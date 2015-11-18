@@ -62,7 +62,8 @@ def build_server_calculator(config):
     if not cloud_size_list:
         abort("No valid node sizes configured")
     return ServerCalculator(cloud_size_list,
-                            config.getint('Daemon', 'max_nodes'))
+                            config.getint('Daemon', 'max_nodes'),
+                            config.getfloat('Daemon', 'max_total_price'))
 
 def launch_pollers(config, server_calculator):
     poll_time = config.getint('Daemon', 'poll_time')
@@ -114,13 +115,14 @@ def main(args=None):
         cloud_node_updater, timer,
         config.new_arvados_client, config.new_cloud_client,
         config.shutdown_windows(),
-        server_calculator.cheapest_size(),
+        server_calculator,
         config.getint('Daemon', 'min_nodes'),
         config.getint('Daemon', 'max_nodes'),
         config.getint('Daemon', 'poll_stale_after'),
         config.getint('Daemon', 'boot_fail_after'),
         config.getint('Daemon', 'node_stale_after'),
-        node_setup, node_shutdown, node_monitor).proxy()
+        node_setup, node_shutdown, node_monitor,
+        max_total_price=config.getfloat('Daemon', 'max_total_price')).proxy()
 
     signal.pause()
     daemon_stopped = node_daemon.actor_ref.actor_stopped.is_set

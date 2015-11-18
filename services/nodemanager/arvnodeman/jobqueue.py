@@ -38,11 +38,12 @@ class ServerCalculator(object):
             return True
 
 
-    def __init__(self, server_list, max_nodes=None):
+    def __init__(self, server_list, max_nodes=None, max_price=None):
         self.cloud_sizes = [self.CloudSizeWrapper(s, **kws)
                             for s, kws in server_list]
         self.cloud_sizes.sort(key=lambda s: s.price)
         self.max_nodes = max_nodes or float('inf')
+        self.max_price = max_price or float('inf')
         self.logger = logging.getLogger('arvnodeman.jobqueue')
         self.logged_jobs = set()
 
@@ -75,7 +76,7 @@ class ServerCalculator(object):
                 if job['uuid'] not in self.logged_jobs:
                     self.logged_jobs.add(job['uuid'])
                     self.logger.debug("job %s not satisfiable", job['uuid'])
-            elif (want_count <= self.max_nodes):
+            elif (want_count <= self.max_nodes) and (want_count*cloud_size.price <= self.max_price):
                 servers.extend([cloud_size.real] * max(1, want_count))
         self.logged_jobs.intersection_update(seen_jobs)
         return servers
