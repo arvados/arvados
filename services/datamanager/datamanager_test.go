@@ -531,8 +531,13 @@ func TestRunDatamanagerAsNonAdminUser(t *testing.T) {
 	}
 }
 
-// Create a collection with multiple streams and blocks using arv-put
-func createMultiBlockCollection(t *testing.T, data string, numStreams, numBlocks int) string {
+/*
+ Create a collection with multiple streams and blocks using arv-put
+ Generated manifest will be for the format:
+   ./stream034036412 ae1426cd6bb371ffd4e8eedf5e9f8288+265+A28b017187d22154d8ae2836d5644312196ddede9@565f7801 0:53:temp-test-file101128526 53:53:temp-test-file525370191 106:53:temp-test-file767521515 159:53:temp-test-file914425264 212:53:temp-test-file989413461
+   ./stream043441762 2b421156d2751447d6fa22fda6742769+265+A4766df9d5a455d76ec3fbd5d1ceea6ab1207967d@565f7801 0:53:temp-test-file016029341 53:53:temp-test-file546920630 106:53:temp-test-file688432627 159:53:temp-test-file823040996 212:53:temp-test-file843401817
+*/
+func createMultiStreamBlockCollection(t *testing.T, data string, numStreams, numBlocks int) string {
 	tempdir, err := ioutil.TempDir(os.TempDir(), "temp-test-dir")
 	if err != nil {
 		t.Fatalf("Error creating tempdir %s", err)
@@ -589,15 +594,86 @@ func geLocatorsFromCollection(t *testing.T, uuid string) []string {
   Create another collection with multiple streams and blocks; backdate it's first block and delete the collection
   After datamanager run: expect only the undeleted blocks from second collection, and none of the backdated blocks.
 */
+func TestPutAndGetCollectionsWithMultipleStreamsAndBlocks(t *testing.T) {
+	defer TearDownDataManagerTest(t)
+	SetupDataManagerTest(t)
+
+	// Put some blocks which will be backdated later on
+	collectionWithOldBlocks := createMultiStreamBlockCollection(t, "to be deleted collection with old blocks", 5, 5)
+	oldBlocks := geLocatorsFromCollection(t, collectionWithOldBlocks)
+
+	collectionWithNewerBlocks := createMultiStreamBlockCollection(t, "to be deleted collection with newer and older blocks", 5, 5)
+	newerBlocks := geLocatorsFromCollection(t, collectionWithNewerBlocks)
+
+	expected := []string{}
+	expected = append(expected, oldBlocks...)
+	expected = append(expected, newerBlocks...)
+	verifyBlocks(t, nil, expected, 2)
+
+	// Backdate old blocks and delete the collection
+	backdateBlocks(t, oldBlocks)
+	deleteCollection(t, collectionWithOldBlocks)
+
+	// Backdate first block from the newer blocks and delete the collection; the rest are still be reachable
+	backdateBlocks(t, newerBlocks[0:1])
+	deleteCollection(t, collectionWithNewerBlocks)
+
+	// run datamanager
+	dataManagerSingleRun(t)
+
+	notExpected := []string{}
+	notExpected = append(notExpected, oldBlocks...)
+	notExpected = append(notExpected, newerBlocks[0])
+
+	verifyBlocks(t, notExpected, newerBlocks[1:], 2)
+}
+
+/*
+ Create a collection with multiple blocks in one stream using arv-put
+ Generated manifest will be for the format:
+   . 83d2e2d0938718a56c9b0c518a4b2930+41+A4b671b8c7525c0af302365b03a44406999e42eec@565f7809 0:41:temp-test-file053866981
+   . cb790454ba6cc9a3ffab377937e06225+41+Ab5460755c3480fb899025b74dc59fadb71402bfc@565f7809 0:41:temp-test-file213181952
+*/
+func createMultiBlockCollection(t *testing.T, data string, numBlocks int) string {
+	tempdir, err := ioutil.TempDir(os.TempDir(), "temp-test-dir")
+	defer os.Remove(tempdir)
+
+	filenames := []string{}
+	for i := 0; i < numBlocks; i++ {
+		tempfile, err := ioutil.TempFile(tempdir, "temp-test-file")
+		defer os.Remove(tempfile.Name())
+
+		_, err = tempfile.Write([]byte(fmt.Sprintf("%s%d", data, i)))
+		if err != nil {
+			t.Fatalf("Error writing to tempfile %v", err)
+		}
+
+		filenames = append(filenames, tempfile.Name())
+	}
+
+	output, err := exec.Command("arv-put", filenames...).Output()
+	if err != nil {
+		t.Fatalf("Error running arv-put %s", err)
+	}
+
+	uuid := string(output[0:27]) // trim terminating char
+	return uuid
+}
+
+/*
+  Create collection with multiple blocks with a single stream; backdate the blocks and delete collection.
+  Create another collection with multiple blocks; backdate it's first block and delete the collection
+  After datamanager run: expect only the undeleted blocks from second collection, and none of the backdated blocks.
+*/
 func TestPutAndGetCollectionsWithMultipleBlocks(t *testing.T) {
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
 
 	// Put some blocks which will be backdated later on
-	collectionWithOldBlocks := createMultiBlockCollection(t, "to be deleted collection with old blocks", 5, 5)
+	collectionWithOldBlocks := createMultiBlockCollection(t, "to be deleted collection with old blocks", 5)
 	oldBlocks := geLocatorsFromCollection(t, collectionWithOldBlocks)
 
-	collectionWithNewerBlocks := createMultiBlockCollection(t, "to be deleted collection with newer and older blocks", 5, 5)
+	collectionWithNewerBlocks := createMultiBlockCollection(t, "to be deleted collection with newer and older blocks", 5)
 	newerBlocks := geLocatorsFromCollection(t, collectionWithNewerBlocks)
 
 	expected := []string{}
