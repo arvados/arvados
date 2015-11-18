@@ -56,6 +56,9 @@ def statlogger(keep, ops):
     net = Stat("net:keep0", interval, "tx", "rx",
                keep.upload_counter.get,
                keep.download_counter.get)
+    cache = Stat("keepcache", interval, "hit", "miss",
+               keep.hits_counter.get,
+               keep.misses_counter.get)
     fuseops = Stat("fuseops", interval,"write", "read",
                    ops.write_ops_counter.get,
                    ops.read_ops_counter.get)
@@ -67,6 +70,7 @@ def statlogger(keep, ops):
         time.sleep(interval)
         calls.update()
         net.update()
+        cache.update()
         fuseops.update()
         blk.update()
 

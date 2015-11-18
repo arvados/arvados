@@ -671,6 +671,8 @@ class KeepClient(object):
         self.download_counter = Counter()
         self.put_counter = Counter()
         self.get_counter = Counter()
+        self.hits_counter = Counter()
+        self.misses_counter = Counter()
 
         if local_store:
             self.local_store = local_store
@@ -883,8 +885,11 @@ class KeepClient(object):
         locator = KeepLocator(loc_s)
         slot, first = self.block_cache.reserve_cache(locator.md5sum)
         if not first:
+            self.hits_counter.add(1)
             v = slot.get()
             return v
+
+        self.misses_counter.add(1)
 
         # If the locator has hints specifying a prefix (indicating a
         # remote keepproxy) or the UUID of a local gateway service,
