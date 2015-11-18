@@ -62,7 +62,8 @@ def build_server_calculator(config):
     if not cloud_size_list:
         abort("No valid node sizes configured")
     return ServerCalculator(cloud_size_list,
-                            config.getint('Daemon', 'max_nodes'))
+                            config.getint('Daemon', 'max_nodes'),
+                            config.getfloat('Daemon', 'max_total_price'))
 
 def launch_pollers(config, server_calculator):
     poll_time = config.getint('Daemon', 'poll_time')

@@ -272,12 +272,14 @@ class NodeManagerDaemonActor(actor_class):
                                            self._nodes_missing(size))
 
         wanted = self._size_wishlist(size) - up_count
-        if wanted > 0 and self.max_total_price and ((total_price + size.price) > self.max_total_price):
+        if wanted > 0 and self.max_total_price and ((total_price + (size.price*wanted)) > self.max_total_price):
+            can_boot = int((self.max_total_price - total_price) / size.price)
+            if can_boot == 0:
                 self._logger.info("Not booting %s (price %s) because with it would exceed max_total_price of %s (current total_price is %s)",
                                   size.name, size.price, self.max_total_price, total_price)
-                return 0
-
-        return
+            return can_boot
+        else:
+            return wanted
 
     def _nodes_excess(self, size):
         up_count = self._nodes_up(size) - self._size_shutdowns(size)

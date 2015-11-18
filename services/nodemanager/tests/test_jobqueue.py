@@ -48,6 +48,16 @@ class ServerCalculatorTestCase(unittest.TestCase):
                                   {'min_scratch_mb_per_node': 200})
         self.assertEqual(6, len(servlist))
 
+    def test_ignore_too_expensive_jobs(self):
+        servcalc = self.make_calculator([1, 2], max_nodes=12, max_price=6)
+        servlist = self.calculate(servcalc,
+                                  {'min_cores_per_node': 1, 'min_nodes': 6})
+        self.assertEqual(6, len(servlist))
+
+        servlist = self.calculate(servcalc,
+                                  {'min_cores_per_node': 2, 'min_nodes': 6})
+        self.assertEqual(0, len(servlist))
+
     def test_job_requesting_max_nodes_accepted(self):
         servcalc = self.make_calculator([1], max_nodes=4)
         servlist = self.calculate(servcalc, {'min_nodes': 4})
