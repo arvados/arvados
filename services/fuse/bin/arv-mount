@@ -48,8 +48,7 @@ class Stat(object):
                                                              self.ing_name,
                                                              delta))
 
-def statlogger(keep, ops):
-    interval = 10
+def statlogger(interval, keep, ops):
     calls = Stat("keepcalls", interval, "put", "get",
                  keep.put_counter.get,
                  keep.get_counter.get)
@@ -114,7 +113,7 @@ with "--".
     parser.add_argument('--read-only', action='store_false', help="Mount will be read only (default)", dest="enable_write", default=False)
     parser.add_argument('--read-write', action='store_true', help="Mount will be read-write", dest="enable_write", default=False)
 
-    parser.add_argument('--stats', action='store_true', help="Write stats to stderr", default=False)
+    parser.add_argument('--crunchstat-interval', type=float, help="Write stats to stderr every N seconds (default disabled)", default=0)
 
     parser.add_argument('--exec', type=str, nargs=argparse.REMAINDER,
                         dest="exec_args", metavar=('command', 'args', '...', '--'),
@@ -162,8 +161,8 @@ with "--".
         api = ThreadSafeApiCache(apiconfig=arvados.config.settings(),
                                  keep_params={"block_cache": arvados.keep.KeepBlockCache(args.file_cache)})
 
-        if args.stats:
-            statsthread = threading.Thread(target=statlogger, args=(api.keep, operations))
+        if args.crunchstat_interval:
+            statsthread = threading.Thread(target=statlogger, args=(args.crunchstat_interval, api.keep, operations))
             statsthread.daemon = True
             statsthread.start()
 
