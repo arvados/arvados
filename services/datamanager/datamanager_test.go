@@ -400,6 +400,10 @@ func TestPutAndGetBlocks(t *testing.T) {
 		t.Fatalf("Locators for both these collections expected to be same: %s %s", oneOfTwoWithSameDataLocator, secondOfTwoWithSameDataLocator)
 	}
 
+	// create collection with empty manifest text
+	emptyBlockLocator := putBlock(t, "")
+	emptyCollection := createCollection(t, "")
+
 	// Verify blocks before doing any backdating / deleting.
 	var expected []string
 	expected = append(expected, oldUnusedBlockLocators...)
@@ -408,6 +412,7 @@ func TestPutAndGetBlocks(t *testing.T) {
 	expected = append(expected, replicationCollectionLocator)
 	expected = append(expected, oneOfTwoWithSameDataLocator)
 	expected = append(expected, secondOfTwoWithSameDataLocator)
+	expected = append(expected, emptyBlockLocator)
 
 	verifyBlocks(t, nil, expected, 2)
 
@@ -421,6 +426,8 @@ func TestPutAndGetBlocks(t *testing.T) {
 	backdateBlocks(t, oldUnusedBlockLocators)
 	deleteCollection(t, toBeDeletedCollectionUUID)
 	deleteCollection(t, secondOfTwoWithSameDataUUID)
+	backdateBlocks(t, []string{emptyBlockLocator})
+	deleteCollection(t, emptyCollection)
 
 	// Run data manager again
 	dataManagerSingleRun(t)
@@ -433,6 +440,7 @@ func TestPutAndGetBlocks(t *testing.T) {
 	expected = append(expected, toBeDeletedCollectionLocator)
 	expected = append(expected, oneOfTwoWithSameDataLocator)
 	expected = append(expected, secondOfTwoWithSameDataLocator)
+	expected = append(expected, emptyBlockLocator) // even when unreferenced, this remains
 
 	verifyBlocks(t, oldUnusedBlockLocators, expected, 2)
 
@@ -521,4 +529,96 @@ func TestRunDatamanagerAsNonAdminUser(t *testing.T) {
 	if err == nil {
 		t.Fatalf("Expected error during singlerun as non-admin user")
 	}
+}
+
+// Create a collection with multiple streams and blocks using arv-put
+func createMultiBlockCollection(t *testing.T, data string, numStreams, numBlocks int) string {
+	tempdir, err := ioutil.TempDir(os.TempDir(), "temp-test-dir")
+	if err != nil {
+		t.Fatalf("Error creating tempdir %s", err)
+	}
+	defer os.Remove(tempdir)
+
+	for i := 0; i < numStreams; i++ {
+		stream, err := ioutil.TempDir(tempdir, "stream")
+		if err != nil {
+			t.Fatalf("Error creating stream tempdir %s", err)
+		}
+		defer os.Remove(stream)
+
+		for j := 0; j < numBlocks; j++ {
+			tempfile, err := ioutil.TempFile(stream, "temp-test-file")
+			if err != nil {
+				t.Fatalf("Error creating tempfile %s", err)
+			}
+			defer os.Remove(tempfile.Name())
+
+			_, err = tempfile.Write([]byte(fmt.Sprintf("%s%d", data, i)))
+			if err != nil {
+				t.Fatalf("Error writing to tempfile %v", err)
+			}
+		}
+	}
+
+	output, err := exec.Command("arv-put", tempdir).Output()
+	if err != nil {
+		t.Fatalf("Error running arv-put %s", err)
+	}
+
+	uuid := string(output[0:27]) // trim terminating char
+	return uuid
+}
+
+func geLocatorsFromCollection(t *testing.T, uuid string) []string {
+	manifest := getCollection(t, uuid)["manifest_text"].(string)
+
+	locators := []string{}
+	splits := strings.Split(manifest, " ")
+	for _, locator := range splits {
+		match := locatorMatcher.FindStringSubmatch(locator)
+		if match != nil {
+			locators = append(locators, match[1]+"+"+match[2])
+		}
+	}
+
+	return locators
+}
+
+/*
+  Create collection with multiple streams and blocks; backdate the blocks and delete collection.
+  Create another collection with multiple streams and blocks; backdate it's first block and delete the collection
+  After datamanager run: expect only the undeleted blocks from second collection, and none of the backdated blocks.
+*/
+func TestPutAndGetCollectionsWithMultipleBlocks(t *testing.T) {
+	defer TearDownDataManagerTest(t)
+	SetupDataManagerTest(t)
+
+	// Put some blocks which will be backdated later on
+	collectionWithOldBlocks := createMultiBlockCollection(t, "to be deleted collection with old blocks", 5, 5)
+	oldBlocks := geLocatorsFromCollection(t, collectionWithOldBlocks)
+
+	collectionWithNewerBlocks := createMultiBlockCollection(t, "to be deleted collection with newer and older blocks", 5, 5)
+	newerBlocks := geLocatorsFromCollection(t, collectionWithNewerBlocks)
+
+	expected := []string{}
+	expected = append(expected, oldBlocks...)
+	expected = append(expected, newerBlocks...)
+	verifyBlocks(t, nil, expected, 2)
+
+	// Backdate old blocks and delete the collection
+	backdateBlocks(t, oldBlocks)
+	deleteCollection(t, collectionWithOldBlocks)
+
+	// Backdate first block from the newer blocks and delete the collection; the rest are still be reachable
+	backdateBlocks(t, newerBlocks[0:1])
+	deleteCollection(t, collectionWithNewerBlocks)
+
+	// run datamanager
+	dataManagerSingleRun(t)
+
+	notExpected := []string{}
+	notExpected = append(notExpected, oldBlocks...)
+	notExpected = append(notExpected, newerBlocks[0])
+
+	verifyBlocks(t, notExpected, newerBlocks[1:], 2)
 }
