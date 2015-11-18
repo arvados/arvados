@@ -703,10 +703,6 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         booting = self.daemon.booting.get()
         self.stop_proxy(self.daemon)
 
-        # technically something could happen between finishing the busywait and
-        # stopping the daemon so check again
-        self.assertEqual(3, self.node_setup.start.call_count)
-
         sizecounts = {a[0].id: 0 for a in avail_sizes}
         for b in booting.itervalues():
             sizecounts[b.cloud_size.get().id] += 1
