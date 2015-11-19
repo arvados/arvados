@@ -96,7 +96,7 @@ func WriteHeapProfile() error {
 }
 
 // GetCollectionsAndSummarize gets collections from api and summarizes
-func GetCollectionsAndSummarize(arvLogger *logger.Logger, params GetCollectionsParams) (results ReadCollections) {
+func GetCollectionsAndSummarize(params GetCollectionsParams) (results ReadCollections) {
 	results, err := GetCollections(params)
 	if err != nil {
 		results.Err = err

@@ -183,7 +183,6 @@ func BuildDataFetcher(arv arvadosclient.ArvadosClient) summary.DataFetcher {
 
 		go func() {
 			collectionChannel <- collection.GetCollectionsAndSummarize(
-				arvLogger,
 				collection.GetCollectionsParams{
 					Client:    arv,
 					Logger:    arvLogger,
