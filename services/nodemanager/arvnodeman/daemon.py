@@ -103,13 +103,15 @@ class NodeManagerDaemonActor(actor_class):
     def __init__(self, server_wishlist_actor, arvados_nodes_actor,
                  cloud_nodes_actor, cloud_update_actor, timer_actor,
                  arvados_factory, cloud_factory,
-                 shutdown_windows, min_size, min_nodes, max_nodes,
+                 shutdown_windows, server_calculator,
+                 min_nodes, max_nodes,
                  poll_stale_after=600,
                  boot_fail_after=1800,
                  node_stale_after=7200,
                  node_setup_class=dispatch.ComputeNodeSetupActor,
                  node_shutdown_class=dispatch.ComputeNodeShutdownActor,
-                 node_actor_class=dispatch.ComputeNodeMonitorActor):
+                 node_actor_class=dispatch.ComputeNodeMonitorActor,
+                 max_total_price=0):
         super(NodeManagerDaemonActor, self).__init__()
         self._node_setup = node_setup_class
         self._node_shutdown = node_shutdown_class
@@ -122,9 +124,11 @@ class NodeManagerDaemonActor(actor_class):
         self._logger = logging.getLogger('arvnodeman.daemon')
         self._later = self.actor_ref.proxy()
         self.shutdown_windows = shutdown_windows
-        self.min_cloud_size = min_size
+        self.server_calculator = server_calculator
+        self.min_cloud_size = self.server_calculator.cheapest_size()
         self.min_nodes = min_nodes
         self.max_nodes = max_nodes
+        self.max_total_price = max_total_price
         self.poll_stale_after = poll_stale_after
         self.boot_fail_after = boot_fail_after
         self.node_stale_after = node_stale_after
@@ -210,51 +214,89 @@ class NodeManagerDaemonActor(actor_class):
                     self._pair_nodes(cloud_rec, arv_node)
                     break
 
-    def _nodes_up(self):
-        return sum(len(nodelist) for nodelist in
-                   [self.cloud_nodes, self.booted, self.booting])
+    def _nodes_up(self, size):
+        up = 0
+        up += sum(1
+                  for c in self.booting.itervalues()
+                  if size is None or c.cloud_size.get().id == size.id)
+        up += sum(1
+                  for i in (self.booted, self.cloud_nodes.nodes)
+                  for c in i.itervalues()
+                  if size is None or (c.cloud_node.size and c.cloud_node.size.id == size.id))
+        return up
 
-    def _nodes_busy(self):
+    def _total_price(self):
+        cost = 0
+        cost += sum(c.cloud_size.get().price
+                  for c in self.booting.itervalues())
+        cost += sum(c.cloud_node.size.price
+                    for i in (self.booted, self.cloud_nodes.nodes)
+                    for c in i.itervalues()
+                    if c.cloud_node.size)
+        return cost
+
+    def _nodes_busy(self, size):
         return sum(1 for busy in
                    pykka.get_all(rec.actor.in_state('busy') for rec in
-                                 self.cloud_nodes.nodes.itervalues())
+                                 self.cloud_nodes.nodes.itervalues()
+                                 if (rec.cloud_node.size and rec.cloud_node.size.id == size.id))
                    if busy)
 
-    def _nodes_missing(self):
+    def _nodes_missing(self, size):
         return sum(1 for arv_node in
                    pykka.get_all(rec.actor.arvados_node for rec in
                                  self.cloud_nodes.nodes.itervalues()
-                                 if rec.actor.cloud_node.get().id not in self.shutdowns)
+                                 if rec.cloud_node.size and rec.cloud_node.size.id == size.id and rec.actor.cloud_node.get().id not in self.shutdowns)
                    if arv_node and cnode.arvados_node_missing(arv_node, self.node_stale_after))
 
-    def _nodes_wanted(self):
-        up_count = self._nodes_up()
-        under_min = self.min_nodes - up_count
-        over_max = up_count - self.max_nodes
+    def _size_wishlist(self, size):
+        return sum(1 for c in self.last_wishlist if c.id == size.id)
+
+    def _size_shutdowns(self, size):
+        return sum(1 for c in self.shutdowns.itervalues()
+                   if c.cloud_node.get().size.id == size.id)
+
+    def _nodes_wanted(self, size):
+        total_up_count = self._nodes_up(None)
+        under_min = self.min_nodes - total_up_count
+        over_max = total_up_count - self.max_nodes
+        total_price = self._total_price()
+
         if over_max >= 0:
             return -over_max
-        elif under_min > 0:
+        elif under_min > 0 and size.id == self.min_cloud_size.id:
             return under_min
-        else:
-            up_count -= len(self.shutdowns) + self._nodes_busy() + self._nodes_missing()
-            return len(self.last_wishlist) - up_count
 
-    def _nodes_excess(self):
-        up_count = self._nodes_up() - len(self.shutdowns)
-        over_min = up_count - self.min_nodes
-        if over_min <= 0:
-            return over_min
+        up_count = self._nodes_up(size) - (self._size_shutdowns(size) +
+                                           self._nodes_busy(size) +
+                                           self._nodes_missing(size))
+
+        wanted = self._size_wishlist(size) - up_count
+        if wanted > 0 and self.max_total_price and ((total_price + (size.price*wanted)) > self.max_total_price):
+            can_boot = int((self.max_total_price - total_price) / size.price)
+            if can_boot == 0:
+                self._logger.info("Not booting %s (price %s) because with it would exceed max_total_price of %s (current total_price is %s)",
+                                  size.name, size.price, self.max_total_price, total_price)
+            return can_boot
         else:
-            return up_count - self._nodes_busy() - len(self.last_wishlist)
+            return wanted
+
+    def _nodes_excess(self, size):
+        up_count = self._nodes_up(size) - self._size_shutdowns(size)
+        if size.id == self.min_cloud_size.id:
+            up_count -= self.min_nodes
+        return up_count - self._nodes_busy(size) - self._size_wishlist(size)
 
     def update_server_wishlist(self, wishlist):
         self._update_poll_time('server_wishlist')
         self.last_wishlist = wishlist
-        nodes_wanted = self._nodes_wanted()
-        if nodes_wanted > 0:
-            self._later.start_node()
-        elif (nodes_wanted < 0) and self.booting:
-            self._later.stop_booting_node()
+        for sz in reversed(self.server_calculator.cloud_sizes):
+            size = sz.real
+            nodes_wanted = self._nodes_wanted(size)
+            if nodes_wanted > 0:
+                self._later.start_node(size)
+            elif (nodes_wanted < 0) and self.booting:
+                self._later.stop_booting_node(size)
 
     def _check_poll_freshness(orig_func):
         """Decorator to inhibit a method when poll information is stale.
@@ -274,15 +316,11 @@ class NodeManagerDaemonActor(actor_class):
         return wrapper
 
     @_check_poll_freshness
-    def start_node(self):
-        nodes_wanted = self._nodes_wanted()
+    def start_node(self, cloud_size):
+        nodes_wanted = self._nodes_wanted(cloud_size)
         if nodes_wanted < 1:
             return None
         arvados_node = self.arvados_nodes.find_stale_node(self.node_stale_after)
-        try:
-            cloud_size = self.last_wishlist[self._nodes_up()]
-        except IndexError:
-            cloud_size = self.min_cloud_size
         self._logger.info("Want %s more nodes.  Booting a %s node.",
                           nodes_wanted, cloud_size.name)
         new_setup = self._node_setup.start(
@@ -297,7 +335,7 @@ class NodeManagerDaemonActor(actor_class):
                 time.time())
         new_setup.subscribe(self._later.node_up)
         if nodes_wanted > 1:
-            self._later.start_node()
+            self._later.start_node(cloud_size)
 
     def _get_actor_attrs(self, actor, *attr_names):
         return pykka.get_all([getattr(actor, name) for name in attr_names])
@@ -314,15 +352,15 @@ class NodeManagerDaemonActor(actor_class):
                              self._later.shutdown_unpaired_node, cloud_node.id)
 
     @_check_poll_freshness
-    def stop_booting_node(self):
-        nodes_excess = self._nodes_excess()
+    def stop_booting_node(self, size):
+        nodes_excess = self._nodes_excess(size)
         if (nodes_excess < 1) or not self.booting:
             return None
         for key, node in self.booting.iteritems():
-            if node.stop_if_no_cloud_node().get():
+            if node.cloud_size.get().id == size.id and node.stop_if_no_cloud_node().get():
                 del self.booting[key]
                 if nodes_excess > 1:
-                    self._later.stop_booting_node()
+                    self._later.stop_booting_node(size)
                 break
 
     def _begin_node_shutdown(self, node_actor, cancellable):
@@ -338,7 +376,7 @@ class NodeManagerDaemonActor(actor_class):
 
     @_check_poll_freshness
     def node_can_shutdown(self, node_actor):
-        if self._nodes_excess() > 0:
+        if self._nodes_excess(node_actor.cloud_node.get().size) > 0:
             self._begin_node_shutdown(node_actor, cancellable=True)
 
     def shutdown_unpaired_node(self, cloud_node_id):

@@ -210,6 +210,21 @@ class KeepBlockCache(object):
                 self._cache.insert(0, n)
                 return n, True
 
+
+class Counter(object):
+    def __init__(self, v=0):
+        self._lk = threading.Lock()
+        self._val = v
+
+    def add(self, v):
+        with self._lk:
+            self._val += v
+
+    def get(self):
+        with self._lk:
+            return self._val
+
+
 class KeepClient(object):
 
     # Default Keep server connection timeout:  2 seconds
@@ -292,7 +307,6 @@ class KeepClient(object):
             with self._done_lock:
                 return self._done
 
-
     class KeepService(object):
         """Make requests to a single Keep service, and track results.
 
@@ -311,7 +325,9 @@ class KeepClient(object):
             arvados.errors.HttpError,
         )
 
-        def __init__(self, root, user_agent_pool=Queue.LifoQueue(), **headers):
+        def __init__(self, root, user_agent_pool=Queue.LifoQueue(),
+                     upload_counter=None,
+                     download_counter=None, **headers):
             self.root = root
             self._user_agent_pool = user_agent_pool
             self._result = {'error': None}
@@ -320,6 +336,8 @@ class KeepClient(object):
             self.get_headers = {'Accept': 'application/octet-stream'}
             self.get_headers.update(headers)
             self.put_headers = headers
+            self.upload_counter = upload_counter
+            self.download_counter = download_counter
 
         def usable(self):
             """Is it worth attempting a request?"""
@@ -405,11 +423,13 @@ class KeepClient(object):
                 _logger.debug("Request fail: GET %s => %s: %s",
                               url, type(self._result['error']), str(self._result['error']))
                 return None
-            _logger.info("%s response: %s bytes in %s msec (%.3f MiB/sec)",
+            _logger.info("GET %s: %s bytes in %s msec (%.3f MiB/sec)",
                          self._result['status_code'],
                          len(self._result['body']),
                          t.msecs,
                          (len(self._result['body'])/(1024.0*1024))/t.secs if t.secs > 0 else 0)
+            if self.download_counter:
+                self.download_counter.add(len(self._result['body']))
             resp_md5 = hashlib.md5(self._result['body']).hexdigest()
             if resp_md5 != locator.md5sum:
                 _logger.warning("Checksum fail: md5(%s) = %s",
@@ -424,36 +444,37 @@ class KeepClient(object):
             _logger.debug("Request: PUT %s", url)
             curl = self._get_user_agent()
             try:
-                self._headers = {}
-                body_reader = cStringIO.StringIO(body)
-                response_body = cStringIO.StringIO()
-                curl.setopt(pycurl.NOSIGNAL, 1)
-                curl.setopt(pycurl.OPENSOCKETFUNCTION, self._socket_open)
-                curl.setopt(pycurl.URL, url.encode('utf-8'))
-                # Using UPLOAD tells cURL to wait for a "go ahead" from the
-                # Keep server (in the form of a HTTP/1.1 "100 Continue"
-                # response) instead of sending the request body immediately.
-                # This allows the server to reject the request if the request
-                # is invalid or the server is read-only, without waiting for
-                # the client to send the entire block.
-                curl.setopt(pycurl.UPLOAD, True)
-                curl.setopt(pycurl.INFILESIZE, len(body))
-                curl.setopt(pycurl.READFUNCTION, body_reader.read)
-                curl.setopt(pycurl.HTTPHEADER, [
-                    '{}: {}'.format(k,v) for k,v in self.put_headers.iteritems()])
-                curl.setopt(pycurl.WRITEFUNCTION, response_body.write)
-                curl.setopt(pycurl.HEADERFUNCTION, self._headerfunction)
-                self._setcurltimeouts(curl, timeout)
-                try:
-                    curl.perform()
-                except Exception as e:
-                    raise arvados.errors.HttpError(0, str(e))
-                self._result = {
-                    'status_code': curl.getinfo(pycurl.RESPONSE_CODE),
-                    'body': response_body.getvalue(),
-                    'headers': self._headers,
-                    'error': False,
-                }
+                with timer.Timer() as t:
+                    self._headers = {}
+                    body_reader = cStringIO.StringIO(body)
+                    response_body = cStringIO.StringIO()
+                    curl.setopt(pycurl.NOSIGNAL, 1)
+                    curl.setopt(pycurl.OPENSOCKETFUNCTION, self._socket_open)
+                    curl.setopt(pycurl.URL, url.encode('utf-8'))
+                    # Using UPLOAD tells cURL to wait for a "go ahead" from the
+                    # Keep server (in the form of a HTTP/1.1 "100 Continue"
+                    # response) instead of sending the request body immediately.
+                    # This allows the server to reject the request if the request
+                    # is invalid or the server is read-only, without waiting for
+                    # the client to send the entire block.
+                    curl.setopt(pycurl.UPLOAD, True)
+                    curl.setopt(pycurl.INFILESIZE, len(body))
+                    curl.setopt(pycurl.READFUNCTION, body_reader.read)
+                    curl.setopt(pycurl.HTTPHEADER, [
+                        '{}: {}'.format(k,v) for k,v in self.put_headers.iteritems()])
+                    curl.setopt(pycurl.WRITEFUNCTION, response_body.write)
+                    curl.setopt(pycurl.HEADERFUNCTION, self._headerfunction)
+                    self._setcurltimeouts(curl, timeout)
+                    try:
+                        curl.perform()
+                    except Exception as e:
+                        raise arvados.errors.HttpError(0, str(e))
+                    self._result = {
+                        'status_code': curl.getinfo(pycurl.RESPONSE_CODE),
+                        'body': response_body.getvalue(),
+                        'headers': self._headers,
+                        'error': False,
+                    }
                 ok = retry.check_http_response_success(self._result['status_code'])
                 if not ok:
                     self._result['error'] = arvados.errors.HttpError(
@@ -474,6 +495,13 @@ class KeepClient(object):
                 _logger.debug("Request fail: PUT %s => %s: %s",
                               url, type(self._result['error']), str(self._result['error']))
                 return False
+            _logger.info("PUT %s: %s bytes in %s msec (%.3f MiB/sec)",
+                         self._result['status_code'],
+                         len(body),
+                         t.msecs,
+                         (len(body)/(1024.0*1024))/t.secs if t.secs > 0 else 0)
+            if self.upload_counter:
+                self.upload_counter.add(len(body))
             return True
 
         def _setcurltimeouts(self, curl, timeouts):
@@ -649,6 +677,12 @@ class KeepClient(object):
         self.timeout = timeout
         self.proxy_timeout = proxy_timeout
         self._user_agent_pool = Queue.LifoQueue()
+        self.upload_counter = Counter()
+        self.download_counter = Counter()
+        self.put_counter = Counter()
+        self.get_counter = Counter()
+        self.hits_counter = Counter()
+        self.misses_counter = Counter()
 
         if local_store:
             self.local_store = local_store
@@ -802,7 +836,10 @@ class KeepClient(object):
         for root in local_roots:
             if root not in roots_map:
                 roots_map[root] = self.KeepService(
-                    root, self._user_agent_pool, **headers)
+                    root, self._user_agent_pool,
+                    upload_counter=self.upload_counter,
+                    download_counter=self.download_counter,
+                    **headers)
         return local_roots
 
     @staticmethod
@@ -854,11 +891,17 @@ class KeepClient(object):
         """
         if ',' in loc_s:
             return ''.join(self.get(x) for x in loc_s.split(','))
+
+        self.get_counter.add(1)
+
         locator = KeepLocator(loc_s)
         slot, first = self.block_cache.reserve_cache(locator.md5sum)
         if not first:
+            self.hits_counter.add(1)
             v = slot.get()
             return v
+
+        self.misses_counter.add(1)
 
         # If the locator has hints specifying a prefix (indicating a
         # remote keepproxy) or the UUID of a local gateway service,
@@ -874,7 +917,9 @@ class KeepClient(object):
                                    )])
         # Map root URLs to their KeepService objects.
         roots_map = {
-            root: self.KeepService(root, self._user_agent_pool)
+            root: self.KeepService(root, self._user_agent_pool,
+                                   upload_counter=self.upload_counter,
+                                   download_counter=self.download_counter)
             for root in hint_roots
         }
 
@@ -956,6 +1001,8 @@ class KeepClient(object):
             data = data.encode("ascii")
         elif not isinstance(data, str):
             raise arvados.errors.ArgumentError("Argument 'data' to KeepClient.put is not type 'str'")
+
+        self.put_counter.add(1)
 
         data_hash = hashlib.md5(data).hexdigest()
         loc_s = data_hash + '+' + str(len(data))

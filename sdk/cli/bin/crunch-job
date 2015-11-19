@@ -896,7 +896,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
         .q{&& SWAP=$(awk '($1 == "SwapTotal:"){print $2}' </proc/meminfo) }
         ."&& MEMLIMIT=\$(( (\$MEM * 95) / ($ENV{CRUNCH_NODE_SLOTS} * 100) )) "
         ."&& let SWAPLIMIT=\$MEMLIMIT+\$SWAP ";
-    $command .= "&& exec arv-mount --by-pdh --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
+    $command .= "&& exec arv-mount --by-pdh --crunchstat-interval=10 --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
     if ($docker_hash)
     {
       my $containername = "$Jobstep->{arvados_task}->{uuid}-$Jobstep->{failures}";
@@ -965,7 +965,10 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
         $command .= $stdbuf;
         $command .= "perl - \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E";
       } else {
-        $command .= "/bin/sh -c \'mkdir -p \"$ENV{JOB_WORK}\" \"$ENV{TASK_WORK}\" && " .
+        $command .= "/bin/sh -c \'python -c " .
+            '"from pkg_resources import get_distribution as get; print \"Using Arvados SDK version\", get(\"arvados-python-client\").version"' .
+            ">&2 2>/dev/null; " .
+            "mkdir -p \"$ENV{JOB_WORK}\" \"$ENV{TASK_WORK}\" && " .
             "if which stdbuf >/dev/null ; then " .
             "  exec $stdbuf \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E ;" .
             " else " .
@@ -2169,10 +2172,11 @@ if (@ARGV) {
     $Log->("Built Python SDK virtualenv");
   }
 
-  my $pip_bin = "pip";
+  my @pysdk_version_cmd = ("python", "-c",
+    "from pkg_resources import get_distribution as get; print get('arvados-python-client').version");
   if ($venv_built) {
     $Log->("Running in Python SDK virtualenv");
-    $pip_bin = "$venv_dir/bin/pip";
+    @pysdk_version_cmd = ();
     my $orig_argv = join(" ", map { quotemeta($_); } @ARGV);
     @ARGV = ("/bin/sh", "-ec",
              ". \Q$venv_dir/bin/activate\E; exec $orig_argv");
@@ -2181,14 +2185,18 @@ if (@ARGV) {
            "\$PATH. Can't install Python SDK.");
   }
 
-  my $pkgs = `(\Q$pip_bin\E freeze 2>/dev/null | grep arvados) || dpkg-query --show '*arvados*'`;
-  if ($pkgs) {
-    $Log->("Using Arvados SDK:");
-    foreach my $line (split /\n/, $pkgs) {
-      $Log->($line);
+  if (@pysdk_version_cmd) {
+    open(my $pysdk_version_pipe, "-|", @pysdk_version_cmd);
+    my $pysdk_version = <$pysdk_version_pipe>;
+    close($pysdk_version_pipe);
+    if ($? == 0) {
+      chomp($pysdk_version);
+      $Log->("Using Arvados SDK version $pysdk_version");
+    } else {
+      # A lot could've gone wrong here, but pretty much all of it means that
+      # Python won't be able to load the Arvados SDK.
+      $Log->("Warning: Arvados SDK not found");
     }
-  } else {
-    $Log->("Arvados SDK packages not found");
   }
 
   while (my ($sdk_dir, $sdk_envkey) = each(%SDK_ENVVARS)) {
