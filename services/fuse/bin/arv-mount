@@ -26,27 +26,29 @@ class Stat(object):
         self.ing_name = ing_name
         self.egress = egr_func
         self.ingress = ing_func
-        self.egr = self.egress()
-        self.ing = self.ingress()
+        self.egr_prev = self.egress()
+        self.ing_prev = self.ingress()
 
     def update(self):
-        self.egr_prev = self.egr
-        self.ing_prev = self.ing
-        self.egr = self.egress()
-        self.ing = self.ingress()
+        egr = self.egress()
+        ing = self.ingress()
 
         delta = " -- interval %.4f seconds %d %s %d %s" % (self.interval,
-                                                           self.egr-self.egr_prev,
+                                                           egr - self.egr_prev,
                                                            self.egr_name,
-                                                           self.ing-self.ing_prev,
+                                                           ing - self.ing_prev,
                                                            self.ing_name)
 
         sys.stderr.write("crunchstat: %s %d %s %d %s%s\n" % (self.prefix,
-                                                             self.egr,
+                                                             egr,
                                                              self.egr_name,
-                                                             self.ing,
+                                                             ing,
                                                              self.ing_name,
                                                              delta))
+
+        self.egr_prev = egr
+        self.ing_prev = ing
+
 
 def statlogger(interval, keep, ops):
     calls = Stat("keepcalls", interval, "put", "get",
