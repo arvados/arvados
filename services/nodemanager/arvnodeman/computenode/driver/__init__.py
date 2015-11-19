@@ -53,6 +53,8 @@ class BaseComputeNodeDriver(object):
                 if new_pair is not None:
                     self.create_kwargs[new_pair[0]] = new_pair[1]
 
+        self.sizes = {sz.id: sz for sz in self.real.list_sizes()}
+
     def _init_ping_host(self, ping_host):
         self.ping_host = ping_host
 
