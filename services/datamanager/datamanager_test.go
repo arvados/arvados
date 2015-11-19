@@ -31,7 +31,7 @@ func SetupDataManagerTest(t *testing.T) {
 	arvadostest.StartKeep(2, false)
 
 	var err error
-	arv, err = makeArvadosClient()
+	arv, err = arvadosclient.MakeArvadosClient()
 	if err != nil {
 		t.Fatalf("Error making arvados client: %s", err)
 	}

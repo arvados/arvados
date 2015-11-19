@@ -3,6 +3,7 @@ package keep
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -152,18 +153,18 @@ type APITestData struct {
 }
 
 func (s *KeepSuite) TestGetKeepServers_UnsupportedServiceType(c *C) {
-	testGetKeepServersFromAPI(c, APITestData{1, "notadisk", 200})
+	testGetKeepServersFromAPI(c, APITestData{1, "notadisk", 200}, "Unsupported service type")
 }
 
 func (s *KeepSuite) TestGetKeepServers_ReceivedTooFewServers(c *C) {
-	testGetKeepServersFromAPI(c, APITestData{2, "disk", 200})
+	testGetKeepServersFromAPI(c, APITestData{2, "disk", 200}, "Did not receive all available keep servers")
 }
 
 func (s *KeepSuite) TestGetKeepServers_ServerError(c *C) {
-	testGetKeepServersFromAPI(c, APITestData{-1, "disk", -1})
+	testGetKeepServersFromAPI(c, APITestData{-1, "disk", -1}, "arvados API server error")
 }
 
-func testGetKeepServersFromAPI(c *C, testData APITestData) {
+func testGetKeepServersFromAPI(c *C, testData APITestData, expectedError string) {
 	keepServers := ServiceList{
 		ItemsAvailable: testData.numServers,
 		KeepServers: []ServerAddress{{
@@ -202,11 +203,8 @@ func testGetKeepServersFromAPI(c *C, testData APITestData) {
 	}
 
 	_, err := GetKeepServersAndSummarize(params)
-	if testData.numServers > 1 {
-		c.Assert(err, ErrorMatches, ".*Did not receive all available keep servers.*")
-	} else if testData.serverType != "disk" {
-		c.Assert(err, ErrorMatches, ".*Unsupported service type.*")
-	}
+	c.Assert(err, NotNil)
+	c.Assert(err, ErrorMatches, fmt.Sprintf(".*%s.*", expectedError))
 }
 
 type KeepServerTestData struct {
@@ -265,15 +263,15 @@ func testGetKeepServersAndSummarize(c *C, testData KeepServerTestData) {
 
 	ksURL, err := url.Parse(ks.URL)
 	c.Check(err, IsNil)
-	ksURLParts := strings.Split(ksURL.Host, ":")
-	ksPort, err := strconv.Atoi(ksURLParts[1])
+	ksHost, port, err := net.SplitHostPort(ksURL.Host)
+	ksPort, err := strconv.Atoi(port)
 	c.Check(err, IsNil)
 
 	servers_list := ServiceList{
 		ItemsAvailable: 1,
 		KeepServers: []ServerAddress{{
 			SSL:         false,
-			Host:        strings.Split(ksURL.Host, ":")[0],
+			Host:        ksHost,
 			Port:        ksPort,
 			UUID:        "abcdefg",
 			ServiceType: "disk",

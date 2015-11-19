@@ -42,21 +42,21 @@ func init() {
 func main() {
 	flag.Parse()
 	if minutesBetweenRuns == 0 {
-		arv, err := makeArvadosClient()
+		arv, err := arvadosclient.MakeArvadosClient()
 		if err != nil {
-			log.Fatalf("makeArvadosClient: %v", err)
+			loggerutil.FatalWithMessage(arvLogger, fmt.Sprintf("Error making arvados client: %v", err))
 		}
 		err = singlerun(arv)
 		if err != nil {
-			log.Fatalf("singlerun: %v", err)
+			loggerutil.FatalWithMessage(arvLogger, fmt.Sprintf("singlerun: %v", err))
 		}
 	} else {
 		waitTime := time.Minute * time.Duration(minutesBetweenRuns)
 		for {
 			log.Println("Beginning Run")
-			arv, err := makeArvadosClient()
+			arv, err := arvadosclient.MakeArvadosClient()
 			if err != nil {
-				log.Fatalf("makeArvadosClient: %v", err)
+				loggerutil.FatalWithMessage(arvLogger, fmt.Sprintf("Error making arvados client: %v", err))
 			}
 			err = singlerun(arv)
 			if err != nil {
@@ -68,9 +68,7 @@ func main() {
 	}
 }
 
-func makeArvadosClient() (arvadosclient.ArvadosClient, error) {
-	return arvadosclient.MakeArvadosClient()
-}
+var arvLogger *logger.Logger
 
 func singlerun(arv arvadosclient.ArvadosClient) error {
 	var err error
@@ -80,7 +78,6 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 		return errors.New("Current user is not an admin. Datamanager requires a privileged token.")
 	}
 
-	var arvLogger *logger.Logger
 	if logEventTypePrefix != "" {
 		arvLogger = logger.NewLogger(logger.LoggerParams{
 			Client:          arv,
@@ -111,7 +108,7 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 		return readCollections.Err
 	}
 
-	_, err = summary.MaybeWriteData(arvLogger, readCollections, keepServerInfo)
+	err = summary.MaybeWriteData(arvLogger, readCollections, keepServerInfo)
 	if err != nil {
 		return err
 	}

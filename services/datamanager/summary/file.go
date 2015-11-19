@@ -51,13 +51,13 @@ func init() {
 // working with stale data.
 func MaybeWriteData(arvLogger *logger.Logger,
 	readCollections collection.ReadCollections,
-	keepServerInfo keep.ReadServers) (bool, error) {
+	keepServerInfo keep.ReadServers) error {
 	if WriteDataTo == "" {
-		return false, nil
+		return nil
 	}
 	summaryFile, err := os.Create(WriteDataTo)
 	if err != nil {
-		return false, err
+		return err
 	}
 	defer summaryFile.Close()
 
@@ -67,10 +67,10 @@ func MaybeWriteData(arvLogger *logger.Logger,
 		KeepServerInfo:  keepServerInfo}
 	err = enc.Encode(data)
 	if err != nil {
-		return false, err
+		return err
 	}
 	log.Printf("Wrote summary data to: %s", WriteDataTo)
-	return true, nil
+	return nil
 }
 
 // ShouldReadData should not be used outside of development
