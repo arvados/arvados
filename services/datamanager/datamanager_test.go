@@ -538,7 +538,7 @@ func TestPutAndGetBlocks_ErrorDuringGetCollectionsBadWriteTo(t *testing.T) {
 }
 
 func TestPutAndGetBlocks_ErrorDuringGetCollectionsBadHeapProfileFilename(t *testing.T) {
-	testOldBlocksNotDeletedOnDataManagerError(t, "", "/badheapprofilefile", false, true)
+	testOldBlocksNotDeletedOnDataManagerError(t, "", "/badheapprofilefile", true, true)
 }
 
 /*

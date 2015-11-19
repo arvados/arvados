@@ -107,8 +107,8 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 
 	dataFetcher(arvLogger, &readCollections, &keepServerInfo)
 
-	if len(readCollections.UUIDToCollection) == 0 {
-		return nil // no collections read so no more work to do?
+	if readCollections.Err != nil {
+		return readCollections.Err
 	}
 
 	_, err = summary.MaybeWriteData(arvLogger, readCollections, keepServerInfo)

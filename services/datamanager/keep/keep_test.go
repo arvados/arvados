@@ -2,6 +2,7 @@ package keep
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -216,37 +217,42 @@ type KeepServerTestData struct {
 	indexStatusCode   int
 	indexResponseBody string
 
-	// Is error expected?
-	expectedError bool
+	// expected error, if any
+	expectedError string
 }
 
 func (s *KeepSuite) TestGetKeepServers_ErrorGettingKeepServerStatus(c *C) {
-	testGetKeepServersAndSummarize(c, KeepServerTestData{500, 200, "ok", true})
+	testGetKeepServersAndSummarize(c, KeepServerTestData{500, 200, "ok",
+		"500 Internal Server Error"})
 }
 
 func (s *KeepSuite) TestGetKeepServers_GettingIndex(c *C) {
-	testGetKeepServersAndSummarize(c, KeepServerTestData{200, -1, "notok", true})
+	testGetKeepServersAndSummarize(c, KeepServerTestData{200, -1, "notok",
+		"redirect-loop"})
 }
 
 func (s *KeepSuite) TestGetKeepServers_ErrorReadServerResponse(c *C) {
-	testGetKeepServersAndSummarize(c, KeepServerTestData{200, 500, "notok", true})
+	testGetKeepServersAndSummarize(c, KeepServerTestData{200, 500, "notok",
+		"500 Internal Server Error"})
 }
 
 func (s *KeepSuite) TestGetKeepServers_ReadServerResponseTuncatedAtLineOne(c *C) {
-	testGetKeepServersAndSummarize(c, KeepServerTestData{200, 200, "notterminatedwithnewline", true})
+	testGetKeepServersAndSummarize(c, KeepServerTestData{200, 200,
+		"notterminatedwithnewline", "truncated at line 1"})
 }
 
 func (s *KeepSuite) TestGetKeepServers_InvalidBlockLocatorPattern(c *C) {
-	testGetKeepServersAndSummarize(c, KeepServerTestData{200, 200, "testing\n", true})
+	testGetKeepServersAndSummarize(c, KeepServerTestData{200, 200, "testing\n",
+		"Error parsing BlockInfo from index line"})
 }
 
 func (s *KeepSuite) TestGetKeepServers_ReadServerResponseEmpty(c *C) {
-	testGetKeepServersAndSummarize(c, KeepServerTestData{200, 200, "\n", false})
+	testGetKeepServersAndSummarize(c, KeepServerTestData{200, 200, "\n", ""})
 }
 
 func (s *KeepSuite) TestGetKeepServers_ReadServerResponseWithTwoBlocks(c *C) {
 	testGetKeepServersAndSummarize(c, KeepServerTestData{200, 200,
-		"51752ba076e461ec9ec1d27400a08548+20 1447526361\na048cc05c02ba1ee43ad071274b9e547+52 1447526362\n\n", false})
+		"51752ba076e461ec9ec1d27400a08548+20 1447526361\na048cc05c02ba1ee43ad071274b9e547+52 1447526362\n\n", ""})
 }
 
 func testGetKeepServersAndSummarize(c *C, testData KeepServerTestData) {
@@ -302,7 +308,7 @@ func testGetKeepServersAndSummarize(c *C, testData KeepServerTestData) {
 	// GetKeepServersAndSummarize
 	results, err := GetKeepServersAndSummarize(params)
 
-	if testData.expectedError == false {
+	if testData.expectedError == "" {
 		c.Assert(err, IsNil)
 		c.Assert(results, NotNil)
 
@@ -321,6 +327,11 @@ func testGetKeepServersAndSummarize(c *C, testData KeepServerTestData) {
 			}
 		}
 	} else {
-		c.Assert(err, ErrorMatches, ".*Error during GetServerContents; no host info found.*")
+		if testData.expectedError == "Error parsing BlockInfo from index line" {
+			// In this case ErrorMatches does not work because the error message contains regexp match characters
+			strings.Contains(err.Error(), testData.expectedError)
+		} else {
+			c.Assert(err, ErrorMatches, fmt.Sprintf(".*%s.*", testData.expectedError))
+		}
 	}
 }

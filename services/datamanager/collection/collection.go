@@ -10,7 +10,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/logger"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
 	"git.curoverse.com/arvados.git/sdk/go/util"
-	"git.curoverse.com/arvados.git/services/datamanager/loggerutil"
 	"log"
 	"os"
 	"runtime/pprof"
@@ -42,6 +41,7 @@ type ReadCollections struct {
 	CollectionUUIDToIndex     map[string]int
 	CollectionIndexToUUID     []string
 	BlockToCollectionIndices  map[blockdigest.DigestWithSize][]int
+	Err                       error
 }
 
 // GetCollectionsParams params
@@ -99,8 +99,7 @@ func WriteHeapProfile() error {
 func GetCollectionsAndSummarize(arvLogger *logger.Logger, params GetCollectionsParams) (results ReadCollections) {
 	results, err := GetCollections(params)
 	if err != nil {
-		loggerutil.LogErrorMessage(arvLogger, fmt.Sprintf("Error during GetCollections with params %v: %v", params, err))
-		results = ReadCollections{}
+		results.Err = err
 		return
 	}
 
@@ -125,6 +124,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections, err e
 	if &params.Client == nil {
 		err = fmt.Errorf("params.Client passed to GetCollections() should " +
 			"contain a valid ArvadosClient, but instead it is nil.")
+		return
 	}
 
 	fieldsWanted := []string{"manifest_text",

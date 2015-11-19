@@ -11,7 +11,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/logger"
-	"git.curoverse.com/arvados.git/services/datamanager/loggerutil"
 	"io"
 	"io/ioutil"
 	"log"
@@ -51,6 +50,7 @@ type ServerContents struct {
 type ServerResponse struct {
 	Address  ServerAddress
 	Contents ServerContents
+	Err      error
 }
 
 // ReadServers struct
@@ -93,6 +93,9 @@ func (s ServerAddress) URL() string {
 // GetKeepServersAndSummarize gets keep servers from api
 func GetKeepServersAndSummarize(params GetKeepServersParams) (results ReadServers, err error) {
 	results, err = GetKeepServers(params)
+	if err != nil {
+		return
+	}
 	log.Printf("Returned %d keep disks", len(results.ServerToContents))
 
 	results.Summarize(params.Logger)
@@ -172,9 +175,9 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers, err error
 		_ = i // Here to prevent go from complaining.
 		response := <-responseChan
 
-		// There might have been an error during GetServerContents; so check if the response is empty
-		if response.Address.Host == "" {
-			return results, fmt.Errorf("Error during GetServerContents; no host info found")
+		// Check if there were any errors during GetServerContents
+		if response.Err != nil {
+			return results, response.Err
 		}
 
 		log.Printf("Received channel response from %v containing %d files",
@@ -199,31 +202,26 @@ func GetServerContents(arvLogger *logger.Logger,
 
 	err := GetServerStatus(arvLogger, keepServer, arv)
 	if err != nil {
-		loggerutil.LogErrorMessage(arvLogger, fmt.Sprintf("Error during GetServerStatus: %v", err))
-		return ServerResponse{}
+		response.Err = err
+		return
 	}
 
 	req, err := CreateIndexRequest(arvLogger, keepServer, arv)
 	if err != nil {
-		loggerutil.LogErrorMessage(arvLogger, fmt.Sprintf("Error building CreateIndexRequest: %v", err))
-		return ServerResponse{}
+		response.Err = err
+		return
 	}
 
 	resp, err := arv.Client.Do(req)
 	if err != nil {
-		loggerutil.LogErrorMessage(arvLogger,
-			fmt.Sprintf("Error fetching %s: %v. Response was %+v",
-				req.URL.String(),
-				err,
-				resp))
-		return ServerResponse{}
+		response.Err = err
+		return
 	}
 
 	response, err = ReadServerResponse(arvLogger, keepServer, resp)
 	if err != nil {
-		loggerutil.LogErrorMessage(arvLogger,
-			fmt.Sprintf("Error during ReadServerResponse %v", err))
-		return ServerResponse{}
+		response.Err = err
+		return
 	}
 
 	return
