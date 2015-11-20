@@ -258,13 +258,10 @@ func valueInArray(value string, list []string) bool {
 	return false
 }
 
-/*
-Test env uses two keep volumes. The volume names can be found by reading the files
-  ARVADOS_HOME/tmp/keep0.volume and ARVADOS_HOME/tmp/keep1.volume
-
-The keep volumes are of the dir structure:
-  volumeN/subdir/locator
-*/
+// Test env uses two keep volumes. The volume names can be found by reading the files
+// ARVADOS_HOME/tmp/keep0.volume and ARVADOS_HOME/tmp/keep1.volume
+//
+// The keep volumes are of the dir structure: volumeN/subdir/locator
 func backdateBlocks(t *testing.T, oldUnusedBlockLocators []string) {
 	// First get rid of any size hints in the locators
 	var trimmedBlockLocators []string
@@ -346,11 +343,9 @@ func waitUntilQueuesFinishWork(t *testing.T) {
 	}
 }
 
-/*
-Create some blocks and backdate some of them.
-Also create some collections and delete some of them.
-Verify block indexes.
-*/
+// Create some blocks and backdate some of them.
+// Also create some collections and delete some of them.
+// Verify block indexes.
 func TestPutAndGetBlocks(t *testing.T) {
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
@@ -551,11 +546,9 @@ func TestPutAndGetBlocks_ErrorDuringGetCollectionsBadHeapProfileFilename(t *test
 	testOldBlocksNotDeletedOnDataManagerError(t, "", "/badheapprofilefile", true, true)
 }
 
-/*
-  Create some blocks and backdate some of them.
-  Run datamanager while producing an error condition.
-  Verify that the blocks are hence not deleted.
-*/
+// Create some blocks and backdate some of them.
+// Run datamanager while producing an error condition.
+// Verify that the blocks are hence not deleted.
 func testOldBlocksNotDeletedOnDataManagerError(t *testing.T, writeDataTo string, heapProfileFile string, expectError bool, expectOldBlocks bool) {
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
@@ -628,12 +621,10 @@ func createMultiStreamBlockCollection(t *testing.T, data string, numStreams, num
 	return collection["uuid"].(string), locs
 }
 
-/*
-  Create collection with multiple streams and blocks; backdate the blocks and but do not delete the collection.
-  Also, create stray block and backdate it.
-  After datamanager run: expect blocks from the collection, but not the stray block.
-*/
-func TestPutAndGetCollectionsWithMultipleStreamsAndBlocks(t *testing.T) {
+// Create collection with multiple streams and blocks; backdate the blocks and but do not delete the collection.
+// Also, create stray block and backdate it.
+// After datamanager run: expect blocks from the collection, but not the stray block.
+func TestManifestWithMultipleStreamsAndBlocks(t *testing.T) {
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
 
