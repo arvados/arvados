@@ -29,7 +29,7 @@ class EventClient(WebSocketClient):
         self.filters = filters
         self.on_event = on_event
         self.last_log_id = last_log_id
-        self.closed_lock = threading.Lock()
+        self.closed_lock = threading.RLock()
         self.closed = False
 
     def opened(self):

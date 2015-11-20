@@ -222,7 +222,7 @@ class NodeManagerDaemonActor(actor_class):
         up += sum(1
                   for i in (self.booted, self.cloud_nodes.nodes)
                   for c in i.itervalues()
-                  if size is None or (c.cloud_node.size and c.cloud_node.size.id == size.id))
+                  if size is None or c.cloud_node.size.id == size.id)
         return up
 
     def _total_price(self):
@@ -231,22 +231,21 @@ class NodeManagerDaemonActor(actor_class):
                   for c in self.booting.itervalues())
         cost += sum(c.cloud_node.size.price
                     for i in (self.booted, self.cloud_nodes.nodes)
-                    for c in i.itervalues()
-                    if c.cloud_node.size)
+                    for c in i.itervalues())
         return cost
 
     def _nodes_busy(self, size):
         return sum(1 for busy in
                    pykka.get_all(rec.actor.in_state('busy') for rec in
                                  self.cloud_nodes.nodes.itervalues()
-                                 if (rec.cloud_node.size and rec.cloud_node.size.id == size.id))
+                                 if rec.cloud_node.size.id == size.id)
                    if busy)
 
     def _nodes_missing(self, size):
         return sum(1 for arv_node in
                    pykka.get_all(rec.actor.arvados_node for rec in
                                  self.cloud_nodes.nodes.itervalues()
-                                 if rec.cloud_node.size and rec.cloud_node.size.id == size.id and rec.actor.cloud_node.get().id not in self.shutdowns)
+                                 if rec.cloud_node.size.id == size.id and rec.actor.cloud_node.get().id not in self.shutdowns)
                    if arv_node and cnode.arvados_node_missing(arv_node, self.node_stale_after))
 
     def _size_wishlist(self, size):
