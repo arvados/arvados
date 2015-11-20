@@ -192,8 +192,8 @@ class InodeCache(object):
         if obj.persisted() and obj.cache_priority in self._entries:
             self._remove(obj, True)
 
-    def find(self, uuid):
-        return self._by_uuid.get(uuid)
+    def find_by_uuid(self, uuid):
+        return self._by_uuid.get(uuid, [])
 
     def clear(self):
         self._entries.clear()
@@ -356,34 +356,37 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def on_event(self, ev):
-        if 'event_type' in ev:
-            with llfuse.lock:
-                items = self.inodes.inode_cache.find(ev["object_uuid"])
-                if items is not None:
-                    for item in items:
-                        item.invalidate()
-                        if ev["object_kind"] == "arvados#collection":
-                            new_attr = ev.get("properties") and ev["properties"].get("new_attributes") and ev["properties"]["new_attributes"]
+        if 'event_type' not in ev:
+            return
+        with llfuse.lock:
+            for item in self.inodes.inode_cache.find_by_uuid(ev["object_uuid"]):
+                item.invalidate()
+                if ev["object_kind"] == "arvados#collection":
+                    new_attr = (ev.get("properties") and
+                                ev["properties"].get("new_attributes") and
+                                ev["properties"]["new_attributes"])
 
-                            # new_attributes.modified_at currently lacks subsecond precision (see #6347) so use event_at which
-                            # should always be the same.
-                            #record_version = (new_attr["modified_at"], new_attr["portable_data_hash"]) if new_attr else None
-                            record_version = (ev["event_at"], new_attr["portable_data_hash"]) if new_attr else None
+                    # new_attributes.modified_at currently lacks
+                    # subsecond precision (see #6347) so use event_at
+                    # which should always be the same.
+                    record_version = (
+                        (ev["event_at"], new_attr["portable_data_hash"])
+                        if new_attr else None)
 
-                            item.update(to_record_version=record_version)
-                        else:
-                            item.update()
+                    item.update(to_record_version=record_version)
+                else:
+                    item.update()
 
-                oldowner = ev.get("properties") and ev["properties"].get("old_attributes") and ev["properties"]["old_attributes"].get("owner_uuid")
-                olditemparent = self.inodes.inode_cache.find(oldowner)
-                if olditemparent is not None:
-                    olditemparent.invalidate()
-                    olditemparent.update()
-
-                itemparent = self.inodes.inode_cache.find(ev["object_owner_uuid"])
-                if itemparent is not None:
-                    itemparent.invalidate()
-                    itemparent.update()
+            oldowner = (
+                ev.get("properties") and
+                ev["properties"].get("old_attributes") and
+                ev["properties"]["old_attributes"].get("owner_uuid"))
+            newowner = ev["object_owner_uuid"]
+            for parent in (
+                    self.inodes.inode_cache.find_by_uuid(oldowner) +
+                    self.inodes.inode_cache.find_by_uuid(newowner)):
+                parent.invalidate()
+                parent.update()
 
 
     @catch_exceptions
