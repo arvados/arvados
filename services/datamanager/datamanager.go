@@ -42,15 +42,23 @@ func init() {
 func main() {
 	flag.Parse()
 	if minutesBetweenRuns == 0 {
-		err := singlerun(makeArvadosClient())
+		arv, err := arvadosclient.MakeArvadosClient()
 		if err != nil {
-			log.Fatalf("singlerun: %v", err)
+			loggerutil.FatalWithMessage(arvLogger, fmt.Sprintf("Error making arvados client: %v", err))
+		}
+		err = singlerun(arv)
+		if err != nil {
+			loggerutil.FatalWithMessage(arvLogger, fmt.Sprintf("singlerun: %v", err))
 		}
 	} else {
 		waitTime := time.Minute * time.Duration(minutesBetweenRuns)
 		for {
 			log.Println("Beginning Run")
-			err := singlerun(makeArvadosClient())
+			arv, err := arvadosclient.MakeArvadosClient()
+			if err != nil {
+				loggerutil.FatalWithMessage(arvLogger, fmt.Sprintf("Error making arvados client: %v", err))
+			}
+			err = singlerun(arv)
 			if err != nil {
 				log.Printf("singlerun: %v", err)
 			}
@@ -60,13 +68,7 @@ func main() {
 	}
 }
 
-func makeArvadosClient() arvadosclient.ArvadosClient {
-	arv, err := arvadosclient.MakeArvadosClient()
-	if err != nil {
-		log.Fatalf("Error setting up arvados client: %s", err)
-	}
-	return arv
-}
+var arvLogger *logger.Logger
 
 func singlerun(arv arvadosclient.ArvadosClient) error {
 	var err error
@@ -76,7 +78,6 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 		return errors.New("Current user is not an admin. Datamanager requires a privileged token.")
 	}
 
-	var arvLogger *logger.Logger
 	if logEventTypePrefix != "" {
 		arvLogger = logger.NewLogger(logger.LoggerParams{
 			Client:          arv,
@@ -103,7 +104,14 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 
 	dataFetcher(arvLogger, &readCollections, &keepServerInfo)
 
-	summary.MaybeWriteData(arvLogger, readCollections, keepServerInfo)
+	if readCollections.Err != nil {
+		return readCollections.Err
+	}
+
+	err = summary.MaybeWriteData(arvLogger, readCollections, keepServerInfo)
+	if err != nil {
+		return err
+	}
 
 	buckets := summary.BucketReplication(readCollections, keepServerInfo)
 	bucketCounts := buckets.Counts()
@@ -126,8 +134,7 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 
 	kc, err := keepclient.MakeKeepClient(&arv)
 	if err != nil {
-		loggerutil.FatalWithMessage(arvLogger,
-			fmt.Sprintf("Error setting up keep client %s", err.Error()))
+		return fmt.Errorf("Error setting up keep client %v", err.Error())
 	}
 
 	// Log that we're finished. We force the recording, since go will
@@ -154,7 +161,10 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 		&keepServerInfo,
 		replicationSummary.KeepBlocksNotInCollections)
 
-	summary.WritePullLists(arvLogger, pullLists)
+	err = summary.WritePullLists(arvLogger, pullLists)
+	if err != nil {
+		return err
+	}
 
 	if trashErr != nil {
 		return err
@@ -179,11 +189,16 @@ func BuildDataFetcher(arv arvadosclient.ArvadosClient) summary.DataFetcher {
 					BatchSize: 50})
 		}()
 
-		*keepServerInfo = keep.GetKeepServersAndSummarize(
+		var err error
+		*keepServerInfo, err = keep.GetKeepServersAndSummarize(
 			keep.GetKeepServersParams{
 				Client: arv,
 				Logger: arvLogger,
 				Limit:  1000})
+
+		if err != nil {
+			return
+		}
 
 		*readCollections = <-collectionChannel
 	}

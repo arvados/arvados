@@ -6,6 +6,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.curoverse.com/arvados.git/services/datamanager/collection"
+	"git.curoverse.com/arvados.git/services/datamanager/summary"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -28,7 +30,11 @@ func SetupDataManagerTest(t *testing.T) {
 	arvadostest.StartAPI()
 	arvadostest.StartKeep(2, false)
 
-	arv = makeArvadosClient()
+	var err error
+	arv, err = arvadosclient.MakeArvadosClient()
+	if err != nil {
+		t.Fatalf("Error making arvados client: %s", err)
+	}
 	arv.ApiToken = arvadostest.DataManagerToken
 
 	// keep client
@@ -40,7 +46,7 @@ func SetupDataManagerTest(t *testing.T) {
 	}
 
 	// discover keep services
-	if err := keepClient.DiscoverKeepServers(); err != nil {
+	if err = keepClient.DiscoverKeepServers(); err != nil {
 		t.Fatalf("Error discovering keep services: %s", err)
 	}
 	keepServers = []string{}
@@ -520,5 +526,58 @@ func TestRunDatamanagerAsNonAdminUser(t *testing.T) {
 	err := singlerun(arv)
 	if err == nil {
 		t.Fatalf("Expected error during singlerun as non-admin user")
+	}
+}
+
+func TestPutAndGetBlocks_NoErrorDuringSingleRun(t *testing.T) {
+	testOldBlocksNotDeletedOnDataManagerError(t, "", "", false, false)
+}
+
+func TestPutAndGetBlocks_ErrorDuringGetCollectionsBadWriteTo(t *testing.T) {
+	testOldBlocksNotDeletedOnDataManagerError(t, "/badwritetofile", "", true, true)
+}
+
+func TestPutAndGetBlocks_ErrorDuringGetCollectionsBadHeapProfileFilename(t *testing.T) {
+	testOldBlocksNotDeletedOnDataManagerError(t, "", "/badheapprofilefile", true, true)
+}
+
+/*
+  Create some blocks and backdate some of them.
+  Run datamanager while producing an error condition.
+  Verify that the blocks are hence not deleted.
+*/
+func testOldBlocksNotDeletedOnDataManagerError(t *testing.T, writeDataTo string, heapProfileFile string, expectError bool, expectOldBlocks bool) {
+	defer TearDownDataManagerTest(t)
+	SetupDataManagerTest(t)
+
+	// Put some blocks and backdate them.
+	var oldUnusedBlockLocators []string
+	oldUnusedBlockData := "this block will have older mtime"
+	for i := 0; i < 5; i++ {
+		oldUnusedBlockLocators = append(oldUnusedBlockLocators, putBlock(t, fmt.Sprintf("%s%d", oldUnusedBlockData, i)))
+	}
+	backdateBlocks(t, oldUnusedBlockLocators)
+
+	// Run data manager
+	summary.WriteDataTo = writeDataTo
+	collection.HeapProfileFilename = heapProfileFile
+
+	err := singlerun(arv)
+	if !expectError {
+		if err != nil {
+			t.Fatalf("Got an error during datamanager singlerun: %v", err)
+		}
+	} else {
+		if err == nil {
+			t.Fatalf("Expected error during datamanager singlerun")
+		}
+	}
+	waitUntilQueuesFinishWork(t)
+
+	// Get block indexes and verify that all backdated blocks are not/deleted as expected
+	if expectOldBlocks {
+		verifyBlocks(t, nil, oldUnusedBlockLocators, 2)
+	} else {
+		verifyBlocks(t, oldUnusedBlockLocators, nil, 2)
 	}
 }
