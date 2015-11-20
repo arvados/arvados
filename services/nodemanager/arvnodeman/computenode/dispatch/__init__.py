@@ -88,6 +88,7 @@ class ComputeNodeStateChangeBase(config.actor_class):
                   'slot_number': None,
                   'first_ping_at': None,
                   'last_ping_at': None,
+                  'properties': {},
                   'info': {'ec2_instance_id': None,
                            'last_action': explanation}},
             ).execute()
@@ -134,6 +135,30 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         self.cloud_node = self._cloud.create_node(self.cloud_size,
                                                   self.arvados_node)
         self._logger.info("Cloud node %s created.", self.cloud_node.id)
+        self._later.update_arvados_node_properties()
+
+    @ComputeNodeStateChangeBase._retry(config.ARVADOS_ERRORS)
+    def update_arvados_node_properties(self):
+        """Tell Arvados some details about the cloud node.
+
+        Currently we only include size/price from our request, which
+        we already knew before create_cloud_node(), but doing it here
+        gives us an opportunity to provide more detail from
+        self.cloud_node, too.
+        """
+        self.arvados_node['properties']['cloud_node'] = {
+            # Note this 'size' is the node size we asked the cloud
+            # driver to create -- not necessarily equal to the size
+            # reported by the cloud driver for the node that was
+            # created.
+            'size': self.cloud_size.id,
+            'price': self.cloud_size.price,
+        }
+        self.arvados_node = self._arvados.nodes().update(
+            uuid=self.arvados_node['uuid'],
+            body={'properties': self.arvados_node['properties']},
+        ).execute()
+        self._logger.info("%s updated properties.", self.arvados_node['uuid'])
         self._later.post_create()
 
     @ComputeNodeStateChangeBase._retry()
