@@ -58,6 +58,8 @@ func SetupDataManagerTest(t *testing.T) {
 func TearDownDataManagerTest(t *testing.T) {
 	arvadostest.StopKeep(2)
 	arvadostest.StopAPI()
+	summary.WriteDataTo = ""
+	collection.HeapProfileFilename = ""
 }
 
 func putBlock(t *testing.T, data string) string {
@@ -256,13 +258,10 @@ func valueInArray(value string, list []string) bool {
 	return false
 }
 
-/*
-Test env uses two keep volumes. The volume names can be found by reading the files
-  ARVADOS_HOME/tmp/keep0.volume and ARVADOS_HOME/tmp/keep1.volume
-
-The keep volumes are of the dir structure:
-  volumeN/subdir/locator
-*/
+// Test env uses two keep volumes. The volume names can be found by reading the files
+// ARVADOS_HOME/tmp/keep0.volume and ARVADOS_HOME/tmp/keep1.volume
+//
+// The keep volumes are of the dir structure: volumeN/subdir/locator
 func backdateBlocks(t *testing.T, oldUnusedBlockLocators []string) {
 	// First get rid of any size hints in the locators
 	var trimmedBlockLocators []string
@@ -344,11 +343,9 @@ func waitUntilQueuesFinishWork(t *testing.T) {
 	}
 }
 
-/*
-Create some blocks and backdate some of them.
-Also create some collections and delete some of them.
-Verify block indexes.
-*/
+// Create some blocks and backdate some of them.
+// Also create some collections and delete some of them.
+// Verify block indexes.
 func TestPutAndGetBlocks(t *testing.T) {
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
@@ -406,6 +403,10 @@ func TestPutAndGetBlocks(t *testing.T) {
 		t.Fatalf("Locators for both these collections expected to be same: %s %s", oneOfTwoWithSameDataLocator, secondOfTwoWithSameDataLocator)
 	}
 
+	// create collection with empty manifest text
+	emptyBlockLocator := putBlock(t, "")
+	emptyCollection := createCollection(t, "")
+
 	// Verify blocks before doing any backdating / deleting.
 	var expected []string
 	expected = append(expected, oldUnusedBlockLocators...)
@@ -414,6 +415,7 @@ func TestPutAndGetBlocks(t *testing.T) {
 	expected = append(expected, replicationCollectionLocator)
 	expected = append(expected, oneOfTwoWithSameDataLocator)
 	expected = append(expected, secondOfTwoWithSameDataLocator)
+	expected = append(expected, emptyBlockLocator)
 
 	verifyBlocks(t, nil, expected, 2)
 
@@ -427,6 +429,8 @@ func TestPutAndGetBlocks(t *testing.T) {
 	backdateBlocks(t, oldUnusedBlockLocators)
 	deleteCollection(t, toBeDeletedCollectionUUID)
 	deleteCollection(t, secondOfTwoWithSameDataUUID)
+	backdateBlocks(t, []string{emptyBlockLocator})
+	deleteCollection(t, emptyCollection)
 
 	// Run data manager again
 	dataManagerSingleRun(t)
@@ -439,6 +443,7 @@ func TestPutAndGetBlocks(t *testing.T) {
 	expected = append(expected, toBeDeletedCollectionLocator)
 	expected = append(expected, oneOfTwoWithSameDataLocator)
 	expected = append(expected, secondOfTwoWithSameDataLocator)
+	expected = append(expected, emptyBlockLocator) // even when unreferenced, this remains
 
 	verifyBlocks(t, oldUnusedBlockLocators, expected, 2)
 
@@ -541,11 +546,9 @@ func TestPutAndGetBlocks_ErrorDuringGetCollectionsBadHeapProfileFilename(t *test
 	testOldBlocksNotDeletedOnDataManagerError(t, "", "/badheapprofilefile", true, true)
 }
 
-/*
-  Create some blocks and backdate some of them.
-  Run datamanager while producing an error condition.
-  Verify that the blocks are hence not deleted.
-*/
+// Create some blocks and backdate some of them.
+// Run datamanager while producing an error condition.
+// Verify that the blocks are hence not deleted.
 func testOldBlocksNotDeletedOnDataManagerError(t *testing.T, writeDataTo string, heapProfileFile string, expectError bool, expectOldBlocks bool) {
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
@@ -580,4 +583,76 @@ func testOldBlocksNotDeletedOnDataManagerError(t *testing.T, writeDataTo string,
 	} else {
 		verifyBlocks(t, oldUnusedBlockLocators, nil, 2)
 	}
+}
+
+// Create a collection with multiple streams and blocks
+func createMultiStreamBlockCollection(t *testing.T, data string, numStreams, numBlocks int) (string, []string) {
+	defer switchToken(arvadostest.AdminToken)()
+
+	manifest := ""
+	locators := make(map[string]bool)
+	for s := 0; s < numStreams; s++ {
+		manifest += fmt.Sprintf("./stream%d ", s)
+		for b := 0; b < numBlocks; b++ {
+			locator, _, err := keepClient.PutB([]byte(fmt.Sprintf("%s in stream %d and block %d", data, s, b)))
+			if err != nil {
+				t.Fatalf("Error creating block %d in stream %d: %v", b, s, err)
+			}
+			locators[strings.Split(locator, "+A")[0]] = true
+			manifest += locator + " "
+		}
+		manifest += "0:1:dummyfile.txt\n"
+	}
+
+	collection := make(Dict)
+	err := arv.Create("collections",
+		arvadosclient.Dict{"collection": arvadosclient.Dict{"manifest_text": manifest}},
+		&collection)
+
+	if err != nil {
+		t.Fatalf("Error creating collection %v", err)
+	}
+
+	var locs []string
+	for k, _ := range locators {
+		locs = append(locs, k)
+	}
+
+	return collection["uuid"].(string), locs
+}
+
+// Create collection with multiple streams and blocks; backdate the blocks and but do not delete the collection.
+// Also, create stray block and backdate it.
+// After datamanager run: expect blocks from the collection, but not the stray block.
+func TestManifestWithMultipleStreamsAndBlocks(t *testing.T) {
+	defer TearDownDataManagerTest(t)
+	SetupDataManagerTest(t)
+
+	// create collection whose blocks will be backdated
+	collectionWithOldBlocks, oldBlocks := createMultiStreamBlockCollection(t, "old block", 100, 10)
+	if collectionWithOldBlocks == "" {
+		t.Fatalf("Failed to create collection with 1000 blocks")
+	}
+	if len(oldBlocks) != 1000 {
+		t.Fatalf("Not all blocks are created: expected %v, found %v", 1000, len(oldBlocks))
+	}
+
+	// create a stray block that will be backdated
+	strayOldBlock := putBlock(t, "this stray block is old")
+
+	expected := []string{strayOldBlock}
+	expected = append(expected, oldBlocks...)
+	verifyBlocks(t, nil, expected, 2)
+
+	// Backdate old blocks; but the collection still references these blocks
+	backdateBlocks(t, oldBlocks)
+
+	// also backdate the stray old block
+	backdateBlocks(t, []string{strayOldBlock})
+
+	// run datamanager
+	dataManagerSingleRun(t)
+
+	// verify that strayOldBlock is not to be found, but the collections blocks are still there
+	verifyBlocks(t, []string{strayOldBlock}, oldBlocks, 2)
 }
