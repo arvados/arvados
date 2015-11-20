@@ -221,27 +221,27 @@ type KeepServerTestData struct {
 
 func (s *KeepSuite) TestGetKeepServers_ErrorGettingKeepServerStatus(c *C) {
 	testGetKeepServersAndSummarize(c, KeepServerTestData{500, 200, "ok",
-		"500 Internal Server Error"})
+		".*http://.* 500 Internal Server Error"})
 }
 
 func (s *KeepSuite) TestGetKeepServers_GettingIndex(c *C) {
 	testGetKeepServersAndSummarize(c, KeepServerTestData{200, -1, "notok",
-		"redirect-loop"})
+		".*redirect-loop.*"})
 }
 
 func (s *KeepSuite) TestGetKeepServers_ErrorReadServerResponse(c *C) {
 	testGetKeepServersAndSummarize(c, KeepServerTestData{200, 500, "notok",
-		"500 Internal Server Error"})
+		".*http://.* 500 Internal Server Error"})
 }
 
 func (s *KeepSuite) TestGetKeepServers_ReadServerResponseTuncatedAtLineOne(c *C) {
 	testGetKeepServersAndSummarize(c, KeepServerTestData{200, 200,
-		"notterminatedwithnewline", "truncated at line 1"})
+		"notterminatedwithnewline", "Index from http://.* truncated at line 1"})
 }
 
 func (s *KeepSuite) TestGetKeepServers_InvalidBlockLocatorPattern(c *C) {
 	testGetKeepServersAndSummarize(c, KeepServerTestData{200, 200, "testing\n",
-		"Error parsing BlockInfo from index line"})
+		"Error parsing BlockInfo from index line.*"})
 }
 
 func (s *KeepSuite) TestGetKeepServers_ReadServerResponseEmpty(c *C) {
@@ -325,11 +325,6 @@ func testGetKeepServersAndSummarize(c *C, testData KeepServerTestData) {
 			}
 		}
 	} else {
-		if testData.expectedError == "Error parsing BlockInfo from index line" {
-			// In this case ErrorMatches does not work because the error message contains regexp match characters
-			strings.Contains(err.Error(), testData.expectedError)
-		} else {
-			c.Assert(err, ErrorMatches, fmt.Sprintf(".*%s.*", testData.expectedError))
-		}
+		c.Assert(err, ErrorMatches, testData.expectedError)
 	}
 }
