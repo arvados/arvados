@@ -187,16 +187,31 @@ class Mount(object):
         dir_args = [llfuse.ROOT_INODE, self.operations.inodes, self.api, self.args.retries]
         mount_readme = False
 
-        if self.args.mode is not None and (
-                self.args.mount_by_id or
-                self.args.mount_by_pdh or
-                self.args.mount_by_tag or
-                self.args.mount_home or
-                self.args.mount_shared or
-                self.args.mount_tmp or
-                self.args.mount_collection):
-            sys.exit("Cannot combine '{}' mode with custom --mount-* options.".
-                     format(self.args.mode))
+        if self.args.collection is not None:
+            # Set up the request handler with the collection at the root
+            self.args.mode = 'collection'
+            dir_class = CollectionDirectory
+            dir_args.append(self.args.collection)
+        elif self.args.project is not None:
+            self.args.mode = 'project'
+            dir_class = ProjectDirectory
+            dir_args.append(
+                self.api.groups().get(uuid=self.args.project).execute(
+                    num_retries=self.args.retries))
+
+        if (self.args.mount_by_id or
+            self.args.mount_by_pdh or
+            self.args.mount_by_tag or
+            self.args.mount_home or
+            self.args.mount_shared or
+            self.args.mount_tmp):
+            if self.args.mode is not None:
+                sys.exit(
+                    "Cannot combine '{}' mode with custom --mount-* options.".
+                    format(self.args.mode))
+        elif self.args.mode is None:
+            # If no --mount-custom or custom mount args, --all is the default
+            self.args.mode = 'all'
 
         if self.args.mode in ['by_id', 'by_pdh']:
             # Set up the request handler with the 'magic directory' at the root
@@ -217,15 +232,6 @@ class Mount(object):
             self.args.mount_home = ['home']
             self.args.mount_shared = ['shared']
             mount_readme = True
-        elif self.args.collection is not None:
-            # Set up the request handler with the collection at the root
-            dir_class = CollectionDirectory
-            dir_args.append(self.args.collection)
-        elif self.args.project is not None:
-            dir_class = ProjectDirectory
-            dir_args.append(
-                self.api.groups().get(uuid=self.args.project).execute(
-                    num_retries=self.args.retries))
 
         if dir_class is not None:
             self.operations.inodes.add_entry(dir_class(*dir_args))
@@ -252,7 +258,7 @@ class Mount(object):
             text = self._readme_text(
                 arvados.config.get('ARVADOS_API_HOST'),
                 usr['email'])
-            self._add_mount(e, StringFile(e.inode, text, now))
+            self._add_mount(e, 'README', StringFile(e.inode, text, now))
 
     def _add_mount(self, tld, name, ent):
         if name in ['', '.', '..'] or '/' in name:
@@ -271,6 +277,7 @@ From here, the following directories are available:
   by_tag/    Access to Keep collections organized by tag.
   home/      The contents of your home project.
   shared/    Projects shared with you.
+
 '''.format(api_host, user_email)
 
     def _run_exec(self):
