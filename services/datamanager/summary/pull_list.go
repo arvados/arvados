@@ -9,7 +9,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/logger"
 	"git.curoverse.com/arvados.git/services/datamanager/keep"
-	"git.curoverse.com/arvados.git/services/datamanager/loggerutil"
 	"log"
 	"os"
 	"strings"
@@ -176,23 +175,22 @@ func BuildPullLists(lps map[Locator]PullServers) (spl map[string]PullList) {
 // This is just a hack for prototyping, it is not expected to be used
 // in production.
 func WritePullLists(arvLogger *logger.Logger,
-	pullLists map[string]PullList) {
+	pullLists map[string]PullList) error {
 	r := strings.NewReplacer(":", ".")
 	for host, list := range pullLists {
 		filename := fmt.Sprintf("pull_list.%s", r.Replace(RemoveProtocolPrefix(host)))
 		pullListFile, err := os.Create(filename)
 		if err != nil {
-			loggerutil.FatalWithMessage(arvLogger,
-				fmt.Sprintf("Failed to open %s: %v", filename, err))
+			return err
 		}
 		defer pullListFile.Close()
 
 		enc := json.NewEncoder(pullListFile)
 		err = enc.Encode(list)
 		if err != nil {
-			loggerutil.FatalWithMessage(arvLogger,
-				fmt.Sprintf("Failed to write pull list to %s: %v", filename, err))
+			return err
 		}
 		log.Printf("Wrote pull list to %s.", filename)
 	}
+	return nil
 }

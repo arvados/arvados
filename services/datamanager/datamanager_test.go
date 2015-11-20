@@ -6,6 +6,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.curoverse.com/arvados.git/services/datamanager/collection"
+	"git.curoverse.com/arvados.git/services/datamanager/summary"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -28,7 +30,11 @@ func SetupDataManagerTest(t *testing.T) {
 	arvadostest.StartAPI()
 	arvadostest.StartKeep(2, false)
 
-	arv = makeArvadosClient()
+	var err error
+	arv, err = arvadosclient.MakeArvadosClient()
+	if err != nil {
+		t.Fatalf("Error making arvados client: %s", err)
+	}
 	arv.ApiToken = arvadostest.DataManagerToken
 
 	// keep client
@@ -40,7 +46,7 @@ func SetupDataManagerTest(t *testing.T) {
 	}
 
 	// discover keep services
-	if err := keepClient.DiscoverKeepServers(); err != nil {
+	if err = keepClient.DiscoverKeepServers(); err != nil {
 		t.Fatalf("Error discovering keep services: %s", err)
 	}
 	keepServers = []string{}
@@ -52,6 +58,8 @@ func SetupDataManagerTest(t *testing.T) {
 func TearDownDataManagerTest(t *testing.T) {
 	arvadostest.StopKeep(2)
 	arvadostest.StopAPI()
+	summary.WriteDataTo = ""
+	collection.HeapProfileFilename = ""
 }
 
 func putBlock(t *testing.T, data string) string {
@@ -531,6 +539,59 @@ func TestRunDatamanagerAsNonAdminUser(t *testing.T) {
 	}
 }
 
+func TestPutAndGetBlocks_NoErrorDuringSingleRun(t *testing.T) {
+	testOldBlocksNotDeletedOnDataManagerError(t, "", "", false, false)
+}
+
+func TestPutAndGetBlocks_ErrorDuringGetCollectionsBadWriteTo(t *testing.T) {
+	testOldBlocksNotDeletedOnDataManagerError(t, "/badwritetofile", "", true, true)
+}
+
+func TestPutAndGetBlocks_ErrorDuringGetCollectionsBadHeapProfileFilename(t *testing.T) {
+	testOldBlocksNotDeletedOnDataManagerError(t, "", "/badheapprofilefile", true, true)
+}
+
+/*
+  Create some blocks and backdate some of them.
+  Run datamanager while producing an error condition.
+  Verify that the blocks are hence not deleted.
+*/
+func testOldBlocksNotDeletedOnDataManagerError(t *testing.T, writeDataTo string, heapProfileFile string, expectError bool, expectOldBlocks bool) {
+	defer TearDownDataManagerTest(t)
+	SetupDataManagerTest(t)
+
+	// Put some blocks and backdate them.
+	var oldUnusedBlockLocators []string
+	oldUnusedBlockData := "this block will have older mtime"
+	for i := 0; i < 5; i++ {
+		oldUnusedBlockLocators = append(oldUnusedBlockLocators, putBlock(t, fmt.Sprintf("%s%d", oldUnusedBlockData, i)))
+	}
+	backdateBlocks(t, oldUnusedBlockLocators)
+
+	// Run data manager
+	summary.WriteDataTo = writeDataTo
+	collection.HeapProfileFilename = heapProfileFile
+
+	err := singlerun(arv)
+	if !expectError {
+		if err != nil {
+			t.Fatalf("Got an error during datamanager singlerun: %v", err)
+		}
+	} else {
+		if err == nil {
+			t.Fatalf("Expected error during datamanager singlerun")
+		}
+	}
+	waitUntilQueuesFinishWork(t)
+
+	// Get block indexes and verify that all backdated blocks are not/deleted as expected
+	if expectOldBlocks {
+		verifyBlocks(t, nil, oldUnusedBlockLocators, 2)
+	} else {
+		verifyBlocks(t, oldUnusedBlockLocators, nil, 2)
+	}
+}
+
 // Create a collection with multiple streams and blocks
 func createMultiStreamBlockCollection(t *testing.T, data string, numStreams, numBlocks int) (string, []string) {
 	defer switchToken(arvadostest.AdminToken)()
@@ -569,8 +630,8 @@ func createMultiStreamBlockCollection(t *testing.T, data string, numStreams, num
 
 /*
   Create collection with multiple streams and blocks; backdate the blocks and but do not delete the collection.
-  Create another collection with multiple streams and blocks; backdate it's blocks and delete the collection.
-  After datamanager run: expect blocks from the first collection, but none from the second collection.
+  Also, create stray block and backdate it.
+  After datamanager run: expect blocks from the collection, but not the stray block.
 */
 func TestPutAndGetCollectionsWithMultipleStreamsAndBlocks(t *testing.T) {
 	defer TearDownDataManagerTest(t)
@@ -585,34 +646,15 @@ func TestPutAndGetCollectionsWithMultipleStreamsAndBlocks(t *testing.T) {
 		t.Fatalf("Not all blocks are created: expected %v, found %v", 1000, len(oldBlocks))
 	}
 
-	// create another collection, whose blocks will be backdated and the collection will be deleted
-	toBeDeletedCollection, toBeDeletedCollectionBlocks := createMultiStreamBlockCollection(t, "new block", 2, 5)
-	if toBeDeletedCollection == "" {
-		t.Fatalf("Failed to create collection with 10 blocks")
-	}
-	if len(toBeDeletedCollectionBlocks) != 10 {
-		t.Fatalf("Not all blocks are created: expected %v, found %v", 10, len(toBeDeletedCollectionBlocks))
-	}
-
 	// create a stray block that will be backdated
 	strayOldBlock := putBlock(t, "this stray block is old")
 
-	// create another block that will not be backdated
-	strayNewBlock := putBlock(t, "this stray block is new")
-
-	expected := []string{}
+	expected := []string{strayOldBlock}
 	expected = append(expected, oldBlocks...)
-	expected = append(expected, toBeDeletedCollectionBlocks...)
-	expected = append(expected, strayOldBlock)
-	expected = append(expected, strayNewBlock)
 	verifyBlocks(t, nil, expected, 2)
 
 	// Backdate old blocks; but the collection still references these blocks
 	backdateBlocks(t, oldBlocks)
-
-	// Backdate first block from the newer blocks and delete the collection; the rest are still be reachable
-	backdateBlocks(t, toBeDeletedCollectionBlocks)
-	deleteCollection(t, toBeDeletedCollection)
 
 	// also backdate the stray old block
 	backdateBlocks(t, []string{strayOldBlock})
@@ -620,11 +662,6 @@ func TestPutAndGetCollectionsWithMultipleStreamsAndBlocks(t *testing.T) {
 	// run datamanager
 	dataManagerSingleRun(t)
 
-	expected = []string{strayNewBlock}
-	expected = append(expected, oldBlocks...)
-
-	notExpected := []string{strayOldBlock}
-	notExpected = append(notExpected, toBeDeletedCollectionBlocks...)
-
-	verifyBlocks(t, notExpected, expected, 2)
+	// verify that strayOldBlock is not to be found, but the collections blocks are still there
+	verifyBlocks(t, []string{strayOldBlock}, oldBlocks, 2)
 }
