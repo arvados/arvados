@@ -75,6 +75,14 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         self.real.ex_create_tags(cloud_node,
                                  {'Name': arvados_node_fqdn(arvados_node)})
 
+    def list_nodes(self):
+        # Need to populate Node.size
+        nodes = super(ComputeNodeDriver, self).list_nodes()
+        for n in nodes:
+            if not n.size:
+                n.size = self.sizes[n.extra["instance_type"]]
+        return nodes
+
     @classmethod
     def node_fqdn(cls, node):
         return node.name

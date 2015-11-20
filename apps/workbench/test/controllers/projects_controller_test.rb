@@ -239,7 +239,7 @@ class ProjectsControllerTest < ActionController::TestCase
     Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
     get(:show, {id: api_fixture('groups')['aproject']['uuid']})
     assert_response 404
-    assert_includes @response.inspect, 'you are not logged in'
+    assert_match(/log ?in/i, @response.body)
   end
 
   test "visit home page as anonymous when anonymous browsing is enabled and expect login" do

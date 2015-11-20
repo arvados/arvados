@@ -88,6 +88,14 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         # of failure that the Azure libcloud driver doesn't know how to interpret.
         return (cloud_node.state in (cloud_types.NodeState.ERROR, cloud_types.NodeState.UNKNOWN))
 
+    def list_nodes(self):
+        # Need to populate Node.size
+        nodes = super(ComputeNodeDriver, self).list_nodes()
+        for n in nodes:
+            if not n.size:
+                n.size = self.sizes[n.extra["properties"]["hardwareProfile"]["vmSize"]]
+        return nodes
+
     @classmethod
     def node_fqdn(cls, node):
         return node.extra["tags"].get("hostname")
