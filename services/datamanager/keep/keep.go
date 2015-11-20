@@ -309,8 +309,7 @@ func ReadServerResponse(arvLogger *logger.Logger,
 	resp *http.Response) (response ServerResponse, err error) {
 
 	if resp.StatusCode != 200 {
-		return response, fmt.Errorf("Received error code %d in response to request "+
-			"for %s index: %s",
+		return response, fmt.Errorf("Received error code %d in response to index request for %s: %s",
 			resp.StatusCode, keepServer.String(), resp.Status)
 	}
 
@@ -397,19 +396,19 @@ func parseBlockInfoFromIndexLine(indexLine string) (blockInfo BlockInfo, err err
 	tokens := strings.Fields(indexLine)
 	if len(tokens) != 2 {
 		err = fmt.Errorf("Expected 2 tokens per line but received a "+
-			"line containing %v instead.",
+			"line containing %#q instead.",
 			tokens)
 	}
 
 	var locator blockdigest.BlockLocator
 	if locator, err = blockdigest.ParseBlockLocator(tokens[0]); err != nil {
-		err = fmt.Errorf("%v Received error while parsing line \"%s\"",
+		err = fmt.Errorf("%v Received error while parsing line \"%#q\"",
 			err, indexLine)
 		return
 	}
 	if len(locator.Hints) > 0 {
 		err = fmt.Errorf("Block locator in index line should not contain hints "+
-			"but it does: %v",
+			"but it does: %#q",
 			locator)
 		return
 	}
