@@ -276,6 +276,8 @@ class NodeManagerDaemonActor(actor_class):
                                            self._nodes_busy(size) +
                                            self._nodes_missing(size))
 
+        self._logger.debug("%s: idle nodes %i, wishlist size %i", size.name, up_count, self._size_wishlist(size))
+
         wanted = self._size_wishlist(size) - up_count
         if wanted > 0 and self.max_total_price and ((total_price + (size.price*wanted)) > self.max_total_price):
             can_boot = int((self.max_total_price - total_price) / size.price)
