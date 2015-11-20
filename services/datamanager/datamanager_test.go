@@ -536,7 +536,7 @@ func createMultiStreamBlockCollection(t *testing.T, data string, numStreams, num
 	defer switchToken(arvadostest.AdminToken)()
 
 	manifest := ""
-	var locators []string
+	locators := make(map[string]bool)
 	for s := 0; s < numStreams; s++ {
 		manifest += fmt.Sprintf("./stream%d ", s)
 		for b := 0; b < numBlocks; b++ {
@@ -544,7 +544,7 @@ func createMultiStreamBlockCollection(t *testing.T, data string, numStreams, num
 			if err != nil {
 				t.Fatalf("Error creating block %d in stream %d: %v", b, s, err)
 			}
-			locators = append(locators, strings.Split(locator, "+A")[0])
+			locators[strings.Split(locator, "+A")[0]] = true
 			manifest += locator + " "
 		}
 		manifest += "0:1:dummyfile.txt\n"
@@ -559,7 +559,12 @@ func createMultiStreamBlockCollection(t *testing.T, data string, numStreams, num
 		t.Fatalf("Error creating collection %v", err)
 	}
 
-	return collection["uuid"].(string), locators
+	var locs []string
+	for k, _ := range locators {
+		locs = append(locs, k)
+	}
+
+	return collection["uuid"].(string), locs
 }
 
 /*
@@ -584,6 +589,9 @@ func TestPutAndGetCollectionsWithMultipleStreamsAndBlocks(t *testing.T) {
 	toBeDeletedCollection, toBeDeletedCollectionBlocks := createMultiStreamBlockCollection(t, "new block", 2, 5)
 	if toBeDeletedCollection == "" {
 		t.Fatalf("Failed to create collection with 10 blocks")
+	}
+	if len(toBeDeletedCollectionBlocks) != 10 {
+		t.Fatalf("Not all blocks are created: expected %v, found %v", 10, len(toBeDeletedCollectionBlocks))
 	}
 
 	// create a stray block that will be backdated
