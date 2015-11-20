@@ -227,9 +227,9 @@ class NodeManagerDaemonActor(actor_class):
 
     def _total_price(self):
         cost = 0
-        cost += sum(c.cloud_size.get().price
+        cost += sum(self.server_calculator.find_size(c.cloud_size.get().id).price
                   for c in self.booting.itervalues())
-        cost += sum(c.cloud_node.size.price
+        cost += sum(self.server_calculator.find_size(c.cloud_node.size.id).price
                     for i in (self.booted, self.cloud_nodes.nodes)
                     for c in i.itervalues())
         return cost
@@ -252,8 +252,14 @@ class NodeManagerDaemonActor(actor_class):
         return sum(1 for c in self.last_wishlist if c.id == size.id)
 
     def _size_shutdowns(self, size):
-        return sum(1 for c in self.shutdowns.itervalues()
-                   if c.cloud_node.get().size.id == size.id)
+        sh = 0
+        for c in self.shutdowns.itervalues():
+            try:
+                if c.cloud_node.get().size.id == size.id:
+                    sh += 1
+            except pykka.ActorDeadError:
+                pass
+        return sh
 
     def _nodes_wanted(self, size):
         total_up_count = self._nodes_up(None)
@@ -269,6 +275,8 @@ class NodeManagerDaemonActor(actor_class):
         up_count = self._nodes_up(size) - (self._size_shutdowns(size) +
                                            self._nodes_busy(size) +
                                            self._nodes_missing(size))
+
+        self._logger.debug("%s: idle nodes %i, wishlist size %i", size.name, up_count, self._size_wishlist(size))
 
         wanted = self._size_wishlist(size) - up_count
         if wanted > 0 and self.max_total_price and ((total_price + (size.price*wanted)) > self.max_total_price):
@@ -289,8 +297,7 @@ class NodeManagerDaemonActor(actor_class):
     def update_server_wishlist(self, wishlist):
         self._update_poll_time('server_wishlist')
         self.last_wishlist = wishlist
-        for sz in reversed(self.server_calculator.cloud_sizes):
-            size = sz.real
+        for size in reversed(self.server_calculator.cloud_sizes):
             nodes_wanted = self._nodes_wanted(size)
             if nodes_wanted > 0:
                 self._later.start_node(size)
