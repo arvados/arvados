@@ -1,12 +1,14 @@
 import arvados
 import arvados_fuse
 import arvados_fuse.command
+import contextlib
 import functools
 import json
 import llfuse
 import logging
 import os
 import run_test_server
+import sys
 import tempfile
 import unittest
 
@@ -21,6 +23,15 @@ def noexit(func):
         except SystemExit:
             raise SystemExitCaught
     return wrapper
+
+@contextlib.contextmanager
+def nostderr():
+    orig, sys.stderr = sys.stderr, open(os.devnull, 'w')
+    try:
+        yield
+    finally:
+        sys.stderr = orig
+
 
 class MountArgsTest(unittest.TestCase):
     def setUp(self):
@@ -126,10 +137,11 @@ class MountArgsTest(unittest.TestCase):
                 ['--by-id', '--project', gid],
                 ['--mount-tmp', 'foo', '--by-id'],
         ]:
-            with self.assertRaises(SystemExit):
-                args = arvados_fuse.command.ArgumentParser().parse_args(
-                    badargs + ['--foreground', self.mntdir])
-                arvados_fuse.command.Mount(args)
+            with nostderr():
+                with self.assertRaises(SystemExit):
+                    args = arvados_fuse.command.ArgumentParser().parse_args(
+                        badargs + ['--foreground', self.mntdir])
+                    arvados_fuse.command.Mount(args)
     @noexit
     def test_project(self):
         uuid = run_test_server.fixture('groups')['aproject']['uuid']
@@ -169,8 +181,9 @@ class MountArgsTest(unittest.TestCase):
 
     def test_custom_unsupported_layouts(self):
         for name in ['.', '..', '', 'foo/bar', '/foo']:
-            with self.assertRaises(SystemExit):
-                args = arvados_fuse.command.ArgumentParser().parse_args([
-                    '--mount-tmp', name,
-                    '--foreground', self.mntdir])
-                arvados_fuse.command.Mount(args)
+            with nostderr():
+                with self.assertRaises(SystemExit):
+                    args = arvados_fuse.command.ArgumentParser().parse_args([
+                        '--mount-tmp', name,
+                        '--foreground', self.mntdir])
+                    arvados_fuse.command.Mount(args)
