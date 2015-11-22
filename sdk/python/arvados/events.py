@@ -29,23 +29,23 @@ class EventClient(WebSocketClient):
         self.filters = filters
         self.on_event = on_event
         self.last_log_id = last_log_id
-        self.closed_lock = threading.RLock()
-        self.closed = False
+        self._closed_lock = threading.RLock()
+        self._closed = False
 
     def opened(self):
         self.subscribe(self.filters, self.last_log_id)
 
     def received_message(self, m):
-        with self.closed_lock:
-            if not self.closed:
+        with self._closed_lock:
+            if not self._closed:
                 self.on_event(json.loads(str(m)))
 
     def close(self, code=1000, reason=''):
         """Close event client and wait for it to finish."""
         super(EventClient, self).close(code, reason)
-        with self.closed_lock:
+        with self._closed_lock:
             # make sure we don't process any more messages.
-            self.closed = True
+            self._closed = True
 
     def subscribe(self, filters, last_log_id=None):
         m = {"method": "subscribe", "filters": filters}
