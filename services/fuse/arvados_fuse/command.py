@@ -125,9 +125,9 @@ class Mount(object):
 
     def run(self):
         if self.args.exec_args:
-            self._run_exec(self.args)
+            self._run_exec()
         else:
-            self._run_standalone(self.args)
+            self._run_standalone()
 
     def _fuse_options(self):
         """FUSE mount options; see mount.fuse(8)"""
