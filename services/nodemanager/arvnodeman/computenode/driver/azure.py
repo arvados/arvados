@@ -78,23 +78,20 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
     def list_nodes(self):
         # Azure only supports filtering node lists by resource group.
         # Do our own filtering based on tag.
-        return [node for node in
+        nodes = [node for node in
                 super(ComputeNodeDriver, self).list_nodes()
                 if node.extra["tags"].get("arvados-class") == self.tags["arvados-class"]]
+        for n in nodes:
+            # Need to populate Node.size
+            if not n.size:
+                n.size = self.sizes[n.extra["properties"]["hardwareProfile"]["vmSize"]]
+        return nodes
 
     def broken(self, cloud_node):
         """Return true if libcloud has indicated the node is in a "broken" state."""
         # UNKNOWN means the node state is unrecognized, which in practice means some combination
         # of failure that the Azure libcloud driver doesn't know how to interpret.
         return (cloud_node.state in (cloud_types.NodeState.ERROR, cloud_types.NodeState.UNKNOWN))
-
-    def list_nodes(self):
-        # Need to populate Node.size
-        nodes = super(ComputeNodeDriver, self).list_nodes()
-        for n in nodes:
-            if not n.size:
-                n.size = self.sizes[n.extra["properties"]["hardwareProfile"]["vmSize"]]
-        return nodes
 
     @classmethod
     def node_fqdn(cls, node):
