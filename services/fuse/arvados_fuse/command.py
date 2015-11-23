@@ -123,7 +123,7 @@ class Mount(object):
         subprocess.call(["fusermount", "-u", "-z", self.args.mountpoint])
         self.operations.destroy()
 
-    def Run(self):
+    def run(self):
         if self.args.exec_args:
             self._run_exec(self.args)
         else:

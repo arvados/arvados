@@ -4,4 +4,4 @@ import arvados_fuse
 
 if __name__ == '__main__':
     args = arvados_fuse.command.ArgumentParser().parse_args()
-    arvados_fuse.command.Mount(args).Run()
+    arvados_fuse.command.Mount(args).run()
