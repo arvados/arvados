@@ -200,14 +200,18 @@ class Dispatcher
     end
     min_node_count = positive_int(job.runtime_constraints['min_nodes'], 1)
     usable_nodes = []
-    Node.find_each do |node|
-      good_node = (node.info['slurm_state'] == 'idle')
-      need_procs.each { |node_test| good_node &&= node_test.call(node) }
-      if good_node
-        usable_nodes << node
-        if usable_nodes.count >= min_node_count
-          return usable_nodes.map { |node| node.hostname }
-        end
+    Node.all.select do |node|
+      node.info['slurm_state'] == 'idle'
+    end.sort_by do |node|
+      # Prefer nodes with no price, then cheap nodes, then expensive nodes
+      node.properties['cloud_node']['price'].to_f rescue 0
+    end.each do |node|
+      if need_procs.select { |node_test| not node_test.call(node) }.any?
+        next
+      end
+      usable_nodes << node
+      if usable_nodes.count >= min_node_count
+        return usable_nodes.map { |node| node.hostname }
       end
     end
     nil
