@@ -324,6 +324,12 @@ class Operations(llfuse.Operations):
         # is fully initialized should wait() on this event object.
         self.initlock = threading.Event()
 
+        # If we get overlapping shutdown events (e.g., fusermount -u
+        # -z and operations.destroy()) llfuse calls forget() on inodes
+        # that have already been deleted. To avoid this, we make
+        # forget() a no-op if called after destroy().
+        self._shutdown_started = threading.Event()
+
         self.num_retries = num_retries
 
         self.read_counter = arvados.keep.Counter()
@@ -340,11 +346,13 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def destroy(self):
-        if self.events:
-            self.events.close()
-            self.events = None
+        with llfuse.lock:
+            self._shutdown_started.set()
+            if self.events:
+                self.events.close()
+                self.events = None
 
-        self.inodes.clear()
+            self.inodes.clear()
 
     def access(self, inode, mode, ctx):
         return True
@@ -468,6 +476,8 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def forget(self, inodes):
+        if self._shutdown_started.is_set():
+            return
         for inode, nlookup in inodes:
             ent = self.inodes[inode]
             _logger.debug("arv-mount forget: inode %i nlookup %i ref_count %i", inode, nlookup, ent.ref_count)
