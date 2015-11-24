@@ -160,7 +160,8 @@ class CrunchDispatch
       # Prefer nodes with no price, then cheap nodes, then expensive nodes
       node.properties['cloud_node']['price'].to_f rescue 0
     end.each do |node|
-      if need_procs.select { |node_test| not node_test.call(node) }.any?
+      if need_procs.select { |need_proc| not need_proc.call(node) }.any?
+        # At least one runtime constraint is not satisfied by this node
         next
       end
       usable_nodes << node

@@ -4,7 +4,10 @@ require 'crunch_dispatch'
 class CrunchDispatchTest < ActiveSupport::TestCase
   test 'choose cheaper nodes first' do
     act_as_system_user do
+      # Replace test fixtures with a set suitable for testing dispatch
       Node.destroy_all
+
+      # Idle nodes with different prices
       [['compute1', 3.20, 32],
        ['compute2', 1.60, 16],
        ['compute3', 0.80, 8]].each do |hostname, price, cores|
@@ -21,6 +24,7 @@ class CrunchDispatchTest < ActiveSupport::TestCase
                        'total_scratch_mb' => cores*10000,
                      })
       end
+
       # Node with no price information
       Node.create!(hostname: 'compute4',
                    info: {
@@ -31,6 +35,7 @@ class CrunchDispatchTest < ActiveSupport::TestCase
                      'total_ram_mb' => 8192,
                      'total_scratch_mb' => 80000,
                    })
+
       # Cheap but busy node
       Node.create!(hostname: 'compute5',
                    info: {
