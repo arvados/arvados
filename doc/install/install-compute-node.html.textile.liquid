@@ -159,14 +159,16 @@ with open('/root/node.json', 'w') as node_file:
 EOF
 
     # Make sure /dev/fuse permissions are correct (the device appears after fuse is loaded)
-    chmod 1660 /dev/fuse
     if grep -q "^fuse:" /etc/group ; then
+        chmod 1660 /dev/fuse
         chgrp fuse /dev/fuse
+    else
+        chmod 666 /dev/fuse
     fi
 fi
 
-UUID=`grep \"uuid\" /root/node.json  |cut -f4 -d\"`
-PING_SECRET=`grep \"ping_secret\" /root/node.json  |cut -f4 -d\"`
+UUID=`grep \"uuid\" /root/node.json | cut -f4 -d\"`
+PING_SECRET=`grep \"ping_secret\" /root/node.json | cut -f4 -d\"`
 
 if ! test -f /etc/cron.d/node_ping ; then
     echo "*/5 * * * * root /usr/bin/curl -k -d ping_secret=$PING_SECRET https://$ARVADOS_API_HOST/arvados/v1/nodes/$UUID/ping" > /etc/cron.d/node_ping
