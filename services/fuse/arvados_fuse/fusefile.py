@@ -112,6 +112,13 @@ class FuncToJSONFile(StringFile):
         super(FuncToJSONFile, self).__init__(parent_inode, "", 0)
         self.func = func
 
+        # invalidate_inode() and invalidate_entry() are asynchronous
+        # with no callback to wait for. In order to guarantee
+        # userspace programs don't get stale data that was generated
+        # before the last invalidate(), we must disallow dirent
+        # caching entirely.
+        self.allow_dirent_cache = False
+
     def size(self):
         self._update()
         return super(FuncToJSONFile, self).size()

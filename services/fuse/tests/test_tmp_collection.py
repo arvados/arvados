@@ -110,12 +110,15 @@ class TmpCollectionTest(IntegrationTest):
              r'^\. 37b51d194a7513e45b56f6524f2d51f2\+3(\+\S+)? acbd18db4cc2f85cedef654fccc4a4d8\+3(\+\S+)? 0:3:bar 3:3:foo\n$'),
             ('foo', None,
              r'^\. 37b51d194a7513e45b56f6524f2d51f2\+3(\+\S+)? 0:3:bar\n$'),
+            ('bar', None,
+             r'^$'),
         ]
-        for fn, content, expect in ops:
-            path = os.path.join(tmpdir, fn)
-            if content is None:
-                os.unlink(path)
-            else:
-                with open(path, 'w') as f:
-                    f.write(content)
-            self.assertRegexpMatches(current_manifest(tmpdir), expect)
+        for _ in range(10):
+            for fn, content, expect in ops:
+                path = os.path.join(tmpdir, fn)
+                if content is None:
+                    os.unlink(path)
+                else:
+                    with open(path, 'w') as f:
+                        f.write(content)
+                self.assertRegexpMatches(current_manifest(tmpdir), expect)

@@ -407,8 +407,8 @@ class Operations(llfuse.Operations):
         entry = llfuse.EntryAttributes()
         entry.st_ino = inode
         entry.generation = 0
-        entry.entry_timeout = 60
-        entry.attr_timeout = 60
+        entry.entry_timeout = 60 if e.allow_dirent_cache else 0
+        entry.attr_timeout = 60 if e.allow_attr_cache else 0
 
         entry.st_mode = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
         if isinstance(e, Directory):
