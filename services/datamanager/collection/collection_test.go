@@ -1,8 +1,12 @@
 package collection
 
 import (
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	. "gopkg.in/check.v1"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -120,4 +124,66 @@ func (s *MySuite) TestSummarizeOverlapping(checker *C) {
 	}
 
 	CompareSummarizedReadCollections(checker, rc, expected)
+}
+
+type APITestData struct {
+	// path and response map
+	data map[string]arvadostest.StatusAndBody
+
+	// expected error, if any
+	expectedError string
+}
+
+func (s *MySuite) TestGetCollectionsAndSummarize_DiscoveryError(c *C) {
+	testData := APITestData{}
+	testData.expectedError = "arvados API server error: 500.*"
+	testGetCollectionsAndSummarize(c, testData)
+}
+
+func (s *MySuite) TestGetCollectionsAndSummarize_ApiErrorGetCollections(c *C) {
+	dataMap := make(map[string]arvadostest.StatusAndBody)
+	dataMap["/discovery/v1/apis/arvados/v1/rest"] = arvadostest.StatusAndBody{200, `{"defaultCollectionReplication":2}`}
+	dataMap["/arvados/v1/collections"] = arvadostest.StatusAndBody{-1, ``}
+
+	testData := APITestData{}
+	testData.data = dataMap
+	testData.expectedError = "arvados API server error: 302.*"
+
+	testGetCollectionsAndSummarize(c, testData)
+}
+
+func (s *MySuite) TestGetCollectionsAndSummarize_GetCollectionsBadManifest(c *C) {
+	dataMap := make(map[string]arvadostest.StatusAndBody)
+	dataMap["/discovery/v1/apis/arvados/v1/rest"] = arvadostest.StatusAndBody{200, `{"defaultCollectionReplication":2}`}
+	dataMap["/arvados/v1/collections"] = arvadostest.StatusAndBody{200, `{"items_available":1,"items":[{"modified_at":"2015-11-24T15:04:05Z","manifest_text":"thisisnotavalidmanifest"}]}`}
+
+	testData := APITestData{}
+	testData.data = dataMap
+	testData.expectedError = ".*invalid manifest format.*"
+
+	testGetCollectionsAndSummarize(c, testData)
+}
+
+func testGetCollectionsAndSummarize(c *C, testData APITestData) {
+	apiStub := arvadostest.APIStub{testData.data}
+
+	api := httptest.NewServer(&apiStub)
+	defer api.Close()
+
+	arv := arvadosclient.ArvadosClient{
+		Scheme:    "http",
+		ApiServer: api.URL[7:],
+		ApiToken:  "abc123",
+		Client:    &http.Client{Transport: &http.Transport{}},
+	}
+
+	// GetCollectionsAndSummarize
+	results := GetCollectionsAndSummarize(GetCollectionsParams{arv, nil, 10})
+
+	if testData.expectedError == "" {
+		c.Assert(results.Err, IsNil)
+		c.Assert(results, NotNil)
+	} else {
+		c.Assert(results.Err, ErrorMatches, testData.expectedError)
+	}
 }

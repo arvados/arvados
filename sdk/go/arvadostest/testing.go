@@ -23,13 +23,11 @@ func (stub *APIStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	pathResponse := stub.Data[req.URL.Path]
-	if pathResponse.ResponseBody != "" {
-		if pathResponse.ResponseStatus == -1 {
-			http.Redirect(resp, req, "/redirect-loop", http.StatusFound)
-		} else {
-			resp.WriteHeader(pathResponse.ResponseStatus)
-			resp.Write([]byte(pathResponse.ResponseBody))
-		}
+	if pathResponse.ResponseStatus == -1 {
+		http.Redirect(resp, req, "/redirect-loop", http.StatusFound)
+	} else if pathResponse.ResponseBody != "" {
+		resp.WriteHeader(pathResponse.ResponseStatus)
+		resp.Write([]byte(pathResponse.ResponseBody))
 	} else {
 		resp.WriteHeader(500)
 		resp.Write([]byte(``))
@@ -49,13 +47,11 @@ func (stub *KeepServerStub) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	}
 
 	pathResponse := stub.Data[req.URL.Path]
-	if pathResponse.ResponseBody != "" {
-		if pathResponse.ResponseStatus == -1 {
-			http.Redirect(resp, req, "/redirect-loop", http.StatusFound)
-		} else {
-			resp.WriteHeader(pathResponse.ResponseStatus)
-			resp.Write([]byte(pathResponse.ResponseBody))
-		}
+	if pathResponse.ResponseStatus == -1 {
+		http.Redirect(resp, req, "/redirect-loop", http.StatusFound)
+	} else if pathResponse.ResponseBody != "" {
+		resp.WriteHeader(pathResponse.ResponseStatus)
+		resp.Write([]byte(pathResponse.ResponseBody))
 	} else {
 		resp.WriteHeader(500)
 		resp.Write([]byte(``))
