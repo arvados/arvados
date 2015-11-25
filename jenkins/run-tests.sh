@@ -74,6 +74,7 @@ sdk/python
 sdk/ruby
 sdk/go/arvadosclient
 sdk/go/keepclient
+sdk/go/manifest
 sdk/go/streamer
 tools/keep-rsync
 
@@ -701,6 +702,7 @@ do_install services/api apiserver
 declare -a gostuff
 gostuff=(
     sdk/go/arvadosclient
+    sdk/go/manifest
     sdk/go/streamer
     services/arv-git-httpd
     services/crunchstat
