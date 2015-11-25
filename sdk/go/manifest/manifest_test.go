@@ -84,10 +84,10 @@ func TestParseBlockLocatorSimple(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error parsing block locator: %v", err)
 	}
-	expectBlockLocator(t, b, BlockLocator{Digest: blockdigest.AssertFromString("365f83f5f808896ec834c8b595288735"),
-		Size: 2310,
-		Hints: []string{"K@qr1hi",
-			"Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf"}})
+	expectBlockLocator(t, blockdigest.BlockLocator{b.Digest, b.Size, b.Hints},
+		blockdigest.BlockLocator{Digest: blockdigest.AssertFromString("365f83f5f808896ec834c8b595288735"),
+			Size:  2310,
+			Hints: []string{"K@qr1hi", "Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf"}})
 }
 
 func TestStreamIterShortManifestWithBlankStreams(t *testing.T) {
