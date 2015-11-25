@@ -125,9 +125,9 @@ func testGetKeepServersFromAPI(c *C, testData APITestData, expectedError string)
 	}
 
 	ksJSON, _ := json.Marshal(keepServers)
-	apiStubData := make(map[string]arvadostest.StatusAndBody)
-	apiStubData["/arvados/v1/keep_services"] = arvadostest.StatusAndBody{testData.statusCode, string(ksJSON)}
-	apiStub := arvadostest.APIStub{apiStubData}
+	apiStubResponses := make(map[string]arvadostest.StubResponse)
+	apiStubResponses["/arvados/v1/keep_services"] = arvadostest.StubResponse{testData.statusCode, string(ksJSON)}
+	apiStub := arvadostest.ServerStub{apiStubResponses}
 
 	api := httptest.NewServer(&apiStub)
 	defer api.Close()
@@ -202,10 +202,10 @@ func (s *KeepSuite) TestGetKeepServers_ReadServerResponseWithTwoBlocks(c *C) {
 }
 
 func testGetKeepServersAndSummarize(c *C, testData KeepServerTestData) {
-	ksStubData := make(map[string]arvadostest.StatusAndBody)
-	ksStubData["/status.json"] = arvadostest.StatusAndBody{testData.statusStatusCode, string(`{}`)}
-	ksStubData["/index"] = arvadostest.StatusAndBody{testData.indexStatusCode, testData.indexResponseBody}
-	ksStub := arvadostest.KeepServerStub{ksStubData}
+	ksStubResponses := make(map[string]arvadostest.StubResponse)
+	ksStubResponses["/status.json"] = arvadostest.StubResponse{testData.statusStatusCode, string(`{}`)}
+	ksStubResponses["/index"] = arvadostest.StubResponse{testData.indexStatusCode, testData.indexResponseBody}
+	ksStub := arvadostest.ServerStub{ksStubResponses}
 	ks := httptest.NewServer(&ksStub)
 	defer ks.Close()
 
@@ -226,9 +226,9 @@ func testGetKeepServersAndSummarize(c *C, testData KeepServerTestData) {
 		}},
 	}
 	ksJSON, _ := json.Marshal(servers_list)
-	apiStubData := make(map[string]arvadostest.StatusAndBody)
-	apiStubData["/arvados/v1/keep_services"] = arvadostest.StatusAndBody{200, string(ksJSON)}
-	apiStub := arvadostest.APIStub{apiStubData}
+	apiStubResponses := make(map[string]arvadostest.StubResponse)
+	apiStubResponses["/arvados/v1/keep_services"] = arvadostest.StubResponse{200, string(ksJSON)}
+	apiStub := arvadostest.ServerStub{apiStubResponses}
 
 	api := httptest.NewServer(&apiStub)
 	defer api.Close()

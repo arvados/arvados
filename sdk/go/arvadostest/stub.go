@@ -4,54 +4,30 @@ import (
 	"net/http"
 )
 
-// StatusAndBody struct with response status and body
-type StatusAndBody struct {
-	ResponseStatus int
-	ResponseBody   string
+// StubResponse struct with response status and body
+type StubResponse struct {
+	Status int
+	Body   string
 }
 
-// APIStub with Data map of path and StatusAndBody
-// Ex:  /arvados/v1/keep_services = arvadostest.StatusAndBody{200, string(`{}`)}
-type APIStub struct {
-	Data map[string]StatusAndBody
+// ServerStub with response map of path and StubResponse
+// Ex:  /arvados/v1/keep_services = arvadostest.StubResponse{200, string(`{}`)}
+type ServerStub struct {
+	Responses map[string]StubResponse
 }
 
-func (stub *APIStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (stub *ServerStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	if req.URL.Path == "/redirect-loop" {
 		http.Redirect(resp, req, "/redirect-loop", http.StatusFound)
 		return
 	}
 
-	pathResponse := stub.Data[req.URL.Path]
-	if pathResponse.ResponseStatus == -1 {
+	pathResponse := stub.Responses[req.URL.Path]
+	if pathResponse.Status == -1 {
 		http.Redirect(resp, req, "/redirect-loop", http.StatusFound)
-	} else if pathResponse.ResponseBody != "" {
-		resp.WriteHeader(pathResponse.ResponseStatus)
-		resp.Write([]byte(pathResponse.ResponseBody))
-	} else {
-		resp.WriteHeader(500)
-		resp.Write([]byte(``))
-	}
-}
-
-// KeepServerStub with Data map of path and StatusAndBody
-// Ex:  /status.json = arvadostest.StatusAndBody{200, string(`{}`)}
-type KeepServerStub struct {
-	Data map[string]StatusAndBody
-}
-
-func (stub *KeepServerStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	if req.URL.Path == "/redirect-loop" {
-		http.Redirect(resp, req, "/redirect-loop", http.StatusFound)
-		return
-	}
-
-	pathResponse := stub.Data[req.URL.Path]
-	if pathResponse.ResponseStatus == -1 {
-		http.Redirect(resp, req, "/redirect-loop", http.StatusFound)
-	} else if pathResponse.ResponseBody != "" {
-		resp.WriteHeader(pathResponse.ResponseStatus)
-		resp.Write([]byte(pathResponse.ResponseBody))
+	} else if pathResponse.Body != "" {
+		resp.WriteHeader(pathResponse.Status)
+		resp.Write([]byte(pathResponse.Body))
 	} else {
 		resp.WriteHeader(500)
 		resp.Write([]byte(``))

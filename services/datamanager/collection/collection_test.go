@@ -128,56 +128,58 @@ func (s *MySuite) TestSummarizeOverlapping(checker *C) {
 
 type APITestData struct {
 	// path and response map
-	data map[string]arvadostest.StatusAndBody
+	responses map[string]arvadostest.StubResponse
 
 	// expected error, if any
 	expectedError string
 }
 
 func (s *MySuite) TestGetCollectionsAndSummarize_DiscoveryError(c *C) {
-	testData := APITestData{}
-	testData.expectedError = "arvados API server error: 500.*"
-	testGetCollectionsAndSummarize(c, testData)
+	testGetCollectionsAndSummarize(c,
+		APITestData{
+			responses:     make(map[string]arvadostest.StubResponse),
+			expectedError: "arvados API server error: 500.*",
+		})
 }
 
 func (s *MySuite) TestGetCollectionsAndSummarize_ApiErrorGetCollections(c *C) {
-	dataMap := make(map[string]arvadostest.StatusAndBody)
-	dataMap["/discovery/v1/apis/arvados/v1/rest"] = arvadostest.StatusAndBody{200, `{"defaultCollectionReplication":2}`}
-	dataMap["/arvados/v1/collections"] = arvadostest.StatusAndBody{-1, ``}
+	respMap := make(map[string]arvadostest.StubResponse)
+	respMap["/discovery/v1/apis/arvados/v1/rest"] = arvadostest.StubResponse{200, `{"defaultCollectionReplication":2}`}
+	respMap["/arvados/v1/collections"] = arvadostest.StubResponse{-1, ``}
 
-	testData := APITestData{}
-	testData.data = dataMap
-	testData.expectedError = "arvados API server error: 302.*"
-
-	testGetCollectionsAndSummarize(c, testData)
+	testGetCollectionsAndSummarize(c,
+		APITestData{
+			responses:     respMap,
+			expectedError: "arvados API server error: 302.*",
+		})
 }
 
 func (s *MySuite) TestGetCollectionsAndSummarize_GetCollectionsBadStreamName(c *C) {
-	dataMap := make(map[string]arvadostest.StatusAndBody)
-	dataMap["/discovery/v1/apis/arvados/v1/rest"] = arvadostest.StatusAndBody{200, `{"defaultCollectionReplication":2}`}
-	dataMap["/arvados/v1/collections"] = arvadostest.StatusAndBody{200, `{"items_available":1,"items":[{"modified_at":"2015-11-24T15:04:05Z","manifest_text":"badstreamname"}]}`}
+	respMap := make(map[string]arvadostest.StubResponse)
+	respMap["/discovery/v1/apis/arvados/v1/rest"] = arvadostest.StubResponse{200, `{"defaultCollectionReplication":2}`}
+	respMap["/arvados/v1/collections"] = arvadostest.StubResponse{200, `{"items_available":1,"items":[{"modified_at":"2015-11-24T15:04:05Z","manifest_text":"badstreamname"}]}`}
 
-	testData := APITestData{}
-	testData.data = dataMap
-	testData.expectedError = "Invalid stream name: badstreamname"
-
-	testGetCollectionsAndSummarize(c, testData)
+	testGetCollectionsAndSummarize(c,
+		APITestData{
+			responses:     respMap,
+			expectedError: "Invalid stream name: badstreamname",
+		})
 }
 
 func (s *MySuite) TestGetCollectionsAndSummarize_GetCollectionsBadFileToken(c *C) {
-	dataMap := make(map[string]arvadostest.StatusAndBody)
-	dataMap["/discovery/v1/apis/arvados/v1/rest"] = arvadostest.StatusAndBody{200, `{"defaultCollectionReplication":2}`}
-	dataMap["/arvados/v1/collections"] = arvadostest.StatusAndBody{200, `{"items_available":1,"items":[{"modified_at":"2015-11-24T15:04:05Z","manifest_text":"./goodstream acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt file2.txt"}]}`}
+	respMap := make(map[string]arvadostest.StubResponse)
+	respMap["/discovery/v1/apis/arvados/v1/rest"] = arvadostest.StubResponse{200, `{"defaultCollectionReplication":2}`}
+	respMap["/arvados/v1/collections"] = arvadostest.StubResponse{200, `{"items_available":1,"items":[{"modified_at":"2015-11-24T15:04:05Z","manifest_text":"./goodstream acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt file2.txt"}]}`}
 
-	testData := APITestData{}
-	testData.data = dataMap
-	testData.expectedError = "Invalid file token: file2.txt"
-
-	testGetCollectionsAndSummarize(c, testData)
+	testGetCollectionsAndSummarize(c,
+		APITestData{
+			responses:     respMap,
+			expectedError: "Invalid file token: file2.txt",
+		})
 }
 
 func testGetCollectionsAndSummarize(c *C, testData APITestData) {
-	apiStub := arvadostest.APIStub{testData.data}
+	apiStub := arvadostest.ServerStub{testData.responses}
 
 	api := httptest.NewServer(&apiStub)
 	defer api.Close()
