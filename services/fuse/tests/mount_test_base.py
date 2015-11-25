@@ -66,6 +66,7 @@ class MountTestBase(unittest.TestCase):
 
         os.rmdir(self.mounttmp)
         shutil.rmtree(self.keeptmp)
+        os.environ.pop('KEEP_LOCAL_STORE')
         run_test_server.reset()
 
     def assertDirContents(self, subdir, expect_content):
