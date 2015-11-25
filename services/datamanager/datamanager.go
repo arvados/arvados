@@ -79,7 +79,7 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 	}
 
 	if logEventTypePrefix != "" {
-		arvLogger = logger.NewLogger(logger.LoggerParams{
+		arvLogger, err = logger.NewLogger(logger.LoggerParams{
 			Client:          arv,
 			EventTypePrefix: logEventTypePrefix,
 			WriteInterval:   time.Second * time.Duration(logFrequencySeconds)})
