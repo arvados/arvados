@@ -22,6 +22,7 @@ class CrunchDispatch
     end
 
     @docker_bin = ENV['CRUNCH_JOB_DOCKER_BIN']
+    @docker_run_args = ENV['CRUNCH_JOB_DOCKER_RUN_ARGS']
 
     @arvados_internal = Rails.configuration.git_internal_dir
     if not File.exists? @arvados_internal
@@ -393,6 +394,10 @@ class CrunchDispatch
 
       if @docker_bin
         cmd_args += ['--docker-bin', @docker_bin]
+      end
+
+      if @docker_run_args
+        cmd_args += ['--docker-run-args', @docker_run_args]
       end
 
       if have_job_lock?(job)
