@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -49,6 +48,7 @@ type ManifestStream struct {
 	StreamName string
 	Blocks     []string
 	FileTokens []string
+	Err        error
 }
 
 var escapeSeq = regexp.MustCompile(`\\([0-9]{3}|\\)`)
@@ -193,6 +193,21 @@ func parseManifestStream(s string) (m ManifestStream) {
 	}
 	m.Blocks = tokens[:i]
 	m.FileTokens = tokens[i:]
+
+	if m.StreamName != "." && !strings.HasPrefix(m.StreamName, "./") {
+		m.Err = fmt.Errorf("Invalid stream name: %s", m.StreamName)
+		return
+	}
+
+	fileTokens := m.FileTokens
+	for j := range m.FileTokens {
+		_, _, _, err := parseFileToken(fileTokens[j])
+		if err != nil {
+			m.Err = fmt.Errorf("Invalid file token: %s", fileTokens[j])
+			break
+		}
+	}
+
 	return
 }
 
@@ -232,18 +247,28 @@ func (m *Manifest) FileSegmentIterByName(filepath string) <-chan *FileSegment {
 	return ch
 }
 
+type ManifestBlockLocator struct {
+	Locator blockdigest.BlockLocator
+	Err     error
+}
+
 // Blocks may appear mulitple times within the same manifest if they
 // are used by multiple files. In that case this Iterator will output
 // the same block multiple times.
-func (m *Manifest) BlockIterWithDuplicates() <-chan blockdigest.BlockLocator {
-	blockChannel := make(chan blockdigest.BlockLocator)
+func (m *Manifest) BlockIterWithDuplicates() <-chan ManifestBlockLocator {
+	blockChannel := make(chan ManifestBlockLocator)
 	go func(streamChannel <-chan ManifestStream) {
 		for m := range streamChannel {
+			if m.Err != nil {
+				blockChannel <- ManifestBlockLocator{Locator: blockdigest.BlockLocator{}, Err: m.Err}
+				continue
+			}
 			for _, block := range m.Blocks {
-				if b, err := blockdigest.ParseBlockLocator(block); err == nil {
-					blockChannel <- b
+				b, err := blockdigest.ParseBlockLocator(block)
+				if err == nil {
+					blockChannel <- ManifestBlockLocator{b, nil}
 				} else {
-					log.Printf("ERROR: Failed to parse block: %v", err)
+					blockChannel <- ManifestBlockLocator{Locator: blockdigest.BlockLocator{}, Err: err}
 				}
 			}
 		}

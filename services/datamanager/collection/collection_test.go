@@ -152,14 +152,26 @@ func (s *MySuite) TestGetCollectionsAndSummarize_ApiErrorGetCollections(c *C) {
 	testGetCollectionsAndSummarize(c, testData)
 }
 
-func (s *MySuite) TestGetCollectionsAndSummarize_GetCollectionsBadManifest(c *C) {
+func (s *MySuite) TestGetCollectionsAndSummarize_GetCollectionsBadStreamName(c *C) {
 	dataMap := make(map[string]arvadostest.StatusAndBody)
 	dataMap["/discovery/v1/apis/arvados/v1/rest"] = arvadostest.StatusAndBody{200, `{"defaultCollectionReplication":2}`}
-	dataMap["/arvados/v1/collections"] = arvadostest.StatusAndBody{200, `{"items_available":1,"items":[{"modified_at":"2015-11-24T15:04:05Z","manifest_text":"thisisnotavalidmanifest"}]}`}
+	dataMap["/arvados/v1/collections"] = arvadostest.StatusAndBody{200, `{"items_available":1,"items":[{"modified_at":"2015-11-24T15:04:05Z","manifest_text":"badstreamname"}]}`}
 
 	testData := APITestData{}
 	testData.data = dataMap
-	testData.expectedError = ".*invalid manifest format.*"
+	testData.expectedError = "Invalid stream name: badstreamname"
+
+	testGetCollectionsAndSummarize(c, testData)
+}
+
+func (s *MySuite) TestGetCollectionsAndSummarize_GetCollectionsBadFileToken(c *C) {
+	dataMap := make(map[string]arvadostest.StatusAndBody)
+	dataMap["/discovery/v1/apis/arvados/v1/rest"] = arvadostest.StatusAndBody{200, `{"defaultCollectionReplication":2}`}
+	dataMap["/arvados/v1/collections"] = arvadostest.StatusAndBody{200, `{"items_available":1,"items":[{"modified_at":"2015-11-24T15:04:05Z","manifest_text":"./goodstream acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt file2.txt"}]}`}
+
+	testData := APITestData{}
+	testData.data = dataMap
+	testData.expectedError = "Invalid file token: file2.txt"
 
 	testGetCollectionsAndSummarize(c, testData)
 }
