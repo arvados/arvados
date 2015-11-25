@@ -67,6 +67,8 @@ class FreshBase(object):
         self.cache_priority = None
         self.cache_size = 0
         self.cache_uuid = None
+        self.allow_attr_cache = True
+        self.allow_dirent_cache = True
 
     # Mark the value as stale
     def invalidate(self):

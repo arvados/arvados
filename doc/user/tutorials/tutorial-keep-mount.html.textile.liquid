@@ -16,7 +16,7 @@ h2. Arv-mount
 * It is easy for existing tools to access files in Keep.
 * Data is streamed on demand.  It is not necessary to download an entire file or collection to start processing.
 
-The default mode permits browsing any collection in Arvados as a subdirectory under the mount directory.  To avoid having to fetch a potentially large list of all collections, collection directories only come into existence when explicitly accessed by their Keep locator. For instance, a collection may be found by its content hash in the @keep/by_id@ directory.
+The default mode permits browsing any collection in Arvados as a subdirectory under the mount directory.  To avoid having to fetch a potentially large list of all collections, collection directories only come into existence when explicitly accessed by UUID or portable data hash. For instance, a collection may be found by its content hash in the @keep/by_id@ directory.
 
 <notextile>
 <pre><code>~$ <span class="userinput">mkdir -p keep</span>
@@ -33,7 +33,7 @@ var-GS000016015-ASM.tsv.bz2
 
 The last line unmounts Keep.  Subdirectories will no longer be accessible.
 
-Within each directory on Keep, there is a @.arvados#collection@ file that does not show up with @ls@. Its contents include, for instance, the @portable_data_hash@, which is the same as the Keep locator.
+In the top level directory of each collection, arv-mount provides a special file called @.arvados#collection@ that contains a JSON-formatted API record for the collection. This can be used to determine the collection's @portable_data_hash@, @uuid@, etc. This file does not show up in @ls@ or @ls -a@.
 
 h3. Modifying files and directories in Keep
 

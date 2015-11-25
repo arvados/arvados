@@ -98,7 +98,8 @@ def kill_server_pid(pidfile, wait=10, passenger_root=False):
             # Pidfile exists, but we can't parse it. Perhaps the
             # server has created the file but hasn't written its PID
             # yet?
-            print("Parse error reading pidfile {}: {}".format(pidfile, error))
+            print("Parse error reading pidfile {}: {}".format(pidfile, error),
+                  file=sys.stderr)
             time.sleep(0.1)
             now = time.time()
 
@@ -113,7 +114,8 @@ def kill_server_pid(pidfile, wait=10, passenger_root=False):
         try:
             if now >= startTERM:
                 os.kill(server_pid, signal.SIGTERM)
-                print("Sent SIGTERM to {} ({})".format(server_pid, pidfile))
+                print("Sent SIGTERM to {} ({})".format(server_pid, pidfile),
+                      file=sys.stderr)
         except OSError as error:
             if error.errno == errno.ESRCH:
                 # Thrown by os.getpgid() or os.kill() if the process
@@ -124,7 +126,8 @@ def kill_server_pid(pidfile, wait=10, passenger_root=False):
         now = time.time()
 
     print("Server PID {} ({}) did not exit, giving up after {}s".
-          format(server_pid, pidfile, wait))
+          format(server_pid, pidfile, wait),
+          file=sys.stderr)
 
 def find_available_port():
     """Return an IPv4 port number that is not in use right now.
@@ -155,7 +158,8 @@ def _wait_until_port_listens(port, timeout=10):
         subprocess.check_output(['which', 'lsof'])
     except subprocess.CalledProcessError:
         print("WARNING: No `lsof` -- cannot wait for port to listen. "+
-              "Sleeping 0.5 and hoping for the best.")
+              "Sleeping 0.5 and hoping for the best.",
+              file=sys.stderr)
         time.sleep(0.5)
         return
     deadline = time.time() + timeout
@@ -695,7 +699,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.action not in actions:
-        print("Unrecognized action '{}'. Actions are: {}.".format(args.action, actions), file=sys.stderr)
+        print("Unrecognized action '{}'. Actions are: {}.".
+              format(args.action, actions),
+              file=sys.stderr)
         sys.exit(1)
     if args.action == 'start':
         stop(force=('ARVADOS_TEST_API_HOST' not in os.environ))
