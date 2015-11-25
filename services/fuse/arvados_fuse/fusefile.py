@@ -1,7 +1,8 @@
-import logging
-import re
 import json
 import llfuse
+import logging
+import re
+import time
 
 from fresh import FreshBase, convertTime
 
@@ -99,3 +100,37 @@ class ObjectFile(StringFile):
 
     def persisted(self):
         return True
+
+
+class FuncToJSONFile(StringFile):
+    """File content is the return value of a given function, encoded as JSON.
+
+    The function is called at the time the file is read. The result is
+    cached until invalidate() is called.
+    """
+    def __init__(self, parent_inode, func):
+        super(FuncToJSONFile, self).__init__(parent_inode, "", 0)
+        self.func = func
+
+        # invalidate_inode() and invalidate_entry() are asynchronous
+        # with no callback to wait for. In order to guarantee
+        # userspace programs don't get stale data that was generated
+        # before the last invalidate(), we must disallow dirent
+        # caching entirely.
+        self.allow_dirent_cache = False
+
+    def size(self):
+        self._update()
+        return super(FuncToJSONFile, self).size()
+
+    def readfrom(self, *args, **kwargs):
+        self._update()
+        return super(FuncToJSONFile, self).readfrom(*args, **kwargs)
+
+    def _update(self):
+        if not self.stale():
+            return
+        self._mtime = time.time()
+        obj = self.func()
+        self.contents = json.dumps(obj, indent=4, sort_keys=True) + "\n"
+        self.fresh()

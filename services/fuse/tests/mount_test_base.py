@@ -35,7 +35,10 @@ class MountTestBase(unittest.TestCase):
         self.api = api if api else arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
 
     def make_mount(self, root_class, **root_kwargs):
-        self.operations = fuse.Operations(os.getuid(), os.getgid(), enable_write=True)
+        self.operations = fuse.Operations(
+            os.getuid(), os.getgid(),
+            api_client=self.api,
+            enable_write=True)
         self.operations.inodes.add_entry(root_class(
             llfuse.ROOT_INODE, self.operations.inodes, self.api, 0, **root_kwargs))
         llfuse.init(self.operations, self.mounttmp, [])

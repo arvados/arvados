@@ -703,7 +703,7 @@ class FuseUpdateFromEventTest(MountTestBase):
         with llfuse.lock:
             m.new_collection(collection.api_response(), collection)
 
-        self.operations.listen_for_events(self.api)
+        self.operations.listen_for_events()
 
         d1 = llfuse.listdir(os.path.join(self.mounttmp))
         self.assertEqual([], sorted(d1))

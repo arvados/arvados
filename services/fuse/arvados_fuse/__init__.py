@@ -76,7 +76,7 @@ import Queue
 
 llfuse.capi._notify_queue = Queue.Queue()
 
-from fusedir import sanitize_filename, Directory, CollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
+from fusedir import sanitize_filename, Directory, CollectionDirectory, TmpCollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
 from fusefile import StringFile, FuseArvadosFile
 
 _logger = logging.getLogger('arvados.arvados_fuse')
@@ -192,8 +192,8 @@ class InodeCache(object):
         if obj.persisted() and obj.cache_priority in self._entries:
             self._remove(obj, True)
 
-    def find(self, uuid):
-        return self._by_uuid.get(uuid)
+    def find_by_uuid(self, uuid):
+        return self._by_uuid.get(uuid, [])
 
     def clear(self):
         self._entries.clear()
@@ -304,8 +304,10 @@ class Operations(llfuse.Operations):
 
     """
 
-    def __init__(self, uid, gid, encoding="utf-8", inode_cache=None, num_retries=4, enable_write=False):
+    def __init__(self, uid, gid, api_client, encoding="utf-8", inode_cache=None, num_retries=4, enable_write=False):
         super(Operations, self).__init__()
+
+        self._api_client = api_client
 
         if not inode_cache:
             inode_cache = InodeCache(cap=256*1024*1024)
@@ -321,6 +323,12 @@ class Operations(llfuse.Operations):
         # Other threads that need to wait until the fuse driver
         # is fully initialized should wait() on this event object.
         self.initlock = threading.Event()
+
+        # If we get overlapping shutdown events (e.g., fusermount -u
+        # -z and operations.destroy()) llfuse calls forget() on inodes
+        # that have already been deleted. To avoid this, we make
+        # forget() a no-op if called after destroy().
+        self._shutdown_started = threading.Event()
 
         self.num_retries = num_retries
 
@@ -338,50 +346,55 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def destroy(self):
-        if self.events:
-            self.events.close()
-            self.events = None
+        with llfuse.lock:
+            self._shutdown_started.set()
+            if self.events:
+                self.events.close()
+                self.events = None
 
-        self.inodes.clear()
+            self.inodes.clear()
 
     def access(self, inode, mode, ctx):
         return True
 
-    def listen_for_events(self, api_client):
-        self.events = arvados.events.subscribe(api_client,
+    def listen_for_events(self):
+        self.events = arvados.events.subscribe(self._api_client,
                                  [["event_type", "in", ["create", "update", "delete"]]],
                                  self.on_event)
 
     @catch_exceptions
     def on_event(self, ev):
-        if 'event_type' in ev:
-            with llfuse.lock:
-                items = self.inodes.inode_cache.find(ev["object_uuid"])
-                if items is not None:
-                    for item in items:
-                        item.invalidate()
-                        if ev["object_kind"] == "arvados#collection":
-                            new_attr = ev.get("properties") and ev["properties"].get("new_attributes") and ev["properties"]["new_attributes"]
+        if 'event_type' not in ev:
+            return
+        with llfuse.lock:
+            for item in self.inodes.inode_cache.find_by_uuid(ev["object_uuid"]):
+                item.invalidate()
+                if ev["object_kind"] == "arvados#collection":
+                    new_attr = (ev.get("properties") and
+                                ev["properties"].get("new_attributes") and
+                                ev["properties"]["new_attributes"])
 
-                            # new_attributes.modified_at currently lacks subsecond precision (see #6347) so use event_at which
-                            # should always be the same.
-                            #record_version = (new_attr["modified_at"], new_attr["portable_data_hash"]) if new_attr else None
-                            record_version = (ev["event_at"], new_attr["portable_data_hash"]) if new_attr else None
+                    # new_attributes.modified_at currently lacks
+                    # subsecond precision (see #6347) so use event_at
+                    # which should always be the same.
+                    record_version = (
+                        (ev["event_at"], new_attr["portable_data_hash"])
+                        if new_attr else None)
 
-                            item.update(to_record_version=record_version)
-                        else:
-                            item.update()
+                    item.update(to_record_version=record_version)
+                else:
+                    item.update()
 
-                oldowner = ev.get("properties") and ev["properties"].get("old_attributes") and ev["properties"]["old_attributes"].get("owner_uuid")
-                olditemparent = self.inodes.inode_cache.find(oldowner)
-                if olditemparent is not None:
-                    olditemparent.invalidate()
-                    olditemparent.update()
-
-                itemparent = self.inodes.inode_cache.find(ev["object_owner_uuid"])
-                if itemparent is not None:
-                    itemparent.invalidate()
-                    itemparent.update()
+            oldowner = (
+                ev.get("properties") and
+                ev["properties"].get("old_attributes") and
+                ev["properties"]["old_attributes"].get("owner_uuid"))
+            newowner = ev["object_owner_uuid"]
+            for parent in (
+                    self.inodes.inode_cache.find_by_uuid(oldowner) +
+                    self.inodes.inode_cache.find_by_uuid(newowner)):
+                parent.invalidate()
+                parent.update()
 
 
     @catch_exceptions
@@ -394,8 +407,8 @@ class Operations(llfuse.Operations):
         entry = llfuse.EntryAttributes()
         entry.st_ino = inode
         entry.generation = 0
-        entry.entry_timeout = 60
-        entry.attr_timeout = 60
+        entry.entry_timeout = 60 if e.allow_dirent_cache else 0
+        entry.attr_timeout = 60 if e.allow_attr_cache else 0
 
         entry.st_mode = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
         if isinstance(e, Directory):
@@ -463,6 +476,8 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def forget(self, inodes):
+        if self._shutdown_started.is_set():
+            return
         for inode, nlookup in inodes:
             ent = self.inodes[inode]
             _logger.debug("arv-mount forget: inode %i nlookup %i ref_count %i", inode, nlookup, ent.ref_count)
