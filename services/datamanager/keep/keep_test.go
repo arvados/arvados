@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 
@@ -93,59 +94,6 @@ func (s *KeepSuite) TestSendTrashListUnreachable(c *C) {
 	sendTrashListError(c, httptest.NewUnstartedServer(&TestHandler{}))
 }
 
-type StatusAndBody struct {
-	respStatus   int
-	responseBody string
-}
-
-type APIStub struct {
-	data map[string]StatusAndBody
-}
-
-func (stub *APIStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	if req.URL.Path == "/redirect-loop" {
-		http.Redirect(resp, req, "/redirect-loop", http.StatusFound)
-		return
-	}
-
-	pathResponse := stub.data[req.URL.Path]
-	if pathResponse.responseBody != "" {
-		if pathResponse.respStatus == -1 {
-			http.Redirect(resp, req, "/redirect-loop", http.StatusFound)
-		} else {
-			resp.WriteHeader(pathResponse.respStatus)
-			resp.Write([]byte(pathResponse.responseBody))
-		}
-	} else {
-		resp.WriteHeader(500)
-		resp.Write([]byte(``))
-	}
-}
-
-type KeepServerStub struct {
-	data map[string]StatusAndBody
-}
-
-func (stub *KeepServerStub) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	if req.URL.Path == "/redirect-loop" {
-		http.Redirect(resp, req, "/redirect-loop", http.StatusFound)
-		return
-	}
-
-	pathResponse := stub.data[req.URL.Path]
-	if pathResponse.responseBody != "" {
-		if pathResponse.respStatus == -1 {
-			http.Redirect(resp, req, "/redirect-loop", http.StatusFound)
-		} else {
-			resp.WriteHeader(pathResponse.respStatus)
-			resp.Write([]byte(pathResponse.responseBody))
-		}
-	} else {
-		resp.WriteHeader(500)
-		resp.Write([]byte(``))
-	}
-}
-
 type APITestData struct {
 	numServers int
 	serverType string
@@ -177,9 +125,9 @@ func testGetKeepServersFromAPI(c *C, testData APITestData, expectedError string)
 	}
 
 	ksJSON, _ := json.Marshal(keepServers)
-	apiData := make(map[string]StatusAndBody)
-	apiData["/arvados/v1/keep_services"] = StatusAndBody{testData.statusCode, string(ksJSON)}
-	apiStub := APIStub{apiData}
+	apiStubResponses := make(map[string]arvadostest.StubResponse)
+	apiStubResponses["/arvados/v1/keep_services"] = arvadostest.StubResponse{testData.statusCode, string(ksJSON)}
+	apiStub := arvadostest.ServerStub{apiStubResponses}
 
 	api := httptest.NewServer(&apiStub)
 	defer api.Close()
@@ -254,10 +202,10 @@ func (s *KeepSuite) TestGetKeepServers_ReadServerResponseWithTwoBlocks(c *C) {
 }
 
 func testGetKeepServersAndSummarize(c *C, testData KeepServerTestData) {
-	ksData := make(map[string]StatusAndBody)
-	ksData["/status.json"] = StatusAndBody{testData.statusStatusCode, string(`{}`)}
-	ksData["/index"] = StatusAndBody{testData.indexStatusCode, testData.indexResponseBody}
-	ksStub := KeepServerStub{ksData}
+	ksStubResponses := make(map[string]arvadostest.StubResponse)
+	ksStubResponses["/status.json"] = arvadostest.StubResponse{testData.statusStatusCode, string(`{}`)}
+	ksStubResponses["/index"] = arvadostest.StubResponse{testData.indexStatusCode, testData.indexResponseBody}
+	ksStub := arvadostest.ServerStub{ksStubResponses}
 	ks := httptest.NewServer(&ksStub)
 	defer ks.Close()
 
@@ -278,9 +226,9 @@ func testGetKeepServersAndSummarize(c *C, testData KeepServerTestData) {
 		}},
 	}
 	ksJSON, _ := json.Marshal(servers_list)
-	apiData := make(map[string]StatusAndBody)
-	apiData["/arvados/v1/keep_services"] = StatusAndBody{200, string(ksJSON)}
-	apiStub := APIStub{apiData}
+	apiStubResponses := make(map[string]arvadostest.StubResponse)
+	apiStubResponses["/arvados/v1/keep_services"] = arvadostest.StubResponse{200, string(ksJSON)}
+	apiStub := arvadostest.ServerStub{apiStubResponses}
 
 	api := httptest.NewServer(&apiStub)
 	defer api.Close()
