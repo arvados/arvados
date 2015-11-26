@@ -86,8 +86,10 @@ end
 
 module HeadlessHelper
   class HeadlessSingleton
+    @display = ENV['ARVADOS_TEST_HEADLESS_DISPLAY'] || rand(400)+100
+    STDERR.puts "Using display :#{@display} for headless tests"
     def self.get
-      @headless ||= Headless.new reuse: false
+      @headless ||= Headless.new reuse: false, display: @display
     end
   end
 
