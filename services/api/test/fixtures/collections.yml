@@ -92,7 +92,7 @@ multilevel_collection_2:
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
-  manifest_text: "./dir1/sub1 0:0:a 0:0:b\n./dir2/sub2 0:0:c 0:0:d\n"
+  manifest_text: "./dir1/sub1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:a 0:0:b\n./dir2/sub2 d41d8cd98f00b204e9800998ecf8427e+0 0:0:c 0:0:d\n"
   name: multilevel_collection_2
 
 docker_image:
