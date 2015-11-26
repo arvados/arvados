@@ -543,9 +543,6 @@ class _BlockManager(object):
     def __exit__(self, exc_type, exc_value, traceback):
         self.stop_threads()
 
-    def __del__(self):
-        self.stop_threads()
-
     def commit_bufferblock(self, block, sync):
         """Initiate a background upload of a bufferblock.
 

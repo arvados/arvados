@@ -6,6 +6,8 @@ _logger = logging.getLogger('arvados.ranges')
 RANGES_SPAM = 9
 
 class Range(object):
+    __slots__ = ("locator", "range_start", "range_size", "segment_offset")
+
     def __init__(self, locator, range_start, range_size, segment_offset=0):
         self.locator = locator
         self.range_start = range_start
@@ -53,6 +55,8 @@ def first_block(data_locators, range_start):
     return i
 
 class LocatorAndRange(object):
+    __slots__ = ("locator", "block_size", "segment_offset", "segment_size")
+
     def __init__(self, locator, block_size, segment_offset, segment_size):
         self.locator = locator
         self.block_size = block_size
