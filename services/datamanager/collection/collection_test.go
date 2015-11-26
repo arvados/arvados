@@ -1,8 +1,12 @@
 package collection
 
 import (
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	. "gopkg.in/check.v1"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -120,4 +124,79 @@ func (s *MySuite) TestSummarizeOverlapping(checker *C) {
 	}
 
 	CompareSummarizedReadCollections(checker, rc, expected)
+}
+
+type APITestData struct {
+	// path and response map
+	responses map[string]arvadostest.StubResponse
+
+	// expected error, if any
+	expectedError string
+}
+
+func (s *MySuite) TestGetCollectionsAndSummarize_DiscoveryError(c *C) {
+	testGetCollectionsAndSummarize(c,
+		APITestData{
+			responses:     make(map[string]arvadostest.StubResponse),
+			expectedError: "arvados API server error: 500.*",
+		})
+}
+
+func (s *MySuite) TestGetCollectionsAndSummarize_ApiErrorGetCollections(c *C) {
+	respMap := make(map[string]arvadostest.StubResponse)
+	respMap["/discovery/v1/apis/arvados/v1/rest"] = arvadostest.StubResponse{200, `{"defaultCollectionReplication":2}`}
+	respMap["/arvados/v1/collections"] = arvadostest.StubResponse{-1, ``}
+
+	testGetCollectionsAndSummarize(c,
+		APITestData{
+			responses:     respMap,
+			expectedError: "arvados API server error: 302.*",
+		})
+}
+
+func (s *MySuite) TestGetCollectionsAndSummarize_GetCollectionsBadStreamName(c *C) {
+	respMap := make(map[string]arvadostest.StubResponse)
+	respMap["/discovery/v1/apis/arvados/v1/rest"] = arvadostest.StubResponse{200, `{"defaultCollectionReplication":2}`}
+	respMap["/arvados/v1/collections"] = arvadostest.StubResponse{200, `{"items_available":1,"items":[{"modified_at":"2015-11-24T15:04:05Z","manifest_text":"badstreamname"}]}`}
+
+	testGetCollectionsAndSummarize(c,
+		APITestData{
+			responses:     respMap,
+			expectedError: "Invalid stream name: badstreamname",
+		})
+}
+
+func (s *MySuite) TestGetCollectionsAndSummarize_GetCollectionsBadFileToken(c *C) {
+	respMap := make(map[string]arvadostest.StubResponse)
+	respMap["/discovery/v1/apis/arvados/v1/rest"] = arvadostest.StubResponse{200, `{"defaultCollectionReplication":2}`}
+	respMap["/arvados/v1/collections"] = arvadostest.StubResponse{200, `{"items_available":1,"items":[{"modified_at":"2015-11-24T15:04:05Z","manifest_text":"./goodstream acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt file2.txt"}]}`}
+
+	testGetCollectionsAndSummarize(c,
+		APITestData{
+			responses:     respMap,
+			expectedError: "Invalid file token: file2.txt",
+		})
+}
+
+func testGetCollectionsAndSummarize(c *C, testData APITestData) {
+	apiStub := arvadostest.ServerStub{testData.responses}
+
+	api := httptest.NewServer(&apiStub)
+	defer api.Close()
+
+	arv := arvadosclient.ArvadosClient{
+		Scheme:    "http",
+		ApiServer: api.URL[7:],
+		ApiToken:  "abc123",
+		Client:    &http.Client{Transport: &http.Transport{}},
+	}
+
+	// GetCollectionsAndSummarize
+	results := GetCollectionsAndSummarize(GetCollectionsParams{arv, nil, 10})
+
+	if testData.expectedError == "" {
+		c.Assert(results.Err, IsNil)
+	} else {
+		c.Assert(results.Err, ErrorMatches, testData.expectedError)
+	}
 }

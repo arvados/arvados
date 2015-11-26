@@ -3,6 +3,7 @@ package manifest
 import (
 	"io/ioutil"
 	"reflect"
+	"regexp"
 	"runtime"
 	"testing"
 
@@ -12,8 +13,8 @@ import (
 
 func getStackTrace() string {
 	buf := make([]byte, 1000)
-	bytes_written := runtime.Stack(buf, false)
-	return "Stack Trace:\n" + string(buf[:bytes_written])
+	bytesWritten := runtime.Stack(buf, false)
+	return "Stack Trace:\n" + string(buf[:bytesWritten])
 }
 
 func expectFromChannel(t *testing.T, c <-chan string, expected string) {
@@ -100,7 +101,7 @@ func TestStreamIterShortManifestWithBlankStreams(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error reading manifest from file: %v", err)
 	}
-	manifest := Manifest{string(content)}
+	manifest := Manifest{Text: string(content)}
 	streamIter := manifest.StreamIter()
 
 	firstStream := <-streamIter
@@ -122,7 +123,7 @@ func TestBlockIterLongManifest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error reading manifest from file: %v", err)
 	}
-	manifest := Manifest{string(content)}
+	manifest := Manifest{Text: string(content)}
 	blockChannel := manifest.BlockIterWithDuplicates()
 
 	firstBlock := <-blockChannel
@@ -138,7 +139,6 @@ func TestBlockIterLongManifest(t *testing.T) {
 	blocksRead := 1
 	var lastBlock blockdigest.BlockLocator
 	for lastBlock = range blockChannel {
-		//log.Printf("Blocks Read: %d", blocksRead)
 		blocksRead++
 	}
 	expectEqual(t, blocksRead, 853)
@@ -205,6 +205,43 @@ func TestFileSegmentIterByName(t *testing.T) {
 		}
 		if !reflect.DeepEqual(got, testCase.want) {
 			t.Errorf("For %#v:\n got  %#v\n want %#v", testCase.f, got, testCase.want)
+		}
+	}
+}
+
+func TestBlockIterWithBadManifest(t *testing.T) {
+	testCases := [][]string{
+		{"badstream acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt", "Invalid stream name: badstream"},
+		{"/badstream acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt", "Invalid stream name: /badstream"},
+		{". acbd18db4cc2f85cedef654fccc4a4d8+3 file1.txt", "Invalid file token: file1.txt"},
+		{". acbd18db4cc2f85cedef654fccc4a4+3 0:1:file1.txt", "No block locators found"},
+		{". acbd18db4cc2f85cedef654fccc4a4d8 0:1:file1.txt", "No block locators found"},
+		{". acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt file2.txt 1:2:file3.txt", "Invalid file token: file2.txt"},
+		{". acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt. bcde18db4cc2f85cedef654fccc4a4d8+3 1:2:file3.txt", "Invalid file token: bcde18db4cc2f85cedef654fccc4a4d8.*"},
+		{". acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt\n. acbd18db4cc2f85cedef654fccc4a4d8+3 ::file2.txt\n", "Invalid file token: ::file2.txt"},
+		{". acbd18db4cc2f85cedef654fccc4a4d8+3 bcde18db4cc2f85cedef654fccc4a4d8+3\n", "No file tokens found"},
+		{". acbd18db4cc2f85cedef654fccc4a4d8+3 ", "Invalid file token"},
+		{". acbd18db4cc2f85cedef654fccc4a4d8+3", "No file tokens found"},
+		{". 0:1:file1.txt\n", "No block locators found"},
+		{".\n", "No block locators found"},
+	}
+
+	for _, testCase := range testCases {
+		manifest := Manifest{Text: string(testCase[0])}
+		blockChannel := manifest.BlockIterWithDuplicates()
+
+		for block := range blockChannel {
+			_ = block
+		}
+
+		// completed reading from blockChannel; now check for errors
+		if manifest.Err == nil {
+			t.Fatalf("Expected error")
+		}
+
+		matched, _ := regexp.MatchString(testCase[1], manifest.Err.Error())
+		if !matched {
+			t.Fatalf("Expected error not found. Expected: %v; Found: %v", testCase[1], manifest.Err.Error())
 		}
 	}
 }

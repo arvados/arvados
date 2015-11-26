@@ -274,7 +274,7 @@ func ProcessCollections(arvLogger *logger.Logger,
 			collection.ReplicationLevel = defaultReplicationLevel
 		}
 
-		manifest := manifest.Manifest{sdkCollection.ManifestText}
+		manifest := manifest.Manifest{Text: sdkCollection.ManifestText}
 		manifestSize := uint64(len(sdkCollection.ManifestText))
 
 		if _, alreadySeen := UUIDToCollection[collection.UUID]; !alreadySeen {
@@ -297,6 +297,11 @@ func ProcessCollections(arvLogger *logger.Logger,
 			}
 			collection.BlockDigestToSize[block.Digest] = block.Size
 		}
+		if manifest.Err != nil {
+			err = manifest.Err
+			return
+		}
+
 		collection.TotalSize = 0
 		for _, size := range collection.BlockDigestToSize {
 			collection.TotalSize += size
