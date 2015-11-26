@@ -31,7 +31,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
       text_assertion = :assert_text
       link_assertion = :refute_empty
     end
-    using_wait_time(Capybara.default_wait_time * 3) do
+    using_wait_time(Capybara.default_max_wait_time * 3) do
       send(text_assertion, "Shared at:")
     end
     send(link_assertion, all("a").select { |a| a[:href] =~ link_regexp })

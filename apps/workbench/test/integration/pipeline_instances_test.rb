@@ -78,7 +78,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       first('span', text: 'foo_tag').click
       find('.btn', text: 'Copy').click
     end
-    using_wait_time(Capybara.default_wait_time * 3) do
+    using_wait_time(Capybara.default_max_wait_time * 3) do
       wait_for_ajax
     end
 
@@ -166,7 +166,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       first('span', text: 'foo_tag').click
       find('.btn', text: 'Copy').click
     end
-    using_wait_time(Capybara.default_wait_time * 3) do
+    using_wait_time(Capybara.default_max_wait_time * 3) do
       wait_for_ajax
     end
 

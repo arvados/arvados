@@ -32,9 +32,9 @@ Capybara.register_driver :selenium_with_download do |app|
 end
 
 module WaitForAjax
-  Capybara.default_wait_time = 5
+  Capybara.default_max_wait_time = 5
   def wait_for_ajax
-    Timeout.timeout(Capybara.default_wait_time) do
+    Timeout.timeout(Capybara.default_max_wait_time) do
       loop until finished_all_ajax_requests?
     end
   end
