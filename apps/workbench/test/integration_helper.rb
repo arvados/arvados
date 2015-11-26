@@ -4,19 +4,43 @@ require 'capybara/poltergeist'
 require 'uri'
 require 'yaml'
 
-POLTERGEIST_OPTS = {
-  window_size: [1200, 800],
-  phantomjs_options: ['--ignore-ssl-errors=true'],
-  inspector: true,
-}
+def available_port for_what
+  Addrinfo.tcp("0.0.0.0", 0).listen do |srv|
+    port = srv.connect_address.ip_port
+    STDERR.puts "Using port #{port} for #{for_what}"
+    return port
+  end
+end
+
+def selenium_opts
+  {
+    port: available_port('selenium'),
+  }
+end
+
+def poltergeist_opts
+  {
+    phantomjs_options: ['--ignore-ssl-errors=true'],
+    port: available_port('poltergeist'),
+    window_size: [1200, 800],
+  }
+end
 
 Capybara.register_driver :poltergeist do |app|
-  Capybara::Poltergeist::Driver.new app, POLTERGEIST_OPTS
+  Capybara::Poltergeist::Driver.new app, poltergeist_opts
+end
+
+Capybara.register_driver :poltergeist_debug do |app|
+  Capybara::Poltergeist::Driver.new app, poltergeist_opts.merge(inspector: true)
 end
 
 Capybara.register_driver :poltergeist_without_file_api do |app|
   js = File.expand_path '../support/remove_file_api.js', __FILE__
-  Capybara::Poltergeist::Driver.new app, POLTERGEIST_OPTS.merge(extensions: [js])
+  Capybara::Poltergeist::Driver.new app, poltergeist_opts.merge(extensions: [js])
+end
+
+Capybara.register_driver :selenium do |app|
+  Capybara::Selenium::Driver.new app, selenium_opts
 end
 
 Capybara.register_driver :selenium_with_download do |app|
@@ -28,7 +52,7 @@ Capybara.register_driver :selenium_with_download do |app|
   profile['browser.download.manager.showWhenStarting'] = false
   profile['browser.helperApps.alwaysAsk.force'] = false
   profile['browser.helperApps.neverAsk.saveToDisk'] = 'text/plain,application/octet-stream'
-  Capybara::Selenium::Driver.new app, profile: profile
+  Capybara::Selenium::Driver.new app, selenium_opts.merge(profile: profile)
 end
 
 module WaitForAjax
