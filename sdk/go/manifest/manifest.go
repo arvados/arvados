@@ -20,6 +20,7 @@ var LocatorPattern = regexp.MustCompile(
 
 type Manifest struct {
 	Text string
+	Err  error
 }
 
 type BlockLocator struct {
@@ -246,28 +247,24 @@ func (m *Manifest) FileSegmentIterByName(filepath string) <-chan *FileSegment {
 	return ch
 }
 
-type ManifestBlockLocator struct {
-	Locator blockdigest.BlockLocator
-	Err     error
-}
-
 // Blocks may appear mulitple times within the same manifest if they
 // are used by multiple files. In that case this Iterator will output
 // the same block multiple times.
-func (m *Manifest) BlockIterWithDuplicates() <-chan ManifestBlockLocator {
-	blockChannel := make(chan ManifestBlockLocator)
+//
+// In order to detect parse errors, caller must check m.Err after the returned channel closes.
+func (m *Manifest) BlockIterWithDuplicates() <-chan blockdigest.BlockLocator {
+	blockChannel := make(chan blockdigest.BlockLocator)
 	go func(streamChannel <-chan ManifestStream) {
 		for ms := range streamChannel {
 			if ms.Err != nil {
-				blockChannel <- ManifestBlockLocator{Locator: blockdigest.BlockLocator{}, Err: ms.Err}
+				m.Err = ms.Err
 				continue
 			}
 			for _, block := range ms.Blocks {
-				b, err := blockdigest.ParseBlockLocator(block)
-				if err == nil {
-					blockChannel <- ManifestBlockLocator{b, nil}
+				if b, err := blockdigest.ParseBlockLocator(block); err == nil {
+					blockChannel <- b
 				} else {
-					blockChannel <- ManifestBlockLocator{Locator: blockdigest.BlockLocator{}, Err: err}
+					m.Err = err
 				}
 			}
 		}

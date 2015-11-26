@@ -96,7 +96,7 @@ func TestStreamIterShortManifestWithBlankStreams(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error reading manifest from file: %v", err)
 	}
-	manifest := Manifest{string(content)}
+	manifest := Manifest{Text: string(content)}
 	streamIter := manifest.StreamIter()
 
 	firstStream := <-streamIter
@@ -118,25 +118,25 @@ func TestBlockIterLongManifest(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error reading manifest from file: %v", err)
 	}
-	manifest := Manifest{string(content)}
+	manifest := Manifest{Text: string(content)}
 	blockChannel := manifest.BlockIterWithDuplicates()
 
 	firstBlock := <-blockChannel
 
 	expectBlockLocator(t,
-		firstBlock.Locator,
+		firstBlock,
 		blockdigest.BlockLocator{Digest: blockdigest.AssertFromString("b746e3d2104645f2f64cd3cc69dd895d"),
 			Size:  15693477,
 			Hints: []string{"E2866e643690156651c03d876e638e674dcd79475@5441920c"}})
 	blocksRead := 1
-	var lastBlock ManifestBlockLocator
+	var lastBlock blockdigest.BlockLocator
 	for lastBlock = range blockChannel {
 		blocksRead++
 	}
 	expectEqual(t, blocksRead, 853)
 
 	expectBlockLocator(t,
-		lastBlock.Locator,
+		lastBlock,
 		blockdigest.BlockLocator{Digest: blockdigest.AssertFromString("f9ce82f59e5908d2d70e18df9679b469"),
 			Size:  31367794,
 			Hints: []string{"E53f903684239bcc114f7bf8ff9bd6089f33058db@5441920c"}})
@@ -211,24 +211,21 @@ func TestBlockIterWithBadManifest(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		manifest := Manifest{string(testCase[0])}
+		manifest := Manifest{Text: string(testCase[0])}
 		blockChannel := manifest.BlockIterWithDuplicates()
 
-		var err error
 		for block := range blockChannel {
-			if block.Err != nil {
-				err = block.Err
-			}
+			_ = block
 		}
 
 		// completed reading from blockChannel; now check for errors
-		if err == nil {
+		if manifest.Err == nil {
 			t.Errorf("Expected error")
 		}
 
-		matched, _ := regexp.MatchString(testCase[1], err.Error())
+		matched, _ := regexp.MatchString(testCase[1], manifest.Err.Error())
 		if !matched {
-			t.Errorf("Expected error not found. Expected: %v; Found: %v", testCase[1], err.Error())
+			t.Errorf("Expected error not found. Expected: %v; Found: %v", testCase[1], manifest.Err.Error())
 		}
 	}
 }
