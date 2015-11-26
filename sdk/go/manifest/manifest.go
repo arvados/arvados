@@ -199,11 +199,10 @@ func parseManifestStream(s string) (m ManifestStream) {
 		return
 	}
 
-	fileTokens := m.FileTokens
-	for j := range m.FileTokens {
-		_, _, _, err := parseFileToken(fileTokens[j])
+	for _, ft := range m.FileTokens {
+		_, _, _, err := parseFileToken(ft)
 		if err != nil {
-			m.Err = fmt.Errorf("Invalid file token: %s", fileTokens[j])
+			m.Err = fmt.Errorf("Invalid file token: %s", ft)
 			break
 		}
 	}
@@ -258,12 +257,12 @@ type ManifestBlockLocator struct {
 func (m *Manifest) BlockIterWithDuplicates() <-chan ManifestBlockLocator {
 	blockChannel := make(chan ManifestBlockLocator)
 	go func(streamChannel <-chan ManifestStream) {
-		for m := range streamChannel {
-			if m.Err != nil {
-				blockChannel <- ManifestBlockLocator{Locator: blockdigest.BlockLocator{}, Err: m.Err}
+		for ms := range streamChannel {
+			if ms.Err != nil {
+				blockChannel <- ManifestBlockLocator{Locator: blockdigest.BlockLocator{}, Err: ms.Err}
 				continue
 			}
-			for _, block := range m.Blocks {
+			for _, block := range ms.Blocks {
 				b, err := blockdigest.ParseBlockLocator(block)
 				if err == nil {
 					blockChannel <- ManifestBlockLocator{b, nil}

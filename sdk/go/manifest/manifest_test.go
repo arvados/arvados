@@ -199,37 +199,36 @@ func TestFileSegmentIterByName(t *testing.T) {
 
 func TestBlockIterWithBadManifest(t *testing.T) {
 	testCases := [][]string{
-		{"notavalidstreamname acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt", "Invalid stream name: notavalidstreamname"},
-		{". acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt", ""},
+		{"badstream acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt", "Invalid stream name: badstream"},
+		{"/badstream acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt", "Invalid stream name: /badstream"},
 		{". acbd18db4cc2f85cedef654fccc4a4d8+3 file1.txt", "Invalid file token: file1.txt"},
-		{". acbd18db4cc2f85cedef654fccc4a4d+3 0:1:file1.txt", "Invalid file token: acbd18db4cc2f85cedef654fccc4a4d.*"},
+		{". acbd18db4cc2f85cedef654fccc4a4+3 0:1:file1.txt", "Invalid file token: acbd18db4cc2f85cedef654fccc4a4.*"},
 		{". acbd18db4cc2f85cedef654fccc4a4d8 0:1:file1.txt", "Invalid file token: acbd18db4cc2f85cedef654fccc4a4d8"},
 		{". acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt file2.txt 1:2:file3.txt", "Invalid file token: file2.txt"},
-		{"/badstream acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt file2.txt 1:2:file3.txt", "Invalid stream name: /badstream"},
-		{"./goodstream acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt 1:2:file2.txt", ""},
+		{". acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt. bcde18db4cc2f85cedef654fccc4a4d8+3 1:2:file3.txt", "Invalid file token: bcde18db4cc2f85cedef654fccc4a4d8.*"},
+		{". acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt\n. acbd18db4cc2f85cedef654fccc4a4d8+3 ::file2.txt\n", "Invalid file token: ::file2.txt"},
+		{". acbd18db4cc2f85cedef654fccc4a4d8+3 bcde18db4cc2f85cedef654fccc4a4d8+3\n", "Invalid file token: bcde18db4cc2f85cedef654fccc4a4d8.*"},
 	}
+
 	for _, testCase := range testCases {
 		manifest := Manifest{string(testCase[0])}
 		blockChannel := manifest.BlockIterWithDuplicates()
 
-		block := <-blockChannel
-
-		if testCase[1] != "" { // expecting error
-			if block.Err == nil {
-				t.Errorf("Expected error")
-			}
-
-			matched, err := regexp.MatchString(testCase[1], block.Err.Error())
-			if err != nil {
-				t.Errorf("Got error verifying returned block locator error: %v", err)
-			}
-			if !matched {
-				t.Errorf("Expected error not found. Expected: %v; Found = %v", testCase[1], block.Err.Error())
-			}
-		} else {
+		var err error
+		for block := range blockChannel {
 			if block.Err != nil {
-				t.Errorf("Got error: %v", block.Err)
+				err = block.Err
 			}
+		}
+
+		// completed reading from blockChannel; now check for errors
+		if err == nil {
+			t.Errorf("Expected error")
+		}
+
+		matched, _ := regexp.MatchString(testCase[1], err.Error())
+		if !matched {
+			t.Errorf("Expected error not found. Expected: %v; Found: %v", testCase[1], err.Error())
 		}
 	}
 }
