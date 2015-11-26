@@ -45,6 +45,7 @@ func FatalWithMessage(arvLogger *logger.Logger, message string) {
 			p["FATAL"] = message
 			runInfo := logger.GetOrCreateMap(p, "run_info")
 			runInfo["finished_at"] = time.Now()
+			runInfo["args"] = os.Args
 		})
 	}
 

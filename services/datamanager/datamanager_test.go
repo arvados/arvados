@@ -614,7 +614,7 @@ func createMultiStreamBlockCollection(t *testing.T, data string, numStreams, num
 	}
 
 	var locs []string
-	for k, _ := range locators {
+	for k := range locators {
 		locs = append(locs, k)
 	}
 
@@ -625,6 +625,14 @@ func createMultiStreamBlockCollection(t *testing.T, data string, numStreams, num
 // Also, create stray block and backdate it.
 // After datamanager run: expect blocks from the collection, but not the stray block.
 func TestManifestWithMultipleStreamsAndBlocks(t *testing.T) {
+	testManifestWithMultipleStreamsAndBlocks(t, false)
+}
+
+func TestManifestWithMultipleStreamsAndBlocks_DryRun(t *testing.T) {
+	testManifestWithMultipleStreamsAndBlocks(t, true)
+}
+
+func testManifestWithMultipleStreamsAndBlocks(t *testing.T, isDryRun bool) {
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
 
@@ -651,8 +659,14 @@ func TestManifestWithMultipleStreamsAndBlocks(t *testing.T) {
 	backdateBlocks(t, []string{strayOldBlock})
 
 	// run datamanager
+	dryRun = isDryRun
 	dataManagerSingleRun(t)
 
-	// verify that strayOldBlock is not to be found, but the collections blocks are still there
-	verifyBlocks(t, []string{strayOldBlock}, oldBlocks, 2)
+	if dryRun {
+		// verify that all blocks, including strayOldBlock, are still to be found
+		verifyBlocks(t, nil, expected, 2)
+	} else {
+		// verify that strayOldBlock is not to be found, but the collections blocks are still there
+		verifyBlocks(t, []string{strayOldBlock}, oldBlocks, 2)
+	}
 }

@@ -15,6 +15,7 @@ import (
 	"git.curoverse.com/arvados.git/services/datamanager/loggerutil"
 	"git.curoverse.com/arvados.git/services/datamanager/summary"
 	"log"
+	"os"
 	"time"
 )
 
@@ -22,6 +23,7 @@ var (
 	logEventTypePrefix  string
 	logFrequencySeconds int
 	minutesBetweenRuns  int
+	dryRun              bool
 )
 
 func init() {
@@ -36,11 +38,16 @@ func init() {
 	flag.IntVar(&minutesBetweenRuns,
 		"minutes-between-runs",
 		0,
-		"How many minutes we wait betwen data manager runs. 0 means run once and exit.")
+		"How many minutes we wait between data manager runs. 0 means run once and exit.")
+	flag.BoolVar(&dryRun,
+		"dry-run",
+		false,
+		"Perform a dry run. Log how many blocks would be deleted/moved, but do not issue any changes to keepstore.")
 }
 
 func main() {
 	flag.Parse()
+
 	if minutesBetweenRuns == 0 {
 		arv, err := arvadosclient.MakeArvadosClient()
 		if err != nil {
@@ -132,11 +139,6 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 			rlbss.Count)
 	}
 
-	kc, err := keepclient.MakeKeepClient(&arv)
-	if err != nil {
-		return fmt.Errorf("Error setting up keep client %v", err.Error())
-	}
-
 	// Log that we're finished. We force the recording, since go will
 	// not wait for the write timer before exiting.
 	if arvLogger != nil {
@@ -147,7 +149,20 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 			p["summary_info"] = summaryInfo
 
 			p["run_info"].(map[string]interface{})["finished_at"] = time.Now()
+			p["run_info"].(map[string]interface{})["args"] = os.Args
 		})
+	}
+
+	// If dry-run, do not issue any changes to keepstore
+	if dryRun {
+		log.Printf("Datamanager dry-run. Returning without issuing any keepstore updates.")
+		return nil
+	}
+
+	// Not dry-run; issue changes to keepstore
+	kc, err := keepclient.MakeKeepClient(&arv)
+	if err != nil {
+		return fmt.Errorf("Error setting up keep client %v", err.Error())
 	}
 
 	pullServers := summary.ComputePullServers(kc,

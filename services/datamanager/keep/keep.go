@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -245,6 +246,9 @@ func GetServerStatus(arvLogger *logger.Logger,
 			serverInfo["port"] = keepServer.Port
 
 			keepInfo[keepServer.UUID] = serverInfo
+
+			runInfo := logger.GetOrCreateMap(p, "run_info")
+			runInfo["args"] = os.Args
 		})
 	}
 
@@ -272,6 +276,9 @@ func GetServerStatus(arvLogger *logger.Logger,
 			serverInfo := keepInfo[keepServer.UUID].(map[string]interface{})
 			serverInfo["status_response_processed_at"] = now
 			serverInfo["status"] = keepStatus
+
+			runInfo := logger.GetOrCreateMap(p, "run_info")
+			runInfo["args"] = os.Args
 		})
 	}
 
@@ -291,6 +298,9 @@ func CreateIndexRequest(arvLogger *logger.Logger,
 			keepInfo := logger.GetOrCreateMap(p, "keep_info")
 			serverInfo := keepInfo[keepServer.UUID].(map[string]interface{})
 			serverInfo["index_request_sent_at"] = now
+
+			runInfo := logger.GetOrCreateMap(p, "run_info")
+			runInfo["args"] = os.Args
 		})
 	}
 
@@ -319,6 +329,9 @@ func ReadServerResponse(arvLogger *logger.Logger,
 			keepInfo := logger.GetOrCreateMap(p, "keep_info")
 			serverInfo := keepInfo[keepServer.UUID].(map[string]interface{})
 			serverInfo["index_response_received_at"] = now
+
+			runInfo := logger.GetOrCreateMap(p, "run_info")
+			runInfo["args"] = os.Args
 		})
 	}
 
@@ -386,6 +399,9 @@ func ReadServerResponse(arvLogger *logger.Logger,
 			serverInfo["lines_received"] = numLines
 			serverInfo["duplicates_seen"] = numDuplicates
 			serverInfo["size_disagreements_seen"] = numSizeDisagreements
+
+			runInfo := logger.GetOrCreateMap(p, "run_info")
+			runInfo["args"] = os.Args
 		})
 	}
 	resp.Body.Close()
@@ -435,6 +451,9 @@ func (readServers *ReadServers) Summarize(arvLogger *logger.Logger) {
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			keepInfo := logger.GetOrCreateMap(p, "keep_info")
 			keepInfo["distinct_blocks_stored"] = len(readServers.BlockToServers)
+
+			runInfo := logger.GetOrCreateMap(p, "run_info")
+			runInfo["args"] = os.Args
 		})
 	}
 }
