@@ -397,7 +397,7 @@ setup_virtualenv() {
     fi
     "$venvdest/bin/pip" install 'setuptools>=18' 'pip>=7'
     # ubuntu1404 can't seem to install mock via tests_require, but it can do this.
-    "$venvdest/bin/pip" install 'mock>=1.0'
+    "$venvdest/bin/pip" install 'mock>=1.0' 'pbr<1.7.0'
 }
 
 export PERLINSTALLBASE
