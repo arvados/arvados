@@ -202,12 +202,16 @@ func TestBlockIterWithBadManifest(t *testing.T) {
 		{"badstream acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt", "Invalid stream name: badstream"},
 		{"/badstream acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt", "Invalid stream name: /badstream"},
 		{". acbd18db4cc2f85cedef654fccc4a4d8+3 file1.txt", "Invalid file token: file1.txt"},
-		{". acbd18db4cc2f85cedef654fccc4a4+3 0:1:file1.txt", "Invalid file token: acbd18db4cc2f85cedef654fccc4a4.*"},
-		{". acbd18db4cc2f85cedef654fccc4a4d8 0:1:file1.txt", "Invalid file token: acbd18db4cc2f85cedef654fccc4a4d8"},
+		{". acbd18db4cc2f85cedef654fccc4a4+3 0:1:file1.txt", "No block locators found"},
+		{". acbd18db4cc2f85cedef654fccc4a4d8 0:1:file1.txt", "No block locators found"},
 		{". acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt file2.txt 1:2:file3.txt", "Invalid file token: file2.txt"},
 		{". acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt. bcde18db4cc2f85cedef654fccc4a4d8+3 1:2:file3.txt", "Invalid file token: bcde18db4cc2f85cedef654fccc4a4d8.*"},
 		{". acbd18db4cc2f85cedef654fccc4a4d8+3 0:1:file1.txt\n. acbd18db4cc2f85cedef654fccc4a4d8+3 ::file2.txt\n", "Invalid file token: ::file2.txt"},
-		{". acbd18db4cc2f85cedef654fccc4a4d8+3 bcde18db4cc2f85cedef654fccc4a4d8+3\n", "Invalid file token: bcde18db4cc2f85cedef654fccc4a4d8.*"},
+		{". acbd18db4cc2f85cedef654fccc4a4d8+3 bcde18db4cc2f85cedef654fccc4a4d8+3\n", "No file tokens found"},
+		{". acbd18db4cc2f85cedef654fccc4a4d8+3 ", "Invalid file token"},
+		{". acbd18db4cc2f85cedef654fccc4a4d8+3", "No file tokens found"},
+		{". 0:1:file1.txt\n", "No block locators found"},
+		{".\n", "No block locators found"},
 	}
 
 	for _, testCase := range testCases {
@@ -220,12 +224,12 @@ func TestBlockIterWithBadManifest(t *testing.T) {
 
 		// completed reading from blockChannel; now check for errors
 		if manifest.Err == nil {
-			t.Errorf("Expected error")
+			t.Fatalf("Expected error")
 		}
 
 		matched, _ := regexp.MatchString(testCase[1], manifest.Err.Error())
 		if !matched {
-			t.Errorf("Expected error not found. Expected: %v; Found: %v", testCase[1], manifest.Err.Error())
+			t.Fatalf("Expected error not found. Expected: %v; Found: %v", testCase[1], manifest.Err.Error())
 		}
 	}
 }

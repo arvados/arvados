@@ -196,7 +196,6 @@ func testGetCollectionsAndSummarize(c *C, testData APITestData) {
 
 	if testData.expectedError == "" {
 		c.Assert(results.Err, IsNil)
-		c.Assert(results, NotNil)
 	} else {
 		c.Assert(results.Err, ErrorMatches, testData.expectedError)
 	}

@@ -184,10 +184,16 @@ func (s *ManifestStream) sendFileSegmentIterByName(filepath string, ch chan<- *F
 
 func parseManifestStream(s string) (m ManifestStream) {
 	tokens := strings.Split(s, " ")
+
 	m.StreamName = UnescapeName(tokens[0])
+	if m.StreamName != "." && !strings.HasPrefix(m.StreamName, "./") {
+		m.Err = fmt.Errorf("Invalid stream name: %s", m.StreamName)
+		return
+	}
+
 	tokens = tokens[1:]
 	var i int
-	for i = range tokens {
+	for i = 0; i < len(tokens); i++ {
 		if !blockdigest.IsBlockLocator(tokens[i]) {
 			break
 		}
@@ -195,8 +201,13 @@ func parseManifestStream(s string) (m ManifestStream) {
 	m.Blocks = tokens[:i]
 	m.FileTokens = tokens[i:]
 
-	if m.StreamName != "." && !strings.HasPrefix(m.StreamName, "./") {
-		m.Err = fmt.Errorf("Invalid stream name: %s", m.StreamName)
+	if len(m.Blocks) == 0 {
+		m.Err = fmt.Errorf("No block locators found")
+		return
+	}
+
+	if len(m.FileTokens) == 0 {
+		m.Err = fmt.Errorf("No file tokens found")
 		return
 	}
 
