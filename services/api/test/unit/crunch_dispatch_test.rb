@@ -81,7 +81,10 @@ class CrunchDispatchTest < ActiveSupport::TestCase
             end
           end
           ActiveRecord::Base.establish_connection
-          CrunchDispatch.new.run []
+
+          dispatch = CrunchDispatch.new
+          dispatch.stubs(:did_recently).returns true
+          dispatch.run []
         ensure
           Process.exit!
         end
@@ -92,7 +95,7 @@ class CrunchDispatchTest < ActiveSupport::TestCase
     ensure
       Process.kill("TERM", pid)
     end
-    assert_with_timeout 5, "Dispatch did not unlock #{lockfile}" do
+    assert_with_timeout 20, "Dispatch did not unlock #{lockfile}" do
       can_lock(lockfile)
     end
   end
