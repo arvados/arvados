@@ -81,6 +81,14 @@ class CrunchDispatchTest < ActiveSupport::TestCase
             end
           end
           ActiveRecord::Base.establish_connection
+
+          # Make sure the queue is empty. We don't really want to
+          # dispatch any jobs.
+          act_as_user users(:admin) do
+            Job.destroy_all
+            PipelineInstance.destroy_all
+          end
+
           CrunchDispatch.new.run []
         ensure
           Process.exit!
@@ -92,7 +100,7 @@ class CrunchDispatchTest < ActiveSupport::TestCase
     ensure
       Process.kill("TERM", pid)
     end
-    assert_with_timeout 5, "Dispatch did not unlock #{lockfile}" do
+    assert_with_timeout 20, "Dispatch did not unlock #{lockfile}" do
       can_lock(lockfile)
     end
   end
