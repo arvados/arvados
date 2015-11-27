@@ -82,14 +82,9 @@ class CrunchDispatchTest < ActiveSupport::TestCase
           end
           ActiveRecord::Base.establish_connection
 
-          # Make sure the queue is empty. We don't really want to
-          # dispatch any jobs.
-          act_as_user users(:admin) do
-            Job.destroy_all
-            PipelineInstance.destroy_all
-          end
-
-          CrunchDispatch.new.run []
+          dispatch = CrunchDispatch.new
+          dispatch.stubs(:did_recently).returns true
+          dispatch.run []
         ensure
           Process.exit!
         end
