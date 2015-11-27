@@ -13,7 +13,7 @@ class Arvados::V1::KeepServicesController < ApplicationController
     if request.headers['X-External-Client'] == '1'
       @objects = model_class.where('service_type=?', 'proxy')
     else
-      @objects = model_class.where('service_type=?', 'disk')
+      @objects = model_class.where(model_class.arel_table[:service_type].not_eq('proxy'))
     end
     render_list
   end

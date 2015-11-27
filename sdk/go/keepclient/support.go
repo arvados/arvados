@@ -34,9 +34,9 @@ func Md5String(s string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(s)))
 }
 
-// Set timeouts apply when connecting to keepproxy services (assumed to be over
-// the Internet).
-func (this *KeepClient) setClientSettingsProxy() {
+// Set timeouts applicable when connecting to non-disk services
+// (assumed to be over the Internet).
+func (this *KeepClient) setClientSettingsNonDisk() {
 	if this.Client.Timeout == 0 {
 		// Maximum time to wait for a complete response
 		this.Client.Timeout = 300 * time.Second
@@ -58,8 +58,8 @@ func (this *KeepClient) setClientSettingsProxy() {
 	}
 }
 
-// Set timeouts apply when connecting to keepstore services directly (assumed
-// to be on the local network).
+// Set timeouts applicable when connecting to keepstore services directly
+// (assumed to be on the local network).
 func (this *KeepClient) setClientSettingsDisk() {
 	if this.Client.Timeout == 0 {
 		// Maximum time to wait for a complete response

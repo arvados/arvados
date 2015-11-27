@@ -111,6 +111,10 @@ func (this *KeepClient) loadKeepServers(list svcList) error {
 			}
 		}
 
+		if service.SvcType != "disk" {
+			this.foundNonDiskSvc = true
+		}
+
 		// Gateway services are only used when specified by
 		// UUID, so there's nothing to gain by filtering them
 		// by service type. Including all accessible services
@@ -119,8 +123,8 @@ func (this *KeepClient) loadKeepServers(list svcList) error {
 		gatewayRoots[service.Uuid] = url
 	}
 
-	if this.Using_proxy {
-		this.setClientSettingsProxy()
+	if this.foundNonDiskSvc {
+		this.setClientSettingsNonDisk()
 	} else {
 		this.setClientSettingsDisk()
 	}
