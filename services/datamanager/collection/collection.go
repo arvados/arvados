@@ -287,13 +287,12 @@ func ProcessCollections(arvLogger *logger.Logger,
 		blockChannel := manifest.BlockIterWithDuplicates()
 		for block := range blockChannel {
 			if storedSize, stored := collection.BlockDigestToSize[block.Digest]; stored && storedSize != block.Size {
-				err = fmt.Errorf(
+				log.Printf(
 					"Collection %s contains multiple sizes (%d and %d) for block %s",
 					collection.UUID,
 					storedSize,
 					block.Size,
 					block.Digest)
-				return
 			}
 			collection.BlockDigestToSize[block.Digest] = block.Size
 		}
