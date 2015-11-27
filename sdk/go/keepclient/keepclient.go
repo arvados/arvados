@@ -78,6 +78,9 @@ type KeepClient struct {
 
 	// set to 1 if all writable services are of disk type, otherwise 0
 	replicasPerService int
+
+	// Any non-disk typed services found in the list of keepservers?
+	foundNonDiskSvc bool
 }
 
 // MakeKeepClient creates a new KeepClient by contacting the API server to discover Keep servers.

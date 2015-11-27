@@ -16,6 +16,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 // Gocheck boilerplate
@@ -1244,4 +1245,49 @@ func (s *StandaloneSuite) TestPutBRetry(c *C) {
 	c.Check(err, Equals, nil)
 	c.Check(hash, Equals, "")
 	c.Check(replicas, Equals, 2)
+}
+
+func (s *ServerRequiredSuite) TestMakeKeepClientWithNonDiskTypeService(c *C) {
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, Equals, nil)
+
+	// Add an additional "testblobstore" keepservice
+	blobKeepService := make(arvadosclient.Dict)
+	err = arv.Create("keep_services",
+		arvadosclient.Dict{"keep_service": arvadosclient.Dict{
+			"service_host": "localhost",
+			"service_port": "21321",
+			"service_type": "testblobstore"}},
+		&blobKeepService)
+	c.Assert(err, Equals, nil)
+	defer func() { arv.Delete("keep_services", blobKeepService["uuid"].(string), nil, nil) }()
+
+	// Make a keepclient and ensure that the testblobstore is included
+	kc, err := MakeKeepClient(&arv)
+	c.Assert(err, Equals, nil)
+
+	// verify kc.LocalRoots
+	c.Check(len(kc.LocalRoots()), Equals, 3)
+	for _, root := range kc.LocalRoots() {
+		c.Check(root, Matches, "http://localhost:\\d+")
+	}
+	c.Assert(kc.LocalRoots()[blobKeepService["uuid"].(string)], NotNil)
+
+	// verify kc.GatewayRoots
+	c.Check(len(kc.GatewayRoots()), Equals, 3)
+	for _, root := range kc.GatewayRoots() {
+		c.Check(root, Matches, "http://localhost:\\d+")
+	}
+	c.Assert(kc.GatewayRoots()[blobKeepService["uuid"].(string)], NotNil)
+
+	// verify kc.WritableLocalRoots
+	c.Check(len(kc.WritableLocalRoots()), Equals, 3)
+	for _, root := range kc.WritableLocalRoots() {
+		c.Check(root, Matches, "http://localhost:\\d+")
+	}
+	c.Assert(kc.WritableLocalRoots()[blobKeepService["uuid"].(string)], NotNil)
+
+	c.Assert(kc.replicasPerService, Equals, 0)
+	c.Assert(kc.foundNonDiskSvc, Equals, true)
+	c.Assert(kc.Client.Timeout, Equals, 300*time.Second)
 }
