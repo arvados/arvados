@@ -23,6 +23,7 @@
 package logger
 
 import (
+	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"log"
 	"time"
@@ -73,16 +74,18 @@ type Logger struct {
 }
 
 // Create a new logger based on the specified parameters.
-func NewLogger(params LoggerParams) *Logger {
+func NewLogger(params LoggerParams) (l *Logger, err error) {
 	// sanity check parameters
 	if &params.Client == nil {
-		log.Fatal("Nil arvados client in LoggerParams passed in to NewLogger()")
+		err = fmt.Errorf("Nil arvados client in LoggerParams passed in to NewLogger()")
+		return
 	}
 	if params.EventTypePrefix == "" {
-		log.Fatal("Empty event type prefix in LoggerParams passed in to NewLogger()")
+		err = fmt.Errorf("Empty event type prefix in LoggerParams passed in to NewLogger()")
+		return
 	}
 
-	l := &Logger{
+	l = &Logger{
 		data:        make(map[string]interface{}),
 		entry:       make(map[string]interface{}),
 		properties:  make(map[string]interface{}),
@@ -97,7 +100,7 @@ func NewLogger(params LoggerParams) *Logger {
 	// Start the worker goroutine.
 	go l.work()
 
-	return l
+	return l, nil
 }
 
 // Exported functions will be called from other goroutines, therefore
@@ -196,7 +199,6 @@ func (l *Logger) write(isFinal bool) {
 	// client.
 	err := l.params.Client.Create("logs", l.data, nil)
 	if err != nil {
-		log.Printf("Attempted to log: %v", l.data)
-		log.Fatalf("Received error writing log: %v", err)
+		log.Printf("Received error writing %v: %v", l.data, err)
 	}
 }
