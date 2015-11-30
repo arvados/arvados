@@ -41,7 +41,6 @@ func SetupDataManagerTest(t *testing.T) {
 	keepClient = &keepclient.KeepClient{
 		Arvados:       &arv,
 		Want_replicas: 2,
-		Using_proxy:   true,
 		Client:        &http.Client{},
 	}
 

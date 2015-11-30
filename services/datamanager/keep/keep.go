@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
@@ -76,6 +77,15 @@ type ServiceList struct {
 	KeepServers    []ServerAddress `json:"items"`
 }
 
+var serviceType string
+
+func init() {
+	flag.StringVar(&serviceType,
+		"service-type",
+		"disk",
+		"Supported keepservice type. Default is disk.")
+}
+
 // String
 // TODO(misha): Change this to include the UUID as well.
 func (s ServerAddress) String() string {
@@ -122,10 +132,17 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers, err error
 	}
 
 	// Currently, only "disk" types are supported. Stop if any other service types are found.
+	foundSupportedServieType := false
 	for _, server := range sdkResponse.KeepServers {
-		if server.ServiceType != "disk" {
-			return results, fmt.Errorf("Unsupported service type %q found for: %v", server.ServiceType, server)
+		if server.ServiceType == serviceType {
+			foundSupportedServieType = true
+		} else {
+			log.Printf("Ignore unsupported service type: %v", server.ServiceType)
 		}
+	}
+
+	if !foundSupportedServieType {
+		return results, fmt.Errorf("Found no keepservices with the supported type %v", serviceType)
 	}
 
 	if params.Logger != nil {

@@ -895,7 +895,6 @@ func (s *StandaloneSuite) TestPutProxy(c *C) {
 	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
-	kc.Using_proxy = true
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
 	writableLocalRoots := make(map[string]string)
@@ -928,7 +927,6 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 3
-	kc.Using_proxy = true
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
 	writableLocalRoots := make(map[string]string)
@@ -1271,21 +1269,21 @@ func (s *ServerRequiredSuite) TestMakeKeepClientWithNonDiskTypeService(c *C) {
 	for _, root := range kc.LocalRoots() {
 		c.Check(root, Matches, "http://localhost:\\d+")
 	}
-	c.Assert(kc.LocalRoots()[blobKeepService["uuid"].(string)], NotNil)
+	c.Assert(kc.LocalRoots()[blobKeepService["uuid"].(string)], Not(Equals), "")
 
 	// verify kc.GatewayRoots
 	c.Check(len(kc.GatewayRoots()), Equals, 3)
 	for _, root := range kc.GatewayRoots() {
 		c.Check(root, Matches, "http://localhost:\\d+")
 	}
-	c.Assert(kc.GatewayRoots()[blobKeepService["uuid"].(string)], NotNil)
+	c.Assert(kc.GatewayRoots()[blobKeepService["uuid"].(string)], Not(Equals), "")
 
 	// verify kc.WritableLocalRoots
 	c.Check(len(kc.WritableLocalRoots()), Equals, 3)
 	for _, root := range kc.WritableLocalRoots() {
 		c.Check(root, Matches, "http://localhost:\\d+")
 	}
-	c.Assert(kc.WritableLocalRoots()[blobKeepService["uuid"].(string)], NotNil)
+	c.Assert(kc.WritableLocalRoots()[blobKeepService["uuid"].(string)], Not(Equals), "")
 
 	c.Assert(kc.replicasPerService, Equals, 0)
 	c.Assert(kc.foundNonDiskSvc, Equals, true)

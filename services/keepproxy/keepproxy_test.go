@@ -105,7 +105,6 @@ func runProxy(c *C, args []string, bogusClientToken bool) *keepclient.KeepClient
 	}
 	kc.SetServiceRoots(sr, sr, sr)
 	kc.Arvados.External = true
-	kc.Using_proxy = true
 
 	return kc
 }
@@ -474,7 +473,7 @@ func (s *NoKeepServerSuite) TestAskGetNoKeepServerError(c *C) {
 	defer closeListener()
 
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
-	for _, f := range []func()error {
+	for _, f := range []func() error{
 		func() error {
 			_, _, err := kc.Ask(hash)
 			return err
