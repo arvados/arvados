@@ -15,7 +15,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -246,9 +245,6 @@ func GetServerStatus(arvLogger *logger.Logger,
 			serverInfo["port"] = keepServer.Port
 
 			keepInfo[keepServer.UUID] = serverInfo
-
-			runInfo := logger.GetOrCreateMap(p, "run_info")
-			runInfo["args"] = os.Args
 		})
 	}
 
@@ -276,9 +272,6 @@ func GetServerStatus(arvLogger *logger.Logger,
 			serverInfo := keepInfo[keepServer.UUID].(map[string]interface{})
 			serverInfo["status_response_processed_at"] = now
 			serverInfo["status"] = keepStatus
-
-			runInfo := logger.GetOrCreateMap(p, "run_info")
-			runInfo["args"] = os.Args
 		})
 	}
 
@@ -298,9 +291,6 @@ func CreateIndexRequest(arvLogger *logger.Logger,
 			keepInfo := logger.GetOrCreateMap(p, "keep_info")
 			serverInfo := keepInfo[keepServer.UUID].(map[string]interface{})
 			serverInfo["index_request_sent_at"] = now
-
-			runInfo := logger.GetOrCreateMap(p, "run_info")
-			runInfo["args"] = os.Args
 		})
 	}
 
@@ -329,9 +319,6 @@ func ReadServerResponse(arvLogger *logger.Logger,
 			keepInfo := logger.GetOrCreateMap(p, "keep_info")
 			serverInfo := keepInfo[keepServer.UUID].(map[string]interface{})
 			serverInfo["index_response_received_at"] = now
-
-			runInfo := logger.GetOrCreateMap(p, "run_info")
-			runInfo["args"] = os.Args
 		})
 	}
 
@@ -399,9 +386,6 @@ func ReadServerResponse(arvLogger *logger.Logger,
 			serverInfo["lines_received"] = numLines
 			serverInfo["duplicates_seen"] = numDuplicates
 			serverInfo["size_disagreements_seen"] = numSizeDisagreements
-
-			runInfo := logger.GetOrCreateMap(p, "run_info")
-			runInfo["args"] = os.Args
 		})
 	}
 	resp.Body.Close()
@@ -451,9 +435,6 @@ func (readServers *ReadServers) Summarize(arvLogger *logger.Logger) {
 		arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 			keepInfo := logger.GetOrCreateMap(p, "keep_info")
 			keepInfo["distinct_blocks_stored"] = len(readServers.BlockToServers)
-
-			runInfo := logger.GetOrCreateMap(p, "run_info")
-			runInfo["args"] = os.Args
 		})
 	}
 }
@@ -468,53 +449,64 @@ type TrashRequest struct {
 type TrashList []TrashRequest
 
 // SendTrashLists to trash queue
-func SendTrashLists(kc *keepclient.KeepClient, spl map[string]TrashList) (errs []error) {
+func SendTrashLists(arvLogger *logger.Logger, kc *keepclient.KeepClient, spl map[string]TrashList, dryRun bool) (errs []error) {
 	count := 0
 	barrier := make(chan error)
 
 	client := kc.Client
 
 	for url, v := range spl {
-		count++
-		log.Printf("Sending trash list to %v", url)
-
-		go (func(url string, v TrashList) {
-			pipeReader, pipeWriter := io.Pipe()
-			go (func() {
-				enc := json.NewEncoder(pipeWriter)
-				enc.Encode(v)
-				pipeWriter.Close()
-			})()
-
-			req, err := http.NewRequest("PUT", fmt.Sprintf("%s/trash", url), pipeReader)
-			if err != nil {
-				log.Printf("Error creating trash list request for %v error: %v", url, err.Error())
-				barrier <- err
-				return
+		if dryRun {
+			if arvLogger != nil {
+				for url, v := range spl {
+					arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
+						trashListInfo := logger.GetOrCreateMap(p, "trash_list")
+						trashListInfo["started_at"] = time.Now()
+						trashListInfo[url] = v
+					})
+				}
 			}
+		} else {
+			count++
+			log.Printf("Sending trash list to %v", url)
 
-			req.Header.Add("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
+			go (func(url string, v TrashList) {
+				pipeReader, pipeWriter := io.Pipe()
+				go (func() {
+					enc := json.NewEncoder(pipeWriter)
+					enc.Encode(v)
+					pipeWriter.Close()
+				})()
 
-			// Make the request
-			var resp *http.Response
-			if resp, err = client.Do(req); err != nil {
-				log.Printf("Error sending trash list to %v error: %v", url, err.Error())
-				barrier <- err
-				return
-			}
+				req, err := http.NewRequest("PUT", fmt.Sprintf("%s/trash", url), pipeReader)
+				if err != nil {
+					log.Printf("Error creating trash list request for %v error: %v", url, err.Error())
+					barrier <- err
+					return
+				}
 
-			log.Printf("Sent trash list to %v: response was HTTP %v", url, resp.Status)
+				req.Header.Add("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
 
-			io.Copy(ioutil.Discard, resp.Body)
-			resp.Body.Close()
+				// Make the request
+				var resp *http.Response
+				if resp, err = client.Do(req); err != nil {
+					log.Printf("Error sending trash list to %v error: %v", url, err.Error())
+					barrier <- err
+					return
+				}
 
-			if resp.StatusCode != 200 {
-				barrier <- errors.New(fmt.Sprintf("Got HTTP code %v", resp.StatusCode))
-			} else {
-				barrier <- nil
-			}
-		})(url, v)
+				log.Printf("Sent trash list to %v: response was HTTP %v", url, resp.Status)
 
+				io.Copy(ioutil.Discard, resp.Body)
+				resp.Body.Close()
+
+				if resp.StatusCode != 200 {
+					barrier <- errors.New(fmt.Sprintf("Got HTTP code %v", resp.StatusCode))
+				} else {
+					barrier <- nil
+				}
+			})(url, v)
+		}
 	}
 
 	for i := 0; i < count; i++ {

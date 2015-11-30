@@ -15,7 +15,6 @@ import (
 	"git.curoverse.com/arvados.git/services/datamanager/loggerutil"
 	"git.curoverse.com/arvados.git/services/datamanager/summary"
 	"log"
-	"os"
 	"time"
 )
 
@@ -149,14 +148,7 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 			p["summary_info"] = summaryInfo
 
 			p["run_info"].(map[string]interface{})["finished_at"] = time.Now()
-			p["run_info"].(map[string]interface{})["args"] = os.Args
 		})
-	}
-
-	// If dry-run, do not issue any changes to keepstore
-	if dryRun {
-		log.Printf("Datamanager dry-run. Returning without issuing any keepstore updates.")
-		return nil
 	}
 
 	// Not dry-run; issue changes to keepstore
@@ -176,7 +168,7 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 		&keepServerInfo,
 		replicationSummary.KeepBlocksNotInCollections)
 
-	err = summary.WritePullLists(arvLogger, pullLists)
+	err = summary.WritePullLists(arvLogger, pullLists, dryRun)
 	if err != nil {
 		return err
 	}
@@ -184,7 +176,7 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 	if trashErr != nil {
 		return err
 	}
-	keep.SendTrashLists(kc, trashLists)
+	keep.SendTrashLists(arvLogger, kc, trashLists, dryRun)
 
 	return nil
 }

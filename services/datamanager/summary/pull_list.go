@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 // Locator is a block digest
@@ -175,22 +176,34 @@ func BuildPullLists(lps map[Locator]PullServers) (spl map[string]PullList) {
 // This is just a hack for prototyping, it is not expected to be used
 // in production.
 func WritePullLists(arvLogger *logger.Logger,
-	pullLists map[string]PullList) error {
+	pullLists map[string]PullList,
+	dryRun bool) error {
 	r := strings.NewReplacer(":", ".")
-	for host, list := range pullLists {
-		filename := fmt.Sprintf("pull_list.%s", r.Replace(RemoveProtocolPrefix(host)))
-		pullListFile, err := os.Create(filename)
-		if err != nil {
-			return err
-		}
-		defer pullListFile.Close()
 
-		enc := json.NewEncoder(pullListFile)
-		err = enc.Encode(list)
-		if err != nil {
-			return err
+	for host, list := range pullLists {
+		if dryRun {
+			if arvLogger != nil {
+				arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
+					pullListInfo := logger.GetOrCreateMap(p, "pull_list")
+					pullListInfo["started_at"] = time.Now()
+					pullListInfo[host] = list
+				})
+			}
+		} else {
+			filename := fmt.Sprintf("pull_list.%s", r.Replace(RemoveProtocolPrefix(host)))
+			pullListFile, err := os.Create(filename)
+			if err != nil {
+				return err
+			}
+			defer pullListFile.Close()
+
+			enc := json.NewEncoder(pullListFile)
+			err = enc.Encode(list)
+			if err != nil {
+				return err
+			}
+			log.Printf("Wrote pull list to %s.", filename)
 		}
-		log.Printf("Wrote pull list to %s.", filename)
 	}
 	return nil
 }

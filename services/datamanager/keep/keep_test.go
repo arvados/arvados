@@ -51,7 +51,7 @@ func (s *KeepSuite) TestSendTrashLists(c *C) {
 		map[string]string{"xxxx": server.URL},
 		map[string]string{})
 
-	err := SendTrashLists(&kc, tl)
+	err := SendTrashLists(nil, &kc, tl, false)
 
 	c.Check(err, IsNil)
 
@@ -78,7 +78,7 @@ func sendTrashListError(c *C, server *httptest.Server) {
 		map[string]string{"xxxx": server.URL},
 		map[string]string{})
 
-	err := SendTrashLists(&kc, tl)
+	err := SendTrashLists(nil, &kc, tl, false)
 
 	c.Check(err, NotNil)
 	c.Check(err[0], NotNil)

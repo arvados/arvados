@@ -357,9 +357,6 @@ func (readCollections *ReadCollections) Summarize(arvLogger *logger.Logger) {
 				readCollections.OwnerToCollectionSize
 			collectionInfo["distinct_blocks_named"] =
 				len(readCollections.BlockToDesiredReplication)
-
-			runInfo := logger.GetOrCreateMap(p, "run_info")
-			runInfo["args"] = os.Args
 		})
 	}
 
