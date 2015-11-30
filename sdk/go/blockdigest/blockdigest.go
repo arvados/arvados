@@ -3,7 +3,6 @@ package blockdigest
 
 import (
 	"fmt"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -56,15 +55,6 @@ func FromString(s string) (dig BlockDigest, err error) {
 	}
 	dig = d
 	return
-}
-
-// Will fatal with the error if an error is encountered
-func AssertFromString(s string) BlockDigest {
-	d, err := FromString(s)
-	if err != nil {
-		log.Fatalf("Error creating BlockDigest from %s: %v", s, err)
-	}
-	return d
 }
 
 func IsBlockLocator(s string) bool {
