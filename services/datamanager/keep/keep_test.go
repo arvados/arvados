@@ -101,7 +101,7 @@ type APITestData struct {
 }
 
 func (s *KeepSuite) TestGetKeepServers_UnsupportedServiceType(c *C) {
-	testGetKeepServersFromAPI(c, APITestData{1, "notadisk", 200}, "Unsupported service type")
+	testGetKeepServersFromAPI(c, APITestData{1, "notadisk", 200}, "Found no keepservices with the supported type disk")
 }
 
 func (s *KeepSuite) TestGetKeepServers_ReceivedTooFewServers(c *C) {

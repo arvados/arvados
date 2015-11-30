@@ -68,7 +68,6 @@ const X_Keep_Replicas_Stored = "X-Keep-Replicas-Stored"
 type KeepClient struct {
 	Arvados            *arvadosclient.ArvadosClient
 	Want_replicas      int
-	Using_proxy        bool
 	localRoots         *map[string]string
 	writableLocalRoots *map[string]string
 	gatewayRoots       *map[string]string
@@ -104,7 +103,6 @@ func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 	kc := &KeepClient{
 		Arvados:       arv,
 		Want_replicas: defaultReplicationLevel,
-		Using_proxy:   false,
 		Client: &http.Client{Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: arv.ApiInsecure}}},
 		Retries: 2,
