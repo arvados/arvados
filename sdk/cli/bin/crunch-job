@@ -886,7 +886,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 
     my $stdbuf = " stdbuf --output=0 --error=0 ";
 
-    my $arv_file_cache = "--file-cache=" . (256 * 1024 * 1024);
+    my $arv_file_cache = "";
     if (defined($Job->{'runtime_constraints'}->{'keep_cache_mb_per_task'})) {
       $arv_file_cache = "--file-cache=" . ($Job->{'runtime_constraints'}->{'keep_cache_mb_per_task'} * 1024 * 1024);
     }
