@@ -95,8 +95,7 @@ case "$TARGET" in
         PYTHON3_PKG_PREFIX=python3
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
-            rsa uritemplate httplib2 ws4py \
-            pykka requests six pyexecjs jsonschema \
+            rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl llfuse)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
@@ -108,8 +107,7 @@ case "$TARGET" in
         PYTHON3_PKG_PREFIX=python3
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
-            rsa uritemplate httplib2 ws4py \
-            pykka requests six pyexecjs jsonschema \
+            rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl llfuse)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
@@ -121,8 +119,7 @@ case "$TARGET" in
         PYTHON3_PKG_PREFIX=python3
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
-            rsa uritemplate httplib2 ws4py \
-            pykka requests six pyexecjs jsonschema \
+            rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl llfuse)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
@@ -145,8 +142,7 @@ case "$TARGET" in
         PYTHON3_PKG_PREFIX=$PYTHON3_PACKAGE
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
-            rsa uritemplate httplib2 ws4py \
-            pykka requests six pyexecjs jsonschema \
+            rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname pycurl
             python-daemon lockfile llfuse 'pbr<1.0')
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
