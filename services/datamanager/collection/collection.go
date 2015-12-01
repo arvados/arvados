@@ -274,7 +274,7 @@ func ProcessCollections(arvLogger *logger.Logger,
 			collection.ReplicationLevel = defaultReplicationLevel
 		}
 
-		manifest := manifest.Manifest{sdkCollection.ManifestText}
+		manifest := manifest.Manifest{Text: sdkCollection.ManifestText}
 		manifestSize := uint64(len(sdkCollection.ManifestText))
 
 		if _, alreadySeen := UUIDToCollection[collection.UUID]; !alreadySeen {
@@ -287,16 +287,20 @@ func ProcessCollections(arvLogger *logger.Logger,
 		blockChannel := manifest.BlockIterWithDuplicates()
 		for block := range blockChannel {
 			if storedSize, stored := collection.BlockDigestToSize[block.Digest]; stored && storedSize != block.Size {
-				err = fmt.Errorf(
+				log.Printf(
 					"Collection %s contains multiple sizes (%d and %d) for block %s",
 					collection.UUID,
 					storedSize,
 					block.Size,
 					block.Digest)
-				return
 			}
 			collection.BlockDigestToSize[block.Digest] = block.Size
 		}
+		if manifest.Err != nil {
+			err = manifest.Err
+			return
+		}
+
 		collection.TotalSize = 0
 		for _, size := range collection.BlockDigestToSize {
 			collection.TotalSize += size

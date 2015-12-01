@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
-	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -21,6 +20,7 @@ var LocatorPattern = regexp.MustCompile(
 
 type Manifest struct {
 	Text string
+	Err  error
 }
 
 type BlockLocator struct {
@@ -49,6 +49,7 @@ type ManifestStream struct {
 	StreamName string
 	Blocks     []string
 	FileTokens []string
+	Err        error
 }
 
 var escapeSeq = regexp.MustCompile(`\\([0-9]{3}|\\)`)
@@ -183,16 +184,41 @@ func (s *ManifestStream) sendFileSegmentIterByName(filepath string, ch chan<- *F
 
 func parseManifestStream(s string) (m ManifestStream) {
 	tokens := strings.Split(s, " ")
+
 	m.StreamName = UnescapeName(tokens[0])
+	if m.StreamName != "." && !strings.HasPrefix(m.StreamName, "./") {
+		m.Err = fmt.Errorf("Invalid stream name: %s", m.StreamName)
+		return
+	}
+
 	tokens = tokens[1:]
 	var i int
-	for i = range tokens {
+	for i = 0; i < len(tokens); i++ {
 		if !blockdigest.IsBlockLocator(tokens[i]) {
 			break
 		}
 	}
 	m.Blocks = tokens[:i]
 	m.FileTokens = tokens[i:]
+
+	if len(m.Blocks) == 0 {
+		m.Err = fmt.Errorf("No block locators found")
+		return
+	}
+
+	if len(m.FileTokens) == 0 {
+		m.Err = fmt.Errorf("No file tokens found")
+		return
+	}
+
+	for _, ft := range m.FileTokens {
+		_, _, _, err := parseFileToken(ft)
+		if err != nil {
+			m.Err = fmt.Errorf("Invalid file token: %s", ft)
+			break
+		}
+	}
+
 	return
 }
 
@@ -235,15 +261,21 @@ func (m *Manifest) FileSegmentIterByName(filepath string) <-chan *FileSegment {
 // Blocks may appear mulitple times within the same manifest if they
 // are used by multiple files. In that case this Iterator will output
 // the same block multiple times.
+//
+// In order to detect parse errors, caller must check m.Err after the returned channel closes.
 func (m *Manifest) BlockIterWithDuplicates() <-chan blockdigest.BlockLocator {
 	blockChannel := make(chan blockdigest.BlockLocator)
 	go func(streamChannel <-chan ManifestStream) {
-		for m := range streamChannel {
-			for _, block := range m.Blocks {
+		for ms := range streamChannel {
+			if ms.Err != nil {
+				m.Err = ms.Err
+				continue
+			}
+			for _, block := range ms.Blocks {
 				if b, err := blockdigest.ParseBlockLocator(block); err == nil {
 					blockChannel <- b
 				} else {
-					log.Printf("ERROR: Failed to parse block: %v", err)
+					m.Err = err
 				}
 			}
 		}

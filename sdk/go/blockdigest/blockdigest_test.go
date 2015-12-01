@@ -88,13 +88,20 @@ func TestInvalidDigestStrings(t *testing.T) {
 
 func TestBlockDigestWorksAsMapKey(t *testing.T) {
 	m := make(map[BlockDigest]int)
-	bd := AssertFromString("01234567890123456789abcdefabcdef")
+	bd, err := FromString("01234567890123456789abcdefabcdef")
+	if err != nil {
+		t.Fatalf("Unexpected error during FromString for block: %v", err)
+	}
 	m[bd] = 5
 }
 
 func TestBlockDigestGetsPrettyPrintedByPrintf(t *testing.T) {
 	input := "01234567890123456789abcdefabcdef"
-	prettyPrinted := fmt.Sprintf("%v", AssertFromString(input))
+	fromString, err := FromString(input)
+	if err != nil {
+		t.Fatalf("Unexpected error during FromString: %v", err)
+	}
+	prettyPrinted := fmt.Sprintf("%v", fromString)
 	if prettyPrinted != input {
 		t.Fatalf("Expected blockDigest produced from \"%s\" to be printed as "+
 			"\"%s\", but instead it was printed as %s",
@@ -103,7 +110,10 @@ func TestBlockDigestGetsPrettyPrintedByPrintf(t *testing.T) {
 }
 
 func TestBlockDigestGetsPrettyPrintedByPrintfInNestedStructs(t *testing.T) {
-	input := "01234567890123456789abcdefabcdef"
+	input, err := FromString("01234567890123456789abcdefabcdef")
+	if err != nil {
+		t.Fatalf("Unexpected error during FromString for block: %v", err)
+	}
 	value := 42
 	nested := struct {
 		// Fun trivia fact: If this field was called "digest" instead of
@@ -113,7 +123,7 @@ func TestBlockDigestGetsPrettyPrintedByPrintfInNestedStructs(t *testing.T) {
 		Digest BlockDigest
 		value  int
 	}{
-		AssertFromString(input),
+		input,
 		value,
 	}
 	prettyPrinted := fmt.Sprintf("%+v", nested)
@@ -155,7 +165,11 @@ func TestParseBlockLocatorSimple(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Unexpected error parsing block locator: %v", err)
 	}
-	expectBlockLocator(t, b, BlockLocator{Digest: AssertFromString("365f83f5f808896ec834c8b595288735"),
+	d, err := FromString("365f83f5f808896ec834c8b595288735")
+	if err != nil {
+		t.Fatalf("Unexpected error during FromString for block: %v", err)
+	}
+	expectBlockLocator(t, b, BlockLocator{Digest: d,
 		Size: 2310,
 		Hints: []string{"K@qr1hi",
 			"Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf"}})
