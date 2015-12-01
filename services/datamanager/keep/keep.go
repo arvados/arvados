@@ -456,57 +456,59 @@ func SendTrashLists(arvLogger *logger.Logger, kc *keepclient.KeepClient, spl map
 	client := kc.Client
 
 	for url, v := range spl {
-		if dryRun {
-			if arvLogger != nil {
-				for url, v := range spl {
-					arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
-						trashListInfo := logger.GetOrCreateMap(p, "trash_list")
-						trashListInfo["started_at"] = time.Now()
-						trashListInfo[url] = v
-					})
-				}
-			}
-		} else {
-			count++
-			log.Printf("Sending trash list to %v", url)
-
-			go (func(url string, v TrashList) {
-				pipeReader, pipeWriter := io.Pipe()
-				go (func() {
-					enc := json.NewEncoder(pipeWriter)
-					enc.Encode(v)
-					pipeWriter.Close()
-				})()
-
-				req, err := http.NewRequest("PUT", fmt.Sprintf("%s/trash", url), pipeReader)
-				if err != nil {
-					log.Printf("Error creating trash list request for %v error: %v", url, err.Error())
-					barrier <- err
-					return
-				}
-
-				req.Header.Add("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
-
-				// Make the request
-				var resp *http.Response
-				if resp, err = client.Do(req); err != nil {
-					log.Printf("Error sending trash list to %v error: %v", url, err.Error())
-					barrier <- err
-					return
-				}
-
-				log.Printf("Sent trash list to %v: response was HTTP %v", url, resp.Status)
-
-				io.Copy(ioutil.Discard, resp.Body)
-				resp.Body.Close()
-
-				if resp.StatusCode != 200 {
-					barrier <- errors.New(fmt.Sprintf("Got HTTP code %v", resp.StatusCode))
-				} else {
-					barrier <- nil
-				}
-			})(url, v)
+		// We need a local variable because Update doesn't call our mutator func until later,
+		// when our list variable might have been reused by the next loop iteration.
+		if arvLogger != nil {
+			arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
+				trashListInfo := logger.GetOrCreateMap(p, "trash_list_len")
+				trashListInfo[url] = len(v)
+			})
 		}
+
+		if dryRun {
+			log.Printf("dry run, not sending trash list to service %s with %d blocks", url, len(v))
+			continue
+		}
+
+		count++
+		log.Printf("Sending trash list to %v", url)
+
+		go (func(url string, v TrashList) {
+			pipeReader, pipeWriter := io.Pipe()
+			go (func() {
+				enc := json.NewEncoder(pipeWriter)
+				enc.Encode(v)
+				pipeWriter.Close()
+			})()
+
+			req, err := http.NewRequest("PUT", fmt.Sprintf("%s/trash", url), pipeReader)
+			if err != nil {
+				log.Printf("Error creating trash list request for %v error: %v", url, err.Error())
+				barrier <- err
+				return
+			}
+
+			req.Header.Add("Authorization", "OAuth2 "+kc.Arvados.ApiToken)
+
+			// Make the request
+			var resp *http.Response
+			if resp, err = client.Do(req); err != nil {
+				log.Printf("Error sending trash list to %v error: %v", url, err.Error())
+				barrier <- err
+				return
+			}
+
+			log.Printf("Sent trash list to %v: response was HTTP %v", url, resp.Status)
+
+			io.Copy(ioutil.Discard, resp.Body)
+			resp.Body.Close()
+
+			if resp.StatusCode != 200 {
+				barrier <- errors.New(fmt.Sprintf("Got HTTP code %v", resp.StatusCode))
+			} else {
+				barrier <- nil
+			}
+		})(url, v)
 	}
 
 	for i := 0; i < count; i++ {

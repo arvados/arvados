@@ -138,6 +138,11 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 			rlbss.Count)
 	}
 
+	kc, err := keepclient.MakeKeepClient(&arv)
+	if err != nil {
+		return fmt.Errorf("Error setting up keep client %v", err.Error())
+	}
+
 	// Log that we're finished. We force the recording, since go will
 	// not wait for the write timer before exiting.
 	if arvLogger != nil {
@@ -149,12 +154,6 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 
 			p["run_info"].(map[string]interface{})["finished_at"] = time.Now()
 		})
-	}
-
-	// Not dry-run; issue changes to keepstore
-	kc, err := keepclient.MakeKeepClient(&arv)
-	if err != nil {
-		return fmt.Errorf("Error setting up keep client %v", err.Error())
 	}
 
 	pullServers := summary.ComputePullServers(kc,

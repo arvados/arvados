@@ -12,7 +12,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"time"
 )
 
 // Locator is a block digest
@@ -181,29 +180,34 @@ func WritePullLists(arvLogger *logger.Logger,
 	r := strings.NewReplacer(":", ".")
 
 	for host, list := range pullLists {
-		if dryRun {
-			if arvLogger != nil {
-				arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
-					pullListInfo := logger.GetOrCreateMap(p, "pull_list")
-					pullListInfo["started_at"] = time.Now()
-					pullListInfo[host] = list
-				})
-			}
-		} else {
-			filename := fmt.Sprintf("pull_list.%s", r.Replace(RemoveProtocolPrefix(host)))
-			pullListFile, err := os.Create(filename)
-			if err != nil {
-				return err
-			}
-			defer pullListFile.Close()
-
-			enc := json.NewEncoder(pullListFile)
-			err = enc.Encode(list)
-			if err != nil {
-				return err
-			}
-			log.Printf("Wrote pull list to %s.", filename)
+		if arvLogger != nil {
+			// We need a local variable because Update doesn't call our mutator func until later,
+			// when our list variable might have been reused by the next loop iteration.
+			arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
+				pullListInfo := logger.GetOrCreateMap(p, "pull_list_len")
+				pullListInfo[host] = len(list)
+			})
 		}
+
+		if dryRun {
+			log.Print("dry run, not sending pull list to service %s with %d blocks", host, len(list))
+			continue
+		}
+
+		filename := fmt.Sprintf("pull_list.%s", r.Replace(RemoveProtocolPrefix(host)))
+		pullListFile, err := os.Create(filename)
+		if err != nil {
+			return err
+		}
+		defer pullListFile.Close()
+
+		enc := json.NewEncoder(pullListFile)
+		err = enc.Encode(list)
+		if err != nil {
+			return err
+		}
+		log.Printf("Wrote pull list to %s.", filename)
 	}
+
 	return nil
 }
