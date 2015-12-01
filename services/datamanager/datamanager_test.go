@@ -624,15 +624,26 @@ func createMultiStreamBlockCollection(t *testing.T, data string, numStreams, num
 // Also, create stray block and backdate it.
 // After datamanager run: expect blocks from the collection, but not the stray block.
 func TestManifestWithMultipleStreamsAndBlocks(t *testing.T) {
+	testManifestWithMultipleStreamsAndBlocks(t, 100, 10, "")
+}
+
+// Same test as TestManifestWithMultipleStreamsAndBlocks with an additional
+// keepstore of a service type other than "disk". Only the "disk" type services
+// will be indexed by datamanager and hence should work the same way.
+func TestManifestWithMultipleStreamsAndBlocks_WithOneUnsupportedKeepServer(t *testing.T) {
+	testManifestWithMultipleStreamsAndBlocks(t, 2, 2, "testblobstore")
+}
+
+func testManifestWithMultipleStreamsAndBlocks(t *testing.T, numStreams, numBlocks int, createExtraKeepServerWithType string) {
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
 
 	// create collection whose blocks will be backdated
-	collectionWithOldBlocks, oldBlocks := createMultiStreamBlockCollection(t, "old block", 100, 10)
+	collectionWithOldBlocks, oldBlocks := createMultiStreamBlockCollection(t, "old block", numStreams, numBlocks)
 	if collectionWithOldBlocks == "" {
-		t.Fatalf("Failed to create collection with 1000 blocks")
+		t.Fatalf("Failed to create collection with %d blocks", numStreams*numBlocks)
 	}
-	if len(oldBlocks) != 1000 {
+	if len(oldBlocks) != numStreams*numBlocks {
 		t.Fatalf("Not all blocks are created: expected %v, found %v", 1000, len(oldBlocks))
 	}
 
@@ -649,9 +660,41 @@ func TestManifestWithMultipleStreamsAndBlocks(t *testing.T) {
 	// also backdate the stray old block
 	backdateBlocks(t, []string{strayOldBlock})
 
+	// If requested, create an extra keepserver with the given type
+	// This should be ignored during indexing and hence not change the datamanager outcome
+	var extraKeepServerUUID string
+	if createExtraKeepServerWithType != "" {
+		extraKeepServerUUID = addExtraKeepServer(t, createExtraKeepServerWithType)
+		defer deleteExtraKeepServer(extraKeepServerUUID)
+	}
+
 	// run datamanager
 	dataManagerSingleRun(t)
 
 	// verify that strayOldBlock is not to be found, but the collections blocks are still there
 	verifyBlocks(t, []string{strayOldBlock}, oldBlocks, 2)
+}
+
+// Add one more keepstore with the given service type
+func addExtraKeepServer(t *testing.T, serviceType string) string {
+	defer switchToken(arvadostest.AdminToken)()
+
+	extraKeepService := make(arvadosclient.Dict)
+	err := arv.Create("keep_services",
+		arvadosclient.Dict{"keep_service": arvadosclient.Dict{
+			"service_host":     "localhost",
+			"service_port":     "21321",
+			"service_ssl_flag": false,
+			"service_type":     serviceType}},
+		&extraKeepService)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return extraKeepService["uuid"].(string)
+}
+
+func deleteExtraKeepServer(uuid string) {
+	defer switchToken(arvadostest.AdminToken)()
+	arv.Delete("keep_services", uuid, nil, nil)
 }

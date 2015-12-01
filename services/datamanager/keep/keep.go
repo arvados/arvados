@@ -77,10 +77,10 @@ type ServiceList struct {
 	KeepServers    []ServerAddress `json:"items"`
 }
 
-var serviceType string
+var supportedServiceType string
 
 func init() {
-	flag.StringVar(&serviceType,
+	flag.StringVar(&supportedServiceType,
 		"service-type",
 		"disk",
 		"Supported keepservice type. Default is disk.")
@@ -131,18 +131,19 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers, err error
 		return
 	}
 
-	// Currently, only "disk" types are supported. Stop if any other service types are found.
-	foundSupportedServieType := false
+	// Ignore any services that are of type other than the "supportedServiceType".
+	// If no services of the "supportedServiceType" are found, raise an error.
+	var indexableKeepServers []ServerAddress
 	for _, server := range sdkResponse.KeepServers {
-		if server.ServiceType == serviceType {
-			foundSupportedServieType = true
+		if server.ServiceType == supportedServiceType {
+			indexableKeepServers = append(indexableKeepServers, server)
 		} else {
 			log.Printf("Ignore unsupported service type: %v", server.ServiceType)
 		}
 	}
 
-	if !foundSupportedServieType {
-		return results, fmt.Errorf("Found no keepservices with the supported type %v", serviceType)
+	if len(indexableKeepServers) == 0 {
+		return results, fmt.Errorf("Found no keepservices with the supported type %v", supportedServiceType)
 	}
 
 	if params.Logger != nil {
@@ -151,6 +152,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers, err error
 			keepInfo["num_keep_servers_available"] = sdkResponse.ItemsAvailable
 			keepInfo["num_keep_servers_received"] = len(sdkResponse.KeepServers)
 			keepInfo["keep_servers"] = sdkResponse.KeepServers
+			keepInfo["indexable_keep_servers"] = indexableKeepServers
 		})
 	}
 
@@ -160,7 +162,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers, err error
 		return results, fmt.Errorf("Did not receive all available keep servers: %+v", sdkResponse)
 	}
 
-	results.KeepServerIndexToAddress = sdkResponse.KeepServers
+	results.KeepServerIndexToAddress = indexableKeepServers
 	results.KeepServerAddressToIndex = make(map[ServerAddress]int)
 	for i, address := range results.KeepServerIndexToAddress {
 		results.KeepServerAddressToIndex[address] = i
@@ -170,7 +172,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers, err error
 
 	// Send off all the index requests concurrently
 	responseChan := make(chan ServerResponse)
-	for _, keepServer := range sdkResponse.KeepServers {
+	for _, keepServer := range results.KeepServerIndexToAddress {
 		// The above keepsServer variable is reused for each iteration, so
 		// it would be shared across all goroutines. This would result in
 		// us querying one server n times instead of n different servers
@@ -188,7 +190,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers, err error
 	results.BlockToServers = make(map[blockdigest.DigestWithSize][]BlockServerInfo)
 
 	// Read all the responses
-	for i := range sdkResponse.KeepServers {
+	for i := range results.KeepServerIndexToAddress {
 		_ = i // Here to prevent go from complaining.
 		response := <-responseChan
 
