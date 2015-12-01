@@ -64,4 +64,5 @@ table(table table-bordered table-condensed).
 |min_ram_mb_per_node|integer|Require that each node assigned to this Job have the specified amount of real memory (in MiB)|&#10003;|
 |min_scratch_mb_per_node|integer|Require that each node assigned to this Job have the specified amount of scratch storage available (in MiB)|&#10003;|
 |max_tasks_per_node|integer|Maximum simultaneous tasks on a single node|&#10003;|
+|keep_cache_mb_per_task|integer|Size of file data buffer for per-task Keep directory ($TASK_KEEPMOUNT), in MiB.  Default is 256 MiB.  Increase this to reduce cache thrashing in situtations such as accessing multiple large (64+ MiB) files at the same time, or accessing different parts of a large file at the same time.|&#10003;|
 |min_ram_per_task|integer|Minimum real memory (KiB) per task||
