@@ -3,6 +3,7 @@
 import arvados
 import collections
 import httplib2
+import itertools
 import json
 import mimetypes
 import os
@@ -15,8 +16,8 @@ import run_test_server
 
 from apiclient import errors as apiclient_errors
 from apiclient import http as apiclient_http
-from arvados.api import OrderedJsonModel
-from arvados_testutil import fake_httplib2_response
+from arvados.api import OrderedJsonModel, RETRY_DELAY_INITIAL, RETRY_DELAY_BACKOFF, RETRY_COUNT
+from arvados_testutil import fake_httplib2_response, queue_with
 
 if not mimetypes.inited:
     mimetypes.init()
@@ -106,20 +107,79 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
         result = api.humans().get(uuid='test').execute()
         self.assertEqual(string.hexdigits, ''.join(result.keys()))
 
-    def test_socket_errors_retried(self):
-        api = arvados.api('v1')
-        self.assertTrue(hasattr(api._http, 'orig_http_request'),
+
+class RetryREST(unittest.TestCase):
+    def setUp(self):
+        self.api = arvados.api('v1')
+        self.assertTrue(hasattr(self.api._http, 'orig_http_request'),
                         "test doesn't know how to intercept HTTP requests")
-        api._http.orig_http_request = mock.MagicMock()
-        mock_response = {'user': 'person'}
-        api._http.orig_http_request.side_effect = [
-            socket.error("mock error"),
-            (fake_httplib2_response(200), json.dumps(mock_response))
-            ]
-        actual_response = api.users().current().execute()
-        self.assertEqual(mock_response, actual_response)
-        self.assertGreater(api._http.orig_http_request.call_count, 1,
+        self.mock_response = {'user': 'person'}
+        self.request_success = (fake_httplib2_response(200),
+                                json.dumps(self.mock_response))
+        self.api._http.orig_http_request = mock.MagicMock()
+        # All requests succeed by default. Tests override as needed.
+        self.api._http.orig_http_request.return_value = self.request_success
+
+    @mock.patch('time.sleep')
+    def test_socket_error_retry_get(self, sleep):
+        self.api._http.orig_http_request.side_effect = (
+            socket.error('mock error'),
+            self.request_success,
+        )
+        self.assertEqual(self.api.users().current().execute(),
+                         self.mock_response)
+        self.assertGreater(self.api._http.orig_http_request.call_count, 1,
                            "client got the right response without retrying")
+        self.assertEqual(sleep.call_args_list,
+                         [mock.call(RETRY_DELAY_INITIAL)])
+
+    @mock.patch('time.sleep')
+    def test_socket_error_retry_delay(self, sleep):
+        self.api._http.orig_http_request.side_effect = socket.error('mock')
+        self.api._http._retry_count = 3
+        with self.assertRaises(socket.error):
+            self.api.users().current().execute()
+        self.assertEqual(self.api._http.orig_http_request.call_count, 4)
+        self.assertEqual(sleep.call_args_list, [
+            mock.call(RETRY_DELAY_INITIAL),
+            mock.call(RETRY_DELAY_INITIAL * RETRY_DELAY_BACKOFF),
+            mock.call(RETRY_DELAY_INITIAL * RETRY_DELAY_BACKOFF**2),
+        ])
+
+    @mock.patch('time.time', side_effect=[i*2**20 for i in range(99)])
+    def test_close_old_connections_non_retryable(self, sleep):
+        self._test_connection_close(expect=1)
+
+    @mock.patch('time.time', side_effect=itertools.count())
+    def test_no_close_fresh_connections_non_retryable(self, sleep):
+        self._test_connection_close(expect=0)
+
+    @mock.patch('time.time', side_effect=itertools.count())
+    def test_override_max_idle_time(self, sleep):
+        self.api._http._max_keepalive_idle = 0
+        self._test_connection_close(expect=1)
+
+    def _test_connection_close(self, expect=0):
+        # Do two POST requests. The second one must close all
+        # connections +expect+ times.
+        self.api.users().create(body={}).execute()
+        mock_conns = {str(i): mock.MagicMock() for i in range(2)}
+        self.api._http.connections = mock_conns.copy()
+        self.api.users().create(body={}).execute()
+        for c in mock_conns.itervalues():
+            self.assertEqual(c.close.call_count, expect)
+
+    @mock.patch('time.sleep')
+    def test_socket_error_no_retry_post(self, sleep):
+        self.api._http.orig_http_request.side_effect = (
+            socket.error('mock error'),
+            self.request_success,
+        )
+        with self.assertRaises(socket.error):
+            self.api.users().create(body={}).execute()
+        self.assertEqual(self.api._http.orig_http_request.call_count, 1,
+                         "client should try non-retryable method exactly once")
+        self.assertEqual(sleep.call_args_list, [])
 
 
 if __name__ == '__main__':

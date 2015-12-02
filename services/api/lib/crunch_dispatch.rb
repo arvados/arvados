@@ -205,14 +205,18 @@ class CrunchDispatch
       $stderr.puts "dispatch: log.create failed"
     end
 
-    begin
-      job.lock @authorizations[job.uuid].user.uuid
-      job.state = "Failed"
-      if not job.save
-        $stderr.puts "dispatch: save failed setting job #{job.uuid} to failed"
+    if not have_job_lock?(job)
+      begin
+        job.lock @authorizations[job.uuid].user.uuid
+      rescue ArvadosModel::AlreadyLockedError
+        $stderr.puts "dispatch: tried to mark job #{job.uuid} as failed but it was already locked by someone else"
+        return
       end
-    rescue ArvadosModel::AlreadyLockedError
-      $stderr.puts "dispatch: tried to mark job #{job.uuid} as failed but it was already locked by someone else"
+    end
+
+    job.state = "Failed"
+    if not job.save
+      $stderr.puts "dispatch: save failed setting job #{job.uuid} to failed"
     end
   end
 
@@ -391,7 +395,7 @@ class CrunchDispatch
         cmd_args += ['--docker-bin', @docker_bin]
       end
 
-      if @todo_job_retries.include?(job.uuid)
+      if have_job_lock?(job)
         cmd_args << "--force-unlock"
       end
 
@@ -802,6 +806,12 @@ class CrunchDispatch
   end
 
   protected
+
+  def have_job_lock?(job)
+    # Return true if the given job is locked by this crunch-dispatch, normally
+    # because we've run crunch-job for it.
+    @todo_job_retries.include?(job.uuid)
+  end
 
   def did_recently(thing, min_interval)
     if !@did_recently[thing] or @did_recently[thing] < Time.now - min_interval
