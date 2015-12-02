@@ -1191,7 +1191,7 @@ sub reapchildren
   if (!defined $task_success) {
     # task did not indicate one way or the other --> fail
     Log($jobstepid, sprintf(
-          "ERROR: Task process exited %d, but never updated its task record to indicate success and record its output.",
+          "ERROR: Task process exited %s, but never updated its task record to indicate success and record its output.",
           exit_status_s($childstatus)));
     $Jobstep->{'arvados_task'}->{success} = 0;
     $Jobstep->{'arvados_task'}->save;
