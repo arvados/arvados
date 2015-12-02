@@ -77,13 +77,13 @@ type ServiceList struct {
 	KeepServers    []ServerAddress `json:"items"`
 }
 
-var supportedServiceType string
+var serviceType string
 
 func init() {
-	flag.StringVar(&supportedServiceType,
+	flag.StringVar(&serviceType,
 		"service-type",
 		"disk",
-		"Supported keepservice type. Default is disk.")
+		"Operate only on keep_services with the specified service_type, ignoring all others.")
 }
 
 // String
@@ -131,19 +131,17 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers, err error
 		return
 	}
 
-	// Ignore any services that are of type other than the "supportedServiceType".
-	// If no services of the "supportedServiceType" are found, raise an error.
-	var indexableKeepServers []ServerAddress
+	var keepServers []ServerAddress
 	for _, server := range sdkResponse.KeepServers {
-		if server.ServiceType == supportedServiceType {
-			indexableKeepServers = append(indexableKeepServers, server)
+		if server.ServiceType == serviceType {
+			keepServers = append(keepServers, server)
 		} else {
-			log.Printf("Ignore unsupported service type: %v", server.ServiceType)
+			log.Printf("Skipping keep_service %q because its service_type %q does not match -service-type=%q", server, server.ServiceType, serviceType)
 		}
 	}
 
-	if len(indexableKeepServers) == 0 {
-		return results, fmt.Errorf("Found no keepservices with the supported type %v", supportedServiceType)
+	if len(keepServers) == 0 {
+		return results, fmt.Errorf("Found no keepservices with the service type %v", serviceType)
 	}
 
 	if params.Logger != nil {
@@ -152,7 +150,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers, err error
 			keepInfo["num_keep_servers_available"] = sdkResponse.ItemsAvailable
 			keepInfo["num_keep_servers_received"] = len(sdkResponse.KeepServers)
 			keepInfo["keep_servers"] = sdkResponse.KeepServers
-			keepInfo["indexable_keep_servers"] = indexableKeepServers
+			keepInfo["indexable_keep_servers"] = keepServers
 		})
 	}
 
@@ -162,7 +160,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers, err error
 		return results, fmt.Errorf("Did not receive all available keep servers: %+v", sdkResponse)
 	}
 
-	results.KeepServerIndexToAddress = indexableKeepServers
+	results.KeepServerIndexToAddress = keepServers
 	results.KeepServerAddressToIndex = make(map[ServerAddress]int)
 	for i, address := range results.KeepServerIndexToAddress {
 		results.KeepServerAddressToIndex[address] = i
