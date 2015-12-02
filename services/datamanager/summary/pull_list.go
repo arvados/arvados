@@ -183,9 +183,9 @@ func WritePullLists(arvLogger *logger.Logger,
 		if arvLogger != nil {
 			// We need a local variable because Update doesn't call our mutator func until later,
 			// when our list variable might have been reused by the next loop iteration.
+			host := host
+			listLen := len(list)
 			arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
-				host := host
-				listLen := len(list)
 				pullListInfo := logger.GetOrCreateMap(p, "pull_list_len")
 				pullListInfo[host] = listLen
 			})
