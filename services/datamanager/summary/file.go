@@ -9,7 +9,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/logger"
 	"git.curoverse.com/arvados.git/services/datamanager/collection"
 	"git.curoverse.com/arvados.git/services/datamanager/keep"
-	"git.curoverse.com/arvados.git/services/datamanager/loggerutil"
 	"log"
 	"os"
 )
@@ -89,13 +88,13 @@ func ReadData(arvLogger *logger.Logger,
 	readCollections *collection.ReadCollections,
 	keepServerInfo *keep.ReadServers) {
 	if readDataFrom == "" {
-		loggerutil.FatalWithMessage(arvLogger,
-			"ReadData() called with empty filename.")
+		readCollections.Err = fmt.Errorf("ReadData() called with empty filename.")
+		return
 	} else {
 		summaryFile, err := os.Open(readDataFrom)
 		if err != nil {
-			loggerutil.FatalWithMessage(arvLogger,
-				fmt.Sprintf("Failed to open %s: %v", readDataFrom, err))
+			readCollections.Err = err
+			return
 		}
 		defer summaryFile.Close()
 
@@ -103,8 +102,8 @@ func ReadData(arvLogger *logger.Logger,
 		data := serializedData{}
 		err = dec.Decode(&data)
 		if err != nil {
-			loggerutil.FatalWithMessage(arvLogger,
-				fmt.Sprintf("Failed to read summary data: %v", err))
+			readCollections.Err = err
+			return
 		}
 
 		// re-summarize data, so that we can update our summarizing

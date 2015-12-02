@@ -613,7 +613,7 @@ func createMultiStreamBlockCollection(t *testing.T, data string, numStreams, num
 	}
 
 	var locs []string
-	for k, _ := range locators {
+	for k := range locators {
 		locs = append(locs, k)
 	}
 
@@ -624,17 +624,22 @@ func createMultiStreamBlockCollection(t *testing.T, data string, numStreams, num
 // Also, create stray block and backdate it.
 // After datamanager run: expect blocks from the collection, but not the stray block.
 func TestManifestWithMultipleStreamsAndBlocks(t *testing.T) {
-	testManifestWithMultipleStreamsAndBlocks(t, 100, 10, "")
+	testManifestWithMultipleStreamsAndBlocks(t, 100, 10, "", false)
 }
 
 // Same test as TestManifestWithMultipleStreamsAndBlocks with an additional
 // keepstore of a service type other than "disk". Only the "disk" type services
 // will be indexed by datamanager and hence should work the same way.
 func TestManifestWithMultipleStreamsAndBlocks_WithOneUnsupportedKeepServer(t *testing.T) {
-	testManifestWithMultipleStreamsAndBlocks(t, 2, 2, "testblobstore")
+	testManifestWithMultipleStreamsAndBlocks(t, 2, 2, "testblobstore", false)
 }
 
-func testManifestWithMultipleStreamsAndBlocks(t *testing.T, numStreams, numBlocks int, createExtraKeepServerWithType string) {
+// Test datamanager with dry-run. Expect no block to be deleted.
+func TestManifestWithMultipleStreamsAndBlocks_DryRun(t *testing.T) {
+	testManifestWithMultipleStreamsAndBlocks(t, 2, 2, "", true)
+}
+
+func testManifestWithMultipleStreamsAndBlocks(t *testing.T, numStreams, numBlocks int, createExtraKeepServerWithType string, isDryRun bool) {
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
 
@@ -669,10 +674,16 @@ func testManifestWithMultipleStreamsAndBlocks(t *testing.T, numStreams, numBlock
 	}
 
 	// run datamanager
+	dryRun = isDryRun
 	dataManagerSingleRun(t)
 
-	// verify that strayOldBlock is not to be found, but the collections blocks are still there
-	verifyBlocks(t, []string{strayOldBlock}, oldBlocks, 2)
+	if dryRun {
+		// verify that all blocks, including strayOldBlock, are still to be found
+		verifyBlocks(t, nil, expected, 2)
+	} else {
+		// verify that strayOldBlock is not to be found, but the collections blocks are still there
+		verifyBlocks(t, []string{strayOldBlock}, oldBlocks, 2)
+	}
 }
 
 // Add one more keepstore with the given service type

@@ -466,13 +466,29 @@ type TrashRequest struct {
 type TrashList []TrashRequest
 
 // SendTrashLists to trash queue
-func SendTrashLists(kc *keepclient.KeepClient, spl map[string]TrashList) (errs []error) {
+func SendTrashLists(arvLogger *logger.Logger, kc *keepclient.KeepClient, spl map[string]TrashList, dryRun bool) (errs []error) {
 	count := 0
 	barrier := make(chan error)
 
 	client := kc.Client
 
 	for url, v := range spl {
+		if arvLogger != nil {
+			// We need a local variable because Update doesn't call our mutator func until later,
+			// when our list variable might have been reused by the next loop iteration.
+			url := url
+			trashLen := len(v)
+			arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
+				trashListInfo := logger.GetOrCreateMap(p, "trash_list_len")
+				trashListInfo[url] = trashLen
+			})
+		}
+
+		if dryRun {
+			log.Printf("dry run, not sending trash list to service %s with %d blocks", url, len(v))
+			continue
+		}
+
 		count++
 		log.Printf("Sending trash list to %v", url)
 
@@ -512,7 +528,6 @@ func SendTrashLists(kc *keepclient.KeepClient, spl map[string]TrashList) (errs [
 				barrier <- nil
 			}
 		})(url, v)
-
 	}
 
 	for i := 0; i < count; i++ {

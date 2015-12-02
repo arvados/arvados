@@ -22,6 +22,7 @@ var (
 	logEventTypePrefix  string
 	logFrequencySeconds int
 	minutesBetweenRuns  int
+	dryRun              bool
 )
 
 func init() {
@@ -36,11 +37,16 @@ func init() {
 	flag.IntVar(&minutesBetweenRuns,
 		"minutes-between-runs",
 		0,
-		"How many minutes we wait betwen data manager runs. 0 means run once and exit.")
+		"How many minutes we wait between data manager runs. 0 means run once and exit.")
+	flag.BoolVar(&dryRun,
+		"dry-run",
+		false,
+		"Perform a dry run. Log how many blocks would be deleted/moved, but do not issue any changes to keepstore.")
 }
 
 func main() {
 	flag.Parse()
+
 	if minutesBetweenRuns == 0 {
 		arv, err := arvadosclient.MakeArvadosClient()
 		if err != nil {
@@ -161,7 +167,7 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 		&keepServerInfo,
 		replicationSummary.KeepBlocksNotInCollections)
 
-	err = summary.WritePullLists(arvLogger, pullLists)
+	err = summary.WritePullLists(arvLogger, pullLists, dryRun)
 	if err != nil {
 		return err
 	}
@@ -169,7 +175,7 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 	if trashErr != nil {
 		return err
 	}
-	keep.SendTrashLists(kc, trashLists)
+	keep.SendTrashLists(arvLogger, kc, trashLists, dryRun)
 
 	return nil
 }

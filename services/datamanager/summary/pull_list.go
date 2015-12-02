@@ -175,9 +175,27 @@ func BuildPullLists(lps map[Locator]PullServers) (spl map[string]PullList) {
 // This is just a hack for prototyping, it is not expected to be used
 // in production.
 func WritePullLists(arvLogger *logger.Logger,
-	pullLists map[string]PullList) error {
+	pullLists map[string]PullList,
+	dryRun bool) error {
 	r := strings.NewReplacer(":", ".")
+
 	for host, list := range pullLists {
+		if arvLogger != nil {
+			// We need a local variable because Update doesn't call our mutator func until later,
+			// when our list variable might have been reused by the next loop iteration.
+			host := host
+			listLen := len(list)
+			arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
+				pullListInfo := logger.GetOrCreateMap(p, "pull_list_len")
+				pullListInfo[host] = listLen
+			})
+		}
+
+		if dryRun {
+			log.Print("dry run, not sending pull list to service %s with %d blocks", host, len(list))
+			continue
+		}
+
 		filename := fmt.Sprintf("pull_list.%s", r.Replace(RemoveProtocolPrefix(host)))
 		pullListFile, err := os.Create(filename)
 		if err != nil {
@@ -192,5 +210,6 @@ func WritePullLists(arvLogger *logger.Logger,
 		}
 		log.Printf("Wrote pull list to %s.", filename)
 	}
+
 	return nil
 }
