@@ -77,6 +77,7 @@ sdk/go/keepclient
 sdk/go/manifest
 sdk/go/blockdigest
 sdk/go/streamer
+sdk/go/crunchrunner
 tools/keep-rsync
 
 EOF
@@ -706,6 +707,7 @@ gostuff=(
     sdk/go/blockdigest
     sdk/go/manifest
     sdk/go/streamer
+    sdk/go/crunchrunner
     services/arv-git-httpd
     services/crunchstat
     services/keep-web
