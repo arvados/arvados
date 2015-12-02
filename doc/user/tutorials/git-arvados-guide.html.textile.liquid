@@ -54,36 +54,47 @@ Create a git branch named *tutorial_branch* in the *tutorial* Arvados git reposi
 
 <notextile>
 <pre><code>~$ <span class="userinput">cd tutorial</span>
-~$ <span class="userinput">git checkout -b tutorial_branch</span>
+~/tutorial$ <span class="userinput">git checkout -b tutorial_branch</span>
 </code></pre>
 </notextile>
 
-h2. Adding files or scripts to an Arvados repository
+h2. Adding scripts to an Arvados repository
 
-First, create a file named *tutorial.txt* in the local repository. Although this tutorial shows how to add a text file to Arvados, the same steps can be used to add any of your custom bash, R, or python scripts to an Arvados repository.
+Arvados crunch scripts need to be added in a *crunch_scripts* subdirectory in the repository. If this subdirectory does not exist, first create it in the local repository and change to that directory:
 
 <notextile>
-<pre><code>~$ <span class="userinput">echo 'hello world' > tutorial.txt</span>
-</code></pre>
+<pre><code>~/tutorial$ <span class="userinput">mkdir crunch_scripts</span>
+~/tutorial$ <span class="userinput">cd crunch_scripts</span></code></pre>
 </notextile>
 
-Next, add the new file to the git index.
+Next, using @nano@ or your favorite Unix text editor, create a new file called @hash.py@ in the @crunch_scripts@ directory.
+
+notextile. <pre>~/tutorial/crunch_scripts$ <code class="userinput">nano hash.py</code></pre>
+
+Add the following code to compute the MD5 hash of each file in a collection
+
+<notextile> {% code 'tutorial_hash_script_py' as python %} </notextile>
+
+Make the file executable:
+
+notextile. <pre><code>~/tutorial/crunch_scripts$ <span class="userinput">chmod +x hash.py</span></code></pre>
+
+Next, add the file to the git repository.  This tells @git@ that the file should be included on the next commit.
+
+notextile. <pre><code>~/tutorial/crunch_scripts$ <span class="userinput">git add hash.py</span></code></pre>
+
+Next, commit your changes.  All staged changes are recorded into the local git repository:
 
 <notextile>
-<pre><code>~$ <span class="userinput">git add tutorial.txt</span>
+<pre><code>~/tutorial/crunch_scripts$ <span class="userinput">git commit -m "my first script"</span>
 </code></pre>
 </notextile>
 
-Next, commit all the changes to the local repository, along with a commit message that describes what this script does.
+Finally, upload your changes to the remote repository:
 
 <notextile>
-<pre><code>~$ <span class="userinput">git commit -a -m "Added tutorial.txt"</span>
+<pre><code>~/tutorial/crunch_scripts$ <span class="userinput">git push origin tutorial_branch</span>
 </code></pre>
 </notextile>
 
-Finally, push the changes in the local repository to the remote repository.
-
-<notextile>
-<pre><code>~$ <span class="userinput">git push origin tutorial_branch</span>
-</code></pre>
-</notextile>
+Although this tutorial shows how to add a python script to Arvados, the same steps can be used to add any of your custom bash, R, or python scripts to an Arvados repository.
