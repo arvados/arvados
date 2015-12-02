@@ -459,9 +459,11 @@ func SendTrashLists(arvLogger *logger.Logger, kc *keepclient.KeepClient, spl map
 		// We need a local variable because Update doesn't call our mutator func until later,
 		// when our list variable might have been reused by the next loop iteration.
 		if arvLogger != nil {
+			url := url
+			trashLen := len(v)
 			arvLogger.Update(func(p map[string]interface{}, e map[string]interface{}) {
 				trashListInfo := logger.GetOrCreateMap(p, "trash_list_len")
-				trashListInfo[url] = len(v)
+				trashListInfo[url] = trashLen
 			})
 		}
 
