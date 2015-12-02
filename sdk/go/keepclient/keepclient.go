@@ -68,7 +68,6 @@ const X_Keep_Replicas_Stored = "X-Keep-Replicas-Stored"
 type KeepClient struct {
 	Arvados            *arvadosclient.ArvadosClient
 	Want_replicas      int
-	Using_proxy        bool
 	localRoots         *map[string]string
 	writableLocalRoots *map[string]string
 	gatewayRoots       *map[string]string
@@ -78,6 +77,9 @@ type KeepClient struct {
 
 	// set to 1 if all writable services are of disk type, otherwise 0
 	replicasPerService int
+
+	// Any non-disk typed services found in the list of keepservers?
+	foundNonDiskSvc bool
 }
 
 // MakeKeepClient creates a new KeepClient by contacting the API server to discover Keep servers.
@@ -101,7 +103,6 @@ func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 	kc := &KeepClient{
 		Arvados:       arv,
 		Want_replicas: defaultReplicationLevel,
-		Using_proxy:   false,
 		Client: &http.Client{Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: arv.ApiInsecure}}},
 		Retries: 2,

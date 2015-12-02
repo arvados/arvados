@@ -84,7 +84,6 @@ func (this *KeepClient) loadKeepServers(list svcList) error {
 
 	// replicasPerService is 1 for disks; unknown or unlimited otherwise
 	this.replicasPerService = 1
-	this.Using_proxy = false
 
 	for _, service := range list.Items {
 		scheme := "http"
@@ -100,15 +99,15 @@ func (this *KeepClient) loadKeepServers(list svcList) error {
 		listed[url] = true
 
 		localRoots[service.Uuid] = url
-		if service.SvcType == "proxy" {
-			this.Using_proxy = true
-		}
-
 		if service.ReadOnly == false {
 			writableLocalRoots[service.Uuid] = url
 			if service.SvcType != "disk" {
 				this.replicasPerService = 0
 			}
+		}
+
+		if service.SvcType != "disk" {
+			this.foundNonDiskSvc = true
 		}
 
 		// Gateway services are only used when specified by
@@ -119,8 +118,8 @@ func (this *KeepClient) loadKeepServers(list svcList) error {
 		gatewayRoots[service.Uuid] = url
 	}
 
-	if this.Using_proxy {
-		this.setClientSettingsProxy()
+	if this.foundNonDiskSvc {
+		this.setClientSettingsNonDisk()
 	} else {
 		this.setClientSettingsDisk()
 	}

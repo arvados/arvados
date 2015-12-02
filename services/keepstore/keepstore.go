@@ -300,7 +300,6 @@ func main() {
 	keepClient := &keepclient.KeepClient{
 		Arvados:       nil,
 		Want_replicas: 1,
-		Using_proxy:   true,
 		Client:        &http.Client{},
 	}
 
