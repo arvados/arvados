@@ -92,6 +92,10 @@ class PipelineInstance < ArvadosBase
     components_map { |cspec| cspec[:job][:log] rescue nil }
   end
 
+  def job_ids
+    components_map { |cspec| cspec[:job][:uuid] rescue nil }
+  end
+
   def stderr_log_object_uuids
     result = job_uuids.values.compact
     result << uuid

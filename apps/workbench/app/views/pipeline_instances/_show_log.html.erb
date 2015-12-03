@@ -1,4 +1,5 @@
 <% log_ids = @object.job_log_ids
+   job_ids = @object.job_ids
    still_logging, done_logging = log_ids.keys.partition { |k| log_ids[k].nil? }
 %>
 
@@ -19,7 +20,7 @@
       <tr>
         <td><%= cname %></td>
         <td><%= link_to("Log for #{cname}",
-                {controller: "collections", action: "show", id: log_ids[cname]})
+                job_path(job_ids[cname], anchor: "Log"))
                 %></td>
       </tr>
       <% end %>
