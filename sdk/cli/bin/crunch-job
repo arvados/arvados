@@ -872,10 +872,11 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     $ENV{"TASK_SLOT_NUMBER"} = $slot[$childslot]->{cpu};
     $ENV{"TASK_WORK"} = $ENV{"CRUNCH_TMP"}."/task/$childslotname";
     $ENV{"HOME"} = $ENV{"TASK_WORK"};
-    $ENV{"TASK_KEEPMOUNT"} = $ENV{"TASK_WORK"}.".keep";
     $ENV{"TASK_TMPDIR"} = $ENV{"TASK_WORK"}; # deprecated
     $ENV{"CRUNCH_NODE_SLOTS"} = $round_max_slots{$ENV{TASK_SLOT_NODE}};
     $ENV{"PATH"} = $ENV{"CRUNCH_INSTALL"} . "/bin:" . $ENV{"PATH"};
+
+    my $keep_mnt = $ENV{"TASK_WORK"}.".keep";
 
     $ENV{"GZIP"} = "-n";
 
@@ -894,16 +895,20 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     }
 
     my $command =
-	"if [ -e $ENV{TASK_WORK} ]; then rm -rf $ENV{TASK_WORK}; fi; "
-        ."mkdir -p $ENV{CRUNCH_TMP} $ENV{JOB_WORK} $ENV{TASK_WORK} $ENV{TASK_KEEPMOUNT} "
-	."&& cd $ENV{CRUNCH_TMP} "
+	"if [ -e \Q$ENV{TASK_WORK}\E ]; then rm -rf \Q$ENV{TASK_WORK}\E; fi; "
+        ."mkdir -p \Q$ENV{CRUNCH_TMP}\E \Q$ENV{JOB_WORK}\E \Q$ENV{TASK_WORK}\E \Q$keep_mnt\E "
+	."&& cd \Q$ENV{CRUNCH_TMP}\E "
         # These environment variables get used explicitly later in
         # $command.  No tool is expected to read these values directly.
         .q{&& MEM=$(awk '($1 == "MemTotal:"){print $2}' </proc/meminfo) }
         .q{&& SWAP=$(awk '($1 == "SwapTotal:"){print $2}' </proc/meminfo) }
         ."&& MEMLIMIT=\$(( (\$MEM * 95) / ($ENV{CRUNCH_NODE_SLOTS} * 100) )) "
         ."&& let SWAPLIMIT=\$MEMLIMIT+\$SWAP ";
-    $command .= "&& exec arv-mount --by-pdh --crunchstat-interval=10 --allow-other $arv_file_cache $ENV{TASK_KEEPMOUNT} --exec ";
+
+    $command .= "&& exec arv-mount --read-write --mount-by-pdh=by_pdh --mount-tmp=tmp --crunchstat-interval=10 --allow-other $arv_file_cache \Q$keep_mnt\E --exec ";
+    $ENV{TASK_KEEPMOUNT} = "$keep_mnt/by_pdh";
+    $ENV{TASK_KEEPMOUNT_TMP} = "$keep_mnt/tmp";
+
     if ($docker_hash)
     {
       my $containername = "$Jobstep->{arvados_task}->{uuid}-$Jobstep->{failures}";
@@ -924,13 +929,17 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .= "--volume=\Q$ENV{CRUNCH_SRC}:$ENV{CRUNCH_SRC}:ro\E ";
       $command .= "--volume=\Q$ENV{CRUNCH_INSTALL}:$ENV{CRUNCH_INSTALL}:ro\E ";
 
-      # Currently, we make arv-mount's mount point appear at /keep
-      # inside the container (instead of using the same path as the
-      # host like we do with CRUNCH_SRC and CRUNCH_INSTALL). However,
-      # crunch scripts and utilities must not rely on this. They must
-      # use $TASK_KEEPMOUNT.
+      # Currently, we make the "by_pdh" directory in arv-mount's mount
+      # point appear at /keep inside the container (instead of using
+      # the same path as the host like we do with CRUNCH_SRC and
+      # CRUNCH_INSTALL). However, crunch scripts and utilities must
+      # not rely on this. They must use $TASK_KEEPMOUNT.
       $command .= "--volume=\Q$ENV{TASK_KEEPMOUNT}:/keep:ro\E ";
       $ENV{TASK_KEEPMOUNT} = "/keep";
+
+      # Ditto TASK_KEEPMOUNT_TMP, as /keep_tmp.
+      $command .= "--volume=\Q$ENV{TASK_KEEPMOUNT_TMP}:/keep_tmp\E ";
+      $ENV{TASK_KEEPMOUNT_TMP} = "/keep_tmp";
 
       # TASK_WORK is almost exactly like a docker data volume: it
       # starts out empty, is writable, and persists until no
