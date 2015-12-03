@@ -46,7 +46,9 @@ class Container < ArvadosModel
       self.state ||= Queued
       self.environment ||= {}
       self.runtime_constraints ||= {}
+      self.mounts ||= {}
       self.cwd ||= "."
+      self.priority ||= 1
     end
   end
 
@@ -102,16 +104,24 @@ class Container < ArvadosModel
           errors.add :state, "Can only go to Runinng from Queued"
         end
       else
-        permitted.push :progress
+        permitted.push :priority, :progress
       end
-    when Complete, Cancelled
+    when Complete
+      if self.state_changed?
+        if self.state_was == Running
+          permitted.push :state, :finished_at, :output, :log
+        else
+          errors.add :state, "Cannot go from #{self.state_was} from #{self.state}"
+        end
+      end
+    when Cancelled
       if self.state_changed?
         if self.state_was == Running
           permitted.push :state, :finished_at, :output, :log
         elsif self.state_was == Queued
-          permitted.push :state
+          permitted.push :state, :finished_at
         else
-          errors.add :state, "Can only go to #{self.state} from Running"
+          errors.add :state, "Cannot go from #{self.state_was} from #{self.state}"
         end
       end
     else
