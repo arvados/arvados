@@ -550,7 +550,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       assert_text "Log for previous"
       log_link = find("a", text: "Log for previous")
       assert_includes(log_link[:href],
-                      pi["components"]["previous"]["job"]["log"])
+                      "/jobs/#{pi["components"]["previous"]["job"]["uuid"]}#Log")
       assert_selector "#event_log_div"
     end
   end
@@ -563,7 +563,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       assert_text "Log for previous"
       pi["components"].each do |cname, cspec|
         log_link = find("a", text: "Log for #{cname}")
-        assert_includes(log_link[:href], cspec["job"]["log"])
+        assert_includes(log_link[:href], "/jobs/#{cspec["job"]["uuid"]}#Log")
       end
       assert_no_selector "#event_log_div"
     end
@@ -577,7 +577,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       assert_text "Log for previous"
       pi["components"].each do |cname, cspec|
         log_link = find("a", text: "Log for #{cname}")
-        assert_includes(log_link[:href], cspec["job"]["log"])
+        assert_includes(log_link[:href], "/jobs/#{cspec["job"]["uuid"]}#Log")
       end
       assert_no_selector "#event_log_div"
     end
