@@ -1,0 +1,16 @@
+#!/usr/bin/env python
+
+import arvados
+import arvados.crunch
+import hashlib
+import os
+
+out = arvados.crunch.TaskOutputDir()
+
+string = open(__file__).read()
+with open(os.path.join(out.path, 'example.out'), 'w') as f:
+    f.write(string)
+with open(os.path.join(out.path, 'example.out.SHA1'), 'w') as f:
+    f.write(hashlib.sha1(string).hexdigest() + "\n")
+
+arvados.current_task().set_output(out.manifest_text())
