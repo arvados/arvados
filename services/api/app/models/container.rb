@@ -1,4 +1,7 @@
 class Container < ArvadosModel
+  include HasUuid
+  include KindAndEtag
+  include CommonApiTemplate
 
   api_accessible :user, extend: :common do |t|
     t.add :command

@@ -1,4 +1,8 @@
 class ContainerRequest < ArvadosModel
+  include HasUuid
+  include KindAndEtag
+  include CommonApiTemplate
+
   api_accessible :user, extend: :common do |t|
     t.add :command
     t.add :container_count_max
