@@ -35,6 +35,9 @@ setup(name='arvados-python-client',
           'bin/arv-run',
           'bin/arv-ws'
       ],
+      data_files=[
+          ('share/doc/arvados-python-client', ['LICENSE-2.0.txt', 'README.rst']),
+      ],
       install_requires=[
           'ciso8601',
           'google-api-python-client',

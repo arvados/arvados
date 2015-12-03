@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import glob
 import os
 import sys
 import setuptools.command.egg_info as egg_info_cmd
@@ -33,8 +34,9 @@ setup(name='arvados-pam',
       ],
       data_files=[
           ('lib/security', ['lib/libpam_arvados.py']),
-          ('share/arvados-pam', ['examples/shellinabox']),
           ('share/pam-configs', ['pam-configs/arvados']),
+          ('share/doc/arvados-pam', ['LICENSE-2.0.txt', 'README.rst']),
+          ('share/doc/arvados-pam/examples', glob.glob('examples/*')),
       ],
       install_requires=[
           'arvados-python-client>=0.1.20150801000000',
