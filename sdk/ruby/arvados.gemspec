@@ -16,7 +16,8 @@ Gem::Specification.new do |s|
   s.email       = 'gem-dev@curoverse.com'
   s.licenses    = ['Apache License, Version 2.0']
   s.files       = ["lib/arvados.rb", "lib/arvados/google_api_client.rb",
-                   "lib/arvados/collection.rb", "lib/arvados/keep.rb"]
+                   "lib/arvados/collection.rb", "lib/arvados/keep.rb",
+                   "README", "LICENSE-2.0.txt"]
   s.required_ruby_version = '>= 2.1.0'
   s.add_dependency('google-api-client', '~> 0.6.3', '>= 0.6.3')
   s.add_dependency('activesupport', '>= 3.2.13')

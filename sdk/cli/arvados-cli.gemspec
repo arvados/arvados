@@ -16,7 +16,9 @@ Gem::Specification.new do |s|
   s.email       = 'gem-dev@curoverse.com'
   #s.bindir      = '.'
   s.licenses    = ['Apache License, Version 2.0']
-  s.files       = ["bin/arv","bin/arv-run-pipeline-instance","bin/arv-crunch-job","bin/arv-tag","bin/crunch-job"]
+  s.files       = ["bin/arv", "bin/arv-run-pipeline-instance",
+                   "bin/arv-crunch-job", "bin/arv-tag", "bin/crunch-job",
+                   "LICENSE-2.0.txt"]
   s.executables << "arv"
   s.executables << "arv-run-pipeline-instance"
   s.executables << "arv-crunch-job"
