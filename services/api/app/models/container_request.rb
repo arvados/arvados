@@ -10,6 +10,9 @@ class ContainerRequest < ArvadosModel
   serialize :command, Array
 
   before_create :set_state_before_save
+  validate :validate_change_permitted
+  validate :validate_status
+  validate :validate_state_change
 
   api_accessible :user, extend: :common do |t|
     t.add :command
@@ -43,6 +46,76 @@ class ContainerRequest < ArvadosModel
     self.state ||= Uncommitted
   end
 
+  def validate_change_permitted
+    if self.changed?
+      ok = case self.state
+           when nil
+             true
+           when Uncommitted
+             true
+           when Committed
+             # only allow state and priority to change.
+             not (self.command_changed? or
+                  self.container_count_max_changed? or
+                  self.container_image_changed? or
+                  self.container_uuid_changed? or
+                  self.cwd_changed? or
+                  self.description_changed? or
+                  self.environment_changed? or
+                  self.expires_at_changed? or
+                  self.filters_changed? or
+                  self.mounts_changed? or
+                  self.name_changed? or
+                  self.output_path_changed? or
+                  self.properties_changed? or
+                  self.requesting_container_uuid_changed? or
+                  self.runtime_constraints_changed?)
+           when Final
+             false
+           else
+             false
+           end
+      if not ok
+        errors.add :state, "Invalid update of container request in #{self.state} state"
+      end
+    end
+  end
+
+  def validate_status
+    if self.state.in?(States)
+      true
+    else
+      errors.add :state, "#{state.inspect} must be one of: #{States.inspect}"
+      false
+    end
+  end
+
+  def validate_state_change
+    ok = true
+    if self.state_changed?
+      ok = case self.state_was
+           when nil
+             # Must go to Uncommitted
+             self.state == Uncommitted
+           when Uncommitted
+             # Must go to Committed
+             self.state == Committed
+           when Committed
+             # Must to go Final
+             self.state == Final
+           when Final
+             # Once in a final state, don't permit any more state changes
+             false
+           else
+             # Any other state transition is also invalid
+             false
+           end
+      if not ok
+        errors.add :state, "invalid change from #{self.state_was} to #{self.state}"
+      end
+    end
+    ok
+  end
 
 
 end
