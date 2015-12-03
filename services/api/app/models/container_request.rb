@@ -3,6 +3,14 @@ class ContainerRequest < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
 
+  serialize :properties, Hash
+  serialize :environment, Hash
+  serialize :mounts, Hash
+  serialize :runtime_constraints, Hash
+  serialize :command, Array
+
+  before_create :set_state_before_save
+
   api_accessible :user, extend: :common do |t|
     t.add :command
     t.add :container_count_max
@@ -23,10 +31,18 @@ class ContainerRequest < ArvadosModel
     t.add :state
   end
 
-  serialize :properties, Hash
-  serialize :environment, Hash
-  serialize :mounts, Hash
-  serialize :runtime_constraints, Hash
-  serialize :command, Array
+  # Supported states for a container request
+  States =
+    [
+     (Uncommitted = 'Uncommitted'),
+     (Committed = 'Committed'),
+     (Final = 'Final'),
+    ]
+
+  def set_state_before_save
+    self.state ||= Uncommitted
+  end
+
+
 
 end
