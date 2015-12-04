@@ -237,6 +237,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
       if objects_readable
         assert_selector 'a[href="#Log"]', text: 'Log'
+
         assert_no_selector 'a[data-toggle="disabled"]', text: 'Log'
         assert_no_text 'Output data not available'
         if pipeline_page
@@ -244,13 +245,13 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
           job_id = object['components']['foo']['job']['uuid']
           assert_selector 'a', text: job_id
           if object['components']['foo']['job']['log']
-            assert_selector "a[href=\"/jobs/#{job_id}#Log\"]", text: 'Job log'
+            assert_selector "a[href=\"/jobs/#{job_id}#Log\"]", text: 'Log'
           end
 
           # We'd like to test the Log tab on job pages too, but we can't right
           # now because Poltergeist 1.x doesn't support JavaScript's
           # Function.prototype.bind, which is used by job_log_graph.js.
-          click_link "Log"
+          find(:xpath, "//a[@href='#Log']").click
           assert_text expect_log_text
         end
       else
@@ -262,7 +263,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
           assert_no_text 'This pipeline was created from'  # template is not readable
           assert_no_selector 'a', text: object['components']['foo']['job']['uuid']
         end
-        click_link "Log"
+        find(:xpath, "//a[@href='#Log']").click
         assert_text 'Output data not available'
         assert_no_text expect_log_text
       end
