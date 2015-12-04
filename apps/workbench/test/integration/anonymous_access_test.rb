@@ -251,17 +251,15 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
           # Function.prototype.bind, which is used by job_log_graph.js.
           find(:xpath, "//a[@href='#Log']").click
           assert_text expect_log_text
-        else
-          assert_selector "a[href=\"/jobs/#{object['uuid']}#Log\"]", text: 'Log'
         end
       else
         assert_selector 'a[data-toggle="disabled"]', text: 'Log'
-        assert_text 'Log unavailable'
         assert_text 'Output data not available'
         assert_text object['job']
         if pipeline_page
           assert_no_text 'This pipeline was created from'  # template is not readable
           assert_no_selector 'a', text: object['components']['foo']['job']['uuid']
+          assert_text 'Log unavailable'
         end
         find(:xpath, "//a[@href='#Log']").click
         assert_text 'Output data not available'
