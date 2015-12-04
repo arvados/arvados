@@ -211,6 +211,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     ['pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', true, 'admin'],
 
     ['completed_job_in_publicly_accessible_project', true],
+    ['running_job_in_publicly_accessible_project', true],
     ['job_in_publicly_accessible_project_but_other_objects_elsewhere', false],
   ].each do |fixture, objects_readable, user=nil|
     test "access #{fixture} in public project with objects readable=#{objects_readable} with user #{user}" do
@@ -218,18 +219,18 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
       if pipeline_page
         object = api_fixture('pipeline_instances')[fixture]
-        page = "/pipeline_instances/#{object['uuid']}"
+        page_link = "/pipeline_instances/#{object['uuid']}"
         expect_log_text = "Log for foo"
       else      # job
         object = api_fixture('jobs')[fixture]
-        page = "/jobs/#{object['uuid']}"
+        page_link = "/jobs/#{object['uuid']}"
         expect_log_text = "stderr crunchstat"
       end
 
       if user
-        visit page_with_token user, page
+        visit page_with_token user, page_link
       else
-        visit page
+        visit page_link
       end
 
       # click job link, if in pipeline page
@@ -241,11 +242,14 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
         assert_no_text 'Output data not available'
         if pipeline_page
           assert_text 'This pipeline was created from'
-          assert_selector 'a', text: object['components']['foo']['job']['uuid']
+          job_id = object['components']['foo']['job']['uuid']
+          assert_selector 'a', text: job_id
+          assert_selector "a[href=\"/jobs/#{job_id}#Log\"]", text: 'Log'
+
           # We'd like to test the Log tab on job pages too, but we can't right
           # now because Poltergeist 1.x doesn't support JavaScript's
           # Function.prototype.bind, which is used by job_log_graph.js.
-          click_link "Log"
+          find(:xpath, "//a[@href='#Log']").click
           assert_text expect_log_text
         end
       else
@@ -255,8 +259,9 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
         if pipeline_page
           assert_no_text 'This pipeline was created from'  # template is not readable
           assert_no_selector 'a', text: object['components']['foo']['job']['uuid']
+          assert_text 'Log unavailable'
         end
-        click_link "Log"
+        find(:xpath, "//a[@href='#Log']").click
         assert_text 'Output data not available'
         assert_no_text expect_log_text
       end
