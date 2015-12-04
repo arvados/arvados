@@ -24,7 +24,7 @@
             <% if current_job[:log] %>
                 <% logCollection = Collection.find? current_job[:log] %>
                 <% if logCollection %>
-                  <%= link_to "Job log", job_path(current_job[:uuid], anchor: "Log") %>
+                  <%= link_to "Log", job_path(current_job[:uuid], anchor: "Log") %>
                 <% else %>
                   Log unavailable
                 <% end %>
