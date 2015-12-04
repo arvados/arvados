@@ -237,7 +237,6 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
       if objects_readable
         assert_selector 'a[href="#Log"]', text: 'Log'
-
         assert_no_selector 'a[data-toggle="disabled"]', text: 'Log'
         assert_no_text 'Output data not available'
         if pipeline_page

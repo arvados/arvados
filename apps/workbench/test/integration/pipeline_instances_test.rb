@@ -545,7 +545,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   test "job logs linked for running pipeline" do
     pi = api_fixture("pipeline_instances", "running_pipeline_with_complete_job")
     visit(page_with_token("active", "/pipeline_instances/#{pi['uuid']}"))
-    click_on "Log"
+    find(:xpath, "//a[@href='#Log']").click
     within "#Log" do
       assert_text "Log for previous"
       log_link = find("a", text: "Log for previous")
@@ -558,7 +558,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   test "job logs linked for complete pipeline" do
     pi = api_fixture("pipeline_instances", "complete_pipeline_with_two_jobs")
     visit(page_with_token("active", "/pipeline_instances/#{pi['uuid']}"))
-    click_on "Log"
+    find(:xpath, "//a[@href='#Log']").click
     within "#Log" do
       assert_text "Log for previous"
       pi["components"].each do |cname, cspec|
@@ -572,7 +572,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   test "job logs linked for failed pipeline" do
     pi = api_fixture("pipeline_instances", "failed_pipeline_with_two_jobs")
     visit(page_with_token("active", "/pipeline_instances/#{pi['uuid']}"))
-    click_on "Log"
+    find(:xpath, "//a[@href='#Log']").click
     within "#Log" do
       assert_text "Log for previous"
       pi["components"].each do |cname, cspec|
