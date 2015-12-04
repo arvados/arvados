@@ -19,26 +19,28 @@
 
         <% if current_job %>
           <%# column offset 4 %>
-          <% if current_job[:state].in? ["Complete", "Failed", "Cancelled"] %>
-            <div class="col-md-1">
-            <% if current_job[:log] %>
-                <% logCollection = Collection.find? current_job[:log] %>
-                <% if logCollection %>
+          <% if(pipeline_display rescue nil) %>
+            <% if current_job[:state].in? ["Complete", "Failed", "Cancelled"] %>
+              <div class="col-md-1">
+              <% if current_job[:log] %>
+                  <% logCollection = Collection.find? current_job[:log] %>
+                  <% if logCollection %>
+                    <%= link_to "Log", job_path(current_job[:uuid], anchor: "Log") %>
+                  <% else %>
+                    Log unavailable
+                  <% end %>
+              <% end %>
+              </div>
+            <% elsif current_job[:state] == "Running" %>
+              <div class="col-md-1">
+                <% job = Job.find? current_job[:uuid] %>
+                <% if job %>
                   <%= link_to "Log", job_path(current_job[:uuid], anchor: "Log") %>
                 <% else %>
                   Log unavailable
                 <% end %>
+              </div>
             <% end %>
-            </div>
-          <% elsif current_job[:state] == "Running" %>
-            <div class="col-md-1">
-              <% job = Job.find? current_job[:uuid] %>
-              <% if job %>
-                <%= link_to "Log", job_path(current_job[:uuid], anchor: "Log") %>
-              <% else %>
-                Log unavailable
-              <% end %>
-            </div>
           <% end %>
 
           <%# column offset 5 %>
