@@ -5,7 +5,6 @@ from __future__ import absolute_import, print_function
 import ConfigParser
 import importlib
 import logging
-import ssl
 import sys
 
 import arvados
@@ -13,10 +12,10 @@ import httplib2
 import pykka
 from apiclient import errors as apierror
 
-# IOError is the base class for socket.error and friends.
+# IOError is the base class for socket.error, ssl.SSLError, and friends.
 # It seems like it hits the sweet spot for operations we want to retry:
 # it's low-level, but unlikely to catch code bugs.
-NETWORK_ERRORS = (IOError, ssl.SSLError)
+NETWORK_ERRORS = (IOError,)
 ARVADOS_ERRORS = NETWORK_ERRORS + (apierror.Error,)
 
 actor_class = pykka.ThreadingActor
