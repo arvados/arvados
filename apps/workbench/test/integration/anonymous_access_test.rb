@@ -211,6 +211,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     ['pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', true, 'admin'],
 
     ['completed_job_in_publicly_accessible_project', true],
+    ['running_job_in_publicly_accessible_project', true],
     ['job_in_publicly_accessible_project_but_other_objects_elsewhere', false],
   ].each do |fixture, objects_readable, user=nil|
     test "access #{fixture} in public project with objects readable=#{objects_readable} with user #{user}" do
@@ -243,15 +244,15 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
           assert_text 'This pipeline was created from'
           job_id = object['components']['foo']['job']['uuid']
           assert_selector 'a', text: job_id
-          if object['components']['foo']['job']['log']
-            assert_selector "a[href=\"/jobs/#{job_id}#Log\"]", text: 'Log'
-          end
+          assert_selector "a[href=\"/jobs/#{job_id}#Log\"]", text: 'Log'
 
           # We'd like to test the Log tab on job pages too, but we can't right
           # now because Poltergeist 1.x doesn't support JavaScript's
           # Function.prototype.bind, which is used by job_log_graph.js.
           find(:xpath, "//a[@href='#Log']").click
           assert_text expect_log_text
+        else
+          assert_selector "a[href=\"/jobs/#{object['uuid']}#Log\"]", text: 'Log'
         end
       else
         assert_selector 'a[data-toggle="disabled"]', text: 'Log'
