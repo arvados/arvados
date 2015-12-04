@@ -1,6 +1,7 @@
 #!/bin/bash
 
 DEBUG=0
+SSH_PORT=22
 
 function usage {
     echo >&2
@@ -9,6 +10,7 @@ function usage {
     echo >&2 "   <identifier>                 Arvados cluster name"
     echo >&2
     echo >&2 "$0 options:"
+    echo >&2 "  -p, --port <ssh port>         SSH port to use (default 22)"
     echo >&2 "  -d, --debug                   Enable debug output"
     echo >&2 "  -h, --help                    Display this help and exit"
     echo >&2
@@ -27,8 +29,8 @@ function usage {
 }
 
 # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
-TEMP=`getopt -o hd \
-    --long help,debug \
+TEMP=`getopt -o hdp: \
+    --long help,debug,port: \
     -n "$0" -- "$@"`
 
 if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -38,6 +40,9 @@ eval set -- "$TEMP"
 while [ $# -ge 1 ]
 do
     case $1 in
+        -p | --port)
+            SSH_PORT="$2"; shift 2
+            ;;
         -d | --debug)
             DEBUG=1
             shift
@@ -91,9 +96,9 @@ function run_puppet() {
   title "Running puppet on $node"
   TMP_FILE=`mktemp`
   if [[ "$DEBUG" != "0" ]]; then
-    ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C bash -c "'$PUPPET_AGENT'" | tee $TMP_FILE
+    ssh -t -p$SSH_PORT -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C bash -c "'$PUPPET_AGENT'" | tee $TMP_FILE
   else
-    ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C bash -c "'$PUPPET_AGENT'" > $TMP_FILE 2>&1
+    ssh -t -p$SSH_PORT -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C bash -c "'$PUPPET_AGENT'" > $TMP_FILE 2>&1
   fi
 
   ECODE=${PIPESTATUS[0]}
@@ -129,9 +134,9 @@ function run_command() {
   title "Running '$command' on $node"
   TMP_FILE=`mktemp`
   if [[ "$DEBUG" != "0" ]]; then
-    ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C "$command" | tee $TMP_FILE
+    ssh -t -p$SSH_PORT -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C "$command" | tee $TMP_FILE
   else
-    ssh -t -p2222 -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C "$command" > $TMP_FILE 2>&1
+    ssh -t -p$SSH_PORT -o "StrictHostKeyChecking no" -o "ConnectTimeout 5" root@$node -C "$command" > $TMP_FILE 2>&1
   fi
 
   ECODE=$?
