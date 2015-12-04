@@ -41,7 +41,7 @@ class JobsTest < ActionDispatch::IntegrationTest
     visit page_with_token("active", "/jobs/#{job['uuid']}")
     assert page.has_text? job['script_version']
 
-    click_link 'Log'
+    find(:xpath, "//a[@href='#Log']").click
     wait_for_ajax
     assert page.has_text? 'Started at'
     assert page.has_text? 'Finished at'
@@ -61,7 +61,7 @@ class JobsTest < ActionDispatch::IntegrationTest
     visit page_with_token("active", "/jobs/#{job['uuid']}")
     assert page.has_text? job['script_version']
 
-    click_link 'Log'
+    find(:xpath, "//a[@href='#Log']").click
     wait_for_ajax
     assert page.has_text? 'Showing only 100 bytes of this log'
   end
