@@ -117,7 +117,10 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
             sec_words = sec_name.split(None, 2)
             if sec_words[0] != 'Size':
                 continue
-            size_kwargs[sec_words[1]] = self.get_section(sec_name, int)
+            size_spec = self.get_section(sec_name, int)
+            if 'price' in size_spec:
+                size_spec['price'] = float(size_spec['price'])
+            size_kwargs[sec_words[1]] = size_spec
         # EC2 node sizes are identified by id. GCE sizes are identified by name.
         matching_sizes = []
         for size in all_sizes:
