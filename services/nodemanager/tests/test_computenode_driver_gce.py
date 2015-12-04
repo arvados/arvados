@@ -194,3 +194,33 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         self.assertEqual(
             service_accounts,
             self.driver_mock().create_node.call_args[1]['ex_service_accounts'])
+
+    def test_fix_string_size(self):
+        # As of 0.18, the libcloud GCE driver sets node.size to the size's name.
+        # It's supposed to be the actual size object.  Make sure our driver
+        # patches that up in listings.
+        size = testutil.MockSize(2)
+        node = testutil.cloud_node_mock(size=size)
+        node.size = size.name
+        self.driver_mock().list_sizes.return_value = [size]
+        self.driver_mock().list_nodes.return_value = [node]
+        driver = self.new_driver()
+        nodelist = driver.list_nodes()
+        self.assertEqual(1, len(nodelist))
+        self.assertIs(node, nodelist[0])
+        self.assertIs(size, nodelist[0].size)
+
+    def test_skip_fix_when_size_not_string(self):
+        # Ensure we don't monkeypatch node sizes unless we need to.
+        size = testutil.MockSize(3)
+        node = testutil.cloud_node_mock(size=size)
+        self.driver_mock().list_nodes.return_value = [node]
+        driver = self.new_driver()
+        nodelist = driver.list_nodes()
+        self.assertEqual(1, len(nodelist))
+        self.assertIs(node, nodelist[0])
+        self.assertIs(size, nodelist[0].size)
+
+    def test_list_empty_nodes(self):
+        self.driver_mock().list_nodes.return_value = []
+        self.assertEqual([], self.new_driver().list_nodes())
