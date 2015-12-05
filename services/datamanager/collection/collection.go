@@ -38,7 +38,6 @@ type ReadCollections struct {
 	CollectionUUIDToIndex     map[string]int
 	CollectionIndexToUUID     []string
 	BlockToCollectionIndices  map[blockdigest.DigestWithSize][]int
-	Err                       error
 }
 
 // GetCollectionsParams params
@@ -93,10 +92,9 @@ func WriteHeapProfile() error {
 }
 
 // GetCollectionsAndSummarize gets collections from api and summarizes
-func GetCollectionsAndSummarize(params GetCollectionsParams) (results ReadCollections) {
-	results, err := GetCollections(params)
+func GetCollectionsAndSummarize(params GetCollectionsParams) (results ReadCollections, err error) {
+	results, err = GetCollections(params)
 	if err != nil {
-		results.Err = err
 		return
 	}
 
