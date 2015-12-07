@@ -15,6 +15,8 @@ class Container < ArvadosModel
   before_validation :set_timestamps
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validate :validate_change
+  after_save :request_finalize
+  after_save :process_tree_priority
 
   has_many :container_requests, :foreign_key => :container_uuid, :class_name => 'ContainerRequest', :primary_key => :uuid
 
@@ -43,6 +45,27 @@ class Container < ArvadosModel
      (Complete = 'Complete'),
      (Cancelled = 'Cancelled')
     ]
+
+  def self.resolve req
+    Container.create!({ :command => req.command,
+                        :container_image => req.container_image,
+                        :cwd => req.cwd,
+                        :environment => req.environment,
+                        :mounts => req.mounts,
+                        :output_path => req.output_path,
+                        :runtime_constraints => req.runtime_constraints })
+  end
+
+  def update_priority!
+    max = 0
+    ContainerRequest.where(container_uuid: uuid).each do |cr|
+      if cr.priority > max
+        max = cr.priority
+      end
+    end
+    self.priority = max
+    self.save!
+  end
 
   protected
 
@@ -132,6 +155,30 @@ class Container < ArvadosModel
     end
 
     check_update_whitelist permitted
+  end
+
+  def request_finalize
+    if self.state_changed? and [Complete, Cancelled].include? self.state
+      act_as_system_user do
+        ContainerRequest.where(container_uuid: uuid).each do |cr|
+          cr.state = ContainerRequest.Final
+          cr.save!
+        end
+      end
+    end
+  end
+
+  def process_tree_priority
+    if self.priority_changed?
+      if self.priority == 0
+        act_as_system_user do
+          ContainerRequest.where(requesting_container_uuid: uuid).each do |cr|
+            cr.priority = self.priority
+            cr.save!
+          end
+        end
+      end
+    end
   end
 
 end
