@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.authors     = ["Arvados Authors"]
   s.email       = 'gem-dev@curoverse.com'
   s.licenses    = ['GNU Affero General Public License, version 3.0']
-  s.files       = ["bin/arvados-login-sync"]
+  s.files       = ["bin/arvados-login-sync", "agpl-3.0.txt"]
   s.executables << "arvados-login-sync"
   s.required_ruby_version = '>= 2.1.0'
   s.add_runtime_dependency 'arvados', '~> 0.1', '>= 0.1.20150615153458'
