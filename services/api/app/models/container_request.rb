@@ -1,7 +1,10 @@
+require 'whitelist_update'
+
 class ContainerRequest < ArvadosModel
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
+  include WhitelistUpdate
 
   serialize :properties, Hash
   serialize :environment, Hash
@@ -9,10 +12,9 @@ class ContainerRequest < ArvadosModel
   serialize :runtime_constraints, Hash
   serialize :command, Array
 
-  before_create :set_state_before_save
-  validate :validate_change_permitted
-  validate :validate_status
-  validate :validate_state_change
+  before_validation :fill_field_defaults, :if => :new_record?
+  validates :command, :container_image, :output_path, :cwd, :presence => true
+  validate :validate_change
 
   api_accessible :user, extend: :common do |t|
     t.add :command
@@ -42,80 +44,65 @@ class ContainerRequest < ArvadosModel
      (Final = 'Final'),
     ]
 
-  def set_state_before_save
+  protected
+
+  def fill_field_defaults
     self.state ||= Uncommitted
+    self.environment ||= {}
+    self.runtime_constraints ||= {}
+    self.mounts ||= {}
+    self.cwd ||= "."
+    self.priority ||= 1
   end
 
-  def validate_change_permitted
-    if self.changed?
-      ok = case self.state
-           when nil
-             true
-           when Uncommitted
-             true
-           when Committed
-             # only allow state and priority to change.
-             not (self.command_changed? or
-                  self.container_count_max_changed? or
-                  self.container_image_changed? or
-                  self.container_uuid_changed? or
-                  self.cwd_changed? or
-                  self.description_changed? or
-                  self.environment_changed? or
-                  self.expires_at_changed? or
-                  self.filters_changed? or
-                  self.mounts_changed? or
-                  self.name_changed? or
-                  self.output_path_changed? or
-                  self.properties_changed? or
-                  self.requesting_container_uuid_changed? or
-                  self.runtime_constraints_changed?)
-           when Final
-             false
-           else
-             false
-           end
-      if not ok
-        errors.add :state, "Invalid update of container request in #{self.state} state"
+  def validate_change
+    permitted = [:owner_uuid]
+
+    case self.state
+    when Uncommitted
+      # Permit updating most fields
+      permitted.push :command, :container_count_max,
+                     :container_image, :cwd, :description, :environment,
+                     :filters, :mounts, :name, :output_path, :priority,
+                     :properties, :requesting_container_uuid, :runtime_constraints,
+                     :state
+
+      if self.container_uuid_changed? and (current_user.andand.is_admin or self.container_uuid.nil?)
+        permitted.push :container_uuid
       end
-    end
-  end
 
-  def validate_status
-    if self.state.in?(States)
-      true
+    when Committed
+      # Can only update priority, container count.
+      permitted.push :priority, :container_count_max
+
+      if self.state_changed?
+        if self.state_was == Uncommitted
+          permitted.push :state
+        else
+          errors.add :state, "Can only go from Uncommitted to Committed"
+        end
+      end
+
+      if self.container_uuid_changed? and current_user.andand.is_admin
+        permitted.push :container_uuid
+      end
+
+    when Final
+      if self.state_changed?
+        if self.state_was == Committed
+          permitted.push :state
+        else
+          errors.add :state, "Can only go from Committed to Final"
+        end
+      else
+        errors.add "Cannot update record in Final state"
+      end
+
     else
-      errors.add :state, "#{state.inspect} must be one of: #{States.inspect}"
-      false
+      errors.add :state, "Invalid state #{self.state}"
     end
-  end
 
-  def validate_state_change
-    ok = true
-    if self.state_changed?
-      ok = case self.state_was
-           when nil
-             # Must go to Uncommitted
-             self.state == Uncommitted
-           when Uncommitted
-             # Must go to Committed
-             self.state == Committed
-           when Committed
-             # Must to go Final
-             self.state == Final
-           when Final
-             # Once in a final state, don't permit any more state changes
-             false
-           else
-             # Any other state transition is also invalid
-             false
-           end
-      if not ok
-        errors.add :state, "invalid change from #{self.state_was} to #{self.state}"
-      end
-    end
-    ok
+    check_update_whitelist permitted
   end
-
 
 end

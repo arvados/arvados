@@ -1,14 +1,17 @@
+require 'whitelist_update'
+
 class Container < ArvadosModel
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
+  include WhitelistUpdate
 
   serialize :environment, Hash
   serialize :mounts, Hash
   serialize :runtime_constraints, Hash
   serialize :command, Array
 
-  before_validation :fill_field_defaults
+  before_validation :fill_field_defaults, :if => :new_record?
   before_validation :set_timestamps
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validate :validate_change
@@ -41,18 +44,16 @@ class Container < ArvadosModel
      (Cancelled = 'Cancelled')
     ]
 
-  def fill_field_defaults
-    if self.new_record?
-      self.state ||= Queued
-      self.environment ||= {}
-      self.runtime_constraints ||= {}
-      self.mounts ||= {}
-      self.cwd ||= "."
-      self.priority ||= 1
-    end
-  end
-
   protected
+
+  def fill_field_defaults
+    self.state ||= Queued
+    self.environment ||= {}
+    self.runtime_constraints ||= {}
+    self.mounts ||= {}
+    self.cwd ||= "."
+    self.priority ||= 1
+  end
 
   def permission_to_create
     current_user.andand.is_admin
@@ -60,14 +61,6 @@ class Container < ArvadosModel
 
   def permission_to_update
     current_user.andand.is_admin
-  end
-
-  def check_permitted_updates permitted_fields
-    attribute_names.each do |field|
-      if not permitted_fields.include? field.to_sym and self.send((field.to_s + "_changed?").to_sym)
-        errors.add field, "Illegal update of field #{field}"
-      end
-    end
   end
 
   def set_timestamps
@@ -81,7 +74,7 @@ class Container < ArvadosModel
   end
 
   def validate_change
-    permitted = [:modified_at, :modified_by_user_uuid, :modified_by_client_uuid]
+    permitted = []
 
     if self.new_record?
       permitted.push :owner_uuid, :command, :container_image, :cwd, :environment,
@@ -91,29 +84,36 @@ class Container < ArvadosModel
     case self.state
     when Queued
       # permit priority change only.
+      permitted.push :priority
+
       if self.state_changed? and not self.state_was.nil?
         errors.add :state, "Can only go to Queued from nil"
-      else
-        permitted.push :priority
       end
+
     when Running
       if self.state_changed?
+        # At point of state change, can only set state and started_at
         if self.state_was == Queued
           permitted.push :state, :started_at
         else
-          errors.add :state, "Can only go to Runinng from Queued"
+          errors.add :state, "Can only go from Queued to Running"
         end
       else
+        # While running, can update priority and progress.
         permitted.push :priority, :progress
       end
+
     when Complete
       if self.state_changed?
         if self.state_was == Running
           permitted.push :state, :finished_at, :output, :log
         else
-          errors.add :state, "Cannot go from #{self.state_was} from #{self.state}"
+          errors.add :state, "Cannot go from #{self.state_was} to #{self.state}"
         end
+      else
+        errors.add :state, "Cannot update record in Complete state"
       end
+
     when Cancelled
       if self.state_changed?
         if self.state_was == Running
@@ -121,17 +121,17 @@ class Container < ArvadosModel
         elsif self.state_was == Queued
           permitted.push :state, :finished_at
         else
-          errors.add :state, "Cannot go from #{self.state_was} from #{self.state}"
+          errors.add :state, "Cannot go from #{self.state_was} to #{self.state}"
         end
+      else
+        errors.add :state, "Cannot update record in Cancelled state"
       end
+
     else
       errors.add :state, "Invalid state #{self.state}"
     end
 
-    check_permitted_updates permitted
-  end
-
-  def validate_fields
+    check_update_whitelist permitted
   end
 
 end

@@ -181,4 +181,20 @@ class ContainerTest < ActiveSupport::TestCase
     end
   end
 
+  test "Container create forbidden for non-admin" do
+    set_user_from_auth :active_trustedclient
+    c = Container.new
+    c.command = ["echo", "foo"]
+    c.container_image = "img"
+    c.cwd = "/tmp"
+    c.environment = {}
+    c.mounts = {"BAR" => "FOO"}
+    c.output_path = "/tmp"
+    c.priority = 1
+    c.runtime_constraints = {}
+    assert_raises(ArvadosModel::PermissionDeniedError) do
+      c.save!
+    end
+  end
+
 end
