@@ -46,7 +46,10 @@ class Container < ArvadosModel
      (Cancelled = 'Cancelled')
     ]
 
+  # Turn a container request into a container.
   def self.resolve req
+    # In the future this will do things like resolve symbolic git and keep
+    # references to content addresses.
     Container.create!({ :command => req.command,
                         :container_image => req.container_image,
                         :cwd => req.cwd,
@@ -57,9 +60,11 @@ class Container < ArvadosModel
   end
 
   def update_priority!
+    # Update the priority of this container to the maximum priority of any of
+    # its committed container requests and save the record.
     max = 0
     ContainerRequest.where(container_uuid: uuid).each do |cr|
-      if cr.priority > max
+      if cr.state == "Committed" and cr.priority > max
         max = cr.priority
       end
     end
@@ -110,18 +115,18 @@ class Container < ArvadosModel
       permitted.push :priority
 
       if self.state_changed? and not self.state_was.nil?
-        errors.add :state, "Can only go to Queued from nil"
+        errors.add :state, "Can only go to from nil to Queued"
       end
 
     when Running
       if self.state_changed?
-        # At point of state change, can only set state and started_at
+        # At point of state change, can set state and started_at
         if self.state_was == Queued
           permitted.push :state, :started_at
         else
           errors.add :state, "Can only go from Queued to Running"
         end
-      else
+
         # While running, can update priority and progress.
         permitted.push :priority, :progress
       end
@@ -161,7 +166,7 @@ class Container < ArvadosModel
     if self.state_changed? and [Complete, Cancelled].include? self.state
       act_as_system_user do
         ContainerRequest.where(container_uuid: uuid).each do |cr|
-          cr.state = ContainerRequest.Final
+          cr.state = "Final"
           cr.save!
         end
       end
@@ -170,6 +175,8 @@ class Container < ArvadosModel
 
   def process_tree_priority
     if self.priority_changed?
+      # This could propagate any parent priority to the children (not just
+      # priority 0)
       if self.priority == 0
         act_as_system_user do
           ContainerRequest.where(requesting_container_uuid: uuid).each do |cr|

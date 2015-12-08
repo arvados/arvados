@@ -46,6 +46,11 @@ class ContainerRequest < ArvadosModel
      (Final = 'Final'),
     ]
 
+  def skip_uuid_read_permission_check
+    # XXX temporary until permissions are sorted out.
+    %w(modified_by_client_uuid container_uuid requesting_container_uuid)
+  end
+
   protected
 
   def fill_field_defaults
@@ -58,14 +63,16 @@ class ContainerRequest < ArvadosModel
   end
 
   def set_container
-    if self.state_changed?
-      if self.state == Committed and (self.state_was == Uncommitted or self.state_was.nil?)
-        act_as_system_user do
-          self.container_uuid = Container.resolve(self).andand.uuid
-          Link.create!(head_uuid: self.container_uuid,
-                       tail_uuid: self.owner_uuid,
-                       link_class: "permission",
-                       name: "can_read")
+    if self.container_uuid_changed?
+      if not current_user.andand.is_admin and not self.container_uuid.nil?
+        errors.add :container_uuid, "Cannot only update container_uuid to nil."
+      end
+    else
+      if self.state_changed?
+        if self.state == Committed and (self.state_was == Uncommitted or self.state_was.nil?)
+          act_as_system_user do
+            self.container_uuid = Container.resolve(self).andand.uuid
+          end
         end
       end
     end
@@ -89,15 +96,14 @@ class ContainerRequest < ArvadosModel
       end
 
       # Can update priority, container count.
-      permitted.push :priority, :container_count_max
+      permitted.push :priority, :container_count_max, :container_uuid
 
       if self.state_changed?
         if self.state_was == Uncommitted or self.state_was.nil?
           # Allow create-and-commit in a single operation.
-          permitted.push :command, :container_count_max,
-                         :container_image, :cwd, :description, :environment,
-                         :filters, :mounts, :name, :output_path, :priority,
-                         :properties, :requesting_container_uuid, :runtime_constraints,
+          permitted.push :command, :container_image, :cwd, :description, :environment,
+                         :filters, :mounts, :name, :output_path, :properties,
+                         :requesting_container_uuid, :runtime_constraints,
                          :state, :container_uuid
         else
           errors.add :state, "Can only go from Uncommitted to Committed"
@@ -123,9 +129,13 @@ class ContainerRequest < ArvadosModel
   end
 
   def update_priority
-    if self.state == Committed and self.priority_changed?
+    if self.state == Committed and (self.state_changed? or
+                                    self.priority_changed? or
+                                    self.container_uuid_changed?)
       c = Container.find_by_uuid self.container_uuid
-      c.update_priority!
+      act_as_system_user do
+        c.update_priority!
+      end
     end
   end
 

@@ -80,7 +80,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c.cwd = "/tmp"
     c.environment = {}
     c.mounts = {"BAR" => "FOO"}
-    c.output_path = "/tmp"
+    c.output_path = "/tmpout"
     c.priority = 1
     c.runtime_constraints = {}
     c.name = "foo"
@@ -115,7 +115,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c.cwd = "/tmp"
     c.environment = {}
     c.mounts = {"BAR" => "FOO"}
-    c.output_path = "/tmp"
+    c.output_path = "/tmpout"
     c.priority = 1
     c.runtime_constraints = {}
     c.name = "foo"
@@ -132,10 +132,209 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c.reload
 
     t = Container.find_by_uuid c.container_uuid
-    assert_equal c.command, t.command
-    assert_equal c.container_image, t.container_image
-    assert_equal c.cwd, t.cwd
+    assert_equal t.command, ["echo", "foo"]
+    assert_equal t.container_image, "img"
+    assert_equal t.cwd, "/tmp"
+    assert_equal t.environment, {}
+    assert_equal t.mounts, {"BAR" => "FOO"}
+    assert_equal t.output_path, "/tmpout"
+    assert_equal t.runtime_constraints, {}
+    assert_equal t.priority, 1
+
+    c.priority = 0
+    c.save!
+
+    c.reload
+    t.reload
+    assert_equal c.priority, 0
+    assert_equal t.priority, 0
+
   end
 
+
+  test "Container request max priority" do
+    set_user_from_auth :active_trustedclient
+    c = ContainerRequest.new
+    c.state = "Committed"
+    c.container_image = "img"
+    c.command = ["foo", "bar"]
+    c.output_path = "/tmp"
+    c.cwd = "/tmp"
+    c.priority = 5
+    c.save!
+
+    t = Container.find_by_uuid c.container_uuid
+    assert_equal t.priority, 5
+
+    c2 = ContainerRequest.new
+    c2.container_image = "img"
+    c2.command = ["foo", "bar"]
+    c2.output_path = "/tmp"
+    c2.cwd = "/tmp"
+    c2.priority = 10
+    c2.save!
+
+    act_as_system_user do
+      c2.state = "Committed"
+      c2.container_uuid = c.container_uuid
+      c2.save!
+    end
+
+    t.reload
+    assert_equal t.priority, 10
+
+    c2.reload
+    c2.priority = 0
+    c2.save!
+
+    t.reload
+    assert_equal t.priority, 5
+
+    c.reload
+    c.priority = 0
+    c.save!
+
+    t.reload
+    assert_equal t.priority, 0
+
+  end
+
+  test "Container cancel process tree" do
+    set_user_from_auth :active_trustedclient
+    c = ContainerRequest.new
+    c.state = "Committed"
+    c.container_image = "img"
+    c.command = ["foo", "bar"]
+    c.output_path = "/tmp"
+    c.cwd = "/tmp"
+    c.priority = 5
+    c.save!
+
+    c2 = ContainerRequest.new
+    c2.state = "Committed"
+    c2.container_image = "img"
+    c2.command = ["foo", "bar"]
+    c2.output_path = "/tmp"
+    c2.cwd = "/tmp"
+    c2.priority = 10
+    c2.requesting_container_uuid = c.container_uuid
+    c2.save!
+
+    t = Container.find_by_uuid c.container_uuid
+    assert_equal t.priority, 5
+
+    t2 = Container.find_by_uuid c2.container_uuid
+    assert_equal t2.priority, 10
+
+    c.priority = 0
+    c.save!
+
+    t.reload
+    assert_equal t.priority, 0
+
+    t2.reload
+    assert_equal t2.priority, 0
+
+  end
+
+
+  test "Independent containers" do
+    set_user_from_auth :active_trustedclient
+    c = ContainerRequest.new
+    c.state = "Committed"
+    c.container_image = "img"
+    c.command = ["foo", "bar"]
+    c.output_path = "/tmp"
+    c.cwd = "/tmp"
+    c.priority = 5
+    c.save!
+
+    c2 = ContainerRequest.new
+    c2.state = "Committed"
+    c2.container_image = "img"
+    c2.command = ["foo", "bar"]
+    c2.output_path = "/tmp"
+    c2.cwd = "/tmp"
+    c2.priority = 10
+    c2.save!
+
+    t = Container.find_by_uuid c.container_uuid
+    assert_equal t.priority, 5
+
+    t2 = Container.find_by_uuid c2.container_uuid
+    assert_equal t2.priority, 10
+
+    c.priority = 0
+    c.save!
+
+    t.reload
+    assert_equal t.priority, 0
+
+    t2.reload
+    assert_equal t2.priority, 10
+  end
+
+  test "Container container cancel" do
+    set_user_from_auth :active_trustedclient
+    c = ContainerRequest.new
+    c.state = "Committed"
+    c.container_image = "img"
+    c.command = ["foo", "bar"]
+    c.output_path = "/tmp"
+    c.cwd = "/tmp"
+    c.priority = 5
+    c.save!
+
+    c.reload
+    assert_equal c.state, "Committed"
+
+    t = Container.find_by_uuid c.container_uuid
+    assert_equal t.state, "Queued"
+
+    act_as_system_user do
+      t.state = "Cancelled"
+      t.save!
+    end
+
+    c.reload
+    assert_equal c.state, "Final"
+
+  end
+
+
+  test "Container container complete" do
+    set_user_from_auth :active_trustedclient
+    c = ContainerRequest.new
+    c.state = "Committed"
+    c.container_image = "img"
+    c.command = ["foo", "bar"]
+    c.output_path = "/tmp"
+    c.cwd = "/tmp"
+    c.priority = 5
+    c.save!
+
+    c.reload
+    assert_equal c.state, "Committed"
+
+    t = Container.find_by_uuid c.container_uuid
+    assert_equal t.state, "Queued"
+
+    act_as_system_user do
+      t.state = "Running"
+      t.save!
+    end
+
+    c.reload
+    assert_equal c.state, "Committed"
+
+    act_as_system_user do
+      t.state = "Complete"
+      t.save!
+    end
+
+    c.reload
+    assert_equal c.state, "Final"
+
+  end
 
 end
