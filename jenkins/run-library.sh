@@ -2,6 +2,11 @@
 
 # A library of functions shared by the various scripts in this directory.
 
+# This is the timestamp about when we merged changed to include licenses
+# with Arvados packages.  We use it as a heuristic to add revisions for
+# older packages.
+LICENSE_PACKAGE_TS=20151208015500
+
 debug_echo () {
     echo "$@" >"$STDOUT_IF_DEBUG"
 }
@@ -71,6 +76,7 @@ package_go_binary() {
     local src_path="$1"; shift
     local prog="$1"; shift
     local description="$1"; shift
+    local license_file=${1:-agpl-3.0.txt}; shift
 
     debug_echo "package_go_binary $src_path as $prog"
 
@@ -94,7 +100,18 @@ package_go_binary() {
 
     cd $WORKSPACE/packages/$TARGET
     go get "git.curoverse.com/arvados.git/$src_path"
-    fpm_build "$GOPATH/bin/$basename=/usr/bin/$prog" "$prog" 'Curoverse, Inc.' dir "$version" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=$description"
+    fpm_build "$GOPATH/bin/$basename=/usr/bin/$prog" "$prog" 'Curoverse, Inc.' dir "$version" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=$description" "$WORKSPACE/$license_file=/usr/share/doc/$prog/$license_file"
+}
+
+default_iteration() {
+    local package_name=$1; shift
+    local package_version=$1; shift
+    local iteration=1
+    if [[ $package_version =~ ^0\.1\.([0-9]{14})(\.|$) ]] && \
+           [[ ${BASH_REMATCH[1]} -le $LICENSE_PACKAGE_TS ]]; then
+        iteration=2
+    fi
+    echo $iteration
 }
 
 # Build packages for everything
@@ -156,6 +173,9 @@ fpm_build () {
   if [[ "$VERSION" != "" ]]; then
     COMMAND_ARR+=('-v' "$VERSION")
   fi
+  # We can always add an --iteration here.  If another one is specified in $@,
+  # that will take precedence, as desired.
+  COMMAND_ARR+=(--iteration "$(default_iteration "$PACKAGE" "$VERSION")")
 
   # Append remaining function arguments directly to fpm's command line.
   for i; do
