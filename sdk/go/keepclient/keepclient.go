@@ -11,7 +11,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -233,7 +232,7 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 		}
 		serversToTry = retryList
 	}
-	log.Printf("DEBUG: %s %s failed: %v", method, locator, errs)
+	DebugPrintf("DEBUG: %s %s failed: %v", method, locator, errs)
 
 	var err error
 	if count404 == numServers {

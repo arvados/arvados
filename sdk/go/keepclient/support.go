@@ -7,7 +7,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	"io"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net"
 	"net/http"
@@ -101,7 +100,7 @@ func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Rea
 	var err error
 	var url = fmt.Sprintf("%s/%s", host, hash)
 	if req, err = http.NewRequest("PUT", url, nil); err != nil {
-		log.Printf("[%08x] Error creating request PUT %v error: %v", requestID, url, err.Error())
+		DebugPrintf("DEBUG: [%08x] Error creating request PUT %v error: %v", requestID, url, err.Error())
 		upload_status <- uploadStatus{err, url, 0, 0, ""}
 		body.Close()
 		return
@@ -126,7 +125,7 @@ func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Rea
 
 	var resp *http.Response
 	if resp, err = this.Client.Do(req); err != nil {
-		log.Printf("[%08x] Upload failed %v error: %v", requestID, url, err.Error())
+		DebugPrintf("DEBUG: [%08x] Upload failed %v error: %v", requestID, url, err.Error())
 		upload_status <- uploadStatus{err, url, 0, 0, ""}
 		return
 	}
@@ -142,13 +141,13 @@ func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Rea
 	respbody, err2 := ioutil.ReadAll(&io.LimitedReader{R: resp.Body, N: 4096})
 	response := strings.TrimSpace(string(respbody))
 	if err2 != nil && err2 != io.EOF {
-		log.Printf("[%08x] Upload %v error: %v response: %v", requestID, url, err2.Error(), response)
+		DebugPrintf("DEBUG: [%08x] Upload %v error: %v response: %v", requestID, url, err2.Error(), response)
 		upload_status <- uploadStatus{err2, url, resp.StatusCode, rep, response}
 	} else if resp.StatusCode == http.StatusOK {
-		log.Printf("[%08x] Upload %v success", requestID, url)
+		DebugPrintf("DEBUG: [%08x] Upload %v success", requestID, url)
 		upload_status <- uploadStatus{nil, url, resp.StatusCode, rep, response}
 	} else {
-		log.Printf("[%08x] Upload %v error: %v response: %v", requestID, url, resp.StatusCode, response)
+		DebugPrintf("DEBUG: [%08x] Upload %v error: %v response: %v", requestID, url, resp.StatusCode, response)
 		upload_status <- uploadStatus{errors.New(resp.Status), url, resp.StatusCode, rep, response}
 	}
 }
@@ -205,7 +204,7 @@ func (this *KeepClient) putReplicas(
 			for active*replicasPerThread < remaining_replicas {
 				// Start some upload requests
 				if next_server < len(sv) {
-					log.Printf("[%08x] Begin upload %s to %s", requestID, hash, sv[next_server])
+					DebugPrintf("DEBUG: [%08x] Begin upload %s to %s", requestID, hash, sv[next_server])
 					go this.uploadToKeepServer(sv[next_server], hash, tr.MakeStreamReader(), upload_status, expectedLength, requestID)
 					next_server += 1
 					active += 1
@@ -217,7 +216,7 @@ func (this *KeepClient) putReplicas(
 					}
 				}
 			}
-			log.Printf("[%08x] Replicas remaining to write: %v active uploads: %v",
+			DebugPrintf("DEBUG: [%08x] Replicas remaining to write: %v active uploads: %v",
 				requestID, remaining_replicas, active)
 
 			// Now wait for something to happen.
