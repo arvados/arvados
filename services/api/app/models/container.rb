@@ -17,7 +17,6 @@ class Container < ArvadosModel
   validate :validate_state_change
   validate :validate_change
   after_save :request_finalize
-  after_save :process_tree_priority
 
   has_many :container_requests, :foreign_key => :container_uuid, :class_name => 'ContainerRequest', :primary_key => :uuid
 
@@ -151,22 +150,18 @@ class Container < ArvadosModel
     # that are associated with this container.
     if self.state_changed? and [Complete, Cancelled].include? self.state
       act_as_system_user do
-        # Note using update_all skips model validation and callbacks.
-        ContainerRequest.update_all({:state => ContainerRequest::Final}, ['container_uuid=?', uuid])
-      end
-    end
-  end
+        # Try to close container requests associated with this container
+        ContainerRequest.where(container_uuid: uuid,
+                               :state => ContainerRequest::Committed).each do |cr|
+          cr.state = ContainerRequest::Final
+          cr.save
+        end
 
-  def process_tree_priority
-    # This container is cancelled so cancel any container requests made by this
-    # container.
-    if self.priority_changed? and self.priority == 0
-      # This could propagate any parent priority to the children (not just
-      # priority 0)
-      act_as_system_user do
-        ContainerRequest.where(requesting_container_uuid: uuid).each do |cr|
-          cr.priority = self.priority
-          cr.save!
+        # Try to close any outstanding container requests made by this container.
+        ContainerRequest.where(requesting_container_uuid: uuid,
+                               :state => ContainerRequest::Committed).each do |cr|
+          cr.state = ContainerRequest::Final
+          cr.save
         end
       end
     end

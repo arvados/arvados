@@ -199,7 +199,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   end
 
-  test "Container cancel process tree" do
+  test "Container request finalize" do
     set_user_from_auth :active_trustedclient
     c = ContainerRequest.new
     c.state = "Committed"
@@ -210,30 +210,14 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c.priority = 5
     c.save!
 
-    c2 = ContainerRequest.new
-    c2.state = "Committed"
-    c2.container_image = "img"
-    c2.command = ["foo", "bar"]
-    c2.output_path = "/tmp"
-    c2.cwd = "/tmp"
-    c2.priority = 10
-    c2.requesting_container_uuid = c.container_uuid
-    c2.save!
-
     t = Container.find_by_uuid c.container_uuid
     assert_equal 5, t.priority
 
-    t2 = Container.find_by_uuid c2.container_uuid
-    assert_equal 10, t2.priority
-
-    c.priority = 0
+    c.state = "Final"
     c.save!
 
     t.reload
     assert_equal 0, t.priority
-
-    t2.reload
-    assert_equal 0, t2.priority
 
   end
 

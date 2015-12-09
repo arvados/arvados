@@ -145,12 +145,16 @@ class ContainerRequest < ArvadosModel
   end
 
   def update_priority
-    if self.state == Committed and (self.state_changed? or
-                                    self.priority_changed? or
-                                    self.container_uuid_changed?)
-      c = Container.find_by_uuid self.container_uuid
-      act_as_system_user do
-        c.update_priority!
+    if [Committed, Final].include? self.state and (self.state_changed? or
+                                                   self.priority_changed? or
+                                                   self.container_uuid_changed?)
+      [self.container_uuid_was, self.container_uuid].each do |cuuid|
+        unless cuuid.nil?
+          c = Container.find_by_uuid cuuid
+          act_as_system_user do
+            c.update_priority!
+          end
+        end
       end
     end
   end
