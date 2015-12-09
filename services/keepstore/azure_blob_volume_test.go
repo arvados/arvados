@@ -292,10 +292,10 @@ type TestableAzureBlobVolume struct {
 	*AzureBlobVolume
 	azHandler *azStubHandler
 	azStub    *httptest.Server
-	t         *testing.T
+	t         TB
 }
 
-func NewTestableAzureBlobVolume(t *testing.T, readonly bool, replication int) *TestableAzureBlobVolume {
+func NewTestableAzureBlobVolume(t TB, readonly bool, replication int) *TestableAzureBlobVolume {
 	azHandler := newAzStubHandler()
 	azStub := httptest.NewServer(azHandler)
 
@@ -341,7 +341,7 @@ func TestAzureBlobVolumeWithGeneric(t *testing.T) {
 	}
 	azureWriteRaceInterval = time.Millisecond
 	azureWriteRacePollTime = time.Nanosecond
-	DoGenericVolumeTests(t, func(t *testing.T) TestableVolume {
+	DoGenericVolumeTests(t, func(t TB) TestableVolume {
 		return NewTestableAzureBlobVolume(t, false, azureStorageReplication)
 	})
 }
@@ -355,7 +355,7 @@ func TestReadonlyAzureBlobVolumeWithGeneric(t *testing.T) {
 	}
 	azureWriteRaceInterval = time.Millisecond
 	azureWriteRacePollTime = time.Nanosecond
-	DoGenericVolumeTests(t, func(t *testing.T) TestableVolume {
+	DoGenericVolumeTests(t, func(t TB) TestableVolume {
 		return NewTestableAzureBlobVolume(t, true, azureStorageReplication)
 	})
 }
