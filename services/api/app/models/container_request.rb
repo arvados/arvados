@@ -15,6 +15,7 @@ class ContainerRequest < ArvadosModel
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :set_container
   validates :command, :container_image, :output_path, :cwd, :presence => true
+  validate :validate_state_change
   validate :validate_change
   after_save :update_priority
 
@@ -46,6 +47,16 @@ class ContainerRequest < ArvadosModel
      (Final = 'Final'),
     ]
 
+  State_transitions = {
+    nil => [Uncommitted, Committed],
+    Uncommitted => [Committed],
+    Committed => [Final]
+  }
+
+  def state_transitions
+    State_transitions
+  end
+
   def skip_uuid_read_permission_check
     # XXX temporary until permissions are sorted out.
     %w(modified_by_client_uuid container_uuid requesting_container_uuid)
@@ -62,16 +73,29 @@ class ContainerRequest < ArvadosModel
     self.priority ||= 1
   end
 
+  # Turn a container request into a container.
+  def resolve
+    # In the future this will do things like resolve symbolic git and keep
+    # references to content addresses.
+    Container.create!({ :command => self.command,
+                        :container_image => self.container_image,
+                        :cwd => self.cwd,
+                        :environment => self.environment,
+                        :mounts => self.mounts,
+                        :output_path => self.output_path,
+                        :runtime_constraints => self.runtime_constraints })
+  end
+
   def set_container
     if self.container_uuid_changed?
       if not current_user.andand.is_admin and not self.container_uuid.nil?
-        errors.add :container_uuid, "Cannot only update container_uuid to nil."
+        errors.add :container_uuid, "can only be updated to nil."
       end
     else
       if self.state_changed?
         if self.state == Committed and (self.state_was == Uncommitted or self.state_was.nil?)
           act_as_system_user do
-            self.container_uuid = Container.resolve(self).andand.uuid
+            self.container_uuid = self.resolve.andand.uuid
           end
         end
       end
@@ -92,37 +116,29 @@ class ContainerRequest < ArvadosModel
 
     when Committed
       if container_uuid.nil?
-        errors.add :container_uuid, "Has not been resolved to a container."
+        errors.add :container_uuid, "has not been resolved to a container."
       end
 
       # Can update priority, container count.
       permitted.push :priority, :container_count_max, :container_uuid
 
       if self.state_changed?
-        if self.state_was == Uncommitted or self.state_was.nil?
-          # Allow create-and-commit in a single operation.
-          permitted.push :command, :container_image, :cwd, :description, :environment,
-                         :filters, :mounts, :name, :output_path, :properties,
-                         :requesting_container_uuid, :runtime_constraints,
-                         :state, :container_uuid
-        else
-          errors.add :state, "Can only go from Uncommitted to Committed"
-        end
+        # Allow create-and-commit in a single operation.
+        permitted.push :command, :container_image, :cwd, :description, :environment,
+                       :filters, :mounts, :name, :output_path, :properties,
+                       :requesting_container_uuid, :runtime_constraints,
+                       :state, :container_uuid
       end
 
     when Final
       if self.state_changed?
-        if self.state_was == Committed
           permitted.push :state
-        else
-          errors.add :state, "Can only go from Committed to Final"
-        end
       else
-        errors.add "Cannot update record in Final state"
+        errors.add :state, "does not allow updates"
       end
 
     else
-      errors.add :state, "Invalid state #{self.state}"
+      errors.add :state, "invalid value"
     end
 
     check_update_whitelist permitted

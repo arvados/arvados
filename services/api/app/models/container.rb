@@ -14,6 +14,7 @@ class Container < ArvadosModel
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :set_timestamps
   validates :command, :container_image, :output_path, :cwd, :presence => true
+  validate :validate_state_change
   validate :validate_change
   after_save :request_finalize
   after_save :process_tree_priority
@@ -46,17 +47,14 @@ class Container < ArvadosModel
      (Cancelled = 'Cancelled')
     ]
 
-  # Turn a container request into a container.
-  def self.resolve req
-    # In the future this will do things like resolve symbolic git and keep
-    # references to content addresses.
-    Container.create!({ :command => req.command,
-                        :container_image => req.container_image,
-                        :cwd => req.cwd,
-                        :environment => req.environment,
-                        :mounts => req.mounts,
-                        :output_path => req.output_path,
-                        :runtime_constraints => req.runtime_constraints })
+  State_transitions = {
+    nil => [Queued],
+    Queued => [Running, Cancelled],
+    Running => [Complete, Cancelled]
+  }
+
+  def state_transitions
+    State_transitions
   end
 
   def update_priority!
@@ -64,7 +62,7 @@ class Container < ArvadosModel
     # its committed container requests and save the record.
     max = 0
     ContainerRequest.where(container_uuid: uuid).each do |cr|
-      if cr.state == "Committed" and cr.priority > max
+      if cr.state == ContainerRequest::Committed and cr.priority > max
         max = cr.priority
       end
     end
@@ -114,32 +112,20 @@ class Container < ArvadosModel
       # permit priority change only.
       permitted.push :priority
 
-      if self.state_changed? and not self.state_was.nil?
-        errors.add :state, "Can only go to from nil to Queued"
-      end
-
     when Running
       if self.state_changed?
         # At point of state change, can set state and started_at
-        if self.state_was == Queued
-          permitted.push :state, :started_at
-        else
-          errors.add :state, "Can only go from Queued to Running"
-        end
-
+        permitted.push :state, :started_at
+      else
         # While running, can update priority and progress.
         permitted.push :priority, :progress
       end
 
     when Complete
       if self.state_changed?
-        if self.state_was == Running
-          permitted.push :state, :finished_at, :output, :log
-        else
-          errors.add :state, "Cannot go from #{self.state_was} to #{self.state}"
-        end
+        permitted.push :state, :finished_at, :output, :log
       else
-        errors.add :state, "Cannot update record in Complete state"
+        errors.add :state, "cannot update record"
       end
 
     when Cancelled
@@ -148,41 +134,39 @@ class Container < ArvadosModel
           permitted.push :state, :finished_at, :output, :log
         elsif self.state_was == Queued
           permitted.push :state, :finished_at
-        else
-          errors.add :state, "Cannot go from #{self.state_was} to #{self.state}"
         end
       else
-        errors.add :state, "Cannot update record in Cancelled state"
+        errors.add :state, "cannot update record"
       end
 
     else
-      errors.add :state, "Invalid state #{self.state}"
+      errors.add :state, "invalid state"
     end
 
     check_update_whitelist permitted
   end
 
   def request_finalize
+    # This container is finished so finalize any associated container requests
+    # that are associated with this container.
     if self.state_changed? and [Complete, Cancelled].include? self.state
       act_as_system_user do
-        ContainerRequest.where(container_uuid: uuid).each do |cr|
-          cr.state = "Final"
-          cr.save!
-        end
+        # Note using update_all skips model validation and callbacks.
+        ContainerRequest.update_all({:state => ContainerRequest::Final}, ['container_uuid=?', uuid])
       end
     end
   end
 
   def process_tree_priority
-    if self.priority_changed?
+    # This container is cancelled so cancel any container requests made by this
+    # container.
+    if self.priority_changed? and self.priority == 0
       # This could propagate any parent priority to the children (not just
       # priority 0)
-      if self.priority == 0
-        act_as_system_user do
-          ContainerRequest.where(requesting_container_uuid: uuid).each do |cr|
-            cr.priority = self.priority
-            cr.save!
-          end
+      act_as_system_user do
+        ContainerRequest.where(requesting_container_uuid: uuid).each do |cr|
+          cr.priority = self.priority
+          cr.save!
         end
       end
     end

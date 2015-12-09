@@ -13,10 +13,10 @@ class CreateContainersAndRequests < ActiveRecord::Migration
       t.string :log
       t.text :environment
       t.string :cwd
-      t.string :command
+      t.text :command
       t.string :output_path
-      t.string :mounts
-      t.string :runtime_constraints
+      t.text :mounts
+      t.text :runtime_constraints
       t.string :output
       t.string :container_image
       t.float :progress
@@ -34,21 +34,21 @@ class CreateContainersAndRequests < ActiveRecord::Migration
       t.string :modified_by_user_uuid
       t.string :name
       t.text :description
-      t.string :properties
+      t.text :properties
       t.string :state
       t.string :requesting_container_uuid
       t.string :container_uuid
       t.integer :container_count_max
-      t.string :mounts
-      t.string :runtime_constraints
+      t.text :mounts
+      t.text :runtime_constraints
       t.string :container_image
-      t.string :environment
+      t.text :environment
       t.string :cwd
-      t.string :command
+      t.text :command
       t.string :output_path
       t.integer :priority
       t.datetime :expires_at
-      t.string :filters
+      t.text :filters
 
       t.timestamps
     end

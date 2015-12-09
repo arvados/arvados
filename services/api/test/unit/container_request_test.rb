@@ -132,22 +132,22 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c.reload
 
     t = Container.find_by_uuid c.container_uuid
-    assert_equal t.command, ["echo", "foo"]
-    assert_equal t.container_image, "img"
-    assert_equal t.cwd, "/tmp"
-    assert_equal t.environment, {}
-    assert_equal t.mounts, {"BAR" => "FOO"}
-    assert_equal t.output_path, "/tmpout"
-    assert_equal t.runtime_constraints, {}
-    assert_equal t.priority, 1
+    assert_equal ["echo", "foo"], t.command
+    assert_equal "img", t.container_image
+    assert_equal "/tmp", t.cwd
+    assert_equal({}, t.environment)
+    assert_equal({"BAR" => "FOO"}, t.mounts)
+    assert_equal "/tmpout", t.output_path
+    assert_equal({}, t.runtime_constraints)
+    assert_equal 1, t.priority
 
     c.priority = 0
     c.save!
 
     c.reload
     t.reload
-    assert_equal c.priority, 0
-    assert_equal t.priority, 0
+    assert_equal 0, c.priority
+    assert_equal 0, t.priority
 
   end
 
@@ -164,7 +164,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c.save!
 
     t = Container.find_by_uuid c.container_uuid
-    assert_equal t.priority, 5
+    assert_equal 5, t.priority
 
     c2 = ContainerRequest.new
     c2.container_image = "img"
@@ -181,21 +181,21 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
 
     t.reload
-    assert_equal t.priority, 10
+    assert_equal 10, t.priority
 
     c2.reload
     c2.priority = 0
     c2.save!
 
     t.reload
-    assert_equal t.priority, 5
+    assert_equal 5, t.priority
 
     c.reload
     c.priority = 0
     c.save!
 
     t.reload
-    assert_equal t.priority, 0
+    assert_equal 0, t.priority
 
   end
 
@@ -221,19 +221,19 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c2.save!
 
     t = Container.find_by_uuid c.container_uuid
-    assert_equal t.priority, 5
+    assert_equal 5, t.priority
 
     t2 = Container.find_by_uuid c2.container_uuid
-    assert_equal t2.priority, 10
+    assert_equal 10, t2.priority
 
     c.priority = 0
     c.save!
 
     t.reload
-    assert_equal t.priority, 0
+    assert_equal 0, t.priority
 
     t2.reload
-    assert_equal t2.priority, 0
+    assert_equal 0, t2.priority
 
   end
 
@@ -259,19 +259,19 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c2.save!
 
     t = Container.find_by_uuid c.container_uuid
-    assert_equal t.priority, 5
+    assert_equal 5, t.priority
 
     t2 = Container.find_by_uuid c2.container_uuid
-    assert_equal t2.priority, 10
+    assert_equal 10, t2.priority
 
     c.priority = 0
     c.save!
 
     t.reload
-    assert_equal t.priority, 0
+    assert_equal 0, t.priority
 
     t2.reload
-    assert_equal t2.priority, 10
+    assert_equal 10, t2.priority
   end
 
   test "Container container cancel" do
@@ -286,10 +286,10 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c.save!
 
     c.reload
-    assert_equal c.state, "Committed"
+    assert_equal "Committed", c.state
 
     t = Container.find_by_uuid c.container_uuid
-    assert_equal t.state, "Queued"
+    assert_equal "Queued", t.state
 
     act_as_system_user do
       t.state = "Cancelled"
@@ -297,7 +297,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
 
     c.reload
-    assert_equal c.state, "Final"
+    assert_equal "Final", c.state
 
   end
 
@@ -314,10 +314,10 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c.save!
 
     c.reload
-    assert_equal c.state, "Committed"
+    assert_equal "Committed", c.state
 
     t = Container.find_by_uuid c.container_uuid
-    assert_equal t.state, "Queued"
+    assert_equal "Queued", t.state
 
     act_as_system_user do
       t.state = "Running"
@@ -325,7 +325,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
 
     c.reload
-    assert_equal c.state, "Committed"
+    assert_equal "Committed", c.state
 
     act_as_system_user do
       t.state = "Complete"
@@ -333,7 +333,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
 
     c.reload
-    assert_equal c.state, "Final"
+    assert_equal "Final", c.state
 
   end
 
