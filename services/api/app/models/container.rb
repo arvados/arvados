@@ -57,16 +57,18 @@ class Container < ArvadosModel
   end
 
   def update_priority!
-    # Update the priority of this container to the maximum priority of any of
-    # its committed container requests and save the record.
-    max = 0
-    ContainerRequest.where(container_uuid: uuid).each do |cr|
-      if cr.state == ContainerRequest::Committed and cr.priority > max
-        max = cr.priority
+    if [Queued, Running].include? self.state
+      # Update the priority of this container to the maximum priority of any of
+      # its committed container requests and save the record.
+      max = 0
+      ContainerRequest.where(container_uuid: uuid).each do |cr|
+        if cr.state == ContainerRequest::Committed and cr.priority > max
+          max = cr.priority
+        end
       end
+      self.priority = max
+      self.save!
     end
-    self.priority = max
-    self.save!
   end
 
   protected
