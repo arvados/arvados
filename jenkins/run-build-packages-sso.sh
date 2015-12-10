@@ -215,7 +215,8 @@ fi
 # Append --depends X and other arguments specified by fpm-info.sh in
 # the package source dir. These are added last so they can override
 # the arguments added by this script.
-declare -a fpm_args=()
+# `--iteration 2` accommodates a postinst change on 2015-12-10.
+declare -a fpm_args=(--iteration 2)
 declare -a fpm_depends=()
 FPM_INFO="$WORKSPACE/fpm-info.sh"
 if [[ -e "$FPM_INFO" ]]; then
