@@ -238,7 +238,7 @@ def main(arguments=None):
 
     files = [c for command in slots[1:] for c in command if isinstance(c, UploadFile)]
     if files:
-        uploadfiles(files, api, dry_run=args.dry_run, num_retries=args.num_retries, project=project)
+        uploadfiles(files, api, dry_run=args.dry_run, num_retries=args.retries, project=project)
 
     for i in xrange(1, len(slots)):
         slots[i] = [("%s%s" % (c.prefix, c.fn)) if isinstance(c, ArvFile) else c for c in slots[i]]
