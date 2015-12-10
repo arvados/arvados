@@ -13,7 +13,7 @@ class Container < ArvadosModel
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :set_timestamps
-  validates :command, :container_image, :output_path, :cwd, :presence => true
+  validates :command, :container_image, :output_path, :cwd, :priority, :presence => true
   validate :validate_state_change
   validate :validate_change
   after_save :request_finalize
@@ -159,10 +159,10 @@ class Container < ArvadosModel
           cr.save
         end
 
-        # Try to close any outstanding container requests made by this container.
+        # Try to cancel any outstanding container requests made by this container.
         ContainerRequest.where(requesting_container_uuid: uuid,
                                :state => ContainerRequest::Committed).each do |cr|
-          cr.state = ContainerRequest::Final
+          cr.priority = 0
           cr.save
         end
       end

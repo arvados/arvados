@@ -74,164 +74,168 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "Container request create" do
     set_user_from_auth :active_trustedclient
-    c = ContainerRequest.new
-    c.command = ["echo", "foo"]
-    c.container_image = "img"
-    c.cwd = "/tmp"
-    c.environment = {}
-    c.mounts = {"BAR" => "FOO"}
-    c.output_path = "/tmpout"
-    c.priority = 1
-    c.runtime_constraints = {}
-    c.name = "foo"
-    c.description = "bar"
-    c.save!
+    cr = ContainerRequest.new
+    cr.command = ["echo", "foo"]
+    cr.container_image = "img"
+    cr.cwd = "/tmp"
+    cr.environment = {}
+    cr.mounts = {"BAR" => "FOO"}
+    cr.output_path = "/tmpout"
+    cr.runtime_constraints = {}
+    cr.name = "foo"
+    cr.description = "bar"
+    cr.save!
 
-    assert_nil c.container_uuid
+    assert_nil cr.container_uuid
+    assert_nil cr.priority
 
-    check_bogus_states c
+    check_bogus_states cr
 
-    c.reload
-    c.command = ["echo", "foo3"]
-    c.container_image = "img3"
-    c.cwd = "/tmp3"
-    c.environment = {"BUP" => "BOP"}
-    c.mounts = {"BAR" => "BAZ"}
-    c.output_path = "/tmp4"
-    c.priority = 2
-    c.runtime_constraints = {"X" => "Y"}
-    c.name = "foo3"
-    c.description = "bar3"
-    c.save!
+    cr.reload
+    cr.command = ["echo", "foo3"]
+    cr.container_image = "img3"
+    cr.cwd = "/tmp3"
+    cr.environment = {"BUP" => "BOP"}
+    cr.mounts = {"BAR" => "BAZ"}
+    cr.output_path = "/tmp4"
+    cr.priority = 2
+    cr.runtime_constraints = {"X" => "Y"}
+    cr.name = "foo3"
+    cr.description = "bar3"
+    cr.save!
 
-    assert_nil c.container_uuid
+    assert_nil cr.container_uuid
+  end
+
+  test "Container request priority must be non-nil" do
+    set_user_from_auth :active_trustedclient
+    cr = ContainerRequest.new
+    cr.command = ["echo", "foo"]
+    cr.container_image = "img"
+    cr.cwd = "/tmp"
+    cr.environment = {}
+    cr.mounts = {"BAR" => "FOO"}
+    cr.output_path = "/tmpout"
+    cr.runtime_constraints = {}
+    cr.name = "foo"
+    cr.description = "bar"
+    cr.save!
+
+    cr.reload
+    cr.state = "Committed"
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.save!
+    end
   end
 
   test "Container request commit" do
     set_user_from_auth :active_trustedclient
-    c = ContainerRequest.new
-    c.command = ["echo", "foo"]
-    c.container_image = "img"
-    c.cwd = "/tmp"
-    c.environment = {}
-    c.mounts = {"BAR" => "FOO"}
-    c.output_path = "/tmpout"
-    c.priority = 1
-    c.runtime_constraints = {}
-    c.name = "foo"
-    c.description = "bar"
-    c.save!
+    cr = ContainerRequest.new
+    cr.command = ["echo", "foo"]
+    cr.container_image = "img"
+    cr.cwd = "/tmp"
+    cr.environment = {}
+    cr.mounts = {"BAR" => "FOO"}
+    cr.output_path = "/tmpout"
+    cr.priority = 1
+    cr.runtime_constraints = {}
+    cr.name = "foo"
+    cr.description = "bar"
+    cr.save!
 
+    cr.reload
+    assert_nil cr.container_uuid
+
+    cr.reload
+    cr.state = "Committed"
+    cr.save!
+
+    cr.reload
+
+    c = Container.find_by_uuid cr.container_uuid
+    assert_equal ["echo", "foo"], c.command
+    assert_equal "img", c.container_image
+    assert_equal "/tmp", c.cwd
+    assert_equal({}, c.environment)
+    assert_equal({"BAR" => "FOO"}, c.mounts)
+    assert_equal "/tmpout", c.output_path
+    assert_equal({}, c.runtime_constraints)
+    assert_equal 1, c.priority
+
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.priority = nil
+      cr.save!
+    end
+
+    cr.priority = 0
+    cr.save!
+
+    cr.reload
     c.reload
-    assert_nil c.container_uuid
-
-    c.reload
-    c.state = "Committed"
-    c.save!
-
-    c.reload
-
-    t = Container.find_by_uuid c.container_uuid
-    assert_equal ["echo", "foo"], t.command
-    assert_equal "img", t.container_image
-    assert_equal "/tmp", t.cwd
-    assert_equal({}, t.environment)
-    assert_equal({"BAR" => "FOO"}, t.mounts)
-    assert_equal "/tmpout", t.output_path
-    assert_equal({}, t.runtime_constraints)
-    assert_equal 1, t.priority
-
-    c.priority = 0
-    c.save!
-
-    c.reload
-    t.reload
+    assert_equal 0, cr.priority
     assert_equal 0, c.priority
-    assert_equal 0, t.priority
 
   end
 
 
   test "Container request max priority" do
     set_user_from_auth :active_trustedclient
-    c = ContainerRequest.new
-    c.state = "Committed"
-    c.container_image = "img"
-    c.command = ["foo", "bar"]
-    c.output_path = "/tmp"
-    c.cwd = "/tmp"
-    c.priority = 5
-    c.save!
+    cr = ContainerRequest.new
+    cr.state = "Committed"
+    cr.container_image = "img"
+    cr.command = ["foo", "bar"]
+    cr.output_path = "/tmp"
+    cr.cwd = "/tmp"
+    cr.priority = 5
+    cr.save!
 
-    t = Container.find_by_uuid c.container_uuid
-    assert_equal 5, t.priority
+    c = Container.find_by_uuid cr.container_uuid
+    assert_equal 5, c.priority
 
-    c2 = ContainerRequest.new
-    c2.container_image = "img"
-    c2.command = ["foo", "bar"]
-    c2.output_path = "/tmp"
-    c2.cwd = "/tmp"
-    c2.priority = 10
-    c2.save!
+    cr2 = ContainerRequest.new
+    cr2.container_image = "img"
+    cr2.command = ["foo", "bar"]
+    cr2.output_path = "/tmp"
+    cr2.cwd = "/tmp"
+    cr2.priority = 10
+    cr2.save!
 
     act_as_system_user do
-      c2.state = "Committed"
-      c2.container_uuid = c.container_uuid
-      c2.save!
+      cr2.state = "Committed"
+      cr2.container_uuid = cr.container_uuid
+      cr2.save!
     end
 
-    t.reload
-    assert_equal 10, t.priority
+    c.reload
+    assert_equal 10, c.priority
 
-    c2.reload
-    c2.priority = 0
-    c2.save!
-
-    t.reload
-    assert_equal 5, t.priority
+    cr2.reload
+    cr2.priority = 0
+    cr2.save!
 
     c.reload
-    c.priority = 0
-    c.save!
+    assert_equal 5, c.priority
 
-    t.reload
-    assert_equal 0, t.priority
+    cr.reload
+    cr.priority = 0
+    cr.save!
 
-  end
-
-  test "Container request finalize" do
-    set_user_from_auth :active_trustedclient
-    c = ContainerRequest.new
-    c.state = "Committed"
-    c.container_image = "img"
-    c.command = ["foo", "bar"]
-    c.output_path = "/tmp"
-    c.cwd = "/tmp"
-    c.priority = 5
-    c.save!
-
-    t = Container.find_by_uuid c.container_uuid
-    assert_equal 5, t.priority
-
-    c.state = "Final"
-    c.save!
-
-    t.reload
-    assert_equal 0, t.priority
+    c.reload
+    assert_equal 0, c.priority
 
   end
 
 
-  test "Independent containers" do
+  test "Independent container requests" do
     set_user_from_auth :active_trustedclient
-    c = ContainerRequest.new
-    c.state = "Committed"
-    c.container_image = "img"
-    c.command = ["foo", "bar"]
-    c.output_path = "/tmp"
-    c.cwd = "/tmp"
-    c.priority = 5
-    c.save!
+    cr = ContainerRequest.new
+    cr.state = "Committed"
+    cr.container_image = "img"
+    cr.command = ["foo", "bar"]
+    cr.output_path = "/tmp"
+    cr.cwd = "/tmp"
+    cr.priority = 5
+    cr.save!
 
     c2 = ContainerRequest.new
     c2.state = "Committed"
@@ -242,82 +246,83 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c2.priority = 10
     c2.save!
 
-    t = Container.find_by_uuid c.container_uuid
-    assert_equal 5, t.priority
+    c = Container.find_by_uuid cr.container_uuid
+    assert_equal 5, c.priority
 
-    t2 = Container.find_by_uuid c2.container_uuid
-    assert_equal 10, t2.priority
+    c2 = Container.find_by_uuid c2.container_uuid
+    assert_equal 10, c2.priority
 
-    c.priority = 0
-    c.save!
-
-    t.reload
-    assert_equal 0, t.priority
-
-    t2.reload
-    assert_equal 10, t2.priority
-  end
-
-  test "Container container cancel" do
-    set_user_from_auth :active_trustedclient
-    c = ContainerRequest.new
-    c.state = "Committed"
-    c.container_image = "img"
-    c.command = ["foo", "bar"]
-    c.output_path = "/tmp"
-    c.cwd = "/tmp"
-    c.priority = 5
-    c.save!
+    cr.priority = 0
+    cr.save!
 
     c.reload
-    assert_equal "Committed", c.state
+    assert_equal 0, c.priority
 
-    t = Container.find_by_uuid c.container_uuid
-    assert_equal "Queued", t.state
-
-    act_as_system_user do
-      t.state = "Cancelled"
-      t.save!
-    end
-
-    c.reload
-    assert_equal "Final", c.state
-
+    c2.reload
+    assert_equal 10, c2.priority
   end
 
 
-  test "Container container complete" do
+  test "Container cancelled finalizes request" do
     set_user_from_auth :active_trustedclient
-    c = ContainerRequest.new
-    c.state = "Committed"
-    c.container_image = "img"
-    c.command = ["foo", "bar"]
-    c.output_path = "/tmp"
-    c.cwd = "/tmp"
-    c.priority = 5
-    c.save!
+    cr = ContainerRequest.new
+    cr.state = "Committed"
+    cr.container_image = "img"
+    cr.command = ["foo", "bar"]
+    cr.output_path = "/tmp"
+    cr.cwd = "/tmp"
+    cr.priority = 5
+    cr.save!
 
-    c.reload
-    assert_equal "Committed", c.state
+    cr.reload
+    assert_equal "Committed", cr.state
 
-    t = Container.find_by_uuid c.container_uuid
-    assert_equal "Queued", t.state
-
-    act_as_system_user do
-      t.state = "Running"
-      t.save!
-    end
-
-    c.reload
-    assert_equal "Committed", c.state
+    c = Container.find_by_uuid cr.container_uuid
+    assert_equal "Queued", c.state
 
     act_as_system_user do
-      t.state = "Complete"
-      t.save!
+      c.state = "Cancelled"
+      c.save!
     end
 
-    c.reload
-    assert_equal "Final", c.state
+    cr.reload
+    assert_equal "Final", cr.state
+
+  end
+
+
+  test "Container complete finalizes request" do
+    set_user_from_auth :active_trustedclient
+    cr = ContainerRequest.new
+    cr.state = "Committed"
+    cr.container_image = "img"
+    cr.command = ["foo", "bar"]
+    cr.output_path = "/tmp"
+    cr.cwd = "/tmp"
+    cr.priority = 5
+    cr.save!
+
+    cr.reload
+    assert_equal "Committed", cr.state
+
+    c = Container.find_by_uuid cr.container_uuid
+    assert_equal "Queued", c.state
+
+    act_as_system_user do
+      c.state = "Running"
+      c.save!
+    end
+
+    cr.reload
+    assert_equal "Committed", cr.state
+
+    act_as_system_user do
+      c.state = "Complete"
+      c.save!
+    end
+
+    cr.reload
+    assert_equal "Final", cr.state
 
   end
 

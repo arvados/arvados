@@ -70,7 +70,6 @@ class ContainerRequest < ArvadosModel
     self.runtime_constraints ||= {}
     self.mounts ||= {}
     self.cwd ||= "."
-    self.priority ||= 1
   end
 
   # Turn a container request into a container.
@@ -119,6 +118,10 @@ class ContainerRequest < ArvadosModel
         errors.add :container_uuid, "has not been resolved to a container."
       end
 
+      if priority.nil?
+        errors.add :priority, "cannot be nil"
+      end
+
       # Can update priority, container count.
       permitted.push :priority, :container_count_max, :container_uuid
 
@@ -131,6 +134,10 @@ class ContainerRequest < ArvadosModel
       end
 
     when Final
+      if not current_user.andand.is_admin
+        errors.add :state, "of container request can only be set to Final by system."
+      end
+
       if self.state_changed?
           permitted.push :state
       else
