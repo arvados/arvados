@@ -16,7 +16,7 @@ class Container < ArvadosModel
   validates :command, :container_image, :output_path, :cwd, :priority, :presence => true
   validate :validate_state_change
   validate :validate_change
-  after_save :request_finalize
+  after_save :handle_completed
 
   has_many :container_requests, :foreign_key => :container_uuid, :class_name => 'ContainerRequest', :primary_key => :uuid
 
@@ -147,7 +147,7 @@ class Container < ArvadosModel
     check_update_whitelist permitted
   end
 
-  def request_finalize
+  def handle_completed
     # This container is finished so finalize any associated container requests
     # that are associated with this container.
     if self.state_changed? and [Complete, Cancelled].include? self.state
