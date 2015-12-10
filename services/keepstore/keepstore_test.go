@@ -10,6 +10,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 )
 
 var TestBlock = []byte("The quick brown fox jumps over the lazy dog.")
@@ -229,9 +231,9 @@ func TestPutBlockCollision(t *testing.T) {
 	defer teardown()
 
 	// These blocks both hash to the MD5 digest cee9a457e790cf20d4bdaa6d69f01e41.
-	var b1 = []byte("\x0e0eaU\x9a\xa7\x87\xd0\x0b\xc6\xf7\x0b\xbd\xfe4\x04\xcf\x03e\x9epO\x854\xc0\x0f\xfbe\x9cL\x87@\xcc\x94/\xeb-\xa1\x15\xa3\xf4\x15\\\xbb\x86\x07Is\x86em}\x1f4\xa4 Y\xd7\x8fZ\x8d\xd1\xef")
-	var b2 = []byte("\x0e0eaU\x9a\xa7\x87\xd0\x0b\xc6\xf7\x0b\xbd\xfe4\x04\xcf\x03e\x9etO\x854\xc0\x0f\xfbe\x9cL\x87@\xcc\x94/\xeb-\xa1\x15\xa3\xf4\x15\xdc\xbb\x86\x07Is\x86em}\x1f4\xa4 Y\xd7\x8fZ\x8d\xd1\xef")
-	var locator = "cee9a457e790cf20d4bdaa6d69f01e41"
+	b1 := arvadostest.MD5CollisionData[0]
+	b2 := arvadostest.MD5CollisionData[1]
+	locator := arvadostest.MD5CollisionMD5
 
 	// Prepare two test Keep volumes.
 	KeepVM = MakeTestVolumeManager(2)

@@ -2,16 +2,10 @@ package main
 
 import (
 	"bytes"
-	"testing"
 	"testing/iotest"
 
 	check "gopkg.in/check.v1"
 )
-
-// Gocheck boilerplate
-func Test(t *testing.T) {
-	check.TestingT(t)
-}
 
 var _ = check.Suite(&CollisionSuite{})
 

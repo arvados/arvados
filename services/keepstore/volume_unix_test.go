@@ -16,10 +16,10 @@ import (
 
 type TestableUnixVolume struct {
 	UnixVolume
-	t *testing.T
+	t TB
 }
 
-func NewTestableUnixVolume(t *testing.T, serialize bool, readonly bool) *TestableUnixVolume {
+func NewTestableUnixVolume(t TB, serialize bool, readonly bool) *TestableUnixVolume {
 	d, err := ioutil.TempDir("", "volume_test")
 	if err != nil {
 		t.Fatal(err)
@@ -66,28 +66,28 @@ func (v *TestableUnixVolume) Teardown() {
 
 // serialize = false; readonly = false
 func TestUnixVolumeWithGenericTests(t *testing.T) {
-	DoGenericVolumeTests(t, func(t *testing.T) TestableVolume {
+	DoGenericVolumeTests(t, func(t TB) TestableVolume {
 		return NewTestableUnixVolume(t, false, false)
 	})
 }
 
 // serialize = false; readonly = true
 func TestUnixVolumeWithGenericTestsReadOnly(t *testing.T) {
-	DoGenericVolumeTests(t, func(t *testing.T) TestableVolume {
+	DoGenericVolumeTests(t, func(t TB) TestableVolume {
 		return NewTestableUnixVolume(t, false, true)
 	})
 }
 
 // serialize = true; readonly = false
 func TestUnixVolumeWithGenericTestsSerialized(t *testing.T) {
-	DoGenericVolumeTests(t, func(t *testing.T) TestableVolume {
+	DoGenericVolumeTests(t, func(t TB) TestableVolume {
 		return NewTestableUnixVolume(t, true, false)
 	})
 }
 
 // serialize = false; readonly = false
 func TestUnixVolumeHandlersWithGenericVolumeTests(t *testing.T) {
-	DoHandlersWithGenericVolumeTests(t, func(t *testing.T) (*RRVolumeManager, []TestableVolume) {
+	DoHandlersWithGenericVolumeTests(t, func(t TB) (*RRVolumeManager, []TestableVolume) {
 		vols := make([]Volume, 2)
 		testableUnixVols := make([]TestableVolume, 2)
 

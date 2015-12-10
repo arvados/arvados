@@ -189,7 +189,7 @@ func (v *AzureBlobVolume) Compare(loc string, expect []byte) error {
 	return compareReaderWithBuf(rdr, expect, loc[:32])
 }
 
-// Put sotres a Keep block as a block blob in the container.
+// Put stores a Keep block as a block blob in the container.
 func (v *AzureBlobVolume) Put(loc string, block []byte) error {
 	if v.readonly {
 		return MethodDisabledError
