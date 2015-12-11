@@ -4,6 +4,7 @@ import daemon
 import llfuse
 import logging
 import os
+import resource
 import signal
 import subprocess
 import sys
@@ -95,14 +96,6 @@ class Mount(object):
         if self.args.logfile:
             self.args.logfile = os.path.realpath(self.args.logfile)
 
-        # Daemonize as early as possible, so we don't accidentally close
-        # file descriptors we're using.
-        self.daemon_ctx = None
-        if not (self.args.exec_args or self.args.foreground):
-            os.chdir(self.args.mountpoint)
-            self.daemon_ctx = daemon.DaemonContext(working_directory='.')
-            self.daemon_ctx.open()
-
         try:
             self._setup_logging()
             self._setup_api()
@@ -141,8 +134,6 @@ class Mount(object):
         # Configure a log handler based on command-line switches.
         if self.args.logfile:
             log_handler = logging.FileHandler(self.args.logfile)
-        elif self.daemon_ctx:
-            log_handler = logging.NullHandler()
         else:
             log_handler = None
 
@@ -162,6 +153,7 @@ class Mount(object):
             keep_params={
                 "block_cache": arvados.keep.KeepBlockCache(self.args.file_cache)
             })
+        self.api.users().current().execute()
 
     def _setup_mount(self):
         self.operations = Operations(
@@ -189,6 +181,8 @@ class Mount(object):
 
         if self.args.collection is not None:
             # Set up the request handler with the collection at the root
+            # First check that the collection is readable
+            self.api.collections().get(uuid=self.args.collection).execute()
             self.args.mode = 'collection'
             dir_class = CollectionDirectory
             dir_args.append(self.args.collection)
@@ -325,6 +319,11 @@ From here, the following directories are available:
     def _run_standalone(self):
         try:
             llfuse.init(self.operations, self.args.mountpoint, self._fuse_options())
+
+            if not (self.args.exec_args or self.args.foreground):
+                self.daemon_ctx = daemon.DaemonContext(working_directory=os.path.dirname(self.args.mountpoint),
+                                                       files_preserve=range(3, resource.getrlimit(resource.RLIMIT_NOFILE)[1]))
+                self.daemon_ctx.open()
 
             # Subscribe to change events from API server
             self.operations.listen_for_events()

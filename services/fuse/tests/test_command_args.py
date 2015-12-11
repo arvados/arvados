@@ -187,3 +187,65 @@ class MountArgsTest(unittest.TestCase):
                         '--mount-tmp', name,
                         '--foreground', self.mntdir])
                     arvados_fuse.command.Mount(args)
+
+class MountErrorTest(unittest.TestCase):
+    def setUp(self):
+        self.mntdir = tempfile.mkdtemp()
+        run_test_server.run()
+        run_test_server.authorize_with("active")
+        self.logger = logging.getLogger("null")
+        self.logger.setLevel(logging.CRITICAL+1)
+
+    def tearDown(self):
+        if os.path.exists(self.mntdir):
+            # If the directory was not unmounted, this will raise an exception.
+            os.rmdir(self.mntdir)
+        run_test_server.reset()
+
+    def test_no_token(self):
+        del arvados.config._settings["ARVADOS_API_TOKEN"]
+        arvados.config._settings = {}
+        with self.assertRaises(SystemExit):
+            args = arvados_fuse.command.ArgumentParser().parse_args([self.mntdir])
+            arvados_fuse.command.Mount(args, logger=self.logger).run()
+
+    def test_no_host(self):
+        del arvados.config._settings["ARVADOS_API_HOST"]
+        with self.assertRaises(SystemExit):
+            args = arvados_fuse.command.ArgumentParser().parse_args([self.mntdir])
+            arvados_fuse.command.Mount(args, logger=self.logger).run()
+
+    def test_bogus_host(self):
+        arvados.config._settings["ARVADOS_API_HOST"] = "example.null"
+        with self.assertRaises(SystemExit):
+            args = arvados_fuse.command.ArgumentParser().parse_args([self.mntdir])
+            arvados_fuse.command.Mount(args, logger=self.logger).run()
+
+    def test_bogus_mount_dir(self):
+        # All FUSE errors in llfuse.init() are raised as RuntimeError
+        # An easy error to trigger is to supply a nonexistent mount point,
+        # so test that one.
+        #
+        # Other possible errors that also raise RuntimeError (but are much
+        # harder to test automatically because they depend on operating
+        # system configuration):
+        #
+        # The user doesn't have permission to use FUSE
+        # The user specified --allow-other but user_allow_other is not set
+        # in /etc/fuse.conf
+        os.rmdir(self.mntdir)
+        with self.assertRaises(SystemExit):
+            args = arvados_fuse.command.ArgumentParser().parse_args([self.mntdir])
+            arvados_fuse.command.Mount(args, logger=self.logger).run()
+
+    def test_unreadable_collection(self):
+        with self.assertRaises(SystemExit):
+            args = arvados_fuse.command.ArgumentParser().parse_args([
+                "--collection", "zzzzz-4zz18-zzzzzzzzzzzzzzz", self.mntdir])
+            arvados_fuse.command.Mount(args, logger=self.logger).run()
+
+    def test_unreadable_project(self):
+        with self.assertRaises(SystemExit):
+            args = arvados_fuse.command.ArgumentParser().parse_args([
+                "--project", "zzzzz-j7d0g-zzzzzzzzzzzzzzz", self.mntdir])
+            arvados_fuse.command.Mount(args, logger=self.logger).run()
