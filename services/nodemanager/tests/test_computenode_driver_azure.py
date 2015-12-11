@@ -45,7 +45,7 @@ class AzureComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase
         arv_node = testutil.arvados_node_mock(hostname=None)
         driver = self.new_driver()
         self.assertEqual('compute-000000000000063-zzzzz',
-                         driver.arvados_create_kwargs(arv_node)['name'])
+                         driver.arvados_create_kwargs(arv_node, testutil.MockSize(1))['name'])
 
     def check_node_tagged(self, cloud_node, expected_tags):
         tag_mock = self.driver_mock().ex_create_tags
