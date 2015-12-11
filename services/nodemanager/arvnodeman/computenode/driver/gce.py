@@ -64,7 +64,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             self.create_kwargs['ex_metadata']['sshKeys'] = (
                 'root:' + ssh_file.read().strip())
 
-    def arvados_create_kwargs(self, arvados_node):
+    def arvados_create_kwargs(self, arvados_node, size):
         cluster_id, _, node_id = arvados_node['uuid'].split('-')
         name = 'compute-{}-{}'.format(node_id, cluster_id)
         disks = [

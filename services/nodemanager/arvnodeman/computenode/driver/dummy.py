@@ -31,7 +31,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         if not node.private_ips:
             node.private_ips = ['10.10.0.{}'.format(node.id)]
 
-    def arvados_create_kwargs(self, arvados_node):
+    def arvados_create_kwargs(self, arvados_node, size):
         return {}
 
     def list_nodes(self):

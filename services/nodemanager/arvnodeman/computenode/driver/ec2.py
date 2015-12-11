@@ -64,7 +64,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
     def _init_subnet_id(self, subnet_id):
         return 'ex_subnet', self.search_for(subnet_id, 'ex_list_subnets')
 
-    def arvados_create_kwargs(self, arvados_node):
+    def arvados_create_kwargs(self, arvados_node, size):
         return {'name': arvados_node_fqdn(arvados_node),
                 'ex_userdata': self._make_ping_url(arvados_node)}
 

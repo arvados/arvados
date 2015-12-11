@@ -37,7 +37,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             auth_kwargs, list_kwargs, create_kwargs,
             driver_class)
 
-    def arvados_create_kwargs(self, arvados_node):
+    def arvados_create_kwargs(self, arvados_node, size):
         cluster_id, _, node_id = arvados_node['uuid'].split('-')
         name = 'compute-{}-{}'.format(node_id, cluster_id)
         tags = {
@@ -47,9 +47,13 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         tags.update(self.tags)
 
         customdata = """#!/bin/sh
-mkdir -p /var/tmp/arv-node-data/meta-data
+mkdir -p    /var/tmp/arv-node-data/meta-data
 echo "%s" > /var/tmp/arv-node-data/arv-ping-url
-""" % (tags['arv-ping-url'])
+echo "%s" > /var/tmp/arv-node-data/meta-data/instance-id
+echo "%s" > /var/tmp/arv-node-data/meta-data/instance-type
+""" % (tags['arv-ping-url'],
+       name,
+       size.id)
 
         return {
             'name': name,
