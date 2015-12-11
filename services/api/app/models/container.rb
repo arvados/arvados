@@ -152,11 +152,10 @@ class Container < ArvadosModel
     # that are associated with this container.
     if self.state_changed? and [Complete, Cancelled].include? self.state
       act_as_system_user do
-        # Try to close container requests associated with this container
+        # Notify container requests associated with this container
         ContainerRequest.where(container_uuid: uuid,
                                :state => ContainerRequest::Committed).each do |cr|
-          cr.state = ContainerRequest::Final
-          cr.save
+          cr.container_completed!
         end
 
         # Try to cancel any outstanding container requests made by this container.

@@ -62,6 +62,12 @@ class ContainerRequest < ArvadosModel
     %w(modified_by_client_uuid container_uuid requesting_container_uuid)
   end
 
+  def container_completed!
+    # may implement retry logic here in the future.
+    self.state = ContainerRequest::Final
+    self.save!
+  end
+
   protected
 
   def fill_field_defaults
