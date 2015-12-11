@@ -45,10 +45,16 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             'arv-ping-url': self._make_ping_url(arvados_node)
         }
         tags.update(self.tags)
+
+        customdata = """#!/bin/sh
+mkdir -p /var/tmp/arv-node-data/meta-data
+echo "%s" > /var/tmp/arv-node-data/arv-ping-url
+""" % (tags['arv-ping-url'])
+
         return {
             'name': name,
             'ex_tags': tags,
-            'ex_customdata': tags['arv-ping-url']
+            'ex_customdata': customdata
         }
 
     def sync_node(self, cloud_node, arvados_node):
