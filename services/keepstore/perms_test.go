@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strconv"
 	"testing"
 	"time"
 )
@@ -23,103 +24,39 @@ const (
 )
 
 func TestSignLocator(t *testing.T) {
-	PermissionSecret = []byte(knownKey)
-	defer func() { PermissionSecret = nil }()
+	defer func(b []byte) {
+		PermissionSecret = b
+	}(PermissionSecret)
 
-	if ts, err := ParseHexTimestamp(knownTimestamp); err != nil {
-		t.Errorf("bad knownTimestamp %s", knownTimestamp)
-	} else {
-		if knownSignedLocator != SignLocator(knownLocator, knownToken, ts) {
-			t.Fail()
-		}
+	tsInt, err := strconv.ParseInt(knownTimestamp, 16, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t0 := time.Unix(tsInt, 0)
+
+	PermissionSecret = []byte(knownKey)
+	if x := SignLocator(knownLocator, knownToken, t0); x != knownSignedLocator {
+		t.Fatalf("Got %+q, expected %+q", x, knownSignedLocator)
+	}
+
+	PermissionSecret = []byte("arbitrarykey")
+	if x := SignLocator(knownLocator, knownToken, t0); x == knownSignedLocator {
+		t.Fatalf("Got same signature %+q, even though PermissionSecret changed", x)
 	}
 }
 
-func TestVerifySignature(t *testing.T) {
+func TestVerifyLocator(t *testing.T) {
+	defer func(b []byte) {
+		PermissionSecret = b
+	}(PermissionSecret)
+
 	PermissionSecret = []byte(knownKey)
-	defer func() { PermissionSecret = nil }()
-
-	if VerifySignature(knownSignedLocator, knownToken) != nil {
-		t.Fail()
-	}
-}
-
-func TestVerifySignatureExtraHints(t *testing.T) {
-	PermissionSecret = []byte(knownKey)
-	defer func() { PermissionSecret = nil }()
-
-	if VerifySignature(knownLocator+"+K@xyzzy"+knownSigHint, knownToken) != nil {
-		t.Fatal("Verify cannot handle hint before permission signature")
+	if err := VerifySignature(knownSignedLocator, knownToken); err != nil {
+		t.Fatal(err)
 	}
 
-	if VerifySignature(knownLocator+knownSigHint+"+Zfoo", knownToken) != nil {
-		t.Fatal("Verify cannot handle hint after permission signature")
-	}
-
-	if VerifySignature(knownLocator+"+K@xyzzy"+knownSigHint+"+Zfoo", knownToken) != nil {
-		t.Fatal("Verify cannot handle hints around permission signature")
-	}
-}
-
-// The size hint on the locator string should not affect signature validation.
-func TestVerifySignatureWrongSize(t *testing.T) {
-	PermissionSecret = []byte(knownKey)
-	defer func() { PermissionSecret = nil }()
-
-	if VerifySignature(knownHash+"+999999"+knownSigHint, knownToken) != nil {
-		t.Fatal("Verify cannot handle incorrect size hint")
-	}
-
-	if VerifySignature(knownHash+knownSigHint, knownToken) != nil {
-		t.Fatal("Verify cannot handle missing size hint")
-	}
-}
-
-func TestVerifySignatureBadSig(t *testing.T) {
-	PermissionSecret = []byte(knownKey)
-	defer func() { PermissionSecret = nil }()
-
-	badLocator := knownLocator + "+Aaaaaaaaaaaaaaaa@" + knownTimestamp
-	if VerifySignature(badLocator, knownToken) != PermissionError {
-		t.Fail()
-	}
-}
-
-func TestVerifySignatureBadTimestamp(t *testing.T) {
-	PermissionSecret = []byte(knownKey)
-	defer func() { PermissionSecret = nil }()
-
-	badLocator := knownLocator + "+A" + knownSignature + "@OOOOOOOl"
-	if VerifySignature(badLocator, knownToken) != PermissionError {
-		t.Fail()
-	}
-}
-
-func TestVerifySignatureBadSecret(t *testing.T) {
-	PermissionSecret = []byte("00000000000000000000")
-	defer func() { PermissionSecret = nil }()
-
-	if VerifySignature(knownSignedLocator, knownToken) != PermissionError {
-		t.Fail()
-	}
-}
-
-func TestVerifySignatureBadToken(t *testing.T) {
-	PermissionSecret = []byte(knownKey)
-	defer func() { PermissionSecret = nil }()
-
-	if VerifySignature(knownSignedLocator, "00000000") != PermissionError {
-		t.Fail()
-	}
-}
-
-func TestVerifySignatureExpired(t *testing.T) {
-	PermissionSecret = []byte(knownKey)
-	defer func() { PermissionSecret = nil }()
-
-	yesterday := time.Now().AddDate(0, 0, -1)
-	expiredLocator := SignLocator(knownHash, knownToken, yesterday)
-	if VerifySignature(expiredLocator, knownToken) != ExpiredError {
-		t.Fail()
+	PermissionSecret = []byte("arbitrarykey")
+	if err := VerifySignature(knownSignedLocator, knownToken); err == nil {
+		t.Fatal("Verified signature even with wrong PermissionSecret")
 	}
 }

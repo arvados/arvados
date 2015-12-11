@@ -27,7 +27,7 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 
 	// start api and keep servers
 	arvadostest.StartAPI()
-	arvadostest.StartKeep()
+	arvadostest.StartKeep(2, false)
 
 	// make arvadosclient
 	arv, err := arvadosclient.MakeArvadosClient()
@@ -39,7 +39,6 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 	keepClient = &keepclient.KeepClient{
 		Arvados:       &arv,
 		Want_replicas: 1,
-		Using_proxy:   true,
 		Client:        &http.Client{},
 	}
 
@@ -82,6 +81,8 @@ func TestPullWorkerIntegration_GetNonExistingLocator(t *testing.T) {
 	}
 
 	pullRequest := SetupPullWorkerIntegrationTest(t, testData, false)
+	defer arvadostest.StopAPI()
+	defer arvadostest.StopKeep(2)
 
 	performPullWorkerIntegrationTest(testData, pullRequest, t)
 }
@@ -97,6 +98,8 @@ func TestPullWorkerIntegration_GetExistingLocator(t *testing.T) {
 	}
 
 	pullRequest := SetupPullWorkerIntegrationTest(t, testData, true)
+	defer arvadostest.StopAPI()
+	defer arvadostest.StopKeep(2)
 
 	performPullWorkerIntegrationTest(testData, pullRequest, t)
 }

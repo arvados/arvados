@@ -10,6 +10,15 @@ class CollectionsControllerTest < ActionController::TestCase
 
   NONEXISTENT_COLLECTION = "ffffffffffffffffffffffffffffffff+0"
 
+  def config_anonymous enable
+    Rails.configuration.anonymous_user_token =
+      if enable
+        api_fixture('api_client_authorizations')['anonymous']['api_token']
+      else
+        false
+      end
+  end
+
   def stub_file_content
     # For the duration of the current test case, stub file download
     # content with a randomized (but recognizable) string. Return the
@@ -167,8 +176,7 @@ class CollectionsControllerTest < ActionController::TestCase
   end
 
   test 'anonymous download' do
-    Rails.configuration.anonymous_user_token =
-      api_fixture('api_client_authorizations')['anonymous']['api_token']
+    config_anonymous true
     expect_content = stub_file_content
     get :show_file, {
       uuid: api_fixture('collections')['user_agreement_in_anonymously_accessible_project']['uuid'],
@@ -205,15 +213,14 @@ class CollectionsControllerTest < ActionController::TestCase
                      "using a reader token set the session's API token")
   end
 
-  [false, api_fixture('api_client_authorizations')['anonymous']['api_token']].
-    each do |anon_conf|
-    test "download a file using a reader token with insufficient scope (anon_conf=#{!!anon_conf})" do
-      Rails.configuration.anonymous_user_token = anon_conf
+  [false, true].each do |anon|
+    test "download a file using a reader token with insufficient scope, anon #{anon}" do
+      config_anonymous anon
       params = collection_params(:foo_file, 'foo')
       params[:reader_token] =
         api_fixture('api_client_authorizations')['active_noscope']['api_token']
       get(:show_file, params)
-      if anon_conf
+      if anon
         # Some files can be shown without a valid token, but not this one.
         assert_response 404
       else
@@ -463,8 +470,7 @@ class CollectionsControllerTest < ActionController::TestCase
   end
 
   test "anonymous user accesses collection in shared project" do
-    Rails.configuration.anonymous_user_token =
-      api_fixture('api_client_authorizations')['anonymous']['api_token']
+    config_anonymous true
     collection = api_fixture('collections')['public_text_file']
     get(:show, {id: collection['uuid']})
 
@@ -513,5 +519,110 @@ class CollectionsControllerTest < ActionController::TestCase
   test "No Upload tab on non-writable collection" do
     get :show, {id: api_fixture('collections')['user_agreement']['uuid']}, session_for(:active)
     assert_not_includes @response.body, '<a href="#Upload"'
+  end
+
+  def setup_for_keep_web cfg='https://%{uuid_or_pdh}.example', dl_cfg=false
+    Rails.configuration.keep_web_url = cfg
+    Rails.configuration.keep_web_download_url = dl_cfg
+    @controller.expects(:file_enumerator).never
+  end
+
+  %w(uuid portable_data_hash).each do |id_type|
+    test "Redirect to keep_web_url via #{id_type}" do
+      setup_for_keep_web
+      tok = api_fixture('api_client_authorizations')['active']['api_token']
+      id = api_fixture('collections')['w_a_z_file'][id_type]
+      get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
+      assert_response :redirect
+      assert_equal "https://#{id.sub '+', '-'}.example/_/w%20a%20z?api_token=#{tok}", @response.redirect_url
+    end
+
+    test "Redirect to keep_web_url via #{id_type} with reader token" do
+      setup_for_keep_web
+      tok = api_fixture('api_client_authorizations')['active']['api_token']
+      id = api_fixture('collections')['w_a_z_file'][id_type]
+      get :show_file, {uuid: id, file: "w a z", reader_token: tok}, session_for(:expired)
+      assert_response :redirect
+      assert_equal "https://#{id.sub '+', '-'}.example/t=#{tok}/_/w%20a%20z", @response.redirect_url
+    end
+
+    test "Redirect to keep_web_url via #{id_type} with no token" do
+      setup_for_keep_web
+      config_anonymous true
+      id = api_fixture('collections')['public_text_file'][id_type]
+      get :show_file, {uuid: id, file: "Hello World.txt"}
+      assert_response :redirect
+      assert_equal "https://#{id.sub '+', '-'}.example/_/Hello%20World.txt", @response.redirect_url
+    end
+
+    test "Redirect to keep_web_url via #{id_type} with disposition param" do
+      setup_for_keep_web
+      config_anonymous true
+      id = api_fixture('collections')['public_text_file'][id_type]
+      get :show_file, {
+        uuid: id,
+        file: "Hello World.txt",
+        disposition: 'attachment',
+      }
+      assert_response :redirect
+      assert_equal "https://#{id.sub '+', '-'}.example/_/Hello%20World.txt?disposition=attachment", @response.redirect_url
+    end
+
+    test "Redirect to keep_web_download_url via #{id_type}" do
+      setup_for_keep_web('https://collections.example/c=%{uuid_or_pdh}',
+                         'https://download.example/c=%{uuid_or_pdh}')
+      tok = api_fixture('api_client_authorizations')['active']['api_token']
+      id = api_fixture('collections')['w_a_z_file'][id_type]
+      get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
+      assert_response :redirect
+      assert_equal "https://download.example/c=#{id.sub '+', '-'}/_/w%20a%20z?api_token=#{tok}", @response.redirect_url
+    end
+  end
+
+  [false, true].each do |anon|
+    test "No redirect to keep_web_url if collection not found, anon #{anon}" do
+      setup_for_keep_web
+      config_anonymous anon
+      id = api_fixture('collections')['w_a_z_file']['uuid']
+      get :show_file, {uuid: id, file: "w a z"}, session_for(:spectator)
+      assert_response 404
+    end
+
+    test "Redirect download to keep_web_download_url, anon #{anon}" do
+      config_anonymous anon
+      setup_for_keep_web('https://collections.example/c=%{uuid_or_pdh}',
+                         'https://download.example/c=%{uuid_or_pdh}')
+      tok = api_fixture('api_client_authorizations')['active']['api_token']
+      id = api_fixture('collections')['public_text_file']['uuid']
+      get :show_file, {
+        uuid: id,
+        file: 'Hello world.txt',
+        disposition: 'attachment',
+      }, session_for(:active)
+      assert_response :redirect
+      expect_url = "https://download.example/c=#{id.sub '+', '-'}/_/Hello%20world.txt"
+      if not anon
+        expect_url += "?api_token=#{tok}"
+      end
+      assert_equal expect_url, @response.redirect_url
+    end
+  end
+
+  test "Error if file is impossible to retrieve from keep_web_url" do
+    # Cannot pass a session token using a single-origin keep-web URL,
+    # cannot read this collection without a session token.
+    setup_for_keep_web 'https://collections.example/c=%{uuid_or_pdh}', false
+    id = api_fixture('collections')['w_a_z_file']['uuid']
+    get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
+    assert_response 422
+  end
+
+  test "Redirect preview to keep_web_download_url when preview is disabled" do
+    setup_for_keep_web false, 'https://download.example/c=%{uuid_or_pdh}'
+    tok = api_fixture('api_client_authorizations')['active']['api_token']
+    id = api_fixture('collections')['w_a_z_file']['uuid']
+    get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
+    assert_response :redirect
+    assert_equal "https://download.example/c=#{id.sub '+', '-'}/_/w%20a%20z?api_token=#{tok}", @response.redirect_url
   end
 end

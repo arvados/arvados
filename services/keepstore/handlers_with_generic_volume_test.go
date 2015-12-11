@@ -2,19 +2,18 @@ package main
 
 import (
 	"bytes"
-	"testing"
 )
 
 // A TestableVolumeManagerFactory creates a volume manager with at least two TestableVolume instances.
 // The factory function, and the TestableVolume instances it returns, can use "t" to write
 // logs, fail the current test, etc.
-type TestableVolumeManagerFactory func(t *testing.T) (*RRVolumeManager, []TestableVolume)
+type TestableVolumeManagerFactory func(t TB) (*RRVolumeManager, []TestableVolume)
 
 // DoHandlersWithGenericVolumeTests runs a set of handler tests with a
 // Volume Manager comprised of TestableVolume instances.
 // It calls factory to create a volume manager with TestableVolume
 // instances for each test case, to avoid leaking state between tests.
-func DoHandlersWithGenericVolumeTests(t *testing.T, factory TestableVolumeManagerFactory) {
+func DoHandlersWithGenericVolumeTests(t TB, factory TestableVolumeManagerFactory) {
 	testGetBlock(t, factory, TestHash, TestBlock)
 	testGetBlock(t, factory, EmptyHash, EmptyBlock)
 	testPutRawBadDataGetBlock(t, factory, TestHash, TestBlock, []byte("baddata"))
@@ -26,7 +25,7 @@ func DoHandlersWithGenericVolumeTests(t *testing.T, factory TestableVolumeManage
 }
 
 // Setup RRVolumeManager with TestableVolumes
-func setupHandlersWithGenericVolumeTest(t *testing.T, factory TestableVolumeManagerFactory) []TestableVolume {
+func setupHandlersWithGenericVolumeTest(t TB, factory TestableVolumeManagerFactory) []TestableVolume {
 	vm, testableVolumes := factory(t)
 	KeepVM = vm
 
@@ -39,7 +38,7 @@ func setupHandlersWithGenericVolumeTest(t *testing.T, factory TestableVolumeMana
 }
 
 // Put a block using PutRaw in just one volume and Get it using GetBlock
-func testGetBlock(t *testing.T, factory TestableVolumeManagerFactory, testHash string, testBlock []byte) {
+func testGetBlock(t TB, factory TestableVolumeManagerFactory, testHash string, testBlock []byte) {
 	testableVolumes := setupHandlersWithGenericVolumeTest(t, factory)
 
 	// Put testBlock in one volume
@@ -56,7 +55,7 @@ func testGetBlock(t *testing.T, factory TestableVolumeManagerFactory, testHash s
 }
 
 // Put a bad block using PutRaw and get it.
-func testPutRawBadDataGetBlock(t *testing.T, factory TestableVolumeManagerFactory,
+func testPutRawBadDataGetBlock(t TB, factory TestableVolumeManagerFactory,
 	testHash string, testBlock []byte, badData []byte) {
 	testableVolumes := setupHandlersWithGenericVolumeTest(t, factory)
 
@@ -72,16 +71,16 @@ func testPutRawBadDataGetBlock(t *testing.T, factory TestableVolumeManagerFactor
 }
 
 // Invoke PutBlock twice to ensure CompareAndTouch path is tested.
-func testPutBlock(t *testing.T, factory TestableVolumeManagerFactory, testHash string, testBlock []byte) {
+func testPutBlock(t TB, factory TestableVolumeManagerFactory, testHash string, testBlock []byte) {
 	setupHandlersWithGenericVolumeTest(t, factory)
 
 	// PutBlock
-	if err := PutBlock(testBlock, testHash); err != nil {
+	if _, err := PutBlock(testBlock, testHash); err != nil {
 		t.Fatalf("Error during PutBlock: %s", err)
 	}
 
 	// Check that PutBlock succeeds again even after CompareAndTouch
-	if err := PutBlock(testBlock, testHash); err != nil {
+	if _, err := PutBlock(testBlock, testHash); err != nil {
 		t.Fatalf("Error during PutBlock: %s", err)
 	}
 
@@ -95,7 +94,7 @@ func testPutBlock(t *testing.T, factory TestableVolumeManagerFactory, testHash s
 }
 
 // Put a bad block using PutRaw, overwrite it using PutBlock and get it.
-func testPutBlockCorrupt(t *testing.T, factory TestableVolumeManagerFactory,
+func testPutBlockCorrupt(t TB, factory TestableVolumeManagerFactory,
 	testHash string, testBlock []byte, badData []byte) {
 	testableVolumes := setupHandlersWithGenericVolumeTest(t, factory)
 
@@ -104,7 +103,7 @@ func testPutBlockCorrupt(t *testing.T, factory TestableVolumeManagerFactory,
 	testableVolumes[1].PutRaw(testHash, badData)
 
 	// Check that PutBlock with good data succeeds
-	if err := PutBlock(testBlock, testHash); err != nil {
+	if _, err := PutBlock(testBlock, testHash); err != nil {
 		t.Fatalf("Error during PutBlock for %q: %s", testHash, err)
 	}
 

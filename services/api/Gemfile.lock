@@ -41,10 +41,10 @@ GEM
       google-api-client (~> 0.6.3, >= 0.6.3)
       json (~> 1.7, >= 1.7.7)
       jwt (>= 0.1.5, < 1.0.0)
-    arvados-cli (0.1.20150205181653)
+    arvados-cli (0.1.20151023190001)
       activesupport (~> 3.2, >= 3.2.13)
       andand (~> 1.3, >= 1.3.3)
-      arvados (~> 0.1, >= 0.1.20150615153458)
+      arvados (~> 0.1, >= 0.1.20150128223554)
       curb (~> 0.8)
       google-api-client (~> 0.6.3, >= 0.6.3)
       json (~> 1.7, >= 1.7.7)
@@ -69,7 +69,7 @@ GEM
       coffee-script-source
       execjs
     coffee-script-source (1.7.0)
-    curb (0.8.6)
+    curb (0.8.8)
     daemon_controller (1.2.0)
     database_cleaner (1.2.0)
     erubis (2.7.0)
@@ -228,7 +228,7 @@ DEPENDENCIES
   acts_as_api
   andand
   arvados (>= 0.1.20150615153458)
-  arvados-cli (>= 0.1.20150128223752)
+  arvados-cli (>= 0.1.20151023185755)
   coffee-rails (~> 3.2.0)
   database_cleaner
   factory_girl_rails
@@ -256,3 +256,6 @@ DEPENDENCIES
   therubyracer
   trollop
   uglifier (>= 1.0.3)
+
+BUNDLED WITH
+   1.10.6

@@ -30,6 +30,7 @@ def arvados_node_mock(node_num=99, job_uuid=None, age=-1, **kwargs):
             'ip_address': ip_address_mock(node_num),
             'job_uuid': job_uuid,
             'crunch_worker_state': crunch_worker_state,
+            'properties': {},
             'info': {'ping_secret': 'defaulttestsecret'}}
     node.update(kwargs)
     return node
@@ -44,17 +45,6 @@ def cloud_object_mock(name_id, **extra):
     cloud_object.extra = extra
     return cloud_object
 
-def cloud_node_mock(node_num=99, **extra):
-    node = mock.NonCallableMagicMock(
-        ['id', 'name', 'state', 'public_ips', 'private_ips', 'driver', 'size',
-         'image', 'extra'],
-        name='cloud_node')
-    node.id = str(node_num)
-    node.name = node.id
-    node.public_ips = []
-    node.private_ips = [ip_address_mock(node_num)]
-    node.extra = extra
-    return node
 
 def cloud_node_fqdn(node):
     # We intentionally put the FQDN somewhere goofy to make sure tested code is
@@ -148,3 +138,16 @@ class RemotePollLoopActorTestMixin(ActorTestMixin):
         self.subscriber = mock.Mock(name='subscriber_mock')
         self.monitor = self.TEST_CLASS.start(
             self.client, self.timer, *args, **kwargs).proxy()
+
+def cloud_node_mock(node_num=99, size=MockSize(1), **extra):
+    node = mock.NonCallableMagicMock(
+        ['id', 'name', 'state', 'public_ips', 'private_ips', 'driver', 'size',
+         'image', 'extra'],
+        name='cloud_node')
+    node.id = str(node_num)
+    node.name = node.id
+    node.size = size
+    node.public_ips = []
+    node.private_ips = [ip_address_mock(node_num)]
+    node.extra = extra
+    return node

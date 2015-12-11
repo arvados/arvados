@@ -127,6 +127,7 @@ my $job_api_token;
 my $no_clear_tmp;
 my $resume_stash;
 my $docker_bin = "docker.io";
+my $docker_run_args = "";
 GetOptions('force-unlock' => \$force_unlock,
            'git-dir=s' => \$git_dir,
            'job=s' => \$jobspec,
@@ -134,6 +135,7 @@ GetOptions('force-unlock' => \$force_unlock,
            'no-clear-tmp' => \$no_clear_tmp,
            'resume-stash=s' => \$resume_stash,
            'docker-bin=s' => \$docker_bin,
+           'docker-run-args=s' => \$docker_run_args,
     );
 
 if (defined $job_api_token) {
@@ -411,7 +413,7 @@ if (!defined $no_clear_tmp) {
 }
 
 # If this job requires a Docker image, install that.
-my ($docker_locator, $docker_stream, $docker_hash, $docker_limitmem);
+my ($docker_locator, $docker_stream, $docker_hash, $docker_limitmem, $dockeruserarg);
 if ($docker_locator = $Job->{docker_image_locator}) {
   ($docker_stream, $docker_hash) = find_docker_image($docker_locator);
   if (!$docker_hash)
@@ -448,6 +450,42 @@ fi
        ["/bin/sh", "-ec", "$docker_bin run --help | grep -qe --memory-swap="],
       {fork => 1});
   $docker_limitmem = ($? == 0);
+
+  # Find a non-root Docker user to use.
+  # Tries the default user for the container, then 'crunch', then 'nobody',
+  # testing for whether the actual user id is non-zero.  This defends against
+  # mistakes but not malice, but we intend to harden the security in the future
+  # so we don't want anyone getting used to their jobs running as root in their
+  # Docker containers.
+  my @tryusers = ("", "crunch", "nobody");
+  foreach my $try_user (@tryusers) {
+    my $try_user_arg;
+    if ($try_user eq "") {
+      Log(undef, "Checking if container default user is not UID 0");
+      $try_user_arg = "";
+    } else {
+      Log(undef, "Checking if user '$try_user' is not UID 0");
+      $try_user_arg = "--user=$try_user";
+    }
+    srun(["srun", "--nodelist=" . $node[0]],
+         ["/bin/sh", "-ec",
+          "a=`$docker_bin run $docker_run_args $try_user_arg $docker_hash id --user` && " .
+          " test \$a -ne 0"],
+         {fork => 1});
+    if ($? == 0) {
+      $dockeruserarg = $try_user_arg;
+      if ($try_user eq "") {
+        Log(undef, "Container will run with default user");
+      } else {
+        Log(undef, "Container will run with $dockeruserarg");
+      }
+      last;
+    }
+  }
+
+  if (!defined $dockeruserarg) {
+    croak("Could not find a user in container that is not UID 0 (tried default user, @tryusers) or there was a problem running 'id' in the container.");
+  }
 
   if ($Job->{arvados_sdk_version}) {
     # The job also specifies an Arvados SDK version.  Add the SDKs to the
@@ -784,6 +822,9 @@ update_progress_stats();
 THISROUND:
 for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 {
+  # Don't create new tasks if we already know the job's final result.
+  last if defined($main::success);
+
   my $id = $jobstep_todo[$todo_ptr];
   my $Jobstep = $jobstep[$id];
   if ($Jobstep->{level} != $level)
@@ -831,10 +872,11 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     $ENV{"TASK_SLOT_NUMBER"} = $slot[$childslot]->{cpu};
     $ENV{"TASK_WORK"} = $ENV{"CRUNCH_TMP"}."/task/$childslotname";
     $ENV{"HOME"} = $ENV{"TASK_WORK"};
-    $ENV{"TASK_KEEPMOUNT"} = $ENV{"TASK_WORK"}.".keep";
     $ENV{"TASK_TMPDIR"} = $ENV{"TASK_WORK"}; # deprecated
     $ENV{"CRUNCH_NODE_SLOTS"} = $round_max_slots{$ENV{TASK_SLOT_NODE}};
     $ENV{"PATH"} = $ENV{"CRUNCH_INSTALL"} . "/bin:" . $ENV{"PATH"};
+
+    my $keep_mnt = $ENV{"TASK_WORK"}.".keep";
 
     $ENV{"GZIP"} = "-n";
 
@@ -844,22 +886,35 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       qw(-n1 -c1 -N1 -D), $ENV{'TMPDIR'},
       "--job-name=$job_id.$id.$$",
 	);
+
+    my $stdbuf = " stdbuf --output=0 --error=0 ";
+
+    my $arv_file_cache = "";
+    if (defined($Job->{'runtime_constraints'}->{'keep_cache_mb_per_task'})) {
+      $arv_file_cache = "--file-cache=" . ($Job->{'runtime_constraints'}->{'keep_cache_mb_per_task'} * 1024 * 1024);
+    }
+
     my $command =
-	"if [ -e $ENV{TASK_WORK} ]; then rm -rf $ENV{TASK_WORK}; fi; "
-        ."mkdir -p $ENV{CRUNCH_TMP} $ENV{JOB_WORK} $ENV{TASK_WORK} $ENV{TASK_KEEPMOUNT} "
-	."&& cd $ENV{CRUNCH_TMP} "
+	"if [ -e \Q$ENV{TASK_WORK}\E ]; then rm -rf \Q$ENV{TASK_WORK}\E; fi; "
+        ."mkdir -p \Q$ENV{CRUNCH_TMP}\E \Q$ENV{JOB_WORK}\E \Q$ENV{TASK_WORK}\E \Q$keep_mnt\E "
+	."&& cd \Q$ENV{CRUNCH_TMP}\E "
         # These environment variables get used explicitly later in
         # $command.  No tool is expected to read these values directly.
         .q{&& MEM=$(awk '($1 == "MemTotal:"){print $2}' </proc/meminfo) }
         .q{&& SWAP=$(awk '($1 == "SwapTotal:"){print $2}' </proc/meminfo) }
         ."&& MEMLIMIT=\$(( (\$MEM * 95) / ($ENV{CRUNCH_NODE_SLOTS} * 100) )) "
         ."&& let SWAPLIMIT=\$MEMLIMIT+\$SWAP ";
-    $command .= "&& exec arv-mount --by-id --allow-other $ENV{TASK_KEEPMOUNT} --exec ";
+
+    $command .= "&& exec arv-mount --read-write --mount-by-pdh=by_pdh --mount-tmp=tmp --crunchstat-interval=10 --allow-other $arv_file_cache \Q$keep_mnt\E --exec ";
+    $ENV{TASK_KEEPMOUNT} = "$keep_mnt/by_pdh";
+    $ENV{TASK_KEEPMOUNT_TMP} = "$keep_mnt/tmp";
+
     if ($docker_hash)
     {
-      my $cidfile = "$ENV{CRUNCH_TMP}/$Jobstep->{arvados_task}->{uuid}-$Jobstep->{failures}.cid";
+      my $containername = "$Jobstep->{arvados_task}->{uuid}-$Jobstep->{failures}";
+      my $cidfile = "$ENV{CRUNCH_TMP}/$containername.cid";
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -cgroup-parent=docker -cgroup-cid=$cidfile -poll=10000 ";
-      $command .= "$docker_bin run --rm=true --attach=stdout --attach=stderr --attach=stdin -i --user=crunch --cidfile=$cidfile --sig-proxy ";
+      $command .= "$docker_bin run $docker_run_args --name=$containername --attach=stdout --attach=stderr --attach=stdin -i \Q$dockeruserarg\E --cidfile=$cidfile --sig-proxy ";
       # We only set memory limits if Docker lets us limit both memory and swap.
       # Memory limits alone have been supported longer, but subprocesses tend
       # to get SIGKILL if they exceed that without any swap limit set.
@@ -874,13 +929,17 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       $command .= "--volume=\Q$ENV{CRUNCH_SRC}:$ENV{CRUNCH_SRC}:ro\E ";
       $command .= "--volume=\Q$ENV{CRUNCH_INSTALL}:$ENV{CRUNCH_INSTALL}:ro\E ";
 
-      # Currently, we make arv-mount's mount point appear at /keep
-      # inside the container (instead of using the same path as the
-      # host like we do with CRUNCH_SRC and CRUNCH_INSTALL). However,
-      # crunch scripts and utilities must not rely on this. They must
-      # use $TASK_KEEPMOUNT.
+      # Currently, we make the "by_pdh" directory in arv-mount's mount
+      # point appear at /keep inside the container (instead of using
+      # the same path as the host like we do with CRUNCH_SRC and
+      # CRUNCH_INSTALL). However, crunch scripts and utilities must
+      # not rely on this. They must use $TASK_KEEPMOUNT.
       $command .= "--volume=\Q$ENV{TASK_KEEPMOUNT}:/keep:ro\E ";
       $ENV{TASK_KEEPMOUNT} = "/keep";
+
+      # Ditto TASK_KEEPMOUNT_TMP, as /keep_tmp.
+      $command .= "--volume=\Q$ENV{TASK_KEEPMOUNT_TMP}:/keep_tmp\E ";
+      $ENV{TASK_KEEPMOUNT_TMP} = "/keep_tmp";
 
       # TASK_WORK is almost exactly like a docker data volume: it
       # starts out empty, is writable, and persists until no
@@ -917,12 +976,25 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       }
       $command .= "--env=\QHOME=$ENV{HOME}\E ";
       $command .= "\Q$docker_hash\E ";
-      $command .= "stdbuf --output=0 --error=0 ";
-      $command .= "perl - $ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
+
+      if ($Job->{arvados_sdk_version}) {
+        $command .= $stdbuf;
+        $command .= "perl - \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E";
+      } else {
+        $command .= "/bin/sh -c \'python -c " .
+            '"from pkg_resources import get_distribution as get; print \"Using Arvados SDK version\", get(\"arvados-python-client\").version"' .
+            ">&2 2>/dev/null; " .
+            "mkdir -p \"$ENV{JOB_WORK}\" \"$ENV{TASK_WORK}\" && " .
+            "if which stdbuf >/dev/null ; then " .
+            "  exec $stdbuf \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E ;" .
+            " else " .
+            "  exec \Q$ENV{CRUNCH_SRC}/crunch_scripts/$Job->{script}\E ;" .
+            " fi\'";
+      }
     } else {
       # Non-docker run
       $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -poll=10000 ";
-      $command .= "stdbuf --output=0 --error=0 ";
+      $command .= $stdbuf;
       $command .= "perl - $ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     }
 
@@ -968,7 +1040,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 	 ||
 	 ($round_num_freeslots > @freeslot && $todo_ptr+1 > $#jobstep_todo))
   {
-    last THISROUND if $main::please_freeze || defined($main::success);
+    last THISROUND if $main::please_freeze;
     if ($main::please_info)
     {
       $main::please_info = 0;
@@ -980,7 +1052,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     my $gotsome
 	= readfrompipes ()
 	+ reapchildren ();
-    if (!$gotsome)
+    if (!$gotsome || ($latest_refresh + 2 < scalar time))
     {
       check_refresh_wanted();
       check_squeue();
@@ -1129,6 +1201,9 @@ sub reapchildren
 
   if (!defined $task_success) {
     # task did not indicate one way or the other --> fail
+    Log($jobstepid, sprintf(
+          "ERROR: Task process exited %s, but never updated its task record to indicate success and record its output.",
+          exit_status_s($childstatus)));
     $Jobstep->{'arvados_task'}->{success} = 0;
     $Jobstep->{'arvados_task'}->save;
     $task_success = 0;
@@ -1645,20 +1720,24 @@ sub log_writer_finish()
 
   close($log_pipe_in);
 
+  my $logger_failed = 0;
   my $read_result = log_writer_read_output(120);
   if ($read_result == -1) {
+    $logger_failed = -1;
     Log (undef, "timed out reading from 'arv-put'");
   } elsif ($read_result != 0) {
+    $logger_failed = -2;
     Log(undef, "failed to read arv-put log manifest to EOF");
   }
 
   waitpid($log_pipe_pid, 0);
   if ($?) {
+    $logger_failed ||= $?;
     Log(undef, "log_writer_finish: arv-put exited " . exit_status_s($?))
   }
 
   close($log_pipe_out);
-  my $arv_put_output = $log_pipe_out_buf;
+  my $arv_put_output = $logger_failed ? undef : $log_pipe_out_buf;
   $log_pipe_pid = $log_pipe_in = $log_pipe_out = $log_pipe_out_buf =
       $log_pipe_out_select = undef;
 
@@ -1724,13 +1803,13 @@ sub save_meta
   my $justcheckpoint = shift; # false if this will be the last meta saved
   return if $justcheckpoint;  # checkpointing is not relevant post-Warehouse.pm
   return unless log_writer_is_active();
+  my $log_manifest = log_writer_finish();
+  return unless defined($log_manifest);
 
-  my $log_manifest = "";
   if ($Job->{log}) {
     my $prev_log_coll = api_call("collections/get", uuid => $Job->{log});
-    $log_manifest .= $prev_log_coll->{manifest_text};
+    $log_manifest = $prev_log_coll->{manifest_text} . $log_manifest;
   }
-  $log_manifest .= log_writer_finish();
 
   my $log_coll = api_call(
     "collections/create", ensure_unique_name => 1, collection => {
@@ -2109,10 +2188,11 @@ if (@ARGV) {
     $Log->("Built Python SDK virtualenv");
   }
 
-  my $pip_bin = "pip";
+  my @pysdk_version_cmd = ("python", "-c",
+    "from pkg_resources import get_distribution as get; print get('arvados-python-client').version");
   if ($venv_built) {
     $Log->("Running in Python SDK virtualenv");
-    $pip_bin = "$venv_dir/bin/pip";
+    @pysdk_version_cmd = ();
     my $orig_argv = join(" ", map { quotemeta($_); } @ARGV);
     @ARGV = ("/bin/sh", "-ec",
              ". \Q$venv_dir/bin/activate\E; exec $orig_argv");
@@ -2121,14 +2201,18 @@ if (@ARGV) {
            "\$PATH. Can't install Python SDK.");
   }
 
-  my $pkgs = `(\Q$pip_bin\E freeze 2>/dev/null | grep arvados) || dpkg-query --show '*arvados*'`;
-  if ($pkgs) {
-    $Log->("Using Arvados SDK:");
-    foreach my $line (split /\n/, $pkgs) {
-      $Log->($line);
+  if (@pysdk_version_cmd) {
+    open(my $pysdk_version_pipe, "-|", @pysdk_version_cmd);
+    my $pysdk_version = <$pysdk_version_pipe>;
+    close($pysdk_version_pipe);
+    if ($? == 0) {
+      chomp($pysdk_version);
+      $Log->("Using Arvados SDK version $pysdk_version");
+    } else {
+      # A lot could've gone wrong here, but pretty much all of it means that
+      # Python won't be able to load the Arvados SDK.
+      $Log->("Warning: Arvados SDK not found");
     }
-  } else {
-    $Log->("Arvados SDK packages not found");
   }
 
   while (my ($sdk_dir, $sdk_envkey) = each(%SDK_ENVVARS)) {

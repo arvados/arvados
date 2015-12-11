@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import apiclient
+import mock
 import os
 import pwd
 import re
@@ -335,10 +336,10 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
         self.main_stderr = StringIO()
         return arv_put.main(args, self.main_stdout, self.main_stderr)
 
-    def call_main_on_test_file(self):
+    def call_main_on_test_file(self, args=[]):
         with self.make_test_file() as testfile:
             path = testfile.name
-            self.call_main_with_args(['--stream', '--no-progress', path])
+            self.call_main_with_args(['--stream', '--no-progress'] + args + [path])
         self.assertTrue(
             os.path.exists(os.path.join(os.environ['KEEP_LOCAL_STORE'],
                                         '098f6bcd4621d373cade4e832627b4f6')),
@@ -380,6 +381,18 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
         finally:
             arv_put.ResumeCache.CACHE_DIR = orig_cachedir
             os.chmod(cachedir, 0o700)
+
+    def test_put_block_replication(self):
+        with mock.patch('arvados.collection.KeepClient.local_store_put') as put_mock, \
+             mock.patch('arvados.commands.put.ResumeCache.load') as cache_mock:
+            cache_mock.side_effect = ValueError
+            put_mock.return_value = 'acbd18db4cc2f85cedef654fccc4a4d8+3'
+            self.call_main_on_test_file(['--replication', '1'])
+            self.call_main_on_test_file(['--replication', '4'])
+            self.call_main_on_test_file(['--replication', '5'])
+            self.assertEqual(
+                [x[-1].get('copies') for x in put_mock.call_args_list],
+                [1, 4, 5])
 
     def test_normalize(self):
         testfile1 = self.make_test_file()

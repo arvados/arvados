@@ -21,6 +21,20 @@ Options:
 </pre>
 </notextile>
 
+h3(#arv-get). arv get
+
+@arv get@ can be used to get a textual representation of Arvados objects from the command line. The output can be limited to a subset of the object's fields. This command can be used with only the knowledge of an object's UUID.
+
+<notextile>
+<pre>
+$ <code class="userinput">arv get --help</code>
+Usage: arv [--format json|yaml] get [uuid] [fields...]
+
+Fetch the specified Arvados object, select the specified fields,
+and print a text representation.
+</pre>
+</notextile>
+
 h3(#arv-edit). arv edit
 
 @arv edit@ can be used to edit Arvados objects from the command line. Arv edit opens up the editor of your choice (set the EDITOR environment variable) with the json or yaml description of the object. Saving the file will update the Arvados object on the API server, if it passes validation.
@@ -157,7 +171,7 @@ $ <code class="userinput">arv keep --help</code>
 Usage: arv keep [method] [--parameters]
 Use 'arv keep [method] --help' to get more information about specific methods.
 
-Available methods: ls, get, put, less, check, docker
+Available methods: ls, get, put, docker
 </pre>
 </notextile>
 

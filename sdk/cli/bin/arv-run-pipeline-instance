@@ -1,63 +1,5 @@
 #!/usr/bin/env ruby
 
-# == Synopsis
-#
-#  arv-run-pipeline-instance --template pipeline-template-uuid [options] [--] [parameters]
-#  arv-run-pipeline-instance --instance pipeline-instance-uuid [options]
-#
-# Satisfy a pipeline template by finding or submitting a mapreduce job
-# for each pipeline component.
-#
-# == Options
-#
-# [--template uuid] Use the specified pipeline template.
-#
-# [--template path] Load the pipeline template from the specified
-#                   local file.
-#
-# [--instance uuid] Use the specified pipeline instance.
-#
-# [-n, --dry-run] Do not start any new jobs or wait for existing jobs
-#                 to finish. Just find out whether jobs are finished,
-#                 queued, or running for each component
-#
-# [--submit] Do not try to satisfy any components. Just
-#                          create an instance, print its UUID to
-#                          stdout, and exit.
-#
-# [--no-wait] Make only as much progress as possible without entering
-#             a sleep/poll loop.
-#
-# [--no-reuse] Do not reuse existing jobs to satisfy pipeline
-#              components. Submit a new job for every component.
-#
-# [--debug] Print extra debugging information on stderr.
-#
-# [--debug-level N] Increase amount of debugging information. Default
-#                   1, possible range 0..3.
-#
-# [--status-text path] Print plain text status report to a file or
-#                      fifo. Default: /dev/stdout
-#
-# [--status-json path] Print JSON status report to a file or
-#                      fifo. Default: /dev/null
-#
-# [--description] Description for the pipeline instance.
-#
-# == Parameters
-#
-# [param_name=param_value]
-#
-# [param_name param_value] Set (or override) the default value for
-#                          every parameter with the given name.
-#
-# [component_name::param_name=param_value]
-# [component_name::param_name param_value]
-# [--component_name::param_name=param_value]
-# [--component_name::param_name param_value] Set the value of a
-#                                            parameter for a single
-#                                            component.
-#
 class WhRunPipelineInstance
 end
 
@@ -92,6 +34,28 @@ end
 
 p = Trollop::Parser.new do
   version __FILE__
+  banner(<<EOF)
+
+Usage:
+  arv-run-pipeline-instance --template TEMPLATE_UUID [options] [--] [parameters]
+  arv-run-pipeline-instance --instance INSTANCE_UUID [options] [--] [parameters]
+
+Parameters:
+  param_name=param_value
+  param_name param_value
+                         Set (or override) the default value for every
+                         pipeline component parameter with the given
+                         name.
+
+  component_name::param_name=param_value
+  component_name::param_name param_value
+  --component_name::param_name=param_value
+  --component_name::param_name param_value
+                         Set the value of a parameter for a single
+                         pipeline component.
+
+Options:
+EOF
   opt(:dry_run,
       "Do not start any new jobs or wait for existing jobs to finish. Just find out whether jobs are finished, queued, or running for each component.",
       :type => :boolean,
@@ -149,6 +113,10 @@ p = Trollop::Parser.new do
       "Description for the pipeline instance.",
       :short => :none,
       :type => :string)
+  opt(:project_uuid,
+      "UUID of the project for the pipeline instance.",
+      short: :none,
+      type: :string)
   stop_on [:'--']
 end
 $options = Trollop::with_standard_exception_handling p do
@@ -440,18 +408,23 @@ class WhRunPipelineInstance
         end
       end
     else
-      description = $options[:description]
-      description = ("Created at #{Time.now.localtime}" + (@template[:name].andand.size.andand>0 ? " using the pipeline template *#{@template[:name]}*" : "")) if !description
-      @instance = PipelineInstance.
-        create(components: @components,
-               properties: {
-                 run_options: {
-                   enable_job_reuse: !@options[:no_reuse]
-                 }
-               },
-               pipeline_template_uuid: @template[:uuid],
-               description: description,
-               state: ($options[:submit] ? 'RunningOnServer' : 'RunningOnClient'))
+      description = $options[:description] ||
+                    ("Created at #{Time.now.localtime}" + (@template[:name].andand.size.andand>0 ? " using the pipeline template *#{@template[:name]}*" : ""))
+      instance_body = {
+        components: @components,
+        properties: {
+          run_options: {
+            enable_job_reuse: !@options[:no_reuse]
+          }
+        },
+        pipeline_template_uuid: @template[:uuid],
+        description: description,
+        state: ($options[:submit] ? 'RunningOnServer' : 'RunningOnClient')
+      }
+      if @options[:project_uuid]
+        instance_body[:owner_uuid] = @options[:project_uuid]
+      end
+      @instance = PipelineInstance.create(instance_body)
     end
     self
   end

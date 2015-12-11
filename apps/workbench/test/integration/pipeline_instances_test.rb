@@ -78,7 +78,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       first('span', text: 'foo_tag').click
       find('.btn', text: 'Copy').click
     end
-    using_wait_time(Capybara.default_wait_time * 3) do
+    using_wait_time(Capybara.default_max_wait_time * 3) do
       wait_for_ajax
     end
 
@@ -166,7 +166,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       first('span', text: 'foo_tag').click
       find('.btn', text: 'Copy').click
     end
-    using_wait_time(Capybara.default_wait_time * 3) do
+    using_wait_time(Capybara.default_max_wait_time * 3) do
       wait_for_ajax
     end
 
@@ -545,12 +545,12 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   test "job logs linked for running pipeline" do
     pi = api_fixture("pipeline_instances", "running_pipeline_with_complete_job")
     visit(page_with_token("active", "/pipeline_instances/#{pi['uuid']}"))
-    click_on "Log"
+    find(:xpath, "//a[@href='#Log']").click
     within "#Log" do
       assert_text "Log for previous"
       log_link = find("a", text: "Log for previous")
       assert_includes(log_link[:href],
-                      pi["components"]["previous"]["job"]["log"])
+                      "/jobs/#{pi["components"]["previous"]["job"]["uuid"]}#Log")
       assert_selector "#event_log_div"
     end
   end
@@ -558,12 +558,12 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   test "job logs linked for complete pipeline" do
     pi = api_fixture("pipeline_instances", "complete_pipeline_with_two_jobs")
     visit(page_with_token("active", "/pipeline_instances/#{pi['uuid']}"))
-    click_on "Log"
+    find(:xpath, "//a[@href='#Log']").click
     within "#Log" do
       assert_text "Log for previous"
       pi["components"].each do |cname, cspec|
         log_link = find("a", text: "Log for #{cname}")
-        assert_includes(log_link[:href], cspec["job"]["log"])
+        assert_includes(log_link[:href], "/jobs/#{cspec["job"]["uuid"]}#Log")
       end
       assert_no_selector "#event_log_div"
     end
@@ -572,12 +572,12 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
   test "job logs linked for failed pipeline" do
     pi = api_fixture("pipeline_instances", "failed_pipeline_with_two_jobs")
     visit(page_with_token("active", "/pipeline_instances/#{pi['uuid']}"))
-    click_on "Log"
+    find(:xpath, "//a[@href='#Log']").click
     within "#Log" do
       assert_text "Log for previous"
       pi["components"].each do |cname, cspec|
         log_link = find("a", text: "Log for #{cname}")
-        assert_includes(log_link[:href], cspec["job"]["log"])
+        assert_includes(log_link[:href], "/jobs/#{cspec["job"]["uuid"]}#Log")
       end
       assert_no_selector "#event_log_div"
     end

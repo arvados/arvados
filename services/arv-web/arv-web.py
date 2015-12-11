@@ -83,7 +83,7 @@ class ArvWeb(object):
     def run_fuse_mount(self):
         self.mountdir = tempfile.mkdtemp()
 
-        self.operations = Operations(os.getuid(), os.getgid(), "utf-8")
+        self.operations = Operations(os.getuid(), os.getgid(), self.api, "utf-8")
         self.cdir = CollectionDirectory(llfuse.ROOT_INODE, self.operations.inodes, self.api, 2, self.collection)
         self.operations.inodes.add_entry(self.cdir)
 

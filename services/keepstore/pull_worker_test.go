@@ -8,19 +8,12 @@ import (
 	. "gopkg.in/check.v1"
 	"io"
 	"net/http"
-	"testing"
 	"time"
 )
 
-type PullWorkerTestSuite struct{}
-
-// Gocheck boilerplate
-func TestPullWorker(t *testing.T) {
-	TestingT(t)
-}
-
-// Gocheck boilerplate
 var _ = Suite(&PullWorkerTestSuite{})
+
+type PullWorkerTestSuite struct{}
 
 var testPullLists map[string]string
 var readContent string

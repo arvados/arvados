@@ -24,6 +24,10 @@ setup(name='arvados-node-manager',
       url="https://arvados.org",
       license='GNU Affero General Public License, version 3.0',
       packages=find_packages(),
+      scripts=['bin/arvados-node-manager'],
+      data_files=[
+          ('share/doc/arvados-node-manager', ['agpl-3.0.txt', 'README.rst']),
+      ],
       install_requires=[
         'apache-libcloud>=0.16',
         'arvados-python-client>=0.1.20150206225333',
@@ -31,11 +35,10 @@ setup(name='arvados-node-manager',
         'python-daemon',
         ],
       dependency_links = [
-          "https://github.com/curoverse/libcloud/archive/apache-libcloud-0.18.1.dev3.zip"
+          "https://github.com/curoverse/libcloud/archive/apache-libcloud-0.18.1.dev4.zip"
       ],
-      scripts=['bin/arvados-node-manager'],
       test_suite='tests',
-      tests_require=['pbr<1.7.0', 'mock>=1.0', "apache-libcloud==0.18.1.dev3"],
+      tests_require=['pbr<1.7.0', 'mock>=1.0', "apache-libcloud==0.18.1.dev4"],
       zip_safe=False,
       cmdclass={'egg_info': tagger},
       )

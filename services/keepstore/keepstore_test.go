@@ -10,6 +10,8 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 )
 
 var TestBlock = []byte("The quick brown fox jumps over the lazy dog.")
@@ -126,8 +128,8 @@ func TestPutBlockOK(t *testing.T) {
 	defer KeepVM.Close()
 
 	// Check that PutBlock stores the data as expected.
-	if err := PutBlock(TestBlock, TestHash); err != nil {
-		t.Fatalf("PutBlock: %v", err)
+	if n, err := PutBlock(TestBlock, TestHash); err != nil || n < 1 {
+		t.Fatalf("PutBlock: n %d err %v", n, err)
 	}
 
 	vols := KeepVM.AllReadable()
@@ -156,8 +158,8 @@ func TestPutBlockOneVol(t *testing.T) {
 	vols[0].(*MockVolume).Bad = true
 
 	// Check that PutBlock stores the data as expected.
-	if err := PutBlock(TestBlock, TestHash); err != nil {
-		t.Fatalf("PutBlock: %v", err)
+	if n, err := PutBlock(TestBlock, TestHash); err != nil || n < 1 {
+		t.Fatalf("PutBlock: n %d err %v", n, err)
 	}
 
 	result, err := GetBlock(TestHash)
@@ -184,8 +186,8 @@ func TestPutBlockMD5Fail(t *testing.T) {
 
 	// Check that PutBlock returns the expected error when the hash does
 	// not match the block.
-	if err := PutBlock(BadBlock, TestHash); err != RequestHashError {
-		t.Error("Expected RequestHashError, got %v", err)
+	if _, err := PutBlock(BadBlock, TestHash); err != RequestHashError {
+		t.Errorf("Expected RequestHashError, got %v", err)
 	}
 
 	// Confirm that GetBlock fails to return anything.
@@ -209,8 +211,8 @@ func TestPutBlockCorrupt(t *testing.T) {
 	// Store a corrupted block under TestHash.
 	vols := KeepVM.AllWritable()
 	vols[0].Put(TestHash, BadBlock)
-	if err := PutBlock(TestBlock, TestHash); err != nil {
-		t.Errorf("PutBlock: %v", err)
+	if n, err := PutBlock(TestBlock, TestHash); err != nil || n < 1 {
+		t.Errorf("PutBlock: n %d err %v", n, err)
 	}
 
 	// The block on disk should now match TestBlock.
@@ -229,9 +231,9 @@ func TestPutBlockCollision(t *testing.T) {
 	defer teardown()
 
 	// These blocks both hash to the MD5 digest cee9a457e790cf20d4bdaa6d69f01e41.
-	var b1 = []byte("\x0e0eaU\x9a\xa7\x87\xd0\x0b\xc6\xf7\x0b\xbd\xfe4\x04\xcf\x03e\x9epO\x854\xc0\x0f\xfbe\x9cL\x87@\xcc\x94/\xeb-\xa1\x15\xa3\xf4\x15\\\xbb\x86\x07Is\x86em}\x1f4\xa4 Y\xd7\x8fZ\x8d\xd1\xef")
-	var b2 = []byte("\x0e0eaU\x9a\xa7\x87\xd0\x0b\xc6\xf7\x0b\xbd\xfe4\x04\xcf\x03e\x9etO\x854\xc0\x0f\xfbe\x9cL\x87@\xcc\x94/\xeb-\xa1\x15\xa3\xf4\x15\xdc\xbb\x86\x07Is\x86em}\x1f4\xa4 Y\xd7\x8fZ\x8d\xd1\xef")
-	var locator = "cee9a457e790cf20d4bdaa6d69f01e41"
+	b1 := arvadostest.MD5CollisionData[0]
+	b2 := arvadostest.MD5CollisionData[1]
+	locator := arvadostest.MD5CollisionMD5
 
 	// Prepare two test Keep volumes.
 	KeepVM = MakeTestVolumeManager(2)
@@ -239,10 +241,10 @@ func TestPutBlockCollision(t *testing.T) {
 
 	// Store one block, then attempt to store the other. Confirm that
 	// PutBlock reported a CollisionError.
-	if err := PutBlock(b1, locator); err != nil {
+	if _, err := PutBlock(b1, locator); err != nil {
 		t.Error(err)
 	}
-	if err := PutBlock(b2, locator); err == nil {
+	if _, err := PutBlock(b2, locator); err == nil {
 		t.Error("PutBlock did not report a collision")
 	} else if err != CollisionError {
 		t.Errorf("PutBlock returned %v", err)
@@ -273,8 +275,8 @@ func TestPutBlockTouchFails(t *testing.T) {
 	// vols[0].Touch will fail on the next call, so the volume
 	// manager will store a copy on vols[1] instead.
 	vols[0].(*MockVolume).Touchable = false
-	if err := PutBlock(TestBlock, TestHash); err != nil {
-		t.Fatalf("PutBlock: %v", err)
+	if n, err := PutBlock(TestBlock, TestHash); err != nil || n < 1 {
+		t.Fatalf("PutBlock: n %d err %v", n, err)
 	}
 	vols[0].(*MockVolume).Touchable = true
 
@@ -333,8 +335,8 @@ func TestDiscoverTmpfs(t *testing.T) {
 	f.Close()
 	ProcMounts = f.Name()
 
-	var resultVols volumeSet
-	added := resultVols.Discover()
+	resultVols := volumeSet{}
+	added := (&unixVolumeAdder{&resultVols}).Discover()
 
 	if added != len(resultVols) {
 		t.Errorf("Discover returned %d, but added %d volumes",
@@ -373,8 +375,8 @@ func TestDiscoverNone(t *testing.T) {
 	f.Close()
 	ProcMounts = f.Name()
 
-	var resultVols volumeSet
-	added := resultVols.Discover()
+	resultVols := volumeSet{}
+	added := (&unixVolumeAdder{&resultVols}).Discover()
 	if added != 0 || len(resultVols) != 0 {
 		t.Fatalf("got %d, %v; expected 0, []", added, resultVols)
 	}

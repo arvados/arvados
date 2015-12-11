@@ -97,5 +97,5 @@
 %>
 
 <% pipeline_jobs.each_with_index do |pj, i| %>
-  <%= render partial: 'running_component', locals: {pj: pj, i: i, expanded: false} %>
+  <%= render partial: 'running_component', locals: {pj: pj, i: i, expanded: false, pipeline_display: true} %>
 <% end %>

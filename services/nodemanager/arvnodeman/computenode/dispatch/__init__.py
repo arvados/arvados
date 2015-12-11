@@ -88,6 +88,7 @@ class ComputeNodeStateChangeBase(config.actor_class):
                   'slot_number': None,
                   'first_ping_at': None,
                   'last_ping_at': None,
+                  'properties': {},
                   'info': {'ec2_instance_id': None,
                            'last_action': explanation}},
             ).execute()
@@ -133,7 +134,33 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
                           self.cloud_size.name)
         self.cloud_node = self._cloud.create_node(self.cloud_size,
                                                   self.arvados_node)
+        if not self.cloud_node.size:
+             self.cloud_node.size = self.cloud_size
         self._logger.info("Cloud node %s created.", self.cloud_node.id)
+        self._later.update_arvados_node_properties()
+
+    @ComputeNodeStateChangeBase._retry(config.ARVADOS_ERRORS)
+    def update_arvados_node_properties(self):
+        """Tell Arvados some details about the cloud node.
+
+        Currently we only include size/price from our request, which
+        we already knew before create_cloud_node(), but doing it here
+        gives us an opportunity to provide more detail from
+        self.cloud_node, too.
+        """
+        self.arvados_node['properties']['cloud_node'] = {
+            # Note this 'size' is the node size we asked the cloud
+            # driver to create -- not necessarily equal to the size
+            # reported by the cloud driver for the node that was
+            # created.
+            'size': self.cloud_size.id,
+            'price': self.cloud_size.price,
+        }
+        self.arvados_node = self._arvados.nodes().update(
+            uuid=self.arvados_node['uuid'],
+            body={'properties': self.arvados_node['properties']},
+        ).execute()
+        self._logger.info("%s updated properties.", self.arvados_node['uuid'])
         self._later.post_create()
 
     @ComputeNodeStateChangeBase._retry()
@@ -154,6 +181,10 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
 
     This actor simply destroys a cloud node, retrying as needed.
     """
+    # Reasons for a shutdown to be cancelled.
+    WINDOW_CLOSED = "shutdown window closed"
+    NODE_BROKEN = "cloud failed to shut down broken node"
+
     def __init__(self, timer_actor, cloud_client, arvados_client, node_monitor,
                  cancellable=True, retry_wait=1, max_retry_wait=180):
         # If a ShutdownActor is cancellable, it will ask the
@@ -167,6 +198,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         self._monitor = node_monitor.proxy()
         self.cloud_node = self._monitor.cloud_node.get()
         self.cancellable = cancellable
+        self.cancel_reason = None
         self.success = None
 
     def on_start(self):
@@ -180,7 +212,10 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
             self.success = success_flag
         return super(ComputeNodeShutdownActor, self)._finished()
 
-    def cancel_shutdown(self):
+    def cancel_shutdown(self, reason):
+        self.cancel_reason = reason
+        self._logger.info("Cloud node %s shutdown cancelled: %s.",
+                          self.cloud_node.id, reason)
         self._finished(success_flag=False)
 
     def _stop_if_window_closed(orig_func):
@@ -188,10 +223,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         def stop_wrapper(self, *args, **kwargs):
             if (self.cancellable and
                   (not self._monitor.shutdown_eligible().get())):
-                self._logger.info(
-                    "Cloud node %s shutdown cancelled - no longer eligible.",
-                    self.cloud_node.id)
-                self._later.cancel_shutdown()
+                self._later.cancel_shutdown(self.WINDOW_CLOSED)
                 return None
             else:
                 return orig_func(self, *args, **kwargs)
@@ -201,8 +233,11 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
     @ComputeNodeStateChangeBase._retry()
     def shutdown_node(self):
         if not self._cloud.destroy_node(self.cloud_node):
-            # Force a retry.
-            raise cloud_types.LibcloudError("destroy_node failed")
+            if self._cloud.broken(self.cloud_node):
+                self._later.cancel_shutdown(self.NODE_BROKEN)
+            else:
+                # Force a retry.
+                raise cloud_types.LibcloudError("destroy_node failed")
         self._logger.info("Cloud node %s shut down.", self.cloud_node.id)
         arv_node = self._arvados_node()
         if arv_node is None:
@@ -325,16 +360,21 @@ class ComputeNodeMonitorActor(config.actor_class):
     def shutdown_eligible(self):
         if not self._shutdowns.window_open():
             return False
-        elif self.arvados_node is None:
+        if self.arvados_node is None:
             # Node is unpaired.
             # If it hasn't pinged Arvados after boot_fail seconds, shut it down
             return not timestamp_fresh(self.cloud_node_start_time, self.boot_fail_after)
-        elif arvados_node_missing(self.arvados_node, self.node_stale_after) and self._cloud.broken(self.cloud_node):
+        missing = arvados_node_missing(self.arvados_node, self.node_stale_after)
+        if missing and self._cloud.broken(self.cloud_node):
             # Node is paired, but Arvados says it is missing and the cloud says the node
             # is in an error state, so shut it down.
             return True
-        else:
-            return self.in_state('idle')
+        if missing is None and self._cloud.broken(self.cloud_node):
+            self._logger.warning(
+                "cloud reports broken node, but paired node %s never pinged "
+                "(bug?) -- skipped check for node_stale_after",
+                self.arvados_node['uuid'])
+        return self.in_state('idle')
 
     def consider_shutdown(self):
         next_opening = self._shutdowns.next_opening()

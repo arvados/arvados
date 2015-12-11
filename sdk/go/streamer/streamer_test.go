@@ -251,6 +251,7 @@ func (s *StandaloneSuite) TestTransferShortBuffer(c *C) {
 
 	n, err := sr.Read(out)
 	c.Check(n, Equals, 100)
+	c.Check(err, IsNil)
 
 	n, err = sr.Read(out)
 	c.Check(n, Equals, 0)

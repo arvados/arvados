@@ -8,8 +8,9 @@ import functools
 import threading
 from apiclient import errors as apiclient_errors
 import errno
+import time
 
-from fusefile import StringFile, ObjectFile, FuseArvadosFile
+from fusefile import StringFile, ObjectFile, FuncToJSONFile, FuseArvadosFile
 from fresh import FreshBase, convertTime, use_counter, check_update
 
 import arvados.collection
@@ -474,6 +475,75 @@ class CollectionDirectory(CollectionDirectoryBase):
             self.collection.stop_threads()
 
 
+class TmpCollectionDirectory(CollectionDirectoryBase):
+    """A directory backed by an Arvados collection that never gets saved.
+
+    This supports using Keep as scratch space. A userspace program can
+    read the .arvados#collection file to get a current manifest in
+    order to save a snapshot of the scratch data or use it as a crunch
+    job output.
+    """
+
+    class UnsaveableCollection(arvados.collection.Collection):
+        def save(self):
+            pass
+        def save_new(self):
+            pass
+
+    def __init__(self, parent_inode, inodes, api_client, num_retries):
+        collection = self.UnsaveableCollection(
+            api_client=api_client,
+            keep_client=api_client.keep)
+        super(TmpCollectionDirectory, self).__init__(
+            parent_inode, inodes, collection)
+        self.collection_record_file = None
+        self.populate(self.mtime())
+
+    def on_event(self, *args, **kwargs):
+        super(TmpCollectionDirectory, self).on_event(*args, **kwargs)
+        if self.collection_record_file:
+            with llfuse.lock:
+                self.collection_record_file.invalidate()
+            self.inodes.invalidate_inode(self.collection_record_file.inode)
+            _logger.debug("%s invalidated collection record", self)
+
+    def collection_record(self):
+        with llfuse.lock_released:
+            return {
+                "uuid": None,
+                "manifest_text": self.collection.manifest_text(),
+                "portable_data_hash": self.collection.portable_data_hash(),
+            }
+
+    def __contains__(self, k):
+        return (k == '.arvados#collection' or
+                super(TmpCollectionDirectory, self).__contains__(k))
+
+    @use_counter
+    def __getitem__(self, item):
+        if item == '.arvados#collection':
+            if self.collection_record_file is None:
+                self.collection_record_file = FuncToJSONFile(
+                    self.inode, self.collection_record)
+                self.inodes.add_entry(self.collection_record_file)
+            return self.collection_record_file
+        return super(TmpCollectionDirectory, self).__getitem__(item)
+
+    def persisted(self):
+        return False
+
+    def writable(self):
+        return True
+
+    def finalize(self):
+        self.collection.stop_threads()
+
+    def invalidate(self):
+        if self.collection_record_file:
+            self.collection_record_file.invalidate()
+        super(TmpCollectionDirectory, self).invalidate()
+
+
 class MagicDirectory(Directory):
     """A special directory that logically contains the set of all extant keep locators.
 
@@ -488,18 +558,20 @@ class MagicDirectory(Directory):
     README_TEXT = """
 This directory provides access to Arvados collections as subdirectories listed
 by uuid (in the form 'zzzzz-4zz18-1234567890abcde') or portable data hash (in
-the form '1234567890abcdefghijklmnopqrstuv+123').
+the form '1234567890abcdef0123456789abcdef+123').
 
 Note that this directory will appear empty until you attempt to access a
 specific collection subdirectory (such as trying to 'cd' into it), at which
 point the collection will actually be looked up on the server and the directory
 will appear if it exists.
+
 """.lstrip()
 
-    def __init__(self, parent_inode, inodes, api, num_retries):
+    def __init__(self, parent_inode, inodes, api, num_retries, pdh_only=False):
         super(MagicDirectory, self).__init__(parent_inode, inodes)
         self.api = api
         self.num_retries = num_retries
+        self.pdh_only = pdh_only
 
     def __setattr__(self, name, value):
         super(MagicDirectory, self).__setattr__(name, value)
@@ -511,13 +583,13 @@ will appear if it exists.
             # If we're the root directory, add an identical by_id subdirectory.
             if self.inode == llfuse.ROOT_INODE:
                 self._entries['by_id'] = self.inodes.add_entry(MagicDirectory(
-                        self.inode, self.inodes, self.api, self.num_retries))
+                        self.inode, self.inodes, self.api, self.num_retries, self.pdh_only))
 
     def __contains__(self, k):
         if k in self._entries:
             return True
 
-        if not portable_data_hash_pattern.match(k) and not uuid_pattern.match(k):
+        if not portable_data_hash_pattern.match(k) and (self.pdh_only or not uuid_pattern.match(k)):
             return False
 
         try:

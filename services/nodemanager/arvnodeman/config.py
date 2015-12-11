@@ -5,7 +5,6 @@ from __future__ import absolute_import, print_function
 import ConfigParser
 import importlib
 import logging
-import ssl
 import sys
 
 import arvados
@@ -13,10 +12,10 @@ import httplib2
 import pykka
 from apiclient import errors as apierror
 
-# IOError is the base class for socket.error and friends.
+# IOError is the base class for socket.error, ssl.SSLError, and friends.
 # It seems like it hits the sweet spot for operations we want to retry:
 # it's low-level, but unlikely to catch code bugs.
-NETWORK_ERRORS = (IOError, ssl.SSLError)
+NETWORK_ERRORS = (IOError,)
 ARVADOS_ERRORS = NETWORK_ERRORS + (apierror.Error,)
 
 actor_class = pykka.ThreadingActor
@@ -41,6 +40,7 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
                        'poll_time': '60',
                        'max_poll_time': '300',
                        'poll_stale_after': '600',
+                       'max_total_price': '0',
                        'boot_fail_after': str(sys.maxint),
                        'node_stale_after': str(60 * 60 * 2)},
             'Logging': {'file': '/dev/stderr',
@@ -116,7 +116,10 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
             sec_words = sec_name.split(None, 2)
             if sec_words[0] != 'Size':
                 continue
-            size_kwargs[sec_words[1]] = self.get_section(sec_name, int)
+            size_spec = self.get_section(sec_name, int)
+            if 'price' in size_spec:
+                size_spec['price'] = float(size_spec['price'])
+            size_kwargs[sec_words[1]] = size_spec
         # EC2 node sizes are identified by id. GCE sizes are identified by name.
         matching_sizes = []
         for size in all_sizes:

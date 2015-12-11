@@ -14,7 +14,9 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
+	"time"
 )
 
 // Gocheck boilerplate
@@ -45,14 +47,14 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 		return
 	}
 	arvadostest.StartAPI()
-	arvadostest.StartKeep()
+	arvadostest.StartKeep(2, false)
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	if *no_server {
 		return
 	}
-	arvadostest.StopKeep()
+	arvadostest.StopKeep(2)
 	arvadostest.StopAPI()
 }
 
@@ -67,6 +69,22 @@ func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
 	for _, root := range kc.LocalRoots() {
 		c.Check(root, Matches, "http://localhost:\\d+")
 	}
+}
+
+func (s *ServerRequiredSuite) TestDefaultReplications(c *C) {
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, Equals, nil)
+
+	kc, err := MakeKeepClient(&arv)
+	c.Assert(kc.Want_replicas, Equals, 2)
+
+	arv.DiscoveryDoc["defaultCollectionReplication"] = 3.0
+	kc, err = MakeKeepClient(&arv)
+	c.Assert(kc.Want_replicas, Equals, 3)
+
+	arv.DiscoveryDoc["defaultCollectionReplication"] = 1.0
+	kc, err = MakeKeepClient(&arv)
+	c.Assert(kc.Want_replicas, Equals, 1)
 }
 
 type StubPutHandler struct {
@@ -126,10 +144,9 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 		make(chan string)}
 
 	UploadToStubHelper(c, st,
-		func(kc *KeepClient, url string, reader io.ReadCloser,
-			writer io.WriteCloser, upload_status chan uploadStatus) {
+		func(kc *KeepClient, url string, reader io.ReadCloser, writer io.WriteCloser, upload_status chan uploadStatus) {
 
-			go kc.uploadToKeepServer(url, st.expectPath, reader, upload_status, int64(len("foo")), "TestUploadToStubKeepServer")
+			go kc.uploadToKeepServer(url, st.expectPath, reader, upload_status, int64(len("foo")), 0)
 
 			writer.Write([]byte("foo"))
 			writer.Close()
@@ -138,13 +155,9 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 			status := <-upload_status
 			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1, ""})
 		})
-
-	log.Printf("TestUploadToStubKeepServer done")
 }
 
 func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
-	log.Printf("TestUploadToStubKeepServerBufferReader")
-
 	st := StubPutHandler{
 		c,
 		"acbd18db4cc2f85cedef654fccc4a4d8",
@@ -161,7 +174,7 @@ func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
 
 			br1 := tr.MakeStreamReader()
 
-			go kc.uploadToKeepServer(url, st.expectPath, br1, upload_status, 3, "TestUploadToStubKeepServerBufferReader")
+			go kc.uploadToKeepServer(url, st.expectPath, br1, upload_status, 3, 0)
 
 			writer.Write([]byte("foo"))
 			writer.Close()
@@ -171,8 +184,6 @@ func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
 			status := <-upload_status
 			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1, ""})
 		})
-
-	log.Printf("TestUploadToStubKeepServerBufferReader done")
 }
 
 type FailHandler struct {
@@ -184,9 +195,32 @@ func (fh FailHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	fh.handled <- fmt.Sprintf("http://%s", req.Host)
 }
 
-func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
-	log.Printf("TestFailedUploadToStubKeepServer")
+type FailThenSucceedHandler struct {
+	handled        chan string
+	count          int
+	successhandler StubGetHandler
+}
 
+func (fh *FailThenSucceedHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	if fh.count == 0 {
+		resp.WriteHeader(500)
+		fh.count += 1
+		fh.handled <- fmt.Sprintf("http://%s", req.Host)
+	} else {
+		fh.successhandler.ServeHTTP(resp, req)
+	}
+}
+
+type Error404Handler struct {
+	handled chan string
+}
+
+func (fh Error404Handler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	resp.WriteHeader(404)
+	fh.handled <- fmt.Sprintf("http://%s", req.Host)
+}
+
+func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
 	st := FailHandler{
 		make(chan string)}
 
@@ -196,7 +230,7 @@ func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
 		func(kc *KeepClient, url string, reader io.ReadCloser,
 			writer io.WriteCloser, upload_status chan uploadStatus) {
 
-			go kc.uploadToKeepServer(url, hash, reader, upload_status, 3, "TestFailedUploadToStubKeepServer")
+			go kc.uploadToKeepServer(url, hash, reader, upload_status, 3, 0)
 
 			writer.Write([]byte("foo"))
 			writer.Close()
@@ -207,7 +241,6 @@ func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
 			c.Check(status.url, Equals, fmt.Sprintf("%s/%s", url, hash))
 			c.Check(status.statusCode, Equals, 500)
 		})
-	log.Printf("TestFailedUploadToStubKeepServer done")
 }
 
 type KeepServer struct {
@@ -226,8 +259,6 @@ func RunSomeFakeKeepServers(st http.Handler, n int) (ks []KeepServer) {
 }
 
 func (s *StandaloneSuite) TestPutB(c *C) {
-	log.Printf("TestPutB")
-
 	hash := Md5String("foo")
 
 	st := StubPutHandler{
@@ -266,13 +297,9 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 		(s1 == shuff[1] && s2 == shuff[0]),
 		Equals,
 		true)
-
-	log.Printf("TestPutB done")
 }
 
 func (s *StandaloneSuite) TestPutHR(c *C) {
-	log.Printf("TestPutHR")
-
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
 	st := StubPutHandler{
@@ -310,7 +337,6 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 	kc.PutHR(hash, reader, 3)
 
 	shuff := NewRootSorter(kc.LocalRoots(), hash).GetSortedRoots()
-	log.Print(shuff)
 
 	s1 := <-st.handled
 	s2 := <-st.handled
@@ -319,13 +345,9 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 		(s1 == shuff[1] && s2 == shuff[0]),
 		Equals,
 		true)
-
-	log.Printf("TestPutHR done")
 }
 
 func (s *StandaloneSuite) TestPutWithFail(c *C) {
-	log.Printf("TestPutWithFail")
-
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
 	st := StubPutHandler{
@@ -364,6 +386,7 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 
 	shuff := NewRootSorter(
 		kc.LocalRoots(), Md5String("foo")).GetSortedRoots()
+	c.Logf("%+v", shuff)
 
 	phash, replicas, err := kc.PutB([]byte("foo"))
 
@@ -383,8 +406,6 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 }
 
 func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
-	log.Printf("TestPutWithTooManyFail")
-
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
 	st := StubPutHandler{
@@ -401,6 +422,7 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
+	kc.Retries = 0
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
 	writableLocalRoots := make(map[string]string)
@@ -426,8 +448,6 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 	c.Check(err, Equals, InsufficientReplicasError)
 	c.Check(replicas, Equals, 1)
 	c.Check(<-st.handled, Equals, ks1[0].url)
-
-	log.Printf("TestPutWithTooManyFail done")
 }
 
 type StubGetHandler struct {
@@ -447,8 +467,6 @@ func (sgh StubGetHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request)
 }
 
 func (s *StandaloneSuite) TestGet(c *C) {
-	log.Printf("TestGet")
-
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
 	st := StubGetHandler{
@@ -464,7 +482,7 @@ func (s *StandaloneSuite) TestGet(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
-	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
 	r, n, url2, err := kc.Get(hash)
 	defer r.Close()
@@ -475,8 +493,26 @@ func (s *StandaloneSuite) TestGet(c *C) {
 	content, err2 := ioutil.ReadAll(r)
 	c.Check(err2, Equals, nil)
 	c.Check(content, DeepEquals, []byte("foo"))
+}
 
-	log.Printf("TestGet done")
+func (s *StandaloneSuite) TestGet404(c *C) {
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	st := Error404Handler{make(chan string, 1)}
+
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
+
+	r, n, url2, err := kc.Get(hash)
+	c.Check(err, Equals, BlockNotFound)
+	c.Check(n, Equals, int64(0))
+	c.Check(url2, Equals, "")
+	c.Check(r, Equals, nil)
 }
 
 func (s *StandaloneSuite) TestGetFail(c *C) {
@@ -490,10 +526,62 @@ func (s *StandaloneSuite) TestGetFail(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
-	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
+	kc.Retries = 0
 
 	r, n, url2, err := kc.Get(hash)
-	c.Check(err, Equals, BlockNotFound)
+	errNotFound, _ := err.(*ErrNotFound)
+	c.Check(errNotFound, NotNil)
+	c.Check(strings.Contains(errNotFound.Error(), "HTTP 500"), Equals, true)
+	c.Check(errNotFound.Temporary(), Equals, true)
+	c.Check(n, Equals, int64(0))
+	c.Check(url2, Equals, "")
+	c.Check(r, Equals, nil)
+}
+
+func (s *StandaloneSuite) TestGetFailRetry(c *C) {
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	st := &FailThenSucceedHandler{make(chan string, 1), 0,
+		StubGetHandler{
+			c,
+			hash,
+			"abc123",
+			http.StatusOK,
+			[]byte("foo")}}
+
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
+
+	r, n, url2, err := kc.Get(hash)
+	defer r.Close()
+	c.Check(err, Equals, nil)
+	c.Check(n, Equals, int64(3))
+	c.Check(url2, Equals, fmt.Sprintf("%s/%s", ks.url, hash))
+
+	content, err2 := ioutil.ReadAll(r)
+	c.Check(err2, Equals, nil)
+	c.Check(content, DeepEquals, []byte("foo"))
+}
+
+func (s *StandaloneSuite) TestGetNetError(c *C) {
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": "http://localhost:62222"}, nil, nil)
+
+	r, n, url2, err := kc.Get(hash)
+	errNotFound, _ := err.(*ErrNotFound)
+	c.Check(errNotFound, NotNil)
+	c.Check(strings.Contains(errNotFound.Error(), "connection refused"), Equals, true)
+	c.Check(errNotFound.Temporary(), Equals, true)
 	c.Check(n, Equals, int64(0))
 	c.Check(url2, Equals, "")
 	c.Check(r, Equals, nil)
@@ -525,7 +613,7 @@ func (s *StandaloneSuite) TestGetWithServiceHint(c *C) {
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(
 		map[string]string{"x": ks0.url},
-		map[string]string{"x": ks0.url},
+		nil,
 		map[string]string{uuid: ks.url})
 
 	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
@@ -572,11 +660,7 @@ func (s *StandaloneSuite) TestGetWithLocalServiceHint(c *C) {
 			"zzzzz-bi6l4-xxxxxxxxxxxxxxx": ks0.url,
 			"zzzzz-bi6l4-wwwwwwwwwwwwwww": ks0.url,
 			uuid: ks.url},
-		map[string]string{
-			"zzzzz-bi6l4-yyyyyyyyyyyyyyy": ks0.url,
-			"zzzzz-bi6l4-xxxxxxxxxxxxxxx": ks0.url,
-			"zzzzz-bi6l4-wwwwwwwwwwwwwww": ks0.url,
-			uuid: ks.url},
+		nil,
 		map[string]string{
 			"zzzzz-bi6l4-yyyyyyyyyyyyyyy": ks0.url,
 			"zzzzz-bi6l4-xxxxxxxxxxxxxxx": ks0.url,
@@ -619,7 +703,7 @@ func (s *StandaloneSuite) TestGetWithServiceHintFailoverToLocals(c *C) {
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(
 		map[string]string{"zzzzz-bi6l4-keepdisk0000000": ksLocal.url},
-		map[string]string{"zzzzz-bi6l4-keepdisk0000000": ksLocal.url},
+		nil,
 		map[string]string{uuid: ksGateway.url})
 
 	r, n, uri, err := kc.Get(hash + "+K@" + uuid)
@@ -654,7 +738,7 @@ func (s *StandaloneSuite) TestChecksum(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 	arv.ApiToken = "abc123"
-	kc.SetServiceRoots(map[string]string{"x": ks.url}, map[string]string{ks.url: ""}, nil)
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
 	r, n, _, err := kc.Get(barhash)
 	_, err = ioutil.ReadAll(r)
@@ -675,7 +759,7 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 	content := []byte("waz")
 	hash := fmt.Sprintf("%x", md5.Sum(content))
 
-	fh := FailHandler{
+	fh := Error404Handler{
 		make(chan string, 4)}
 
 	st := StubGetHandler{
@@ -706,6 +790,7 @@ func (s *StandaloneSuite) TestGetWithFailures(c *C) {
 	}
 
 	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
+	kc.Retries = 0
 
 	// This test works only if one of the failing services is
 	// attempted before the succeeding service. Otherwise,
@@ -775,15 +860,12 @@ func (this StubProxyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reque
 }
 
 func (s *StandaloneSuite) TestPutProxy(c *C) {
-	log.Printf("TestPutProxy")
-
 	st := StubProxyHandler{make(chan string, 1)}
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 2
-	kc.Using_proxy = true
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
 	writableLocalRoots := make(map[string]string)
@@ -803,20 +885,15 @@ func (s *StandaloneSuite) TestPutProxy(c *C) {
 
 	c.Check(err, Equals, nil)
 	c.Check(replicas, Equals, 2)
-
-	log.Printf("TestPutProxy done")
 }
 
 func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
-	log.Printf("TestPutProxy")
-
 	st := StubProxyHandler{make(chan string, 1)}
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	kc, _ := MakeKeepClient(&arv)
 
 	kc.Want_replicas = 3
-	kc.Using_proxy = true
 	arv.ApiToken = "abc123"
 	localRoots := make(map[string]string)
 	writableLocalRoots := make(map[string]string)
@@ -835,8 +912,6 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 
 	c.Check(err, Equals, InsufficientReplicasError)
 	c.Check(replicas, Equals, 2)
-
-	log.Printf("TestPutProxy done")
 }
 
 func (s *StandaloneSuite) TestMakeLocator(c *C) {
@@ -947,4 +1022,235 @@ func (s *StandaloneSuite) TestPutBWithNoWritableLocalRoots(c *C) {
 
 	c.Check(err, Equals, InsufficientReplicasError)
 	c.Check(replicas, Equals, 0)
+}
+
+type StubGetIndexHandler struct {
+	c              *C
+	expectPath     string
+	expectAPIToken string
+	httpStatus     int
+	body           []byte
+}
+
+func (h StubGetIndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	h.c.Check(req.URL.Path, Equals, h.expectPath)
+	h.c.Check(req.Header.Get("Authorization"), Equals, fmt.Sprintf("OAuth2 %s", h.expectAPIToken))
+	resp.WriteHeader(h.httpStatus)
+	resp.Header().Set("Content-Length", fmt.Sprintf("%d", len(h.body)))
+	resp.Write(h.body)
+}
+
+func (s *StandaloneSuite) TestGetIndexWithNoPrefix(c *C) {
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	st := StubGetIndexHandler{
+		c,
+		"/index",
+		"abc123",
+		http.StatusOK,
+		[]byte(hash + "+3 1443559274\n\n")}
+
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
+
+	r, err := kc.GetIndex("x", "")
+	c.Check(err, Equals, nil)
+
+	content, err2 := ioutil.ReadAll(r)
+	c.Check(err2, Equals, nil)
+	c.Check(content, DeepEquals, st.body[0:len(st.body)-1])
+}
+
+func (s *StandaloneSuite) TestGetIndexWithPrefix(c *C) {
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	st := StubGetIndexHandler{
+		c,
+		"/index/" + hash[0:3],
+		"abc123",
+		http.StatusOK,
+		[]byte(hash + "+3 1443559274\n\n")}
+
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
+
+	r, err := kc.GetIndex("x", hash[0:3])
+	c.Check(err, Equals, nil)
+
+	content, err2 := ioutil.ReadAll(r)
+	c.Check(err2, Equals, nil)
+	c.Check(content, DeepEquals, st.body[0:len(st.body)-1])
+}
+
+func (s *StandaloneSuite) TestGetIndexIncomplete(c *C) {
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	st := StubGetIndexHandler{
+		c,
+		"/index/" + hash[0:3],
+		"abc123",
+		http.StatusOK,
+		[]byte(hash)}
+
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
+
+	_, err = kc.GetIndex("x", hash[0:3])
+	c.Check(err, Equals, ErrIncompleteIndex)
+}
+
+func (s *StandaloneSuite) TestGetIndexWithNoSuchServer(c *C) {
+	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
+
+	st := StubGetIndexHandler{
+		c,
+		"/index/" + hash[0:3],
+		"abc123",
+		http.StatusOK,
+		[]byte(hash)}
+
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
+
+	_, err = kc.GetIndex("y", hash[0:3])
+	c.Check(err, Equals, ErrNoSuchKeepServer)
+}
+
+func (s *StandaloneSuite) TestGetIndexWithNoSuchPrefix(c *C) {
+	st := StubGetIndexHandler{
+		c,
+		"/index/abcd",
+		"abc123",
+		http.StatusOK,
+		[]byte("\n")}
+
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
+
+	r, err := kc.GetIndex("x", "abcd")
+	c.Check(err, Equals, nil)
+
+	content, err2 := ioutil.ReadAll(r)
+	c.Check(err2, Equals, nil)
+	c.Check(content, DeepEquals, st.body[0:len(st.body)-1])
+}
+
+type FailThenSucceedPutHandler struct {
+	handled        chan string
+	count          int
+	successhandler StubPutHandler
+}
+
+func (h *FailThenSucceedPutHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	if h.count == 0 {
+		resp.WriteHeader(500)
+		h.count += 1
+		h.handled <- fmt.Sprintf("http://%s", req.Host)
+	} else {
+		h.successhandler.ServeHTTP(resp, req)
+	}
+}
+
+func (s *StandaloneSuite) TestPutBRetry(c *C) {
+	st := &FailThenSucceedPutHandler{make(chan string, 1), 0,
+		StubPutHandler{
+			c,
+			Md5String("foo"),
+			"abc123",
+			"foo",
+			make(chan string, 5)}}
+
+	arv, _ := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(&arv)
+
+	kc.Want_replicas = 2
+	arv.ApiToken = "abc123"
+	localRoots := make(map[string]string)
+	writableLocalRoots := make(map[string]string)
+
+	ks := RunSomeFakeKeepServers(st, 2)
+
+	for i, k := range ks {
+		localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		writableLocalRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", i)] = k.url
+		defer k.listener.Close()
+	}
+
+	kc.SetServiceRoots(localRoots, writableLocalRoots, nil)
+
+	hash, replicas, err := kc.PutB([]byte("foo"))
+
+	c.Check(err, Equals, nil)
+	c.Check(hash, Equals, "")
+	c.Check(replicas, Equals, 2)
+}
+
+func (s *ServerRequiredSuite) TestMakeKeepClientWithNonDiskTypeService(c *C) {
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, Equals, nil)
+
+	// Add an additional "testblobstore" keepservice
+	blobKeepService := make(arvadosclient.Dict)
+	err = arv.Create("keep_services",
+		arvadosclient.Dict{"keep_service": arvadosclient.Dict{
+			"service_host": "localhost",
+			"service_port": "21321",
+			"service_type": "testblobstore"}},
+		&blobKeepService)
+	c.Assert(err, Equals, nil)
+	defer func() { arv.Delete("keep_services", blobKeepService["uuid"].(string), nil, nil) }()
+
+	// Make a keepclient and ensure that the testblobstore is included
+	kc, err := MakeKeepClient(&arv)
+	c.Assert(err, Equals, nil)
+
+	// verify kc.LocalRoots
+	c.Check(len(kc.LocalRoots()), Equals, 3)
+	for _, root := range kc.LocalRoots() {
+		c.Check(root, Matches, "http://localhost:\\d+")
+	}
+	c.Assert(kc.LocalRoots()[blobKeepService["uuid"].(string)], Not(Equals), "")
+
+	// verify kc.GatewayRoots
+	c.Check(len(kc.GatewayRoots()), Equals, 3)
+	for _, root := range kc.GatewayRoots() {
+		c.Check(root, Matches, "http://localhost:\\d+")
+	}
+	c.Assert(kc.GatewayRoots()[blobKeepService["uuid"].(string)], Not(Equals), "")
+
+	// verify kc.WritableLocalRoots
+	c.Check(len(kc.WritableLocalRoots()), Equals, 3)
+	for _, root := range kc.WritableLocalRoots() {
+		c.Check(root, Matches, "http://localhost:\\d+")
+	}
+	c.Assert(kc.WritableLocalRoots()[blobKeepService["uuid"].(string)], Not(Equals), "")
+
+	c.Assert(kc.replicasPerService, Equals, 0)
+	c.Assert(kc.foundNonDiskSvc, Equals, true)
+	c.Assert(kc.Client.Timeout, Equals, 300*time.Second)
 }

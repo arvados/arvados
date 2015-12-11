@@ -1,45 +1,6 @@
 # Do not use this file for site configuration. Create application.yml
 # instead (see application.yml.example).
 
-<%
-# If you change any of the code in this block, you'll probably also want
-# to update it in API server's application.default.yml.
-def info_cmd(*args, &block)
-  IO.popen(args, "r", chdir: Rails.root, err: "/dev/null", &block)
-end
-
-source_version = ""
-local_modified = false
-if Rails.env == "production"
-  # Read the version from our package's git-commit.version file, if available.
-  begin
-    source_version = IO.read(Rails.root.join("git-commit.version")).strip
-  rescue Errno::ENOENT
-  end
-end
-
-if source_version.empty?
-  begin
-    status_output = false
-    info_cmd("git", "status", "-s") do |git_pipe|
-      git_pipe.each_line do |_|
-        status_output = true
-        # Continue reading the pipe so git doesn't get SIGPIPE.
-      end
-    end
-    if $?.success?
-      info_cmd("git", "log", "-n1", "--format=%H") do |git_pipe|
-        git_pipe.each_line do |line|
-          source_version = line.chomp
-        end
-      end
-      local_modified = status_output
-    end
-  rescue SystemCallError
-  end
-end
-%>
-
 # Below is a sample setting for diagnostics testing.
 # Configure workbench URL as "arvados_workbench_url"
 # Configure test user tokens as "user_tokens".
@@ -84,7 +45,6 @@ development:
   assets.debug: true
   profiling_enabled: true
   site_name: Arvados Workbench (dev)
-  local_modified: "<%= local_modified ? '-modified' : '' %>"
 
   # API server configuration
   arvados_login_base: ~
@@ -222,9 +182,11 @@ common:
   # the profile page.
   user_profile_form_message: Welcome to Arvados. All <span style="color:red">required fields</span> must be completed before you can proceed.
 
-  # source_version
-  source_version: "<%= source_version[0...8] %>"
-  local_modified: false
+  # Override the automatic version string. With the default value of
+  # false, the version string is read from git-commit.version in
+  # Rails.root (included in vendor packages) or determined by invoking
+  # "git log".
+  source_version: false
 
   # report notification to and from addresses
   issue_reporter_email_from: arvados@example.com
@@ -263,3 +225,32 @@ common:
   # E.g., using a name-based proxy server to forward connections to shell hosts:
   # https://%{hostname}.webshell.uuid_prefix.arvadosapi.com/
   shell_in_a_box_url: false
+
+  # Format of preview links. If false, use keep_web_download_url
+  # instead, and disable inline preview. If both are false, use
+  # Workbench's built-in file download/preview mechanism.
+  #
+  # Examples:
+  # keep_web_url: https://%{uuid_or_pdh}.collections.uuid_prefix.arvadosapi.com
+  # keep_web_url: https://%{uuid_or_pdh}--collections.uuid_prefix.arvadosapi.com
+  #
+  # Example supporting only public data and collection-sharing links
+  # (other data will be handled as downloads via keep_web_download_url):
+  # keep_web_url: https://collections.uuid_prefix.arvadosapi.com/c=%{uuid_or_pdh}
+  keep_web_url: false
+
+  # Format of download links. If false, use keep_web_url with
+  # disposition=attachment query param.
+  #
+  # The host part of the keep_web_download_url value here must match
+  # the -attachment-only-host argument given to keep-web: if
+  # keep_web_download_url is "https://FOO.EXAMPLE/c=..." then keep-web
+  # must run with "-attachment-only-host=FOO.EXAMPLE".
+  #
+  # If keep_web_download_url is false, and keep_web_url uses a
+  # single-origin form, then Workbench will show an error page
+  # when asked to download or preview private data.
+  #
+  # Example:
+  # keep_web_download_url: https://download.uuid_prefix.arvadosapi.com/c=%{uuid_or_pdh}
+  keep_web_download_url: false

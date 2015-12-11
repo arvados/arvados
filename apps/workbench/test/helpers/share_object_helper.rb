@@ -31,7 +31,7 @@ module ShareObjectHelper
       end
       click_on "Add"
     end
-    using_wait_time(Capybara.default_wait_time * 3) do
+    using_wait_time(Capybara.default_max_wait_time * 3) do
       assert(page.has_link?(name),
              "new share was not added to sharing table")
       assert_equal(start_share_count + 1, share_rows.size,
@@ -57,7 +57,7 @@ module ShareObjectHelper
       end
     end
     # Ensure revoked permission disappears from page.
-    using_wait_time(Capybara.default_wait_time * 3) do
+    using_wait_time(Capybara.default_max_wait_time * 3) do
       assert_no_text name
       assert_equal(start_rows.size - 1, share_rows.size,
                    "revoking share did not remove row from sharing table")

@@ -52,7 +52,7 @@ def is_in_collection(root, branch):
         else:
             sp = os.path.split(root)
             return is_in_collection(sp[0], os.path.join(sp[1], branch))
-    except IOError, OSError:
+    except (IOError, OSError):
         return (None, None)
 
 # Determine the project to place the output of this command by searching upward
@@ -73,7 +73,7 @@ def determine_project(root, current_user):
         else:
             sp = os.path.split(root)
             return determine_project(sp[0], current_user)
-    except IOError, OSError:
+    except (IOError, OSError):
         return current_user
 
 # Determine if string corresponds to a file, and if that file is part of a
@@ -101,7 +101,7 @@ def statfile(prefix, fn):
 
     return prefix+fn
 
-def uploadfiles(files, api, dry_run=False, num_retries=0, project=None):
+def uploadfiles(files, api, dry_run=False, num_retries=0, project=None, fnPattern="$(file %s/%s)"):
     # Find the smallest path prefix that includes all the files that need to be uploaded.
     # This starts at the root and iteratively removes common parent directory prefixes
     # until all file pathes no longer have a common parent.
@@ -153,7 +153,7 @@ def uploadfiles(files, api, dry_run=False, num_retries=0, project=None):
         logger.info("Uploaded to %s", item["uuid"])
 
     for c in files:
-        c.fn = "$(file %s/%s)" % (pdh, c.fn)
+        c.fn = fnPattern % (pdh, c.fn)
 
     os.chdir(orgdir)
 
@@ -238,7 +238,7 @@ def main(arguments=None):
 
     files = [c for command in slots[1:] for c in command if isinstance(c, UploadFile)]
     if files:
-        uploadfiles(files, api, dry_run=args.dry_run, num_retries=args.num_retries, project=project)
+        uploadfiles(files, api, dry_run=args.dry_run, num_retries=args.retries, project=project)
 
     for i in xrange(1, len(slots)):
         slots[i] = [("%s%s" % (c.prefix, c.fn)) if isinstance(c, ArvFile) else c for c in slots[i]]

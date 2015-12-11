@@ -176,7 +176,10 @@ class ApiServerForTests
       # though it doesn't need to start up a new server).
       env_script = check_output %w(python ./run_test_server.py start --auth admin)
       check_output %w(python ./run_test_server.py start_arv-git-httpd)
+      check_output %w(python ./run_test_server.py start_keep-web)
       check_output %w(python ./run_test_server.py start_nginx)
+      # This one isn't a no-op, even under run-tests.sh.
+      check_output %w(python ./run_test_server.py start_keep)
     end
     test_env = {}
     env_script.each_line do |line|
@@ -192,9 +195,11 @@ class ApiServerForTests
 
   def stop_test_server
     Dir.chdir PYTHON_TESTS_DIR do
+      check_output %w(python ./run_test_server.py stop_keep)
       # These are no-ops if we're running within run-tests.sh
       check_output %w(python ./run_test_server.py stop_nginx)
       check_output %w(python ./run_test_server.py stop_arv-git-httpd)
+      check_output %w(python ./run_test_server.py stop_keep-web)
       check_output %w(python ./run_test_server.py stop)
     end
     @@server_is_running = false

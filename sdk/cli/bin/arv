@@ -5,6 +5,7 @@
 # Ward Vandewege <ward@curoverse.com>
 
 require 'fileutils'
+require 'shellwords'
 
 if RUBY_VERSION < '1.9.3' then
   abort <<-EOS
@@ -85,7 +86,15 @@ def init_config
 end
 
 
-subcommands = %w(copy create edit keep pipeline run tag ws)
+subcommands = %w(copy create edit get keep pipeline run tag ws)
+
+def exec_bin bin, opts
+  bin_path = `which #{bin.shellescape}`.strip
+  if bin_path.empty?
+    raise "#{bin}: command not found"
+  end
+  exec bin_path, *opts
+end
 
 def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
   case subcommand
@@ -93,28 +102,27 @@ def check_subcommands client, arvados, subcommand, global_opts, remaining_opts
     arv_create client, arvados, global_opts, remaining_opts
   when 'edit'
     arv_edit client, arvados, global_opts, remaining_opts
+  when 'get'
+    arv_get client, arvados, global_opts, remaining_opts
   when 'copy', 'tag', 'ws', 'run'
-    exec `which arv-#{subcommand}`.strip, *remaining_opts
+    exec_bin "arv-#{subcommand}", remaining_opts
   when 'keep'
     @sub = remaining_opts.shift
     if ['get', 'put', 'ls', 'normalize'].index @sub then
       # Native Arvados
-      exec `which arv-#{@sub}`.strip, *remaining_opts
-    elsif ['less', 'check'].index @sub then
-      # wh* shims
-      exec `which wh#{@sub}`.strip, *remaining_opts
+      exec_bin "arv-#{@sub}", remaining_opts
     elsif @sub == 'docker'
-      exec `which arv-keepdocker`.strip, *remaining_opts
+      exec_bin "arv-keepdocker", remaining_opts
     else
       puts "Usage: arv keep [method] [--parameters]\n"
       puts "Use 'arv keep [method] --help' to get more information about specific methods.\n\n"
-      puts "Available methods: ls, get, put, less, check, docker"
+      puts "Available methods: ls, get, put, docker"
     end
     abort
   when 'pipeline'
     sub = remaining_opts.shift
     if sub == 'run'
-      exec `which arv-run-pipeline-instance`.strip, *remaining_opts
+      exec_bin "arv-run-pipeline-instance", remaining_opts
     else
       puts "Usage: arv pipeline [method] [--parameters]\n"
       puts "Use 'arv pipeline [method] --help' to get more information about specific methods.\n\n"
@@ -150,14 +158,7 @@ end
 
 def edit_and_commit_object initial_obj, tmp_stem, global_opts, &block
 
-  content = case global_opts[:format]
-            when 'json'
-              Oj.dump(initial_obj, :indent => 1)
-            when 'yaml'
-              initial_obj.to_yaml
-            else
-              abort "Unrecognized format #{global_opts[:format]}"
-            end
+  content = get_obj_content initial_obj, global_opts
 
   tmp_file = Tempfile.new([tmp_stem, ".#{global_opts[:format]}"])
   tmp_file.write(content)
@@ -182,6 +183,8 @@ def edit_and_commit_object initial_obj, tmp_stem, global_opts, &block
                    Oj.load(newcontent)
                  when 'yaml'
                    YAML.load(newcontent)
+                 else
+                   abort "Unrecognized format #{global_opts[:format]}"
                  end
 
         yield newobj
@@ -246,20 +249,7 @@ def check_response result
   results
 end
 
-def arv_edit client, arvados, global_opts, remaining_opts
-  uuid = remaining_opts.shift
-  if uuid.nil? or uuid == "-h" or uuid == "--help"
-    puts head_banner
-    puts "Usage: arv edit [uuid] [fields...]\n\n"
-    puts "Fetch the specified Arvados object, select the specified fields, \n"
-    puts "open an interactive text editor on a text representation (json or\n"
-    puts "yaml, use --format) and then update the object.  Will use 'nano'\n"
-    puts "by default, customize with the EDITOR or VISUAL environment variable.\n"
-    exit 255
-  end
-
-  # determine controller
-
+def lookup_uuid_rsc arvados, uuid
   m = /([a-z0-9]{5})-([a-z0-9]{5})-([a-z0-9]{15})/.match uuid
   if !m
     if /^[a-f0-9]{32}/.match uuid
@@ -282,6 +272,11 @@ def arv_edit client, arvados, global_opts, remaining_opts
     abort "Could not determine resource type #{m[2]}"
   end
 
+  return rsc
+end
+
+def fetch_rsc_obj client, arvados, rsc, uuid, remaining_opts
+
   begin
     result = client.execute(:api_method => eval('arvados.' + rsc + '.get'),
                             :parameters => {"uuid" => uuid},
@@ -289,14 +284,44 @@ def arv_edit client, arvados, global_opts, remaining_opts
                             :headers => {
                               authorization: 'OAuth2 '+ENV['ARVADOS_API_TOKEN']
                             })
-    oldobj = check_response result
+    obj = check_response result
   rescue => e
     abort "Server error: #{e}"
   end
 
   if remaining_opts.length > 0
-    oldobj.select! { |k, v| remaining_opts.include? k }
+    obj.select! { |k, v| remaining_opts.include? k }
   end
+
+  return obj
+end
+
+def get_obj_content obj, global_opts
+  content = case global_opts[:format]
+            when 'json'
+              Oj.dump(obj, :indent => 1)
+            when 'yaml'
+              obj.to_yaml
+            else
+              abort "Unrecognized format #{global_opts[:format]}"
+            end
+  return content
+end
+
+def arv_edit client, arvados, global_opts, remaining_opts
+  uuid = remaining_opts.shift
+  if uuid.nil? or uuid == "-h" or uuid == "--help"
+    puts head_banner
+    puts "Usage: arv edit [uuid] [fields...]\n\n"
+    puts "Fetch the specified Arvados object, select the specified fields, \n"
+    puts "open an interactive text editor on a text representation (json or\n"
+    puts "yaml, use --format) and then update the object.  Will use 'nano'\n"
+    puts "by default, customize with the EDITOR or VISUAL environment variable.\n"
+    exit 255
+  end
+
+  rsc = lookup_uuid_rsc arvados, uuid
+  oldobj = fetch_rsc_obj client, arvados, rsc, uuid, remaining_opts
 
   edit_and_commit_object oldobj, uuid, global_opts do |newobj|
     newobj.select! {|k| newobj[k] != oldobj[k]}
@@ -315,6 +340,24 @@ def arv_edit client, arvados, global_opts, remaining_opts
     end
   end
 
+  exit 0
+end
+
+def arv_get client, arvados, global_opts, remaining_opts
+  uuid = remaining_opts.shift
+  if uuid.nil? or uuid == "-h" or uuid == "--help"
+    puts head_banner
+    puts "Usage: arv [--format json|yaml] get [uuid] [fields...]\n\n"
+    puts "Fetch the specified Arvados object, select the specified fields,\n"
+    puts "and print a text representation.\n"
+    exit 255
+  end
+
+  rsc = lookup_uuid_rsc arvados, uuid
+  obj = fetch_rsc_obj client, arvados, rsc, uuid, remaining_opts
+  content = get_obj_content obj, global_opts
+
+  puts content
   exit 0
 end
 

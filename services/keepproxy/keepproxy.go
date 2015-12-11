@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"reflect"
 	"regexp"
 	"sync"
 	"syscall"
@@ -22,8 +21,8 @@ import (
 )
 
 // Default TCP address on which to listen for requests.
-// Initialized by the -listen flag.
-const DEFAULT_ADDR = ":25107"
+// Override with -listen.
+const DefaultAddr = ":25107"
 
 var listener net.Listener
 
@@ -37,12 +36,12 @@ func main() {
 		pidfile          string
 	)
 
-	flagset := flag.NewFlagSet("default", flag.ExitOnError)
+	flagset := flag.NewFlagSet("keepproxy", flag.ExitOnError)
 
 	flagset.StringVar(
 		&listen,
 		"listen",
-		DEFAULT_ADDR,
+		DefaultAddr,
 		"Interface on which to listen for requests, in the format "+
 			"ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port "+
 			"to listen on all network interfaces.")
@@ -84,6 +83,9 @@ func main() {
 		log.Fatalf("Error setting up arvados client %s", err.Error())
 	}
 
+	if os.Getenv("ARVADOS_DEBUG") != "" {
+		keepclient.DebugPrintf = log.Printf
+	}
 	kc, err := keepclient.MakeKeepClient(&arv)
 	if err != nil {
 		log.Fatalf("Error setting up keep client %s", err.Error())
@@ -100,15 +102,14 @@ func main() {
 	}
 
 	kc.Want_replicas = default_replicas
-
 	kc.Client.Timeout = time.Duration(timeout) * time.Second
+	go kc.RefreshServices(5*time.Minute, 3*time.Second)
 
 	listener, err = net.Listen("tcp", listen)
 	if err != nil {
 		log.Fatalf("Could not listen on %v", listen)
 	}
-
-	go RefreshServicesList(kc)
+	log.Printf("Arvados Keep proxy started listening on %v", listener.Addr())
 
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.
@@ -121,9 +122,7 @@ func main() {
 	signal.Notify(term, syscall.SIGTERM)
 	signal.Notify(term, syscall.SIGINT)
 
-	log.Printf("Arvados Keep proxy started listening on %v", listener.Addr())
-
-	// Start listening for requests.
+	// Start serving requests.
 	http.Serve(listener, MakeRESTRouter(!no_get, !no_put, kc))
 
 	log.Println("shutting down")
@@ -133,30 +132,6 @@ type ApiTokenCache struct {
 	tokens     map[string]int64
 	lock       sync.Mutex
 	expireTime int64
-}
-
-// Refresh the keep service list every five minutes.
-func RefreshServicesList(kc *keepclient.KeepClient) {
-	var previousRoots = []map[string]string{}
-	var delay time.Duration = 0
-	for {
-		time.Sleep(delay * time.Second)
-		delay = 300
-		if err := kc.DiscoverKeepServers(); err != nil {
-			log.Println("Error retrieving services list:", err)
-			delay = 3
-			continue
-		}
-		newRoots := []map[string]string{kc.LocalRoots(), kc.GatewayRoots()}
-		if !reflect.DeepEqual(previousRoots, newRoots) {
-			log.Printf("Updated services list: locals %v gateways %v", newRoots[0], newRoots[1])
-		}
-		if len(newRoots[0]) == 0 {
-			log.Print("WARNING: No local services. Retrying in 3 seconds.")
-			delay = 3
-		}
-		previousRoots = newRoots
-	}
 }
 
 // Cache the token and set an expire time.  If we already have an expire time
@@ -191,17 +166,13 @@ func (this *ApiTokenCache) RecallToken(token string) bool {
 }
 
 func GetRemoteAddress(req *http.Request) string {
-	if realip := req.Header.Get("X-Real-IP"); realip != "" {
-		if forwarded := req.Header.Get("X-Forwarded-For"); forwarded != realip {
-			return fmt.Sprintf("%s (X-Forwarded-For %s)", realip, forwarded)
-		} else {
-			return realip
-		}
+	if xff := req.Header.Get("X-Forwarded-For"); xff != "" {
+		return xff + "," + req.RemoteAddr
 	}
 	return req.RemoteAddr
 }
 
-func CheckAuthorizationHeader(kc keepclient.KeepClient, cache *ApiTokenCache, req *http.Request) (pass bool, tok string) {
+func CheckAuthorizationHeader(kc *keepclient.KeepClient, cache *ApiTokenCache, req *http.Request) (pass bool, tok string) {
 	var auth string
 	if auth = req.Header.Get("Authorization"); auth == "" {
 		return false, ""
@@ -241,6 +212,11 @@ type PutBlockHandler struct {
 	*ApiTokenCache
 }
 
+type IndexHandler struct {
+	*keepclient.KeepClient
+	*ApiTokenCache
+}
+
 type InvalidPathHandler struct{}
 
 type OptionsHandler struct{}
@@ -262,6 +238,12 @@ func MakeRESTRouter(
 		rest.Handle(`/{locator:[0-9a-f]{32}\+.*}`,
 			GetBlockHandler{kc, t}).Methods("GET", "HEAD")
 		rest.Handle(`/{locator:[0-9a-f]{32}}`, GetBlockHandler{kc, t}).Methods("GET", "HEAD")
+
+		// List all blocks
+		rest.Handle(`/index`, IndexHandler{kc, t}).Methods("GET")
+
+		// List blocks whose hash has the given prefix
+		rest.Handle(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler{kc, t}).Methods("GET")
 	}
 
 	if enable_put {
@@ -320,7 +302,7 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	var pass bool
 	var tok string
-	if pass, tok = CheckAuthorizationHeader(kc, this.ApiTokenCache, req); !pass {
+	if pass, tok = CheckAuthorizationHeader(&kc, this.ApiTokenCache, req); !pass {
 		status, err = http.StatusForbidden, BadAuthorizationHeader
 		return
 	}
@@ -351,7 +333,7 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 		log.Println("Warning:", GetRemoteAddress(req), req.Method, proxiedURI, "Content-Length not provided")
 	}
 
-	switch err {
+	switch respErr := err.(type) {
 	case nil:
 		status = http.StatusOK
 		resp.Header().Set("Content-Length", fmt.Sprint(expectLength))
@@ -364,10 +346,16 @@ func (this GetBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 				err = ContentLengthMismatch
 			}
 		}
-	case keepclient.BlockNotFound:
-		status = http.StatusNotFound
+	case keepclient.Error:
+		if respErr == keepclient.BlockNotFound {
+			status = http.StatusNotFound
+		} else if respErr.Temporary() {
+			status = http.StatusBadGateway
+		} else {
+			status = 422
+		}
 	default:
-		status = http.StatusBadGateway
+		status = http.StatusInternalServerError
 	}
 }
 
@@ -421,7 +409,7 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	var pass bool
 	var tok string
-	if pass, tok = CheckAuthorizationHeader(kc, this.ApiTokenCache, req); !pass {
+	if pass, tok = CheckAuthorizationHeader(&kc, this.ApiTokenCache, req); !pass {
 		err = BadAuthorizationHeader
 		status = http.StatusForbidden
 		return
@@ -480,4 +468,64 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	default:
 		status = http.StatusBadGateway
 	}
+}
+
+// ServeHTTP implementation for IndexHandler
+// Supports only GET requests for /index/{prefix:[0-9a-f]{0,32}}
+// For each keep server found in LocalRoots:
+//   Invokes GetIndex using keepclient
+//   Expects "complete" response (terminating with blank new line)
+//   Aborts on any errors
+// Concatenates responses from all those keep servers and returns
+func (handler IndexHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	SetCorsHeaders(resp)
+
+	prefix := mux.Vars(req)["prefix"]
+	var err error
+	var status int
+
+	defer func() {
+		if status != http.StatusOK {
+			http.Error(resp, err.Error(), status)
+		}
+	}()
+
+	kc := *handler.KeepClient
+
+	ok, token := CheckAuthorizationHeader(&kc, handler.ApiTokenCache, req)
+	if !ok {
+		status, err = http.StatusForbidden, BadAuthorizationHeader
+		return
+	}
+
+	// Copy ArvadosClient struct and use the client's API token
+	arvclient := *kc.Arvados
+	arvclient.ApiToken = token
+	kc.Arvados = &arvclient
+
+	// Only GET method is supported
+	if req.Method != "GET" {
+		status, err = http.StatusNotImplemented, MethodNotSupported
+		return
+	}
+
+	// Get index from all LocalRoots and write to resp
+	var reader io.Reader
+	for uuid := range kc.LocalRoots() {
+		reader, err = kc.GetIndex(uuid, prefix)
+		if err != nil {
+			status = http.StatusBadGateway
+			return
+		}
+
+		_, err = io.Copy(resp, reader)
+		if err != nil {
+			status = http.StatusBadGateway
+			return
+		}
+	}
+
+	// Got index from all the keep servers and wrote to resp
+	status = http.StatusOK
+	resp.Write([]byte("\n"))
 }

@@ -24,6 +24,7 @@ creds = dummy_creds
 
 [Size 1]
 cores = 1
+price = 0.8
 
 [Logging]
 file = /dev/null
@@ -55,6 +56,7 @@ testlogger = INFO
         size, kwargs = sizes[0]
         self.assertEqual('Small', size.name)
         self.assertEqual(1, kwargs['cores'])
+        self.assertEqual(0.8, kwargs['price'])
 
     def test_shutdown_windows(self):
         config = self.load_config()

@@ -427,12 +427,16 @@ class FuseWriteFileTest(MountTestBase):
 
         self.assertNotIn("file1.txt", collection)
 
+        self.assertEqual(0, self.operations.write_counter.get())
         self.pool.apply(fuseWriteFileTestHelperWriteFile, (self.mounttmp,))
+        self.assertEqual(12, self.operations.write_counter.get())
 
         with collection.open("file1.txt") as f:
             self.assertEqual(f.read(), "Hello world!")
 
+        self.assertEqual(0, self.operations.read_counter.get())
         self.pool.apply(fuseWriteFileTestHelperReadFile, (self.mounttmp,))
+        self.assertEqual(12, self.operations.read_counter.get())
 
         collection2 = self.api.collections().get(uuid=collection.manifest_locator()).execute()
         self.assertRegexpMatches(collection2["manifest_text"],
@@ -699,7 +703,7 @@ class FuseUpdateFromEventTest(MountTestBase):
         with llfuse.lock:
             m.new_collection(collection.api_response(), collection)
 
-        self.operations.listen_for_events(self.api)
+        self.operations.listen_for_events()
 
         d1 = llfuse.listdir(os.path.join(self.mounttmp))
         self.assertEqual([], sorted(d1))
@@ -1060,3 +1064,66 @@ class FuseUnitTest(unittest.TestCase):
         self.assertEqual("_", fuse.sanitize_filename(""))
         self.assertEqual("_", fuse.sanitize_filename("."))
         self.assertEqual("__", fuse.sanitize_filename(".."))
+
+
+class FuseMagicTestPDHOnly(MountTestBase):
+    def setUp(self, api=None):
+        super(FuseMagicTestPDHOnly, self).setUp(api=api)
+
+        cw = arvados.CollectionWriter()
+
+        cw.start_new_file('thing1.txt')
+        cw.write("data 1")
+
+        self.testcollection = cw.finish()
+        self.test_manifest = cw.manifest_text()
+        created = self.api.collections().create(body={"manifest_text":self.test_manifest}).execute()
+        self.testcollectionuuid = str(created['uuid'])
+
+    def verify_pdh_only(self, pdh_only=False, skip_pdh_only=False):
+        if skip_pdh_only is True:
+            self.make_mount(fuse.MagicDirectory)    # in this case, the default by_id applies
+        else:
+            self.make_mount(fuse.MagicDirectory, pdh_only=pdh_only)
+
+        mount_ls = llfuse.listdir(self.mounttmp)
+        self.assertIn('README', mount_ls)
+        self.assertFalse(any(arvados.util.keep_locator_pattern.match(fn) or
+                             arvados.util.uuid_pattern.match(fn)
+                             for fn in mount_ls),
+                         "new FUSE MagicDirectory lists Collection")
+
+        # look up using pdh should succeed in all cases
+        self.assertDirContents(self.testcollection, ['thing1.txt'])
+        self.assertDirContents(os.path.join('by_id', self.testcollection),
+                               ['thing1.txt'])
+        mount_ls = llfuse.listdir(self.mounttmp)
+        self.assertIn('README', mount_ls)
+        self.assertIn(self.testcollection, mount_ls)
+        self.assertIn(self.testcollection,
+                      llfuse.listdir(os.path.join(self.mounttmp, 'by_id')))
+
+        files = {}
+        files[os.path.join(self.mounttmp, self.testcollection, 'thing1.txt')] = 'data 1'
+
+        for k, v in files.items():
+            with open(os.path.join(self.mounttmp, k)) as f:
+                self.assertEqual(v, f.read())
+
+        # look up using uuid should fail when pdh_only is set
+        if pdh_only is True:
+            with self.assertRaises(OSError):
+                self.assertDirContents(os.path.join('by_id', self.testcollectionuuid),
+                               ['thing1.txt'])
+        else:
+            self.assertDirContents(os.path.join('by_id', self.testcollectionuuid),
+                               ['thing1.txt'])
+
+    def test_with_pdh_only_true(self):
+        self.verify_pdh_only(pdh_only=True)
+
+    def test_with_pdh_only_false(self):
+        self.verify_pdh_only(pdh_only=False)
+
+    def test_with_default_by_id(self):
+        self.verify_pdh_only(skip_pdh_only=True)

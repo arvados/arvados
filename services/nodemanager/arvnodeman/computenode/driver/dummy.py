@@ -38,6 +38,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         nodelist = super(ComputeNodeDriver, self).list_nodes()
         for node in nodelist:
             self._ensure_private_ip(node)
+            node.size = self.sizes["1"]
         return nodelist
 
     def create_node(self, size, arvados_node):

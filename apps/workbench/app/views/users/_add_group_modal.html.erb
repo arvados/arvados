@@ -1,0 +1,27 @@
+<div class="modal" id="add-group-modal" tabindex="-1" role="dialog" aria-labelledby="add-group-label" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="add-group-form">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h4 class="modal-title" id="add-group-label">Add new group</h4>
+        </div>
+        <div class="modal-body form-horizontal">
+          <div class="form-group">
+            <label for="group_name_input" class="col-sm-1 control-label">Name</label>
+            <div class="col-sm-9">
+              <div class="input-group-name">
+                <input type="text" class="form-control" id="group_name_input" name="group_name_input" placeholder="Enter group name"/>
+              </div>
+            </div>
+          </div>
+          <p id="add-group-error" class="alert alert-danger"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+          <input type="submit" class="btn btn-primary" id="add-group-submit" name="submit" value="Create">
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

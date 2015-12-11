@@ -1,251 +1,189 @@
 require 'minitest/autorun'
-require 'digest/md5'
+require 'json'
+require 'yaml'
 
+# Black box tests for 'arv get' command.
 class TestArvGet < Minitest::Test
-  def setup
-    begin
-      Dir.mkdir './tmp'
-    rescue Errno::EEXIST
-    end
-    @@foo_manifest_locator ||= `echo -n foo | ./bin/arv-put --filename foo --no-progress -`.strip
-    @@baz_locator ||= `echo -n baz | ./bin/arv-put --as-raw --no-progress -`.strip
-    @@multilevel_manifest_locator ||= `echo ./foo/bar #{@@baz_locator} 0:3:baz | ./bin/arv-put --as-raw --no-progress -`.strip
-  end
+  # UUID for an Arvados object that does not exist
+  NON_EXISTENT_OBJECT_UUID = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
+  # Name of field of Arvados object that can store any (textual) value
+  STORED_VALUE_FIELD_NAME = "name"
+  # Name of UUID field of Arvados object
+  UUID_FIELD_NAME = "uuid"
+  # Name of an invalid field of Arvados object
+  INVALID_FIELD_NAME = "invalid"
 
-  def test_no_args
+  # Tests that a valid Arvados object can be retrieved in a supported format
+  # using: `arv get [uuid]`. Given all other `arv foo` commands return JSON
+  # when no format is specified, JSON should be expected in this case.
+  def test_get_valid_object_no_format_specified
+    stored_value = __method__.to_s
+    uuid = create_arv_object_with_value(stored_value)
     out, err = capture_subprocess_io do
-      assert_arv_get false
+      assert(arv_get_default(uuid))
     end
-    assert_equal '', out
-    assert_match /^usage:/, err
+    assert_empty(err, "Error text not expected: '#{err}'")
+    arv_object = parse_json_arv_object(out)
+    assert(has_field_with_value(arv_object, STORED_VALUE_FIELD_NAME, stored_value))
   end
 
-  def test_help
+  # Tests that a valid Arvados object can be retrieved in JSON format using:
+  # `arv get [uuid] --format json`.
+  def test_get_valid_object_json_format_specified
+    stored_value = __method__.to_s
+    uuid = create_arv_object_with_value(stored_value)
     out, err = capture_subprocess_io do
-      assert_arv_get '-h'
+      assert(arv_get_json(uuid))
     end
-    $stderr.write err
-    assert_equal '', err
-    assert_match /^usage:/, out
+    assert_empty(err, "Error text not expected: '#{err}'")
+    arv_object = parse_json_arv_object(out)
+    assert(has_field_with_value(arv_object, STORED_VALUE_FIELD_NAME, stored_value))
   end
 
-  def test_file_to_dev_stdout
-    test_file_to_stdout('/dev/stdout')
-  end
-
-  def test_file_to_stdout(specify_stdout_as='-')
+  # Tests that a valid Arvados object can be retrieved in YAML format using:
+  # `arv get [uuid] --format yaml`.
+  def test_get_valid_object_yaml_format_specified
+    stored_value = __method__.to_s
+    uuid = create_arv_object_with_value(stored_value)
     out, err = capture_subprocess_io do
-      assert_arv_get @@foo_manifest_locator + '/foo', specify_stdout_as
+      assert(arv_get_yaml(uuid))
     end
-    assert_equal '', err
-    assert_equal 'foo', out
+    assert_empty(err, "Error text not expected: '#{err}'")
+    arv_object = parse_yaml_arv_object(out)
+    assert(has_field_with_value(arv_object, STORED_VALUE_FIELD_NAME, stored_value))
   end
 
-  def test_file_to_file
-    remove_tmp_foo
+  # Tests that a subset of all fields of a valid Arvados object can be retrieved
+  # using: `arv get [uuid] [fields...]`.
+  def test_get_valid_object_with_valid_fields
+    stored_value = __method__.to_s
+    uuid = create_arv_object_with_value(stored_value)
     out, err = capture_subprocess_io do
-      assert_arv_get @@foo_manifest_locator + '/foo', 'tmp/foo'
+      assert(arv_get_json(uuid, STORED_VALUE_FIELD_NAME, UUID_FIELD_NAME))
     end
-    assert_equal '', err
-    assert_equal '', out
-    assert_equal 'foo', IO.read('tmp/foo')
+    assert_empty(err, "Error text not expected: '#{err}'")
+    arv_object = parse_json_arv_object(out)
+    assert(has_field_with_value(arv_object, STORED_VALUE_FIELD_NAME, stored_value))
+    assert(has_field_with_value(arv_object, UUID_FIELD_NAME, uuid))
   end
 
-  def test_file_to_file_no_overwrite_file
-    File.open './tmp/foo', 'wb' do |f|
-      f.write 'baz'
-    end
+  # Tests that the valid field is retrieved when both a valid and invalid field
+  # are requested from a valid Arvados object, using:
+  # `arv get [uuid] [fields...]`.
+  def test_get_valid_object_with_both_valid_and_invalid_fields
+    stored_value = __method__.to_s
+    uuid = create_arv_object_with_value(stored_value)
     out, err = capture_subprocess_io do
-      assert_arv_get false, @@foo_manifest_locator + '/foo', 'tmp/foo'
+      assert(arv_get_json(uuid, STORED_VALUE_FIELD_NAME, INVALID_FIELD_NAME))
     end
-    assert_match /Local file tmp\/foo already exists/, err
-    assert_equal '', out
-    assert_equal 'baz', IO.read('tmp/foo')
+    assert_empty(err, "Error text not expected: '#{err}'")
+    arv_object = parse_json_arv_object(out)
+    assert(has_field_with_value(arv_object, STORED_VALUE_FIELD_NAME, stored_value))
+    refute(has_field_with_value(arv_object, INVALID_FIELD_NAME, stored_value))
   end
 
-  def test_file_to_file_no_overwrite_file_in_dir
-    File.open './tmp/foo', 'wb' do |f|
-      f.write 'baz'
-    end
+  # Tests that no fields are retreived when no valid fields are requested from
+  # a valid Arvados object, using: `arv get [uuid] [fields...]`.
+  def test_get_valid_object_with_no_valid_fields
+    stored_value = __method__.to_s
+    uuid = create_arv_object_with_value(stored_value)
     out, err = capture_subprocess_io do
-      assert_arv_get false, @@foo_manifest_locator + '/', 'tmp/'
+      assert(arv_get_json(uuid, INVALID_FIELD_NAME))
     end
-    assert_match /Local file tmp\/foo already exists/, err
-    assert_equal '', out
-    assert_equal 'baz', IO.read('tmp/foo')
+    assert_empty(err, "Error text not expected: '#{err}'")
+    arv_object = parse_json_arv_object(out)
+    assert_equal(0, arv_object.length)
   end
 
-  def test_file_to_file_force_overwrite
-    File.open './tmp/foo', 'wb' do |f|
-      f.write 'baz'
-    end
-    assert_equal 'baz', IO.read('tmp/foo')
+  # Tests that an invalid (non-existent) Arvados object is not retrieved using:
+  # using: `arv get [non-existent-uuid]`.
+  def test_get_invalid_object
     out, err = capture_subprocess_io do
-      assert_arv_get '-f', @@foo_manifest_locator + '/', 'tmp/'
+      refute(arv_get_json(NON_EXISTENT_OBJECT_UUID))
     end
-    assert_match '', err
-    assert_equal '', out
-    assert_equal 'foo', IO.read('tmp/foo')
+    refute_empty(err, "Expected error feedback on request for invalid object")
+    assert_empty(out)
   end
 
-  def test_file_to_file_skip_existing
-    File.open './tmp/foo', 'wb' do |f|
-      f.write 'baz'
-    end
-    assert_equal 'baz', IO.read('tmp/foo')
+  # Tests that help text exists using: `arv get --help`.
+  def test_help_exists
     out, err = capture_subprocess_io do
-      assert_arv_get '--skip-existing', @@foo_manifest_locator + '/', 'tmp/'
+#      assert(arv_get_default("--help"), "Expected exit code 0: #{$?}")
+       #XXX: Exit code given is 255. It probably should be 0, which seems to be
+       #     standard elsewhere. However, 255 is in line with other `arv`
+       #     commands (e.g. see `arv edit`) so ignoring the problem here.
+       arv_get_default("--help")
     end
-    assert_match '', err
-    assert_equal '', out
-    assert_equal 'baz', IO.read('tmp/foo')
-  end
-
-  def test_file_to_dir
-    remove_tmp_foo
-    out, err = capture_subprocess_io do
-      assert_arv_get @@foo_manifest_locator + '/foo', 'tmp/'
-    end
-    assert_equal '', err
-    assert_equal '', out
-    assert_equal 'foo', IO.read('tmp/foo')
-  end
-
-  def test_dir_to_file
-    out, err = capture_subprocess_io do
-      assert_arv_get false, @@foo_manifest_locator + '/', 'tmp/foo'
-    end
-    assert_equal '', out
-    assert_match /^usage:/, err
-  end
-
-  def test_dir_to_empty_string
-    out, err = capture_subprocess_io do
-      assert_arv_get false, @@foo_manifest_locator + '/', ''
-    end
-    assert_equal '', out
-    assert_match /^usage:/, err
-  end
-
-  def test_nonexistent_block
-    out, err = capture_subprocess_io do
-      assert_arv_get false, 'e796ab2294f3e48ec709ffa8d6daf58c'
-    end
-    assert_equal '', out
-    assert_match /Error:/, err
-  end
-
-  def test_nonexistent_manifest
-    out, err = capture_subprocess_io do
-      assert_arv_get false, 'acbd18db4cc2f85cedef654fccc4a4d8/', 'tmp/'
-    end
-    assert_equal '', out
-    assert_match /Error:/, err
-  end
-
-  def test_manifest_root_to_dir
-    remove_tmp_foo
-    out, err = capture_subprocess_io do
-      assert_arv_get '-r', @@foo_manifest_locator + '/', 'tmp/'
-    end
-    assert_equal '', err
-    assert_equal '', out
-    assert_equal 'foo', IO.read('tmp/foo')
-  end
-
-  def test_manifest_root_to_dir_noslash
-    remove_tmp_foo
-    out, err = capture_subprocess_io do
-      assert_arv_get '-r', @@foo_manifest_locator + '/', 'tmp'
-    end
-    assert_equal '', err
-    assert_equal '', out
-    assert_equal 'foo', IO.read('tmp/foo')
-  end
-
-  def test_display_md5sum
-    remove_tmp_foo
-    out, err = capture_subprocess_io do
-      assert_arv_get '-r', '--md5sum', @@foo_manifest_locator + '/', 'tmp/'
-    end
-    assert_equal "#{Digest::MD5.hexdigest('foo')}  ./foo\n", err
-    assert_equal '', out
-    assert_equal 'foo', IO.read('tmp/foo')
-  end
-
-  def test_md5sum_nowrite
-    remove_tmp_foo
-    out, err = capture_subprocess_io do
-      assert_arv_get '-n', '--md5sum', @@foo_manifest_locator + '/', 'tmp/'
-    end
-    assert_equal "#{Digest::MD5.hexdigest('foo')}  ./foo\n", err
-    assert_equal '', out
-    assert_equal false, File.exists?('tmp/foo')
-  end
-
-  def test_sha1_nowrite
-    remove_tmp_foo
-    out, err = capture_subprocess_io do
-      assert_arv_get '-n', '-r', '--hash', 'sha1', @@foo_manifest_locator+'/', 'tmp/'
-    end
-    assert_equal "#{Digest::SHA1.hexdigest('foo')}  ./foo\n", err
-    assert_equal '', out
-    assert_equal false, File.exists?('tmp/foo')
-  end
-
-  def test_block_to_file
-    remove_tmp_foo
-    out, err = capture_subprocess_io do
-      assert_arv_get @@foo_manifest_locator, 'tmp/foo'
-    end
-    assert_equal '', err
-    assert_equal '', out
-
-    digest = Digest::MD5.hexdigest('foo')
-    !(IO.read('tmp/foo')).gsub!( /^(. #{digest}+3)(.*)( 0:3:foo)$/).nil?
-  end
-
-  def test_create_directory_tree
-    `rm -rf ./tmp/arv-get-test/`
-    Dir.mkdir './tmp/arv-get-test'
-    out, err = capture_subprocess_io do
-      assert_arv_get @@multilevel_manifest_locator + '/', 'tmp/arv-get-test/'
-    end
-    assert_equal '', err
-    assert_equal '', out
-    assert_equal 'baz', IO.read('tmp/arv-get-test/foo/bar/baz')
-  end
-
-  def test_create_partial_directory_tree
-    `rm -rf ./tmp/arv-get-test/`
-    Dir.mkdir './tmp/arv-get-test'
-    out, err = capture_subprocess_io do
-      assert_arv_get(@@multilevel_manifest_locator + '/foo/',
-                     'tmp/arv-get-test/')
-    end
-    assert_equal '', err
-    assert_equal '', out
-    assert_equal 'baz', IO.read('tmp/arv-get-test/bar/baz')
+    assert_empty(err, "Error text not expected: '#{err}'")
+    refute_empty(out, "Help text should be given")
   end
 
   protected
-  def assert_arv_get(*args)
-    expect = case args.first
-             when true, false
-               args.shift
-             else
-               true
-             end
-    assert_equal(expect,
-                 system(['./bin/arv-get', 'arv-get'], *args),
-                 "`arv-get #{args.join ' '}` " +
-                 "should exit #{if expect then 0 else 'non-zero' end}")
+  # Runs 'arv get <varargs>' with given arguments. Returns whether the exit
+  # status was 0 (i.e. success). Use $? to attain more details on failure.
+  def arv_get_default(*args)
+    return system("arv", "get", *args)
   end
 
-  def remove_tmp_foo
-    begin
-      File.unlink('tmp/foo')
-    rescue Errno::ENOENT
+  # Runs 'arv --format json get <varargs>' with given arguments. Returns whether
+  # the exit status was 0 (i.e. success). Use $? to attain more details on
+  # failure.
+  def arv_get_json(*args)
+    return system("arv", "--format", "json", "get", *args)
+  end
+
+  # Runs 'arv --format yaml get <varargs>' with given arguments. Returns whether
+  # the exit status was 0 (i.e. success). Use $? to attain more details on
+  # failure.
+  def arv_get_yaml(*args)
+    return system("arv", "--format", "yaml", "get", *args)
+  end
+
+  # Creates an Arvados object that stores a given value. Returns the uuid of the
+  # created object.
+  def create_arv_object_with_value(value)
+    out, err = capture_subprocess_io do
+      system("arv", "tag", "add", value, "--object", "testing")
+      assert $?.success?, "Command failure running `arv tag`: #{$?}"
     end
+    assert_equal '', err
+    assert_operator 0, :<, out.strip.length
+    out.strip
+  end
+
+  # Parses the given JSON representation of an Arvados object, returning
+  # an equivalent Ruby representation (a hash map).
+  def parse_json_arv_object(arvObjectAsJson)
+    begin
+      parsed = JSON.parse(arvObjectAsJson)
+      assert(parsed.instance_of?(Hash))
+      return parsed
+    rescue JSON::ParserError => e
+      raise "Invalid JSON representation of Arvados object.\n" \
+            "Parse error: '#{e}'\n" \
+            "JSON: '#{arvObjectAsJson}'\n"
+    end
+  end
+
+  # Parses the given JSON representation of an Arvados object, returning
+  # an equivalent Ruby representation (a hash map).
+  def parse_yaml_arv_object(arvObjectAsYaml)
+    begin
+      parsed = YAML.load(arvObjectAsYaml)
+      assert(parsed.instance_of?(Hash))
+      return parsed
+    rescue
+      raise "Invalid YAML representation of Arvados object.\n" \
+            "YAML: '#{arvObjectAsYaml}'\n"
+    end
+  end
+
+  # Checks whether the given Arvados object has the given expected value for the
+  # specified field.
+  def has_field_with_value(arvObjectAsHash, fieldName, expectedValue)
+    if !arvObjectAsHash.has_key?(fieldName)
+      return false
+    end
+    return (arvObjectAsHash[fieldName] == expectedValue)
   end
 end

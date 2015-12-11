@@ -1,9 +1,12 @@
 import collections
+import httplib
 import httplib2
 import json
 import logging
 import os
 import re
+import socket
+import time
 import types
 
 import apiclient
@@ -14,6 +17,11 @@ import errors
 import util
 
 _logger = logging.getLogger('arvados.api')
+
+MAX_IDLE_CONNECTION_DURATION = 30
+RETRY_DELAY_INITIAL = 2
+RETRY_DELAY_BACKOFF = 2
+RETRY_COUNT = 2
 
 class OrderedJsonModel(apiclient.model.JsonModel):
     """Model class for JSON that preserves the contents' order.
@@ -36,8 +44,6 @@ class OrderedJsonModel(apiclient.model.JsonModel):
 
 
 def _intercept_http_request(self, uri, **kwargs):
-    from httplib import BadStatusLine
-
     if (self.max_request_size and
         kwargs.get('body') and
         self.max_request_size < len(kwargs['body'])):
@@ -50,22 +56,54 @@ def _intercept_http_request(self, uri, **kwargs):
         kwargs['headers']['X-External-Client'] = '1'
 
     kwargs['headers']['Authorization'] = 'OAuth2 %s' % self.arvados_api_token
-    try:
-        return self.orig_http_request(uri, **kwargs)
-    except BadStatusLine:
-        # This is how httplib tells us that it tried to reuse an
-        # existing connection but it was already closed by the
-        # server. In that case, yes, we would like to retry.
-        # Unfortunately, we are not absolutely certain that the
-        # previous call did not succeed, so this is slightly
-        # risky.
-        return self.orig_http_request(uri, **kwargs)
+
+    retryable = kwargs.get('method', 'GET') in [
+        'DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT']
+    retry_count = self._retry_count if retryable else 0
+
+    if (not retryable and
+        time.time() - self._last_request_time > self._max_keepalive_idle):
+        # High probability of failure due to connection atrophy. Make
+        # sure this request [re]opens a new connection by closing and
+        # forgetting all cached connections first.
+        for conn in self.connections.itervalues():
+            conn.close()
+        self.connections.clear()
+
+    delay = self._retry_delay_initial
+    for _ in range(retry_count):
+        self._last_request_time = time.time()
+        try:
+            return self.orig_http_request(uri, **kwargs)
+        except httplib.HTTPException:
+            _logger.debug("Retrying API request in %d s after HTTP error",
+                          delay, exc_info=True)
+        except socket.error:
+            # This is the one case where httplib2 doesn't close the
+            # underlying connection first.  Close all open
+            # connections, expecting this object only has the one
+            # connection to the API server.  This is safe because
+            # httplib2 reopens connections when needed.
+            _logger.debug("Retrying API request in %d s after socket error",
+                          delay, exc_info=True)
+            for conn in self.connections.itervalues():
+                conn.close()
+        time.sleep(delay)
+        delay = delay * self._retry_delay_backoff
+
+    self._last_request_time = time.time()
+    return self.orig_http_request(uri, **kwargs)
 
 def _patch_http_request(http, api_token):
     http.arvados_api_token = api_token
     http.max_request_size = 0
     http.orig_http_request = http.request
     http.request = types.MethodType(_intercept_http_request, http)
+    http._last_request_time = 0
+    http._max_keepalive_idle = MAX_IDLE_CONNECTION_DURATION
+    http._retry_delay_initial = RETRY_DELAY_INITIAL
+    http._retry_delay_backoff = RETRY_DELAY_BACKOFF
+    http._retry_count = RETRY_COUNT
     return http
 
 # Monkey patch discovery._cast() so objects and arrays get serialized

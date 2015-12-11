@@ -153,7 +153,9 @@ navbar:
       - install/install-shell-server.html.textile.liquid
       - install/create-standard-objects.html.textile.liquid
       - install/install-keepstore.html.textile.liquid
+      - install/configure-azure-blob-storage.html.textile.liquid
       - install/install-keepproxy.html.textile.liquid
+      #- install/install-keep-web.html.textile.liquid
       - install/install-crunch-dispatch.html.textile.liquid
       - install/install-compute-node.html.textile.liquid
     - Helpful hints:

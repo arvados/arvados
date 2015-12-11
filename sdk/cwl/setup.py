@@ -26,11 +26,12 @@ setup(name='arvados-cwl-runner',
       license='Apache 2.0',
       packages=find_packages(),
       scripts=[
-          'bin/cwl-runner'
+          'bin/cwl-runner',
+          'bin/arvados-cwl-runner'
       ],
       install_requires=[
-          'cwltool',
-          'arvados-python-client'
+          'cwltool>=1.0.20151026181844',
+          'arvados-python-client>=0.1.20151023214338'
       ],
       zip_safe=True,
       cmdclass={'egg_info': tagger},

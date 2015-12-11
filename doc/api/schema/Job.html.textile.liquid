@@ -57,11 +57,12 @@ h3. Runtime constraints
 table(table table-bordered table-condensed).
 |_. Key|_. Type|_. Description|_. Implemented|
 |arvados_sdk_version|string|The Git version of the SDKs to use from the Arvados git repository.  See "Specifying Git versions":#script_version for more detail about acceptable ways to specify a commit.  If you use this, you must also specify a @docker_image@ constraint (see below).  In order to install the Python SDK successfully, Crunch must be able to find and run virtualenv inside the container.|&#10003;|
-|docker_image|string|The Docker image that this Job needs to run.  If specified, Crunch will create a Docker container from this image, and run the Job's script inside that.  The Keep mount and work directories will be available as volumes inside this container.  The image must be uploaded to Arvados using @arv keep docker@.  You may specify the image in any format that Docker accepts, such as @arvados/jobs@, @debian:latest@, or the Docker image id.  Alternatively, you may specify the UUID or portable data hash of the image Collection, returned by @arv keep docker@.|&#10003;|
+|docker_image|string|The Docker image that this Job needs to run.  If specified, Crunch will create a Docker container from this image, and run the Job's script inside that.  The Keep mount and work directories will be available as volumes inside this container.  The image must be uploaded to Arvados using @arv keep docker@.  You may specify the image in any format that Docker accepts, such as @arvados/jobs@, @debian:latest@, or the Docker image id.  Alternatively, you may specify the portable data hash of the image Collection.|&#10003;|
 |min_nodes|integer||&#10003;|
 |max_nodes|integer|||
 |min_cores_per_node|integer|Require that each node assigned to this Job have the specified number of CPU cores|&#10003;|
 |min_ram_mb_per_node|integer|Require that each node assigned to this Job have the specified amount of real memory (in MiB)|&#10003;|
 |min_scratch_mb_per_node|integer|Require that each node assigned to this Job have the specified amount of scratch storage available (in MiB)|&#10003;|
 |max_tasks_per_node|integer|Maximum simultaneous tasks on a single node|&#10003;|
+|keep_cache_mb_per_task|integer|Size of file data buffer for per-task Keep directory ($TASK_KEEPMOUNT), in MiB.  Default is 256 MiB.  Increase this to reduce cache thrashing in situtations such as accessing multiple large (64+ MiB) files at the same time, or accessing different parts of a large file at the same time.|&#10003;|
 |min_ram_per_task|integer|Minimum real memory (KiB) per task||

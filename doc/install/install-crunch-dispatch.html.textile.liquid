@@ -175,6 +175,7 @@ rvmexec=""
 
 export ARVADOS_API_HOST=<span class="userinput">uuid_prefix.your.domain</span>
 export CRUNCH_DISPATCH_LOCKFILE=/var/lock/crunch-dispatch
+export HOME=$(pwd)
 export RAILS_ENV=production
 
 ## Uncomment this line if your cluster uses self-signed SSL certificates:
@@ -185,7 +186,7 @@ export RAILS_ENV=production
 export CRUNCH_JOB_DOCKER_BIN=<span class="userinput">docker.io</span>
 
 fuser -TERM -k $CRUNCH_DISPATCH_LOCKFILE || true
-cd /var/www/arvados-api/services/api
+cd /var/www/arvados-api/current
 exec $rvmexec bundle exec ./script/crunch-dispatch.rb 2>&1
 </code></pre>
 </notextile>

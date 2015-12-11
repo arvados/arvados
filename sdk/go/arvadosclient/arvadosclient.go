@@ -14,6 +14,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 )
 
 type StringMatcher func(string) bool
@@ -24,6 +25,14 @@ var PDHMatch StringMatcher = regexp.MustCompile(`^[0-9a-f]{32}\+\d+$`).MatchStri
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
 var ErrInvalidArgument = errors.New("Invalid argument")
+
+// A common failure mode is to reuse a keepalive connection that has been
+// terminated (in a way that we can't detect) for being idle too long.
+// POST and DELETE are not safe to retry automatically, so we minimize
+// such failures by always using a new or recently active socket.
+var MaxIdleConnectionDuration = 30 * time.Second
+
+var RetryDelay = 2 * time.Second
 
 // Indicates an error that was returned by the API server.
 type APIServerError struct {
@@ -58,6 +67,9 @@ type Dict map[string]interface{}
 
 // Information about how to contact the Arvados server
 type ArvadosClient struct {
+	// https
+	Scheme string
+
 	// Arvados API server, form "host:port"
 	ApiServer string
 
@@ -76,6 +88,11 @@ type ArvadosClient struct {
 
 	// Discovery document
 	DiscoveryDoc Dict
+
+	lastClosedIdlesAt time.Time
+
+	// Number of retries
+	Retries int
 }
 
 // Create a new ArvadosClient, initialized with standard Arvados environment
@@ -87,12 +104,14 @@ func MakeArvadosClient() (ac ArvadosClient, err error) {
 	external := matchTrue.MatchString(os.Getenv("ARVADOS_EXTERNAL_CLIENT"))
 
 	ac = ArvadosClient{
+		Scheme:      "https",
 		ApiServer:   os.Getenv("ARVADOS_API_HOST"),
 		ApiToken:    os.Getenv("ARVADOS_API_TOKEN"),
 		ApiInsecure: insecure,
 		Client: &http.Client{Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
-		External: external}
+		External: external,
+		Retries:  2}
 
 	if ac.ApiServer == "" {
 		return ac, MissingArvadosApiHost
@@ -101,16 +120,20 @@ func MakeArvadosClient() (ac ArvadosClient, err error) {
 		return ac, MissingArvadosApiToken
 	}
 
+	ac.lastClosedIdlesAt = time.Now()
+
 	return ac, err
 }
 
 // CallRaw is the same as Call() but returns a Reader that reads the
 // response body, instead of taking an output object.
 func (c ArvadosClient) CallRaw(method string, resourceType string, uuid string, action string, parameters Dict) (reader io.ReadCloser, err error) {
-	var req *http.Request
-
+	scheme := c.Scheme
+	if scheme == "" {
+		scheme = "https"
+	}
 	u := url.URL{
-		Scheme: "https",
+		Scheme: scheme,
 		Host:   c.ApiServer}
 
 	if resourceType != API_DISCOVERY_RESOURCE {
@@ -140,36 +163,73 @@ func (c ArvadosClient) CallRaw(method string, resourceType string, uuid string, 
 		}
 	}
 
-	if method == "GET" || method == "HEAD" {
-		u.RawQuery = vals.Encode()
-		if req, err = http.NewRequest(method, u.String(), nil); err != nil {
-			return nil, err
-		}
-	} else {
-		if req, err = http.NewRequest(method, u.String(), bytes.NewBufferString(vals.Encode())); err != nil {
-			return nil, err
-		}
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	retryable := false
+	switch method {
+	case "GET", "HEAD", "PUT", "OPTIONS", "DELETE":
+		retryable = true
 	}
 
-	// Add api token header
-	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", c.ApiToken))
-	if c.External {
-		req.Header.Add("X-External-Client", "1")
+	// Non-retryable methods such as POST are not safe to retry automatically,
+	// so we minimize such failures by always using a new or recently active socket
+	if !retryable {
+		if time.Since(c.lastClosedIdlesAt) > MaxIdleConnectionDuration {
+			c.lastClosedIdlesAt = time.Now()
+			c.Client.Transport.(*http.Transport).CloseIdleConnections()
+		}
 	}
 
 	// Make the request
+	var req *http.Request
 	var resp *http.Response
-	if resp, err = c.Client.Do(req); err != nil {
-		return nil, err
+
+	for attempt := 0; attempt <= c.Retries; attempt++ {
+		if method == "GET" || method == "HEAD" {
+			u.RawQuery = vals.Encode()
+			if req, err = http.NewRequest(method, u.String(), nil); err != nil {
+				return nil, err
+			}
+		} else {
+			if req, err = http.NewRequest(method, u.String(), bytes.NewBufferString(vals.Encode())); err != nil {
+				return nil, err
+			}
+			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+		}
+
+		// Add api token header
+		req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", c.ApiToken))
+		if c.External {
+			req.Header.Add("X-External-Client", "1")
+		}
+
+		resp, err = c.Client.Do(req)
+		if err != nil {
+			if retryable {
+				time.Sleep(RetryDelay)
+				continue
+			} else {
+				return nil, err
+			}
+		}
+
+		if resp.StatusCode == http.StatusOK {
+			return resp.Body, nil
+		}
+
+		defer resp.Body.Close()
+
+		switch resp.StatusCode {
+		case 408, 409, 422, 423, 500, 502, 503, 504:
+			time.Sleep(RetryDelay)
+			continue
+		default:
+			return nil, newAPIServerError(c.ApiServer, resp)
+		}
 	}
 
-	if resp.StatusCode == http.StatusOK {
-		return resp.Body, nil
+	if resp != nil {
+		return nil, newAPIServerError(c.ApiServer, resp)
 	}
-
-	defer resp.Body.Close()
-	return nil, newAPIServerError(c.ApiServer, resp)
+	return nil, err
 }
 
 func newAPIServerError(ServerAddress string, resp *http.Response) APIServerError {

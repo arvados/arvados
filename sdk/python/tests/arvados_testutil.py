@@ -43,6 +43,12 @@ def mock_responses(body, *codes, **headers):
     return mock.patch('httplib2.Http.request', side_effect=queue_with((
         (fake_httplib2_response(code, **headers), body) for code in codes)))
 
+def mock_api_responses(api_client, body, codes, headers={}):
+    return mock.patch.object(api_client._http, 'request', side_effect=queue_with((
+        (fake_httplib2_response(code, **headers), body) for code in codes)))
+
+def str_keep_locator(s):
+    return '{}+{}'.format(hashlib.md5(s).hexdigest(), len(s))
 
 class FakeCurl:
     @classmethod
@@ -122,8 +128,7 @@ class MockStreamReader(object):
     def __init__(self, name='.', *data):
         self._name = name
         self._data = ''.join(data)
-        self._data_locators = ['{}+{}'.format(hashlib.md5(d).hexdigest(),
-                                              len(d)) for d in data]
+        self._data_locators = [str_keep_locator(d) for d in data]
         self.num_retries = 0
 
     def name(self):

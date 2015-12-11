@@ -6,6 +6,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.curoverse.com/arvados.git/services/datamanager/collection"
+	"git.curoverse.com/arvados.git/services/datamanager/summary"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -14,11 +16,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-)
-
-const (
-	ActiveUserToken = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
-	AdminToken      = "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h"
 )
 
 var arv arvadosclient.ArvadosClient
@@ -31,20 +28,24 @@ func SetupDataManagerTest(t *testing.T) {
 	// start api and keep servers
 	arvadostest.ResetEnv()
 	arvadostest.StartAPI()
-	arvadostest.StartKeep()
+	arvadostest.StartKeep(2, false)
 
-	arv = makeArvadosClient()
+	var err error
+	arv, err = arvadosclient.MakeArvadosClient()
+	if err != nil {
+		t.Fatalf("Error making arvados client: %s", err)
+	}
+	arv.ApiToken = arvadostest.DataManagerToken
 
 	// keep client
 	keepClient = &keepclient.KeepClient{
 		Arvados:       &arv,
 		Want_replicas: 2,
-		Using_proxy:   true,
 		Client:        &http.Client{},
 	}
 
 	// discover keep services
-	if err := keepClient.DiscoverKeepServers(); err != nil {
+	if err = keepClient.DiscoverKeepServers(); err != nil {
 		t.Fatalf("Error discovering keep services: %s", err)
 	}
 	keepServers = []string{}
@@ -54,8 +55,10 @@ func SetupDataManagerTest(t *testing.T) {
 }
 
 func TearDownDataManagerTest(t *testing.T) {
-	arvadostest.StopKeep()
+	arvadostest.StopKeep(2)
 	arvadostest.StopAPI()
+	summary.WriteDataTo = ""
+	collection.HeapProfileFilename = ""
 }
 
 func putBlock(t *testing.T, data string) string {
@@ -124,7 +127,18 @@ func getFirstLocatorFromCollection(t *testing.T, uuid string) string {
 	return match[1] + "+" + match[2]
 }
 
+func switchToken(t string) func() {
+	orig := arv.ApiToken
+	restore := func() {
+		arv.ApiToken = orig
+	}
+	arv.ApiToken = t
+	return restore
+}
+
 func getCollection(t *testing.T, uuid string) Dict {
+	defer switchToken(arvadostest.AdminToken)()
+
 	getback := make(Dict)
 	err := arv.Get("collections", uuid, nil, &getback)
 	if err != nil {
@@ -138,6 +152,8 @@ func getCollection(t *testing.T, uuid string) Dict {
 }
 
 func updateCollection(t *testing.T, uuid string, paramName string, paramValue string) {
+	defer switchToken(arvadostest.AdminToken)()
+
 	err := arv.Update("collections", uuid, arvadosclient.Dict{
 		"collection": arvadosclient.Dict{
 			paramName: paramValue,
@@ -152,6 +168,8 @@ func updateCollection(t *testing.T, uuid string, paramName string, paramValue st
 type Dict map[string]interface{}
 
 func deleteCollection(t *testing.T, uuid string) {
+	defer switchToken(arvadostest.AdminToken)()
+
 	getback := make(Dict)
 	err := arv.Delete("collections", uuid, nil, &getback)
 	if err != nil {
@@ -175,7 +193,7 @@ func getBlockIndexesForServer(t *testing.T, i int) []string {
 	path := keepServers[i] + "/index"
 	client := http.Client{}
 	req, err := http.NewRequest("GET", path, nil)
-	req.Header.Add("Authorization", "OAuth2 "+AdminToken)
+	req.Header.Add("Authorization", "OAuth2 "+arvadostest.DataManagerToken)
 	req.Header.Add("Content-Type", "application/octet-stream")
 	resp, err := client.Do(req)
 	defer resp.Body.Close()
@@ -239,13 +257,10 @@ func valueInArray(value string, list []string) bool {
 	return false
 }
 
-/*
-Test env uses two keep volumes. The volume names can be found by reading the files
-  ARVADOS_HOME/tmp/keep0.volume and ARVADOS_HOME/tmp/keep1.volume
-
-The keep volumes are of the dir structure:
-  volumeN/subdir/locator
-*/
+// Test env uses two keep volumes. The volume names can be found by reading the files
+// ARVADOS_HOME/tmp/keep0.volume and ARVADOS_HOME/tmp/keep1.volume
+//
+// The keep volumes are of the dir structure: volumeN/subdir/locator
 func backdateBlocks(t *testing.T, oldUnusedBlockLocators []string) {
 	// First get rid of any size hints in the locators
 	var trimmedBlockLocators []string
@@ -297,7 +312,7 @@ func backdateBlocks(t *testing.T, oldUnusedBlockLocators []string) {
 func getStatus(t *testing.T, path string) interface{} {
 	client := http.Client{}
 	req, err := http.NewRequest("GET", path, nil)
-	req.Header.Add("Authorization", "OAuth2 "+AdminToken)
+	req.Header.Add("Authorization", "OAuth2 "+arvadostest.DataManagerToken)
 	req.Header.Add("Content-Type", "application/octet-stream")
 	resp, err := client.Do(req)
 	if err != nil {
@@ -327,11 +342,9 @@ func waitUntilQueuesFinishWork(t *testing.T) {
 	}
 }
 
-/*
-Create some blocks and backdate some of them.
-Also create some collections and delete some of them.
-Verify block indexes.
-*/
+// Create some blocks and backdate some of them.
+// Also create some collections and delete some of them.
+// Verify block indexes.
 func TestPutAndGetBlocks(t *testing.T) {
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
@@ -389,6 +402,10 @@ func TestPutAndGetBlocks(t *testing.T) {
 		t.Fatalf("Locators for both these collections expected to be same: %s %s", oneOfTwoWithSameDataLocator, secondOfTwoWithSameDataLocator)
 	}
 
+	// create collection with empty manifest text
+	emptyBlockLocator := putBlock(t, "")
+	emptyCollection := createCollection(t, "")
+
 	// Verify blocks before doing any backdating / deleting.
 	var expected []string
 	expected = append(expected, oldUnusedBlockLocators...)
@@ -397,6 +414,7 @@ func TestPutAndGetBlocks(t *testing.T) {
 	expected = append(expected, replicationCollectionLocator)
 	expected = append(expected, oneOfTwoWithSameDataLocator)
 	expected = append(expected, secondOfTwoWithSameDataLocator)
+	expected = append(expected, emptyBlockLocator)
 
 	verifyBlocks(t, nil, expected, 2)
 
@@ -410,6 +428,8 @@ func TestPutAndGetBlocks(t *testing.T) {
 	backdateBlocks(t, oldUnusedBlockLocators)
 	deleteCollection(t, toBeDeletedCollectionUUID)
 	deleteCollection(t, secondOfTwoWithSameDataUUID)
+	backdateBlocks(t, []string{emptyBlockLocator})
+	deleteCollection(t, emptyCollection)
 
 	// Run data manager again
 	dataManagerSingleRun(t)
@@ -422,6 +442,7 @@ func TestPutAndGetBlocks(t *testing.T) {
 	expected = append(expected, toBeDeletedCollectionLocator)
 	expected = append(expected, oneOfTwoWithSameDataLocator)
 	expected = append(expected, secondOfTwoWithSameDataLocator)
+	expected = append(expected, emptyBlockLocator) // even when unreferenced, this remains
 
 	verifyBlocks(t, oldUnusedBlockLocators, expected, 2)
 
@@ -504,10 +525,187 @@ func TestRunDatamanagerAsNonAdminUser(t *testing.T) {
 	defer TearDownDataManagerTest(t)
 	SetupDataManagerTest(t)
 
-	arv.ApiToken = ActiveUserToken
+	arv.ApiToken = arvadostest.ActiveToken
 
 	err := singlerun(arv)
 	if err == nil {
 		t.Fatalf("Expected error during singlerun as non-admin user")
 	}
+}
+
+func TestPutAndGetBlocks_NoErrorDuringSingleRun(t *testing.T) {
+	testOldBlocksNotDeletedOnDataManagerError(t, "", "", false, false)
+}
+
+func TestPutAndGetBlocks_ErrorDuringGetCollectionsBadWriteTo(t *testing.T) {
+	testOldBlocksNotDeletedOnDataManagerError(t, "/badwritetofile", "", true, true)
+}
+
+func TestPutAndGetBlocks_ErrorDuringGetCollectionsBadHeapProfileFilename(t *testing.T) {
+	testOldBlocksNotDeletedOnDataManagerError(t, "", "/badheapprofilefile", true, true)
+}
+
+// Create some blocks and backdate some of them.
+// Run datamanager while producing an error condition.
+// Verify that the blocks are hence not deleted.
+func testOldBlocksNotDeletedOnDataManagerError(t *testing.T, writeDataTo string, heapProfileFile string, expectError bool, expectOldBlocks bool) {
+	defer TearDownDataManagerTest(t)
+	SetupDataManagerTest(t)
+
+	// Put some blocks and backdate them.
+	var oldUnusedBlockLocators []string
+	oldUnusedBlockData := "this block will have older mtime"
+	for i := 0; i < 5; i++ {
+		oldUnusedBlockLocators = append(oldUnusedBlockLocators, putBlock(t, fmt.Sprintf("%s%d", oldUnusedBlockData, i)))
+	}
+	backdateBlocks(t, oldUnusedBlockLocators)
+
+	// Run data manager
+	summary.WriteDataTo = writeDataTo
+	collection.HeapProfileFilename = heapProfileFile
+
+	err := singlerun(arv)
+	if !expectError {
+		if err != nil {
+			t.Fatalf("Got an error during datamanager singlerun: %v", err)
+		}
+	} else {
+		if err == nil {
+			t.Fatalf("Expected error during datamanager singlerun")
+		}
+	}
+	waitUntilQueuesFinishWork(t)
+
+	// Get block indexes and verify that all backdated blocks are not/deleted as expected
+	if expectOldBlocks {
+		verifyBlocks(t, nil, oldUnusedBlockLocators, 2)
+	} else {
+		verifyBlocks(t, oldUnusedBlockLocators, nil, 2)
+	}
+}
+
+// Create a collection with multiple streams and blocks
+func createMultiStreamBlockCollection(t *testing.T, data string, numStreams, numBlocks int) (string, []string) {
+	defer switchToken(arvadostest.AdminToken)()
+
+	manifest := ""
+	locators := make(map[string]bool)
+	for s := 0; s < numStreams; s++ {
+		manifest += fmt.Sprintf("./stream%d ", s)
+		for b := 0; b < numBlocks; b++ {
+			locator, _, err := keepClient.PutB([]byte(fmt.Sprintf("%s in stream %d and block %d", data, s, b)))
+			if err != nil {
+				t.Fatalf("Error creating block %d in stream %d: %v", b, s, err)
+			}
+			locators[strings.Split(locator, "+A")[0]] = true
+			manifest += locator + " "
+		}
+		manifest += "0:1:dummyfile.txt\n"
+	}
+
+	collection := make(Dict)
+	err := arv.Create("collections",
+		arvadosclient.Dict{"collection": arvadosclient.Dict{"manifest_text": manifest}},
+		&collection)
+
+	if err != nil {
+		t.Fatalf("Error creating collection %v", err)
+	}
+
+	var locs []string
+	for k := range locators {
+		locs = append(locs, k)
+	}
+
+	return collection["uuid"].(string), locs
+}
+
+// Create collection with multiple streams and blocks; backdate the blocks and but do not delete the collection.
+// Also, create stray block and backdate it.
+// After datamanager run: expect blocks from the collection, but not the stray block.
+func TestManifestWithMultipleStreamsAndBlocks(t *testing.T) {
+	testManifestWithMultipleStreamsAndBlocks(t, 100, 10, "", false)
+}
+
+// Same test as TestManifestWithMultipleStreamsAndBlocks with an additional
+// keepstore of a service type other than "disk". Only the "disk" type services
+// will be indexed by datamanager and hence should work the same way.
+func TestManifestWithMultipleStreamsAndBlocks_WithOneUnsupportedKeepServer(t *testing.T) {
+	testManifestWithMultipleStreamsAndBlocks(t, 2, 2, "testblobstore", false)
+}
+
+// Test datamanager with dry-run. Expect no block to be deleted.
+func TestManifestWithMultipleStreamsAndBlocks_DryRun(t *testing.T) {
+	testManifestWithMultipleStreamsAndBlocks(t, 2, 2, "", true)
+}
+
+func testManifestWithMultipleStreamsAndBlocks(t *testing.T, numStreams, numBlocks int, createExtraKeepServerWithType string, isDryRun bool) {
+	defer TearDownDataManagerTest(t)
+	SetupDataManagerTest(t)
+
+	// create collection whose blocks will be backdated
+	collectionWithOldBlocks, oldBlocks := createMultiStreamBlockCollection(t, "old block", numStreams, numBlocks)
+	if collectionWithOldBlocks == "" {
+		t.Fatalf("Failed to create collection with %d blocks", numStreams*numBlocks)
+	}
+	if len(oldBlocks) != numStreams*numBlocks {
+		t.Fatalf("Not all blocks are created: expected %v, found %v", 1000, len(oldBlocks))
+	}
+
+	// create a stray block that will be backdated
+	strayOldBlock := putBlock(t, "this stray block is old")
+
+	expected := []string{strayOldBlock}
+	expected = append(expected, oldBlocks...)
+	verifyBlocks(t, nil, expected, 2)
+
+	// Backdate old blocks; but the collection still references these blocks
+	backdateBlocks(t, oldBlocks)
+
+	// also backdate the stray old block
+	backdateBlocks(t, []string{strayOldBlock})
+
+	// If requested, create an extra keepserver with the given type
+	// This should be ignored during indexing and hence not change the datamanager outcome
+	var extraKeepServerUUID string
+	if createExtraKeepServerWithType != "" {
+		extraKeepServerUUID = addExtraKeepServer(t, createExtraKeepServerWithType)
+		defer deleteExtraKeepServer(extraKeepServerUUID)
+	}
+
+	// run datamanager
+	dryRun = isDryRun
+	dataManagerSingleRun(t)
+
+	if dryRun {
+		// verify that all blocks, including strayOldBlock, are still to be found
+		verifyBlocks(t, nil, expected, 2)
+	} else {
+		// verify that strayOldBlock is not to be found, but the collections blocks are still there
+		verifyBlocks(t, []string{strayOldBlock}, oldBlocks, 2)
+	}
+}
+
+// Add one more keepstore with the given service type
+func addExtraKeepServer(t *testing.T, serviceType string) string {
+	defer switchToken(arvadostest.AdminToken)()
+
+	extraKeepService := make(arvadosclient.Dict)
+	err := arv.Create("keep_services",
+		arvadosclient.Dict{"keep_service": arvadosclient.Dict{
+			"service_host":     "localhost",
+			"service_port":     "21321",
+			"service_ssl_flag": false,
+			"service_type":     serviceType}},
+		&extraKeepService)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return extraKeepService["uuid"].(string)
+}
+
+func deleteExtraKeepServer(uuid string) {
+	defer switchToken(arvadostest.AdminToken)()
+	arv.Delete("keep_services", uuid, nil, nil)
 }

@@ -6,7 +6,7 @@ title: Install Workbench
 
 h2. Install prerequisites
 
-The Arvados package repository includes Workbench server package that can help automate much of the deployment.
+The Arvados package repository includes a Workbench server package that can help automate much of the deployment.
 
 h3(#install_ruby_and_bundler). Install Ruby and Bundler
 
@@ -93,7 +93,7 @@ For best performance, we recommend you use Nginx as your Web server front-end, w
 
 <notextile>
 <ol>
-<li><a href="https://www.phusionpassenger.com/documentation/Users%20guide%20Nginx.html">Install Nginx and Phusion Passenger</a>.</li>
+<li><a href="https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/install_passenger_main.html">Install Nginx and Phusion Passenger</a>.</li>
 
 <li>If you're deploying on CentOS and using the python27 Software Collection, configure Nginx to use it:
 
@@ -115,6 +115,10 @@ For best performance, we recommend you use Nginx as your Web server front-end, w
   passenger_enabled on;
   # If you're using RVM, uncomment the line below.
   #passenger_ruby /usr/local/rvm/wrappers/default/ruby;
+
+  # `client_max_body_size` should match the corresponding setting in
+  # the API server's Nginx configuration.
+  client_max_body_size 128m;
 }
 
 upstream workbench {
@@ -132,6 +136,8 @@ server {
   ssl_certificate_key <span class="userinput">/YOUR/PATH/TO/cert.key</span>;
 
   index  index.html index.htm index.php;
+  # `client_max_body_size` should match the corresponding setting in
+  # the API server's Nginx configuration.
   client_max_body_size 128m;
 
   location / {

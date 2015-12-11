@@ -28,8 +28,11 @@ setup(name='arvados_fuse',
       scripts=[
         'bin/arv-mount'
         ],
+      data_files=[
+          ('share/doc/arvados_fuse', ['agpl-3.0.txt', 'README.rst']),
+      ],
       install_requires=[
-        'arvados-python-client >= 0.1.20150625175218',
+        'arvados-python-client >= 0.1.20151118035730',
         'llfuse>=0.40',
         'python-daemon',
         'ciso8601'

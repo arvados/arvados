@@ -92,7 +92,7 @@ multilevel_collection_2:
   modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
-  manifest_text: "./dir1/sub1 0:0:a 0:0:b\n./dir2/sub2 0:0:c 0:0:d\n"
+  manifest_text: "./dir1/sub1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:a 0:0:b\n./dir2/sub2 d41d8cd98f00b204e9800998ecf8427e+0 0:0:c 0:0:d\n"
   name: multilevel_collection_2
 
 docker_image:
@@ -299,7 +299,7 @@ collection_with_files_in_subdir:
   modified_by_user_uuid: zzzzz-tpzed-user1withloadab
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
-  manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95+A3a4e26a366ee7e4ed3e476ccf05354761be2e4ae@545a9920 0:95:file_in_subdir1\n./subdir2/subdir3 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file1_in_subdir3.txt 32:32:file2_in_subdir3.txt\n./subdir2/subdir3/subdir4 2bbc341c702df4d8f42ec31f16c10120+64+A315d7e7bad2ce937e711fc454fae2d1194d14d64@545a9920 0:32:file1_in_subdir4.txt 32:32:file2_in_subdir4.txt"
+  manifest_text: ". 85877ca2d7e05498dd3d109baf2df106+95 0:95:file_in_subdir1\n./subdir2/subdir3 2bbc341c702df4d8f42ec31f16c10120+64 0:32:file1_in_subdir3.txt 32:32:file2_in_subdir3.txt\n./subdir2/subdir3/subdir4 2bbc341c702df4d8f42ec31f16c10120+64 0:32:file1_in_subdir4.txt 32:32:file2_in_subdir4.txt"
 
 graph_test_collection1:
   uuid: zzzzz-4zz18-bv31uwvy3neko22
@@ -481,7 +481,7 @@ collection_with_repeated_filenames_and_contents_in_two_dirs_1:
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
   name: collection_with_repeated_filenames_and_contents_in_two_dirs_1
-  manifest_text: "./dir1 92b53930db60fe94be2a73fc771ba921+34+Af966b611a1e6a7df18e0f20ac742a255c27744b7@550a3f11 0:12:alice 12:12:alice.txt 24:10:bob.txt\n./dir2 56ac2557b1ded11ccab7293dc47d1e88+44+A1780092551dadcb9c74190a793a779cea84d632d@550a3f11 0:27:alice.txt\n"
+  manifest_text: "./dir1 92b53930db60fe94be2a73fc771ba921+34 0:12:alice 12:12:alice.txt 24:10:bob.txt\n./dir2 56ac2557b1ded11ccab7293dc47d1e88+44 0:27:alice.txt\n"
 
 collection_with_repeated_filenames_and_contents_in_two_dirs_2:
   uuid: zzzzz-4zz18-duplicatenames2
@@ -493,7 +493,7 @@ collection_with_repeated_filenames_and_contents_in_two_dirs_2:
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
   name: collection_with_repeated_filenames_and_contents_in_two_dirs_2
-  manifest_text: "./dir1 92b53930db60fe94be2a73fc771ba921+34+Af966b611a1e6a7df18e0f20ac742a255c27744b7@550a3f11 0:12:alice 12:12:alice.txt 24:10:carol.txt\n./dir2 56ac2557b1ded11ccab7293dc47d1e88+44+A1780092551dadcb9c74190a793a779cea84d632d@550a3f11 0:27:alice.txt\n"
+  manifest_text: "./dir1 92b53930db60fe94be2a73fc771ba921+34 0:12:alice 12:12:alice.txt 24:10:carol.txt\n./dir2 56ac2557b1ded11ccab7293dc47d1e88+44 0:27:alice.txt\n"
 
 foo_and_bar_files_in_dir:
   uuid: zzzzz-4zz18-foonbarfilesdir
@@ -505,7 +505,7 @@ foo_and_bar_files_in_dir:
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
   name: foo_file_in_dir
-  manifest_text: "./dir1 a84b928ebdbae3f658518c711beaec02+28+A0cff02249e70e8cd6e55dba49fef4afa3f5bfdfb@550acd28 0:3:bar 12:16:foo\n"
+  manifest_text: "./dir1 3858f62230ac3c915f300c664312c63f+6 3:3:bar 0:3:foo\n"
 
 multi_level_to_combine:
   uuid: zzzzz-4zz18-pyw8yp9g3ujh45f

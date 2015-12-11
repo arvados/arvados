@@ -30,6 +30,9 @@ class ServerCalculator(object):
                     raise ValueError("unrecognized size field '%s'" % (name,))
                 setattr(self, name, override)
 
+            if self.price is None:
+                raise ValueError("Required field 'price' is None")
+
         def meets_constraints(self, **kwargs):
             for name, want_value in kwargs.iteritems():
                 have_value = getattr(self, name)
@@ -38,11 +41,12 @@ class ServerCalculator(object):
             return True
 
 
-    def __init__(self, server_list, max_nodes=None):
+    def __init__(self, server_list, max_nodes=None, max_price=None):
         self.cloud_sizes = [self.CloudSizeWrapper(s, **kws)
                             for s, kws in server_list]
         self.cloud_sizes.sort(key=lambda s: s.price)
         self.max_nodes = max_nodes or float('inf')
+        self.max_price = max_price or float('inf')
         self.logger = logging.getLogger('arvnodeman.jobqueue')
         self.logged_jobs = set()
 
@@ -69,20 +73,25 @@ class ServerCalculator(object):
         for job in queue:
             seen_jobs.add(job['uuid'])
             constraints = job['runtime_constraints']
-            want_count = self.coerce_int(constraints.get('min_nodes'), 1)
+            want_count = max(1, self.coerce_int(constraints.get('min_nodes'), 1))
             cloud_size = self.cloud_size_for_constraints(constraints)
             if cloud_size is None:
                 if job['uuid'] not in self.logged_jobs:
                     self.logged_jobs.add(job['uuid'])
                     self.logger.debug("job %s not satisfiable", job['uuid'])
-            elif (want_count <= self.max_nodes):
-                servers.extend([cloud_size.real] * max(1, want_count))
+            elif (want_count <= self.max_nodes) and (want_count*cloud_size.price <= self.max_price):
+                servers.extend([cloud_size.real] * want_count)
         self.logged_jobs.intersection_update(seen_jobs)
         return servers
 
     def cheapest_size(self):
         return self.cloud_sizes[0]
 
+    def find_size(self, sizeid):
+        for s in self.cloud_sizes:
+            if s.id == sizeid:
+                return s
+        return None
 
 class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
     """Actor to generate server wishlists from the job queue.
