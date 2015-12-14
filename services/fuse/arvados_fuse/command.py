@@ -153,6 +153,7 @@ class Mount(object):
             keep_params={
                 "block_cache": arvados.keep.KeepBlockCache(self.args.file_cache)
             })
+        # Do a sanity check that we have a working arvados host + token.
         self.api.users().current().execute()
 
     def _setup_mount(self):
