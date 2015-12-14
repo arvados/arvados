@@ -326,4 +326,43 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   end
 
+  test "Container makes container request, then is cancelled" do
+    set_user_from_auth :active_trustedclient
+    cr = ContainerRequest.new
+    cr.state = "Committed"
+    cr.container_image = "img"
+    cr.command = ["foo", "bar"]
+    cr.output_path = "/tmp"
+    cr.cwd = "/tmp"
+    cr.priority = 5
+    cr.save!
+
+    c = Container.find_by_uuid cr.container_uuid
+    assert_equal 5, c.priority
+
+    c2 = ContainerRequest.new
+    c2.state = "Committed"
+    c2.container_image = "img"
+    c2.command = ["foo", "bar"]
+    c2.output_path = "/tmp"
+    c2.cwd = "/tmp"
+    c2.priority = 10
+    c2.requesting_container_uuid = c.uuid
+    c2.save!
+
+    c2 = Container.find_by_uuid c2.container_uuid
+    assert_equal 10, c2.priority
+
+    act_as_system_user do
+      c.state = "Cancelled"
+      c.save!
+    end
+
+    cr.reload
+    assert_equal "Final", cr.state
+
+    c2.reload
+    assert_equal 0, c2.priority
+  end
+
 end
