@@ -78,6 +78,7 @@ sdk/go/manifest
 sdk/go/blockdigest
 sdk/go/streamer
 sdk/go/crunchrunner
+tools/crunchstat-summary
 tools/keep-rsync
 
 EOF
@@ -642,6 +643,7 @@ pythonstuff=(
     sdk/python
     services/fuse
     services/nodemanager
+    tools/crunchstat-summary
     )
 for p in "${pythonstuff[@]}"
 do
