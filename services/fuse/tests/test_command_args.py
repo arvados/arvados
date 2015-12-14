@@ -224,6 +224,13 @@ class MountErrorTest(unittest.TestCase):
             arvados_fuse.command.Mount(args, logger=self.logger).run()
         self.assertEqual(1, ex.exception.code)
 
+    def test_bogus_token(self):
+        arvados.config._settings["ARVADOS_API_TOKEN"] = "zzzzzzzzzzzzz"
+        with self.assertRaises(SystemExit) as ex:
+            args = arvados_fuse.command.ArgumentParser().parse_args([self.mntdir])
+            arvados_fuse.command.Mount(args, logger=self.logger).run()
+        self.assertEqual(1, ex.exception.code)
+
     def test_bogus_mount_dir(self):
         # All FUSE errors in llfuse.init() are raised as RuntimeError
         # An easy error to trigger is to supply a nonexistent mount point,
