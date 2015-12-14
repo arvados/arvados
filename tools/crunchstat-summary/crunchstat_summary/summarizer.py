@@ -84,6 +84,6 @@ class Summarizer(object):
                 raise ValueError(
                     "collection {} has {} files; need exactly one".format(
                         job.log, len(filenames)))
-            return c.open(filenames[0])
+            return collection.open(filenames[0])
         else:
             return sys.stdin
