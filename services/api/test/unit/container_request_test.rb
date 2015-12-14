@@ -237,14 +237,14 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.priority = 5
     cr.save!
 
-    c2 = ContainerRequest.new
-    c2.state = "Committed"
-    c2.container_image = "img"
-    c2.command = ["foo", "bar"]
-    c2.output_path = "/tmp"
-    c2.cwd = "/tmp"
-    c2.priority = 10
-    c2.save!
+    cr2 = ContainerRequest.new
+    cr2.state = "Committed"
+    cr2.container_image = "img"
+    cr2.command = ["foo", "bar"]
+    cr2.output_path = "/tmp"
+    cr2.cwd = "/tmp"
+    cr2.priority = 10
+    cr2.save!
 
     c = Container.find_by_uuid cr.container_uuid
     assert_equal 5, c.priority
@@ -340,15 +340,15 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c = Container.find_by_uuid cr.container_uuid
     assert_equal 5, c.priority
 
-    c2 = ContainerRequest.new
-    c2.state = "Committed"
-    c2.container_image = "img"
-    c2.command = ["foo", "bar"]
-    c2.output_path = "/tmp"
-    c2.cwd = "/tmp"
-    c2.priority = 10
-    c2.requesting_container_uuid = c.uuid
-    c2.save!
+    cr2 = ContainerRequest.new
+    cr2.state = "Committed"
+    cr2.container_image = "img"
+    cr2.command = ["foo", "bar"]
+    cr2.output_path = "/tmp"
+    cr2.cwd = "/tmp"
+    cr2.priority = 10
+    cr2.requesting_container_uuid = c.uuid
+    cr2.save!
 
     c2 = Container.find_by_uuid c2.container_uuid
     assert_equal 10, c2.priority
@@ -360,6 +360,9 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     cr.reload
     assert_equal "Final", cr.state
+
+    cr2.reload
+    assert_equal 0, cr2.priority
 
     c2.reload
     assert_equal 0, c2.priority
