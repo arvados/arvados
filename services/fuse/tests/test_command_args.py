@@ -205,21 +205,24 @@ class MountErrorTest(unittest.TestCase):
     def test_no_token(self):
         del arvados.config._settings["ARVADOS_API_TOKEN"]
         arvados.config._settings = {}
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit) as ex:
             args = arvados_fuse.command.ArgumentParser().parse_args([self.mntdir])
             arvados_fuse.command.Mount(args, logger=self.logger).run()
+        self.assertEqual(1, ex.exception.code)
 
     def test_no_host(self):
         del arvados.config._settings["ARVADOS_API_HOST"]
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit) as ex:
             args = arvados_fuse.command.ArgumentParser().parse_args([self.mntdir])
             arvados_fuse.command.Mount(args, logger=self.logger).run()
+        self.assertEqual(1, ex.exception.code)
 
     def test_bogus_host(self):
         arvados.config._settings["ARVADOS_API_HOST"] = "example.null"
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit) as ex:
             args = arvados_fuse.command.ArgumentParser().parse_args([self.mntdir])
             arvados_fuse.command.Mount(args, logger=self.logger).run()
+        self.assertEqual(1, ex.exception.code)
 
     def test_bogus_mount_dir(self):
         # All FUSE errors in llfuse.init() are raised as RuntimeError
@@ -234,18 +237,21 @@ class MountErrorTest(unittest.TestCase):
         # The user specified --allow-other but user_allow_other is not set
         # in /etc/fuse.conf
         os.rmdir(self.mntdir)
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit) as ex:
             args = arvados_fuse.command.ArgumentParser().parse_args([self.mntdir])
             arvados_fuse.command.Mount(args, logger=self.logger).run()
+        self.assertEqual(1, ex.exception.code)
 
     def test_unreadable_collection(self):
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit) as ex:
             args = arvados_fuse.command.ArgumentParser().parse_args([
                 "--collection", "zzzzz-4zz18-zzzzzzzzzzzzzzz", self.mntdir])
             arvados_fuse.command.Mount(args, logger=self.logger).run()
+        self.assertEqual(1, ex.exception.code)
 
     def test_unreadable_project(self):
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit) as ex:
             args = arvados_fuse.command.ArgumentParser().parse_args([
                 "--project", "zzzzz-j7d0g-zzzzzzzzzzzzzzz", self.mntdir])
             arvados_fuse.command.Mount(args, logger=self.logger).run()
+        self.assertEqual(1, ex.exception.code)
