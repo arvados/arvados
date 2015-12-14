@@ -249,7 +249,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c = Container.find_by_uuid cr.container_uuid
     assert_equal 5, c.priority
 
-    c2 = Container.find_by_uuid c2.container_uuid
+    c2 = Container.find_by_uuid cr2.container_uuid
     assert_equal 10, c2.priority
 
     cr.priority = 0
@@ -350,7 +350,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr2.requesting_container_uuid = c.uuid
     cr2.save!
 
-    c2 = Container.find_by_uuid c2.container_uuid
+    c2 = Container.find_by_uuid cr2.container_uuid
     assert_equal 10, c2.priority
 
     act_as_system_user do
