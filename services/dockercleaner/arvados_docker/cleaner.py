@@ -288,7 +288,7 @@ def run(args, docker_client):
 def main(arguments):
     args = parse_arguments(arguments)
     setup_logging(args)
-    run(args, docker.Client())
+    run(args, docker.Client(version='1.14'))
 
 if __name__ == '__main__':
     main(sys.argv[1:])
