@@ -374,6 +374,21 @@ class RunTestCase(unittest.TestCase):
         self.assertEqual(event_kwargs[0]['until'], event_kwargs[1]['since'])
 
 
+@mock.patch('docker.Client', name='docker_client')
+@mock.patch('arvados_docker.cleaner.run', name='cleaner_run')
+class MainTestCase(unittest.TestCase):
+    def test_client_api_version(self, run_mock, docker_client):
+        cleaner.main(['--quota', '1000T'])
+        self.assertEqual(1, docker_client.call_count)
+        # 1.14 is the first version that's well defined, going back to
+        # Docker 1.2, and still supported up to at least Docker 1.9.
+        # See <https://docs.docker.com/engine/reference/api/docker_remote_api/>.
+        self.assertEqual('1.14',
+                         docker_client.call_args[1].get('version'))
+        self.assertEqual(1, run_mock.call_count)
+        self.assertIs(run_mock.call_args[0][1], docker_client())
+
+
 class ContainerRemovalTestCase(unittest.TestCase):
     LIFECYCLE = ['create', 'attach', 'start', 'resize', 'die', 'destroy']
 
