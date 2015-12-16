@@ -91,7 +91,7 @@ class BaseComputeNodeDriver(object):
     def list_nodes(self):
         return self.real.list_nodes(**self.list_kwargs)
 
-    def arvados_create_kwargs(self, arvados_node):
+    def arvados_create_kwargs(self, size, arvados_node):
         """Return dynamic keyword arguments for create_node.
 
         Subclasses must override this method.  It should return a dictionary
@@ -100,6 +100,7 @@ class BaseComputeNodeDriver(object):
         create_kwargs.
 
         Arguments:
+        * size: The node size that will be created (libcloud NodeSize object)
         * arvados_node: The Arvados node record that will be associated
           with this cloud node, as returned from the API server.
         """
@@ -116,7 +117,7 @@ class BaseComputeNodeDriver(object):
 
     def create_node(self, size, arvados_node):
         kwargs = self.create_kwargs.copy()
-        kwargs.update(self.arvados_create_kwargs(arvados_node))
+        kwargs.update(self.arvados_create_kwargs(size, arvados_node))
         kwargs['size'] = size
         return self.real.create_node(**kwargs)
 

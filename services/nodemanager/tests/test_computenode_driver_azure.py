@@ -45,7 +45,9 @@ class AzureComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase
         arv_node = testutil.arvados_node_mock(hostname=None)
         driver = self.new_driver()
         self.assertEqual('compute-000000000000063-zzzzz',
-                         driver.arvados_create_kwargs(arv_node)['name'])
+                         driver.arvados_create_kwargs(testutil.MockSize(1), arv_node)['name'])
+
+
 
     def check_node_tagged(self, cloud_node, expected_tags):
         tag_mock = self.driver_mock().ex_create_tags
@@ -87,3 +89,14 @@ class AzureComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase
         driver.sync_node(cloud_node, arv_node)
         self.check_node_tagged(cloud_node,
                                {'hostname': 'compute1.zzzzz.arvadosapi.com'})
+
+    def test_custom_data(self):
+        arv_node = testutil.arvados_node_mock(hostname=None)
+        driver = self.new_driver()
+        self.assertEqual("""#!/bin/sh
+mkdir -p    /var/tmp/arv-node-data/meta-data
+echo 'https://100::/arvados/v1/nodes/zzzzz-yyyyy-000000000000063/ping?ping_secret=defaulttestsecret' > /var/tmp/arv-node-data/arv-ping-url
+echo compute-000000000000063-zzzzz > /var/tmp/arv-node-data/meta-data/instance-id
+echo z1.test > /var/tmp/arv-node-data/meta-data/instance-type
+""",
+                         driver.arvados_create_kwargs(testutil.MockSize(1), arv_node)['ex_customdata'])

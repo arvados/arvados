@@ -51,13 +51,13 @@ class EC2ComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         arv_node = testutil.arvados_node_mock(8)
         driver = self.new_driver()
         self.assertEqual('compute8.zzzzz.arvadosapi.com',
-                         driver.arvados_create_kwargs(arv_node)['name'])
+                         driver.arvados_create_kwargs(testutil.MockSize(1), arv_node)['name'])
 
     def test_default_hostname_from_new_arvados_node(self):
         arv_node = testutil.arvados_node_mock(hostname=None)
         driver = self.new_driver()
         self.assertEqual('dynamic.compute.zzzzz.arvadosapi.com',
-                         driver.arvados_create_kwargs(arv_node)['name'])
+                         driver.arvados_create_kwargs(testutil.MockSize(1), arv_node)['name'])
 
     def check_node_tagged(self, cloud_node, expected_tags):
         tag_mock = self.driver_mock().ex_create_tags
