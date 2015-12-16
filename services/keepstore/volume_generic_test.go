@@ -14,15 +14,15 @@ import (
 )
 
 type TB interface {
-        Error(args ...interface{})
-        Errorf(format string, args ...interface{})
-        Fail()
-        FailNow()
-        Failed() bool
-        Fatal(args ...interface{})
-        Fatalf(format string, args ...interface{})
-        Log(args ...interface{})
-        Logf(format string, args ...interface{})
+	Error(args ...interface{})
+	Errorf(format string, args ...interface{})
+	Fail()
+	FailNow()
+	Failed() bool
+	Fatal(args ...interface{})
+	Fatalf(format string, args ...interface{})
+	Log(args ...interface{})
+	Logf(format string, args ...interface{})
 }
 
 // A TestableVolumeFactory returns a new TestableVolume. The factory
