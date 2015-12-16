@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import, print_function
 
+import pipes
 import time
 
 import libcloud.compute.base as cloud_base
@@ -37,7 +38,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             auth_kwargs, list_kwargs, create_kwargs,
             driver_class)
 
-    def arvados_create_kwargs(self, arvados_node, size):
+    def arvados_create_kwargs(self, size, arvados_node):
         cluster_id, _, node_id = arvados_node['uuid'].split('-')
         name = 'compute-{}-{}'.format(node_id, cluster_id)
         tags = {
@@ -48,12 +49,12 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
         customdata = """#!/bin/sh
 mkdir -p    /var/tmp/arv-node-data/meta-data
-echo "%s" > /var/tmp/arv-node-data/arv-ping-url
-echo "%s" > /var/tmp/arv-node-data/meta-data/instance-id
-echo "%s" > /var/tmp/arv-node-data/meta-data/instance-type
-""" % (tags['arv-ping-url'],
-       name,
-       size.id)
+echo %s > /var/tmp/arv-node-data/arv-ping-url
+echo %s > /var/tmp/arv-node-data/meta-data/instance-id
+echo %s > /var/tmp/arv-node-data/meta-data/instance-type
+""" % (pipes.quote(tags['arv-ping-url']),
+       pipes.quote(name),
+       pipes.quote(size.id))
 
         return {
             'name': name,
