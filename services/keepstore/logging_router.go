@@ -65,6 +65,6 @@ func (loggingRouter *LoggingRESTRouter) ServeHTTP(resp http.ResponseWriter, req 
 	tTotal := now.Sub(t0)
 	tLatency := loggingWriter.sentHdr.Sub(t0)
 	tResponse := now.Sub(loggingWriter.sentHdr)
-	log.Printf("[%s] %s %s %.6fs %.6fs %.6fs %d %d \"%s\"", req.RemoteAddr, req.Method, req.URL.Path[1:], tTotal.Seconds(), tLatency.Seconds(), tResponse.Seconds(), loggingWriter.Status, loggingWriter.Length, statusText)
+	log.Printf("[%s] %s %s %d %.6fs %.6fs %.6fs %d %d \"%s\"", req.RemoteAddr, req.Method, req.URL.Path[1:], req.ContentLength, tTotal.Seconds(), tLatency.Seconds(), tResponse.Seconds(), loggingWriter.Status, loggingWriter.Length, statusText)
 
 }
