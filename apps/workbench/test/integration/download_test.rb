@@ -2,16 +2,10 @@ require 'integration_helper'
 require 'helpers/download_helper'
 
 class DownloadTest < ActionDispatch::IntegrationTest
-  def getport service
-    File.read(File.expand_path("../../../../../tmp/#{service}.port", __FILE__))
-  end
+  include KeepWebConfig
 
   setup do
-    @kwport = getport 'keep-web-ssl'
-    @kwdport = getport 'keep-web-dl-ssl'
-    Rails.configuration.keep_web_url = "https://localhost:#{@kwport}/c=%{uuid_or_pdh}"
-    Rails.configuration.keep_web_download_url = "https://localhost:#{@kwdport}/c=%{uuid_or_pdh}"
-    CollectionsController.any_instance.expects(:file_enumerator).never
+    use_keep_web_config
 
     # Make sure Capybara can download files.
     need_selenium 'for downloading', :selenium_with_download
