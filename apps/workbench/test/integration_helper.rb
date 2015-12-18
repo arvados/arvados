@@ -126,6 +126,20 @@ module HeadlessHelper
   end
 end
 
+module KeepWebConfig
+  def getport service
+    File.read(File.expand_path("../../../../tmp/#{service}.port", __FILE__))
+  end
+
+  def use_keep_web_config
+    @kwport = getport 'keep-web-ssl'
+    @kwdport = getport 'keep-web-dl-ssl'
+    Rails.configuration.keep_web_url = "https://localhost:#{@kwport}/c=%{uuid_or_pdh}"
+    Rails.configuration.keep_web_download_url = "https://localhost:#{@kwdport}/c=%{uuid_or_pdh}"
+    CollectionsController.any_instance.expects(:file_enumerator).never
+  end
+end
+
 class ActionDispatch::IntegrationTest
   # Make the Capybara DSL available in all integration tests
   include Capybara::DSL

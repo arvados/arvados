@@ -96,6 +96,21 @@ func authzViaPOST(r *http.Request, tok string) int {
 	return http.StatusUnauthorized
 }
 
+func (s *IntegrationSuite) TestVhostViaXHRPOST(c *check.C) {
+	doVhostRequests(c, authzViaPOST)
+}
+func authzViaXHRPOST(r *http.Request, tok string) int {
+	r.Method = "POST"
+	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	r.Header.Add("Origin", "https://origin.example")
+	r.Body = ioutil.NopCloser(strings.NewReader(
+		url.Values{
+			"api_token":   {tok},
+			"disposition": {"attachment"},
+		}.Encode()))
+	return http.StatusUnauthorized
+}
+
 // Try some combinations of {url, token} using the given authorization
 // mechanism, and verify the result is correct.
 func doVhostRequests(c *check.C, authz authorizer) {
@@ -129,11 +144,18 @@ func doVhostRequestsWithHostPath(c *check.C, authz authorizer, hostPath string) 
 			Header:     http.Header{},
 		}
 		failCode := authz(req, tok)
-		resp := doReq(req)
+		req, resp := doReq(req)
 		code, body := resp.Code, resp.Body.String()
+
+		// If the initial request had a (non-empty) token
+		// showing in the query string, we should have been
+		// redirected in order to hide it in a cookie.
+		c.Check(req.URL.String(), check.Not(check.Matches), `.*api_token=.+`)
+
 		if tok == arvadostest.ActiveToken {
 			c.Check(code, check.Equals, http.StatusOK)
 			c.Check(body, check.Equals, "foo")
+
 		} else {
 			c.Check(code >= 400, check.Equals, true)
 			c.Check(code < 500, check.Equals, true)
@@ -151,11 +173,11 @@ func doVhostRequestsWithHostPath(c *check.C, authz authorizer, hostPath string) 
 	}
 }
 
-func doReq(req *http.Request) *httptest.ResponseRecorder {
+func doReq(req *http.Request) (*http.Request, *httptest.ResponseRecorder) {
 	resp := httptest.NewRecorder()
 	(&handler{}).ServeHTTP(resp, req)
 	if resp.Code != http.StatusSeeOther {
-		return resp
+		return req, resp
 	}
 	cookies := (&http.Response{Header: resp.Header()}).Cookies()
 	u, _ := req.URL.Parse(resp.Header().Get("Location"))
@@ -374,6 +396,34 @@ func (s *IntegrationSuite) TestRange(c *check.C) {
 		c.Check(resp.Header().Get("Content-Range"), check.Equals, "")
 		c.Check(resp.Header().Get("Accept-Ranges"), check.Equals, "bytes")
 	}
+}
+
+// XHRs can't follow redirect-with-cookie so they rely on method=POST
+// and disposition=attachment (telling us it's acceptable to respond
+// with content instead of a redirect) and an Origin header that gets
+// added automatically by the browser (telling us it's desirable to do
+// so).
+func (s *IntegrationSuite) TestXHRNoRedirect(c *check.C) {
+	u, _ := url.Parse("http://example.com/c=" + arvadostest.FooCollection + "/foo")
+	req := &http.Request{
+		Method:     "POST",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header: http.Header{
+			"Origin":       {"https://origin.example"},
+			"Content-Type": {"application/x-www-form-urlencoded"},
+		},
+		Body: ioutil.NopCloser(strings.NewReader(url.Values{
+			"api_token":   {arvadostest.ActiveToken},
+			"disposition": {"attachment"},
+		}.Encode())),
+	}
+	resp := httptest.NewRecorder()
+	(&handler{}).ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	c.Check(resp.Body.String(), check.Equals, "foo")
+	c.Check(resp.Header().Get("Access-Control-Allow-Origin"), check.Equals, "*")
 }
 
 func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, hostPath, queryString, contentType, reqBody string, expectStatus int, expectRespBody string) *httptest.ResponseRecorder {
