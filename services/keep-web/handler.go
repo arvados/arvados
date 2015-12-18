@@ -101,8 +101,11 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Header.Get("Origin") != "" {
-		// Allow simple cross-origin requests, without
-		// credentials.
+		// Allow simple cross-origin requests without user
+		// credentials ("user credentials" as defined by CORS,
+		// i.e., cookies, HTTP authentication, and client-side
+		// SSL certificates. See
+		// http://www.w3.org/TR/cors/#user-credentials).
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 	}
 
