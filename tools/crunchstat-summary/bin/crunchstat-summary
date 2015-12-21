@@ -7,6 +7,6 @@ import crunchstat_summary.summarizer
 import sys
 
 args = crunchstat_summary.command.ArgumentParser().parse_args(sys.argv[1:])
-s = crunchstat_summary.summarizer.Summarizer(args)
+s = crunchstat_summary.command.Command(args).summarizer()
 s.run()
 print(s.report(), end='')

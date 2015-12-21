@@ -3,14 +3,13 @@ from __future__ import print_function
 import arvados
 import collections
 import functools
-import gzip
 import re
 import sys
 
 
 class Summarizer(object):
-    def __init__(self, args):
-        self.args = args
+    def __init__(self, logdata):
+        self._logdata = logdata
 
     def run(self):
         # stats_max: {category: {stat: val}}
@@ -20,7 +19,7 @@ class Summarizer(object):
         # task_stats: {task_id: {category: {stat: val}}}
         self.task_stats = collections.defaultdict(
             functools.partial(collections.defaultdict, dict))
-        for line in self._logdata():
+        for line in self._logdata:
             m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) success in (?P<elapsed>\d+) seconds', line)
             if m:
                 task_id = m.group('seq')
@@ -35,6 +34,8 @@ class Summarizer(object):
             if m.group('category').endswith(':'):
                 # "notice:" etc.
                 continue
+            elif m.group('category') == 'error':
+                continue
             task_id = m.group('seq')
             this_interval_s = None
             for group in ['current', 'interval']:
@@ -44,10 +45,15 @@ class Summarizer(object):
                 words = m.group(group).split(' ')
                 stats = {}
                 for val, stat in zip(words[::2], words[1::2]):
-                    if '.' in val:
-                        stats[stat] = float(val)
-                    else:
-                        stats[stat] = int(val)
+                    try:
+                        if '.' in val:
+                            stats[stat] = float(val)
+                        else:
+                            stats[stat] = int(val)
+                    except ValueError as e:
+                        raise ValueError(
+                            'Error parsing {} stat in "{}": {!r}'.format(
+                                stat, line, e))
                 if 'user' in stats or 'sys' in stats:
                     stats['user+sys'] = stats.get('user', 0) + stats.get('sys', 0)
                 if 'tx' in stats or 'rx' in stats:
@@ -127,25 +133,58 @@ class Summarizer(object):
         else:
             return '{}'.format(val)
 
-    def _logdata(self):
-        if self.args.log_file:
-            if self.args.log_file.endswith('.gz'):
-                return gzip.open(self.args.log_file)
-            else:
-                return open(self.args.log_file)
-        elif self.args.job:
-            arv = arvados.api('v1')
-            job = arv.jobs().get(uuid=self.args.job).execute()
-            if not job['log']:
-                raise ValueError(
-                    "job {} has no log; live summary not implemented".format(
-                        self.args.job))
-            collection = arvados.collection.CollectionReader(job['log'])
-            filenames = [filename for filename in collection]
-            if len(filenames) != 1:
-                raise ValueError(
-                    "collection {} has {} files; need exactly one".format(
-                        job.log, len(filenames)))
-            return collection.open(filenames[0])
+class CollectionSummarizer(Summarizer):
+    def __init__(self, collection_id):
+        collection = arvados.collection.CollectionReader(collection_id)
+        filenames = [filename for filename in collection]
+        if len(filenames) != 1:
+            raise ValueError(
+                "collection {} has {} files; need exactly one".format(
+                    collection_id, len(filenames)))
+        super(CollectionSummarizer, self).__init__(collection.open(filenames[0]))
+
+class JobSummarizer(CollectionSummarizer):
+    def __init__(self, job):
+        arv = arvados.api('v1')
+        if isinstance(job, str):
+            self.job = arv.jobs().get(uuid=job).execute()
         else:
-            return sys.stdin
+            self.job = job
+        if not self.job['log']:
+            raise ValueError(
+                "job {} has no log; live summary not implemented".format(
+                    self.job['uuid']))
+        super(JobSummarizer, self).__init__(self.job['log'])
+
+class PipelineSummarizer():
+    def __init__(self, pipeline_instance_uuid):
+        arv = arvados.api('v1')
+        instance = arv.pipeline_instances().get(
+            uuid=pipeline_instance_uuid).execute()
+        self.summarizers = collections.OrderedDict()
+        for cname, component in instance['components'].iteritems():
+            if 'job' not in component:
+                print("{}: skipping component with no job assigned".format(
+                    cname), file=sys.stderr)
+            elif component['job'].get('log') is None:
+                print("{}: skipping component with no log available".format(
+                    cname), file=sys.stderr)
+            else:
+                print("{}: reading log from {}".format(
+                    cname, component['job']['log']), file=sys.stderr)
+                summarizer = CollectionSummarizer(component['job']['log'])
+                summarizer.job_uuid = component['job']['uuid']
+                self.summarizers[cname] = summarizer
+
+    def run(self):
+        for summarizer in self.summarizers.itervalues():
+            summarizer.run()
+
+    def report(self):
+        txt = ''
+        for cname, summarizer in self.summarizers.iteritems():
+            txt += '### Summary for {} ({})\n'.format(
+                cname, summarizer.job_uuid)
+            txt += summarizer.report()
+            txt += '\n'
+        return txt
