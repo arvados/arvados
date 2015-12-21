@@ -4,7 +4,10 @@ from __future__ import print_function
 
 import crunchstat_summary.command
 import crunchstat_summary.summarizer
+import logging
 import sys
+
+logging.getLogger().addHandler(logging.StreamHandler())
 
 args = crunchstat_summary.command.ArgumentParser().parse_args(sys.argv[1:])
 s = crunchstat_summary.command.Command(args).summarizer()

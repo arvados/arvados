@@ -15,3 +15,4 @@ time	elapsed	2	-	4
 # Overall CPU usage: 0.00%
 # Max memory used by a single task: 0.00GB
 # Max network traffic in a single task: 0.00GB
+#!! job never used more than 1 MiB RAM -- try runtime_constraints "min_ram_mb_per_node":1024

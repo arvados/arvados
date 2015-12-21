@@ -24,7 +24,7 @@ class ReportDiff(unittest.TestCase):
             expect, got, fromfile=expectfile, tofile="(generated)")))
 
 
-class ExampleLogsTestCase(ReportDiff):
+class SummarizeFile(ReportDiff):
     def test_example_files(self):
         for fnm in glob.glob(os.path.join(TESTS_DIR, '*.txt.gz')):
             logfile = os.path.join(TESTS_DIR, fnm)
@@ -35,22 +35,28 @@ class ExampleLogsTestCase(ReportDiff):
             self.diff_known_report(logfile, summarizer)
 
 
-class LookupJobUUID(ReportDiff):
-    fake_uuid = 'zzzzz-8i9sb-jq0ekny1xou3zoh'
+class SummarizeJob(ReportDiff):
+    fake_job_uuid = 'zzzzz-8i9sb-jjjjjjjjjjjjjjj'
+    fake_log_id = 'fake-log-collection-id'
+    fake_job = {
+        'uuid': fake_job_uuid,
+        'log': fake_log_id,
+    }
+    logfile = os.path.join(TESTS_DIR, 'logfile_20151204190335.txt.gz')
 
     @mock.patch('arvados.collection.CollectionReader')
     @mock.patch('arvados.api')
-    def test_job_uuid(self, mock_api, mock_cr):
-        logfile = os.path.join(TESTS_DIR, 'logfile_20151204190335.txt.gz')
-        mock_api().jobs().get().execute.return_value = {'log': 'fake-uuid'}
+    def test_job_report(self, mock_api, mock_cr):
+        mock_api().jobs().get().execute.return_value = self.fake_job
         mock_cr().__iter__.return_value = ['fake-logfile.txt']
-        mock_cr().open.return_value = gzip.open(logfile)
+        mock_cr().open.return_value = gzip.open(self.logfile)
         args = crunchstat_summary.command.ArgumentParser().parse_args(
-            ['--job', self.fake_uuid])
+            ['--job', self.fake_job_uuid])
         summarizer = crunchstat_summary.command.Command(args).summarizer()
         summarizer.run()
-        self.diff_known_report(logfile, summarizer)
-        mock_api().jobs().get.assert_called_with(uuid=self.fake_uuid)
+        self.diff_known_report(self.logfile, summarizer)
+        mock_api().jobs().get.assert_called_with(uuid=self.fake_job_uuid)
+        mock_cr.assert_called_with(self.fake_log_id)
         mock_cr().open.assert_called_with('fake-logfile.txt')
 
 
@@ -63,12 +69,20 @@ class SummarizePipeline(ReportDiff):
                 'job': {
                     'uuid': 'zzzzz-8i9sb-000000000000000',
                     'log': 'fake-log-pdh-0',
+                    'runtime_constraints': {
+                        'min_ram_mb_per_node': 1024,
+                        'min_cores_per_node': 1,
+                    },
                 },
             }],
             ['bar', {
                 'job': {
                     'uuid': 'zzzzz-8i9sb-000000000000001',
                     'log': 'fake-log-pdh-1',
+                    'runtime_constraints': {
+                        'min_ram_mb_per_node': 1024,
+                        'min_cores_per_node': 1,
+                    },
                 },
             }],
             ['no-job-assigned', {}],
@@ -81,6 +95,10 @@ class SummarizePipeline(ReportDiff):
                 'job': {
                     'uuid': 'zzzzz-8i9sb-000000000000002',
                     'log': 'fake-log-pdh-2',
+                    'runtime_constraints': {
+                        'min_ram_mb_per_node': 1024,
+                        'min_cores_per_node': 1,
+                    },
                 },
             }]]),
     }
@@ -98,13 +116,16 @@ class SummarizePipeline(ReportDiff):
         summarizer = crunchstat_summary.command.Command(args).summarizer()
         summarizer.run()
 
+        job_report = [
+            line for line in open(logfile+'.report').readlines()
+            if not line.startswith('#!! ')]
         expect = (
             ['### Summary for foo (zzzzz-8i9sb-000000000000000)\n'] +
-            open(logfile+'.report').readlines() + ['\n'] +
+            job_report + ['\n'] +
             ['### Summary for bar (zzzzz-8i9sb-000000000000001)\n'] +
-            open(logfile+'.report').readlines() + ['\n'] +
+            job_report + ['\n'] +
             ['### Summary for baz (zzzzz-8i9sb-000000000000002)\n'] +
-            open(logfile+'.report').readlines())
+            job_report)
         self.diff_report(summarizer, expect)
         mock_cr.assert_has_calls(
             [
