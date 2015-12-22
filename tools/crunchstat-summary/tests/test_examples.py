@@ -70,7 +70,7 @@ class SummarizePipeline(ReportDiff):
                     'uuid': 'zzzzz-8i9sb-000000000000000',
                     'log': 'fake-log-pdh-0',
                     'runtime_constraints': {
-                        'min_ram_mb_per_node': 1024,
+                        'min_ram_mb_per_node': 900,
                         'min_cores_per_node': 1,
                     },
                 },
@@ -80,7 +80,7 @@ class SummarizePipeline(ReportDiff):
                     'uuid': 'zzzzz-8i9sb-000000000000001',
                     'log': 'fake-log-pdh-1',
                     'runtime_constraints': {
-                        'min_ram_mb_per_node': 1024,
+                        'min_ram_mb_per_node': 900,
                         'min_cores_per_node': 1,
                     },
                 },
@@ -96,7 +96,7 @@ class SummarizePipeline(ReportDiff):
                     'uuid': 'zzzzz-8i9sb-000000000000002',
                     'log': 'fake-log-pdh-2',
                     'runtime_constraints': {
-                        'min_ram_mb_per_node': 1024,
+                        'min_ram_mb_per_node': 900,
                         'min_cores_per_node': 1,
                     },
                 },

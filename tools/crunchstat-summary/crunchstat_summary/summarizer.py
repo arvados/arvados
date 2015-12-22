@@ -12,6 +12,11 @@ import sys
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+# Recommend memory constraints that are this multiple of an integral
+# number of GiB. (Actual nodes tend to be sold in sizes like 8 GiB
+# that have amounts like 7.5 GiB according to the kernel.)
+AVAILABLE_RAM_RATIO = 0.95
+
 class Summarizer(object):
     existing_constraints = {}
 
@@ -159,7 +164,7 @@ class Summarizer(object):
                 int(used_cores))
 
     def _recommend_ram(self):
-        """Recommend asking for 2048 MiB RAM if max rss was 1248 MiB"""
+        """Recommend asking for (2048*0.95) MiB RAM if max rss was 1248 MiB"""
 
         used_ram = self.stats_max['mem']['rss']
         if used_ram == float('-Inf'):
@@ -167,14 +172,16 @@ class Summarizer(object):
             return
         used_ram = math.ceil(float(used_ram) / (1<<20))
         asked_ram = self.existing_constraints.get('min_ram_mb_per_node')
-        if asked_ram is None or math.ceil(used_ram/(1<<10)) < asked_ram/(1<<10):
+        if asked_ram is None or (
+                math.ceil((used_ram/AVAILABLE_RAM_RATIO)/(1<<10)) <
+                (asked_ram/AVAILABLE_RAM_RATIO)/(1<<10)):
             yield (
-                '#!! {} never used more than {} MiB RAM -- '
+                '#!! {} max RSS was {} MiB -- '
                 'try runtime_constraints "min_ram_mb_per_node":{}'
             ).format(
                 self.label,
                 int(used_ram),
-                int(math.ceil(used_ram/(1<<10))*(1<<10)))
+                int(math.ceil((used_ram/AVAILABLE_RAM_RATIO)/(1<<10))*(1<<10)*AVAILABLE_RAM_RATIO))
 
     def _format(self, val):
         """Return a string representation of a stat.

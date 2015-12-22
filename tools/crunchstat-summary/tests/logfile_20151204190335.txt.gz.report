@@ -29,4 +29,4 @@ time	elapsed	80	-	80
 # Max network traffic in a single task: 1.79GB
 # Max network speed in a single interval: 42.58MB/s
 #!! job max CPU usage was 13% -- try runtime_constraints "min_cores_per_node":1
-#!! job never used more than 334 MiB RAM -- try runtime_constraints "min_ram_mb_per_node":1024
+#!! job max RSS was 334 MiB -- try runtime_constraints "min_ram_mb_per_node":972
