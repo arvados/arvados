@@ -6,13 +6,12 @@ import crunchstat_summary.chartjs
 import datetime
 import functools
 import itertools
-import logging
 import math
 import re
 import sys
 
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.NullHandler())
+from arvados.api import OrderedJsonModel
+from crunchstat_summary import logger
 
 # Recommend memory constraints that are this multiple of an integral
 # number of GiB. (Actual nodes tend to be sold in sizes like 8 GiB
@@ -29,11 +28,15 @@ class Task(object):
 class Summarizer(object):
     existing_constraints = {}
 
-    def __init__(self, logdata, label='job'):
+    def __init__(self, logdata, label=None):
         self._logdata = logdata
         self.label = label
+        self.starttime = None
+        self.finishtime = None
+        logger.debug("%s: logdata %s", self.label, repr(logdata))
 
     def run(self):
+        logger.debug("%s: parsing log data", self.label)
         # stats_max: {category: {stat: val}}
         self.stats_max = collections.defaultdict(
             functools.partial(collections.defaultdict,
@@ -51,20 +54,34 @@ class Summarizer(object):
                 if elapsed > self.stats_max['time']['elapsed']:
                     self.stats_max['time']['elapsed'] = elapsed
                 continue
-            m = re.search(r'^(?P<timestamp>\S+) \S+ \d+ (?P<seq>\d+) stderr crunchstat: (?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n', line)
+            m = re.search(r'^(?P<timestamp>\S+) (?P<job_uuid>\S+) \d+ (?P<seq>\d+) stderr crunchstat: (?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n', line)
             if not m:
                 continue
+            if self.label is None:
+                self.label = m.group('job_uuid')
+                logger.debug('%s: using job uuid as label', self.label)
             if m.group('category').endswith(':'):
                 # "notice:" etc.
                 continue
             elif m.group('category') == 'error':
                 continue
             task_id = m.group('seq')
+            task = self.tasks[task_id]
+
+            # Use the first and last crunchstat timestamps as
+            # approximations of starttime and finishtime.
             timestamp = datetime.datetime.strptime(
                 m.group('timestamp'), '%Y-%m-%d_%H:%M:%S')
-            task = self.tasks[task_id]
             if not task.starttime:
                 task.starttime = timestamp
+                logger.debug('%s: task %s starttime %s',
+                             self.label, task_id, timestamp)
+            task.finishtime = timestamp
+
+            if not self.starttime:
+                self.starttime = timestamp
+            self.finishtime = timestamp
+
             this_interval_s = None
             for group in ['current', 'interval']:
                 if not m.group(group):
@@ -119,13 +136,27 @@ class Summarizer(object):
                         continue
                     self.job_tot[category][stat] += val
 
+    def long_label(self):
+        label = self.label
+        if self.finishtime:
+            label += ' -- elapsed time '
+            s = (self.finishtime - self.starttime).total_seconds()
+            if s > 86400:
+                label += '{}d'.format(int(s/86400))
+            if s > 3600:
+                label += '{}h'.format(int(s/3600) % 24)
+            if s > 60:
+                label += '{}m'.format(int(s/60) % 60)
+            label += '{}s'.format(int(s) % 60)
+        return label
+
     def text_report(self):
         return "\n".join(itertools.chain(
             self._text_report_gen(),
             self._recommend_gen())) + "\n"
 
     def html_report(self):
-        return crunchstat_summary.chartjs.ChartJS(self.label, self.tasks).html()
+        return crunchstat_summary.chartjs.ChartJS(self.label, [self]).html()
 
     def _text_report_gen(self):
         yield "\t".join(['category', 'metric', 'task_max', 'task_max_rate', 'job_total'])
@@ -227,6 +258,7 @@ class CollectionSummarizer(Summarizer):
                     collection_id, len(filenames)))
         super(CollectionSummarizer, self).__init__(
             collection.open(filenames[0]))
+        self.label = collection_id
 
 
 class JobSummarizer(CollectionSummarizer):
@@ -243,11 +275,12 @@ class JobSummarizer(CollectionSummarizer):
                 "job {} has no log; live summary not implemented".format(
                     self.job['uuid']))
         super(JobSummarizer, self).__init__(self.job['log'])
+        self.label = self.job['uuid']
 
 
 class PipelineSummarizer():
     def __init__(self, pipeline_instance_uuid):
-        arv = arvados.api('v1')
+        arv = arvados.api('v1', model=OrderedJsonModel())
         instance = arv.pipeline_instances().get(
             uuid=pipeline_instance_uuid).execute()
         self.summarizers = collections.OrderedDict()
@@ -260,11 +293,12 @@ class PipelineSummarizer():
                     "%s: skipping job %s with no log available",
                     cname, component['job'].get('uuid'))
             else:
-                logger.debug(
-                    "%s: reading log from %s", cname, component['job']['log'])
+                logger.info(
+                    "%s: logdata %s", cname, component['job']['log'])
                 summarizer = JobSummarizer(component['job'])
                 summarizer.label = cname
                 self.summarizers[cname] = summarizer
+        self.label = pipeline_instance_uuid
 
     def run(self):
         for summarizer in self.summarizers.itervalues():
@@ -278,3 +312,7 @@ class PipelineSummarizer():
             txt += summarizer.text_report()
             txt += '\n'
         return txt
+
+    def html_report(self):
+        return crunchstat_summary.chartjs.ChartJS(
+            self.label, self.summarizers.itervalues()).html()

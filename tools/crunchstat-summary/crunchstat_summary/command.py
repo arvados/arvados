@@ -1,8 +1,9 @@
 import argparse
 import gzip
+import logging
 import sys
 
-from crunchstat_summary import summarizer
+from crunchstat_summary import logger, summarizer
 
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -22,11 +23,21 @@ class ArgumentParser(argparse.ArgumentParser):
         self.add_argument(
             '--format', type=str, choices=('html', 'text'), default='text',
             help='Report format')
+        self.add_argument(
+            '--verbose', action='store_true',
+            help='Write progress messages to stderr')
+        self.add_argument(
+            '--debug', action='store_true',
+            help='Write debug messages to stderr')
 
 
 class Command(object):
     def __init__(self, args):
         self.args = args
+        if args.debug:
+            logger.setLevel(logging.DEBUG)
+        elif args.verbose:
+            logger.setLevel(logging.INFO)
 
     def run(self):
         if self.args.pipeline_instance:
