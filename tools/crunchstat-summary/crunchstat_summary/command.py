@@ -19,22 +19,32 @@ class ArgumentParser(argparse.ArgumentParser):
         src.add_argument(
             '--log-file', type=str,
             help='Read log data from a regular file')
+        self.add_argument(
+            '--format', type=str, choices=('html', 'text'), default='text',
+            help='Report format')
 
 
 class Command(object):
     def __init__(self, args):
         self.args = args
 
-    def summarizer(self):
+    def run(self):
         if self.args.pipeline_instance:
-            return summarizer.PipelineSummarizer(self.args.pipeline_instance)
+            self.summer = summarizer.PipelineSummarizer(self.args.pipeline_instance)
         elif self.args.job:
-            return summarizer.JobSummarizer(self.args.job)
+            self.summer = summarizer.JobSummarizer(self.args.job)
         elif self.args.log_file:
             if self.args.log_file.endswith('.gz'):
                 fh = gzip.open(self.args.log_file)
             else:
                 fh = open(self.args.log_file)
-            return summarizer.Summarizer(fh)
+            self.summer = summarizer.Summarizer(fh)
         else:
-            return summarizer.Summarizer(sys.stdin)
+            self.summer = summarizer.Summarizer(sys.stdin)
+        return self.summer.run()
+
+    def report(self):
+        if self.args.format == 'html':
+            return self.summer.html_report()
+        elif self.args.format == 'text':
+            return self.summer.text_report()

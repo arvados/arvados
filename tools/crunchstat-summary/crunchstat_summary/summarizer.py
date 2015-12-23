@@ -2,6 +2,8 @@ from __future__ import print_function
 
 import arvados
 import collections
+import crunchstat_summary.chartjs
+import datetime
 import functools
 import itertools
 import logging
@@ -16,6 +18,13 @@ logger.addHandler(logging.NullHandler())
 # number of GiB. (Actual nodes tend to be sold in sizes like 8 GiB
 # that have amounts like 7.5 GiB according to the kernel.)
 AVAILABLE_RAM_RATIO = 0.95
+
+
+class Task(object):
+    def __init__(self):
+        self.starttime = None
+        self.series = collections.defaultdict(list)
+
 
 class Summarizer(object):
     existing_constraints = {}
@@ -32,6 +41,7 @@ class Summarizer(object):
         # task_stats: {task_id: {category: {stat: val}}}
         self.task_stats = collections.defaultdict(
             functools.partial(collections.defaultdict, dict))
+        self.tasks = collections.defaultdict(Task)
         for line in self._logdata:
             m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) success in (?P<elapsed>\d+) seconds', line)
             if m:
@@ -41,7 +51,7 @@ class Summarizer(object):
                 if elapsed > self.stats_max['time']['elapsed']:
                     self.stats_max['time']['elapsed'] = elapsed
                 continue
-            m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) stderr crunchstat: (?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n', line)
+            m = re.search(r'^(?P<timestamp>\S+) \S+ \d+ (?P<seq>\d+) stderr crunchstat: (?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n', line)
             if not m:
                 continue
             if m.group('category').endswith(':'):
@@ -50,6 +60,11 @@ class Summarizer(object):
             elif m.group('category') == 'error':
                 continue
             task_id = m.group('seq')
+            timestamp = datetime.datetime.strptime(
+                m.group('timestamp'), '%Y-%m-%d_%H:%M:%S')
+            task = self.tasks[task_id]
+            if not task.starttime:
+                task.starttime = timestamp
             this_interval_s = None
             for group in ['current', 'interval']:
                 if not m.group(group):
@@ -84,7 +99,13 @@ class Summarizer(object):
                         else:
                             stat = stat + '__rate'
                             val = val / this_interval_s
+                            if stat in ['user+sys__rate', 'tx+rx__rate']:
+                                task.series[category, stat].append(
+                                    (timestamp - task.starttime, val))
                     else:
+                        if stat in ['rss']:
+                            task.series[category, stat].append(
+                                (timestamp - task.starttime, val))
                         self.task_stats[task_id][category][stat] = val
                     if val > self.stats_max[category][stat]:
                         self.stats_max[category][stat] = val
@@ -98,12 +119,15 @@ class Summarizer(object):
                         continue
                     self.job_tot[category][stat] += val
 
-    def report(self):
+    def text_report(self):
         return "\n".join(itertools.chain(
-            self._report_gen(),
+            self._text_report_gen(),
             self._recommend_gen())) + "\n"
 
-    def _report_gen(self):
+    def html_report(self):
+        return crunchstat_summary.chartjs.ChartJS(self.label, self.tasks).html()
+
+    def _text_report_gen(self):
         yield "\t".join(['category', 'metric', 'task_max', 'task_max_rate', 'job_total'])
         for category, stat_max in sorted(self.stats_max.iteritems()):
             for stat, val in sorted(stat_max.iteritems()):
@@ -246,11 +270,11 @@ class PipelineSummarizer():
         for summarizer in self.summarizers.itervalues():
             summarizer.run()
 
-    def report(self):
+    def text_report(self):
         txt = ''
         for cname, summarizer in self.summarizers.iteritems():
             txt += '### Summary for {} ({})\n'.format(
                 cname, summarizer.job['uuid'])
-            txt += summarizer.report()
+            txt += summarizer.text_report()
             txt += '\n'
         return txt

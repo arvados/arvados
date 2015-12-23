@@ -1,7 +1,6 @@
 import arvados
 import collections
 import crunchstat_summary.command
-import crunchstat_summary.summarizer
 import difflib
 import glob
 import gzip
@@ -9,17 +8,17 @@ import mock
 import os
 import unittest
 
-
 TESTS_DIR = os.path.dirname(os.path.abspath(__file__))
 
+
 class ReportDiff(unittest.TestCase):
-    def diff_known_report(self, logfile, summarizer):
+    def diff_known_report(self, logfile, cmd):
         expectfile = logfile+'.report'
         expect = open(expectfile).readlines()
-        self.diff_report(summarizer, expect, expectfile=expectfile)
+        self.diff_report(cmd, expect, expectfile=expectfile)
 
-    def diff_report(self, summarizer, expect, expectfile=None):
-        got = [x+"\n" for x in summarizer.report().strip("\n").split("\n")]
+    def diff_report(self, cmd, expect, expectfile=None):
+        got = [x+"\n" for x in cmd.report().strip("\n").split("\n")]
         self.assertEqual(got, expect, "\n"+"".join(difflib.context_diff(
             expect, got, fromfile=expectfile, tofile="(generated)")))
 
@@ -30,9 +29,9 @@ class SummarizeFile(ReportDiff):
             logfile = os.path.join(TESTS_DIR, fnm)
             args = crunchstat_summary.command.ArgumentParser().parse_args(
                 ['--log-file', logfile])
-            summarizer = crunchstat_summary.command.Command(args).summarizer()
-            summarizer.run()
-            self.diff_known_report(logfile, summarizer)
+            cmd = crunchstat_summary.command.Command(args)
+            cmd.run()
+            self.diff_known_report(logfile, cmd)
 
 
 class SummarizeJob(ReportDiff):
@@ -52,9 +51,9 @@ class SummarizeJob(ReportDiff):
         mock_cr().open.return_value = gzip.open(self.logfile)
         args = crunchstat_summary.command.ArgumentParser().parse_args(
             ['--job', self.fake_job_uuid])
-        summarizer = crunchstat_summary.command.Command(args).summarizer()
-        summarizer.run()
-        self.diff_known_report(self.logfile, summarizer)
+        cmd = crunchstat_summary.command.Command(args)
+        cmd.run()
+        self.diff_known_report(self.logfile, cmd)
         mock_api().jobs().get.assert_called_with(uuid=self.fake_job_uuid)
         mock_cr.assert_called_with(self.fake_log_id)
         mock_cr().open.assert_called_with('fake-logfile.txt')
@@ -113,8 +112,8 @@ class SummarizePipeline(ReportDiff):
         mock_cr().open.side_effect = [gzip.open(logfile) for _ in range(3)]
         args = crunchstat_summary.command.ArgumentParser().parse_args(
             ['--pipeline-instance', self.fake_instance['uuid']])
-        summarizer = crunchstat_summary.command.Command(args).summarizer()
-        summarizer.run()
+        cmd = crunchstat_summary.command.Command(args)
+        cmd.run()
 
         job_report = [
             line for line in open(logfile+'.report').readlines()
@@ -126,7 +125,7 @@ class SummarizePipeline(ReportDiff):
             job_report + ['\n'] +
             ['### Summary for baz (zzzzz-8i9sb-000000000000002)\n'] +
             job_report)
-        self.diff_report(summarizer, expect)
+        self.diff_report(cmd, expect)
         mock_cr.assert_has_calls(
             [
                 mock.call('fake-log-pdh-0'),
