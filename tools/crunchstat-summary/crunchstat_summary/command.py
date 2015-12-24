@@ -21,6 +21,9 @@ class ArgumentParser(argparse.ArgumentParser):
             '--log-file', type=str,
             help='Read log data from a regular file')
         self.add_argument(
+            '--include-child-jobs', action='store_true',
+            help='Include stats from child jobs')
+        self.add_argument(
             '--format', type=str, choices=('html', 'text'), default='text',
             help='Report format')
         self.add_argument(
@@ -40,18 +43,21 @@ class Command(object):
             logger.setLevel(logging.INFO)
 
     def run(self):
+        kwargs = {
+            'include_child_jobs': self.args.include_child_jobs,
+        }
         if self.args.pipeline_instance:
-            self.summer = summarizer.PipelineSummarizer(self.args.pipeline_instance)
+            self.summer = summarizer.PipelineSummarizer(self.args.pipeline_instance, **kwargs)
         elif self.args.job:
-            self.summer = summarizer.JobSummarizer(self.args.job)
+            self.summer = summarizer.JobSummarizer(self.args.job, **kwargs)
         elif self.args.log_file:
             if self.args.log_file.endswith('.gz'):
                 fh = gzip.open(self.args.log_file)
             else:
                 fh = open(self.args.log_file)
-            self.summer = summarizer.Summarizer(fh)
+            self.summer = summarizer.Summarizer(fh, **kwargs)
         else:
-            self.summer = summarizer.Summarizer(sys.stdin)
+            self.summer = summarizer.Summarizer(sys.stdin, **kwargs)
         return self.summer.run()
 
     def report(self):

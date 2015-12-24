@@ -22,11 +22,12 @@ net:keep0	rx	0	0.00	0
 net:keep0	tx	0	0.00	0
 net:keep0	tx+rx	0	0.00	0
 time	elapsed	80	-	80
+# Number of tasks: 1
 # Max CPU time spent by a single task: 5.75s
 # Max CPU usage in a single interval: 13.00%
 # Overall CPU usage: 7.19%
 # Max memory used by a single task: 0.35GB
 # Max network traffic in a single task: 1.79GB
 # Max network speed in a single interval: 42.58MB/s
-#!! job max CPU usage was 13% -- try runtime_constraints "min_cores_per_node":1
-#!! job max RSS was 334 MiB -- try runtime_constraints "min_ram_mb_per_node":972
+#!! 4xphq-8i9sb-jq0ekny1xou3zoh max CPU usage was 13% -- try runtime_constraints "min_cores_per_node":1
+#!! 4xphq-8i9sb-jq0ekny1xou3zoh max RSS was 334 MiB -- try runtime_constraints "min_ram_mb_per_node":972

@@ -35,7 +35,7 @@ class SummarizeFile(ReportDiff):
 
 
 class SummarizeJob(ReportDiff):
-    fake_job_uuid = 'zzzzz-8i9sb-jjjjjjjjjjjjjjj'
+    fake_job_uuid = '4xphq-8i9sb-jq0ekny1xou3zoh'
     fake_log_id = 'fake-log-collection-id'
     fake_job = {
         'uuid': fake_job_uuid,

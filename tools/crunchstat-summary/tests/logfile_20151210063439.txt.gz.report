@@ -11,8 +11,9 @@ net:eth0	rx	90	-	90
 net:eth0	tx	90	-	90
 net:eth0	tx+rx	180	-	180
 time	elapsed	2	-	3
+# Number of tasks: 2
 # Max CPU time spent by a single task: 0.00s
 # Overall CPU usage: 0.00%
 # Max memory used by a single task: 0.00GB
 # Max network traffic in a single task: 0.00GB
-#!! job max RSS was 1 MiB -- try runtime_constraints "min_ram_mb_per_node":972
+#!! 4xphq-8i9sb-v831jm2uq0g2g9x max RSS was 1 MiB -- try runtime_constraints "min_ram_mb_per_node":972
