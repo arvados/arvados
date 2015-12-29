@@ -25,6 +25,7 @@ class Container < ArvadosModel
     t.add :container_image
     t.add :cwd
     t.add :environment
+    t.add :exit_code
     t.add :finished_at
     t.add :log
     t.add :mounts
@@ -124,7 +125,7 @@ class Container < ArvadosModel
 
     when Complete
       if self.state_changed?
-        permitted.push :state, :finished_at, :output, :log
+        permitted.push :state, :finished_at, :output, :log, :exit_code
       else
         errors.add :state, "cannot update record"
       end

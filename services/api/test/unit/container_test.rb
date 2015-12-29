@@ -197,4 +197,38 @@ class ContainerTest < ActiveSupport::TestCase
     end
   end
 
+  test "Container only set exit code on complete" do
+    act_as_system_user do
+      c = Container.new
+      c.command = ["echo", "foo"]
+      c.container_image = "img"
+      c.output_path = "/tmp"
+      c.save!
+
+      c.reload
+      c.state = "Running"
+      c.save!
+
+      assert_raises(ActiveRecord::RecordInvalid) do
+        c.reload
+        c.exit_code = 1
+        c.save!
+      end
+
+      assert_raises(ActiveRecord::RecordInvalid) do
+        c.reload
+        c.exit_code = 1
+        c.state = "Cancelled"
+        c.save!
+      end
+
+      c.reload
+      c.exit_code = 1
+      c.state = "Complete"
+      c.save!
+
+    end
+  end
+
+
 end
