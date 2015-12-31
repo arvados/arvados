@@ -51,21 +51,16 @@ Usage of keepproxy:
 
 h3. Create an API token for the Keepproxy server
 
-The Keepproxy server needs a token to talk to the API server.
-
-On the <strong>API server</strong>, use the following command to create the token:
-
-<notextile>
-<pre><code>/var/www/arvados-api/current/script$ <span class="userinput">RAILS_ENV=production bundle exec ./get_anonymous_user_token.rb</span>
-hoShoomoo2bai3Ju1xahg6aeng1siquuaZ1yae2gi2Uhaeng2r
-</code></pre></notextile>
+{% assign railscmd = "bundle exec ./script/get_anonymous_user_token.rb" %}
+{% assign railsout = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" %}
+The Keepproxy server needs a token to talk to the API server.  On the <strong>API server</strong>, use the following command to create the token.  {% include 'install_rails_command' %}
 
 h3. Set up the Keepproxy service
 
 We recommend you run Keepproxy under "runit":http://smarden.org/runit/ or a similar supervisor.  Make sure the launcher sets the envirnoment variables @ARVADOS_API_TOKEN@ (with the token you just generated), @ARVADOS_API_HOST@, and, if needed, @ARVADOS_API_HOST_INSECURE@.  The core keepproxy command to run is:
 
 <notextile>
-<pre><code>ARVADOS_API_TOKEN=<span class="userinput">[generated token]</span> ARVADOS_API_HOST=<span class="userinput">uuid_prefix.your.domain</span> exec keepproxy
+<pre><code>ARVADOS_API_TOKEN=<span class="userinput">{{railsout}}</span> ARVADOS_API_HOST=<span class="userinput">uuid_prefix.your.domain</span> exec keepproxy
 </code></pre>
 </notextile>
 

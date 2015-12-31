@@ -34,25 +34,10 @@ DNS and network configuration should be set up so port 443 reaches your HTTPS pr
 
 h2. Generate an API token
 
-Use the following command to generate an API token, changing *@webserver-user@* to the user of the web server process.  This is typically *@www-data@* on Debian systems by default, other systems may use different defaults such the name of the web server software (for example, *@nginx@*).
-
-Using RVM:
-
-<notextile>
-<pre><code>gitserver:~$ <span class="userinput">cd /var/www/arvados-api/current</span>
-gitserver:/var/www/arvados-api/current$ <span class="userinput">sudo -u <b>webserver-user</b> RAILS_ENV=production `which rvm-exec` default bundle exec ./script/create_superuser_token.rb</span>
-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-</code></pre>
-</notextile>
-
-Not using RVM:
-
-<notextile>
-<pre><code>gitserver:~$ <span class="userinput">cd /var/www/arvados-api/current</span>
-gitserver:/var/www/arvados-api/current$ <span class="userinput">sudo -u <b>webserver-user</b> RAILS_ENV=production bundle exec ./script/create_superuser_token.rb</span>
-zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-</code></pre>
-</notextile>
+{% assign railshost = "gitserver" %}
+{% assign railscmd = "bundle exec ./script/create_superuser_token.rb" %}
+{% assign railsout = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" %}
+Use the following command to generate an API token.  {% include 'install_rails_command' %}
 
 Copy that token; you'll need it in a minute.
 
