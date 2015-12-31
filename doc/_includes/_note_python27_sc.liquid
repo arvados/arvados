@@ -1,5 +1,14 @@
 {% include 'notebox_begin' %}
 
-On older Red Hat-based systems, these packages require the "python27 Software Collection":https://www.softwarecollections.org/en/scls/rhscl/python27/.
+On older Red Hat-based systems, these packages require the python27 Software Collection.  The Software Collection will be installed automatically as long as Software Collections are enabled on your system.
+
+To "enable Software Collections on CentOS":https://wiki.centos.org/AdditionalResources/Repositories/SCL, run:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install centos-release-SCL scl-utils</span>
+</code></pre>
+</notextile>
+
+To enable Software Collections on RHEL, "follow section 2.1 of Red Hat's Installation chapter":https://access.redhat.com/documentation/en-US/Red_Hat_Software_Collections/2/html/2.0_Release_Notes/chap-Installation.html.
 
 {% include 'notebox_end' %}

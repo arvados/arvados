@@ -8,6 +8,8 @@ h2. Install dependencies
 
 First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
 
+{% include 'note_python27_sc' %}
+
 On Debian-based systems:
 
 <notextile>
@@ -21,8 +23,6 @@ On Red Hat-based systems:
 <pre><code>~$ <span class="userinput">sudo yum install perl python27-python-virtualenv fuse python27-python-arvados-python-client python27-python-arvados-fuse crunchstat arvados-docker-cleaner iptables ca-certificates</span>
 </code></pre>
 </notextile>
-
-{% include 'note_python27_sc' %}
 
 h2. Install Docker
 

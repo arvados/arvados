@@ -16,6 +16,8 @@ h2(#install_workbench). Install Workbench and dependencies
 
 Workbench doesn't need its own database, so it does not need to have PostgreSQL installed.
 
+{% include 'note_python27_sc' %}
+
 On a Debian-based system, install the following packages:
 
 <notextile>
@@ -29,8 +31,6 @@ On a Red Hat-based system, install the following packages:
 <pre><code>~$ <span class="userinput">sudo yum install bison make automake gcc gcc-c++ graphviz git python27-python-arvados-python-client arvados-workbench</span>
 </code></pre>
 </notextile>
-
-{% include 'note_python27_sc' %}
 
 h2. Set up configuration files
 
@@ -95,7 +95,7 @@ For best performance, we recommend you use Nginx as your Web server front-end, w
 <ol>
 <li><a href="https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/install_passenger_main.html">Install Nginx and Phusion Passenger</a>.</li>
 
-<li>If you're deploying on CentOS and using the python27 Software Collection, configure Nginx to use it:
+<li>If you're deploying on an older Red Hat-based distribution and installed Pythyon 2.7 from Software Collections, configure Nginx to use it:
 
 <pre><code>~$ <span class="userinput">sudo usermod --shell /bin/bash nginx</span>
 ~$ <span class="userinput">sudo -u nginx sh -c 'echo "[[ -z \$PS1 && -e /opt/rh/python27/enable ]] && source /opt/rh/python27/enable" >>~/.bash_profile'</span>
