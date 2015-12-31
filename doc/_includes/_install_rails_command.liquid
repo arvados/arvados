@@ -1,0 +1,41 @@
+{% comment %}
+This template recognizes four variables:
+* railshost: The hostname included in the prompt, to let the user know where to run the command.  If this is the empty string, no hostname will be displayed.  Default "apiserver".
+* railsdir: The directory included in the prompt, to let the user know where to run the command.  Default "/var/www/arvados-api/current".
+* railscmd: The full command to run.  Default "bundle exec rails console".
+* railsout: The expected output of the command, if any.
+{% endcomment %} Change *@webserver-user@* to the user that runs your web server process.  If you install Phusion Passenger as we recommend, this is *@www-data@* on Debian-based systems, and *@nginx@* on Red Hat-based systems.
+
+{% unless railshost %}
+  {% assign railshost = "apiserver" %}
+{% endunless %}
+
+{% unless (railshost == "") or (railshost contains ":") %}
+  {% capture railshost %}{{railshost}}:{% endcapture %}
+{% endunless %}
+
+{% unless railsdir %}
+  {% assign railsdir = "/var/www/arvados-api/current" %}
+{% endunless %}
+
+{% unless railscmd %}
+  {% assign railscmd = "bundle exec rails console" %}
+{% endunless %}
+
+Using RVM:
+
+<notextile>
+<pre><code>{{railshost}}~$ <span class="userinput">cd {{railsdir}}</span>
+{{railshost}}{{railsdir}}$ <span class="userinput">sudo -u <b>webserver-user</b> RAILS_ENV=production `which rvm-exec` default {{railscmd}}</span>
+{% if railsout %}{{railsout}}
+{% endif %}</code></pre>
+</notextile>
+
+Not using RVM:
+
+<notextile>
+<pre><code>{{railshost}}~$ <span class="userinput">cd {{railsdir}}</span>
+{{railshost}}{{railsdir}}$ <span class="userinput">sudo -u <b>webserver-user</b> RAILS_ENV=production {{railscmd}}</span>
+{% if railsout %}{{railsout}}
+{% endif %}</code></pre>
+</notextile>
