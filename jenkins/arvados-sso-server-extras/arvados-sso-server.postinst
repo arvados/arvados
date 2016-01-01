@@ -37,26 +37,11 @@ EOF
     fi
 }
 
-configure_version() {
-  WEB_SERVICE=${WEB_SERVICE:-$(service --status-all 2>/dev/null \
-      | grep -Eo '\bnginx|httpd[^[:space:]]*' || true)}
-  if [ -z "$WEB_SERVICE" ]; then
+report_web_service_warning() {
+    local warning=$1; shift
     cat >&2 <<EOF
 
-Warning: web service (Nginx or Apache) not found.
-
-To override, set the WEB_SERVICE environment variable to the name of the service
-hosting the Rails server. Alternativey, install nginx.
-
-For Debian-based systems, then reconfigure this package with dpkg-reconfigure.
-
-For RPM-based systems, then reinstall this package.
-
-EOF
-  elif [ "$WEB_SERVICE" != "$(echo "$WEB_SERVICE" | head -n 1)" ]; then
-    WEB_SERVICE=$(echo "$WEB_SERVICE" | head -n 1)
-    cat >&2 <<EOF
-Warning: multiple web services found. Choosing the first one ($WEB_SERVICE).
+WARNING: $warning.
 
 To override, set the WEB_SERVICE environment variable to the name of the service
 hosting the Rails server.
@@ -66,6 +51,17 @@ For Debian-based systems, then reconfigure this package with dpkg-reconfigure.
 For RPM-based systems, then reinstall this package.
 
 EOF
+}
+
+configure_version() {
+  WEB_SERVICE=${WEB_SERVICE:-$(service --status-all 2>/dev/null \
+      | grep -Eo '\bnginx|httpd[^[:space:]]*' || true)}
+  if [ -z "$WEB_SERVICE" ]; then
+    report_web_service_warning "Web service (Nginx or Apache) not found"
+  elif [ "$WEB_SERVICE" != "$(echo "$WEB_SERVICE" | head -n 1)" ]; then
+    WEB_SERVICE=$(echo "$WEB_SERVICE" | head -n 1)
+    report_web_service_warning \
+        "Multiple web services found.  Choosing the first one ($WEB_SERVICE)"
   fi
 
   if [ -e /etc/redhat-release ]; then
