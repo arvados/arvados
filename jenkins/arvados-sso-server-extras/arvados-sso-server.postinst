@@ -176,19 +176,15 @@ configure_version() {
   chmod 644 $SHARED_PATH/log/*
   echo "... done."
 
-  set +e
-  DB_MIGRATE_STATUS=`$COMMAND_PREFIX bundle exec rake db:migrate:status 2>&1`
-  DB_MIGRATE_STATUS_CODE=$?
-  set -e
-
-  if echo $DB_MIGRATE_STATUS | grep 'Schema migrations table does not exist yet.' >/dev/null; then
+  DB_MIGRATE_STATUS=`$COMMAND_PREFIX bundle exec rake db:migrate:status 2>&1 || true`
+  if echo $DB_MIGRATE_STATUS | grep -qF 'Schema migrations table does not exist yet.'; then
       # The database exists, but the migrations table doesn't.
       run_and_report "Setting up database" \
                      $COMMAND_PREFIX bundle exec rake db:schema:load db:seed
-  elif echo $DB_MIGRATE_STATUS | grep '^database: ' >/dev/null; then
+  elif echo $DB_MIGRATE_STATUS | grep -q '^database: '; then
       run_and_report "Running db:migrate" \
                      $COMMAND_PREFIX bundle exec rake db:migrate
-  elif echo $DB_MIGRATE_STATUS | grep 'database .* does not exist' >/dev/null; then
+  elif echo $DB_MIGRATE_STATUS | grep -q 'database .* does not exist'; then
       if ! run_and_report "Running db:setup" \
            $COMMAND_PREFIX bundle exec rake db:setup 2>/dev/null; then
           echo "Warning: unable to set up database." >&2
