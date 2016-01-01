@@ -54,6 +54,23 @@ For RPM-based systems, then reinstall this package.
 EOF
 }
 
+run_and_report() {
+    # Usage: run_and_report ACTION_MSG CMD
+    # This is the usual wrapper that prints ACTION_MSG, runs CMD, then writes
+    # a message about whether CMD succeeded or failed.  Returns the exit code
+    # of CMD.
+    local action_message=$1; shift
+    local retcode=0
+    echo -n "$action_message..."
+    if "$@"; then
+        echo " done."
+    else
+        retcode=$?
+        echo " failed."
+    fi
+    return $retcode
+}
+
 setup_conffile() {
     # Usage: setup_conffile CONFFILE_PATH [SOURCE_PATH]
     # Both paths are relative to RELEASE_CONFIG_PATH.
@@ -140,18 +157,12 @@ configure_version() {
   cd "$RELEASE_PATH"
   export RAILS_ENV=production
 
-  echo "Making sure bundle is installed ..."
-  set +e
-  which bundle > /dev/null
-  if [[ "$?" != "0" ]]; then
-    $COMMAND_PREFIX gem install bundle
+  if ! $COMMAND_PREFIX bundle --version >/dev/null; then
+      run_and_report "Installing bundle" $COMMAND_PREFIX gem install bundle
   fi
-  set -e
-  echo "... done."
 
-  echo -n "Running bundle install ..."
-  $COMMAND_PREFIX bundle install --path $SHARED_PATH/vendor_bundle --quiet || exit $?
-  echo "... done."
+  run_and_report "Running bundle install" \
+      $COMMAND_PREFIX bundle install --path $SHARED_PATH/vendor_bundle --quiet
 
   echo -n "Ensuring directory and file permissions ..."
   # Ensure correct ownership of a few files
@@ -171,52 +182,35 @@ configure_version() {
   set -e
 
   if echo $DB_MIGRATE_STATUS | grep 'Schema migrations table does not exist yet.' >/dev/null; then
-    # The database exists, but the migrations table doesn't.
-    echo -n "Setting up database ..."
-    $COMMAND_PREFIX bundle exec rake db:schema:load db:seed || exit $?
-    echo "... done."
+      # The database exists, but the migrations table doesn't.
+      run_and_report "Setting up database" \
+                     $COMMAND_PREFIX bundle exec rake db:schema:load db:seed
   elif echo $DB_MIGRATE_STATUS | grep '^database: ' >/dev/null; then
-    echo -n "Running db:migrate ..."
-    $COMMAND_PREFIX bundle exec rake db:migrate || exit $?
-    echo "... done."
+      run_and_report "Running db:migrate" \
+                     $COMMAND_PREFIX bundle exec rake db:migrate
   elif echo $DB_MIGRATE_STATUS | grep 'database .* does not exist' >/dev/null; then
-    echo -n "Running db:setup ..."
-    set +e
-    $COMMAND_PREFIX bundle exec rake db:setup 2>/dev/null
-    if [ "$?" = "0" ]; then
-      echo "... done."
-    else
-      echo "... failed."
-      echo "Warning: unable to set up database." >&2
-      DATABASE_READY=0
-    fi
-    set -e
+      if ! run_and_report "Running db:setup" \
+           $COMMAND_PREFIX bundle exec rake db:setup 2>/dev/null; then
+          echo "Warning: unable to set up database." >&2
+          DATABASE_READY=0
+      fi
   else
     echo "Warning: Database is not ready to set up. Skipping database setup." >&2
     DATABASE_READY=0
   fi
 
-  echo -n "Precompiling assets ..."
   # precompile assets; thankfully this does not take long
   if [ "$APPLICATION_READY" = "1" ]; then
-    set +e
-    $COMMAND_PREFIX bundle exec rake assets:precompile -q -s 2>/dev/null
-    if [ "$?" = "0" ]; then
-      echo "... done."
-    else
-      echo "... failed."
-      APPLICATION_READY=0
-    fi
-    set -e
+      run_and_report "Precompiling assets" \
+          $COMMAND_PREFIX bundle exec rake assets:precompile -q -s 2>/dev/null \
+          || APPLICATION_READY=0
   else
-    echo "... skipped."
+      echo "Precompiling assets... skipped."
   fi
   chown -R "$WWW_OWNER" $RELEASE_PATH/tmp
 
   if [ ! -z "$WEB_SERVICE" ]; then
-    echo -n "Restarting $WEB_SERVICE ..."
-    service "$WEB_SERVICE" restart >/dev/null || exit $?
-    echo "... done."
+      service "$WEB_SERVICE" restart
   fi
 }
 
