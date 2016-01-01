@@ -11,8 +11,6 @@ PACKAGE_NAME=arvados-sso-server
 DATABASE_READY=1
 APPLICATION_READY=1
 
-VERSION=`cat $RELEASE_PATH/git-commit.version`
-
 setup_ruby_environment() {
   if [ -s "$HOME/.rvm/scripts/rvm" ] ; then
     using_rvm="true"
@@ -29,12 +27,7 @@ setup_ruby_environment() {
   fi
 }
 
-# arguments: <major version> <most recently configured package version>
 configure_version() {
-  VERSION="$1"
-
-  [ "$VERSION" ] || { echo "Error: configure_version: need version parameter" >&2; exit 1; }
-
   WEB_SERVICE=${WEB_SERVICE:-$(service --status-all 2>/dev/null \
       | grep -Eo '\bnginx|httpd[^[:space:]]*' || true)}
   if [ -z "$WEB_SERVICE" ]; then
@@ -209,11 +202,11 @@ EOF
 if [ "$1" = configure ]; then
   # This is a debian-based system
   setup_ruby_environment
-  configure_version $VERSION "$2"
+  configure_version
 elif [ "$1" = "0" ] || [ "$1" = "1" ] || [ "$1" = "2" ]; then
   # This is an rpm-based system
   setup_ruby_environment
-  configure_version $VERSION
+  configure_version
 fi
 
 if [ "$DATABASE_READY" = "0" ]; then
