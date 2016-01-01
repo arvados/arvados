@@ -7,9 +7,29 @@ RELEASE_PATH=$INSTALL_PATH/current
 SHARED_PATH=$INSTALL_PATH/shared
 CONFIG_PATH=/etc/arvados/sso
 PACKAGE_NAME=arvados-sso-server
+DOC_URL="http://doc.arvados.org/install/install-sso.html#configure"
 
 DATABASE_READY=1
 APPLICATION_READY=1
+
+report_not_ready() {
+    local ready_flag=$1; shift
+    local config_file=$1; shift
+    if [ "1" != "$ready_flag" ]; then cat >&2 <<EOF
+
+PLEASE NOTE:
+
+The $PACKAGE_NAME package was not configured completely because
+$config_file needs some tweaking.
+Please refer to the documentation at
+<$DOC_URL> for more details.
+
+When $(basename "$config_file") has been modified,
+reconfigure or reinstall this package.
+
+EOF
+    fi
+}
 
 setup_ruby_environment() {
   if [ -s "$HOME/.rvm/scripts/rvm" ] ; then
@@ -209,32 +229,5 @@ elif [ "$1" = "0" ] || [ "$1" = "1" ] || [ "$1" = "2" ]; then
   configure_version
 fi
 
-if [ "$DATABASE_READY" = "0" ]; then
-  cat <<EOF
-
-PLEASE NOTE:
-
-The $PACKAGE_NAME package was not configured completely because
-$CONFIG_PATH/database.yml needs some tweaking. Please refer to the
-documentation at http://doc.arvados.org/install/install-sso.html#configure for
-more details.
-
-When database.yml has been modified, reconfigure or reinstall this package.
-EOF
-fi
-
-if [ "$APPLICATION_READY" = "0" ]; then
-  cat <<EOF
-
-PLEASE NOTE:
-
-The $PACKAGE_NAME package was not configured completely because
-$CONFIG_PATH/application.yml needs some tweaking. Please refer to the
-documentation at http://doc.arvados.org/install/install-sso.html#configure for
-more details.
-
-When application.yml has been modified, reconfigure or reinstall this package.
-EOF
-fi
-
-echo
+report_not_ready "$DATABASE_READY" "$CONFIG_PATH/database.yml"
+report_not_ready "$APPLICATION_READY" "$CONFIG_PATH/application.yml"
