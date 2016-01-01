@@ -4,6 +4,7 @@ set -e
 
 INSTALL_PATH=/var/www/arvados-sso
 RELEASE_PATH=$INSTALL_PATH/current
+RELEASE_CONFIG_PATH=$RELEASE_PATH/config
 SHARED_PATH=$INSTALL_PATH/shared
 CONFIG_PATH=/etc/arvados/sso
 PACKAGE_NAME=arvados-sso-server
@@ -53,6 +54,44 @@ For RPM-based systems, then reinstall this package.
 EOF
 }
 
+setup_conffile() {
+    # Usage: setup_conffile CONFFILE_PATH [SOURCE_PATH]
+    # Both paths are relative to RELEASE_CONFIG_PATH.
+    # This function will try to safely ensure that a symbolic link for
+    # the configuration file points from RELEASE_CONFIG_PATH to CONFIG_PATH.
+    # If SOURCE_PATH is given, this function will try to install that file as
+    # the configuration file in CONFIG_PATH, and return 1 if the file in
+    # CONFIG_PATH is unmodified from the source.
+    local conffile_relpath=$1; shift
+    local conffile_source=$1; shift
+    local release_conffile=$RELEASE_CONFIG_PATH/$conffile_relpath
+    local etc_conffile=$CONFIG_PATH/$(basename "$conffile_relpath")
+
+    # Note that -h can return true and -e will return false simultaneously
+    # when the target is a dangling symlink.  We're okay with that outcome,
+    # so check -h first.
+    if [ ! -h "$release_conffile" ]; then
+        if [ ! -e "$release_conffile" ]; then
+            ln -s "$etc_conffile" "$release_conffile"
+        # If there's a config file in /var/www identical to the one in /etc,
+        # overwrite it with a symlink.
+        elif cmp --quiet "$release_conffile" "$etc_conffile"; then
+            ln --force -s "$etc_conffile" "$release_conffile"
+        fi
+    fi
+
+    if [ -n "$conffile_source" ]; then
+        cp --no-clobber "$RELEASE_CONFIG_PATH/$conffile_source" "$etc_conffile"
+        # Even if $etc_conffile already existed, it might be unmodified from
+        # the source.  This is especially likely when a user installs, updates
+        # database.yml, then reconfigures before they update application.yml.
+        # Use cmp to be sure whether $etc_conffile is modified.
+        if cmp --quiet "$RELEASE_CONFIG_PATH/$conffile_source" "$etc_conffile"; then
+            return 1
+        fi
+    fi
+}
+
 configure_version() {
   WEB_SERVICE=${WEB_SERVICE:-$(service --status-all 2>/dev/null \
       | grep -Eo '\bnginx|httpd[^[:space:]]*' || true)}
@@ -85,36 +124,11 @@ configure_version() {
   echo
 
   echo -n "Symlinking files from $CONFIG_PATH ..."
-
-  if [ ! -f $CONFIG_PATH/database.yml ]; then
-    mkdir -p $CONFIG_PATH
-    cp $RELEASE_PATH/config/database.yml.example $CONFIG_PATH/database.yml
-    DATABASE_READY=0
-  fi
-
-  if [ ! -h $RELEASE_PATH/config/database.yml ]; then
-    ln -s $CONFIG_PATH/database.yml $RELEASE_PATH/config/database.yml
-  fi
-
-  if [ ! -f $CONFIG_PATH/production.rb ]; then
-    mkdir -p $CONFIG_PATH
-    cp $RELEASE_PATH/config/environments/production.rb.example $CONFIG_PATH/production.rb
-  fi
-
-  if [ ! -h $RELEASE_PATH/config/environments/production.rb ]; then
-    ln -s $CONFIG_PATH/production.rb $RELEASE_PATH/config/environments/production.rb
-  fi
-
-  if [ ! -f $CONFIG_PATH/application.yml ]; then
-    mkdir -p $CONFIG_PATH
-    cp $RELEASE_PATH/config/application.yml.example $CONFIG_PATH/application.yml
-    APPLICATION_READY=0
-  fi
-
-  if [ ! -h $RELEASE_PATH/config/application.yml ]; then
-    ln -s $CONFIG_PATH/application.yml $RELEASE_PATH/config/application.yml
-  fi
-
+  mkdir -p $CONFIG_PATH
+  setup_conffile database.yml database.yml.example || DATABASE_READY=0
+  setup_conffile environments/production.rb environments/production.rb.example \
+      || true
+  setup_conffile application.yml application.yml.example || APPLICATION_READY=0
   echo "... done."
 
   # Before we do anything else, make sure some directories and files are in place
