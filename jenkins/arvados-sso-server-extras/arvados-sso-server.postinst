@@ -12,6 +12,12 @@ DOC_URL="http://doc.arvados.org/install/install-sso.html#configure"
 DATABASE_READY=1
 APPLICATION_READY=1
 
+if [ -s "$HOME/.rvm/scripts/rvm" ] || [ -s "/usr/local/rvm/scripts/rvm" ]; then
+    COMMAND_PREFIX="/usr/local/rvm/bin/rvm-exec default"
+else
+    COMMAND_PREFIX=
+fi
+
 report_not_ready() {
     local ready_flag=$1; shift
     local config_file=$1; shift
@@ -29,22 +35,6 @@ reconfigure or reinstall this package.
 
 EOF
     fi
-}
-
-setup_ruby_environment() {
-  if [ -s "$HOME/.rvm/scripts/rvm" ] ; then
-    using_rvm="true"
-  elif [ -s "/usr/local/rvm/scripts/rvm" ] ; then
-    using_rvm="true"
-  else
-    using_rvm="false"
-  fi
-
-  if [ "$using_rvm" = "true" ]; then
-    COMMAND_PREFIX="/usr/local/rvm/bin/rvm-exec default"
-  else
-    COMMAND_PREFIX=
-  fi
 }
 
 configure_version() {
@@ -221,11 +211,9 @@ EOF
 
 if [ "$1" = configure ]; then
   # This is a debian-based system
-  setup_ruby_environment
   configure_version
 elif [ "$1" = "0" ] || [ "$1" = "1" ] || [ "$1" = "2" ]; then
   # This is an rpm-based system
-  setup_ruby_environment
   configure_version
 fi
 
