@@ -65,7 +65,8 @@ configure_version() {
   fi
 
   if [ -e /etc/redhat-release ]; then
-      if [ "$WEB_SERVICE" = "nginx" ]; then
+      # Recognize any service that starts with "nginx"; e.g., nginx16.
+      if [ "$WEB_SERVICE" != "${WEB_SERVICE#nginx}" ]; then
         WWW_OWNER=nginx:nginx
       else
         WWW_OWNER=apache:apache
