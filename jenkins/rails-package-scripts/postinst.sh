@@ -1,14 +1,7 @@
-#!/bin/bash
+#!/bin/sh
+# This code runs after package variable definitions and step2.sh.
 
 set -e
-
-INSTALL_PATH=/var/www/arvados-sso
-RELEASE_PATH=$INSTALL_PATH/current
-RELEASE_CONFIG_PATH=$RELEASE_PATH/config
-SHARED_PATH=$INSTALL_PATH/shared
-CONFIG_PATH=/etc/arvados/sso
-PACKAGE_NAME=arvados-sso-server
-DOC_URL="http://doc.arvados.org/install/install-sso.html#configure"
 
 DATABASE_READY=1
 APPLICATION_READY=1
@@ -20,8 +13,8 @@ else
 fi
 
 report_not_ready() {
-    local ready_flag=$1; shift
-    local config_file=$1; shift
+    local ready_flag="$1"; shift
+    local config_file="$1"; shift
     if [ "1" != "$ready_flag" ]; then cat >&2 <<EOF
 
 PLEASE NOTE:
@@ -39,7 +32,7 @@ EOF
 }
 
 report_web_service_warning() {
-    local warning=$1; shift
+    local warning="$1"; shift
     cat >&2 <<EOF
 
 WARNING: $warning.
@@ -59,7 +52,7 @@ run_and_report() {
     # This is the usual wrapper that prints ACTION_MSG, runs CMD, then writes
     # a message about whether CMD succeeded or failed.  Returns the exit code
     # of CMD.
-    local action_message=$1; shift
+    local action_message="$1"; shift
     local retcode=0
     echo -n "$action_message..."
     if "$@"; then
@@ -79,10 +72,10 @@ setup_conffile() {
     # If SOURCE_PATH is given, this function will try to install that file as
     # the configuration file in CONFIG_PATH, and return 1 if the file in
     # CONFIG_PATH is unmodified from the source.
-    local conffile_relpath=$1; shift
-    local conffile_source=$1; shift
-    local release_conffile=$RELEASE_CONFIG_PATH/$conffile_relpath
-    local etc_conffile=$CONFIG_PATH/$(basename "$conffile_relpath")
+    local conffile_relpath="$1"; shift
+    local conffile_source="$1"
+    local release_conffile="$RELEASE_CONFIG_PATH/$conffile_relpath"
+    local etc_conffile="$CONFIG_PATH/$(basename "$conffile_relpath")"
 
     # Note that -h can return true and -e will return false simultaneously
     # when the target is a dangling symlink.  We're okay with that outcome,
@@ -107,6 +100,27 @@ setup_conffile() {
             return 1
         fi
     fi
+}
+
+prepare_database() {
+  DB_MIGRATE_STATUS=`$COMMAND_PREFIX bundle exec rake db:migrate:status 2>&1 || true`
+  if echo $DB_MIGRATE_STATUS | grep -qF 'Schema migrations table does not exist yet.'; then
+      # The database exists, but the migrations table doesn't.
+      run_and_report "Setting up database" $COMMAND_PREFIX bundle exec \
+                     rake "$RAILSPKG_DATABASE_LOAD_TASK" db:seed
+  elif echo $DB_MIGRATE_STATUS | grep -q '^database: '; then
+      run_and_report "Running db:migrate" \
+                     $COMMAND_PREFIX bundle exec rake db:migrate
+  elif echo $DB_MIGRATE_STATUS | grep -q 'database .* does not exist'; then
+      if ! run_and_report "Running db:setup" \
+           $COMMAND_PREFIX bundle exec rake db:setup 2>/dev/null; then
+          echo "Warning: unable to set up database." >&2
+          DATABASE_READY=0
+      fi
+  else
+    echo "Warning: Database is not ready to set up. Skipping database setup." >&2
+    DATABASE_READY=0
+  fi
 }
 
 configure_version() {
@@ -134,18 +148,20 @@ configure_version() {
   fi
 
   echo
-  echo "Assumption: $WEB_SERVICE is configured to serve your SSO server URL from"
+  echo "Assumption: $WEB_SERVICE is configured to serve Rails from"
   echo "            $RELEASE_PATH"
-  echo "Assumption: configuration files are in $CONFIG_PATH"
   echo "Assumption: $WEB_SERVICE and passenger run as $WWW_OWNER"
   echo
 
-  echo -n "Symlinking files from $CONFIG_PATH ..."
+  echo -n "Creating symlinks to configuration in $CONFIG_PATH ..."
   mkdir -p $CONFIG_PATH
-  setup_conffile database.yml database.yml.example || DATABASE_READY=0
   setup_conffile environments/production.rb environments/production.rb.example \
       || true
   setup_conffile application.yml application.yml.example || APPLICATION_READY=0
+  if [ -n "$RAILSPKG_DATABASE_LOAD_TASK" ]; then
+      setup_conffile database.yml database.yml.example || DATABASE_READY=0
+  fi
+  setup_extra_conffiles
   echo "... done."
 
   # Before we do anything else, make sure some directories and files are in place
@@ -168,31 +184,25 @@ configure_version() {
   # Ensure correct ownership of a few files
   chown "$WWW_OWNER" $RELEASE_PATH/config/environment.rb
   chown "$WWW_OWNER" $RELEASE_PATH/config.ru
-  chown "$WWW_OWNER" $RELEASE_PATH/config/database.yml
   chown "$WWW_OWNER" $RELEASE_PATH/Gemfile.lock
   chown -R "$WWW_OWNER" $RELEASE_PATH/tmp
   chown -R "$WWW_OWNER" $SHARED_PATH/log
-  chown "$WWW_OWNER" $RELEASE_PATH/db/schema.rb
+  case "$RAILSPKG_DATABASE_LOAD_TASK" in
+      db:schema:load) chown "$WWW_OWNER" $RELEASE_PATH/db/schema.rb ;;
+      db:structure:load) chown "$WWW_OWNER" $RELEASE_PATH/db/structure.sql ;;
+  esac
   chmod 644 $SHARED_PATH/log/*
+  chmod -R 2775 $RELEASE_PATH/tmp
   echo "... done."
 
-  DB_MIGRATE_STATUS=`$COMMAND_PREFIX bundle exec rake db:migrate:status 2>&1 || true`
-  if echo $DB_MIGRATE_STATUS | grep -qF 'Schema migrations table does not exist yet.'; then
-      # The database exists, but the migrations table doesn't.
-      run_and_report "Setting up database" \
-                     $COMMAND_PREFIX bundle exec rake db:schema:load db:seed
-  elif echo $DB_MIGRATE_STATUS | grep -q '^database: '; then
-      run_and_report "Running db:migrate" \
-                     $COMMAND_PREFIX bundle exec rake db:migrate
-  elif echo $DB_MIGRATE_STATUS | grep -q 'database .* does not exist'; then
-      if ! run_and_report "Running db:setup" \
-           $COMMAND_PREFIX bundle exec rake db:setup 2>/dev/null; then
-          echo "Warning: unable to set up database." >&2
-          DATABASE_READY=0
-      fi
-  else
-    echo "Warning: Database is not ready to set up. Skipping database setup." >&2
-    DATABASE_READY=0
+  if [ -n "$RAILSPKG_DATABASE_LOAD_TASK" ]; then
+      chown "$WWW_OWNER" $RELEASE_PATH/config/database.yml
+      prepare_database
+  fi
+
+  if [ 11 = "$RAILSPKG_SUPPORTS_CONFIG_CHECK$APPLICATION_READY" ]; then
+      run_and_report "Checking application.yml for completeness" \
+          $COMMAND_PREFIX bundle exec rake config:check || APPLICATION_READY=0
   fi
 
   # precompile assets; thankfully this does not take long

@@ -114,6 +114,64 @@ default_iteration() {
     echo $iteration
 }
 
+_build_rails_package_scripts() {
+    local pkgname="$1"; shift
+    local destdir="$1"; shift
+    local srcdir="$RUN_BUILD_PACKAGES_PATH/rails-package-scripts"
+    for scriptname in postinst prerm postrm; do
+        cat "$srcdir/$pkgname.sh" "$srcdir/step2.sh" "$srcdir/$scriptname.sh" \
+            >"$destdir/$scriptname" || return $?
+    done
+}
+
+handle_rails_package() {
+    local pkgname="$1"; shift
+    local srcdir="$1"; shift
+    local license_path="$1"; shift
+    local scripts_dir="$(mktemp --tmpdir -d "$pkgname-XXXXXXXX.scripts")" && \
+    local version_file="$(mktemp --tmpdir "$pkgname-XXXXXXXX.version")" && (
+        set -e
+        _build_rails_package_scripts "$pkgname" "$scripts_dir"
+        cd "$srcdir"
+        mkdir -p tmp
+        version_from_git >"$version_file"
+        git rev-parse HEAD >git-commit.version
+        if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
+            bundle install --path vendor/bundle >"$STDOUT_IF_DEBUG"
+        fi
+    )
+    if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
+        echo "ERROR: $pkgname package prep failed" >&2
+        rm -rf "$scripts_dir" "$version_file"
+        EXITCODE=1
+        return 1
+    fi
+    local railsdir="/var/www/${pkgname%-server}/current"
+    local -a pos_args=("$srcdir/=$railsdir" "$pkgname" "Curoverse, Inc." dir
+                       "$(cat "$version_file")")
+    local license_arg="$license_path=$railsdir/$(basename "$license_path")"
+    # --iteration=3 accommodates the package scripts change from #8014.
+    local -a switches=(--iteration=3
+                       --after-install "$scripts_dir/postinst"
+                       --before-remove "$scripts_dir/prerm"
+                       --after-remove "$scripts_dir/postrm")
+    # For some reason fpm excludes need to not start with /.
+    local exclude_root="${railsdir#/}"
+    # .git and packages are for the SSO server, which is built from its
+    # repository root.
+    for exclude in .git packages tmp log coverage \
+                        vendor/cache/\* Capfile\* config/deploy\*; do
+        switches+=(-x "$exclude_root/$exclude")
+    done
+    fpm_build "${pos_args[@]}" "${switches[@]}" \
+              -x "$exclude_root/vendor/bundle" "$@" "$license_arg"
+    if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
+        posargs[1]="$pkgname-with-bundle"
+        fpm_build "${pos_args[@]}" "${switches[@]}" "$@" "$license_arg"
+    fi
+    rm -rf "$scripts_dir" "$version_file"
+}
+
 # Build packages for everything
 fpm_build () {
   # The package source.  Depending on the source type, this can be a
