@@ -28,7 +28,7 @@ EOF
 }
 
 format_last_commit_here() {
-    local format=$1; shift
+    local format="$1"; shift
     TZ=UTC git log -n1 --first-parent "--format=format:$format" .
 }
 
@@ -59,8 +59,8 @@ handle_python_package () {
 }
 
 handle_ruby_gem() {
-    local gem_name=$1; shift
-    local gem_version=$(nohash_version_from_git)
+    local gem_name="$1"; shift
+    local gem_version="$(nohash_version_from_git)"
     local gem_src_dir="$(pwd)"
 
     if ! [[ -e "${gem_name}-${gem_version}.gem" ]]; then
@@ -76,7 +76,7 @@ package_go_binary() {
     local src_path="$1"; shift
     local prog="$1"; shift
     local description="$1"; shift
-    local license_file=${1:-agpl-3.0.txt}; shift
+    local license_file="${1:-agpl-3.0.txt}"; shift
 
     debug_echo "package_go_binary $src_path as $prog"
 
@@ -86,8 +86,8 @@ package_go_binary() {
     ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
 
     cd "$GOPATH/src/git.curoverse.com/arvados.git/$src_path"
-    local version=$(version_from_git)
-    local timestamp=$(timestamp_from_git)
+    local version="$(version_from_git)"
+    local timestamp="$(timestamp_from_git)"
 
     # If the command imports anything from the Arvados SDK, bump the
     # version number and build a new package whenever the SDK changes.
@@ -104,8 +104,8 @@ package_go_binary() {
 }
 
 default_iteration() {
-    local package_name=$1; shift
-    local package_version=$1; shift
+    local package_name="$1"; shift
+    local package_version="$1"; shift
     local iteration=1
     if [[ $package_version =~ ^0\.1\.([0-9]{14})(\.|$) ]] && \
            [[ ${BASH_REMATCH[1]} -le $LICENSE_PACKAGE_TS ]]; then
