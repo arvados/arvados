@@ -80,7 +80,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
     within('.navbar-fixed-top') do
       page.find("#arv-help").click
       within('.dropdown-menu') do
-        assert_selector 'a', text:'Getting Started ...'
+        assert_no_selector 'a', text:'Getting Started ...'
         assert_selector 'a', text:'Public Pipelines and Data sets'
         assert page.has_link?('Tutorials and User guide'), 'No link - Tutorials and User guide'
         assert page.has_link?('API Reference'), 'No link - API Reference'
@@ -130,65 +130,57 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         visit page_with_token(token)
       end
 
-      verify_homepage user, invited, has_profile
-    end
-
-    test "check help for user #{token}" do
-      if !token
-        visit ('/')
-      else
-        visit page_with_token(token)
-      end
-
       check_help_menu
-    end
-
-    test "test system menu for user #{token}" do
-      if !token
-        visit ('/')
-      else
-        visit page_with_token(token)
-      end
-
+      verify_homepage user, invited, has_profile
       verify_system_menu user
     end
   end
 
-  test "test getting started help menu item" do
-    visit page_with_token('active')
-    within '.navbar-fixed-top' do
-      find('.help-menu > a').click
-      find('.help-menu .dropdown-menu a', text: 'Getting Started ...').click
-    end
+  [
+    ['active', true],
+    ['active_with_prefs_profile_no_getting_started_shown', false],
+  ].each do |token, getting_started_shown|
+    test "getting started help menu item #{getting_started_shown}" do
+      Rails.configuration.enable_getting_started_popup = true
 
-    within '.modal-content' do
-      assert_text 'Getting Started'
-      assert_selector 'button:not([disabled])', text: 'Next'
-      assert_no_selector 'button:not([disabled])', text: 'Prev'
+      visit page_with_token(token)
 
-      # Use Next button to enable Prev button
-      click_button 'Next'
-      assert_selector 'button:not([disabled])', text: 'Prev'  # Prev button is now enabled
-      click_button 'Prev'
-      assert_no_selector 'button:not([disabled])', text: 'Prev'  # Prev button is again disabled
-
-      # Click Next until last page is reached and verify that it is disabled
-      (0..20).each do |i|   # currently we only have 4 pages, and don't expect to have more than 20 in future
-        click_button 'Next'
-        begin
-          find('button:not([disabled])', text: 'Next')
-        rescue => e
-          break
+      if getting_started_shown
+        within '.navbar-fixed-top' do
+          find('.help-menu > a').click
+          find('.help-menu .dropdown-menu a', text: 'Getting Started ...').click
         end
       end
-      assert_no_selector 'button:not([disabled])', text: 'Next'  # Next button is disabled
-      assert_selector 'button:not([disabled])', text: 'Prev'     # Prev button is enabled
-      click_button 'Prev'
-      assert_selector 'button:not([disabled])', text: 'Next'     # Next button is now enabled
 
-      first('button', text: 'x').click
+      within '.modal-content' do
+        assert_text 'Getting Started'
+        assert_selector 'button:not([disabled])', text: 'Next'
+        assert_no_selector 'button:not([disabled])', text: 'Prev'
+
+        # Use Next button to enable Prev button
+        click_button 'Next'
+        assert_selector 'button:not([disabled])', text: 'Prev'  # Prev button is now enabled
+        click_button 'Prev'
+        assert_no_selector 'button:not([disabled])', text: 'Prev'  # Prev button is again disabled
+
+        # Click Next until last page is reached and verify that it is disabled
+        (0..20).each do |i|   # currently we only have 4 pages, and don't expect to have more than 20 in future
+          click_button 'Next'
+          begin
+            find('button:not([disabled])', text: 'Next')
+          rescue => e
+            break
+          end
+        end
+        assert_no_selector 'button:not([disabled])', text: 'Next'  # Next button is disabled
+        assert_selector 'button:not([disabled])', text: 'Prev'     # Prev button is enabled
+        click_button 'Prev'
+        assert_selector 'button:not([disabled])', text: 'Next'     # Next button is now enabled
+
+        first('button', text: 'x').click
+      end
+      assert_text 'Active pipelines' # seeing dashboard now
     end
-    assert_text 'Active pipelines' # seeing dashboard now
   end
 
   test "test arvados_public_data_doc_url config unset" do
@@ -199,8 +191,8 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       find('.help-menu > a').click
 
       assert_no_selector 'a', text:'Public Pipelines and Data sets'
+      assert_no_selector 'a', text:'Getting Started ...'
 
-      assert_selector 'a', text:'Getting Started ...'
       assert page.has_link?('Tutorials and User guide'), 'No link - Tutorials and User guide'
       assert page.has_link?('API Reference'), 'No link - API Reference'
       assert page.has_link?('SDK Reference'), 'No link - SDK Reference'

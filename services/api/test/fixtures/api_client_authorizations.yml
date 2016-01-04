@@ -211,6 +211,12 @@ active_no_prefs_profile_with_getting_started_shown:
   api_token: 3kg612cdc0f3415c245786758f33bdfb07babcd1b00e86qdmi
   expires_at: 2038-01-01 00:00:00
 
+active_with_prefs_profile_no_getting_started_shown:
+  api_client: untrusted
+  user: active_with_prefs_profile_no_getting_started_shown
+  api_token: 3kg612cdc0f3415c245786758f33bdfb07befgh1b00e86qdmi
+  expires_at: 2038-01-01 00:00:00
+
 user_foo_in_sharing_group:
   api_client: untrusted
   user: user_foo_in_sharing_group
