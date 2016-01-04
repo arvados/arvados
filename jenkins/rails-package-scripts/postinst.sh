@@ -64,6 +64,14 @@ run_and_report() {
     return $retcode
 }
 
+setup_confdirs() {
+    for confdir in "$@"; do
+        if [ ! -d "$confdir" ]; then
+            install -d -g "$WWW_OWNER" -m 0750 "$confdir"
+        fi
+    done
+}
+
 setup_conffile() {
     # Usage: setup_conffile CONFFILE_PATH [SOURCE_PATH]
     # Both paths are relative to RELEASE_CONFIG_PATH.
@@ -84,19 +92,27 @@ setup_conffile() {
         if [ ! -e "$release_conffile" ]; then
             ln -s "$etc_conffile" "$release_conffile"
         # If there's a config file in /var/www identical to the one in /etc,
-        # overwrite it with a symlink.
+        # overwrite it with a symlink after porting its permissions.
         elif cmp --quiet "$release_conffile" "$etc_conffile"; then
+            local ownership="$(stat -c "%U:%G" "$release_conffile")"
+            chown "$ownership" "$etc_conffile"
+            chmod --reference="$release_conffile" "$etc_conffile"
+            chgrp "${ownership#*:}" "$CONFIG_PATH" /etc/arvados
+            chmod g+rx "$CONFIG_PATH" /etc/arvados
             ln --force -s "$etc_conffile" "$release_conffile"
         fi
     fi
 
     if [ -n "$conffile_source" ]; then
-        cp --no-clobber "$RELEASE_CONFIG_PATH/$conffile_source" "$etc_conffile"
+        if [ ! -e "$etc_conffile" ]; then
+            install -g "$WWW_OWNER" -m 0640 \
+                    "$RELEASE_CONFIG_PATH/$conffile_source" "$etc_conffile"
+            return 1
         # Even if $etc_conffile already existed, it might be unmodified from
         # the source.  This is especially likely when a user installs, updates
         # database.yml, then reconfigures before they update application.yml.
         # Use cmp to be sure whether $etc_conffile is modified.
-        if cmp --quiet "$RELEASE_CONFIG_PATH/$conffile_source" "$etc_conffile"; then
+        elif cmp --quiet "$RELEASE_CONFIG_PATH/$conffile_source" "$etc_conffile"; then
             return 1
         fi
     fi
@@ -137,14 +153,14 @@ configure_version() {
   if [ -e /etc/redhat-release ]; then
       # Recognize any service that starts with "nginx"; e.g., nginx16.
       if [ "$WEB_SERVICE" != "${WEB_SERVICE#nginx}" ]; then
-        WWW_OWNER=nginx:nginx
+        WWW_OWNER=nginx
       else
-        WWW_OWNER=apache:apache
+        WWW_OWNER=apache
       fi
   else
       # Assume we're on a Debian-based system for now.
       # Both Apache and Nginx run as www-data by default.
-      WWW_OWNER=www-data:www-data
+      WWW_OWNER=www-data
   fi
 
   echo
@@ -154,7 +170,7 @@ configure_version() {
   echo
 
   echo -n "Creating symlinks to configuration in $CONFIG_PATH ..."
-  mkdir -p $CONFIG_PATH
+  setup_confdirs /etc/arvados "$CONFIG_PATH"
   setup_conffile environments/production.rb environments/production.rb.example \
       || true
   setup_conffile application.yml application.yml.example || APPLICATION_READY=0
@@ -182,21 +198,20 @@ configure_version() {
 
   echo -n "Ensuring directory and file permissions ..."
   # Ensure correct ownership of a few files
-  chown "$WWW_OWNER" $RELEASE_PATH/config/environment.rb
-  chown "$WWW_OWNER" $RELEASE_PATH/config.ru
-  chown "$WWW_OWNER" $RELEASE_PATH/Gemfile.lock
-  chown -R "$WWW_OWNER" $RELEASE_PATH/tmp
-  chown -R "$WWW_OWNER" $SHARED_PATH/log
+  chown "$WWW_OWNER:" $RELEASE_PATH/config/environment.rb
+  chown "$WWW_OWNER:" $RELEASE_PATH/config.ru
+  chown "$WWW_OWNER:" $RELEASE_PATH/Gemfile.lock
+  chown -R "$WWW_OWNER:" $RELEASE_PATH/tmp
+  chown -R "$WWW_OWNER:" $SHARED_PATH/log
   case "$RAILSPKG_DATABASE_LOAD_TASK" in
-      db:schema:load) chown "$WWW_OWNER" $RELEASE_PATH/db/schema.rb ;;
-      db:structure:load) chown "$WWW_OWNER" $RELEASE_PATH/db/structure.sql ;;
+      db:schema:load) chown "$WWW_OWNER:" $RELEASE_PATH/db/schema.rb ;;
+      db:structure:load) chown "$WWW_OWNER:" $RELEASE_PATH/db/structure.sql ;;
   esac
   chmod 644 $SHARED_PATH/log/*
   chmod -R 2775 $RELEASE_PATH/tmp
   echo "... done."
 
   if [ -n "$RAILSPKG_DATABASE_LOAD_TASK" ]; then
-      chown "$WWW_OWNER" $RELEASE_PATH/config/database.yml
       prepare_database
   fi
 
@@ -213,7 +228,7 @@ configure_version() {
   else
       echo "Precompiling assets... skipped."
   fi
-  chown -R "$WWW_OWNER" $RELEASE_PATH/tmp
+  chown -R "$WWW_OWNER:" $RELEASE_PATH/tmp
 
   if [ ! -z "$WEB_SERVICE" ]; then
       service "$WEB_SERVICE" restart
