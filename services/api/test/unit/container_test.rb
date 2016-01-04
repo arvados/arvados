@@ -2,92 +2,90 @@ require 'test_helper'
 
 class ContainerTest < ActiveSupport::TestCase
   def check_illegal_modify c
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.command = ["echo", "bar"]
-        c.save!
-      end
+    c.reload
+    c.command = ["echo", "bar"]
+    assert_raises(ActiveRecord::RecordInvalid) do
+      c.save!
+    end
 
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.container_image = "img2"
-        c.save!
-      end
+    c.reload
+    c.container_image = "img2"
+    assert_raises(ActiveRecord::RecordInvalid) do
+      c.save!
+    end
 
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.cwd = "/tmp2"
-        c.save!
-      end
+    c.reload
+    c.cwd = "/tmp2"
+    assert_raises(ActiveRecord::RecordInvalid) do
+      c.save!
+    end
 
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.environment = {"FOO" => "BAR"}
-        c.save!
-      end
+    c.reload
+    c.environment = {"FOO" => "BAR"}
+    assert_raises(ActiveRecord::RecordInvalid) do
+      c.save!
+    end
 
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.mounts = {"FOO" => "BAR"}
-        c.save!
-      end
+    c.reload
+    c.mounts = {"FOO" => "BAR"}
+    assert_raises(ActiveRecord::RecordInvalid) do
+      c.save!
+    end
 
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.output_path = "/tmp3"
-        c.save!
-      end
+    c.reload
+    c.output_path = "/tmp3"
+    assert_raises(ActiveRecord::RecordInvalid) do
+      c.save!
+    end
 
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.runtime_constraints = {"FOO" => "BAR"}
-        c.save!
-      end
-
+    c.reload
+    c.runtime_constraints = {"FOO" => "BAR"}
+    assert_raises(ActiveRecord::RecordInvalid) do
+      c.save!
+    end
   end
 
   def check_bogus_states c
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.state = nil
-        c.save!
-      end
+    c.reload
+    c.state = nil
+    assert_raises(ActiveRecord::RecordInvalid) do
+      c.save!
+    end
 
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.state = "Flubber"
-        c.save!
-      end
+    c.reload
+    c.state = "Flubber"
+    assert_raises(ActiveRecord::RecordInvalid) do
+      c.save!
+    end
   end
 
   def check_no_change_from_complete c
-      check_illegal_modify c
-      check_bogus_states c
+    check_illegal_modify c
+    check_bogus_states c
 
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.priority = 3
-        c.save!
-      end
+    c.reload
+    c.priority = 3
+    assert_raises(ActiveRecord::RecordInvalid) do
+      c.save!
+    end
 
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.state = "Queued"
-        c.save!
-      end
+    c.reload
+    c.state = "Queued"
+    assert_raises(ActiveRecord::RecordInvalid) do
+      c.save!
+    end
 
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.state = "Running"
-        c.save!
-      end
+    c.reload
+    c.state = "Running"
+    assert_raises(ActiveRecord::RecordInvalid) do
+      c.save!
+    end
 
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.state = "Complete"
-        c.save!
-      end
-
+    c.reload
+    c.state = "Complete"
+    assert_raises(ActiveRecord::RecordInvalid) do
+      c.save!
+    end
   end
 
   test "Container create" do
@@ -120,9 +118,9 @@ class ContainerTest < ActiveSupport::TestCase
       c.output_path = "/tmp"
       c.save!
 
+      c.reload
+      c.state = "Complete"
       assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.state = "Complete"
         c.save!
       end
 
@@ -133,9 +131,9 @@ class ContainerTest < ActiveSupport::TestCase
       check_illegal_modify c
       check_bogus_states c
 
+      c.reload
+      c.state = "Queued"
       assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.state = "Queued"
         c.save!
       end
 
@@ -209,16 +207,16 @@ class ContainerTest < ActiveSupport::TestCase
       c.state = "Running"
       c.save!
 
+      c.reload
+      c.exit_code = 1
       assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.exit_code = 1
         c.save!
       end
 
+      c.reload
+      c.exit_code = 1
+      c.state = "Cancelled"
       assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.exit_code = 1
-        c.state = "Cancelled"
         c.save!
       end
 
@@ -226,9 +224,6 @@ class ContainerTest < ActiveSupport::TestCase
       c.exit_code = 1
       c.state = "Complete"
       c.save!
-
     end
   end
-
-
 end
