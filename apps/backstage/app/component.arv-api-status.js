@@ -34,7 +34,7 @@ function ArvApiStatusComponent(connection) {
             return !vm.dd() ? {} : {
                 apiVersion: vm.dd().version + ' (' + vm.dd().revision + ')',
                 sourceVersion: m('a', {
-                    href: 'https://arvados.org/projects/arvados/repository/changes?rev=' + vm.dd().source_version
+                    href: 'https://dev.arvados.org/projects/arvados/repository/changes?rev=' + vm.dd().source_version.replace(/-.*/,'')
                 }, vm.dd().source_version),
                 generatedAt: vm.dd().generatedAt,
                 websocket: util.choose(vm.connection.webSocket().readyState, {
