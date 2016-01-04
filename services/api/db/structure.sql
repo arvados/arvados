@@ -337,7 +337,8 @@ CREATE TABLE containers (
     container_image character varying(255),
     progress double precision,
     priority integer,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    exit_code integer
 );
 
 
@@ -2566,3 +2567,5 @@ INSERT INTO schema_migrations (version) VALUES ('20150526180251');
 INSERT INTO schema_migrations (version) VALUES ('20151202151426');
 
 INSERT INTO schema_migrations (version) VALUES ('20151215134304');
+
+INSERT INTO schema_migrations (version) VALUES ('20151229214707');
