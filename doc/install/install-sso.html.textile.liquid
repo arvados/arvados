@@ -128,7 +128,7 @@ Enter password for new role: <span class="userinput">paste-database-password-you
 Enter it again: <span class="userinput">paste-database-password-you-generated</span>
 </code></pre></notextile>
 
-Rails will take care of creating the database, based on the information from @/etc/arvados/sso/database.yml@. 
+Rails will take care of creating the database, based on the information from @/etc/arvados/sso/database.yml@.
 
 Alternatively, if the database user you intend to use for the SSO server should not be allowed to create new databases, the user and the database can be created like this:
 
@@ -141,21 +141,8 @@ Enter it again: <span class="userinput">paste-database-password-you-generated</s
 
 h2(#reconfigure_package). Reconfigure the package
 
-Now that the @/etc/arvados/sso/application.yml@ and @/etc/arvados/sso/database.yml@ files have been updated, we need to reconfigure our installed package. Doing so will create and/or initialize the database and precompile the assets.
-
-On a Debian-based system:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo dpkg-reconfigure arvados-sso-server</span>
-</code></pre>
-</notextile>
-
-On a Red Hat-based system, we need to reinstall the package instead:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo yum reinstall arvados-sso-server</span>
-</code></pre>
-</notextile>
+{% assign railspkg = "arvados-sso-server" %}
+{% include 'install_rails_reconfigure' %}
 
 h2(#client). Create arvados-server client
 
@@ -309,5 +296,3 @@ In order to use Google+ authentication, you must use the <a href="https://consol
 <pre><code>  # Google API tokens required for OAuth2 login.
   google_oauth2_client_id: <span class="userinput">"---YOUR---CLIENT---ID---HERE--"-</span>
   google_oauth2_client_secret: <span class="userinput">"---YOUR---CLIENT---SECRET---HERE--"-</span></code></pre></notextile>
-
-

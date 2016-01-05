@@ -340,14 +340,12 @@ server {
 
 h2. Prepare the API server deployment
 
-Now that all your configuration is in place, run @/usr/local/bin/arvados-api-server-upgrade.sh@.  This will install and check your configuration, install necessary gems, and run any necessary database setup.
+{% assign railspkg = "arvados-api-server" %}
+{% include 'install_rails_reconfigure' %}
 
 {% include 'notebox_begin' %}
-You can safely ignore the following messages if they appear while this script runs:
+You can safely ignore the following messages if they appear while this command runs:
 <pre>Don't run Bundler as root. Bundler can ask for sudo if it is needed, and installing your bundle as root will
 break this application for all non-root users on this machine.</pre>
 <pre>fatal: Not a git repository (or any of the parent directories): .git</pre>
 {% include 'notebox_end' %}
-
-This command aborts when it encounters an error.  It's safe to rerun multiple times, so if there's a problem with your configuration, you can fix that and try again.
-
