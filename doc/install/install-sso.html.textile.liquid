@@ -159,17 +159,18 @@ On a Red Hat-based system, we need to reinstall the package instead:
 
 h2(#client). Create arvados-server client
 
-Use @rails console@ to create a @Client@ record that will be used by the Arvados API server.  The values of @app_id@ and @app_secret@ correspond to the values for @sso_app_id@ and @sso_app_secret@ in the "API server's SSO settings.":install-api-server.html#omniauth
+{% assign railshost = "" %}
+{% assign railsdir = "/var/www/arvados-sso/current" %}
+Use @rails console@ to create a @Client@ record that will be used by the Arvados API server.  {% include 'install_rails_command' %}
+
+Enter the following commands at the console.  The values that appear after you assign @app_id@ and @app_secret@ correspond to the values for @sso_app_id@ and @sso_app_secret@, respectively, in the "API server's SSO settings":install-api-server.html#omniauth.
 
 <notextile>
-<pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**400).to_s(36)'</span>
-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-~$ <span class="userinput">cd /var/www/arvados-sso/current</span>
-/var/www/arvados-sso/current$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
-:001 &gt; <span class="userinput">c = Client.new</span>
+<pre><code>:001 &gt; <span class="userinput">c = Client.new</span>
 :002 &gt; <span class="userinput">c.name = "joshid"</span>
 :003 &gt; <span class="userinput">c.app_id = "arvados-server"</span>
-:004 &gt; <span class="userinput">c.app_secret = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"</span>
+:004 &gt; <span class="userinput">c.app_secret = rand(2**400).to_s(36)</span>
+=&gt; "<strong>save this string for your API server's sso_app_secret</strong>"
 :005 &gt; <span class="userinput">c.save!</span>
 :006 &gt; <span class="userinput">quit</span>
 </code></pre>
@@ -245,11 +246,12 @@ There are two configuration options for local accounts:
 
 For more information about configuring backend support for sending email (required to send email confirmations) see "Configuring Action Mailer":http://guides.rubyonrails.org/configuring.html#configuring-action-mailer
 
-If @allow_account_registration@ is false, you may manually create local accounts on the SSO server from the rails console:
+If @allow_account_registration@ is false, you may manually create local accounts on the SSO server from the Rails console.  {% include 'install_rails_command' %}
+
+Enter the following commands at the console.
 
 <notextile>
-<pre><code>~$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
-:001 &gt; <span class="userinput">user = User.new(:email =&gt; "test@example.com")</span>
+<pre><code>:001 &gt; <span class="userinput">user = User.new(:email =&gt; "test@example.com")</span>
 :002 &gt; <span class="userinput">user.password = "passw0rd"</span>
 :003 &gt; <span class="userinput">user.save!</span>
 :004 &gt; <span class="userinput">quit</span>

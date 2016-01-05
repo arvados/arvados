@@ -183,10 +183,11 @@ h2. Trusted client setting
 
 Log in to Workbench once to ensure that the Arvados API server has a record of the Workbench client. (It's OK if Workbench says your account hasn't been activated yet. We'll deal with that next.)
 
-In the <strong>API server</strong> project root, start the rails console.  Locate the ApiClient record for your Workbench installation (typically, while you're setting this up, the @last@ one in the database is the one you want), then set the @is_trusted@ flag for the appropriate client record:
+In the <strong>API server</strong> project root, start the Rails console.  {% include 'install_rails_command' %}
 
-<notextile><pre><code>/var/www/arvados-api/current$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
-irb(main):001:0&gt; <span class="userinput">wb = ApiClient.all.last; [wb.url_prefix, wb.created_at]</span>
+At the console, enter the following commands to locate the ApiClient record for your Workbench installation (typically, while you're setting this up, the @last@ one in the database is the one you want), then set the @is_trusted@ flag for the appropriate client record:
+
+<notextile><pre><code>irb(main):001:0&gt; <span class="userinput">wb = ApiClient.all.last; [wb.url_prefix, wb.created_at]</span>
 =&gt; ["https://workbench.example.com/", Sat, 19 Apr 2014 03:35:12 UTC +00:00]
 irb(main):002:0&gt; <span class="userinput">include CurrentApiClient</span>
 =&gt; true
@@ -197,11 +198,12 @@ irb(main):003:0&gt; <span class="userinput">act_as_system_user do wb.update_attr
 
 h2(#admin-user). Add an admin user
 
-Next, we're going to use the rails console on the <strong>API server</strong> to activate our own account and give yourself admin privileges:
+Next, we're going to use the Rails console on the <strong>API server</strong> to activate your account and give yourself admin privileges.  {% include 'install_rails_command' %}
+
+Enter the following commands at the console:
 
 <notextile>
-<pre><code>/var/www/arvados-api/current$ <span class="userinput">RAILS_ENV=production bundle exec rails console</span>
-irb(main):001:0&gt; <span class="userinput">Thread.current[:user] = User.all.select(&:identity_url).last</span>
+<pre><code>irb(main):001:0&gt; <span class="userinput">Thread.current[:user] = User.all.select(&:identity_url).last</span>
 irb(main):002:0&gt; <span class="userinput">Thread.current[:user].update_attributes is_admin: true, is_active: true</span>
 irb(main):003:0&gt; <span class="userinput">User.where(is_admin: true).collect &:email</span>
 =&gt; ["root", "<b>your_address@example.com</b>"]
