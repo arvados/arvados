@@ -245,6 +245,19 @@ active_no_prefs_profile_with_getting_started_shown:
     test: abc
     getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
+active_with_prefs_profile_no_getting_started_shown:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-nogettinstarted
+  email: active_nogettinstarted@arvados.local
+  first_name: HasPrefsProfile
+  last_name: NoGettingStartedShown
+  identity_url: https://active_nogettinstarted.openid.local
+  is_active: true
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
+
 # Fixtures to test granting and removing permissions.
 
 user_foo_in_sharing_group:

@@ -137,6 +137,8 @@ class UserProfileTest < ActionDispatch::IntegrationTest
 
     test "visit home page when profile is configured for user #{token}" do
       # Our test config enabled profile by default. So, no need to update config
+      Rails.configuration.enable_getting_started_popup = true
+
       if !token
         visit ('/')
       else
@@ -148,6 +150,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
 
     test "visit home page when profile not configured for user #{token}" do
       Rails.configuration.user_profile_form_fields = false
+      Rails.configuration.enable_getting_started_popup = true
 
       if !token
         visit ('/')

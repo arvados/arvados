@@ -159,10 +159,12 @@
               <li role="presentation" class="dropdown-header">
                 Help
               </li>
-              <li>
-              <%= link_to raw('<i class="fa fa-fw fa-info"></i> Getting Started ...'), "#",
-                   {'data-toggle' => "modal", 'data-target' => '#getting-started-modal-window'}  %>
-              </li>
+              <% if Rails.configuration.enable_getting_started_popup %>
+                <li>
+                <%= link_to raw('<i class="fa fa-fw fa-info"></i> Getting Started ...'), "#",
+                     {'data-toggle' => "modal", 'data-target' => '#getting-started-modal-window'}  %>
+                </li>
+              <% end %>
               <% if Rails.configuration.arvados_public_data_doc_url %>
                 <li><%= link_to raw('<i class="fa fa-book fa-fw"></i> Public Pipelines and Data sets'), "#{Rails.configuration.arvados_public_data_doc_url}", target: "_blank" %></li>
               <% end %>
@@ -290,7 +292,7 @@
 <div id="report-issue-modal-window"></div>
 <script src="/browser_unsupported.js"></script>
 
-<%  if current_user and !current_user.prefs[:getting_started_shown] and
+<%  if Rails.configuration.enable_getting_started_popup and current_user and !current_user.prefs[:getting_started_shown] and
        !request.url.include?("/profile") and
        !request.url.include?("/user_agreements") and
        !request.url.include?("/inactive")%>
