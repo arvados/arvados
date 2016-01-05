@@ -100,6 +100,15 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if r.Header.Get("Origin") != "" {
+		// Allow simple cross-origin requests without user
+		// credentials ("user credentials" as defined by CORS,
+		// i.e., cookies, HTTP authentication, and client-side
+		// SSL certificates. See
+		// http://www.w3.org/TR/cors/#user-credentials).
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+	}
+
 	arv := clientPool.Get()
 	if arv == nil {
 		statusCode, statusText = http.StatusInternalServerError, "Pool failed: "+clientPool.Err().Error()
@@ -149,7 +158,24 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		statusCode = http.StatusNotFound
 		return
 	}
-	if t := r.FormValue("api_token"); t != "" {
+
+	formToken := r.FormValue("api_token")
+	if formToken != "" && r.Header.Get("Origin") != "" && attachment && r.URL.Query().Get("api_token") == "" {
+		// The client provided an explicit token in the POST
+		// body. The Origin header indicates this *might* be
+		// an AJAX request, in which case redirect-with-cookie
+		// won't work: we should just serve the content in the
+		// POST response. This is safe because:
+		//
+		// * We're supplying an attachment, not inline
+		//   content, so we don't need to convert the POST to
+		//   a GET and avoid the "really resubmit form?"
+		//   problem.
+		//
+		// * The token isn't embedded in the URL, so we don't
+		//   need to worry about bookmarks and copy/paste.
+		tokens = append(tokens, formToken)
+	} else if formToken != "" {
 		// The client provided an explicit token in the query
 		// string, or a form in POST body. We must put the
 		// token in an HttpOnly cookie, and redirect to the
@@ -179,7 +205,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 
 		http.SetCookie(w, &http.Cookie{
 			Name:     "arvados_api_token",
-			Value:    auth.EncodeTokenCookie([]byte(t)),
+			Value:    auth.EncodeTokenCookie([]byte(formToken)),
 			Path:     "/",
 			HttpOnly: true,
 		})

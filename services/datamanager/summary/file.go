@@ -28,7 +28,7 @@ var (
 // DataFetcher to fetch data from keep servers
 type DataFetcher func(arvLogger *logger.Logger,
 	readCollections *collection.ReadCollections,
-	keepServerInfo *keep.ReadServers)
+	keepServerInfo *keep.ReadServers) error
 
 func init() {
 	flag.StringVar(&WriteDataTo,
@@ -86,33 +86,30 @@ func ShouldReadData() bool {
 // working with stale data.
 func ReadData(arvLogger *logger.Logger,
 	readCollections *collection.ReadCollections,
-	keepServerInfo *keep.ReadServers) {
+	keepServerInfo *keep.ReadServers) error {
 	if readDataFrom == "" {
-		readCollections.Err = fmt.Errorf("ReadData() called with empty filename.")
-		return
-	} else {
-		summaryFile, err := os.Open(readDataFrom)
-		if err != nil {
-			readCollections.Err = err
-			return
-		}
-		defer summaryFile.Close()
-
-		dec := gob.NewDecoder(summaryFile)
-		data := serializedData{}
-		err = dec.Decode(&data)
-		if err != nil {
-			readCollections.Err = err
-			return
-		}
-
-		// re-summarize data, so that we can update our summarizing
-		// functions without needing to do all our network i/o
-		data.ReadCollections.Summarize(arvLogger)
-		data.KeepServerInfo.Summarize(arvLogger)
-
-		*readCollections = data.ReadCollections
-		*keepServerInfo = data.KeepServerInfo
-		log.Printf("Read summary data from: %s", readDataFrom)
+		return fmt.Errorf("ReadData() called with empty filename.")
 	}
+	summaryFile, err := os.Open(readDataFrom)
+	if err != nil {
+		return err
+	}
+	defer summaryFile.Close()
+
+	dec := gob.NewDecoder(summaryFile)
+	data := serializedData{}
+	err = dec.Decode(&data)
+	if err != nil {
+		return err
+	}
+
+	// re-summarize data, so that we can update our summarizing
+	// functions without needing to do all our network i/o
+	data.ReadCollections.Summarize(arvLogger)
+	data.KeepServerInfo.Summarize(arvLogger)
+
+	*readCollections = data.ReadCollections
+	*keepServerInfo = data.KeepServerInfo
+	log.Printf("Read summary data from: %s", readDataFrom)
+	return nil
 }

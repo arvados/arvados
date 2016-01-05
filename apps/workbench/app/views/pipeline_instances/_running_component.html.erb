@@ -4,7 +4,7 @@
     <div class="container-fluid">
       <div class="row-fluid">
         <%# column offset 0 %>
-        <div class="col-md-3" style="word-break:break-all;">
+        <div class="col-md-2" style="word-break:break-all;">
           <h4 class="panel-title">
             <a data-toggle="collapse" href="#collapse<%= i %>">
               <%= pj[:name] %> <span class="caret"></span>
@@ -12,12 +12,37 @@
           </h4>
         </div>
 
-        <%# column offset 3 %>
+        <%# column offset 2 %>
         <div class="col-md-2 pipeline-instance-spacing">
           <%= pj[:progress_bar] %>
         </div>
 
-        <% if current_job %>
+        <%# column offset 4 %>
+        <% if not current_job %>
+          <div class="col-md-8"></div>
+        <% else %>
+          <div class="col-md-1">
+            <% if (pipeline_display rescue nil) %>
+              <% if current_job[:state].in? ["Complete", "Failed", "Cancelled"] %>
+                <% if current_job[:log] %>
+                  <% logCollection = Collection.find? current_job[:log] %>
+                  <% if logCollection %>
+                    <%= link_to "Log", job_path(current_job[:uuid], anchor: "Log") %>
+                  <% else %>
+                    Log unavailable
+                  <% end %>
+                <% end %>
+              <% elsif current_job[:state] == "Running" %>
+                <% job = Job.find? current_job[:uuid] %>
+                <% if job %>
+                  <%= link_to "Log", job_path(current_job[:uuid], anchor: "Log") %>
+                <% else %>
+                  Log unavailable
+                <% end %>
+              <% end %>
+            <% end %>
+          </div>
+
           <%# column offset 5 %>
           <% if current_job[:state] != "Queued" %>
           <div class="col-md-3">

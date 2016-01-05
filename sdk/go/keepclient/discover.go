@@ -57,14 +57,14 @@ func (kc *KeepClient) RefreshServices(interval, errInterval time.Duration) {
 		timer.Reset(interval)
 
 		if err := kc.DiscoverKeepServers(); err != nil {
-			log.Println("Error retrieving services list: %v (retrying in %v)", err, errInterval)
+			log.Printf("WARNING: Error retrieving services list: %v (retrying in %v)", err, errInterval)
 			timer.Reset(errInterval)
 			continue
 		}
 		newRoots := []map[string]string{kc.LocalRoots(), kc.GatewayRoots()}
 
 		if !reflect.DeepEqual(previousRoots, newRoots) {
-			log.Printf("Updated services list: locals %v gateways %v", newRoots[0], newRoots[1])
+			DebugPrintf("DEBUG: Updated services list: locals %v gateways %v", newRoots[0], newRoots[1])
 			previousRoots = newRoots
 		}
 

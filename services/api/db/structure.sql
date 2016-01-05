@@ -260,6 +260,108 @@ ALTER SEQUENCE commits_id_seq OWNED BY commits.id;
 
 
 --
+-- Name: container_requests; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE container_requests (
+    id integer NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255),
+    created_at timestamp without time zone NOT NULL,
+    modified_at timestamp without time zone,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    name character varying(255),
+    description text,
+    properties text,
+    state character varying(255),
+    requesting_container_uuid character varying(255),
+    container_uuid character varying(255),
+    container_count_max integer,
+    mounts text,
+    runtime_constraints text,
+    container_image character varying(255),
+    environment text,
+    cwd character varying(255),
+    command text,
+    output_path character varying(255),
+    priority integer,
+    expires_at timestamp without time zone,
+    filters text,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: container_requests_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE container_requests_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: container_requests_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE container_requests_id_seq OWNED BY container_requests.id;
+
+
+--
+-- Name: containers; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE containers (
+    id integer NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255),
+    created_at timestamp without time zone NOT NULL,
+    modified_at timestamp without time zone,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    state character varying(255),
+    started_at timestamp without time zone,
+    finished_at timestamp without time zone,
+    log character varying(255),
+    environment text,
+    cwd character varying(255),
+    command text,
+    output_path character varying(255),
+    mounts text,
+    runtime_constraints text,
+    output character varying(255),
+    container_image character varying(255),
+    progress double precision,
+    priority integer,
+    updated_at timestamp without time zone NOT NULL,
+    exit_code integer
+);
+
+
+--
+-- Name: containers_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE containers_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: containers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE containers_id_seq OWNED BY containers.id;
+
+
+--
 -- Name: groups; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -994,6 +1096,20 @@ ALTER TABLE ONLY commits ALTER COLUMN id SET DEFAULT nextval('commits_id_seq'::r
 -- Name: id; Type: DEFAULT; Schema: public; Owner: -
 --
 
+ALTER TABLE ONLY container_requests ALTER COLUMN id SET DEFAULT nextval('container_requests_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY containers ALTER COLUMN id SET DEFAULT nextval('containers_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
 ALTER TABLE ONLY groups ALTER COLUMN id SET DEFAULT nextval('groups_id_seq'::regclass);
 
 
@@ -1148,6 +1264,22 @@ ALTER TABLE ONLY commit_ancestors
 
 ALTER TABLE ONLY commits
     ADD CONSTRAINT commits_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: container_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY container_requests
+    ADD CONSTRAINT container_requests_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: containers_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY containers
+    ADD CONSTRAINT containers_pkey PRIMARY KEY (id);
 
 
 --
@@ -1321,6 +1453,27 @@ CREATE INDEX collections_search_index ON collections USING btree (owner_uuid, mo
 
 
 --
+-- Name: container_requests_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX container_requests_full_text_search_idx ON container_requests USING gin (to_tsvector('english'::regconfig, (((((((((((((((((((((((((((((((((((' '::text || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(description, ''::text)) || ' '::text) || COALESCE(properties, ''::text)) || ' '::text) || (COALESCE(state, ''::character varying))::text) || ' '::text) || (COALESCE(requesting_container_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(container_uuid, ''::character varying))::text) || ' '::text) || COALESCE(mounts, ''::text)) || ' '::text) || COALESCE(runtime_constraints, ''::text)) || ' '::text) || (COALESCE(container_image, ''::character varying))::text) || ' '::text) || COALESCE(environment, ''::text)) || ' '::text) || (COALESCE(cwd, ''::character varying))::text) || ' '::text) || COALESCE(command, ''::text)) || ' '::text) || (COALESCE(output_path, ''::character varying))::text) || ' '::text) || COALESCE(filters, ''::text))));
+
+
+--
+-- Name: container_requests_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX container_requests_search_index ON container_requests USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, state, requesting_container_uuid, container_uuid, container_image, cwd, output_path);
+
+
+--
+-- Name: containers_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX containers_search_index ON containers USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, state, log, cwd, output_path, output, container_image);
+
+
+--
 -- Name: groups_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -1465,6 +1618,34 @@ CREATE UNIQUE INDEX index_commit_ancestors_on_descendant_and_ancestor ON commit_
 --
 
 CREATE UNIQUE INDEX index_commits_on_repository_name_and_sha1 ON commits USING btree (repository_name, sha1);
+
+
+--
+-- Name: index_container_requests_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_container_requests_on_owner_uuid ON container_requests USING btree (owner_uuid);
+
+
+--
+-- Name: index_container_requests_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX index_container_requests_on_uuid ON container_requests USING btree (uuid);
+
+
+--
+-- Name: index_containers_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_containers_on_owner_uuid ON containers USING btree (owner_uuid);
+
+
+--
+-- Name: index_containers_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX index_containers_on_uuid ON containers USING btree (uuid);
 
 
 --
@@ -2382,3 +2563,9 @@ INSERT INTO schema_migrations (version) VALUES ('20150423145759');
 INSERT INTO schema_migrations (version) VALUES ('20150512193020');
 
 INSERT INTO schema_migrations (version) VALUES ('20150526180251');
+
+INSERT INTO schema_migrations (version) VALUES ('20151202151426');
+
+INSERT INTO schema_migrations (version) VALUES ('20151215134304');
+
+INSERT INTO schema_migrations (version) VALUES ('20151229214707');

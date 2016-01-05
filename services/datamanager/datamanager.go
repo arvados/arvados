@@ -108,10 +108,9 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 		dataFetcher = BuildDataFetcher(arv)
 	}
 
-	dataFetcher(arvLogger, &readCollections, &keepServerInfo)
-
-	if readCollections.Err != nil {
-		return readCollections.Err
+	err = dataFetcher(arvLogger, &readCollections, &keepServerInfo)
+	if err != nil {
+		return err
 	}
 
 	err = summary.MaybeWriteData(arvLogger, readCollections, keepServerInfo)
@@ -182,30 +181,35 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 
 // BuildDataFetcher returns a data fetcher that fetches data from remote servers.
 func BuildDataFetcher(arv arvadosclient.ArvadosClient) summary.DataFetcher {
-	return func(arvLogger *logger.Logger,
+	return func(
+		arvLogger *logger.Logger,
 		readCollections *collection.ReadCollections,
-		keepServerInfo *keep.ReadServers) {
-		collectionChannel := make(chan collection.ReadCollections)
-
+		keepServerInfo *keep.ReadServers,
+	) error {
+		collDone := make(chan struct{})
+		var collErr error
 		go func() {
-			collectionChannel <- collection.GetCollectionsAndSummarize(
+			*readCollections, collErr = collection.GetCollectionsAndSummarize(
 				collection.GetCollectionsParams{
 					Client:    arv,
 					Logger:    arvLogger,
 					BatchSize: 50})
+			collDone <- struct{}{}
 		}()
 
-		var err error
-		*keepServerInfo, err = keep.GetKeepServersAndSummarize(
+		var keepErr error
+		*keepServerInfo, keepErr = keep.GetKeepServersAndSummarize(
 			keep.GetKeepServersParams{
 				Client: arv,
 				Logger: arvLogger,
 				Limit:  1000})
 
-		if err != nil {
-			return
-		}
+		<- collDone
 
-		*readCollections = <-collectionChannel
+		// Return a nil error only if both parts succeeded.
+		if collErr != nil {
+			return collErr
+		}
+		return keepErr
 	}
 }

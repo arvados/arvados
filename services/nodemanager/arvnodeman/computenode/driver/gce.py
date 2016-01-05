@@ -34,6 +34,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         super(ComputeNodeDriver, self).__init__(
             auth_kwargs, list_kwargs, create_kwargs,
             driver_class)
+        self._sizes_by_name = {sz.name: sz for sz in self.sizes.itervalues()}
         self._disktype_links = {dt.name: self._object_link(dt)
                                 for dt in self.real.ex_list_disktypes()}
 
@@ -63,7 +64,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             self.create_kwargs['ex_metadata']['sshKeys'] = (
                 'root:' + ssh_file.read().strip())
 
-    def arvados_create_kwargs(self, arvados_node):
+    def arvados_create_kwargs(self, size, arvados_node):
         cluster_id, _, node_id = arvados_node['uuid'].split('-')
         name = 'compute-{}-{}'.format(node_id, cluster_id)
         disks = [
@@ -103,9 +104,16 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
     def list_nodes(self):
         # The GCE libcloud driver only supports filtering node lists by zone.
         # Do our own filtering based on tag list.
-        return [node for node in
-                super(ComputeNodeDriver, self).list_nodes()
-                if self.node_tags.issubset(node.extra.get('tags', []))]
+        nodelist = [node for node in
+                    super(ComputeNodeDriver, self).list_nodes()
+                    if self.node_tags.issubset(node.extra.get('tags', []))]
+        # As of 0.18, the libcloud GCE driver sets node.size to the size's name.
+        # It's supposed to be the actual size object.  Check that it's not,
+        # and monkeypatch the results when that's the case.
+        if nodelist and not hasattr(nodelist[0].size, 'id'):
+            for node in nodelist:
+                node.size = self._sizes_by_name[node.size]
+        return nodelist
 
     @classmethod
     def _find_metadata(cls, metadata_items, key):

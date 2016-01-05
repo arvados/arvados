@@ -155,13 +155,9 @@ func (s *StandaloneSuite) TestUploadToStubKeepServer(c *C) {
 			status := <-upload_status
 			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1, ""})
 		})
-
-	log.Printf("TestUploadToStubKeepServer done")
 }
 
 func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
-	log.Printf("TestUploadToStubKeepServerBufferReader")
-
 	st := StubPutHandler{
 		c,
 		"acbd18db4cc2f85cedef654fccc4a4d8",
@@ -188,8 +184,6 @@ func (s *StandaloneSuite) TestUploadToStubKeepServerBufferReader(c *C) {
 			status := <-upload_status
 			c.Check(status, DeepEquals, uploadStatus{nil, fmt.Sprintf("%s/%s", url, st.expectPath), 200, 1, ""})
 		})
-
-	log.Printf("TestUploadToStubKeepServerBufferReader done")
 }
 
 type FailHandler struct {
@@ -227,8 +221,6 @@ func (fh Error404Handler) ServeHTTP(resp http.ResponseWriter, req *http.Request)
 }
 
 func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
-	log.Printf("TestFailedUploadToStubKeepServer")
-
 	st := FailHandler{
 		make(chan string)}
 
@@ -249,7 +241,6 @@ func (s *StandaloneSuite) TestFailedUploadToStubKeepServer(c *C) {
 			c.Check(status.url, Equals, fmt.Sprintf("%s/%s", url, hash))
 			c.Check(status.statusCode, Equals, 500)
 		})
-	log.Printf("TestFailedUploadToStubKeepServer done")
 }
 
 type KeepServer struct {
@@ -268,8 +259,6 @@ func RunSomeFakeKeepServers(st http.Handler, n int) (ks []KeepServer) {
 }
 
 func (s *StandaloneSuite) TestPutB(c *C) {
-	log.Printf("TestPutB")
-
 	hash := Md5String("foo")
 
 	st := StubPutHandler{
@@ -308,13 +297,9 @@ func (s *StandaloneSuite) TestPutB(c *C) {
 		(s1 == shuff[1] && s2 == shuff[0]),
 		Equals,
 		true)
-
-	log.Printf("TestPutB done")
 }
 
 func (s *StandaloneSuite) TestPutHR(c *C) {
-	log.Printf("TestPutHR")
-
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
 	st := StubPutHandler{
@@ -352,7 +337,6 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 	kc.PutHR(hash, reader, 3)
 
 	shuff := NewRootSorter(kc.LocalRoots(), hash).GetSortedRoots()
-	log.Print(shuff)
 
 	s1 := <-st.handled
 	s2 := <-st.handled
@@ -361,13 +345,9 @@ func (s *StandaloneSuite) TestPutHR(c *C) {
 		(s1 == shuff[1] && s2 == shuff[0]),
 		Equals,
 		true)
-
-	log.Printf("TestPutHR done")
 }
 
 func (s *StandaloneSuite) TestPutWithFail(c *C) {
-	log.Printf("TestPutWithFail")
-
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
 	st := StubPutHandler{
@@ -406,6 +386,7 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 
 	shuff := NewRootSorter(
 		kc.LocalRoots(), Md5String("foo")).GetSortedRoots()
+	c.Logf("%+v", shuff)
 
 	phash, replicas, err := kc.PutB([]byte("foo"))
 
@@ -425,8 +406,6 @@ func (s *StandaloneSuite) TestPutWithFail(c *C) {
 }
 
 func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
-	log.Printf("TestPutWithTooManyFail")
-
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
 	st := StubPutHandler{
@@ -469,8 +448,6 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 	c.Check(err, Equals, InsufficientReplicasError)
 	c.Check(replicas, Equals, 1)
 	c.Check(<-st.handled, Equals, ks1[0].url)
-
-	log.Printf("TestPutWithTooManyFail done")
 }
 
 type StubGetHandler struct {
@@ -490,8 +467,6 @@ func (sgh StubGetHandler) ServeHTTP(resp http.ResponseWriter, req *http.Request)
 }
 
 func (s *StandaloneSuite) TestGet(c *C) {
-	log.Printf("TestGet")
-
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
 	st := StubGetHandler{
@@ -518,8 +493,6 @@ func (s *StandaloneSuite) TestGet(c *C) {
 	content, err2 := ioutil.ReadAll(r)
 	c.Check(err2, Equals, nil)
 	c.Check(content, DeepEquals, []byte("foo"))
-
-	log.Printf("TestGet done")
 }
 
 func (s *StandaloneSuite) TestGet404(c *C) {
@@ -887,8 +860,6 @@ func (this StubProxyHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reque
 }
 
 func (s *StandaloneSuite) TestPutProxy(c *C) {
-	log.Printf("TestPutProxy")
-
 	st := StubProxyHandler{make(chan string, 1)}
 
 	arv, err := arvadosclient.MakeArvadosClient()
@@ -914,13 +885,9 @@ func (s *StandaloneSuite) TestPutProxy(c *C) {
 
 	c.Check(err, Equals, nil)
 	c.Check(replicas, Equals, 2)
-
-	log.Printf("TestPutProxy done")
 }
 
 func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
-	log.Printf("TestPutProxy")
-
 	st := StubProxyHandler{make(chan string, 1)}
 
 	arv, err := arvadosclient.MakeArvadosClient()
@@ -945,8 +912,6 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 
 	c.Check(err, Equals, InsufficientReplicasError)
 	c.Check(replicas, Equals, 2)
-
-	log.Printf("TestPutProxy done")
 }
 
 func (s *StandaloneSuite) TestMakeLocator(c *C) {

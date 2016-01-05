@@ -1,0 +1,2 @@
+class ContainerRequestsController < ApplicationController
+end

@@ -4,6 +4,8 @@ require 'tmpdir'
 require 'integration_helper'
 
 class JobsTest < ActionDispatch::IntegrationTest
+  include KeepWebConfig
+
   setup do
       need_javascript
   end
@@ -41,7 +43,7 @@ class JobsTest < ActionDispatch::IntegrationTest
     visit page_with_token("active", "/jobs/#{job['uuid']}")
     assert page.has_text? job['script_version']
 
-    click_link 'Log'
+    find(:xpath, "//a[@href='#Log']").click
     wait_for_ajax
     assert page.has_text? 'Started at'
     assert page.has_text? 'Finished at'
@@ -61,9 +63,29 @@ class JobsTest < ActionDispatch::IntegrationTest
     visit page_with_token("active", "/jobs/#{job['uuid']}")
     assert page.has_text? job['script_version']
 
-    click_link 'Log'
+    find(:xpath, "//a[@href='#Log']").click
     wait_for_ajax
     assert page.has_text? 'Showing only 100 bytes of this log'
+  end
+
+  test 'view log via keep-web redirect' do
+    use_keep_web_config
+
+    token = api_fixture('api_client_authorizations')['active']['api_token']
+    logdata = fakepipe_with_log_data.read
+    logblock = `echo -n #{logdata.shellescape} | ARVADOS_API_TOKEN=#{token.shellescape} arv-put --no-progress --raw -`.strip
+    assert $?.success?, $?
+
+    job = nil
+    use_token 'active' do
+      job = Job.find api_fixture('jobs')['running']['uuid']
+      mtxt = ". #{logblock} 0:#{logdata.length}:#{job.uuid}.log.txt\n"
+      logcollection = Collection.create(manifest_text: mtxt)
+      job.update_attributes log: logcollection.portable_data_hash
+    end
+    visit page_with_token 'active', '/jobs/'+job.uuid
+    find('a[href="#Log"]').click
+    assert_text 'log message 1'
   end
 
   [

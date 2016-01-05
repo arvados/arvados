@@ -48,18 +48,15 @@ Usage of keep-web:
 </code></pre>
 </notextile>
 
-If you intend to use Keep-web to serve public data to anonymous clients, configure it with an anonymous token. You can use the same one you used when you set up your Keepproxy server, or use the following command on the <strong>API server</strong> to create another:
-
-<notextile>
-<pre><code>/var/www/arvados-api/current/script$ <span class="userinput">RAILS_ENV=production bundle exec ./get_anonymous_user_token.rb</span>
-hoShoomoo2bai3Ju1xahg6aeng1siquuaZ1yae2gi2Uhaeng2r
-</code></pre></notextile>
+{% assign railscmd = "bundle exec ./script/get_anonymous_user_token.rb" %}
+{% assign railsout = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" %}
+If you intend to use Keep-web to serve public data to anonymous clients, configure it with an anonymous token. You can use the same one you used when you set up your Keepproxy server, or use the following command on the <strong>API server</strong> to create another. {% include 'install_rails_command' %}
 
 We recommend running @keep-web@ under "runit":https://packages.debian.org/search?keywords=runit or a similar supervisor. The basic command to start @keep-web@ is:
 
 <notextile>
 <pre><code>export ARVADOS_API_HOST=<span class="userinput">uuid_prefix</span>.your.domain
-export ARVADOS_API_TOKEN="<span class="userinput">hoShoomoo2bai3Ju1xahg6aeng1siquuaZ1yae2gi2Uhaeng2r</span>"
+export ARVADOS_API_TOKEN="<span class="userinput">{{railsout}}</span>"
 exec sudo -u nobody keep-web \
  -listen=<span class="userinput">:9002</span> \
  -attachment-only-host=<span class="userinput">download.uuid_prefix.your.domain</span> \

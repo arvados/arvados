@@ -1,0 +1,3 @@
+class Container < ArvadosBase
+
+end

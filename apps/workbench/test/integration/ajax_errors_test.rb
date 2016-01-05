@@ -7,6 +7,7 @@ class AjaxErrorsTest < ActionDispatch::IntegrationTest
   end
 
   test 'load pane with deleted session' do
+    skip 'unreliable test'
     # Simulate loading a page in browser-tab A, hitting "Log out" in
     # browser-tab B, then returning to browser-tab A and choosing a
     # different tab. (Automatic tab refreshes will behave similarly.)
@@ -22,6 +23,7 @@ class AjaxErrorsTest < ActionDispatch::IntegrationTest
   end
 
   test 'load pane with expired token' do
+    skip 'unreliable test'
     # Similar to 'deleted session'. Here, the session cookie is still
     # alive, but it contains a token which has expired. This uses a
     # different code path because Workbench cannot detect that

@@ -18,9 +18,6 @@ import (
 
 var (
 	HeapProfileFilename string
-	// globals for debugging
-	totalManifestSize uint64
-	maxManifestSize   uint64
 )
 
 // Collection representation
@@ -41,7 +38,6 @@ type ReadCollections struct {
 	CollectionUUIDToIndex     map[string]int
 	CollectionIndexToUUID     []string
 	BlockToCollectionIndices  map[blockdigest.DigestWithSize][]int
-	Err                       error
 }
 
 // GetCollectionsParams params
@@ -96,10 +92,9 @@ func WriteHeapProfile() error {
 }
 
 // GetCollectionsAndSummarize gets collections from api and summarizes
-func GetCollectionsAndSummarize(params GetCollectionsParams) (results ReadCollections) {
-	results, err := GetCollections(params)
+func GetCollectionsAndSummarize(params GetCollectionsParams) (results ReadCollections, err error) {
+	results, err = GetCollections(params)
 	if err != nil {
-		results.Err = err
 		return
 	}
 
@@ -200,13 +195,12 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections, err e
 		}
 
 		// Process collection and update our date filter.
-		var latestModificationDate time.Time
-		latestModificationDate, err = ProcessCollections(params.Logger,
+		latestModificationDate, maxManifestSize, totalManifestSize, err := ProcessCollections(params.Logger,
 			collections.Items,
 			defaultReplicationLevel,
 			results.UUIDToCollection)
 		if err != nil {
-			return
+			return results, err
 		}
 		sdkParams["filters"].([][]string)[0][2] = latestModificationDate.Format(time.RFC3339)
 
@@ -250,7 +244,12 @@ func StrCopy(s string) string {
 func ProcessCollections(arvLogger *logger.Logger,
 	receivedCollections []SdkCollectionInfo,
 	defaultReplicationLevel int,
-	UUIDToCollection map[string]Collection) (latestModificationDate time.Time, err error) {
+	UUIDToCollection map[string]Collection,
+) (
+	latestModificationDate time.Time,
+	maxManifestSize, totalManifestSize uint64,
+	err error,
+) {
 	for _, sdkCollection := range receivedCollections {
 		collection := Collection{UUID: StrCopy(sdkCollection.UUID),
 			OwnerUUID:         StrCopy(sdkCollection.OwnerUUID),
@@ -258,12 +257,13 @@ func ProcessCollections(arvLogger *logger.Logger,
 			BlockDigestToSize: make(map[blockdigest.BlockDigest]int)}
 
 		if sdkCollection.ModifiedAt.IsZero() {
-			return latestModificationDate, fmt.Errorf(
+			err = fmt.Errorf(
 				"Arvados SDK collection returned with unexpected zero "+
 					"modification date. This probably means that either we failed to "+
 					"parse the modification date or the API server has changed how "+
 					"it returns modification dates: %+v",
 				collection)
+			return
 		}
 
 		if sdkCollection.ModifiedAt.After(latestModificationDate) {

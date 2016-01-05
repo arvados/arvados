@@ -2,6 +2,7 @@ require 'open3'
 require 'shellwords'
 
 class CrunchDispatch
+  extend DbCurrentTime
   include ApplicationHelper
   include Process
 
@@ -22,6 +23,7 @@ class CrunchDispatch
     end
 
     @docker_bin = ENV['CRUNCH_JOB_DOCKER_BIN']
+    @docker_run_args = ENV['CRUNCH_JOB_DOCKER_RUN_ARGS']
 
     @arvados_internal = Rails.configuration.git_internal_dir
     if not File.exists? @arvados_internal
@@ -193,7 +195,7 @@ class CrunchDispatch
     nodelist
   end
 
-  def fail_job job, message
+  def fail_job job, message, skip_lock: false
     $stderr.puts "dispatch: #{job.uuid}: #{message}"
     begin
       Log.new(object_uuid: job.uuid,
@@ -205,7 +207,7 @@ class CrunchDispatch
       $stderr.puts "dispatch: log.create failed"
     end
 
-    if not have_job_lock?(job)
+    if not skip_lock and not have_job_lock?(job)
       begin
         job.lock @authorizations[job.uuid].user.uuid
       rescue ArvadosModel::AlreadyLockedError
@@ -338,16 +340,7 @@ class CrunchDispatch
         raise "Unknown crunch_job_wrapper: #{Server::Application.config.crunch_job_wrapper}"
       end
 
-      if Server::Application.config.crunch_job_user
-        cmd_args.unshift("sudo", "-E", "-u",
-                         Server::Application.config.crunch_job_user,
-                         "LD_LIBRARY_PATH=#{ENV['LD_LIBRARY_PATH']}",
-                         "PATH=#{ENV['PATH']}",
-                         "PERLLIB=#{ENV['PERLLIB']}",
-                         "PYTHONPATH=#{ENV['PYTHONPATH']}",
-                         "RUBYLIB=#{ENV['RUBYLIB']}",
-                         "GEM_PATH=#{ENV['GEM_PATH']}")
-      end
+      cmd_args = sudo_preface + cmd_args
 
       next unless get_authorization job
 
@@ -361,7 +354,7 @@ class CrunchDispatch
         # reasonable thing to do at this point.
         repo = Repository.where(name: job.repository).first
         if repo.nil? or repo.server_path.nil?
-          fail_job "Repository #{job.repository} not found under #{@repo_root}"
+          fail_job job, "Repository #{job.repository} not found under #{@repo_root}"
           next
         end
         ready &&= get_commit repo.server_path, job.script_version
@@ -393,6 +386,10 @@ class CrunchDispatch
 
       if @docker_bin
         cmd_args += ['--docker-bin', @docker_bin]
+      end
+
+      if @docker_run_args
+        cmd_args += ['--docker-run-args', @docker_run_args]
       end
 
       if have_job_lock?(job)
@@ -805,6 +802,51 @@ class CrunchDispatch
     end
   end
 
+  def fail_jobs before: nil
+    act_as_system_user do
+      threshold = nil
+      if before == 'reboot'
+        boottime = nil
+        open('/proc/stat').map(&:split).each do |stat, t|
+          if stat == 'btime'
+            boottime = t
+          end
+        end
+        if not boottime
+          raise "Could not find btime in /proc/stat"
+        end
+        threshold = Time.at(boottime.to_i)
+      elsif before
+        threshold = Time.parse(before, Time.now)
+      else
+        threshold = db_current_time
+      end
+      Rails.logger.info "fail_jobs: threshold is #{threshold}"
+
+      if Rails.configuration.crunch_job_wrapper == :slurm_immediate
+        # [["slurm_job_id", "slurm_job_name"], ...]
+        squeue = File.popen(['squeue', '-h', '-o', '%i %j']).readlines.map do |line|
+          line.strip.split(' ', 2)
+        end
+      else
+        squeue = []
+      end
+
+      Job.where('state = ? and started_at < ?', Job::Running, threshold).
+        each do |job|
+        Rails.logger.debug "fail_jobs: #{job.uuid} started #{job.started_at}"
+        squeue.each do |slurm_id, slurm_name|
+          if slurm_name == job.uuid
+            Rails.logger.info "fail_jobs: scancel #{slurm_id} for #{job.uuid}"
+            scancel slurm_id
+          end
+        end
+        fail_job(job, "cleaned up stale job: started before #{threshold}",
+                 skip_lock: true)
+      end
+    end
+  end
+
   protected
 
   def have_job_lock?(job)
@@ -845,5 +887,25 @@ class CrunchDispatch
       running_job[:stderr_buf_to_flush] = ''
       running_job[:stderr_flushed_at] = Time.now
     end
+  end
+
+  def scancel slurm_id
+    cmd = sudo_preface + ['scancel', slurm_id]
+    puts File.popen(cmd).read
+    if not $?.success?
+      Rails.logger.error "scancel #{slurm_id.shellescape}: $?"
+    end
+  end
+
+  def sudo_preface
+    return [] if not Server::Application.config.crunch_job_user
+    ["sudo", "-E", "-u",
+     Server::Application.config.crunch_job_user,
+     "LD_LIBRARY_PATH=#{ENV['LD_LIBRARY_PATH']}",
+     "PATH=#{ENV['PATH']}",
+     "PERLLIB=#{ENV['PERLLIB']}",
+     "PYTHONPATH=#{ENV['PYTHONPATH']}",
+     "RUBYLIB=#{ENV['RUBYLIB']}",
+     "GEM_PATH=#{ENV['GEM_PATH']}"]
   end
 end

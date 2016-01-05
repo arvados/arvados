@@ -28,6 +28,8 @@ Server::Application.routes.draw do
       end
       resources :humans
       resources :job_tasks
+      resources :containers
+      resources :container_requests
       resources :jobs do
         get 'queue', on: :collection
         get 'queue_size', on: :collection

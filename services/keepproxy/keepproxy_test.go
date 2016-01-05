@@ -43,7 +43,7 @@ func waitForListener() {
 	const (
 		ms = 5
 	)
-	for i := 0; listener == nil && i < 1000; i += ms {
+	for i := 0; listener == nil && i < 10000; i += ms {
 		time.Sleep(ms * time.Millisecond)
 	}
 	if listener == nil {

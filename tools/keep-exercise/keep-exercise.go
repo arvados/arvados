@@ -36,6 +36,8 @@ var (
 	VaryThread    = flag.Bool("vary-thread", false, "use -wthreads different data blocks")
 	Replicas      = flag.Int("replicas", 1, "replication level for writing")
 	StatsInterval = flag.Duration("stats-interval", time.Second, "time interval between IO stats reports, or 0 to disable")
+	ServiceURL    = flag.String("url", "", "specify scheme://host of a single keep service to exercise (instead of using all advertised services like normal clients)")
+	ServiceUUID   = flag.String("uuid", "", "specify UUID of a single advertised keep service to exercise")
 )
 
 func main() {
@@ -51,6 +53,8 @@ func main() {
 	}
 	kc.Want_replicas = *Replicas
 	kc.Client.Timeout = 10 * time.Minute
+
+	overrideServices(kc)
 
 	nextBuf := make(chan []byte, *WriteThreads)
 	nextLocator := make(chan string, *ReadThreads+*WriteThreads)
@@ -109,6 +113,7 @@ func makeBufs(nextBuf chan []byte, threadID int) {
 	}
 	for {
 		if *VaryRequest {
+			buf = make([]byte, *BlockSize)
 			if _, err := io.ReadFull(rand.Reader, buf); err != nil {
 				log.Fatal(err)
 			}
@@ -154,4 +159,24 @@ func doReads(kc *keepclient.KeepClient, nextLocator chan string) {
 		}
 		bytesInChan <- uint64(n)
 	}
+}
+
+func overrideServices(kc *keepclient.KeepClient) {
+	roots := make(map[string]string)
+	if *ServiceURL != "" {
+		roots["zzzzz-bi6l4-000000000000000"] = *ServiceURL
+	} else if *ServiceUUID != "" {
+		for uuid, url := range kc.GatewayRoots() {
+			if uuid == *ServiceUUID {
+				roots[uuid] = url
+				break
+			}
+		}
+		if len(roots) == 0 {
+			log.Fatalf("Service %q was not in list advertised by API %+q", *ServiceUUID, kc.GatewayRoots())
+		}
+	} else {
+		return
+	}
+	kc.SetServiceRoots(roots, roots, roots)
 }

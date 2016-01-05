@@ -11,12 +11,14 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/curoverse/azure-sdk-for-go/storage"
 )
 
 var (
+	azureMaxGetBytes           int
 	azureStorageAccountName    string
 	azureStorageAccountKeyFile string
 	azureStorageReplication    int
@@ -85,6 +87,11 @@ func init() {
 		"azure-storage-replication",
 		3,
 		"Replication level to report to clients when data is stored in an Azure container.")
+	flag.IntVar(
+		&azureMaxGetBytes,
+		"azure-max-get-bytes",
+		BlockSize,
+		fmt.Sprintf("Maximum bytes to request in a single GET request. If smaller than %d, use multiple concurrent range requests to retrieve a block.", BlockSize))
 }
 
 // An AzureBlobVolume stores and retrieves blocks in an Azure Blob
@@ -163,20 +170,72 @@ func (v *AzureBlobVolume) Get(loc string) ([]byte, error) {
 }
 
 func (v *AzureBlobVolume) get(loc string) ([]byte, error) {
-	rdr, err := v.bsClient.GetBlob(v.containerName, loc)
-	if err != nil {
-		return nil, v.translateError(err)
+	expectSize := BlockSize
+	if azureMaxGetBytes < BlockSize {
+		// Unfortunately the handler doesn't tell us how long the blob
+		// is expected to be, so we have to ask Azure.
+		props, err := v.bsClient.GetBlobProperties(v.containerName, loc)
+		if err != nil {
+			return nil, v.translateError(err)
+		}
+		if props.ContentLength > int64(BlockSize) || props.ContentLength < 0 {
+			return nil, fmt.Errorf("block %s invalid size %d (max %d)", loc, props.ContentLength, BlockSize)
+		}
+		expectSize = int(props.ContentLength)
 	}
-	defer rdr.Close()
-	buf := bufs.Get(BlockSize)
-	n, err := io.ReadFull(rdr, buf)
-	switch err {
-	case nil, io.EOF, io.ErrUnexpectedEOF:
-		return buf[:n], nil
-	default:
-		bufs.Put(buf)
-		return nil, err
+
+	buf := bufs.Get(expectSize)
+	if expectSize == 0 {
+		return buf, nil
 	}
+
+	// We'll update this actualSize if/when we get the last piece.
+	actualSize := -1
+	pieces := (expectSize + azureMaxGetBytes - 1) / azureMaxGetBytes
+	errors := make([]error, pieces)
+	var wg sync.WaitGroup
+	wg.Add(pieces)
+	for p := 0; p < pieces; p++ {
+		go func(p int) {
+			defer wg.Done()
+			startPos := p * azureMaxGetBytes
+			endPos := startPos + azureMaxGetBytes
+			if endPos > expectSize {
+				endPos = expectSize
+			}
+			var rdr io.ReadCloser
+			var err error
+			if startPos == 0 && endPos == expectSize {
+				rdr, err = v.bsClient.GetBlob(v.containerName, loc)
+			} else {
+				rdr, err = v.bsClient.GetBlobRange(v.containerName, loc, fmt.Sprintf("%d-%d", startPos, endPos-1))
+			}
+			if err != nil {
+				errors[p] = err
+				return
+			}
+			defer rdr.Close()
+			n, err := io.ReadFull(rdr, buf[startPos:endPos])
+			if pieces == 1 && (err == io.ErrUnexpectedEOF || err == io.EOF) {
+				// If we don't know the actual size,
+				// and just tried reading 64 MiB, it's
+				// normal to encounter EOF.
+			} else if err != nil {
+				errors[p] = err
+			}
+			if p == pieces-1 {
+				actualSize = startPos + n
+			}
+		}(p)
+	}
+	wg.Wait()
+	for _, err := range errors {
+		if err != nil {
+			bufs.Put(buf)
+			return nil, v.translateError(err)
+		}
+	}
+	return buf[:actualSize], nil
 }
 
 // Compare the given data with existing stored data.
@@ -189,7 +248,7 @@ func (v *AzureBlobVolume) Compare(loc string, expect []byte) error {
 	return compareReaderWithBuf(rdr, expect, loc[:32])
 }
 
-// Put sotres a Keep block as a block blob in the container.
+// Put stores a Keep block as a block blob in the container.
 func (v *AzureBlobVolume) Put(loc string, block []byte) error {
 	if v.readonly {
 		return MethodDisabledError
@@ -317,6 +376,7 @@ func (v *AzureBlobVolume) translateError(err error) error {
 }
 
 var keepBlockRegexp = regexp.MustCompile(`^[0-9a-f]{32}$`)
+
 func (v *AzureBlobVolume) isKeepBlock(s string) bool {
 	return keepBlockRegexp.MatchString(s)
 }

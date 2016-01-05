@@ -1,0 +1,12 @@
+#!/usr/bin/env python
+
+from __future__ import print_function
+
+import crunchstat_summary.command
+import crunchstat_summary.summarizer
+import sys
+
+args = crunchstat_summary.command.ArgumentParser().parse_args(sys.argv[1:])
+s = crunchstat_summary.summarizer.Summarizer(args)
+s.run()
+print(s.report(), end='')

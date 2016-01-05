@@ -192,11 +192,11 @@ func testGetCollectionsAndSummarize(c *C, testData APITestData) {
 	}
 
 	// GetCollectionsAndSummarize
-	results := GetCollectionsAndSummarize(GetCollectionsParams{arv, nil, 10})
+	_, err := GetCollectionsAndSummarize(GetCollectionsParams{arv, nil, 10})
 
 	if testData.expectedError == "" {
-		c.Assert(results.Err, IsNil)
+		c.Assert(err, IsNil)
 	} else {
-		c.Assert(results.Err, ErrorMatches, testData.expectedError)
+		c.Assert(err, ErrorMatches, testData.expectedError)
 	}
 }

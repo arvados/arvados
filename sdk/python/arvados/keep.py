@@ -230,13 +230,13 @@ class Counter(object):
 class KeepClient(object):
 
     # Default Keep server connection timeout:  2 seconds
-    # Default Keep server read timeout:       64 seconds
+    # Default Keep server read timeout:       256 seconds
     # Default Keep server bandwidth minimum:  32768 bytes per second
     # Default Keep proxy connection timeout:  20 seconds
-    # Default Keep proxy read timeout:        64 seconds
+    # Default Keep proxy read timeout:        256 seconds
     # Default Keep proxy bandwidth minimum:   32768 bytes per second
-    DEFAULT_TIMEOUT = (2, 64, 32768)
-    DEFAULT_PROXY_TIMEOUT = (20, 64, 32768)
+    DEFAULT_TIMEOUT = (2, 256, 32768)
+    DEFAULT_PROXY_TIMEOUT = (20, 256, 32768)
 
     class ThreadLimiter(object):
         """Limit the number of threads writing to Keep at once.
@@ -631,7 +631,7 @@ class KeepClient(object):
           seconds. Because timeouts are often a result of transient server
           load, the actual connection timeout will be increased by a factor
           of two on each retry.
-          Default: (2, 64, 32768).
+          Default: (2, 256, 32768).
 
         :proxy_timeout:
           The initial timeout (in seconds) for HTTP requests to
@@ -639,7 +639,7 @@ class KeepClient(object):
           (connection_timeout, read_timeout, minimum_bandwidth). The behavior
           described above for adjusting connection timeouts on retry also
           applies.
-          Default: (20, 64, 32768).
+          Default: (20, 256, 32768).
 
         :api_token:
           If you're not using an API client, but only talking

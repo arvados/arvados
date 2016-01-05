@@ -2,6 +2,9 @@
 .rvmrc
 *~
 *.pyc
+*.egg
+*.egg-info
+.eggs
 *.gem
 *.rpm
 *.deb
@@ -18,6 +21,4 @@ sdk/perl/pm_to_blib
 sdk/java/target
 *.class
 sdk/java/log
-/tmp
-sdk/python/tmp
-services/fuse/tmp
+tmp
