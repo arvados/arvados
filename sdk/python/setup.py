@@ -42,7 +42,7 @@ setup(name='arvados-python-client',
           'ciso8601',
           'google-api-python-client',
           'httplib2',
-          'pycurl>=7.19.5.1',
+          'pycurl >=7.19.5.1, <7.21.5',
           'python-gflags',
           'ws4py'
       ],
