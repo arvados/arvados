@@ -214,7 +214,7 @@ common:
   enable_public_projects_page: true
 
   # by default, disable the "Getting Started" popup which is specific to the public beta install
-  enable_getting_started_popup: false 
+  enable_getting_started_popup: false
 
   # Ask Arvados API server to compress its response payloads.
   api_response_compression: true
