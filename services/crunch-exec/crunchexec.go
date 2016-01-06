@@ -48,8 +48,19 @@ type ContainerRecord struct {
 
 type NewLogWriter func(name string) io.WriteCloser
 
+type ThinDockerClient interface {
+	StopContainer(id string, timeout int) error
+	InspectImage(id string) (*dockerclient.ImageInfo, error)
+	LoadImage(reader io.Reader) error
+	CreateContainer(config *dockerclient.ContainerConfig, name string, authConfig *dockerclient.AuthConfig) (string, error)
+	StartContainer(id string, config *dockerclient.HostConfig) error
+	ContainerLogs(id string, options *dockerclient.LogOptions) (io.ReadCloser, error)
+	Wait(id string) <-chan dockerclient.WaitResult
+	RemoveImage(name string, force bool) ([]*dockerclient.ImageDelete, error)
+}
+
 type ContainerRunner struct {
-	Docker *dockerclient.DockerClient
+	Docker ThinDockerClient
 	Api    IArvadosClient
 	Kc     IKeepClient
 	ContainerRecord
@@ -348,7 +359,7 @@ func (this *ContainerRunner) Run(containerUuid string) (err error) {
 
 func NewContainerRunner(api IArvadosClient,
 	kc IKeepClient,
-	docker *dockerclient.DockerClient) *ContainerRunner {
+	docker ThinDockerClient) *ContainerRunner {
 
 	cr := &ContainerRunner{Api: api, Kc: kc, Docker: docker}
 	cr.NewLogWriter = cr.NewArvLogWriter

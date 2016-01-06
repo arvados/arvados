@@ -3,14 +3,8 @@ package main
 import (
 	"fmt"
 	. "gopkg.in/check.v1"
-	"testing"
 	"time"
 )
-
-// Gocheck boilerplate
-func Test2(t *testing.T) {
-	TestingT(t)
-}
 
 type LoggingTestSuite struct{}
 
