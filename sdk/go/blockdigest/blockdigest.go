@@ -9,7 +9,7 @@ import (
 )
 
 var LocatorPattern = regexp.MustCompile(
-	"^[0-9a-fA-F]{32}\\+[0-9]+(\\+[A-Z][A-Za-z0-9@_-]+)*$")
+	"^[0-9a-fA-F]{32}\\+[0-9]+(\\+[A-Z][A-Za-z0-9@_-]*)*$")
 
 // Stores a Block Locator Digest compactly, up to 128 bits.
 // Can be used as a map key.

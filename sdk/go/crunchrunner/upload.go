@@ -130,8 +130,8 @@ func (m *ManifestWriter) WalkFunc(path string, info os.FileInfo, err error) erro
 
 	stream.offset += count
 
-	stream.ManifestStream.FileTokens = append(stream.ManifestStream.FileTokens,
-		fmt.Sprintf("%v:%v:%v", fileStart, count, fn))
+	stream.ManifestStream.FileStreamSegments = append(stream.ManifestStream.FileStreamSegments,
+		manifest.FileStreamSegment{uint64(fileStart), uint64(count), fn})
 
 	return nil
 }
@@ -189,11 +189,11 @@ func (m *ManifestWriter) ManifestText() string {
 			buf.WriteString(" ")
 			buf.WriteString(b)
 		}
-		for _, f := range v.FileTokens {
+		for _, f := range v.FileStreamSegments {
 			buf.WriteString(" ")
-			f = strings.Replace(f, " ", "\\040", -1)
-			f = strings.Replace(f, "\n", "", -1)
-			buf.WriteString(f)
+			name := strings.Replace(f.Name, " ", "\\040", -1)
+			name = strings.Replace(name, "\n", "", -1)
+			buf.WriteString(fmt.Sprintf("%d:%d:%s", f.SegPos, f.SegLen, name))
 		}
 		buf.WriteString("\n")
 	}

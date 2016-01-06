@@ -40,6 +40,10 @@ func (kc *KeepClient) CollectionFileReader(collection map[string]interface{}, fi
 		return nil, ErrNoManifest
 	}
 	m := manifest.Manifest{Text: mText}
+	return kc.ManifestFileReader(m, filename)
+}
+
+func (kc *KeepClient) ManifestFileReader(m manifest.Manifest, filename string) (ReadCloserWithLen, error) {
 	rdrChan := make(chan *cfReader)
 	go kc.queueSegmentsToGet(m, filename, rdrChan)
 	r, ok := <-rdrChan

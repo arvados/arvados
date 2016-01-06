@@ -61,10 +61,21 @@ func expectStringSlicesEqual(t *testing.T, actual []string, expected []string) {
 	}
 }
 
+func expectFileStreamSegmentsEqual(t *testing.T, actual []FileStreamSegment, expected []FileStreamSegment) {
+	if len(actual) != len(expected) {
+		t.Fatalf("Expected %v (length %d), but received %v (length %d) instead. %s", expected, len(expected), actual, len(actual), getStackTrace())
+	}
+	for i := range actual {
+		if actual[i] != expected[i] {
+			t.Fatalf("Expected %v but received %v instead (first disagreement at position %d). %s", expected, actual, i, getStackTrace())
+		}
+	}
+}
+
 func expectManifestStream(t *testing.T, actual ManifestStream, expected ManifestStream) {
 	expectEqual(t, actual.StreamName, expected.StreamName)
 	expectStringSlicesEqual(t, actual.Blocks, expected.Blocks)
-	expectStringSlicesEqual(t, actual.FileTokens, expected.FileTokens)
+	expectFileStreamSegmentsEqual(t, actual.FileStreamSegments, expected.FileStreamSegments)
 }
 
 func expectBlockLocator(t *testing.T, actual blockdigest.BlockLocator, expected blockdigest.BlockLocator) {
@@ -76,8 +87,8 @@ func expectBlockLocator(t *testing.T, actual blockdigest.BlockLocator, expected 
 func TestParseManifestStreamSimple(t *testing.T) {
 	m := parseManifestStream(". 365f83f5f808896ec834c8b595288735+2310+K@qr1hi+Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf 0:2310:qr1hi-8i9sb-ienvmpve1a0vpoi.log.txt")
 	expectManifestStream(t, m, ManifestStream{StreamName: ".",
-		Blocks:     []string{"365f83f5f808896ec834c8b595288735+2310+K@qr1hi+Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf"},
-		FileTokens: []string{"0:2310:qr1hi-8i9sb-ienvmpve1a0vpoi.log.txt"}})
+		Blocks:             []string{"365f83f5f808896ec834c8b595288735+2310+K@qr1hi+Af0c9a66381f3b028677411926f0be1c6282fe67c@542b5ddf"},
+		FileStreamSegments: []FileStreamSegment{{0, 2310, "qr1hi-8i9sb-ienvmpve1a0vpoi.log.txt"}}})
 }
 
 func TestParseBlockLocatorSimple(t *testing.T) {
@@ -108,8 +119,8 @@ func TestStreamIterShortManifestWithBlankStreams(t *testing.T) {
 	expectManifestStream(t,
 		firstStream,
 		ManifestStream{StreamName: ".",
-			Blocks:     []string{"b746e3d2104645f2f64cd3cc69dd895d+15693477+E2866e643690156651c03d876e638e674dcd79475@5441920c"},
-			FileTokens: []string{"0:15893477:chr10_band0_s0_e3000000.fj"}})
+			Blocks:             []string{"b746e3d2104645f2f64cd3cc69dd895d+15693477+E2866e643690156651c03d876e638e674dcd79475@5441920c"},
+			FileStreamSegments: []FileStreamSegment{{0, 15893477, "chr10_band0_s0_e3000000.fj"}}})
 
 	received, ok := <-streamIter
 	if ok {
