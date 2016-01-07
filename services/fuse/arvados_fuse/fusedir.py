@@ -327,6 +327,9 @@ class CollectionDirectory(CollectionDirectoryBase):
         self.num_retries = num_retries
         self.collection_record_file = None
         self.collection_record = None
+        self.poll = True
+        self.poll_time = 60 * 60
+
         if isinstance(collection_record, dict):
             self.collection_locator = collection_record['uuid']
             self._mtime = convertTime(collection_record.get('modified_at'))
