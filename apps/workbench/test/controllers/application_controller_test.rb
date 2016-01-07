@@ -479,4 +479,14 @@ class ApplicationControllerTest < ActionController::TestCase
       end
     end
   end
+
+  test "session cookie simulation with expired token" do
+    session[:arvados_api_token] = api_fixture('api_client_authorizations')['expired']['token']
+
+    @controller = CollectionsController.new
+    get(:index)
+
+    assert_response 302
+    assert_match /welcome/, @response.redirect_url
+  end
 end
