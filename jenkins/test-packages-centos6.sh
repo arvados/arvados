@@ -2,7 +2,7 @@
 
 yum -q clean all
 touch /var/lib/rpm/*
-if ! yum -q install --assumeyes \
+if ! yum install --assumeyes \
      python27-python-arvados-python-client python27-python-arvados-fuse arvados-node-manager
 then
     exit 1

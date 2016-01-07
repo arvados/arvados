@@ -5,7 +5,7 @@
 target=$(echo $0 | sed 's/.*test-packages-\([^.]*\)\.sh.*/\1/')
 
 apt-get -qq update
-if ! apt-get -qq --assume-yes --force-yes install \
+if ! apt-get --assume-yes --force-yes install \
      python-arvados-python-client python-arvados-fuse arvados-node-manager
 then
     exit 1
