@@ -362,21 +362,20 @@ rm -rf $LIBCLOUD_DIR
 for deppkg in "${PYTHON_BACKPORTS[@]}"; do
     outname=$(echo "$deppkg" | sed -e 's/^python-//' -e 's/[<=>].*//' -e 's/_/-/g' -e "s/^/${PYTHON2_PKG_PREFIX}-/")
     case "$deppkg" in
-        httplib2)
-        # Work around 0640 permissions on some package files on Debian 8
-        # and Ubuntu 14.04.  See #7591.
-            httplib2_workdir=$(mktemp -d httplib2-XXXXXX) && (
+        httplib2|google-api-python-client)
+            # Work around 0640 permissions on some package files.
+            # See #7591 and #7991.
+            pyfpm_workdir=$(mktemp --tmpdir -d pyfpm-XXXXXX) && (
                 set -e
-                cd "$httplib2_workdir"
-                pip install --download . httplib2
-                tar -xf httplib2-*.tar*
-                cd httplib2-*/
+                cd "$pyfpm_workdir"
+                pip install --no-deps --no-use-wheel --download . "$deppkg"
+                tar -xf "$deppkg"-*.tar*
+                cd "$deppkg"-*/
                 "python$PYTHON2_VERSION" setup.py $DASHQ_UNLESS_DEBUG egg_info build
                 chmod -R go+rX .
                 set +e
                 # --iteration 2 provides an upgrade for previously built
-                # buggy packages.  Arguments past $outname can be removed
-                # once we're building httplib2 > 0.9.2.
+                # buggy packages.
                 fpm_build . "$outname" "" python "" --iteration 2
                 # The upload step uses the package timestamp to determine
                 # whether it's new.  --no-clobber plays nice with that.
@@ -386,8 +385,8 @@ for deppkg in "${PYTHON_BACKPORTS[@]}"; do
                 echo "ERROR: httplib2 build process failed"
                 EXITCODE=1
             fi
-            if [ -n "$httplib2_workdir" ]; then
-                rm -rf "$httplib2_workdir"
+            if [ -n "$pyfpm_workdir" ]; then
+                rm -rf "$pyfpm_workdir"
             fi
             ;;
         *)
