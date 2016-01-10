@@ -359,6 +359,15 @@ fpm_build $LIBCLOUD_DIR "$PYTHON2_PKG_PREFIX"-apache-libcloud
 rm -rf $LIBCLOUD_DIR
 
 # Python 2 dependencies
+declare -a PIP_DOWNLOAD_SWITCHES=(--no-deps)
+# Add --no-use-wheel if this pip knows it.
+pip wheel --help >/dev/null 2>&1
+case "$?" in
+    0) PIP_DOWNLOAD_SWITCHES+=(--no-use-wheel) ;;
+    2) ;;
+    *) echo "WARNING: `pip wheel` test returned unknown exit code $?" ;;
+esac
+
 for deppkg in "${PYTHON_BACKPORTS[@]}"; do
     outname=$(echo "$deppkg" | sed -e 's/^python-//' -e 's/[<=>].*//' -e 's/_/-/g' -e "s/^/${PYTHON2_PKG_PREFIX}-/")
     case "$deppkg" in
@@ -368,7 +377,7 @@ for deppkg in "${PYTHON_BACKPORTS[@]}"; do
             pyfpm_workdir=$(mktemp --tmpdir -d pyfpm-XXXXXX) && (
                 set -e
                 cd "$pyfpm_workdir"
-                pip install --no-deps --no-use-wheel --download . "$deppkg"
+                pip install "${PIP_DOWNLOAD_SWITCHES[@]}" --download . "$deppkg"
                 tar -xf "$deppkg"-*.tar*
                 cd "$deppkg"-*/
                 "python$PYTHON2_VERSION" setup.py $DASHQ_UNLESS_DEBUG egg_info build
