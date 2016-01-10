@@ -382,7 +382,7 @@ for deppkg in "${PYTHON_BACKPORTS[@]}"; do
                 mv --no-clobber "$outname"*.$FORMAT "$WORKSPACE/packages/$TARGET"
             )
             if [ 0 != "$?" ]; then
-                echo "ERROR: httplib2 build process failed"
+                echo "ERROR: $deppkg build process failed"
                 EXITCODE=1
             fi
             if [ -n "$pyfpm_workdir" ]; then
