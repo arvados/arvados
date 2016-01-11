@@ -1,0 +1,11 @@
+Now that all your configuration is in place, rerun the {{railspkg}} package configuration to install necessary Ruby Gems and other server dependencies.  On Debian-based systems:
+
+<notextile><pre><code>~$ <span class="userinput">sudo dpkg-reconfigure {{railspkg}}</span>
+</code></pre></notextile>
+
+On Red Hat-based systems:
+
+<notextile><pre><code>~$ <span class="userinput">sudo yum reinstall {{railspkg}}</span>
+</code></pre></notextile>
+
+You only need to do this manual step once, after initial configuration.  When you make configuration changes in the future, you just need to restart Nginx for them to take effect.
