@@ -328,7 +328,11 @@ class CollectionDirectory(CollectionDirectoryBase):
         self.collection_record_file = None
         self.collection_record = None
         self.poll = True
-        self.poll_time = 60 * 60
+        try:
+            self.poll_time = (api._rootDesc.get('blobSignatureTtl', 60*60*2)/2)
+        except:
+            _logger.debug("Error getting blobSignatureTtl from discovery document: %s", sys.exc_info()[0])
+            self.poll_time = 60*60
 
         if isinstance(collection_record, dict):
             self.collection_locator = collection_record['uuid']
