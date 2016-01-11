@@ -1,20 +1,16 @@
 #!/bin/sh
-
-set -e
-
-INSTALL_PATH=/var/www/arvados-sso
-RELEASE_PATH=$INSTALL_PATH/current
-SHARED_PATH=$INSTALL_PATH/shared
-CONFIG_PATH=/etc/arvados/sso
+# This code runs after package variable definitions and step2.sh.
 
 remove () {
   rm -f $RELEASE_PATH/config/database.yml
   rm -f $RELEASE_PATH/config/environments/production.rb
   rm -f $RELEASE_PATH/config/application.yml
+  # Old API server configuration file.
+  rm -f $RELEASE_PATH/config/initializers/omniauth.rb
   rm -rf $RELEASE_PATH/public/assets/
   rm -rf $RELEASE_PATH/tmp
   rm -rf $RELEASE_PATH/.bundle
-  rm $RELEASE_PATH/log || true
+  rm -rf $RELEASE_PATH/log
 }
 
 if [ "$1" = 'remove' ]; then

@@ -412,114 +412,47 @@ for deppkg in "${PYTHON3_BACKPORTS[@]}"; do
 done
 
 # Build the API server package
-
-cd "$WORKSPACE/services/api"
-
-API_VERSION=$(version_from_git)
-PACKAGE_NAME=arvados-api-server
-
-if [[ ! -d "$WORKSPACE/services/api/tmp" ]]; then
-  mkdir $WORKSPACE/services/api/tmp
-fi
-
-
-if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
-  bundle install --path vendor/bundle >"$STDOUT_IF_DEBUG"
-fi
-
-/usr/bin/git rev-parse HEAD > git-commit.version
-
-cd $WORKSPACE/packages/$TARGET
-
-# Annoyingly, we require a database.yml file for rake assets:precompile to work. So for now,
-# we do that in the upgrade script.
-# TODO: add bogus database.yml file so we can precompile the assets and put them in the
-# package. Then remove that database.yml file again. It has to be a valid file though.
-#RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile
-
-# This is the complete package with vendor/bundle included.
-# It's big, so we do not build it by default.
-if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
-  declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados API server - Arvados is a free and open source platform for big data science.'" "--license='GNU Affero General Public License, version 3.0'" "-s" "dir" "-t" "$FORMAT" "-n" "${PACKAGE_NAME}-with-bundle" "-v" "$API_VERSION" "--iteration" "$(default_iteration "$PACKAGE_NAME" "$API_VERSION")" "-x" "var/www/arvados-api/current/tmp" "-x" "var/www/arvados-api/current/log" "-x" "var/www/arvados-api/current/vendor/cache/*" "-x" "var/www/arvados-api/current/coverage" "-x" "var/www/arvados-api/current/Capfile*" "-x" "var/www/arvados-api/current/config/deploy*" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-api-server-extras/postinst.sh" "$WORKSPACE/services/api/=/var/www/arvados-api/current" "$RUN_BUILD_PACKAGES_PATH/arvados-api-server-extras/arvados-api-server-upgrade.sh=/usr/local/bin/arvados-api-server-upgrade.sh" "$WORKSPACE/agpl-3.0.txt=/var/www/arvados-api/current/agpl-3.0.txt")
-
-  debug_echo -e "\n${COMMAND_ARR[@]}\n"
-
-  FPM_RESULTS=$("${COMMAND_ARR[@]}")
-  FPM_EXIT_CODE=$?
-  fpm_verify $FPM_EXIT_CODE $FPM_RESULTS
-fi
-
-# Build the 'bare' package without vendor/bundle.
-declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados API server - Arvados is a free and open source platform for big data science.'" "--license='GNU Affero General Public License, version 3.0'" "-s" "dir" "-t" "$FORMAT" "-n" "${PACKAGE_NAME}" "-v" "$API_VERSION" "--iteration" "$(default_iteration "$PACKAGE_NAME" "$API_VERSION")" "-x" "var/www/arvados-api/current/tmp" "-x" "var/www/arvados-api/current/log" "-x" "var/www/arvados-api/current/vendor/bundle" "-x" "var/www/arvados-api/current/vendor/cache/*" "-x" "var/www/arvados-api/current/coverage" "-x" "var/www/arvados-api/current/Capfile*" "-x" "var/www/arvados-api/current/config/deploy*" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-api-server-extras/postinst.sh" "$WORKSPACE/services/api/=/var/www/arvados-api/current" "$RUN_BUILD_PACKAGES_PATH/arvados-api-server-extras/arvados-api-server-upgrade.sh=/usr/local/bin/arvados-api-server-upgrade.sh" "$WORKSPACE/agpl-3.0.txt=/var/www/arvados-api/current/agpl-3.0.txt")
-
-debug_echo -e "\n${COMMAND_ARR[@]}\n"
-
-FPM_RESULTS=$("${COMMAND_ARR[@]}")
-FPM_EXIT_CODE=$?
-fpm_verify $FPM_EXIT_CODE $FPM_RESULTS
-
-# API server package build done
+handle_rails_package arvados-api-server "$WORKSPACE/services/api" \
+    "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
+    --description="Arvados API server - Arvados is a free and open source platform for big data science." \
+    --license="GNU Affero General Public License, version 3.0"
 
 # Build the workbench server package
+(
+    set -e
+    cd "$WORKSPACE/apps/workbench"
 
-cd "$WORKSPACE/apps/workbench"
+    # We need to bundle to be ready even when we build a package without vendor directory
+    # because asset compilation requires it.
+    bundle install --path vendor/bundle >"$STDOUT_IF_DEBUG"
 
-WORKBENCH_VERSION=$(version_from_git)
-PACKAGE_NAME=arvados-workbench
+    # clear the tmp directory; the asset generation step will recreate tmp/cache/assets,
+    # and we want that in the package, so it's easier to not exclude the tmp directory
+    # from the package - empty it instead.
+    rm -rf tmp
+    mkdir tmp
 
-if [[ ! -d "$WORKSPACE/apps/workbench/tmp" ]]; then
-  mkdir $WORKSPACE/apps/workbench/tmp
-fi
+    # Set up application.yml and production.rb so that asset precompilation works
+    \cp config/application.yml.example config/application.yml -f
+    \cp config/environments/production.rb.example config/environments/production.rb -f
+    sed -i 's/secret_token: ~/secret_token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/' config/application.yml
 
-# We need to bundle to be ready even when we build a package without vendor directory
-# because asset compilation requires it.
-bundle install --path vendor/bundle >"$STDOUT_IF_DEBUG"
+    RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile >/dev/null
 
-/usr/bin/git rev-parse HEAD > git-commit.version
-
-# clear the tmp directory; the asset generation step will recreate tmp/cache/assets,
-# and we want that in the package, so it's easier to not exclude the tmp directory
-# from the package - empty it instead.
-rm -rf $WORKSPACE/apps/workbench/tmp/*
-
-# Set up application.yml and production.rb so that asset precompilation works
-\cp config/application.yml.example config/application.yml -f
-\cp config/environments/production.rb.example config/environments/production.rb -f
-sed -i 's/secret_token: ~/secret_token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/' config/application.yml
-
-RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile >/dev/null
+    # Remove generated configuration files so they don't go in the package.
+    rm config/application.yml config/environments/production.rb
+)
 
 if [[ "$?" != "0" ]]; then
   echo "ERROR: Asset precompilation failed"
   EXITCODE=1
+else
+  handle_rails_package arvados-workbench "$WORKSPACE/apps/workbench" \
+      "$WORKSPACE/agpl-3.0.txt" --url="https://arvados.org" \
+      --description="Arvados Workbench - Arvados is a free and open source platform for big data science." \
+      --license="GNU Affero General Public License, version 3.0"
 fi
 
-cd $WORKSPACE/packages/$TARGET
-
-# This is the complete package with vendor/bundle included.
-# It's big, so we do not build it by default.
-if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
-
-  declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados Workbench - Arvados is a free and open source platform for big data science.'" "--license='GNU Affero General Public License, version 3.0'" "-s" "dir" "-t" "$FORMAT" "-n" "${PACKAGE_NAME}-with-bundle" "-v" "$WORKBENCH_VERSION" "--iteration" "$(default_iteration "$PACKAGE_NAME" "$WORKBENCH_VERSION")" "-x" "var/www/arvados-workbench/current/log" "-x" "var/www/arvados-workbench/current/vendor/cache/*" "-x" "var/www/arvados-workbench/current/coverage" "-x" "var/www/arvados-workbench/current/Capfile*" "-x" "var/www/arvados-workbench/current/config/deploy*" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-workbench-extras/postinst.sh" "$WORKSPACE/apps/workbench/=/var/www/arvados-workbench/current" "$RUN_BUILD_PACKAGES_PATH/arvados-workbench-extras/arvados-workbench-upgrade.sh=/usr/local/bin/arvados-workbench-upgrade.sh" "$WORKSPACE/agpl-3.0.txt=/var/www/arvados-workbench/current/agpl-3.0.txt")
-
-  debug_echo -e "\n${COMMAND_ARR[@]}\n"
-
-  FPM_RESULTS=$("${COMMAND_ARR[@]}")
-  FPM_EXIT_CODE=$?
-  fpm_verify $FPM_EXIT_CODE $FPM_RESULTS
-fi
-
-# Build the 'bare' package without vendor/bundle.
-
-declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados Workbench - Arvados is a free and open source platform for big data science.'" "--license='GNU Affero General Public License, version 3.0'" "-s" "dir" "-t" "$FORMAT" "-n" "${PACKAGE_NAME}" "-v" "$WORKBENCH_VERSION" "--iteration" "$(default_iteration "$PACKAGE_NAME" "$WORKBENCH_VERSION")" "-x" "var/www/arvados-workbench/current/log" "-x" "var/www/arvados-workbench/current/vendor/bundle" "-x" "var/www/arvados-workbench/current/vendor/cache/*" "-x" "var/www/arvados-workbench/current/coverage" "-x" "var/www/arvados-workbench/current/Capfile*" "-x" "var/www/arvados-workbench/current/config/deploy*" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-workbench-extras/postinst.sh" "$WORKSPACE/apps/workbench/=/var/www/arvados-workbench/current" "$RUN_BUILD_PACKAGES_PATH/arvados-workbench-extras/arvados-workbench-upgrade.sh=/usr/local/bin/arvados-workbench-upgrade.sh" "$WORKSPACE/agpl-3.0.txt=/var/www/arvados-workbench/current/agpl-3.0.txt")
-
-debug_echo -e "\n${COMMAND_ARR[@]}\n"
-
-FPM_RESULTS=$("${COMMAND_ARR[@]}")
-FPM_EXIT_CODE=$?
-fpm_verify $FPM_EXIT_CODE $FPM_RESULTS
-
-# Workbench package build done
 # clean up temporary GOPATH
 rm -rf "$GOPATH"
 

@@ -1,15 +1,12 @@
 #!/bin/sh
+# This code runs after package variable definitions and step2.sh.
 
 set -e
-
-INSTALL_PATH=/var/www/arvados-sso
-RELEASE_PATH=$INSTALL_PATH/current
-SHARED_PATH=$INSTALL_PATH/shared
-CONFIG_PATH=/etc/arvados/sso
 
 purge () {
   rm -rf $SHARED_PATH/vendor_bundle
   rm -rf $SHARED_PATH/log
+  rm -rf $CONFIG_PATH
   rmdir $SHARED_PATH || true
   rmdir $INSTALL_PATH || true
 }
