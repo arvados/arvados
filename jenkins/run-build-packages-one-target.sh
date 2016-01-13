@@ -117,7 +117,7 @@ time docker build --tag=$IMAGE .
 popd
 
 if test -z "$packages" ; then
-packages="arvados-api-server
+    packages="arvados-api-server
         arvados-data-manager
         arvados-docker-cleaner
         arvados-git-httpd
@@ -129,9 +129,15 @@ packages="arvados-api-server
         keep-rsync
         keepstore
         keep-web
-        libarvados-perl
-        python27-python-arvados-fuse
-        python27-python-arvados-python-client"
+        libarvados-perl"
+
+    if test $target == centos6 ; then
+        packages="$packages python27-python-arvados-fuse
+                  python27-python-arvados-python-client"
+    else
+        packages="$packages python-arvados-fuse
+                  python-arvados-python-client"
+    fi
 fi
 
 FINAL_EXITCODE=0

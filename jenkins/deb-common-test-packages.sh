@@ -12,7 +12,9 @@ apt-get --assume-yes --force-yes install $1
 mkdir -p /tmp/opts
 cd /tmp/opts
 
-dpkg-deb -x /arvados/packages/$target/$1-*.deb .
+export ARV_PACKAGES_DIR=/arvados/packages/$target
+
+dpkg-deb -x $ARV_PACKAGES_DIR/"$1"_*.deb .
 
 for so in $(find . -name "*.so") ; do
     echo
