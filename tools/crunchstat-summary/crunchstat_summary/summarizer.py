@@ -93,9 +93,13 @@ class Summarizer(object):
                 self.label = m.group('job_uuid')
                 logger.debug('%s: using job uuid as label', self.label)
             if m.group('category').endswith(':'):
-                # "notice:" etc.
+                # "stderr crunchstat: notice: ..."
                 continue
             elif m.group('category') == 'error':
+                continue
+            elif m.group('category') == 'read':
+                # "stderr crunchstat: read /proc/1234/net/dev: ..."
+                # (crunchstat formatting fixed, but old logs still say this)
                 continue
             task_id = self.seq_to_uuid[int(m.group('seq'))]
             task = self.tasks[task_id]

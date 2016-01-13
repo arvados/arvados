@@ -142,7 +142,7 @@ func GetContainerNetStats(cgroup Cgroup) (io.Reader, error) {
 		statsFilename := fmt.Sprintf("/proc/%s/net/dev", taskPid)
 		stats, err := ioutil.ReadFile(statsFilename)
 		if err != nil {
-			statLog.Printf("read %s: %s\n", statsFilename, err)
+			statLog.Printf("error reading %s: %s\n", statsFilename, err)
 			continue
 		}
 		return strings.NewReader(string(stats)), nil
@@ -409,7 +409,7 @@ func run(logger *log.Logger) error {
 			if cmd.Process != nil {
 				cmd.Process.Signal(catch)
 			}
-			statLog.Println("caught signal:", catch)
+			statLog.Println("notice: caught signal:", catch)
 		}(sigChan)
 		signal.Notify(sigChan, syscall.SIGTERM)
 		signal.Notify(sigChan, syscall.SIGINT)

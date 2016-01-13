@@ -34,6 +34,13 @@ class SummarizeFile(ReportDiff):
             self.diff_known_report(logfile, cmd)
 
 
+class SummarizeEdgeCases(unittest.TestCase):
+    def test_error_messages(self):
+        logfile = open(os.path.join(TESTS_DIR, 'crunchstat_error_messages.txt'))
+        s = crunchstat_summary.summarizer.Summarizer(logfile)
+        s.run()
+
+
 class SummarizeJob(ReportDiff):
     fake_job_uuid = '4xphq-8i9sb-jq0ekny1xou3zoh'
     fake_log_id = 'fake-log-collection-id'
