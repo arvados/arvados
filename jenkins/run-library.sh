@@ -235,18 +235,17 @@ fpm_build () {
   # that will take precedence, as desired.
   COMMAND_ARR+=(--iteration "$(default_iteration "$PACKAGE" "$VERSION")")
 
-  # Append remaining function arguments directly to fpm's command line.
-  for i; do
-    COMMAND_ARR+=("$i")
-  done
+  # 'dir' type packages are provided in the form /path/to/source=/path/to/dest
+  # so strip off the 2nd part to check for fpm-info below.
+  PACKAGE_DIR=$(echo $PACKAGE | sed 's/\/=.*//')
 
   # Append --depends X and other arguments specified by fpm-info.sh in
   # the package source dir. These are added last so they can override
   # the arguments added by this script.
   declare -a fpm_args=()
   declare -a fpm_depends=()
-  if [[ -d "$PACKAGE" ]]; then
-      FPM_INFO="$PACKAGE/fpm-info.sh"
+  if [[ -d "$PACKAGE_DIR" ]]; then
+      FPM_INFO="$PACKAGE_DIR/fpm-info.sh"
   else
       FPM_INFO="${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE}/fpm-info.sh"
   fi
@@ -258,6 +257,11 @@ fpm_build () {
     COMMAND_ARR+=('--depends' "$i")
   done
   COMMAND_ARR+=("${fpm_args[@]}")
+
+  # Append remaining function arguments directly to fpm's command line.
+  for i; do
+    COMMAND_ARR+=("$i")
+  done
 
   COMMAND_ARR+=("$PACKAGE")
 

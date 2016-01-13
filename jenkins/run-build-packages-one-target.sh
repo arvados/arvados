@@ -21,6 +21,8 @@ WORKSPACE=path         Path to the Arvados source tree to build packages from
 
 EOF
 
+set -e
+
 if ! [[ -n "$WORKSPACE" ]]; then
   echo >&2 "$helpmessage"
   echo >&2
@@ -131,7 +133,7 @@ if test -z "$packages" ; then
         keep-web
         libarvados-perl"
 
-    if test $target == centos6 ; then
+    if test "$target" = centos6 ; then
         packages="$packages python27-python-arvados-fuse
                   python27-python-arvados-python-client"
     else

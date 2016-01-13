@@ -12,4 +12,8 @@ RUN touch /var/lib/rpm/* && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.1 && \
     /usr/local/rvm/bin/rvm-exec default gem install bundle fpm
 
+RUN cd / root && \
+    curl -OL 'http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm' && \
+    rpm -ivh rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm
+
 COPY localrepo.repo /etc/yum.repos.d/localrepo.repo
