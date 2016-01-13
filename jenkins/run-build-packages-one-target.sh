@@ -14,6 +14,8 @@ Syntax:
     Run package install test script "test-packages-$target.sh"
 --debug
     Output debug information (default: false)
+--only-test
+    Test only a specific package
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
 
@@ -36,7 +38,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,test-packages,target:,command: \
+    help,debug,test-packages,target:,command:,only-test: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -56,6 +58,9 @@ while [ $# -gt 0 ]; do
             ;;
         --target)
             TARGET="$2"; shift
+            ;;
+        --only-test)
+            packages="$2"; shift
             ;;
         --debug)
             DEBUG=" --debug"
@@ -111,6 +116,7 @@ cd $TARGET
 time docker build --tag=$IMAGE .
 popd
 
+if test -z "$packages" ; then
 packages="arvados-api-server
         arvados-data-manager
         arvados-docker-cleaner
@@ -126,14 +132,18 @@ packages="arvados-api-server
         libarvados-perl
         python27-python-arvados-fuse
         python27-python-arvados-python-client"
+fi
 
 FINAL_EXITCODE=0
+
+package_fails=""
 
 if [[ -n "$test_packages" ]]; then
     for p in $packages ; do
         if ! docker run --rm -v "$JENKINS_DIR:/jenkins" -v "$WORKSPACE:/arvados" \
                   --env ARVADOS_DEBUG=1 "$IMAGE" $COMMAND $p ; then
             FINAL_EXITCODE=$?
+            package_fails="$package_fails $p"
             echo "ERROR: $tag build failed with exit status $FINAL_EXITCODE." >&2
         fi
     done
@@ -146,6 +156,10 @@ else
         FINAL_EXITCODE=$?
         echo "ERROR: $tag build failed with exit status $FINAL_EXITCODE." >&2
     fi
+fi
+
+if test -n "$package_fails" ; then
+    echo "Failed package tests:$package_fails"
 fi
 
 exit $FINAL_EXITCODE
