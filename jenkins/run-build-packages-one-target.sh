@@ -111,15 +111,41 @@ cd $TARGET
 time docker build --tag=$IMAGE .
 popd
 
+packages="arvados-api-server
+        arvados-data-manager
+        arvados-docker-cleaner
+        arvados-git-httpd
+        arvados-node-manager
+        arvados-src
+        arvados-workbench
+        crunchstat
+        keepproxy
+        keep-rsync
+        keepstore
+        keep-web
+        libarvados-perl
+        python27-python-arvados-fuse
+        python27-python-arvados-python-client"
+
 FINAL_EXITCODE=0
 
-if docker run --rm -v "$JENKINS_DIR:/jenkins" -v "$WORKSPACE:/arvados" \
-          --env ARVADOS_DEBUG=1 "$IMAGE" $COMMAND; then
-    # Success - nothing more to do.
-    true
+if [[ -n "$test_packages" ]]; then
+    for p in $packages ; do
+        if ! docker run --rm -v "$JENKINS_DIR:/jenkins" -v "$WORKSPACE:/arvados" \
+                  --env ARVADOS_DEBUG=1 "$IMAGE" $COMMAND $p ; then
+            FINAL_EXITCODE=$?
+            echo "ERROR: $tag build failed with exit status $FINAL_EXITCODE." >&2
+        fi
+    done
 else
-    FINAL_EXITCODE=$?
-    echo "ERROR: $tag build failed with exit status $FINAL_EXITCODE." >&2
+    if docker run --rm -v "$JENKINS_DIR:/jenkins" -v "$WORKSPACE:/arvados" \
+              --env ARVADOS_DEBUG=1 "$IMAGE" $COMMAND; then
+        # Success - nothing more to do.
+        true
+    else
+        FINAL_EXITCODE=$?
+        echo "ERROR: $tag build failed with exit status $FINAL_EXITCODE." >&2
+    fi
 fi
 
 exit $FINAL_EXITCODE

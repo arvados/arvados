@@ -1,28 +1,28 @@
 #!/bin/sh
 
+set -eu
+
 FAIL=0
 
 echo
-for so in $(find . -name "*.so") ; do
-    if ldd $so | grep "not found" ; then
-        echo "^^^ Missing while scanning $so ^^^"
-        FAIL=1
+shared=$(find -name '*.so')
+if test -n "$shared" ; then
+    for so in $shared ; do
+        if ldd $so | grep "not found" ; then
+            echo "^^^ Missing while scanning $so ^^^"
+            FAIL=1
+        fi
+    done
+fi
+
+if test -x /jenkins/test-package-$1.sh ; then
+    if ! /jenkins/test-package-$1.sh ; then
+       FAIL=1
     fi
-done
+fi
 
-echo
-if ! python <<EOF
-import arvados
-import arvados_fuse
-print "Successly imported arvados and arvados_fuse"
-
-import libcloud.compute.types
-import libcloud.compute.providers
-libcloud.compute.providers.get_driver(libcloud.compute.types.Provider.AZURE_ARM)
-print "Successly imported compatible libcloud library"
-EOF
-then
-    FAIL=1
+if test $FAIL = 0 ; then
+   echo "Package $1 passed"
 fi
 
 exit $FAIL
