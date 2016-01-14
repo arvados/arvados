@@ -136,9 +136,7 @@ handle_rails_package() {
         mkdir -p tmp
         version_from_git >"$version_file"
         git rev-parse HEAD >git-commit.version
-        if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
-            bundle install --path vendor/bundle >"$STDOUT_IF_DEBUG"
-        fi
+        bundle package --all
     )
     if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
         echo "ERROR: $pkgname package prep failed" >&2
@@ -160,15 +158,11 @@ handle_rails_package() {
     # .git and packages are for the SSO server, which is built from its
     # repository root.
     for exclude in .git packages tmp log coverage \
-                        vendor/cache/\* Capfile\* config/deploy\*; do
+                        Capfile\* config/deploy\*; do
         switches+=(-x "$exclude_root/$exclude")
     done
     fpm_build "${pos_args[@]}" "${switches[@]}" \
               -x "$exclude_root/vendor/bundle" "$@" "$license_arg"
-    if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
-        posargs[1]="$pkgname-with-bundle"
-        fpm_build "${pos_args[@]}" "${switches[@]}" "$@" "$license_arg"
-    fi
     rm -rf "$scripts_dir" "$version_file"
 }
 

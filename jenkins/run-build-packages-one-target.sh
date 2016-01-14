@@ -133,23 +133,32 @@ if test -z "$packages" ; then
         keep-web
         libarvados-perl"
 
-    if test "$target" = centos6 ; then
-        packages="$packages python27-python-arvados-fuse
+    case "$TARGET" in
+        centos6)
+            packages="$packages python27-python-arvados-fuse
                   python27-python-arvados-python-client"
-    else
-        packages="$packages python-arvados-fuse
+        ;;
+        *)
+            packages="$packages python-arvados-fuse
                   python-arvados-python-client"
-    fi
+            ;;
+    esac
 fi
 
 FINAL_EXITCODE=0
 
 package_fails=""
+set -x
 
 if [[ -n "$test_packages" ]]; then
     for p in $packages ; do
-        if ! docker run --rm -v "$JENKINS_DIR:/jenkins" -v "$WORKSPACE:/arvados" \
-                  --env ARVADOS_DEBUG=1 "$IMAGE" $COMMAND $p ; then
+        set +e
+        docker run --rm -v "$JENKINS_DIR:/jenkins" -v "$WORKSPACE:/arvados" \
+               --env ARVADOS_DEBUG=1 \
+               --env "TARGET=$TARGET" \
+               --env "WORKSPACE=/arvados" \
+               "$IMAGE" $COMMAND $p
+        if test $? != 0 ; then
             FINAL_EXITCODE=$?
             package_fails="$package_fails $p"
             echo "ERROR: $tag build failed with exit status $FINAL_EXITCODE." >&2

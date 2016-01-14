@@ -1,6 +1,7 @@
 #!/bin/bash
 
-. `dirname "$(readlink -f "$0")"`/run-library.sh
+JENKINS_DIR=$(dirname $(readlink -e "$0"))
+. "$JENKINS_DIR/run-library.sh"
 
 read -rd "\000" helpmessage <<EOF
 $(basename $0): Build Arvados SSO server package
@@ -10,8 +11,6 @@ Syntax:
 
 Options:
 
---build-bundle-packages  (default: false)
-    Build package with vendor/bundle included
 --debug
     Output debug information (default: false)
 --target
@@ -23,7 +22,6 @@ EOF
 
 EXITCODE=0
 DEBUG=${ARVADOS_DEBUG:-0}
-BUILD_BUNDLE_PACKAGES=0
 TARGET=debian7
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
@@ -47,8 +45,8 @@ while [ $# -gt 0 ]; do
         --debug)
             DEBUG=1
             ;;
-        --build-bundle-packages)
-            BUILD_BUNDLE_PACKAGES=1
+        --test-packages)
+            test_packages=1
             ;;
         --)
             if [ $# -gt 1 ]; then
@@ -111,19 +109,19 @@ fi
 fpm --version >/dev/null 2>&1
 
 if [[ "$?" != 0 ]]; then
-  echo >&2 "$helpmessage"
-  echo >&2
-  echo >&2 "Error: fpm not found"
-  echo >&2
-  exit 1
+    echo >&2 "$helpmessage"
+    echo >&2
+    echo >&2 "Error: fpm not found"
+    echo >&2
+    exit 1
 fi
 
 RUN_BUILD_PACKAGES_PATH="`dirname \"$0\"`"
 RUN_BUILD_PACKAGES_PATH="`( cd \"$RUN_BUILD_PACKAGES_PATH\" && pwd )`"  # absolutized and normalized
 if [ -z "$RUN_BUILD_PACKAGES_PATH" ] ; then
-  # error; for some reason, the path is not accessible
-  # to the script (e.g. permissions re-evaled after suid)
-  exit 1  # fail
+    # error; for some reason, the path is not accessible
+    # to the script (e.g. permissions re-evaled after suid)
+    exit 1  # fail
 fi
 
 debug_echo "$0 is running from $RUN_BUILD_PACKAGES_PATH"
@@ -134,20 +132,6 @@ if [[ -f /etc/profile.d/rvm.sh ]]; then
     GEM="rvm-exec default gem"
 else
     GEM=gem
-fi
-
-if [[ "$TARGET" == "centos6" ]]; then
-  # CentOS6 comes with git 1.7.1, but we want at least 1.7.6
-  # because we use git status --ignore in fpm-info.sh
-  cd /usr/src
-  install_package libcurl-devel zlib-devel wget gettext
-  wget https://www.kernel.org/pub/software/scm/git/git-1.8.5.6.tar.gz
-  tar xzf git-1.8.5.6.tar.gz
-  cd git-1.8.5.6
-  make configure
-  ./configure --prefix=/usr --without-tcltk
-  make all
-  make install
 fi
 
 # Make all files world-readable -- jenkins runs with umask 027, and has checked
@@ -165,13 +149,13 @@ umask 0022
 debug_echo "umask is" `umask`
 
 if [[ ! -d "$WORKSPACE/packages/$TARGET" ]]; then
-  mkdir -p $WORKSPACE/packages/$TARGET
+    mkdir -p $WORKSPACE/packages/$TARGET
 fi
 
 # Build the SSO server package
 handle_rails_package arvados-sso-server "$WORKSPACE" \
-    "$WORKSPACE/LICENCE" --url="https://arvados.org" \
-    --description="Arvados SSO server - Arvados is a free and open source platform for big data science." \
-    --license="Expat license"
+                     "$WORKSPACE/LICENCE" --url="https://arvados.org" \
+                     --description="Arvados SSO server - Arvados is a free and open source platform for big data science." \
+                     --license="Expat license"
 
 exit $EXITCODE

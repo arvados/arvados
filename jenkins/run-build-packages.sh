@@ -27,7 +27,6 @@ EOF
 
 EXITCODE=0
 DEBUG=${ARVADOS_DEBUG:-0}
-BUILD_BUNDLE_PACKAGES=0
 TARGET=debian7
 COMMAND=
 
@@ -51,9 +50,6 @@ while [ $# -gt 0 ]; do
             ;;
         --debug)
             DEBUG=1
-            ;;
-        --build-bundle-packages)
-            BUILD_BUNDLE_PACKAGES=1
             ;;
         --command)
             COMMAND="$2"; shift
