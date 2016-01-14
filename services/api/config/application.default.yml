@@ -188,6 +188,12 @@ common:
   # for other data types.
   max_index_database_read: 134217728
 
+  # Maximum number of items to return when responding to a APIs that
+  # can return partial result sets using limit and offset parameters
+  # (e.g., *.index, groups.contents). If a request specifies a "limit"
+  # parameter higher than this value, this value is used instead.
+  max_items_per_response: 1000
+
   # When you run the db:delete_old_job_logs task, it will find jobs that
   # have been finished for at least this many seconds, and delete their
   # stderr logs from the logs table.
