@@ -9,9 +9,6 @@ module LoadParam
   # Default number of rows to return in a single query.
   DEFAULT_LIMIT = 100
 
-  # Maximum number of rows to return in a single query, even if the client asks for more.
-  MAX_LIMIT = 1000
-
   # Load params[:where] into @where
   def load_where_param
     if params[:where].nil? or params[:where] == ""
@@ -54,7 +51,8 @@ module LoadParam
       unless params[:limit].to_s.match(/^\d+$/)
         raise ArgumentError.new("Invalid value for limit parameter")
       end
-      @limit = [params[:limit].to_i, MAX_LIMIT].min
+      @limit = [params[:limit].to_i,
+                Rails.configuration.max_items_per_response].min
     else
       @limit = DEFAULT_LIMIT
     end
