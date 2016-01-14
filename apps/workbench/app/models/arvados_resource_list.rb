@@ -184,7 +184,8 @@ class ArvadosResourceList
     api_params[:order] = @orderby_spec if @orderby_spec
     api_params[:filters] = @filters if @filters
     api_params[:distinct] = @distinct if @distinct
-
+    # Default limit to (effectively) api server's MAX_LIMIT
+    api_params[:limit] = 2**(0.size*8 - 1) - 1
 
     item_count = 0
     offset = @offset || 0

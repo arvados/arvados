@@ -363,6 +363,8 @@ def is_hex(s, *length_args):
     return bool(good_len and HEX_RE.match(s))
 
 def list_all(fn, num_retries=0, **kwargs):
+    # Default limit to (effectively) api server's MAX_LIMIT
+    kwargs.setdefault('limit', sys.maxint)
     items = []
     offset = 0
     items_available = sys.maxint
