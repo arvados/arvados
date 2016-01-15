@@ -20,11 +20,13 @@ import (
 	"strings"
 )
 
+// Block is a data block in a manifest stream
 type Block struct {
 	data   []byte
 	offset int64
 }
 
+// CollectionFileWriter is a Writer that permits writing to a file in a Keep Collection.
 type CollectionFileWriter struct {
 	IKeepClient
 	*manifest.ManifestStream
@@ -36,11 +38,13 @@ type CollectionFileWriter struct {
 	fn       string
 }
 
+// Write to a file in a keep collection
 func (m *CollectionFileWriter) Write(p []byte) (int, error) {
 	n, err := m.ReadFrom(bytes.NewReader(p))
 	return int(n), err
 }
 
+// ReadFrom a Reader and write to the Keep collection file.
 func (m *CollectionFileWriter) ReadFrom(r io.Reader) (n int64, err error) {
 	var total int64
 	var count int
@@ -62,11 +66,11 @@ func (m *CollectionFileWriter) ReadFrom(r io.Reader) (n int64, err error) {
 
 	if err == io.EOF {
 		return total, nil
-	} else {
-		return total, err
 	}
+	return total, err
 }
 
+// Close stops writing a file and adds it to the parent manifest.
 func (m *CollectionFileWriter) Close() error {
 	m.ManifestStream.FileStreamSegments = append(m.ManifestStream.FileStreamSegments,
 		manifest.FileStreamSegment{m.offset, m.length, m.fn})
@@ -89,11 +93,14 @@ func (m *CollectionFileWriter) goUpload() {
 	finish <- errors
 }
 
+// CollectionWriter makes implements creating new Keep collections by opening files
+// and writing to them.
 type CollectionWriter struct {
 	IKeepClient
 	Streams []*CollectionFileWriter
 }
 
+// Open a new file for writing in the Keep collection.
 func (m *CollectionWriter) Open(path string) io.WriteCloser {
 	var dir string
 	var fn string
@@ -123,6 +130,7 @@ func (m *CollectionWriter) Open(path string) io.WriteCloser {
 	return fw
 }
 
+// Finish writing the collection, wait for all blocks to complete uploading.
 func (m *CollectionWriter) Finish() error {
 	var errstring string
 	for _, stream := range m.Streams {
@@ -145,11 +153,13 @@ func (m *CollectionWriter) Finish() error {
 	}
 	if errstring != "" {
 		return errors.New(errstring)
-	} else {
-		return nil
 	}
+	return nil
 }
 
+// ManifestText returns the manifest text of the collection.  Calls Finish()
+// first to ensure that all blocks are written and that signed locators and
+// available.
 func (m *CollectionWriter) ManifestText() (mt string, err error) {
 	err = m.Finish()
 	if err != nil {

@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"io"
@@ -12,6 +11,8 @@ import (
 	"time"
 )
 
+// Timestamper is the signature for a function that takes a timestamp and
+// return a formated string value.
 type Timestamper func(t time.Time) string
 
 // Logging plumbing:
@@ -36,61 +37,62 @@ type ThrottledLogger struct {
 	Timestamper
 }
 
-// Builtin RFC3339Nano format isn't fixed width so
-// provide our own with microsecond precision (same as API server).
+// RFC3339Fixed is a fixed-width version of RFC3339 with microsecond precision,
+// because the RFC3339Nano format isn't fixed width.
 const RFC3339Fixed = "2006-01-02T15:04:05.000000Z07:00"
 
+// RFC3339Timestamp return a RFC3339 formatted timestamp using RFC3339Fixed
 func RFC3339Timestamp(now time.Time) string {
 	return now.Format(RFC3339Fixed)
 }
 
 // Write to the internal buffer.  Prepend a timestamp to each line of the input
 // data.
-func (this *ThrottledLogger) Write(p []byte) (n int, err error) {
-	this.Mutex.Lock()
-	if this.buf == nil {
-		this.buf = &bytes.Buffer{}
+func (tl *ThrottledLogger) Write(p []byte) (n int, err error) {
+	tl.Mutex.Lock()
+	if tl.buf == nil {
+		tl.buf = &bytes.Buffer{}
 	}
-	defer this.Mutex.Unlock()
+	defer tl.Mutex.Unlock()
 
-	now := this.Timestamper(time.Now().UTC())
+	now := tl.Timestamper(time.Now().UTC())
 	sc := bufio.NewScanner(bytes.NewBuffer(p))
 	for sc.Scan() {
-		_, err = fmt.Fprintf(this.buf, "%s %s\n", now, sc.Text())
+		_, err = fmt.Fprintf(tl.buf, "%s %s\n", now, sc.Text())
 	}
 	return len(p), err
 }
 
 // Periodically check the current buffer; if not empty, send it on the
 // channel to the goWriter goroutine.
-func (this *ThrottledLogger) flusher() {
+func (tl *ThrottledLogger) flusher() {
 	bufchan := make(chan *bytes.Buffer)
 	bufterm := make(chan bool)
 
 	// Use a separate goroutine for the actual write so that the writes are
 	// actually initiated closer every 1s instead of every
 	// 1s + (time to it takes to write).
-	go goWriter(this.writer, bufchan, bufterm)
+	go goWriter(tl.writer, bufchan, bufterm)
 	for {
-		if !this.stop {
+		if !tl.stop {
 			time.Sleep(1 * time.Second)
 		}
-		this.Mutex.Lock()
-		if this.buf != nil && this.buf.Len() > 0 {
-			oldbuf := this.buf
-			this.buf = nil
-			this.Mutex.Unlock()
+		tl.Mutex.Lock()
+		if tl.buf != nil && tl.buf.Len() > 0 {
+			oldbuf := tl.buf
+			tl.buf = nil
+			tl.Mutex.Unlock()
 			bufchan <- oldbuf
-		} else if this.stop {
-			this.Mutex.Unlock()
+		} else if tl.stop {
+			tl.Mutex.Unlock()
 			break
 		} else {
-			this.Mutex.Unlock()
+			tl.Mutex.Unlock()
 		}
 	}
 	close(bufchan)
 	<-bufterm
-	this.flusherDone <- true
+	tl.flusherDone <- true
 }
 
 // Receive buffers from a channel and send to the underlying Writer
@@ -101,19 +103,21 @@ func goWriter(writer io.Writer, c <-chan *bytes.Buffer, t chan<- bool) {
 	t <- true
 }
 
-// Stop the flusher goroutine and wait for it to complete, then close the
+// Close the flusher goroutine and wait for it to complete, then close the
 // underlying Writer.
-func (this *ThrottledLogger) Close() error {
-	this.stop = true
-	<-this.flusherDone
-	return this.writer.Close()
+func (tl *ThrottledLogger) Close() error {
+	tl.stop = true
+	<-tl.flusherDone
+	return tl.writer.Close()
 }
 
 const (
-	MaxLogLine = 1 << 12 // Child stderr lines >4KiB will be split
+	// MaxLogLine is the maximum length of stdout/stderr lines before they are split.
+	MaxLogLine = 1 << 12
 )
 
-// Goroutine to copy from a reader to a logger, with long line splitting.
+// CopyReaderToLog reads from a Reader and prints to a Logger, with long line
+// splitting.
 func CopyReaderToLog(in io.Reader, logger *log.Logger, done chan<- bool) {
 	reader := bufio.NewReaderSize(in, MaxLogLine)
 	var prefix string
@@ -139,11 +143,10 @@ func CopyReaderToLog(in io.Reader, logger *log.Logger, done chan<- bool) {
 	done <- true
 }
 
-// Create a new thottled logger that
+// NewThrottledLogger creates a new thottled logger that
 // (a) prepends timestamps to each line
 // (b) batches log messages and only calls the underlying Writer at most once
 // per second.
-
 func NewThrottledLogger(writer io.WriteCloser) *ThrottledLogger {
 	alw := &ThrottledLogger{}
 	alw.flusherDone = make(chan bool)
@@ -154,40 +157,39 @@ func NewThrottledLogger(writer io.WriteCloser) *ThrottledLogger {
 	return alw
 }
 
-// Implements a writer that writes to each of a WriteCloser (typically
-// CollectionFileWriter) and creates an API server log entry.
+// ArvLogWriter implements a writer that writes to each of a WriteCloser
+// (typically CollectionFileWriter) and creates an API server log entry.
 type ArvLogWriter struct {
-	Api           IArvadosClient
-	Uuid          string
+	ArvClient     IArvadosClient
+	UUID          string
 	loggingStream string
 	writeCloser   io.WriteCloser
 }
 
-func (this *ArvLogWriter) Write(p []byte) (n int, err error) {
+func (arvlog *ArvLogWriter) Write(p []byte) (n int, err error) {
 	// Write to the next writer in the chain (a file in Keep)
 	var err1 error
-	if this.writeCloser != nil {
-		_, err1 = this.writeCloser.Write(p)
+	if arvlog.writeCloser != nil {
+		_, err1 = arvlog.writeCloser.Write(p)
 	}
 
 	// write to API
-	lr := arvadosclient.Dict{"object_uuid": this.Uuid,
-		"event_type": this.loggingStream,
+	lr := arvadosclient.Dict{"object_uuid": arvlog.UUID,
+		"event_type": arvlog.loggingStream,
 		"properties": map[string]string{"text": string(p)}}
-	err2 := this.Api.Create("logs", lr, nil)
+	err2 := arvlog.ArvClient.Create("logs", lr, nil)
 
 	if err1 != nil || err2 != nil {
-		return 0, errors.New(fmt.Sprintf("%s ; %s", err1, err2))
-	} else {
-		return len(p), nil
+		return 0, fmt.Errorf("%s ; %s", err1, err2)
 	}
-
+	return len(p), nil
 }
 
-func (this *ArvLogWriter) Close() (err error) {
-	if this.writeCloser != nil {
-		err = this.writeCloser.Close()
-		this.writeCloser = nil
+// Close the underlying writer
+func (arvlog *ArvLogWriter) Close() (err error) {
+	if arvlog.writeCloser != nil {
+		err = arvlog.writeCloser.Close()
+		arvlog.writeCloser = nil
 	}
 	return err
 }

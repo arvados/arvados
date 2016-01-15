@@ -390,7 +390,7 @@ func (s *TestSuite) TestCommitLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	cr := NewContainerRunner(api, kc, nil)
-	cr.ContainerRecord.Uuid = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
+	cr.ContainerRecord.UUID = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 
 	cr.CrunchLog.Print("Hello world!")
@@ -409,7 +409,7 @@ func (s *TestSuite) TestUpdateContainerRecordRunning(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	cr := NewContainerRunner(api, kc, nil)
-	cr.ContainerRecord.Uuid = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
+	cr.ContainerRecord.UUID = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
 
 	err := cr.UpdateContainerRecordRunning()
 	c.Check(err, IsNil)
@@ -421,7 +421,7 @@ func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	cr := NewContainerRunner(api, kc, nil)
-	cr.ContainerRecord.Uuid = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
+	cr.ContainerRecord.UUID = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
 
 	cr.LogsPDH = new(string)
 	*cr.LogsPDH = "d3a229d2fe3690c2c3e75a71a153c6a3+60"
@@ -442,7 +442,7 @@ func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	cr := NewContainerRunner(api, kc, nil)
-	cr.ContainerRecord.Uuid = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
+	cr.ContainerRecord.UUID = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
 	cr.Cancelled = true
 	cr.finalState = "Cancelled"
 
@@ -610,7 +610,7 @@ func (s *TestSuite) TestCancel(c *C) {
 	cr := NewContainerRunner(api, &KeepTestClient{}, docker)
 
 	go func() {
-		for cr.ContainerId == "" {
+		for cr.ContainerID == "" {
 			time.Sleep(1 * time.Second)
 		}
 		cr.SigChan <- syscall.SIGINT
