@@ -342,10 +342,6 @@ type TestLogs struct {
 	Stderr ClosableBuffer
 }
 
-func (this *ClosableBuffer) Write(p []byte) (n int, err error) {
-	return this.Buffer.Write(p)
-}
-
 func (this *ClosableBuffer) Close() error {
 	return nil
 }
@@ -399,6 +395,7 @@ func (s *TestSuite) TestCommitLogs(c *C) {
 
 	cr.CrunchLog.Print("Hello world!")
 	cr.CrunchLog.Print("Goodbye")
+	cr.finalState = "Complete"
 
 	err := cr.CommitLogs()
 	c.Check(err, IsNil)
@@ -431,6 +428,7 @@ func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
 
 	cr.ExitCode = new(int)
 	*cr.ExitCode = 42
+	cr.finalState = "Complete"
 
 	err := cr.UpdateContainerRecordComplete()
 	c.Check(err, IsNil)
@@ -446,6 +444,7 @@ func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
 	cr := NewContainerRunner(api, kc, nil)
 	cr.ContainerRecord.Uuid = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
 	cr.Cancelled = true
+	cr.finalState = "Cancelled"
 
 	err := cr.UpdateContainerRecordComplete()
 	c.Check(err, IsNil)
@@ -455,6 +454,8 @@ func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
 	c.Check(api.Content["state"], Equals, "Cancelled")
 }
 
+// Used by the TestFullRun*() test below to DRY up boilerplate setup to do full
+// dress rehersal of the Run() function, starting from a JSON container record.
 func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner) {
 	rec := ContainerRecord{}
 	err := json.NewDecoder(strings.NewReader(record)).Decode(&rec)

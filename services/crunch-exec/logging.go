@@ -14,6 +14,18 @@ import (
 
 type Timestamper func(t time.Time) string
 
+// Logging plumbing:
+//
+// ThrottledLogger.Logger -> ThrottledLogger.Write ->
+// ThrottledLogger.buf -> ThrottledLogger.flusher -> goWriter ->
+// ArvLogWriter.Write -> CollectionFileWriter.Write | Api.Create
+//
+// For stdout/stderr CopyReaderToLog additionally runs as a goroutine to pull
+// data from the stdout/stderr Reader and send to the Logger.
+
+// ThrottledLogger accepts writes, prepends a timestamp to each line of the
+// write, and periodically flushes to a downstream writer.  It supports the
+// "Logger" and "WriteCloser" interfaces.
 type ThrottledLogger struct {
 	*log.Logger
 	buf *bytes.Buffer
@@ -24,18 +36,16 @@ type ThrottledLogger struct {
 	Timestamper
 }
 
+// Builtin RFC3339Nano format isn't fixed width so
+// provide our own with microsecond precision (same as API server).
+const RFC3339Fixed = "2006-01-02T15:04:05.000000Z07:00"
+
 func RFC3339Timestamp(now time.Time) string {
-	// return now.Format(time.RFC3339Nano)
-	// Builtin RFC3339Nano format isn't fixed width so
-	// provide our own.
-
-	return fmt.Sprintf("%04d-%02d-%02dT%02d:%02d:%02d.%09dZ",
-		now.Year(), now.Month(), now.Day(),
-		now.Hour(), now.Minute(), now.Second(),
-		now.Nanosecond())
-
+	return now.Format(RFC3339Fixed)
 }
 
+// Write to the internal buffer.  Prepend a timestamp to each line of the input
+// data.
 func (this *ThrottledLogger) Write(p []byte) (n int, err error) {
 	this.Mutex.Lock()
 	if this.buf == nil {
@@ -43,27 +53,23 @@ func (this *ThrottledLogger) Write(p []byte) (n int, err error) {
 	}
 	defer this.Mutex.Unlock()
 
-	now := time.Now().UTC()
-	_, err = fmt.Fprintf(this.buf, "%s %s", this.Timestamper(now), p)
+	now := this.Timestamper(time.Now().UTC())
+	sc := bufio.NewScanner(bytes.NewBuffer(p))
+	for sc.Scan() {
+		_, err = fmt.Fprintf(this.buf, "%s %s\n", now, sc.Text())
+	}
 	return len(p), err
 }
 
-func (this *ThrottledLogger) Stop() {
-	this.stop = true
-	<-this.flusherDone
-	this.writer.Close()
-}
-
-func goWriter(writer io.Writer, c <-chan *bytes.Buffer, t chan<- bool) {
-	for b := range c {
-		writer.Write(b.Bytes())
-	}
-	t <- true
-}
-
+// Periodically check the current buffer; if not empty, send it on the
+// channel to the goWriter goroutine.
 func (this *ThrottledLogger) flusher() {
 	bufchan := make(chan *bytes.Buffer)
 	bufterm := make(chan bool)
+
+	// Use a separate goroutine for the actual write so that the writes are
+	// actually initiated closer every 1s instead of every
+	// 1s + (time to it takes to write).
 	go goWriter(this.writer, bufchan, bufterm)
 	for {
 		if !this.stop {
@@ -71,23 +77,43 @@ func (this *ThrottledLogger) flusher() {
 		}
 		this.Mutex.Lock()
 		if this.buf != nil && this.buf.Len() > 0 {
-			bufchan <- this.buf
+			oldbuf := this.buf
 			this.buf = nil
+			this.Mutex.Unlock()
+			bufchan <- oldbuf
 		} else if this.stop {
 			this.Mutex.Unlock()
 			break
+		} else {
+			this.Mutex.Unlock()
 		}
-		this.Mutex.Unlock()
 	}
 	close(bufchan)
 	<-bufterm
 	this.flusherDone <- true
 }
 
+// Receive buffers from a channel and send to the underlying Writer
+func goWriter(writer io.Writer, c <-chan *bytes.Buffer, t chan<- bool) {
+	for b := range c {
+		writer.Write(b.Bytes())
+	}
+	t <- true
+}
+
+// Stop the flusher goroutine and wait for it to complete, then close the
+// underlying Writer.
+func (this *ThrottledLogger) Close() error {
+	this.stop = true
+	<-this.flusherDone
+	return this.writer.Close()
+}
+
 const (
 	MaxLogLine = 1 << 12 // Child stderr lines >4KiB will be split
 )
 
+// Goroutine to copy from a reader to a logger, with long line splitting.
 func CopyReaderToLog(in io.Reader, logger *log.Logger, done chan<- bool) {
 	reader := bufio.NewReaderSize(in, MaxLogLine)
 	var prefix string
@@ -113,6 +139,11 @@ func CopyReaderToLog(in io.Reader, logger *log.Logger, done chan<- bool) {
 	done <- true
 }
 
+// Create a new thottled logger that
+// (a) prepends timestamps to each line
+// (b) batches log messages and only calls the underlying Writer at most once
+// per second.
+
 func NewThrottledLogger(writer io.WriteCloser) *ThrottledLogger {
 	alw := &ThrottledLogger{}
 	alw.flusherDone = make(chan bool)
@@ -123,17 +154,20 @@ func NewThrottledLogger(writer io.WriteCloser) *ThrottledLogger {
 	return alw
 }
 
+// Implements a writer that writes to each of a WriteCloser (typically
+// CollectionFileWriter) and creates an API server log entry.
 type ArvLogWriter struct {
 	Api           IArvadosClient
 	Uuid          string
 	loggingStream string
-	io.WriteCloser
+	writeCloser   io.WriteCloser
 }
 
 func (this *ArvLogWriter) Write(p []byte) (n int, err error) {
+	// Write to the next writer in the chain (a file in Keep)
 	var err1 error
-	if this.WriteCloser != nil {
-		_, err1 = this.WriteCloser.Write(p)
+	if this.writeCloser != nil {
+		_, err1 = this.writeCloser.Write(p)
 	}
 
 	// write to API
@@ -151,9 +185,9 @@ func (this *ArvLogWriter) Write(p []byte) (n int, err error) {
 }
 
 func (this *ArvLogWriter) Close() (err error) {
-	if this.WriteCloser != nil {
-		err = this.WriteCloser.Close()
-		this.WriteCloser = nil
+	if this.writeCloser != nil {
+		err = this.writeCloser.Close()
+		this.writeCloser = nil
 	}
 	return err
 }

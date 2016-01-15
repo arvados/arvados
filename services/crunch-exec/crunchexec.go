@@ -22,6 +22,8 @@ type IArvadosClient interface {
 	Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error)
 }
 
+var ErrCancelled = errors.New("Cancelled")
+
 type IKeepClient interface {
 	PutHB(hash string, buf []byte) (string, int, error)
 	ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error)
@@ -34,16 +36,16 @@ type Collection struct {
 }
 
 type ContainerRecord struct {
-	Uuid               string            `json:"uuid"`
-	Command            []string          `json:"command"`
-	ContainerImage     string            `json:"container_image"`
-	Cwd                string            `json:"cwd"`
-	Environment        map[string]string `json:"environment"`
-	Mounts             map[string]Mount  `json:"mounts"`
-	OutputPath         string            `json:"output_path"`
-	Priority           int               `json:"priority"`
-	RuntimeConstraints map[string]string `json:"runtime_constraints"`
-	State              string            `json:"state"`
+	Uuid               string                 `json:"uuid"`
+	Command            []string               `json:"command"`
+	ContainerImage     string                 `json:"container_image"`
+	Cwd                string                 `json:"cwd"`
+	Environment        map[string]string      `json:"environment"`
+	Mounts             map[string]Mount       `json:"mounts"`
+	OutputPath         string                 `json:"output_path"`
+	Priority           int                    `json:"priority"`
+	RuntimeConstraints map[string]interface{} `json:"runtime_constraints"`
+	State              string                 `json:"state"`
 }
 
 type NewLogWriter func(name string) io.WriteCloser
@@ -77,6 +79,7 @@ type ContainerRunner struct {
 	CancelLock    sync.Mutex
 	Cancelled     bool
 	SigChan       chan os.Signal
+	finalState    string
 }
 
 func (this *ContainerRunner) SetupSignals() error {
@@ -152,7 +155,7 @@ func (this *ContainerRunner) StartContainer() (err error) {
 	defer this.CancelLock.Unlock()
 
 	if this.Cancelled {
-		return errors.New("Cancelled")
+		return ErrCancelled
 	}
 
 	this.ContainerConfig.Cmd = this.ContainerRecord.Command
@@ -213,20 +216,15 @@ func (this *ContainerRunner) WaitFinish() error {
 	<-this.loggingDone
 	<-this.loggingDone
 
-	this.Stdout.Stop()
-	this.Stderr.Stop()
+	this.Stdout.Close()
+	this.Stderr.Close()
 
 	return nil
 }
 
 func (this *ContainerRunner) CommitLogs() error {
-	if this.Cancelled {
-		this.CrunchLog.Print("Cancelled")
-	} else {
-		this.CrunchLog.Print("Complete")
-	}
-
-	this.CrunchLog.Stop()
+	this.CrunchLog.Print(this.finalState)
+	this.CrunchLog.Close()
 	this.CrunchLog = NewThrottledLogger(&ArvLogWriter{this.Api, this.ContainerRecord.Uuid,
 		"crunchexec", nil})
 
@@ -264,11 +262,8 @@ func (this *ContainerRunner) UpdateContainerRecordComplete() error {
 		update["exit_code"] = *this.ExitCode
 	}
 
-	if this.Cancelled {
-		update["state"] = "Cancelled"
-	} else {
-		update["state"] = "Complete"
-	}
+	update["state"] = this.finalState
+
 	return this.Api.Update("containers", this.ContainerRecord.Uuid, update, nil)
 }
 
@@ -286,6 +281,12 @@ func (this *ContainerRunner) Run(containerUuid string) (err error) {
 			this.CrunchLog.Print(err)
 		}
 
+		if this.Cancelled {
+			this.finalState = "Cancelled"
+		} else {
+			this.finalState = "Complete"
+		}
+
 		// (6) write logs
 		logerr := this.CommitLogs()
 		if logerr != nil {
@@ -298,7 +299,7 @@ func (this *ContainerRunner) Run(containerUuid string) (err error) {
 			this.CrunchLog.Print(updateerr)
 		}
 
-		this.CrunchLog.Stop()
+		this.CrunchLog.Close()
 
 		if err == nil {
 			if runerr != nil {
@@ -333,7 +334,7 @@ func (this *ContainerRunner) Run(containerUuid string) (err error) {
 	// (2) start container
 	err = this.StartContainer()
 	if err != nil {
-		if err.Error() == "Cancelled" {
+		if err == ErrCancelled {
 			err = nil
 		}
 		return

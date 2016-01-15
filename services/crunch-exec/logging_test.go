@@ -28,7 +28,7 @@ func (s *LoggingTestSuite) TestWriteLogs(c *C) {
 
 	cr.CrunchLog.Print("Hello world!")
 	cr.CrunchLog.Print("Goodbye")
-	cr.CrunchLog.Stop()
+	cr.CrunchLog.Close()
 
 	c.Check(api.Calls, Equals, 1)
 
@@ -54,7 +54,7 @@ func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
 		cr.CrunchLog.Printf("Hello %d", i)
 	}
 	cr.CrunchLog.Print("Goodbye")
-	cr.CrunchLog.Stop()
+	cr.CrunchLog.Close()
 
 	c.Check(api.Calls > 1, Equals, true)
 	c.Check(api.Calls < 2000000, Equals, true)
@@ -78,13 +78,13 @@ func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 	cr.CrunchLog.Print("Goodbye")
 	stdout.Print("Blurb")
 
-	cr.CrunchLog.Stop()
+	cr.CrunchLog.Close()
 	logtext1 := "2015-12-29T15:51:45.000000001Z Hello world!\n" +
 		"2015-12-29T15:51:45.000000003Z Goodbye\n"
 	c.Check(api.Content["event_type"], Equals, "crunchexec")
 	c.Check(api.Content["properties"].(map[string]string)["text"], Equals, logtext1)
 
-	stdout.Stop()
+	stdout.Close()
 	logtext2 := "2015-12-29T15:51:45.000000002Z Doing stuff\n" +
 		"2015-12-29T15:51:45.000000004Z Blurb\n"
 	c.Check(api.Content["event_type"], Equals, "stdout")

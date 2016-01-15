@@ -1,5 +1,14 @@
 package main
 
+// Originally based on sdk/go/crunchrunner/upload.go
+//
+// Unlike the original, which iterates over a directory tree and uploads each
+// file sequentially, this version supports opening and writing multiple files
+// in a collection simultaneously.
+//
+// Eventually this should move into the Arvados Go SDK for a more comprehensive
+// implementation of Collections.
+
 import (
 	"bytes"
 	"crypto/md5"
