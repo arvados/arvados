@@ -217,7 +217,7 @@
 //
 // In "trust all content" mode, Keep-web will accept credentials (API
 // tokens) and serve any collection X at
-// "https://collections.example.com/collections/X/path/file.ext".
+// "https://collections.example.com/c=X/path/file.ext".
 // This is UNSAFE except in the special case where everyone who is
 // able write ANY data to Keep, and every JavaScript and HTML file
 // written to Keep, is also trusted to read ALL of the data in Keep.
@@ -233,6 +233,8 @@
 //   keep-web -listen :9999 -attachment-only-host domain.example:9999 -trust-all-content
 //
 // Depending on your site configuration, you might also want to enable
-// "trust all content" setting on Workbench, in which case Workbench will
-// redirect users to keep-web even when that exposes XSS vulnerabilities.
+// "trust all content" setting on Workbench. Normally, Workbench
+// avoids redirecting requests to keep-web if they depend on
+// -trust-all-content being set.
+//
 package main

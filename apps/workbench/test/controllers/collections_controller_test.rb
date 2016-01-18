@@ -578,7 +578,7 @@ class CollectionsControllerTest < ActionController::TestCase
       assert_equal "https://download.example/c=#{id.sub '+', '-'}/_/w%20a%20z?api_token=#{tok}", @response.redirect_url
     end
 
-    test "Redirect to keep_web_download_url via #{id_type} when trust_all_content enabled" do
+    test "Redirect to keep_web_url via #{id_type} when trust_all_content enabled" do
       Rails.configuration.trust_all_content = true
       setup_for_keep_web('https://collections.example/c=%{uuid_or_pdh}',
                          'https://download.example/c=%{uuid_or_pdh}')

@@ -339,7 +339,7 @@ class CollectionsController < ApplicationController
       # Prefer the attachment-only-host when we want an attachment
       # (and when there is no preview link configured)
       tmpl = Rails.configuration.keep_web_download_url
-    else
+    elsif not Rails.configuration.trust_all_content
       check_uri = URI.parse(tmpl % fmt)
       if opts[:query_token] and
           not check_uri.host.start_with?(munged_id + "--") and
@@ -347,9 +347,7 @@ class CollectionsController < ApplicationController
         # We're about to pass a token in the query string, but
         # keep-web can't accept that safely at a single-origin URL
         # template (unless it's -attachment-only-host).
-        unless (Rails.configuration.trust_all_content and tmpl)
-          tmpl = Rails.configuration.keep_web_download_url
-        end
+        tmpl = Rails.configuration.keep_web_download_url
         if not tmpl
           raise ArgumentError, "Download precluded by site configuration"
         end
