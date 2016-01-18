@@ -15,7 +15,6 @@ RUN touch /var/lib/rpm/* && \
 RUN cd /tmp && \
     curl -OL 'http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm' && \
     rpm -ivh rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm && \
-    cat /etc/yum.repos.d/rpmforge.repo | sed 's/enabled = 0/enabled = 1/' > /tmp/rpmforge.repo && \
-    mv /tmp/rpmforge.repo /etc/yum.repos.d
+    sed -i 's/enabled = 0/enabled = 1/' /etc/yum.repos.d/rpmforge.repo
 
 COPY localrepo.repo /etc/yum.repos.d/localrepo.repo

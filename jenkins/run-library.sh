@@ -250,12 +250,13 @@ fpm_build () {
   for i in "${fpm_depends[@]}"; do
     COMMAND_ARR+=('--depends' "$i")
   done
-  COMMAND_ARR+=("${fpm_args[@]}")
 
   # Append remaining function arguments directly to fpm's command line.
   for i; do
     COMMAND_ARR+=("$i")
   done
+
+  COMMAND_ARR+=("${fpm_args[@]}")
 
   COMMAND_ARR+=("$PACKAGE")
 

@@ -264,7 +264,7 @@ handle_python_package
 
 # arvados-src
 (
-    set -ex
+    set -e
 
     cd "$WORKSPACE"
     COMMIT_HASH=$(format_last_commit_here "%H")
