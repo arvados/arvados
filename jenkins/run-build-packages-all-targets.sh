@@ -81,6 +81,19 @@ done
 
 cd $(dirname $0)
 
+FINAL_EXITCODE=0
+
 for dockerfile_path in $(find -name Dockerfile); do
     ./run-build-packages-one-target.sh --target "$(basename $(dirname "$dockerfile_path"))" --command "$COMMAND" $DEBUG $TEST_PACKAGES $ONLY_TEST
+
+    CODE=$?
+    if test $CODE != 0 ; then
+        FINAL_EXITCODE=$CODE
+    fi
 done
+
+if test $FINAL_EXITCODE != 0 ; then
+    echo "Build packages failed with code $FINAL_EXITCODE" >&2
+fi
+
+exit $FINAL_EXITCODE

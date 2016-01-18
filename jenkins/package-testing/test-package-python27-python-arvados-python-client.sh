@@ -2,5 +2,5 @@
 
 exec python <<EOF
 import arvados
-print "Successly imported arvados"
+print "Successfully imported arvados"
 EOF

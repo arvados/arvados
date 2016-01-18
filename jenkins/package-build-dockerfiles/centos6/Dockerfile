@@ -20,12 +20,13 @@ RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
 RUN touch /var/lib/rpm/* && yum -q -y install python27 python33
 RUN scl enable python33 "easy_install-3.3 pip" && scl enable python27 "easy_install-2.7 pip"
 
-RUN cd / root && \
+RUN cd /tmp && \
     curl -OL 'http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm' && \
     rpm -ivh rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm && \
     cat /etc/yum.repos.d/rpmforge.repo | sed 's/enabled = 0/enabled = 1/' > /tmp/rpmforge.repo && \
-    mv /tmp/rpmforge.repo /etc/yum.repos.d && \
-    yum install --assumeyes git
+    mv /tmp/rpmforge.repo /etc/yum.repos.d
+
+RUN touch /var/lib/rpm/* && yum install --assumeyes git
 
 ENV WORKSPACE /arvados
 CMD ["scl", "enable", "python33", "python27", "/usr/local/rvm/bin/rvm-exec default bash /jenkins/run-build-packages.sh --target centos6"]

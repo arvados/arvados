@@ -149,7 +149,7 @@ umask 0022
 debug_echo "umask is" `umask`
 
 if [[ ! -d "$WORKSPACE/packages/$TARGET" ]]; then
-    mkdir -p $WORKSPACE/packages/$TARGET
+    mkdir -p "$WORKSPACE/packages/$TARGET"
 fi
 
 # Build the SSO server package

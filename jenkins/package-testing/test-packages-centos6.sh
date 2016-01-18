@@ -38,7 +38,7 @@ if test -n "$shared" ; then
 fi
 
 if test -n "$SCL" ; then
-    exec $SCL "/jenkins/common-test-packages.sh $1"
+    exec $SCL "/jenkins/package-testing/common-test-packages.sh $1"
 else
-    exec /jenkins/common-test-packages.sh $1
+    exec /jenkins/package-testing/common-test-packages.sh $1
 fi

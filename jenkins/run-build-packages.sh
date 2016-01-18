@@ -264,7 +264,7 @@ handle_python_package
 
 # arvados-src
 (
-    set -e
+    set -ex
 
     cd "$WORKSPACE"
     COMMIT_HASH=$(format_last_commit_here "%H")
@@ -285,6 +285,7 @@ handle_python_package
     fpm_build $SRC_BUILD_DIR/=/usr/local/arvados/src arvados-src 'Curoverse, Inc.' 'dir' "$PKG_VERSION" "--exclude=usr/local/arvados/src/.git" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=The Arvados source code" "--architecture=all"
 
     rm -rf "$SRC_BUILD_DIR"
+    echo $?
 )
 
 # Go binaries

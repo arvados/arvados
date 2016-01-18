@@ -2,5 +2,5 @@
 
 exec python <<EOF
 import arvados_fuse
-print "Successly imported arvados_fuse"
+print "Successfully imported arvados_fuse"
 EOF

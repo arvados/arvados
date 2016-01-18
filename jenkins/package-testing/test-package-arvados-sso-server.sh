@@ -76,7 +76,7 @@ if [[ ! -e "/etc/arvados/sso/database.yml" ]]; then
   # We need to set up our database configuration now.
   if [[ "$FORMAT" == "rpm" ]]; then
     # postgres packaging on CentOS6 is kind of primitive, needs an initdb
-    $SUDO service postgresql initdb
+    service postgresql initdb
     if [ "$TARGET" = "centos6" ]; then
       sed -i -e "s/127.0.0.1\/32          ident/127.0.0.1\/32          md5/" /var/lib/pgsql/data/pg_hba.conf
       sed -i -e "s/::1\/128               ident/::1\/128               md5/" /var/lib/pgsql/data/pg_hba.conf
@@ -107,12 +107,12 @@ if [[ "$FORMAT" == "deb" ]]; then
   /usr/local/rvm/bin/rvm-exec default bundle list >$ARV_PACKAGES_DIR/arvados-sso-server.gems
 
   # Test 3: the package should remove cleanly
-  $SUDO apt-get remove arvados-sso-server --yes || EXITCODE=3
+  apt-get remove arvados-sso-server --yes || EXITCODE=3
 
   checkexit $EXITCODE "apt-get remove arvados-sso-server --yes"
 
   # Test 4: the package configuration should remove cleanly
-  $SUDO dpkg --purge arvados-sso-server || EXITCODE=4
+  dpkg --purge arvados-sso-server || EXITCODE=4
 
   checkexit $EXITCODE "dpkg --purge arvados-sso-server"
 
@@ -124,7 +124,7 @@ if [[ "$FORMAT" == "deb" ]]; then
 
   # Test 5: the package should remove cleanly with --purge
 
-  $SUDO apt-get remove arvados-sso-server --purge --yes || EXITCODE=5
+  apt-get remove arvados-sso-server --purge --yes || EXITCODE=5
 
   checkexit $EXITCODE "apt-get remove arvados-sso-server --purge --yes"
 
@@ -138,10 +138,10 @@ elif [[ "$FORMAT" == "rpm" ]]; then
 
   # Set up Nginx first
   # (courtesy of https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/el6/install_passenger.html)
-  $SUDO yum install -q -y epel-release pygpgme curl
-  $SUDO curl --fail -sSLo /etc/yum.repos.d/passenger.repo https://oss-binaries.phusionpassenger.com/yum/definitions/el-passenger.repo
-  $SUDO yum install -q -y nginx passenger
-  $SUDO sed -i -e 's/^# passenger/passenger/' /etc/nginx/conf.d/passenger.conf
+  yum install -q -y epel-release pygpgme curl
+  curl --fail -sSLo /etc/yum.repos.d/passenger.repo https://oss-binaries.phusionpassenger.com/yum/definitions/el-passenger.repo
+  yum install -q -y nginx passenger
+  sed -i -e 's/^# passenger/passenger/' /etc/nginx/conf.d/passenger.conf
   # Done setting up Nginx
 
   # Test 2: the package should reinstall cleanly
@@ -151,7 +151,7 @@ elif [[ "$FORMAT" == "rpm" ]]; then
   /usr/local/rvm/bin/rvm-exec default bundle list >$ARV_PACKAGES_DIR/arvados-sso-server.gems
 
   # Test 3: the package should remove cleanly
-  $SUDO yum -q -y remove arvados-sso-server || EXITCODE=3
+  yum -q -y remove arvados-sso-server || EXITCODE=3
 
   checkexit $EXITCODE "yum -q -y remove arvados-sso-server"
 
