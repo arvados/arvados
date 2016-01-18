@@ -577,6 +577,17 @@ class CollectionsControllerTest < ActionController::TestCase
       assert_response :redirect
       assert_equal "https://download.example/c=#{id.sub '+', '-'}/_/w%20a%20z?api_token=#{tok}", @response.redirect_url
     end
+
+    test "Redirect to keep_web_download_url via #{id_type} when trust_all_content enabled" do
+      Rails.configuration.trust_all_content = true
+      setup_for_keep_web('https://collections.example/c=%{uuid_or_pdh}',
+                         'https://download.example/c=%{uuid_or_pdh}')
+      tok = api_fixture('api_client_authorizations')['active']['api_token']
+      id = api_fixture('collections')['w_a_z_file'][id_type]
+      get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
+      assert_response :redirect
+      assert_equal "https://collections.example/c=#{id.sub '+', '-'}/_/w%20a%20z?api_token=#{tok}", @response.redirect_url
+    end
   end
 
   [false, true].each do |anon|
@@ -617,12 +628,15 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_response 422
   end
 
-  test "Redirect preview to keep_web_download_url when preview is disabled" do
-    setup_for_keep_web false, 'https://download.example/c=%{uuid_or_pdh}'
-    tok = api_fixture('api_client_authorizations')['active']['api_token']
-    id = api_fixture('collections')['w_a_z_file']['uuid']
-    get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
-    assert_response :redirect
-    assert_equal "https://download.example/c=#{id.sub '+', '-'}/_/w%20a%20z?api_token=#{tok}", @response.redirect_url
+  [false, true].each do |trust_all_content|
+    test "Redirect preview to keep_web_download_url when preview is disabled and trust_all_content is #{trust_all_content}" do
+      Rails.configuration.trust_all_content = trust_all_content
+      setup_for_keep_web false, 'https://download.example/c=%{uuid_or_pdh}'
+      tok = api_fixture('api_client_authorizations')['active']['api_token']
+      id = api_fixture('collections')['w_a_z_file']['uuid']
+      get :show_file, {uuid: id, file: "w a z"}, session_for(:active)
+      assert_response :redirect
+      assert_equal "https://download.example/c=#{id.sub '+', '-'}/_/w%20a%20z?api_token=#{tok}", @response.redirect_url
+    end
   end
 end

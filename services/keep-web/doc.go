@@ -232,4 +232,7 @@
 //
 //   keep-web -listen :9999 -attachment-only-host domain.example:9999 -trust-all-content
 //
+// Depending on your site configuration, you might also want to enable
+// "trust all content" setting on Workbench, in which case Workbench will
+// redirect users to keep-web even when that exposes XSS vulnerabilities.
 package main

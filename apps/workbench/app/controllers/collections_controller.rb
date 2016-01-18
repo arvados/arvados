@@ -347,7 +347,9 @@ class CollectionsController < ApplicationController
         # We're about to pass a token in the query string, but
         # keep-web can't accept that safely at a single-origin URL
         # template (unless it's -attachment-only-host).
-        tmpl = Rails.configuration.keep_web_download_url
+        unless (Rails.configuration.trust_all_content and tmpl)
+          tmpl = Rails.configuration.keep_web_download_url
+        end
         if not tmpl
           raise ArgumentError, "Download precluded by site configuration"
         end
