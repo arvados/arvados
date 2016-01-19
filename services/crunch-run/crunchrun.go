@@ -216,8 +216,8 @@ func (runner *ContainerRunner) AttachLogs() (err error) {
 
 	runner.Stdout = NewThrottledLogger(runner.NewLogWriter("stdout"))
 	runner.Stderr = NewThrottledLogger(runner.NewLogWriter("stderr"))
-	go CopyReaderToLog(stdoutReader, runner.Stdout.Logger, runner.loggingDone)
-	go CopyReaderToLog(stderrReader, runner.Stderr.Logger, runner.loggingDone)
+	go ReadWriteLines(stdoutReader, runner.Stdout, runner.loggingDone)
+	go ReadWriteLines(stderrReader, runner.Stderr, runner.loggingDone)
 
 	return nil
 }

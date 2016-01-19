@@ -21,7 +21,7 @@ type Timestamper func(t time.Time) string
 // ThrottledLogger.buf -> ThrottledLogger.flusher -> goWriter ->
 // ArvLogWriter.Write -> CollectionFileWriter.Write | Api.Create
 //
-// For stdout/stderr CopyReaderToLog additionally runs as a goroutine to pull
+// For stdout/stderr ReadWriteLines additionally runs as a goroutine to pull
 // data from the stdout/stderr Reader and send to the Logger.
 
 // ThrottledLogger accepts writes, prepends a timestamp to each line of the
@@ -116,9 +116,9 @@ const (
 	MaxLogLine = 1 << 12
 )
 
-// CopyReaderToLog reads from a Reader and prints to a Logger, with long line
-// splitting.
-func CopyReaderToLog(in io.Reader, logger *log.Logger, done chan<- bool) {
+// ReadWriteLines reads lines from a reader and writes to a Writer, with long
+// line splitting.
+func ReadWriteLines(in io.Reader, writer io.Writer, done chan<- bool) {
 	reader := bufio.NewReaderSize(in, MaxLogLine)
 	var prefix string
 	for {
@@ -126,13 +126,19 @@ func CopyReaderToLog(in io.Reader, logger *log.Logger, done chan<- bool) {
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			logger.Print("error reading container log:", err)
+			writer.Write([]byte(fmt.Sprintln("error reading container log:", err)))
 		}
 		var suffix string
 		if isPrefix {
-			suffix = "[...]"
+			suffix = "[...]\n"
 		}
-		logger.Print(prefix, string(line), suffix)
+
+		if prefix == "" && suffix == "" {
+			writer.Write(line)
+		} else {
+			writer.Write([]byte(fmt.Sprint(prefix, string(line), suffix)))
+		}
+
 		// Set up prefix for following line
 		if isPrefix {
 			prefix = "[...]"
