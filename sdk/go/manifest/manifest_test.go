@@ -62,13 +62,8 @@ func expectStringSlicesEqual(t *testing.T, actual []string, expected []string) {
 }
 
 func expectFileStreamSegmentsEqual(t *testing.T, actual []FileStreamSegment, expected []FileStreamSegment) {
-	if len(actual) != len(expected) {
-		t.Fatalf("Expected %v (length %d), but received %v (length %d) instead. %s", expected, len(expected), actual, len(actual), getStackTrace())
-	}
-	for i := range actual {
-		if actual[i] != expected[i] {
-			t.Fatalf("Expected %v but received %v instead (first disagreement at position %d). %s", expected, actual, i, getStackTrace())
-		}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("Expected %v but received %v instead. %s", expected, actual, getStackTrace())
 	}
 }
 

@@ -16,7 +16,7 @@ import (
 	"syscall"
 )
 
-// IArvadosClient is the minimal Arvados API methods used by crunchexec.
+// IArvadosClient is the minimal Arvados API methods used by crunch-run.
 type IArvadosClient interface {
 	Create(resourceType string, parameters arvadosclient.Dict, output interface{}) error
 	Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error
@@ -26,7 +26,7 @@ type IArvadosClient interface {
 // ErrCancelled is the error returned when the container is cancelled.
 var ErrCancelled = errors.New("Cancelled")
 
-// IKeepClient is the minimal Keep API methods used by crunchexec.
+// IKeepClient is the minimal Keep API methods used by crunch-run.
 type IKeepClient interface {
 	PutHB(hash string, buf []byte) (string, int, error)
 	ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error)
@@ -57,7 +57,7 @@ type ContainerRecord struct {
 // NewLogWriter is a factory function to create a new log writer.
 type NewLogWriter func(name string) io.WriteCloser
 
-// ThinDockerClient is the minimal Docker client interface used by crunchexec.
+// ThinDockerClient is the minimal Docker client interface used by crunch-run.
 type ThinDockerClient interface {
 	StopContainer(id string, timeout int) error
 	InspectImage(id string) (*dockerclient.ImageInfo, error)
@@ -252,7 +252,7 @@ func (runner *ContainerRunner) CommitLogs() error {
 	// other further (such as failing to write the log to Keep!) while
 	// shutting down
 	runner.CrunchLog = NewThrottledLogger(&ArvLogWriter{runner.ArvClient, runner.ContainerRecord.UUID,
-		"crunchexec", nil})
+		"crunch-run", nil})
 
 	mt, err := runner.LogCollection.ManifestText()
 	if err != nil {
@@ -397,7 +397,7 @@ func NewContainerRunner(api IArvadosClient,
 	cr := &ContainerRunner{ArvClient: api, Kc: kc, Docker: docker}
 	cr.NewLogWriter = cr.NewArvLogWriter
 	cr.LogCollection = &CollectionWriter{kc, nil}
-	cr.CrunchLog = NewThrottledLogger(cr.NewLogWriter("crunchexec"))
+	cr.CrunchLog = NewThrottledLogger(cr.NewLogWriter("crunch-run"))
 	return cr
 }
 
