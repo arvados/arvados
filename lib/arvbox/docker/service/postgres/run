@@ -1,0 +1,12 @@
+#!/bin/bash
+
+flock /var/lib/arvados/createusers.lock /usr/local/lib/arvbox/createusers.sh
+
+. /usr/local/lib/arvbox/common.sh
+
+chown -R $PGUSER:$PGGROUP /var/lib/postgresql
+chown -R $PGUSER:$PGGROUP /var/run/postgresql
+chown -R $PGUSER:$PGGROUP /etc/postgresql
+chown -R $PGUSER:$PGGROUP /etc/ssl/private
+
+exec chpst -u $PGUSER:$PGGROUP $0-service

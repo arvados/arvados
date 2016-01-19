@@ -1,0 +1,14 @@
+FROM arvados/arvbox-base
+
+RUN cd /usr/src && \
+    git clone https://github.com/curoverse/arvados.git && \
+    git clone https://github.com/curoverse/sso-devise-omniauth-provider.git sso
+
+RUN chown -R 1000:1000 /usr/src && /usr/local/lib/arvbox/createusers.sh
+
+RUN sudo -u arvbox /usr/local/lib/arvbox/service/sso/run-service --only-deps
+RUN sudo -u arvbox /usr/local/lib/arvbox/service/api/run-service --only-deps
+RUN sudo -u arvbox /usr/local/lib/arvbox/service/workbench/run-service --only-deps
+RUN sudo -u arvbox /usr/local/lib/arvbox/service/doc/run-service --only-deps
+RUN sudo -u arvbox /usr/local/lib/arvbox/service/vm/run-service --only-deps
+RUN sudo -u arvbox /usr/local/lib/arvbox/service/sdk/run-service
