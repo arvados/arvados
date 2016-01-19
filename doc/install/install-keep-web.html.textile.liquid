@@ -109,6 +109,10 @@ server {
 }
 </pre></notextile>
 
+{% include 'notebox_begin' %}
+If you restrict access to your Arvados services based on network topology -- for example, your proxy server is not reachable from the public internet -- additional proxy configuration might be needed to thwart cross-site scripting attacks that would circumvent your restrictions. Read the "'Intranet mode' section of the Keep-web documentation":https://godoc.org/github.com/curoverse/arvados/services/keep-web#hdr-Intranet_mode now.
+{% include 'notebox_end' %}
+
 h3. Configure DNS
 
 Configure your DNS servers so the following names resolve to your Nginx proxy's public IP address.
@@ -117,7 +121,9 @@ Configure your DNS servers so the following names resolve to your Nginx proxy's 
 * @*--collections.uuid_prefix.your.domain@, if you have a wildcard SSL certificate valid for @*.uuid_prefix.your.domain@ and your DNS server allows this without interfering with other DNS names.
 * @*.collections.uuid_prefix.your.domain@, if you have a wildcard SSL certificate valid for these names.
 
-If neither of the above wildcard options is feasible, only unauthenticated requests (public data and collection sharing links) will be served as web content at @collections.uuid_prefix.your.domain@. The @download@ name will be used to serve authenticated content, but only as file downloads.
+If neither of the above wildcard options is feasible, you have two choices:
+# Serve web content at @collections.uuid_prefix.your.domain@, but only for unauthenticated requests (public data and collection sharing links). Authenticated requests will always result in file downloads, using the @download@ name. For example, the Workbench "preview" button and the "view entire log file" link will invoke file downloads instead of displaying content in the browser window.
+# In the special case where you know you are immune to XSS exploits, you can enable the "trust all content" mode in Keep-web (with the @-trust-all-content@ command line flag) and Workbench (with the @trust_all_content@ item in @application.yml@). With both of these enabled, inline web content can be served from a single @collections@ host name; no wildcard DNS or certificate is needed. Do not do this without understanding the security implications described in the "Keep-web documentation":http://godoc.org/github.com/curoverse/arvados/services/keep-web.
 
 h3. Tell Workbench about the Keep-web service
 
