@@ -13,7 +13,7 @@ table(table table-bordered table-condensed).
 |_Function_|_Number of nodes_|
 |Arvados API, Crunch dispatcher, Git, Websockets and Workbench|1|
 |Arvados Compute node|1|
-|Arvados Keepproxy server|1|
+|Arvados Keepproxy and Keep-web server|1|
 |Arvados Keepstore servers|2|
 |Arvados Shell server|1|
 |Arvados SSO server|1|
@@ -90,12 +90,13 @@ There are six public-facing services that require an SSL certificate. If you do 
 
 Most Arvados clients and services will accept self-signed certificates when the @ARVADOS_API_HOST_INSECURE@ environment variable is set to @true@.  However, web browsers generally do not make it easy for users to accept self-signed certificates from Web sites.
 
-Users who log in through Workbench will visit three sites: the SSO server, the API server, and Workbench itself.  When a browser visits each of these sites, it will warn the user if the site uses a self-signed certificate, and the user must accept it before continuing.  This procedure usually only needs to be done once in a browser.
+Users who log in through Workbench will visit at least three sites: the SSO server, the API server, and Workbench itself.  When a browser visits each of these sites, it will warn the user if the site uses a self-signed certificate, and the user must accept it before continuing.  This procedure usually only needs to be done once in a browser.
 
 After that's done, Workbench includes JavaScript clients for other Arvados services.  Users are usually not warned if these client connections are refused because the server uses a self-signed certificate, and it is especially difficult to accept those cerficiates:
 
 * JavaScript connects to the Websockets server to provide incremental page updates and view logs from running jobs.
 * JavaScript connects to the API and Keepproxy servers to upload local files to collections.
+* JavaScript connects to the Keep-web server to download log files.
 
 In sum, Workbench will be much less pleasant to use in a cluster that uses self-signed certificates.  You should avoid using self-signed certificates unless you plan to deploy a cluster without Workbench; you are deploying only to evaluate Arvados as an individual system administrator; or you can push configuration to users' browsers to trust your self-signed certificates.
 
@@ -109,6 +110,11 @@ table(table table-bordered table-condensed).
 |Arvados API|@uuid_prefix@.your.domain|
 |Arvados Git server|git.@uuid_prefix@.your.domain|
 |Arvados Keepproxy server|keep.@uuid_prefix@.your.domain|
+|Arvados Keep-web server|download.@uuid_prefix@.your.domain
+_and_
+*.collections.@uuid_prefix@.your.domain or
+*<notextile>--</notextile>collections.@uuid_prefix@.your.domain or
+collections.@uuid_prefix@.your.domain (see the "keep-web install docs":install-keep-web.html)|
 |Arvados SSO Server|auth.your.domain|
 |Arvados Websockets endpoint|ws.@uuid_prefix@.your.domain|
 |Arvados Workbench|workbench.@uuid_prefix@.your.domain|
