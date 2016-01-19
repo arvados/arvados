@@ -1,0 +1,10 @@
+#!/bin/bash
+
+exec 2>&1
+set -eux -o pipefail
+
+if ! test -d /var/run/sshd ; then
+   mkdir /var/run/sshd
+   chmod 0755 /var/run/sshd
+fi
+/usr/sbin/sshd -D
