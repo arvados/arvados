@@ -84,8 +84,7 @@ type Container struct {
 
 // ContainerList is a list of the containers from api
 type ContainerList struct {
-	ItemsAvailable int         `json:"items_available"`
-	Items          []Container `json:"items"`
+	Items []Container `json:"items"`
 }
 
 // Get the list of queued containers from API server and invoke run for each container.
@@ -101,7 +100,7 @@ func dispatchLocal(priorityPollInterval int, crunchRunCommand string) {
 		return
 	}
 
-	for i := 0; i < containers.ItemsAvailable; i++ {
+	for i := 0; i < len(containers.Items); i++ {
 		log.Printf("About to run queued container %v", containers.Items[i].UUID)
 		go run(containers.Items[i].UUID, crunchRunCommand, priorityPollInterval)
 	}
@@ -113,7 +112,7 @@ func dispatchLocal(priorityPollInterval int, crunchRunCommand string) {
 // Set the container state to Running
 // If the container priority becomes zero while crunch job is still running, terminate it.
 func run(uuid string, crunchRunCommand string, priorityPollInterval int) {
-	cmd := exec.Command(crunchRunCommand, "--job", uuid)
+	cmd := exec.Command(crunchRunCommand, uuid)
 
 	cmd.Stdin = nil
 	cmd.Stderr = os.Stderr
@@ -146,7 +145,7 @@ func run(uuid string, crunchRunCommand string, priorityPollInterval int) {
 				} else {
 					if container.Priority == 0 {
 						priorityTicker.Stop()
-						cmd.Process.Kill()
+						cmd.Process.Signal(os.Interrupt)
 						return
 					}
 				}
@@ -168,7 +167,7 @@ func run(uuid string, crunchRunCommand string, priorityPollInterval int) {
 		err = arv.Update("containers", uuid,
 			arvadosclient.Dict{
 				"container": arvadosclient.Dict{"state": "Complete"}},
-			&container)
+			nil)
 		if err != nil {
 			log.Printf("Error updating container state to Complete for %v: %q", uuid, err)
 		}

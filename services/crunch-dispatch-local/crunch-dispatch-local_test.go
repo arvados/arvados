@@ -59,7 +59,7 @@ func (s *MockArvadosServerSuite) TearDownTest(c *C) {
 }
 
 func (s *TestSuite) Test_doMain(c *C) {
-	args := []string{"-poll-interval", "1", "-container-priority-poll-interval", "1", "-crunch-run-command", "echo"}
+	args := []string{"-poll-interval", "2", "-container-priority-poll-interval", "1", "-crunch-run-command", "echo"}
 	os.Args = append(os.Args, args...)
 
 	go func() {
@@ -70,6 +70,9 @@ func (s *TestSuite) Test_doMain(c *C) {
 	err := doMain()
 	c.Check(err, IsNil)
 
+	// Give some time for run goroutine to complete
+	time.Sleep(1 * time.Second)
+
 	// There should be no queued containers now
 	params := arvadosclient.Dict{
 		"filters": [][]string{[]string{"state", "=", "Queued"}},
@@ -77,7 +80,7 @@ func (s *TestSuite) Test_doMain(c *C) {
 	var containers ContainerList
 	err = arv.List("containers", params, &containers)
 	c.Check(err, IsNil)
-	c.Assert(containers.ItemsAvailable, Equals, 0)
+	c.Assert(len(containers.Items), Equals, 0)
 
 	// Previously "Queued" container should now be in "Complete" state
 	var container Container
