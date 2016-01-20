@@ -24,6 +24,7 @@ import shutil
 import sys
 import logging
 import tempfile
+import urlparse
 
 import arvados
 import arvados.config
@@ -583,6 +584,20 @@ def copy_collection(obj_uuid, src, dst, args):
     c['manifest_text'] = dst_manifest
     return create_collection_from(c, src, dst, args)
 
+def setup_git_http(url):
+    u = urlparse.urlsplit(url)
+    url = urlparse.urlunsplit((u.scheme, u.netloc, "", "", ""))
+    arvados.util.run_command(["git",
+                              "config",
+                              "--global",
+                              "credential.%s/.username" % url,
+                              "none"])
+    arvados.util.run_command(["git",
+                              "config",
+                              "--global",
+                              "credential.%s/.helper" % url,
+                              """!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred"""])
+
 # copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args)
 #
 #    Copies commits from git repository 'src_git_repo' on Arvados
@@ -605,7 +620,13 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
     if r['items_available'] != 1:
         raise Exception('cannot identify source repo {}; {} repos found'
                         .format(src_git_repo, r['items_available']))
-    src_git_url = r['items'][0]['fetch_url']
+
+    http_url = [c for c in r['items'][0]['clone_urls'] if c.startswith("http")]
+    if http_url:
+        src_git_url = http_url[0]
+        setup_git_http(src_git_url)
+    else:
+        src_git_url = r['items'][0]['fetch_url']
     logger.debug('src_git_url: {}'.format(src_git_url))
 
     r = dst.repositories().list(
@@ -613,7 +634,14 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
     if r['items_available'] != 1:
         raise Exception('cannot identify destination repo {}; {} repos found'
                         .format(dst_git_repo, r['items_available']))
-    dst_git_push_url  = r['items'][0]['push_url']
+
+    http_url = [c for c in r['items'][0]['clone_urls'] if c.startswith("http")]
+    if http_url:
+        dst_git_push_url = http_url[0]
+        setup_git_http(dst_git_push_url)
+    else:
+        dst_git_push_url = r['items'][0]['push_url']
+
     logger.debug('dst_git_push_url: {}'.format(dst_git_push_url))
 
     dst_branch = re.sub(r'\W+', '_', "{}_{}".format(src_git_url, script_version))
@@ -624,7 +652,9 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
         arvados.util.run_command(
             ["git", "clone", "--bare", src_git_url,
              local_repo_dir[src_git_repo]],
-            cwd=os.path.dirname(local_repo_dir[src_git_repo]))
+            cwd=os.path.dirname(local_repo_dir[src_git_repo]),
+            env={"HOME": os.environ["HOME"],
+                 "ARVADOS_API_TOKEN": src.api_token})
         arvados.util.run_command(
             ["git", "remote", "add", "dst", dst_git_push_url],
             cwd=local_repo_dir[src_git_repo])
@@ -632,7 +662,9 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
         ["git", "branch", dst_branch, script_version],
         cwd=local_repo_dir[src_git_repo])
     arvados.util.run_command(["git", "push", "dst", dst_branch],
-                             cwd=local_repo_dir[src_git_repo])
+                             cwd=local_repo_dir[src_git_repo],
+                             env={"HOME": os.environ["HOME"],
+                                  "ARVADOS_API_TOKEN": dst.api_token})
 
 def copy_docker_images(pipeline, src, dst, args):
     """Copy any docker images named in the pipeline components'
