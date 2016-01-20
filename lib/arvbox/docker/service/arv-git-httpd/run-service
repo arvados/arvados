@@ -23,5 +23,5 @@ cd ~git
 
 exec /usr/local/bin/arv-git-httpd \
      -address=:${services[arv-git-httpd]} \
-     -git-command=/var/lib/arvados/git/gitolite/src/gitolite-shell \
+     -git-command=/usr/share/gitolite3/gitolite-shell \
      -repo-root=/var/lib/arvados/git/repositories
