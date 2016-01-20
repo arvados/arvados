@@ -257,3 +257,18 @@ common:
   # Example:
   # keep_web_download_url: https://download.uuid_prefix.arvadosapi.com/c=%{uuid_or_pdh}
   keep_web_download_url: false
+
+  # In "trust all content" mode, Workbench will redirect download
+  # requests to keep-web, even in the cases when keep-web would have
+  # to expose XSS vulnerabilities in order to handle the redirect.
+  #
+  # When enabling this setting, the -trust-all-content flag on the
+  # keep-web server must also be enabled.  For more detail, see
+  # https://godoc.org/github.com/curoverse/arvados/services/keep-web
+  #
+  # This setting has no effect in the recommended configuration, where
+  # the host part of keep_web_url begins with %{uuid_or_pdh}: in this
+  # case XSS protection is provided by browsers' same-origin policy.
+  #
+  # The default setting (false) is appropriate for a multi-user site.
+  trust_all_content: false
