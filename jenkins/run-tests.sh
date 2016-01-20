@@ -68,6 +68,7 @@ services/keepproxy
 services/keepstore
 services/login-sync
 services/nodemanager
+services/crunch-dispatch-local
 sdk/cli
 sdk/pam
 sdk/python
@@ -720,6 +721,7 @@ gostuff=(
     services/datamanager/collection
     services/datamanager/keep
     services/datamanager
+    services/crunch-dispatch-local
     services/crunch-run
     tools/keep-rsync
     )
