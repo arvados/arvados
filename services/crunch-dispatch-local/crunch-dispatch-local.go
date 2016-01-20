@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -52,16 +53,22 @@ func doMain() error {
 	sigChan = make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	go func(sig <-chan os.Signal) {
+		var wg sync.WaitGroup
 		for sig := range sig {
 			doneProcessing <- true
 			caught := sig
 			for uuid, cmd := range runningCmds {
-				cmd.Process.Signal(caught)
-				if _, err := cmd.Process.Wait(); err != nil {
-					log.Printf("Error while waiting for process to finish for %v: %q", uuid, err)
-				}
+				go func(uuid string) {
+					wg.Add(1)
+					defer wg.Done()
+					cmd.Process.Signal(caught)
+					if _, err := cmd.Process.Wait(); err != nil {
+						log.Printf("Error while waiting for process to finish for %v: %q", uuid, err)
+					}
+				}(uuid)
 			}
 		}
+		wg.Wait()
 	}(sigChan)
 
 	// channel to terminate
