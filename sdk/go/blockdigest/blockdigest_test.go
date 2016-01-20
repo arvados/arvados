@@ -143,6 +143,9 @@ func TestLocatorPatternBasic(t *testing.T) {
 		"12345678901234567890123456789012+12345+A1+B123wxyz@_-")
 	expectLocatorPatternMatch(t,
 		"12345678901234567890123456789012+12345+A1+B123wxyz@_-+C@")
+	expectLocatorPatternMatch(t, "12345678901234567890123456789012+12345+A")
+	expectLocatorPatternMatch(t, "12345678901234567890123456789012+12345+A1+B")
+	expectLocatorPatternMatch(t, "12345678901234567890123456789012+12345+A+B2")
 
 	expectLocatorPatternFail(t, "12345678901234567890123456789012")
 	expectLocatorPatternFail(t, "12345678901234567890123456789012+")
@@ -153,11 +156,9 @@ func TestLocatorPatternBasic(t *testing.T) {
 	expectLocatorPatternFail(t, "12345678901234567890123456789012+12345 ")
 	expectLocatorPatternFail(t, "12345678901234567890123456789012+12345+1")
 	expectLocatorPatternFail(t, "12345678901234567890123456789012+12345+1A")
-	expectLocatorPatternFail(t, "12345678901234567890123456789012+12345+A")
 	expectLocatorPatternFail(t, "12345678901234567890123456789012+12345+a1")
 	expectLocatorPatternFail(t, "12345678901234567890123456789012+12345+A1+")
-	expectLocatorPatternFail(t, "12345678901234567890123456789012+12345+A1+B")
-	expectLocatorPatternFail(t, "12345678901234567890123456789012+12345+A+B2")
+
 }
 
 func TestParseBlockLocatorSimple(t *testing.T) {

@@ -44,12 +44,19 @@ type FileSegment struct {
 	Len    int
 }
 
+// FileStreamSegment is a portion of a file described as a segment of a stream.
+type FileStreamSegment struct {
+	SegPos uint64
+	SegLen uint64
+	Name   string
+}
+
 // Represents a single line from a manifest.
 type ManifestStream struct {
-	StreamName string
-	Blocks     []string
-	FileTokens []string
-	Err        error
+	StreamName         string
+	Blocks             []string
+	FileStreamSegments []FileStreamSegment
+	Err                error
 }
 
 var escapeSeq = regexp.MustCompile(`\\([0-9]{3}|\\)`)
@@ -97,21 +104,21 @@ func ParseBlockLocator(s string) (b BlockLocator, err error) {
 	return
 }
 
-func parseFileToken(tok string) (segPos, segLen uint64, name string, err error) {
+func parseFileStreamSegment(tok string) (ft FileStreamSegment, err error) {
 	parts := strings.SplitN(tok, ":", 3)
 	if len(parts) != 3 {
 		err = ErrInvalidToken
 		return
 	}
-	segPos, err = strconv.ParseUint(parts[0], 10, 64)
+	ft.SegPos, err = strconv.ParseUint(parts[0], 10, 64)
 	if err != nil {
 		return
 	}
-	segLen, err = strconv.ParseUint(parts[1], 10, 64)
+	ft.SegLen, err = strconv.ParseUint(parts[1], 10, 64)
 	if err != nil {
 		return
 	}
-	name = UnescapeName(parts[2])
+	ft.Name = UnescapeName(parts[2])
 	return
 }
 
@@ -128,12 +135,11 @@ func (s *ManifestStream) sendFileSegmentIterByName(filepath string, ch chan<- *F
 	blockLens := make([]int, 0, len(s.Blocks))
 	// This is what streamName+"/"+fileName will look like:
 	target := "./" + filepath
-	for _, fTok := range s.FileTokens {
-		wantPos, wantLen, name, err := parseFileToken(fTok)
-		if err != nil {
-			// Skip (!) invalid file tokens.
-			continue
-		}
+	for _, fTok := range s.FileStreamSegments {
+		wantPos := fTok.SegPos
+		wantLen := fTok.SegLen
+		name := fTok.Name
+
 		if s.StreamName+"/"+name != target {
 			continue
 		}
@@ -199,24 +205,25 @@ func parseManifestStream(s string) (m ManifestStream) {
 		}
 	}
 	m.Blocks = tokens[:i]
-	m.FileTokens = tokens[i:]
+	fileTokens := tokens[i:]
 
 	if len(m.Blocks) == 0 {
 		m.Err = fmt.Errorf("No block locators found")
 		return
 	}
 
-	if len(m.FileTokens) == 0 {
+	if len(fileTokens) == 0 {
 		m.Err = fmt.Errorf("No file tokens found")
 		return
 	}
 
-	for _, ft := range m.FileTokens {
-		_, _, _, err := parseFileToken(ft)
+	for _, ft := range fileTokens {
+		pft, err := parseFileStreamSegment(ft)
 		if err != nil {
 			m.Err = fmt.Errorf("Invalid file token: %s", ft)
 			break
 		}
+		m.FileStreamSegments = append(m.FileStreamSegments, pft)
 	}
 
 	return
