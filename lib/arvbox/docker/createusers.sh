@@ -37,4 +37,6 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
 
     mkdir -p /tmp/crunch0 /tmp/crunch1
     chown crunch:crunch -R /tmp/crunch0 /tmp/crunch1
+
+    echo "arvbox    ALL=(crunch) NOPASSWD: ALL" >> /etc/sudoers
 fi
