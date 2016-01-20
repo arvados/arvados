@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -17,6 +19,7 @@ func main() {
 }
 
 var arv arvadosclient.ArvadosClient
+var runningCmds map[string]*exec.Cmd
 
 func doMain() error {
 	flags := flag.NewFlagSet("crunch-dispatch-local", flag.ExitOnError)
@@ -45,6 +48,22 @@ func doMain() error {
 		return err
 	}
 
+	runningCmds = make(map[string]*exec.Cmd)
+	sigChan = make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	go func(sig <-chan os.Signal) {
+		for sig := range sig {
+			doneProcessing <- true
+			caught := sig
+			for uuid, cmd := range runningCmds {
+				cmd.Process.Signal(caught)
+				if _, err := cmd.Process.Wait(); err != nil {
+					log.Printf("Error while waiting for process to finish for %v: %q", uuid, err)
+				}
+			}
+		}
+	}(sigChan)
+
 	// channel to terminate
 	doneProcessing = make(chan bool)
 
@@ -54,6 +73,7 @@ func doMain() error {
 }
 
 var doneProcessing chan bool
+var sigChan chan os.Signal
 
 // Poll for queued containers using pollInterval.
 // Invoke dispatchLocal for each ticker cycle, which will run all the queued containers.
@@ -122,6 +142,8 @@ func run(uuid string, crunchRunCommand string, priorityPollInterval int) {
 		return
 	}
 
+	runningCmds[uuid] = cmd
+
 	log.Printf("Started container run for %v", uuid)
 
 	err := arv.Update("containers", uuid,
@@ -146,6 +168,7 @@ func run(uuid string, crunchRunCommand string, priorityPollInterval int) {
 					if container.Priority == 0 {
 						priorityTicker.Stop()
 						cmd.Process.Signal(os.Interrupt)
+						delete(runningCmds, uuid)
 						return
 					}
 				}
@@ -157,6 +180,7 @@ func run(uuid string, crunchRunCommand string, priorityPollInterval int) {
 	if _, err := cmd.Process.Wait(); err != nil {
 		log.Printf("Error while waiting for process to finish for %v: %q", uuid, err)
 	}
+	delete(runningCmds, uuid)
 
 	priorityTicker.Stop()
 
