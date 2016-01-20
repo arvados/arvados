@@ -116,6 +116,8 @@ The @-max-buffers@ argument limits keepstore's memory usage. It should be set su
 
 If you want access control on your Keepstore server(s), you must specify the @-enforce-permissions@ flag and provide a signing key. The @-blob-signing-key-file@ argument should be a file containing a long random alphanumeric string with no internal line breaks (it is also possible to use a socket or FIFO: keepstore reads it only once, at startup). This key must be the same as the @blob_signing_key@ configured in the "API server's":install-api-server.html configuration file, @/etc/arvados/api/application.yml@.
 
+The @-serialize=true@ (default: @false@) argument limits keepstore to one reader/writer process per storage partition. This avoids trashing by allowing the storage device underneath the storage partition to do read/write operations sequentially. Enabling @-serialize@ can improve Keepstore performance if the storage partitions map 1:1 to physical disks that are dedicated to Keepstore, particularly so for mechanical disks. In some cloud environments, enabling @-serialize@ has also also proven to be beneficial for performance, but YMMV. If your storage partition(s) are backed by network or RAID storage that can handle many simultaneous reader/writer processes without trashing, you probably do not want to set @-serialize@.
+
 h3. Set up additional servers
 
 Repeat the above sections to prepare volumes and bring up supervised services on each Keepstore server you are setting up.
