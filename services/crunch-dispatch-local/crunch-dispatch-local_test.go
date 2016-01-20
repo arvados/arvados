@@ -10,6 +10,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -63,15 +64,12 @@ func (s *TestSuite) Test_doMain(c *C) {
 	os.Args = append(os.Args, args...)
 
 	go func() {
-		time.Sleep(2 * time.Second)
-		doneProcessing <- true
+		time.Sleep(5 * time.Second)
+		sigChan <- syscall.SIGINT
 	}()
 
 	err := doMain()
 	c.Check(err, IsNil)
-
-	// Give some time for run goroutine to complete
-	time.Sleep(1 * time.Second)
 
 	// There should be no queued containers now
 	params := arvadosclient.Dict{
@@ -148,7 +146,7 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 
 	go func() {
 		time.Sleep(1 * time.Second)
-		doneProcessing <- true
+		sigChan <- syscall.SIGTERM
 	}()
 
 	runQueuedContainers(1, 1, crunchCmd)
