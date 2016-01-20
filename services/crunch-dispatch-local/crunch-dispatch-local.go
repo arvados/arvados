@@ -176,19 +176,15 @@ func run(uuid string, crunchRunCommand string, priorityPollInterval int) {
 	// A goroutine to terminate the runner if container priority becomes zero
 	priorityTicker := time.NewTicker(time.Duration(priorityPollInterval) * time.Second)
 	go func() {
-		for {
-			select {
-			case <-priorityTicker.C:
-				var container Container
-				err := arv.Get("containers", uuid, nil, &container)
-				if err != nil {
-					log.Printf("Error getting container info for %v: %q", uuid, err)
-				} else {
-					if container.Priority == 0 {
-						priorityTicker.Stop()
-						cmd.Process.Signal(os.Interrupt)
-						return
-					}
+		for _ = range priorityTicker.C {
+			var container Container
+			err := arv.Get("containers", uuid, nil, &container)
+			if err != nil {
+				log.Printf("Error getting container info for %v: %q", uuid, err)
+			} else {
+				if container.Priority == 0 {
+					priorityTicker.Stop()
+					cmd.Process.Signal(os.Interrupt)
 				}
 			}
 		}

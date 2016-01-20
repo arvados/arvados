@@ -145,14 +145,14 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	log.SetOutput(tempfile)
 
 	go func() {
-		time.Sleep(1 * time.Second)
+		time.Sleep(2 * time.Second)
 		sigChan <- syscall.SIGTERM
 	}()
 
 	runQueuedContainers(1, 1, crunchCmd)
 
-	// Give some time for run goroutine to complete
-	time.Sleep(5 * time.Second)
+	// Wait for all running crunch jobs to complete / terminate
+	waitGroup.Wait()
 
 	buf, _ := ioutil.ReadFile(tempfile.Name())
 	c.Check(strings.Contains(string(buf), expected), Equals, true)
