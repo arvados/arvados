@@ -1,0 +1,377 @@
+#!/bin/sh
+
+set -e
+
+if ! test -d /sys/fs/cgroup ; then
+     echo "Arvbox requires cgroups to be mounted at /sys/fs/cgroup in order to use"
+     echo "Docker-in-Docker.  Older operating systems that put cgroups in other"
+     echo "places (such as /cgroup) are not supported."
+     exit 1
+fi
+
+if ! which docker >/dev/null 2>/dev/null ; then
+  echo "Arvbox requires Docker.  To install, run the following command as root:"
+  echo "curl -sSL https://get.docker.com/ | sh"
+  exit 1
+fi
+
+if test -z "$ARVBOX_DOCKER" ; then
+    if which greadlink >/dev/null 2>/dev/null ; then
+        ARVBOX_DOCKER=$(greadlink -f $(dirname $0)/../lib/arvbox/docker)
+    else
+        ARVBOX_DOCKER=$(readlink -f $(dirname $0)/../lib/arvbox/docker)
+    fi
+fi
+
+if test -z "$ARVBOX_CONTAINER" ; then
+    ARVBOX_CONTAINER=arvbox
+fi
+
+if test -z "$ARVBOX_BASE" ; then
+    ARVBOX_BASE="$HOME/.arvbox"
+fi
+
+if test -z "$ARVBOX_DATA" ; then
+    ARVBOX_DATA="$ARVBOX_BASE/$ARVBOX_CONTAINER"
+fi
+
+if test -z "$ARVADOS_ROOT" ; then
+    ARVADOS_ROOT="$ARVBOX_DATA/arvados"
+fi
+
+if test -z "$ARVADOS_DEV_ROOT" ; then
+    ARVADOS_DEV_ROOT="$ARVBOX_DATA/arvados-dev"
+fi
+
+if test -z "$SSO_ROOT" ; then
+    SSO_ROOT="$ARVBOX_DATA/sso-devise-omniauth-provider"
+fi
+
+PG_DATA="$ARVBOX_DATA/postgres"
+VAR_DATA="$ARVBOX_DATA/var"
+PASSENGER="$ARVBOX_DATA/passenger"
+GEMS="$ARVBOX_DATA/gems"
+
+getip() {
+    docker inspect $ARVBOX_CONTAINER | grep \"IPAddress\" | head -n1 | tr -d ' ":,\n' | cut -c10-
+}
+
+updateconf() {
+    if test -f ~/.config/arvados/$ARVBOX_CONTAINER.conf ; then
+        sed "s/ARVADOS_API_HOST=.*/ARVADOS_API_HOST=$(getip):8000/" <$HOME/.config/arvados/$ARVBOX_CONTAINER.conf >$HOME/.config/arvados/$ARVBOX_CONTAINER.conf.tmp
+        mv ~/.config/arvados/$ARVBOX_CONTAINER.conf.tmp ~/.config/arvados/$ARVBOX_CONTAINER.conf
+    else
+        mkdir -p $HOME/.config/arvados
+        cat >$HOME/.config/arvados/$ARVBOX_CONTAINER.conf <<EOF
+ARVADOS_API_HOST=$(getip):8000
+ARVADOS_API_TOKEN=
+ARVADOS_API_HOST_INSECURE=true
+EOF
+    fi
+}
+
+wait_for_arvbox() {
+    FF=/tmp/arvbox-fifo-$$
+    mkfifo $FF
+    docker logs -f $ARVBOX_CONTAINER > $FF &
+    LOGPID=$!
+    while read line ; do
+        echo $line
+        if echo $line | grep "Workbench is running at" >/dev/null ; then
+            kill $LOGPID
+        fi
+    done < $FF
+    rm $FF
+    echo
+    if test -n "$localip" ; then
+        echo "export ARVADOS_API_HOST=$localip:8000"
+    else
+        echo "export ARVADOS_API_HOST=$(getip):8000"
+    fi
+}
+
+run() {
+    if docker ps -a | grep -E "$ARVBOX_CONTAINER$" -q ; then
+        echo "Container $ARVBOX_CONTAINER is already running, use stop, restart or reboot"
+        exit 0
+    fi
+
+    if echo "$1" | grep '^public' ; then
+        if test -n "$ARVBOX_PUBLISH_IP" ; then
+            localip=$ARVBOX_PUBLISH_IP
+        else
+            defaultdev=$(/sbin/ip route|awk '/default/ { print $5 }')
+            localip=$(ip addr show $defaultdev | grep 'inet ' | sed 's/ *inet \(.*\)\/.*/\1/')
+        fi
+        iptemp=$(tempfile)
+        echo $localip > $iptemp
+        chmod og+r $iptemp
+        PUBLIC="--volume=$iptemp:/var/run/localip_override
+              --publish=80:80
+              --publish=8000:8000
+              --publish=8900:8900
+              --publish=9001:9001
+              --publish=9002:9002
+              --publish=25100:25100
+              --publish=25107:25107
+              --publish=25108:25108
+              --publish=8001:8001"
+    else
+        PUBLIC=""
+    fi
+
+    if echo "$1" | grep 'demo$' ; then
+        if test -d "$ARVBOX_DATA" ; then
+            echo "It looks like you already have a development container named $ARVBOX_CONTAINER."
+            echo "Set ARVBOX_CONTAINER to set a different name for your demo container"
+            exit 1
+        fi
+
+        if ! (docker ps -a | grep -E "$ARVBOX_CONTAINER-data$" -q) ; then
+            docker create -v /var/lib/postgresql -v /var/lib/arvados --name $ARVBOX_CONTAINER-data arvados/arvbox-demo /bin/true
+        fi
+
+        docker run \
+               --detach \
+               --name=$ARVBOX_CONTAINER \
+               --privileged \
+               --volumes-from $ARVBOX_CONTAINER-data \
+               $PUBLIC \
+               arvados/arvbox-demo
+        updateconf
+        wait_for_arvbox
+    else
+        mkdir -p "$PG_DATA" "$VAR_DATA" "$PASSENGER" "$GEMS"
+
+        if ! test -d "$ARVADOS_ROOT" ; then
+            git clone https://github.com/curoverse/arvados.git "$ARVADOS_ROOT"
+        fi
+        if ! test -d "$SSO_ROOT" ; then
+            git clone https://github.com/curoverse/sso-devise-omniauth-provider.git "$SSO_ROOT"
+        fi
+
+        if test "$1" = test ; then
+            shift
+
+            if ! test -d "$ARVADOS_DEV_ROOT" ; then
+                git clone https://github.com/curoverse/arvados-dev.git "$ARVADOS_DEV_ROOT"
+            fi
+
+            mkdir -p $VAR_DATA/test
+
+            docker run \
+                   --detach \
+                   --name=$ARVBOX_CONTAINER \
+                   --privileged \
+                   "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
+                   "--volume=$ARVADOS_DEV_ROOT:/usr/src/arvados-dev:rw" \
+                   "--volume=$SSO_ROOT:/usr/src/sso:rw" \
+                   "--volume=$PG_DATA:/var/lib/postgresql:rw" \
+                   "--volume=$VAR_DATA:/var/lib/arvados:rw" \
+                   "--volume=$PASSENGER:/var/lib/passenger:rw" \
+                   "--volume=$GEMS:/var/lib/gems:rw" \
+                   arvados/arvbox-dev \
+                   /usr/local/bin/runsvinit -svdir=/etc/test-service
+
+            docker exec -ti \
+                    $ARVBOX_CONTAINER \
+                    /usr/local/lib/arvbox/runsu.sh \
+                    /usr/local/lib/arvbox/waitforpostgres.sh
+
+            docker exec -ti \
+                   $ARVBOX_CONTAINER \
+                   /usr/local/lib/arvbox/runsu.sh \
+                   /usr/local/lib/arvbox/service/sso/run-service --only-setup
+
+            docker exec -ti \
+                   $ARVBOX_CONTAINER \
+                   /usr/local/lib/arvbox/runsu.sh \
+                   /usr/local/lib/arvbox/service/api/run-service --only-setup
+
+            docker exec -ti \
+                   $ARVBOX_CONTAINER \
+                   /usr/local/lib/arvbox/runsu.sh \
+                   /usr/src/arvados-dev/jenkins/run-tests.sh \
+                   --temp /var/lib/arvados/test \
+                   WORKSPACE=/usr/src/arvados \
+                   GEM_HOME=/var/lib/gems \
+                   "$@"
+        else
+            docker run \
+                   --detach \
+                   --name=$ARVBOX_CONTAINER \
+                   --privileged \
+                   "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
+                   "--volume=$SSO_ROOT:/usr/src/sso:rw" \
+                   "--volume=$PG_DATA:/var/lib/postgresql:rw" \
+                   "--volume=$VAR_DATA:/var/lib/arvados:rw" \
+                   "--volume=$PASSENGER:/var/lib/passenger:rw" \
+                   "--volume=$GEMS:/var/lib/gems:rw" \
+                   $PUBLIC \
+                   arvados/arvbox-dev
+            updateconf
+            wait_for_arvbox
+            echo "The Arvados source code is checked out at: $ARVADOS_ROOT"
+        fi
+    fi
+}
+
+stop() {
+    if docker ps -a --filter "status=running" | grep -E "$ARVBOX_CONTAINER$" -q ; then
+        docker stop $ARVBOX_CONTAINER
+    fi
+
+    VOLUMES=--volumes=true
+    if docker ps -a --filter "status=created" | grep -E "$ARVBOX_CONTAINER$" -q ; then
+        docker rm $VOLUMES $ARVBOX_CONTAINER
+    fi
+    if docker ps -a --filter "status=exited" | grep -E "$ARVBOX_CONTAINER$" -q ; then
+        docker rm $VOLUMES $ARVBOX_CONTAINER
+    fi
+}
+
+build() {
+    if ! test -f "$ARVBOX_DOCKER/Dockerfile.base" ;  then
+        echo "Could not find Dockerfile ($ARVBOX_DOCKER/Dockerfile.base)"
+        exit 1
+    fi
+    docker build -t arvados/arvbox-base -f "$ARVBOX_DOCKER/Dockerfile.base" "$ARVBOX_DOCKER"
+    if test "$1" = localdemo -o "$1" = publicdemo ; then
+        docker build -t arvados/arvbox-demo -f "$ARVBOX_DOCKER/Dockerfile.demo" "$ARVBOX_DOCKER"
+    else
+        docker build -t arvados/arvbox-dev -f "$ARVBOX_DOCKER/Dockerfile.dev" "$ARVBOX_DOCKER"
+    fi
+}
+
+check() {
+    case "$1" in
+        localdemo|publicdemo|dev|publicdev|test)
+            true
+            ;;
+        *)
+            echo "Argument to $subcmd must be one of localdemo, publicdemo, dev, publicdev, test"
+            exit 1
+        ;;
+    esac
+}
+
+subcmd="$1"
+if test -n "$subcmd" ; then
+    shift
+fi
+case "$subcmd" in
+    build)
+        check $@
+        build $@
+        ;;
+
+    start|run)
+        check $@
+        run $@
+        ;;
+
+    sh*)
+        docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM GEM_HOME=/var/lib/gems /bin/bash
+        ;;
+
+    stop)
+        stop
+        ;;
+
+    restart)
+        check $@
+        stop
+        run $@
+        ;;
+
+    reboot)
+        check $@
+        stop
+        build $@
+        run $@
+        ;;
+
+    ip|open)
+        if test "$subcmd" = 'ip' ; then
+            echo $(getip)
+        else
+            xdg-open http://$(getip)
+        fi
+        ;;
+
+    reset|destroy)
+        stop
+        if test -d "$ARVBOX_DATA" ; then
+            if test "$subcmd" = destroy ; then
+                if test "$1" != -f ; then
+                    echo "WARNING!  This will delete your entire arvbox ($ARVBOX_DATA)."
+                    echo "Use destroy -f if you really mean it."
+                    exit 1
+                fi
+                rm -rf "$ARVBOX_DATA"
+            else
+                if test "$1" != -f ; then
+                    echo "WARNING!  This will delete your arvbox data ($ARVBOX_DATA)."
+                    echo "Code and downloaded packages will be preserved."
+                    echo "Use reset -f if you really mean it."
+                    exit 1
+                fi
+                rm -rf "$ARVBOX_DATA/postgres"
+                rm -rf "$ARVBOX_DATA/var"
+            fi
+        else
+            if test "$1" != -f ; then
+                echo "WARNING!  This will delete your data container $ARVBOX_CONTAINER-data.  Use -f if you really mean it."
+                exit 1
+            fi
+            docker rm "$ARVBOX_CONTAINER-data"
+        fi
+        ;;
+
+    log|svrestart)
+        if test -n "$1" ; then
+            if test "$subcmd" = log ; then
+                docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM less --follow-name +GF "/etc/service/$1/log/main/current"
+            fi
+            if test "$subcmd" = svrestart ; then
+                docker exec -ti $ARVBOX_CONTAINER sv restart "$1"
+                docker exec -ti $ARVBOX_CONTAINER sv restart ready
+            fi
+        else
+            echo "Usage: $0 $subcmd <service>"
+            echo "Available services:"
+            docker exec -ti $ARVBOX_CONTAINER ls /etc/service
+        fi
+        ;;
+
+    clone)
+        if test -n "$2" ; then
+            cp -r "$ARVBOX_BASE/$1" "$ARVBOX_BASE/$2"
+            echo "Created new arvbox $2"
+            echo "export ARVBOX_CONTAINER=$2"
+        else
+            echo "clone <from> <to>   clone an arvbox"
+            echo "available arvboxes: $(ls $ARVBOX_BASE)"
+        fi
+        ;;
+
+    *)
+        echo "Arvados-in-a-box"
+        echo
+        echo "$(basename $0) (build|start|run|open|shell|ip|stop|reboot|reset|destroy|log|svrestart)"
+        echo
+        echo "build <config>      build arvbox Docker image"
+        echo "start|run <config>  start $ARVBOX_CONTAINER container"
+        echo "open       open arvbox workbench in a web browser"
+        echo "shell      enter arvbox shell"
+        echo "ip         print arvbox ip address"
+        echo "stop       stop arvbox container"
+        echo "restart <config>  stop, then run again"
+        echo "reboot  <config>  stop, build arvbox Docker image, run"
+        echo "reset      delete arvbox arvados data (be careful!)"
+        echo "destroy    delete all arvbox code and data (be careful!)"
+        echo "log       <service> tail log of specified service"
+        echo "svrestart <service> restart specified service inside arvbox"
+        echo "clone <from> <to>   clone an arvbox"
+        ;;
+esac

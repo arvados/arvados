@@ -169,73 +169,9 @@ if [[ ! -d "$WORKSPACE/packages/$TARGET" ]]; then
 fi
 
 # Build the SSO server package
-
-cd "$WORKSPACE"
-
-SSO_VERSION=$(version_from_git)
-PACKAGE_NAME=arvados-sso-server
-
-if [[ ! -d "$WORKSPACE/tmp" ]]; then
-  mkdir $WORKSPACE/tmp
-fi
-
-if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
-  bundle install --path vendor/bundle >"$STDOUT_IF_DEBUG"
-fi
-
-/usr/bin/git rev-parse HEAD > git-commit.version
-
-cd $WORKSPACE/packages/$TARGET
-
-# Annoyingly, we require a database.yml file for rake assets:precompile to work.
-
-# TODO: add bogus database.yml file so we can precompile the assets and put them in the
-# package. Then remove that database.yml file again. It has to be a valid file though.
-#RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile
-
-# There are just 2 excludes left here, all the others are pulled in via fpm-info.sh, which
-# takes .gitignore into account via a call to git status:
-#
-# 1. The .git directory is excluded by git implicitly, so we can't pick it up from .gitignore.
-# 2. The packages directory needs to be explictly excluded here because it will only be listed
-# if it exists at the time fpm-info.sh runs. If it does not exist at that time, this script
-# will create it and when fpm runs, it will include the directory. So we add it to the exclude
-# list explicitly here, just in case.
-declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "--vendor='Curoverse, Inc.'" "--url='https://arvados.org'" "--description='Arvados SSO server - Arvados is a free and open source platform for big data science.'" "--license='Expat License'" "-s" "dir" "-t" "$FORMAT" "-v" "$SSO_VERSION" "-x" "var/www/arvados-sso/current/.git" "-x" "var/www/arvados-sso/current/packages" "--after-install=$RUN_BUILD_PACKAGES_PATH/arvados-sso-server-extras/arvados-sso-server.postinst" "--before-remove=$RUN_BUILD_PACKAGES_PATH/arvados-sso-server-extras/arvados-sso-server.prerm" "--after-remove=$RUN_BUILD_PACKAGES_PATH/arvados-sso-server-extras/arvados-sso-server.postrm" )
-
-if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
-  # This is the complete package with vendor/bundle included.
-  # It's big, so we do not build it by default.
-  COMMAND_ARR+=("-n" "${PACKAGE_NAME}-with-bundle")
-else
-  # The default package excludes vendor/bundle
-  COMMAND_ARR+=("-n" "${PACKAGE_NAME}" "-x" "var/www/arvados-sso/current/vendor/bundle")
-fi
-
-# Append --depends X and other arguments specified by fpm-info.sh in
-# the package source dir. These are added last so they can override
-# the arguments added by this script.
-# `--iteration 2` accommodates a postinst change on 2015-12-10.
-declare -a fpm_args=(--iteration 2)
-declare -a fpm_depends=()
-FPM_INFO="$WORKSPACE/fpm-info.sh"
-if [[ -e "$FPM_INFO" ]]; then
-  debug_echo "Loading fpm overrides from $FPM_INFO"
-  source "$FPM_INFO"
-fi
-
-for i in "${fpm_depends[@]}"; do
-  COMMAND_ARR+=('--depends' "$i")
-done
-COMMAND_ARR+=("${fpm_args[@]}")
-COMMAND_ARR+=("$WORKSPACE/=/var/www/arvados-sso/current")
-debug_echo -e "\n${COMMAND_ARR[@]}\n"
-
-FPM_RESULTS=$("${COMMAND_ARR[@]}")
-FPM_EXIT_CODE=$?
-
-fpm_verify $FPM_EXIT_CODE $FPM_RESULTS
-
-# SSO server package build done
+handle_rails_package arvados-sso-server "$WORKSPACE" \
+    "$WORKSPACE/LICENCE" --url="https://arvados.org" \
+    --description="Arvados SSO server - Arvados is a free and open source platform for big data science." \
+    --license="Expat license"
 
 exit $EXITCODE

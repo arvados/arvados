@@ -394,7 +394,7 @@ gem_uninstall_if_exists() {
 }
 
 setup_virtualenv() {
-    local venvdest=$1; shift
+    local venvdest="$1"; shift
     if ! [[ -e "$venvdest/bin/activate" ]] || ! [[ -e "$venvdest/bin/pip" ]]; then
         virtualenv --setuptools "$@" "$venvdest" || fatal "virtualenv $venvdest failed"
     fi
@@ -722,6 +722,7 @@ gostuff=(
     services/datamanager/keep
     services/datamanager
     services/crunch-dispatch-local
+    services/crunch-run
     tools/keep-rsync
     )
 for g in "${gostuff[@]}"
