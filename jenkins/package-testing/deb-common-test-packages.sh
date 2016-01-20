@@ -6,12 +6,12 @@ set -eu
 # from the invocation path.
 target=$(echo $0 | sed 's/.*test-packages-\([^.]*\)\.sh.*/\1/')
 
-export ARV_PACKAGES_DIR=/arvados/packages/$target
+export ARV_PACKAGES_DIR="/arvados/packages/$target"
 
 dpkg-query --show > "$ARV_PACKAGES_DIR/$1.before"
 
 apt-get -qq update
-apt-get --assume-yes --force-yes install $1
+apt-get --assume-yes --force-yes install "$1"
 
 dpkg-query --show > "$ARV_PACKAGES_DIR/$1.after"
 
@@ -22,7 +22,7 @@ set -e
 mkdir -p /tmp/opts
 cd /tmp/opts
 
-export ARV_PACKAGES_DIR=/arvados/packages/$target
+export ARV_PACKAGES_DIR="/arvados/packages/$target"
 
 dpkg-deb -x $ARV_PACKAGES_DIR/"$1"_*.deb .
 
@@ -34,4 +34,4 @@ done <<EOF
 $(find -name '*.so')
 EOF
 
-exec /jenkins/package-testing/common-test-packages.sh $1
+exec /jenkins/package-testing/common-test-packages.sh "$1"

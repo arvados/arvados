@@ -17,4 +17,4 @@ case "$TARGET" in
         ;;
 esac
 
-/usr/local/rvm/bin/rvm-exec default bundle list >$ARV_PACKAGES_DIR/arados-api-server.gems
+/usr/local/rvm/bin/rvm-exec default bundle list >"$ARV_PACKAGES_DIR/arvados-api-server.gems"

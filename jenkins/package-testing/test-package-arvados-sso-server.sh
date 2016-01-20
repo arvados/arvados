@@ -104,7 +104,7 @@ if [[ "$FORMAT" == "deb" ]]; then
   dpkg-reconfigure arvados-sso-server || EXITCODE=3
 
   cd /var/www/arvados-sso/current/
-  /usr/local/rvm/bin/rvm-exec default bundle list >$ARV_PACKAGES_DIR/arvados-sso-server.gems
+  /usr/local/rvm/bin/rvm-exec default bundle list >"$ARV_PACKAGES_DIR/arvados-sso-server.gems"
 
   # Test 3: the package should remove cleanly
   apt-get remove arvados-sso-server --yes || EXITCODE=3
