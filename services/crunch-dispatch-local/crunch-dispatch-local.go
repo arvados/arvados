@@ -75,13 +75,8 @@ func doMain() error {
 	runQueuedContainers(*pollInterval, *priorityPollInterval, *crunchRunCommand)
 
 	// Finished dispatching; interrupt any crunch jobs that are still running
-	for uuid, cmd := range runningCmds {
-		go func(uuid string) {
-			cmd.Process.Signal(os.Interrupt)
-			if _, err := cmd.Process.Wait(); err != nil {
-				log.Printf("Error while waiting for crunch job to finish for %v: %q", uuid, err)
-			}
-		}(uuid)
+	for _, cmd := range runningCmds {
+		cmd.Process.Signal(os.Interrupt)
 	}
 
 	// Wait for all running crunch jobs to complete / terminate
@@ -192,9 +187,6 @@ func run(uuid string, crunchRunCommand string, priorityPollInterval int) {
 					if container.Priority == 0 {
 						priorityTicker.Stop()
 						cmd.Process.Signal(os.Interrupt)
-						runningCmdsMutex.Lock()
-						delete(runningCmds, uuid)
-						runningCmdsMutex.Unlock()
 						return
 					}
 				}
