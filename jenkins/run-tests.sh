@@ -720,6 +720,7 @@ gostuff=(
     services/datamanager/collection
     services/datamanager/keep
     services/datamanager
+    services/crunch-run
     tools/keep-rsync
     )
 for g in "${gostuff[@]}"
