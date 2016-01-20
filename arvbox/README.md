@@ -26,6 +26,11 @@ log       <service> tail log of specified service
 svrestart <service> restart specified service inside arvbox
 clone <from> <to>   clone an arvbox
 
+## Requirements
+
+Linux 3.x+ and Docker 1.9+
+Minimum of 3 GiB of RAM  + additional memory to run jobs
+Minimum of 3 GiB of disk + storage for actual data
 
 ## Configs
 
