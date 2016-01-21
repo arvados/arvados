@@ -970,3 +970,83 @@ func TestPutReplicationHeader(t *testing.T) {
 		t.Errorf("Got X-Keep-Replicas-Stored: %q, expected %q", r, "1")
 	}
 }
+
+func TestUndeleteHandler(t *testing.T) {
+	defer teardown()
+
+	// Set up Keep volumes
+	KeepVM = MakeTestVolumeManager(2)
+	defer KeepVM.Close()
+	vols := KeepVM.AllWritable()
+	vols[0].Put(TestHash, TestBlock)
+
+	// Only the datamanager user should be allowed to undelete blocks
+	dataManagerToken = "DATA MANAGER TOKEN"
+
+	// unauthenticatedReq => UnauthorizedError
+	unauthenticatedReq := &RequestTester{
+		method: "PUT",
+		uri:    "/undelete/" + TestHash,
+	}
+	response := IssueRequest(unauthenticatedReq)
+	ExpectStatusCode(t,
+		"enforcePermissions on, unauthenticated request",
+		UnauthorizedError.HTTPCode,
+		response)
+
+	// notDataManagerReq => UnauthorizedError
+	notDataManagerReq := &RequestTester{
+		method:   "PUT",
+		uri:      "/undelete/" + TestHash,
+		apiToken: knownToken,
+	}
+
+	response = IssueRequest(notDataManagerReq)
+	ExpectStatusCode(t,
+		"permissions on, unauthenticated /index/prefix request",
+		UnauthorizedError.HTTPCode,
+		response)
+
+	// datamanagerWithBadHashReq => StatusBadRequest
+	datamanagerWithBadHashReq := &RequestTester{
+		method:   "PUT",
+		uri:      "/undelete/thisisnotalocator",
+		apiToken: dataManagerToken,
+	}
+	response = IssueRequest(datamanagerWithBadHashReq)
+	ExpectStatusCode(t,
+		"permissions on, authenticated request, non-superuser",
+		http.StatusBadRequest,
+		response)
+
+	// datamanagerWrongMethodReq => StatusBadRequest
+	datamanagerWrongMethodReq := &RequestTester{
+		method:   "GET",
+		uri:      "/undelete/" + TestHash,
+		apiToken: dataManagerToken,
+	}
+	response = IssueRequest(datamanagerWrongMethodReq)
+	ExpectStatusCode(t,
+		"permissions on, authenticated request, non-superuser",
+		http.StatusBadRequest,
+		response)
+
+	// datamanagerReq => StatusOK
+	datamanagerReq := &RequestTester{
+		method:   "PUT",
+		uri:      "/undelete/" + TestHash,
+		apiToken: dataManagerToken,
+	}
+	response = IssueRequest(datamanagerReq)
+	ExpectStatusCode(t,
+		"permissions on, authenticated request, non-superuser",
+		http.StatusOK,
+		response)
+	expected := `Untrashed on volume`
+	match, _ := regexp.MatchString(expected, response.Body.String())
+	if !match {
+		t.Errorf(
+			"Undelete response mismatched: expected %s, got:\n%s",
+			expected, response.Body.String())
+	}
+}

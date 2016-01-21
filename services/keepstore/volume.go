@@ -144,20 +144,21 @@ type Volume interface {
 	// particular order.
 	IndexTo(prefix string, writer io.Writer) error
 
-	// Delete deletes the block data from the underlying storage
-	// device.
+	// Trash moves the block data from the underlying storage
+	// device to trash area. The block then stays in trash for
+	// -trash-lifetime interval before it is actually deleted.
 	//
 	// loc is as described in Get.
 	//
 	// If the timestamp for the given locator is newer than
-	// blobSignatureTTL, Delete must not delete the data.
+	// blobSignatureTTL, Trash must not trash the data.
 	//
-	// If a Delete operation overlaps with any Touch or Put
+	// If a Trash operation overlaps with any Touch or Put
 	// operations on the same locator, the implementation must
 	// ensure one of the following outcomes:
 	//
 	//   - Touch and Put return a non-nil error, or
-	//   - Delete does not delete the block, or
+	//   - Trash does not trash the block, or
 	//   - Both of the above.
 	//
 	// If it is possible for the storage device to be accessed by
@@ -171,9 +172,12 @@ type Volume interface {
 	// reliably or fail outright.
 	//
 	// Corollary: A successful Touch or Put guarantees a block
-	// will not be deleted for at least blobSignatureTTL
+	// will not be trashed for at least blobSignatureTTL
 	// seconds.
-	Delete(loc string) error
+	Trash(loc string) error
+
+	// Untrash moves block from trash back into store
+	Untrash(loc string) error
 
 	// Status returns a *VolumeStatus representing the current
 	// in-use and available storage capacity and an

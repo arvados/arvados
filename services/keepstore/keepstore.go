@@ -79,6 +79,7 @@ var (
 	SizeRequiredError   = &KeepError{411, "Missing Content-Length"}
 	TooLongError        = &KeepError{413, "Block is too large"}
 	MethodDisabledError = &KeepError{405, "Method disabled"}
+	ErrNotImplemented   = &KeepError{500, "Unsupported configuration"}
 )
 
 func (e *KeepError) Error() string {
@@ -113,6 +114,7 @@ var (
 	flagSerializeIO bool
 	flagReadonly    bool
 	volumes         volumeSet
+	trashLifetime   int
 )
 
 func (vs *volumeSet) String() string {
@@ -200,6 +202,11 @@ func main() {
 		"max-buffers",
 		maxBuffers,
 		fmt.Sprintf("Maximum RAM to use for data buffers, given in multiples of block size (%d MiB). When this limit is reached, HTTP requests requiring buffers (like GET and PUT) will wait for buffer space to be released.", BlockSize>>20))
+	flag.IntVar(
+		&trashLifetime,
+		"trash-lifetime",
+		0,
+		fmt.Sprintf("Trashed blocks will stay in trash for trash-lifetime interval before they are actually deleted by the system."))
 
 	flag.Parse()
 
