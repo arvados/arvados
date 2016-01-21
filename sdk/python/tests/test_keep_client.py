@@ -852,6 +852,10 @@ class KeepClientRetryTestMixin(object):
         with self.TEST_PATCHER(self.DEFAULT_EXPECT, 500, 200):
             self.check_success(num_retries=3)
 
+    def test_exception_then_success(self):
+        with self.TEST_PATCHER(self.DEFAULT_EXPECT, Exception('mock err'), 200):
+            self.check_success(num_retries=3)
+
     def test_no_default_retry(self):
         with self.TEST_PATCHER(self.DEFAULT_EXPECT, 500, 200):
             self.check_exception()
@@ -928,3 +932,38 @@ class KeepClientRetryPutTestCase(KeepClientRetryTestMixin, unittest.TestCase):
     def test_do_not_send_multiple_copies_to_same_server(self):
         with tutil.mock_keep_responses(self.DEFAULT_EXPECT, 200):
             self.check_exception(copies=2, num_retries=3)
+
+
+@tutil.skip_sleep
+class RetryNeedsMultipleServices(unittest.TestCase, tutil.ApiClientMock):
+    # Test put()s that need two distinct servers to succeed, possibly
+    # requiring multiple passes through the retry loop.
+
+    def setUp(self):
+        self.api_client = self.mock_keep_services(count=2)
+        self.keep_client = arvados.KeepClient(api_client=self.api_client)
+
+    def test_success_after_exception(self):
+        with tutil.mock_keep_responses(
+                'acbd18db4cc2f85cedef654fccc4a4d8+3',
+                Exception('mock err'), 200, 200) as req_mock:
+            self.keep_client.put('foo', num_retries=1, copies=2)
+        self.assertTrue(3, req_mock.call_count)
+
+    def test_success_after_retryable_error(self):
+        with tutil.mock_keep_responses(
+                'acbd18db4cc2f85cedef654fccc4a4d8+3',
+                500, 200, 200) as req_mock:
+            self.keep_client.put('foo', num_retries=1, copies=2)
+        self.assertTrue(3, req_mock.call_count)
+
+    def test_fail_after_final_error(self):
+        # First retry loop gets a 200 (can't achieve replication by
+        # storing again on that server) and a 400 (can't retry that
+        # server at all), so we shouldn't try a third request.
+        with tutil.mock_keep_responses(
+                'acbd18db4cc2f85cedef654fccc4a4d8+3',
+                200, 400, 200) as req_mock:
+            with self.assertRaises(arvados.errors.KeepWriteError):
+                self.keep_client.put('foo', num_retries=1, copies=2)
+        self.assertTrue(2, req_mock.call_count)

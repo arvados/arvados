@@ -151,7 +151,8 @@ class Mount(object):
         self.api = arvados.safeapi.ThreadSafeApiCache(
             apiconfig=arvados.config.settings(),
             keep_params={
-                "block_cache": arvados.keep.KeepBlockCache(self.args.file_cache)
+                'block_cache': arvados.keep.KeepBlockCache(self.args.file_cache),
+                'num_retries': self.args.retries,
             })
         # Do a sanity check that we have a working arvados host + token.
         self.api.users().current().execute()

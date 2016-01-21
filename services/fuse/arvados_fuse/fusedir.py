@@ -501,7 +501,8 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
     def __init__(self, parent_inode, inodes, api_client, num_retries):
         collection = self.UnsaveableCollection(
             api_client=api_client,
-            keep_client=api_client.keep)
+            keep_client=api_client.keep,
+            num_retries=num_retries)
         super(TmpCollectionDirectory, self).__init__(
             parent_inode, inodes, collection)
         self.collection_record_file = None

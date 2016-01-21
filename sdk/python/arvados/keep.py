@@ -379,6 +379,7 @@ class KeepClient(object):
             url = self.root + str(locator)
             _logger.debug("Request: GET %s", url)
             curl = self._get_user_agent()
+            ok = None
             try:
                 with timer.Timer() as t:
                     self._headers = {}
@@ -410,7 +411,6 @@ class KeepClient(object):
                 self._result = {
                     'error': e,
                 }
-                ok = False
             self._usable = ok != False
             if self._result.get('status_code', None):
                 # The client worked well enough to get an HTTP status
@@ -445,6 +445,7 @@ class KeepClient(object):
             url = self.root + hash_s
             _logger.debug("Request: PUT %s", url)
             curl = self._get_user_agent()
+            ok = None
             try:
                 with timer.Timer() as t:
                     self._headers = {}
@@ -486,7 +487,6 @@ class KeepClient(object):
                 self._result = {
                     'error': e,
                 }
-                ok = False
             self._usable = ok != False # still usable if ok is True or None
             if self._result.get('status_code', None):
                 # Client is functional. See comment in get().
@@ -1018,6 +1018,7 @@ class KeepClient(object):
         roots_map = {}
         loop = retry.RetryLoop(num_retries, self._check_loop_result,
                                backoff_start=2)
+        done = 0
         for tries_left in loop:
             try:
                 sorted_roots = self.map_new_services(
@@ -1028,7 +1029,7 @@ class KeepClient(object):
                 continue
 
             thread_limiter = KeepClient.ThreadLimiter(
-                copies, self.max_replicas_per_service)
+                copies - done, self.max_replicas_per_service)
             threads = []
             for service_root, ks in [(root, roots_map[root])
                                      for root in sorted_roots]:
@@ -1046,7 +1047,8 @@ class KeepClient(object):
                 threads.append(t)
             for t in threads:
                 t.join()
-            loop.save_result((thread_limiter.done() >= copies, len(threads)))
+            done += thread_limiter.done()
+            loop.save_result((done >= copies, len(threads)))
 
         if loop.success():
             return thread_limiter.response()
