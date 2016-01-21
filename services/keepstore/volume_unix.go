@@ -363,7 +363,7 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 }
 
 // Delete deletes the block data from the unix storage
-func (v *UnixVolume) Delete(loc string) error {
+func (v *UnixVolume) Trash(loc string) error {
 	// Touch() must be called before calling Write() on a block.  Touch()
 	// also uses lockfile().  This avoids a race condition between Write()
 	// and Delete() because either (a) the file will be deleted and Touch()
@@ -403,6 +403,12 @@ func (v *UnixVolume) Delete(loc string) error {
 		}
 	}
 	return os.Remove(p)
+}
+
+// Untrash moves block from trash back into store
+// TBD
+func (v *UnixVolume) Untrash(loc string) error {
+	return nil
 }
 
 // blockDir returns the fully qualified directory name for the directory
