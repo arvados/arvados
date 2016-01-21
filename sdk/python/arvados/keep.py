@@ -1029,7 +1029,7 @@ class KeepClient(object):
                 continue
 
             thread_limiter = KeepClient.ThreadLimiter(
-                copies, self.max_replicas_per_service)
+                copies - done, self.max_replicas_per_service)
             threads = []
             for service_root, ks in [(root, roots_map[root])
                                      for root in sorted_roots]:
