@@ -422,7 +422,10 @@ def run_keep(blob_signing_key=None, enforce_permissions=False, num_servers=2):
     # keepstore services.
     proxypidfile = _pidfile('keepproxy')
     if os.path.exists(proxypidfile):
-        os.kill(int(open(proxypidfile).read()), signal.SIGHUP)
+        try:
+            os.kill(int(open(proxypidfile).read()), signal.SIGHUP)
+        except OSError:
+            os.remove(proxypidfile)
 
 def _stop_keep(n):
     kill_server_pid(_pidfile('keep{}'.format(n)))

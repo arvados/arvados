@@ -17,7 +17,7 @@ import run_test_server
 logger = logging.getLogger('arvados.arv-mount')
 
 class MountTestBase(unittest.TestCase):
-    def setUp(self, api=None):
+    def setUp(self, api=None, local_store=True):
         # The underlying C implementation of open() makes a fstat() syscall
         # with the GIL still held.  When the GETATTR message comes back to
         # llfuse (which in these tests is in the same interpreter process) it
@@ -27,8 +27,11 @@ class MountTestBase(unittest.TestCase):
         # relatively easy.
         self.pool = multiprocessing.Pool(1)
 
-        self.keeptmp = tempfile.mkdtemp()
-        os.environ['KEEP_LOCAL_STORE'] = self.keeptmp
+        if local_store:
+            self.keeptmp = tempfile.mkdtemp()
+            os.environ['KEEP_LOCAL_STORE'] = self.keeptmp
+        else:
+            self.keeptmp = None
         self.mounttmp = tempfile.mkdtemp()
         run_test_server.run()
         run_test_server.authorize_with("admin")
@@ -65,8 +68,9 @@ class MountTestBase(unittest.TestCase):
         self.operations.destroy()
 
         os.rmdir(self.mounttmp)
-        shutil.rmtree(self.keeptmp)
-        os.environ.pop('KEEP_LOCAL_STORE')
+        if self.keeptmp:
+            shutil.rmtree(self.keeptmp)
+            os.environ.pop('KEEP_LOCAL_STORE')
         run_test_server.reset()
 
     def assertDirContents(self, subdir, expect_content):
