@@ -254,7 +254,7 @@ class Inodes(object):
         llfuse.invalidate_inode(inode)
 
     def invalidate_entry(self, inode, name):
-        llfuse.invalidate_entry(inode, name)
+        llfuse.invalidate_entry(inode, name.encode(self.encoding))
 
     def clear(self):
         self.inode_cache.clear()
