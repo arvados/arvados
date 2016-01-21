@@ -149,30 +149,27 @@ FINAL_EXITCODE=0
 
 package_fails=""
 
-set +e
 if [[ -n "$test_packages" ]]; then
     for p in $packages ; do
-        docker run --rm -v "$JENKINS_DIR:/jenkins" -v "$WORKSPACE:/arvados" \
+        if docker run --rm -v "$JENKINS_DIR:/jenkins" -v "$WORKSPACE:/arvados" \
                --env ARVADOS_DEBUG=1 \
                --env "TARGET=$TARGET" \
                --env "WORKSPACE=/arvados" \
-               "$IMAGE" $COMMAND $p
-        CODE=$?
-        if test $CODE != 0 ; then
-            FINAL_EXITCODE=$CODE
+               "$IMAGE" $COMMAND $p ; then
+            true
+        else
+            FINAL_EXITCODE=$?
             package_fails="$package_fails $p"
             echo "ERROR: $tag test failed with exit status $FINAL_EXITCODE." >&2
         fi
     done
 else
-    docker run --rm -v "$JENKINS_DIR:/jenkins" -v "$WORKSPACE:/arvados" \
-           --env ARVADOS_DEBUG=1 "$IMAGE" $COMMAND
-    CODE=$?
-    if test $CODE = 0 ; then
+    if docker run --rm -v "$JENKINS_DIR:/jenkins" -v "$WORKSPACE:/arvados" \
+           --env ARVADOS_DEBUG=1 "$IMAGE" $COMMAND ; then
         echo
         echo "Build packages for $TARGET succeeded." >&2
     else
-        FINAL_EXITCODE=$CODE
+        FINAL_EXITCODE=$?
         echo "ERROR: $tag build failed with exit status $FINAL_EXITCODE." >&2
     fi
 fi
