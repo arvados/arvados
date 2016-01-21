@@ -23,6 +23,10 @@ type unixVolumeAdder struct {
 }
 
 func (vs *unixVolumeAdder) Set(value string) error {
+	if trashLifetime <= 0 {
+		log.Print("Missing required configuration parameter: trash-lifetime")
+		//return ErrNotImplemented
+	}
 	if dirs := strings.Split(value, ","); len(dirs) > 1 {
 		log.Print("DEPRECATED: using comma-separated volume list.")
 		for _, dir := range dirs {
