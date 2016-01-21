@@ -1143,11 +1143,9 @@ class TokenExpiryTest(MountTestBase):
     @mock.patch('arvados.keep.KeepClient.get')
     def runTest(self, mocked_get):
         logging.getLogger('arvados.arvados_fuse').setLevel(logging.DEBUG)
+        self.api._rootDesc = {"blobSignatureTtl": 2}
         mnt = self.make_mount(fuse.CollectionDirectory, collection_record='zzzzz-4zz18-op4e2lbej01tcvu')
         mocked_get.return_value = 'fake data'
-
-        mnt._poll = True
-        mnt._poll_time = 1
 
         old_exp = int(time.time()) + 86400*14
         self.pool.apply(_test_refresh_old_manifest, (self.mounttmp,))
