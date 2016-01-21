@@ -1,0 +1,1 @@
+fpm_depends+=('git')
