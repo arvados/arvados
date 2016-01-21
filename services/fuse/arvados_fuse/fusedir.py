@@ -442,6 +442,7 @@ class CollectionDirectory(CollectionDirectoryBase):
             _logger.exception("arv-mount %s: error", self.collection_locator)
             if self.collection_record is not None and "manifest_text" in self.collection_record:
                 _logger.error("arv-mount manifest_text is: %s", self.collection_record["manifest_text"])
+        self.invalidate()
         return False
 
     @use_counter
@@ -610,10 +611,11 @@ will appear if it exists.
                     self.inodes.del_entry(e)
                 return True
             else:
+                self.inodes.invalidate_entry(self.inode, k)
                 self.inodes.del_entry(e)
                 return False
-        except Exception as e:
-            _logger.debug('arv-mount exception keep %s', e)
+        except Exception as ex:
+            _logger.debug('arv-mount exception keep %s', ex)
             self.inodes.del_entry(e)
             return False
 
