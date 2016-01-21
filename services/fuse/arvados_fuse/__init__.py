@@ -459,6 +459,7 @@ class Operations(llfuse.Operations):
         else:
             if parent_inode in self.inodes:
                 p = self.inodes[parent_inode]
+                self.inodes.touch(p)
                 if name == '..':
                     inode = p.parent_inode
                 elif isinstance(p, Directory) and name in p:
@@ -500,11 +501,14 @@ class Operations(llfuse.Operations):
         fh = next(self._filehandles_counter)
         self._filehandles[fh] = FileHandle(fh, p)
         self.inodes.touch(p)
+
+        _logger.debug("arv-mount open inode %i flags %x fh %i", inode, flags, fh)
+
         return fh
 
     @catch_exceptions
     def read(self, fh, off, size):
-        _logger.debug("arv-mount read %i %i %i", fh, off, size)
+        _logger.debug("arv-mount read fh %i off %i size %i", fh, off, size)
         self.read_ops_counter.add(1)
 
         if fh in self._filehandles:
@@ -586,8 +590,6 @@ class Operations(llfuse.Operations):
             handle = self._filehandles[fh]
         else:
             raise llfuse.FUSEError(errno.EBADF)
-
-        _logger.debug("arv-mount handle.dirobj %s", handle.obj)
 
         e = off
         while e < len(handle.entries):
