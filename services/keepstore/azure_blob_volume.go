@@ -311,8 +311,8 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 	}
 }
 
-// Delete a Keep block.
-func (v *AzureBlobVolume) Delete(loc string) error {
+// Trash a Keep block.
+func (v *AzureBlobVolume) Trash(loc string) error {
 	if v.readonly {
 		return MethodDisabledError
 	}
@@ -333,6 +333,12 @@ func (v *AzureBlobVolume) Delete(loc string) error {
 	return v.bsClient.DeleteBlob(v.containerName, loc, map[string]string{
 		"If-Match": props.Etag,
 	})
+}
+
+// Untrash a Keep block.
+// TBD
+func (v *AzureBlobVolume) Untrash(loc string) error {
+	return nil
 }
 
 // Status returns a VolumeStatus struct with placeholder data.

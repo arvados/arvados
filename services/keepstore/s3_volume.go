@@ -257,7 +257,7 @@ func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 	return nil
 }
 
-func (v *S3Volume) Delete(loc string) error {
+func (v *S3Volume) Trash(loc string) error {
 	if v.readonly {
 		return MethodDisabledError
 	}
@@ -270,6 +270,11 @@ func (v *S3Volume) Delete(loc string) error {
 		return ErrS3DeleteNotAvailable
 	}
 	return v.Bucket.Del(loc)
+}
+
+// TBD
+func (v *S3Volume) Untrash(loc string) error {
+	return nil
 }
 
 func (v *S3Volume) Status() *VolumeStatus {

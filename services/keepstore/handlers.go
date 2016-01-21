@@ -53,6 +53,9 @@ func MakeRESTRouter() *mux.Router {
 	// Replace the current trash queue.
 	rest.HandleFunc(`/trash`, TrashHandler).Methods("PUT")
 
+	// Undelete moves blocks from trash back into store
+	rest.HandleFunc(`/undelete/{hash:[0-9a-f]{32}}`, UndeleteHandler).Methods("PUT")
+
 	// Any request which does not match any of these routes gets
 	// 400 Bad Request.
 	rest.NotFoundHandler = http.HandlerFunc(BadRequestHandler)
@@ -295,7 +298,7 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 		Failed  int `json:"copies_failed"`
 	}
 	for _, vol := range KeepVM.AllWritable() {
-		if err := vol.Delete(hash); err == nil {
+		if err := vol.Trash(hash); err == nil {
 			result.Deleted++
 		} else if os.IsNotExist(err) {
 			continue
@@ -428,6 +431,36 @@ func TrashHandler(resp http.ResponseWriter, req *http.Request) {
 		tlist.PushBack(t)
 	}
 	trashq.ReplaceQueue(tlist)
+}
+
+// UndeleteHandler processes "PUT /undelete/{hash:[0-9a-f]{32}}" requests for the data manager.
+func UndeleteHandler(resp http.ResponseWriter, req *http.Request) {
+	// Reject unauthorized requests.
+	if !IsDataManagerToken(GetApiToken(req)) {
+		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
+		return
+	}
+
+	hash := mux.Vars(req)["hash"]
+	successResp := "Untrashed on volume: "
+	var st int
+	for _, vol := range KeepVM.AllWritable() {
+		if err := vol.Untrash(hash); err == nil {
+			log.Printf("Untrashed %v on volume %v", hash, vol.String())
+			st = http.StatusOK
+			successResp += vol.String()
+			break
+		} else {
+			log.Printf("Error untrashing %v on volume %v: %v", hash, vol.String(), err)
+			st = 500
+		}
+	}
+
+	if st == http.StatusOK {
+		resp.Write([]byte(successResp))
+	}
+
+	resp.WriteHeader(st)
 }
 
 // ==============================
