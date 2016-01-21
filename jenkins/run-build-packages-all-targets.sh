@@ -38,7 +38,7 @@ fi
 set -e
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,test-packages,debug,command: \
+    help,test-packages,debug,command:,only-test: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -47,6 +47,7 @@ fi
 COMMAND=
 DEBUG=
 TEST_PACKAGES=
+ONLY_TEST=
 
 eval set -- "$PARSEDOPTS"
 while [ $# -gt 0 ]; do
@@ -65,6 +66,9 @@ while [ $# -gt 0 ]; do
         --test-packages)
             TEST_PACKAGES="--test-packages"
             ;;
+        --only-test)
+            ONLY_TEST="$1 $2"; shift
+            ;;
         --)
             if [ $# -gt 1 ]; then
                 echo >&2 "$0: unrecognized argument '$2'. Try: $0 --help"
@@ -77,6 +81,18 @@ done
 
 cd $(dirname $0)
 
+FINAL_EXITCODE=0
+
 for dockerfile_path in $(find -name Dockerfile); do
-    ./run-build-packages-one-target.sh --target "$(basename $(dirname "$dockerfile_path"))" --command "$COMMAND" $DEBUG $TEST_PACKAGES
+    if ./run-build-packages-one-target.sh --target "$(basename $(dirname "$dockerfile_path"))" --command "$COMMAND" $DEBUG $TEST_PACKAGES $ONLY_TEST ; then
+        true
+    else
+        FINAL_EXITCODE=$?
+    fi
 done
+
+if test $FINAL_EXITCODE != 0 ; then
+    echo "Build packages failed with code $FINAL_EXITCODE" >&2
+fi
+
+exit $FINAL_EXITCODE
