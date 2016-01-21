@@ -43,6 +43,11 @@ type azureVolumeAdder struct {
 }
 
 func (s *azureVolumeAdder) Set(containerName string) error {
+	if trashLifetime <= 0 {
+		log.Print("Missing required configuration parameter: trash-lifetime")
+		return ErrNotImplemented
+	}
+
 	if containerName == "" {
 		return errors.New("no container name given")
 	}
