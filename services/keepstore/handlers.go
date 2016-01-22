@@ -20,6 +20,7 @@ import (
 	"regexp"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -53,8 +54,8 @@ func MakeRESTRouter() *mux.Router {
 	// Replace the current trash queue.
 	rest.HandleFunc(`/trash`, TrashHandler).Methods("PUT")
 
-	// Undelete moves blocks from trash back into store
-	rest.HandleFunc(`/undelete/{hash:[0-9a-f]{32}}`, UndeleteHandler).Methods("PUT")
+	// Untrash moves blocks from trash back into store
+	rest.HandleFunc(`/untrash/{hash:[0-9a-f]{32}}`, UntrashHandler).Methods("PUT")
 
 	// Any request which does not match any of these routes gets
 	// 400 Bad Request.
@@ -433,8 +434,8 @@ func TrashHandler(resp http.ResponseWriter, req *http.Request) {
 	trashq.ReplaceQueue(tlist)
 }
 
-// UndeleteHandler processes "PUT /undelete/{hash:[0-9a-f]{32}}" requests for the data manager.
-func UndeleteHandler(resp http.ResponseWriter, req *http.Request) {
+// UntrashHandler processes "PUT /untrash/{hash:[0-9a-f]{32}}" requests for the data manager.
+func UntrashHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
 	if !IsDataManagerToken(GetApiToken(req)) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
@@ -442,25 +443,43 @@ func UndeleteHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	hash := mux.Vars(req)["hash"]
-	successResp := "Untrashed on volume: "
-	var st int
+
+	if len(KeepVM.AllWritable()) == 0 {
+		http.Error(resp, "No writable volumes", http.StatusNotFound)
+		return
+	}
+
+	var untrashedOn, failedOn []string
+	var numNotFound int
 	for _, vol := range KeepVM.AllWritable() {
-		if err := vol.Untrash(hash); err == nil {
+		err := vol.Untrash(hash)
+		if err == nil || err == ErrNotImplemented {
 			log.Printf("Untrashed %v on volume %v", hash, vol.String())
-			st = http.StatusOK
-			successResp += vol.String()
-			break
+			untrashedOn = append(untrashedOn, vol.String())
 		} else {
-			log.Printf("Error untrashing %v on volume %v: %v", hash, vol.String(), err)
-			st = 500
+			if os.IsNotExist(err) {
+				numNotFound++
+			} else {
+				log.Printf("Error untrashing %v on volume %v", hash, vol.String())
+				failedOn = append(failedOn, vol.String())
+			}
 		}
 	}
 
-	if st == http.StatusOK {
-		resp.Write([]byte(successResp))
+	if numNotFound == len(KeepVM.AllWritable()) {
+		http.Error(resp, "Block not found on any of the writable volumes", http.StatusNotFound)
+		return
 	}
 
-	resp.WriteHeader(st)
+	if len(failedOn) == len(KeepVM.AllWritable()) {
+		http.Error(resp, "Failed to untrash on all writable volumes", http.StatusInternalServerError)
+	} else {
+		respBody := "Successfully untrashed on: " + strings.Join(untrashedOn, ",")
+		if len(failedOn) > 0 {
+			respBody += "; Failed to untrash on: " + strings.Join(failedOn, ",")
+		}
+		resp.Write([]byte(respBody))
+	}
 }
 
 // ==============================

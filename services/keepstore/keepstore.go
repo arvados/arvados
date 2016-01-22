@@ -55,6 +55,10 @@ var dataManagerToken string
 // actually deleting anything.
 var neverDelete = true
 
+// trashLifetime is the time duration after a block is trashed
+// during which it can be recovered using an /untrash request
+var trashLifetime time.Duration
+
 var maxBuffers = 128
 var bufs *bufferPool
 
@@ -114,7 +118,6 @@ var (
 	flagSerializeIO bool
 	flagReadonly    bool
 	volumes         volumeSet
-	trashLifetime   int
 )
 
 func (vs *volumeSet) String() string {
@@ -202,11 +205,11 @@ func main() {
 		"max-buffers",
 		maxBuffers,
 		fmt.Sprintf("Maximum RAM to use for data buffers, given in multiples of block size (%d MiB). When this limit is reached, HTTP requests requiring buffers (like GET and PUT) will wait for buffer space to be released.", BlockSize>>20))
-	flag.IntVar(
+	flag.DurationVar(
 		&trashLifetime,
 		"trash-lifetime",
-		0,
-		fmt.Sprintf("Trashed blocks will stay in trash for trash-lifetime interval before they are actually deleted by the system."))
+		0*time.Second,
+		"Interval after a block is trashed during which it can be recovered using an /untrash request")
 
 	flag.Parse()
 
