@@ -136,9 +136,7 @@ handle_rails_package() {
         mkdir -p tmp
         version_from_git >"$version_file"
         git rev-parse HEAD >git-commit.version
-        if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
-            bundle install --path vendor/bundle >"$STDOUT_IF_DEBUG"
-        fi
+        bundle package --all
     )
     if [[ 0 != "$?" ]] || ! cd "$WORKSPACE/packages/$TARGET"; then
         echo "ERROR: $pkgname package prep failed" >&2
@@ -160,15 +158,13 @@ handle_rails_package() {
     # .git and packages are for the SSO server, which is built from its
     # repository root.
     for exclude in .git packages tmp log coverage \
-                        vendor/cache/\* Capfile\* config/deploy\*; do
+                        Capfile\* config/deploy\* \
+                        config/application.yml \
+                        config/database.yml; do
         switches+=(-x "$exclude_root/$exclude")
     done
     fpm_build "${pos_args[@]}" "${switches[@]}" \
               -x "$exclude_root/vendor/bundle" "$@" "$license_arg"
-    if [[ "$BUILD_BUNDLE_PACKAGES" != 0 ]]; then
-        posargs[1]="$pkgname-with-bundle"
-        fpm_build "${pos_args[@]}" "${switches[@]}" "$@" "$license_arg"
-    fi
     rm -rf "$scripts_dir" "$version_file"
 }
 
@@ -235,18 +231,17 @@ fpm_build () {
   # that will take precedence, as desired.
   COMMAND_ARR+=(--iteration "$(default_iteration "$PACKAGE" "$VERSION")")
 
-  # Append remaining function arguments directly to fpm's command line.
-  for i; do
-    COMMAND_ARR+=("$i")
-  done
+  # 'dir' type packages are provided in the form /path/to/source=/path/to/dest
+  # so strip off the 2nd part to check for fpm-info below.
+  PACKAGE_DIR=$(echo $PACKAGE | sed 's/\/=.*//')
 
   # Append --depends X and other arguments specified by fpm-info.sh in
   # the package source dir. These are added last so they can override
   # the arguments added by this script.
   declare -a fpm_args=()
   declare -a fpm_depends=()
-  if [[ -d "$PACKAGE" ]]; then
-      FPM_INFO="$PACKAGE/fpm-info.sh"
+  if [[ -d "$PACKAGE_DIR" ]]; then
+      FPM_INFO="$PACKAGE_DIR/fpm-info.sh"
   else
       FPM_INFO="${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE}/fpm-info.sh"
   fi
@@ -257,6 +252,12 @@ fpm_build () {
   for i in "${fpm_depends[@]}"; do
     COMMAND_ARR+=('--depends' "$i")
   done
+
+  # Append remaining function arguments directly to fpm's command line.
+  for i; do
+    COMMAND_ARR+=("$i")
+  done
+
   COMMAND_ARR+=("${fpm_args[@]}")
 
   COMMAND_ARR+=("$PACKAGE")

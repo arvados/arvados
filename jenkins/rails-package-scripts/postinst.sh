@@ -194,7 +194,7 @@ configure_version() {
   fi
 
   run_and_report "Running bundle install" \
-      $COMMAND_PREFIX bundle install --path $SHARED_PATH/vendor_bundle --quiet
+      $COMMAND_PREFIX bundle install --path $SHARED_PATH/vendor_bundle --local --quiet
 
   echo -n "Ensuring directory and file permissions ..."
   # Ensure correct ownership of a few files
