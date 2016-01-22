@@ -80,3 +80,14 @@ new_with_custom_hostname:
   job_uuid: ~
   info:
     ping_secret: "abcdyi0x4lb5q4gzqqtrnq30oyj08r8dtdimmanbqw49z1anz2"
+
+node_with_no_ip_address_yet:
+  uuid: zzzzz-7ekkf-nodenoipaddryet
+  owner_uuid: zzzzz-tpzed-000000000000000
+  hostname: noipaddr
+  slot_number: ~
+  last_ping_at: ~
+  first_ping_at: ~
+  job_uuid: ~
+  info:
+    ping_secret: "abcdyefg4lb5q4gzqqtrnq30oyj08r8dtdimmanbqw49z1anz2"

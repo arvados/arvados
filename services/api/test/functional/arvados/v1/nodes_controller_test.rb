@@ -182,4 +182,42 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     }
     assert_response 422
   end
+
+  test "first ping should set ip addr using local_ipv4 when provided" do
+    post :ping, {
+      id: 'zzzzz-7ekkf-nodenoipaddryet',
+      instance_id: 'i-0000000',
+      local_ipv4: '172.17.2.172',
+      ping_secret: 'abcdyefg4lb5q4gzqqtrnq30oyj08r8dtdimmanbqw49z1anz2'
+    }
+    assert_response :success
+    response = JSON.parse(@response.body)
+    assert_equal 'zzzzz-7ekkf-nodenoipaddryet', response['uuid']
+    assert_equal '172.17.2.172', response['ip_address']
+  end
+
+  test "first ping should set ip addr using remote_ip when local_ipv4 is not provided" do
+    post :ping, {
+      id: 'zzzzz-7ekkf-nodenoipaddryet',
+      instance_id: 'i-0000000',
+      ping_secret: 'abcdyefg4lb5q4gzqqtrnq30oyj08r8dtdimmanbqw49z1anz2'
+    }
+    assert_response :success
+    response = JSON.parse(@response.body)
+    assert_equal 'zzzzz-7ekkf-nodenoipaddryet', response['uuid']
+    assert_equal request.remote_ip, response['ip_address']
+  end
+
+  test "future pings should not change previous ip address" do
+    post :ping, {
+      id: 'zzzzz-7ekkf-2z3mc76g2q73aio',
+      instance_id: 'i-0000000',
+      local_ipv4: '172.17.2.175',
+      ping_secret: '69udawxvn3zzj45hs8bumvndricrha4lcpi23pd69e44soanc0'
+    }
+    assert_response :success
+    response = JSON.parse(@response.body)
+    assert_equal 'zzzzz-7ekkf-2z3mc76g2q73aio', response['uuid']
+    assert_equal '172.17.2.174', response['ip_address']   # original ip address is not overwritten
+  end
 end
