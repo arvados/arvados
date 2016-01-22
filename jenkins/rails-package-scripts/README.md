@@ -9,5 +9,6 @@ Since our build process is a tower of shell scripts, concatenating files seemed 
 postinst.sh lets the early parts define a few hooks to control behavior:
 
 * After it installs the core configuration files (database.yml, application.yml, and production.rb) to /etc/arvados/server, it calls setup_extra_conffiles.  By default this is a noop function (in step2.sh).  API server defines this to set up the old omniauth.rb conffile.
+* Before it restarts nginx, it calls setup_before_nginx_restart.  By default this is a noop function (in step2.sh).  API server defines this to set up the internal git repository, if necessary.
 * $RAILSPKG_DATABASE_LOAD_TASK defines the Rake task to load the database.  API server uses db:structure:load.  SSO server uses db:schema:load.  Workbench doesn't set this, which causes the postinst to skip all database work.
 * If $RAILSPKG_SUPPORTS_CONFIG_CHECK != 1, it won't run the config:check rake task.  SSO clears this flag (it doesn't have that task code).

@@ -23,3 +23,6 @@ RAILSPKG_SUPPORTS_CONFIG_CHECK=${RAILSPKG_SUPPORTS_CONFIG_CHECK:-1}
 if ! type setup_extra_conffiles >/dev/null 2>&1; then
     setup_extra_conffiles() { return; }
 fi
+if ! type setup_before_nginx_restart >/dev/null 2>&1; then
+    setup_before_nginx_restart() { return; }
+fi

@@ -230,6 +230,8 @@ configure_version() {
   fi
   chown -R "$WWW_OWNER:" $RELEASE_PATH/tmp
 
+  setup_before_nginx_restart
+
   if [ ! -z "$WEB_SERVICE" ]; then
       service "$WEB_SERVICE" restart
   fi
