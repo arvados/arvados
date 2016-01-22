@@ -158,7 +158,9 @@ handle_rails_package() {
     # .git and packages are for the SSO server, which is built from its
     # repository root.
     for exclude in .git packages tmp log coverage \
-                        Capfile\* config/deploy\*; do
+                        Capfile\* config/deploy\* \
+                        config/application.yml \
+                        config/database.yml; do
         switches+=(-x "$exclude_root/$exclude")
     done
     fpm_build "${pos_args[@]}" "${switches[@]}" \
