@@ -335,7 +335,6 @@ func TestDiscoverTmpfs(t *testing.T) {
 	f.Close()
 	ProcMounts = f.Name()
 
-	trashLifetime = 24 * 60 * 60
 	resultVols := volumeSet{}
 	added := (&unixVolumeAdder{&resultVols}).Discover()
 
@@ -376,7 +375,6 @@ func TestDiscoverNone(t *testing.T) {
 	f.Close()
 	ProcMounts = f.Name()
 
-	trashLifetime = 24 * 60 * 60
 	resultVols := volumeSet{}
 	added := (&unixVolumeAdder{&resultVols}).Discover()
 	if added != 0 || len(resultVols) != 0 {

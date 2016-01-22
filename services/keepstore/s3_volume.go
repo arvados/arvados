@@ -39,8 +39,7 @@ type s3VolumeAdder struct {
 }
 
 func (s *s3VolumeAdder) Set(bucketName string) error {
-	if trashLifetime <= 0 {
-		log.Print("Missing required configuration parameter: trash-lifetime")
+	if trashLifetime != 0 {
 		return ErrNotImplemented
 	}
 	if bucketName == "" {
@@ -278,7 +277,7 @@ func (v *S3Volume) Trash(loc string) error {
 
 // TBD
 func (v *S3Volume) Untrash(loc string) error {
-	return nil
+	return ErrNotImplemented
 }
 
 func (v *S3Volume) Status() *VolumeStatus {

@@ -43,8 +43,7 @@ type azureVolumeAdder struct {
 }
 
 func (s *azureVolumeAdder) Set(containerName string) error {
-	if trashLifetime <= 0 {
-		log.Print("Missing required configuration parameter: trash-lifetime")
+	if trashLifetime != 0 {
 		return ErrNotImplemented
 	}
 
@@ -343,7 +342,7 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 // Untrash a Keep block.
 // TBD
 func (v *AzureBlobVolume) Untrash(loc string) error {
-	return nil
+	return ErrNotImplemented
 }
 
 // Status returns a VolumeStatus struct with placeholder data.

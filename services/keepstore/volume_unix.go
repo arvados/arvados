@@ -23,9 +23,8 @@ type unixVolumeAdder struct {
 }
 
 func (vs *unixVolumeAdder) Set(value string) error {
-	if trashLifetime <= 0 {
-		log.Print("Missing required configuration parameter: trash-lifetime")
-		//return ErrNotImplemented
+	if trashLifetime != 0 {
+		return ErrNotImplemented
 	}
 	if dirs := strings.Split(value, ","); len(dirs) > 1 {
 		log.Print("DEPRECATED: using comma-separated volume list.")
@@ -412,7 +411,7 @@ func (v *UnixVolume) Trash(loc string) error {
 // Untrash moves block from trash back into store
 // TBD
 func (v *UnixVolume) Untrash(loc string) error {
-	return nil
+	return ErrNotImplemented
 }
 
 // blockDir returns the fully qualified directory name for the directory
