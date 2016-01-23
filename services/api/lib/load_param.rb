@@ -111,7 +111,12 @@ module LoadParam
     # (e.g., [] or ['owner_uuid desc']), fall back on the default
     # orders to ensure repeating the same request (possibly with
     # different limit/offset) will return records in the same order.
-    @orders += model_class.default_orders
+    unless @orders.any? do |order|
+        otable, ocol = order.split(' ')[0].split('.')
+        otable == table_name and model_class.unique_columns.include?(ocol)
+      end
+      @orders += model_class.default_orders
+    end
 
     case params[:select]
     when Array
