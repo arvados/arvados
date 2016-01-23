@@ -23,6 +23,7 @@ setup(name='crunchstat_summary',
       download_url="https://github.com/curoverse/arvados.git",
       license='GNU Affero General Public License, version 3.0',
       packages=['crunchstat_summary'],
+      include_package_data=True,
       scripts=[
           'bin/crunchstat-summary'
       ],
