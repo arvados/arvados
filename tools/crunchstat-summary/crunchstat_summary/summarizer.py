@@ -261,24 +261,56 @@ class Summarizer(object):
                 int(used_cores))
 
     def _recommend_ram(self):
-        """Recommend asking for (2048*0.95) MiB RAM if max rss was 1248 MiB"""
+        """Recommend an economical RAM constraint for this job.
 
-        used_ram = self.stats_max['mem']['rss']
-        if used_ram == float('-Inf'):
+        Nodes that are advertised as "8 gibibytes" actually have what
+        we might call "8 nearlygibs" of memory available for jobs.
+        Here, we calculate a whole number of nearlygibs that would
+        have sufficed to run the job, then recommend requesting a node
+        with that number of nearlygibs (expressed as mebibytes).
+
+        Requesting a node with "nearly 8 gibibytes" is our best hope
+        of getting a node that actually has nearly 8 gibibytes
+        available.  If the node manager is smart enough to account for
+        the discrepancy itself when choosing/creating a node, we'll
+        get an 8 GiB node with nearly 8 GiB available.  Otherwise, the
+        advertised size of the next-size-smaller node (say, 6 GiB)
+        will be too low to satisfy our request, so we will effectively
+        get rounded up to 8 GiB.
+
+        For example, if we need 7500 MiB, we can ask for 7500 MiB, and
+        we will generally get a node that is advertised as "8 GiB" and
+        has at least 7500 MiB available.  However, asking for 8192 MiB
+        would either result in an unnecessarily expensive 12 GiB node
+        (if node manager knows about the discrepancy), or an 8 GiB
+        node which has less than 8192 MiB available and is therefore
+        considered by crunch-dispatch to be too small to meet our
+        constraint.
+
+        When node manager learns how to predict the available memory
+        for each node type such that crunch-dispatch always agrees
+        that a node is big enough to run the job it was brought up
+        for, all this will be unnecessary.  We'll just ask for exactly
+        the memory we want -- even if that happens to be 8192 MiB.
+        """
+
+        used_bytes = self.stats_max['mem']['rss']
+        if used_bytes == float('-Inf'):
             logger.warning('%s: no memory usage data', self.label)
             return
-        used_ram = math.ceil(float(used_ram) / (1<<20))
-        asked_ram = self.existing_constraints.get('min_ram_mb_per_node')
-        if asked_ram is None or (
-                math.ceil((used_ram/AVAILABLE_RAM_RATIO)/(1<<10)) <
-                (asked_ram/AVAILABLE_RAM_RATIO)/(1<<10)):
+        used_mib = math.ceil(float(used_bytes) / 1048576)
+        asked_mib = self.existing_constraints.get('min_ram_mb_per_node')
+
+        nearlygibs = lambda mebibytes: mebibytes/AVAILABLE_RAM_RATIO/1024
+        if asked_mib is None or (
+                math.ceil(nearlygibs(used_mib)) < nearlygibs(asked_mib)):
             yield (
                 '#!! {} max RSS was {} MiB -- '
                 'try runtime_constraints "min_ram_mb_per_node":{}'
             ).format(
                 self.label,
-                int(used_ram),
-                int(math.ceil((used_ram/AVAILABLE_RAM_RATIO)/(1<<10))*(1<<10)*AVAILABLE_RAM_RATIO))
+                int(used_mib),
+                int(math.ceil(nearlygibs(used_mib))*AVAILABLE_RAM_RATIO*1024))
 
     def _format(self, val):
         """Return a string representation of a stat.
