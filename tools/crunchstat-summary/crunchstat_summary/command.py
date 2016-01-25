@@ -27,20 +27,14 @@ class ArgumentParser(argparse.ArgumentParser):
             '--format', type=str, choices=('html', 'text'), default='text',
             help='Report format')
         self.add_argument(
-            '--verbose', action='store_true',
-            help='Write progress messages to stderr')
-        self.add_argument(
-            '--debug', action='store_true',
-            help='Write debug messages to stderr')
+            '--verbose', '-v', action='count', default=0,
+            help='Log more information (once for progress, twice for debug)')
 
 
 class Command(object):
     def __init__(self, args):
         self.args = args
-        if args.debug:
-            logger.setLevel(logging.DEBUG)
-        elif args.verbose:
-            logger.setLevel(logging.INFO)
+        logger.setLevel(logging.WARNING - 10 * args.verbose)
 
     def run(self):
         kwargs = {
