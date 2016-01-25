@@ -34,6 +34,7 @@ setup(name='crunchstat_summary',
           'arvados-python-client',
       ],
       test_suite='tests',
+      tests_require=['pbr<1.7.0', 'mock>=1.0'],
       zip_safe=False,
       cmdclass={'egg_info': tagger},
       )
