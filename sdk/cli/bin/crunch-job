@@ -1340,8 +1340,9 @@ sub check_squeue
   # squeue check interval (15s) this should make the squeue check an
   # infrequent event.
   my $silent_procs = 0;
-  for my $jobstep (values %proc)
+  for my $procinfo (values %proc)
   {
+    my $jobstep = $jobstep[$procinfo->{jobstep}];
     if ($jobstep->{stderr_at} < $last_squeue_check)
     {
       $silent_procs++;
@@ -1350,17 +1351,18 @@ sub check_squeue
   return if $silent_procs == 0;
 
   # use killem() on procs whose killtime is reached
-  while (my ($pid, $jobstep) = each %proc)
+  while (my ($pid, $procinfo) = each %proc)
   {
-    if (exists $jobstep->{killtime}
-        && $jobstep->{killtime} <= time
+    my $jobstep = $jobstep[$procinfo->{jobstep}];
+    if (exists $procinfo->{killtime}
+        && $procinfo->{killtime} <= time
         && $jobstep->{stderr_at} < $last_squeue_check)
     {
       my $sincewhen = "";
       if ($jobstep->{stderr_at}) {
         $sincewhen = " in last " . (time - $jobstep->{stderr_at}) . "s";
       }
-      Log($jobstep->{jobstep}, "killing orphaned srun process $pid (task not in slurm queue, no stderr received$sincewhen)");
+      Log($procinfo->{jobstep}, "killing orphaned srun process $pid (task not in slurm queue, no stderr received$sincewhen)");
       killem ($pid);
     }
   }
@@ -1395,12 +1397,12 @@ sub check_squeue
   }
 
   # Check for child procs >60s old and not mentioned by squeue.
-  while (my ($pid, $jobstep) = each %proc)
+  while (my ($pid, $procinfo) = each %proc)
   {
-    if ($jobstep->{time} < time - 60
-        && $jobstep->{jobstepname}
-        && !exists $ok{$jobstep->{jobstepname}}
-        && !exists $jobstep->{killtime})
+    if ($procinfo->{time} < time - 60
+        && $procinfo->{jobstepname}
+        && !exists $ok{$procinfo->{jobstepname}}
+        && !exists $procinfo->{killtime})
     {
       # According to slurm, this task has ended (successfully or not)
       # -- but our srun child hasn't exited. First we must wait (30
@@ -1409,8 +1411,8 @@ sub check_squeue
       # terminated, we'll conclude some slurm communication
       # error/delay has caused the task to die without notifying srun,
       # and we'll kill srun ourselves.
-      $jobstep->{killtime} = time + 30;
-      Log($jobstep->{jobstep}, "notice: task is not in slurm queue but srun process $pid has not exited");
+      $procinfo->{killtime} = time + 30;
+      Log($procinfo->{jobstep}, "notice: task is not in slurm queue but srun process $pid has not exited");
     }
   }
 }
