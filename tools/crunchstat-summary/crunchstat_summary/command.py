@@ -21,8 +21,8 @@ class ArgumentParser(argparse.ArgumentParser):
             '--log-file', type=str,
             help='Read log data from a regular file')
         self.add_argument(
-            '--include-child-jobs', action='store_true',
-            help='Include stats from child jobs')
+            '--skip-child-jobs', action='store_true',
+            help='Do not include stats from child jobs')
         self.add_argument(
             '--format', type=str, choices=('html', 'text'), default='text',
             help='Report format')
@@ -44,7 +44,7 @@ class Command(object):
 
     def run(self):
         kwargs = {
-            'include_child_jobs': self.args.include_child_jobs,
+            'skip_child_jobs': self.args.skip_child_jobs,
         }
         if self.args.pipeline_instance:
             self.summer = summarizer.PipelineSummarizer(self.args.pipeline_instance, **kwargs)

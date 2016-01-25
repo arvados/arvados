@@ -28,13 +28,13 @@ class Task(object):
 class Summarizer(object):
     existing_constraints = {}
 
-    def __init__(self, logdata, label=None, include_child_jobs=True):
+    def __init__(self, logdata, label=None, skip_child_jobs=False):
         self._logdata = logdata
 
         self.label = label
         self.starttime = None
         self.finishtime = None
-        self._include_child_jobs = include_child_jobs
+        self._skip_child_jobs = skip_child_jobs
 
         # stats_max: {category: {stat: val}}
         self.stats_max = collections.defaultdict(
@@ -72,8 +72,9 @@ class Summarizer(object):
             m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) stderr Queued job (?P<uuid>\S+)$', line)
             if m:
                 uuid = m.group('uuid')
-                if not self._include_child_jobs:
-                    logger.warning('%s: omitting %s (try --include-child-job)',
+                if self._skip_child_jobs:
+                    logger.warning('%s: omitting stats from child job %s'
+                                   ' because --skip-child-jobs flag is on',
                                    self.label, uuid)
                     continue
                 logger.debug('%s: follow %s', self.label, uuid)
