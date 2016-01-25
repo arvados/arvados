@@ -184,6 +184,13 @@ class StreamFileReaderTestCase(unittest.TestCase):
     def test_bz2_decompression(self):
         self.check_decompression('bz2', bz2.compress)
 
+    def test_readline_then_readlines(self):
+        reader = self.make_newlines_reader()
+        data = reader.readline()
+        self.assertEqual('one\n', data)
+        data = reader.readlines()
+        self.assertEqual(['two\n', '\n', 'three\n', 'four\n', '\n'], data)
+
 
 class StreamRetryTestMixin(object):
     # Define reader_for(coll_name, **kwargs)
