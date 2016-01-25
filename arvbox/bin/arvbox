@@ -299,6 +299,23 @@ case "$subcmd" in
         fi
         ;;
 
+    status)
+        echo "Selected: $ARVBOX_CONTAINER"
+        if docker ps -a --filter "status=running" | grep -E "$ARVBOX_CONTAINER$" -q ; then
+            echo "Status: running"
+            echo "IP: $(getip)"
+        else
+            echo "Status: not running"
+        fi
+        if test -d "$ARVBOX_DATA" ; then
+            echo "Data: $ARVBOX_DATA"
+        elif docker ps -a | grep -E "$ARVBOX_CONTAINER-data$" -q ; then
+            echo "Data: $ARVBOX_CONTAINER-data"
+        else
+            echo "Data: none"
+        fi
+        ;;
+
     reset|destroy)
         stop
         if test -d "$ARVBOX_DATA" ; then
@@ -365,6 +382,7 @@ case "$subcmd" in
         echo "open       open arvbox workbench in a web browser"
         echo "shell      enter arvbox shell"
         echo "ip         print arvbox ip address"
+        echo "status     print some information about current arvbox"
         echo "stop       stop arvbox container"
         echo "restart <config>  stop, then run again"
         echo "reboot  <config>  stop, build arvbox Docker image, run"
