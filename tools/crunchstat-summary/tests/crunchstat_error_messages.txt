@@ -1,0 +1,9 @@
+2016-01-07_00:15:33 tb05z-8i9sb-khsk5rmf4xjdcbl 20819 0 stderr 
+2016-01-07_00:15:33 tb05z-8i9sb-khsk5rmf4xjdcbl 20819 0 stderr old error message:
+2016-01-07_00:15:33 tb05z-8i9sb-khsk5rmf4xjdcbl 20819 0 stderr crunchstat: read /proc/3305/net/dev: open /proc/3305/net/dev: no such file or directory
+2016-01-07_00:15:34 tb05z-8i9sb-khsk5rmf4xjdcbl 20819 0 stderr 
+2016-01-07_00:15:34 tb05z-8i9sb-khsk5rmf4xjdcbl 20819 0 stderr new error message:
+2016-01-07_00:15:34 tb05z-8i9sb-khsk5rmf4xjdcbl 20819 0 stderr crunchstat: error reading /proc/3305/net/dev: open /proc/3305/net/dev: no such file or directory
+2016-01-07_00:15:34 tb05z-8i9sb-khsk5rmf4xjdcbl 20819 0 stderr
+2016-01-07_00:15:34 tb05z-8i9sb-khsk5rmf4xjdcbl 20819 0 stderr cancelled job:
+2016-01-07_00:15:34 tb05z-8i9sb-khsk5rmf4xjdcbl 20819 0 stderr crunchstat: caught signal: interrupt
