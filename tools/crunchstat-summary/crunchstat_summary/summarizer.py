@@ -26,8 +26,6 @@ class Task(object):
 
 
 class Summarizer(object):
-    existing_constraints = {}
-
     def __init__(self, logdata, label=None, skip_child_jobs=False):
         self._logdata = logdata
 
@@ -46,6 +44,12 @@ class Summarizer(object):
 
         self.seq_to_uuid = {}
         self.tasks = collections.defaultdict(Task)
+
+        # We won't bother recommending new runtime constraints if the
+        # constraints given when running the job are known to us and
+        # are already suitable.  If applicable, the subclass
+        # constructor will overwrite this with something useful.
+        self.existing_constraints = {}
 
         logger.debug("%s: logdata %s", self.label, repr(logdata))
 
@@ -251,7 +255,7 @@ class Summarizer(object):
             logger.warning('%s: no CPU usage data', self.label)
             return
         used_cores = int(math.ceil(cpu_max_rate))
-        asked_cores =  self.existing_constraints.get('min_cores_per_node')
+        asked_cores = self.existing_constraints.get('min_cores_per_node')
         if asked_cores is None or used_cores < asked_cores:
             yield (
                 '#!! {} max CPU usage was {}% -- '
@@ -344,14 +348,13 @@ class JobSummarizer(CollectionSummarizer):
             self.job = arv.jobs().get(uuid=job).execute()
         else:
             self.job = job
-        self.label = self.job['uuid']
-        self.existing_constraints = self.job.get('runtime_constraints', {})
         if not self.job['log']:
             raise ValueError(
                 "job {} has no log; live summary not implemented".format(
                     self.job['uuid']))
         super(JobSummarizer, self).__init__(self.job['log'], **kwargs)
         self.label = self.job['uuid']
+        self.existing_constraints = self.job.get('runtime_constraints', {})
 
 
 class PipelineSummarizer(object):
