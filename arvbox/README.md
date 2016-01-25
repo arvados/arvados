@@ -4,10 +4,13 @@ Self-contained development, demonstration and testing environment for Arvados.
 
 ## Quick start
 
+```
 $ bin/arvbox reboot localdemo
+```
 
 ## Usage
 
+```
 Arvados-in-a-box
 
 arvbox (build|start|run|open|shell|ip|stop|reboot|reset|destroy|log|svrestart)
@@ -25,12 +28,13 @@ destroy    delete all arvbox code and data (be careful!)
 log       <service> tail log of specified service
 svrestart <service> restart specified service inside arvbox
 clone <from> <to>   clone an arvbox
+```
 
 ## Requirements
 
-Linux 3.x+ and Docker 1.9+
-Minimum of 3 GiB of RAM  + additional memory to run jobs
-Minimum of 3 GiB of disk + storage for actual data
+* Linux 3.x+ and Docker 1.9+
+* Minimum of 3 GiB of RAM  + additional memory to run jobs
+* Minimum of 3 GiB of disk + storage for actual data
 
 ## Configs
 
