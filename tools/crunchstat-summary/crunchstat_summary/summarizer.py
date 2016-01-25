@@ -340,7 +340,7 @@ class CollectionSummarizer(Summarizer):
 class JobSummarizer(CollectionSummarizer):
     def __init__(self, job, **kwargs):
         arv = arvados.api('v1')
-        if isinstance(job, str):
+        if isinstance(job, basestring):
             self.job = arv.jobs().get(uuid=job).execute()
         else:
             self.job = job
