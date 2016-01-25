@@ -34,6 +34,20 @@ class SummarizeFile(ReportDiff):
             self.diff_known_report(logfile, cmd)
 
 
+class HTMLFromFile(ReportDiff):
+    def test_example_files(self):
+        # Note we don't test the output content at all yet; we're
+        # mainly just verifying the --format=html option isn't ignored
+        # and the HTML code path doesn't crash.
+        for fnm in glob.glob(os.path.join(TESTS_DIR, '*.txt.gz')):
+            logfile = os.path.join(TESTS_DIR, fnm)
+            args = crunchstat_summary.command.ArgumentParser().parse_args(
+                ['--format=html', '--log-file', logfile])
+            cmd = crunchstat_summary.command.Command(args)
+            cmd.run()
+            self.assertRegexpMatches(cmd.report(), r'(?is)<html>.*</html>\s*$')
+
+
 class SummarizeEdgeCases(unittest.TestCase):
     def test_error_messages(self):
         logfile = open(os.path.join(TESTS_DIR, 'crunchstat_error_messages.txt'))

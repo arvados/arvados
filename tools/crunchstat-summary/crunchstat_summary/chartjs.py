@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import cgi
 import json
 import pkg_resources
 
@@ -19,7 +20,7 @@ class ChartJS(object):
         <script type="text/javascript" src="{}"></script>
         <script type="text/javascript">{}</script>
         </head><body></body></html>
-        '''.format(self.label, self.JSLIB, self.js())
+        '''.format(cgi.escape(self.label), self.JSLIB, self.js())
 
     def js(self):
         return 'var sections = {};\n{}'.format(
