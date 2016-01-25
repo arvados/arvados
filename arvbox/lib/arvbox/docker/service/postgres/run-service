@@ -5,7 +5,7 @@ set -eux -o pipefail
 
 if ! test -d /var/lib/postgresql/9.4/main ; then
     /usr/lib/postgresql/9.4/bin/initdb -D /var/lib/postgresql/9.4/main
-    sh -c "while ! psql -c'\du' >/dev/null 2>/dev/null ; do createdb ; sleep 1 ; done" &
+    sh -c "while ! (psql -c'\du' | grep '^ arvbox ') >/dev/null ; do createuser -s arvbox ; sleep 1 ; done" &
 fi
 mkdir -p /var/run/postgresql/9.4-main.pg_stat_tmp
 
