@@ -10,7 +10,8 @@ import libcloud.common.types as cloud_types
 import pykka
 
 from .. import \
-    arvados_node_fqdn, arvados_node_mtime, arvados_timestamp, timestamp_fresh, arvados_node_missing
+    arvados_node_fqdn, arvados_node_mtime, arvados_timestamp, timestamp_fresh, \
+    arvados_node_missing, _retry
 from ...clientactor import _notify_subscribers
 from ... import config
 
@@ -32,40 +33,6 @@ class ComputeNodeStateChangeBase(config.actor_class):
         self.max_retry_wait = max_retry_wait
         self.retry_wait = retry_wait
         self.subscribers = set()
-
-    @staticmethod
-    def _retry(errors=()):
-        """Retry decorator for an actor method that makes remote requests.
-
-        Use this function to decorator an actor method, and pass in a
-        tuple of exceptions to catch.  This decorator will schedule
-        retries of that method with exponential backoff if the
-        original method raises a known cloud driver error, or any of the
-        given exception types.
-        """
-        def decorator(orig_func):
-            @functools.wraps(orig_func)
-            def retry_wrapper(self, *args, **kwargs):
-                start_time = time.time()
-                try:
-                    orig_func(self, *args, **kwargs)
-                except Exception as error:
-                    if not (isinstance(error, errors) or
-                            self._cloud.is_cloud_exception(error)):
-                        raise
-                    self._logger.warning(
-                        "Client error: %s - waiting %s seconds",
-                        error, self.retry_wait)
-                    self._timer.schedule(start_time + self.retry_wait,
-                                         getattr(self._later,
-                                                 orig_func.__name__),
-                                         *args, **kwargs)
-                    self.retry_wait = min(self.retry_wait * 2,
-                                          self.max_retry_wait)
-                else:
-                    self.retry_wait = self.min_retry_wait
-            return retry_wrapper
-        return decorator
 
     def _finished(self):
         _notify_subscribers(self._later, self.subscribers)
@@ -117,18 +84,18 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         else:
             self._later.prepare_arvados_node(arvados_node)
 
-    @ComputeNodeStateChangeBase._retry(config.ARVADOS_ERRORS)
+    @_retry(config.ARVADOS_ERRORS)
     def create_arvados_node(self):
         self.arvados_node = self._arvados.nodes().create(body={}).execute()
         self._later.create_cloud_node()
 
-    @ComputeNodeStateChangeBase._retry(config.ARVADOS_ERRORS)
+    @_retry(config.ARVADOS_ERRORS)
     def prepare_arvados_node(self, node):
         self.arvados_node = self._clean_arvados_node(
             node, "Prepared by Node Manager")
         self._later.create_cloud_node()
 
-    @ComputeNodeStateChangeBase._retry()
+    @_retry()
     def create_cloud_node(self):
         self._logger.info("Creating cloud node with size %s.",
                           self.cloud_size.name)
@@ -139,7 +106,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         self._logger.info("Cloud node %s created.", self.cloud_node.id)
         self._later.update_arvados_node_properties()
 
-    @ComputeNodeStateChangeBase._retry(config.ARVADOS_ERRORS)
+    @_retry(config.ARVADOS_ERRORS)
     def update_arvados_node_properties(self):
         """Tell Arvados some details about the cloud node.
 
@@ -163,7 +130,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         self._logger.info("%s updated properties.", self.arvados_node['uuid'])
         self._later.post_create()
 
-    @ComputeNodeStateChangeBase._retry()
+    @_retry()
     def post_create(self):
         self._cloud.post_create_node(self.cloud_node)
         self._logger.info("%s post-create work done.", self.cloud_node.id)
@@ -230,7 +197,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         return stop_wrapper
 
     @_stop_if_window_closed
-    @ComputeNodeStateChangeBase._retry()
+    @_retry()
     def shutdown_node(self):
         if not self._cloud.destroy_node(self.cloud_node):
             if self._cloud.broken(self.cloud_node):
@@ -245,7 +212,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         else:
             self._later.clean_arvados_node(arv_node)
 
-    @ComputeNodeStateChangeBase._retry(config.ARVADOS_ERRORS)
+    @_retry(config.ARVADOS_ERRORS)
     def clean_arvados_node(self, arvados_node):
         self._clean_arvados_node(arvados_node, "Shut down by Node Manager")
         self._finished(success_flag=True)

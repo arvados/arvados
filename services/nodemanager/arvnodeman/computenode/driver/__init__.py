@@ -8,6 +8,7 @@ import libcloud.common.types as cloud_types
 from libcloud.compute.base import NodeDriver, NodeAuthSSHKey
 
 from ...config import NETWORK_ERRORS
+from .. import _retry
 
 class BaseComputeNodeDriver(object):
     """Abstract base class for compute node drivers.
@@ -24,7 +25,12 @@ class BaseComputeNodeDriver(object):
     """
     CLOUD_ERRORS = NETWORK_ERRORS + (cloud_types.LibcloudError,)
 
-    def __init__(self, auth_kwargs, list_kwargs, create_kwargs, driver_class):
+    @_retry()
+    def _create_driver(self, driver_class, **auth_kwargs):
+        return driver_class(**auth_kwargs)
+
+    def __init__(self, auth_kwargs, list_kwargs, create_kwargs,
+                 driver_class, retry_wait=1, max_retry_wait=180):
         """Base initializer for compute node drivers.
 
         Arguments:
@@ -37,7 +43,9 @@ class BaseComputeNodeDriver(object):
           libcloud driver's create_node method to create a new compute node.
         * driver_class: The class of a libcloud driver to use.
         """
-        self.real = driver_class(**auth_kwargs)
+        self.min_retry_wait = retry_wait
+        self.max_retry_wait = max_retry_wait
+        self.real = self._create_driver(driver_class, **auth_kwargs)
         self.list_kwargs = list_kwargs
         self.create_kwargs = create_kwargs
         # Transform entries in create_kwargs.  For each key K, if this class

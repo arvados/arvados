@@ -3,6 +3,7 @@
 from __future__ import absolute_import, print_function
 
 import calendar
+import functools
 import itertools
 import re
 import time
@@ -42,6 +43,39 @@ def arvados_node_missing(arvados_node, fresh_time):
         return None
     else:
         return not timestamp_fresh(arvados_timestamp(arvados_node["last_ping_at"]), fresh_time)
+
+def _retry(errors=()):
+    """Retry decorator for an actor method that makes remote requests.
+
+    Use this function to decorator an actor method, and pass in a
+    tuple of exceptions to catch.  This decorator will schedule
+    retries of that method with exponential backoff if the
+    original method raises a known cloud driver error, or any of the
+    given exception types.
+    """
+    def decorator(orig_func):
+        @functools.wraps(orig_func)
+        def retry_wrapper(self, *args, **kwargs):
+            start_time = time.time()
+            try:
+                return orig_func(self, *args, **kwargs)
+            except Exception as error:
+                if not (isinstance(error, errors) or
+                        self._cloud.is_cloud_exception(error)):
+                    raise
+                self._logger.warning(
+                    "Client error: %s - waiting %s seconds",
+                    error, self.retry_wait)
+                self._timer.schedule(start_time + self.retry_wait,
+                                     getattr(self._later,
+                                             orig_func.__name__),
+                                     *args, **kwargs)
+                self.retry_wait = min(self.retry_wait * 2,
+                                      self.max_retry_wait)
+            else:
+                self.retry_wait = self.min_retry_wait
+        return retry_wrapper
+    return decorator
 
 class ShutdownTimer(object):
     """Keep track of a cloud node's shutdown windows.
