@@ -354,7 +354,7 @@ class JobSummarizer(CollectionSummarizer):
         self.label = self.job['uuid']
 
 
-class PipelineSummarizer():
+class PipelineSummarizer(object):
     def __init__(self, pipeline_instance_uuid, **kwargs):
         arv = arvados.api('v1', model=OrderedJsonModel())
         instance = arv.pipeline_instances().get(
