@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import, print_function
 
+import logging
 from operator import attrgetter
 
 import libcloud.common.types as cloud_types
@@ -45,6 +46,10 @@ class BaseComputeNodeDriver(object):
         """
         self.min_retry_wait = retry_wait
         self.max_retry_wait = max_retry_wait
+        self.retry_wait = retry_wait
+        self._cloud = type(self)
+        self._logger = logging.getLogger(str(self._cloud))
+        self._timer = None
         self.real = self._create_driver(driver_class, **auth_kwargs)
         self.list_kwargs = list_kwargs
         self.create_kwargs = create_kwargs

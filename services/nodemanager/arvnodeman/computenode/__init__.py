@@ -45,35 +45,48 @@ def arvados_node_missing(arvados_node, fresh_time):
         return not timestamp_fresh(arvados_timestamp(arvados_node["last_ping_at"]), fresh_time)
 
 def _retry(errors=()):
-    """Retry decorator for an actor method that makes remote requests.
+    """Retry decorator for an method that makes remote requests.
 
-    Use this function to decorator an actor method, and pass in a
-    tuple of exceptions to catch.  This decorator will schedule
-    retries of that method with exponential backoff if the
-    original method raises a known cloud driver error, or any of the
-    given exception types.
+    Use this function to decorate method, and pass in a tuple of exceptions to
+    catch.  If the original method raises a known cloud driver error, or any of
+    the given exception types, this decorator will either go into a
+    sleep-and-retry loop with exponential backoff either by sleeping (if
+    self._timer is None) or by scheduling retries of the method (if self._timer
+    is a timer actor.)
+
     """
+
     def decorator(orig_func):
         @functools.wraps(orig_func)
         def retry_wrapper(self, *args, **kwargs):
             start_time = time.time()
-            try:
-                return orig_func(self, *args, **kwargs)
-            except Exception as error:
-                if not (isinstance(error, errors) or
-                        self._cloud.is_cloud_exception(error)):
-                    raise
-                self._logger.warning(
-                    "Client error: %s - waiting %s seconds",
-                    error, self.retry_wait)
-                self._timer.schedule(start_time + self.retry_wait,
-                                     getattr(self._later,
-                                             orig_func.__name__),
-                                     *args, **kwargs)
-                self.retry_wait = min(self.retry_wait * 2,
-                                      self.max_retry_wait)
-            else:
-                self.retry_wait = self.min_retry_wait
+            while True:
+                try:
+                    ret = orig_func(self, *args, **kwargs)
+                except Exception as error:
+                    if not (isinstance(error, errors) or
+                            self._cloud.is_cloud_exception(error)):
+                        raise
+                    self._logger.warning(
+                        "Client error: %s - waiting %s seconds",
+                        error, self.retry_wait)
+                    if self._timer:
+                        # reschedule to be called again
+                        self._timer.schedule(start_time + self.retry_wait,
+                                             getattr(self._later,
+                                                     orig_func.__name__),
+                                             *args, **kwargs)
+                    else:
+                        # sleep on it.
+                        time.sleep(self.retry_wait)
+                    self.retry_wait = min(self.retry_wait * 2,
+                                          self.max_retry_wait)
+                    if self._timer:
+                        # expect to be called again by timer so don't loop
+                        return
+                else:
+                    self.retry_wait = self.min_retry_wait
+                    return ret
         return retry_wrapper
     return decorator
 

@@ -130,6 +130,13 @@ class DriverTestMixin(object):
     def driver_method_args(self, method_name):
         return getattr(self.driver_mock(), method_name).call_args
 
+    def test_driver_create_retry(self):
+        driver_mock2 = mock.MagicMock(name='driver_mock2')
+        self.driver_mock.side_effect = (Exception("oops"), driver_mock2)
+        kwargs = {'user_id': 'foo'}
+        driver = self.new_driver(auth_kwargs=kwargs)
+        self.assertTrue(self.driver_mock.called)
+        self.assertIs(driver.real, driver_mock2)
 
 class RemotePollLoopActorTestMixin(ActorTestMixin):
     def build_monitor(self, *args, **kwargs):
