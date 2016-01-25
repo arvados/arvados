@@ -111,6 +111,7 @@ if [[ -n "$test_packages" ]]; then
     pushd "$JENKINS_DIR/package-test-dockerfiles"
 else
     pushd "$JENKINS_DIR/package-build-dockerfiles"
+    make "$TARGET/generated"
 fi
 
 echo $TARGET
