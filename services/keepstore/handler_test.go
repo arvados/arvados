@@ -970,3 +970,106 @@ func TestPutReplicationHeader(t *testing.T) {
 		t.Errorf("Got X-Keep-Replicas-Stored: %q, expected %q", r, "1")
 	}
 }
+
+func TestUntrashHandler(t *testing.T) {
+	defer teardown()
+
+	// Set up Keep volumes
+	KeepVM = MakeTestVolumeManager(2)
+	defer KeepVM.Close()
+	vols := KeepVM.AllWritable()
+	vols[0].Put(TestHash, TestBlock)
+
+	dataManagerToken = "DATA MANAGER TOKEN"
+
+	// unauthenticatedReq => UnauthorizedError
+	unauthenticatedReq := &RequestTester{
+		method: "PUT",
+		uri:    "/untrash/" + TestHash,
+	}
+	response := IssueRequest(unauthenticatedReq)
+	ExpectStatusCode(t,
+		"Unauthenticated request",
+		UnauthorizedError.HTTPCode,
+		response)
+
+	// notDataManagerReq => UnauthorizedError
+	notDataManagerReq := &RequestTester{
+		method:   "PUT",
+		uri:      "/untrash/" + TestHash,
+		apiToken: knownToken,
+	}
+
+	response = IssueRequest(notDataManagerReq)
+	ExpectStatusCode(t,
+		"Non-datamanager token",
+		UnauthorizedError.HTTPCode,
+		response)
+
+	// datamanagerWithBadHashReq => StatusBadRequest
+	datamanagerWithBadHashReq := &RequestTester{
+		method:   "PUT",
+		uri:      "/untrash/thisisnotalocator",
+		apiToken: dataManagerToken,
+	}
+	response = IssueRequest(datamanagerWithBadHashReq)
+	ExpectStatusCode(t,
+		"Bad locator in untrash request",
+		http.StatusBadRequest,
+		response)
+
+	// datamanagerWrongMethodReq => StatusBadRequest
+	datamanagerWrongMethodReq := &RequestTester{
+		method:   "GET",
+		uri:      "/untrash/" + TestHash,
+		apiToken: dataManagerToken,
+	}
+	response = IssueRequest(datamanagerWrongMethodReq)
+	ExpectStatusCode(t,
+		"Only PUT method is supported for untrash",
+		http.StatusBadRequest,
+		response)
+
+	// datamanagerReq => StatusOK
+	datamanagerReq := &RequestTester{
+		method:   "PUT",
+		uri:      "/untrash/" + TestHash,
+		apiToken: dataManagerToken,
+	}
+	response = IssueRequest(datamanagerReq)
+	ExpectStatusCode(t,
+		"",
+		http.StatusOK,
+		response)
+	expected := "Successfully untrashed on: [MockVolume],[MockVolume]"
+	if response.Body.String() != expected {
+		t.Errorf(
+			"Untrash response mismatched: expected %s, got:\n%s",
+			expected, response.Body.String())
+	}
+}
+
+func TestUntrashHandlerWithNoWritableVolumes(t *testing.T) {
+	defer teardown()
+
+	// Set up readonly Keep volumes
+	vols := []*MockVolume{CreateMockVolume(), CreateMockVolume()}
+	vols[0].Readonly = true
+	vols[1].Readonly = true
+	KeepVM = MakeRRVolumeManager([]Volume{vols[0], vols[1]})
+	defer KeepVM.Close()
+
+	dataManagerToken = "DATA MANAGER TOKEN"
+
+	// datamanagerReq => StatusOK
+	datamanagerReq := &RequestTester{
+		method:   "PUT",
+		uri:      "/untrash/" + TestHash,
+		apiToken: dataManagerToken,
+	}
+	response := IssueRequest(datamanagerReq)
+	ExpectStatusCode(t,
+		"No writable volumes",
+		http.StatusNotFound,
+		response)
+}
