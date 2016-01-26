@@ -378,6 +378,9 @@ func (v *UnixVolume) Trash(loc string) error {
 	if v.readonly {
 		return MethodDisabledError
 	}
+	if trashLifetime != 0 {
+		return ErrNotImplemented
+	}
 	if v.locker != nil {
 		v.locker.Lock()
 		defer v.locker.Unlock()

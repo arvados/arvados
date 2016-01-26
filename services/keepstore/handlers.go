@@ -453,16 +453,15 @@ func UntrashHandler(resp http.ResponseWriter, req *http.Request) {
 	var numNotFound int
 	for _, vol := range KeepVM.AllWritable() {
 		err := vol.Untrash(hash)
-		if err == nil || err == ErrNotImplemented {
+
+		if os.IsNotExist(err) {
+			numNotFound++
+		} else if err != nil {
+			log.Printf("Error untrashing %v on volume %v", hash, vol.String())
+			failedOn = append(failedOn, vol.String())
+		} else {
 			log.Printf("Untrashed %v on volume %v", hash, vol.String())
 			untrashedOn = append(untrashedOn, vol.String())
-		} else {
-			if os.IsNotExist(err) {
-				numNotFound++
-			} else {
-				log.Printf("Error untrashing %v on volume %v", hash, vol.String())
-				failedOn = append(failedOn, vol.String())
-			}
 		}
 	}
 

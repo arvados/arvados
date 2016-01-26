@@ -201,7 +201,7 @@ func (v *MockVolume) Trash(loc string) error {
 
 // TBD
 func (v *MockVolume) Untrash(loc string) error {
-	return ErrNotImplemented
+	return nil
 }
 
 func (v *MockVolume) Status() *VolumeStatus {

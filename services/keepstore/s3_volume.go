@@ -264,6 +264,9 @@ func (v *S3Volume) Trash(loc string) error {
 	if v.readonly {
 		return MethodDisabledError
 	}
+	if trashLifetime != 0 {
+		return ErrNotImplemented
+	}
 	if t, err := v.Mtime(loc); err != nil {
 		return err
 	} else if time.Since(t) < blobSignatureTTL {

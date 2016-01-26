@@ -320,6 +320,11 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 	if v.readonly {
 		return MethodDisabledError
 	}
+
+	if trashLifetime != 0 {
+		return ErrNotImplemented
+	}
+
 	// Ideally we would use If-Unmodified-Since, but that
 	// particular condition seems to be ignored by Azure. Instead,
 	// we get the Etag before checking Mtime, and use If-Match to
