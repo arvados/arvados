@@ -166,7 +166,7 @@ func TestUnixVolumeReadonly(t *testing.T) {
 		t.Errorf("got err %v, expected MethodDisabledError", err)
 	}
 
-	err = v.Delete(TestHash)
+	err = v.Trash(TestHash)
 	if err != MethodDisabledError {
 		t.Errorf("got err %v, expected MethodDisabledError", err)
 	}

@@ -420,7 +420,7 @@ func testDeleteNewBlock(t TB, factory TestableVolumeFactory) {
 
 	v.Put(TestHash, TestBlock)
 
-	if err := v.Delete(TestHash); err != nil {
+	if err := v.Trash(TestHash); err != nil {
 		t.Error(err)
 	}
 	data, err := v.Get(TestHash)
@@ -449,7 +449,7 @@ func testDeleteOldBlock(t TB, factory TestableVolumeFactory) {
 	v.Put(TestHash, TestBlock)
 	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
 
-	if err := v.Delete(TestHash); err != nil {
+	if err := v.Trash(TestHash); err != nil {
 		t.Error(err)
 	}
 	if _, err := v.Get(TestHash); err == nil || !os.IsNotExist(err) {
@@ -463,7 +463,7 @@ func testDeleteNoSuchBlock(t TB, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
 
-	if err := v.Delete(TestHash2); err == nil {
+	if err := v.Trash(TestHash2); err == nil {
 		t.Errorf("Expected error when attempting to delete a non-existing block")
 	}
 }
@@ -535,7 +535,7 @@ func testUpdateReadOnly(t TB, factory TestableVolumeFactory) {
 	}
 
 	// Delete a block from a read-only volume should result in error
-	err = v.Delete(TestHash)
+	err = v.Trash(TestHash)
 	if err == nil {
 		t.Errorf("Expected error when deleting block from a read-only volume")
 	}
