@@ -25,7 +25,7 @@ fi
 mkdir -p /tmp/opts
 cd /tmp/opts
 
-rpm2cpio "$ARV_PACKAGES_DIR/$1"-*.rpm | cpio -idm 2>/dev/null
+rpm2cpio $(ls -t "$ARV_PACKAGES_DIR/$1"-*.rpm | head -n1) | cpio -idm 2>/dev/null
 
 shared=$(find -name '*.so')
 if test -n "$shared" ; then

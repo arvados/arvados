@@ -24,7 +24,7 @@ cd /tmp/opts
 
 export ARV_PACKAGES_DIR="/arvados/packages/$target"
 
-dpkg-deb -x $ARV_PACKAGES_DIR/"$1"_*.deb .
+dpkg-deb -x $(ls -t "$ARV_PACKAGES_DIR/$1"_*.deb | head -n1) .
 
 while read so && [ -n "$so" ]; do
     echo
