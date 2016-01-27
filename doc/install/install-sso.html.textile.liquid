@@ -94,18 +94,9 @@ On a Red Hat-based system, we also need to initialize the database system:
 </code></pre>
 </notextile>
 
-{% include 'notebox_begin' %}
-
-If you are installing on CentOS6, you will need to modify PostgreSQL's configuration to allow password authentication for local users. The default configuration allows 'ident' only. The following commands will make the configuration change, and restart PostgreSQL for it to take effect.
-<br/>
-<notextile>
-<pre><code>~$ <span class="userinput">sudo sed -i -e "s/127.0.0.1\/32          ident/127.0.0.1\/32          md5/" /var/lib/pgsql/data/pg_hba.conf</span>
-~$ <span class="userinput">sudo sed -i -e "s/::1\/128               ident/::1\/128               md5/" /var/lib/pgsql/data/pg_hba.conf</span>
-~$ <span class="userinput">sudo service postgresql restart</span>
-</code></pre>
-</notextile>
-{% include 'notebox_end' %}
-
+{% assign pg_service = "postgresql" %}
+{% assign pg_hba_path = "/var/lib/pgsql/data/pg_hba.conf" %}
+{% include 'install_redhat_postgres_auth' %}
 
 Next, generate a new database password. Nobody ever needs to memorize it or type it, so make a strong one:
 
