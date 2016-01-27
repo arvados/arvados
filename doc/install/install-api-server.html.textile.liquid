@@ -52,11 +52,9 @@ Enter password for new role: <span class="userinput">paste-password-you-generate
 Enter it again: <span class="userinput">paste-password-again</span>
 </code></pre></notextile>
 
-{% include 'notebox_begin' %}
-
-This user setup assumes that your PostgreSQL is configured to accept password authentication.  Red Hat systems use ident-based authentication by default.  You may need to either adapt the user creation, or reconfigure PostgreSQL (in @pg_hba.conf@) to accept password authentication.
-
-{% include 'notebox_end' %}
+{% assign pg_hba_path = "/opt/rh/postgresql92/root/var/lib/pgsql/data/pg_hba.conf" %}
+{% assign pg_service = "postgresql92-postgresql" %}
+{% include 'install_redhat_postgres_auth' %}
 
 Create the database:
 
