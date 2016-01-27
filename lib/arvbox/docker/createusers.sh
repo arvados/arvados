@@ -20,7 +20,8 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     useradd --home-dir /var/lib/arvados/git --uid $HOSTUID --gid $HOSTGID --non-unique git
     useradd --groups docker,fuse crunch
 
-    chown arvbox:arvbox -R /usr/local /var/lib/arvados /var/lib/gems /var/lib/passenger /var/lib/postgresql
+    chown arvbox:arvbox -R /usr/local /var/lib/arvados /var/lib/gems \
+          /var/lib/passenger /var/lib/postgresql /etc/ssl/private
 
     mkdir -p /var/lib/gems/ruby/2.1.0
     chown arvbox:arvbox -R /var/lib/gems/ruby/2.1.0
