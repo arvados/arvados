@@ -76,6 +76,8 @@ func DoGenericVolumeTests(t TB, factory TestableVolumeFactory) {
 	testPutConcurrent(t, factory)
 
 	testPutFullBlock(t, factory)
+
+	testTrashUntrash(t, factory)
 }
 
 // Put a test block, get it and verify content
@@ -694,5 +696,64 @@ func testPutFullBlock(t TB, factory TestableVolumeFactory) {
 	}
 	if bytes.Compare(rdata, wdata) != 0 {
 		t.Error("rdata != wdata")
+	}
+}
+
+// With trashLifetime != 0, perform:
+// Trash an old block - which either raises ErrNotImplemented or succeeds
+// Untrash -  which either raises ErrNotImplemented or succeeds
+// Get - which must succeed
+func testTrashUntrash(t TB, factory TestableVolumeFactory) {
+	v := factory(t)
+	defer v.Teardown()
+	defer func() {
+		trashLifetime = 0
+	}()
+
+	trashLifetime = 3600 * time.Second
+
+	// put block and backdate it
+	v.PutRaw(TestHash, TestBlock)
+	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
+
+	buf, err := v.Get(TestHash)
+	if err != nil {
+		t.Errorf("got err %v, expected nil", err)
+	}
+	bufs.Put(buf)
+
+	// Trash
+	err = v.Trash(TestHash)
+	if v.Writable() == false {
+		if err != MethodDisabledError {
+			t.Errorf("Expected MethodDisabledError during Trash from a read-only volume")
+		}
+	} else if err != nil {
+		if err != ErrNotImplemented {
+			t.Errorf("Error during trash: %v", err.Error())
+		}
+	} else {
+		_, err = v.Get(TestHash)
+		if err == nil || !os.IsNotExist(err) {
+			t.Errorf("os.IsNotExist(%v) should have been true", err)
+		}
+
+		// Untrash
+		err = v.Untrash(TestHash)
+		if err != nil {
+			t.Errorf("Error during untrash: %v", err.Error())
+		}
+	}
+
+	// Get the block - after trash and untrash sequence
+	// Backdating block is resulting in emptying out the block in s3 test setup
+	// Hence, compare the Get respose with buf (obtained after put, instead of TestBlock)
+	buf2, err := v.Get(TestHash)
+	if err != nil {
+		t.Errorf("Error during Get: %v", err.Error())
+	} else {
+		if bytes.Compare(buf2, buf) != 0 {
+			t.Errorf("Got data %+q, expected %+q", buf2, buf)
+		}
 	}
 }
