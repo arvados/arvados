@@ -255,19 +255,13 @@ fatal: No REQUEST_METHOD from server
 
 h3. Enable arvados-git-httpd
 
-On Debian-based systems, install runit:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install runit</span>
-</code></pre>
-</notextile>
-
-On Red Hat-based systems, "install runit from source":http://smarden.org/runit/install.html or use an alternative daemon supervisor.
+Install runit to supervise the arvados-git-httpd daemon.  {% include 'install_runit' %}
 
 Configure runit to run arvados-git-httpd, making sure to update the API host to match your site:
 
 <notextile>
-<pre><code>~$ <span class="userinput">cd /etc/sv</span>
+<pre><code>~$ <span class="userinput">sudo mkdir -p /etc/sv</span>
+~$ <span class="userinput">cd /etc/sv</span>
 /etc/sv$ <span class="userinput">sudo mkdir arvados-git-httpd; cd arvados-git-httpd</span>
 /etc/sv/arvados-git-httpd$ <span class="userinput">sudo mkdir log</span>
 /etc/sv/arvados-git-httpd$ <span class="userinput">sudo sh -c 'cat &gt;log/run' &lt;&lt;'EOF'
@@ -285,6 +279,7 @@ export PATH="$PATH:/var/lib/arvados/git/bin"
 exec chpst -u git:git arvados-git-httpd -address=:9001 -git-command=/var/lib/arvados/git/gitolite/src/gitolite-shell -repo-root=<b>/var/lib/arvados/git</b>/repositories 2&gt;&1
 EOF</span>
 /etc/sv/arvados-git-httpd$ <span class="userinput">sudo chmod +x run log/run</span>
+/etc/sv/arvados-git-httpd$ <span class="userinput">sudo ln -s "$(pwd)" /etc/service/</span>
 </code></pre>
 </notextile>
 

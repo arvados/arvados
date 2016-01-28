@@ -57,7 +57,9 @@ The Keepproxy server needs a token to talk to the API server.  On the <strong>AP
 
 h3. Set up the Keepproxy service
 
-We recommend you run Keepproxy under "runit":http://smarden.org/runit/ or a similar supervisor.  Make sure the launcher sets the envirnoment variables @ARVADOS_API_TOKEN@ (with the token you just generated), @ARVADOS_API_HOST@, and, if needed, @ARVADOS_API_HOST_INSECURE@.  The core keepproxy command to run is:
+Install runit to supervise the keepproxy daemon.  {% include 'install_runit' %}
+
+The run script for the keepproxy service should set the environment variables @ARVADOS_API_TOKEN@ (with the token you just generated), @ARVADOS_API_HOST@, and, if needed, @ARVADOS_API_HOST_INSECURE@.  The core keepproxy command to run is:
 
 <notextile>
 <pre><code>ARVADOS_API_TOKEN=<span class="userinput">{{railsout}}</span> ARVADOS_API_HOST=<span class="userinput">uuid_prefix.your.domain</span> exec keepproxy
