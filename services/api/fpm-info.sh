@@ -5,6 +5,6 @@ case "$TARGET" in
         fpm_depends+=(libcurl-devel postgresql-devel)
         ;;
     debian* | ubuntu*)
-        fpm_depends+=(libcurl4-openssl-dev libpq-dev)
+        fpm_depends+=(libcurl-ssl-dev libpq-dev)
         ;;
 esac
