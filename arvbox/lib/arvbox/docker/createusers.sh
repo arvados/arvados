@@ -21,20 +21,11 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     useradd --groups docker,fuse crunch
 
     chown arvbox:arvbox -R /usr/local /var/lib/arvados /var/lib/gems \
-          /var/lib/passenger /var/lib/postgresql /etc/ssl/private
+          /var/lib/passenger /var/lib/postgresql \
+          /var/lib/nginx /var/log/nginx /etc/ssl/private
 
     mkdir -p /var/lib/gems/ruby/2.1.0
     chown arvbox:arvbox -R /var/lib/gems/ruby/2.1.0
-
-    chown arvbox:arvbox -R /var/lib/nginx
-
-    # There's something weird about /var/log/nginx that prevents a non-root
-    # arvbox user from writing to it, even after the ownership has been
-    # changed.  As a workaround, delete it and recreate it.
-
-    rm -r /var/log/nginx
-    mkdir -p /var/log/nginx
-    chown arvbox:arvbox -R /var/log/nginx
 
     mkdir -p /tmp/crunch0 /tmp/crunch1
     chown crunch:crunch -R /tmp/crunch0 /tmp/crunch1
