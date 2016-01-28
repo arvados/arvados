@@ -58,7 +58,12 @@ On Debian-based systems:
 </code></pre>
 </notextile>
 
-On Red Hat-based systems, "install SLURM and munge from source following their installation guide":https://computing.llnl.gov/linux/slurm/quickstart_admin.html.
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install slurm munge</span>
+</code></pre>
+</notextile>
 
 Now we need to give SLURM a configuration file in @/etc/slurm-llnl/slurm.conf@. Here's an example:
 
