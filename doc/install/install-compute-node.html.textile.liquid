@@ -82,19 +82,13 @@ The arvados-docker-cleaner program removes least recently used docker images as 
 This also removes all containers as soon as they exit, as if they were run with @docker run --rm@. If you need to debug or inspect containers after they stop, temporarily stop arvados-docker-cleaner or run it with @--remove-stopped-containers never@.
 {% include 'notebox_end' %}
 
-On Debian-based systems, install runit:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install runit</span>
-</code></pre>
-</notextile>
-
-On Red Hat-based systems, "install runit from source":http://smarden.org/runit/install.html or use an alternative daemon supervisor.
+Install runit to supervise the Docker cleaner daemon.  {% include 'install_runit' %}
 
 Configure runit to run the image cleaner using a suitable quota for your compute nodes and workload:
 
 <notextile>
-<pre><code>~$ <span class="userinput">cd /etc/sv</span>
+<pre><code>~$ <span class="userinput">sudo mkdir -p /etc/sv</span>
+~$ <span class="userinput">cd /etc/sv</span>
 /etc/sv$ <span class="userinput">sudo mkdir arvados-docker-cleaner; cd arvados-docker-cleaner</span>
 /etc/sv/arvados-docker-cleaner$ <span class="userinput">sudo mkdir log log/main</span>
 /etc/sv/arvados-docker-cleaner$ <span class="userinput">sudo sh -c 'cat &gt;log/run' &lt;&lt;'EOF'
@@ -106,6 +100,7 @@ EOF</span>
 exec python3 -m arvados_docker.cleaner --quota <b>50G</b>
 EOF</span>
 /etc/sv/arvados-docker-cleaner$ <span class="userinput">sudo chmod +x run log/run</span>
+/etc/sv/arvados-docker-cleaner$ <span class="userinput">sudo ln -s "$(pwd)" /etc/service/</span>
 </code></pre>
 </notextile>
 
@@ -182,4 +177,3 @@ And remove your token from the environment:
 </code>
 </pre>
 </notextile>
-
