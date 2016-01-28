@@ -44,9 +44,9 @@ if ! test -f /var/lib/arvados/sso_database_pw ; then
 fi
 database_pw=$(cat /var/lib/arvados/sso_database_pw)
 
-if ! (psql -c "\du" | grep "^ arvados_sso ") >/dev/null ; then
-    psql -c "create user arvados_sso with password '$database_pw'"
-    psql -c "ALTER USER arvados_sso CREATEDB;"
+if ! (psql postgres -c "\du" | grep "^ arvados_sso ") >/dev/null ; then
+    psql postgres -c "create user arvados_sso with password '$database_pw'"
+    psql postgres -c "ALTER USER arvados_sso CREATEDB;"
 fi
 
 sed "s/password:.*/password: $database_pw/" <config/database.yml.example >config/database.yml

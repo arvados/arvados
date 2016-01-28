@@ -40,7 +40,7 @@ if ! test -f /var/lib/arvados/gitolite-setup ; then
     ssh -o stricthostkeychecking=no git@localhost true
     rm .ssh/authorized_keys
 
-    cp -r /usr/local/lib/arvbox/gitolite.rc .
+    cp /usr/local/lib/arvbox/gitolite.rc .gitolite.rc
 
     gitolite setup -pk .ssh/id_rsa.pub
 

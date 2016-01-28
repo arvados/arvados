@@ -325,6 +325,7 @@ case "$subcmd" in
                     echo "Use destroy -f if you really mean it."
                     exit 1
                 fi
+                set -x
                 rm -rf "$ARVBOX_DATA"
             else
                 if test "$1" != -f ; then
@@ -333,6 +334,7 @@ case "$subcmd" in
                     echo "Use reset -f if you really mean it."
                     exit 1
                 fi
+                set -x
                 rm -rf "$ARVBOX_DATA/postgres"
                 rm -rf "$ARVBOX_DATA/var"
             fi
@@ -341,6 +343,7 @@ case "$subcmd" in
                 echo "WARNING!  This will delete your data container $ARVBOX_CONTAINER-data.  Use -f if you really mean it."
                 exit 1
             fi
+            set -x
             docker rm "$ARVBOX_CONTAINER-data"
         fi
         ;;
