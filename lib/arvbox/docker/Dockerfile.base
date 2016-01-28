@@ -13,6 +13,8 @@ RUN apt-get update && \
 
 RUN curl -sSL https://get.docker.com/ | sh
 VOLUME /var/lib/docker
+VOLUME /var/log/nginx
+VOLUME /etc/ssl/private
 
 RUN rm -rf /var/lib/postgresql && mkdir -p /var/lib/postgresql
 
