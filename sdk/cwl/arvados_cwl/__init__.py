@@ -166,7 +166,8 @@ class ArvadosJob(object):
 
             try:
                 outputs = {}
-                outputs = self.collect_outputs("keep:" + record["output"])
+                if record["output"]:
+                    outputs = self.collect_outputs("keep:" + record["output"])
             except Exception as e:
                 logger.exception("Got exception while collecting job outputs:")
                 processStatus = "permanentFail"
@@ -188,7 +189,7 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
                 self._pathmap[src] = (src, "$(task.keep)/%s" % src[5:])
             if src not in self._pathmap:
                 ab = cwltool.pathmapper.abspath(src, basedir)
-                st = arvados.commands.run.statfile("", ab)
+                st = arvados.commands.run.statfile("", ab, fnPattern="$(task.keep)/%s/%s")
                 if kwargs.get("conformance_test"):
                     self._pathmap[src] = (src, ab)
                 elif isinstance(st, arvados.commands.run.UploadFile):
