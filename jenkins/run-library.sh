@@ -244,6 +244,7 @@ fpm_build () {
   # the arguments added by this script.
   declare -a fpm_args=()
   declare -a fpm_depends=()
+  declare -a fpm_exclude=()
   if [[ -d "$PACKAGE_DIR" ]]; then
       FPM_INFO="$PACKAGE_DIR/fpm-info.sh"
   else
@@ -255,6 +256,9 @@ fpm_build () {
   fi
   for i in "${fpm_depends[@]}"; do
     COMMAND_ARR+=('--depends' "$i")
+  done
+  for i in "${fpm_exclude[@]}"; do
+    COMMAND_ARR+=('--exclude' "$i")
   done
 
   # Append remaining function arguments directly to fpm's command line.
