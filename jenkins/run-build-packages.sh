@@ -92,7 +92,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
-            ciso8601 pycrypto backports.ssl_match_hostname llfuse \
+            ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             'pycurl<7.21.5')
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
@@ -105,7 +105,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
-            ciso8601 pycrypto backports.ssl_match_hostname llfuse \
+            ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             'pycurl<7.21.5')
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
@@ -118,7 +118,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
-            ciso8601 pycrypto backports.ssl_match_hostname llfuse \
+            ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             'pycurl<7.21.5')
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
@@ -128,7 +128,7 @@ case "$TARGET" in
         PYTHON2_PKG_PREFIX=python
         PYTHON3_PACKAGE=python$PYTHON3_VERSION
         PYTHON3_PKG_PREFIX=python3
-        PYTHON_BACKPORTS=(pyasn1==0.1.7 pyvcf pyasn1-modules==0.0.5 llfuse ciso8601 \
+        PYTHON_BACKPORTS=(pyasn1==0.1.7 pyvcf pyasn1-modules==0.0.5 llfuse==0.41.1 ciso8601 \
             google-api-python-client six uritemplate oauth2client httplib2 \
             rsa 'pycurl<7.21.5' backports.ssl_match_hostname)
         PYTHON3_BACKPORTS=(docker-py requests websocket-client)
@@ -143,7 +143,7 @@ case "$TARGET" in
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname 'pycurl<7.21.5' \
-            python-daemon lockfile llfuse 'pbr<1.0')
+            python-daemon lockfile llfuse==0.41.1 'pbr<1.0')
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         export PYCURL_SSL_LIBRARY=nss
         ;;
