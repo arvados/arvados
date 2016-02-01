@@ -13,6 +13,7 @@ from ws4py.client.threadedclient import WebSocketClient
 
 _logger = logging.getLogger('arvados.events')
 
+
 class EventClient(WebSocketClient):
     def __init__(self, url, filters, on_event, last_log_id):
         ssl_options = {'ca_certs': arvados.util.ca_certs_path()}
@@ -29,23 +30,33 @@ class EventClient(WebSocketClient):
         self.filters = filters
         self.on_event = on_event
         self.last_log_id = last_log_id
-        self._closed_lock = threading.RLock()
-        self._closed = False
+        self._closing_lock = threading.RLock()
+        self._closing = False
+        self._closed = threading.Event()
 
     def opened(self):
         self.subscribe(self.filters, self.last_log_id)
 
+    def closed(self, code, reason=None):
+        self._closed.set()
+
     def received_message(self, m):
-        with self._closed_lock:
-            if not self._closed:
+        with self._closing_lock:
+            if not self._closing:
                 self.on_event(json.loads(str(m)))
 
-    def close(self, code=1000, reason=''):
-        """Close event client and wait for it to finish."""
+    def close(self, code=1000, reason='', timeout=0):
+        """Close event client and optionally wait for it to finish.
+
+        :timeout: is the number of seconds to wait for ws4py to
+        indicate that the connection has closed.
+        """
         super(EventClient, self).close(code, reason)
-        with self._closed_lock:
+        with self._closing_lock:
             # make sure we don't process any more messages.
-            self._closed = True
+            self._closing = True
+        # wait for ws4py to tell us the connection is closed.
+        self._closed.wait(timeout=timeout)
 
     def subscribe(self, filters, last_log_id=None):
         m = {"method": "subscribe", "filters": filters}
@@ -55,6 +66,7 @@ class EventClient(WebSocketClient):
 
     def unsubscribe(self, filters):
         self.send(json.dumps({"method": "unsubscribe", "filters": filters}))
+
 
 class PollClient(threading.Thread):
     def __init__(self, api, filters, on_event, poll_time, last_log_id):
@@ -67,8 +79,9 @@ class PollClient(threading.Thread):
         self.on_event = on_event
         self.poll_time = poll_time
         self.daemon = True
-        self.stop = threading.Event()
         self.last_log_id = last_log_id
+        self._closing = threading.Event()
+        self._closing_lock = threading.RLock()
 
     def run(self):
         self.id = 0
@@ -83,7 +96,7 @@ class PollClient(threading.Thread):
 
         self.on_event({'status': 200})
 
-        while not self.stop.isSet():
+        while not self._closing.is_set():
             max_id = self.id
             moreitems = False
             for f in self.filters:
@@ -91,24 +104,38 @@ class PollClient(threading.Thread):
                 for i in items["items"]:
                     if i['id'] > max_id:
                         max_id = i['id']
-                    self.on_event(i)
+                    with self._closing_lock:
+                        if self._closing.is_set():
+                            return
+                        self.on_event(i)
                 if items["items_available"] > len(items["items"]):
                     moreitems = True
             self.id = max_id
             if not moreitems:
-                self.stop.wait(self.poll_time)
+                self._closing.wait(self.poll_time)
 
     def run_forever(self):
         # Have to poll here, otherwise KeyboardInterrupt will never get processed.
-        while not self.stop.is_set():
-            self.stop.wait(1)
+        while not self._closing.is_set():
+            self._closing.wait(1)
 
-    def close(self):
-        """Close poll client and wait for it to finish."""
+    def close(self, code=None, reason=None, timeout=0):
+        """Close poll client and optionally wait for it to finish.
 
-        self.stop.set()
+        If an :on_event: handler is running in a different thread,
+        first wait (indefinitely) for it to return.
+
+        After closing, wait up to :timeout: seconds for the thread to
+        finish the poll request in progress (if any).
+
+        :code: and :reason: are ignored. They are present for
+        interface compatibility with EventClient.
+        """
+
+        with self._closing_lock:
+            self._closing.set()
         try:
-            self.join()
+            self.join(timeout=timeout)
         except RuntimeError:
             # "join() raises a RuntimeError if an attempt is made to join the
             # current thread as that would cause a deadlock. It is also an
