@@ -101,6 +101,29 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                 })
         return result
 
+    def create_node(self, size, arvados_node):
+        try:
+            kwargs = self.create_kwargs.copy()
+            kwargs.update(self.arvados_create_kwargs(size, arvados_node))
+            kwargs['size'] = size
+            return self.real.create_node(**kwargs)
+        except ComputeNodeDriver.CLOUD_ERRORS:
+            # Workaround for bug #6702: sometimes the create node request
+            # succeeds but times out and raises an exception instead of
+            # returning a result.  If this happens, we get stuck in a retry
+            # loop forever because subsequent create_node attempts will fail
+            # due to node name collision.  So check if the node we intended to
+            # create shows up in the cloud node list and return it if found.
+            try:
+                node = [n for n in self.list_nodes() if n.name == kwargs['name']]
+                if node:
+                    return node[0]
+            except:
+                # Ignore possible exception from list_nodes in favor of
+                # re-raising the original create_node exception.
+                pass
+            raise
+
     def list_nodes(self):
         # The GCE libcloud driver only supports filtering node lists by zone.
         # Do our own filtering based on tag list.
