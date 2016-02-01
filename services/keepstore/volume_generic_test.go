@@ -77,9 +77,7 @@ func DoGenericVolumeTests(t TB, factory TestableVolumeFactory) {
 
 	testPutFullBlock(t, factory)
 
-	testTrashUntrashNewBlock(t, factory)
-	testTrashUntrashOldBlock(t, factory)
-	testTrashUntrashWithNonZeroTrashLifetime(t, factory)
+	testTrashUntrash(t, factory)
 }
 
 // Put a test block, get it and verify content
@@ -701,59 +699,21 @@ func testPutFullBlock(t TB, factory TestableVolumeFactory) {
 	}
 }
 
-// With acceptable trashLifetime configuration, perform:
-// Trash newer block - does not actually delete the new block
-// Untrash - which raises ErrNotImplemented
-// Get - which fails on the trashed locator
-func testTrashUntrashNewBlock(t TB, factory TestableVolumeFactory) {
+// With trashLifetime != 0, perform:
+// Trash an old block - which either raises ErrNotImplemented or succeeds
+// Untrash -  which either raises ErrNotImplemented or succeeds
+// Get - which must succeed
+func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
+	defer func() {
+		trashLifetime = 0
+	}()
 
+	trashLifetime = 3600 * time.Second
+
+	// put block and backdate it
 	v.PutRaw(TestHash, TestBlock)
-	buf, err := v.Get(TestHash)
-	if err != nil {
-		t.Errorf("got err %v, expected nil", err)
-	}
-	bufs.Put(buf)
-
-	// Trash
-	err = v.Trash(TestHash)
-	if v.Writable() == false {
-		if err != MethodDisabledError {
-			t.Errorf("Expected MethodDisabledError during Trash from a read-only volume")
-		}
-	} else if err != nil {
-		t.Errorf("Error during Trash %v", err.Error())
-	}
-
-	// Untrash
-	err = v.Untrash(TestHash)
-	if err != ErrNotImplemented {
-		t.Errorf("Expected ErrNotImplemented during Untrash")
-	}
-
-	// Get
-	buf, err = v.Get(TestHash)
-	if err != nil {
-		t.Errorf("Error during Get: %v", err.Error())
-	} else {
-		if bytes.Compare(buf, TestBlock) != 0 {
-			t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
-		}
-		bufs.Put(buf)
-	}
-}
-
-// With acceptable trashLifetime configuration, perform:
-// Trash an old block - which works and hence deletes the locator
-// Untrash - which raises ErrNotImplemented
-// Get - which fails on the trashed locator
-func testTrashUntrashOldBlock(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
-	defer v.Teardown()
-
-	v.PutRaw(TestHash, TestBlock)
-	blobSignatureTTL = 300 * time.Second
 	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
 
 	buf, err := v.Get(TestHash)
@@ -769,79 +729,31 @@ func testTrashUntrashOldBlock(t TB, factory TestableVolumeFactory) {
 			t.Errorf("Expected MethodDisabledError during Trash from a read-only volume")
 		}
 	} else if err != nil {
-		t.Errorf("Error during Trash %v", err.Error())
-	}
-
-	// Untrash
-	err = v.Untrash(TestHash)
-	if err != ErrNotImplemented {
-		t.Errorf("Expected ErrNotImplemented during Untrash")
-	}
-
-	// Get
-	buf, err = v.Get(TestHash)
-	if v.Writable() {
+		if err != ErrNotImplemented {
+			t.Errorf("Error during trash: %v", err.Error())
+		}
+	} else {
+		_, err = v.Get(TestHash)
 		if err == nil || !os.IsNotExist(err) {
 			t.Errorf("os.IsNotExist(%v) should have been true", err)
 		}
-		return
+
+		// Untrash
+		err = v.Untrash(TestHash)
+		if err != nil {
+			t.Errorf("Error during untrash: %v", err.Error())
+		}
 	}
-	// Not writable; hence the block was not trashed
+
+	// Get the block - after trash and untrash sequence
+	// Backdating block is resulting in emptying out the block in s3 test setup
+	// Hence, compare the Get respose with buf (obtained after put, instead of TestBlock)
+	buf2, err := v.Get(TestHash)
 	if err != nil {
 		t.Errorf("Error during Get: %v", err.Error())
 	} else {
-		if bytes.Compare(buf, TestBlock) != 0 {
-			t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
+		if bytes.Compare(buf2, buf) != 0 {
+			t.Errorf("Got data %+q, expected %+q", buf2, buf)
 		}
-		bufs.Put(buf)
-	}
-}
-
-// With non-zero trashLifetime configuration, perform:
-// Trash - which raises ErrNotImplemented and hence does not Trash
-// Untrash - which raises ErrNotImplemented
-// Get - which passes since Trash did not work
-func testTrashUntrashWithNonZeroTrashLifetime(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
-	defer v.Teardown()
-	defer func() {
-		trashLifetime = 0
-	}()
-
-	v.PutRaw(TestHash, TestBlock)
-	buf, err := v.Get(TestHash)
-	if err != nil {
-		t.Errorf("got err %v, expected nil", err)
-	}
-	bufs.Put(buf)
-
-	// trashLifetime == 0 is the only supported configuration
-	trashLifetime = 1000
-
-	// Trash
-	err = v.Trash(TestHash)
-	if v.Writable() == false {
-		if err != MethodDisabledError {
-			t.Errorf("Expected MethodDisabledError during Trash from a read-only volume")
-		}
-	} else if err != ErrNotImplemented {
-		t.Errorf("Expected ErrNotImplemented during Trash")
-	}
-
-	// Untrash
-	err = v.Untrash(TestHash)
-	if err != ErrNotImplemented {
-		t.Errorf("Expected ErrNotImplemented during Untrash")
-	}
-
-	// Get
-	buf, err = v.Get(TestHash)
-	if err != nil {
-		t.Errorf("Error during Get: %v", err.Error())
-	} else {
-		if bytes.Compare(buf, TestBlock) != 0 {
-			t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
-		}
-		bufs.Put(buf)
 	}
 }
