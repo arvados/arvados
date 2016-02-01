@@ -23,7 +23,7 @@ class Arvados::V1::NodesController < ApplicationController
         return render_not_found
       end
       ping_data = {
-        ip: params[:local_ipv4] || request.env['REMOTE_ADDR'],
+        ip: params[:local_ipv4] || request.remote_ip,
         ec2_instance_id: params[:instance_id]
       }
       [:ping_secret, :total_cpu_cores, :total_ram_mb, :total_scratch_mb]

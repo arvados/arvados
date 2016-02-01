@@ -58,7 +58,12 @@ On Debian-based systems:
 </code></pre>
 </notextile>
 
-On Red Hat-based systems, "install SLURM and munge from source following their installation guide":https://computing.llnl.gov/linux/slurm/quickstart_admin.html.
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install slurm munge</span>
+</code></pre>
+</notextile>
 
 Now we need to give SLURM a configuration file in @/etc/slurm-llnl/slurm.conf@. Here's an example:
 
@@ -163,7 +168,9 @@ To dispatch Arvados jobs:
 * @crunch-job@ needs the installation path of the Perl SDK in its @PERLLIB@.
 * @crunch-job@ needs the @ARVADOS_API_HOST@ (and, if necessary, @ARVADOS_API_HOST_INSECURE@) environment variable set.
 
-We recommend you run @crunch-dispatch.rb@ under "runit":http://smarden.org/runit/ or a similar supervisor.  Here's an example runit service script:
+Install runit to monitor the Crunch dispatch daemon.  {% include 'install_runit' %}
+
+Install the script below as the run script for the Crunch dispatch service, modifying it as directed by the comments.
 
 <notextile>
 <pre><code>#!/bin/sh

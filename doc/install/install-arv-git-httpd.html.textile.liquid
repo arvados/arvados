@@ -89,14 +89,14 @@ git@gitserver:~$ <span class="userinput">rm .ssh/authorized_keys</span>
 
 h2. Install gitolite
 
-Check "https://github.com/sitaramc/gitolite/tags":https://github.com/sitaramc/gitolite/tags for the latest stable version. This guide was tested with @v3.6.3@. _Versions below 3.0 are missing some features needed by Arvados, and should not be used._
+Check "https://github.com/sitaramc/gitolite/tags":https://github.com/sitaramc/gitolite/tags for the latest stable version. This guide was tested with @v3.6.4@. _Versions below 3.0 are missing some features needed by Arvados, and should not be used._
 
 Download and install the version you selected.
 
 <notextile>
 <pre><code>git@gitserver:~$ <span class="userinput">echo 'PATH=$HOME/bin:$PATH' &gt;.profile</span>
 git@gitserver:~$ <span class="userinput">source .profile</span>
-git@gitserver:~$ <span class="userinput">git clone --branch <b>v3.6.3</b> git://github.com/sitaramc/gitolite</span>
+git@gitserver:~$ <span class="userinput">git clone --branch <b>v3.6.4</b> https://github.com/sitaramc/gitolite</span>
 ...
 Note: checking out '5d24ae666bfd2fa9093d67c840eb8d686992083f'.
 ...
@@ -255,19 +255,13 @@ fatal: No REQUEST_METHOD from server
 
 h3. Enable arvados-git-httpd
 
-On Debian-based systems, install runit:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install runit</span>
-</code></pre>
-</notextile>
-
-On Red Hat-based systems, "install runit from source":http://smarden.org/runit/install.html or use an alternative daemon supervisor.
+Install runit to supervise the arvados-git-httpd daemon.  {% include 'install_runit' %}
 
 Configure runit to run arvados-git-httpd, making sure to update the API host to match your site:
 
 <notextile>
-<pre><code>~$ <span class="userinput">cd /etc/sv</span>
+<pre><code>~$ <span class="userinput">sudo mkdir -p /etc/sv</span>
+~$ <span class="userinput">cd /etc/sv</span>
 /etc/sv$ <span class="userinput">sudo mkdir arvados-git-httpd; cd arvados-git-httpd</span>
 /etc/sv/arvados-git-httpd$ <span class="userinput">sudo mkdir log</span>
 /etc/sv/arvados-git-httpd$ <span class="userinput">sudo sh -c 'cat &gt;log/run' &lt;&lt;'EOF'
@@ -285,6 +279,7 @@ export PATH="$PATH:/var/lib/arvados/git/bin"
 exec chpst -u git:git arvados-git-httpd -address=:9001 -git-command=/var/lib/arvados/git/gitolite/src/gitolite-shell -repo-root=<b>/var/lib/arvados/git</b>/repositories 2&gt;&1
 EOF</span>
 /etc/sv/arvados-git-httpd$ <span class="userinput">sudo chmod +x run log/run</span>
+/etc/sv/arvados-git-httpd$ <span class="userinput">sudo ln -s "$(pwd)" /etc/service/</span>
 </code></pre>
 </notextile>
 

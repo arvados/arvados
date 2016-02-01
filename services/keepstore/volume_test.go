@@ -183,7 +183,7 @@ func (v *MockVolume) IndexTo(prefix string, w io.Writer) error {
 	return nil
 }
 
-func (v *MockVolume) Delete(loc string) error {
+func (v *MockVolume) Trash(loc string) error {
 	v.gotCall("Delete")
 	<-v.Gate
 	if v.Readonly {
@@ -197,6 +197,11 @@ func (v *MockVolume) Delete(loc string) error {
 		return nil
 	}
 	return os.ErrNotExist
+}
+
+// TBD
+func (v *MockVolume) Untrash(loc string) error {
+	return nil
 }
 
 func (v *MockVolume) Status() *VolumeStatus {

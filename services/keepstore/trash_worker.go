@@ -47,7 +47,7 @@ func TrashItem(trashRequest TrashRequest) {
 		if neverDelete {
 			err = errors.New("did not delete block because neverDelete is true")
 		} else {
-			err = volume.Delete(trashRequest.Locator)
+			err = volume.Trash(trashRequest.Locator)
 		}
 
 		if err != nil {

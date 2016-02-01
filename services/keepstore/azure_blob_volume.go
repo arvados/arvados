@@ -43,6 +43,10 @@ type azureVolumeAdder struct {
 }
 
 func (s *azureVolumeAdder) Set(containerName string) error {
+	if trashLifetime != 0 {
+		return ErrNotImplemented
+	}
+
 	if containerName == "" {
 		return errors.New("no container name given")
 	}
@@ -311,11 +315,16 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 	}
 }
 
-// Delete a Keep block.
-func (v *AzureBlobVolume) Delete(loc string) error {
+// Trash a Keep block.
+func (v *AzureBlobVolume) Trash(loc string) error {
 	if v.readonly {
 		return MethodDisabledError
 	}
+
+	if trashLifetime != 0 {
+		return ErrNotImplemented
+	}
+
 	// Ideally we would use If-Unmodified-Since, but that
 	// particular condition seems to be ignored by Azure. Instead,
 	// we get the Etag before checking Mtime, and use If-Match to
@@ -333,6 +342,12 @@ func (v *AzureBlobVolume) Delete(loc string) error {
 	return v.bsClient.DeleteBlob(v.containerName, loc, map[string]string{
 		"If-Match": props.Etag,
 	})
+}
+
+// Untrash a Keep block.
+// TBD
+func (v *AzureBlobVolume) Untrash(loc string) error {
+	return ErrNotImplemented
 }
 
 // Status returns a VolumeStatus struct with placeholder data.

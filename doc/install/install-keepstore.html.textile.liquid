@@ -94,7 +94,9 @@ Equivalently:
 
 h3. Run keepstore as a supervised service
 
-We recommend running Keepstore under "runit":http://smarden.org/runit/ or something similar, using a run script like the following:
+Install runit to supervise the keepstore daemon.  {% include 'install_runit' %}
+
+Install this script as the run script for the keepstore service, modifying it as directed below.
 
 <notextile>
 <pre><code>#!/bin/sh

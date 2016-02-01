@@ -55,6 +55,10 @@ var dataManagerToken string
 // actually deleting anything.
 var neverDelete = true
 
+// trashLifetime is the time duration after a block is trashed
+// during which it can be recovered using an /untrash request
+var trashLifetime time.Duration
+
 var maxBuffers = 128
 var bufs *bufferPool
 
@@ -79,6 +83,7 @@ var (
 	SizeRequiredError   = &KeepError{411, "Missing Content-Length"}
 	TooLongError        = &KeepError{413, "Block is too large"}
 	MethodDisabledError = &KeepError{405, "Method disabled"}
+	ErrNotImplemented   = &KeepError{500, "Unsupported configuration"}
 )
 
 func (e *KeepError) Error() string {
@@ -200,6 +205,11 @@ func main() {
 		"max-buffers",
 		maxBuffers,
 		fmt.Sprintf("Maximum RAM to use for data buffers, given in multiples of block size (%d MiB). When this limit is reached, HTTP requests requiring buffers (like GET and PUT) will wait for buffer space to be released.", BlockSize>>20))
+	flag.DurationVar(
+		&trashLifetime,
+		"trash-lifetime",
+		0*time.Second,
+		"Interval after a block is trashed during which it can be recovered using an /untrash request")
 
 	flag.Parse()
 
