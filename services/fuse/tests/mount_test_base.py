@@ -37,6 +37,16 @@ class MountTestBase(unittest.TestCase):
         run_test_server.authorize_with("admin")
         self.api = api if api else arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
 
+    # This is a copy of Mount's method.  TODO: Refactor MountTestBase
+    # to use a Mount instead of copying its code.
+    def _llfuse_main(self):
+        try:
+            llfuse.main()
+        except:
+            llfuse.close(unmount=False)
+            raise
+        llfuse.close()
+
     def make_mount(self, root_class, **root_kwargs):
         self.operations = fuse.Operations(
             os.getuid(), os.getgid(),
@@ -45,7 +55,9 @@ class MountTestBase(unittest.TestCase):
         self.operations.inodes.add_entry(root_class(
             llfuse.ROOT_INODE, self.operations.inodes, self.api, 0, **root_kwargs))
         llfuse.init(self.operations, self.mounttmp, [])
-        threading.Thread(None, llfuse.main).start()
+        self.llfuse_thread = threading.Thread(None, lambda: self._llfuse_main())
+        self.llfuse_thread.daemon = True
+        self.llfuse_thread.start()
         # wait until the driver is finished initializing
         self.operations.initlock.wait()
         return self.operations.inodes[llfuse.ROOT_INODE]
@@ -55,17 +67,13 @@ class MountTestBase(unittest.TestCase):
         self.pool.join()
         del self.pool
 
-        # llfuse.close is buggy, so use fusermount instead.
-        #llfuse.close(unmount=True)
-
-        count = 0
-        success = 1
-        while (count < 9 and success != 0):
-          success = subprocess.call(["fusermount", "-u", self.mounttmp])
-          time.sleep(0.1)
-          count += 1
-
-        self.operations.destroy()
+        subprocess.call(["fusermount", "-u", "-z", self.mounttmp])
+        self.llfuse_thread.join(timeout=0.1)
+        if self.llfuse_thread.is_alive():
+            logger.warning("MountTestBase.tearDown():"
+                           " llfuse thread still alive 100ms after umount"
+                           " -- resorting to operations.destroy()")
+            self.operations.destroy()
 
         os.rmdir(self.mounttmp)
         if self.keeptmp:
