@@ -68,12 +68,11 @@ class MountTestBase(unittest.TestCase):
         del self.pool
 
         subprocess.call(["fusermount", "-u", "-z", self.mounttmp])
-        self.llfuse_thread.join(timeout=0.1)
+        self.llfuse_thread.join(timeout=1)
         if self.llfuse_thread.is_alive():
             logger.warning("MountTestBase.tearDown():"
-                           " llfuse thread still alive 100ms after umount"
-                           " -- resorting to operations.destroy()")
-            self.operations.destroy()
+                           " llfuse thread still alive 1s after umount"
+                           " -- abandoning and exiting anyway")
 
         os.rmdir(self.mounttmp)
         if self.keeptmp:
