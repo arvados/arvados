@@ -123,9 +123,8 @@ class Mount(object):
         if self.llfuse_thread.is_alive():
             self.logger.warning("Mount.__exit__:"
                                 " llfuse thread still alive %fs after umount"
-                                " -- resorting to operations.destroy()",
+                                " -- abandoning and exiting anyway",
                                 self.args.unmount_timeout)
-            self.operations.destroy()
 
     def run(self):
         if self.args.exec_args:
