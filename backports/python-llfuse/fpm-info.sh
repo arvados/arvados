@@ -11,3 +11,6 @@ esac
 
 # FIXME: Remove this line after #6885 is done.
 fpm_args+=(--iteration 2)
+
+# FIXME: Remove once support for llfuse 0.42+ is in place
+fpm_args+=(-v 0.41.1)
