@@ -94,6 +94,7 @@ class ApplicationController < ActionController::Base
         # Fall back to the default-setting code later.
       end
     end
+    @starred_projects ||= []
     @my_project_tree ||= []
     @shared_project_tree ||= []
     render_error(err_opts)
@@ -442,6 +443,41 @@ class ApplicationController < ActionController::Base
     respond_to do |f|
       f.json { render(json: results, status: status) }
     end
+  end
+
+  def star
+    links = Link.where(tail_uuid: current_user.uuid,
+                       head_uuid: @object.uuid,
+                       link_class: 'star')
+
+    if params['status'] == 'create'
+      # create 'star' link if one does not already exist
+      if !links.andand.any?
+        dst = Link.new(owner_uuid: @object.uuid,
+                       tail_uuid: current_user.uuid,
+                       head_uuid: @object.uuid,
+                       link_class: 'star',
+                       name: @object.uuid)
+        dst.save!
+      end
+    else # delete any existing 'star' links
+      if links.andand.any?
+        links.each do |link|
+          link.destroy
+        end
+      end
+    end
+
+    show
+  end
+
+  helper_method :is_starred
+  def is_starred
+    links = Link.where(tail_uuid: current_user.uuid,
+               head_uuid: @object.uuid,
+               link_class: 'star')
+
+    return links.andand.any?
   end
 
   protected
@@ -831,6 +867,17 @@ class ApplicationController < ActionController::Base
       own[g[:uuid]] = g
     end
     {collections: c, owners: own}
+  end
+
+  helper_method :my_starred_projects
+  def my_starred_projects
+    return if @starred_projects
+    links = Link.filter([['tail_uuid', '=', current_user.uuid],
+                         ['link_class', '=', 'star'],
+                         ['head_uuid', 'is_a', 'arvados#group']]).select(%w(head_uuid))
+    uuids =links.collect { |x| x.head_uuid }
+    starred_projects = Group.filter([['uuid', 'in', uuids]]).order('name')
+    @starred_projects = starred_projects.results
   end
 
   helper_method :my_project_tree

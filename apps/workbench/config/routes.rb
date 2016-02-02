@@ -89,6 +89,7 @@ ArvadosWorkbench::Application.routes.draw do
     post 'share_with', on: :member
     get 'tab_counts', on: :member
     get 'public', on: :collection
+    post 'star', on: :member
   end
 
   resources :search do
