@@ -8,7 +8,7 @@ import time
 from . import \
     ComputeNodeSetupActor, ComputeNodeUpdateActor, ComputeNodeMonitorActor
 from . import ComputeNodeShutdownActor as ShutdownActorBase
-from .. import _retry
+from .. import RetryMixin
 
 class ComputeNodeShutdownActor(ShutdownActorBase):
     SLURM_END_STATES = frozenset(['down\n', 'down*\n',
@@ -43,7 +43,7 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
     # of the excessive memory usage that result in the "Cannot allocate memory"
     # error are still being investigated.
 
-    @_retry((subprocess.CalledProcessError, OSError))
+    @RetryMixin._retry((subprocess.CalledProcessError, OSError))
     def cancel_shutdown(self, reason):
         if self._nodename:
             if self._get_slurm_state() in self.SLURM_DRAIN_STATES:
@@ -55,14 +55,14 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
                 pass
         return super(ComputeNodeShutdownActor, self).cancel_shutdown(reason)
 
-    @_retry((subprocess.CalledProcessError, OSError))
+    @RetryMixin._retry((subprocess.CalledProcessError, OSError))
     @ShutdownActorBase._stop_if_window_closed
     def issue_slurm_drain(self):
         self._set_node_state('DRAIN', 'Reason=Node Manager shutdown')
         self._logger.info("Waiting for SLURM node %s to drain", self._nodename)
         self._later.await_slurm_drain()
 
-    @_retry((subprocess.CalledProcessError, OSError))
+    @RetryMixin._retry((subprocess.CalledProcessError, OSError))
     @ShutdownActorBase._stop_if_window_closed
     def await_slurm_drain(self):
         output = self._get_slurm_state()

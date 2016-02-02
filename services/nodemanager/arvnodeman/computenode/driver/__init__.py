@@ -9,9 +9,9 @@ import libcloud.common.types as cloud_types
 from libcloud.compute.base import NodeDriver, NodeAuthSSHKey
 
 from ...config import NETWORK_ERRORS
-from .. import _retry
+from .. import RetryMixin
 
-class BaseComputeNodeDriver(object):
+class BaseComputeNodeDriver(RetryMixin):
     """Abstract base class for compute node drivers.
 
     libcloud drivers abstract away many of the differences between
@@ -26,7 +26,7 @@ class BaseComputeNodeDriver(object):
     """
     CLOUD_ERRORS = NETWORK_ERRORS + (cloud_types.LibcloudError,)
 
-    @_retry()
+    @RetryMixin._retry()
     def _create_driver(self, driver_class, **auth_kwargs):
         return driver_class(**auth_kwargs)
 
@@ -44,12 +44,11 @@ class BaseComputeNodeDriver(object):
           libcloud driver's create_node method to create a new compute node.
         * driver_class: The class of a libcloud driver to use.
         """
-        self.min_retry_wait = retry_wait
-        self.max_retry_wait = max_retry_wait
-        self.retry_wait = retry_wait
-        self._cloud = type(self)
-        self._logger = logging.getLogger(str(self._cloud))
-        self._timer = None
+
+        super(BaseComputeNodeDriver, self).__init__(retry_wait, max_retry_wait,
+                                         logging.getLogger(str(type(self))),
+                                         type(self),
+                                         None)
         self.real = self._create_driver(driver_class, **auth_kwargs)
         self.list_kwargs = list_kwargs
         self.create_kwargs = create_kwargs

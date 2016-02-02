@@ -11,11 +11,11 @@ import pykka
 
 from .. import \
     arvados_node_fqdn, arvados_node_mtime, arvados_timestamp, timestamp_fresh, \
-    arvados_node_missing, _retry
+    arvados_node_missing, RetryMixin
 from ...clientactor import _notify_subscribers
 from ... import config
 
-class ComputeNodeStateChangeBase(config.actor_class):
+class ComputeNodeStateChangeBase(config.actor_class, RetryMixin):
     """Base class for actors that change a compute node's state.
 
     This base class takes care of retrying changes and notifying
@@ -24,14 +24,14 @@ class ComputeNodeStateChangeBase(config.actor_class):
     def __init__(self, logger_name, cloud_client, arvados_client, timer_actor,
                  retry_wait, max_retry_wait):
         super(ComputeNodeStateChangeBase, self).__init__()
+        RetryMixin.__init__(self,
+                            retry_wait,
+                            max_retry_wait,
+                            logging.getLogger(logger_name),
+                            cloud_client,
+                            timer_actor)
         self._later = self.actor_ref.proxy()
-        self._logger = logging.getLogger(logger_name)
-        self._cloud = cloud_client
         self._arvados = arvados_client
-        self._timer = timer_actor
-        self.min_retry_wait = retry_wait
-        self.max_retry_wait = max_retry_wait
-        self.retry_wait = retry_wait
         self.subscribers = set()
 
     def _finished(self):
@@ -84,18 +84,18 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         else:
             self._later.prepare_arvados_node(arvados_node)
 
-    @_retry(config.ARVADOS_ERRORS)
+    @RetryMixin._retry(config.ARVADOS_ERRORS)
     def create_arvados_node(self):
         self.arvados_node = self._arvados.nodes().create(body={}).execute()
         self._later.create_cloud_node()
 
-    @_retry(config.ARVADOS_ERRORS)
+    @RetryMixin._retry(config.ARVADOS_ERRORS)
     def prepare_arvados_node(self, node):
         self.arvados_node = self._clean_arvados_node(
             node, "Prepared by Node Manager")
         self._later.create_cloud_node()
 
-    @_retry()
+    @RetryMixin._retry()
     def create_cloud_node(self):
         self._logger.info("Creating cloud node with size %s.",
                           self.cloud_size.name)
@@ -106,7 +106,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         self._logger.info("Cloud node %s created.", self.cloud_node.id)
         self._later.update_arvados_node_properties()
 
-    @_retry(config.ARVADOS_ERRORS)
+    @RetryMixin._retry(config.ARVADOS_ERRORS)
     def update_arvados_node_properties(self):
         """Tell Arvados some details about the cloud node.
 
@@ -130,7 +130,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         self._logger.info("%s updated properties.", self.arvados_node['uuid'])
         self._later.post_create()
 
-    @_retry()
+    @RetryMixin._retry()
     def post_create(self):
         self._cloud.post_create_node(self.cloud_node)
         self._logger.info("%s post-create work done.", self.cloud_node.id)
@@ -197,7 +197,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         return stop_wrapper
 
     @_stop_if_window_closed
-    @_retry()
+    @RetryMixin._retry()
     def shutdown_node(self):
         if not self._cloud.destroy_node(self.cloud_node):
             if self._cloud.broken(self.cloud_node):
@@ -212,7 +212,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         else:
             self._later.clean_arvados_node(arv_node)
 
-    @_retry(config.ARVADOS_ERRORS)
+    @RetryMixin._retry(config.ARVADOS_ERRORS)
     def clean_arvados_node(self, arvados_node):
         self._clean_arvados_node(arvados_node, "Shut down by Node Manager")
         self._finished(success_flag=True)

@@ -44,7 +44,7 @@ def arvados_node_missing(arvados_node, fresh_time):
     else:
         return not timestamp_fresh(arvados_timestamp(arvados_node["last_ping_at"]), fresh_time)
 
-def _retry(errors=()):
+class RetryMixin(object):
     """Retry decorator for an method that makes remote requests.
 
     Use this function to decorate method, and pass in a tuple of exceptions to
@@ -55,40 +55,54 @@ def _retry(errors=()):
     is a timer actor.)
 
     """
+    def __init__(self, retry_wait, max_retry_wait,
+                 logger, cloud, timer=None):
+        self.min_retry_wait = retry_wait
+        self.max_retry_wait = max_retry_wait
+        self.retry_wait = retry_wait
+        self._logger = logger
+        self._cloud = cloud
+        self._timer = timer
 
-    def decorator(orig_func):
-        @functools.wraps(orig_func)
-        def retry_wrapper(self, *args, **kwargs):
-            start_time = time.time()
-            while True:
-                try:
-                    ret = orig_func(self, *args, **kwargs)
-                except Exception as error:
-                    if not (isinstance(error, errors) or
-                            self._cloud.is_cloud_exception(error)):
-                        raise
-                    self._logger.warning(
-                        "Client error: %s - waiting %s seconds",
-                        error, self.retry_wait)
-                    if self._timer:
-                        # reschedule to be called again
-                        self._timer.schedule(start_time + self.retry_wait,
-                                             getattr(self._later,
-                                                     orig_func.__name__),
-                                             *args, **kwargs)
+    @staticmethod
+    def _retry(errors=()):
+        def decorator(orig_func):
+            @functools.wraps(orig_func)
+            def retry_wrapper(self, *args, **kwargs):
+                while True:
+                    try:
+                        ret = orig_func(self, *args, **kwargs)
+                    except Exception as error:
+                        if not (isinstance(error, errors) or
+                                self._cloud.is_cloud_exception(error)):
+                            self.retry_wait = self.min_retry_wait
+                            raise
+
+                        self._logger.warning(
+                            "Client error: %s - waiting %s seconds",
+                            error, self.retry_wait, exc_info=error)
+
+                        if self._timer:
+                            start_time = time.time()
+                            # reschedule to be called again
+                            self._timer.schedule(start_time + self.retry_wait,
+                                                 getattr(self._later,
+                                                         orig_func.__name__),
+                                                 *args, **kwargs)
+                        else:
+                            # sleep on it.
+                            time.sleep(self.retry_wait)
+
+                        self.retry_wait = min(self.retry_wait * 2,
+                                              self.max_retry_wait)
+                        if self._timer:
+                            # expect to be called again by timer so don't loop
+                            return
                     else:
-                        # sleep on it.
-                        time.sleep(self.retry_wait)
-                    self.retry_wait = min(self.retry_wait * 2,
-                                          self.max_retry_wait)
-                    if self._timer:
-                        # expect to be called again by timer so don't loop
-                        return
-                else:
-                    self.retry_wait = self.min_retry_wait
-                    return ret
-        return retry_wrapper
-    return decorator
+                        self.retry_wait = self.min_retry_wait
+                        return ret
+            return retry_wrapper
+        return decorator
 
 class ShutdownTimer(object):
     """Keep track of a cloud node's shutdown windows.
