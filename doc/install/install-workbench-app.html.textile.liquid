@@ -32,20 +32,9 @@ On a Red Hat-based system, install the following packages:
 </code></pre>
 </notextile>
 
-h2. Set up configuration files
-
-The Workbench server package uses configuration files that you write to @/etc/arvados/workbench@ and ensures they're consistently deployed.  Create this directory and copy the example configuration files to it:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo mkdir -p /etc/arvados/workbench</span>
-~$ <span class="userinput">sudo chmod 700 /etc/arvados/workbench</span>
-~$ <span class="userinput">sudo cp /var/www/arvados-workbench/current/config/application.yml.example /etc/arvados/workbench/application.yml</span>
-</code></pre>
-</notextile>
-
 h2(#configure). Configure Workbench
 
-Edit @/etc/arvados/workbench/application.yml@ following the instructions below.  The deployment script will consistently deploy this to Workbench's configuration directory.  Workbench reads both @application.yml@ and its own @config/application.defaults.yml@ file.  Values in @application.yml@ take precedence over the defaults that are defined in @config/application.defaults.yml@.  The @config/application.yml.example@ file is not read by Workbench and is provided for installation convenience only.
+Edit @/etc/arvados/workbench/application.yml@ following the instructions below.  Workbench reads both @application.yml@ and its own @config/application.defaults.yml@ file.  Values in @application.yml@ take precedence over the defaults that are defined in @config/application.defaults.yml@.  The @config/application.yml.example@ file is not read by Workbench and is provided for installation convenience only.
 
 Consult @config/application.default.yml@ for a full list of configuration options.  Always put your local configuration in @/etc/arvados/workbench/application.yml@&mdash;never edit @config/application.default.yml@.
 
