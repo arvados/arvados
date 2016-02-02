@@ -2,14 +2,16 @@
 
 from __future__ import absolute_import, print_function
 
+import logging
 from operator import attrgetter
 
 import libcloud.common.types as cloud_types
 from libcloud.compute.base import NodeDriver, NodeAuthSSHKey
 
 from ...config import NETWORK_ERRORS
+from .. import RetryMixin
 
-class BaseComputeNodeDriver(object):
+class BaseComputeNodeDriver(RetryMixin):
     """Abstract base class for compute node drivers.
 
     libcloud drivers abstract away many of the differences between
@@ -24,7 +26,12 @@ class BaseComputeNodeDriver(object):
     """
     CLOUD_ERRORS = NETWORK_ERRORS + (cloud_types.LibcloudError,)
 
-    def __init__(self, auth_kwargs, list_kwargs, create_kwargs, driver_class):
+    @RetryMixin._retry()
+    def _create_driver(self, driver_class, **auth_kwargs):
+        return driver_class(**auth_kwargs)
+
+    def __init__(self, auth_kwargs, list_kwargs, create_kwargs,
+                 driver_class, retry_wait=1, max_retry_wait=180):
         """Base initializer for compute node drivers.
 
         Arguments:
@@ -37,7 +44,12 @@ class BaseComputeNodeDriver(object):
           libcloud driver's create_node method to create a new compute node.
         * driver_class: The class of a libcloud driver to use.
         """
-        self.real = driver_class(**auth_kwargs)
+
+        super(BaseComputeNodeDriver, self).__init__(retry_wait, max_retry_wait,
+                                         logging.getLogger(str(type(self))),
+                                         type(self),
+                                         None)
+        self.real = self._create_driver(driver_class, **auth_kwargs)
         self.list_kwargs = list_kwargs
         self.create_kwargs = create_kwargs
         # Transform entries in create_kwargs.  For each key K, if this class
