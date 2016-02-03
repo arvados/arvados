@@ -92,7 +92,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
-            ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
+            ciso8601 pycrypto backports.ssl_match_hostname llfuse \
             'pycurl<7.21.5')
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
@@ -105,7 +105,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
-            ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
+            ciso8601 pycrypto backports.ssl_match_hostname llfuse \
             'pycurl<7.21.5')
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
@@ -118,7 +118,8 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags pyvcf google-api-python-client \
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
-            ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
+            ciso8601 pycrypto backports.ssl_match_hostname llfuse \
+            contextlib2 \
             'pycurl<7.21.5')
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
@@ -128,7 +129,7 @@ case "$TARGET" in
         PYTHON2_PKG_PREFIX=python
         PYTHON3_PACKAGE=python$PYTHON3_VERSION
         PYTHON3_PKG_PREFIX=python3
-        PYTHON_BACKPORTS=(pyasn1==0.1.7 pyvcf pyasn1-modules==0.0.5 llfuse==0.41.1 ciso8601 \
+        PYTHON_BACKPORTS=(pyasn1==0.1.7 pyvcf pyasn1-modules==0.0.5 llfuse ciso8601 \
             google-api-python-client six uritemplate oauth2client httplib2 \
             rsa 'pycurl<7.21.5' backports.ssl_match_hostname)
         PYTHON3_BACKPORTS=(docker-py requests websocket-client)
@@ -143,7 +144,7 @@ case "$TARGET" in
             oauth2client pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname 'pycurl<7.21.5' \
-            python-daemon lockfile llfuse==0.41.1 'pbr<1.0')
+            python-daemon lockfile llfuse 'pbr<1.0')
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         export PYCURL_SSL_LIBRARY=nss
         ;;
@@ -353,6 +354,44 @@ LIBCLOUD_DIR=$(mktemp -d)
 )
 fpm_build $LIBCLOUD_DIR "$PYTHON2_PKG_PREFIX"-apache-libcloud
 rm -rf $LIBCLOUD_DIR
+
+# libfuse 2.9.2 on Ubuntu 12.04 
+if [[ $TARGET =~ ubuntu1204 ]]; then
+    LIBFUSE_DIR=$(mktemp -d)
+    (
+        cd $LIBFUSE_DIR
+        # download fuse 2.9.2 ubuntu 14.04 source package
+        curl -o fuse_2.9.2.orig.tar.xz http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/fuse_2.9.2.orig.tar.xz
+        curl -o fuse_2.9.2-4ubuntu4.14.04.1.debian.tar.xz http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/fuse_2.9.2-4ubuntu4.14.04.1.debian.tar.xz
+        curl -o fuse_2.9.2-4ubuntu4.14.04.1.dsc http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/fuse_2.9.2-4ubuntu4.14.04.1.dsc
+
+        # install dpkg-dev for dpkg-source and dpkg-buildpackage commands
+        apt-get install -y dpkg-dev
+
+        # extract source and apply patches
+        dpkg-source -x fuse_2.9.2-4ubuntu4.14.04.1.dsc
+
+        # add new version to changelog
+        cd fuse-2.9.2
+	mv debian/changelog debian/changelog.old
+	echo "fuse (2.9.2-5) precise; urgency=low" > debian/changelog
+	echo "" >> debian/changelog
+	echo "  * Backported from trusty-security to precise" >> debian/changelog
+	echo "" >> debian/changelog
+	echo " -- Joshua Randall <jcrandall@alum.mit.edu>  Thu, 4 Feb 2016 11:31:00 -0000" >> debian/changelog
+	echo "" >> debian/changelog
+	cat debian/changelog.old >> debian/changelog
+	rm debian/changelog.old
+
+	# install build-deps and build
+        apt-get install -y $(awk 'BEGIN {FS=":"} $1=="Build-Depends" {n=split($2,deps,","); for (i=0; i<n; i++) {split(deps[i],pkg," "); if (pkg[1]!="") {print pkg[1]}}}' debian/control)
+        dpkg-buildpackage -rfakeroot -b
+    )
+    fpm_build $LIBFUSE_DIR/fuse_2.9.2-5_amd64.deb fuse "Ubuntu Developers" deb "2.9.2" --iteration 5
+    fpm_build $LIBFUSE_DIR/libfuse2_2.9.2-5_amd64.deb libfuse2 "Ubuntu Developers" deb "2.9.2" --iteration 5
+    fpm_build $LIBFUSE_DIR/libfuse-dev_2.9.2-5_amd64.deb libfuse-dev "Ubuntu Developers" deb "2.9.2" --iteration 5
+    rm -rf $LIBFUSE_DIR
+fi
 
 # Python 2 dependencies
 declare -a PIP_DOWNLOAD_SWITCHES=(--no-deps)
