@@ -21,18 +21,24 @@ class ComputeNodeStateChangeBase(config.actor_class, RetryMixin):
     This base class takes care of retrying changes and notifying
     subscribers when the change is finished.
     """
-    def __init__(self, logger_name, cloud_client, arvados_client, timer_actor,
+    def __init__(self, cloud_client, arvados_client, timer_actor,
                  retry_wait, max_retry_wait):
         super(ComputeNodeStateChangeBase, self).__init__()
-        RetryMixin.__init__(self,
-                            retry_wait,
-                            max_retry_wait,
-                            logging.getLogger(logger_name),
-                            cloud_client,
-                            timer_actor)
         self._later = self.actor_ref.proxy()
         self._arvados = arvados_client
         self.subscribers = set()
+
+    def _set_logger(self):
+        self._logger = logging.getLogger("%s.%s" % (self.__class__.__name__, self.actor_urn[9:]))
+
+    def on_start(self):
+        self._set_logger()
+        RetryMixin.__init__(self,
+                            retry_wait,
+                            max_retry_wait,
+                            self._logger,
+                            cloud_client,
+                            timer_actor)
 
     def _finished(self):
         _notify_subscribers(self._later, self.subscribers)
@@ -74,7 +80,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
                  cloud_size, arvados_node=None,
                  retry_wait=1, max_retry_wait=180):
         super(ComputeNodeSetupActor, self).__init__(
-            'arvnodeman.nodeup', cloud_client, arvados_client, timer_actor,
+            cloud_client, arvados_client, timer_actor,
             retry_wait, max_retry_wait)
         self.cloud_size = cloud_size
         self.arvados_node = None
@@ -97,7 +103,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
 
     @RetryMixin._retry()
     def create_cloud_node(self):
-        self._logger.info("Creating cloud node with size %s.",
+        self._logger.info("Creating cloud node of size %s.",
                           self.cloud_size.name)
         self.cloud_node = self._cloud.create_node(self.cloud_size,
                                                   self.arvados_node)
@@ -160,7 +166,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         # eligible.  Normal shutdowns based on job demand should be
         # cancellable; shutdowns based on node misbehavior should not.
         super(ComputeNodeShutdownActor, self).__init__(
-            'arvnodeman.nodedown', cloud_client, arvados_client, timer_actor,
+            cloud_client, arvados_client, timer_actor,
             retry_wait, max_retry_wait)
         self._monitor = node_monitor.proxy()
         self.cloud_node = self._monitor.cloud_node.get()
@@ -168,7 +174,11 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         self.cancel_reason = None
         self.success = None
 
+    def _set_logger(self):
+        self._logger = logging.getLogger("%s.%s.%s" % (self.__class__.__name__, self.actor_urn[9:], self.cloud_node.id))
+
     def on_start(self):
+        super(ComputeNodeShutdownActor, self).on_start()
         self._later.shutdown_node()
 
     def _arvados_node(self):
@@ -181,7 +191,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
 
     def cancel_shutdown(self, reason):
         self.cancel_reason = reason
-        self._logger.info("Cloud node %s shutdown cancelled: %s.",
+        self._logger.info("Shutdown cancelled: %s.",
                           self.cloud_node.id, reason)
         self._finished(success_flag=False)
 
@@ -199,13 +209,14 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
     @_stop_if_window_closed
     @RetryMixin._retry()
     def shutdown_node(self):
+        self._logger.info("Starting shutdown", self.cloud_node.id)
         if not self._cloud.destroy_node(self.cloud_node):
             if self._cloud.broken(self.cloud_node):
                 self._later.cancel_shutdown(self.NODE_BROKEN)
             else:
                 # Force a retry.
                 raise cloud_types.LibcloudError("destroy_node failed")
-        self._logger.info("Cloud node %s shut down.", self.cloud_node.id)
+        self._logger.info("Shutdown success", self.cloud_node.id)
         arv_node = self._arvados_node()
         if arv_node is None:
             self._finished(success_flag=True)
@@ -281,7 +292,6 @@ class ComputeNodeMonitorActor(config.actor_class):
     ):
         super(ComputeNodeMonitorActor, self).__init__()
         self._later = self.actor_ref.proxy()
-        self._logger = logging.getLogger('arvnodeman.computenode')
         self._last_log = None
         self._shutdowns = shutdown_timer
         self._cloud_node_fqdn = cloud_fqdn_func
@@ -298,6 +308,12 @@ class ComputeNodeMonitorActor(config.actor_class):
         self._later.update_arvados_node(arvados_node)
         self.last_shutdown_opening = None
         self._later.consider_shutdown()
+
+    def _set_logger(self):
+        self._logger = logging.getLogger("%s.%s.%s" % (self.__class__.__name__, self.actor_urn[9:], self.cloud_node.name))
+
+    def on_start(self):
+        self._set_logger()
 
     def subscribe(self, subscriber):
         self.subscribers.add(subscriber)
@@ -346,13 +362,13 @@ class ComputeNodeMonitorActor(config.actor_class):
     def consider_shutdown(self):
         next_opening = self._shutdowns.next_opening()
         if self.shutdown_eligible():
-            self._debug("Node %s suggesting shutdown.", self.cloud_node.id)
+            self._debug("Suggesting shutdown.", self.cloud_node.id)
             _notify_subscribers(self._later, self.subscribers)
         elif self._shutdowns.window_open():
-            self._debug("Node %s shutdown window open but node busy.",
+            self._debug("Shutdown window open but node busy.",
                         self.cloud_node.id)
         elif self.last_shutdown_opening != next_opening:
-            self._debug("Node %s shutdown window closed.  Next at %s.",
+            self._debug("Shutdown window closed.  Next at %s.",
                         self.cloud_node.id, time.ctime(next_opening))
             self._timer.schedule(next_opening, self._later.consider_shutdown)
             self.last_shutdown_opening = next_opening

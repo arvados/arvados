@@ -121,7 +121,6 @@ class NodeManagerDaemonActor(actor_class):
         self._new_arvados = arvados_factory
         self._new_cloud = cloud_factory
         self._cloud_driver = self._new_cloud()
-        self._logger = logging.getLogger('arvnodeman.daemon')
         self._later = self.actor_ref.proxy()
         self.shutdown_windows = shutdown_windows
         self.server_calculator = server_calculator
@@ -144,6 +143,9 @@ class NodeManagerDaemonActor(actor_class):
         self.booted = {}        # Cloud node IDs to _ComputeNodeRecords
         self.shutdowns = {}     # Cloud node IDs to ComputeNodeShutdownActors
         self._logger.debug("Daemon initialized")
+
+    def on_start(self):
+        self._logger = logging.getLogger("%s.%s" % (self.__class__.__name__, id(self.actor_urn[9:])))
 
     def _update_poll_time(self, poll_key):
         self.last_polls[poll_key] = time.time()

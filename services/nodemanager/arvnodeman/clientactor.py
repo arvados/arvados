@@ -38,10 +38,8 @@ class RemotePollLoopActor(actor_class):
         super(RemotePollLoopActor, self).__init__()
         self._client = client
         self._timer = timer_actor
-        self._logger = logging.getLogger(self.LOGGER_NAME)
         self._later = self.actor_ref.proxy()
         self._polling_started = False
-        self.log_prefix = "{} (at {})".format(self.__class__.__name__, id(self))
         self.min_poll_wait = poll_wait
         self.max_poll_wait = max_poll_wait
         self.poll_wait = self.min_poll_wait
@@ -49,6 +47,9 @@ class RemotePollLoopActor(actor_class):
         self.key_subscribers = {}
         if hasattr(self, '_item_key'):
             self.subscribe_to = self._subscribe_to
+
+    def on_start(self):
+        self._logger = logging.getLogger("%s.%s" % (self.__class__.__name__, id(self.actor_urn[9:])))
 
     def _start_polling(self):
         if not self._polling_started:
@@ -71,8 +72,7 @@ class RemotePollLoopActor(actor_class):
         raise NotImplementedError("subclasses must implement request method")
 
     def _got_response(self, response):
-        self._logger.debug("%s got response with %d items",
-                           self.log_prefix, len(response))
+        self._logger.debug("got response with %d items", len(response))
         self.poll_wait = self.min_poll_wait
         _notify_subscribers(response, self.all_subscribers)
         if hasattr(self, '_item_key'):
@@ -89,7 +89,7 @@ class RemotePollLoopActor(actor_class):
         return False
 
     def poll(self, scheduled_start=None):
-        self._logger.debug("%s sending poll", self.log_prefix)
+        self._logger.debug("sending request")
         start_time = time.time()
         if scheduled_start is None:
             scheduled_start = start_time
