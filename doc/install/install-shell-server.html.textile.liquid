@@ -12,7 +12,21 @@ Please follow the "API token guide":../user/reference/api-tokens.html to get API
 
 h2. Install the Ruby SDK and utilities
 
-If you're using RVM:
+First, install the curl development libraries necessary to build the Arvados Ruby SDK.  On Debian-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install libcurl4-openssl-dev</span>
+</code></pre>
+</notextile>
+
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install libcurl-devel</span>
+</code></pre>
+</notextile>
+
+Next, install the arvados-cli Ruby gem.  If you're using RVM:
 
 <notextile>
 <pre><code>~$ <span class="userinput">sudo /usr/local/rvm/bin/rvm-exec default gem install arvados-cli</span>
