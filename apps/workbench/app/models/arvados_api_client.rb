@@ -89,7 +89,10 @@ class ArvadosApiClient
           @api_client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
         else
           # Use system CA certificates
-          @api_client.ssl_config.add_trust_ca('/etc/ssl/certs')
+          ["/etc/ssl/certs/ca-certificates.crt",
+           "/etc/pki/tls/certs/ca-bundle.crt"]
+            .select { |ca_path| File.readable?(ca_path) }
+            .each { |ca_path| @api_client.ssl_config.add_trust_ca(ca_path) }
         end
         if Rails.configuration.api_response_compression
           @api_client.transparent_gzip_decompression = true

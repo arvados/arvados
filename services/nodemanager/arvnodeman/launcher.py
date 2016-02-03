@@ -71,7 +71,7 @@ def launch_pollers(config, server_calculator):
 
     timer = TimedCallBackActor.start(poll_time / 10.0).proxy()
     cloud_node_poller = CloudNodeListMonitorActor.start(
-        config.new_cloud_client(), timer, poll_time, max_poll_time).proxy()
+        config.new_cloud_client(timer), timer, poll_time, max_poll_time).proxy()
     arvados_node_poller = ArvadosNodeListMonitorActor.start(
         config.new_arvados_client(), timer, poll_time, max_poll_time).proxy()
     job_queue_poller = JobQueueMonitorActor.start(
