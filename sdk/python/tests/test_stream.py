@@ -191,6 +191,12 @@ class StreamFileReaderTestCase(unittest.TestCase):
         data = reader.readlines()
         self.assertEqual(['two\n', '\n', 'three\n', 'four\n', '\n'], data)
 
+    def test_readline_then_readall(self):
+        reader = self.make_newlines_reader()
+        data = reader.readline()
+        self.assertEqual('one\n', data)
+        self.assertEqual(''.join(['two\n', '\n', 'three\n', 'four\n', '\n']), ''.join(reader.readall()))
+
 
 class StreamRetryTestMixin(object):
     # Define reader_for(coll_name, **kwargs)
