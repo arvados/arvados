@@ -82,6 +82,10 @@ class ArgumentParser(argparse.ArgumentParser):
 
         self.add_argument('--crunchstat-interval', type=float, help="Write stats to stderr every N seconds (default disabled)", default=0)
 
+        self.add_argument('--unmount-timeout',
+                          type=float, default=2.0,
+                          help="Time to wait for graceful shutdown after --exec program exits and filesystem is unmounted")
+
         self.add_argument('--exec', type=str, nargs=argparse.REMAINDER,
                             dest="exec_args", metavar=('command', 'args', '...', '--'),
                             help="""Mount, run a command, then unmount and exit""")
@@ -108,13 +112,19 @@ class Mount(object):
         llfuse.init(self.operations, self.args.mountpoint, self._fuse_options())
         if self.args.mode != 'by_pdh':
             self.operations.listen_for_events()
-        t = threading.Thread(None, lambda: llfuse.main())
-        t.start()
+        self.llfuse_thread = threading.Thread(None, lambda: self._llfuse_main())
+        self.llfuse_thread.daemon = True
+        self.llfuse_thread.start()
         self.operations.initlock.wait()
 
     def __exit__(self, exc_type, exc_value, traceback):
         subprocess.call(["fusermount", "-u", "-z", self.args.mountpoint])
-        self.operations.destroy()
+        self.llfuse_thread.join(timeout=self.args.unmount_timeout)
+        if self.llfuse_thread.is_alive():
+            self.logger.warning("Mount.__exit__:"
+                                " llfuse thread still alive %fs after umount"
+                                " -- abandoning and exiting anyway",
+                                self.args.unmount_timeout)
 
     def run(self):
         if self.args.exec_args:
@@ -277,63 +287,56 @@ From here, the following directories are available:
 '''.format(api_host, user_email)
 
     def _run_exec(self):
-        # Initialize the fuse connection
-        llfuse.init(self.operations, self.args.mountpoint, self._fuse_options())
-
-        # Subscribe to change events from API server
-        if self.args.mode != 'by_pdh':
-            self.operations.listen_for_events()
-
-        t = threading.Thread(None, lambda: llfuse.main())
-        t.start()
-
-        # wait until the driver is finished initializing
-        self.operations.initlock.wait()
-
         rc = 255
-        try:
-            sp = subprocess.Popen(self.args.exec_args, shell=False)
-
-            # forward signals to the process.
-            signal.signal(signal.SIGINT, lambda signum, frame: sp.send_signal(signum))
-            signal.signal(signal.SIGTERM, lambda signum, frame: sp.send_signal(signum))
-            signal.signal(signal.SIGQUIT, lambda signum, frame: sp.send_signal(signum))
-
-            # wait for process to complete.
-            rc = sp.wait()
-
-            # restore default signal handlers.
-            signal.signal(signal.SIGINT, signal.SIG_DFL)
-            signal.signal(signal.SIGTERM, signal.SIG_DFL)
-            signal.signal(signal.SIGQUIT, signal.SIG_DFL)
-        except Exception as e:
-            self.logger.exception(
-                'arv-mount: exception during exec %s', self.args.exec_args)
+        with self:
             try:
-                rc = e.errno
-            except AttributeError:
-                pass
-        finally:
-            subprocess.call(["fusermount", "-u", "-z", self.args.mountpoint])
-            self.operations.destroy()
+                sp = subprocess.Popen(self.args.exec_args, shell=False)
+
+                # forward signals to the process.
+                signal.signal(signal.SIGINT, lambda signum, frame: sp.send_signal(signum))
+                signal.signal(signal.SIGTERM, lambda signum, frame: sp.send_signal(signum))
+                signal.signal(signal.SIGQUIT, lambda signum, frame: sp.send_signal(signum))
+
+                # wait for process to complete.
+                rc = sp.wait()
+
+                # restore default signal handlers.
+                signal.signal(signal.SIGINT, signal.SIG_DFL)
+                signal.signal(signal.SIGTERM, signal.SIG_DFL)
+                signal.signal(signal.SIGQUIT, signal.SIG_DFL)
+            except Exception as e:
+                self.logger.exception(
+                    'arv-mount: exception during exec %s', self.args.exec_args)
+                try:
+                    rc = e.errno
+                except AttributeError:
+                    pass
         exit(rc)
 
     def _run_standalone(self):
         try:
             llfuse.init(self.operations, self.args.mountpoint, self._fuse_options())
 
-            if not (self.args.exec_args or self.args.foreground):
-                self.daemon_ctx = daemon.DaemonContext(working_directory=os.path.dirname(self.args.mountpoint),
-                                                       files_preserve=range(3, resource.getrlimit(resource.RLIMIT_NOFILE)[1]))
+            if not self.args.foreground:
+                self.daemon_ctx = daemon.DaemonContext(
+                    working_directory=os.path.dirname(self.args.mountpoint),
+                    files_preserve=range(
+                        3, resource.getrlimit(resource.RLIMIT_NOFILE)[1]))
                 self.daemon_ctx.open()
 
             # Subscribe to change events from API server
             self.operations.listen_for_events()
 
-            llfuse.main()
+            self._llfuse_main()
         except Exception as e:
             self.logger.exception('arv-mount: exception during mount: %s', e)
             exit(getattr(e, 'errno', 1))
-        finally:
-            self.operations.destroy()
         exit(0)
+
+    def _llfuse_main(self):
+        try:
+            llfuse.main()
+        except:
+            llfuse.close(unmount=False)
+            raise
+        llfuse.close()
