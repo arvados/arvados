@@ -398,7 +398,10 @@ class Operations(llfuse.Operations):
 
 
     @catch_exceptions
-    def getattr(self, inode):
+    def getattr(self, inode, ctx):
+        return self._getattr(inode)
+
+    def _getattr(self, inode):
         if inode not in self.inodes:
             raise llfuse.FUSEError(errno.ENOENT)
 
@@ -430,15 +433,15 @@ class Operations(llfuse.Operations):
 
         entry.st_blksize = 512
         entry.st_blocks = (entry.st_size/512)+1
-        entry.st_atime = int(e.atime())
-        entry.st_mtime = int(e.mtime())
-        entry.st_ctime = int(e.mtime())
+        entry.st_atime_ns = int(e.atime())
+        entry.st_mtime_ns = int(e.mtime())
+        entry.st_ctime_ns = int(e.mtime())
 
         return entry
 
     @catch_exceptions
-    def setattr(self, inode, attr):
-        entry = self.getattr(inode)
+    def setattr(self, inode, attr, ctx):
+        entry = self._getattr(inode)
 
         e = self.inodes[inode]
 
@@ -450,7 +453,7 @@ class Operations(llfuse.Operations):
         return entry
 
     @catch_exceptions
-    def lookup(self, parent_inode, name):
+    def lookup(self, parent_inode, name, ctx):
         name = unicode(name, self.inodes.encoding)
         inode = None
 
@@ -469,7 +472,7 @@ class Operations(llfuse.Operations):
             _logger.debug("arv-mount lookup: parent_inode %i name '%s' inode %i",
                       parent_inode, name, inode)
             self.inodes[inode].inc_ref()
-            return self.getattr(inode)
+            return self._getattr(inode)
         else:
             _logger.debug("arv-mount lookup: parent_inode %i name '%s' not found",
                       parent_inode, name)
@@ -486,7 +489,7 @@ class Operations(llfuse.Operations):
                 self.inodes.del_entry(ent)
 
     @catch_exceptions
-    def open(self, inode, flags):
+    def open(self, inode, flags, ctx):
         if inode in self.inodes:
             p = self.inodes[inode]
         else:
@@ -559,7 +562,7 @@ class Operations(llfuse.Operations):
         self.release(fh)
 
     @catch_exceptions
-    def opendir(self, inode):
+    def opendir(self, inode, ctx):
         _logger.debug("arv-mount opendir: inode %i", inode)
 
         if inode in self.inodes:
@@ -594,11 +597,11 @@ class Operations(llfuse.Operations):
         e = off
         while e < len(handle.entries):
             if handle.entries[e][1].inode in self.inodes:
-                yield (handle.entries[e][0].encode(self.inodes.encoding), self.getattr(handle.entries[e][1].inode), e+1)
+                yield (handle.entries[e][0].encode(self.inodes.encoding), self._getattr(handle.entries[e][1].inode), e+1)
             e += 1
 
     @catch_exceptions
-    def statfs(self):
+    def statfs(self, ctx):
         st = llfuse.StatvfsData()
         st.f_bsize = 128 * 1024
         st.f_blocks = 0
@@ -644,7 +647,7 @@ class Operations(llfuse.Operations):
         self.inodes.touch(p)
 
         f.inc_ref()
-        return (fh, self.getattr(f.inode))
+        return (fh, self._getattr(f.inode))
 
     @catch_exceptions
     def mkdir(self, inode_parent, name, mode, ctx):
@@ -657,22 +660,22 @@ class Operations(llfuse.Operations):
         d = p[name]
 
         d.inc_ref()
-        return self.getattr(d.inode)
+        return self._getattr(d.inode)
 
     @catch_exceptions
-    def unlink(self, inode_parent, name):
+    def unlink(self, inode_parent, name, ctx):
         _logger.debug("arv-mount unlink: %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
         p.unlink(name)
 
     @catch_exceptions
-    def rmdir(self, inode_parent, name):
+    def rmdir(self, inode_parent, name, ctx):
         _logger.debug("arv-mount rmdir: %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
         p.rmdir(name)
 
     @catch_exceptions
-    def rename(self, inode_parent_old, name_old, inode_parent_new, name_new):
+    def rename(self, inode_parent_old, name_old, inode_parent_new, name_new, ctx):
         _logger.debug("arv-mount rename: %i '%s' %i '%s'", inode_parent_old, name_old, inode_parent_new, name_new)
         src = self._check_writable(inode_parent_old)
         dest = self._check_writable(inode_parent_new)
@@ -686,5 +689,5 @@ class Operations(llfuse.Operations):
     def fsync(self, fh, datasync):
         self.flush(fh)
 
-    def fsyncdir(self, fh, datasync):
+    def fsyncdir(self, fh, datasync): 
         self.flush(fh)
