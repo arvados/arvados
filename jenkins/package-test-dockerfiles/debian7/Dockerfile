@@ -8,4 +8,7 @@ RUN apt-get update && apt-get -y install curl procps && \
     /usr/local/rvm/bin/rvm install 2.1 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.1
 
+# udev daemon can't start in a container, so don't try.
+RUN mkdir -p /etc/udev/disabled
+
 RUN echo "deb file:///arvados/packages/debian7/ /" >>/etc/apt/sources.list
