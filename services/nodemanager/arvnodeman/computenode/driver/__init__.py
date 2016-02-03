@@ -127,11 +127,35 @@ class BaseComputeNodeDriver(RetryMixin):
             self.ping_host, arvados_node['uuid'],
             arvados_node['info']['ping_secret'])
 
+    def find_node(self, name):
+        node = [n for n in self.list_nodes() if n.name == name]
+        if node:
+            return node[0]
+        else:
+            return None
+
     def create_node(self, size, arvados_node):
-        kwargs = self.create_kwargs.copy()
-        kwargs.update(self.arvados_create_kwargs(size, arvados_node))
-        kwargs['size'] = size
-        return self.real.create_node(**kwargs)
+        try:
+            kwargs = self.create_kwargs.copy()
+            kwargs.update(self.arvados_create_kwargs(size, arvados_node))
+            kwargs['size'] = size
+            return self.real.create_node(**kwargs)
+        except self.CLOUD_ERRORS:
+            # Workaround for bug #6702: sometimes the create node request
+            # succeeds but times out and raises an exception instead of
+            # returning a result.  If this happens, we get stuck in a retry
+            # loop forever because subsequent create_node attempts will fail
+            # due to node name collision.  So check if the node we intended to
+            # create shows up in the cloud node list and return it if found.
+            try:
+                node = self.find_node(kwargs['name'])
+                if node:
+                    return node
+            except:
+                # Ignore possible exception from find_node in favor of
+                # re-raising the original create_node exception.
+                pass
+            raise
 
     def post_create_node(self, cloud_node):
         # ComputeNodeSetupActor calls this method after the cloud node is
