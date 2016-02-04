@@ -833,6 +833,12 @@ class ApplicationController < ActionController::Base
     {collections: c, owners: own}
   end
 
+  helper_method :my_toplevel_projects
+  def my_toplevel_projects
+    @my_toplevel_projects ||= Group.
+      filter([['group_class','=','project'], ['owner_uuid', '=', current_user.uuid]]).order('name')
+  end
+
   helper_method :my_project_tree
   def my_project_tree
     build_project_trees

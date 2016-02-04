@@ -1,4 +1,4 @@
-<li role="presentation" class="dropdown-header">
+<li role="presentation" class="dropdown-header" title="Toplevel projects">
   My projects
 </li>
 <li>
@@ -6,11 +6,10 @@
     <span style="padding-left: 0">Home</span>
   <% end %>
 </li>
-<% my_project_tree.each do |pnode| %>
-  <% next if pnode[:object].class != Group %>
+<% my_toplevel_projects.each do |pnode| %>
   <li>
-    <%= project_link_to.call pnode do %>
-      <span style="padding-left: <%= pnode[:depth] %>em"></span><%= pnode[:object].name %>
+    <%= project_link_to.call({object: pnode, depth: 1}) do %>
+      <span style="padding-left: 1em"></span><%= pnode[:name] %>
     <% end %>
   </li>
 <% end %>
