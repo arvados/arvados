@@ -718,7 +718,10 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 
 	buf, err := v.Get(TestHash)
 	if err != nil {
-		t.Errorf("got err %v, expected nil", err)
+		t.Fatal(err)
+	}
+	if bytes.Compare(buf, TestBlock) != 0 {
+		t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
 	}
 	bufs.Put(buf)
 
@@ -726,11 +729,11 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 	err = v.Trash(TestHash)
 	if v.Writable() == false {
 		if err != MethodDisabledError {
-			t.Errorf("Expected MethodDisabledError during Trash from a read-only volume")
+			t.Error(err)
 		}
 	} else if err != nil {
 		if err != ErrNotImplemented {
-			t.Errorf("Error during trash: %v", err.Error())
+			t.Error(err)
 		}
 	} else {
 		_, err = v.Get(TestHash)
@@ -741,19 +744,17 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 		// Untrash
 		err = v.Untrash(TestHash)
 		if err != nil {
-			t.Errorf("Error during untrash: %v", err.Error())
+			t.Fatal(err)
 		}
 	}
 
 	// Get the block - after trash and untrash sequence
-	// Backdating block is resulting in emptying out the block in s3 test setup
-	// Hence, compare the Get respose with buf (obtained after put, instead of TestBlock)
-	buf2, err := v.Get(TestHash)
+	buf, err = v.Get(TestHash)
 	if err != nil {
-		t.Errorf("Error during Get: %v", err.Error())
-	} else {
-		if bytes.Compare(buf2, buf) != 0 {
-			t.Errorf("Got data %+q, expected %+q", buf2, buf)
-		}
+		t.Fatal(err)
 	}
+	if bytes.Compare(buf, TestBlock) != 0 {
+		t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
+	}
+	bufs.Put(buf)
 }
