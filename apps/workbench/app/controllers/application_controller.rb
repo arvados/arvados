@@ -836,7 +836,7 @@ class ApplicationController < ActionController::Base
   helper_method :my_toplevel_projects
   def my_toplevel_projects
     @my_toplevel_projects ||= Group.
-      filter([['group_class','=','project'], ['owner_uuid', '=', current_user.uuid]]).order('name')
+      filter([['group_class','=','project'], ['owner_uuid', '=', current_user.uuid]]).order('name').limit(200)
   end
 
   helper_method :my_project_tree
