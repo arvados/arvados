@@ -76,6 +76,9 @@ class RetryMixin(object):
                         if not (isinstance(error, errors) or
                                 self._cloud.is_cloud_exception(error)):
                             self.retry_wait = self.min_retry_wait
+                            self._logger.warning(
+                                "Re-raising unknown error (no retry): %s",
+                                error, exc_info=error)
                             raise
 
                         self._logger.warning(

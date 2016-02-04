@@ -58,14 +58,14 @@ class RemotePollLoopActor(actor_class):
 
     def subscribe(self, subscriber):
         self.all_subscribers.add(subscriber)
-        self._logger.debug("%r subscribed to all events", subscriber)
+        self._logger.debug("%s subscribed to all events", subscriber.actor_ref.actor_urn)
         self._start_polling()
 
     # __init__ exposes this method to the proxy if the subclass defines
     # _item_key.
     def _subscribe_to(self, key, subscriber):
         self.key_subscribers.setdefault(key, set()).add(subscriber)
-        self._logger.debug("%r subscribed to events for '%s'", subscriber, key)
+        self._logger.debug("%s subscribed to events for '%s'", subscriber.actor_ref.actor_urn, key)
         self._start_polling()
 
     def _send_request(self):
@@ -82,8 +82,8 @@ class RemotePollLoopActor(actor_class):
 
     def _got_error(self, error):
         self.poll_wait = min(self.poll_wait * 2, self.max_poll_wait)
-        return "{} got error: {} - waiting {} seconds".format(
-            self.log_prefix, error, self.poll_wait)
+        return "got error: {} - will try again in {} seconds".format(
+            error, self.poll_wait)
 
     def is_common_error(self, exception):
         return False
@@ -105,6 +105,7 @@ class RemotePollLoopActor(actor_class):
         else:
             self._got_response(response)
             next_poll = scheduled_start + self.poll_wait
+        self._logger.info("request took %s seconds", (time.time() - scheduled_start))
         end_time = time.time()
         if next_poll < end_time:  # We've drifted too much; start fresh.
             next_poll = end_time + self.poll_wait

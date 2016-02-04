@@ -36,4 +36,5 @@ class CloudNodeListMonitorActor(clientactor.RemotePollLoopActor):
         return node.id
 
     def _send_request(self):
-        return self._client.list_nodes()
+        n = self._client.list_nodes()
+        return n
