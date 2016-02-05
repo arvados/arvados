@@ -72,7 +72,6 @@ class RemotePollLoopActor(actor_class):
         raise NotImplementedError("subclasses must implement request method")
 
     def _got_response(self, response):
-        self._logger.debug("got response with %d items", len(response))
         self.poll_wait = self.min_poll_wait
         _notify_subscribers(response, self.all_subscribers)
         if hasattr(self, '_item_key'):
@@ -105,7 +104,9 @@ class RemotePollLoopActor(actor_class):
         else:
             self._got_response(response)
             next_poll = scheduled_start + self.poll_wait
-        self._logger.info("request took %s seconds", (time.time() - scheduled_start))
+            self._logger.info("got response with %d items in %s seconds, next poll at %s",
+                              len(response), (time.time() - scheduled_start),
+                              time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(next_poll)))
         end_time = time.time()
         if next_poll < end_time:  # We've drifted too much; start fresh.
             next_poll = end_time + self.poll_wait

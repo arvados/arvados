@@ -151,8 +151,8 @@ class NodeManagerDaemonActor(actor_class):
         self.last_polls[poll_key] = time.time()
 
     def _pair_nodes(self, node_record, arvados_node):
-        self._logger.info("Cloud node %s has associated with Arvados node %s",
-                          node_record.cloud_node.id, arvados_node['uuid'])
+        self._logger.info("Cloud node %s is now paired with Arvados node %s",
+                          node_record.cloud_node.name, arvados_node['uuid'])
         self._arvados_nodes_actor.subscribe_to(
             arvados_node['uuid'], node_record.actor.update_arvados_node)
         node_record.arvados_node = arvados_node
@@ -217,14 +217,22 @@ class NodeManagerDaemonActor(actor_class):
                     break
 
     def _nodes_booting(self, size):
+        s = sum(1
+                for c in self.booting.itervalues()
+                if size is None or c.cloud_size.get().id == size.id)
+        s += sum(1
+                 for c in self.booted.itervalues()
+                 if size is None or c.cloud_node.size.id == size.id)
+        return s
+
+    def _nodes_unpaired(self, size):
         return sum(1
-                   for c in self.booting.itervalues()
-                   if size is None or c.cloud_size.get().id == size.id)
+                   for c in self.cloud_nodes.unpaired()
+                   if size is None or c.cloud_node.size.id == size.id)
 
     def _nodes_booted(self, size):
         return sum(1
-                  for i in (self.booted, self.cloud_nodes.nodes)
-                  for c in i.itervalues()
+                  for c in self.cloud_nodes.nodes.itervalues()
                   if size is None or c.cloud_node.size.id == size.id)
 
     def _nodes_up(self, size):
@@ -278,21 +286,18 @@ class NodeManagerDaemonActor(actor_class):
         elif under_min > 0 and size.id == self.min_cloud_size.id:
             return under_min
 
-        try:
-            booting_count = self._nodes_booting(size) + sum(1 for _ in self.cloud_nodes.unpaired())
-            shutdown_count = self._size_shutdowns(size)
-            busy_count = self._nodes_busy(size)
-            up_count = self._nodes_up(size) - (shutdown_count + busy_count + self._nodes_missing(size))
+        booting_count = self._nodes_booting(size) + self._nodes_unpaired(size)
+        shutdown_count = self._size_shutdowns(size)
+        busy_count = self._nodes_busy(size)
+        up_count = self._nodes_up(size) - (shutdown_count + busy_count + self._nodes_missing(size))
 
-            self._logger.info("%s: wishlist %i, up %i (booting %i, idle %i, busy %i), shutting down %i", size.name,
-                              self._size_wishlist(size),
-                              up_count + busy_count,
-                              booting_count,
-                              up_count - booting_count,
-                              busy_count,
-                              shutdown_count)
-        except Exception as e:
-            self._logger.exception("whoops")
+        self._logger.info("%s: wishlist %i, up %i (booting %i, idle %i, busy %i), shutting down %i", size.name,
+                          self._size_wishlist(size),
+                          up_count + busy_count,
+                          booting_count,
+                          up_count - booting_count,
+                          busy_count,
+                          shutdown_count)
 
         wanted = self._size_wishlist(size) - up_count
         if wanted > 0 and self.max_total_price and ((total_price + (size.price*wanted)) > self.max_total_price):
@@ -314,11 +319,14 @@ class NodeManagerDaemonActor(actor_class):
         self._update_poll_time('server_wishlist')
         self.last_wishlist = wishlist
         for size in reversed(self.server_calculator.cloud_sizes):
-            nodes_wanted = self._nodes_wanted(size)
-            if nodes_wanted > 0:
-                self._later.start_node(size)
-            elif (nodes_wanted < 0) and self.booting:
-                self._later.stop_booting_node(size)
+            try:
+                nodes_wanted = self._nodes_wanted(size)
+                if nodes_wanted > 0:
+                    self._later.start_node(size)
+                elif (nodes_wanted < 0) and self.booting:
+                    self._later.stop_booting_node(size)
+            except Exception as e:
+                self._logger.exception("while calculating nodes wanted for size %s", size)
 
     def _check_poll_freshness(orig_func):
         """Decorator to inhibit a method when poll information is stale.
