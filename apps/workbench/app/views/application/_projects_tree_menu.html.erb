@@ -1,4 +1,4 @@
-<li role="presentation" class="dropdown-header" title="Toplevel projects">
+<li role="presentation" class="dropdown-header">
   My projects
 </li>
 <li>
@@ -6,10 +6,17 @@
     <span style="padding-left: 0">Home</span>
   <% end %>
 </li>
-<% my_toplevel_projects.each do |pnode| %>
+<% my_tree = my_wanted_projects_tree %>
+<% my_tree[0].each do |pnode| %>
+  <% next if pnode[:object].class != Group %>
   <li>
-    <%= project_link_to.call({object: pnode, depth: 1}) do %>
-      <span style="padding-left: 1em"></span><%= pnode[:name] %>
+    <%= project_link_to.call pnode do %>
+      <span style="padding-left: <%= pnode[:depth] %>em"></span><%= pnode[:object].name %>
     <% end %>
   </li>
+<% end %>
+<% if my_tree[1] and my_tree[1] > my_tree[0].size %>
+<li role="presentation" class="dropdown-header">
+  Showing <%= my_tree[0].size %> of your projects out of <%= my_tree[1] %> total projects.
+</li>
 <% end %>
