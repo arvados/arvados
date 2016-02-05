@@ -6,7 +6,7 @@
     <span style="padding-left: 0">Home</span>
   <% end %>
 </li>
-<% my_tree = my_wanted_projects_tree %>
+<% my_tree = my_wanted_projects_tree current_user %>
 <% my_tree[0].each do |pnode| %>
   <% next if pnode[:object].class != Group %>
   <li>

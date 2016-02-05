@@ -89,7 +89,7 @@ class ApplicationController < ActionController::Base
     # exception here than in a template.)
     unless current_user.nil?
       begin
-        build_my_wanted_projects_tree
+        build_my_wanted_projects_tree current_user
       rescue ArvadosApiClient::ApiError
         # Fall back to the default-setting code later.
       end
@@ -833,19 +833,21 @@ class ApplicationController < ActionController::Base
   end
 
   # If there are more than 200 projects that are readable by the user,
-  # build the tree using only the top 200+ projects. That is:
-  # get toplevel projects under home, get subprojects under these
-  # projects, and so on until we hit the limit
-  def my_wanted_projects
+  # build the tree using only the top 200+ projects owned by the user.
+  # That is: get toplevel projects under home, get subprojects of
+  # these projects, and so on until we hit the limit
+  def my_wanted_projects page_size=100
     return @my_wanted_projects if @my_wanted_projects
 
-    all = Group.filter([['group_class','=','project']]).order('name').limit(100)
-    if all.items_available > 200
+    all = Group.filter([['group_class','=','project']]).order('name').limit(page_size)
+    if all.items_available > page_size*3
       @total_projects = all.items_available
       from_top = []
       uuids = [current_user.uuid]
-      while from_top.size <= 200
-        current_level = Group.filter([['group_class','=','project'], ['owner_uuid', 'in', uuids]]).order('name').limit(200)
+      while from_top.size <= page_size*2
+        current_level = Group.filter([['group_class','=','project'],
+                                      ['owner_uuid', 'in', uuids]])
+                             .order('name').limit(page_size*2)
         break if current_level.results.size == 0
         from_top.concat current_level.results
         uuids = current_level.results.collect { |x| x.uuid }
@@ -861,21 +863,21 @@ class ApplicationController < ActionController::Base
   end
 
   helper_method :my_wanted_projects_tree
-  def my_wanted_projects_tree
-    build_my_wanted_projects_tree
+  def my_wanted_projects_tree user, page_size=100
+    build_my_wanted_projects_tree user, page_size
     [@my_wanted_projects_tree, @total_projects]
   end
 
-  def build_my_wanted_projects_tree
+  def build_my_wanted_projects_tree user, page_size=100
     return @my_wanted_projects_tree if @my_wanted_projects_tree
 
-    parent_of = {current_user.uuid => 'me'}
-    my_wanted_projects.each do |ob|
+    parent_of = {user.uuid => 'me'}
+    my_wanted_projects(page_size).each do |ob|
       parent_of[ob.uuid] = ob.owner_uuid
     end
-    children_of = {false => [], 'me' => [current_user]}
-    my_wanted_projects.each do |ob|
-      if ob.owner_uuid != current_user.uuid and
+    children_of = {false => [], 'me' => [user]}
+    my_wanted_projects(page_size).each do |ob|
+      if ob.owner_uuid != user.uuid and
           not parent_of.has_key? ob.owner_uuid
         parent_of[ob.uuid] = false
       end
