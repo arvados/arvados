@@ -74,7 +74,7 @@ import Queue
 # unlimited to avoid deadlocks, see https://arvados.org/issues/3198#note-43 for
 # details.
 
-llfuse.capi._notify_queue = Queue.Queue()
+llfuse._notify_queue = Queue.Queue()
 
 from fusedir import sanitize_filename, Directory, CollectionDirectory, TmpCollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
 from fusefile import StringFile, FuseArvadosFile
