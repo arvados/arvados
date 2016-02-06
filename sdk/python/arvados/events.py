@@ -143,6 +143,16 @@ class PollClient(threading.Thread):
             # to do so raises the same exception."
             pass
 
+    def terminate(self):
+        """Stop polling.
+
+        Waits for any active :on_event: handlers to finish before
+        closing.
+
+        :on_event: will not be called after terminate() returns.
+        """
+        self.close(timeout=0)
+
     def subscribe(self, filters):
         self.on_event({'status': 200})
         self.filters.append(filters)
