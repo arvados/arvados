@@ -6,6 +6,7 @@ import functools
 import json
 import llfuse
 import logging
+import mock
 import os
 import run_test_server
 import sys
@@ -82,6 +83,7 @@ class MountArgsTest(unittest.TestCase):
         self.mnt = arvados_fuse.command.Mount(args)
         e = self.check_ent_type(arvados_fuse.MagicDirectory)
         self.assertEqual(e.pdh_only, False)
+        self.assertEqual(True, self.mnt.listen_for_events)
 
     @noexit
     def test_by_pdh(self):
@@ -92,6 +94,7 @@ class MountArgsTest(unittest.TestCase):
         self.mnt = arvados_fuse.command.Mount(args)
         e = self.check_ent_type(arvados_fuse.MagicDirectory)
         self.assertEqual(e.pdh_only, True)
+        self.assertEqual(False, self.mnt.listen_for_events)
 
     @noexit
     def test_by_tag(self):
@@ -101,6 +104,7 @@ class MountArgsTest(unittest.TestCase):
         self.assertEqual(args.mode, 'by_tag')
         self.mnt = arvados_fuse.command.Mount(args)
         e = self.check_ent_type(arvados_fuse.TagsDirectory)
+        self.assertEqual(True, self.mnt.listen_for_events)
 
     @noexit
     def test_collection(self, id_type='uuid'):
@@ -112,6 +116,7 @@ class MountArgsTest(unittest.TestCase):
         self.mnt = arvados_fuse.command.Mount(args)
         e = self.check_ent_type(arvados_fuse.CollectionDirectory)
         self.assertEqual(e.collection_locator, cid)
+        self.assertEqual(id_type == 'uuid', self.mnt.listen_for_events)
 
     def test_collection_pdh(self):
         self.test_collection('portable_data_hash')
@@ -126,6 +131,7 @@ class MountArgsTest(unittest.TestCase):
         e = self.check_ent_type(arvados_fuse.ProjectDirectory)
         self.assertEqual(e.project_object['uuid'],
                          run_test_server.fixture('users')['active']['uuid'])
+        self.assertEqual(True, self.mnt.listen_for_events)
 
     def test_mutually_exclusive_args(self):
         cid = run_test_server.fixture('collections')['public_text_file']['uuid']
@@ -162,9 +168,11 @@ class MountArgsTest(unittest.TestCase):
         e = self.check_ent_type(arvados_fuse.SharedDirectory)
         self.assertEqual(e.current_user['uuid'],
                          run_test_server.fixture('users')['active']['uuid'])
+        self.assertEqual(True, self.mnt.listen_for_events)
 
     @noexit
-    def test_custom(self):
+    @mock.patch('arvados.events.subscribe')
+    def test_custom(self, mock_subscribe):
         args = arvados_fuse.command.ArgumentParser().parse_args([
             '--mount-tmp', 'foo',
             '--mount-tmp', 'bar',
@@ -178,6 +186,24 @@ class MountArgsTest(unittest.TestCase):
         e = self.check_ent_type(arvados_fuse.ProjectDirectory, 'my_home')
         self.assertEqual(e.project_object['uuid'],
                          run_test_server.fixture('users')['active']['uuid'])
+        self.assertEqual(True, self.mnt.listen_for_events)
+        with self.mnt:
+            pass
+        self.assertEqual(1, mock_subscribe.call_count)
+
+    @noexit
+    @mock.patch('arvados.events.subscribe')
+    def test_custom_no_listen(self, mock_subscribe):
+        args = arvados_fuse.command.ArgumentParser().parse_args([
+            '--mount-by-pdh', 'pdh',
+            '--mount-tmp', 'foo',
+            '--mount-tmp', 'bar',
+            '--foreground', self.mntdir])
+        self.mnt = arvados_fuse.command.Mount(args)
+        self.assertEqual(False, self.mnt.listen_for_events)
+        with self.mnt:
+            pass
+        self.assertEqual(0, mock_subscribe.call_count)
 
     def test_custom_unsupported_layouts(self):
         for name in ['.', '..', '', 'foo/bar', '/foo']:
