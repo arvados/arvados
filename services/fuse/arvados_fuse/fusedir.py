@@ -946,3 +946,6 @@ class SharedDirectory(Directory):
                        lambda i: ProjectDirectory(self.inode, self.inodes, self.api, self.num_retries, i[1], poll=self._poll, poll_time=self._poll_time))
         except Exception:
             _logger.exception()
+
+    def want_event_subscribe(self):
+        return True
