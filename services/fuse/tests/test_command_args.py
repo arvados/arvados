@@ -6,6 +6,7 @@ import functools
 import json
 import llfuse
 import logging
+import mock
 import os
 import run_test_server
 import sys
@@ -170,7 +171,8 @@ class MountArgsTest(unittest.TestCase):
         self.assertEqual(True, self.mnt.listen_for_events)
 
     @noexit
-    def test_custom(self):
+    @mock.patch('arvados.events.subscribe')
+    def test_custom(self, mock_subscribe):
         args = arvados_fuse.command.ArgumentParser().parse_args([
             '--mount-tmp', 'foo',
             '--mount-tmp', 'bar',
@@ -185,15 +187,23 @@ class MountArgsTest(unittest.TestCase):
         self.assertEqual(e.project_object['uuid'],
                          run_test_server.fixture('users')['active']['uuid'])
         self.assertEqual(True, self.mnt.listen_for_events)
+        with self.mnt:
+            pass
+        self.assertEqual(1, mock_subscribe.call_count)
 
     @noexit
-    def test_custom_no_listen(self):
+    @mock.patch('arvados.events.subscribe')
+    def test_custom_no_listen(self, mock_subscribe):
         args = arvados_fuse.command.ArgumentParser().parse_args([
+            '--mount-by-pdh', 'pdh',
             '--mount-tmp', 'foo',
             '--mount-tmp', 'bar',
             '--foreground', self.mntdir])
         self.mnt = arvados_fuse.command.Mount(args)
         self.assertEqual(False, self.mnt.listen_for_events)
+        with self.mnt:
+            pass
+        self.assertEqual(0, mock_subscribe.call_count)
 
     def test_custom_unsupported_layouts(self):
         for name in ['.', '..', '', 'foo/bar', '/foo']:

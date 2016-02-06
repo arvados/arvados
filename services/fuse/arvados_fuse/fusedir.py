@@ -641,6 +641,7 @@ will appear if it exists.
     def want_event_subscribe(self):
         return not self.pdh_only
 
+
 class RecursiveInvalidateDirectory(Directory):
     def invalidate(self):
         try:
@@ -660,6 +661,9 @@ class TagsDirectory(RecursiveInvalidateDirectory):
         self.num_retries = num_retries
         self._poll = True
         self._poll_time = poll_time
+
+    def want_event_subscribe(self):
+        return True
 
     @use_counter
     def update(self):
