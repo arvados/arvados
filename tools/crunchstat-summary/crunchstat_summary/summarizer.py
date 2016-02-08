@@ -87,6 +87,7 @@ class Summarizer(object):
                 child_summarizer.stats_max = self.stats_max
                 child_summarizer.task_stats = self.task_stats
                 child_summarizer.tasks = self.tasks
+                child_summarizer.starttime = self.starttime
                 child_summarizer.run()
                 logger.debug('%s: done %s', self.label, uuid)
                 continue
@@ -160,11 +161,11 @@ class Summarizer(object):
                             val = val / this_interval_s
                             if stat in ['user+sys__rate', 'tx+rx__rate']:
                                 task.series[category, stat].append(
-                                    (timestamp - task.starttime, val))
+                                    (timestamp - self.starttime, val))
                     else:
                         if stat in ['rss']:
                             task.series[category, stat].append(
-                                (timestamp - task.starttime, val))
+                                (timestamp - self.starttime, val))
                         self.task_stats[task_id][category][stat] = val
                     if val > self.stats_max[category][stat]:
                         self.stats_max[category][stat] = val
