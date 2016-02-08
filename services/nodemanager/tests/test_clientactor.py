@@ -47,7 +47,8 @@ class RemotePollLoopActorTestCase(testutil.RemotePollLoopActorTestMixin,
 
     def test_late_subscribers_get_responses(self):
         self.build_monitor(['pre_late_test', 'late_test'])
-        self.monitor.subscribe(lambda response: None).get(self.TIMEOUT)
+        mock_subscriber = mock.Mock(name='mock_subscriber')
+        self.monitor.subscribe(mock_subscriber).get(self.TIMEOUT)
         self.monitor.subscribe(self.subscriber)
         self.monitor.poll().get(self.TIMEOUT)
         self.stop_proxy(self.monitor)
@@ -146,4 +147,3 @@ class RemotePollLoopActorWithKeysTestCase(testutil.RemotePollLoopActorTestMixin,
 
 if __name__ == '__main__':
     unittest.main()
-
