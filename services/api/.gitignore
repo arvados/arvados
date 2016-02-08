@@ -28,3 +28,6 @@
 # Dev/test SSL certificates
 /self-signed.key
 /self-signed.pem
+
+# Generated git-commit.version file
+/git-commit.version
