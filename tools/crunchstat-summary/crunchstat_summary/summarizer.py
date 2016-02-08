@@ -90,7 +90,7 @@ class Summarizer(object):
                 logger.debug('%s: done %s', self.label, uuid)
                 continue
 
-            m = re.search(r'^(?P<timestamp>\S+) (?P<job_uuid>\S+) \d+ (?P<seq>\d+) stderr crunchstat: (?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n', line)
+            m = re.search(r'^(?P<timestamp>[^\s.]+)(\.\d+)? (?P<job_uuid>\S+) \d+ (?P<seq>\d+) stderr crunchstat: (?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n', line)
             if not m:
                 continue
 
@@ -327,8 +327,8 @@ class Summarizer(object):
             return '{}'.format(val)
 
 
-class CollectionSummarizer(Summarizer):
-    def __init__(self, collection_id, **kwargs):
+class CollectionReader(object):
+    def __init__(self, collection_id):
         logger.debug('load collection %s', collection_id)
         collection = arvados.collection.CollectionReader(collection_id)
         filenames = [filename for filename in collection]
@@ -336,24 +336,76 @@ class CollectionSummarizer(Summarizer):
             raise ValueError(
                 "collection {} has {} files; need exactly one".format(
                     collection_id, len(filenames)))
+        self._reader = collection.open(filenames[0])
+
+    def __iter__(self):
+        return iter(self._reader)
+
+
+class LiveLogReader(object):
+    def __init__(self, job_uuid):
+        logger.debug('load stderr events for job %s', job_uuid)
+        self._filters = [
+            ['object_uuid', '=', job_uuid],
+            ['event_type', '=', 'stderr']]
+        self._buffer = collections.deque()
+        self._got = 0
+        self._got_all = False
+        self._label = job_uuid
+        self._last_id = 0
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        if self._buffer is None:
+            raise StopIteration
+        if len(self._buffer) == 0:
+            if self._got_all:
+                raise StopIteration
+            page = arvados.api().logs().index(
+                limit=1000,
+                order=['id asc'],
+                filters=self._filters + [['id','>',str(self._last_id)]],
+            ).execute()
+            self._got += len(page['items'])
+            logger.debug('%s: received %d of %d log events', self._label, self._got, self._got + page['items_available'] - len(page['items']))
+            if len(page['items']) == 0:
+                self._got_all = True
+                self._buffer = None
+                raise StopIteration
+            elif len(page['items']) == page['items_available']:
+                # Don't try to fetch any more after this page
+                self._got_all = True
+            for i in page['items']:
+                for line in i['properties']['text'].split('\n'):
+                    self._buffer.append(line)
+                self._last_id = i['id']
+        return self._buffer.popleft() + '\n'
+
+
+class CollectionSummarizer(Summarizer):
+    def __init__(self, collection_id, **kwargs):
         super(CollectionSummarizer, self).__init__(
-            collection.open(filenames[0]), **kwargs)
+            CollectionReader(collection_id), **kwargs)
         self.label = collection_id
 
 
-class JobSummarizer(CollectionSummarizer):
+class JobSummarizer(Summarizer):
     def __init__(self, job, **kwargs):
         arv = arvados.api('v1')
         if isinstance(job, basestring):
             self.job = arv.jobs().get(uuid=job).execute()
         else:
             self.job = job
-        if not self.job['log']:
-            raise ValueError(
-                "job {} has no log; live summary not implemented".format(
-                    self.job['uuid']))
-        super(JobSummarizer, self).__init__(self.job['log'], **kwargs)
-        self.label = self.job['uuid']
+        if self.job['log']:
+            rdr = CollectionReader(self.job['log'])
+            label = self.job['uuid']
+        else:
+            rdr = LiveLogReader(self.job['uuid'])
+            label = self.job['uuid'] + ' (partial)'
+        super(JobSummarizer, self).__init__(rdr, **kwargs)
+        self.label = label
         self.existing_constraints = self.job.get('runtime_constraints', {})
 
 
