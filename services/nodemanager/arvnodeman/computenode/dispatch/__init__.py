@@ -203,8 +203,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
 
     def cancel_shutdown(self, reason):
         self.cancel_reason = reason
-        self._logger.info("Shutdown cancelled: %s.",
-                          self.cloud_node.id, reason)
+        self._logger.info("Shutdown cancelled: %s.", reason)
         self._finished(success_flag=False)
 
     def _stop_if_window_closed(orig_func):
