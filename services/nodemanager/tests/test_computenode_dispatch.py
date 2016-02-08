@@ -9,6 +9,7 @@ import arvados.errors as arverror
 import httplib2
 import mock
 import pykka
+import threading
 
 import arvnodeman.computenode.dispatch as dispatch
 from . import testutil
@@ -44,8 +45,11 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
 
     def test_creation_without_arvados_node(self):
         self.make_actor()
+        finished = threading.Event()
+        self.setup_actor.subscribe(lambda _: finished.set())
         self.assertEqual(self.arvados_effect[-1],
                          self.setup_actor.arvados_node.get(self.TIMEOUT))
+        assert(finished.wait(self.TIMEOUT))
         self.assertEqual(1, self.api_client.nodes().create().execute.call_count)
         self.assertEqual(1, self.api_client.nodes().update().execute.call_count)
         self.assert_node_properties_updated()
@@ -55,8 +59,11 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
     def test_creation_with_arvados_node(self):
         self.make_mocks(arvados_effect=[testutil.arvados_node_mock()]*2)
         self.make_actor(testutil.arvados_node_mock())
+        finished = threading.Event()
+        self.setup_actor.subscribe(lambda _: finished.set())
         self.assertEqual(self.arvados_effect[-1],
                          self.setup_actor.arvados_node.get(self.TIMEOUT))
+        assert(finished.wait(self.TIMEOUT))
         self.assert_node_properties_updated()
         self.assertEqual(2, self.api_client.nodes().update().execute.call_count)
         self.assertEqual(self.cloud_client.create_node(),
