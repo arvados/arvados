@@ -9,6 +9,7 @@ import itertools
 import math
 import re
 import sys
+import threading
 
 from arvados.api import OrderedJsonModel
 from crunchstat_summary import logger
@@ -350,37 +351,54 @@ class LiveLogReader(object):
             ['event_type', '=', 'stderr']]
         self._buffer = collections.deque()
         self._got = 0
-        self._got_all = False
         self._label = job_uuid
         self._last_id = 0
+        self._start_getting_next_page()
+
+    def _start_getting_next_page(self):
+        self._thread = threading.Thread(target=self._get_next_page)
+        self._thread.daemon = True
+        self._thread.start()
+
+    def _get_next_page(self):
+        page = arvados.api().logs().index(
+            limit=1000,
+            order=['id asc'],
+            filters=self._filters + [['id','>',str(self._last_id)]],
+        ).execute()
+        self._got += len(page['items'])
+        logger.debug(
+            '%s: received %d of %d log events',
+            self._label, self._got,
+            self._got + page['items_available'] - len(page['items']))
+        self._page = page
+
+    def _buffer_page(self):
+        """Wait for current worker, copy results to _buffer, start next worker.
+
+        Return True if anything was added to the buffer."""
+        if self._thread is None:
+            return False
+        self._thread.join()
+        self._thread = None
+        page = self._page
+        if len(page['items']) == 0:
+            return False
+        if len(page['items']) < page['items_available']:
+            self._start_getting_next_page()
+        for i in page['items']:
+            for line in i['properties']['text'].split('\n'):
+                self._buffer.append(line)
+            self._last_id = i['id']
+        return True
 
     def __iter__(self):
         return self
 
     def next(self):
-        if self._buffer is None:
-            raise StopIteration
         if len(self._buffer) == 0:
-            if self._got_all:
+            if not self._buffer_page():
                 raise StopIteration
-            page = arvados.api().logs().index(
-                limit=1000,
-                order=['id asc'],
-                filters=self._filters + [['id','>',str(self._last_id)]],
-            ).execute()
-            self._got += len(page['items'])
-            logger.debug('%s: received %d of %d log events', self._label, self._got, self._got + page['items_available'] - len(page['items']))
-            if len(page['items']) == 0:
-                self._got_all = True
-                self._buffer = None
-                raise StopIteration
-            elif len(page['items']) == page['items_available']:
-                # Don't try to fetch any more after this page
-                self._got_all = True
-            for i in page['items']:
-                for line in i['properties']['text'].split('\n'):
-                    self._buffer.append(line)
-                self._last_id = i['id']
         return self._buffer.popleft() + '\n'
 
 
