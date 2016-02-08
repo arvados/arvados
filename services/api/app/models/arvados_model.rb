@@ -115,6 +115,10 @@ class ArvadosModel < ActiveRecord::Base
     ["#{table_name}.modified_at desc", "#{table_name}.uuid"]
   end
 
+  def self.unique_columns
+    ["id", "uuid"]
+  end
+
   # If current user can manage the object, return an array of uuids of
   # users and groups that have permission to write the object. The
   # first two elements are always [self.owner_uuid, current user's
