@@ -349,7 +349,7 @@ class Operations(llfuse.Operations):
         with llfuse.lock:
             self._shutdown_started.set()
             if self.events:
-                self.events.close()
+                self.events.terminate()
                 self.events = None
 
             self.inodes.clear()
