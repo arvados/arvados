@@ -111,11 +111,30 @@ module LoadParam
     # (e.g., [] or ['owner_uuid desc']), fall back on the default
     # orders to ensure repeating the same request (possibly with
     # different limit/offset) will return records in the same order.
-    unless @orders.any? do |order|
-        otable, ocol = order.split(' ')[0].split('.')
-        otable == table_name and model_class.unique_columns.include?(ocol)
+    #
+    # Clean up the resulting list of orders such that no column
+    # uselessly appears twice (Postgres might not optimize this out
+    # for us) and no columns uselessly appear after a unique column
+    # (Postgres does not optimize this out for us; as of 9.2, "order
+    # by id, modified_at desc, uuid" is slow but "order by id" is
+    # fast).
+    orders_given_and_default = @orders + model_class.default_orders
+    order_cols_used = {}
+    @orders = []
+    orders_given_and_default.each do |order|
+      otablecol = order.split(' ')[0]
+
+      next if order_cols_used[otablecol]
+      order_cols_used[otablecol] = true
+
+      @orders << order
+
+      otable, ocol = otablecol.split('.')
+      if otable == table_name and model_class.unique_columns.include?(ocol)
+        # we already have a full ordering; subsequent entries would be
+        # superfluous
+        break
       end
-      @orders += model_class.default_orders
     end
 
     case params[:select]
