@@ -142,6 +142,7 @@ class NodeManagerDaemonActor(actor_class):
         self.booting = {}       # Actor IDs to ComputeNodeSetupActors
         self.booted = {}        # Cloud node IDs to _ComputeNodeRecords
         self.shutdowns = {}     # Cloud node IDs to ComputeNodeShutdownActors
+        self.sizes_booting_shutdown = {} # Actor IDs or Cloud node IDs to node size
 
     def on_start(self):
         self._logger = logging.getLogger("%s.%s" % (self.__class__.__name__, self.actor_urn[33:]))
@@ -200,6 +201,7 @@ class NodeManagerDaemonActor(actor_class):
                 except pykka.ActorDeadError:
                     pass
                 del self.shutdowns[key]
+                del self.sizes_booting_shutdown[key]
             record.actor.stop()
             record.cloud_node = None
 
@@ -218,8 +220,8 @@ class NodeManagerDaemonActor(actor_class):
 
     def _nodes_booting(self, size):
         s = sum(1
-                for c in self.booting.itervalues()
-                if size is None or c.cloud_size.get().id == size.id)
+                for c in self.booting.iterkeys()
+                if size is None or self.sizes_booting_shutdown[c].id == size.id)
         s += sum(1
                  for c in self.booted.itervalues()
                  if size is None or c.cloud_node.size.id == size.id)
@@ -241,8 +243,8 @@ class NodeManagerDaemonActor(actor_class):
 
     def _total_price(self):
         cost = 0
-        cost += sum(self.server_calculator.find_size(c.cloud_size.get().id).price
-                  for c in self.booting.itervalues())
+        cost += sum(self.server_calculator.find_size(self.sizes_booting_shutdown[c].id).price
+                  for c in self.booting.iterkeys())
         cost += sum(self.server_calculator.find_size(c.cloud_node.size.id).price
                     for i in (self.booted, self.cloud_nodes.nodes)
                     for c in i.itervalues())
@@ -267,9 +269,9 @@ class NodeManagerDaemonActor(actor_class):
 
     def _size_shutdowns(self, size):
         sh = 0
-        for c in self.shutdowns.itervalues():
+        for c in self.shutdowns.iterkeys():
             try:
-                if c.cloud_node.get().size.id == size.id:
+                if self.sizes_booting_shutdown[c].id == size.id:
                     sh += 1
             except pykka.ActorDeadError:
                 pass
@@ -360,6 +362,8 @@ class NodeManagerDaemonActor(actor_class):
             cloud_client=self._new_cloud(),
             cloud_size=cloud_size).proxy()
         self.booting[new_setup.actor_ref.actor_urn] = new_setup
+        self.sizes_booting_shutdown[new_setup.actor_ref.actor_urn] = cloud_size
+
         if arvados_node is not None:
             self.arvados_nodes[arvados_node['uuid']].assignment_time = (
                 time.time())
@@ -373,6 +377,8 @@ class NodeManagerDaemonActor(actor_class):
     def node_up(self, setup_proxy):
         cloud_node = setup_proxy.cloud_node.get()
         del self.booting[setup_proxy.actor_ref.actor_urn]
+        del self.sizes_booting_shutdown[setup_proxy.actor_ref.actor_urn]
+
         setup_proxy.stop()
         if cloud_node is not None:
             record = self.cloud_nodes.get(cloud_node.id)
@@ -390,12 +396,15 @@ class NodeManagerDaemonActor(actor_class):
         for key, node in self.booting.iteritems():
             if node.cloud_size.get().id == size.id and node.stop_if_no_cloud_node().get():
                 del self.booting[key]
+                del self.sizes_booting_shutdown[key]
+
                 if nodes_excess > 1:
                     self._later.stop_booting_node(size)
                 break
 
     def _begin_node_shutdown(self, node_actor, cancellable):
-        cloud_node_id = node_actor.cloud_node.get().id
+        cloud_node_obj = node_actor.cloud_node.get()
+        cloud_node_id = cloud_node_obj.id
         if cloud_node_id in self.shutdowns:
             return None
         shutdown = self._node_shutdown.start(
@@ -403,6 +412,7 @@ class NodeManagerDaemonActor(actor_class):
             arvados_client=self._new_arvados(),
             node_monitor=node_actor.actor_ref, cancellable=cancellable).proxy()
         self.shutdowns[cloud_node_id] = shutdown
+        self.sizes_booting_shutdown[cloud_node_id] = cloud_node_obj.size
         shutdown.subscribe(self._later.node_finished_shutdown)
 
     @_check_poll_freshness
@@ -429,9 +439,11 @@ class NodeManagerDaemonActor(actor_class):
             if cancel_reason == self._node_shutdown.NODE_BROKEN:
                 self.cloud_nodes.blacklist(cloud_node_id)
             del self.shutdowns[cloud_node_id]
+            del self.sizes_booting_shutdown[cloud_node_id]
         elif cloud_node_id in self.booted:
             self.booted.pop(cloud_node_id).actor.stop()
             del self.shutdowns[cloud_node_id]
+            del self.sizes_booting_shutdown[cloud_node_id]
 
     def shutdown(self):
         self._logger.info("Shutting down after signal.")
