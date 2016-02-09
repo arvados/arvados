@@ -11,7 +11,9 @@ class AddUuidToApiClientAuthorization < ActiveRecord::Migration
              Digest::MD5.hexdigest('ApiClientAuthorization'.to_s).to_i(16).to_s(36)[-5..-1] + '-'
 
     update_sql <<-EOS
-update api_client_authorizations set uuid = (select concat('#{prefix}', substring(api_token, length(api_token)-4), array_to_string(ARRAY (SELECT substring('0123456789abcdefghijklmnopqrstuvwxyz' FROM (ceil(random()*36))::int FOR 1) FROM generate_series(1, 10)), '')));
+update api_client_authorizations set uuid = (select concat('#{prefix}',
+array_to_string(ARRAY (SELECT substring(api_token FROM (ceil(random()*36))::int FOR 1) FROM generate_series(1, 15)), '')
+));
 EOS
 
     change_column_null :api_client_authorizations, :uuid, false
