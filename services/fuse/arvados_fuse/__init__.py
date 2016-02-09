@@ -440,12 +440,16 @@ class Operations(llfuse.Operations):
         return entry
 
     @catch_exceptions
-    def setattr(self, inode, attr, ctx):
+    def setattr(self, inode, attr, fields, fh, ctx):
         entry = self._getattr(inode)
 
-        e = self.inodes[inode]
+        if fh is not None and fh in self._filehandles:
+            handle = self._filehandles[fh]
+            e = handle.obj
+        else:
+            e = self.inodes[inode]
 
-        if attr.st_size is not None and isinstance(e, FuseArvadosFile):
+        if fields.update_size and isinstance(e, FuseArvadosFile):
             with llfuse.lock_released:
                 e.arvfile.truncate(attr.st_size)
                 entry.st_size = e.arvfile.size()
