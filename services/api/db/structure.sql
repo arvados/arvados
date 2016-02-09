@@ -46,7 +46,8 @@ CREATE TABLE api_client_authorizations (
     default_owner_uuid character varying(255),
     scopes text DEFAULT '---
 - all
-'::text NOT NULL
+'::text NOT NULL,
+    uuid character varying(255) NOT NULL
 );
 
 
@@ -1530,6 +1531,13 @@ CREATE INDEX index_api_client_authorizations_on_user_id ON api_client_authorizat
 
 
 --
+-- Name: index_api_client_authorizations_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX index_api_client_authorizations_on_uuid ON api_client_authorizations USING btree (uuid);
+
+
+--
 -- Name: index_api_clients_on_created_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -2569,3 +2577,5 @@ INSERT INTO schema_migrations (version) VALUES ('20151202151426');
 INSERT INTO schema_migrations (version) VALUES ('20151215134304');
 
 INSERT INTO schema_migrations (version) VALUES ('20151229214707');
+
+INSERT INTO schema_migrations (version) VALUES ('20160208210629');
