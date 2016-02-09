@@ -397,12 +397,18 @@ try:
     active = 1
     pids = set([s.pid for s in subprocesses])
     while len(pids) > 0:
-        (pid, status) = os.wait()
-        pids.discard(pid)
-        if not taskp.get("task.ignore_rcode"):
-            rcode[pid] = (status >> 8)
-        else:
-            rcode[pid] = 0
+        try:
+            (pid, status) = os.wait()
+            pids.discard(pid)
+            if not taskp.get("task.ignore_rcode"):
+                rcode[pid] = (status >> 8)
+            else:
+                rcode[pid] = 0
+        except OSError as e:
+            if e.errno == errno.EINTR:
+                pass
+            else:
+                raise
 
     if sig.sig is not None:
         logger.critical("terminating on signal %s" % sig.sig)
