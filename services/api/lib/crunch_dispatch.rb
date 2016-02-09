@@ -637,7 +637,7 @@ class CrunchDispatch
 
     jobrecord = Job.find_by_uuid(job_done.uuid)
 
-    if exit_status == EXIT_RETRY_UNLOCKED
+    if exit_status == EXIT_RETRY_UNLOCKED or (exit_tempfail and @job_retry_counts[jobrecord.uuid])
       # The job failed because all of the nodes allocated to it
       # failed.  Only this crunch-dispatch process can retry the job:
       # it's already locked, and there's no way to put it back in the
