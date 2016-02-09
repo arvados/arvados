@@ -10,6 +10,7 @@ import itertools
 import math
 import re
 import sys
+import threading
 
 from arvados.api import OrderedJsonModel
 from crunchstat_summary import logger
@@ -378,8 +379,14 @@ class PipelineSummarizer(object):
         self.label = pipeline_instance_uuid
 
     def run(self):
+        threads = []
         for summarizer in self.summarizers.itervalues():
-            summarizer.run()
+            t = threading.Thread(target=summarizer.run)
+            t.daemon = True
+            t.start()
+            threads.append(t)
+        for t in threads:
+            t.join()
 
     def text_report(self):
         txt = ''
