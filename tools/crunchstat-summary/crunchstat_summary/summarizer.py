@@ -52,10 +52,10 @@ class Summarizer(object):
         # constructor will overwrite this with something useful.
         self.existing_constraints = {}
 
-        logger.debug("%s: logdata %s", self.label, repr(logdata))
+        logger.debug("%s: logdata %s", self.label, logdata)
 
     def run(self):
-        logger.debug("%s: parsing log data", self.label)
+        logger.debug("%s: parsing logdata %s", self.label, self._logdata)
         for line in self._logdata:
             m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) job_task (?P<task_uuid>\S+)$', line)
             if m:
