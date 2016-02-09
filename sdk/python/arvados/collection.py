@@ -1231,7 +1231,8 @@ class Collection(RichCollectionBase):
     @synchronized
     def _my_api(self):
         if self._api_client is None:
-            self._api_client = ThreadSafeApiCache(self._config)
+            block_cache = keep.KeepBlockCache(int(self._config["KEEP_CACHE"]) if "KEEP_CACHE" in self._config else None)
+            self._api_client = ThreadSafeApiCache(self._config, keep_params={"block_cache": block_cache})
             self._keep_client = self._api_client.keep
         return self._api_client
 
@@ -1241,13 +1242,15 @@ class Collection(RichCollectionBase):
             if self._api_client is None:
                 self._my_api()
             else:
-                self._keep_client = KeepClient(api_client=self._api_client)
+                block_cache = keep.KeepBlockCache(int(self._config["KEEP_CACHE"]) if "KEEP_CACHE" in self._config else None)
+                self._keep_client = KeepClient(api_client=self._api_client, block_cache=block_cache)
         return self._keep_client
 
     @synchronized
     def _my_block_manager(self):
         if self._block_manager is None:
-            self._block_manager = _BlockManager(self._my_keep())
+            prefetch_size = int(self._config["KEEP_PREFETCH"]) if "KEEP_PREFETCH" in self._config else None
+            self._block_manager = _BlockManager(self._my_keep(), prefetch_size=prefetch_size)
         return self._block_manager
 
     def _remember_api_response(self, response):

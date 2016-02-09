@@ -400,7 +400,7 @@ class _BlockManager(object):
     DEFAULT_PUT_THREADS = 2
     DEFAULT_GET_THREADS = 2
 
-    def __init__(self, keep):
+    def __init__(self, keep, prefetch_size=None):
         """keep: KeepClient object to use"""
         self._keep = keep
         self._bufferblocks = {}
@@ -412,6 +412,7 @@ class _BlockManager(object):
         self.prefetch_enabled = True
         self.num_put_threads = _BlockManager.DEFAULT_PUT_THREADS
         self.num_get_threads = _BlockManager.DEFAULT_GET_THREADS
+        self.prefetch_size = prefetch_size if prefetch_size is not None else config.KEEP_BLOCK_SIZE
 
     @synchronized
     def alloc_bufferblock(self, blockid=None, starting_capacity=2**14, owner=None):
@@ -820,7 +821,9 @@ class ArvadosFile(object):
             if size == 0 or offset >= self.size():
                 return ''
             readsegs = locators_and_ranges(self._segments, offset, size)
-            prefetch = locators_and_ranges(self._segments, offset + size, config.KEEP_BLOCK_SIZE, limit=32)
+            prefetch = locators_and_ranges(self._segments, offset + size,
+                                           self.parent._my_block_manager().prefetch_size,
+                                           limit=32)
 
         locs = set()
         data = []
