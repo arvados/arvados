@@ -1415,7 +1415,7 @@ ALTER TABLE ONLY virtual_machines
 -- Name: api_client_authorizations_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX api_client_authorizations_search_index ON api_client_authorizations USING btree (api_token, created_by_ip_address, last_used_by_ip_address, default_owner_uuid);
+CREATE INDEX api_client_authorizations_search_index ON api_client_authorizations USING btree (api_token, created_by_ip_address, last_used_by_ip_address, default_owner_uuid, uuid);
 
 
 --
@@ -2579,3 +2579,5 @@ INSERT INTO schema_migrations (version) VALUES ('20151215134304');
 INSERT INTO schema_migrations (version) VALUES ('20151229214707');
 
 INSERT INTO schema_migrations (version) VALUES ('20160208210629');
+
+INSERT INTO schema_migrations (version) VALUES ('20160209155729');
