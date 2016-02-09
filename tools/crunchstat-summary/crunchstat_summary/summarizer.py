@@ -37,8 +37,7 @@ class Summarizer(object):
 
         # stats_max: {category: {stat: val}}
         self.stats_max = collections.defaultdict(
-            functools.partial(collections.defaultdict,
-                              lambda: float('-Inf')))
+            functools.partial(collections.defaultdict, lambda: 0))
         # task_stats: {task_id: {category: {stat: val}}}
         self.task_stats = collections.defaultdict(
             functools.partial(collections.defaultdict, dict))
@@ -232,10 +231,12 @@ class Summarizer(object):
                  self.stats_max['mem']['rss'],
                  lambda x: x / 1e9),
                 ('Max network traffic in a single task: {}GB',
-                 self.stats_max['net:eth0']['tx+rx'],
+                 self.stats_max['net:eth0']['tx+rx'] +
+                 self.stats_max['net:keep0']['tx+rx'],
                  lambda x: x / 1e9),
                 ('Max network speed in a single interval: {}MB/s',
-                 self.stats_max['net:eth0']['tx+rx__rate'],
+                 self.stats_max['net:eth0']['tx+rx__rate'] +
+                 self.stats_max['net:keep0']['tx+rx__rate'],
                  lambda x: x / 1e6)):
             format_string, val, transform = args
             if val == float('-Inf'):
