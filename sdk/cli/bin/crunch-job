@@ -1461,7 +1461,7 @@ sub preprocess_stderr
       # whoa.
       $main::please_freeze = 1;
     }
-    elsif ($line =~ /srun: error: (Node failure on|Aborting, io error)/) {
+    elsif ($line =~ /srun: error: (Node failure on|Aborting, .*\bio error\b)/) {
       my $job_slot_index = $jobstep[$job]->{slotindex};
       $slot[$job_slot_index]->{node}->{fail_count}++;
       $jobstep[$job]->{tempfail} = 1;
