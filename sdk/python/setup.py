@@ -43,7 +43,7 @@ setup(name='arvados-python-client',
           'google-api-python-client',
           'httplib2',
           'pycurl >=7.19.5.1, <7.21.5',
-          'python-gflags',
+          'python-gflags<3.0',
           'ws4py'
       ],
       test_suite='tests',
