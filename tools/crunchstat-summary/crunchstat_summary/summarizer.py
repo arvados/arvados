@@ -65,7 +65,7 @@ class Summarizer(object):
                 logger.debug('%s: seq %d is task %s', self.label, seq, uuid)
                 continue
 
-            m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) success in (?P<elapsed>\d+) seconds', line)
+            m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) (success in|failure \(#., permanent\) after) (?P<elapsed>\d+) seconds', line)
             if m:
                 task_id = self.seq_to_uuid[int(m.group('seq'))]
                 elapsed = int(m.group('elapsed'))
@@ -238,7 +238,15 @@ class Summarizer(object):
                 ('Max network speed in a single interval: {}MB/s',
                  self.stats_max['net:eth0']['tx+rx__rate'] +
                  self.stats_max['net:keep0']['tx+rx__rate'],
-                 lambda x: x / 1e6)):
+                 lambda x: x / 1e6),
+                ('Keep cache miss rate {}%',
+                 float(self.job_tot['keepcache']['miss']) /
+                 float(self.job_tot['keepcalls']['get']),
+                 lambda x: x * 100.0),
+                ('Keep cache utilization {}%',
+                 float(self.job_tot['blkio:0:0']['read']) /
+                 float(self.job_tot['net:keep0']['rx']),
+                 lambda x: x * 100.0)):
             format_string, val, transform = args
             if val == float('-Inf'):
                 continue
