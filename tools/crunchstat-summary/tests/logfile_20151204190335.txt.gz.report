@@ -29,5 +29,7 @@ time	elapsed	80	-	80
 # Max memory used by a single task: 0.35GB
 # Max network traffic in a single task: 1.79GB
 # Max network speed in a single interval: 42.58MB/s
+# Keep cache miss rate 0.00%
+# Keep cache utilization 0.00%
 #!! 4xphq-8i9sb-jq0ekny1xou3zoh max CPU usage was 13% -- try runtime_constraints "min_cores_per_node":1
 #!! 4xphq-8i9sb-jq0ekny1xou3zoh max RSS was 334 MiB -- try runtime_constraints "min_ram_mb_per_node":972

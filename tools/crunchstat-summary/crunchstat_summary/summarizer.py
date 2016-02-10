@@ -240,12 +240,14 @@ class Summarizer(object):
                  self.stats_max['net:keep0']['tx+rx__rate'],
                  lambda x: x / 1e6),
                 ('Keep cache miss rate {}%',
-                 float(self.job_tot['keepcache']['miss']) /
-                 float(self.job_tot['keepcalls']['get']),
+                 (float(self.job_tot['keepcache']['miss']) /
+                 float(self.job_tot['keepcalls']['get']))
+                 if self.job_tot['keepcalls']['get'] > 0 else 0,
                  lambda x: x * 100.0),
                 ('Keep cache utilization {}%',
-                 float(self.job_tot['blkio:0:0']['read']) /
-                 float(self.job_tot['net:keep0']['rx']),
+                 (float(self.job_tot['blkio:0:0']['read']) /
+                 float(self.job_tot['net:keep0']['rx']))
+                 if self.job_tot['net:keep0']['rx'] > 0 else 0,
                  lambda x: x * 100.0)):
             format_string, val, transform = args
             if val == float('-Inf'):
@@ -257,7 +259,8 @@ class Summarizer(object):
     def _recommend_gen(self):
         return itertools.chain(
             self._recommend_cpu(),
-            self._recommend_ram())
+            self._recommend_ram(),
+            self._recommend_keep_cache())
 
     def _recommend_cpu(self):
         """Recommend asking for 4 cores if max CPU usage was 333%"""
@@ -328,6 +331,23 @@ class Summarizer(object):
                 self.label,
                 int(used_mib),
                 int(math.ceil(nearlygibs(used_mib))*AVAILABLE_RAM_RATIO*1024))
+
+    def _recommend_keep_cache(self):
+        """Recommend increasing keep cache if miss rate is above 0.5%"""
+        if self.job_tot['keepcalls']['get'] == 0:
+            return
+        miss_rate = float(self.job_tot['keepcache']['miss']) / float(self.job_tot['keepcalls']['get']) * 100.0
+        asked_mib = self.existing_constraints.get('keep_cache_mb_per_task', 256)
+
+        if miss_rate > 0.5:
+            yield (
+                '#!! {} Keep cache miss rate was {:.2f}% -- '
+                'try runtime_constraints "keep_cache_mb_per_task":{}'
+            ).format(
+                self.label,
+                miss_rate,
+                asked_mib*2)
+
 
     def _format(self, val):
         """Return a string representation of a stat.
