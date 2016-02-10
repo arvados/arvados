@@ -48,6 +48,7 @@ class LiveLogReader(object):
                     limit=1000,
                     order=['id asc'],
                     filters=filters + [['id','>',str(last_id)]],
+                    select=['id', 'properties'],
                 ).execute(num_retries=2)
                 got += len(page['items'])
                 logger.debug(
