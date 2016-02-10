@@ -1057,11 +1057,13 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       check_refresh_wanted();
       check_squeue();
       update_progress_stats();
-      select (undef, undef, undef, 0.1);
     }
     elsif (time - $progress_stats_updated >= 30 || $progress_is_dirty)
     {
       update_progress_stats();
+    }
+    if (!$gotsome) {
+      select (undef, undef, undef, 0.1);
     }
     $working_slot_count = scalar(grep { $_->{node}->{fail_count} == 0 &&
                                         $_->{node}->{hold_count} < 4 } @slot);
@@ -1432,15 +1434,21 @@ sub readfrompipes
   foreach my $job (keys %reader)
   {
     my $buf;
-    while (0 < sysread ($reader{$job}, $buf, 8192))
+    if (0 < sysread ($reader{$job}, $buf, 65536))
     {
       print STDERR $buf if $ENV{CRUNCH_DEBUG};
       $jobstep[$job]->{stderr_at} = time;
       $jobstep[$job]->{stderr} .= $buf;
+
+      # Consume everything up to the last \n
       preprocess_stderr ($job);
+
       if (length ($jobstep[$job]->{stderr}) > 16384)
       {
-	substr ($jobstep[$job]->{stderr}, 0, 8192) = "";
+        # If we get a lot of stderr without a newline, chop off the
+        # front to avoid letting our buffer grow indefinitely.
+        substr ($jobstep[$job]->{stderr},
+                0, length($jobstep[$job]->{stderr}) - 8192) = "";
       }
       $gotsome = 1;
     }
