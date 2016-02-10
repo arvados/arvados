@@ -9,6 +9,7 @@ import arvados.errors as arverror
 import httplib2
 import mock
 import pykka
+import threading
 
 import arvnodeman.computenode.dispatch as dispatch
 from . import testutil
@@ -44,8 +45,11 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
 
     def test_creation_without_arvados_node(self):
         self.make_actor()
+        finished = threading.Event()
+        self.setup_actor.subscribe(lambda _: finished.set())
         self.assertEqual(self.arvados_effect[-1],
                          self.setup_actor.arvados_node.get(self.TIMEOUT))
+        assert(finished.wait(self.TIMEOUT))
         self.assertEqual(1, self.api_client.nodes().create().execute.call_count)
         self.assertEqual(1, self.api_client.nodes().update().execute.call_count)
         self.assert_node_properties_updated()
@@ -55,8 +59,11 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
     def test_creation_with_arvados_node(self):
         self.make_mocks(arvados_effect=[testutil.arvados_node_mock()]*2)
         self.make_actor(testutil.arvados_node_mock())
+        finished = threading.Event()
+        self.setup_actor.subscribe(lambda _: finished.set())
         self.assertEqual(self.arvados_effect[-1],
                          self.setup_actor.arvados_node.get(self.TIMEOUT))
+        assert(finished.wait(self.TIMEOUT))
         self.assert_node_properties_updated()
         self.assertEqual(2, self.api_client.nodes().update().execute.call_count)
         self.assertEqual(self.cloud_client.create_node(),
@@ -339,7 +346,7 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
     def test_no_shutdown_booting(self):
         self.make_actor()
         self.shutdowns._set_state(True, 600)
-        self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+        self.assertTrue(self.node_actor.shutdown_eligible().get(self.TIMEOUT).startswith("node is still booting"))
 
     def test_shutdown_without_arvados_node(self):
         self.make_actor(start_time=0)
@@ -352,7 +359,7 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
                                               last_ping_at='1970-01-01T01:02:03.04050607Z')
         self.make_actor(10, arv_node)
         self.shutdowns._set_state(True, 600)
-        self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+        self.assertTrue(self.node_actor.shutdown_eligible().get(self.TIMEOUT).startswith("node is not idle."))
 
     def test_no_shutdown_running_broken(self):
         arv_node = testutil.arvados_node_mock(12, job_uuid=None,
@@ -360,7 +367,7 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.make_actor(12, arv_node)
         self.shutdowns._set_state(True, 600)
         self.cloud_client.broken.return_value = True
-        self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+        self.assertTrue(self.node_actor.shutdown_eligible().get(self.TIMEOUT).startswith("node is not idle."))
 
     def test_shutdown_missing_broken(self):
         arv_node = testutil.arvados_node_mock(11, job_uuid=None,
@@ -373,23 +380,23 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
 
     def test_no_shutdown_when_window_closed(self):
         self.make_actor(3, testutil.arvados_node_mock(3, job_uuid=None))
-        self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+        self.assertTrue(self.node_actor.shutdown_eligible().get(self.TIMEOUT).startswith("shutdown window is not open."))
 
     def test_no_shutdown_when_node_running_job(self):
         self.make_actor(4, testutil.arvados_node_mock(4, job_uuid=True))
         self.shutdowns._set_state(True, 600)
-        self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+        self.assertTrue(self.node_actor.shutdown_eligible().get(self.TIMEOUT).startswith("node is not idle."))
 
     def test_no_shutdown_when_node_state_unknown(self):
         self.make_actor(5, testutil.arvados_node_mock(
             5, crunch_worker_state=None))
         self.shutdowns._set_state(True, 600)
-        self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+        self.assertTrue(self.node_actor.shutdown_eligible().get(self.TIMEOUT).startswith("node is not idle."))
 
     def test_no_shutdown_when_node_state_stale(self):
         self.make_actor(6, testutil.arvados_node_mock(6, age=90000))
         self.shutdowns._set_state(True, 600)
-        self.assertFalse(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+        self.assertTrue(self.node_actor.shutdown_eligible().get(self.TIMEOUT).startswith("node is not idle."))
 
     def test_arvados_node_match(self):
         self.make_actor(2)

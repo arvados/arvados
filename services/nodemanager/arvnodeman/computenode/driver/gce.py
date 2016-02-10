@@ -101,6 +101,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                 })
         return result
 
+
     def list_nodes(self):
         # The GCE libcloud driver only supports filtering node lists by zone.
         # Do our own filtering based on tag list.

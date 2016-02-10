@@ -75,6 +75,9 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         self.real.ex_create_tags(cloud_node,
                                  {'Name': arvados_node_fqdn(arvados_node)})
 
+    def find_node(self, name):
+        raise NotImplementedError("ec2.ComputeNodeDriver.find_node")
+
     def list_nodes(self):
         # Need to populate Node.size
         nodes = super(ComputeNodeDriver, self).list_nodes()

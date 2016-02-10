@@ -68,7 +68,6 @@ begin
   logins.each do |l|
     next if seen[l[:username]]
     seen[l[:username]] = true if not seen.has_key?(l[:username])
-    @homedir = "/home/#{l[:username]}"
 
     unless uids[l[:username]]
       STDERR.puts "Creating account #{l[:username]}"
@@ -85,6 +84,7 @@ begin
                          out: devnull)
     end
     # Create .ssh directory if necessary
+    @homedir = Etc.getpwnam(l[:username]).dir
     userdotssh = File.join(@homedir, ".ssh")
     Dir.mkdir(userdotssh) if !File.exists?(userdotssh)
     @key = "#######################################################################################
@@ -109,4 +109,3 @@ rescue Exception => bang
   puts bang.backtrace.join("\n")
   exit 1
 end
-

@@ -100,3 +100,13 @@ echo compute-000000000000063-zzzzz > /var/tmp/arv-node-data/meta-data/instance-i
 echo z1.test > /var/tmp/arv-node-data/meta-data/instance-type
 """,
                          driver.arvados_create_kwargs(testutil.MockSize(1), arv_node)['ex_customdata'])
+
+    def test_create_raises_but_actually_succeeded(self):
+        arv_node = testutil.arvados_node_mock(1, hostname=None)
+        driver = self.new_driver(create_kwargs={"tag_arvados-class": "dynamic-compute"})
+        nodelist = [testutil.cloud_node_mock(1, tags={"arvados-class": "dynamic-compute"})]
+        nodelist[0].name = 'compute-000000000000001-zzzzz'
+        self.driver_mock().list_nodes.return_value = nodelist
+        self.driver_mock().create_node.side_effect = IOError
+        n = driver.create_node(testutil.MockSize(1), arv_node)
+        self.assertEqual('compute-000000000000001-zzzzz', n.name)
