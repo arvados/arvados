@@ -345,10 +345,16 @@ class JobSummarizer(Summarizer):
             self.job = arv.jobs().get(uuid=job).execute()
         else:
             self.job = job
+        rdr = None
         if self.job['log']:
-            rdr = crunchstat_summary.reader.CollectionReader(self.job['log'])
-            label = self.job['uuid']
-        else:
+            try:
+                rdr = crunchstat_summary.reader.CollectionReader(self.job['log'])
+            except arvados.errors.NotFoundError as e:
+                logger.warning("Trying event logs after failing to read "
+                               "log collection %s: %s", self.job['log'], e)
+            else:
+                label = self.job['uuid']
+        if rdr is None:
             rdr = crunchstat_summary.reader.LiveLogReader(self.job['uuid'])
             label = self.job['uuid'] + ' (partial)'
         super(JobSummarizer, self).__init__(rdr, **kwargs)
