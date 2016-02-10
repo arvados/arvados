@@ -6,8 +6,8 @@ class AddUuidToApiClientAuthorization < ActiveRecord::Migration
   def up
     add_column :api_client_authorizations, :uuid, :string
     add_index :api_client_authorizations, :uuid, :unique => true
-    
-    prefix = Server::Application.config.uuid_prefix + '-' + 
+
+    prefix = Server::Application.config.uuid_prefix + '-' +
              Digest::MD5.hexdigest('ApiClientAuthorization'.to_s).to_i(16).to_s(36)[-5..-1] + '-'
 
     update_sql <<-EOS
