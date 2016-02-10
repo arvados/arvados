@@ -258,7 +258,7 @@ class Summarizer(object):
         if cpu_max_rate == float('-Inf'):
             logger.warning('%s: no CPU usage data', self.label)
             return
-        used_cores = int(math.ceil(cpu_max_rate))
+        used_cores = max(1, int(math.ceil(cpu_max_rate)))
         asked_cores = self.existing_constraints.get('min_cores_per_node')
         if asked_cores is None or used_cores < asked_cores:
             yield (
