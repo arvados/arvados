@@ -1416,7 +1416,7 @@ sub check_squeue
     if ($procinfo->{time} < time - 60
         && $procinfo->{jobstepname}
         && !exists $ok{$procinfo->{jobstepname}}
-        && !exists $js->{killtime})
+        && !exists $procinfo->{killtime})
     {
       # According to slurm, this task has ended (successfully or not)
       # -- but our srun child hasn't exited. First we must wait (30
