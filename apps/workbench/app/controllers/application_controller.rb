@@ -453,7 +453,7 @@ class ApplicationController < ActionController::Base
     if params['status'] == 'create'
       # create 'star' link if one does not already exist
       if !links.andand.any?
-        dst = Link.new(owner_uuid: @object.uuid,
+        dst = Link.new(owner_uuid: current_user.uuid,
                        tail_uuid: current_user.uuid,
                        head_uuid: @object.uuid,
                        link_class: 'star',
@@ -870,9 +870,9 @@ class ApplicationController < ActionController::Base
   end
 
   helper_method :my_starred_projects
-  def my_starred_projects
+  def my_starred_projects user
     return if @starred_projects
-    links = Link.filter([['tail_uuid', '=', current_user.uuid],
+    links = Link.filter([['tail_uuid', '=', user.uuid],
                          ['link_class', '=', 'star'],
                          ['head_uuid', 'is_a', 'arvados#group']]).select(%w(head_uuid))
     uuids =links.collect { |x| x.head_uuid }
