@@ -197,6 +197,8 @@ class Summarizer(object):
         return label
 
     def text_report(self):
+        if not self.tasks:
+            return "(no report generated)\n"
         return "\n".join(itertools.chain(
             self._text_report_gen(),
             self._recommend_gen())) + "\n"
@@ -226,7 +228,8 @@ class Summarizer(object):
                  lambda x: x * 100),
                 ('Overall CPU usage: {}%',
                  self.job_tot['cpu']['user+sys'] /
-                 self.job_tot['time']['elapsed'],
+                 self.job_tot['time']['elapsed']
+                 if self.job_tot['time']['elapsed'] > 0 else 0,
                  lambda x: x * 100),
                 ('Max memory used by a single task: {}GB',
                  self.stats_max['mem']['rss'],
@@ -374,7 +377,7 @@ class JobSummarizer(Summarizer):
         else:
             self.job = job
         rdr = None
-        if self.job['log']:
+        if self.job.get('log'):
             try:
                 rdr = crunchstat_summary.reader.CollectionReader(self.job['log'])
             except arvados.errors.NotFoundError as e:
@@ -400,15 +403,12 @@ class PipelineSummarizer(object):
             if 'job' not in component:
                 logger.warning(
                     "%s: skipping component with no job assigned", cname)
-            elif component['job'].get('log') is None:
-                logger.warning(
-                    "%s: skipping job %s with no log available",
-                    cname, component['job'].get('uuid'))
             else:
                 logger.info(
-                    "%s: logdata %s", cname, component['job']['log'])
+                    "%s: job %s", cname, component['job']['uuid'])
                 summarizer = JobSummarizer(component['job'], **kwargs)
-                summarizer.label = cname
+                summarizer.label = '{} {}'.format(
+                    cname, component['job']['uuid'])
                 self.summarizers[cname] = summarizer
         self.label = pipeline_instance_uuid
 
