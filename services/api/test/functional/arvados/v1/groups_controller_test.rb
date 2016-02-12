@@ -423,16 +423,4 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     end
     assert_equal true, found_projects.include?(groups(:starred_and_shared_active_user_project).uuid)
   end
-
-  test "deleting a project results in deleting it's star links" do
-    skip "Delete is not yet supported for groups with share and other links"
-
-    authorize_with :admin
-    post :destroy, id: groups(:starred_and_shared_active_user_project).uuid
-    assert_response :success
-
-    @controller = Arvados::V1::LinksController.new
-    get :show, {id: links(:star_shared_project_for_project_viewer).uuid}
-    assert_response 404
-  end
 end

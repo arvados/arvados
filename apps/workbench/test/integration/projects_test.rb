@@ -709,4 +709,23 @@ class ProjectsTest < ActionDispatch::IntegrationTest
      assert page.has_text?('Unrestricted public data'), 'No text - Unrestricted public data'
      assert page.has_text?('An anonymously accessible project'), 'No text - An anonymously accessible project'
   end
+
+  test "test star and unstar project" do
+    visit page_with_token 'active', "/projects/#{api_fixture('groups')['anonymously_accessible_project']['uuid']}"
+
+    # add to favorites
+    find('.fa-star-o').click
+
+    find("#projects-menu").click
+    within('.dropdown-menu') do
+      assert_selector 'li', text: 'Unrestricted public data'
+    end
+
+    # remove from favotires
+    find('.fa-star').click
+    find("#projects-menu").click
+    within('.dropdown-menu') do
+      assert_no_selector 'li', text: 'Unrestricted public data'
+    end
+  end
 end
