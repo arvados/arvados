@@ -415,11 +415,13 @@ if (!defined $no_clear_tmp) {
 # If this job requires a Docker image, install that.
 my ($docker_locator, $docker_stream, $docker_hash, $docker_limitmem, $dockeruserarg);
 if ($docker_locator = $Job->{docker_image_locator}) {
+  Log (undef, "Install docker image $docker_locator");
   ($docker_stream, $docker_hash) = find_docker_image($docker_locator);
   if (!$docker_hash)
   {
     croak("No Docker image hash found from locator $docker_locator");
   }
+  Log (undef, "docker image hash is $docker_hash");
   $docker_stream =~ s/^\.//;
   my $docker_install_script = qq{
 if ! $docker_bin images -q --no-trunc --all | grep -qxF \Q$docker_hash\E; then
@@ -1057,11 +1059,13 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       check_refresh_wanted();
       check_squeue();
       update_progress_stats();
-      select (undef, undef, undef, 0.1);
     }
     elsif (time - $progress_stats_updated >= 30 || $progress_is_dirty)
     {
       update_progress_stats();
+    }
+    if (!$gotsome) {
+      select (undef, undef, undef, 0.1);
     }
     $working_slot_count = scalar(grep { $_->{node}->{fail_count} == 0 &&
                                         $_->{node}->{hold_count} < 4 } @slot);
@@ -1340,8 +1344,9 @@ sub check_squeue
   # squeue check interval (15s) this should make the squeue check an
   # infrequent event.
   my $silent_procs = 0;
-  for my $jobstep (values %proc)
+  for my $procinfo (values %proc)
   {
+    my $jobstep = $jobstep[$procinfo->{jobstep}];
     if ($jobstep->{stderr_at} < $last_squeue_check)
     {
       $silent_procs++;
@@ -1350,17 +1355,18 @@ sub check_squeue
   return if $silent_procs == 0;
 
   # use killem() on procs whose killtime is reached
-  while (my ($pid, $jobstep) = each %proc)
+  while (my ($pid, $procinfo) = each %proc)
   {
-    if (exists $jobstep->{killtime}
-        && $jobstep->{killtime} <= time
+    my $jobstep = $jobstep[$procinfo->{jobstep}];
+    if (exists $procinfo->{killtime}
+        && $procinfo->{killtime} <= time
         && $jobstep->{stderr_at} < $last_squeue_check)
     {
       my $sincewhen = "";
       if ($jobstep->{stderr_at}) {
         $sincewhen = " in last " . (time - $jobstep->{stderr_at}) . "s";
       }
-      Log($jobstep->{jobstep}, "killing orphaned srun process $pid (task not in slurm queue, no stderr received$sincewhen)");
+      Log($procinfo->{jobstep}, "killing orphaned srun process $pid (task not in slurm queue, no stderr received$sincewhen)");
       killem ($pid);
     }
   }
@@ -1395,12 +1401,12 @@ sub check_squeue
   }
 
   # Check for child procs >60s old and not mentioned by squeue.
-  while (my ($pid, $jobstep) = each %proc)
+  while (my ($pid, $procinfo) = each %proc)
   {
-    if ($jobstep->{time} < time - 60
-        && $jobstep->{jobstepname}
-        && !exists $ok{$jobstep->{jobstepname}}
-        && !exists $jobstep->{killtime})
+    if ($procinfo->{time} < time - 60
+        && $procinfo->{jobstepname}
+        && !exists $ok{$procinfo->{jobstepname}}
+        && !exists $procinfo->{killtime})
     {
       # According to slurm, this task has ended (successfully or not)
       # -- but our srun child hasn't exited. First we must wait (30
@@ -1409,8 +1415,8 @@ sub check_squeue
       # terminated, we'll conclude some slurm communication
       # error/delay has caused the task to die without notifying srun,
       # and we'll kill srun ourselves.
-      $jobstep->{killtime} = time + 30;
-      Log($jobstep->{jobstep}, "notice: task is not in slurm queue but srun process $pid has not exited");
+      $procinfo->{killtime} = time + 30;
+      Log($procinfo->{jobstep}, "notice: task is not in slurm queue but srun process $pid has not exited");
     }
   }
 }
@@ -1432,15 +1438,21 @@ sub readfrompipes
   foreach my $job (keys %reader)
   {
     my $buf;
-    while (0 < sysread ($reader{$job}, $buf, 8192))
+    if (0 < sysread ($reader{$job}, $buf, 65536))
     {
       print STDERR $buf if $ENV{CRUNCH_DEBUG};
       $jobstep[$job]->{stderr_at} = time;
       $jobstep[$job]->{stderr} .= $buf;
+
+      # Consume everything up to the last \n
       preprocess_stderr ($job);
+
       if (length ($jobstep[$job]->{stderr}) > 16384)
       {
-	substr ($jobstep[$job]->{stderr}, 0, 8192) = "";
+        # If we get a lot of stderr without a newline, chop off the
+        # front to avoid letting our buffer grow indefinitely.
+        substr ($jobstep[$job]->{stderr},
+                0, length($jobstep[$job]->{stderr}) - 8192) = "";
       }
       $gotsome = 1;
     }
@@ -1461,7 +1473,7 @@ sub preprocess_stderr
       # whoa.
       $main::please_freeze = 1;
     }
-    elsif ($line =~ /srun: error: Node failure on/) {
+    elsif ($line =~ /srun: error: (Node failure on|Aborting, .*\bio error\b)/) {
       my $job_slot_index = $jobstep[$job]->{slotindex};
       $slot[$job_slot_index]->{node}->{fail_count}++;
       $jobstep[$job]->{tempfail} = 1;

@@ -95,6 +95,7 @@ class Mount(object):
     def __init__(self, args, logger=logging.getLogger('arvados.arv-mount')):
         self.logger = logger
         self.args = args
+        self.listen_for_events = False
 
         self.args.mountpoint = os.path.realpath(self.args.mountpoint)
         if self.args.logfile:
@@ -110,7 +111,7 @@ class Mount(object):
 
     def __enter__(self):
         llfuse.init(self.operations, self.args.mountpoint, self._fuse_options())
-        if self.args.mode != 'by_pdh':
+        if self.listen_for_events:
             self.operations.listen_for_events()
         self.llfuse_thread = threading.Thread(None, lambda: self._llfuse_main())
         self.llfuse_thread.daemon = True
@@ -240,7 +241,9 @@ class Mount(object):
             mount_readme = True
 
         if dir_class is not None:
-            self.operations.inodes.add_entry(dir_class(*dir_args))
+            ent = dir_class(*dir_args)
+            self.operations.inodes.add_entry(ent)
+            self.listen_for_events = ent.want_event_subscribe()
             return
 
         e = self.operations.inodes.add_entry(Directory(
@@ -270,6 +273,7 @@ class Mount(object):
         if name in ['', '.', '..'] or '/' in name:
             sys.exit("Mount point '{}' is not supported.".format(name))
         tld._entries[name] = self.operations.inodes.add_entry(ent)
+        self.listen_for_events = (self.listen_for_events or ent.want_event_subscribe())
 
     def _readme_text(self, api_host, user_email):
         return '''
@@ -325,7 +329,8 @@ From here, the following directories are available:
                 self.daemon_ctx.open()
 
             # Subscribe to change events from API server
-            self.operations.listen_for_events()
+            if self.listen_for_events:
+                self.operations.listen_for_events()
 
             self._llfuse_main()
         except Exception as e:
