@@ -196,7 +196,7 @@ run() {
                    WORKSPACE=/usr/src/arvados \
                    GEM_HOME=/var/lib/gems \
                    "$@"
-        else
+        elif echo "$1" | grep 'dev$' ; then
             docker run \
                    --detach \
                    --name=$ARVBOX_CONTAINER \
@@ -212,6 +212,8 @@ run() {
             updateconf
             wait_for_arvbox
             echo "The Arvados source code is checked out at: $ARVADOS_ROOT"
+        else
+            echo "Unknown configuration '$1'"
         fi
     fi
 }
@@ -348,15 +350,18 @@ case "$subcmd" in
         fi
         ;;
 
-    log|svrestart)
+    log)
         if test -n "$1" ; then
-            if test "$subcmd" = log ; then
-                docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM less --follow-name +GF "/etc/service/$1/log/main/current"
-            fi
-            if test "$subcmd" = svrestart ; then
-                docker exec -ti $ARVBOX_CONTAINER sv restart "$1"
-                docker exec -ti $ARVBOX_CONTAINER sv restart ready
-            fi
+            docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM less --follow-name +GF "/etc/service/$1/log/main/current"
+        else
+            docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM tail $(docker exec -ti $ARVBOX_CONTAINER find -L /etc -path '/etc/service/*/log/main/current' -printf " %p")
+        fi
+        ;;
+
+    svrestart)
+        if test -n "$1" ; then
+            docker exec -ti $ARVBOX_CONTAINER sv restart "$1"
+            docker exec -ti $ARVBOX_CONTAINER sv restart ready
         else
             echo "Usage: $0 $subcmd <service>"
             echo "Available services:"
