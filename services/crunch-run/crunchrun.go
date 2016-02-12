@@ -178,6 +178,7 @@ func (runner *ContainerRunner) SetupMounts(hostConfig *dockerclient.HostConfig) 
 	pdhOnly := true
 	tmpcount := 0
 	arvMountCmd := []string{"--foreground"}
+	collections := []string{}
 
 	for bind, mnt := range runner.ContainerRecord.Mounts {
 		if mnt.Kind == "collection" {
@@ -207,6 +208,7 @@ func (runner *ContainerRunner) SetupMounts(hostConfig *dockerclient.HostConfig) 
 			} else {
 				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s:ro", src, bind))
 			}
+			collections = append(collections, src)
 		} else if mnt.Kind == "tmp" {
 			hostConfig.Binds = append(hostConfig.Binds, bind)
 		} else {
@@ -226,6 +228,9 @@ func (runner *ContainerRunner) SetupMounts(hostConfig *dockerclient.HostConfig) 
 	if err != nil {
 		return err
 	}
+
+	// XXX need to go through and os.Stat() each file or dir in "sources"
+	// to make sure they show up for Docker.
 }
 
 // StartContainer creates the container and runs it.
