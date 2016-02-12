@@ -44,8 +44,9 @@ type Mount struct {
 }
 
 // Collection record returned by the API server.
-type Collection struct {
-	ManifestText string `json:"manifest_text"`
+type CollectionRecord struct {
+	ManifestText     string `json:"manifest_text"`
+	PortableDataHash string `json:"portable_data_hash"`
 }
 
 // ContainerRecord is the container record returned by the API server.
@@ -60,6 +61,7 @@ type ContainerRecord struct {
 	Priority           int                    `json:"priority"`
 	RuntimeConstraints map[string]interface{} `json:"runtime_constraints"`
 	State              string                 `json:"state"`
+	Output             string                 `json:"output"`
 }
 
 // NewLogWriter is a factory function to create a new log writer.
@@ -96,6 +98,8 @@ type ContainerRunner struct {
 	LogsPDH       *string
 	ArvMount      *exec.Cmd
 	ArvMountPoint string
+	HostOutputDir string
+	OutputPDH     string
 	CancelLock    sync.Mutex
 	Cancelled     bool
 	SigChan       chan os.Signal
@@ -133,17 +137,17 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 
 	runner.CrunchLog.Printf("Fetching Docker image from collection '%s'", runner.ContainerRecord.ContainerImage)
 
-	var collection Collection
+	var collection CollectionRecord
 	err = runner.ArvClient.Get("collections", runner.ContainerRecord.ContainerImage, nil, &collection)
 	if err != nil {
-		return err
+		return fmt.Errorf("While getting container image collection: %v", err)
 	}
 	manifest := manifest.Manifest{Text: collection.ManifestText}
 	var img, imageID string
 	for ms := range manifest.StreamIter() {
 		img = ms.FileStreamSegments[0].Name
 		if !strings.HasSuffix(img, ".tar") {
-			return errors.New("First file in the collection does not end in .tar")
+			return fmt.Errorf("First file in the container image collection does not end in .tar")
 		}
 		imageID = img[:len(img)-4]
 	}
@@ -157,12 +161,12 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 		var readCloser io.ReadCloser
 		readCloser, err = runner.Kc.ManifestFileReader(manifest, img)
 		if err != nil {
-			return err
+			return fmt.Errorf("While creating ManifestFileReader for container image: %v", err)
 		}
 
 		err = runner.Docker.LoadImage(readCloser)
 		if err != nil {
-			return err
+			return fmt.Errorf("While loading container image into Docker: %v", err)
 		}
 	} else {
 		runner.CrunchLog.Print("Docker image is available")
@@ -178,17 +182,17 @@ func (runner *ContainerRunner) SetupMounts(hostConfig *dockerclient.HostConfig) 
 	pdhOnly := true
 	tmpcount := 0
 	arvMountCmd := []string{"--foreground"}
-	collections := []string{}
+	collectionPaths := []string{}
 
 	for bind, mnt := range runner.ContainerRecord.Mounts {
 		if mnt.Kind == "collection" {
 			var src string
 			if mnt.UUID != "" && mnt.PortableDataHash != "" {
-				return fmt.Errorf("Cannot specify both 'uuid' and 'portable_data_hash' for a collection")
+				return fmt.Errorf("Cannot specify both 'uuid' and 'portable_data_hash' for a collection mount")
 			}
 			if mnt.UUID != "" {
 				if mnt.Writable {
-					return fmt.Errorf("Writing to collection currently not permitted.")
+					return fmt.Errorf("Writing to existing collections currently not permitted.")
 				}
 				pdhOnly = false
 				src = fmt.Sprintf("%s/by_id/%s", arvMountPoint, mnt.UUID)
@@ -204,16 +208,28 @@ func (runner *ContainerRunner) SetupMounts(hostConfig *dockerclient.HostConfig) 
 				tmpcount += 1
 			}
 			if mnt.Writable {
+				if bind == runner.ContainerRecord.OutputPath {
+					runner.HostOutputDir = src
+				}
 				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s", src, bind))
 			} else {
 				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s:ro", src, bind))
 			}
-			collections = append(collections, src)
+			collectionPaths = append(collections, src)
 		} else if mnt.Kind == "tmp" {
-			hostConfig.Binds = append(hostConfig.Binds, bind)
+			if bind == runner.ContainerRecord.OutputPath {
+				runner.HostOutputDir = ioutil.TempDir("", "")
+				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s", runner.HostOutputDir, bind))
+			} else {
+				hostConfig.Binds = append(hostConfig.Binds, bind)
+			}
 		} else {
 			return fmt.Errorf("Unknown mount kind '%s'", mnt.Kind)
 		}
+	}
+
+	if runner.HostOutputDir == "" {
+		return fmt.Errorf("Output path does not correspond to a writable mount point")
 	}
 
 	if pdhOnly {
@@ -226,11 +242,18 @@ func (runner *ContainerRunner) SetupMounts(hostConfig *dockerclient.HostConfig) 
 	runner.ArvMount = exec.Command("arv-mount", arvMountCmd)
 	err = runner.ArvMount.Start()
 	if err != nil {
-		return err
+		runner.ArvMount = nil
+		return fmt.Errorf("While trying to start arv-mount: %v", err)
 	}
 
-	// XXX need to go through and os.Stat() each file or dir in "sources"
-	// to make sure they show up for Docker.
+	for p := range collectionPaths {
+		_, err = os.Stat(p)
+		if err != nil {
+			return fmt.Errorf("While checking that input files exist: %v", err)
+		}
+	}
+
+	return nil
 }
 
 // StartContainer creates the container and runs it.
@@ -253,19 +276,19 @@ func (runner *ContainerRunner) StartContainer() (err error) {
 	}
 	runner.ContainerID, err = runner.Docker.CreateContainer(&runner.ContainerConfig, "", nil)
 	if err != nil {
-		return
+		return fmt.Errorf("While creating container: %v", err)
 	}
 	hostConfig := &dockerclient.HostConfig{}
 
 	err = runner.SetupMounts(hostConfig)
 	if err != nil {
-		return
+		return fmt.Errorf("While setting up mounts: %v", err)
 	}
 
 	runner.CrunchLog.Printf("Starting Docker container id '%s'", runner.ContainerID)
 	err = runner.Docker.StartContainer(runner.ContainerID, hostConfig)
 	if err != nil {
-		return
+		return fmt.Errorf("While starting container: %v", err)
 	}
 
 	return nil
@@ -280,11 +303,11 @@ func (runner *ContainerRunner) AttachLogs() (err error) {
 	var stderrReader, stdoutReader io.Reader
 	stderrReader, err = runner.Docker.ContainerLogs(runner.ContainerID, &dockerclient.LogOptions{Follow: true, Stderr: true})
 	if err != nil {
-		return
+		return fmt.Errorf("While getting container standard error: %v", err)
 	}
 	stdoutReader, err = runner.Docker.ContainerLogs(runner.ContainerID, &dockerclient.LogOptions{Follow: true, Stdout: true})
 	if err != nil {
-		return
+		return fmt.Errorf("While getting container standard output: %v", err)
 	}
 
 	runner.loggingDone = make(chan bool)
@@ -303,7 +326,7 @@ func (runner *ContainerRunner) WaitFinish() error {
 	result := runner.Docker.Wait(runner.ContainerID)
 	wr := <-result
 	if wr.Error != nil {
-		return wr.Error
+		return fmt.Errorf("While waiting for container to finish: %v", wr.Error)
 	}
 	runner.ExitCode = &wr.ExitCode
 
@@ -314,8 +337,61 @@ func (runner *ContainerRunner) WaitFinish() error {
 	runner.Stdout.Close()
 	runner.Stderr.Close()
 
-	umount := exec.Command("fusermount", "-z", "-u", runner.ArvMountPoint)
-	umount.Run()
+	return nil
+}
+
+// HandleOutput sets the output and unmounts the FUSE mount.
+func (runner *ContainerRunner) HandleOutput() error {
+	if runner.ArvMount != nil {
+		defer func() {
+			umount := exec.Command("fusermount", "-z", "-u", runner.ArvMountPoint)
+			umount.Run()
+		}()
+	}
+
+	if runner.finalState != "Complete" {
+		return nil
+	}
+
+	_, err = os.Stat(os.HostOutputPath)
+	if err != nil {
+		return fmt.Errorf("While checking host output path: %v", err)
+	}
+
+	var manifestText string
+
+	collectionMetafile = fmt.Sprintf("%s/.arvados#collection", os.HostOutputPath)
+	_, err = os.Stat(collectionMetafile)
+	if err != nil {
+		// Regular directory
+		cw := CollectionWriter{runner.Kc}
+		manifestText, err = cw.WriteTree(os.HostOutputPath, runner.CrunchLog)
+		if err != nil {
+			return fmt.Errorf("While uploading output files: %v", err)
+		}
+	} else {
+		// FUSE mount directory
+		file, openerr := os.Open(collectionMetafile)
+		if openerr != nil {
+			return fmt.Errorf("While opening FUSE metafile: %v", err)
+		}
+		defer file.Close()
+
+		rec := CollectionRecord{}
+		err = json.NewDecoder(file).Decode(&rec)
+		if err != nil {
+			return fmt.Errorf("While reading FUSE metafile: %v", err)
+		}
+		manifestText = rec.ManifestText
+	}
+
+	var response CollectionRecord
+	err = runner.ArvClient.Create("collections", &response)
+	if err != nil {
+		return fmt.Errorf("While creating output collection: %v", err)
+	}
+
+	runner.OutputPDH = response.PortableDataHash
 
 	return nil
 }
@@ -334,7 +410,7 @@ func (runner *ContainerRunner) CommitLogs() error {
 
 	mt, err := runner.LogCollection.ManifestText()
 	if err != nil {
-		return err
+		return fmt.Errorf("While creating log manifest: %v", err)
 	}
 
 	response := make(map[string]string)
@@ -343,7 +419,7 @@ func (runner *ContainerRunner) CommitLogs() error {
 			"manifest_text": mt},
 		response)
 	if err != nil {
-		return err
+		return fmt.Errorf("While creating log collection: %v", err)
 	}
 
 	runner.LogsPDH = new(string)
@@ -370,6 +446,7 @@ func (runner *ContainerRunner) UpdateContainerRecordComplete() error {
 	}
 
 	update["state"] = runner.finalState
+	update["output"] = runner.OutputPDH
 
 	return runner.ArvClient.Update("containers", runner.ContainerRecord.UUID, update, nil)
 }
@@ -396,13 +473,19 @@ func (runner *ContainerRunner) Run(containerUUID string) (err error) {
 			runner.finalState = "Complete"
 		}
 
-		// (6) write logs
+		// (6) handle output
+		outputerr := runner.HandleOutput()
+		if outputerr != nil {
+			runner.CrunchLog.Print(outputrr)
+		}
+
+		// (7) write logs
 		logerr := runner.CommitLogs()
 		if logerr != nil {
 			runner.CrunchLog.Print(logerr)
 		}
 
-		// (7) update container record with results
+		// (8) update container record with results
 		updateerr := runner.UpdateContainerRecordComplete()
 		if updateerr != nil {
 			runner.CrunchLog.Print(updateerr)
@@ -425,19 +508,19 @@ func (runner *ContainerRunner) Run(containerUUID string) (err error) {
 
 	err = runner.ArvClient.Get("containers", containerUUID, nil, &runner.ContainerRecord)
 	if err != nil {
-		return
+		return fmt.Errorf("While getting container record: %v", err)
 	}
 
 	// (0) setup signal handling
 	err = runner.SetupSignals()
 	if err != nil {
-		return
+		return fmt.Errorf("While setting up signal handling: %v", err)
 	}
 
 	// (1) check for and/or load image
 	err = runner.LoadImage()
 	if err != nil {
-		return
+		return fmt.Errorf("While loading container image: %v", err)
 	}
 
 	// (2) start container

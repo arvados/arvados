@@ -253,6 +253,7 @@ func (m *CollectionWriter) WalkFunc(path string,
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
 	status.Printf("Uploading %v/%v (%v bytes)", dir, fn, info.Size())
 
