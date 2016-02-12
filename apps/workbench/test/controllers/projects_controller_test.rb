@@ -423,7 +423,7 @@ class ProjectsControllerTest < ActionController::TestCase
     ["active", 5, ["aproject", "asubproject"], "anonymously_accessible_project"],
     ["admin", 5, ["anonymously_accessible_project", "subproject_in_anonymous_accessible_project"], "aproject"],
   ].each do |user, page_size, tree_segment, unexpected|
-    test "build my projects tree for #{user} with page size #{page_size}" do
+    test "build my projects tree for #{user} user with page size #{page_size}" do
       use_token user
       ctrl = ProjectsController.new
 

@@ -836,30 +836,20 @@ class ApplicationController < ActionController::Base
   # build the tree using only the top 200+ projects owned by the user.
   # That is: get toplevel projects under home, get subprojects of
   # these projects, and so on until we hit the limit
-  def my_wanted_projects page_size=100
+  def my_wanted_projects user, page_size=100
     return @my_wanted_projects if @my_wanted_projects
 
-    all = Group.filter([['group_class','=','project']]).order('name').limit(page_size)
-    if all.items_available > page_size*3
-      @total_projects = all.items_available
-      from_top = []
-      uuids = [current_user.uuid]
-      while from_top.size <= page_size*2
-        current_level = Group.filter([['group_class','=','project'],
-                                      ['owner_uuid', 'in', uuids]])
-                             .order('name').limit(page_size*2)
-        break if current_level.results.size == 0
-        from_top.concat current_level.results
-        uuids = current_level.results.collect { |x| x.uuid }
-      end
-      @my_wanted_projects = from_top
-    else
-      if all.results.size == all.items_available
-        @my_wanted_projects = all
-      else
-        @my_wanted_projects = Group.filter([['group_class','=','project']]).order('name')
-      end
+    from_top = []
+    uuids = [user.uuid]
+    while from_top.size <= page_size*2
+      current_level = Group.filter([['group_class','=','project'],
+                                    ['owner_uuid', 'in', uuids]])
+                      .order('name').limit(page_size*2)
+      break if current_level.results.size == 0
+      from_top.concat current_level.results
+      uuids = current_level.results.collect { |x| x.uuid }
     end
+    @my_wanted_projects = from_top
   end
 
   helper_method :my_wanted_projects_tree
@@ -872,11 +862,11 @@ class ApplicationController < ActionController::Base
     return @my_wanted_projects_tree if @my_wanted_projects_tree
 
     parent_of = {user.uuid => 'me'}
-    my_wanted_projects(page_size).each do |ob|
+    my_wanted_projects(user, page_size).each do |ob|
       parent_of[ob.uuid] = ob.owner_uuid
     end
     children_of = {false => [], 'me' => [user]}
-    my_wanted_projects(page_size).each do |ob|
+    my_wanted_projects(user, page_size).each do |ob|
       if ob.owner_uuid != user.uuid and
           not parent_of.has_key? ob.owner_uuid
         parent_of[ob.uuid] = false
