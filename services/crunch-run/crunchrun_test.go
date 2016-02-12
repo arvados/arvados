@@ -161,9 +161,9 @@ func (this *ArvTestClient) Create(resourceType string,
 func (this *ArvTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
 	if resourceType == "collections" {
 		if uuid == hwPDH {
-			output.(*Collection).ManifestText = hwManifest
+			output.(*CollectionRecord).ManifestText = hwManifest
 		} else if uuid == otherPDH {
-			output.(*Collection).ManifestText = otherManifest
+			output.(*CollectionRecord).ManifestText = otherManifest
 		}
 	}
 	if resourceType == "containers" {

@@ -1,14 +1,16 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
 	"github.com/curoverse/dockerclient"
 	"io"
-	"ioutil"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
@@ -178,7 +180,11 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 }
 
 func (runner *ContainerRunner) SetupMounts(hostConfig *dockerclient.HostConfig) (err error) {
-	runner.ArvMountPoint = ioutil.TempDir("", "keep")
+	runner.ArvMountPoint, err = ioutil.TempDir("", "keep")
+	if err != nil {
+		return fmt.Errorf("While creating keep mount temp dir: %v", err)
+	}
+
 	pdhOnly := true
 	tmpcount := 0
 	arvMountCmd := []string{"--foreground"}
@@ -195,14 +201,14 @@ func (runner *ContainerRunner) SetupMounts(hostConfig *dockerclient.HostConfig) 
 					return fmt.Errorf("Writing to existing collections currently not permitted.")
 				}
 				pdhOnly = false
-				src = fmt.Sprintf("%s/by_id/%s", arvMountPoint, mnt.UUID)
+				src = fmt.Sprintf("%s/by_id/%s", runner.ArvMountPoint, mnt.UUID)
 			} else if mnt.PortableDataHash != "" {
 				if mnt.Writable {
 					return fmt.Errorf("Can never write to a collection specified by portable data hash")
 				}
-				src = fmt.Sprintf("%s/by_id/%s", arvMountPoint, mnt.PortableDataHash)
+				src = fmt.Sprintf("%s/by_id/%s", runner.ArvMountPoint, mnt.PortableDataHash)
 			} else {
-				src = fmt.Sprintf("%s/tmp%i", arvMountPoint, tmpcount)
+				src = fmt.Sprintf("%s/tmp%i", runner.ArvMountPoint, tmpcount)
 				arvMountCmd = append(arvMountCmd, "--mount-tmp")
 				arvMountCmd = append(arvMountCmd, fmt.Sprintf("tmp%i", tmpcount))
 				tmpcount += 1
@@ -215,10 +221,14 @@ func (runner *ContainerRunner) SetupMounts(hostConfig *dockerclient.HostConfig) 
 			} else {
 				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s:ro", src, bind))
 			}
-			collectionPaths = append(collections, src)
+			collectionPaths = append(collectionPaths, src)
 		} else if mnt.Kind == "tmp" {
 			if bind == runner.ContainerRecord.OutputPath {
-				runner.HostOutputDir = ioutil.TempDir("", "")
+				runner.HostOutputDir, err = ioutil.TempDir("", "")
+				if err != nil {
+					return fmt.Errorf("While creating mount temp dir: %v", err)
+				}
+
 				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s", runner.HostOutputDir, bind))
 			} else {
 				hostConfig.Binds = append(hostConfig.Binds, bind)
@@ -237,16 +247,16 @@ func (runner *ContainerRunner) SetupMounts(hostConfig *dockerclient.HostConfig) 
 	} else {
 		arvMountCmd = append(arvMountCmd, "--mount-by-id", "by_id")
 	}
-	arvMountCmd = append(arvMountCmd, arvMountPoint)
+	arvMountCmd = append(arvMountCmd, runner.ArvMountPoint)
 
-	runner.ArvMount = exec.Command("arv-mount", arvMountCmd)
+	runner.ArvMount = exec.Command("arv-mount", arvMountCmd...)
 	err = runner.ArvMount.Start()
 	if err != nil {
 		runner.ArvMount = nil
 		return fmt.Errorf("While trying to start arv-mount: %v", err)
 	}
 
-	for p := range collectionPaths {
+	for _, p := range collectionPaths {
 		_, err = os.Stat(p)
 		if err != nil {
 			return fmt.Errorf("While checking that input files exist: %v", err)
@@ -353,19 +363,19 @@ func (runner *ContainerRunner) HandleOutput() error {
 		return nil
 	}
 
-	_, err = os.Stat(os.HostOutputPath)
+	_, err := os.Stat(runner.HostOutputDir)
 	if err != nil {
 		return fmt.Errorf("While checking host output path: %v", err)
 	}
 
 	var manifestText string
 
-	collectionMetafile = fmt.Sprintf("%s/.arvados#collection", os.HostOutputPath)
+	collectionMetafile := fmt.Sprintf("%s/.arvados#collection", runner.HostOutputDir)
 	_, err = os.Stat(collectionMetafile)
 	if err != nil {
 		// Regular directory
-		cw := CollectionWriter{runner.Kc}
-		manifestText, err = cw.WriteTree(os.HostOutputPath, runner.CrunchLog)
+		cw := CollectionWriter{runner.Kc, nil, sync.Mutex{}}
+		manifestText, err = cw.WriteTree(runner.HostOutputDir, runner.CrunchLog.Logger)
 		if err != nil {
 			return fmt.Errorf("While uploading output files: %v", err)
 		}
@@ -386,7 +396,9 @@ func (runner *ContainerRunner) HandleOutput() error {
 	}
 
 	var response CollectionRecord
-	err = runner.ArvClient.Create("collections", &response)
+	err = runner.ArvClient.Create("collections",
+		arvadosclient.Dict{"manifest_text": manifestText},
+		&response)
 	if err != nil {
 		return fmt.Errorf("While creating output collection: %v", err)
 	}
@@ -476,7 +488,7 @@ func (runner *ContainerRunner) Run(containerUUID string) (err error) {
 		// (6) handle output
 		outputerr := runner.HandleOutput()
 		if outputerr != nil {
-			runner.CrunchLog.Print(outputrr)
+			runner.CrunchLog.Print(outputerr)
 		}
 
 		// (7) write logs
@@ -557,7 +569,7 @@ func NewContainerRunner(api IArvadosClient,
 
 	cr := &ContainerRunner{ArvClient: api, Kc: kc, Docker: docker}
 	cr.NewLogWriter = cr.NewArvLogWriter
-	cr.LogCollection = &CollectionWriter{kc, nil}
+	cr.LogCollection = &CollectionWriter{kc, nil, sync.Mutex{}}
 	cr.CrunchLog = NewThrottledLogger(cr.NewLogWriter("crunch-run"))
 	return cr
 }
