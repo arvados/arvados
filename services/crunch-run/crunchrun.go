@@ -8,8 +8,10 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
 	"github.com/curoverse/dockerclient"
 	"io"
+	"ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 	"strings"
 	"sync"
@@ -33,7 +35,13 @@ type IKeepClient interface {
 }
 
 // Mount describes the mount points to create inside the container.
-type Mount struct{}
+type Mount struct {
+	Kind             string `json:"kind"`
+	Writable         bool   `json:"writable"`
+	PortableDataHash string `json:"portable_data_hash"`
+	UUID             string `json:"uuid"`
+	DeviceType       string `json:"device_type"`
+}
 
 // Collection record returned by the API server.
 type Collection struct {
@@ -86,6 +94,8 @@ type ContainerRunner struct {
 	Stderr        *ThrottledLogger
 	LogCollection *CollectionWriter
 	LogsPDH       *string
+	ArvMount      *exec.Cmd
+	ArvMountPoint string
 	CancelLock    sync.Mutex
 	Cancelled     bool
 	SigChan       chan os.Signal
@@ -163,6 +173,61 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 	return nil
 }
 
+func (runner *ContainerRunner) SetupMounts(hostConfig *dockerclient.HostConfig) (err error) {
+	runner.ArvMountPoint = ioutil.TempDir("", "keep")
+	pdhOnly := true
+	tmpcount := 0
+	arvMountCmd := []string{"--foreground"}
+
+	for bind, mnt := range runner.ContainerRecord.Mounts {
+		if mnt.Kind == "collection" {
+			var src string
+			if mnt.UUID != "" && mnt.PortableDataHash != "" {
+				return fmt.Errorf("Cannot specify both 'uuid' and 'portable_data_hash' for a collection")
+			}
+			if mnt.UUID != "" {
+				if mnt.Writable {
+					return fmt.Errorf("Writing to collection currently not permitted.")
+				}
+				pdhOnly = false
+				src = fmt.Sprintf("%s/by_id/%s", arvMountPoint, mnt.UUID)
+			} else if mnt.PortableDataHash != "" {
+				if mnt.Writable {
+					return fmt.Errorf("Can never write to a collection specified by portable data hash")
+				}
+				src = fmt.Sprintf("%s/by_id/%s", arvMountPoint, mnt.PortableDataHash)
+			} else {
+				src = fmt.Sprintf("%s/tmp%i", arvMountPoint, tmpcount)
+				arvMountCmd = append(arvMountCmd, "--mount-tmp")
+				arvMountCmd = append(arvMountCmd, fmt.Sprintf("tmp%i", tmpcount))
+				tmpcount += 1
+			}
+			if mnt.Writable {
+				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s", src, bind))
+			} else {
+				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s:ro", src, bind))
+			}
+		} else if mnt.Kind == "tmp" {
+			hostConfig.Binds = append(hostConfig.Binds, bind)
+		} else {
+			return fmt.Errorf("Unknown mount kind '%s'", mnt.Kind)
+		}
+	}
+
+	if pdhOnly {
+		arvMountCmd = append(arvMountCmd, "--mount-by-pdh", "by_id")
+	} else {
+		arvMountCmd = append(arvMountCmd, "--mount-by-id", "by_id")
+	}
+	arvMountCmd = append(arvMountCmd, arvMountPoint)
+
+	runner.ArvMount = exec.Command("arv-mount", arvMountCmd)
+	err = runner.ArvMount.Start()
+	if err != nil {
+		return err
+	}
+}
+
 // StartContainer creates the container and runs it.
 func (runner *ContainerRunner) StartContainer() (err error) {
 	runner.CrunchLog.Print("Creating Docker container")
@@ -186,6 +251,11 @@ func (runner *ContainerRunner) StartContainer() (err error) {
 		return
 	}
 	hostConfig := &dockerclient.HostConfig{}
+
+	err = runner.SetupMounts(hostConfig)
+	if err != nil {
+		return
+	}
 
 	runner.CrunchLog.Printf("Starting Docker container id '%s'", runner.ContainerID)
 	err = runner.Docker.StartContainer(runner.ContainerID, hostConfig)
@@ -238,6 +308,9 @@ func (runner *ContainerRunner) WaitFinish() error {
 
 	runner.Stdout.Close()
 	runner.Stderr.Close()
+
+	umount := exec.Command("fusermount", "-z", "-u", runner.ArvMountPoint)
+	umount.Run()
 
 	return nil
 }

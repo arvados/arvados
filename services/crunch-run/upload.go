@@ -191,3 +191,74 @@ func (m *CollectionWriter) ManifestText() (mt string, err error) {
 	}
 	return buf.String(), nil
 }
+
+func (m *CollectionWriter) WalkFunc(path string, info os.FileInfo, err error, stripPrefix string) error {
+	if info.IsDir() {
+		return nil
+	}
+
+	var dir string
+	if len(path) > (len(stripPrefix) + len(info.Name()) + 1) {
+		dir = path[len(stripPrefix)+1 : (len(path) - len(info.Name()) - 1)]
+	}
+	if dir == "" {
+		dir = "."
+	}
+
+	fn := path[(len(path) - len(info.Name())):]
+
+	if m.Streams[dir] == nil {
+		m.Streams[dir] = &CollectionFileWriter{
+			m.IKeepClient,
+			&manifest.ManifestStream{StreamName: dir},
+			0,
+			0,
+			nil,
+			make(chan *Block),
+			make(chan []error),
+			""}
+		go m.Streams[dir].goUpload()
+	}
+
+	stream := m.Streams[dir]
+
+	fileStart := stream.offset
+
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Uploading %v/%v (%v bytes)", dir, fn, info.Size())
+
+	var count int64
+	count, err = io.Copy(stream, file)
+	if err != nil {
+		return err
+	}
+
+	stream.offset += count
+
+	stream.ManifestStream.FileStreamSegments = append(stream.ManifestStream.FileStreamSegments,
+		manifest.FileStreamSegment{uint64(fileStart), uint64(count), fn})
+
+	return nil
+}
+
+func WriteTree(kc IKeepClient, root string) (manifest string, err error) {
+	mw := CollectionWriter{kc, root, map[string]*ManifestStreamWriter{}}
+	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) {
+		return mw.WalkFunc(path, info, err, root)
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	err = mw.Finish()
+	if err != nil {
+		return "", err
+	}
+
+	return mw.ManifestText(), nil
+}
