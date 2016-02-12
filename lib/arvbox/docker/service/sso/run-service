@@ -39,6 +39,8 @@ development:
   allow_account_registration: true
 EOF
 
+(cd config && /usr/local/lib/arvbox/application_yml_override.py)
+
 if ! test -f /var/lib/arvados/sso_database_pw ; then
     ruby -e 'puts rand(2**128).to_s(36)' > /var/lib/arvados/sso_database_pw
 fi
