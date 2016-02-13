@@ -841,6 +841,8 @@ class ApplicationController < ActionController::Base
 
     from_top = []
     uuids = [user.uuid]
+    depth = 0
+    @too_many_levels = false
     while from_top.size <= page_size*2
       current_level = Group.filter([['group_class','=','project'],
                                     ['owner_uuid', 'in', uuids]])
@@ -848,6 +850,11 @@ class ApplicationController < ActionController::Base
       break if current_level.results.size == 0
       from_top.concat current_level.results
       uuids = current_level.results.collect { |x| x.uuid }
+      depth += 1
+      if depth >= 3
+        @too_many_levels = true
+        break
+      end
     end
     @my_wanted_projects = from_top
   end
@@ -855,7 +862,7 @@ class ApplicationController < ActionController::Base
   helper_method :my_wanted_projects_tree
   def my_wanted_projects_tree user, page_size=100
     build_my_wanted_projects_tree user, page_size
-    [@my_wanted_projects_tree, @total_projects]
+    [@my_wanted_projects_tree, @too_many_levels]
   end
 
   def build_my_wanted_projects_tree user, page_size=100

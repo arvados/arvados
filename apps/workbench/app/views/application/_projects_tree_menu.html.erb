@@ -15,8 +15,8 @@
     <% end %>
   </li>
 <% end %>
-<% if my_tree[1] and my_tree[1] > my_tree[0].size %>
+<% if my_tree[1] or my_tree[0].size > 200 %>
 <li role="presentation" class="dropdown-header">
-  Showing your top projects, some projects have been omitted.
+  Not all projects may have been listed.
 </li>
 <% end %>
