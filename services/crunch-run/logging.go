@@ -180,9 +180,10 @@ func (arvlog *ArvLogWriter) Write(p []byte) (n int, err error) {
 	}
 
 	// write to API
-	lr := arvadosclient.Dict{"object_uuid": arvlog.UUID,
-		"event_type": arvlog.loggingStream,
-		"properties": map[string]string{"text": string(p)}}
+	lr := arvadosclient.Dict{"log": arvadosclient.Dict{
+		"object_uuid": arvlog.UUID,
+		"event_type":  arvlog.loggingStream,
+		"properties":  map[string]string{"text": string(p)}}}
 	err2 := arvlog.ArvClient.Create("logs", lr, nil)
 
 	if err1 != nil || err2 != nil {

@@ -398,7 +398,9 @@ func (runner *ContainerRunner) CaptureOutput() error {
 
 	var response CollectionRecord
 	err = runner.ArvClient.Create("collections",
-		arvadosclient.Dict{"manifest_text": manifestText},
+		arvadosclient.Dict{
+			"collection": arvadosclient.Dict{
+				"manifest_text": manifestText}},
 		&response)
 	if err != nil {
 		return fmt.Errorf("While creating output collection: %v", err)
@@ -429,8 +431,10 @@ func (runner *ContainerRunner) CommitLogs() error {
 
 	var response CollectionRecord
 	err = runner.ArvClient.Create("collections",
-		arvadosclient.Dict{"name": "logs for " + runner.ContainerRecord.UUID,
-			"manifest_text": mt},
+		arvadosclient.Dict{
+			"collection": arvadosclient.Dict{
+				"name":          "logs for " + runner.ContainerRecord.UUID,
+				"manifest_text": mt}},
 		&response)
 	if err != nil {
 		return fmt.Errorf("While creating log collection: %v", err)
@@ -444,8 +448,8 @@ func (runner *ContainerRunner) CommitLogs() error {
 
 // UpdateContainerRecordRunning updates the container state to "Running"
 func (runner *ContainerRunner) UpdateContainerRecordRunning() error {
-	update := arvadosclient.Dict{"state": "Running"}
-	return runner.ArvClient.Update("containers", runner.ContainerRecord.UUID, update, nil)
+	return runner.ArvClient.Update("containers", runner.ContainerRecord.UUID,
+		arvadosclient.Dict{"container": arvadosclient.Dict{"state": "Running"}}, nil)
 }
 
 // UpdateContainerRecordComplete updates the container record state on API
@@ -464,7 +468,7 @@ func (runner *ContainerRunner) UpdateContainerRecordComplete() error {
 
 	update["state"] = runner.finalState
 
-	return runner.ArvClient.Update("containers", runner.ContainerRecord.UUID, update, nil)
+	return runner.ArvClient.Update("containers", runner.ContainerRecord.UUID, arvadosclient.Dict{"container": update}, nil)
 }
 
 // NewArvLogWriter creates an ArvLogWriter
@@ -473,8 +477,8 @@ func (runner *ContainerRunner) NewArvLogWriter(name string) io.WriteCloser {
 }
 
 // Run the full container lifecycle.
-func (runner *ContainerRunner) Run(containerUUID string) (err error) {
-	runner.CrunchLog.Printf("Executing container '%s'", containerUUID)
+func (runner *ContainerRunner) Run() (err error) {
+	runner.CrunchLog.Printf("Executing container '%s'", runner.ContainerRecord.UUID)
 
 	var runerr, waiterr error
 
@@ -522,7 +526,7 @@ func (runner *ContainerRunner) Run(containerUUID string) (err error) {
 		}
 	}()
 
-	err = runner.ArvClient.Get("containers", containerUUID, nil, &runner.ContainerRecord)
+	err = runner.ArvClient.Get("containers", runner.ContainerRecord.UUID, nil, &runner.ContainerRecord)
 	if err != nil {
 		return fmt.Errorf("While getting container record: %v", err)
 	}
@@ -575,11 +579,13 @@ func (runner *ContainerRunner) Run(containerUUID string) (err error) {
 // NewContainerRunner creates a new container runner.
 func NewContainerRunner(api IArvadosClient,
 	kc IKeepClient,
-	docker ThinDockerClient) *ContainerRunner {
+	docker ThinDockerClient,
+	containerUUID string) *ContainerRunner {
 
 	cr := &ContainerRunner{ArvClient: api, Kc: kc, Docker: docker}
 	cr.NewLogWriter = cr.NewArvLogWriter
 	cr.LogCollection = &CollectionWriter{kc, nil, sync.Mutex{}}
+	cr.ContainerRecord.UUID = containerUUID
 	cr.CrunchLog = NewThrottledLogger(cr.NewLogWriter("crunch-run"))
 	return cr
 }
@@ -606,9 +612,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	cr := NewContainerRunner(api, kc, docker)
+	cr := NewContainerRunner(api, kc, docker, flag.Arg(0))
 
-	err = cr.Run(flag.Arg(0))
+	err = cr.Run()
 	if err != nil {
 		log.Fatal(err)
 	}
