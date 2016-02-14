@@ -101,7 +101,8 @@ type ContainerRunner struct {
 	ArvMount      *exec.Cmd
 	ArvMountPoint string
 	HostOutputDir string
-	OutputPDH     string
+	Binds         []string
+	OutputPDH     *string
 	CancelLock    sync.Mutex
 	Cancelled     bool
 	SigChan       chan os.Signal
@@ -179,7 +180,7 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 	return nil
 }
 
-func (runner *ContainerRunner) SetupMounts(hostConfig *dockerclient.HostConfig) (err error) {
+func (runner *ContainerRunner) SetupMounts() (err error) {
 	runner.ArvMountPoint, err = ioutil.TempDir("", "keep")
 	if err != nil {
 		return fmt.Errorf("While creating keep mount temp dir: %v", err)
@@ -217,9 +218,9 @@ func (runner *ContainerRunner) SetupMounts(hostConfig *dockerclient.HostConfig) 
 				if bind == runner.ContainerRecord.OutputPath {
 					runner.HostOutputDir = src
 				}
-				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s", src, bind))
+				runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", src, bind))
 			} else {
-				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s:ro", src, bind))
+				runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s:ro", src, bind))
 			}
 			collectionPaths = append(collectionPaths, src)
 		} else if mnt.Kind == "tmp" {
@@ -229,9 +230,9 @@ func (runner *ContainerRunner) SetupMounts(hostConfig *dockerclient.HostConfig) 
 					return fmt.Errorf("While creating mount temp dir: %v", err)
 				}
 
-				hostConfig.Binds = append(hostConfig.Binds, fmt.Sprintf("%s:%s", runner.HostOutputDir, bind))
+				runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", runner.HostOutputDir, bind))
 			} else {
-				hostConfig.Binds = append(hostConfig.Binds, bind)
+				runner.Binds = append(runner.Binds, bind)
 			}
 		} else {
 			return fmt.Errorf("Unknown mount kind '%s'", mnt.Kind)
@@ -284,16 +285,12 @@ func (runner *ContainerRunner) StartContainer() (err error) {
 	for k, v := range runner.ContainerRecord.Environment {
 		runner.ContainerConfig.Env = append(runner.ContainerConfig.Env, k+"="+v)
 	}
+	runner.ContainerConfig.NetworkDisabled = true
 	runner.ContainerID, err = runner.Docker.CreateContainer(&runner.ContainerConfig, "", nil)
 	if err != nil {
 		return fmt.Errorf("While creating container: %v", err)
 	}
-	hostConfig := &dockerclient.HostConfig{}
-
-	err = runner.SetupMounts(hostConfig)
-	if err != nil {
-		return fmt.Errorf("While setting up mounts: %v", err)
-	}
+	hostConfig := &dockerclient.HostConfig{Binds: runner.Binds}
 
 	runner.CrunchLog.Printf("Starting Docker container id '%s'", runner.ContainerID)
 	err = runner.Docker.StartContainer(runner.ContainerID, hostConfig)
@@ -351,7 +348,7 @@ func (runner *ContainerRunner) WaitFinish() error {
 }
 
 // HandleOutput sets the output and unmounts the FUSE mount.
-func (runner *ContainerRunner) HandleOutput() error {
+func (runner *ContainerRunner) CaptureOutput() error {
 	if runner.ArvMount != nil {
 		defer func() {
 			umount := exec.Command("fusermount", "-z", "-u", runner.ArvMountPoint)
@@ -360,6 +357,10 @@ func (runner *ContainerRunner) HandleOutput() error {
 	}
 
 	if runner.finalState != "Complete" {
+		return nil
+	}
+
+	if runner.HostOutputDir == "" {
 		return nil
 	}
 
@@ -403,7 +404,8 @@ func (runner *ContainerRunner) HandleOutput() error {
 		return fmt.Errorf("While creating output collection: %v", err)
 	}
 
-	runner.OutputPDH = response.PortableDataHash
+	runner.OutputPDH = new(string)
+	*runner.OutputPDH = response.PortableDataHash
 
 	return nil
 }
@@ -425,17 +427,17 @@ func (runner *ContainerRunner) CommitLogs() error {
 		return fmt.Errorf("While creating log manifest: %v", err)
 	}
 
-	response := make(map[string]string)
+	var response CollectionRecord
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{"name": "logs for " + runner.ContainerRecord.UUID,
 			"manifest_text": mt},
-		response)
+		&response)
 	if err != nil {
 		return fmt.Errorf("While creating log collection: %v", err)
 	}
 
 	runner.LogsPDH = new(string)
-	*runner.LogsPDH = response["portable_data_hash"]
+	*runner.LogsPDH = response.PortableDataHash
 
 	return nil
 }
@@ -456,9 +458,11 @@ func (runner *ContainerRunner) UpdateContainerRecordComplete() error {
 	if runner.ExitCode != nil {
 		update["exit_code"] = *runner.ExitCode
 	}
+	if runner.OutputPDH != nil {
+		update["output"] = runner.OutputPDH
+	}
 
 	update["state"] = runner.finalState
-	update["output"] = runner.OutputPDH
 
 	return runner.ArvClient.Update("containers", runner.ContainerRecord.UUID, update, nil)
 }
@@ -485,19 +489,19 @@ func (runner *ContainerRunner) Run(containerUUID string) (err error) {
 			runner.finalState = "Complete"
 		}
 
-		// (6) handle output
-		outputerr := runner.HandleOutput()
+		// (7) capture output
+		outputerr := runner.CaptureOutput()
 		if outputerr != nil {
 			runner.CrunchLog.Print(outputerr)
 		}
 
-		// (7) write logs
+		// (8) write logs
 		logerr := runner.CommitLogs()
 		if logerr != nil {
 			runner.CrunchLog.Print(logerr)
 		}
 
-		// (8) update container record with results
+		// (9) update container record with results
 		updateerr := runner.UpdateContainerRecordComplete()
 		if updateerr != nil {
 			runner.CrunchLog.Print(updateerr)
@@ -523,19 +527,25 @@ func (runner *ContainerRunner) Run(containerUUID string) (err error) {
 		return fmt.Errorf("While getting container record: %v", err)
 	}
 
-	// (0) setup signal handling
+	// (1) setup signal handling
 	err = runner.SetupSignals()
 	if err != nil {
 		return fmt.Errorf("While setting up signal handling: %v", err)
 	}
 
-	// (1) check for and/or load image
+	// (2) check for and/or load image
 	err = runner.LoadImage()
 	if err != nil {
 		return fmt.Errorf("While loading container image: %v", err)
 	}
 
-	// (2) start container
+	// (3) set up FUSE mount and binds
+	err = runner.SetupMounts()
+	if err != nil {
+		return fmt.Errorf("While setting up mounts: %v", err)
+	}
+
+	// (3) create and start container
 	err = runner.StartContainer()
 	if err != nil {
 		if err == ErrCancelled {
@@ -544,19 +554,19 @@ func (runner *ContainerRunner) Run(containerUUID string) (err error) {
 		return
 	}
 
-	// (3) update container record state
+	// (4) update container record state
 	err = runner.UpdateContainerRecordRunning()
 	if err != nil {
 		runner.CrunchLog.Print(err)
 	}
 
-	// (4) attach container logs
+	// (5) attach container logs
 	runerr = runner.AttachLogs()
 	if runerr != nil {
 		runner.CrunchLog.Print(runerr)
 	}
 
-	// (5) wait for container to finish
+	// (6) wait for container to finish
 	waiterr = runner.WaitFinish()
 
 	return

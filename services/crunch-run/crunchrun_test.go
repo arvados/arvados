@@ -151,8 +151,8 @@ func (this *ArvTestClient) Create(resourceType string,
 
 	if resourceType == "collections" && output != nil {
 		mt := parameters["manifest_text"].(string)
-		outmap := output.(map[string]string)
-		outmap["portable_data_hash"] = fmt.Sprintf("%x+%d", md5.Sum([]byte(mt)), len(mt))
+		outmap := output.(*CollectionRecord)
+		outmap.PortableDataHash = fmt.Sprintf("%x+%d", md5.Sum([]byte(mt)), len(mt))
 	}
 
 	return nil
@@ -301,7 +301,7 @@ func (s *TestSuite) TestLoadImageArvError(c *C) {
 	cr.ContainerRecord.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
-	c.Check(err.Error(), Equals, "ArvError")
+	c.Check(err.Error(), Equals, "While getting container image collection: ArvError")
 }
 
 func (s *TestSuite) TestLoadImageKeepError(c *C) {
@@ -311,7 +311,7 @@ func (s *TestSuite) TestLoadImageKeepError(c *C) {
 	cr.ContainerRecord.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
-	c.Check(err.Error(), Equals, "KeepError")
+	c.Check(err.Error(), Equals, "While creating ManifestFileReader for container image: KeepError")
 }
 
 func (s *TestSuite) TestLoadImageCollectionError(c *C) {
@@ -320,7 +320,7 @@ func (s *TestSuite) TestLoadImageCollectionError(c *C) {
 	cr.ContainerRecord.ContainerImage = otherPDH
 
 	err := cr.LoadImage()
-	c.Check(err.Error(), Equals, "First file in the collection does not end in .tar")
+	c.Check(err.Error(), Equals, "First file in the container image collection does not end in .tar")
 }
 
 func (s *TestSuite) TestLoadImageKeepReadError(c *C) {
@@ -490,7 +490,7 @@ func (s *TestSuite) TestFullRunHello(c *C) {
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
     "environment": {},
-    "mounts": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
@@ -514,7 +514,7 @@ func (s *TestSuite) TestFullRunStderr(c *C) {
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
     "environment": {},
-    "mounts": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
@@ -540,7 +540,7 @@ func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
     "environment": {},
-    "mounts": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
@@ -563,7 +563,7 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": "/bin",
     "environment": {},
-    "mounts": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
@@ -586,7 +586,7 @@ func (s *TestSuite) TestCancel(c *C) {
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
     "environment": {},
-    "mounts": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
@@ -641,7 +641,7 @@ func (s *TestSuite) TestFullRunSetEnv(c *C) {
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": "/bin",
     "environment": {"FROBIZ": "bilbo"},
-    "mounts": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
