@@ -23,7 +23,7 @@ var _ = Suite(&LoggingTestSuite{})
 func (s *LoggingTestSuite) TestWriteLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
-	cr := NewContainerRunner(api, kc, nil)
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 
 	cr.CrunchLog.Print("Hello world!")
@@ -47,7 +47,7 @@ func (s *LoggingTestSuite) TestWriteLogs(c *C) {
 func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
-	cr := NewContainerRunner(api, kc, nil)
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 
 	for i := 0; i < 2000000; i += 1 {
@@ -67,7 +67,7 @@ func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
 func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
-	cr := NewContainerRunner(api, kc, nil)
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
 	ts := &TestTimestamper{}
 	cr.CrunchLog.Timestamper = ts.Timestamp
 	stdout := NewThrottledLogger(cr.NewLogWriter("stdout"))

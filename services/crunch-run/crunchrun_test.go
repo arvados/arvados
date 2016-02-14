@@ -210,7 +210,7 @@ func (this *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename str
 func (s *TestSuite) TestLoadImage(c *C) {
 	kc := &KeepTestClient{}
 	docker := NewTestDockerClient()
-	cr := NewContainerRunner(&ArvTestClient{}, kc, docker)
+	cr := NewContainerRunner(&ArvTestClient{}, kc, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	_, err := cr.Docker.RemoveImage(hwImageId, true)
 
@@ -297,7 +297,7 @@ func (this KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, file
 
 func (s *TestSuite) TestLoadImageArvError(c *C) {
 	// (1) Arvados error
-	cr := NewContainerRunner(ArvErrorTestClient{}, &KeepTestClient{}, nil)
+	cr := NewContainerRunner(ArvErrorTestClient{}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.ContainerRecord.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
@@ -307,7 +307,7 @@ func (s *TestSuite) TestLoadImageArvError(c *C) {
 func (s *TestSuite) TestLoadImageKeepError(c *C) {
 	// (2) Keep error
 	docker := NewTestDockerClient()
-	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, docker)
+	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.ContainerRecord.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
@@ -316,7 +316,7 @@ func (s *TestSuite) TestLoadImageKeepError(c *C) {
 
 func (s *TestSuite) TestLoadImageCollectionError(c *C) {
 	// (3) Collection doesn't contain image
-	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, nil)
+	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.ContainerRecord.ContainerImage = otherPDH
 
 	err := cr.LoadImage()
@@ -326,7 +326,7 @@ func (s *TestSuite) TestLoadImageCollectionError(c *C) {
 func (s *TestSuite) TestLoadImageKeepReadError(c *C) {
 	// (4) Collection doesn't contain image
 	docker := NewTestDockerClient()
-	cr := NewContainerRunner(&ArvTestClient{}, KeepReadErrorTestClient{}, docker)
+	cr := NewContainerRunner(&ArvTestClient{}, KeepReadErrorTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.ContainerRecord.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
@@ -364,7 +364,7 @@ func (s *TestSuite) TestRunContainer(c *C) {
 		t.stderrWriter.Close()
 		t.finish <- dockerclient.WaitResult{}
 	}
-	cr := NewContainerRunner(&ArvTestClient{}, &KeepTestClient{}, docker)
+	cr := NewContainerRunner(&ArvTestClient{}, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	var logs TestLogs
 	cr.NewLogWriter = logs.NewTestLoggingWriter
@@ -389,8 +389,7 @@ func (s *TestSuite) TestRunContainer(c *C) {
 func (s *TestSuite) TestCommitLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
-	cr := NewContainerRunner(api, kc, nil)
-	cr.ContainerRecord.UUID = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 
 	cr.CrunchLog.Print("Hello world!")
@@ -408,8 +407,7 @@ func (s *TestSuite) TestCommitLogs(c *C) {
 func (s *TestSuite) TestUpdateContainerRecordRunning(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
-	cr := NewContainerRunner(api, kc, nil)
-	cr.ContainerRecord.UUID = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	err := cr.UpdateContainerRecordRunning()
 	c.Check(err, IsNil)
@@ -420,8 +418,7 @@ func (s *TestSuite) TestUpdateContainerRecordRunning(c *C) {
 func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
-	cr := NewContainerRunner(api, kc, nil)
-	cr.ContainerRecord.UUID = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	cr.LogsPDH = new(string)
 	*cr.LogsPDH = "d3a229d2fe3690c2c3e75a71a153c6a3+60"
@@ -441,8 +438,7 @@ func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
 func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
-	cr := NewContainerRunner(api, kc, nil)
-	cr.ContainerRecord.UUID = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.Cancelled = true
 	cr.finalState = "Cancelled"
 
@@ -466,9 +462,9 @@ func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvT
 	docker.RemoveImage(hwImageId, true)
 
 	api = &ArvTestClient{ContainerRecord: rec}
-	cr = NewContainerRunner(api, &KeepTestClient{}, docker)
+	cr = NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
-	err = cr.Run("zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	err = cr.Run()
 	c.Check(err, IsNil)
 	c.Check(api.WasSetRunning, Equals, true)
 
@@ -607,7 +603,7 @@ func (s *TestSuite) TestCancel(c *C) {
 	docker.RemoveImage(hwImageId, true)
 
 	api := &ArvTestClient{ContainerRecord: rec}
-	cr := NewContainerRunner(api, &KeepTestClient{}, docker)
+	cr := NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	go func() {
 		for cr.ContainerID == "" {
@@ -616,7 +612,7 @@ func (s *TestSuite) TestCancel(c *C) {
 		cr.SigChan <- syscall.SIGINT
 	}()
 
-	err = cr.Run("zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	err = cr.Run()
 
 	c.Check(err, IsNil)
 
