@@ -266,7 +266,7 @@ func (this ArvErrorTestClient) Update(resourceType string, uuid string, paramete
 }
 
 func (this KeepErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
-	return "", 0, nil
+	return "", 0, errors.New("KeepError")
 }
 
 func (this KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
