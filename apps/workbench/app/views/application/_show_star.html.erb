@@ -1,0 +1,9 @@
+<% if is_starred %>
+  <%= link_to(star_path(status: 'delete', id:@object.uuid, action_method: 'get'), class: "btn btn-xs star-unstar", title: "Remove from list of favorites", remote: true) do  %>
+            <i class="fa fa-fw fa-star"></i>
+          <% end %>
+<% else %>
+  <%= link_to(star_path(status: 'create', id:@object.uuid, action_method: 'get'), class: "btn btn-xs star-unstar", title: "Add to list of favorites", remote: true) do %>
+            <i class="fa fa-fw fa-star-o"></i>
+          <% end %>
+<% end %>

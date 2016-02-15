@@ -3,17 +3,7 @@
     <% if @object.uuid == current_user.andand.uuid %>
       Home
     <% else %>
-      <% starred = false %>
-      <% starred = true if is_starred %>
-      <% if starred %>
-        <%= link_to(url_for({action: 'star', status: 'delete', id: @object.uuid, controller: 'projects'}), method: :post, class: "btn btn-xs", title: "Remove from list of favorites") do %>
-            <i class="fa fa-fw fa-star"></i>
-          <% end %>
-      <% else %>
-        <%= link_to(url_for({action: 'star', status: 'create', id: @object.uuid, controller: 'projects'}), method: :post, class: "btn btn-xs", title: "Add to list of favorites") do %>
-            <i class="fa fa-fw fa-star-o"></i>
-          <% end %>
-      <% end %>
+      <%= render partial: "show_star" %>
       <%= render_editable_attribute @object, 'name', nil, { 'data-emptytext' => "New project" } %>
     <% end %>
   </h2>

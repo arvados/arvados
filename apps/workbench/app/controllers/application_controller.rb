@@ -446,32 +446,6 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  def star
-    links = Link.where(tail_uuid: current_user.uuid,
-                       head_uuid: @object.uuid,
-                       link_class: 'star')
-
-    if params['status'] == 'create'
-      # create 'star' link if one does not already exist
-      if !links.andand.any?
-        dst = Link.new(owner_uuid: current_user.uuid,
-                       tail_uuid: current_user.uuid,
-                       head_uuid: @object.uuid,
-                       link_class: 'star',
-                       name: @object.uuid)
-        dst.save!
-      end
-    else # delete any existing 'star' links
-      if links.andand.any?
-        links.each do |link|
-          link.destroy
-        end
-      end
-    end
-
-    show
-  end
-
   helper_method :is_starred
   def is_starred
     links = Link.where(tail_uuid: current_user.uuid,
