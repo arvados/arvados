@@ -242,6 +242,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	tmpcount := 0
 	arvMountCmd := []string{"--foreground"}
 	collectionPaths := []string{}
+	runner.Binds = nil
 
 	for bind, mnt := range runner.ContainerRecord.Mounts {
 		if mnt.Kind == "collection" {
@@ -261,9 +262,9 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				}
 				src = fmt.Sprintf("%s/by_id/%s", runner.ArvMountPoint, mnt.PortableDataHash)
 			} else {
-				src = fmt.Sprintf("%s/tmp%i", runner.ArvMountPoint, tmpcount)
+				src = fmt.Sprintf("%s/tmp%d", runner.ArvMountPoint, tmpcount)
 				arvMountCmd = append(arvMountCmd, "--mount-tmp")
-				arvMountCmd = append(arvMountCmd, fmt.Sprintf("tmp%i", tmpcount))
+				arvMountCmd = append(arvMountCmd, fmt.Sprintf("tmp%d", tmpcount))
 				tmpcount += 1
 			}
 			if mnt.Writable {

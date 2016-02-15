@@ -13,6 +13,7 @@ import (
 	. "gopkg.in/check.v1"
 	"io"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"strings"
 	"syscall"
@@ -674,7 +675,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	i := 0
 	cr.MkTempDir = func(string, string) (string, error) {
 		i += 1
-		return fmt.Sprintf("/tmp/mktmpdir%v", i), nil
+		return fmt.Sprintf("/tmp/mktmpdir%d", i), nil
 	}
 
 	cr.ContainerRecord.Mounts = make(map[string]Mount)
@@ -685,4 +686,29 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	c.Check(err, IsNil)
 	c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
 	c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir2:/tmp"})
+
+	i = 0
+	cr.ContainerRecord.Mounts = make(map[string]Mount)
+	cr.ContainerRecord.Mounts["/keeptmp"] = Mount{Kind: "collection", Writable: true}
+	cr.OutputPath = "/keeptmp"
+
+	os.MkdirAll("/tmp/mktmpdir1/tmp0", os.ModePerm)
+
+	err = cr.SetupMounts()
+	c.Check(err, IsNil)
+	c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
+	c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir1/tmp0:/keeptmp"})
+
+	i = 0
+	cr.ContainerRecord.Mounts = make(map[string]Mount)
+	cr.ContainerRecord.Mounts["/keepinp"] = Mount{Kind: "collection", PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53"}
+	cr.ContainerRecord.Mounts["/keeptmp"] = Mount{Kind: "collection", Writable: true}
+	cr.OutputPath = "/keeptmp"
+
+	os.MkdirAll("/tmp/mktmpdir1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
+
+	err = cr.SetupMounts()
+	c.Check(err, IsNil)
+	c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
+	c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro", "/tmp/mktmpdir1/tmp0:/keeptmp"})
 }
