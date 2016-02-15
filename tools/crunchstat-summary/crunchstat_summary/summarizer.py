@@ -65,7 +65,7 @@ class Summarizer(object):
                 logger.debug('%s: seq %d is task %s', self.label, seq, uuid)
                 continue
 
-            m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) success in (?P<elapsed>\d+) seconds', line)
+            m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) (success in|failure \(#., permanent\) after) (?P<elapsed>\d+) seconds', line)
             if m:
                 task_id = self.seq_to_uuid[int(m.group('seq'))]
                 elapsed = int(m.group('elapsed'))
@@ -197,6 +197,8 @@ class Summarizer(object):
         return label
 
     def text_report(self):
+        if not self.tasks:
+            return "(no report generated)\n"
         return "\n".join(itertools.chain(
             self._text_report_gen(),
             self._recommend_gen())) + "\n"
@@ -226,7 +228,8 @@ class Summarizer(object):
                  lambda x: x * 100),
                 ('Overall CPU usage: {}%',
                  self.job_tot['cpu']['user+sys'] /
-                 self.job_tot['time']['elapsed'],
+                 self.job_tot['time']['elapsed']
+                 if self.job_tot['time']['elapsed'] > 0 else 0,
                  lambda x: x * 100),
                 ('Max memory used by a single task: {}GB',
                  self.stats_max['mem']['rss'],
@@ -238,7 +241,17 @@ class Summarizer(object):
                 ('Max network speed in a single interval: {}MB/s',
                  self.stats_max['net:eth0']['tx+rx__rate'] +
                  self.stats_max['net:keep0']['tx+rx__rate'],
-                 lambda x: x / 1e6)):
+                 lambda x: x / 1e6),
+                ('Keep cache miss rate {}%',
+                 (float(self.job_tot['keepcache']['miss']) /
+                 float(self.job_tot['keepcalls']['get']))
+                 if self.job_tot['keepcalls']['get'] > 0 else 0,
+                 lambda x: x * 100.0),
+                ('Keep cache utilization {}%',
+                 (float(self.job_tot['blkio:0:0']['read']) /
+                 float(self.job_tot['net:keep0']['rx']))
+                 if self.job_tot['net:keep0']['rx'] > 0 else 0,
+                 lambda x: x * 100.0)):
             format_string, val, transform = args
             if val == float('-Inf'):
                 continue
@@ -249,7 +262,8 @@ class Summarizer(object):
     def _recommend_gen(self):
         return itertools.chain(
             self._recommend_cpu(),
-            self._recommend_ram())
+            self._recommend_ram(),
+            self._recommend_keep_cache())
 
     def _recommend_cpu(self):
         """Recommend asking for 4 cores if max CPU usage was 333%"""
@@ -321,6 +335,23 @@ class Summarizer(object):
                 int(used_mib),
                 int(math.ceil(nearlygibs(used_mib))*AVAILABLE_RAM_RATIO*1024))
 
+    def _recommend_keep_cache(self):
+        """Recommend increasing keep cache if miss rate is above 0.2%"""
+        if self.job_tot['keepcalls']['get'] == 0:
+            return
+        miss_rate = float(self.job_tot['keepcache']['miss']) / float(self.job_tot['keepcalls']['get']) * 100.0
+        asked_mib = self.existing_constraints.get('keep_cache_mb_per_task', 256)
+
+        if miss_rate > 0.2:
+            yield (
+                '#!! {} Keep cache miss rate was {:.2f}% -- '
+                'try runtime_constraints "keep_cache_mb_per_task":{}'
+            ).format(
+                self.label,
+                miss_rate,
+                asked_mib*2)
+
+
     def _format(self, val):
         """Return a string representation of a stat.
 
@@ -346,7 +377,7 @@ class JobSummarizer(Summarizer):
         else:
             self.job = job
         rdr = None
-        if self.job['log']:
+        if self.job.get('log'):
             try:
                 rdr = crunchstat_summary.reader.CollectionReader(self.job['log'])
             except arvados.errors.NotFoundError as e:
@@ -372,15 +403,12 @@ class PipelineSummarizer(object):
             if 'job' not in component:
                 logger.warning(
                     "%s: skipping component with no job assigned", cname)
-            elif component['job'].get('log') is None:
-                logger.warning(
-                    "%s: skipping job %s with no log available",
-                    cname, component['job'].get('uuid'))
             else:
                 logger.info(
-                    "%s: logdata %s", cname, component['job']['log'])
+                    "%s: job %s", cname, component['job']['uuid'])
                 summarizer = JobSummarizer(component['job'], **kwargs)
-                summarizer.label = cname
+                summarizer.label = '{} {}'.format(
+                    cname, component['job']['uuid'])
                 self.summarizers[cname] = summarizer
         self.label = pipeline_instance_uuid
 

@@ -89,12 +89,13 @@ class ApplicationController < ActionController::Base
     # exception here than in a template.)
     unless current_user.nil?
       begin
-        build_project_trees
+        build_my_wanted_projects_tree current_user
       rescue ArvadosApiClient::ApiError
         # Fall back to the default-setting code later.
       end
     end
     @starred_projects ||= []
+    @my_wanted_projects_tree ||= []
     @my_project_tree ||= []
     @shared_project_tree ||= []
     render_error(err_opts)
@@ -878,6 +879,79 @@ class ApplicationController < ActionController::Base
     uuids =links.collect { |x| x.head_uuid }
     starred_projects = Group.filter([['uuid', 'in', uuids]]).order('name')
     @starred_projects = starred_projects.results
+  end
+
+  # If there are more than 200 projects that are readable by the user,
+  # build the tree using only the top 200+ projects owned by the user,
+  # from the top three levels.
+  # That is: get toplevel projects under home, get subprojects of
+  # these projects, and so on until we hit the limit.
+  def my_wanted_projects user, page_size=100
+    return @my_wanted_projects if @my_wanted_projects
+
+    from_top = []
+    uuids = [user.uuid]
+    depth = 0
+    @too_many_projects = false
+    @reached_level_limit = false
+    while from_top.size <= page_size*2
+      current_level = Group.filter([['group_class','=','project'],
+                                    ['owner_uuid', 'in', uuids]])
+                      .order('name').limit(page_size*2)
+      break if current_level.results.size == 0
+      @too_many_projects = true if current_level.items_available > current_level.results.size
+      from_top.concat current_level.results
+      uuids = current_level.results.collect { |x| x.uuid }
+      depth += 1
+      if depth >= 3
+        @reached_level_limit = true
+        break
+      end
+    end
+    @my_wanted_projects = from_top
+  end
+
+  helper_method :my_wanted_projects_tree
+  def my_wanted_projects_tree user, page_size=100
+    build_my_wanted_projects_tree user, page_size
+    [@my_wanted_projects_tree, @too_many_projects, @reached_level_limit]
+  end
+
+  def build_my_wanted_projects_tree user, page_size=100
+    return @my_wanted_projects_tree if @my_wanted_projects_tree
+
+    parent_of = {user.uuid => 'me'}
+    my_wanted_projects(user, page_size).each do |ob|
+      parent_of[ob.uuid] = ob.owner_uuid
+    end
+    children_of = {false => [], 'me' => [user]}
+    my_wanted_projects(user, page_size).each do |ob|
+      if ob.owner_uuid != user.uuid and
+          not parent_of.has_key? ob.owner_uuid
+        parent_of[ob.uuid] = false
+      end
+      children_of[parent_of[ob.uuid]] ||= []
+      children_of[parent_of[ob.uuid]] << ob
+    end
+    buildtree = lambda do |children_of, root_uuid=false|
+      tree = {}
+      children_of[root_uuid].andand.each do |ob|
+        tree[ob] = buildtree.call(children_of, ob.uuid)
+      end
+      tree
+    end
+    sorted_paths = lambda do |tree, depth=0|
+      paths = []
+      tree.keys.sort_by { |ob|
+        ob.is_a?(String) ? ob : ob.friendly_link_name
+      }.each do |ob|
+        paths << {object: ob, depth: depth}
+        paths += sorted_paths.call tree[ob], depth+1
+      end
+      paths
+    end
+    @my_wanted_projects_tree =
+      sorted_paths.call buildtree.call(children_of, 'me')
   end
 
   helper_method :my_project_tree

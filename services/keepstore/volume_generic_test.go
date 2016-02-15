@@ -76,6 +76,8 @@ func DoGenericVolumeTests(t TB, factory TestableVolumeFactory) {
 	testPutConcurrent(t, factory)
 
 	testPutFullBlock(t, factory)
+
+	testTrashUntrash(t, factory)
 }
 
 // Put a test block, get it and verify content
@@ -695,4 +697,64 @@ func testPutFullBlock(t TB, factory TestableVolumeFactory) {
 	if bytes.Compare(rdata, wdata) != 0 {
 		t.Error("rdata != wdata")
 	}
+}
+
+// With trashLifetime != 0, perform:
+// Trash an old block - which either raises ErrNotImplemented or succeeds
+// Untrash -  which either raises ErrNotImplemented or succeeds
+// Get - which must succeed
+func testTrashUntrash(t TB, factory TestableVolumeFactory) {
+	v := factory(t)
+	defer v.Teardown()
+	defer func() {
+		trashLifetime = 0
+	}()
+
+	trashLifetime = 3600 * time.Second
+
+	// put block and backdate it
+	v.PutRaw(TestHash, TestBlock)
+	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
+
+	buf, err := v.Get(TestHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Compare(buf, TestBlock) != 0 {
+		t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
+	}
+	bufs.Put(buf)
+
+	// Trash
+	err = v.Trash(TestHash)
+	if v.Writable() == false {
+		if err != MethodDisabledError {
+			t.Error(err)
+		}
+	} else if err != nil {
+		if err != ErrNotImplemented {
+			t.Error(err)
+		}
+	} else {
+		_, err = v.Get(TestHash)
+		if err == nil || !os.IsNotExist(err) {
+			t.Errorf("os.IsNotExist(%v) should have been true", err)
+		}
+
+		// Untrash
+		err = v.Untrash(TestHash)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Get the block - after trash and untrash sequence
+	buf, err = v.Get(TestHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Compare(buf, TestBlock) != 0 {
+		t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
+	}
+	bufs.Put(buf)
 }
