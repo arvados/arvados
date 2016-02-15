@@ -336,19 +336,20 @@ class Summarizer(object):
                 int(math.ceil(nearlygibs(used_mib))*AVAILABLE_RAM_RATIO*1024))
 
     def _recommend_keep_cache(self):
-        """Recommend increasing keep cache if miss rate is above 0.2%"""
-        if self.job_tot['keepcalls']['get'] == 0:
+        """Recommend increasing keep cache if utilization < 80%"""
+        if self.job_tot['net:keep0']['rx'] == 0:
             return
-        miss_rate = float(self.job_tot['keepcache']['miss']) / float(self.job_tot['keepcalls']['get']) * 100.0
+        utilization = (float(self.job_tot['blkio:0:0']['read']) /
+                       float(self.job_tot['net:keep0']['rx']))
         asked_mib = self.existing_constraints.get('keep_cache_mb_per_task', 256)
 
-        if miss_rate > 0.2:
+        if utilization < 0.8:
             yield (
-                '#!! {} Keep cache miss rate was {:.2f}% -- '
-                'try runtime_constraints "keep_cache_mb_per_task":{}'
+                '#!! {} Keep cache utilization was {:.2f}% -- '
+                'try runtime_constraints "keep_cache_mb_per_task":{} (or more)'
             ).format(
                 self.label,
-                miss_rate,
+                utilization * 100.0,
                 asked_mib*2)
 
 
