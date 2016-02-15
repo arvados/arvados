@@ -432,7 +432,7 @@ fi
   if ($docker_pid == 0)
   {
     srun (["srun", "--nodelist=" . join(',', @node)],
-          ["/bin/sh", "-ec", $docker_install_script]);
+          ["/bin/bash", "-o", "pipefail", "-ec", $docker_install_script]);
     exit ($?);
   }
   while (1)
@@ -443,8 +443,8 @@ fi
   }
   if ($? != 0)
   {
-    croak("Installing Docker image from $docker_locator exited "
-          .exit_status_s($?));
+    Log(undef, "Installing Docker image from $docker_locator exited " . exit_status_s($?));
+    exit(EX_RETRY_UNLOCKED);
   }
 
   # Determine whether this version of Docker supports memory+swap limits.
