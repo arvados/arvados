@@ -429,6 +429,8 @@ func (runner *ContainerRunner) AttachLogs() (err error) {
 // WaitFinish waits for the container to terminate, capture the exit code, and
 // close the stdout/stderr logging.
 func (runner *ContainerRunner) WaitFinish() error {
+	runner.CrunchLog.Print("Waiting for container to finish")
+
 	result := runner.Docker.Wait(runner.ContainerID)
 	wr := <-result
 	if wr.Error != nil {
@@ -516,7 +518,9 @@ func (runner *ContainerRunner) CleanupDirs() {
 
 	for _, tmpdir := range runner.CleanupTempDir {
 		rmerr := os.RemoveAll(tmpdir)
-		runner.CrunchLog.Printf("While cleaning up temporary directories: %v", rmerr)
+		if rmerr != nil {
+			runner.CrunchLog.Printf("While cleaning up temporary directory %s: %v", tmpdir, rmerr)
+		}
 	}
 }
 
