@@ -715,6 +715,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     # add to favorites
     find('.fa-star-o').click
+    wait_for_ajax
 
     find("#projects-menu").click
     within('.dropdown-menu') do
@@ -723,6 +724,8 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     # remove from favotires
     find('.fa-star').click
+    wait_for_ajax
+
     find("#projects-menu").click
     within('.dropdown-menu') do
       assert_no_selector 'li', text: 'Unrestricted public data'

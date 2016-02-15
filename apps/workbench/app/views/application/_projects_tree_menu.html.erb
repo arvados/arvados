@@ -1,15 +1,16 @@
 <% starred_projects = my_starred_projects current_user%>
 <% if starred_projects.andand.any? %>
-<li role="presentation" class="dropdown-header">
-  My favorite projects
-</li>
-<% (starred_projects).each do |pnode| %>
-  <li>
-    <%= project_link_to.call({object: pnode, depth: 0}) do%>
-      <span style="padding-left: 0em"></span><%= pnode[:name] %>
-    <% end %>
+  <li role="presentation" class="dropdown-header">
+    My favorite projects
   </li>
-<% end %>
+  <% (starred_projects).each do |pnode| %>
+    <li>
+      <%= project_link_to.call({object: pnode, depth: 0}) do%>
+        <span style="padding-left: 0em"></span><%= pnode[:name] %>
+      <% end %>
+    </li>
+  <% end %>
+  <li role="presentation" class="divider">
 <% end %>
 
 <li role="presentation" class="dropdown-header">
