@@ -18,6 +18,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 )
 
 // IArvadosClient is the minimal Arvados API methods used by crunch-run.
@@ -69,6 +70,8 @@ type ContainerRecord struct {
 // NewLogWriter is a factory function to create a new log writer.
 type NewLogWriter func(name string) io.WriteCloser
 
+type RunArvMount func([]string) (*exec.Cmd, error)
+
 // ThinDockerClient is the minimal Docker client interface used by crunch-run.
 type ThinDockerClient interface {
 	StopContainer(id string, timeout int) error
@@ -98,6 +101,7 @@ type ContainerRunner struct {
 	Stderr        *ThrottledLogger
 	LogCollection *CollectionWriter
 	LogsPDH       *string
+	RunArvMount
 	ArvMount      *exec.Cmd
 	ArvMountPoint string
 	HostOutputDir string
@@ -106,6 +110,7 @@ type ContainerRunner struct {
 	CancelLock    sync.Mutex
 	Cancelled     bool
 	SigChan       chan os.Signal
+	ArvMountExit  chan error
 	finalState    string
 }
 
@@ -180,6 +185,50 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 	return nil
 }
 
+func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string) (c *exec.Cmd, err error) {
+	c = exec.Command("arv-mount", arvMountCmd...)
+	nt := NewThrottledLogger(runner.NewLogWriter("arv-mount"))
+	c.Stdout = nt
+	c.Stderr = nt
+
+	err = c.Start()
+	if err != nil {
+		return nil, err
+	}
+
+	statReadme := make(chan bool)
+	runner.ArvMountExit = make(chan error)
+
+	keepStatting := true
+	go func() {
+		for keepStatting {
+			time.Sleep(100 * time.Millisecond)
+			_, err = os.Stat(fmt.Sprintf("%s/by_id/README", runner.ArvMountPoint))
+			if err == nil {
+				keepStatting = false
+				statReadme <- true
+			}
+		}
+		close(statReadme)
+	}()
+
+	go func() {
+		runner.ArvMountExit <- c.Wait()
+		close(runner.ArvMountExit)
+	}()
+
+	select {
+	case <-statReadme:
+		break
+	case err := <-runner.ArvMountExit:
+		runner.ArvMount = nil
+		keepStatting = false
+		return nil, err
+	}
+
+	return c, nil
+}
+
 func (runner *ContainerRunner) SetupMounts() (err error) {
 	runner.ArvMountPoint, err = ioutil.TempDir("", "keep")
 	if err != nil {
@@ -250,10 +299,8 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	}
 	arvMountCmd = append(arvMountCmd, runner.ArvMountPoint)
 
-	runner.ArvMount = exec.Command("arv-mount", arvMountCmd...)
-	err = runner.ArvMount.Start()
+	runner.ArvMount, err = runner.RunArvMount(arvMountCmd)
 	if err != nil {
-		runner.ArvMount = nil
 		return fmt.Errorf("While trying to start arv-mount: %v", err)
 	}
 
@@ -352,7 +399,15 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	if runner.ArvMount != nil {
 		defer func() {
 			umount := exec.Command("fusermount", "-z", "-u", runner.ArvMountPoint)
-			umount.Run()
+			umnterr := umount.Run()
+			if umnterr != nil {
+				runner.CrunchLog.Print("While running fusermount: %v", umnterr)
+			}
+
+			mnterr := <-runner.ArvMountExit
+			if mnterr != nil {
+				runner.CrunchLog.Print("Arv-mount exit error: %v", mnterr)
+			}
 		}()
 	}
 
@@ -584,6 +639,7 @@ func NewContainerRunner(api IArvadosClient,
 
 	cr := &ContainerRunner{ArvClient: api, Kc: kc, Docker: docker}
 	cr.NewLogWriter = cr.NewArvLogWriter
+	cr.RunArvMount = cr.ArvMountCmd
 	cr.LogCollection = &CollectionWriter{kc, nil, sync.Mutex{}}
 	cr.ContainerRecord.UUID = containerUUID
 	cr.CrunchLog = NewThrottledLogger(cr.NewLogWriter("crunch-run"))
