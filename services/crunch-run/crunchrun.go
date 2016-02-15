@@ -105,16 +105,17 @@ type ContainerRunner struct {
 	LogsPDH       *string
 	RunArvMount
 	MkTempDir
-	ArvMount      *exec.Cmd
-	ArvMountPoint string
-	HostOutputDir string
-	Binds         []string
-	OutputPDH     *string
-	CancelLock    sync.Mutex
-	Cancelled     bool
-	SigChan       chan os.Signal
-	ArvMountExit  chan error
-	finalState    string
+	ArvMount       *exec.Cmd
+	ArvMountPoint  string
+	HostOutputDir  string
+	CleanupTempDir []string
+	Binds          []string
+	OutputPDH      *string
+	CancelLock     sync.Mutex
+	Cancelled      bool
+	SigChan        chan os.Signal
+	ArvMountExit   chan error
+	finalState     string
 }
 
 // SetupSignals sets up signal handling to gracefully terminate the underlying
@@ -238,9 +239,11 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 		return fmt.Errorf("While creating keep mount temp dir: %v", err)
 	}
 
+	runner.CleanupTempDir = append(runner.CleanupTempDir, runner.ArvMountPoint)
+
 	pdhOnly := true
 	tmpcount := 0
-	arvMountCmd := []string{"--foreground"}
+	arvMountCmd := []string{"--foreground", "--allow-other"}
 	collectionPaths := []string{}
 	runner.Binds = nil
 
@@ -282,7 +285,15 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				if err != nil {
 					return fmt.Errorf("While creating mount temp dir: %v", err)
 				}
-
+				st, staterr := os.Stat(runner.HostOutputDir)
+				if staterr != nil {
+					return fmt.Errorf("While Stat on temp dir: %v", staterr)
+				}
+				err = os.Chmod(runner.HostOutputDir, st.Mode()|os.ModeSetgid)
+				if staterr != nil {
+					return fmt.Errorf("While Chmod temp dir: %v", err)
+				}
+				runner.CleanupTempDir = append(runner.CleanupTempDir, runner.HostOutputDir)
 				runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", runner.HostOutputDir, bind))
 			} else {
 				runner.Binds = append(runner.Binds, bind)
@@ -352,28 +363,65 @@ func (runner *ContainerRunner) StartContainer() (err error) {
 	return nil
 }
 
+func (runner *ContainerRunner) ProcessDockerAttach(containerReader io.Reader) {
+	// Handle docker log protocol
+	// https://docs.docker.com/engine/reference/api/docker_remote_api_v1.15/#attach-to-a-container
+
+	header := make([]byte, 8)
+	for {
+		_, readerr := io.ReadAtLeast(containerReader, header, 8)
+
+		if readerr == nil {
+			readsize := int64(header[4]) | (int64(header[5]) << 8) | (int64(header[6]) << 16) | (int64(header[7]) << 24)
+			if header[0] == 1 {
+				// stdout
+				_, readerr = io.CopyN(runner.Stdout, containerReader, readsize)
+			} else {
+				// stderr
+				_, readerr = io.CopyN(runner.Stderr, containerReader, readsize)
+			}
+		}
+
+		if readerr != nil {
+			if readerr != io.EOF {
+				runner.CrunchLog.Printf("While reading docker logs: %v", readerr)
+			}
+
+			closeerr := runner.Stdout.Close()
+			if closeerr != nil {
+				runner.CrunchLog.Printf("While closing stdout logs: %v", readerr)
+			}
+
+			closeerr = runner.Stderr.Close()
+			if closeerr != nil {
+				runner.CrunchLog.Printf("While closing stderr logs: %v", readerr)
+			}
+
+			runner.loggingDone <- true
+			close(runner.loggingDone)
+			return
+		}
+	}
+}
+
 // AttachLogs connects the docker container stdout and stderr logs to the
 // Arvados logger which logs to Keep and the API server logs table.
 func (runner *ContainerRunner) AttachLogs() (err error) {
 
 	runner.CrunchLog.Print("Attaching container logs")
 
-	var stderrReader, stdoutReader io.Reader
-	stderrReader, err = runner.Docker.ContainerLogs(runner.ContainerID, &dockerclient.LogOptions{Follow: true, Stderr: true})
+	var containerReader io.Reader
+	containerReader, err = runner.Docker.ContainerLogs(runner.ContainerID, &dockerclient.LogOptions{Follow: true, Stdout: true, Stderr: true})
 	if err != nil {
-		return fmt.Errorf("While getting container standard error: %v", err)
-	}
-	stdoutReader, err = runner.Docker.ContainerLogs(runner.ContainerID, &dockerclient.LogOptions{Follow: true, Stdout: true})
-	if err != nil {
-		return fmt.Errorf("While getting container standard output: %v", err)
+		return fmt.Errorf("While attaching container logs: %v", err)
 	}
 
 	runner.loggingDone = make(chan bool)
 
 	runner.Stdout = NewThrottledLogger(runner.NewLogWriter("stdout"))
 	runner.Stderr = NewThrottledLogger(runner.NewLogWriter("stderr"))
-	go ReadWriteLines(stdoutReader, runner.Stdout, runner.loggingDone)
-	go ReadWriteLines(stderrReader, runner.Stderr, runner.loggingDone)
+
+	go runner.ProcessDockerAttach(containerReader)
 
 	return nil
 }
@@ -388,33 +436,14 @@ func (runner *ContainerRunner) WaitFinish() error {
 	}
 	runner.ExitCode = &wr.ExitCode
 
-	// drain stdout/stderr
+	// wait for stdout/stderr to complete
 	<-runner.loggingDone
-	<-runner.loggingDone
-
-	runner.Stdout.Close()
-	runner.Stderr.Close()
 
 	return nil
 }
 
-// HandleOutput sets the output and unmounts the FUSE mount.
+// HandleOutput sets the output, unmounts the FUSE mount, and deletes temporary directories
 func (runner *ContainerRunner) CaptureOutput() error {
-	if runner.ArvMount != nil {
-		defer func() {
-			umount := exec.Command("fusermount", "-z", "-u", runner.ArvMountPoint)
-			umnterr := umount.Run()
-			if umnterr != nil {
-				runner.CrunchLog.Print("While running fusermount: %v", umnterr)
-			}
-
-			mnterr := <-runner.ArvMountExit
-			if mnterr != nil {
-				runner.CrunchLog.Print("Arv-mount exit error: %v", mnterr)
-			}
-		}()
-	}
-
 	if runner.finalState != "Complete" {
 		return nil
 	}
@@ -469,6 +498,26 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	*runner.OutputPDH = response.PortableDataHash
 
 	return nil
+}
+
+func (runner *ContainerRunner) CleanupDirs() {
+	if runner.ArvMount != nil {
+		umount := exec.Command("fusermount", "-z", "-u", runner.ArvMountPoint)
+		umnterr := umount.Run()
+		if umnterr != nil {
+			runner.CrunchLog.Printf("While running fusermount: %v", umnterr)
+		}
+
+		mnterr := <-runner.ArvMountExit
+		if mnterr != nil {
+			runner.CrunchLog.Printf("Arv-mount exit error: %v", mnterr)
+		}
+	}
+
+	for _, tmpdir := range runner.CleanupTempDir {
+		rmerr := os.RemoveAll(tmpdir)
+		runner.CrunchLog.Printf("While cleaning up temporary directories: %v", rmerr)
+	}
 }
 
 // CommitLogs posts the collection containing the final container logs.
@@ -558,13 +607,16 @@ func (runner *ContainerRunner) Run() (err error) {
 			runner.CrunchLog.Print(outputerr)
 		}
 
-		// (8) write logs
+		// (8) clean up temporary directories
+		runner.CleanupDirs()
+
+		// (9) write logs
 		logerr := runner.CommitLogs()
 		if logerr != nil {
 			runner.CrunchLog.Print(logerr)
 		}
 
-		// (9) update container record with results
+		// (10) update container record with results
 		updateerr := runner.UpdateContainerRecordComplete()
 		if updateerr != nil {
 			runner.CrunchLog.Print(updateerr)

@@ -13,8 +13,10 @@ import (
 	. "gopkg.in/check.v1"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 	"syscall"
 	"testing"
@@ -53,22 +55,19 @@ var otherManifest = ". 68a84f561b1d1708c6baff5e019a9ab3+46+Ae5d0af96944a3690becb
 var otherPDH = "a3e8f74c6f101eae01fa08bfb4e49b3a+54"
 
 type TestDockerClient struct {
-	imageLoaded  string
-	stdoutReader io.ReadCloser
-	stderrReader io.ReadCloser
-	stdoutWriter io.WriteCloser
-	stderrWriter io.WriteCloser
-	fn           func(t *TestDockerClient)
-	finish       chan dockerclient.WaitResult
-	stop         chan bool
-	cwd          string
-	env          []string
+	imageLoaded string
+	logReader   io.ReadCloser
+	logWriter   io.WriteCloser
+	fn          func(t *TestDockerClient)
+	finish      chan dockerclient.WaitResult
+	stop        chan bool
+	cwd         string
+	env         []string
 }
 
 func NewTestDockerClient() *TestDockerClient {
 	t := &TestDockerClient{}
-	t.stdoutReader, t.stdoutWriter = io.Pipe()
-	t.stderrReader, t.stderrWriter = io.Pipe()
+	t.logReader, t.logWriter = io.Pipe()
 	t.finish = make(chan dockerclient.WaitResult)
 	t.stop = make(chan bool)
 	t.cwd = "/"
@@ -116,13 +115,7 @@ func (t *TestDockerClient) StartContainer(id string, config *dockerclient.HostCo
 }
 
 func (t *TestDockerClient) ContainerLogs(id string, options *dockerclient.LogOptions) (io.ReadCloser, error) {
-	if options.Stdout {
-		return t.stdoutReader, nil
-	}
-	if options.Stderr {
-		return t.stderrReader, nil
-	}
-	return nil, nil
+	return t.logReader, nil
 }
 
 func (t *TestDockerClient) Wait(id string) <-chan dockerclient.WaitResult {
@@ -358,12 +351,20 @@ func (this *TestLogs) NewTestLoggingWriter(logstr string) io.WriteCloser {
 	return nil
 }
 
+func dockerLog(fd byte, msg string) []byte {
+	by := []byte(msg)
+	header := make([]byte, 8+len(by))
+	header[0] = fd
+	header[4] = byte(len(by))
+	copy(header[8:], by)
+	return header
+}
+
 func (s *TestSuite) TestRunContainer(c *C) {
 	docker := NewTestDockerClient()
 	docker.fn = func(t *TestDockerClient) {
-		t.stdoutWriter.Write([]byte("Hello world\n"))
-		t.stdoutWriter.Close()
-		t.stderrWriter.Close()
+		t.logWriter.Write(dockerLog(1, "Hello world\n"))
+		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{}
 	}
 	cr := NewContainerRunner(&ArvTestClient{}, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
@@ -493,9 +494,8 @@ func (s *TestSuite) TestFullRunHello(c *C) {
     "priority": 1,
     "runtime_constraints": {}
 }`, func(t *TestDockerClient) {
-		t.stdoutWriter.Write([]byte("hello world\n"))
-		t.stdoutWriter.Close()
-		t.stderrWriter.Close()
+		t.logWriter.Write(dockerLog(1, "hello world\n"))
+		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{}
 	})
 
@@ -517,10 +517,9 @@ func (s *TestSuite) TestFullRunStderr(c *C) {
     "priority": 1,
     "runtime_constraints": {}
 }`, func(t *TestDockerClient) {
-		t.stdoutWriter.Write([]byte("hello\n"))
-		t.stderrWriter.Write([]byte("world\n"))
-		t.stdoutWriter.Close()
-		t.stderrWriter.Close()
+		t.logWriter.Write(dockerLog(1, "hello\n"))
+		t.logWriter.Write(dockerLog(2, "world\n"))
+		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 1}
 	})
 
@@ -543,14 +542,15 @@ func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
     "priority": 1,
     "runtime_constraints": {}
 }`, func(t *TestDockerClient) {
-		t.stdoutWriter.Write([]byte(t.cwd + "\n"))
-		t.stdoutWriter.Close()
-		t.stderrWriter.Close()
+		t.logWriter.Write(dockerLog(1, t.cwd+"\n"))
+		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
 	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
 	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
+
+	log.Print(api.Logs["stdout"].String())
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "/\n"), Equals, true)
 }
@@ -566,9 +566,8 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
     "priority": 1,
     "runtime_constraints": {}
 }`, func(t *TestDockerClient) {
-		t.stdoutWriter.Write([]byte(t.cwd + "\n"))
-		t.stdoutWriter.Close()
-		t.stderrWriter.Close()
+		t.logWriter.Write(dockerLog(1, t.cwd+"\n"))
+		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
@@ -597,9 +596,8 @@ func (s *TestSuite) TestCancel(c *C) {
 	docker := NewTestDockerClient()
 	docker.fn = func(t *TestDockerClient) {
 		<-t.stop
-		t.stdoutWriter.Write([]byte("foo\n"))
-		t.stdoutWriter.Close()
-		t.stderrWriter.Close()
+		t.logWriter.Write(dockerLog(1, "foo\n"))
+		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	}
 	docker.RemoveImage(hwImageId, true)
@@ -644,9 +642,8 @@ func (s *TestSuite) TestFullRunSetEnv(c *C) {
     "priority": 1,
     "runtime_constraints": {}
 }`, func(t *TestDockerClient) {
-		t.stdoutWriter.Write([]byte(t.env[0][7:] + "\n"))
-		t.stdoutWriter.Close()
-		t.stderrWriter.Close()
+		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
+		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
@@ -675,40 +672,55 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	i := 0
 	cr.MkTempDir = func(string, string) (string, error) {
 		i += 1
-		return fmt.Sprintf("/tmp/mktmpdir%d", i), nil
+		d := fmt.Sprintf("/tmp/mktmpdir%d", i)
+		os.Mkdir(d, os.ModePerm)
+		return d, nil
 	}
 
-	cr.ContainerRecord.Mounts = make(map[string]Mount)
-	cr.ContainerRecord.Mounts["/tmp"] = Mount{Kind: "tmp"}
-	cr.OutputPath = "/tmp"
+	{
+		cr.ContainerRecord.Mounts = make(map[string]Mount)
+		cr.ContainerRecord.Mounts["/tmp"] = Mount{Kind: "tmp"}
+		cr.OutputPath = "/tmp"
 
-	err := cr.SetupMounts()
-	c.Check(err, IsNil)
-	c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
-	c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir2:/tmp"})
+		err := cr.SetupMounts()
+		c.Check(err, IsNil)
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
+		c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir2:/tmp"})
+		cr.CleanupDirs()
+	}
 
-	i = 0
-	cr.ContainerRecord.Mounts = make(map[string]Mount)
-	cr.ContainerRecord.Mounts["/keeptmp"] = Mount{Kind: "collection", Writable: true}
-	cr.OutputPath = "/keeptmp"
+	{
+		i = 0
+		cr.ContainerRecord.Mounts = make(map[string]Mount)
+		cr.ContainerRecord.Mounts["/keeptmp"] = Mount{Kind: "collection", Writable: true}
+		cr.OutputPath = "/keeptmp"
 
-	os.MkdirAll("/tmp/mktmpdir1/tmp0", os.ModePerm)
+		os.MkdirAll("/tmp/mktmpdir1/tmp0", os.ModePerm)
 
-	err = cr.SetupMounts()
-	c.Check(err, IsNil)
-	c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
-	c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir1/tmp0:/keeptmp"})
+		err := cr.SetupMounts()
+		c.Check(err, IsNil)
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
+		c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir1/tmp0:/keeptmp"})
+		cr.CleanupDirs()
+	}
 
-	i = 0
-	cr.ContainerRecord.Mounts = make(map[string]Mount)
-	cr.ContainerRecord.Mounts["/keepinp"] = Mount{Kind: "collection", PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53"}
-	cr.ContainerRecord.Mounts["/keeptmp"] = Mount{Kind: "collection", Writable: true}
-	cr.OutputPath = "/keeptmp"
+	{
+		i = 0
+		cr.ContainerRecord.Mounts = make(map[string]Mount)
+		cr.ContainerRecord.Mounts["/keepinp"] = Mount{Kind: "collection", PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53"}
+		cr.ContainerRecord.Mounts["/keepout"] = Mount{Kind: "collection", Writable: true}
+		cr.OutputPath = "/keepout"
 
-	os.MkdirAll("/tmp/mktmpdir1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
+		os.MkdirAll("/tmp/mktmpdir1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
+		os.MkdirAll("/tmp/mktmpdir1/tmp0", os.ModePerm)
 
-	err = cr.SetupMounts()
-	c.Check(err, IsNil)
-	c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
-	c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro", "/tmp/mktmpdir1/tmp0:/keeptmp"})
+		err := cr.SetupMounts()
+		c.Check(err, IsNil)
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
+		var ss sort.StringSlice = cr.Binds
+		ss.Sort()
+		c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro",
+			"/tmp/mktmpdir1/tmp0:/keepout"})
+		cr.CleanupDirs()
+	}
 }
