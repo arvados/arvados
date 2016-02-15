@@ -139,18 +139,18 @@ func (this *ArvTestClient) Create(resourceType string,
 	this.Content = parameters
 
 	if resourceType == "logs" {
-		et := parameters["event_type"].(string)
+		et := parameters["log"].(arvadosclient.Dict)["event_type"].(string)
 		if this.Logs == nil {
 			this.Logs = make(map[string]*bytes.Buffer)
 		}
 		if this.Logs[et] == nil {
 			this.Logs[et] = &bytes.Buffer{}
 		}
-		this.Logs[et].Write([]byte(parameters["properties"].(map[string]string)["text"]))
+		this.Logs[et].Write([]byte(parameters["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"]))
 	}
 
 	if resourceType == "collections" && output != nil {
-		mt := parameters["manifest_text"].(string)
+		mt := parameters["collection"].(arvadosclient.Dict)["manifest_text"].(string)
 		outmap := output.(*CollectionRecord)
 		outmap.PortableDataHash = fmt.Sprintf("%x+%d", md5.Sum([]byte(mt)), len(mt))
 	}
@@ -176,7 +176,7 @@ func (this *ArvTestClient) Update(resourceType string, uuid string, parameters a
 
 	this.Content = parameters
 	if resourceType == "containers" {
-		if parameters["state"] == "Running" {
+		if parameters["container"].(arvadosclient.Dict)["state"] == "Running" {
 			this.WasSetRunning = true
 		}
 
@@ -399,8 +399,8 @@ func (s *TestSuite) TestCommitLogs(c *C) {
 	err := cr.CommitLogs()
 	c.Check(err, IsNil)
 
-	c.Check(api.Content["name"], Equals, "logs for zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	c.Check(api.Content["manifest_text"], Equals, ". 744b2e4553123b02fa7b452ec5c18993+123 0:123:crunch-run.txt\n")
+	c.Check(api.Content["collection"].(arvadosclient.Dict)["name"], Equals, "logs for zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Check(api.Content["collection"].(arvadosclient.Dict)["manifest_text"], Equals, ". 744b2e4553123b02fa7b452ec5c18993+123 0:123:crunch-run.txt\n")
 	c.Check(*cr.LogsPDH, Equals, "63da7bdacf08c40f604daad80c261e9a+60")
 }
 
@@ -412,7 +412,7 @@ func (s *TestSuite) TestUpdateContainerRecordRunning(c *C) {
 	err := cr.UpdateContainerRecordRunning()
 	c.Check(err, IsNil)
 
-	c.Check(api.Content["state"], Equals, "Running")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Running")
 }
 
 func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
@@ -430,9 +430,9 @@ func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
 	err := cr.UpdateContainerRecordComplete()
 	c.Check(err, IsNil)
 
-	c.Check(api.Content["log"], Equals, *cr.LogsPDH)
-	c.Check(api.Content["exit_code"], Equals, *cr.ExitCode)
-	c.Check(api.Content["state"], Equals, "Complete")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["log"], Equals, *cr.LogsPDH)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, *cr.ExitCode)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 }
 
 func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
@@ -445,9 +445,9 @@ func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
 	err := cr.UpdateContainerRecordComplete()
 	c.Check(err, IsNil)
 
-	c.Check(api.Content["log"], IsNil)
-	c.Check(api.Content["exit_code"], IsNil)
-	c.Check(api.Content["state"], Equals, "Cancelled")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["log"], IsNil)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], IsNil)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Cancelled")
 }
 
 // Used by the TestFullRun*() test below to DRY up boilerplate setup to do full
@@ -468,7 +468,7 @@ func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvT
 	c.Check(err, IsNil)
 	c.Check(api.WasSetRunning, Equals, true)
 
-	c.Check(api.Content["log"], NotNil)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["log"], NotNil)
 
 	if err != nil {
 		for k, v := range api.Logs {
@@ -497,8 +497,8 @@ func (s *TestSuite) TestFullRunHello(c *C) {
 		t.finish <- dockerclient.WaitResult{}
 	})
 
-	c.Check(api.Content["exit_code"], Equals, 0)
-	c.Check(api.Content["state"], Equals, "Complete")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "hello world\n"), Equals, true)
 
@@ -522,9 +522,9 @@ func (s *TestSuite) TestFullRunStderr(c *C) {
 		t.finish <- dockerclient.WaitResult{ExitCode: 1}
 	})
 
-	c.Check(api.Content["log"], NotNil)
-	c.Check(api.Content["exit_code"], Equals, 1)
-	c.Check(api.Content["state"], Equals, "Complete")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["log"], NotNil)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, 1)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "hello\n"), Equals, true)
 	c.Check(strings.HasSuffix(api.Logs["stderr"].String(), "world\n"), Equals, true)
@@ -547,8 +547,8 @@ func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
-	c.Check(api.Content["exit_code"], Equals, 0)
-	c.Check(api.Content["state"], Equals, "Complete")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "/\n"), Equals, true)
 }
@@ -570,8 +570,8 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
-	c.Check(api.Content["exit_code"], Equals, 0)
-	c.Check(api.Content["state"], Equals, "Complete")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "/bin\n"), Equals, true)
 }
@@ -616,7 +616,7 @@ func (s *TestSuite) TestCancel(c *C) {
 
 	c.Check(err, IsNil)
 
-	c.Check(api.Content["log"], NotNil)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["log"], NotNil)
 
 	if err != nil {
 		for k, v := range api.Logs {
@@ -625,7 +625,7 @@ func (s *TestSuite) TestCancel(c *C) {
 		}
 	}
 
-	c.Check(api.Content["state"], Equals, "Cancelled")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Cancelled")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "foo\n"), Equals, true)
 
@@ -648,8 +648,8 @@ func (s *TestSuite) TestFullRunSetEnv(c *C) {
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
-	c.Check(api.Content["exit_code"], Equals, 0)
-	c.Check(api.Content["state"], Equals, "Complete")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "bilbo\n"), Equals, true)
 }
