@@ -833,26 +833,29 @@ class ApplicationController < ActionController::Base
   end
 
   # If there are more than 200 projects that are readable by the user,
-  # build the tree using only the top 200+ projects owned by the user.
+  # build the tree using only the top 200+ projects owned by the user,
+  # from the top three levels.
   # That is: get toplevel projects under home, get subprojects of
-  # these projects, and so on until we hit the limit
+  # these projects, and so on until we hit the limit.
   def my_wanted_projects user, page_size=100
     return @my_wanted_projects if @my_wanted_projects
 
     from_top = []
     uuids = [user.uuid]
     depth = 0
-    @too_many_levels = false
+    @too_many_projects = false
+    @reached_level_limit = false
     while from_top.size <= page_size*2
       current_level = Group.filter([['group_class','=','project'],
                                     ['owner_uuid', 'in', uuids]])
                       .order('name').limit(page_size*2)
       break if current_level.results.size == 0
+      @too_many_projects = true if current_level.items_available > current_level.results.size
       from_top.concat current_level.results
       uuids = current_level.results.collect { |x| x.uuid }
       depth += 1
       if depth >= 3
-        @too_many_levels = true
+        @reached_level_limit = true
         break
       end
     end
@@ -862,7 +865,7 @@ class ApplicationController < ActionController::Base
   helper_method :my_wanted_projects_tree
   def my_wanted_projects_tree user, page_size=100
     build_my_wanted_projects_tree user, page_size
-    [@my_wanted_projects_tree, @too_many_levels]
+    [@my_wanted_projects_tree, @too_many_projects, @reached_level_limit]
   end
 
   def build_my_wanted_projects_tree user, page_size=100

@@ -17,6 +17,10 @@
 <% end %>
 <% if my_tree[1] or my_tree[0].size > 200 %>
 <li role="presentation" class="dropdown-header">
-  Not all projects may have been listed.
+  Some projects have been omitted.
+</li>
+<% elsif my_tree[2] %>
+<li role="presentation" class="dropdown-header">
+  Showing top three levels of your projects.
 </li>
 <% end %>
