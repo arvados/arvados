@@ -656,28 +656,28 @@ func main() {
 
 	api, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%s: %v", flag.Arg(0), err)
 	}
 	api.Retries = 8
 
 	var kc *keepclient.KeepClient
 	kc, err = keepclient.MakeKeepClient(&api)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%s: %v", flag.Arg(0), err)
 	}
 	kc.Retries = 4
 
 	var docker *dockerclient.DockerClient
 	docker, err = dockerclient.NewDockerClient("unix:///var/run/docker.sock", nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%s: %v", flag.Arg(0), err)
 	}
 
 	cr := NewContainerRunner(api, kc, docker, flag.Arg(0))
 
 	err = cr.Run()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("%s: %v", flag.Arg(0), err)
 	}
 
 }

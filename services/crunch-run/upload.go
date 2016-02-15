@@ -187,6 +187,9 @@ func (m *CollectionWriter) ManifestText() (mt string, err error) {
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
 	for _, v := range m.Streams {
+		if len(v.FileStreamSegments) == 0 {
+			continue
+		}
 		k := v.StreamName
 		if k == "." {
 			buf.WriteString(".")
@@ -195,9 +198,13 @@ func (m *CollectionWriter) ManifestText() (mt string, err error) {
 			k = strings.Replace(k, "\n", "", -1)
 			buf.WriteString("./" + k)
 		}
-		for _, b := range v.Blocks {
-			buf.WriteString(" ")
-			buf.WriteString(b)
+		if len(v.Blocks) > 0 {
+			for _, b := range v.Blocks {
+				buf.WriteString(" ")
+				buf.WriteString(b)
+			}
+		} else {
+			buf.WriteString(" d41d8cd98f00b204e9800998ecf8427e+0")
 		}
 		for _, f := range v.FileStreamSegments {
 			buf.WriteString(" ")
