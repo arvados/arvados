@@ -13,6 +13,7 @@ import (
 	. "gopkg.in/check.v1"
 	"io"
 	"io/ioutil"
+	"os/exec"
 	"strings"
 	"syscall"
 	"testing"
@@ -652,4 +653,36 @@ func (s *TestSuite) TestFullRunSetEnv(c *C) {
 	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "bilbo\n"), Equals, true)
+}
+
+type ArvMountCmdLine struct {
+	Cmd []string
+}
+
+func (am *ArvMountCmdLine) ArvMountTest(c []string) (*exec.Cmd, error) {
+	am.Cmd = c
+	return nil, nil
+}
+
+func (s *TestSuite) TestSetupMounts(c *C) {
+	api := &ArvTestClient{}
+	kc := &KeepTestClient{}
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	am := &ArvMountCmdLine{}
+	cr.RunArvMount = am.ArvMountTest
+
+	i := 0
+	cr.MkTempDir = func(string, string) (string, error) {
+		i += 1
+		return fmt.Sprintf("/tmp/mktmpdir%v", i), nil
+	}
+
+	cr.ContainerRecord.Mounts = make(map[string]Mount)
+	cr.ContainerRecord.Mounts["/tmp"] = Mount{Kind: "tmp"}
+	cr.OutputPath = "/tmp"
+
+	err := cr.SetupMounts()
+	c.Check(err, IsNil)
+	c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
+	c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir2:/tmp"})
 }

@@ -72,6 +72,8 @@ type NewLogWriter func(name string) io.WriteCloser
 
 type RunArvMount func([]string) (*exec.Cmd, error)
 
+type MkTempDir func(string, string) (string, error)
+
 // ThinDockerClient is the minimal Docker client interface used by crunch-run.
 type ThinDockerClient interface {
 	StopContainer(id string, timeout int) error
@@ -102,6 +104,7 @@ type ContainerRunner struct {
 	LogCollection *CollectionWriter
 	LogsPDH       *string
 	RunArvMount
+	MkTempDir
 	ArvMount      *exec.Cmd
 	ArvMountPoint string
 	HostOutputDir string
@@ -230,7 +233,7 @@ func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string) (c *exec.Cmd, e
 }
 
 func (runner *ContainerRunner) SetupMounts() (err error) {
-	runner.ArvMountPoint, err = ioutil.TempDir("", "keep")
+	runner.ArvMountPoint, err = runner.MkTempDir("", "keep")
 	if err != nil {
 		return fmt.Errorf("While creating keep mount temp dir: %v", err)
 	}
@@ -274,7 +277,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			collectionPaths = append(collectionPaths, src)
 		} else if mnt.Kind == "tmp" {
 			if bind == runner.ContainerRecord.OutputPath {
-				runner.HostOutputDir, err = ioutil.TempDir("", "")
+				runner.HostOutputDir, err = runner.MkTempDir("", "")
 				if err != nil {
 					return fmt.Errorf("While creating mount temp dir: %v", err)
 				}
@@ -640,6 +643,7 @@ func NewContainerRunner(api IArvadosClient,
 	cr := &ContainerRunner{ArvClient: api, Kc: kc, Docker: docker}
 	cr.NewLogWriter = cr.NewArvLogWriter
 	cr.RunArvMount = cr.ArvMountCmd
+	cr.MkTempDir = ioutil.TempDir
 	cr.LogCollection = &CollectionWriter{kc, nil, sync.Mutex{}}
 	cr.ContainerRecord.UUID = containerUUID
 	cr.CrunchLog = NewThrottledLogger(cr.NewLogWriter("crunch-run"))
