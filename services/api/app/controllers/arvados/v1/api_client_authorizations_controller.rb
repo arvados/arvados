@@ -56,7 +56,7 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
         ((attr == 'scopes') and (operator == '=')) ? operand : nil
       })
       @filters.select! { |attr, operator, operand|
-        (attr == 'uuid') and (operator == '=')
+        ((attr == 'uuid') and (operator == '=')) || ((attr == 'api_token') and (operator == '='))
       }
     end
     if @where
@@ -74,14 +74,23 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
   end
 
   def find_object_by_uuid
-    # Again, to make things easier for the client and our own routing,
-    # here we look for the api_token key in a "uuid" (POST) or "id"
-    # (GET) parameter.
-    @object = model_class.where('api_token=?', params[:uuid] || params[:id]).first
+    @object = model_class.where(uuid: (params[:uuid] || params[:id])).first
   end
 
   def current_api_client_is_trusted
     unless Thread.current[:api_client].andand.is_trusted
+      if params["action"] == "show"
+        if @object and @object['api_token'] == current_api_client_authorization.andand.api_token
+          return true
+        end
+      elsif params["action"] == "index" and @objects.andand.size == 1
+        filters = @filters.map{|f|f.first}.uniq
+        if ['uuid'] == filters
+          return true if @objects.first['api_token'] == current_api_client_authorization.andand.api_token
+        elsif ['api_token'] == filters
+          return true if @objects.first[:user_id] = current_user.id
+        end
+      end
       send_error('Forbidden: this API client cannot manipulate other clients\' access tokens.',
                  status: 403)
     end
