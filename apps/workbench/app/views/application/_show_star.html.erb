@@ -1,4 +1,4 @@
-<% if is_starred %>
+<% if current_user and is_starred %>
   <%= link_to(star_path(status: 'delete', id:@object.uuid, action_method: 'get'), class: "btn btn-xs star-unstar", title: "Remove from list of favorites", remote: true) do  %>
             <i class="fa fa-fw fa-star"></i>
           <% end %>
