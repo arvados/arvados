@@ -35,6 +35,7 @@ type ThrottledLogger struct {
 	stop        bool
 	flusherDone chan bool
 	Timestamper
+	Immediate *log.Logger
 }
 
 // RFC3339Fixed is a fixed-width version of RFC3339 with microsecond precision,
@@ -59,6 +60,9 @@ func (tl *ThrottledLogger) Write(p []byte) (n int, err error) {
 	sc := bufio.NewScanner(bytes.NewBuffer(p))
 	for sc.Scan() {
 		_, err = fmt.Fprintf(tl.buf, "%s %s\n", now, sc.Text())
+		if tl.Immediate != nil {
+			tl.Immediate.Printf("%s %s\n", now, sc.Text())
+		}
 	}
 	return len(p), err
 }

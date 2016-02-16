@@ -243,7 +243,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 
 	pdhOnly := true
 	tmpcount := 0
-	arvMountCmd := []string{"--foreground", "--allow-other"}
+	arvMountCmd := []string{"--foreground", "--allow-other", "--read-write"}
 	collectionPaths := []string{}
 	runner.Binds = nil
 
@@ -289,7 +289,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				if staterr != nil {
 					return fmt.Errorf("While Stat on temp dir: %v", staterr)
 				}
-				err = os.Chmod(runner.HostOutputDir, st.Mode()|os.ModeSetgid)
+				err = os.Chmod(runner.HostOutputDir, st.Mode()|os.ModeSetgid|0777)
 				if staterr != nil {
 					return fmt.Errorf("While Chmod temp dir: %v", err)
 				}
@@ -338,7 +338,7 @@ func (runner *ContainerRunner) ProcessDockerAttach(containerReader io.Reader) {
 		_, readerr := io.ReadAtLeast(containerReader, header, 8)
 
 		if readerr == nil {
-			readsize := int64(header[4]) | (int64(header[5]) << 8) | (int64(header[6]) << 16) | (int64(header[7]) << 24)
+			readsize := int64(header[7]) | (int64(header[6]) << 8) | (int64(header[5]) << 16) | (int64(header[4]) << 24)
 			if header[0] == 1 {
 				// stdout
 				_, readerr = io.CopyN(runner.Stdout, containerReader, readsize)
@@ -600,6 +600,13 @@ func (runner *ContainerRunner) NewArvLogWriter(name string) io.WriteCloser {
 func (runner *ContainerRunner) Run() (err error) {
 	runner.CrunchLog.Printf("Executing container '%s'", runner.ContainerRecord.UUID)
 
+	hostname, hosterr := os.Hostname()
+	if hosterr != nil {
+		runner.CrunchLog.Printf("Error getting hostname '%v'", hosterr)
+	} else {
+		runner.CrunchLog.Printf("Executing on host '%s'", runner.ContainerRecord.UUID, hostname)
+	}
+
 	var runerr, waiterr error
 
 	defer func() {
@@ -706,36 +713,39 @@ func NewContainerRunner(api IArvadosClient,
 	cr.LogCollection = &CollectionWriter{kc, nil, sync.Mutex{}}
 	cr.ContainerRecord.UUID = containerUUID
 	cr.CrunchLog = NewThrottledLogger(cr.NewLogWriter("crunch-run"))
+	cr.CrunchLog.Immediate = log.New(os.Stderr, containerUUID+" ", 0)
 	return cr
 }
 
 func main() {
 	flag.Parse()
 
+	containerId := flag.Arg(0)
+
 	api, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
-		log.Fatalf("%s: %v", flag.Arg(0), err)
+		log.Fatalf("%s: %v", containerId, err)
 	}
 	api.Retries = 8
 
 	var kc *keepclient.KeepClient
 	kc, err = keepclient.MakeKeepClient(&api)
 	if err != nil {
-		log.Fatalf("%s: %v", flag.Arg(0), err)
+		log.Fatalf("%s: %v", containerId, err)
 	}
 	kc.Retries = 4
 
 	var docker *dockerclient.DockerClient
 	docker, err = dockerclient.NewDockerClient("unix:///var/run/docker.sock", nil)
 	if err != nil {
-		log.Fatalf("%s: %v", flag.Arg(0), err)
+		log.Fatalf("%s: %v", containerId, err)
 	}
 
-	cr := NewContainerRunner(api, kc, docker, flag.Arg(0))
+	cr := NewContainerRunner(api, kc, docker, containerId)
 
 	err = cr.Run()
 	if err != nil {
-		log.Fatalf("%s: %v", flag.Arg(0), err)
+		log.Fatalf("%s: %v", containerId, err)
 	}
 
 }

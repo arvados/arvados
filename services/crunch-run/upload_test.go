@@ -58,9 +58,16 @@ func (s *TestSuite) TestSimpleUploadSubdir(c *C) {
 	str, err := cw.WriteTree(tmpdir, log.New(os.Stdout, "", 0))
 
 	c.Check(err, IsNil)
-	c.Check(str, Equals, `. acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:file1.txt
+
+	// streams can get added in either order because of scheduling
+	// of goroutines.
+	if str != `. acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:file1.txt
 ./subdir 37b51d194a7513e45b56f6524f2d51f2+3 0:3:file2.txt
-`)
+` && str != `./subdir 37b51d194a7513e45b56f6524f2d51f2+3 0:3:file2.txt
+. acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:file1.txt
+` {
+		c.Error("Did not get expected manifest text")
+	}
 }
 
 func (s *TestSuite) TestSimpleUploadLarge(c *C) {

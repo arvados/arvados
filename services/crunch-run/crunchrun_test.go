@@ -355,7 +355,7 @@ func dockerLog(fd byte, msg string) []byte {
 	by := []byte(msg)
 	header := make([]byte, 8+len(by))
 	header[0] = fd
-	header[4] = byte(len(by))
+	header[7] = byte(len(by))
 	copy(header[8:], by)
 	return header
 }
@@ -681,7 +681,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
 		c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir2:/tmp"})
 		cr.CleanupDirs()
 	}
@@ -696,7 +696,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
 		c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir1/tmp0:/keeptmp"})
 		cr.CleanupDirs()
 	}
@@ -713,7 +713,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
 		var ss sort.StringSlice = cr.Binds
 		ss.Sort()
 		c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro",

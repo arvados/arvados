@@ -50,6 +50,7 @@ func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
 	kc := &KeepTestClient{}
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
+	cr.CrunchLog.Immediate = nil
 
 	for i := 0; i < 2000000; i += 1 {
 		cr.CrunchLog.Printf("Hello %d", i)
