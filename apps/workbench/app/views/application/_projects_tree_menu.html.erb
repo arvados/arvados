@@ -6,11 +6,21 @@
     <span style="padding-left: 0">Home</span>
   <% end %>
 </li>
-<% my_project_tree.each do |pnode| %>
+<% my_tree = my_wanted_projects_tree current_user %>
+<% my_tree[0].each do |pnode| %>
   <% next if pnode[:object].class != Group %>
   <li>
     <%= project_link_to.call pnode do %>
       <span style="padding-left: <%= pnode[:depth] %>em"></span><%= pnode[:object].name %>
     <% end %>
   </li>
+<% end %>
+<% if my_tree[1] or my_tree[0].size > 200 %>
+<li role="presentation" class="dropdown-header">
+  Some projects have been omitted.
+</li>
+<% elsif my_tree[2] %>
+<li role="presentation" class="dropdown-header">
+  Showing top three levels of your projects.
+</li>
 <% end %>
