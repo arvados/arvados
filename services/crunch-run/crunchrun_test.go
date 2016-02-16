@@ -114,7 +114,7 @@ func (t *TestDockerClient) StartContainer(id string, config *dockerclient.HostCo
 	}
 }
 
-func (t *TestDockerClient) ContainerLogs(id string, options *dockerclient.LogOptions) (io.ReadCloser, error) {
+func (t *TestDockerClient) AttachContainer(id string, options *dockerclient.AttachOptions) (io.ReadCloser, error) {
 	return t.logReader, nil
 }
 
@@ -377,9 +377,6 @@ func (s *TestSuite) TestRunContainer(c *C) {
 	c.Check(err, IsNil)
 
 	err = cr.StartContainer()
-	c.Check(err, IsNil)
-
-	err = cr.AttachLogs()
 	c.Check(err, IsNil)
 
 	err = cr.WaitFinish()

@@ -81,7 +81,7 @@ type ThinDockerClient interface {
 	LoadImage(reader io.Reader) error
 	CreateContainer(config *dockerclient.ContainerConfig, name string, authConfig *dockerclient.AuthConfig) (string, error)
 	StartContainer(id string, config *dockerclient.HostConfig) error
-	ContainerLogs(id string, options *dockerclient.LogOptions) (io.ReadCloser, error)
+	AttachContainer(id string, options *dockerclient.AttachOptions) (io.ReadCloser, error)
 	Wait(id string) <-chan dockerclient.WaitResult
 	RemoveImage(name string, force bool) ([]*dockerclient.ImageDelete, error)
 }
@@ -329,40 +329,6 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	return nil
 }
 
-// StartContainer creates the container and runs it.
-func (runner *ContainerRunner) StartContainer() (err error) {
-	runner.CrunchLog.Print("Creating Docker container")
-
-	runner.CancelLock.Lock()
-	defer runner.CancelLock.Unlock()
-
-	if runner.Cancelled {
-		return ErrCancelled
-	}
-
-	runner.ContainerConfig.Cmd = runner.ContainerRecord.Command
-	if runner.ContainerRecord.Cwd != "." {
-		runner.ContainerConfig.WorkingDir = runner.ContainerRecord.Cwd
-	}
-	for k, v := range runner.ContainerRecord.Environment {
-		runner.ContainerConfig.Env = append(runner.ContainerConfig.Env, k+"="+v)
-	}
-	runner.ContainerConfig.NetworkDisabled = true
-	runner.ContainerID, err = runner.Docker.CreateContainer(&runner.ContainerConfig, "", nil)
-	if err != nil {
-		return fmt.Errorf("While creating container: %v", err)
-	}
-	hostConfig := &dockerclient.HostConfig{Binds: runner.Binds}
-
-	runner.CrunchLog.Printf("Starting Docker container id '%s'", runner.ContainerID)
-	err = runner.Docker.StartContainer(runner.ContainerID, hostConfig)
-	if err != nil {
-		return fmt.Errorf("While starting container: %v", err)
-	}
-
-	return nil
-}
-
 func (runner *ContainerRunner) ProcessDockerAttach(containerReader io.Reader) {
 	// Handle docker log protocol
 	// https://docs.docker.com/engine/reference/api/docker_remote_api_v1.15/#attach-to-a-container
@@ -406,12 +372,13 @@ func (runner *ContainerRunner) ProcessDockerAttach(containerReader io.Reader) {
 
 // AttachLogs connects the docker container stdout and stderr logs to the
 // Arvados logger which logs to Keep and the API server logs table.
-func (runner *ContainerRunner) AttachLogs() (err error) {
+func (runner *ContainerRunner) AttachStreams() (err error) {
 
-	runner.CrunchLog.Print("Attaching container logs")
+	runner.CrunchLog.Print("Attaching container streams")
 
 	var containerReader io.Reader
-	containerReader, err = runner.Docker.ContainerLogs(runner.ContainerID, &dockerclient.LogOptions{Follow: true, Stdout: true, Stderr: true})
+	containerReader, err = runner.Docker.AttachContainer(runner.ContainerID,
+		&dockerclient.AttachOptions{Stream: true, Stdout: true, Stderr: true})
 	if err != nil {
 		return fmt.Errorf("While attaching container logs: %v", err)
 	}
@@ -422,6 +389,47 @@ func (runner *ContainerRunner) AttachLogs() (err error) {
 	runner.Stderr = NewThrottledLogger(runner.NewLogWriter("stderr"))
 
 	go runner.ProcessDockerAttach(containerReader)
+
+	return nil
+}
+
+// StartContainer creates the container and runs it.
+func (runner *ContainerRunner) StartContainer() (err error) {
+	runner.CrunchLog.Print("Creating Docker container")
+
+	runner.CancelLock.Lock()
+	defer runner.CancelLock.Unlock()
+
+	if runner.Cancelled {
+		return ErrCancelled
+	}
+
+	runner.ContainerConfig.Cmd = runner.ContainerRecord.Command
+	if runner.ContainerRecord.Cwd != "." {
+		runner.ContainerConfig.WorkingDir = runner.ContainerRecord.Cwd
+	}
+	for k, v := range runner.ContainerRecord.Environment {
+		runner.ContainerConfig.Env = append(runner.ContainerConfig.Env, k+"="+v)
+	}
+	runner.ContainerConfig.NetworkDisabled = true
+	runner.ContainerID, err = runner.Docker.CreateContainer(&runner.ContainerConfig, "", nil)
+	if err != nil {
+		return fmt.Errorf("While creating container: %v", err)
+	}
+	hostConfig := &dockerclient.HostConfig{Binds: runner.Binds,
+		LogConfig: dockerclient.LogConfig{Type: "none"}}
+
+	runner.AttachStreams()
+	if err != nil {
+		return fmt.Errorf("While attaching streams: %v", err)
+		return err
+	}
+
+	runner.CrunchLog.Printf("Starting Docker container id '%s'", runner.ContainerID)
+	err = runner.Docker.StartContainer(runner.ContainerID, hostConfig)
+	if err != nil {
+		return fmt.Errorf("While starting container: %v", err)
+	}
 
 	return nil
 }
@@ -605,22 +613,22 @@ func (runner *ContainerRunner) Run() (err error) {
 			runner.finalState = "Complete"
 		}
 
-		// (7) capture output
+		// (6) capture output
 		outputerr := runner.CaptureOutput()
 		if outputerr != nil {
 			runner.CrunchLog.Print(outputerr)
 		}
 
-		// (8) clean up temporary directories
+		// (7) clean up temporary directories
 		runner.CleanupDirs()
 
-		// (9) write logs
+		// (8) write logs
 		logerr := runner.CommitLogs()
 		if logerr != nil {
 			runner.CrunchLog.Print(logerr)
 		}
 
-		// (10) update container record with results
+		// (9) update container record with results
 		updateerr := runner.UpdateContainerRecordComplete()
 		if updateerr != nil {
 			runner.CrunchLog.Print(updateerr)
@@ -679,13 +687,7 @@ func (runner *ContainerRunner) Run() (err error) {
 		runner.CrunchLog.Print(err)
 	}
 
-	// (5) attach container logs
-	runerr = runner.AttachLogs()
-	if runerr != nil {
-		runner.CrunchLog.Print(runerr)
-	}
-
-	// (6) wait for container to finish
+	// (5) wait for container to finish
 	waiterr = runner.WaitFinish()
 
 	return
