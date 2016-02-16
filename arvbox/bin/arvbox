@@ -181,12 +181,12 @@ run() {
             docker exec -ti \
                    $ARVBOX_CONTAINER \
                    /usr/local/lib/arvbox/runsu.sh \
-                   /usr/local/lib/arvbox/service/sso/run-service --only-setup
+                   /var/lib/arvbox/service/sso/run-service --only-setup
 
             docker exec -ti \
                    $ARVBOX_CONTAINER \
                    /usr/local/lib/arvbox/runsu.sh \
-                   /usr/local/lib/arvbox/service/api/run-service --only-setup
+                   /var/lib/arvbox/service/api/run-service --only-setup
 
             docker exec -ti \
                    $ARVBOX_CONTAINER \
