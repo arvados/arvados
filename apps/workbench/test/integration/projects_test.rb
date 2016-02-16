@@ -39,7 +39,10 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   test 'Create a project and move it into a different project' do
     visit page_with_token 'active', '/projects'
     find("#projects-menu").click
-    find(".dropdown-menu a", text: "Home").click
+    within('.dropdown-menu') do
+      first('li', text: 'Home').click
+    end
+    wait_for_ajax
     find('.btn', text: "Add a subproject").click
 
     within('h2') do
@@ -51,7 +54,10 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     visit '/projects'
     find("#projects-menu").click
-    find(".dropdown-menu a", text: "Home").click
+    within('.dropdown-menu') do
+      first('li', text: 'Home').click
+    end
+    wait_for_ajax
     find('.btn', text: "Add a subproject").click
     within('h2') do
       find('.fa-pencil').click
