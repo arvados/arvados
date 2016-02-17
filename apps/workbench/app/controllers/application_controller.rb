@@ -94,7 +94,10 @@ class ApplicationController < ActionController::Base
         # Fall back to the default-setting code later.
       end
     end
+    @starred_projects ||= []
     @my_wanted_projects_tree ||= []
+    @my_project_tree ||= []
+    @shared_project_tree ||= []
     render_error(err_opts)
   end
 
@@ -441,6 +444,15 @@ class ApplicationController < ActionController::Base
     respond_to do |f|
       f.json { render(json: results, status: status) }
     end
+  end
+
+  helper_method :is_starred
+  def is_starred
+    links = Link.where(tail_uuid: current_user.uuid,
+               head_uuid: @object.uuid,
+               link_class: 'star')
+
+    return links.andand.any?
   end
 
   protected
@@ -830,6 +842,17 @@ class ApplicationController < ActionController::Base
       own[g[:uuid]] = g
     end
     {collections: c, owners: own}
+  end
+
+  helper_method :my_starred_projects
+  def my_starred_projects user
+    return if @starred_projects
+    links = Link.filter([['tail_uuid', '=', user.uuid],
+                         ['link_class', '=', 'star'],
+                         ['head_uuid', 'is_a', 'arvados#group']]).select(%w(head_uuid))
+    uuids =links.collect { |x| x.head_uuid }
+    starred_projects = Group.filter([['uuid', 'in', uuids]]).order('name')
+    @starred_projects = starred_projects.results
   end
 
   # If there are more than 200 projects that are readable by the user,

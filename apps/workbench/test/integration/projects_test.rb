@@ -39,7 +39,10 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   test 'Create a project and move it into a different project' do
     visit page_with_token 'active', '/projects'
     find("#projects-menu").click
-    find(".dropdown-menu a", text: "Home").click
+    within('.dropdown-menu') do
+      first('li', text: 'Home').click
+    end
+    wait_for_ajax
     find('.btn', text: "Add a subproject").click
 
     within('h2') do
@@ -51,7 +54,10 @@ class ProjectsTest < ActionDispatch::IntegrationTest
 
     visit '/projects'
     find("#projects-menu").click
-    find(".dropdown-menu a", text: "Home").click
+    within('.dropdown-menu') do
+      first('li', text: 'Home').click
+    end
+    wait_for_ajax
     find('.btn', text: "Add a subproject").click
     within('h2') do
       find('.fa-pencil').click
@@ -708,5 +714,27 @@ class ProjectsTest < ActionDispatch::IntegrationTest
      end
      assert page.has_text?('Unrestricted public data'), 'No text - Unrestricted public data'
      assert page.has_text?('An anonymously accessible project'), 'No text - An anonymously accessible project'
+  end
+
+  test "test star and unstar project" do
+    visit page_with_token 'active', "/projects/#{api_fixture('groups')['anonymously_accessible_project']['uuid']}"
+
+    # add to favorites
+    find('.fa-star-o').click
+    wait_for_ajax
+
+    find("#projects-menu").click
+    within('.dropdown-menu') do
+      assert_selector 'li', text: 'Unrestricted public data'
+    end
+
+    # remove from favotires
+    find('.fa-star').click
+    wait_for_ajax
+
+    find("#projects-menu").click
+    within('.dropdown-menu') do
+      assert_no_selector 'li', text: 'Unrestricted public data'
+    end
   end
 end
