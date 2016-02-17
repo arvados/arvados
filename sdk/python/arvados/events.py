@@ -163,7 +163,10 @@ def subscribe(api, filters, on_event, poll_fallback=15, last_log_id=None):
         return _subscribe_websocket(api, filters, on_event, last_log_id)
 
     try:
-        return _subscribe_websocket(api, filters, on_event, last_log_id)
+        if not config.flag_is_true('ARVADOS_DISABLE_WEBSOCKETS'):
+            return _subscribe_websocket(api, filters, on_event, last_log_id)
+        else:
+            _logger.info("Using polling because ARVADOS_DISABLE_WEBSOCKETS is true")
     except Exception as e:
         _logger.warn("Falling back to polling after websocket error: %s" % e)
     p = PollClient(api, filters, on_event, poll_fallback, last_log_id)
