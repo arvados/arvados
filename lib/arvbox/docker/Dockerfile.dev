@@ -10,4 +10,7 @@ RUN set -e && \
  tar -C /usr/local -xjf /tmp/$PJS.tar.bz2 && \
  ln -s ../$PJS/bin/phantomjs /usr/local/bin/
 
+ADD service/ /var/lib/arvbox/service
+RUN rmdir /etc/service && ln -sf /var/lib/arvbox/service /etc
+
 RUN mkdir /etc/test-service && ln -sf /var/lib/arvbox/service/postgres /etc/test-service
