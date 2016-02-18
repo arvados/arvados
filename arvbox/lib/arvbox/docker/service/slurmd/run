@@ -1,0 +1,6 @@
+#!/bin/bash
+
+exec 2>&1
+set -eux -o pipefail
+
+exec /usr/sbin/slurmd -v -D

@@ -10,7 +10,7 @@ RUN apt-get update && \
     pkg-config libattr1-dev python-llfuse python-pycurl \
     libwww-perl libio-socket-ssl-perl libcrypt-ssleay-perl \
     libjson-perl nginx gitolite3 lsof python-epydoc graphviz \
-    apt-transport-https ca-certificates
+    apt-transport-https ca-certificates slurm-wlm
 
 VOLUME /var/lib/docker
 VOLUME /var/log/nginx
@@ -37,9 +37,6 @@ ADD crunch-setup.sh gitolite.rc \
     logger runsu.sh waitforpostgres.sh \
     application_yml_override.py \
     /usr/local/lib/arvbox/
-
-ADD service/ /var/lib/arvbox/service
-RUN rmdir /etc/service && ln -sf /var/lib/arvbox/service /etc
 
 # Start the supervisor.
 CMD ["/usr/local/bin/runsvinit"]
