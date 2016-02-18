@@ -1,0 +1,13 @@
+==================
+DOCKER IMAGE BUILD
+==================
+
+1. `make`
+2. `cd DISTRO`
+3. `docker build -t arvados/build:DISTRO .`
+
+==============
+BUILD PACKAGES
+==============
+
+`docker run -v /path/to/your/arvados-dev/jenkins:/jenkins -v /path/to/your/arvados:/arvados arvados/build:DISTRO`
