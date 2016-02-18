@@ -81,7 +81,7 @@ def determine_project(root, current_user):
 # ArvFile() (file already exists in a collection), UploadFile() (file needs to
 # be uploaded to a collection), or simply returns prefix+fn (which yields the
 # original parameter string).
-def statfile(prefix, fn):
+def statfile(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)"):
     absfn = os.path.abspath(fn)
     if os.path.exists(absfn):
         st = os.stat(absfn)
@@ -89,7 +89,7 @@ def statfile(prefix, fn):
             sp = os.path.split(absfn)
             (pdh, branch) = is_in_collection(sp[0], sp[1])
             if pdh:
-                return ArvFile(prefix, "$(file %s/%s)" % (pdh, branch))
+                return ArvFile(prefix, fnPattern % (pdh, branch))
             else:
                 # trim leading '/' for path prefix test later
                 return UploadFile(prefix, absfn[1:])
@@ -97,7 +97,7 @@ def statfile(prefix, fn):
             sp = os.path.split(absfn)
             (pdh, branch) = is_in_collection(sp[0], sp[1])
             if pdh:
-                return ArvFile(prefix, "$(dir %s/%s/)" % (pdh, branch))
+                return ArvFile(prefix, dirPattern % (pdh, branch))
 
     return prefix+fn
 
