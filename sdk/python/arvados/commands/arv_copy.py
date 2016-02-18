@@ -598,6 +598,39 @@ def setup_git_http(url):
                               "credential.%s/.helper" % url,
                               """!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred"""])
 
+def select_git_url(api, repo_name, retries):
+    r = api.repositories().list(
+        filters=[['name', '=', repo_name]]).execute(num_retries=retries)
+    if r['items_available'] != 1:
+        raise Exception('cannot identify repo {}; {} repos found'
+                        .format(repo_name, r['items_available']))
+
+    http_url = [c for c in r['items'][0]["clone_urls"] if c.startswith("https")]
+    other_url = [c for c in r['items'][0]["clone_urls"] if not c.startswith("https")]
+    if http_url:
+        setup_git_http(http_url[0])
+
+    git_url = None
+    for url in (http_url + other_url):
+        try:
+            logger.debug("trying %s", url)
+            arvados.util.run_command(["git", "ls-remote", url],
+                                      env={"HOME": os.environ["HOME"],
+                                           "ARVADOS_API_TOKEN": api.api_token,
+                                           "GIT_ASKPASS": "/bin/false"})
+        except arvados.errors.CommandFailedError:
+            pass
+        else:
+            git_url = url
+            break
+
+    if not git_url:
+        raise Exception('Cannot access git repository, tried {}'
+                        .format(http_url + other_url))
+
+    return git_url
+
+
 # copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args)
 #
 #    Copies commits from git repository 'src_git_repo' on Arvados
@@ -615,34 +648,12 @@ def setup_git_http(url):
 #
 def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
     # Identify the fetch and push URLs for the git repositories.
-    r = src.repositories().list(
-        filters=[['name', '=', src_git_repo]]).execute(num_retries=args.retries)
-    if r['items_available'] != 1:
-        raise Exception('cannot identify source repo {}; {} repos found'
-                        .format(src_git_repo, r['items_available']))
 
-    http_url = [c for c in r['items'][0]['clone_urls'] if c.startswith("http")]
-    if http_url:
-        src_git_url = http_url[0]
-        setup_git_http(src_git_url)
-    else:
-        src_git_url = r['items'][0]['fetch_url']
+    src_git_url = select_git_url(src, src_git_repo, args.retries)
+    dst_git_url = select_git_url(dst, dst_git_repo, args.retries)
+
     logger.debug('src_git_url: {}'.format(src_git_url))
-
-    r = dst.repositories().list(
-        filters=[['name', '=', dst_git_repo]]).execute(num_retries=args.retries)
-    if r['items_available'] != 1:
-        raise Exception('cannot identify destination repo {}; {} repos found'
-                        .format(dst_git_repo, r['items_available']))
-
-    http_url = [c for c in r['items'][0]['clone_urls'] if c.startswith("http")]
-    if http_url:
-        dst_git_push_url = http_url[0]
-        setup_git_http(dst_git_push_url)
-    else:
-        dst_git_push_url = r['items'][0]['push_url']
-
-    logger.debug('dst_git_push_url: {}'.format(dst_git_push_url))
+    logger.debug('dst_git_url: {}'.format(dst_git_url))
 
     dst_branch = re.sub(r'\W+', '_', "{}_{}".format(src_git_url, script_version))
 
@@ -654,9 +665,10 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
              local_repo_dir[src_git_repo]],
             cwd=os.path.dirname(local_repo_dir[src_git_repo]),
             env={"HOME": os.environ["HOME"],
-                 "ARVADOS_API_TOKEN": src.api_token})
+                 "ARVADOS_API_TOKEN": src.api_token,
+                 "GIT_ASKPASS": "/bin/false"})
         arvados.util.run_command(
-            ["git", "remote", "add", "dst", dst_git_push_url],
+            ["git", "remote", "add", "dst", dst_git_url],
             cwd=local_repo_dir[src_git_repo])
     arvados.util.run_command(
         ["git", "branch", dst_branch, script_version],
@@ -664,7 +676,8 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
     arvados.util.run_command(["git", "push", "dst", dst_branch],
                              cwd=local_repo_dir[src_git_repo],
                              env={"HOME": os.environ["HOME"],
-                                  "ARVADOS_API_TOKEN": dst.api_token})
+                                  "ARVADOS_API_TOKEN": dst.api_token,
+                                  "GIT_ASKPASS": "/bin/false"})
 
 def copy_docker_images(pipeline, src, dst, args):
     """Copy any docker images named in the pipeline components'
