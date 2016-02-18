@@ -227,6 +227,17 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections, err e
 		}
 	}
 
+	if totalCollections < initialNumberOfCollectionsAvailable {
+		err = fmt.Errorf("Initially there were %d collections available, "+
+				"but we only retrieved %d. Refusing to continue as "+
+				"this could indicate an otherwise undetected "+
+				"failure, though it is also possible that "+
+				"collections were deleted by another process "+
+				"while datamanager was running.",
+				initialNumberOfCollectionsAvailable, totalCollections)
+		return
+	}
+
 	// Write the heap profile for examining memory usage
 	err = WriteHeapProfile()
 
