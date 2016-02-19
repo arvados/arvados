@@ -247,6 +247,30 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections, err e
 		}
 	}
 
+	// Make one final API request to verify that we have processed all collections available up to the latest modification date
+	var collections SdkCollectionList
+	sdkParams["filters"].([][]string)[0][1] = "<="
+	sdkParams["limit"] = 0
+	err = params.Client.List("collections", sdkParams, &collections)
+	if err != nil {
+		return
+	}
+	finalNumberOfCollectionsAvailable, err :=
+		util.NumberItemsAvailable(params.Client, "collections")
+	if err != nil {
+		return
+	}
+	if totalCollections < finalNumberOfCollectionsAvailable {
+		err = fmt.Errorf("API server indicates a total of %d collections "+
+				"available up to %v, but we only retrieved %d. "+
+				"Refusing to continue as this could indicate an "+
+				"otherwise undetected failure.",
+				finalNumberOfCollectionsAvailable, 
+				sdkParams["filters"].([][]string)[0][2],
+				totalCollections)
+		return
+	}
+
 	// Write the heap profile for examining memory usage
 	err = WriteHeapProfile()
 
