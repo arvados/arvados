@@ -5,6 +5,7 @@ import arvados
 import arvados.events
 import arvados.commands.keepdocker
 import arvados.commands.run
+import arvados.collection
 import cwltool.draft2tool
 import cwltool.workflow
 import cwltool.main
@@ -20,6 +21,8 @@ from cwltool.process import get_feature
 
 logger = logging.getLogger('arvados.cwl-runner')
 logger.setLevel(logging.INFO)
+
+crunchrunner_pdh = "e9b79ec72c692982d59f3a438fb49df2+66"
 
 def arv_docker_get_image(api_client, dockerRequirement, pull_image):
     if "dockerImageId" not in dockerRequirement and "dockerPull" in dockerRequirement:
@@ -142,9 +145,9 @@ class ArvadosJob(object):
         try:
             response = self.arvrunner.api.jobs().create(body={
                 "script": "crunchrunner",
-                "repository": kwargs["repository"],
-                "script_version": "master",
-                "script_parameters": {"tasks": [script_parameters]},
+                "repository": "arvados",
+                "script_version": "8488-cwl-crunchrunner-collection", #"master",
+                "script_parameters": {"tasks": [script_parameters], "crunchrunner": crunchrunner_pdh+"/crunchrunner"},
                 "runtime_constraints": runtime_constraints
             }, find_or_create=kwargs.get("enable_reuse", True)).execute(num_retries=self.arvrunner.num_retries)
 
@@ -302,6 +305,17 @@ class ArvCwlRunner(object):
     def arvExecutor(self, tool, job_order, input_basedir, args, **kwargs):
         events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#job"]], self.on_message)
 
+        try:
+            self.api.collections().get(uuid=crunchrunner_pdh).execute()
+        except arvados.errors.ApiError:
+            import httplib2
+            h = httplib2.Http()
+            resp, content = h.request("https://cloud.curoverse.com/collections/download/%s/1i1u2qtq66k1atziv4ocfgsg5nu5tj11n4r6e0bhvjg03rix4m/crunchrunner" % (crunchrunner_pdh), "GET")
+            with arvados.collection.Collection() as col:
+                with col.open("crunchrunner", "w") as f:
+                    f.write(content)
+                col.save_new("crunchrunner binary")
+
         self.pipeline = self.api.pipeline_instances().create(body={"name": shortname(tool.tool["id"]),
                                                                    "components": {},
                                                                    "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
@@ -310,7 +324,6 @@ class ArvCwlRunner(object):
 
         kwargs["fs_access"] = self.fs_access
         kwargs["enable_reuse"] = args.enable_reuse
-        kwargs["repository"] = args.repository
 
         if kwargs.get("conformance_test"):
             return cwltool.main.single_job_executor(tool, job_order, input_basedir, args, **kwargs)
@@ -361,7 +374,5 @@ def main(args, stdout, stderr, api_client=None):
     exgroup.add_argument("--disable-reuse", action="store_false",
                         default=False, dest="enable_reuse",
                         help="")
-
-    parser.add_argument('--repository', type=str, default="peter/crunchrunner", help="Repository containing the 'crunchrunner' program.")
 
     return cwltool.main.main(args, executor=runner.arvExecutor, makeTool=runner.arvMakeTool, parser=parser)
