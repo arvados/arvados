@@ -193,7 +193,7 @@ func BuildDataFetcher(arv arvadosclient.ArvadosClient) summary.DataFetcher {
 				collection.GetCollectionsParams{
 					Client:    arv,
 					Logger:    arvLogger,
-					BatchSize: 50})
+					BatchSize: 1000})
 			collDone <- struct{}{}
 		}()
 
