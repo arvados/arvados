@@ -270,7 +270,7 @@ fpm_build () {
               apt-get install -y "$pkg"
           fi
       else
-          pkg_rpm=$(ls $WORKSPACE/packages/$TARGET/$pkg*.rpm | sort -rg | awk 'NR==1')
+          pkg_rpm=$(ls "$WORKSPACE/packages/$TARGET/$pkg"-[0-9]*.rpm | sort -rg | awk 'NR==1')
           if [[ -e $pkg_rpm ]]; then
               echo "Installing build_dep $pkg from $pkg_rpm"
               rpm -i "$pkg_rpm"
