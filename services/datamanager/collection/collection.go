@@ -228,6 +228,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections, err e
 	}
 
 	// Make one final API request to verify that we have processed all collections available up to the latest modification date
+	var collections SdkCollectionList
 	sdkParams["filters"].([][]string)[0][1] = "<="
 	sdkParams["limit"] = 0
 	err = params.Client.List("collections", sdkParams, &collections)
