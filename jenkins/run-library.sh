@@ -261,7 +261,7 @@ fpm_build () {
   fi
   for pkg in "${build_depends[@]}"; do
       if [[ $TARGET =~ debian|ubuntu ]]; then
-          pkg_deb=$(ls $WORKSPACE/packages/$TARGET/$pkg*.deb | sort -rg | awk 'NR==1')
+          pkg_deb=$(ls "$WORKSPACE/packages/$TARGET/$pkg_"*.deb | sort -rg | awk 'NR==1')
           if [[ -e $pkg_deb ]]; then
               echo "Installing build_dep $pkg from $pkg_deb"
               dpkg -i "$pkg_deb"
