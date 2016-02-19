@@ -361,9 +361,9 @@ if [[ $TARGET =~ ubuntu1204 ]]; then
     (
         cd $LIBFUSE_DIR
         # download fuse 2.9.2 ubuntu 14.04 source package
-        curl -o fuse_2.9.2.orig.tar.xz http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/fuse_2.9.2.orig.tar.xz
-        curl -o fuse_2.9.2-4ubuntu4.14.04.1.debian.tar.xz http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/fuse_2.9.2-4ubuntu4.14.04.1.debian.tar.xz
-        curl -o fuse_2.9.2-4ubuntu4.14.04.1.dsc http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/fuse_2.9.2-4ubuntu4.14.04.1.dsc
+        file="fuse_2.9.2.orig.tar.xz" && curl -L -o "${file}" "http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/${file}"
+        file="fuse_2.9.2-4ubuntu4.14.04.1.debian.tar.xz" && curl -L -o "${file}" "http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/${file}"
+        file="fuse_2.9.2-4ubuntu4.14.04.1.dsc" && curl -L -o "${file}" "http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/${file}"
 
         # install dpkg-source and dpkg-buildpackage commands
         apt-get install -y dpkg-dev
@@ -401,7 +401,7 @@ elif [[ $TARGET =~ centos6 ]]; then
     (
         cd "$LIBFUSE_DIR"
         # download fuse 2.9.2 centos 7 source rpm
-        curl -o fuse-2.9.2-6.el7.src.rpm "http://vault.centos.org/7.2.1511/os/Source/SPackages/fuse-2.9.2-6.el7.src.rpm"
+        file="fuse-2.9.2-6.el7.src.rpm" && curl -L -o "${file}" "http://vault.centos.org/7.2.1511/os/Source/SPackages/${file}"
         (
             # modify source rpm spec to remove conflict on filesystem version
             mkdir -p /root/rpmbuild/SOURCES
