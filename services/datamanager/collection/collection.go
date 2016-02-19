@@ -227,14 +227,26 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections, err e
 		}
 	}
 
-	if totalCollections < initialNumberOfCollectionsAvailable {
-		err = fmt.Errorf("Initially there were %d collections available, "+
-				"but we only retrieved %d. Refusing to continue as "+
-				"this could indicate an otherwise undetected "+
-				"failure, though it is also possible that "+
-				"collections were deleted by another process "+
-				"while datamanager was running.",
-				initialNumberOfCollectionsAvailable, totalCollections)
+	// Make one final API request to verify that we have processed all collections available up to the latest modification date
+	sdkParams["filters"].([][]string)[0][1] = "<="
+	sdkParams["limit"] = 0
+	err = params.Client.List("collections", sdkParams, &collections)
+	if err != nil {
+		return
+	}
+	finalNumberOfCollectionsAvailable, err :=
+		util.NumberItemsAvailable(params.Client, "collections")
+	if err != nil {
+		return
+	}
+	if totalCollections < finalNumberOfCollectionsAvailable {
+		err = fmt.Errorf("API server indicates a total of %d collections "+
+				"available up to %v, but we only retrieved %d. "+
+				"Refusing to continue as this could indicate an "+
+				"otherwise undetected failure.",
+				finalNumberOfCollectionsAvailable, 
+				sdkParams["filters"].([][]string)[0][2],
+				totalCollections)
 		return
 	}
 
