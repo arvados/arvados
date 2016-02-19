@@ -174,6 +174,7 @@ func run(uuid string, crunchRunCommand string, priorityPollInterval int) {
 				log.Printf("Error getting container info for %v: %q", uuid, err)
 			} else {
 				if container.Priority == 0 {
+					log.Printf("Canceling container %v", uuid)
 					priorityTicker.Stop()
 					cancelcmd := exec.Command("scancel", "--name="+uuid)
 					cancelcmd.Run()
