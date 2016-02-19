@@ -140,7 +140,7 @@ class ArvadosApiClient
     profile_checkpoint { "Prepare request #{query["_method"] or "POST"} #{url} #{query[:uuid]} #{query.inspect[0,256]}" }
     msg = @client_mtx.synchronize do
       begin
-        @api_client.post(url, query, header: header)
+        @api_client.post(url, query, header: header, timeout_sec: 300, open_timeout_sec: 120)
       rescue => exception
         raise NoApiResponseException.new(url, exception)
       end
