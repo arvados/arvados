@@ -374,17 +374,18 @@ if [[ $TARGET =~ ubuntu1204 ]]; then
 
         # add new version to changelog
         cd fuse-2.9.2
-	mv debian/changelog debian/changelog.old
-	echo "fuse (2.9.2-5) precise; urgency=low" > debian/changelog
-	echo "" >> debian/changelog
-	echo "  * Backported from trusty-security to precise" >> debian/changelog
-	echo "" >> debian/changelog
-	echo " -- Joshua Randall <jcrandall@alum.mit.edu>  Thu, 4 Feb 2016 11:31:00 -0000" >> debian/changelog
-	echo "" >> debian/changelog
-	cat debian/changelog.old >> debian/changelog
-	rm -f debian/changelog.old
+        (
+            echo "fuse (2.9.2-5) precise; urgency=low"
+            echo
+            echo "  * Backported from trusty-security to precise"
+            echo
+            echo " -- Joshua Randall <jcrandall@alum.mit.edu>  Thu, 4 Feb 2016 11:31:00 -0000"
+            echo
+            cat debian/changelog
+        ) > debian/changelog.new
+        mv debian/changelog.new debian/changelog
 
-	# install build-deps and build
+        # install build-deps and build
         apt-get install -y $(awk 'BEGIN {FS=":"} $1=="Build-Depends" {n=split($2,deps,","); for (i=0; i<n; i++) {split(deps[i],pkg," "); if (pkg[1]!="") {print pkg[1]}}}' debian/control)
         dpkg-buildpackage -rfakeroot -b
     )
