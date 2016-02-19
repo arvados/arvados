@@ -215,4 +215,6 @@ func run(uuid string, crunchRunCommand string, priorityPollInterval int) {
 			log.Printf("Error updating container state to Complete for %v: %q", uuid, err)
 		}
 	}
+
+	log.Printf("Finished container run for %v", uuid)
 }

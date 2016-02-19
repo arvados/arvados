@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	. "gopkg.in/check.v1"
 	"time"
 )
@@ -23,7 +24,7 @@ var _ = Suite(&LoggingTestSuite{})
 func (s *LoggingTestSuite) TestWriteLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
-	cr := NewContainerRunner(api, kc, nil)
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 
 	cr.CrunchLog.Print("Hello world!")
@@ -39,16 +40,17 @@ func (s *LoggingTestSuite) TestWriteLogs(c *C) {
 	logtext := "2015-12-29T15:51:45.000000001Z Hello world!\n" +
 		"2015-12-29T15:51:45.000000002Z Goodbye\n"
 
-	c.Check(api.Content["event_type"], Equals, "crunch-run")
-	c.Check(api.Content["properties"].(map[string]string)["text"], Equals, logtext)
+	c.Check(api.Content["log"].(arvadosclient.Dict)["event_type"], Equals, "crunch-run")
+	c.Check(api.Content["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"], Equals, logtext)
 	c.Check(string(kc.Content), Equals, logtext)
 }
 
 func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
-	cr := NewContainerRunner(api, kc, nil)
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
+	cr.CrunchLog.Immediate = nil
 
 	for i := 0; i < 2000000; i += 1 {
 		cr.CrunchLog.Printf("Hello %d", i)
@@ -67,7 +69,7 @@ func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
 func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
-	cr := NewContainerRunner(api, kc, nil)
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
 	ts := &TestTimestamper{}
 	cr.CrunchLog.Timestamper = ts.Timestamp
 	stdout := NewThrottledLogger(cr.NewLogWriter("stdout"))
@@ -81,14 +83,14 @@ func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 	cr.CrunchLog.Close()
 	logtext1 := "2015-12-29T15:51:45.000000001Z Hello world!\n" +
 		"2015-12-29T15:51:45.000000003Z Goodbye\n"
-	c.Check(api.Content["event_type"], Equals, "crunch-run")
-	c.Check(api.Content["properties"].(map[string]string)["text"], Equals, logtext1)
+	c.Check(api.Content["log"].(arvadosclient.Dict)["event_type"], Equals, "crunch-run")
+	c.Check(api.Content["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"], Equals, logtext1)
 
 	stdout.Close()
 	logtext2 := "2015-12-29T15:51:45.000000002Z Doing stuff\n" +
 		"2015-12-29T15:51:45.000000004Z Blurb\n"
-	c.Check(api.Content["event_type"], Equals, "stdout")
-	c.Check(api.Content["properties"].(map[string]string)["text"], Equals, logtext2)
+	c.Check(api.Content["log"].(arvadosclient.Dict)["event_type"], Equals, "stdout")
+	c.Check(api.Content["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"], Equals, logtext2)
 
 	mt, err := cr.LogCollection.ManifestText()
 	c.Check(err, IsNil)
