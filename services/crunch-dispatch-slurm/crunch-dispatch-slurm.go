@@ -139,7 +139,7 @@ func dispatchSlurm(priorityPollInterval int, crunchRunCommand string) {
 func run(uuid string, crunchRunCommand string, priorityPollInterval int) {
 	stdinReader, stdinWriter := io.Pipe()
 
-	cmd := exec.Command("sbatch", "--job-name="+uuid)
+	cmd := exec.Command("sbatch", "--job-name="+uuid, "--share")
 	cmd.Stdin = stdinReader
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stderr
@@ -148,7 +148,7 @@ func run(uuid string, crunchRunCommand string, priorityPollInterval int) {
 		return
 	}
 
-	fmt.Fprintf(stdinWriter, "#!/bin/sh\nexec %s %s\n", crunchRunCommand, uuid)
+	fmt.Fprintf(stdinWriter, "#!/bin/sh\nexec '%s' '%s'\n", crunchRunCommand, uuid)
 
 	stdinWriter.Close()
 	cmd.Wait()
@@ -178,6 +178,9 @@ func run(uuid string, crunchRunCommand string, priorityPollInterval int) {
 					priorityTicker.Stop()
 					cancelcmd := exec.Command("scancel", "--name="+uuid)
 					cancelcmd.Run()
+				}
+				if container.State == "Complete" {
+					priorityTicker.Stop()
 				}
 			}
 		}
