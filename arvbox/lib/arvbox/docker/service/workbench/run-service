@@ -36,3 +36,5 @@ development:
   keep_web_url: http://$localip:${services[keep-web]}/c=%{uuid_or_pdh}
   arvados_docsite: http://$localip:${services[doc]}/
 EOF
+
+(cd config && /usr/local/lib/arvbox/application_yml_override.py)

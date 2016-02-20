@@ -6,15 +6,23 @@ RUN apt-get update && \
     ruby rake bundler curl libpq-dev \
     libcurl4-openssl-dev libssl-dev zlib1g-dev libpcre3-dev \
     openssh-server python-setuptools netcat-traditional \
-    libpython-dev fuse libfuse-dev python-pip \
+    libpython-dev fuse libfuse-dev python-pip python-yaml \
     pkg-config libattr1-dev python-llfuse python-pycurl \
     libwww-perl libio-socket-ssl-perl libcrypt-ssleay-perl \
-    libjson-perl nginx gitolite3 lsof python-epydoc graphviz
+    libjson-perl nginx gitolite3 lsof python-epydoc graphviz \
+    apt-transport-https ca-certificates
 
-RUN curl -sSL https://get.docker.com/ | sh
 VOLUME /var/lib/docker
 VOLUME /var/log/nginx
 VOLUME /etc/ssl/private
+
+RUN apt-key adv --keyserver hkp://pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D || \
+    apt-key adv --keyserver hkp://pgp.mit.edu:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
+
+RUN mkdir -p /etc/apt/sources.list.d && \
+    echo deb https://apt.dockerproject.org/repo debian-jessie main > /etc/apt/sources.list.d/docker.list && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -yq install docker-engine=1.9.1-0~jessie
 
 RUN rm -rf /var/lib/postgresql && mkdir -p /var/lib/postgresql
 
@@ -27,9 +35,11 @@ ADD fuse.conf /etc/
 ADD crunch-setup.sh gitolite.rc \
     keep-setup.sh common.sh createusers.sh \
     logger runsu.sh waitforpostgres.sh \
+    application_yml_override.py \
     /usr/local/lib/arvbox/
-ADD service/ /usr/local/lib/arvbox/service
-RUN rmdir /etc/service && ln -sf /usr/local/lib/arvbox/service /etc
+
+ADD service/ /var/lib/arvbox/service
+RUN rmdir /etc/service && ln -sf /var/lib/arvbox/service /etc
 
 # Start the supervisor.
 CMD ["/usr/local/bin/runsvinit"]

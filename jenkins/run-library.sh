@@ -218,6 +218,12 @@ fpm_build () {
   declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "-s" "$PACKAGE_TYPE" "-t" "$FORMAT")
   if [ python = "$PACKAGE_TYPE" ]; then
     COMMAND_ARR+=(--exclude=\*/{dist,site}-packages/tests/\*)
+    if [ deb = "$FORMAT" ]; then
+        # Dependencies are built from setup.py.  Since setup.py will never
+        # refer to Debian package iterations, it doesn't make sense to
+        # enforce those in the .deb dependencies.
+        COMMAND_ARR+=(--deb-ignore-iteration-in-dependencies)
+    fi
   fi
 
   if [[ "$PACKAGE_NAME" != "$PACKAGE" ]]; then
