@@ -366,7 +366,7 @@ if [[ $TARGET =~ ubuntu1204 ]]; then
         file="fuse_2.9.2-4ubuntu4.14.04.1.dsc" && curl -L -o "${file}" "http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/${file}"
 
         # install dpkg-source and dpkg-buildpackage commands
-        apt-get install -y dpkg-dev
+        apt-get install -y --no-install-recommends dpkg-dev
 
         # extract source and apply patches
         dpkg-source -x fuse_2.9.2-4ubuntu4.14.04.1.dsc
@@ -386,7 +386,7 @@ if [[ $TARGET =~ ubuntu1204 ]]; then
         mv debian/changelog.new debian/changelog
 
         # install build-deps and build
-        apt-get install -y $(awk 'BEGIN {FS=":"} $1=="Build-Depends" {n=split($2,deps,","); for (i=0; i<n; i++) {split(deps[i],pkg," "); if (pkg[1]!="") {print pkg[1]}}}' debian/control)
+        apt-get install -y --no-install-recommends debhelper dh-autoreconf libselinux-dev
         dpkg-buildpackage -rfakeroot -b
     )
     fpm_build "$LIBFUSE_DIR/fuse_2.9.2-5_amd64.deb" fuse "Ubuntu Developers" deb "2.9.2" --iteration 5
