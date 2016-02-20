@@ -13,7 +13,7 @@ RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.1 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.1 && \
-    /usr/local/rvm/bin/rvm-exec default gem install bundle fpm
+    /usr/local/rvm/bin/rvm-exec default gem install bundler fpm
 
 # Need to "touch" RPM database to workaround bug in interaction between
 # overlayfs and yum (https://bugzilla.redhat.com/show_bug.cgi?id=1213602)
