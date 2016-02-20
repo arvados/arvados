@@ -91,7 +91,7 @@ class TestCrunchJob < Minitest::Test
       tryjobrecord j, binstubs: ['clean_fail']
     end
     assert_match /Failing mount stub was called/, err
-    assert_match /Clean work dirs: exit 1\n$/, err
+    assert_match /clean work dirs: exit 44\n$/, err
     assert_equal SPECIAL_EXIT[:EX_RETRY_UNLOCKED], $?.exitstatus
   end
 
