@@ -643,7 +643,17 @@ if resource_body
     if resource_body == '-'
       _resource_body_file = $stdin
     else
-      _resource_body_file = File.open(resource_body, 'r')
+      if File.readable? resource_body
+        _resource_body_file = File.open(resource_body, 'r')
+      else
+        if File.exists? resource_body
+          # specified file exists but is not readable
+          abort "File '#{resource_body}' specified for option '--#{resource_schema.to_sym}' exists but is not readable."
+        else
+          # specified file does not exist
+          abort "File '#{resource_body}' specified for option '--#{resource_schema.to_sym}' does not exist."
+        end
+      end
     end
     resource_body = _resource_body_file.read()
     _resource_body_file.close()
