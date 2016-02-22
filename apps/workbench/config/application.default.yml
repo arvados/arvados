@@ -272,3 +272,7 @@ common:
   #
   # The default setting (false) is appropriate for a multi-user site.
   trust_all_content: false
+
+  # Maximum number of historic log lines of a running job to fetch
+  # and display in the Log tab, while subscribing to web sockets.
+  running_job_log_lines_to_fetch: 2000

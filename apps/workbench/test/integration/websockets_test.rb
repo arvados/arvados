@@ -211,4 +211,68 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     datum = page.evaluate_script("jobGraphData[jobGraphData.length-1]['#{series}']")
     assert_in_epsilon value, datum.to_f
   end
+
+  test "test running job with just a few previous log lines" do
+    Thread.current[:arvados_api_token] = @@API_AUTHS["admin"]['api_token']
+    job = Job.where(uuid: api_fixture("jobs")['running']['uuid']).results.first
+    visit page_with_token("admin", "/jobs/#{job.uuid}")
+
+    api = ArvadosApiClient.new
+
+    # Create just one old log line
+    api.api("logs", "", {log: {
+                object_uuid: job.uuid,
+                event_type: "stderr",
+                properties: {"text" => "Historic log message"}}})
+
+    click_link("Log")
+
+    # Expect "all" historic log lines because we have less than
+    # default Rails.configuration.running_job_log_lines_to_fetch count
+    assert_text 'Historic log message'
+
+    # Create new log line and expect it to show up in log tab
+    api.api("logs", "", {log: {
+                object_uuid: job.uuid,
+                event_type: "stderr",
+                properties: {"text" => "Log message after subscription"}}})
+    assert_text 'Log message after subscription'
+  end
+
+  test "test running job with too many previous log lines" do
+    Rails.configuration.running_job_log_lines_to_fetch = 5
+
+    Thread.current[:arvados_api_token] = @@API_AUTHS["admin"]['api_token']
+    job = Job.where(uuid: api_fixture("jobs")['running']['uuid']).results.first
+
+    visit page_with_token("admin", "/jobs/#{job.uuid}")
+
+    api = ArvadosApiClient.new
+
+    # Create Rails.configuration.running_job_log_lines_to_fetch + 1 log lines
+    (0..Rails.configuration.running_job_log_lines_to_fetch).each do |count|
+      api.api("logs", "", {log: {
+                object_uuid: job.uuid,
+                event_type: "stderr",
+                properties: {"text" => "Old log message #{count}"}}})
+    end
+
+    # Go to log tab, which results in subscribing to websockets
+    click_link("Log")
+
+    # Expect all but the first historic log lines,
+    # because that was one too many than fetch count.
+    (1..Rails.configuration.running_job_log_lines_to_fetch).each do |count|
+      assert_text "Old log message #{count}"
+    end
+    assert_no_text 'Old log message 0'
+
+    # Create one more log line after subsription
+    api.api("logs", "", {log: {
+                object_uuid: job.uuid,
+                event_type: "stderr",
+                properties: {"text" => "Life goes on!"}}})
+    # Expect it to show up in log tab
+    assert_text 'Life goes on!'
+  end
 end
