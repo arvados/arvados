@@ -23,8 +23,9 @@ from cwltool.process import get_feature
 logger = logging.getLogger('arvados.cwl-runner')
 logger.setLevel(logging.INFO)
 
-crunchrunner_pdh = "e9b79ec72c692982d59f3a438fb49df2+66"
+crunchrunner_pdh = "721abe848fd8e6e6d1c99b920e6b7a2c+140"
 crunchrunner_download = "https://cloud.curoverse.com/collections/download/qr1hi-4zz18-n3m1yxd0vx78jic/1i1u2qtq66k1atziv4ocfgsg5nu5tj11n4r6e0bhvjg03rix4m/crunchrunner"
+certs_download = "https://cloud.curoverse.com/collections/download/qr1hi-4zz18-n3m1yxd0vx78jic/1i1u2qtq66k1atziv4ocfgsg5nu5tj11n4r6e0bhvjg03rix4m/ca-certificates.crt"
 
 def arv_docker_get_image(api_client, dockerRequirement, pull_image):
     if "dockerImageId" not in dockerRequirement and "dockerPull" in dockerRequirement:
@@ -311,12 +312,16 @@ class ArvCwlRunner(object):
             self.api.collections().get(uuid=crunchrunner_pdh).execute()
         except arvados.errors.ApiError as e:
             import httplib2
-            h = httplib2.Http('ca_certs': arvados.util.ca_certs_path())
+            h = httplib2.Http(ca_certs=arvados.util.ca_certs_path())
             resp, content = h.request(crunchrunner_download, "GET")
+            resp2, content2 = h.request(certs_download, "GET")
             with arvados.collection.Collection() as col:
                 with col.open("crunchrunner", "w") as f:
                     f.write(content)
-                col.save_new("crunchrunner binary")
+                with col.open("ca-certificates.crt", "w") as f:
+                    f.write(content2)
+
+                col.save_new("crunchrunner binary", ensure_unique_name=True)
 
         self.pipeline = self.api.pipeline_instances().create(body={"name": shortname(tool.tool["id"]),
                                                                    "components": {},
