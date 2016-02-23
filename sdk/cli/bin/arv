@@ -638,23 +638,26 @@ if resource_body
   rescue JSON::ParserError => e
     _is_json = false
   end
-  if !_is_json
-    # if resource_body is not valid JSON, it should be a filename (or '-' for stdin)
-    if resource_body == '-'
-      _resource_body_file = $stdin
+  _is_readable_file = false
+  # if resource_body is not valid JSON, it should be a filename (or '-' for stdin)
+  if resource_body == '-'
+    _is_readable_file = true
+    _resource_body_file = $stdin
+  elsif File.readable? resource_body
+      _is_readable_file = true
+      _resource_body_file = File.open(resource_body, 'r')
+  end
+  if _is_json and _is_readable_file
+    abort "Argument '#{resource_body}' specified for option '--#{resource_schema.to_sym}' is both valid JSON and a readable file, cannot continue (suggest renaming the file '#{resource_body}')."
+  elsif !_is_json and !_is_readable_file
+    if File.exists? resource_body
+      # specified file exists but is not readable
+      abort "File '#{resource_body}' specified for option '--#{resource_schema.to_sym}' exists but is not readable."
     else
-      if File.readable? resource_body
-        _resource_body_file = File.open(resource_body, 'r')
-      else
-        if File.exists? resource_body
-          # specified file exists but is not readable
-          abort "File '#{resource_body}' specified for option '--#{resource_schema.to_sym}' exists but is not readable."
-        else
-          # specified file does not exist
-          abort "File '#{resource_body}' specified for option '--#{resource_schema.to_sym}' does not exist."
-        end
-      end
+      # specified file does not exist
+      abort "File '#{resource_body}' specified for option '--#{resource_schema.to_sym}' does not exist."
     end
+  elsif _is_readable_file
     resource_body = _resource_body_file.read()
     _resource_body_file.close()
   end
