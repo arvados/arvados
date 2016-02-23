@@ -584,20 +584,6 @@ def copy_collection(obj_uuid, src, dst, args):
     c['manifest_text'] = dst_manifest
     return create_collection_from(c, src, dst, args)
 
-def setup_git_http(url):
-    u = urlparse.urlsplit(url)
-    url = urlparse.urlunsplit((u.scheme, u.netloc, "", "", ""))
-    arvados.util.run_command(["git",
-                              "config",
-                              "--global",
-                              "credential.%s/.username" % url,
-                              "none"])
-    arvados.util.run_command(["git",
-                              "config",
-                              "--global",
-                              "credential.%s/.helper" % url,
-                              """!cred(){ cat >/dev/null; if [ "$1" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred"""])
-
 def select_git_url(api, repo_name, retries):
     r = api.repositories().list(
         filters=[['name', '=', repo_name]]).execute(num_retries=retries)
@@ -605,16 +591,26 @@ def select_git_url(api, repo_name, retries):
         raise Exception('cannot identify repo {}; {} repos found'
                         .format(repo_name, r['items_available']))
 
-    http_url = [c for c in r['items'][0]["clone_urls"] if c.startswith("https")]
-    other_url = [c for c in r['items'][0]["clone_urls"] if not c.startswith("https")]
-    if http_url:
-        setup_git_http(http_url[0])
+    https_url = [c for c in r['items'][0]["clone_urls"] if c.startswith("https:")]
+    http_url = [c for c in r['items'][0]["clone_urls"] if c.startswith("http:")]
+    other_url = [c for c in r['items'][0]["clone_urls"] if not c.startswith("http")]
 
+    priority = https_url + other_url + http_url
+
+    git_config = []
     git_url = None
-    for url in (http_url + other_url):
+    for url in priority:
+        if url.startswith("http"):
+            u = urlparse.urlsplit(url)
+            baseurl = urlparse.urlunsplit((u.scheme, u.netloc, "", "", ""))
+            git_config = ["-c", "credential.%s/.username=none" % baseurl,
+                          "-c", "credential.%s/.helper=!cred(){ cat >/dev/null; if [ \"$1\" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred" % baseurl]
+        else:
+            git_config = []
+
         try:
             logger.debug("trying %s", url)
-            arvados.util.run_command(["git", "ls-remote", url],
+            arvados.util.run_command(["git"] + git_config + ["ls-remote", url],
                                       env={"HOME": os.environ["HOME"],
                                            "ARVADOS_API_TOKEN": api.api_token,
                                            "GIT_ASKPASS": "/bin/false"})
@@ -626,9 +622,15 @@ def select_git_url(api, repo_name, retries):
 
     if not git_url:
         raise Exception('Cannot access git repository, tried {}'
-                        .format(http_url + other_url))
+                        .format(priority))
 
-    return git_url
+    if git_url.startswith("http:"):
+        if api.insecure:
+            logger.warn("Using insecure git url %s but will allow this because ARVADOS_API_HOST_INSECURE is true.", git_url)
+        else:
+            raise Exception("Refusing to use insecure git url %s, set ARVADOS_API_HOST_INSECURE if you really want this." % git_url)
+
+    return (git_url, git_config)
 
 
 # copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args)
@@ -649,8 +651,8 @@ def select_git_url(api, repo_name, retries):
 def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
     # Identify the fetch and push URLs for the git repositories.
 
-    src_git_url = select_git_url(src, src_git_repo, args.retries)
-    dst_git_url = select_git_url(dst, dst_git_repo, args.retries)
+    (src_git_url, src_git_config) = select_git_url(src, src_git_repo, args.retries)
+    (dst_git_url, dst_git_config) = select_git_url(dst, dst_git_repo, args.retries)
 
     logger.debug('src_git_url: {}'.format(src_git_url))
     logger.debug('dst_git_url: {}'.format(dst_git_url))
@@ -661,7 +663,7 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
     if src_git_repo not in local_repo_dir:
         local_repo_dir[src_git_repo] = tempfile.mkdtemp()
         arvados.util.run_command(
-            ["git", "clone", "--bare", src_git_url,
+            ["git"] + src_git_config + ["clone", "--bare", src_git_url,
              local_repo_dir[src_git_repo]],
             cwd=os.path.dirname(local_repo_dir[src_git_repo]),
             env={"HOME": os.environ["HOME"],
@@ -673,7 +675,7 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
     arvados.util.run_command(
         ["git", "branch", dst_branch, script_version],
         cwd=local_repo_dir[src_git_repo])
-    arvados.util.run_command(["git", "push", "dst", dst_branch],
+    arvados.util.run_command(["git"] + dst_git_config + ["push", "dst", dst_branch],
                              cwd=local_repo_dir[src_git_repo],
                              env={"HOME": os.environ["HOME"],
                                   "ARVADOS_API_TOKEN": dst.api_token,

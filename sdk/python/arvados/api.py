@@ -207,6 +207,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
 
     svc = apiclient_discovery.build('arvados', version, **kwargs)
     svc.api_token = token
+    svc.insecure = insecure
     kwargs['http'].max_request_size = svc._rootDesc.get('maxRequestSize', 0)
     kwargs['http'].cache = None
     return svc
