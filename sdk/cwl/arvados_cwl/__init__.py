@@ -6,6 +6,7 @@ import arvados.events
 import arvados.commands.keepdocker
 import arvados.commands.run
 import arvados.collection
+import arvados.util
 import cwltool.draft2tool
 import cwltool.workflow
 import cwltool.main
@@ -23,6 +24,7 @@ logger = logging.getLogger('arvados.cwl-runner')
 logger.setLevel(logging.INFO)
 
 crunchrunner_pdh = "e9b79ec72c692982d59f3a438fb49df2+66"
+crunchrunner_download = "https://cloud.curoverse.com/collections/download/qr1hi-4zz18-n3m1yxd0vx78jic/1i1u2qtq66k1atziv4ocfgsg5nu5tj11n4r6e0bhvjg03rix4m/crunchrunner"
 
 def arv_docker_get_image(api_client, dockerRequirement, pull_image):
     if "dockerImageId" not in dockerRequirement and "dockerPull" in dockerRequirement:
@@ -307,10 +309,10 @@ class ArvCwlRunner(object):
 
         try:
             self.api.collections().get(uuid=crunchrunner_pdh).execute()
-        except arvados.errors.ApiError:
+        except arvados.errors.ApiError as e:
             import httplib2
-            h = httplib2.Http()
-            resp, content = h.request("https://cloud.curoverse.com/collections/download/%s/1i1u2qtq66k1atziv4ocfgsg5nu5tj11n4r6e0bhvjg03rix4m/crunchrunner" % (crunchrunner_pdh), "GET")
+            h = httplib2.Http('ca_certs': arvados.util.ca_certs_path())
+            resp, content = h.request(crunchrunner_download, "GET")
             with arvados.collection.Collection() as col:
                 with col.open("crunchrunner", "w") as f:
                     f.write(content)
@@ -364,7 +366,6 @@ class ArvCwlRunner(object):
 
 
 def main(args, stdout, stderr, api_client=None):
-    runner = ArvCwlRunner(api_client=arvados.api('v1'))
     args.insert(0, "--leave-outputs")
     parser = cwltool.main.arg_parser()
     exgroup = parser.add_mutually_exclusive_group()
@@ -374,5 +375,11 @@ def main(args, stdout, stderr, api_client=None):
     exgroup.add_argument("--disable-reuse", action="store_false",
                         default=False, dest="enable_reuse",
                         help="")
+
+    try:
+        runner = ArvCwlRunner(api_client=arvados.api('v1'))
+    except Exception as e:
+        logger.error(e)
+        return 1
 
     return cwltool.main.main(args, executor=runner.arvExecutor, makeTool=runner.arvMakeTool, parser=parser)
