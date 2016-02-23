@@ -149,7 +149,7 @@ class ArvadosJob(object):
             response = self.arvrunner.api.jobs().create(body={
                 "script": "crunchrunner",
                 "repository": "arvados",
-                "script_version": "8488-cwl-crunchrunner-collection", #"master",
+                "script_version": "master",
                 "script_parameters": {"tasks": [script_parameters], "crunchrunner": crunchrunner_pdh+"/crunchrunner"},
                 "runtime_constraints": runtime_constraints
             }, find_or_create=kwargs.get("enable_reuse", True)).execute(num_retries=self.arvrunner.num_retries)
