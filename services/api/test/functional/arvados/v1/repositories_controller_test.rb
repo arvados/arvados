@@ -176,13 +176,13 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
         end
         if perms['can_write']
           assert u.can? write: repo['uuid']
-          assert_match /RW/, perms['gitolite_permissions']
+          assert_match /RW\+/, perms['gitolite_permissions']
         else
           refute_match /W/, perms['gitolite_permissions']
         end
         if perms['can_manage']
           assert u.can? manage: repo['uuid']
-          assert_match /RW/, perms['gitolite_permissions']
+          assert_match /RW\+/, perms['gitolite_permissions']
         end
       end
     end

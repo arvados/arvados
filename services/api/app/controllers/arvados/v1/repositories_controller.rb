@@ -91,11 +91,11 @@ class Arvados::V1::RepositoriesController < ApplicationController
     @repo_info.values.each do |repo|
       repo[:user_permissions].each do |user_uuid, user_perms|
         if user_perms['can_manage']
-          user_perms['gitolite_permissions'] = 'RW'
+          user_perms['gitolite_permissions'] = 'RW+'
           user_perms['can_write'] = true
           user_perms['can_read'] = true
         elsif user_perms['can_write']
-          user_perms['gitolite_permissions'] = 'RW'
+          user_perms['gitolite_permissions'] = 'RW+'
           user_perms['can_read'] = true
         elsif user_perms['can_read']
           user_perms['gitolite_permissions'] = 'R'
