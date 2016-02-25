@@ -358,10 +358,9 @@ case "$subcmd" in
         fi
         ;;
 
-    svrestart)
+    sv)
         if test -n "$1" ; then
-            docker exec -ti $ARVBOX_CONTAINER sv restart "$1"
-            docker exec -ti $ARVBOX_CONTAINER sv restart ready
+            docker exec -ti $ARVBOX_CONTAINER sv "$1" "$2"
         else
             echo "Usage: $0 $subcmd <service>"
             echo "Available services:"
@@ -397,7 +396,7 @@ case "$subcmd" in
         echo "reset      delete arvbox arvados data (be careful!)"
         echo "destroy    delete all arvbox code and data (be careful!)"
         echo "log       <service> tail log of specified service"
-        echo "svrestart <service> restart specified service inside arvbox"
+        echo "sv        <start|stop|restart> <service> change state of service inside arvbox"
         echo "clone <from> <to>   clone an arvbox"
         ;;
 esac
