@@ -7,8 +7,8 @@
 
 <div id="event_log_div"
      class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window"
-     data-object-uuid="<%= @object.uuid %>" >
-  <%= @object.stderr_log_lines(Rails.configuration.running_job_log_lines_to_fetch).join("\n") %>
+     data-object-uuid="<%= @object.uuid %>"
+  ><%= @object.stderr_log_lines(Rails.configuration.running_job_log_records_to_fetch).join("\n") %>
 </div>
 
 <%# Applying a long throttle suppresses the auto-refresh of this
