@@ -34,8 +34,3 @@ if arv virtual_machine get --uuid $ARVADOS_VIRTUAL_MACHINE_UUID ; then
 else
     arv virtual_machine create --virtual-machine "$vm"
 fi
-
-while true ; do
-      bundle exec arvados-login-sync
-      sleep 120
-done
