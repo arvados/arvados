@@ -9,9 +9,11 @@ cat > /etc/slurm-llnl/slurm.conf  <<EOF
 ControlMachine=$HOSTNAME
 ControlAddr=$HOSTNAME
 AuthType=auth/munge
-DefaultStorageLoc=/var/log/slurm
+DefaultStorageLoc=/var/log/slurm-llnl
 SelectType=select/cons_res
+SelectTypeParameters=CR_CPU_Memory
 SlurmUser=arvbox
+SlurmdUser=arvbox
 SlurmctldPort=7002
 SlurmctldTimeout=300
 SlurmdPort=7003
