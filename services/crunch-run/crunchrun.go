@@ -604,7 +604,7 @@ func (runner *ContainerRunner) Run() (err error) {
 	if hosterr != nil {
 		runner.CrunchLog.Printf("Error getting hostname '%v'", hosterr)
 	} else {
-		runner.CrunchLog.Printf("Executing on host '%s'", runner.ContainerRecord.UUID, hostname)
+		runner.CrunchLog.Printf("Executing on host '%s'", hostname)
 	}
 
 	var runerr, waiterr error
