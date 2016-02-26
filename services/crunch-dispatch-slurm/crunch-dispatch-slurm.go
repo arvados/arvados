@@ -209,8 +209,9 @@ func submit(container Container, crunchRunCommand string) (jobid string, submite
 	return
 }
 
-func strigger(jobid, containerUUID, finishCommand string) {
-	cmd := exec.Command("strigger", "--set", "--jobid="+jobid, "--fini", fmt.Sprintf("--program=%s", finishCommand))
+func strigger(jobid, containerUUID, finishCommand, apiHost, apiToken, apiInsecure string) {
+	cmd := exec.Command("strigger", "--set", "--jobid="+jobid, "--fini",
+		fmt.Sprintf("--program=%s %s %s %s %s", finishCommand, apiHost, apiToken, apiInsecure, containerUUID))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
@@ -232,7 +233,11 @@ func run(container Container, crunchRunCommand, finishCommand string, priorityPo
 		return
 	}
 
-	strigger(jobid, container.UUID, finishCommand)
+	insecure := "0"
+	if arv.ApiInsecure {
+		insecure = "1"
+	}
+	strigger(jobid, container.UUID, finishCommand, arv.ApiServer, arv.ApiToken, insecure)
 
 	// Update container status to Running
 	err = arv.Update("containers", container.UUID,
