@@ -89,6 +89,13 @@ def main():
         '--project-uuid', dest='project_uuid',
         help='The UUID of the project at the destination to which the pipeline should be copied.')
     copy_opts.add_argument(
+        '--allow-git-http-src', action="store_true",
+        help='Allow cloning git repositories over insecure http')
+    copy_opts.add_argument(
+        '--allow-git-http-dst', action="store_true",
+        help='Allow pushing git repositories over insecure http')
+
+    copy_opts.add_argument(
         'object_uuid',
         help='The UUID of the object to be copied.')
     copy_opts.set_defaults(progress=True)
@@ -584,7 +591,7 @@ def copy_collection(obj_uuid, src, dst, args):
     c['manifest_text'] = dst_manifest
     return create_collection_from(c, src, dst, args)
 
-def select_git_url(api, repo_name, retries):
+def select_git_url(api, repo_name, retries, allow_insecure_http, allow_insecure_http_opt):
     r = api.repositories().list(
         filters=[['name', '=', repo_name]]).execute(num_retries=retries)
     if r['items_available'] != 1:
@@ -625,10 +632,10 @@ def select_git_url(api, repo_name, retries):
                         .format(priority))
 
     if git_url.startswith("http:"):
-        if api.insecure:
-            logger.warn("Using insecure git url %s but will allow this because ARVADOS_API_HOST_INSECURE is true.", git_url)
+        if allow_insecure_http:
+            logger.warn("Using insecure git url %s but will allow this because %s", git_url, allow_insecure_http_opt)
         else:
-            raise Exception("Refusing to use insecure git url %s, set ARVADOS_API_HOST_INSECURE if you really want this." % git_url)
+            raise Exception("Refusing to use insecure git url %s, use %s if you really want this." % (git_url, allow_insecure_http_opt))
 
     return (git_url, git_config)
 
@@ -651,8 +658,8 @@ def select_git_url(api, repo_name, retries):
 def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
     # Identify the fetch and push URLs for the git repositories.
 
-    (src_git_url, src_git_config) = select_git_url(src, src_git_repo, args.retries)
-    (dst_git_url, dst_git_config) = select_git_url(dst, dst_git_repo, args.retries)
+    (src_git_url, src_git_config) = select_git_url(src, src_git_repo, args.retries, args.allow_git_http_src, "--allow-git-http-src")
+    (dst_git_url, dst_git_config) = select_git_url(dst, dst_git_repo, args.retries, args.allow_git_http_dst, "--allow-git-http-dst")
 
     logger.debug('src_git_url: {}'.format(src_git_url))
     logger.debug('dst_git_url: {}'.format(dst_git_url))
