@@ -20,6 +20,7 @@ import os
 import sys
 
 from cwltool.process import get_feature
+from arvados.api import OrderedJsonModel
 
 logger = logging.getLogger('arvados.cwl-runner')
 logger.setLevel(logging.INFO)
@@ -398,7 +399,7 @@ def main(args, stdout, stderr, api_client=None):
                         help="")
 
     try:
-        runner = ArvCwlRunner(api_client=arvados.api('v1'))
+        runner = ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
     except Exception as e:
         logger.error(e)
         return 1
