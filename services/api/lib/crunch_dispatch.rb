@@ -429,7 +429,7 @@ class CrunchDispatch
         log_throttle_bytes_so_far: 0,
         log_throttle_lines_so_far: 0,
         log_throttle_bytes_skipped: 0,
-        log_throttle_partial_line_last_at: 0,
+        log_throttle_partial_line_last_at: Time.new(0),
         log_throttle_first_partial_line: true,
       }
       i.close
@@ -447,10 +447,11 @@ class CrunchDispatch
     if running_job[:log_throttle_is_open]
       partial_line = false
       skip_counts = false
-      if line.start_with?('[...]') and line.end_with?('[...]')
+      line_splits = line.split('stderr ')
+      if line_splits[1].andand.start_with?('[...]') and line_splits[1].end_with?('[...]')
         partial_line = true
-        if Time.now > j[:log_throttle_partial_line_last_at] + Rails.configuration.crunch_log_partial_line_throttle_period
-          j[:log_throttle_partial_line_last_at] = Time.now
+        if Time.now > running_job[:log_throttle_partial_line_last_at] + Rails.configuration.crunch_log_partial_line_throttle_period
+          running_job[:log_throttle_partial_line_last_at] = Time.now
         else
           skip_counts = true
         end
@@ -480,8 +481,8 @@ class CrunchDispatch
         message = "Exceeded rate #{Rails.configuration.crunch_log_throttle_lines} lines per #{Rails.configuration.crunch_log_throttle_period} seconds (crunch_log_throttle_lines), logging will be silenced for the next #{remaining_time.round} seconds."
         running_job[:log_throttle_is_open] = false
 
-      elsif partial_line and j[:log_throttle_first_partial_line]
-        j[:log_throttle_first_partial_line] = false
+      elsif partial_line and running_job[:log_throttle_first_partial_line]
+        running_job[:log_throttle_first_partial_line] = false
         message = "Rate-limiting partial segments of long lines to one every #{Rails.configuration.crunch_log_partial_line_throttle_period} seconds."
       end
     end
@@ -497,6 +498,8 @@ class CrunchDispatch
       message += " A complete log is still being written to Keep, and will be available when the job finishes.\n"
       line.replace message
       true
+    elsif partial_line
+      false
     else
       running_job[:log_throttle_is_open]
     end
@@ -521,7 +524,7 @@ class CrunchDispatch
         j[:log_throttle_lines_so_far] = 0
         j[:log_throttle_bytes_skipped] = 0
         j[:log_throttle_is_open] = true
-        j[:log_throttle_partial_line_last_at] = 0
+        j[:log_throttle_partial_line_last_at] = Time.new(0)
         j[:log_throttle_first_partial_line] = true
       end
 
