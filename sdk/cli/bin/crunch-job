@@ -1184,6 +1184,7 @@ sub update_progress_stats
 sub reapchildren
 {
   my $children_reaped = 0;
+  my @successful_task_uuids = ();
 
   while((my $pid = waitpid (-1, WNOHANG)) > 0)
   {
@@ -1257,8 +1258,9 @@ sub reapchildren
       push @jobstep_todo, $jobstepid;
       $Job->{'tasks_summary'}->{'failed'}++;
     }
-    else
+    else # task_success
     {
+      push @successful_task_uuids, $Jobstep->{'arvados_task'}->{uuid};
       ++$thisround_succeeded;
       $slot[$proc{$pid}->{slot}]->{node}->{losing_streak} = 0;
       $slot[$proc{$pid}->{slot}]->{node}->{hold_until} = 0;
@@ -1281,34 +1283,36 @@ sub reapchildren
     push @freeslot, $proc{$pid}->{slot};
     delete $proc{$pid};
 
-    if ($task_success) {
-      # Load new tasks
-      my $newtask_list = [];
-      my $newtask_results;
-      do {
-        $newtask_results = api_call(
-          "job_tasks/list",
-          'where' => {
-            'created_by_job_task_uuid' => $Jobstep->{'arvados_task'}->{uuid}
-          },
-          'order' => 'qsequence',
-          'offset' => scalar(@$newtask_list),
-            );
-        push(@$newtask_list, @{$newtask_results->{items}});
-      } while (@{$newtask_results->{items}});
-      foreach my $arvados_task (@$newtask_list) {
-        my $jobstep = {
-          'level' => $arvados_task->{'sequence'},
-          'failures' => 0,
-          'arvados_task' => $arvados_task
-        };
-        push @jobstep, $jobstep;
-        push @jobstep_todo, $#jobstep;
-      }
-    }
     $progress_is_dirty = 1;
   }
 
+  if ($children_reaped > 0 && (scalar(@successful_task_uuids) == $children_reaped))
+  {
+    Log (undef, sprintf("Reaped %d children and all were successful, checking for new tasks from API server.", $children_reaped));
+    # Load new tasks
+    my $newtask_list = [];
+    my $newtask_results;
+    do {
+      $newtask_results = api_call(
+        "job_tasks/list",
+        'filters' => '[["created_by_job_task_uuid","in",['.join(',',map {"\"$_\""} @successful_task_uuids).']]]',
+        'order' => 'qsequence',
+        'offset' => scalar(@$newtask_list),
+          );
+      push(@$newtask_list, @{$newtask_results->{items}});
+    } while (@{$newtask_results->{items}});
+    Log (undef, sprintf("Got %d new tasks from API server.", scalar(@$newtask_list)));
+    foreach my $arvados_task (@$newtask_list) {
+      my $jobstep = {
+        'level' => $arvados_task->{'sequence'},
+        'failures' => 0,
+        'arvados_task' => $arvados_task
+      };
+      push @jobstep, $jobstep;
+      push @jobstep_todo, $#jobstep;
+    }
+  }
+   
   return $children_reaped;
 }
 
