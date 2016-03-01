@@ -1,0 +1,12 @@
+runit-docker (1.1) unstable; urgency=low
+
+  * Simplify logic.
+  * Install for SIGINT as well.
+
+ -- Kosma Moczek <kosma@kosma.pl>  Mon, 11 May 2015 12:23:59 +0000
+
+runit-docker (1.0) unstable; urgency=low
+
+  * Initial release
+
+ -- Kosma Moczek <kosma@kosma.pl>  Mon, 11 May 2015 12:23:59 +0000

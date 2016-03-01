@@ -1,0 +1,4 @@
+#!/bin/sh
+
+export LD_PRELOAD=/lib/runit-docker.so
+exec runsvdir /etc/service
