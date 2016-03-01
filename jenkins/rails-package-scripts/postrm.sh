@@ -14,7 +14,7 @@ purge () {
 if [ "$1" = 'purge' ]; then
   # This is a debian-based system and purge was requested
   purge
-elif [ "$1" = "0" ] || [ "$1" = "1" ] || [ "$1" = "2" ]; then
+elif [ "$1" = "0" ]; then
   # This is an rpm-based system, no guarantees are made, always purge
   # Apparently yum doesn't actually remember what it installed.
   # Clean those files up here, then purge.

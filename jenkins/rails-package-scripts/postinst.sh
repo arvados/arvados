@@ -94,11 +94,13 @@ setup_conffile() {
         # If there's a config file in /var/www identical to the one in /etc,
         # overwrite it with a symlink after porting its permissions.
         elif cmp --quiet "$release_conffile" "$etc_conffile"; then
-            local ownership="$(stat -c "%U:%G" "$release_conffile")"
+            local ownership="$(stat -c "%u:%g" "$release_conffile")"
+            local owning_group="${ownership#*:}"
+            if [ 0 != "$owning_group" ]; then
+                chgrp "$owning_group" "$CONFIG_PATH" /etc/arvados
+            fi
             chown "$ownership" "$etc_conffile"
             chmod --reference="$release_conffile" "$etc_conffile"
-            chgrp "${ownership#*:}" "$CONFIG_PATH" /etc/arvados
-            chmod g+rx "$CONFIG_PATH" /etc/arvados
             ln --force -s "$etc_conffile" "$release_conffile"
         fi
     fi
