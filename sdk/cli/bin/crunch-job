@@ -1483,7 +1483,7 @@ sub preprocess_stderr
       $jobstep[$job]->{tempfail} = 1;
       ban_node_by_slot($jobstep[$job]->{slotindex});
     }
-    elsif ($line =~ /arvados\.errors\.Keep/) {
+    elsif ($line =~ /\bKeep(Read|Write|Request)Error:/) {
       $jobstep[$job]->{tempfail} = 1;
     }
   }
