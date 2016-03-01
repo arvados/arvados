@@ -463,6 +463,8 @@ func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvT
 
 	api = &ArvTestClient{ContainerRecord: rec}
 	cr = NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	am := &ArvMountCmdLine{}
+	cr.RunArvMount = am.ArvMountTest
 
 	err = cr.Run()
 	c.Check(err, IsNil)
@@ -601,6 +603,8 @@ func (s *TestSuite) TestCancel(c *C) {
 
 	api := &ArvTestClient{ContainerRecord: rec}
 	cr := NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	am := &ArvMountCmdLine{}
+	cr.RunArvMount = am.ArvMountTest
 
 	go func() {
 		for cr.ContainerID == "" {

@@ -120,7 +120,7 @@ type ContainerRunner struct {
 
 // SetupSignals sets up signal handling to gracefully terminate the underlying
 // Docker container and update state when receiving a TERM, INT or QUIT signal.
-func (runner *ContainerRunner) SetupSignals() error {
+func (runner *ContainerRunner) SetupSignals() {
 	runner.SigChan = make(chan os.Signal, 1)
 	signal.Notify(runner.SigChan, syscall.SIGTERM)
 	signal.Notify(runner.SigChan, syscall.SIGINT)
@@ -138,8 +138,6 @@ func (runner *ContainerRunner) SetupSignals() error {
 			}
 		}
 	}(runner.SigChan)
-
-	return nil
 }
 
 // LoadImage determines the docker image id from the container record and
@@ -355,12 +353,12 @@ func (runner *ContainerRunner) ProcessDockerAttach(containerReader io.Reader) {
 
 			closeerr := runner.Stdout.Close()
 			if closeerr != nil {
-				runner.CrunchLog.Printf("While closing stdout logs: %v", readerr)
+				runner.CrunchLog.Printf("While closing stdout logs: %v", closeerr)
 			}
 
 			closeerr = runner.Stderr.Close()
 			if closeerr != nil {
-				runner.CrunchLog.Printf("While closing stderr logs: %v", readerr)
+				runner.CrunchLog.Printf("While closing stderr logs: %v", closeerr)
 			}
 
 			runner.loggingDone <- true
@@ -380,7 +378,7 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 	containerReader, err = runner.Docker.AttachContainer(runner.ContainerID,
 		&dockerclient.AttachOptions{Stream: true, Stdout: true, Stderr: true})
 	if err != nil {
-		return fmt.Errorf("While attaching container logs: %v", err)
+		return fmt.Errorf("While attaching container stdout/stderr streams: %v", err)
 	}
 
 	runner.loggingDone = make(chan bool)
@@ -419,9 +417,8 @@ func (runner *ContainerRunner) StartContainer() (err error) {
 	hostConfig := &dockerclient.HostConfig{Binds: runner.Binds,
 		LogConfig: dockerclient.LogConfig{Type: "none"}}
 
-	runner.AttachStreams()
+	err = runner.AttachStreams()
 	if err != nil {
-		return fmt.Errorf("While attaching streams: %v", err)
 		return err
 	}
 
@@ -604,7 +601,7 @@ func (runner *ContainerRunner) Run() (err error) {
 	if hosterr != nil {
 		runner.CrunchLog.Printf("Error getting hostname '%v'", hosterr)
 	} else {
-		runner.CrunchLog.Printf("Executing on host '%s'", runner.ContainerRecord.UUID, hostname)
+		runner.CrunchLog.Printf("Executing on host '%s'", hostname)
 	}
 
 	var runerr, waiterr error
@@ -647,7 +644,7 @@ func (runner *ContainerRunner) Run() (err error) {
 			if runerr != nil {
 				err = runerr
 			} else if waiterr != nil {
-				err = runerr
+				err = waiterr
 			} else if logerr != nil {
 				err = logerr
 			} else if updateerr != nil {
@@ -662,10 +659,7 @@ func (runner *ContainerRunner) Run() (err error) {
 	}
 
 	// (1) setup signal handling
-	err = runner.SetupSignals()
-	if err != nil {
-		return fmt.Errorf("While setting up signal handling: %v", err)
-	}
+	runner.SetupSignals()
 
 	// (2) check for and/or load image
 	err = runner.LoadImage()

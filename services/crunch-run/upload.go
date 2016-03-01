@@ -103,7 +103,7 @@ func (m *CollectionFileWriter) goUpload() {
 	finish <- errors
 }
 
-// CollectionWriter makes implements creating new Keep collections by opening files
+// CollectionWriter implements creating new Keep collections by opening files
 // and writing to them.
 type CollectionWriter struct {
 	IKeepClient
