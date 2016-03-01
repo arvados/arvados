@@ -803,6 +803,7 @@ if ($initial_tasks_this_level < @node) {
   @freeslot = (0..$#slot);
 }
 my $round_num_freeslots = scalar(@freeslot);
+print STDERR "crunch-job have ${round_num_freeslots} free slots for ${initial_tasks_this_level} initial tasks at this level, ".scalar(@node)." nodes, and ".scalar(@slot)." slots\n";
 
 my %round_max_slots = ();
 for (my $ii = $#freeslot; $ii >= 0; $ii--) {
@@ -1064,9 +1065,6 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     {
       update_progress_stats();
     }
-    if (!$gotsome) {
-      select (undef, undef, undef, 0.1);
-    }
     $working_slot_count = scalar(grep { $_->{node}->{fail_count} == 0 &&
                                         $_->{node}->{hold_count} < 4 } @slot);
     if (($thisround_failed_multiple >= 8 && $thisround_succeeded == 0) ||
@@ -1185,109 +1183,125 @@ sub update_progress_stats
 
 sub reapchildren
 {
-  my $pid = waitpid (-1, WNOHANG);
-  return 0 if $pid <= 0;
+  my $children_reaped = 0;
+  my @successful_task_uuids = ();
 
-  my $whatslot = ($slot[$proc{$pid}->{slot}]->{node}->{name}
-		  . "."
-		  . $slot[$proc{$pid}->{slot}]->{cpu});
-  my $jobstepid = $proc{$pid}->{jobstep};
-  my $elapsed = time - $proc{$pid}->{time};
-  my $Jobstep = $jobstep[$jobstepid];
-
-  my $childstatus = $?;
-  my $exitvalue = $childstatus >> 8;
-  my $exitinfo = "exit ".exit_status_s($childstatus);
-  $Jobstep->{'arvados_task'}->reload;
-  my $task_success = $Jobstep->{'arvados_task'}->{success};
-
-  Log ($jobstepid, "child $pid on $whatslot $exitinfo success=$task_success");
-
-  if (!defined $task_success) {
-    # task did not indicate one way or the other --> fail
-    Log($jobstepid, sprintf(
-          "ERROR: Task process exited %s, but never updated its task record to indicate success and record its output.",
-          exit_status_s($childstatus)));
-    $Jobstep->{'arvados_task'}->{success} = 0;
-    $Jobstep->{'arvados_task'}->save;
-    $task_success = 0;
-  }
-
-  if (!$task_success)
+  while((my $pid = waitpid (-1, WNOHANG)) > 0)
   {
-    my $temporary_fail;
-    $temporary_fail ||= $Jobstep->{tempfail};
-    $temporary_fail ||= ($exitvalue == TASK_TEMPFAIL);
+    my $childstatus = $?;
+    my $whatslot = ($slot[$proc{$pid}->{slot}]->{node}->{name}
+                    . "."
+                    . $slot[$proc{$pid}->{slot}]->{cpu});
+    my $jobstepid = $proc{$pid}->{jobstep};
 
-    ++$thisround_failed;
-    ++$thisround_failed_multiple if $Jobstep->{'failures'} >= 1;
+    if (!WIFEXITED($childstatus))
+    {
+      # child did not exit (may be temporarily stopped)
+      Log ($jobstepid, "child $pid did not actually exit in reapchildren, ignoring for now.");
+      next;
+    }
 
-    # Check for signs of a failed or misconfigured node
-    if (++$slot[$proc{$pid}->{slot}]->{node}->{losing_streak} >=
-	2+$slot[$proc{$pid}->{slot}]->{node}->{ncpus}) {
-      # Don't count this against jobstep failure thresholds if this
-      # node is already suspected faulty and srun exited quickly
-      if ($slot[$proc{$pid}->{slot}]->{node}->{hold_until} &&
-	  $elapsed < 5) {
-	Log ($jobstepid, "blaming failure on suspect node " .
-             $slot[$proc{$pid}->{slot}]->{node}->{name});
-        $temporary_fail ||= 1;
+    $children_reaped++;
+    my $elapsed = time - $proc{$pid}->{time};
+    my $Jobstep = $jobstep[$jobstepid];
+
+    my $exitvalue = $childstatus >> 8;
+    my $exitinfo = "exit ".exit_status_s($childstatus);
+    $Jobstep->{'arvados_task'}->reload;
+    my $task_success = $Jobstep->{'arvados_task'}->{success};
+
+    Log ($jobstepid, "child $pid on $whatslot $exitinfo success=$task_success");
+
+    if (!defined $task_success) {
+      # task did not indicate one way or the other --> fail
+      Log($jobstepid, sprintf(
+            "ERROR: Task process exited %s, but never updated its task record to indicate success and record its output.",
+            exit_status_s($childstatus)));
+      $Jobstep->{'arvados_task'}->{success} = 0;
+      $Jobstep->{'arvados_task'}->save;
+      $task_success = 0;
+    }
+
+    if (!$task_success)
+    {
+      my $temporary_fail;
+      $temporary_fail ||= $Jobstep->{tempfail};
+      $temporary_fail ||= ($exitvalue == TASK_TEMPFAIL);
+
+      ++$thisround_failed;
+      ++$thisround_failed_multiple if $Jobstep->{'failures'} >= 1;
+
+      # Check for signs of a failed or misconfigured node
+      if (++$slot[$proc{$pid}->{slot}]->{node}->{losing_streak} >=
+          2+$slot[$proc{$pid}->{slot}]->{node}->{ncpus}) {
+        # Don't count this against jobstep failure thresholds if this
+        # node is already suspected faulty and srun exited quickly
+        if ($slot[$proc{$pid}->{slot}]->{node}->{hold_until} &&
+            $elapsed < 5) {
+          Log ($jobstepid, "blaming failure on suspect node " .
+               $slot[$proc{$pid}->{slot}]->{node}->{name});
+          $temporary_fail ||= 1;
+        }
+        ban_node_by_slot($proc{$pid}->{slot});
       }
-      ban_node_by_slot($proc{$pid}->{slot});
-    }
 
-    Log ($jobstepid, sprintf('failure (#%d, %s) after %d seconds',
-                             ++$Jobstep->{'failures'},
-                             $temporary_fail ? 'temporary' : 'permanent',
-                             $elapsed));
+      Log ($jobstepid, sprintf('failure (#%d, %s) after %d seconds',
+                               ++$Jobstep->{'failures'},
+                               $temporary_fail ? 'temporary' : 'permanent',
+                               $elapsed));
 
-    if (!$temporary_fail || $Jobstep->{'failures'} >= 3) {
-      # Give up on this task, and the whole job
-      $main::success = 0;
+      if (!$temporary_fail || $Jobstep->{'failures'} >= 3) {
+        # Give up on this task, and the whole job
+        $main::success = 0;
+      }
+      # Put this task back on the todo queue
+      push @jobstep_todo, $jobstepid;
+      $Job->{'tasks_summary'}->{'failed'}++;
     }
-    # Put this task back on the todo queue
-    push @jobstep_todo, $jobstepid;
-    $Job->{'tasks_summary'}->{'failed'}++;
+    else # task_success
+    {
+      push @successful_task_uuids, $Jobstep->{'arvados_task'}->{uuid};
+      ++$thisround_succeeded;
+      $slot[$proc{$pid}->{slot}]->{node}->{losing_streak} = 0;
+      $slot[$proc{$pid}->{slot}]->{node}->{hold_until} = 0;
+      $slot[$proc{$pid}->{slot}]->{node}->{fail_count} = 0;
+      push @jobstep_done, $jobstepid;
+      Log ($jobstepid, "success in $elapsed seconds");
+    }
+    $Jobstep->{exitcode} = $childstatus;
+    $Jobstep->{finishtime} = time;
+    $Jobstep->{'arvados_task'}->{finished_at} = strftime "%Y-%m-%dT%H:%M:%SZ", gmtime($Jobstep->{finishtime});
+    $Jobstep->{'arvados_task'}->save;
+    process_stderr ($jobstepid, $task_success);
+    Log ($jobstepid, sprintf("task output (%d bytes): %s",
+                             length($Jobstep->{'arvados_task'}->{output}),
+                             $Jobstep->{'arvados_task'}->{output}));
+
+    close $reader{$jobstepid};
+    delete $reader{$jobstepid};
+    delete $slot[$proc{$pid}->{slot}]->{pid};
+    push @freeslot, $proc{$pid}->{slot};
+    delete $proc{$pid};
+
+    $progress_is_dirty = 1;
   }
-  else
+
+  if ($children_reaped > 0 && (scalar(@successful_task_uuids) == $children_reaped))
   {
-    ++$thisround_succeeded;
-    $slot[$proc{$pid}->{slot}]->{node}->{losing_streak} = 0;
-    $slot[$proc{$pid}->{slot}]->{node}->{hold_until} = 0;
-    $slot[$proc{$pid}->{slot}]->{node}->{fail_count} = 0;
-    push @jobstep_done, $jobstepid;
-    Log ($jobstepid, "success in $elapsed seconds");
-  }
-  $Jobstep->{exitcode} = $childstatus;
-  $Jobstep->{finishtime} = time;
-  $Jobstep->{'arvados_task'}->{finished_at} = strftime "%Y-%m-%dT%H:%M:%SZ", gmtime($Jobstep->{finishtime});
-  $Jobstep->{'arvados_task'}->save;
-  process_stderr ($jobstepid, $task_success);
-  Log ($jobstepid, sprintf("task output (%d bytes): %s",
-                           length($Jobstep->{'arvados_task'}->{output}),
-                           $Jobstep->{'arvados_task'}->{output}));
-
-  close $reader{$jobstepid};
-  delete $reader{$jobstepid};
-  delete $slot[$proc{$pid}->{slot}]->{pid};
-  push @freeslot, $proc{$pid}->{slot};
-  delete $proc{$pid};
-
-  if ($task_success) {
+    Log (undef, sprintf("Reaped %d children and all were successful, checking for new tasks from API server.", $children_reaped));
     # Load new tasks
     my $newtask_list = [];
     my $newtask_results;
     do {
       $newtask_results = api_call(
         "job_tasks/list",
-        'where' => {
-          'created_by_job_task_uuid' => $Jobstep->{'arvados_task'}->{uuid}
-        },
+        'filters' => '[["created_by_job_task_uuid","in",['.join(',',map {"\"$_\""} @successful_task_uuids).']]]',
         'order' => 'qsequence',
         'offset' => scalar(@$newtask_list),
-      );
+          );
       push(@$newtask_list, @{$newtask_results->{items}});
     } while (@{$newtask_results->{items}});
+    Log (undef, sprintf("Got %d new tasks from API server.", scalar(@$newtask_list)));
     foreach my $arvados_task (@$newtask_list) {
       my $jobstep = {
         'level' => $arvados_task->{'sequence'},
@@ -1298,9 +1312,8 @@ sub reapchildren
       push @jobstep_todo, $#jobstep;
     }
   }
-
-  $progress_is_dirty = 1;
-  1;
+   
+  return $children_reaped;
 }
 
 sub check_refresh_wanted
@@ -1357,14 +1370,14 @@ sub check_squeue
   # use killem() on procs whose killtime is reached
   while (my ($pid, $procinfo) = each %proc)
   {
-    my $jobstep = $jobstep[$procinfo->{jobstep}];
+    my $js = $jobstep[$procinfo->{jobstep}];
     if (exists $procinfo->{killtime}
         && $procinfo->{killtime} <= time
-        && $jobstep->{stderr_at} < $last_squeue_check)
+        && $js->{stderr_at} < $last_squeue_check)
     {
       my $sincewhen = "";
-      if ($jobstep->{stderr_at}) {
-        $sincewhen = " in last " . (time - $jobstep->{stderr_at}) . "s";
+      if ($js->{stderr_at}) {
+        $sincewhen = " in last " . (time - $js->{stderr_at}) . "s";
       }
       Log($procinfo->{jobstep}, "killing orphaned srun process $pid (task not in slurm queue, no stderr received$sincewhen)");
       killem ($pid);
@@ -1403,6 +1416,7 @@ sub check_squeue
   # Check for child procs >60s old and not mentioned by squeue.
   while (my ($pid, $procinfo) = each %proc)
   {
+    my $js = $jobstep[$procinfo->{jobstep}];
     if ($procinfo->{time} < time - 60
         && $procinfo->{jobstepname}
         && !exists $ok{$procinfo->{jobstepname}}
@@ -1435,12 +1449,23 @@ sub release_allocation
 sub readfrompipes
 {
   my $gotsome = 0;
+  my %fd_job;
+  my $sel = IO::Select->new();
   foreach my $job (keys %reader)
   {
+    my $fd = $reader{$job};
+    $sel->add($fd);
+    $fd_job{$fd} = $job;
+  }
+  # select on all reader fds with 0.1s timeout
+  my @ready_fds = $sel->can_read(0.1);
+  foreach my $fd (@ready_fds)
+  {
     my $buf;
-    if (0 < sysread ($reader{$job}, $buf, 65536))
+    if (0 < sysread ($fd, $buf, 65536))
     {
       print STDERR $buf if $ENV{CRUNCH_DEBUG};
+      my $job = $fd_job{$fd};
       $jobstep[$job]->{stderr_at} = time;
       $jobstep[$job]->{stderr} .= $buf;
 
