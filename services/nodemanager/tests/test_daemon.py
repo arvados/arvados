@@ -208,6 +208,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         mock_shutdown = self.node_shutdown.start(node_monitor=mock_node_monitor)
 
         self.daemon.shutdowns.get()[cloud_nodes[1].id] = mock_shutdown.proxy()
+        self.daemon.sizes_booting_shutdown.get()[cloud_nodes[1].id] = size
 
         self.assertEqual(2, self.alive_monitor_count())
         for mon_ref in self.monitor_list():

@@ -121,7 +121,6 @@ class NodeManagerDaemonActor(actor_class):
         self._new_arvados = arvados_factory
         self._new_cloud = cloud_factory
         self._cloud_driver = self._new_cloud()
-        self._logger = logging.getLogger('arvnodeman.daemon')
         self._later = self.actor_ref.proxy()
         self.shutdown_windows = shutdown_windows
         self.server_calculator = server_calculator
@@ -143,14 +142,18 @@ class NodeManagerDaemonActor(actor_class):
         self.booting = {}       # Actor IDs to ComputeNodeSetupActors
         self.booted = {}        # Cloud node IDs to _ComputeNodeRecords
         self.shutdowns = {}     # Cloud node IDs to ComputeNodeShutdownActors
-        self._logger.debug("Daemon initialized")
+        self.sizes_booting_shutdown = {} # Actor IDs or Cloud node IDs to node size
+
+    def on_start(self):
+        self._logger = logging.getLogger("%s.%s" % (self.__class__.__name__, self.actor_urn[33:]))
+        self._logger.debug("Daemon started")
 
     def _update_poll_time(self, poll_key):
         self.last_polls[poll_key] = time.time()
 
     def _pair_nodes(self, node_record, arvados_node):
-        self._logger.info("Cloud node %s has associated with Arvados node %s",
-                          node_record.cloud_node.id, arvados_node['uuid'])
+        self._logger.info("Cloud node %s is now paired with Arvados node %s",
+                          node_record.cloud_node.name, arvados_node['uuid'])
         self._arvados_nodes_actor.subscribe_to(
             arvados_node['uuid'], node_record.actor.update_arvados_node)
         node_record.arvados_node = arvados_node
@@ -198,6 +201,7 @@ class NodeManagerDaemonActor(actor_class):
                 except pykka.ActorDeadError:
                     pass
                 del self.shutdowns[key]
+                del self.sizes_booting_shutdown[key]
             record.actor.stop()
             record.cloud_node = None
 
@@ -214,21 +218,33 @@ class NodeManagerDaemonActor(actor_class):
                     self._pair_nodes(cloud_rec, arv_node)
                     break
 
-    def _nodes_up(self, size):
-        up = 0
-        up += sum(1
-                  for c in self.booting.itervalues()
-                  if size is None or c.cloud_size.get().id == size.id)
-        up += sum(1
-                  for i in (self.booted, self.cloud_nodes.nodes)
-                  for c in i.itervalues()
+    def _nodes_booting(self, size):
+        s = sum(1
+                for c in self.booting.iterkeys()
+                if size is None or self.sizes_booting_shutdown[c].id == size.id)
+        s += sum(1
+                 for c in self.booted.itervalues()
+                 if size is None or c.cloud_node.size.id == size.id)
+        return s
+
+    def _nodes_unpaired(self, size):
+        return sum(1
+                   for c in self.cloud_nodes.unpaired()
+                   if size is None or c.cloud_node.size.id == size.id)
+
+    def _nodes_booted(self, size):
+        return sum(1
+                  for c in self.cloud_nodes.nodes.itervalues()
                   if size is None or c.cloud_node.size.id == size.id)
+
+    def _nodes_up(self, size):
+        up = self._nodes_booting(size) + self._nodes_booted(size)
         return up
 
     def _total_price(self):
         cost = 0
-        cost += sum(self.server_calculator.find_size(c.cloud_size.get().id).price
-                  for c in self.booting.itervalues())
+        cost += sum(self.server_calculator.find_size(self.sizes_booting_shutdown[c].id).price
+                  for c in self.booting.iterkeys())
         cost += sum(self.server_calculator.find_size(c.cloud_node.size.id).price
                     for i in (self.booted, self.cloud_nodes.nodes)
                     for c in i.itervalues())
@@ -253,9 +269,9 @@ class NodeManagerDaemonActor(actor_class):
 
     def _size_shutdowns(self, size):
         sh = 0
-        for c in self.shutdowns.itervalues():
+        for c in self.shutdowns.iterkeys():
             try:
-                if c.cloud_node.get().size.id == size.id:
+                if self.sizes_booting_shutdown[c].id == size.id:
                     sh += 1
             except pykka.ActorDeadError:
                 pass
@@ -272,11 +288,18 @@ class NodeManagerDaemonActor(actor_class):
         elif under_min > 0 and size.id == self.min_cloud_size.id:
             return under_min
 
-        up_count = self._nodes_up(size) - (self._size_shutdowns(size) +
-                                           self._nodes_busy(size) +
-                                           self._nodes_missing(size))
+        booting_count = self._nodes_booting(size) + self._nodes_unpaired(size)
+        shutdown_count = self._size_shutdowns(size)
+        busy_count = self._nodes_busy(size)
+        up_count = self._nodes_up(size) - (shutdown_count + busy_count + self._nodes_missing(size))
 
-        self._logger.debug("%s: idle nodes %i, wishlist size %i", size.name, up_count, self._size_wishlist(size))
+        self._logger.info("%s: wishlist %i, up %i (booting %i, idle %i, busy %i), shutting down %i", size.name,
+                          self._size_wishlist(size),
+                          up_count + busy_count,
+                          booting_count,
+                          up_count - booting_count,
+                          busy_count,
+                          shutdown_count)
 
         wanted = self._size_wishlist(size) - up_count
         if wanted > 0 and self.max_total_price and ((total_price + (size.price*wanted)) > self.max_total_price):
@@ -298,11 +321,14 @@ class NodeManagerDaemonActor(actor_class):
         self._update_poll_time('server_wishlist')
         self.last_wishlist = wishlist
         for size in reversed(self.server_calculator.cloud_sizes):
-            nodes_wanted = self._nodes_wanted(size)
-            if nodes_wanted > 0:
-                self._later.start_node(size)
-            elif (nodes_wanted < 0) and self.booting:
-                self._later.stop_booting_node(size)
+            try:
+                nodes_wanted = self._nodes_wanted(size)
+                if nodes_wanted > 0:
+                    self._later.start_node(size)
+                elif (nodes_wanted < 0) and self.booting:
+                    self._later.stop_booting_node(size)
+            except Exception as e:
+                self._logger.exception("while calculating nodes wanted for size %s", size)
 
     def _check_poll_freshness(orig_func):
         """Decorator to inhibit a method when poll information is stale.
@@ -327,7 +353,7 @@ class NodeManagerDaemonActor(actor_class):
         if nodes_wanted < 1:
             return None
         arvados_node = self.arvados_nodes.find_stale_node(self.node_stale_after)
-        self._logger.info("Want %s more nodes.  Booting a %s node.",
+        self._logger.info("Want %i more %s nodes.  Booting a node.",
                           nodes_wanted, cloud_size.name)
         new_setup = self._node_setup.start(
             timer_actor=self._timer,
@@ -336,6 +362,8 @@ class NodeManagerDaemonActor(actor_class):
             cloud_client=self._new_cloud(),
             cloud_size=cloud_size).proxy()
         self.booting[new_setup.actor_ref.actor_urn] = new_setup
+        self.sizes_booting_shutdown[new_setup.actor_ref.actor_urn] = cloud_size
+
         if arvados_node is not None:
             self.arvados_nodes[arvados_node['uuid']].assignment_time = (
                 time.time())
@@ -349,13 +377,16 @@ class NodeManagerDaemonActor(actor_class):
     def node_up(self, setup_proxy):
         cloud_node = setup_proxy.cloud_node.get()
         del self.booting[setup_proxy.actor_ref.actor_urn]
+        del self.sizes_booting_shutdown[setup_proxy.actor_ref.actor_urn]
+
         setup_proxy.stop()
-        record = self.cloud_nodes.get(cloud_node.id)
-        if record is None:
-            record = self._new_node(cloud_node)
-            self.booted[cloud_node.id] = record
-        self._timer.schedule(time.time() + self.boot_fail_after,
-                             self._later.shutdown_unpaired_node, cloud_node.id)
+        if cloud_node is not None:
+            record = self.cloud_nodes.get(cloud_node.id)
+            if record is None:
+                record = self._new_node(cloud_node)
+                self.booted[cloud_node.id] = record
+            self._timer.schedule(time.time() + self.boot_fail_after,
+                                 self._later.shutdown_unpaired_node, cloud_node.id)
 
     @_check_poll_freshness
     def stop_booting_node(self, size):
@@ -365,12 +396,15 @@ class NodeManagerDaemonActor(actor_class):
         for key, node in self.booting.iteritems():
             if node.cloud_size.get().id == size.id and node.stop_if_no_cloud_node().get():
                 del self.booting[key]
+                del self.sizes_booting_shutdown[key]
+
                 if nodes_excess > 1:
                     self._later.stop_booting_node(size)
                 break
 
     def _begin_node_shutdown(self, node_actor, cancellable):
-        cloud_node_id = node_actor.cloud_node.get().id
+        cloud_node_obj = node_actor.cloud_node.get()
+        cloud_node_id = cloud_node_obj.id
         if cloud_node_id in self.shutdowns:
             return None
         shutdown = self._node_shutdown.start(
@@ -378,6 +412,7 @@ class NodeManagerDaemonActor(actor_class):
             arvados_client=self._new_arvados(),
             node_monitor=node_actor.actor_ref, cancellable=cancellable).proxy()
         self.shutdowns[cloud_node_id] = shutdown
+        self.sizes_booting_shutdown[cloud_node_id] = cloud_node_obj.size
         shutdown.subscribe(self._later.node_finished_shutdown)
 
     @_check_poll_freshness
@@ -404,9 +439,11 @@ class NodeManagerDaemonActor(actor_class):
             if cancel_reason == self._node_shutdown.NODE_BROKEN:
                 self.cloud_nodes.blacklist(cloud_node_id)
             del self.shutdowns[cloud_node_id]
+            del self.sizes_booting_shutdown[cloud_node_id]
         elif cloud_node_id in self.booted:
             self.booted.pop(cloud_node_id).actor.stop()
             del self.shutdowns[cloud_node_id]
+            del self.sizes_booting_shutdown[cloud_node_id]
 
     def shutdown(self):
         self._logger.info("Shutting down after signal.")

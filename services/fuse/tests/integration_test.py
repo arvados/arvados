@@ -62,7 +62,9 @@ class IntegrationTest(unittest.TestCase):
             def wrapper(self, *args, **kwargs):
                 with arvados_fuse.command.Mount(
                         arvados_fuse.command.ArgumentParser().parse_args(
-                            argv + ['--foreground', self.mnt])):
+                            argv + ['--foreground',
+                                    '--unmount-timeout=0.1',
+                                    self.mnt])):
                     return func(self, *args, **kwargs)
             return wrapper
         return decorator

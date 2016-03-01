@@ -41,4 +41,16 @@ class Job < ArvadosBase
   def textile_attributes
     [ 'description' ]
   end
+
+  def stderr_log_query(limit=nil)
+    query = Log.where(event_type: "stderr", object_uuid: self.uuid)
+               .order("id DESC")
+    query = query.limit(limit) if limit
+    query
+  end
+
+  def stderr_log_lines(limit=2000)
+    stderr_log_query(limit).results.reverse.
+      flat_map { |log| log.properties[:text].split("\n") rescue [] }
+  end
 end

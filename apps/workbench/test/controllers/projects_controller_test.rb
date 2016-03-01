@@ -418,4 +418,83 @@ class ProjectsControllerTest < ActionController::TestCase
     }, session_for(:active)
     assert_select "#projects-menu + ul li.divider ~ li a[href=/projects/#{project_uuid}]"
   end
+
+  [
+    ["active", 5, ["aproject", "asubproject"], "anonymously_accessible_project"],
+    ["user1_with_load", 2, ["project_with_10_collections"], "project_with_2_pipelines_and_60_jobs"],
+    ["admin", 5, ["anonymously_accessible_project", "subproject_in_anonymous_accessible_project"], "aproject"],
+  ].each do |user, page_size, tree_segment, unexpected|
+    test "build my projects tree for #{user} user and verify #{unexpected} is omitted" do
+      use_token user
+      ctrl = ProjectsController.new
+
+      current_user = User.find(api_fixture('users')[user]['uuid'])
+
+      my_tree = ctrl.send :my_wanted_projects_tree, current_user, page_size
+
+      tree_segment_at_depth_1 = api_fixture('groups')[tree_segment[0]]
+      tree_segment_at_depth_2 = api_fixture('groups')[tree_segment[1]] if tree_segment[1]
+
+      tree_nodes = {}
+      my_tree[0].each do |x|
+        tree_nodes[x[:object]['uuid']] = x[:depth]
+      end
+
+      assert_equal(1, tree_nodes[tree_segment_at_depth_1['uuid']])
+      assert_equal(2, tree_nodes[tree_segment_at_depth_2['uuid']]) if tree_segment[1]
+
+      unexpected_project = api_fixture('groups')[unexpected]
+      assert_nil(tree_nodes[unexpected_project['uuid']])
+    end
+  end
+
+  [
+    ["active", 1],
+    ["project_viewer", 1],
+    ["admin", 0],
+  ].each do |user, size|
+    test "starred projects for #{user}" do
+      use_token user
+      ctrl = ProjectsController.new
+      current_user = User.find(api_fixture('users')[user]['uuid'])
+      my_starred_project = ctrl.send :my_starred_projects, current_user
+      assert_equal(size, my_starred_project.andand.size)
+
+      ctrl2 = ProjectsController.new
+      current_user = User.find(api_fixture('users')[user]['uuid'])
+      my_starred_project = ctrl2.send :my_starred_projects, current_user
+      assert_equal(size, my_starred_project.andand.size)
+    end
+  end
+
+  test "unshare project and verify that it is no longer included in shared user's starred projects" do
+    # remove sharing link
+    use_token :system_user
+    Link.find(api_fixture('links')['share_starred_project_with_project_viewer']['uuid']).destroy
+
+    # verify that project is no longer included in starred projects
+    use_token :project_viewer
+    current_user = User.find(api_fixture('users')['project_viewer']['uuid'])
+    ctrl = ProjectsController.new
+    my_starred_project = ctrl.send :my_starred_projects, current_user
+    assert_equal(0, my_starred_project.andand.size)
+
+    # share it again
+    @controller = LinksController.new
+    post :create, {
+      link: {
+        link_class: 'permission',
+        name: 'can_read',
+        head_uuid: api_fixture('groups')['starred_and_shared_active_user_project']['uuid'],
+        tail_uuid: api_fixture('users')['project_viewer']['uuid'],
+      },
+      format: :json
+    }, session_for(:system_user)
+
+    # verify that the project is again included in starred projects
+    use_token :project_viewer
+    ctrl = ProjectsController.new
+    my_starred_project = ctrl.send :my_starred_projects, current_user
+    assert_equal(1, my_starred_project.andand.size)
+  end
 end

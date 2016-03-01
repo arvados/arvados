@@ -380,4 +380,47 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
                  'A Project (2)',
                  "new project name '#{new_project['name']}' was expected to be 'A Project (2)'")
   end
+
+  test "unsharing a project results in hiding it from previously shared user" do
+    # remove sharing link for project
+    @controller = Arvados::V1::LinksController.new
+    authorize_with :admin
+    post :destroy, id: links(:share_starred_project_with_project_viewer).uuid
+    assert_response :success
+
+    # verify that the user can no longer see the project
+    @counter = 0  # Reset executed action counter
+    @controller = Arvados::V1::GroupsController.new
+    authorize_with :project_viewer
+    get :index, filters: [['group_class', '=', 'project']], format: :json
+    assert_response :success
+    found_projects = {}
+    json_response['items'].each do |g|
+      found_projects[g['uuid']] = g
+    end
+    assert_equal false, found_projects.include?(groups(:starred_and_shared_active_user_project).uuid)
+
+    # share the project
+    @counter = 0
+    @controller = Arvados::V1::LinksController.new
+    authorize_with :system_user
+    post :create, link: {
+      link_class: "permission",
+      name: "can_read",
+      head_uuid: groups(:starred_and_shared_active_user_project).uuid,
+      tail_uuid: users(:project_viewer).uuid,
+    }
+
+    # verify that project_viewer user can now see shared project again
+    @counter = 0
+    @controller = Arvados::V1::GroupsController.new
+    authorize_with :project_viewer
+    get :index, filters: [['group_class', '=', 'project']], format: :json
+    assert_response :success
+    found_projects = {}
+    json_response['items'].each do |g|
+      found_projects[g['uuid']] = g
+    end
+    assert_equal true, found_projects.include?(groups(:starred_and_shared_active_user_project).uuid)
+  end
 end

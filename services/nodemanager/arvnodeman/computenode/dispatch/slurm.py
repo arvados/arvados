@@ -22,6 +22,7 @@ class ComputeNodeShutdownActor(ShutdownActorBase):
             self._nodename = None
             return super(ComputeNodeShutdownActor, self).on_start()
         else:
+            self._set_logger()
             self._nodename = arv_node['hostname']
             self._logger.info("Draining SLURM node %s", self._nodename)
             self._later.issue_slurm_drain()

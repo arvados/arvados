@@ -184,6 +184,9 @@ class Directory(FreshBase):
     def flush(self):
         pass
 
+    def want_event_subscribe(self):
+        raise NotImplementedError()
+
     def create(self, name):
         raise NotImplementedError()
 
@@ -350,6 +353,9 @@ class CollectionDirectory(CollectionDirectoryBase):
 
     def writable(self):
         return self.collection.writable() if self.collection is not None else self._writable
+
+    def want_event_subscribe(self):
+        return (uuid_pattern.match(self.collection_locator) is not None)
 
     # Used by arv-web.py to switch the contents of the CollectionDirectory
     def change_collection(self, new_locator):
@@ -544,6 +550,9 @@ class TmpCollectionDirectory(CollectionDirectoryBase):
     def writable(self):
         return True
 
+    def want_event_subscribe(self):
+        return False
+
     def finalize(self):
         self.collection.stop_threads()
 
@@ -629,6 +638,9 @@ will appear if it exists.
     def clear(self, force=False):
         pass
 
+    def want_event_subscribe(self):
+        return not self.pdh_only
+
 
 class RecursiveInvalidateDirectory(Directory):
     def invalidate(self):
@@ -649,6 +661,9 @@ class TagsDirectory(RecursiveInvalidateDirectory):
         self.num_retries = num_retries
         self._poll = True
         self._poll_time = poll_time
+
+    def want_event_subscribe(self):
+        return True
 
     @use_counter
     def update(self):
@@ -677,6 +692,9 @@ class TagDirectory(Directory):
         self.tag = tag
         self._poll = poll
         self._poll_time = poll_time
+
+    def want_event_subscribe(self):
+        return True
 
     @use_counter
     def update(self):
@@ -708,6 +726,9 @@ class ProjectDirectory(Directory):
         self._poll_time = poll_time
         self._updating_lock = threading.Lock()
         self._current_user = None
+
+    def want_event_subscribe(self):
+        return True
 
     def createDirectory(self, i):
         if collection_uuid_pattern.match(i['uuid']):
@@ -929,3 +950,6 @@ class SharedDirectory(Directory):
                        lambda i: ProjectDirectory(self.inode, self.inodes, self.api, self.num_retries, i[1], poll=self._poll, poll_time=self._poll_time))
         except Exception:
             _logger.exception()
+
+    def want_event_subscribe(self):
+        return True

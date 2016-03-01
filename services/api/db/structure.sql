@@ -46,7 +46,8 @@ CREATE TABLE api_client_authorizations (
     default_owner_uuid character varying(255),
     scopes text DEFAULT '---
 - all
-'::text NOT NULL
+'::text NOT NULL,
+    uuid character varying(255) NOT NULL
 );
 
 
@@ -1414,7 +1415,7 @@ ALTER TABLE ONLY virtual_machines
 -- Name: api_client_authorizations_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX api_client_authorizations_search_index ON api_client_authorizations USING btree (api_token, created_by_ip_address, last_used_by_ip_address, default_owner_uuid);
+CREATE INDEX api_client_authorizations_search_index ON api_client_authorizations USING btree (api_token, created_by_ip_address, last_used_by_ip_address, default_owner_uuid, uuid);
 
 
 --
@@ -1527,6 +1528,13 @@ CREATE INDEX index_api_client_authorizations_on_expires_at ON api_client_authori
 --
 
 CREATE INDEX index_api_client_authorizations_on_user_id ON api_client_authorizations USING btree (user_id);
+
+
+--
+-- Name: index_api_client_authorizations_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX index_api_client_authorizations_on_uuid ON api_client_authorizations USING btree (uuid);
 
 
 --
@@ -2569,3 +2577,7 @@ INSERT INTO schema_migrations (version) VALUES ('20151202151426');
 INSERT INTO schema_migrations (version) VALUES ('20151215134304');
 
 INSERT INTO schema_migrations (version) VALUES ('20151229214707');
+
+INSERT INTO schema_migrations (version) VALUES ('20160208210629');
+
+INSERT INTO schema_migrations (version) VALUES ('20160209155729');

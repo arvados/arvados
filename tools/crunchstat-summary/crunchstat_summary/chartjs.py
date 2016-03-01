@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import cgi
 import json
+import math
 import pkg_resources
 
 from crunchstat_summary import logger
@@ -35,12 +36,25 @@ class ChartJS(object):
             }
             for s in self.summarizers]
 
+    def _axisY(self, tasks, stat):
+        ymax = 1
+        for task in tasks.itervalues():
+            for pt in task.series[stat]:
+                ymax = max(ymax, pt[1])
+        ytick = math.exp((1+math.floor(math.log(ymax, 2)))*math.log(2))/4
+        return {
+            'gridColor': '#cccccc',
+            'gridThickness': 1,
+            'interval': ytick,
+            'minimum': 0,
+            'maximum': ymax,
+            'valueFormatString': "''",
+        }
+
     def charts(self, label, tasks):
         return [
             {
-                'axisY': {
-                    'minimum': 0,
-                },
+                'axisY': self._axisY(tasks=tasks, stat=stat),
                 'data': [
                     {
                         'type': 'line',

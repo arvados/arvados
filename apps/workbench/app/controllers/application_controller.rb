@@ -89,13 +89,14 @@ class ApplicationController < ActionController::Base
     # exception here than in a template.)
     unless current_user.nil?
       begin
-        build_project_trees
+        my_starred_projects current_user
+        build_my_wanted_projects_tree current_user
       rescue ArvadosApiClient::ApiError
         # Fall back to the default-setting code later.
       end
     end
-    @my_project_tree ||= []
-    @shared_project_tree ||= []
+    @starred_projects ||= []
+    @my_wanted_projects_tree ||= []
     render_error(err_opts)
   end
 
@@ -442,6 +443,15 @@ class ApplicationController < ActionController::Base
     respond_to do |f|
       f.json { render(json: results, status: status) }
     end
+  end
+
+  helper_method :is_starred
+  def is_starred
+    links = Link.where(tail_uuid: current_user.uuid,
+               head_uuid: @object.uuid,
+               link_class: 'star')
+
+    return links.andand.any?
   end
 
   protected
@@ -833,27 +843,63 @@ class ApplicationController < ActionController::Base
     {collections: c, owners: own}
   end
 
-  helper_method :my_project_tree
-  def my_project_tree
-    build_project_trees
-    @my_project_tree
+  helper_method :my_starred_projects
+  def my_starred_projects user
+    return if @starred_projects
+    links = Link.filter([['tail_uuid', '=', user.uuid],
+                         ['link_class', '=', 'star'],
+                         ['head_uuid', 'is_a', 'arvados#group']]).select(%w(head_uuid))
+    uuids = links.collect { |x| x.head_uuid }
+    starred_projects = Group.filter([['uuid', 'in', uuids]]).order('name')
+    @starred_projects = starred_projects.results
   end
 
-  helper_method :shared_project_tree
-  def shared_project_tree
-    build_project_trees
-    @shared_project_tree
+  # If there are more than 200 projects that are readable by the user,
+  # build the tree using only the top 200+ projects owned by the user,
+  # from the top three levels.
+  # That is: get toplevel projects under home, get subprojects of
+  # these projects, and so on until we hit the limit.
+  def my_wanted_projects user, page_size=100
+    return @my_wanted_projects if @my_wanted_projects
+
+    from_top = []
+    uuids = [user.uuid]
+    depth = 0
+    @too_many_projects = false
+    @reached_level_limit = false
+    while from_top.size <= page_size*2
+      current_level = Group.filter([['group_class','=','project'],
+                                    ['owner_uuid', 'in', uuids]])
+                      .order('name').limit(page_size*2)
+      break if current_level.results.size == 0
+      @too_many_projects = true if current_level.items_available > current_level.results.size
+      from_top.concat current_level.results
+      uuids = current_level.results.collect { |x| x.uuid }
+      depth += 1
+      if depth >= 3
+        @reached_level_limit = true
+        break
+      end
+    end
+    @my_wanted_projects = from_top
   end
 
-  def build_project_trees
-    return if @my_project_tree and @shared_project_tree
-    parent_of = {current_user.uuid => 'me'}
-    all_projects.each do |ob|
+  helper_method :my_wanted_projects_tree
+  def my_wanted_projects_tree user, page_size=100
+    build_my_wanted_projects_tree user, page_size
+    [@my_wanted_projects_tree, @too_many_projects, @reached_level_limit]
+  end
+
+  def build_my_wanted_projects_tree user, page_size=100
+    return @my_wanted_projects_tree if @my_wanted_projects_tree
+
+    parent_of = {user.uuid => 'me'}
+    my_wanted_projects(user, page_size).each do |ob|
       parent_of[ob.uuid] = ob.owner_uuid
     end
-    children_of = {false => [], 'me' => [current_user]}
-    all_projects.each do |ob|
-      if ob.owner_uuid != current_user.uuid and
+    children_of = {false => [], 'me' => [user]}
+    my_wanted_projects(user, page_size).each do |ob|
+      if ob.owner_uuid != user.uuid and
           not parent_of.has_key? ob.owner_uuid
         parent_of[ob.uuid] = false
       end
@@ -877,11 +923,8 @@ class ApplicationController < ActionController::Base
       end
       paths
     end
-    @my_project_tree =
+    @my_wanted_projects_tree =
       sorted_paths.call buildtree.call(children_of, 'me')
-    @shared_project_tree =
-      sorted_paths.call({'Projects shared with me' =>
-                          buildtree.call(children_of, false)})
   end
 
   helper_method :get_object

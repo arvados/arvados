@@ -23,6 +23,7 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
     authorize_with :admin_trustedclient
     post :create_system_auth, scopes: '["test"]'
     assert_response :success
+    assert_not_nil JSON.parse(@response.body)['uuid']
   end
 
   test "prohibit create system auth with token from non-trusted client" do
@@ -64,6 +65,49 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
 
     test "#{auth.to_s} can find auths filtered with scopes=#{scopes.inspect}" do
       assert_found_tokens(auth, {filters: [['scopes', '=', scopes]]}, *expected)
+    end
+  end
+
+  [
+    [:admin, :admin, 200],
+    [:admin, :active, 403],
+    [:admin, :admin_vm, 403], # this belongs to the user of current session, but we can't get it by uuid
+    [:admin_trustedclient, :active, 200],
+  ].each do |user, token, status|
+    test "as user #{user} get #{token} token and expect #{status}" do
+      authorize_with user
+      get :show, {id: api_client_authorizations(token).uuid}
+      assert_response status
+    end
+  end
+
+  [
+    [:admin, :admin, 200],
+    [:admin, :active, 403],
+    [:admin, :admin_vm, 403], # this belongs to the user of current session, but we can't list it by uuid
+    [:admin_trustedclient, :active, 200],
+  ].each do |user, token, status|
+    test "as user #{user} list #{token} token using uuid and expect #{status}" do
+      authorize_with user
+      get :index, {
+        filters: [['uuid','=',api_client_authorizations(token).uuid]]
+      }
+      assert_response status
+    end
+  end
+
+  [
+    [:admin, :admin, 200],
+    [:admin, :active, 403],
+    [:admin, :admin_vm, 200], # this belongs to the user of current session, and can be listed by token
+    [:admin_trustedclient, :active, 200],
+  ].each do |user, token, status|
+    test "as user #{user} list #{token} token using token and expect #{status}" do
+      authorize_with user
+      get :index, {
+        filters: [['api_token','=',api_client_authorizations(token).api_token]]
+      }
+      assert_response status
     end
   end
 end

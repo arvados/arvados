@@ -13,29 +13,37 @@
 
       <div class="modal-body">
         <div class="selectable-container" style="height: 15em; overflow-y: scroll">
-          <% [my_project_tree, shared_project_tree].each do |tree| %>
-            <% tree.each do |projectnode| %>
-              <% if projectnode[:object].is_a? String %>
-                <div class="row" style="padding-left: <%= 1 + projectnode[:depth] %>em; margin-right: 0px">
-                  <i class="fa fa-fw fa-share-alt"></i>
-                  <%= projectnode[:object] %>
-                </div>
-              <% else
-                 row_selectable = !params[:editable] || projectnode[:object].editable?
-                 if projectnode[:object].uuid == current_user.uuid
-                   row_name = "Home"
-                   row_selectable = true
-                 else
-                   row_name = projectnode[:object].friendly_link_name || 'New project'
-                 end %>
-                <div class="<%= 'selectable project' if row_selectable %> row"
-                     style="padding-left: <%= 1 + projectnode[:depth] %>em; margin-right: 0px" data-object-uuid="<%= projectnode[:object].uuid %>">
-                  <i class="fa fa-fw fa-folder-o"></i> <%= row_name %>
-                </div>
-              <% end %>
+          <% starred_projects = my_starred_projects current_user%>
+          <% if starred_projects.andand.any? %>
+            <% writable_projects = starred_projects.select(&:editable?) %>
+            <% writable_projects.each do |projectnode| %>
+              <% row_name = projectnode.friendly_link_name || 'New project' %>
+              <div class="selectable project row"
+                   style="padding-left: 1em; margin-right: 0px"
+                   data-object-uuid="<%= projectnode.uuid %>">
+                <i class="fa fa-fw fa-folder-o"></i> <%= row_name %> <i class="fa fa-fw fa-star"></i>
+              </div>
             <% end %>
           <% end %>
+
+          <% my_projects = my_wanted_projects_tree(current_user) %>
+          <% my_projects[0].each do |projectnode| %>
+            <% if projectnode[:object].uuid == current_user.uuid
+                 row_name = "Home"
+               else
+                 row_name = projectnode[:object].friendly_link_name || 'New project'
+               end %>
+            <div class="selectable project row"
+                 style="padding-left: <%= 1 + projectnode[:depth] %>em; margin-right: 0px"
+                 data-object-uuid="<%= projectnode[:object].uuid %>">
+              <i class="fa fa-fw fa-folder-o"></i> <%= row_name %>
+            </div>
+          <% end %>
         </div>
+
+        <% if my_projects[1] or my_projects[2] or my_projects[0].size > 200 %>
+          <div>Some of your projects are omitted. Add projects of interest to favorites.</div>
+        <% end %>
       </div>
 
       <div class="modal-footer">

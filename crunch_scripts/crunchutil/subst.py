@@ -63,7 +63,7 @@ def sub_basename(v):
 def sub_glob(v):
     l = glob.glob(v)
     if len(l) == 0:
-        raise SubstitutionError("$(glob {}) no match fonud".format(v))
+        raise SubstitutionError("$(glob {}) no match found".format(v))
     else:
         return l[0]
 

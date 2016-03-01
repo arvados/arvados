@@ -30,6 +30,10 @@ class BaseComputeNodeDriver(RetryMixin):
     def _create_driver(self, driver_class, **auth_kwargs):
         return driver_class(**auth_kwargs)
 
+    @RetryMixin._retry()
+    def _set_sizes(self):
+        self.sizes = {sz.id: sz for sz in self.real.list_sizes()}
+
     def __init__(self, auth_kwargs, list_kwargs, create_kwargs,
                  driver_class, retry_wait=1, max_retry_wait=180):
         """Base initializer for compute node drivers.
@@ -46,7 +50,7 @@ class BaseComputeNodeDriver(RetryMixin):
         """
 
         super(BaseComputeNodeDriver, self).__init__(retry_wait, max_retry_wait,
-                                         logging.getLogger(str(type(self))),
+                                         logging.getLogger(self.__class__.__name__),
                                          type(self),
                                          None)
         self.real = self._create_driver(driver_class, **auth_kwargs)
@@ -65,7 +69,7 @@ class BaseComputeNodeDriver(RetryMixin):
                 if new_pair is not None:
                     self.create_kwargs[new_pair[0]] = new_pair[1]
 
-        self.sizes = {sz.id: sz for sz in self.real.list_sizes()}
+        self._set_sizes()
 
     def _init_ping_host(self, ping_host):
         self.ping_host = ping_host
@@ -127,11 +131,29 @@ class BaseComputeNodeDriver(RetryMixin):
             self.ping_host, arvados_node['uuid'],
             arvados_node['info']['ping_secret'])
 
+    @staticmethod
+    def _name_key(cloud_object):
+        return cloud_object.name
+
     def create_node(self, size, arvados_node):
-        kwargs = self.create_kwargs.copy()
-        kwargs.update(self.arvados_create_kwargs(size, arvados_node))
-        kwargs['size'] = size
-        return self.real.create_node(**kwargs)
+        try:
+            kwargs = self.create_kwargs.copy()
+            kwargs.update(self.arvados_create_kwargs(size, arvados_node))
+            kwargs['size'] = size
+            return self.real.create_node(**kwargs)
+        except self.CLOUD_ERRORS:
+            # Workaround for bug #6702: sometimes the create node request
+            # succeeds but times out and raises an exception instead of
+            # returning a result.  If this happens, we get stuck in a retry
+            # loop forever because subsequent create_node attempts will fail
+            # due to node name collision.  So check if the node we intended to
+            # create shows up in the cloud node list and return it if found.
+            node = self.search_for(kwargs['name'], 'list_nodes', self._name_key)
+            if node:
+                return node
+            else:
+                # something else went wrong, re-raise the exception
+                raise
 
     def post_create_node(self, cloud_node):
         # ComputeNodeSetupActor calls this method after the cloud node is

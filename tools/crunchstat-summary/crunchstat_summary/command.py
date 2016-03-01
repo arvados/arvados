@@ -13,7 +13,8 @@ class ArgumentParser(argparse.ArgumentParser):
         src = self.add_mutually_exclusive_group()
         src.add_argument(
             '--job', type=str, metavar='UUID',
-            help='Look up the specified job and read its log data from Keep')
+            help='Look up the specified job and read its log data from Keep'
+            ' (or from the Arvados event log, if the job is still running)')
         src.add_argument(
             '--pipeline-instance', type=str, metavar='UUID',
             help='Summarize each component of the given pipeline instance')

@@ -102,7 +102,6 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
     """
 
     CLIENT_ERRORS = ARVADOS_ERRORS
-    LOGGER_NAME = 'arvnodeman.jobqueue'
 
     def __init__(self, client, timer_actor, server_calc, *args, **kwargs):
         super(JobQueueMonitorActor, self).__init__(
@@ -114,6 +113,6 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
 
     def _got_response(self, queue):
         server_list = self._calculator.servers_for_queue(queue)
-        self._logger.debug("Sending server wishlist: %s",
+        self._logger.debug("Calculated wishlist: %s",
                            ', '.join(s.name for s in server_list) or "(empty)")
         return super(JobQueueMonitorActor, self)._got_response(server_list)

@@ -11,7 +11,6 @@ class ArvadosNodeListMonitorActor(clientactor.RemotePollLoopActor):
     This actor regularly polls the list of Arvados node records, and
     sends it to subscribers.
     """
-    LOGGER_NAME = 'arvnodeman.arvados_nodes'
 
     def is_common_error(self, exception):
         return isinstance(exception, config.ARVADOS_ERRORS)
@@ -29,7 +28,6 @@ class CloudNodeListMonitorActor(clientactor.RemotePollLoopActor):
     This actor regularly polls the cloud to get a list of running compute
     nodes, and sends it to subscribers.
     """
-    LOGGER_NAME = 'arvnodeman.cloud_nodes'
 
     def is_common_error(self, exception):
         return self._client.is_cloud_exception(exception)
@@ -38,4 +36,5 @@ class CloudNodeListMonitorActor(clientactor.RemotePollLoopActor):
         return node.id
 
     def _send_request(self):
-        return self._client.list_nodes()
+        n = self._client.list_nodes()
+        return n

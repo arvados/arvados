@@ -3,6 +3,7 @@
     <% if @object.uuid == current_user.andand.uuid %>
       Home
     <% else %>
+      <%= render partial: "show_star" %>
       <%= render_editable_attribute @object, 'name', nil, { 'data-emptytext' => "New project" } %>
     <% end %>
   </h2>

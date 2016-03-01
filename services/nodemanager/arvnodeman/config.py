@@ -12,13 +12,15 @@ import httplib2
 import pykka
 from apiclient import errors as apierror
 
+from .fullstopactor import FullStopActor
+
 # IOError is the base class for socket.error, ssl.SSLError, and friends.
 # It seems like it hits the sweet spot for operations we want to retry:
 # it's low-level, but unlikely to catch code bugs.
 NETWORK_ERRORS = (IOError,)
 ARVADOS_ERRORS = NETWORK_ERRORS + (apierror.Error,)
 
-actor_class = pykka.ThreadingActor
+actor_class = FullStopActor
 
 class NodeManagerConfig(ConfigParser.SafeConfigParser):
     """Node Manager Configuration class.

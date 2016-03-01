@@ -1,4 +1,5 @@
 class ApiClientAuthorization < ArvadosModel
+  include HasUuid
   include KindAndEtag
   include CommonApiTemplate
 
@@ -34,17 +35,6 @@ class ApiClientAuthorization < ArvadosModel
   end
   def owner_uuid_changed?
     self.user_id_changed?
-  end
-
-  def uuid
-    self.api_token
-  end
-  def uuid=(x) end
-  def uuid_was
-    self.api_token_was
-  end
-  def uuid_changed?
-    self.api_token_changed?
   end
 
   def modified_by_client_uuid
