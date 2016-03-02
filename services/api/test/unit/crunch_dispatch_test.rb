@@ -152,12 +152,6 @@ class CrunchDispatchTest < ActiveSupport::TestCase
       assert_equal false, limit
       assert_equal 2, job[:log_throttle_lines_so_far]
 
-      # crunchstat partial line segment is also skipped
-      line = "#{now} localhost 100 0 stderr crunchstat [...] second partial line segment within the interval [...]"
-      limit = dispatch.rate_limit(job, line)
-      assert_equal false, limit
-      assert_equal 2, job[:log_throttle_lines_so_far]
-
       # next partial line after interval is counted towards skipped lines
       sleep(1)
       line = "#{now} localhost 100 0 stderr [...] third partial line segment after the interval [...]"

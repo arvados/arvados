@@ -448,9 +448,7 @@ class CrunchDispatch
       partial_line = false
       skip_counts = false
       matches = line.match(/^\S+ \S+ \d+ \d+ stderr (.*)/)
-      if matches and matches[1] and
-         (matches[1].start_with?('[...]') or matches[1].start_with?('crunchstat [...]')) and
-         matches[1].end_with?('[...]')
+      if matches and matches[1] and matches[1].start_with?('[...]') and matches[1].end_with?('[...]')
         partial_line = true
         if Time.now > running_job[:log_throttle_partial_line_last_at] + Rails.configuration.crunch_log_partial_line_throttle_period
           running_job[:log_throttle_partial_line_last_at] = Time.now
