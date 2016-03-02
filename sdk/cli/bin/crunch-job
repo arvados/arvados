@@ -1237,9 +1237,9 @@ sub reapchildren
     $progress_is_dirty = 1;
   }
 
-  if ($children_reaped > 0 && (scalar(@successful_task_uuids) == $children_reaped))
+  if (scalar(@successful_task_uuids) > 0)
   {
-    Log (undef, sprintf("Reaped %d children and all were successful, checking for new tasks from API server.", $children_reaped));
+    Log (undef, sprintf("%d tasks exited (%d succeeded), checking for new tasks from API server.", $children_reaped, scalar(@successful_task_uuids)));
     # Load new tasks
     my $newtask_list = [];
     my $newtask_results;
