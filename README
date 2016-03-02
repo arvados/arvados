@@ -1,21 +1,39 @@
-Welcome to Arvados!
+Welcome to the Arvados Project!
 
-The main Arvados web site is 
+Arvados is an open source distributed computing platform for bioinformatics,
+data science, and high throughput analysis of massive data sets.  Arvados
+supports a variety of cloud, cluster and HPC environments.  Arvados consists of
+a content-addressable storage system "Keep" for managing and storing large
+collections of files; a containerized workflow engine "Crunch" designed for
+versioning, reproducibilty, and provenance of computations; and a variety
+related services and components including APIs, SDKs, and visual tools.
+
+The main Arvados web site is
   https://arvados.org
 
-The Arvados public wiki is located at 
+The Arvados public wiki is located at
   https://dev.arvados.org/projects/arvados/wiki
 
-The Arvados public bug tracker is located at 
+The Arvados public bug tracker is located at
   https://dev.arvados.org/projects/arvados/issues
 
-For support see 
+For support see
   http://doc.arvados.org/user/getting_started/community.html
 
-Installation documentation is located at 
+Installation documentation is located at
   http://doc.arvados.org/install
 
-If you wish to build the documentation yourself, follow the instructions in
-doc/README to build the documentation, then consult the "Install Guide".
+To try out Arvados quickly, you can use Arvbox, which provides Arvados
+components pre-installed in a Docker container (requires Docker 1.9+).  After
+cloning Arvados:
+
+  $ cd arvados/tools/arvbox/bin
+  $ ./arvbox start localdemo
+
+See http://doc.arvados.org/install/arvbox.html for details and documentation.
+
+If you wish to build the Arvados documentation yourself, follow the
+instructions in doc/README to build the documentation, then consult the
+"Install Guide".
 
 See COPYING for information about Arvados Free Software licenses.
