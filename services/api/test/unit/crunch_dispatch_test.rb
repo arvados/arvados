@@ -143,4 +143,62 @@ class CrunchDispatchTest < ActiveSupport::TestCase
       return f.flock(File::LOCK_EX|File::LOCK_NB)
     end
   end
+
+  test 'rate limit of partial line segments' do
+    act_as_system_user do
+      Rails.configuration.crunch_log_partial_line_throttle_period = 1
+
+      job = {}
+      job[:bytes_logged] = 0
+      job[:log_throttle_bytes_so_far] = 0
+      job[:log_throttle_lines_so_far] = 0
+      job[:log_throttle_bytes_skipped] = 0
+      job[:log_throttle_is_open] = true
+      job[:log_throttle_partial_line_last_at] = Time.new(0)
+      job[:log_throttle_first_partial_line] = true
+
+      dispatch = CrunchDispatch.new
+
+      line = "first log line"
+      limit = dispatch.rate_limit(job, line)
+      assert_equal true, limit
+      assert_equal "first log line", line
+      assert_equal 1, job[:log_throttle_lines_so_far]
+
+      # first partial line segment is skipped and counted towards skipped lines
+      now = Time.now.strftime('%Y-%m-%d-%H:%M:%S')
+      line = "#{now} localhost 100 0 stderr [...] this is first partial line segment [...]"
+      limit = dispatch.rate_limit(job, line)
+      assert_equal true, limit
+      assert_includes line, "Rate-limiting partial segments of long lines", line
+      assert_equal 2, job[:log_throttle_lines_so_far]
+
+      # next partial line segment within throttle interval is skipped but not counted towards skipped lines
+      line = "#{now} localhost 100 0 stderr [...] second partial line segment within the interval [...]"
+      limit = dispatch.rate_limit(job, line)
+      assert_equal false, limit
+      assert_equal 2, job[:log_throttle_lines_so_far]
+
+      # next partial line after interval is counted towards skipped lines
+      sleep(1)
+      line = "#{now} localhost 100 0 stderr [...] third partial line segment after the interval [...]"
+      limit = dispatch.rate_limit(job, line)
+      assert_equal false, limit
+      assert_equal 3, job[:log_throttle_lines_so_far]
+
+      # this is not a valid line segment
+      line = "#{now} localhost 100 0 stderr [...] does not end with [...] and is not a partial segment"
+      limit = dispatch.rate_limit(job, line)
+      assert_equal true, limit
+      assert_equal "#{now} localhost 100 0 stderr [...] does not end with [...] and is not a partial segment", line
+      assert_equal 4, job[:log_throttle_lines_so_far]
+
+      # this also is not a valid line segment
+      line = "#{now} localhost 100 0 stderr does not start correctly but ends with [...]"
+      limit = dispatch.rate_limit(job, line)
+      assert_equal true, limit
+      assert_equal "#{now} localhost 100 0 stderr does not start correctly but ends with [...]", line
+      assert_equal 5, job[:log_throttle_lines_so_far]
+    end
+  end
 end

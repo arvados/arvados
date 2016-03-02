@@ -338,6 +338,7 @@ common:
   # "git log".
   source_version: false
 
+  crunch_log_partial_line_throttle_period: 5
 
 development:
   force_ssl: false
