@@ -17,6 +17,8 @@ set -u
 cat <<EOF >/var/lib/arvados/doc-nginx.conf
 worker_processes auto;
 pid /var/lib/arvados/doc-nginx.pid;
+
+error_log stderr;
 daemon off;
 
 events {
@@ -24,6 +26,7 @@ events {
 }
 
 http {
+     access_log off;
      include /etc/nginx/mime.types;
      default_type application/octet-stream;
      server {
