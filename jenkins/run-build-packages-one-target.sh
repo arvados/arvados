@@ -150,13 +150,27 @@ FINAL_EXITCODE=0
 
 package_fails=""
 
+mkdir -p "$WORKSPACE/apps/workbench/vendor/cache-$TARGET"
+mkdir -p "$WORKSPACE/services/api/vendor/cache-$TARGET"
+
+docker_volume_args=(
+    -v "$JENKINS_DIR:/jenkins"
+    -v "$WORKSPACE:/arvados"
+    -v /arvados/services/api/vendor/bundle
+    -v /arvados/apps/workbench/vendor/bundle
+    -v "$WORKSPACE/services/api/vendor/cache-$TARGET:/arvados/services/api/vendor/cache"
+    -v "$WORKSPACE/apps/workbench/vendor/cache-$TARGET:/arvados/apps/workbench/vendor/cache"
+)
+
 if [[ -n "$test_packages" ]]; then
     for p in $packages ; do
-        if docker run --rm -v "$JENKINS_DIR:/jenkins" -v "$WORKSPACE:/arvados" \
-               --env ARVADOS_DEBUG=1 \
-               --env "TARGET=$TARGET" \
-               --env "WORKSPACE=/arvados" \
-               "$IMAGE" $COMMAND $p ; then
+        if docker run --rm \
+            "${docker_volume_args[@]}" \
+            --env ARVADOS_DEBUG=1 \
+            --env "TARGET=$TARGET" \
+            --env "WORKSPACE=/arvados" \
+            "$IMAGE" $COMMAND $p
+        then
             true
         else
             FINAL_EXITCODE=$?
@@ -165,8 +179,11 @@ if [[ -n "$test_packages" ]]; then
         fi
     done
 else
-    if docker run --rm -v "$JENKINS_DIR:/jenkins" -v "$WORKSPACE:/arvados" \
-           --env ARVADOS_DEBUG=1 "$IMAGE" $COMMAND ; then
+    if docker run --rm \
+        "${docker_volume_args[@]}" \
+        --env ARVADOS_DEBUG=1 \
+        "$IMAGE" $COMMAND
+    then
         echo
         echo "Build packages for $TARGET succeeded." >&2
     else
