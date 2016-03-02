@@ -13,6 +13,10 @@ import (
 	. "gopkg.in/check.v1"
 	"io"
 	"io/ioutil"
+	"log"
+	"os"
+	"os/exec"
+	"sort"
 	"strings"
 	"syscall"
 	"testing"
@@ -51,22 +55,19 @@ var otherManifest = ". 68a84f561b1d1708c6baff5e019a9ab3+46+Ae5d0af96944a3690becb
 var otherPDH = "a3e8f74c6f101eae01fa08bfb4e49b3a+54"
 
 type TestDockerClient struct {
-	imageLoaded  string
-	stdoutReader io.ReadCloser
-	stderrReader io.ReadCloser
-	stdoutWriter io.WriteCloser
-	stderrWriter io.WriteCloser
-	fn           func(t *TestDockerClient)
-	finish       chan dockerclient.WaitResult
-	stop         chan bool
-	cwd          string
-	env          []string
+	imageLoaded string
+	logReader   io.ReadCloser
+	logWriter   io.WriteCloser
+	fn          func(t *TestDockerClient)
+	finish      chan dockerclient.WaitResult
+	stop        chan bool
+	cwd         string
+	env         []string
 }
 
 func NewTestDockerClient() *TestDockerClient {
 	t := &TestDockerClient{}
-	t.stdoutReader, t.stdoutWriter = io.Pipe()
-	t.stderrReader, t.stderrWriter = io.Pipe()
+	t.logReader, t.logWriter = io.Pipe()
 	t.finish = make(chan dockerclient.WaitResult)
 	t.stop = make(chan bool)
 	t.cwd = "/"
@@ -113,14 +114,8 @@ func (t *TestDockerClient) StartContainer(id string, config *dockerclient.HostCo
 	}
 }
 
-func (t *TestDockerClient) ContainerLogs(id string, options *dockerclient.LogOptions) (io.ReadCloser, error) {
-	if options.Stdout {
-		return t.stdoutReader, nil
-	}
-	if options.Stderr {
-		return t.stderrReader, nil
-	}
-	return nil, nil
+func (t *TestDockerClient) AttachContainer(id string, options *dockerclient.AttachOptions) (io.ReadCloser, error) {
+	return t.logReader, nil
 }
 
 func (t *TestDockerClient) Wait(id string) <-chan dockerclient.WaitResult {
@@ -139,20 +134,20 @@ func (this *ArvTestClient) Create(resourceType string,
 	this.Content = parameters
 
 	if resourceType == "logs" {
-		et := parameters["event_type"].(string)
+		et := parameters["log"].(arvadosclient.Dict)["event_type"].(string)
 		if this.Logs == nil {
 			this.Logs = make(map[string]*bytes.Buffer)
 		}
 		if this.Logs[et] == nil {
 			this.Logs[et] = &bytes.Buffer{}
 		}
-		this.Logs[et].Write([]byte(parameters["properties"].(map[string]string)["text"]))
+		this.Logs[et].Write([]byte(parameters["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"]))
 	}
 
 	if resourceType == "collections" && output != nil {
-		mt := parameters["manifest_text"].(string)
-		outmap := output.(map[string]string)
-		outmap["portable_data_hash"] = fmt.Sprintf("%x+%d", md5.Sum([]byte(mt)), len(mt))
+		mt := parameters["collection"].(arvadosclient.Dict)["manifest_text"].(string)
+		outmap := output.(*CollectionRecord)
+		outmap.PortableDataHash = fmt.Sprintf("%x+%d", md5.Sum([]byte(mt)), len(mt))
 	}
 
 	return nil
@@ -161,9 +156,9 @@ func (this *ArvTestClient) Create(resourceType string,
 func (this *ArvTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
 	if resourceType == "collections" {
 		if uuid == hwPDH {
-			output.(*Collection).ManifestText = hwManifest
+			output.(*CollectionRecord).ManifestText = hwManifest
 		} else if uuid == otherPDH {
-			output.(*Collection).ManifestText = otherManifest
+			output.(*CollectionRecord).ManifestText = otherManifest
 		}
 	}
 	if resourceType == "containers" {
@@ -176,7 +171,7 @@ func (this *ArvTestClient) Update(resourceType string, uuid string, parameters a
 
 	this.Content = parameters
 	if resourceType == "containers" {
-		if parameters["state"] == "Running" {
+		if parameters["container"].(arvadosclient.Dict)["state"] == "Running" {
 			this.WasSetRunning = true
 		}
 
@@ -210,7 +205,7 @@ func (this *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename str
 func (s *TestSuite) TestLoadImage(c *C) {
 	kc := &KeepTestClient{}
 	docker := NewTestDockerClient()
-	cr := NewContainerRunner(&ArvTestClient{}, kc, docker)
+	cr := NewContainerRunner(&ArvTestClient{}, kc, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	_, err := cr.Docker.RemoveImage(hwImageId, true)
 
@@ -266,7 +261,7 @@ func (this ArvErrorTestClient) Update(resourceType string, uuid string, paramete
 }
 
 func (this KeepErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
-	return "", 0, nil
+	return "", 0, errors.New("KeepError")
 }
 
 func (this KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
@@ -297,36 +292,36 @@ func (this KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, file
 
 func (s *TestSuite) TestLoadImageArvError(c *C) {
 	// (1) Arvados error
-	cr := NewContainerRunner(ArvErrorTestClient{}, &KeepTestClient{}, nil)
+	cr := NewContainerRunner(ArvErrorTestClient{}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.ContainerRecord.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
-	c.Check(err.Error(), Equals, "ArvError")
+	c.Check(err.Error(), Equals, "While getting container image collection: ArvError")
 }
 
 func (s *TestSuite) TestLoadImageKeepError(c *C) {
 	// (2) Keep error
 	docker := NewTestDockerClient()
-	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, docker)
+	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.ContainerRecord.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
-	c.Check(err.Error(), Equals, "KeepError")
+	c.Check(err.Error(), Equals, "While creating ManifestFileReader for container image: KeepError")
 }
 
 func (s *TestSuite) TestLoadImageCollectionError(c *C) {
 	// (3) Collection doesn't contain image
-	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, nil)
+	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.ContainerRecord.ContainerImage = otherPDH
 
 	err := cr.LoadImage()
-	c.Check(err.Error(), Equals, "First file in the collection does not end in .tar")
+	c.Check(err.Error(), Equals, "First file in the container image collection does not end in .tar")
 }
 
 func (s *TestSuite) TestLoadImageKeepReadError(c *C) {
 	// (4) Collection doesn't contain image
 	docker := NewTestDockerClient()
-	cr := NewContainerRunner(&ArvTestClient{}, KeepReadErrorTestClient{}, docker)
+	cr := NewContainerRunner(&ArvTestClient{}, KeepReadErrorTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.ContainerRecord.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
@@ -356,15 +351,23 @@ func (this *TestLogs) NewTestLoggingWriter(logstr string) io.WriteCloser {
 	return nil
 }
 
+func dockerLog(fd byte, msg string) []byte {
+	by := []byte(msg)
+	header := make([]byte, 8+len(by))
+	header[0] = fd
+	header[7] = byte(len(by))
+	copy(header[8:], by)
+	return header
+}
+
 func (s *TestSuite) TestRunContainer(c *C) {
 	docker := NewTestDockerClient()
 	docker.fn = func(t *TestDockerClient) {
-		t.stdoutWriter.Write([]byte("Hello world\n"))
-		t.stdoutWriter.Close()
-		t.stderrWriter.Close()
+		t.logWriter.Write(dockerLog(1, "Hello world\n"))
+		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{}
 	}
-	cr := NewContainerRunner(&ArvTestClient{}, &KeepTestClient{}, docker)
+	cr := NewContainerRunner(&ArvTestClient{}, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	var logs TestLogs
 	cr.NewLogWriter = logs.NewTestLoggingWriter
@@ -374,9 +377,6 @@ func (s *TestSuite) TestRunContainer(c *C) {
 	c.Check(err, IsNil)
 
 	err = cr.StartContainer()
-	c.Check(err, IsNil)
-
-	err = cr.AttachLogs()
 	c.Check(err, IsNil)
 
 	err = cr.WaitFinish()
@@ -389,8 +389,7 @@ func (s *TestSuite) TestRunContainer(c *C) {
 func (s *TestSuite) TestCommitLogs(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
-	cr := NewContainerRunner(api, kc, nil)
-	cr.ContainerRecord.UUID = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 
 	cr.CrunchLog.Print("Hello world!")
@@ -400,28 +399,26 @@ func (s *TestSuite) TestCommitLogs(c *C) {
 	err := cr.CommitLogs()
 	c.Check(err, IsNil)
 
-	c.Check(api.Content["name"], Equals, "logs for zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	c.Check(api.Content["manifest_text"], Equals, ". 744b2e4553123b02fa7b452ec5c18993+123 0:123:crunch-run.txt\n")
+	c.Check(api.Content["collection"].(arvadosclient.Dict)["name"], Equals, "logs for zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Check(api.Content["collection"].(arvadosclient.Dict)["manifest_text"], Equals, ". 744b2e4553123b02fa7b452ec5c18993+123 0:123:crunch-run.txt\n")
 	c.Check(*cr.LogsPDH, Equals, "63da7bdacf08c40f604daad80c261e9a+60")
 }
 
 func (s *TestSuite) TestUpdateContainerRecordRunning(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
-	cr := NewContainerRunner(api, kc, nil)
-	cr.ContainerRecord.UUID = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	err := cr.UpdateContainerRecordRunning()
 	c.Check(err, IsNil)
 
-	c.Check(api.Content["state"], Equals, "Running")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Running")
 }
 
 func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
-	cr := NewContainerRunner(api, kc, nil)
-	cr.ContainerRecord.UUID = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
 	cr.LogsPDH = new(string)
 	*cr.LogsPDH = "d3a229d2fe3690c2c3e75a71a153c6a3+60"
@@ -433,25 +430,24 @@ func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
 	err := cr.UpdateContainerRecordComplete()
 	c.Check(err, IsNil)
 
-	c.Check(api.Content["log"], Equals, *cr.LogsPDH)
-	c.Check(api.Content["exit_code"], Equals, *cr.ExitCode)
-	c.Check(api.Content["state"], Equals, "Complete")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["log"], Equals, *cr.LogsPDH)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, *cr.ExitCode)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 }
 
 func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
-	cr := NewContainerRunner(api, kc, nil)
-	cr.ContainerRecord.UUID = "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.Cancelled = true
 	cr.finalState = "Cancelled"
 
 	err := cr.UpdateContainerRecordComplete()
 	c.Check(err, IsNil)
 
-	c.Check(api.Content["log"], IsNil)
-	c.Check(api.Content["exit_code"], IsNil)
-	c.Check(api.Content["state"], Equals, "Cancelled")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["log"], IsNil)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], IsNil)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Cancelled")
 }
 
 // Used by the TestFullRun*() test below to DRY up boilerplate setup to do full
@@ -466,13 +462,15 @@ func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvT
 	docker.RemoveImage(hwImageId, true)
 
 	api = &ArvTestClient{ContainerRecord: rec}
-	cr = NewContainerRunner(api, &KeepTestClient{}, docker)
+	cr = NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	am := &ArvMountCmdLine{}
+	cr.RunArvMount = am.ArvMountTest
 
-	err = cr.Run("zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	err = cr.Run()
 	c.Check(err, IsNil)
 	c.Check(api.WasSetRunning, Equals, true)
 
-	c.Check(api.Content["log"], NotNil)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["log"], NotNil)
 
 	if err != nil {
 		for k, v := range api.Logs {
@@ -490,19 +488,18 @@ func (s *TestSuite) TestFullRunHello(c *C) {
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
     "environment": {},
-    "mounts": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
 }`, func(t *TestDockerClient) {
-		t.stdoutWriter.Write([]byte("hello world\n"))
-		t.stdoutWriter.Close()
-		t.stderrWriter.Close()
+		t.logWriter.Write(dockerLog(1, "hello world\n"))
+		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{}
 	})
 
-	c.Check(api.Content["exit_code"], Equals, 0)
-	c.Check(api.Content["state"], Equals, "Complete")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "hello world\n"), Equals, true)
 
@@ -514,21 +511,20 @@ func (s *TestSuite) TestFullRunStderr(c *C) {
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
     "environment": {},
-    "mounts": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
 }`, func(t *TestDockerClient) {
-		t.stdoutWriter.Write([]byte("hello\n"))
-		t.stderrWriter.Write([]byte("world\n"))
-		t.stdoutWriter.Close()
-		t.stderrWriter.Close()
+		t.logWriter.Write(dockerLog(1, "hello\n"))
+		t.logWriter.Write(dockerLog(2, "world\n"))
+		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 1}
 	})
 
-	c.Check(api.Content["log"], NotNil)
-	c.Check(api.Content["exit_code"], Equals, 1)
-	c.Check(api.Content["state"], Equals, "Complete")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["log"], NotNil)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, 1)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "hello\n"), Equals, true)
 	c.Check(strings.HasSuffix(api.Logs["stderr"].String(), "world\n"), Equals, true)
@@ -540,19 +536,20 @@ func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
     "environment": {},
-    "mounts": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
 }`, func(t *TestDockerClient) {
-		t.stdoutWriter.Write([]byte(t.cwd + "\n"))
-		t.stdoutWriter.Close()
-		t.stderrWriter.Close()
+		t.logWriter.Write(dockerLog(1, t.cwd+"\n"))
+		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
-	c.Check(api.Content["exit_code"], Equals, 0)
-	c.Check(api.Content["state"], Equals, "Complete")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
+
+	log.Print(api.Logs["stdout"].String())
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "/\n"), Equals, true)
 }
@@ -563,19 +560,18 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": "/bin",
     "environment": {},
-    "mounts": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
 }`, func(t *TestDockerClient) {
-		t.stdoutWriter.Write([]byte(t.cwd + "\n"))
-		t.stdoutWriter.Close()
-		t.stderrWriter.Close()
+		t.logWriter.Write(dockerLog(1, t.cwd+"\n"))
+		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
-	c.Check(api.Content["exit_code"], Equals, 0)
-	c.Check(api.Content["state"], Equals, "Complete")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "/bin\n"), Equals, true)
 }
@@ -586,7 +582,7 @@ func (s *TestSuite) TestCancel(c *C) {
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
     "environment": {},
-    "mounts": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
@@ -599,15 +595,16 @@ func (s *TestSuite) TestCancel(c *C) {
 	docker := NewTestDockerClient()
 	docker.fn = func(t *TestDockerClient) {
 		<-t.stop
-		t.stdoutWriter.Write([]byte("foo\n"))
-		t.stdoutWriter.Close()
-		t.stderrWriter.Close()
+		t.logWriter.Write(dockerLog(1, "foo\n"))
+		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	}
 	docker.RemoveImage(hwImageId, true)
 
 	api := &ArvTestClient{ContainerRecord: rec}
-	cr := NewContainerRunner(api, &KeepTestClient{}, docker)
+	cr := NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	am := &ArvMountCmdLine{}
+	cr.RunArvMount = am.ArvMountTest
 
 	go func() {
 		for cr.ContainerID == "" {
@@ -616,11 +613,11 @@ func (s *TestSuite) TestCancel(c *C) {
 		cr.SigChan <- syscall.SIGINT
 	}()
 
-	err = cr.Run("zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	err = cr.Run()
 
 	c.Check(err, IsNil)
 
-	c.Check(api.Content["log"], NotNil)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["log"], NotNil)
 
 	if err != nil {
 		for k, v := range api.Logs {
@@ -629,7 +626,7 @@ func (s *TestSuite) TestCancel(c *C) {
 		}
 	}
 
-	c.Check(api.Content["state"], Equals, "Cancelled")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Cancelled")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "foo\n"), Equals, true)
 
@@ -641,19 +638,90 @@ func (s *TestSuite) TestFullRunSetEnv(c *C) {
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": "/bin",
     "environment": {"FROBIZ": "bilbo"},
-    "mounts": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
 }`, func(t *TestDockerClient) {
-		t.stdoutWriter.Write([]byte(t.env[0][7:] + "\n"))
-		t.stdoutWriter.Close()
-		t.stderrWriter.Close()
+		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
+		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
-	c.Check(api.Content["exit_code"], Equals, 0)
-	c.Check(api.Content["state"], Equals, "Complete")
+	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
+	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "bilbo\n"), Equals, true)
+}
+
+type ArvMountCmdLine struct {
+	Cmd []string
+}
+
+func (am *ArvMountCmdLine) ArvMountTest(c []string) (*exec.Cmd, error) {
+	am.Cmd = c
+	return nil, nil
+}
+
+func (s *TestSuite) TestSetupMounts(c *C) {
+	api := &ArvTestClient{}
+	kc := &KeepTestClient{}
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	am := &ArvMountCmdLine{}
+	cr.RunArvMount = am.ArvMountTest
+
+	i := 0
+	cr.MkTempDir = func(string, string) (string, error) {
+		i += 1
+		d := fmt.Sprintf("/tmp/mktmpdir%d", i)
+		os.Mkdir(d, os.ModePerm)
+		return d, nil
+	}
+
+	{
+		cr.ContainerRecord.Mounts = make(map[string]Mount)
+		cr.ContainerRecord.Mounts["/tmp"] = Mount{Kind: "tmp"}
+		cr.OutputPath = "/tmp"
+
+		err := cr.SetupMounts()
+		c.Check(err, IsNil)
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
+		c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir2:/tmp"})
+		cr.CleanupDirs()
+	}
+
+	{
+		i = 0
+		cr.ContainerRecord.Mounts = make(map[string]Mount)
+		cr.ContainerRecord.Mounts["/keeptmp"] = Mount{Kind: "collection", Writable: true}
+		cr.OutputPath = "/keeptmp"
+
+		os.MkdirAll("/tmp/mktmpdir1/tmp0", os.ModePerm)
+
+		err := cr.SetupMounts()
+		c.Check(err, IsNil)
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
+		c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir1/tmp0:/keeptmp"})
+		cr.CleanupDirs()
+	}
+
+	{
+		i = 0
+		cr.ContainerRecord.Mounts = make(map[string]Mount)
+		cr.ContainerRecord.Mounts["/keepinp"] = Mount{Kind: "collection", PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53"}
+		cr.ContainerRecord.Mounts["/keepout"] = Mount{Kind: "collection", Writable: true}
+		cr.OutputPath = "/keepout"
+
+		os.MkdirAll("/tmp/mktmpdir1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
+		os.MkdirAll("/tmp/mktmpdir1/tmp0", os.ModePerm)
+
+		err := cr.SetupMounts()
+		c.Check(err, IsNil)
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
+		var ss sort.StringSlice = cr.Binds
+		ss.Sort()
+		c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro",
+			"/tmp/mktmpdir1/tmp0:/keepout"})
+		cr.CleanupDirs()
+	}
 }

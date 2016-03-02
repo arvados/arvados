@@ -40,7 +40,7 @@ setup(name='arvados-python-client',
       ],
       install_requires=[
           'google-api-python-client==1.4.2',
-          'oauth2client==1.5.1',
+          'oauth2client >=1.4.6, <2',
           'ciso8601',
           'httplib2',
           'pycurl >=7.19.5.1, <7.21.5',

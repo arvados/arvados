@@ -21,6 +21,11 @@ from crunchstat_summary import logger
 AVAILABLE_RAM_RATIO = 0.95
 
 
+# Workaround datetime.datetime.strptime() thread-safety bug by calling
+# it once before starting threads.  https://bugs.python.org/issue7980
+datetime.datetime.strptime('1999-12-31_23:59:59', '%Y-%m-%d_%H:%M:%S')
+
+
 class Task(object):
     def __init__(self):
         self.starttime = None
