@@ -1467,7 +1467,6 @@ sub preprocess_stderr
     }
     elsif ($line =~ /srun: error: (Node failure on|Aborting, .*\bio error\b)/) {
       my $job_slot_index = $jobstep[$jobstepidx]->{slotindex};
-      my $job_slot_index = $jobstep[$jobstepidx]->{slotindex};
       $slot[$job_slot_index]->{node}->{fail_count}++;
       $jobstep[$jobstepidx]->{tempfail} = 1;
       ban_node_by_slot($job_slot_index);
