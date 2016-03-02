@@ -24,6 +24,7 @@ class CrunchDispatch
 
     @docker_bin = ENV['CRUNCH_JOB_DOCKER_BIN']
     @docker_run_args = ENV['CRUNCH_JOB_DOCKER_RUN_ARGS']
+    @cgroup_root = ENV['CRUNCH_CGROUP_ROOT']
 
     @arvados_internal = Rails.configuration.git_internal_dir
     if not File.exists? @arvados_internal
@@ -383,6 +384,10 @@ class CrunchDispatch
                    '--job-api-token', @authorizations[job.uuid].api_token,
                    '--job', job.uuid,
                    '--git-dir', @arvados_internal]
+
+      if @cgroup_root
+        cmd_args += ['--cgroup-root', @cgroup_root]
+      end
 
       if @docker_bin
         cmd_args += ['--docker-bin', @docker_bin]
