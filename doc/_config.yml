@@ -145,7 +145,7 @@ navbar:
     - Overview:
       - install/index.html.textile.liquid
     - Docker quick start:
-      - install/arvbox.html.md.liquid
+      - install/arvbox.html.textile.liquid
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
       - install/install-sso.html.textile.liquid
