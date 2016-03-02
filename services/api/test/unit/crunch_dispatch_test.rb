@@ -1,7 +1,10 @@
 require 'test_helper'
 require 'crunch_dispatch'
+require 'helpers/git_test_helper'
 
 class CrunchDispatchTest < ActiveSupport::TestCase
+  include GitTestHelper
+
   test 'choose cheaper nodes first' do
     act_as_system_user do
       # Replace test fixtures with a set suitable for testing dispatch
@@ -97,6 +100,30 @@ class CrunchDispatchTest < ActiveSupport::TestCase
     end
     assert_with_timeout 20, "Dispatch did not unlock #{lockfile}" do
       can_lock(lockfile)
+    end
+  end
+
+  test 'override --cgroup-root with CRUNCH_CGROUP_ROOT' do
+    ENV['CRUNCH_CGROUP_ROOT'] = '/path/to/cgroup'
+    Rails.configuration.crunch_job_wrapper = :none
+    act_as_system_user do
+      j = Job.create(repository: 'active/foo',
+                     script: 'hash',
+                     script_version: '4fe459abe02d9b365932b8f5dc419439ab4e2577',
+                     script_parameters: {})
+      ok = false
+      Open3.expects(:popen3).at_least_once.with do |*args|
+        if args.index(j.uuid)
+          ok = ((i = args.index '--cgroup-root') and
+                (args[i+1] == '/path/to/cgroup'))
+        end
+        true
+      end.raises(StandardError.new('all is well'))
+      dispatch = CrunchDispatch.new
+      dispatch.parse_argv ['--jobs']
+      dispatch.refresh_todo
+      dispatch.start_jobs
+      assert ok
     end
   end
 

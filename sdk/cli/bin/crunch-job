@@ -126,6 +126,7 @@ my $jobspec;
 my $job_api_token;
 my $no_clear_tmp;
 my $resume_stash;
+my $cgroup_root = "/sys/fs/cgroup";
 my $docker_bin = "docker.io";
 my $docker_run_args = "";
 GetOptions('force-unlock' => \$force_unlock,
@@ -134,6 +135,7 @@ GetOptions('force-unlock' => \$force_unlock,
            'job-api-token=s' => \$job_api_token,
            'no-clear-tmp' => \$no_clear_tmp,
            'resume-stash=s' => \$resume_stash,
+           'cgroup-root=s' => \$cgroup_root,
            'docker-bin=s' => \$docker_bin,
            'docker-run-args=s' => \$docker_run_args,
     );
@@ -915,7 +917,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
     {
       my $containername = "$Jobstep->{arvados_task}->{uuid}-$Jobstep->{failures}";
       my $cidfile = "$ENV{CRUNCH_TMP}/$containername.cid";
-      $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -cgroup-parent=docker -cgroup-cid=$cidfile -poll=10000 ";
+      $command .= "crunchstat -cgroup-root=\Q$cgroup_root\E -cgroup-parent=docker -cgroup-cid=$cidfile -poll=10000 ";
       $command .= "$docker_bin run $docker_run_args --name=$containername --attach=stdout --attach=stderr --attach=stdin -i \Q$dockeruserarg\E --cidfile=$cidfile --sig-proxy ";
       # We only set memory limits if Docker lets us limit both memory and swap.
       # Memory limits alone have been supported longer, but subprocesses tend
@@ -995,7 +997,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       }
     } else {
       # Non-docker run
-      $command .= "crunchstat -cgroup-root=/sys/fs/cgroup -poll=10000 ";
+      $command .= "crunchstat -cgroup-root=\Q$cgroup_root\E -poll=10000 ";
       $command .= $stdbuf;
       $command .= "perl - $ENV{CRUNCH_SRC}/crunch_scripts/" . $Job->{"script"};
     }
