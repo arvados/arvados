@@ -367,6 +367,7 @@ class ArvCwlRunner(object):
             jobiter = tool.job(job_order,
                                input_basedir,
                                self.output_callback,
+                               docker_outdir="$(task.outdir)",
                                **kwargs)
 
             try:
