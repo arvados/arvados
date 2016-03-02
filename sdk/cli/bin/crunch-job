@@ -1246,7 +1246,7 @@ sub reapchildren
     do {
       $newtask_results = api_call(
         "job_tasks/list",
-        'filters' => '[["created_by_job_task_uuid","in",['.join(',',map {"\"$_\""} @successful_task_uuids).']]]',
+        'filters' => [["created_by_job_task_uuid","in",\@successful_task_uuids]],
         'order' => 'qsequence',
         'offset' => scalar(@$newtask_list),
           );
