@@ -213,6 +213,10 @@ func runner(api IArvadosClient,
 		"$(task.outdir)": outdir,
 		"$(task.keep)":   keepmount}
 
+	log.Printf("crunchrunner: $(task.tmpdir)=%v", tmpdir)
+	log.Printf("crunchrunner: $(task.outdir)=%v", outdir)
+	log.Printf("crunchrunner: $(task.keep)=%v", keepmount)
+
 	// Set up subprocess
 	for k, v := range taskp.Command {
 		taskp.Command[k] = substitute(v, replacements)
