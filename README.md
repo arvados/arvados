@@ -67,9 +67,9 @@ The Arvados public bug tracker is located at https://dev.arvados.org/projects/ar
 
 Continuous integration is hosted at https://ci.curoverse.com/
 
-You can use Arvbox as a self-contained Arvados development environment using
-`arvbox start dev` and run the Arvados test suite with `arvbox start test`.
-See http://doc.arvados.org/install/arvbox.html for details.
+Instructions for setting up a development environment and working on specific
+components can be found on the
+["Hacking Arvados" page of the Arvados wiki](https://dev.arvados.org/projects/arvados/wiki/Hacking).
 
 ## Licensing
 
