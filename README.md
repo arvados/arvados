@@ -18,16 +18,22 @@ Arvados consists of:
 
 ## Quick start
 
-To try out Arvados quickly, you can use Arvbox, which provides Arvados
-components pre-installed in a Docker container (requires Docker 1.9+).  After
-cloning the Arvados git repository:
+Curoverse maintains an Arvados public cloud demo at
+[https://cloud.curoverse.com](https://cloud.curoverse.com).  A Google account
+is required to log in.
+
+To try out Arvados on your local workstation, you can use Arvbox, which
+provides Arvados components pre-installed in a Docker container (requires
+Docker 1.9+).  After cloning the Arvados git repository:
 
 ```
 $ cd arvados/tools/arvbox/bin
 $ ./arvbox start localdemo
 ```
 
-See http://doc.arvados.org/install/arvbox.html for details and documentation.
+In this mode you will only be able to connect to Arvbox from the same host.  To
+configure Arvbox to be accessible over a network and for other options see
+http://doc.arvados.org/install/arvbox.html for details.
 
 ## Documentation
 
@@ -60,6 +66,10 @@ contributers to Arvados.
 The Arvados public bug tracker is located at https://dev.arvados.org/projects/arvados/issues
 
 Continuous integration is hosted at https://ci.curoverse.com/
+
+You can use Arvbox as a self-contained Arvados development environment using
+`arvbox start dev` and run the Arvados test suite with `arvbox start test`.
+See http://doc.arvados.org/install/arvbox.html for details.
 
 ## Licensing
 
