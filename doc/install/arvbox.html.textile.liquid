@@ -61,11 +61,11 @@ Run the test suite.
 
 h3. publicdev
 
-Publicly accessible development configuration.  Similar to 'dev' except that service ports are published to the host's IP address and can accessed by anyone who can connect to the host system.  WARNING! The public arvbox configuration is NOT SECURE and must not be placed on a public IP address or used for production work.
+Publicly accessible development configuration.  Similar to 'dev' except that service ports are published to the host's IP address and can accessed by anyone who can connect to the host system.  See below for more information.  WARNING! The public arvbox configuration is NOT SECURE and must not be placed on a public IP address or used for production work.
 
 h3. publicdemo
 
-Publicly accessible development configuration.  Similar to 'localdemo' except that service ports are published to the host's IP address and can accessed by anyone who can connect to the host system.  WARNING! The public arvbox configuration is NOT SECURE and must not be placed on a public IP address or used for production work.
+Publicly accessible development configuration.  Similar to 'localdemo' except that service ports are published to the host's IP address and can accessed by anyone who can connect to the host system.  See below for more information.  WARNING! The public arvbox configuration is NOT SECURE and must not be placed on a public IP address or used for production work.
 
 h2. Environment variables
 
@@ -107,6 +107,27 @@ default: $ARVBOX_DATA/sso-devise-omniauth-provider
 h3. ARVBOX_PUBLISH_IP
 
 The IP address on which to publish services when running in public configuration.  Overrides default detection of the host's IP address.
+
+h2. Using Arvbox for Arvados development
+
+The "Arvbox section of Hacking Arvados":https://dev.arvados.org/projects/arvados/wiki/Arvbox has information about using Arvbox for Arvados development.
+
+h2. Making Arvbox accessible from other hosts
+
+In "dev" and "localdemo" mode, Arvbox can only be accessed on the same host it is running.  To publish Arvbox service ports to the host's service ports and advertise the host's IP address for services, use @publicdev@ or @publicdemo@:
+
+<pre>
+$ arvbox reboot publicdemo
+</pre>
+
+This attempts to auto-detect the correct IP address to use by taking the IP address of the default route device.  If the auto-detection is wrong, you want to publish a hostname instead of a raw address, or you need to access it through a different device (such as a router or firewall), set @ARVBOX_PUBLISH_IP@ to the desire hostname or IP address.
+
+<pre>
+$ export ARVBOX_PUBLISH_IP=example.com
+$ arvbox reboot publicdemo
+</pre>
+
+Note: this expects to bind the host's port 80 (http) for workbench, so you cannot have a conflicting web server already running on the host.  It does not attempt to take bind the host's port 22 (ssh), as a result the arvbox ssh port is not published.
 
 h2. Notes
 
