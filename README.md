@@ -10,8 +10,8 @@ Arvados consists of:
 * *Keep*: a petabyte-scale content-addressed distributed storage system for managing and
   storing collections of files, accessible via HTTP and FUSE mount.
 
-* *Crunch*: a Docker-based workflow engine designed providing strong
-  versioning, reproducibilty, and provenance of computations.
+* *Crunch*: a Docker-based cluster and HPC workflow engine designed providing
+  strong versioning, reproducibilty, and provenance of computations.
 
 * Related services and components including a web workbench for managing files
   and compute jobs, REST APIs, SDKs, and other tools.
