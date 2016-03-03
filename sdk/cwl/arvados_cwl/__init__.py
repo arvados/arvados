@@ -218,6 +218,7 @@ class ArvadosJob(object):
                             break
 
                     self.builder.outdir = outdir
+                    self.builder.pathmapper.keepdir = keepdir
                     outputs = self.collect_outputs("keep:" + record["output"])
             except Exception as e:
                 logger.exception("Got exception while collecting job outputs:")
@@ -261,6 +262,15 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
             arvrunner.add_uploaded(src, (ab, st.fn))
             self._pathmap[src] = (ab, st.fn)
 
+        self.keepdir = None
+
+    def reversemap(self, target):
+        if target.startswith("keep:"):
+            return target
+        elif self.keepdir and target.startswith(self.keepdir):
+            return "keep:" + target[len(self.keepdir)+1:]
+        else:
+            return super(ArvPathMapper, self).reversemap(target)
 
 
 class ArvadosCommandTool(cwltool.draft2tool.CommandLineTool):
