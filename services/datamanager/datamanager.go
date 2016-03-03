@@ -22,6 +22,7 @@ var (
 	logEventTypePrefix  string
 	logFrequencySeconds int
 	minutesBetweenRuns  int
+	collectionBatchSize int
 	dryRun              bool
 )
 
@@ -38,6 +39,10 @@ func init() {
 		"minutes-between-runs",
 		0,
 		"How many minutes we wait between data manager runs. 0 means run once and exit.")
+	flag.IntVar(&collectionBatchSize,
+		"collection-batch-size",
+		1000,
+		"How many collections to request in each batch.")
 	flag.BoolVar(&dryRun,
 		"dry-run",
 		false,
@@ -193,7 +198,7 @@ func BuildDataFetcher(arv arvadosclient.ArvadosClient) summary.DataFetcher {
 				collection.GetCollectionsParams{
 					Client:    arv,
 					Logger:    arvLogger,
-					BatchSize: 1000})
+					BatchSize: collectionBatchSize})
 			collDone <- struct{}{}
 		}()
 
