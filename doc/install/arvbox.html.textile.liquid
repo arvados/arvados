@@ -9,8 +9,16 @@ Arvbox is a Docker-based self-contained development, demonstration and testing e
 h2. Quick start
 
 <pre>
-arvados/tools/arvbox/bin$ ./arvbox start localdemo
+$ git clone https://github.com/curoverse/arvados.git
+$ cd arvados/tools/arvbox/bin
+$ ./arvbox start localdemo
 </pre>
+
+h2. Requirements
+
+* Linux 3.x+ and Docker 1.9+
+* Minimum of 3 GiB of RAM  + additional memory to run jobs
+* Minimum of 3 GiB of disk + storage for actual data
 
 h2. Usage
 
@@ -34,12 +42,6 @@ log       <service> tail log of specified service
 sv        <start|stop|restart> <service> change state of service inside arvbox
 clone <from> <to>   clone an arvbox
 </pre>
-
-h2. Requirements
-
-* Linux 3.x+ and Docker 1.9+
-* Minimum of 3 GiB of RAM  + additional memory to run jobs
-* Minimum of 3 GiB of disk + storage for actual data
 
 h2. Configs
 
