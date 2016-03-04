@@ -40,8 +40,8 @@ func (s *LoggingTestSuite) TestWriteLogs(c *C) {
 	logtext := "2015-12-29T15:51:45.000000001Z Hello world!\n" +
 		"2015-12-29T15:51:45.000000002Z Goodbye\n"
 
-	c.Check(api.Content["log"].(arvadosclient.Dict)["event_type"], Equals, "crunch-run")
-	c.Check(api.Content["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"], Equals, logtext)
+	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["event_type"], Equals, "crunch-run")
+	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"], Equals, logtext)
 	c.Check(string(kc.Content), Equals, logtext)
 }
 
@@ -83,14 +83,14 @@ func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 	cr.CrunchLog.Close()
 	logtext1 := "2015-12-29T15:51:45.000000001Z Hello world!\n" +
 		"2015-12-29T15:51:45.000000003Z Goodbye\n"
-	c.Check(api.Content["log"].(arvadosclient.Dict)["event_type"], Equals, "crunch-run")
-	c.Check(api.Content["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"], Equals, logtext1)
+	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["event_type"], Equals, "crunch-run")
+	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"], Equals, logtext1)
 
 	stdout.Close()
 	logtext2 := "2015-12-29T15:51:45.000000002Z Doing stuff\n" +
 		"2015-12-29T15:51:45.000000004Z Blurb\n"
-	c.Check(api.Content["log"].(arvadosclient.Dict)["event_type"], Equals, "stdout")
-	c.Check(api.Content["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"], Equals, logtext2)
+	c.Check(api.Content[1]["log"].(arvadosclient.Dict)["event_type"], Equals, "stdout")
+	c.Check(api.Content[1]["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"], Equals, logtext2)
 
 	mt, err := cr.LogCollection.ManifestText()
 	c.Check(err, IsNil)
