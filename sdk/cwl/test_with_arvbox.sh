@@ -6,17 +6,22 @@ fi
 
 reset_container=1
 leave_running=0
+config=dev
 
 while test -n "$1" ; do
     arg="$1"
     case "$arg" in
         --no-reset-container)
             reset_container=0
-            shift;
+            shift
             ;;
         --leave-running)
             leave_running=1
-            shift;
+            shift
+            ;;
+        --config)
+            config=$2
+            shift ; shift
             ;;
         -*)
             break
@@ -30,10 +35,9 @@ fi
 
 if test $reset_container = 1 ; then
     arvbox reset -f
-    arvbox build dev
 fi
 
-arvbox start dev
+arvbox start $config
 
 arvbox pipe <<EOF
 set -eu -o pipefail
