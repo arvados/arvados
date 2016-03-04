@@ -23,7 +23,8 @@ h2. Requirements
 h2. Usage
 
 <pre>
-Arvados-in-a-box
+$ arvbox
+Arvados-in-a-box                      http://arvados.org
 
 arvbox (build|start|run|open|shell|ip|stop|reboot|reset|destroy|log|svrestart)
 
@@ -31,15 +32,19 @@ build <config>      build arvbox Docker image
 start|run <config>  start arvbox container
 open       open arvbox workbench in a web browser
 shell      enter arvbox shell
-ip         print arvbox ip address
+ip         print arvbox docker container ip address
+host       print arvbox published host
 status     print some information about current arvbox
 stop       stop arvbox container
 restart <config>  stop, then run again
 reboot  <config>  stop, build arvbox Docker image, run
 reset      delete arvbox arvados data (be careful!)
 destroy    delete all arvbox code and data (be careful!)
-log       <service> tail log of specified service
-sv        <start|stop|restart> <service> change state of service inside arvbox
+log <service> tail log of specified service
+ls <options>  list directories inside arvbox
+cat <files>   get contents of files inside arvbox
+pipe       run a bash script piped in from stdin
+sv <start|stop|restart> <service> change state of service inside arvbox
 clone <from> <to>   clone an arvbox
 </pre>
 

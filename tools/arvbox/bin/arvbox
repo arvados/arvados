@@ -56,14 +56,26 @@ getip() {
     docker inspect $ARVBOX_CONTAINER | grep \"IPAddress\" | head -n1 | tr -d ' ":,\n' | cut -c10-
 }
 
+gethost() {
+    set +e
+    OVERRIDE=$(docker exec -i $ARVBOX_CONTAINER cat /var/run/localip_override 2>/dev/null)
+    CODE=$?
+    set -e
+    if test "$CODE" = 0 ; then
+       echo $OVERRIDE
+    else
+        getip
+    fi
+}
+
 updateconf() {
     if test -f ~/.config/arvados/$ARVBOX_CONTAINER.conf ; then
-        sed "s/ARVADOS_API_HOST=.*/ARVADOS_API_HOST=$(getip):8000/" <$HOME/.config/arvados/$ARVBOX_CONTAINER.conf >$HOME/.config/arvados/$ARVBOX_CONTAINER.conf.tmp
+        sed "s/ARVADOS_API_HOST=.*/ARVADOS_API_HOST=$(gethost):8000/" <$HOME/.config/arvados/$ARVBOX_CONTAINER.conf >$HOME/.config/arvados/$ARVBOX_CONTAINER.conf.tmp
         mv ~/.config/arvados/$ARVBOX_CONTAINER.conf.tmp ~/.config/arvados/$ARVBOX_CONTAINER.conf
     else
         mkdir -p $HOME/.config/arvados
         cat >$HOME/.config/arvados/$ARVBOX_CONTAINER.conf <<EOF
-ARVADOS_API_HOST=$(getip):8000
+ARVADOS_API_HOST=$(gethost):8000
 ARVADOS_API_TOKEN=
 ARVADOS_API_HOST_INSECURE=true
 EOF
@@ -86,7 +98,7 @@ wait_for_arvbox() {
     if test -n "$localip" ; then
         echo "export ARVADOS_API_HOST=$localip:8000"
     else
-        echo "export ARVADOS_API_HOST=$(getip):8000"
+        echo "export ARVADOS_API_HOST=$(gethost):8000"
     fi
 }
 
@@ -234,7 +246,7 @@ stop() {
 
 build() {
     if ! test -f "$ARVBOX_DOCKER/Dockerfile.base" ;  then
-        echo "Could not find Dockerfile ($ARVBOX_DOCKER/Dockerfile.base)"
+        echo "Could not find Dockerfile (expected it at $ARVBOX_DOCKER/Dockerfile.base)"
         exit 1
     fi
     docker build -t arvados/arvbox-base -f "$ARVBOX_DOCKER/Dockerfile.base" "$ARVBOX_DOCKER"
@@ -273,7 +285,11 @@ case "$subcmd" in
         ;;
 
     sh*)
-        docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM GEM_HOME=/var/lib/gems /bin/bash
+        exec docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM GEM_HOME=/var/lib/gems /bin/bash
+        ;;
+
+    pipe)
+        exec docker exec -i $ARVBOX_CONTAINER /usr/bin/env GEM_HOME=/var/lib/gems /bin/bash -
         ;;
 
     stop)
@@ -293,19 +309,24 @@ case "$subcmd" in
         run $@
         ;;
 
-    ip|open)
-        if test "$subcmd" = 'ip' ; then
-            echo $(getip)
-        else
-            xdg-open http://$(getip)
-        fi
+    ip)
+        getip
+        ;;
+
+    host)
+        gethost
+        ;;
+
+    open)
+        exec xdg-open http://$(gethost)
         ;;
 
     status)
         echo "Selected: $ARVBOX_CONTAINER"
         if docker ps -a --filter "status=running" | grep -E "$ARVBOX_CONTAINER$" -q ; then
             echo "Status: running"
-            echo "IP: $(getip)"
+            echo "Container IP: $(getip)"
+            echo "Published host: $(gethost)"
         else
             echo "Status: not running"
         fi
@@ -352,19 +373,31 @@ case "$subcmd" in
 
     log)
         if test -n "$1" ; then
-            docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM less --follow-name +GF "/etc/service/$1/log/main/current"
+            exec docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM less --follow-name +GF "/etc/service/$1/log/main/current"
         else
-            docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM tail $(docker exec -ti $ARVBOX_CONTAINER find -L /etc -path '/etc/service/*/log/main/current' -printf " %p")
+            exec docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM tail $(docker exec -ti $ARVBOX_CONTAINER find -L /etc -path '/etc/service/*/log/main/current' -printf " %p")
         fi
         ;;
 
-    sv)
+    cat)
         if test -n "$1" ; then
-            docker exec -ti $ARVBOX_CONTAINER sv "$1" "$2"
+            exec docker exec -ti $ARVBOX_CONTAINER cat "$@"
         else
-            echo "Usage: $0 $subcmd <service>"
+            echo "Usage: $0 $subcmd <files>"
+        fi
+        ;;
+
+    ls)
+        exec docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM ls "$@"
+        ;;
+
+    sv)
+        if test -n "$1" -a -n "$2" ; then
+            exec docker exec -ti $ARVBOX_CONTAINER sv "$@"
+        else
+            echo "Usage: $0 $subcmd <start|stop|restart> <service>"
             echo "Available services:"
-            docker exec -ti $ARVBOX_CONTAINER ls /etc/service
+            exec docker exec -ti $ARVBOX_CONTAINER ls /etc/service
         fi
         ;;
 
@@ -380,7 +413,7 @@ case "$subcmd" in
         ;;
 
     *)
-        echo "Arvados-in-a-box"
+        echo "Arvados-in-a-box                      http://arvados.org"
         echo
         echo "$(basename $0) (build|start|run|open|shell|ip|stop|reboot|reset|destroy|log|svrestart)"
         echo
@@ -388,15 +421,19 @@ case "$subcmd" in
         echo "start|run <config>  start $ARVBOX_CONTAINER container"
         echo "open       open arvbox workbench in a web browser"
         echo "shell      enter arvbox shell"
-        echo "ip         print arvbox ip address"
+        echo "ip         print arvbox docker container ip address"
+        echo "host       print arvbox published host"
         echo "status     print some information about current arvbox"
         echo "stop       stop arvbox container"
         echo "restart <config>  stop, then run again"
         echo "reboot  <config>  stop, build arvbox Docker image, run"
         echo "reset      delete arvbox arvados data (be careful!)"
         echo "destroy    delete all arvbox code and data (be careful!)"
-        echo "log       <service> tail log of specified service"
-        echo "sv        <start|stop|restart> <service> change state of service inside arvbox"
+        echo "log <service> tail log of specified service"
+        echo "ls <options>  list directories inside arvbox"
+        echo "cat <files>   get contents of files inside arvbox"
+        echo "pipe       run a bash script piped in from stdin"
+        echo "sv <start|stop|restart> <service> change state of service inside arvbox"
         echo "clone <from> <to>   clone an arvbox"
         ;;
 esac
