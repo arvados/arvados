@@ -49,14 +49,14 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
   def find_objects_for_index
     # Here we are deliberately less helpful about searching for client
     # authorizations.  We look up tokens belonging to the current user
-    # and filter by exact matches on api_token and scopes.
+    # and filter by exact matches on uuid, api_token, and scopes.
     wanted_scopes = []
     if @filters
       wanted_scopes.concat(@filters.map { |attr, operator, operand|
         ((attr == 'scopes') and (operator == '=')) ? operand : nil
       })
       @filters.select! { |attr, operator, operand|
-        ((attr == 'uuid') and (operator == '=')) || ((attr == 'api_token') and (operator == '='))
+        operator == '=' && (attr == 'uuid' || attr == 'api_token')
       }
     end
     if @where
@@ -74,21 +74,26 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
   end
 
   def find_object_by_uuid
-    @object = model_class.where(uuid: (params[:uuid] || params[:id])).first
+    conditions = {
+      uuid: (params[:uuid] || params[:id]),
+      user_id: current_user.id,
+    }
+    unless Thread.current[:api_client].andand.is_trusted
+      conditions[:api_token] = current_api_client_authorization.andand.api_token
+    end
+    @object = model_class.where(conditions).first
   end
 
   def current_api_client_is_trusted
     unless Thread.current[:api_client].andand.is_trusted
-      if params["action"] == "show"
-        if @object and @object['api_token'] == current_api_client_authorization.andand.api_token
+      if %w[show update destroy].include? params['action']
+        if @object.andand['api_token'] == current_api_client_authorization.andand.api_token
           return true
         end
       elsif params["action"] == "index" and @objects.andand.size == 1
         filters = @filters.map{|f|f.first}.uniq
-        if ['uuid'] == filters
+        if [['uuid'], ['api_token']].include? filters
           return true if @objects.first['api_token'] == current_api_client_authorization.andand.api_token
-        elsif ['api_token'] == filters
-          return true if @objects.first[:user_id] = current_user.id
         end
       end
       send_error('Forbidden: this API client cannot manipulate other clients\' access tokens.',

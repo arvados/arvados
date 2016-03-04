@@ -68,46 +68,62 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
     end
   end
 
-  [
-    [:admin, :admin, 200],
-    [:admin, :active, 403],
-    [:admin, :admin_vm, 403], # this belongs to the user of current session, but we can't get it by uuid
-    [:admin_trustedclient, :active, 200],
-  ].each do |user, token, status|
-    test "as user #{user} get #{token} token and expect #{status}" do
+  [# anyone can look up the token they're currently using
+   [:admin, :admin, 200, 200, 1],
+   [:active, :active, 200, 200, 1],
+   # cannot look up other tokens (even for same user) if not trustedclient
+   [:admin, :active, 404, 403],
+   [:admin, :admin_vm, 404, 403],
+   [:active, :admin, 404, 403],
+   # cannot look up other tokens for other users, regardless of trustedclient
+   [:admin_trustedclient, :active, 404, 200, 0],
+   [:active_trustedclient, :admin, 404, 200, 0],
+  ].each do |user, token, expect_get_response, expect_list_response, expect_list_items|
+    test "using '#{user}', get '#{token}' by uuid" do
       authorize_with user
-      get :show, {id: api_client_authorizations(token).uuid}
-      assert_response status
+      get :show, {
+        id: api_client_authorizations(token).uuid,
+      }
+      assert_response expect_get_response
     end
-  end
 
-  [
-    [:admin, :admin, 200],
-    [:admin, :active, 403],
-    [:admin, :admin_vm, 403], # this belongs to the user of current session, but we can't list it by uuid
-    [:admin_trustedclient, :active, 200],
-  ].each do |user, token, status|
-    test "as user #{user} list #{token} token using uuid and expect #{status}" do
+    test "using '#{user}', update '#{token}' by uuid" do
+      authorize_with user
+      put :update, {
+        id: api_client_authorizations(token).uuid,
+        api_client_authorization: {},
+      }
+      assert_response expect_get_response
+    end
+
+    test "using '#{user}', delete '#{token}' by uuid" do
+      authorize_with user
+      post :destroy, {
+        id: api_client_authorizations(token).uuid,
+      }
+      assert_response expect_get_response
+    end
+
+    test "using '#{user}', list '#{token}' by uuid" do
       authorize_with user
       get :index, {
-        filters: [['uuid','=',api_client_authorizations(token).uuid]]
+        filters: [['uuid','=',api_client_authorizations(token).uuid]],
       }
-      assert_response status
+      assert_response expect_list_response
+      if expect_list_items
+        assert_equal assigns(:objects).length, expect_list_items
+      end
     end
-  end
 
-  [
-    [:admin, :admin, 200],
-    [:admin, :active, 403],
-    [:admin, :admin_vm, 200], # this belongs to the user of current session, and can be listed by token
-    [:admin_trustedclient, :active, 200],
-  ].each do |user, token, status|
-    test "as user #{user} list #{token} token using token and expect #{status}" do
+    test "using '#{user}', list '#{token}' by token" do
       authorize_with user
       get :index, {
-        filters: [['api_token','=',api_client_authorizations(token).api_token]]
+        filters: [['api_token','=',api_client_authorizations(token).api_token]],
       }
-      assert_response status
+      assert_response expect_list_response
+      if expect_list_items
+        assert_equal assigns(:objects).length, expect_list_items
+      end
     end
   end
 end
