@@ -152,6 +152,19 @@ class ArvadosJob(object):
         if docker_req and kwargs.get("use_container") is not False:
             runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image)
 
+        resources = self.builder.resources
+        if resources is not None:
+            if "coresMin" in resources.keys():
+                try:
+                    runtime_constraints["min_cores_per_node"] = int(resources["coresMin"])
+                except:
+                    runtime_constraints["min_cores_per_node"] = None
+            if "ramMin" in resources.keys():
+                try:
+                    runtime_constraints["min_ram_mb_per_node"] = int(resources["ramMin"])
+                except:
+                    runtime_constraints["min_ram_mb_per_node"] = None
+
         try:
             response = self.arvrunner.api.jobs().create(body={
                 "script": "crunchrunner",
