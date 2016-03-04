@@ -26,7 +26,7 @@ h2. Usage
 $ arvbox
 Arvados-in-a-box                      http://arvados.org
 
-arvbox (build|start|run|open|shell|ip|stop|reboot|reset|destroy|log|svrestart)
+arvbox (build|start|run|open|shell|ip|stop|rebuild|reset|destroy|log|svrestart)
 
 build <config>      build arvbox Docker image
 start|run <config>  start arvbox container
@@ -37,7 +37,7 @@ host       print arvbox published host
 status     print some information about current arvbox
 stop       stop arvbox container
 restart <config>  stop, then run again
-reboot  <config>  stop, build arvbox Docker image, run
+rebuild  <config>  stop, build arvbox Docker image, run
 reset      delete arvbox arvados data (be careful!)
 destroy    delete all arvbox code and data (be careful!)
 log <service> tail log of specified service
@@ -122,14 +122,14 @@ h2. Making Arvbox accessible from other hosts
 In "dev" and "localdemo" mode, Arvbox can only be accessed on the same host it is running.  To publish Arvbox service ports to the host's service ports and advertise the host's IP address for services, use @publicdev@ or @publicdemo@:
 
 <pre>
-$ arvbox reboot publicdemo
+$ arvbox rebuild publicdemo
 </pre>
 
 This attempts to auto-detect the correct IP address to use by taking the IP address of the default route device.  If the auto-detection is wrong, you want to publish a hostname instead of a raw address, or you need to access it through a different device (such as a router or firewall), set @ARVBOX_PUBLISH_IP@ to the desire hostname or IP address.
 
 <pre>
 $ export ARVBOX_PUBLISH_IP=example.com
-$ arvbox reboot publicdemo
+$ arvbox rebuild publicdemo
 </pre>
 
 Note: this expects to bind the host's port 80 (http) for workbench, so you cannot have a conflicting web server already running on the host.  It does not attempt to take bind the host's port 22 (ssh), as a result the arvbox ssh port is not published.

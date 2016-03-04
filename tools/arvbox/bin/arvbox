@@ -104,8 +104,8 @@ wait_for_arvbox() {
 
 run() {
     if docker ps -a | grep -E "$ARVBOX_CONTAINER$" -q ; then
-        echo "Container $ARVBOX_CONTAINER is already running, use stop, restart or reboot"
-        exit 0
+        echo "Container $ARVBOX_CONTAINER is already running, use stop, restart or rebuild"
+        exit 1
     fi
 
     if echo "$1" | grep '^public' ; then
@@ -302,7 +302,7 @@ case "$subcmd" in
         run $@
         ;;
 
-    reboot)
+    rebuild)
         check $@
         stop
         build $@
@@ -415,7 +415,7 @@ case "$subcmd" in
     *)
         echo "Arvados-in-a-box                      http://arvados.org"
         echo
-        echo "$(basename $0) (build|start|run|open|shell|ip|stop|reboot|reset|destroy|log|svrestart)"
+        echo "$(basename $0) (build|start|run|open|shell|ip|stop|rebuild|reset|destroy|log|svrestart)"
         echo
         echo "build <config>      build arvbox Docker image"
         echo "start|run <config>  start $ARVBOX_CONTAINER container"
@@ -426,7 +426,7 @@ case "$subcmd" in
         echo "status     print some information about current arvbox"
         echo "stop       stop arvbox container"
         echo "restart <config>  stop, then run again"
-        echo "reboot  <config>  stop, build arvbox Docker image, run"
+        echo "rebuild <config>  stop, build arvbox Docker image, run"
         echo "reset      delete arvbox arvados data (be careful!)"
         echo "destroy    delete all arvbox code and data (be careful!)"
         echo "log <service> tail log of specified service"
