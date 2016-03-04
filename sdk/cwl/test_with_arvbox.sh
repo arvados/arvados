@@ -8,15 +8,17 @@ reset_container=1
 leave_running=0
 
 while test -n "$1" ; do
-    arg="$1"; shift
+    arg="$1"
     case "$arg" in
         --no-reset-container)
             reset_container=0
+            shift;
             ;;
         --leave-running)
             leave_running=1
+            shift;
             ;;
-        *)
+        -*)
             break
             ;;
     esac
@@ -34,7 +36,9 @@ fi
 arvbox start dev
 
 arvbox pipe <<EOF
-set -e
+set -eu -o pipefail
+
+. /usr/local/lib/arvbox/common.sh
 
 cd /usr/src/arvados/sdk/cwl
 python setup.py sdist
