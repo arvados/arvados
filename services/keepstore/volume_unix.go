@@ -408,13 +408,22 @@ func (v *UnixVolume) Trash(loc string) error {
 			return nil
 		}
 	}
-	return os.Remove(p)
+	return os.Rename(p, fmt.Sprintf("%v.trash.%d", p, time.Now().Add(trashLifetime).Unix()))
 }
 
 // Untrash moves block from trash back into store
-// TBD
-func (v *UnixVolume) Untrash(loc string) error {
-	return ErrNotImplemented
+func (v *UnixVolume) Untrash(loc string) (err error) {
+	prefix := fmt.Sprintf("%v.trash.", loc)
+	files, _ := ioutil.ReadDir(v.blockDir(loc))
+	for _, f := range files {
+		if strings.HasPrefix(f.Name(), prefix) {
+			err = os.Rename(v.blockPath(f.Name()), v.blockPath(loc))
+			if err != nil {
+				break
+			}
+		}
+	}
+	return err
 }
 
 // blockDir returns the fully qualified directory name for the directory
