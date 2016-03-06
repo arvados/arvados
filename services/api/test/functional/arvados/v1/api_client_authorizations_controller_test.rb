@@ -126,4 +126,22 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
       end
     end
   end
+
+  test "scoped token cannot change its own scopes" do
+    authorize_with :admin_vm
+    put :update, {
+      id: api_client_authorizations(:admin_vm).uuid,
+      api_client_authorization: {scopes: ['all']},
+    }
+    assert_response 403
+  end
+
+  test "token cannot change its own uuid" do
+    authorize_with :admin
+    put :update, {
+      id: api_client_authorizations(:admin).uuid,
+      api_client_authorization: {uuid: 'zzzzz-gj3su-zzzzzzzzzzzzzzz'},
+    }
+    assert_response 403
+  end
 end
