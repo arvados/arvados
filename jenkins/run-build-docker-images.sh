@@ -124,15 +124,16 @@ timer_reset
 
 # clean up the docker build environment
 cd "$WORKSPACE"
-cd docker
-./build.sh realclean
 
-rm -f config.yml
+tools/arvbox/bin/arvbox build dev
+ECODE=$?
 
-# Get test config.yml file
-cp $HOME/docker/config.yml .
+if [[ "$ECODE" != "0" ]]; then
+    title "!!!!!! docker BUILD FAILED !!!!!!"
+    EXITCODE=$(($EXITCODE + $ECODE))
+fi
 
-./build.sh
+tools/arvbox/bin/arvbox build localdemo
 
 ECODE=$?
 
@@ -155,14 +156,8 @@ else
         ## even though credentials are already in .dockercfg
         docker login -u arvados
 
-        docker_push arvados/api
-        docker_push arvados/compute
-        docker_push arvados/doc
-        docker_push arvados/workbench
-        docker_push arvados/keep
-        docker_push arvados/keepproxy
-        docker_push arvados/shell
-        docker_push arvados/sso
+        docker_push arvados/arvbox-dev
+        docker_push arvados/arvbox-demo
         title "upload arvados images complete (`timer`)"
     else
         title "upload arvados images SKIPPED because no --upload option set"
