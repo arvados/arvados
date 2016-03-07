@@ -425,6 +425,12 @@ pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
     || pip install --pre --ignore-installed https://github.com/curoverse/libcloud/archive/apache-libcloud-$LIBCLOUD_PIN.zip >/dev/null \
     || fatal "pip install apache-libcloud failed"
 
+# Uninstall old llfuse, because services/fuse "pip install" won't
+# upgrade it by default.
+if pip freeze | egrep '^llfuse==0\.41\.'; then
+    yes | pip uninstall 'llfuse<0.42'
+fi
+
 # Deactivate Python 2 virtualenv
 deactivate
 
