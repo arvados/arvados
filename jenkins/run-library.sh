@@ -225,6 +225,10 @@ fpm_build () {
     fi
   fi
 
+  if [[ "${DEBUG:-0}" != "0" ]]; then
+    COMMAND_ARR+=('--verbose' '--log' 'info')
+  fi
+
   if [[ "$PACKAGE_NAME" != "$PACKAGE" ]]; then
     COMMAND_ARR+=('-n' "$PACKAGE_NAME")
   fi

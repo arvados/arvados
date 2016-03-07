@@ -138,7 +138,7 @@ if test -z "$packages" ; then
         centos6)
             packages="$packages python27-python-arvados-fuse
                   python27-python-arvados-python-client"
-        ;;
+            ;;
         *)
             packages="$packages python-arvados-fuse
                   python-arvados-python-client"
@@ -164,6 +164,8 @@ docker_volume_args=(
 
 if [[ -n "$test_packages" ]]; then
     for p in $packages ; do
+        echo
+        echo "START: $p test on $IMAGE" >&2
         if docker run --rm \
             "${docker_volume_args[@]}" \
             --env ARVADOS_DEBUG=1 \
@@ -171,24 +173,26 @@ if [[ -n "$test_packages" ]]; then
             --env "WORKSPACE=/arvados" \
             "$IMAGE" $COMMAND $p
         then
-            true
+            echo "OK: $p test on $IMAGE succeeded" >&2
         else
             FINAL_EXITCODE=$?
             package_fails="$package_fails $p"
-            echo "ERROR: $tag test failed with exit status $FINAL_EXITCODE." >&2
+            echo "ERROR: $p test on $IMAGE failed with exit status $FINAL_EXITCODE" >&2
         fi
     done
 else
+    echo
+    echo "START: build packages on $IMAGE" >&2
     if docker run --rm \
         "${docker_volume_args[@]}" \
         --env ARVADOS_DEBUG=1 \
         "$IMAGE" $COMMAND
     then
         echo
-        echo "Build packages for $TARGET succeeded." >&2
+        echo "OK: build packages on $IMAGE succeeded" >&2
     else
         FINAL_EXITCODE=$?
-        echo "ERROR: $tag build failed with exit status $FINAL_EXITCODE." >&2
+        echo "ERROR: build packages on $IMAGE failed with exit status $FINAL_EXITCODE" >&2
     fi
 fi
 
