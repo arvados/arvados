@@ -693,5 +693,5 @@ class Operations(llfuse.Operations):
     def fsync(self, fh, datasync):
         self.flush(fh)
 
-    def fsyncdir(self, fh, datasync): 
+    def fsyncdir(self, fh, datasync):
         self.flush(fh)
