@@ -24,6 +24,7 @@ import shutil
 import sys
 import logging
 import tempfile
+import urlparse
 
 import arvados
 import arvados.config
@@ -87,6 +88,13 @@ def main():
     copy_opts.add_argument(
         '--project-uuid', dest='project_uuid',
         help='The UUID of the project at the destination to which the pipeline should be copied.')
+    copy_opts.add_argument(
+        '--allow-git-http-src', action="store_true",
+        help='Allow cloning git repositories over insecure http')
+    copy_opts.add_argument(
+        '--allow-git-http-dst', action="store_true",
+        help='Allow pushing git repositories over insecure http')
+
     copy_opts.add_argument(
         'object_uuid',
         help='The UUID of the object to be copied.')
@@ -583,6 +591,55 @@ def copy_collection(obj_uuid, src, dst, args):
     c['manifest_text'] = dst_manifest
     return create_collection_from(c, src, dst, args)
 
+def select_git_url(api, repo_name, retries, allow_insecure_http, allow_insecure_http_opt):
+    r = api.repositories().list(
+        filters=[['name', '=', repo_name]]).execute(num_retries=retries)
+    if r['items_available'] != 1:
+        raise Exception('cannot identify repo {}; {} repos found'
+                        .format(repo_name, r['items_available']))
+
+    https_url = [c for c in r['items'][0]["clone_urls"] if c.startswith("https:")]
+    http_url = [c for c in r['items'][0]["clone_urls"] if c.startswith("http:")]
+    other_url = [c for c in r['items'][0]["clone_urls"] if not c.startswith("http")]
+
+    priority = https_url + other_url + http_url
+
+    git_config = []
+    git_url = None
+    for url in priority:
+        if url.startswith("http"):
+            u = urlparse.urlsplit(url)
+            baseurl = urlparse.urlunsplit((u.scheme, u.netloc, "", "", ""))
+            git_config = ["-c", "credential.%s/.username=none" % baseurl,
+                          "-c", "credential.%s/.helper=!cred(){ cat >/dev/null; if [ \"$1\" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred" % baseurl]
+        else:
+            git_config = []
+
+        try:
+            logger.debug("trying %s", url)
+            arvados.util.run_command(["git"] + git_config + ["ls-remote", url],
+                                      env={"HOME": os.environ["HOME"],
+                                           "ARVADOS_API_TOKEN": api.api_token,
+                                           "GIT_ASKPASS": "/bin/false"})
+        except arvados.errors.CommandFailedError:
+            pass
+        else:
+            git_url = url
+            break
+
+    if not git_url:
+        raise Exception('Cannot access git repository, tried {}'
+                        .format(priority))
+
+    if git_url.startswith("http:"):
+        if allow_insecure_http:
+            logger.warn("Using insecure git url %s but will allow this because %s", git_url, allow_insecure_http_opt)
+        else:
+            raise Exception("Refusing to use insecure git url %s, use %s if you really want this." % (git_url, allow_insecure_http_opt))
+
+    return (git_url, git_config)
+
+
 # copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args)
 #
 #    Copies commits from git repository 'src_git_repo' on Arvados
@@ -600,21 +657,12 @@ def copy_collection(obj_uuid, src, dst, args):
 #
 def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
     # Identify the fetch and push URLs for the git repositories.
-    r = src.repositories().list(
-        filters=[['name', '=', src_git_repo]]).execute(num_retries=args.retries)
-    if r['items_available'] != 1:
-        raise Exception('cannot identify source repo {}; {} repos found'
-                        .format(src_git_repo, r['items_available']))
-    src_git_url = r['items'][0]['fetch_url']
-    logger.debug('src_git_url: {}'.format(src_git_url))
 
-    r = dst.repositories().list(
-        filters=[['name', '=', dst_git_repo]]).execute(num_retries=args.retries)
-    if r['items_available'] != 1:
-        raise Exception('cannot identify destination repo {}; {} repos found'
-                        .format(dst_git_repo, r['items_available']))
-    dst_git_push_url  = r['items'][0]['push_url']
-    logger.debug('dst_git_push_url: {}'.format(dst_git_push_url))
+    (src_git_url, src_git_config) = select_git_url(src, src_git_repo, args.retries, args.allow_git_http_src, "--allow-git-http-src")
+    (dst_git_url, dst_git_config) = select_git_url(dst, dst_git_repo, args.retries, args.allow_git_http_dst, "--allow-git-http-dst")
+
+    logger.debug('src_git_url: {}'.format(src_git_url))
+    logger.debug('dst_git_url: {}'.format(dst_git_url))
 
     dst_branch = re.sub(r'\W+', '_', "{}_{}".format(src_git_url, script_version))
 
@@ -622,17 +670,23 @@ def copy_git_repo(src_git_repo, src, dst, dst_git_repo, script_version, args):
     if src_git_repo not in local_repo_dir:
         local_repo_dir[src_git_repo] = tempfile.mkdtemp()
         arvados.util.run_command(
-            ["git", "clone", "--bare", src_git_url,
+            ["git"] + src_git_config + ["clone", "--bare", src_git_url,
              local_repo_dir[src_git_repo]],
-            cwd=os.path.dirname(local_repo_dir[src_git_repo]))
+            cwd=os.path.dirname(local_repo_dir[src_git_repo]),
+            env={"HOME": os.environ["HOME"],
+                 "ARVADOS_API_TOKEN": src.api_token,
+                 "GIT_ASKPASS": "/bin/false"})
         arvados.util.run_command(
-            ["git", "remote", "add", "dst", dst_git_push_url],
+            ["git", "remote", "add", "dst", dst_git_url],
             cwd=local_repo_dir[src_git_repo])
     arvados.util.run_command(
         ["git", "branch", dst_branch, script_version],
         cwd=local_repo_dir[src_git_repo])
-    arvados.util.run_command(["git", "push", "dst", dst_branch],
-                             cwd=local_repo_dir[src_git_repo])
+    arvados.util.run_command(["git"] + dst_git_config + ["push", "dst", dst_branch],
+                             cwd=local_repo_dir[src_git_repo],
+                             env={"HOME": os.environ["HOME"],
+                                  "ARVADOS_API_TOKEN": dst.api_token,
+                                  "GIT_ASKPASS": "/bin/false"})
 
 def copy_docker_images(pipeline, src, dst, args):
     """Copy any docker images named in the pipeline components'

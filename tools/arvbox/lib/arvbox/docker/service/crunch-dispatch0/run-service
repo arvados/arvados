@@ -1,0 +1,2 @@
+#!/bin/sh
+exec /usr/local/lib/arvbox/crunch-setup.sh crunch0

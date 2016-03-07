@@ -184,6 +184,10 @@ export CRUNCH_DISPATCH_LOCKFILE=/var/lock/crunch-dispatch
 export HOME=$(pwd)
 export RAILS_ENV=production
 
+## Uncomment and edit this line if your compute nodes have cgroup info
+## somewhere other than /sys/fs/cgroup (e.g., "/cgroup" for CentOS 6)
+#export CRUNCH_CGROUP_ROOT="/sys/fs/cgroup"
+
 ## Uncomment this line if your cluster uses self-signed SSL certificates:
 #export ARVADOS_API_HOST_INSECURE=yes
 

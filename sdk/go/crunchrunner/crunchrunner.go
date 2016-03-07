@@ -1,13 +1,17 @@
 package main
 
 import (
+	"crypto/x509"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path"
 	"strings"
 	"syscall"
 )
@@ -209,6 +213,10 @@ func runner(api IArvadosClient,
 		"$(task.outdir)": outdir,
 		"$(task.keep)":   keepmount}
 
+	log.Printf("crunchrunner: $(task.tmpdir)=%v", tmpdir)
+	log.Printf("crunchrunner: $(task.outdir)=%v", outdir)
+	log.Printf("crunchrunner: $(task.keep)=%v", keepmount)
+
 	// Set up subprocess
 	for k, v := range taskp.Command {
 		taskp.Command[k] = substitute(v, replacements)
@@ -315,6 +323,15 @@ func main() {
 	api, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	certpath := path.Join(path.Dir(os.Args[0]), "ca-certificates.crt")
+	certdata, err := ioutil.ReadFile(certpath)
+	if err == nil {
+		log.Printf("Using TLS certificates at %v", certpath)
+		certs := x509.NewCertPool()
+		certs.AppendCertsFromPEM(certdata)
+		api.Client.Transport.(*http.Transport).TLSClientConfig.RootCAs = certs
 	}
 
 	jobUuid := os.Getenv("JOB_UUID")

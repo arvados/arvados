@@ -5,6 +5,8 @@ import arvados
 import arvados.events
 import arvados.commands.keepdocker
 import arvados.commands.run
+import arvados.collection
+import arvados.util
 import cwltool.draft2tool
 import cwltool.workflow
 import cwltool.main
@@ -15,11 +17,22 @@ import fnmatch
 import logging
 import re
 import os
+import sys
 
 from cwltool.process import get_feature
+from arvados.api import OrderedJsonModel
 
 logger = logging.getLogger('arvados.cwl-runner')
 logger.setLevel(logging.INFO)
+
+crunchrunner_pdh = "83db29f08544e1c319572a6bd971088a+140"
+crunchrunner_download = "https://cloud.curoverse.com/collections/download/qr1hi-4zz18-n3m1yxd0vx78jic/1i1u2qtq66k1atziv4ocfgsg5nu5tj11n4r6e0bhvjg03rix4m/crunchrunner"
+certs_download = "https://cloud.curoverse.com/collections/download/qr1hi-4zz18-n3m1yxd0vx78jic/1i1u2qtq66k1atziv4ocfgsg5nu5tj11n4r6e0bhvjg03rix4m/ca-certificates.crt"
+
+tmpdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.tmpdir\)=(.*)")
+outdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.outdir\)=(.*)")
+keepre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.keep\)=(.*)")
+
 
 def arv_docker_get_image(api_client, dockerRequirement, pull_image):
     if "dockerImageId" not in dockerRequirement and "dockerPull" in dockerRequirement:
@@ -142,9 +155,9 @@ class ArvadosJob(object):
         try:
             response = self.arvrunner.api.jobs().create(body={
                 "script": "crunchrunner",
-                "repository": kwargs["repository"],
-                "script_version": "master",
-                "script_parameters": {"tasks": [script_parameters]},
+                "repository": "arvados",
+                "script_version": "8488-cwl-crunchrunner-collection",
+                "script_parameters": {"tasks": [script_parameters], "crunchrunner": crunchrunner_pdh+"/crunchrunner"},
                 "runtime_constraints": runtime_constraints
             }, find_or_create=kwargs.get("enable_reuse", True)).execute(num_retries=self.arvrunner.num_retries)
 
@@ -186,6 +199,26 @@ class ArvadosJob(object):
             try:
                 outputs = {}
                 if record["output"]:
+                    logc = arvados.collection.Collection(record["log"])
+                    log = logc.open(logc.keys()[0])
+                    tmpdir = None
+                    outdir = None
+                    keepdir = None
+                    for l in log.readlines():
+                        g = tmpdirre.match(l)
+                        if g:
+                            tmpdir = g.group(1)
+                        g = outdirre.match(l)
+                        if g:
+                            outdir = g.group(1)
+                        g = keepre.match(l)
+                        if g:
+                            keepdir = g.group(1)
+                        if tmpdir and outdir and keepdir:
+                            break
+
+                    self.builder.outdir = outdir
+                    self.builder.pathmapper.keepdir = keepdir
                     outputs = self.collect_outputs("keep:" + record["output"])
             except Exception as e:
                 logger.exception("Got exception while collecting job outputs:")
@@ -229,11 +262,20 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
             arvrunner.add_uploaded(src, (ab, st.fn))
             self._pathmap[src] = (ab, st.fn)
 
+        self.keepdir = None
+
+    def reversemap(self, target):
+        if target.startswith("keep:"):
+            return target
+        elif self.keepdir and target.startswith(self.keepdir):
+            return "keep:" + target[len(self.keepdir)+1:]
+        else:
+            return super(ArvPathMapper, self).reversemap(target)
 
 
 class ArvadosCommandTool(cwltool.draft2tool.CommandLineTool):
     def __init__(self, arvrunner, toolpath_object, **kwargs):
-        super(ArvadosCommandTool, self).__init__(toolpath_object, outdir="$(task.outdir)", tmpdir="$(task.tmpdir)", **kwargs)
+        super(ArvadosCommandTool, self).__init__(toolpath_object, **kwargs)
         self.arvrunner = arvrunner
 
     def makeJobRunner(self):
@@ -302,56 +344,84 @@ class ArvCwlRunner(object):
     def arvExecutor(self, tool, job_order, input_basedir, args, **kwargs):
         events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#job"]], self.on_message)
 
-        self.pipeline = self.api.pipeline_instances().create(body={"name": shortname(tool.tool["id"]),
-                                                                   "components": {},
-                                                                   "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
+        try:
+            self.api.collections().get(uuid=crunchrunner_pdh).execute()
+        except arvados.errors.ApiError as e:
+            import httplib2
+            h = httplib2.Http(ca_certs=arvados.util.ca_certs_path())
+            resp, content = h.request(crunchrunner_download, "GET")
+            resp2, content2 = h.request(certs_download, "GET")
+            with arvados.collection.Collection() as col:
+                with col.open("crunchrunner", "w") as f:
+                    f.write(content)
+                with col.open("ca-certificates.crt", "w") as f:
+                    f.write(content2)
+
+                col.save_new("crunchrunner binary", ensure_unique_name=True)
 
         self.fs_access = CollectionFsAccess(input_basedir)
 
         kwargs["fs_access"] = self.fs_access
         kwargs["enable_reuse"] = args.enable_reuse
-        kwargs["repository"] = args.repository
+
+        kwargs["outdir"] = "$(task.outdir)"
+        kwargs["tmpdir"] = "$(task.tmpdir)"
 
         if kwargs.get("conformance_test"):
             return cwltool.main.single_job_executor(tool, job_order, input_basedir, args, **kwargs)
         else:
+            self.pipeline = self.api.pipeline_instances().create(body={"name": shortname(tool.tool["id"]),
+                                                                   "components": {},
+                                                                   "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
+
             jobiter = tool.job(job_order,
-                            input_basedir,
-                            self.output_callback,
-                            **kwargs)
+                               input_basedir,
+                               self.output_callback,
+                               docker_outdir="$(task.outdir)",
+                               **kwargs)
 
-            for runnable in jobiter:
-                if runnable:
-                    with self.lock:
-                        runnable.run(**kwargs)
-                else:
-                    if self.jobs:
-                        try:
-                            self.cond.acquire()
-                            self.cond.wait()
-                        finally:
-                            self.cond.release()
+            try:
+                for runnable in jobiter:
+                    if runnable:
+                        with self.lock:
+                            runnable.run(**kwargs)
                     else:
-                        logger.error("Workflow cannot make any more progress.")
-                        break
+                        if self.jobs:
+                            try:
+                                self.cond.acquire()
+                                self.cond.wait(1)
+                            except RuntimeError:
+                                pass
+                            finally:
+                                self.cond.release()
+                        else:
+                            logger.error("Workflow cannot make any more progress.")
+                            break
 
-            while self.jobs:
-                try:
-                    self.cond.acquire()
-                    self.cond.wait()
-                finally:
-                    self.cond.release()
+                while self.jobs:
+                    try:
+                        self.cond.acquire()
+                        self.cond.wait(1)
+                    except RuntimeError:
+                        pass
+                    finally:
+                        self.cond.release()
 
-            events.close()
+                events.close()
 
-            if self.final_output is None:
-                raise cwltool.workflow.WorkflowException("Workflow did not return a result.")
+                if self.final_output is None:
+                    raise cwltool.workflow.WorkflowException("Workflow did not return a result.")
+
+            except:
+                if sys.exc_info()[0] is not KeyboardInterrupt:
+                    logger.exception("Caught unhandled exception, marking pipeline as failed")
+                self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
+                                                     body={"state": "Failed"}).execute(num_retries=self.num_retries)
 
             return self.final_output
 
 
 def main(args, stdout, stderr, api_client=None):
-    runner = ArvCwlRunner(api_client=arvados.api('v1'))
     args.insert(0, "--leave-outputs")
     parser = cwltool.main.arg_parser()
     exgroup = parser.add_mutually_exclusive_group()
@@ -362,6 +432,10 @@ def main(args, stdout, stderr, api_client=None):
                         default=False, dest="enable_reuse",
                         help="")
 
-    parser.add_argument('--repository', type=str, default="peter/crunchrunner", help="Repository containing the 'crunchrunner' program.")
+    try:
+        runner = ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
+    except Exception as e:
+        logger.error(e)
+        return 1
 
     return cwltool.main.main(args, executor=runner.arvExecutor, makeTool=runner.arvMakeTool, parser=parser)

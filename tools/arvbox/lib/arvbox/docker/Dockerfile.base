@@ -1,0 +1,42 @@
+FROM debian:8
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -yq install \
+    postgresql-9.4 git gcc golang-go runit \
+    ruby rake bundler curl libpq-dev \
+    libcurl4-openssl-dev libssl-dev zlib1g-dev libpcre3-dev \
+    openssh-server python-setuptools netcat-traditional \
+    libpython-dev fuse libfuse-dev python-pip python-yaml \
+    pkg-config libattr1-dev python-llfuse python-pycurl \
+    libwww-perl libio-socket-ssl-perl libcrypt-ssleay-perl \
+    libjson-perl nginx gitolite3 lsof python-epydoc graphviz \
+    apt-transport-https ca-certificates slurm-wlm
+
+VOLUME /var/lib/docker
+VOLUME /var/log/nginx
+VOLUME /etc/ssl/private
+
+RUN apt-key adv --keyserver hkp://pool.sks-keyservers.net:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D || \
+    apt-key adv --keyserver hkp://pgp.mit.edu:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
+
+RUN mkdir -p /etc/apt/sources.list.d && \
+    echo deb https://apt.dockerproject.org/repo debian-jessie main > /etc/apt/sources.list.d/docker.list && \
+    apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get -yq install docker-engine=1.9.1-0~jessie
+
+RUN rm -rf /var/lib/postgresql && mkdir -p /var/lib/postgresql
+
+RUN cd /root && \
+    GOPATH=$PWD go get github.com/curoverse/runsvinit && \
+    install bin/runsvinit /usr/local/bin
+
+ADD fuse.conf /etc/
+
+ADD crunch-setup.sh gitolite.rc \
+    keep-setup.sh common.sh createusers.sh \
+    logger runsu.sh waitforpostgres.sh \
+    application_yml_override.py \
+    /usr/local/lib/arvbox/
+
+# Start the supervisor.
+CMD ["/usr/local/bin/runsvinit"]
