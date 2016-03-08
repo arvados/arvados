@@ -85,7 +85,10 @@ class MockTimer(object):
             to_deliver = self.messages
             self.messages = []
         for callback, args, kwargs in to_deliver:
-            callback(*args, **kwargs)
+            try:
+                callback(*args, **kwargs)
+            except pykka.ActorDeadError:
+                pass
 
     def schedule(self, want_time, callback, *args, **kwargs):
         with self.lock:
