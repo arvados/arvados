@@ -773,6 +773,7 @@ do_test doc doclinkchecker
 stop_services
 
 test_apiserver() {
+    rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
         && RAILS_ENV=test bundle exec rake test TESTOPTS=-v ${testargs[services/api]}
 }
