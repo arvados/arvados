@@ -1,5 +1,41 @@
 #!/usr/bin/env python
 
+import arvados
 import arvados_cwl
+import arvados.collection
+import arvados.util
+from cwltool.process import shortname
+import cwltool.main
 
-print "Hello world"
+api = arvados.api("v1")
+
+try:
+    job_order_object = arvados.current_job()['script_parameters']
+
+    for k,v in job_order_object.items():
+        if arvados.util.keep_locator_pattern.match(v):
+            job_order_object[k] = "%s/%s" % (os.environ['TASK_KEEPMOUNT'], v)
+
+    runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
+
+    t = cwltool.main.load_tool(job_order_object, False, True, runner.arvMakeTool, True)
+
+    outputObj = runner.arvExecutor(t, job_order_object, "", None)
+
+    c = arvados.collection.Collection():
+    with c.open("cwl.output.json") as f:
+        json.dump(f, indent=4)
+
+    api.job_tasks().update(uuid=arvados.current_task()['uuid'],
+                                         body={
+                                             'output': c.save_new(create_collection_record=False),
+                                             'success': True,
+                                             'progress':1.0
+                                         }).execute()
+except:
+    api.job_tasks().update(uuid=arvados.current_task()['uuid'],
+                                         body={
+                                             'output': None,
+                                             'success': False,
+                                             'progress':1.0
+                                         }).execute()
