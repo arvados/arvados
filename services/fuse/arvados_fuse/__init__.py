@@ -435,9 +435,9 @@ class Operations(llfuse.Operations):
 
         entry.st_blksize = 512
         entry.st_blocks = (entry.st_size/512)+1
-        entry.st_atime_ns = int(e.atime())
-        entry.st_mtime_ns = int(e.mtime())
-        entry.st_ctime_ns = int(e.mtime())
+        entry.st_atime_ns = int(e.atime() * 1000000000)
+        entry.st_mtime_ns = int(e.mtime() * 1000000000)
+        entry.st_ctime_ns = int(e.mtime() * 1000000000)
 
         return entry
 
