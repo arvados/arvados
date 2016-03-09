@@ -1,9 +1,10 @@
 package main
 
 import (
+	"io/ioutil"
 	"os"
 	"os/exec"
-	"io/ioutil"
+	"strings"
 
 	check "gopkg.in/check.v1"
 )
@@ -26,7 +27,12 @@ func (s *GitoliteSuite) SetUpTest(c *check.C) {
 		c.Log(prog, " ", args)
 		cmd := exec.Command(prog, args...)
 		cmd.Dir = s.gitoliteHome
-		cmd.Env = append(os.Environ(), "HOME=" + s.gitoliteHome)
+		cmd.Env = []string{"HOME=" + s.gitoliteHome}
+		for _, e := range os.Environ() {
+			if !strings.HasPrefix(e, "HOME=") {
+				cmd.Env = append(cmd.Env, e)
+			}
+		}
 		diags, err := cmd.CombinedOutput()
 		c.Log(string(diags))
 		c.Assert(err, check.Equals, nil)
@@ -76,13 +82,13 @@ func (s *GitoliteSuite) TestPush(c *check.C) {
 	// Check that the commit hash appears in the gitolite log, as
 	// assurance that the gitolite hooks really did run.
 
-	sha1, err := exec.Command("git", "--git-dir", s.tmpWorkdir + "/.git",
+	sha1, err := exec.Command("git", "--git-dir", s.tmpWorkdir+"/.git",
 		"log", "-n1", "--format=%H").CombinedOutput()
 	c.Logf("git-log in workdir: %q", string(sha1))
 	c.Assert(err, check.Equals, nil)
 	c.Assert(len(sha1), check.Equals, 41)
 
-	gitoliteLog, err := exec.Command("grep", "-r", string(sha1[:40]), s.gitoliteHome + "/.gitolite/logs").CombinedOutput()
+	gitoliteLog, err := exec.Command("grep", "-r", string(sha1[:40]), s.gitoliteHome+"/.gitolite/logs").CombinedOutput()
 	c.Check(err, check.Equals, nil)
 	c.Logf("gitolite log message: %q", string(gitoliteLog))
 }
