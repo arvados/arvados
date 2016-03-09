@@ -485,8 +485,8 @@ timer() {
     echo -n "$(($SECONDS - $t0))s"
 }
 
-do_test() {
-    while ! do_test_once ${@} && [[ "$retry" == 1 ]]
+retry() {
+    while ! ${@} && [[ "$retry" == 1 ]]
     do
         read -p 'Try again? [Y/n] ' x
         if [[ "$x" != "y" ]] && [[ "$x" != "" ]]
@@ -494,6 +494,10 @@ do_test() {
             break
         fi
     done
+}
+
+do_test() {
+    retry do_test_once ${@}
 }
 
 do_test_once() {
@@ -548,6 +552,10 @@ do_test_once() {
 }
 
 do_install() {
+    retry do_install_once ${@}
+}
+
+do_install_once() {
     if [[ -z "$skip_install" || (-n "$only_install" && "$only_install" == "$1") ]]
     then
         title "Running $1 install"
@@ -580,8 +588,10 @@ do_install() {
         else
             "install_$1"
         fi
-        checkexit $? "$1 install"
+        result=$?
+        checkexit $result "$1 install"
         title "End of $1 install (`timer`)"
+        return $result
     else
         title "Skipping $1 install"
     fi
