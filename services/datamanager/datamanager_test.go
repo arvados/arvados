@@ -12,11 +12,11 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"regexp"
 	"strings"
 	"testing"
 	"time"
-	"path"
 )
 
 var arv arvadosclient.ArvadosClient
@@ -547,14 +547,12 @@ func createBadPath(t *testing.T) (badpath string) {
 	return
 }
 
-func destroyBadPath(t *testing.T, badpath string) () {
+func destroyBadPath(t *testing.T, badpath string) {
 	tempdir := path.Join(badpath, "..")
 	err := os.Remove(tempdir)
 	if err != nil {
 		t.Fatalf("Could not remove bad path temporary directory %v: %v", tempdir, err)
-		return
 	}
-	return
 }
 
 func TestPutAndGetBlocks_ErrorDuringGetCollectionsBadWriteTo(t *testing.T) {
