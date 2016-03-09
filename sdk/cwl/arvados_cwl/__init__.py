@@ -156,7 +156,8 @@ class ArvadosJob(object):
             response = self.arvrunner.api.jobs().create(body={
                 "script": "crunchrunner",
                 "repository": "arvados",
-                "script_version": "8488-cwl-crunchrunner-collection",
+                "script_version": "master",
+                "minimum_script_version": "9e5b98e8f5f4727856b53447191f9c06e3da2ba6",
                 "script_parameters": {"tasks": [script_parameters], "crunchrunner": crunchrunner_pdh+"/crunchrunner"},
                 "runtime_constraints": runtime_constraints
             }, find_or_create=kwargs.get("enable_reuse", True)).execute(num_retries=self.arvrunner.num_retries)
@@ -266,9 +267,9 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
 
     def reversemap(self, target):
         if target.startswith("keep:"):
-            return target
+            return (target, target)
         elif self.keepdir and target.startswith(self.keepdir):
-            return "keep:" + target[len(self.keepdir)+1:]
+            return (target, "keep:" + target[len(self.keepdir)+1:])
         else:
             return super(ArvPathMapper, self).reversemap(target)
 
