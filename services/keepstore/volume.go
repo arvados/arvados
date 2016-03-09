@@ -204,6 +204,10 @@ type Volume interface {
 	// underlying device. It will be passed on to clients in
 	// responses to PUT requests.
 	Replication() int
+
+	// EmptyTrash looks for trashed blocks that exceeded trashLifetime
+	// and deletes them from the volume.
+	EmptyTrash() error
 }
 
 // A VolumeManager tells callers which volumes can read, which volumes

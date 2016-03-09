@@ -55,9 +55,13 @@ var dataManagerToken string
 // actually deleting anything.
 var neverDelete = true
 
-// trashLifetime is the time duration after a block is trashed
+// trashLifetime is the time duration in seconds after a block is trashed
 // during which it can be recovered using an /untrash request
-var trashLifetime time.Duration
+var trashLifetime int
+
+// Interval in seconds at which the emptyTrash goroutine will check
+// and delete expired trashed blocks. Default is once a day.
+var trashCheckInterval int
 
 var maxBuffers = 128
 var bufs *bufferPool
@@ -205,11 +209,16 @@ func main() {
 		"max-buffers",
 		maxBuffers,
 		fmt.Sprintf("Maximum RAM to use for data buffers, given in multiples of block size (%d MiB). When this limit is reached, HTTP requests requiring buffers (like GET and PUT) will wait for buffer space to be released.", BlockSize>>20))
-	flag.DurationVar(
+	flag.IntVar(
 		&trashLifetime,
 		"trash-lifetime",
-		0*time.Second,
+		0,
 		"Interval in seconds after a block is trashed during which it can be recovered using an /untrash request")
+	flag.IntVar(
+		&trashCheckInterval,
+		"trash-check-interval",
+		24*60*60,
+		"Interval in seconds at which the emptyTrash goroutine will check and delete expired trashed blocks. Default is one day.")
 
 	flag.Parse()
 
@@ -321,10 +330,14 @@ func main() {
 	trashq = NewWorkQueue()
 	go RunTrashWorker(trashq)
 
+	// Start emptyTrash goroutine
+	go emptyTrash(trashCheckInterval)
+
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.
 	term := make(chan os.Signal, 1)
 	go func(sig <-chan os.Signal) {
+		doneEmptyingTrash <- true
 		s := <-sig
 		log.Println("caught signal:", s)
 		listener.Close()
@@ -335,4 +348,26 @@ func main() {
 	log.Println("listening at", listen)
 	srv := &http.Server{Addr: listen}
 	srv.Serve(listener)
+}
+
+// Channel to stop emptying trash
+var doneEmptyingTrash = make(chan bool)
+
+// At every trashCheckInterval tick, invoke EmptyTrash on all volumes.
+func emptyTrash(trashCheckInterval int) {
+	ticker := time.NewTicker(time.Duration(trashCheckInterval) * time.Second)
+
+	for {
+		select {
+		case <-ticker.C:
+			for _, v := range volumes {
+				if v.Writable() {
+					v.EmptyTrash()
+				}
+			}
+		case <-doneEmptyingTrash:
+			ticker.Stop()
+			return
+		}
+	}
 }

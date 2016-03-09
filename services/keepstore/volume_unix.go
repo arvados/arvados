@@ -23,9 +23,6 @@ type unixVolumeAdder struct {
 }
 
 func (vs *unixVolumeAdder) Set(value string) error {
-	if trashLifetime != 0 {
-		return ErrNotImplemented
-	}
 	if dirs := strings.Split(value, ","); len(dirs) > 1 {
 		log.Print("DEPRECATED: using comma-separated volume list.")
 		for _, dir := range dirs {
@@ -365,21 +362,21 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 	}
 }
 
-// Delete deletes the block data from the unix storage
+// Trash trashes the block data from the unix storage
+// If trashLifetime == 0, the block is deleted
+// Else, the block is renamed as path/{loc}.trash.{deadline},
+// where deadline = now + trashLifetime
 func (v *UnixVolume) Trash(loc string) error {
 	// Touch() must be called before calling Write() on a block.  Touch()
 	// also uses lockfile().  This avoids a race condition between Write()
-	// and Delete() because either (a) the file will be deleted and Touch()
+	// and Trash() because either (a) the file will be trashed and Touch()
 	// will signal to the caller that the file is not present (and needs to
 	// be re-written), or (b) Touch() will update the file's timestamp and
-	// Delete() will read the correct up-to-date timestamp and choose not to
-	// delete the file.
+	// Trash() will read the correct up-to-date timestamp and choose not to
+	// trash the file.
 
 	if v.readonly {
 		return MethodDisabledError
-	}
-	if trashLifetime != 0 {
-		return ErrNotImplemented
 	}
 	if v.locker != nil {
 		v.locker.Lock()
@@ -408,11 +405,21 @@ func (v *UnixVolume) Trash(loc string) error {
 			return nil
 		}
 	}
-	return os.Rename(p, fmt.Sprintf("%v.trash.%d", p, time.Now().Add(trashLifetime).Unix()))
+
+	if trashLifetime == 0 {
+		return os.Remove(p)
+	}
+	return os.Rename(p, fmt.Sprintf("%v.trash.%d", p, time.Now().Unix()+int64(trashLifetime)))
 }
 
 // Untrash moves block from trash back into store
+// Look for path/{loc}.trash.{deadline} in storage,
+// and rename the first such file as path/{loc}
 func (v *UnixVolume) Untrash(loc string) (err error) {
+	if v.readonly {
+		return MethodDisabledError
+	}
+
 	prefix := fmt.Sprintf("%v.trash.", loc)
 	files, _ := ioutil.ReadDir(v.blockDir(loc))
 	for _, f := range files {
@@ -423,7 +430,8 @@ func (v *UnixVolume) Untrash(loc string) (err error) {
 			}
 		}
 	}
-	return err
+
+	return
 }
 
 // blockDir returns the fully qualified directory name for the directory
@@ -516,4 +524,52 @@ func (v *UnixVolume) translateError(err error) error {
 	default:
 		return err
 	}
+}
+
+var trashRegexp = regexp.MustCompile(`.*([0-9a-fA-F]{32}).trash.(\d+)`)
+
+// EmptyTrash walks hierarchy looking for {hash}.trash.*
+// and deletes those with deadline < now.
+func (v *UnixVolume) EmptyTrash() error {
+	var bytesDeleted, bytesInTrash int64
+	var blocksDeleted, blocksInTrash int
+
+	err := filepath.Walk(v.root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Printf("EmptyTrash error for %v: %v", path, err)
+		} else if !info.Mode().IsDir() {
+			matches := trashRegexp.FindStringSubmatch(path)
+			if len(matches) == 3 {
+				deadline, err := strconv.Atoi(matches[2])
+				if err != nil {
+					log.Printf("EmptyTrash error for %v: %v", matches[1], err)
+				} else {
+					if int64(deadline) < time.Now().Unix() {
+						err = os.Remove(path)
+						if err != nil {
+							log.Printf("Error deleting %v: %v", matches[1], err)
+							bytesInTrash += info.Size()
+							blocksInTrash++
+						} else {
+							bytesDeleted += info.Size()
+							blocksDeleted++
+						}
+					} else {
+						bytesInTrash += info.Size()
+						blocksInTrash++
+					}
+				}
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		log.Printf("EmptyTrash error for %v: %v", v.String(), err)
+	} else {
+		log.Printf("EmptyTrash stats for %v: Bytes deleted %v; Blocks deleted %v; Bytes remaining in trash: %v; Blocks remaining in trash: %v",
+			v.String(), bytesDeleted, blocksDeleted, bytesInTrash, blocksInTrash)
+	}
+
+	return nil
 }

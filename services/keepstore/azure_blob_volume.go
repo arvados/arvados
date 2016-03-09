@@ -395,3 +395,10 @@ var keepBlockRegexp = regexp.MustCompile(`^[0-9a-f]{32}$`)
 func (v *AzureBlobVolume) isKeepBlock(s string) bool {
 	return keepBlockRegexp.MatchString(s)
 }
+
+// EmptyTrash looks for trashed blocks that exceeded trashLifetime
+// and deletes them from the volume.
+// TBD
+func (v *AzureBlobVolume) EmptyTrash() error {
+	return nil
+}
