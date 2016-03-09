@@ -3,6 +3,9 @@ import mock
 import arvados_cwl
 
 class TestJob(unittest.TestCase):
+
+    # The test passes no builder.resources
+    # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     def test_run(self):
         runner = mock.MagicMock()
         tool = {
@@ -26,10 +29,16 @@ class TestJob(unittest.TestCase):
             'script_version':
             'master',
             'repository': 'arvados',
-            'script': 'crunchrunner'
+            'script': 'crunchrunner',
+            'runtime_constraints': {
+                'min_cores_per_node': 1,
+                'min_ram_mb_per_node': 1024,
+                'min_scratch_mb_per_node': 2048 # tmpdirSize + outdirSize
+            }
         }, find_or_create=True)
 
-
+    # The test passes some fields in builder.resources
+    # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     def test_resource_requirements(self):
         runner = mock.MagicMock()
         tool = {
@@ -37,9 +46,9 @@ class TestJob(unittest.TestCase):
             "outputs": [],
             "hints": [{
                 "class": "ResourceRequirement",
-                "minCores": 3,
+                "coresMin": 3,
                 "ramMin": 3000,
-                "tmpDirMin": 4000
+                "tmpdirMin": 4000
             }],
             "baseCommand": "ls"
         }
@@ -63,6 +72,6 @@ class TestJob(unittest.TestCase):
             'runtime_constraints': {
                 'min_cores_per_node': 3,
                 'min_ram_mb_per_node': 3000,
-                'min_scratch_mb_per_node': 4000
+                'min_scratch_mb_per_node': 5024 # tmpdirSize + outdirSize
             }
         }, find_or_create=True)
