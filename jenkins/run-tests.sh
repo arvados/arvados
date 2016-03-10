@@ -79,6 +79,7 @@ sdk/go/manifest
 sdk/go/blockdigest
 sdk/go/streamer
 sdk/go/crunchrunner
+sdk/cwl
 tools/crunchstat-summary
 tools/keep-rsync
 
@@ -642,6 +643,7 @@ declare -a pythonstuff
 pythonstuff=(
     sdk/pam
     sdk/python
+    sdk/cwl
     services/fuse
     services/nodemanager
     tools/crunchstat-summary
