@@ -39,7 +39,7 @@ class ComputeNodeStateChangeBase(config.actor_class, RetryMixin):
     def _finished(self):
         if self.subscribers is None:
             raise Exception("Actor tried to finish twice")
-        _notify_subscribers(self._later, self.subscribers)
+        _notify_subscribers(self.actor_ref.proxy(), self.subscribers)
         self.subscribers = None
         self._logger.info("finished")
 
@@ -391,7 +391,7 @@ class ComputeNodeMonitorActor(config.actor_class):
             eligible = self.shutdown_eligible()
             if eligible is True:
                 self._debug("Suggesting shutdown.")
-                _notify_subscribers(self._later, self.subscribers)
+                _notify_subscribers(self.actor_ref.proxy(), self.subscribers)
             elif self._shutdowns.window_open():
                 self._debug("Cannot shut down because %s", eligible)
             elif self.last_shutdown_opening != next_opening:
