@@ -154,7 +154,7 @@ class ArvadosJob(object):
 
         resources = self.builder.resources
         if resources is not None:
-            runtime_constraints["min_cores_per_node"] = resources.get("cores")
+            runtime_constraints["min_cores_per_node"] = resources.get("cores", 1)
             runtime_constraints["min_ram_mb_per_node"] = resources.get("ram")
             runtime_constraints["min_scratch_mb_per_node"] = resources.get("tmpdirSize", 0) + resources.get("outdirSize", 0)
 
