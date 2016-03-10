@@ -95,6 +95,12 @@ class ObjectFile(StringFile):
         return self.object_uuid
 
     def update(self, obj=None):
+        if obj is None:
+            # TODO: retrieve the current record for self.object_uuid
+            # from the server. For now, at least don't crash when
+            # someone tells us it's a good time to update but doesn't
+            # pass us a fresh obj. See #8345
+            return
         self._mtime = convertTime(obj['modified_at']) if 'modified_at' in obj else 0
         self.contents = json.dumps(obj, indent=4, sort_keys=True) + "\n"
 
