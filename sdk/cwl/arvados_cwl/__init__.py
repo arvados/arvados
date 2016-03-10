@@ -34,7 +34,7 @@ outdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.
 keepre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.keep\)=(.*)")
 
 
-def arv_docker_get_image(api_client, dockerRequirement, pull_image):
+def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid):
     if "dockerImageId" not in dockerRequirement and "dockerPull" in dockerRequirement:
         dockerRequirement["dockerImageId"] = dockerRequirement["dockerPull"]
 
@@ -48,7 +48,7 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image):
 
     if not images:
         imageId = cwltool.docker.get_image(dockerRequirement, pull_image)
-        args = [image_name]
+        args = ["--project-uuid", project_uuid, image_name]
         if image_tag:
             args.append(image_tag)
         logger.info("Uploading Docker image %s", ":".join(args))
@@ -150,10 +150,11 @@ class ArvadosJob(object):
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if docker_req and kwargs.get("use_container") is not False:
-            runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image)
+            runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvruner.project_uuid)
 
         try:
             response = self.arvrunner.api.jobs().create(body={
+                "owner_uuid": self.arvrunner.project_uuid,
                 "script": "crunchrunner",
                 "repository": "arvados",
                 "script_version": "master",
@@ -257,7 +258,8 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
                                              arvrunner.api,
                                              dry_run=kwargs.get("dry_run"),
                                              num_retries=3,
-                                             fnPattern="$(task.keep)/%s/%s")
+                                             fnPattern="$(task.keep)/%s/%s",
+                                             project=arvrunner.project_uuid)
 
         for src, ab, st in uploadfiles:
             arvrunner.add_uploaded(src, (ab, st.fn))
@@ -368,12 +370,18 @@ class ArvCwlRunner(object):
         kwargs["outdir"] = "$(task.outdir)"
         kwargs["tmpdir"] = "$(task.tmpdir)"
 
+        useruuid = self.api.users().current().execute()["uuid"]
+        self.project_uuid = args.project_uuid if args.project_uuid else useruuid
+
         if kwargs.get("conformance_test"):
             return cwltool.main.single_job_executor(tool, job_order, input_basedir, args, **kwargs)
         else:
-            self.pipeline = self.api.pipeline_instances().create(body={"name": shortname(tool.tool["id"]),
-                                                                   "components": {},
-                                                                   "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
+            self.pipeline = self.api.pipeline_instances().create(
+                body={
+                    "owner_uuid": self.project_uuid,
+                    "name": shortname(tool.tool["id"]),
+                    "components": {},
+                    "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
 
             jobiter = tool.job(job_order,
                                input_basedir,
@@ -432,6 +440,7 @@ def main(args, stdout, stderr, api_client=None):
     exgroup.add_argument("--disable-reuse", action="store_false",
                         default=False, dest="enable_reuse",
                         help="")
+    parser.add_argument("--project-uuid", type=str, help="Project that will own the workflow jobs")
 
     try:
         runner = ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
