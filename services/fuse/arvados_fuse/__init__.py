@@ -398,10 +398,7 @@ class Operations(llfuse.Operations):
 
 
     @catch_exceptions
-    def getattr(self, inode, ctx):
-        return self._getattr(inode)
-
-    def _getattr(self, inode):
+    def getattr(self, inode, ctx=None):
         if inode not in self.inodes:
             raise llfuse.FUSEError(errno.ENOENT)
 
@@ -441,7 +438,7 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def setattr(self, inode, attr, fields, fh, ctx):
-        entry = self._getattr(inode)
+        entry = self.getattr(inode)
 
         if fh is not None and fh in self._filehandles:
             handle = self._filehandles[fh]
@@ -476,7 +473,7 @@ class Operations(llfuse.Operations):
             _logger.debug("arv-mount lookup: parent_inode %i name '%s' inode %i",
                       parent_inode, name, inode)
             self.inodes[inode].inc_ref()
-            return self._getattr(inode)
+            return self.getattr(inode)
         else:
             _logger.debug("arv-mount lookup: parent_inode %i name '%s' not found",
                       parent_inode, name)
@@ -601,7 +598,7 @@ class Operations(llfuse.Operations):
         e = off
         while e < len(handle.entries):
             if handle.entries[e][1].inode in self.inodes:
-                yield (handle.entries[e][0].encode(self.inodes.encoding), self._getattr(handle.entries[e][1].inode), e+1)
+                yield (handle.entries[e][0].encode(self.inodes.encoding), self.getattr(handle.entries[e][1].inode), e+1)
             e += 1
 
     @catch_exceptions
@@ -651,7 +648,7 @@ class Operations(llfuse.Operations):
         self.inodes.touch(p)
 
         f.inc_ref()
-        return (fh, self._getattr(f.inode))
+        return (fh, self.getattr(f.inode))
 
     @catch_exceptions
     def mkdir(self, inode_parent, name, mode, ctx):
@@ -664,7 +661,7 @@ class Operations(llfuse.Operations):
         d = p[name]
 
         d.inc_ref()
-        return self._getattr(d.inode)
+        return self.getattr(d.inode)
 
     @catch_exceptions
     def unlink(self, inode_parent, name, ctx):
