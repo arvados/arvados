@@ -6,15 +6,20 @@ import arvados.collection
 import arvados.util
 from cwltool.process import shortname
 import cwltool.main
+import logging
+import os
+from arvados.api import OrderedJsonModel
 
 api = arvados.api("v1")
 
 try:
     job_order_object = arvados.current_job()['script_parameters']
 
+    print job_order_object
+
     for k,v in job_order_object.items():
         if arvados.util.keep_locator_pattern.match(v):
-            job_order_object[k] = "%s/%s" % (os.environ['TASK_KEEPMOUNT'], v)
+            job_order_object[k] = "file://%s/%s" % (os.environ['TASK_KEEPMOUNT'], v)
 
     runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
 
@@ -32,7 +37,8 @@ try:
                                              'success': True,
                                              'progress':1.0
                                          }).execute()
-except:
+except Exception as e:
+    logging.exception("Unhandled exception")
     api.job_tasks().update(uuid=arvados.current_task()['uuid'],
                                          body={
                                              'output': None,
