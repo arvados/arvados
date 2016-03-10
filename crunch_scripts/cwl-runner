@@ -22,7 +22,7 @@ try:
 
     outputObj = runner.arvExecutor(t, job_order_object, "", None)
 
-    c = arvados.collection.Collection():
+    c = arvados.collection.Collection()
     with c.open("cwl.output.json") as f:
         json.dump(f, indent=4)
 
