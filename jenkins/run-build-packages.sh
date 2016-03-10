@@ -315,6 +315,11 @@ cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/sdk/python/build"
 fpm_build $WORKSPACE/sdk/python "${PYTHON2_PKG_PREFIX}-arvados-python-client" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK" --deb-recommends=git
 
+# cwl-runner
+cd $WORKSPACE/packages/$TARGET
+rm -rf "$WORKSPACE/sdk/cwl/build"
+fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/cwl/arvados_cwl_runner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados CWL runner"
+
 # The PAM module
 if [[ $TARGET =~ debian|ubuntu ]]; then
     cd $WORKSPACE/packages/$TARGET
