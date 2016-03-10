@@ -154,28 +154,9 @@ class ArvadosJob(object):
 
         resources = self.builder.resources
         if resources is not None:
-            if "cores" in resources:
-                try:
-                    runtime_constraints["min_cores_per_node"] = int(resources["cores"])
-                except:
-                    runtime_constraints["min_cores_per_node"] = None
-            if "ram" in resources:
-                try:
-                    runtime_constraints["min_ram_mb_per_node"] = int(resources["ram"])
-                except:
-                    runtime_constraints["min_ram_mb_per_node"] = None
-            if "tmpdirSize" in resources or "outdirSize" in resources:
-                tmpdirMin = None
-                try:
-                    tmpdirMin = int(resources["tmpdirSize"])
-                except:
-                    tmpdirMin = 0
-                outdirMin = None
-                try:
-                    outdirMin = int(resources["outdirSize"])
-                except:
-                    outdirMin = 0
-                runtime_constraints["min_scratch_mb_per_node"] = tmpdirMin + outdirMin
+            runtime_constraints["min_cores_per_node"] = resources.get("cores")
+            runtime_constraints["min_ram_mb_per_node"] = resources.get("ram")
+            runtime_constraints["min_scratch_mb_per_node"] = resources.get("tmpdirSize", 0) + resources.get("outdirSize", 0)
 
         try:
             response = self.arvrunner.api.jobs().create(body={
