@@ -23,7 +23,7 @@ ubuntu1404/generated: common-generated-all
 common-generated-all: common-generated/golang-amd64.tar.gz
 
 common-generated/golang-amd64.tar.gz: common-generated
-	wget -cqO common-generated/golang-amd64.tar.gz https://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz
+	wget -cqO common-generated/golang-amd64.tar.gz http://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz
 
 common-generated:
 	mkdir common-generated
