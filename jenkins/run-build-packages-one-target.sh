@@ -138,7 +138,7 @@ if test -z "$packages" ; then
         centos6)
             packages="$packages python27-python-arvados-fuse
                   python27-python-arvados-python-client"
-        ;;
+            ;;
         *)
             packages="$packages python-arvados-fuse
                   python-arvados-python-client"
@@ -150,28 +150,49 @@ FINAL_EXITCODE=0
 
 package_fails=""
 
+mkdir -p "$WORKSPACE/apps/workbench/vendor/cache-$TARGET"
+mkdir -p "$WORKSPACE/services/api/vendor/cache-$TARGET"
+
+docker_volume_args=(
+    -v "$JENKINS_DIR:/jenkins"
+    -v "$WORKSPACE:/arvados"
+    -v /arvados/services/api/vendor/bundle
+    -v /arvados/apps/workbench/vendor/bundle
+    -v "$WORKSPACE/services/api/vendor/cache-$TARGET:/arvados/services/api/vendor/cache"
+    -v "$WORKSPACE/apps/workbench/vendor/cache-$TARGET:/arvados/apps/workbench/vendor/cache"
+)
+
 if [[ -n "$test_packages" ]]; then
     for p in $packages ; do
-        if docker run --rm -v "$JENKINS_DIR:/jenkins" -v "$WORKSPACE:/arvados" \
-               --env ARVADOS_DEBUG=1 \
-               --env "TARGET=$TARGET" \
-               --env "WORKSPACE=/arvados" \
-               "$IMAGE" $COMMAND $p ; then
-            true
+        echo
+        echo "START: $p test on $IMAGE" >&2
+        if docker run --rm \
+            "${docker_volume_args[@]}" \
+            --env ARVADOS_DEBUG=1 \
+            --env "TARGET=$TARGET" \
+            --env "WORKSPACE=/arvados" \
+            "$IMAGE" $COMMAND $p
+        then
+            echo "OK: $p test on $IMAGE succeeded" >&2
         else
             FINAL_EXITCODE=$?
             package_fails="$package_fails $p"
-            echo "ERROR: $tag test failed with exit status $FINAL_EXITCODE." >&2
+            echo "ERROR: $p test on $IMAGE failed with exit status $FINAL_EXITCODE" >&2
         fi
     done
 else
-    if docker run --rm -v "$JENKINS_DIR:/jenkins" -v "$WORKSPACE:/arvados" \
-           --env ARVADOS_DEBUG=1 "$IMAGE" $COMMAND ; then
+    echo
+    echo "START: build packages on $IMAGE" >&2
+    if docker run --rm \
+        "${docker_volume_args[@]}" \
+        --env ARVADOS_DEBUG=1 \
+        "$IMAGE" $COMMAND
+    then
         echo
-        echo "Build packages for $TARGET succeeded." >&2
+        echo "OK: build packages on $IMAGE succeeded" >&2
     else
         FINAL_EXITCODE=$?
-        echo "ERROR: $tag build failed with exit status $FINAL_EXITCODE." >&2
+        echo "ERROR: build packages on $IMAGE failed with exit status $FINAL_EXITCODE" >&2
     fi
 fi
 

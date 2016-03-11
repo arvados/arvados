@@ -93,7 +93,7 @@ case "$TARGET" in
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
-            'pycurl<7.21.5')
+            'pycurl<7.21.5' contextlib2)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
     debian8)
@@ -119,6 +119,7 @@ case "$TARGET" in
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
+            contextlib2 \
             'pycurl<7.21.5')
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
@@ -287,7 +288,89 @@ handle_python_package
     rm -rf "$SRC_BUILD_DIR"
 )
 
+# On older platforms we need to publish a backport of libfuse >=2.9.2,
+# and we need to build and install it here in order to even build an
+# llfuse package.
+cd $WORKSPACE/packages/$TARGET
+if [[ $TARGET =~ ubuntu1204 ]]; then
+    # port libfuse 2.9.2 to Ubuntu 12.04
+    LIBFUSE_DIR=$(mktemp -d)
+    (
+        cd $LIBFUSE_DIR
+        # download fuse 2.9.2 ubuntu 14.04 source package
+        file="fuse_2.9.2.orig.tar.xz" && curl -L -o "${file}" "http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/${file}"
+        file="fuse_2.9.2-4ubuntu4.14.04.1.debian.tar.xz" && curl -L -o "${file}" "http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/${file}"
+        file="fuse_2.9.2-4ubuntu4.14.04.1.dsc" && curl -L -o "${file}" "http://archive.ubuntu.com/ubuntu/pool/main/f/fuse/${file}"
+
+        # install dpkg-source and dpkg-buildpackage commands
+        apt-get install -y --no-install-recommends dpkg-dev
+
+        # extract source and apply patches
+        dpkg-source -x fuse_2.9.2-4ubuntu4.14.04.1.dsc
+        rm -f fuse_2.9.2.orig.tar.xz fuse_2.9.2-4ubuntu4.14.04.1.debian.tar.xz fuse_2.9.2-4ubuntu4.14.04.1.dsc
+
+        # add new version to changelog
+        cd fuse-2.9.2
+        (
+            echo "fuse (2.9.2-5) precise; urgency=low"
+            echo
+            echo "  * Backported from trusty-security to precise"
+            echo
+            echo " -- Joshua Randall <jcrandall@alum.mit.edu>  Thu, 4 Feb 2016 11:31:00 -0000"
+            echo
+            cat debian/changelog
+        ) > debian/changelog.new
+        mv debian/changelog.new debian/changelog
+
+        # install build-deps and build
+        apt-get install -y --no-install-recommends debhelper dh-autoreconf libselinux-dev
+        dpkg-buildpackage -rfakeroot -b
+    )
+    fpm_build "$LIBFUSE_DIR/fuse_2.9.2-5_amd64.deb" fuse "Ubuntu Developers" deb "2.9.2" --iteration 5
+    fpm_build "$LIBFUSE_DIR/libfuse2_2.9.2-5_amd64.deb" libfuse2 "Ubuntu Developers" deb "2.9.2" --iteration 5
+    fpm_build "$LIBFUSE_DIR/libfuse-dev_2.9.2-5_amd64.deb" libfuse-dev "Ubuntu Developers" deb "2.9.2" --iteration 5
+    dpkg -i \
+        "$WORKSPACE/packages/$TARGET/fuse_2.9.2-5_amd64.deb" \
+        "$WORKSPACE/packages/$TARGET/libfuse2_2.9.2-5_amd64.deb" \
+        "$WORKSPACE/packages/$TARGET/libfuse-dev_2.9.2-5_amd64.deb"
+    apt-get -y --no-install-recommends -f install
+    rm -rf $LIBFUSE_DIR
+elif [[ $TARGET =~ centos6 ]]; then
+    # port fuse 2.9.2 to centos 6
+    # install tools to build rpm from source
+    yum install -y rpm-build redhat-rpm-config
+    LIBFUSE_DIR=$(mktemp -d)
+    (
+        cd "$LIBFUSE_DIR"
+        # download fuse 2.9.2 centos 7 source rpm
+        file="fuse-2.9.2-6.el7.src.rpm" && curl -L -o "${file}" "http://vault.centos.org/7.2.1511/os/Source/SPackages/${file}"
+        (
+            # modify source rpm spec to remove conflict on filesystem version
+            mkdir -p /root/rpmbuild/SOURCES
+            cd /root/rpmbuild/SOURCES
+            rpm2cpio ${LIBFUSE_DIR}/fuse-2.9.2-6.el7.src.rpm | cpio -i
+            perl -pi -e 's/Conflicts:\s*filesystem.*//g' fuse.spec
+        )
+        # build rpms from source 
+        rpmbuild -bb /root/rpmbuild/SOURCES/fuse.spec
+        rm -f fuse-2.9.2-6.el7.src.rpm
+        # move built RPMs to LIBFUSE_DIR
+        mv "/root/rpmbuild/RPMS/x86_64/fuse-2.9.2-6.el6.x86_64.rpm" ${LIBFUSE_DIR}/
+        mv "/root/rpmbuild/RPMS/x86_64/fuse-libs-2.9.2-6.el6.x86_64.rpm" ${LIBFUSE_DIR}/
+        mv "/root/rpmbuild/RPMS/x86_64/fuse-devel-2.9.2-6.el6.x86_64.rpm" ${LIBFUSE_DIR}/
+        rm -rf /root/rpmbuild
+    )
+    fpm_build "$LIBFUSE_DIR/fuse-libs-2.9.2-6.el6.x86_64.rpm" fuse-libs "Centos Developers" rpm "2.9.2" --iteration 5
+    fpm_build "$LIBFUSE_DIR/fuse-2.9.2-6.el6.x86_64.rpm" fuse "Centos Developers" rpm "2.9.2" --iteration 5 --no-auto-depends
+    fpm_build "$LIBFUSE_DIR/fuse-devel-2.9.2-6.el6.x86_64.rpm" fuse-devel "Centos Developers" rpm "2.9.2" --iteration 5 --no-auto-depends
+    yum install -y \
+        "$WORKSPACE/packages/$TARGET/fuse-libs-2.9.2-5.x86_64.rpm" \
+        "$WORKSPACE/packages/$TARGET/fuse-2.9.2-5.x86_64.rpm" \
+        "$WORKSPACE/packages/$TARGET/fuse-devel-2.9.2-5.x86_64.rpm"
+fi
+
 # Go binaries
+cd $WORKSPACE/packages/$TARGET
 export GOPATH=$(mktemp -d)
 package_go_binary services/keepstore keepstore \
     "Keep storage daemon, accessible to clients on the LAN"

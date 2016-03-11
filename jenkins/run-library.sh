@@ -225,6 +225,10 @@ fpm_build () {
     fi
   fi
 
+  if [[ "${DEBUG:-0}" != "0" ]]; then
+    COMMAND_ARR+=('--verbose' '--log' 'info')
+  fi
+
   if [[ "$PACKAGE_NAME" != "$PACKAGE" ]]; then
     COMMAND_ARR+=('-n' "$PACKAGE_NAME")
   fi
@@ -248,17 +252,44 @@ fpm_build () {
   # the package source dir. These are added last so they can override
   # the arguments added by this script.
   declare -a fpm_args=()
+  declare -a build_depends=()
   declare -a fpm_depends=()
   declare -a fpm_exclude=()
+  FPM_INFO=""
   if [[ -d "$PACKAGE_DIR" ]]; then
       FPM_INFO="$PACKAGE_DIR/fpm-info.sh"
-  else
+  elif [[ -e "${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE}/fpm-info.sh" ]]; then
       FPM_INFO="${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE}/fpm-info.sh"
+      debug_echo "Found fpm-info.sh in backports: $FPM_INFO"
+  elif [[ -e "${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE_NAME}/fpm-info.sh" ]]; then
+      FPM_INFO="${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE_NAME}/fpm-info.sh"
   fi
   if [[ -e "$FPM_INFO" ]]; then
       debug_echo "Loading fpm overrides from $FPM_INFO"
       source "$FPM_INFO"
   fi
+  for pkg in "${build_depends[@]}"; do
+      if [[ $TARGET =~ debian|ubuntu ]]; then
+          pkg_deb=$(ls "$WORKSPACE/packages/$TARGET/$pkg_"*.deb | sort -rg | awk 'NR==1')
+          if [[ -e $pkg_deb ]]; then
+              echo "Installing build_dep $pkg from $pkg_deb"
+              dpkg -i "$pkg_deb"
+          else
+              echo "Attemping to install build_dep $pkg using apt-get"
+              apt-get install -y "$pkg"
+          fi
+          apt-get -y -f install
+      else
+          pkg_rpm=$(ls "$WORKSPACE/packages/$TARGET/$pkg"-[0-9]*.rpm | sort -rg | awk 'NR==1')
+          if [[ -e $pkg_rpm ]]; then
+              echo "Installing build_dep $pkg from $pkg_rpm"
+              rpm -i "$pkg_rpm"
+          else
+              echo "Attemping to install build_dep $pkg"
+              rpm -i "$pkg"
+          fi
+      fi
+  done
   for i in "${fpm_depends[@]}"; do
     COMMAND_ARR+=('--depends' "$i")
   done

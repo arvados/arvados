@@ -2,7 +2,7 @@ FROM centos:6
 MAINTAINER Brett Smith <brett@curoverse.com>
 
 # Install build dependencies provided in base distribution
-RUN yum -q -y install make automake gcc gcc-c++ libyaml-devel patch readline-devel zlib-devel libffi-devel openssl-devel bzip2 libtool bison sqlite-devel rpm-build git perl-ExtUtils-MakeMaker fuse-devel libattr-devel nss-devel libcurl-devel which tar scl-utils centos-release-SCL postgresql-devel
+RUN yum -q -y install make automake gcc gcc-c++ libyaml-devel patch readline-devel zlib-devel libffi-devel openssl-devel bzip2 libtool bison sqlite-devel rpm-build git perl-ExtUtils-MakeMaker libattr-devel nss-devel libcurl-devel which tar scl-utils centos-release-SCL postgresql-devel
 
 # Install golang binary
 ADD generated/golang-amd64.tar.gz /usr/local/
