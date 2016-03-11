@@ -363,7 +363,7 @@ elif [[ $TARGET =~ centos6 ]]; then
     fpm_build "$LIBFUSE_DIR/fuse-libs-2.9.2-6.el6.x86_64.rpm" fuse-libs "Centos Developers" rpm "2.9.2" --iteration 5
     fpm_build "$LIBFUSE_DIR/fuse-2.9.2-6.el6.x86_64.rpm" fuse "Centos Developers" rpm "2.9.2" --iteration 5 --no-auto-depends
     fpm_build "$LIBFUSE_DIR/fuse-devel-2.9.2-6.el6.x86_64.rpm" fuse-devel "Centos Developers" rpm "2.9.2" --iteration 5 --no-auto-depends
-    yum install \
+    yum install -y \
         "$WORKSPACE/packages/$TARGET/fuse-libs-2.9.2-5.x86_64.rpm" \
         "$WORKSPACE/packages/$TARGET/fuse-2.9.2-5.x86_64.rpm" \
         "$WORKSPACE/packages/$TARGET/fuse-devel-2.9.2-5.x86_64.rpm"
