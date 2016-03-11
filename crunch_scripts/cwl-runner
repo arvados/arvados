@@ -9,7 +9,9 @@ import cwltool.main
 import logging
 import os
 import json
+import argparse
 from arvados.api import OrderedJsonModel
+from cwltool.process import adjustFiles
 
 api = arvados.api("v1")
 
@@ -26,15 +28,40 @@ try:
 
     t = cwltool.main.load_tool(job_order_object, False, True, runner.arvMakeTool, True)
 
-    outputObj = runner.arvExecutor(t, job_order_object, "", None)
+    np = argparse.Namespace()
+    np.project_uuid = arvados.current_job()["owner_uuid"]
+    np.enable_reuse = True
+    outputObj = runner.arvExecutor(t, job_order_object, "", np)
 
-    c = arvados.collection.Collection()
-    with c.open("cwl.output.json", "w") as f:
+    files = {}
+    def capture(path):
+        sp = path.split("/")
+        col = sp[0][5:]
+        if col not in files:
+            files[col] = set()
+        files[col].add("/".join(sp[1:]))
+        return path
+
+    adjustFiles(outputObj, capture)
+
+    final = arvados.collection.Collection()
+
+    for k,v in files.iteritems():
+        with arvados.collection.Collection(k) as c:
+            for f in c:
+                final.copy(f, f, c, True)
+
+    def makeRelative(path):
+        return "/".join(path.split("/")[1:])
+
+    adjustFiles(outputObj, makeRelative)
+
+    with final.open("cwl.output.json", "w") as f:
         json.dump(outputObj, f, indent=4)
 
     api.job_tasks().update(uuid=arvados.current_task()['uuid'],
                                          body={
-                                             'output': c.save_new(create_collection_record=False),
+                                             'output': final.save_new(create_collection_record=False),
                                              'success': True,
                                              'progress':1.0
                                          }).execute()
