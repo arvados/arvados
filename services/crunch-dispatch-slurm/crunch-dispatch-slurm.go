@@ -136,6 +136,17 @@ func dispatchSlurm(priorityPollInterval int, crunchRunCommand, finishCommand str
 	}
 }
 
+// sbatchCmd
+var sbatchCmd = func(uuid string) *exec.Cmd {
+	return exec.Command("sbatch", "--job-name="+uuid, "--share", "--parsable")
+}
+
+// striggerCmd
+var striggerCmd = func(jobid, containerUUID, finishCommand, apiHost, apiToken, apiInsecure string) *exec.Cmd {
+	return exec.Command("strigger", "--set", "--jobid="+jobid, "--fini",
+		fmt.Sprintf("--program=%s %s %s %s %s", finishCommand, apiHost, apiToken, apiInsecure, containerUUID))
+}
+
 func submit(container Container, crunchRunCommand string) (jobid string, submiterr error) {
 	submiterr = nil
 
@@ -152,7 +163,7 @@ func submit(container Container, crunchRunCommand string) (jobid string, submite
 		}
 	}()
 
-	cmd := exec.Command("sbatch", "--job-name="+container.UUID, "--share", "--parsable")
+	cmd := sbatchCmd(container.UUID)
 	stdinWriter, stdinerr := cmd.StdinPipe()
 	if stdinerr != nil {
 		submiterr = fmt.Errorf("Error creating stdin pipe %v: %q", container.UUID, stdinerr)
@@ -210,8 +221,7 @@ func submit(container Container, crunchRunCommand string) (jobid string, submite
 }
 
 func strigger(jobid, containerUUID, finishCommand, apiHost, apiToken, apiInsecure string) {
-	cmd := exec.Command("strigger", "--set", "--jobid="+jobid, "--fini",
-		fmt.Sprintf("--program=%s %s %s %s %s", finishCommand, apiHost, apiToken, apiInsecure, containerUUID))
+	cmd := striggerCmd(jobid, containerUUID, finishCommand, apiHost, apiToken, apiInsecure)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
