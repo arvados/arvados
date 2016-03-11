@@ -209,7 +209,7 @@ func BuildDataFetcher(arv arvadosclient.ArvadosClient) summary.DataFetcher {
 				Logger: arvLogger,
 				Limit:  1000})
 
-		<- collDone
+		<-collDone
 
 		// Return a nil error only if both parts succeeded.
 		if collErr != nil {

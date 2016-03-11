@@ -18,7 +18,7 @@ class TimedCallBackActor(actor_class):
     """
     def __init__(self, max_sleep=1):
         super(TimedCallBackActor, self).__init__()
-        self._proxy = self.actor_ref.proxy()
+        self._proxy = self.actor_ref.tell_proxy()
         self.messages = []
         self.max_sleep = max_sleep
 

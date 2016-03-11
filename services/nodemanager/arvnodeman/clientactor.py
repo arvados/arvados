@@ -38,7 +38,7 @@ class RemotePollLoopActor(actor_class):
         super(RemotePollLoopActor, self).__init__()
         self._client = client
         self._timer = timer_actor
-        self._later = self.actor_ref.proxy()
+        self._later = self.actor_ref.tell_proxy()
         self._polling_started = False
         self.min_poll_wait = poll_wait
         self.max_poll_wait = max_poll_wait

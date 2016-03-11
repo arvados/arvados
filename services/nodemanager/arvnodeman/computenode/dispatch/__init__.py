@@ -26,7 +26,7 @@ class ComputeNodeStateChangeBase(config.actor_class, RetryMixin):
         super(ComputeNodeStateChangeBase, self).__init__()
         RetryMixin.__init__(self, retry_wait, max_retry_wait,
                             None, cloud_client, timer_actor)
-        self._later = self.actor_ref.proxy()
+        self._later = self.actor_ref.tell_proxy()
         self._arvados = arvados_client
         self.subscribers = set()
 
@@ -37,6 +37,8 @@ class ComputeNodeStateChangeBase(config.actor_class, RetryMixin):
         self._set_logger()
 
     def _finished(self):
+        if self.subscribers is None:
+            raise Exception("Actor tried to finish twice")
         _notify_subscribers(self._later, self.subscribers)
         self.subscribers = None
         self._logger.info("finished")
@@ -225,6 +227,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         if not self._cloud.destroy_node(self.cloud_node):
             if self._cloud.broken(self.cloud_node):
                 self._later.cancel_shutdown(self.NODE_BROKEN)
+                return
             else:
                 # Force a retry.
                 raise cloud_types.LibcloudError("destroy_node failed")
@@ -304,7 +307,7 @@ class ComputeNodeMonitorActor(config.actor_class):
                  boot_fail_after=1800
     ):
         super(ComputeNodeMonitorActor, self).__init__()
-        self._later = self.actor_ref.proxy()
+        self._later = self.actor_ref.tell_proxy()
         self._last_log = None
         self._shutdowns = shutdown_timer
         self._cloud_node_fqdn = cloud_fqdn_func

@@ -26,6 +26,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                                           cloud_size=get_cloud_size,
                                           actor_ref=mock_actor)
         mock_actor.proxy.return_value = mock_proxy
+        mock_actor.tell_proxy.return_value = mock_proxy
 
         self.last_setup = mock_proxy
         return mock_actor
