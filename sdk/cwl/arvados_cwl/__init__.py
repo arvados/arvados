@@ -48,10 +48,10 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
 
     if not images:
         imageId = cwltool.docker.get_image(dockerRequirement, pull_image)
-        args = ["--project-uuid", project_uuid, image_name]
+        args = ["--project-uuid="+project_uuid, image_name]
         if image_tag:
             args.append(image_tag)
-        logger.info("Uploading Docker image %s", ":".join(args))
+        logger.info("Uploading Docker image %s", ":".join(args[1:]))
         arvados.commands.keepdocker.main(args)
 
     return dockerRequirement["dockerImageId"]
@@ -414,6 +414,8 @@ class ArvCwlRunner(object):
 
                 if self.final_output is None:
                     raise cwltool.workflow.WorkflowException("Workflow did not return a result.")
+
+                # create final output collection
             except:
                 if sys.exc_info()[0] is KeyboardInterrupt:
                     logger.error("Interrupted, marking pipeline as failed")
