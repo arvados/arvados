@@ -383,7 +383,7 @@ class ArvCwlRunner(object):
                     "components": {},
                     "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
 
-            logger.info("Pipeline instance %s", self.pipeline)
+            logger.info("Pipeline instance %s", self.pipeline["uuid"])
 
             jobiter = tool.job(job_order,
                                input_basedir,
@@ -432,10 +432,10 @@ def main(args, stdout, stderr, api_client=None):
     parser = cwltool.main.arg_parser()
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--enable-reuse", action="store_true",
-                        default=False, dest="enable_reuse",
+                        default=True, dest="enable_reuse",
                         help="")
     exgroup.add_argument("--disable-reuse", action="store_false",
-                        default=False, dest="enable_reuse",
+                        default=True, dest="enable_reuse",
                         help="")
     parser.add_argument("--project-uuid", type=str, help="Project that will own the workflow jobs")
 
