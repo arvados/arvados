@@ -33,6 +33,8 @@ setup(name='arvados-cwl-runner',
           'cwltool>=1.0.20160308152645',
           'arvados-python-client>=0.1.20160219154918'
       ],
+      test_suite='tests',
+      tests_require=['mock>=1.0'],
       zip_safe=True,
       cmdclass={'egg_info': tagger},
       )
