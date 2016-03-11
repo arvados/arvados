@@ -425,10 +425,13 @@ pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
     || pip install --pre --ignore-installed https://github.com/curoverse/libcloud/archive/apache-libcloud-$LIBCLOUD_PIN.zip >/dev/null \
     || fatal "pip install apache-libcloud failed"
 
-# Uninstall old llfuse, because services/fuse "pip install" won't
-# upgrade it by default.
-if pip freeze | egrep '^llfuse==0\.41\.'; then
-    yes | pip uninstall 'llfuse<0.42'
+# This will help people who reuse --temp dirs when we upgrade to llfuse 0.42
+if egrep -q 'llfuse.*>= *0\.42' "$WORKSPACE/services/fuse/setup.py"; then
+    # Uninstall old llfuse, because services/fuse "pip install" won't
+    # upgrade it by default.
+    if pip freeze | egrep '^llfuse==0\.41\.'; then
+        yes | pip uninstall 'llfuse<0.42'
+    fi
 fi
 
 # Deactivate Python 2 virtualenv
