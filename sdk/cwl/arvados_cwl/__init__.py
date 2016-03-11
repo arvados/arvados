@@ -362,7 +362,8 @@ class ArvCwlRunner(object):
         self.fs_access = CollectionFsAccess(input_basedir)
 
         kwargs["fs_access"] = self.fs_access
-        kwargs["enable_reuse"] = args.enable_reuse
+        if args:
+            kwargs["enable_reuse"] = args.enable_reuse
 
         kwargs["outdir"] = "$(task.outdir)"
         kwargs["tmpdir"] = "$(task.tmpdir)"

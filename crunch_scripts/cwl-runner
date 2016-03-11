@@ -8,6 +8,7 @@ from cwltool.process import shortname
 import cwltool.main
 import logging
 import os
+import json
 from arvados.api import OrderedJsonModel
 
 api = arvados.api("v1")
@@ -28,8 +29,8 @@ try:
     outputObj = runner.arvExecutor(t, job_order_object, "", None)
 
     c = arvados.collection.Collection()
-    with c.open("cwl.output.json") as f:
-        json.dump(f, indent=4)
+    with c.open("cwl.output.json", "w") as f:
+        json.dump(outputObj, f, indent=4)
 
     api.job_tasks().update(uuid=arvados.current_task()['uuid'],
                                          body={

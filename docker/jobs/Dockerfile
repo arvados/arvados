@@ -6,10 +6,8 @@ ENV DEBIAN_FRONTEND noninteractive
 
 ADD apt.arvados.org.list /etc/apt/sources.list.d/
 RUN apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7
-RUN apt-get update -q
 
-RUN apt-get install -qy git python-pip python-virtualenv python-arvados-python-client python-dev libcurl4-gnutls-dev nodejs
-RUN pip install arvados-cwl-runner
+RUN apt-get update -q && apt-get install -qy git python-pip python-virtualenv python-arvados-python-client python-dev libcurl4-gnutls-dev nodejs python-arvados-cwl-runner
 
 RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3
 
