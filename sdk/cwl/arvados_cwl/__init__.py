@@ -150,7 +150,7 @@ class ArvadosJob(object):
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if docker_req and kwargs.get("use_container") is not False:
-            runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvruner.project_uuid)
+            runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvrunner.project_uuid)
 
         try:
             response = self.arvrunner.api.jobs().create(body={
@@ -319,24 +319,24 @@ class ArvCwlRunner(object):
 
     def on_message(self, event):
         if "object_uuid" in event:
-                if event["object_uuid"] in self.jobs and event["event_type"] == "update":
-                    if event["properties"]["new_attributes"]["state"] == "Running" and self.jobs[event["object_uuid"]].running is False:
-                        uuid = event["object_uuid"]
-                        with self.lock:
-                            j = self.jobs[uuid]
-                            logger.info("Job %s (%s) is Running", j.name, uuid)
-                            j.running = True
-                            j.update_pipeline_component(event["properties"]["new_attributes"])
-                    elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled"):
-                        uuid = event["object_uuid"]
-                        try:
-                            self.cond.acquire()
-                            j = self.jobs[uuid]
-                            logger.info("Job %s (%s) is %s", j.name, uuid, event["properties"]["new_attributes"]["state"])
-                            j.done(event["properties"]["new_attributes"])
-                            self.cond.notify()
-                        finally:
-                            self.cond.release()
+            if event["object_uuid"] in self.jobs and event["event_type"] == "update":
+                if event["properties"]["new_attributes"]["state"] == "Running" and self.jobs[event["object_uuid"]].running is False:
+                    uuid = event["object_uuid"]
+                    with self.lock:
+                        j = self.jobs[uuid]
+                        logger.info("Job %s (%s) is Running", j.name, uuid)
+                        j.running = True
+                        j.update_pipeline_component(event["properties"]["new_attributes"])
+                elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled"):
+                    uuid = event["object_uuid"]
+                    try:
+                        self.cond.acquire()
+                        j = self.jobs[uuid]
+                        logger.info("Job %s (%s) is %s", j.name, uuid, event["properties"]["new_attributes"]["state"])
+                        j.done(event["properties"]["new_attributes"])
+                        self.cond.notify()
+                    finally:
+                        self.cond.release()
 
     def get_uploaded(self):
         return self.uploaded.copy()
@@ -383,6 +383,8 @@ class ArvCwlRunner(object):
                     "components": {},
                     "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
 
+            logger.info("Pipeline instance %s", self.pipeline)
+
             jobiter = tool.job(job_order,
                                input_basedir,
                                self.output_callback,
@@ -390,42 +392,37 @@ class ArvCwlRunner(object):
                                **kwargs)
 
             try:
+                self.cond.acquire()
+                # Will continue to hold the lock for the duration of this code
+                # except when in cond.wait(), at which point on_message can update
+                # job state and process output callbacks.
+
                 for runnable in jobiter:
                     if runnable:
-                        with self.lock:
-                            runnable.run(**kwargs)
+                        runnable.run(**kwargs)
                     else:
                         if self.jobs:
-                            try:
-                                self.cond.acquire()
-                                self.cond.wait(1)
-                            except RuntimeError:
-                                pass
-                            finally:
-                                self.cond.release()
+                            self.cond.wait(1)
                         else:
-                            logger.error("Workflow cannot make any more progress.")
+                            logger.error("Workflow is deadlocked, no runnable jobs and not waiting on any pending jobs.")
                             break
 
                 while self.jobs:
-                    try:
-                        self.cond.acquire()
-                        self.cond.wait(1)
-                    except RuntimeError:
-                        pass
-                    finally:
-                        self.cond.release()
+                    self.cond.wait(1)
 
                 events.close()
 
                 if self.final_output is None:
                     raise cwltool.workflow.WorkflowException("Workflow did not return a result.")
-
             except:
-                if sys.exc_info()[0] is not KeyboardInterrupt:
+                if sys.exc_info()[0] is KeyboardInterrupt:
+                    logger.error("Interrupted, marking pipeline as failed")
+                else:
                     logger.exception("Caught unhandled exception, marking pipeline as failed")
                 self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
                                                      body={"state": "Failed"}).execute(num_retries=self.num_retries)
+            finally:
+                self.cond.release()
 
             return self.final_output
 
