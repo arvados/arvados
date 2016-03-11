@@ -121,7 +121,7 @@ class NodeManagerDaemonActor(actor_class):
         self._new_arvados = arvados_factory
         self._new_cloud = cloud_factory
         self._cloud_driver = self._new_cloud()
-        self._later = self.actor_ref.proxy()
+        self._later = self.actor_ref.tell_proxy()
         self.shutdown_windows = shutdown_windows
         self.server_calculator = server_calculator
         self.min_cloud_size = self.server_calculator.cheapest_size()
@@ -174,11 +174,12 @@ class NodeManagerDaemonActor(actor_class):
             poll_stale_after=self.poll_stale_after,
             node_stale_after=self.node_stale_after,
             cloud_client=self._cloud_driver,
-            boot_fail_after=self.boot_fail_after).proxy()
-        actor.subscribe(self._later.node_can_shutdown)
+            boot_fail_after=self.boot_fail_after)
+        actorTell = actor.tell_proxy()
+        actorTell.subscribe(self._later.node_can_shutdown)
         self._cloud_nodes_actor.subscribe_to(cloud_node.id,
-                                             actor.update_cloud_node)
-        record = _ComputeNodeRecord(actor, cloud_node)
+                                             actorTell.update_cloud_node)
+        record = _ComputeNodeRecord(actor.proxy(), cloud_node)
         return record
 
     def update_cloud_nodes(self, nodelist):
@@ -360,7 +361,7 @@ class NodeManagerDaemonActor(actor_class):
             arvados_client=self._new_arvados(),
             arvados_node=arvados_node,
             cloud_client=self._new_cloud(),
-            cloud_size=cloud_size).proxy()
+            cloud_size=cloud_size).tell_proxy()
         self.booting[new_setup.actor_ref.actor_urn] = new_setup
         self.sizes_booting_shutdown[new_setup.actor_ref.actor_urn] = cloud_size
 
@@ -413,7 +414,7 @@ class NodeManagerDaemonActor(actor_class):
             node_monitor=node_actor.actor_ref, cancellable=cancellable).proxy()
         self.shutdowns[cloud_node_id] = shutdown
         self.sizes_booting_shutdown[cloud_node_id] = cloud_node_obj.size
-        shutdown.subscribe(self._later.node_finished_shutdown)
+        shutdown.tell_proxy().subscribe(self._later.node_finished_shutdown)
 
     @_check_poll_freshness
     def node_can_shutdown(self, node_actor):
@@ -438,12 +439,10 @@ class NodeManagerDaemonActor(actor_class):
         if not success:
             if cancel_reason == self._node_shutdown.NODE_BROKEN:
                 self.cloud_nodes.blacklist(cloud_node_id)
-            del self.shutdowns[cloud_node_id]
-            del self.sizes_booting_shutdown[cloud_node_id]
         elif cloud_node_id in self.booted:
             self.booted.pop(cloud_node_id).actor.stop()
-            del self.shutdowns[cloud_node_id]
-            del self.sizes_booting_shutdown[cloud_node_id]
+        del self.shutdowns[cloud_node_id]
+        del self.sizes_booting_shutdown[cloud_node_id]
 
     def shutdown(self):
         self._logger.info("Shutting down after signal.")

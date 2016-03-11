@@ -26,8 +26,8 @@ class TestJob(unittest.TestCase):
                 }],
                 'crunchrunner': '83db29f08544e1c319572a6bd971088a+140/crunchrunner'
             },
-            'script_version':
-            'master',
+            'script_version': 'master',
+            'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
             'repository': 'arvados',
             'script': 'crunchrunner',
             'runtime_constraints': {
@@ -65,8 +65,8 @@ class TestJob(unittest.TestCase):
                 }],
                 'crunchrunner': '83db29f08544e1c319572a6bd971088a+140/crunchrunner'
             },
-            'script_version':
-            'master',
+            'script_version': 'master',
+            'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
             'repository': 'arvados',
             'script': 'crunchrunner',
             'runtime_constraints': {
