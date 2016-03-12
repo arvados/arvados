@@ -74,30 +74,46 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
   end
 
   def find_object_by_uuid
-    conditions = {
-      uuid: (params[:uuid] || params[:id]),
-      user_id: current_user.id,
-    }
-    unless Thread.current[:api_client].andand.is_trusted
-      conditions[:api_token] = current_api_client_authorization.andand.api_token
+    uuid_param = params[:uuid] || params[:id]
+    if (uuid_param != current_api_client_authorization.andand.uuid and
+        not Thread.current[:api_client].andand.is_trusted)
+      return forbidden
     end
-    @object = model_class.where(conditions).first
+    @limit = 1
+    @offset = 0
+    @orders = []
+    @where = {}
+    @filters = [['uuid', '=', uuid_param]]
+    find_objects_for_index
+    @object = @objects.first
   end
 
   def current_api_client_is_trusted
-    unless Thread.current[:api_client].andand.is_trusted
-      if %w[show update destroy].include? params['action']
-        if @object.andand['api_token'] == current_api_client_authorization.andand.api_token
-          return true
-        end
-      elsif params["action"] == "index" and @objects.andand.size == 1
-        filters = @filters.map{|f|f.first}.uniq
-        if [['uuid'], ['api_token']].include? filters
-          return true if @objects.first['api_token'] == current_api_client_authorization.andand.api_token
-        end
-      end
-      send_error('Forbidden: this API client cannot manipulate other clients\' access tokens.',
-                 status: 403)
+    if Thread.current[:api_client].andand.is_trusted
+      return true
     end
+    # A non-trusted client can do a search for its own token if it
+    # explicitly restricts the search to its own UUID or api_token.
+    # Any other kind of query must return 403, even if it matches only
+    # the current token, because that's currently how Workbench knows
+    # (after searching on scopes) the difference between "the token
+    # I'm using now *is* the only sharing token for this collection"
+    # (403) and "my token is trusted, and there is one sharing token
+    # for this collection" (200).
+    #
+    # The @filters test here also prevents a non-trusted token from
+    # filtering on its own scopes, and discovering whether any _other_
+    # equally scoped tokens exist (403=yes, 200=no).
+    if (@objects.andand.count == 1 and
+        @objects.first.uuid == current_api_client_authorization.andand.uuid and
+        (@filters.map(&:first) & %w(uuid api_token)).any?)
+      return true
+    end
+    forbidden
+  end
+
+  def forbidden
+    send_error('Forbidden: this API client cannot manipulate other clients\' access tokens.',
+               status: 403)
   end
 end
