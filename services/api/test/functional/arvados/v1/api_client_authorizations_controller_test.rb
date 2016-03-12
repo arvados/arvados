@@ -72,9 +72,9 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
    [:admin, :admin, 200, 200, 1],
    [:active, :active, 200, 200, 1],
    # cannot look up other tokens (even for same user) if not trustedclient
-   [:admin, :active, 404, 403],
-   [:admin, :admin_vm, 404, 403],
-   [:active, :admin, 404, 403],
+   [:admin, :active, 403, 403],
+   [:admin, :admin_vm, 403, 403],
+   [:active, :admin, 403, 403],
    # cannot look up other tokens for other users, regardless of trustedclient
    [:admin_trustedclient, :active, 404, 200, 0],
    [:active_trustedclient, :admin, 404, 200, 0],
