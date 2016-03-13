@@ -78,7 +78,6 @@ func DoGenericVolumeTests(t TB, factory TestableVolumeFactory) {
 	testPutFullBlock(t, factory)
 
 	testTrashUntrash(t, factory)
-	testEmptyTrashTrashLifetime0s(t, factory)
 	testEmptyTrashTrashLifetime3600s(t, factory)
 	testEmptyTrashTrashLifetime1s(t, factory)
 }
@@ -710,10 +709,10 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
 	defer func() {
-		trashLifetime = 0
+		trashLifetime = 0 * time.Second
 	}()
 
-	trashLifetime = 3600
+	trashLifetime = 3600 * time.Second
 
 	// put block and backdate it
 	v.PutRaw(TestHash, TestBlock)
@@ -762,40 +761,6 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 	bufs.Put(buf)
 }
 
-// With trashLifetime == 0, perform:
-// Trash an old block - which either raises ErrNotImplemented or succeeds to delete it
-// Untrash - which either raises ErrNotImplemented or is a no-op for the deleted block
-// Get - which must fail to find the block, since it was deleted and hence not untrashed
-func testEmptyTrashTrashLifetime0s(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
-	defer v.Teardown()
-	defer func() {
-		trashLifetime = 0
-		doneEmptyingTrash <- true
-	}()
-
-	trashLifetime = 0
-	trashCheckInterval = 1
-
-	go emptyTrash(trashCheckInterval)
-
-	// Trash old block; since trashLifetime = 0, Trash actually deletes the block
-	err := trashUntrashOldBlock(t, v, 0)
-
-	// Get it; for writable volumes, this should not find the block since it was deleted
-	buf, err := v.Get(TestHash)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			t.Errorf("os.IsNotExist(%v) should have been true", err)
-		}
-	} else {
-		if bytes.Compare(buf, TestBlock) != 0 {
-			t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
-		}
-		bufs.Put(buf)
-	}
-}
-
 // With large trashLifetime, perform:
 // Run emptyTrash goroutine with much smaller trashCheckInterval
 // Trash an old block - which either raises ErrNotImplemented or succeeds
@@ -804,15 +769,17 @@ func testEmptyTrashTrashLifetime0s(t TB, factory TestableVolumeFactory) {
 func testEmptyTrashTrashLifetime3600s(t TB, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
+
+	doneEmptyingTrash := make(chan bool)
 	defer func() {
-		trashLifetime = 0
+		trashLifetime = 0 * time.Second
 		doneEmptyingTrash <- true
 	}()
 
-	trashLifetime = 3600
-	trashCheckInterval = 1
+	trashLifetime = 3600 * time.Second
+	trashCheckInterval = 1 * time.Second
 
-	go emptyTrash(trashCheckInterval)
+	go emptyTrash(doneEmptyingTrash, trashCheckInterval)
 
 	// Trash old block
 	err := trashUntrashOldBlock(t, v, 2)
@@ -840,17 +807,19 @@ func testEmptyTrashTrashLifetime3600s(t TB, factory TestableVolumeFactory) {
 func testEmptyTrashTrashLifetime1s(t TB, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
+
+	doneEmptyingTrash := make(chan bool)
 	defer func() {
-		trashLifetime = 0
+		trashLifetime = 0 * time.Second
 		doneEmptyingTrash <- true
 	}()
 
 	volumes = append(volumes, v)
 
-	trashLifetime = 1
-	trashCheckInterval = 1
+	trashLifetime = 1 * time.Second
+	trashCheckInterval = 1 * time.Second
 
-	go emptyTrash(trashCheckInterval)
+	go emptyTrash(doneEmptyingTrash, trashCheckInterval)
 
 	// Trash old block and untrash a little after first trashCheckInterval
 	err := trashUntrashOldBlock(t, v, 3)
@@ -905,11 +874,11 @@ func trashUntrashOldBlock(t TB, v TestableVolume, untrashAfter int) error {
 		}
 	}
 
-	// Untrash after give wait time
+	// Untrash after give wait time; it may have been deleted by emptyTrash goroutine
 	time.Sleep(time.Duration(untrashAfter) * time.Second)
 	err = v.Untrash(TestHash)
 	if err != nil {
-		if err != ErrNotImplemented && err != MethodDisabledError {
+		if err != ErrNotImplemented && err != MethodDisabledError && err != os.ErrNotExist {
 			t.Fatal(err)
 		}
 	}

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -55,13 +56,15 @@ var dataManagerToken string
 // actually deleting anything.
 var neverDelete = true
 
-// trashLifetime is the time duration in seconds after a block is trashed
+// trashLifetime is the time duration after a block is trashed
 // during which it can be recovered using an /untrash request
-var trashLifetime int
+// Use 10s or 10m or 10h to set as 10 seconds or minutes or hours respectively.
+var trashLifetime time.Duration
 
-// Interval in seconds at which the emptyTrash goroutine will check
-// and delete expired trashed blocks. Default is once a day.
-var trashCheckInterval int
+// trashCheckInterval is the time duration at which the emptyTrash goroutine
+// will check and delete expired trashed blocks. Default is one day.
+// Use 10s or 10m or 10h to set as 10 seconds or minutes or hours respectively.
+var trashCheckInterval time.Duration
 
 var maxBuffers = 128
 var bufs *bufferPool
@@ -123,6 +126,8 @@ var (
 	flagReadonly    bool
 	volumes         volumeSet
 )
+
+var trashLocRegexp = regexp.MustCompile(`/([0-9a-f]{32}).trash.(\d+)$`)
 
 func (vs *volumeSet) String() string {
 	return fmt.Sprintf("%+v", (*vs)[:])
@@ -209,16 +214,16 @@ func main() {
 		"max-buffers",
 		maxBuffers,
 		fmt.Sprintf("Maximum RAM to use for data buffers, given in multiples of block size (%d MiB). When this limit is reached, HTTP requests requiring buffers (like GET and PUT) will wait for buffer space to be released.", BlockSize>>20))
-	flag.IntVar(
+	flag.DurationVar(
 		&trashLifetime,
 		"trash-lifetime",
-		0,
-		"Interval in seconds after a block is trashed during which it can be recovered using an /untrash request")
-	flag.IntVar(
+		0*time.Second,
+		"Time duration after a block is trashed during which it can be recovered using an /untrash request")
+	flag.DurationVar(
 		&trashCheckInterval,
 		"trash-check-interval",
-		24*60*60,
-		"Interval in seconds at which the emptyTrash goroutine will check and delete expired trashed blocks. Default is one day.")
+		24*time.Hour,
+		"Time duration at which the emptyTrash goroutine will check and delete expired trashed blocks. Default is one day.")
 
 	flag.Parse()
 
@@ -331,15 +336,16 @@ func main() {
 	go RunTrashWorker(trashq)
 
 	// Start emptyTrash goroutine
-	go emptyTrash(trashCheckInterval)
+	doneEmptyingTrash := make(chan bool)
+	go emptyTrash(doneEmptyingTrash, trashCheckInterval)
 
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.
 	term := make(chan os.Signal, 1)
 	go func(sig <-chan os.Signal) {
-		doneEmptyingTrash <- true
 		s := <-sig
 		log.Println("caught signal:", s)
+		doneEmptyingTrash <- true
 		listener.Close()
 	}(term)
 	signal.Notify(term, syscall.SIGTERM)
@@ -350,12 +356,9 @@ func main() {
 	srv.Serve(listener)
 }
 
-// Channel to stop emptying trash
-var doneEmptyingTrash = make(chan bool)
-
 // At every trashCheckInterval tick, invoke EmptyTrash on all volumes.
-func emptyTrash(trashCheckInterval int) {
-	ticker := time.NewTicker(time.Duration(trashCheckInterval) * time.Second)
+func emptyTrash(doneEmptyingTrash chan bool, trashCheckInterval time.Duration) {
+	ticker := time.NewTicker(trashCheckInterval)
 
 	for {
 		select {

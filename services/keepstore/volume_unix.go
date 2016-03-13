@@ -409,7 +409,7 @@ func (v *UnixVolume) Trash(loc string) error {
 	if trashLifetime == 0 {
 		return os.Remove(p)
 	}
-	return os.Rename(p, fmt.Sprintf("%v.trash.%d", p, time.Now().Unix()+int64(trashLifetime)))
+	return os.Rename(p, fmt.Sprintf("%v.trash.%d", p, time.Now().Add(trashLifetime).Unix()))
 }
 
 // Untrash moves block from trash back into store
@@ -421,11 +421,17 @@ func (v *UnixVolume) Untrash(loc string) (err error) {
 	}
 
 	prefix := fmt.Sprintf("%v.trash.", loc)
-	files, _ := ioutil.ReadDir(v.blockDir(loc))
+	files, err := ioutil.ReadDir(v.blockDir(loc))
+	if err != nil {
+		return err
+	}
+	if len(files) == 0 {
+		return os.ErrNotExist
+	}
 	for _, f := range files {
 		if strings.HasPrefix(f.Name(), prefix) {
 			err = os.Rename(v.blockPath(f.Name()), v.blockPath(loc))
-			if err != nil {
+			if err == nil {
 				break
 			}
 		}
@@ -526,8 +532,6 @@ func (v *UnixVolume) translateError(err error) error {
 	}
 }
 
-var trashRegexp = regexp.MustCompile(`.*([0-9a-fA-F]{32}).trash.(\d+)`)
-
 // EmptyTrash walks hierarchy looking for {hash}.trash.*
 // and deletes those with deadline < now.
 func (v *UnixVolume) EmptyTrash() error {
@@ -536,15 +540,17 @@ func (v *UnixVolume) EmptyTrash() error {
 
 	err := filepath.Walk(v.root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			log.Printf("EmptyTrash error for %v: %v", path, err)
-		} else if !info.Mode().IsDir() {
-			matches := trashRegexp.FindStringSubmatch(path)
+			return err
+		}
+
+		if !info.Mode().IsDir() {
+			matches := trashLocRegexp.FindStringSubmatch(path)
 			if len(matches) == 3 {
-				deadline, err := strconv.Atoi(matches[2])
+				deadline, err := strconv.ParseInt(matches[2], 10, 64)
 				if err != nil {
 					log.Printf("EmptyTrash error for %v: %v", matches[1], err)
 				} else {
-					if int64(deadline) < time.Now().Unix() {
+					if int64(deadline) <= time.Now().Unix() {
 						err = os.Remove(path)
 						if err != nil {
 							log.Printf("Error deleting %v: %v", matches[1], err)
@@ -566,10 +572,9 @@ func (v *UnixVolume) EmptyTrash() error {
 
 	if err != nil {
 		log.Printf("EmptyTrash error for %v: %v", v.String(), err)
-	} else {
-		log.Printf("EmptyTrash stats for %v: Bytes deleted %v; Blocks deleted %v; Bytes remaining in trash: %v; Blocks remaining in trash: %v",
-			v.String(), bytesDeleted, blocksDeleted, bytesInTrash, blocksInTrash)
 	}
+
+	log.Printf("EmptyTrash stats for %v: Bytes deleted %v; Blocks deleted %v; Bytes remaining in trash: %v; Blocks remaining in trash: %v", v.String(), bytesDeleted, blocksDeleted, bytesInTrash, blocksInTrash)
 
 	return nil
 }
