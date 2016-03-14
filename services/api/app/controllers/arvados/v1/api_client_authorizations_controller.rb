@@ -61,7 +61,13 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
     end
     if @where
       wanted_scopes << @where['scopes']
-      @where.select! { |attr, val| attr == 'uuid' }
+      @where.select! { |attr, val|
+        # "where":{"uuid":"zzzzz-zzzzz-zzzzzzzzzzzzzzz"} is OK but
+        # "where":{"api_client_id":1} is not supported
+        # "where":{"uuid":["contains","-"]} is not supported
+        # "where":{"uuid":["uuid1","uuid2","uuid3"]} is not supported
+        val.is_a?(String) && (attr == 'uuid' || attr == 'api_token')
+      }
     end
     @objects = model_class.
       includes(:user, :api_client).
