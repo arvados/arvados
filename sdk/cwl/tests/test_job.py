@@ -8,6 +8,7 @@ class TestJob(unittest.TestCase):
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     def test_run(self):
         runner = mock.MagicMock()
+        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         tool = {
             "inputs": [],
             "outputs": [],
@@ -41,6 +42,7 @@ class TestJob(unittest.TestCase):
     # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     def test_resource_requirements(self):
         runner = mock.MagicMock()
+        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         tool = {
             "inputs": [],
             "outputs": [],
