@@ -19,6 +19,7 @@ class TestJob(unittest.TestCase):
         for j in arvtool.job({}, "", mock.MagicMock()):
             j.run()
         runner.api.jobs().create.assert_called_with(body={
+            'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
             'runtime_constraints': {},
             'script_parameters': {
                 'tasks': [{
@@ -59,6 +60,7 @@ class TestJob(unittest.TestCase):
         for j in arvtool.job({}, "", mock.MagicMock()):
             j.run()
         runner.api.jobs().create.assert_called_with(body={
+            'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
             'runtime_constraints': {},
             'script_parameters': {
                 'tasks': [{
