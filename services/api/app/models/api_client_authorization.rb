@@ -82,8 +82,9 @@ class ApiClientAuthorization < ArvadosModel
 
   def permission_to_update
     (permission_to_create and
-     not self.user_id_changed? and
-     not self.owner_uuid_changed?)
+     not uuid_changed? and
+     not user_id_changed? and
+     not owner_uuid_changed?)
   end
 
   def log_update
