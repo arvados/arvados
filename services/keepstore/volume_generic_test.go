@@ -768,6 +768,8 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 		trashLifetime = 0 * time.Second
 	}()
 
+	// First set of tests
+
 	// With trashLifetime = 1h, test trash/untrash cycle.
 	trashLifetime = 1 * time.Hour
 
@@ -780,7 +782,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 		t.Fatal(err)
 	}
 	if bytes.Compare(buf, TestBlock) != 0 {
-		t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
+		t.Fatalf("Got data %+q, expected %+q", buf, TestBlock)
 	}
 	bufs.Put(buf)
 
@@ -789,9 +791,10 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	if err == MethodDisabledError || err == ErrNotImplemented {
 		return
 	}
+
 	buf, err = v.Get(TestHash)
 	if err == nil || !os.IsNotExist(err) {
-		t.Errorf("os.IsNotExist(%v) should have been true", err)
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
 	// Empty trash; the block is still within trashLifetime and hence is not emptied
@@ -809,9 +812,26 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 		t.Fatal(err)
 	}
 	if bytes.Compare(buf, TestBlock) != 0 {
-		t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
+		t.Fatalf("Got data %+q, expected %+q", buf, TestBlock)
 	}
 	bufs.Put(buf)
+
+	// Untrash again; should fail
+	err = v.Untrash(TestHash)
+	if err == nil || !os.IsNotExist(err) {
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+	}
+
+	buf, err = v.Get(TestHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Compare(buf, TestBlock) != 0 {
+		t.Fatalf("Got data %+q, expected %+q", buf, TestBlock)
+	}
+	bufs.Put(buf)
+
+	// Second set of tests
 
 	// With trashLifetime = 1ns, test trash/untrash cycle.
 	trashLifetime = 1 * time.Nanosecond
@@ -823,7 +843,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	}
 	buf, err = v.Get(TestHash)
 	if err == nil || !os.IsNotExist(err) {
-		t.Errorf("os.IsNotExist(%v) should have been true", err)
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
 	// Untrash
@@ -838,7 +858,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 		t.Fatal(err)
 	}
 	if bytes.Compare(buf, TestBlock) != 0 {
-		t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
+		t.Fatalf("Got data %+q, expected %+q", buf, TestBlock)
 	}
 	bufs.Put(buf)
 
@@ -858,14 +878,16 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	// Untrash won't find it
 	err = v.Untrash(TestHash)
 	if err == nil || !os.IsNotExist(err) {
-		t.Errorf("os.IsNotExist(%v) should have been true", err)
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
 	// Get block won't find it
 	buf, err = v.Get(TestHash)
 	if err == nil || !os.IsNotExist(err) {
-		t.Errorf("os.IsNotExist(%v) should have been true", err)
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
+
+  // Third set of tests
 
 	// Still with trashLifetime = 1ns: put, trash, put one more, trash etc
 	// put block and backdate it
@@ -879,7 +901,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	}
 	buf, err = v.Get(TestHash)
 	if err == nil || !os.IsNotExist(err) {
-		t.Errorf("os.IsNotExist(%v) should have been true", err)
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
 	// put again
@@ -898,7 +920,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 		t.Fatal(err)
 	}
 	if bytes.Compare(buf, TestBlock) != 0 {
-		t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
+		t.Fatalf("Got data %+q, expected %+q", buf, TestBlock)
 	}
 	bufs.Put(buf)
 
@@ -926,7 +948,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 		t.Fatal(err)
 	}
 	if bytes.Compare(buf, TestBlock) != 0 {
-		t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
+		t.Fatalf("Got data %+q, expected %+q", buf, TestBlock)
 	}
 	bufs.Put(buf)
 }

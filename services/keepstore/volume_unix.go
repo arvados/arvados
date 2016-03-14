@@ -420,21 +420,29 @@ func (v *UnixVolume) Untrash(loc string) (err error) {
 		return MethodDisabledError
 	}
 
-	prefix := fmt.Sprintf("%v.trash.", loc)
 	files, err := ioutil.ReadDir(v.blockDir(loc))
 	if err != nil {
 		return err
 	}
+
 	if len(files) == 0 {
 		return os.ErrNotExist
 	}
+
+	foundTrash := false
+	prefix := fmt.Sprintf("%v.trash.", loc)
 	for _, f := range files {
 		if strings.HasPrefix(f.Name(), prefix) {
+			foundTrash = true
 			err = os.Rename(v.blockPath(f.Name()), v.blockPath(loc))
 			if err == nil {
 				break
 			}
 		}
+	}
+
+	if foundTrash == false {
+		return os.ErrNotExist
 	}
 
 	return
@@ -550,7 +558,7 @@ func (v *UnixVolume) EmptyTrash() {
 				if err != nil {
 					log.Printf("EmptyTrash error for %v: %v", matches[1], err)
 				} else {
-					if int64(deadline) <= time.Now().Unix() {
+					if deadline <= time.Now().Unix() {
 						err = os.Remove(path)
 						if err != nil {
 							log.Printf("Error deleting %v: %v", matches[1], err)
