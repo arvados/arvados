@@ -207,7 +207,7 @@ type Volume interface {
 
 	// EmptyTrash looks for trashed blocks that exceeded trashLifetime
 	// and deletes them from the volume.
-	EmptyTrash() error
+	EmptyTrash()
 }
 
 // A VolumeManager tells callers which volumes can read, which volumes

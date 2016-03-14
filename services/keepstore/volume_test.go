@@ -224,6 +224,5 @@ func (v *MockVolume) Replication() int {
 	return 1
 }
 
-func (v *MockVolume) EmptyTrash() error {
-	return nil
+func (v *MockVolume) EmptyTrash() {
 }

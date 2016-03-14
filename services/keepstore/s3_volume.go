@@ -326,6 +326,5 @@ func (v *S3Volume) translateError(err error) error {
 // EmptyTrash looks for trashed blocks that exceeded trashLifetime
 // and deletes them from the volume.
 // TBD
-func (v *S3Volume) EmptyTrash() error {
-	return nil
+func (v *S3Volume) EmptyTrash() {
 }

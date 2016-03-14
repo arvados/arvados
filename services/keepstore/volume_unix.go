@@ -534,7 +534,7 @@ func (v *UnixVolume) translateError(err error) error {
 
 // EmptyTrash walks hierarchy looking for {hash}.trash.*
 // and deletes those with deadline < now.
-func (v *UnixVolume) EmptyTrash() error {
+func (v *UnixVolume) EmptyTrash() {
 	var bytesDeleted, bytesInTrash int64
 	var blocksDeleted, blocksInTrash int
 
@@ -575,6 +575,4 @@ func (v *UnixVolume) EmptyTrash() error {
 	}
 
 	log.Printf("EmptyTrash stats for %v: Bytes deleted %v; Blocks deleted %v; Bytes remaining in trash: %v; Blocks remaining in trash: %v", v.String(), bytesDeleted, blocksDeleted, bytesInTrash, blocksInTrash)
-
-	return nil
 }

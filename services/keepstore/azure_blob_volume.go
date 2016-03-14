@@ -399,6 +399,5 @@ func (v *AzureBlobVolume) isKeepBlock(s string) bool {
 // EmptyTrash looks for trashed blocks that exceeded trashLifetime
 // and deletes them from the volume.
 // TBD
-func (v *AzureBlobVolume) EmptyTrash() error {
-	return nil
+func (v *AzureBlobVolume) EmptyTrash() {
 }
