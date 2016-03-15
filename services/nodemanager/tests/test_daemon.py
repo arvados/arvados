@@ -59,6 +59,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.cloud_factory().node_start_time.return_value = time.time()
         self.cloud_updates = mock.MagicMock(name='updates_mock')
         self.timer = testutil.MockTimer(deliver_immediately=False)
+        self.cloud_factory().node_id.return_value = '2'
 
         self.node_setup = mock.MagicMock(name='setup_mock')
         self.node_setup.start.side_effect = self.mock_node_start

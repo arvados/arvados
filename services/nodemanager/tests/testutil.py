@@ -31,7 +31,7 @@ def arvados_node_mock(node_num=99, job_uuid=None, age=-1, **kwargs):
             'job_uuid': job_uuid,
             'crunch_worker_state': crunch_worker_state,
             'properties': {},
-            'info': {'ping_secret': 'defaulttestsecret'}}
+            'info': {'ping_secret': 'defaulttestsecret', 'ec2_instance_id': '2'}}
     node.update(kwargs)
     return node
 
