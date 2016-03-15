@@ -191,7 +191,7 @@ class DockerImageCleaner(DockerImageUseRecorder):
 
     def _remove_container(self, cid):
         try:
-            self.docker_client.remove_container(cid)
+            self.docker_client.remove_container(cid, v=True)
         except docker.errors.APIError as error:
             logger.warning("Failed to remove container %s: %s", cid, error)
         else:
