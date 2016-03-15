@@ -361,7 +361,7 @@ class NodeManagerDaemonActor(actor_class):
             arvados_client=self._new_arvados(),
             arvados_node=arvados_node,
             cloud_client=self._new_cloud(),
-            cloud_size=cloud_size).tell_proxy()
+            cloud_size=cloud_size).proxy()
         self.booting[new_setup.actor_ref.actor_urn] = new_setup
         self.sizes_booting_shutdown[new_setup.actor_ref.actor_urn] = cloud_size
 
