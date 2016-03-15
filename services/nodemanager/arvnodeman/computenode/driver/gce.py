@@ -163,3 +163,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                     node.extra['metadata']['items'], 'booted_at'))
         except KeyError:
             return 0
+
+    @classmethod
+    def node_id(cls, node):
+        return node.id
