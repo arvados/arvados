@@ -79,7 +79,6 @@ func DoGenericVolumeTests(t TB, factory TestableVolumeFactory) {
 
 	testTrashUntrash(t, factory)
 	testTrashEmptyTrashUntrash(t, factory)
-	testTrashUntrashWithEmptyTrashGoroutine(t, factory)
 }
 
 // Put a test block, get it and verify content
@@ -951,73 +950,4 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 		t.Fatalf("Got data %+q, expected %+q", buf, TestBlock)
 	}
 	bufs.Put(buf)
-}
-
-// With trashLifetime = 1ns, perform:
-// Run emptyTrash goroutine
-// Trash an old block - which either raises ErrNotImplemented or succeeds
-// Untrash - after emptyTrash goroutine ticks, and hence does not actually untrash
-// Get - which must fail to find the block
-func testTrashUntrashWithEmptyTrashGoroutine(t TB, factory TestableVolumeFactory) {
-	v := factory(t)
-	defer v.Teardown()
-
-	doneEmptyingTrash := make(chan bool)
-	defer func() {
-		trashLifetime = 0 * time.Second
-		doneEmptyingTrash <- true
-	}()
-
-	volumes = append(volumes, v)
-
-	trashLifetime = 1 * time.Nanosecond
-	trashCheckInterval = 1 * time.Nanosecond
-
-	go emptyTrash(doneEmptyingTrash, trashCheckInterval)
-
-	// Trash old block and untrash a little after first trashCheckInterval
-	v.PutRaw(TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
-
-	buf, err := v.Get(TestHash)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if bytes.Compare(buf, TestBlock) != 0 {
-		t.Fatalf("Got data %+q, expected %+q", buf, TestBlock)
-	}
-	bufs.Put(buf)
-
-	// Trash
-	err = v.Trash(TestHash)
-	if err == MethodDisabledError || err == ErrNotImplemented {
-		return
-	}
-
-	_, err = v.Get(TestHash)
-	if err == nil || !os.IsNotExist(err) {
-		t.Fatalf("os.IsNotExist(%v) should have been true", err)
-	}
-
-	time.Sleep(2 * time.Nanosecond)
-
-	// Untrash
-	err = v.Untrash(TestHash)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Get is expected to fail due to EmptyTrash before Untrash
-	// It is still found on readonly volumes
-	buf, err = v.Get(TestHash)
-	if err != nil {
-		if !os.IsNotExist(err) {
-			t.Errorf("os.IsNotExist(%v) should have been true", err)
-		}
-	} else {
-		if bytes.Compare(buf, TestBlock) != 0 {
-			t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
-		}
-		bufs.Put(buf)
-	}
 }
