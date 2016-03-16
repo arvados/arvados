@@ -1,0 +1,3 @@
+#!/bin/bash
+. /usr/local/lib/arvbox/common.sh
+exec /usr/local/lib/arvbox/keep-setup.sh keep1 ${services[keepstore1]}

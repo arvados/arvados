@@ -39,10 +39,6 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                                 for dt in self.real.ex_list_disktypes()}
 
     @staticmethod
-    def _name_key(cloud_object):
-        return cloud_object.name
-
-    @staticmethod
     def _object_link(cloud_object):
         return cloud_object.extra.get('selfLink')
 

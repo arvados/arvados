@@ -5,6 +5,8 @@ import arvados
 import arvados.events
 import arvados.commands.keepdocker
 import arvados.commands.run
+import arvados.collection
+import arvados.util
 import cwltool.draft2tool
 import cwltool.workflow
 import cwltool.main
@@ -15,13 +17,24 @@ import fnmatch
 import logging
 import re
 import os
+import sys
 
 from cwltool.process import get_feature
+from arvados.api import OrderedJsonModel
 
 logger = logging.getLogger('arvados.cwl-runner')
 logger.setLevel(logging.INFO)
 
-def arv_docker_get_image(api_client, dockerRequirement, pull_image):
+crunchrunner_pdh = "83db29f08544e1c319572a6bd971088a+140"
+crunchrunner_download = "https://cloud.curoverse.com/collections/download/qr1hi-4zz18-n3m1yxd0vx78jic/1i1u2qtq66k1atziv4ocfgsg5nu5tj11n4r6e0bhvjg03rix4m/crunchrunner"
+certs_download = "https://cloud.curoverse.com/collections/download/qr1hi-4zz18-n3m1yxd0vx78jic/1i1u2qtq66k1atziv4ocfgsg5nu5tj11n4r6e0bhvjg03rix4m/ca-certificates.crt"
+
+tmpdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.tmpdir\)=(.*)")
+outdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.outdir\)=(.*)")
+keepre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.keep\)=(.*)")
+
+
+def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid):
     if "dockerImageId" not in dockerRequirement and "dockerPull" in dockerRequirement:
         dockerRequirement["dockerImageId"] = dockerRequirement["dockerPull"]
 
@@ -35,10 +48,10 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image):
 
     if not images:
         imageId = cwltool.docker.get_image(dockerRequirement, pull_image)
-        args = [image_name]
+        args = ["--project-uuid="+project_uuid, image_name]
         if image_tag:
             args.append(image_tag)
-        logger.info("Uploading Docker image %s", ":".join(args))
+        logger.info("Uploading Docker image %s", ":".join(args[1:]))
         arvados.commands.keepdocker.main(args)
 
     return dockerRequirement["dockerImageId"]
@@ -137,14 +150,22 @@ class ArvadosJob(object):
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if docker_req and kwargs.get("use_container") is not False:
-            runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image)
+            runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvrunner.project_uuid)
+
+        resources = self.builder.resources
+        if resources is not None:
+            runtime_constraints["min_cores_per_node"] = resources.get("cores", 1)
+            runtime_constraints["min_ram_mb_per_node"] = resources.get("ram")
+            runtime_constraints["min_scratch_mb_per_node"] = resources.get("tmpdirSize", 0) + resources.get("outdirSize", 0)
 
         try:
             response = self.arvrunner.api.jobs().create(body={
+                "owner_uuid": self.arvrunner.project_uuid,
                 "script": "crunchrunner",
-                "repository": kwargs["repository"],
+                "repository": "arvados",
                 "script_version": "master",
-                "script_parameters": {"tasks": [script_parameters]},
+                "minimum_script_version": "9e5b98e8f5f4727856b53447191f9c06e3da2ba6",
+                "script_parameters": {"tasks": [script_parameters], "crunchrunner": crunchrunner_pdh+"/crunchrunner"},
                 "runtime_constraints": runtime_constraints
             }, find_or_create=kwargs.get("enable_reuse", True)).execute(num_retries=self.arvrunner.num_retries)
 
@@ -186,6 +207,26 @@ class ArvadosJob(object):
             try:
                 outputs = {}
                 if record["output"]:
+                    logc = arvados.collection.Collection(record["log"])
+                    log = logc.open(logc.keys()[0])
+                    tmpdir = None
+                    outdir = None
+                    keepdir = None
+                    for l in log.readlines():
+                        g = tmpdirre.match(l)
+                        if g:
+                            tmpdir = g.group(1)
+                        g = outdirre.match(l)
+                        if g:
+                            outdir = g.group(1)
+                        g = keepre.match(l)
+                        if g:
+                            keepdir = g.group(1)
+                        if tmpdir and outdir and keepdir:
+                            break
+
+                    self.builder.outdir = outdir
+                    self.builder.pathmapper.keepdir = keepdir
                     outputs = self.collect_outputs("keep:" + record["output"])
             except Exception as e:
                 logger.exception("Got exception while collecting job outputs:")
@@ -223,17 +264,27 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
                                              arvrunner.api,
                                              dry_run=kwargs.get("dry_run"),
                                              num_retries=3,
-                                             fnPattern="$(task.keep)/%s/%s")
+                                             fnPattern="$(task.keep)/%s/%s",
+                                             project=arvrunner.project_uuid)
 
         for src, ab, st in uploadfiles:
             arvrunner.add_uploaded(src, (ab, st.fn))
             self._pathmap[src] = (ab, st.fn)
 
+        self.keepdir = None
+
+    def reversemap(self, target):
+        if target.startswith("keep:"):
+            return (target, target)
+        elif self.keepdir and target.startswith(self.keepdir):
+            return (target, "keep:" + target[len(self.keepdir)+1:])
+        else:
+            return super(ArvPathMapper, self).reversemap(target)
 
 
 class ArvadosCommandTool(cwltool.draft2tool.CommandLineTool):
     def __init__(self, arvrunner, toolpath_object, **kwargs):
-        super(ArvadosCommandTool, self).__init__(toolpath_object, outdir="$(task.outdir)", tmpdir="$(task.tmpdir)", **kwargs)
+        super(ArvadosCommandTool, self).__init__(toolpath_object, **kwargs)
         self.arvrunner = arvrunner
 
     def makeJobRunner(self):
@@ -274,24 +325,24 @@ class ArvCwlRunner(object):
 
     def on_message(self, event):
         if "object_uuid" in event:
-                if event["object_uuid"] in self.jobs and event["event_type"] == "update":
-                    if event["properties"]["new_attributes"]["state"] == "Running" and self.jobs[event["object_uuid"]].running is False:
-                        uuid = event["object_uuid"]
-                        with self.lock:
-                            j = self.jobs[uuid]
-                            logger.info("Job %s (%s) is Running", j.name, uuid)
-                            j.running = True
-                            j.update_pipeline_component(event["properties"]["new_attributes"])
-                    elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled"):
-                        uuid = event["object_uuid"]
-                        try:
-                            self.cond.acquire()
-                            j = self.jobs[uuid]
-                            logger.info("Job %s (%s) is %s", j.name, uuid, event["properties"]["new_attributes"]["state"])
-                            j.done(event["properties"]["new_attributes"])
-                            self.cond.notify()
-                        finally:
-                            self.cond.release()
+            if event["object_uuid"] in self.jobs and event["event_type"] == "update":
+                if event["properties"]["new_attributes"]["state"] == "Running" and self.jobs[event["object_uuid"]].running is False:
+                    uuid = event["object_uuid"]
+                    with self.lock:
+                        j = self.jobs[uuid]
+                        logger.info("Job %s (%s) is Running", j.name, uuid)
+                        j.running = True
+                        j.update_pipeline_component(event["properties"]["new_attributes"])
+                elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled"):
+                    uuid = event["object_uuid"]
+                    try:
+                        self.cond.acquire()
+                        j = self.jobs[uuid]
+                        logger.info("Job %s (%s) is %s", j.name, uuid, event["properties"]["new_attributes"]["state"])
+                        j.done(event["properties"]["new_attributes"])
+                        self.cond.notify()
+                    finally:
+                        self.cond.release()
 
     def get_uploaded(self):
         return self.uploaded.copy()
@@ -302,66 +353,104 @@ class ArvCwlRunner(object):
     def arvExecutor(self, tool, job_order, input_basedir, args, **kwargs):
         events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#job"]], self.on_message)
 
-        self.pipeline = self.api.pipeline_instances().create(body={"name": shortname(tool.tool["id"]),
-                                                                   "components": {},
-                                                                   "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
+        try:
+            self.api.collections().get(uuid=crunchrunner_pdh).execute()
+        except arvados.errors.ApiError as e:
+            import httplib2
+            h = httplib2.Http(ca_certs=arvados.util.ca_certs_path())
+            resp, content = h.request(crunchrunner_download, "GET")
+            resp2, content2 = h.request(certs_download, "GET")
+            with arvados.collection.Collection() as col:
+                with col.open("crunchrunner", "w") as f:
+                    f.write(content)
+                with col.open("ca-certificates.crt", "w") as f:
+                    f.write(content2)
+
+                col.save_new("crunchrunner binary", ensure_unique_name=True)
 
         self.fs_access = CollectionFsAccess(input_basedir)
 
         kwargs["fs_access"] = self.fs_access
         kwargs["enable_reuse"] = args.enable_reuse
-        kwargs["repository"] = args.repository
+
+        kwargs["outdir"] = "$(task.outdir)"
+        kwargs["tmpdir"] = "$(task.tmpdir)"
+
+        useruuid = self.api.users().current().execute()["uuid"]
+        self.project_uuid = args.project_uuid if args.project_uuid else useruuid
 
         if kwargs.get("conformance_test"):
             return cwltool.main.single_job_executor(tool, job_order, input_basedir, args, **kwargs)
         else:
+            self.pipeline = self.api.pipeline_instances().create(
+                body={
+                    "owner_uuid": self.project_uuid,
+                    "name": shortname(tool.tool["id"]),
+                    "components": {},
+                    "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
+
+            logger.info("Pipeline instance %s", self.pipeline["uuid"])
+
             jobiter = tool.job(job_order,
-                            input_basedir,
-                            self.output_callback,
-                            **kwargs)
+                               input_basedir,
+                               self.output_callback,
+                               docker_outdir="$(task.outdir)",
+                               **kwargs)
 
-            for runnable in jobiter:
-                if runnable:
-                    with self.lock:
+            try:
+                self.cond.acquire()
+                # Will continue to hold the lock for the duration of this code
+                # except when in cond.wait(), at which point on_message can update
+                # job state and process output callbacks.
+
+                for runnable in jobiter:
+                    if runnable:
                         runnable.run(**kwargs)
-                else:
-                    if self.jobs:
-                        try:
-                            self.cond.acquire()
-                            self.cond.wait()
-                        finally:
-                            self.cond.release()
                     else:
-                        logger.error("Workflow cannot make any more progress.")
-                        break
+                        if self.jobs:
+                            self.cond.wait(1)
+                        else:
+                            logger.error("Workflow is deadlocked, no runnable jobs and not waiting on any pending jobs.")
+                            break
 
-            while self.jobs:
-                try:
-                    self.cond.acquire()
-                    self.cond.wait()
-                finally:
-                    self.cond.release()
+                while self.jobs:
+                    self.cond.wait(1)
 
-            events.close()
+                events.close()
 
-            if self.final_output is None:
-                raise cwltool.workflow.WorkflowException("Workflow did not return a result.")
+                if self.final_output is None:
+                    raise cwltool.workflow.WorkflowException("Workflow did not return a result.")
+
+                # create final output collection
+            except:
+                if sys.exc_info()[0] is KeyboardInterrupt:
+                    logger.error("Interrupted, marking pipeline as failed")
+                else:
+                    logger.exception("Caught unhandled exception, marking pipeline as failed")
+                self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
+                                                     body={"state": "Failed"}).execute(num_retries=self.num_retries)
+            finally:
+                self.cond.release()
 
             return self.final_output
 
 
 def main(args, stdout, stderr, api_client=None):
-    runner = ArvCwlRunner(api_client=arvados.api('v1'))
     args.insert(0, "--leave-outputs")
     parser = cwltool.main.arg_parser()
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--enable-reuse", action="store_true",
-                        default=False, dest="enable_reuse",
+                        default=True, dest="enable_reuse",
                         help="")
     exgroup.add_argument("--disable-reuse", action="store_false",
-                        default=False, dest="enable_reuse",
+                        default=True, dest="enable_reuse",
                         help="")
+    parser.add_argument("--project-uuid", type=str, help="Project that will own the workflow jobs")
 
-    parser.add_argument('--repository', type=str, default="peter/crunchrunner", help="Repository containing the 'crunchrunner' program.")
+    try:
+        runner = ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
+    except Exception as e:
+        logger.error(e)
+        return 1
 
     return cwltool.main.main(args, executor=runner.arvExecutor, makeTool=runner.arvMakeTool, parser=parser)

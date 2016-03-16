@@ -36,7 +36,7 @@ var _ = Suite(&TestSuite{})
 type ArvTestClient struct {
 	Total   int64
 	Calls   int
-	Content arvadosclient.Dict
+	Content []arvadosclient.Dict
 	ContainerRecord
 	Logs          map[string]*bytes.Buffer
 	WasSetRunning bool
@@ -131,7 +131,7 @@ func (this *ArvTestClient) Create(resourceType string,
 	output interface{}) error {
 
 	this.Calls += 1
-	this.Content = parameters
+	this.Content = append(this.Content, parameters)
 
 	if resourceType == "logs" {
 		et := parameters["log"].(arvadosclient.Dict)["event_type"].(string)
@@ -168,8 +168,8 @@ func (this *ArvTestClient) Get(resourceType string, uuid string, parameters arva
 }
 
 func (this *ArvTestClient) Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error) {
-
-	this.Content = parameters
+	this.Calls += 1
+	this.Content = append(this.Content, parameters)
 	if resourceType == "containers" {
 		if parameters["container"].(arvadosclient.Dict)["state"] == "Running" {
 			this.WasSetRunning = true
@@ -399,8 +399,9 @@ func (s *TestSuite) TestCommitLogs(c *C) {
 	err := cr.CommitLogs()
 	c.Check(err, IsNil)
 
-	c.Check(api.Content["collection"].(arvadosclient.Dict)["name"], Equals, "logs for zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	c.Check(api.Content["collection"].(arvadosclient.Dict)["manifest_text"], Equals, ". 744b2e4553123b02fa7b452ec5c18993+123 0:123:crunch-run.txt\n")
+	c.Check(api.Calls, Equals, 2)
+	c.Check(api.Content[1]["collection"].(arvadosclient.Dict)["name"], Equals, "logs for zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	c.Check(api.Content[1]["collection"].(arvadosclient.Dict)["manifest_text"], Equals, ". 744b2e4553123b02fa7b452ec5c18993+123 0:123:crunch-run.txt\n")
 	c.Check(*cr.LogsPDH, Equals, "63da7bdacf08c40f604daad80c261e9a+60")
 }
 
@@ -412,7 +413,7 @@ func (s *TestSuite) TestUpdateContainerRecordRunning(c *C) {
 	err := cr.UpdateContainerRecordRunning()
 	c.Check(err, IsNil)
 
-	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Running")
+	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["state"], Equals, "Running")
 }
 
 func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
@@ -430,9 +431,9 @@ func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
 	err := cr.UpdateContainerRecordComplete()
 	c.Check(err, IsNil)
 
-	c.Check(api.Content["container"].(arvadosclient.Dict)["log"], Equals, *cr.LogsPDH)
-	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, *cr.ExitCode)
-	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
+	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["log"], Equals, *cr.LogsPDH)
+	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["exit_code"], Equals, *cr.ExitCode)
+	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 }
 
 func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
@@ -445,9 +446,9 @@ func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
 	err := cr.UpdateContainerRecordComplete()
 	c.Check(err, IsNil)
 
-	c.Check(api.Content["container"].(arvadosclient.Dict)["log"], IsNil)
-	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], IsNil)
-	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Cancelled")
+	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["log"], IsNil)
+	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["exit_code"], IsNil)
+	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["state"], Equals, "Cancelled")
 }
 
 // Used by the TestFullRun*() test below to DRY up boilerplate setup to do full
@@ -463,12 +464,14 @@ func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvT
 
 	api = &ArvTestClient{ContainerRecord: rec}
 	cr = NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	am := &ArvMountCmdLine{}
+	cr.RunArvMount = am.ArvMountTest
 
 	err = cr.Run()
 	c.Check(err, IsNil)
 	c.Check(api.WasSetRunning, Equals, true)
 
-	c.Check(api.Content["container"].(arvadosclient.Dict)["log"], NotNil)
+	c.Check(api.Content[api.Calls-1]["container"].(arvadosclient.Dict)["log"], NotNil)
 
 	if err != nil {
 		for k, v := range api.Logs {
@@ -496,8 +499,9 @@ func (s *TestSuite) TestFullRunHello(c *C) {
 		t.finish <- dockerclient.WaitResult{}
 	})
 
-	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
-	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
+	c.Check(api.Calls, Equals, 7)
+	c.Check(api.Content[6]["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
+	c.Check(api.Content[6]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "hello world\n"), Equals, true)
 
@@ -520,9 +524,10 @@ func (s *TestSuite) TestFullRunStderr(c *C) {
 		t.finish <- dockerclient.WaitResult{ExitCode: 1}
 	})
 
-	c.Check(api.Content["container"].(arvadosclient.Dict)["log"], NotNil)
-	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, 1)
-	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
+	c.Check(api.Calls, Equals, 8)
+	c.Check(api.Content[7]["container"].(arvadosclient.Dict)["log"], NotNil)
+	c.Check(api.Content[7]["container"].(arvadosclient.Dict)["exit_code"], Equals, 1)
+	c.Check(api.Content[7]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "hello\n"), Equals, true)
 	c.Check(strings.HasSuffix(api.Logs["stderr"].String(), "world\n"), Equals, true)
@@ -544,8 +549,9 @@ func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
-	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
-	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
+	c.Check(api.Calls, Equals, 7)
+	c.Check(api.Content[6]["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
+	c.Check(api.Content[6]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 
 	log.Print(api.Logs["stdout"].String())
 
@@ -568,8 +574,9 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
-	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
-	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
+	c.Check(api.Calls, Equals, 7)
+	c.Check(api.Content[6]["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
+	c.Check(api.Content[6]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "/bin\n"), Equals, true)
 }
@@ -601,6 +608,8 @@ func (s *TestSuite) TestCancel(c *C) {
 
 	api := &ArvTestClient{ContainerRecord: rec}
 	cr := NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	am := &ArvMountCmdLine{}
+	cr.RunArvMount = am.ArvMountTest
 
 	go func() {
 		for cr.ContainerID == "" {
@@ -613,7 +622,8 @@ func (s *TestSuite) TestCancel(c *C) {
 
 	c.Check(err, IsNil)
 
-	c.Check(api.Content["container"].(arvadosclient.Dict)["log"], NotNil)
+	c.Check(api.Calls, Equals, 6)
+	c.Check(api.Content[5]["container"].(arvadosclient.Dict)["log"], NotNil)
 
 	if err != nil {
 		for k, v := range api.Logs {
@@ -622,7 +632,7 @@ func (s *TestSuite) TestCancel(c *C) {
 		}
 	}
 
-	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Cancelled")
+	c.Check(api.Content[5]["container"].(arvadosclient.Dict)["state"], Equals, "Cancelled")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "foo\n"), Equals, true)
 
@@ -644,8 +654,9 @@ func (s *TestSuite) TestFullRunSetEnv(c *C) {
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
-	c.Check(api.Content["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
-	c.Check(api.Content["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
+	c.Check(api.Calls, Equals, 7)
+	c.Check(api.Content[6]["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
+	c.Check(api.Content[6]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "bilbo\n"), Equals, true)
 }
