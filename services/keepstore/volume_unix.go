@@ -550,7 +550,8 @@ func (v *UnixVolume) EmptyTrash() {
 
 	err := filepath.Walk(v.root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			log.Printf("EmptyTrash: filepath.Walk: %v: %v", path, err)
+			return nil
 		}
 		if info.Mode().IsDir() {
 			return nil
