@@ -64,19 +64,26 @@ func (s *TestSuite) Test_doMain(c *C) {
 	args := []string{"-poll-interval", "2", "-container-priority-poll-interval", "1", "-crunch-run-command", "echo"}
 	os.Args = append(os.Args, args...)
 
+	var sbatchCmdLine []string
+	var striggerCmdLine []string
+
 	// Override sbatchCmd
 	defer func(orig func(string) *exec.Cmd) {
 		sbatchCmd = orig
 	}(sbatchCmd)
 	sbatchCmd = func(uuid string) *exec.Cmd {
+		sbatchCmdLine = sbatchFunc(uuid).Args
 		return exec.Command("echo", uuid)
 	}
 
 	// Override striggerCmd
-	defer func(orig func(jobid, containerUUID, finishCommand, apiHost, apiToken, apiInsecure string) *exec.Cmd) {
+	defer func(orig func(jobid, containerUUID, finishCommand,
+		apiHost, apiToken, apiInsecure string) *exec.Cmd) {
 		striggerCmd = orig
 	}(striggerCmd)
 	striggerCmd = func(jobid, containerUUID, finishCommand, apiHost, apiToken, apiInsecure string) *exec.Cmd {
+		striggerCmdLine = striggerFunc(jobid, containerUUID, finishCommand,
+			apiHost, apiToken, apiInsecure).Args
 		go func() {
 			time.Sleep(5 * time.Second)
 			arv.Update("containers", containerUUID,
@@ -99,15 +106,19 @@ func (s *TestSuite) Test_doMain(c *C) {
 	var containers ContainerList
 	err := arv.List("containers", params, &containers)
 	c.Check(err, IsNil)
-	c.Assert(len(containers.Items), Equals, 1)
+	c.Check(len(containers.Items), Equals, 1)
 
 	err = doMain()
 	c.Check(err, IsNil)
 
+	c.Check(sbatchCmdLine, DeepEquals, []string{"sbatch", "--job-name=zzzzz-dz642-queuedcontainer", "--share", "--parsable"})
+	c.Check(striggerCmdLine, DeepEquals, []string{"strigger", "--set", "--jobid=zzzzz-dz642-queuedcontainer\n", "--fini",
+		"--program=/usr/bin/crunch-finish-slurm.sh 0.0.0.0:36857 4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h 1 zzzzz-dz642-queuedcontainer"})
+
 	// There should be no queued containers now
 	err = arv.List("containers", params, &containers)
 	c.Check(err, IsNil)
-	c.Assert(len(containers.Items), Equals, 0)
+	c.Check(len(containers.Items), Equals, 0)
 
 	// Previously "Queued" container should now be in "Complete" state
 	var container Container

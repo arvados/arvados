@@ -137,15 +137,19 @@ func dispatchSlurm(priorityPollInterval int, crunchRunCommand, finishCommand str
 }
 
 // sbatchCmd
-var sbatchCmd = func(uuid string) *exec.Cmd {
+func sbatchFunc(uuid string) *exec.Cmd {
 	return exec.Command("sbatch", "--job-name="+uuid, "--share", "--parsable")
 }
 
+var sbatchCmd = sbatchFunc
+
 // striggerCmd
-var striggerCmd = func(jobid, containerUUID, finishCommand, apiHost, apiToken, apiInsecure string) *exec.Cmd {
+func striggerFunc(jobid, containerUUID, finishCommand, apiHost, apiToken, apiInsecure string) *exec.Cmd {
 	return exec.Command("strigger", "--set", "--jobid="+jobid, "--fini",
 		fmt.Sprintf("--program=%s %s %s %s %s", finishCommand, apiHost, apiToken, apiInsecure, containerUUID))
 }
+
+var striggerCmd = striggerFunc
 
 // Submit job to slurm using sbatch.
 func submit(container Container, crunchRunCommand string) (jobid string, submitErr error) {
