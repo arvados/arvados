@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"regexp"
 	"strings"
 	"testing"
@@ -537,12 +538,33 @@ func TestPutAndGetBlocks_NoErrorDuringSingleRun(t *testing.T) {
 	testOldBlocksNotDeletedOnDataManagerError(t, "", "", false, false)
 }
 
+func createBadPath(t *testing.T) (badpath string) {
+	tempdir, err := ioutil.TempDir("", "bad")
+	if err != nil {
+		t.Fatalf("Could not create temporary directory for bad path: %v", err)
+	}
+	badpath = path.Join(tempdir, "bad")
+	return
+}
+
+func destroyBadPath(t *testing.T, badpath string) {
+	tempdir := path.Join(badpath, "..")
+	err := os.Remove(tempdir)
+	if err != nil {
+		t.Fatalf("Could not remove bad path temporary directory %v: %v", tempdir, err)
+	}
+}
+
 func TestPutAndGetBlocks_ErrorDuringGetCollectionsBadWriteTo(t *testing.T) {
-	testOldBlocksNotDeletedOnDataManagerError(t, "/badwritetofile", "", true, true)
+	badpath := createBadPath(t)
+	defer destroyBadPath(t, badpath)
+	testOldBlocksNotDeletedOnDataManagerError(t, path.Join(badpath, "writetofile"), "", true, true)
 }
 
 func TestPutAndGetBlocks_ErrorDuringGetCollectionsBadHeapProfileFilename(t *testing.T) {
-	testOldBlocksNotDeletedOnDataManagerError(t, "", "/badheapprofilefile", true, true)
+	badpath := createBadPath(t)
+	defer destroyBadPath(t, badpath)
+	testOldBlocksNotDeletedOnDataManagerError(t, "", path.Join(badpath, "heapprofilefile"), true, true)
 }
 
 // Create some blocks and backdate some of them.

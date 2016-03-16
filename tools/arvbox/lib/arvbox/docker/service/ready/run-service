@@ -34,11 +34,12 @@ if ! docker version >/dev/null 2>/dev/null ; then
   waiting="$waiting docker"
 fi
 
-if ! which arv >/dev/null ; then
-  waiting="$waiting sdk"
-elif ! which arv-get >/dev/null ; then
-  waiting="$waiting sdk"
-fi
+for sdk_app in arv arv-get cwl-runner arv-mount ; do
+    if ! which $sdk_app >/dev/null ; then
+        waiting="$waiting sdk"
+        break
+    fi
+done
 
 if ! (ps x | grep -v grep | grep "crunch-dispatch") > /dev/null ; then
     waiting="$waiting crunch-dispatch"

@@ -12,7 +12,7 @@ import httplib2
 import pykka
 from apiclient import errors as apierror
 
-from .fullstopactor import FullStopActor
+from .baseactor import BaseNodeManagerActor
 
 # IOError is the base class for socket.error, ssl.SSLError, and friends.
 # It seems like it hits the sweet spot for operations we want to retry:
@@ -20,7 +20,7 @@ from .fullstopactor import FullStopActor
 NETWORK_ERRORS = (IOError,)
 ARVADOS_ERRORS = NETWORK_ERRORS + (apierror.Error,)
 
-actor_class = FullStopActor
+actor_class = BaseNodeManagerActor
 
 class NodeManagerConfig(ConfigParser.SafeConfigParser):
     """Node Manager Configuration class.
