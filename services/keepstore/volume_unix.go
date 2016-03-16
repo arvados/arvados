@@ -552,31 +552,30 @@ func (v *UnixVolume) EmptyTrash() {
 		if err != nil {
 			return err
 		}
-
-		if !info.Mode().IsDir() {
-			matches := trashLocRegexp.FindStringSubmatch(path)
-			if len(matches) == 3 {
-				deadline, err := strconv.ParseInt(matches[2], 10, 64)
-				if err != nil {
-					log.Printf("EmptyTrash error for %v: %v", matches[1], err)
-				} else {
-					if deadline <= time.Now().Unix() {
-						err = os.Remove(path)
-						if err != nil {
-							log.Printf("Error deleting %v: %v", matches[1], err)
-							bytesInTrash += info.Size()
-							blocksInTrash++
-						} else {
-							bytesDeleted += info.Size()
-							blocksDeleted++
-						}
-					} else {
-						bytesInTrash += info.Size()
-						blocksInTrash++
-					}
-				}
-			}
+		if info.Mode().IsDir() {
+			return nil
 		}
+		matches := trashLocRegexp.FindStringSubmatch(path)
+		if len(matches) != 3 {
+			return nil
+		}
+		deadline, err := strconv.ParseInt(matches[2], 10, 64)
+		if err != nil {
+			log.Printf("EmptyTrash: %v: ParseInt(%v): %v", path, matches[2], err)
+			return nil
+		}
+		bytesInTrash += info.Size()
+		blocksInTrash++
+		if deadline > time.Now().Unix() {
+			return nil
+		}
+		err = os.Remove(path)
+		if err != nil {
+			log.Printf("EmptyTrash: Remove %v: %v", path, err)
+			return nil
+		}
+		bytesDeleted += info.Size()
+		blocksDeleted++
 		return nil
 	})
 
@@ -584,5 +583,5 @@ func (v *UnixVolume) EmptyTrash() {
 		log.Printf("EmptyTrash error for %v: %v", v.String(), err)
 	}
 
-	log.Printf("EmptyTrash stats for %v: Bytes deleted %v; Blocks deleted %v; Bytes remaining in trash: %v; Blocks remaining in trash: %v", v.String(), bytesDeleted, blocksDeleted, bytesInTrash, blocksInTrash)
+	log.Printf("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
 }
