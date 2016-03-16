@@ -16,6 +16,7 @@ import logging
 
 class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                                      unittest.TestCase):
+    maxDiff = None
     def mock_node_start(self, **kwargs):
         # Make sure that every time the daemon starts a setup actor,
         # it gets a new mock object back.
@@ -112,6 +113,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.assertTrue(self.node_setup.start.called)
 
     def check_monitors_arvados_nodes(self, *arv_nodes):
+        logging.info("XYZ %s\n\n%s", arv_nodes, self.monitored_arvados_nodes())
         self.assertItemsEqual(arv_nodes, self.monitored_arvados_nodes())
 
     def test_node_pairing(self):

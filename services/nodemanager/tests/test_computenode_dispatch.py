@@ -402,6 +402,7 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.make_actor(2)
         arv_node = testutil.arvados_node_mock(
             2, hostname='compute-two.zzzzz.arvadosapi.com')
+        self.cloud_client.node_id.return_value = '2'
         pair_id = self.node_actor.offer_arvados_pair(arv_node).get(self.TIMEOUT)
         self.assertEqual(self.cloud_mock.id, pair_id)
         self.stop_proxy(self.node_actor)
