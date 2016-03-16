@@ -49,19 +49,25 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
   def find_objects_for_index
     # Here we are deliberately less helpful about searching for client
     # authorizations.  We look up tokens belonging to the current user
-    # and filter by exact matches on api_token and scopes.
+    # and filter by exact matches on uuid, api_token, and scopes.
     wanted_scopes = []
     if @filters
       wanted_scopes.concat(@filters.map { |attr, operator, operand|
         ((attr == 'scopes') and (operator == '=')) ? operand : nil
       })
       @filters.select! { |attr, operator, operand|
-        ((attr == 'uuid') and (operator == '=')) || ((attr == 'api_token') and (operator == '='))
+        operator == '=' && (attr == 'uuid' || attr == 'api_token')
       }
     end
     if @where
       wanted_scopes << @where['scopes']
-      @where.select! { |attr, val| attr == 'uuid' }
+      @where.select! { |attr, val|
+        # "where":{"uuid":"zzzzz-zzzzz-zzzzzzzzzzzzzzz"} is OK but
+        # "where":{"api_client_id":1} is not supported
+        # "where":{"uuid":["contains","-"]} is not supported
+        # "where":{"uuid":["uuid1","uuid2","uuid3"]} is not supported
+        val.is_a?(String) && (attr == 'uuid' || attr == 'api_token')
+      }
     end
     @objects = model_class.
       includes(:user, :api_client).
@@ -74,25 +80,46 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
   end
 
   def find_object_by_uuid
-    @object = model_class.where(uuid: (params[:uuid] || params[:id])).first
+    uuid_param = params[:uuid] || params[:id]
+    if (uuid_param != current_api_client_authorization.andand.uuid and
+        not Thread.current[:api_client].andand.is_trusted)
+      return forbidden
+    end
+    @limit = 1
+    @offset = 0
+    @orders = []
+    @where = {}
+    @filters = [['uuid', '=', uuid_param]]
+    find_objects_for_index
+    @object = @objects.first
   end
 
   def current_api_client_is_trusted
-    unless Thread.current[:api_client].andand.is_trusted
-      if params["action"] == "show"
-        if @object and @object['api_token'] == current_api_client_authorization.andand.api_token
-          return true
-        end
-      elsif params["action"] == "index" and @objects.andand.size == 1
-        filters = @filters.map{|f|f.first}.uniq
-        if ['uuid'] == filters
-          return true if @objects.first['api_token'] == current_api_client_authorization.andand.api_token
-        elsif ['api_token'] == filters
-          return true if @objects.first[:user_id] = current_user.id
-        end
-      end
-      send_error('Forbidden: this API client cannot manipulate other clients\' access tokens.',
-                 status: 403)
+    if Thread.current[:api_client].andand.is_trusted
+      return true
     end
+    # A non-trusted client can do a search for its own token if it
+    # explicitly restricts the search to its own UUID or api_token.
+    # Any other kind of query must return 403, even if it matches only
+    # the current token, because that's currently how Workbench knows
+    # (after searching on scopes) the difference between "the token
+    # I'm using now *is* the only sharing token for this collection"
+    # (403) and "my token is trusted, and there is one sharing token
+    # for this collection" (200).
+    #
+    # The @filters test here also prevents a non-trusted token from
+    # filtering on its own scopes, and discovering whether any _other_
+    # equally scoped tokens exist (403=yes, 200=no).
+    if (@objects.andand.count == 1 and
+        @objects.first.uuid == current_api_client_authorization.andand.uuid and
+        (@filters.map(&:first) & %w(uuid api_token)).any?)
+      return true
+    end
+    forbidden
+  end
+
+  def forbidden
+    send_error('Forbidden: this API client cannot manipulate other clients\' access tokens.',
+               status: 403)
   end
 end

@@ -260,6 +260,7 @@ func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 	return nil
 }
 
+// Trash a Keep block.
 func (v *S3Volume) Trash(loc string) error {
 	if v.readonly {
 		return MethodDisabledError
@@ -320,4 +321,10 @@ func (v *S3Volume) translateError(err error) error {
 		// to os.ErrNotExist.
 	}
 	return err
+}
+
+// EmptyTrash looks for trashed blocks that exceeded trashLifetime
+// and deletes them from the volume.
+// TBD
+func (v *S3Volume) EmptyTrash() {
 }

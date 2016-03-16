@@ -197,10 +197,10 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
   end
 
   [
-    {cfg: :git_repo_ssh_base, cfgval: "git@example.com:", match: %r"^git@example.com:/"},
-    {cfg: :git_repo_ssh_base, cfgval: true, match: %r"^git@git.zzzzz.arvadosapi.com:/"},
+    {cfg: :git_repo_ssh_base, cfgval: "git@example.com:", match: %r"^git@example.com:"},
+    {cfg: :git_repo_ssh_base, cfgval: true, match: %r"^git@git.zzzzz.arvadosapi.com:"},
     {cfg: :git_repo_ssh_base, cfgval: false, refute: /^git@/ },
-    {cfg: :git_repo_https_base, cfgval: "https://example.com/", match: %r"https://example.com/"},
+    {cfg: :git_repo_https_base, cfgval: "https://example.com/", match: %r"^https://example.com/"},
     {cfg: :git_repo_https_base, cfgval: true, match: %r"^https://git.zzzzz.arvadosapi.com/"},
     {cfg: :git_repo_https_base, cfgval: false, refute: /^http/ },
   ].each do |expect|
@@ -209,15 +209,17 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
       authorize_with :active
       get :index
       assert_response :success
+      assert_not_empty json_response['items']
       json_response['items'].each do |r|
         if expect[:refute]
           r['clone_urls'].each do |u|
             refute_match expect[:refute], u
           end
         else
-          assert r['clone_urls'].any? do |u|
-            expect[:prefix].match u
-          end
+          assert((r['clone_urls'].any? do |u|
+                    expect[:match].match u
+                  end),
+                 "no match for #{expect[:match]} in #{r['clone_urls'].inspect}")
         end
       end
     end
