@@ -113,7 +113,7 @@ func (s *TestSuite) Test_doMain(c *C) {
 
 	c.Check(sbatchCmdLine, DeepEquals, []string{"sbatch", "--job-name=zzzzz-dz642-queuedcontainer", "--share", "--parsable"})
 	c.Check(striggerCmdLine, DeepEquals, []string{"strigger", "--set", "--jobid=zzzzz-dz642-queuedcontainer\n", "--fini",
-		"--program=/usr/bin/crunch-finish-slurm.sh 0.0.0.0:36857 4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h 1 zzzzz-dz642-queuedcontainer"})
+		"--program=/usr/bin/crunch-finish-slurm.sh " + os.Getenv("ARVADOS_API_HOST") + " 4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h 1 zzzzz-dz642-queuedcontainer"})
 
 	// There should be no queued containers now
 	err = arv.List("containers", params, &containers)
