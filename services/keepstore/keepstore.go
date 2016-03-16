@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -126,8 +125,6 @@ var (
 	flagReadonly    bool
 	volumes         volumeSet
 )
-
-var trashLocRegexp = regexp.MustCompile(`/([0-9a-f]{32}).trash.(\d+)$`)
 
 func (vs *volumeSet) String() string {
 	return fmt.Sprintf("%+v", (*vs)[:])

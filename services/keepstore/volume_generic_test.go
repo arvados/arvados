@@ -763,115 +763,104 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
-	defer func() {
-		trashLifetime = 0 * time.Second
-	}()
+	defer func(orig time.Duration) {
+		trashLifetime = orig
+	}(trashLifetime)
 
-	// First set of tests
+	checkGet := func() error {
+		buf, err := v.Get(TestHash)
+		if err != nil {
+			return err
+		}
+		if bytes.Compare(buf, TestBlock) != 0 {
+			t.Fatalf("Got data %+q, expected %+q", buf, TestBlock)
+		}
+		bufs.Put(buf)
+		return nil
+	}
 
-	// With trashLifetime = 1h, test trash/untrash cycle.
+	// First set: EmptyTrash before reaching the trash deadline.
+
 	trashLifetime = 1 * time.Hour
 
-	// put block and backdate it
 	v.PutRaw(TestHash, TestBlock)
 	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
 
-	buf, err := v.Get(TestHash)
+	err := checkGet()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Compare(buf, TestBlock) != 0 {
-		t.Fatalf("Got data %+q, expected %+q", buf, TestBlock)
-	}
-	bufs.Put(buf)
 
-	// Trash it
 	err = v.Trash(TestHash)
 	if err == MethodDisabledError || err == ErrNotImplemented {
+		// Skip the trash tests for read-only volumes, and
+		// volume types that don't support trashLifetime>0.
 		return
 	}
 
-	buf, err = v.Get(TestHash)
+	err = checkGet()
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
-	// Empty trash; the block is still within trashLifetime and hence is not emptied
 	v.EmptyTrash()
 
-	// Untrash will hence rescue it
+	// Even after emptying the trash, we can untrash our block
+	// because the deadline hasn't been reached.
 	err = v.Untrash(TestHash)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// Get block will find it
-	buf, err = v.Get(TestHash)
+	err = checkGet()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Compare(buf, TestBlock) != 0 {
-		t.Fatalf("Got data %+q, expected %+q", buf, TestBlock)
-	}
-	bufs.Put(buf)
 
-	// Untrash again; should fail
+	// Untrash should fail if the only block in the trash has
+	// already been untrashed.
 	err = v.Untrash(TestHash)
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
-	buf, err = v.Get(TestHash)
+	// The failed Untrash should not interfere with our
+	// already-untrashed copy.
+	err = checkGet()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Compare(buf, TestBlock) != 0 {
-		t.Fatalf("Got data %+q, expected %+q", buf, TestBlock)
-	}
-	bufs.Put(buf)
 
-	// Second set of tests
+	// Second set: EmptyTrash after the trash deadline has passed.
 
-	// With trashLifetime = 1ns, test trash/untrash cycle.
 	trashLifetime = 1 * time.Nanosecond
 
-	// Trash it
 	err = v.Trash(TestHash)
 	if err != nil {
 		t.Fatal(err)
 	}
-	buf, err = v.Get(TestHash)
+	err = checkGet()
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
-	// Untrash
+	// Even though 1ns has passed, we can untrash because we
+	// haven't called EmptyTrash yet.
 	err = v.Untrash(TestHash)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// Get block will find it
-	buf, err = v.Get(TestHash)
+	err = checkGet()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Compare(buf, TestBlock) != 0 {
-		t.Fatalf("Got data %+q, expected %+q", buf, TestBlock)
-	}
-	bufs.Put(buf)
 
-	// Trash it again
+	// Trash it again, and this time call EmptyTrash so it really
+	// goes away.
 	err = v.Trash(TestHash)
-	if err == MethodDisabledError || err == ErrNotImplemented {
-		return
-	}
-	buf, err = v.Get(TestHash)
+	err = checkGet()
 	if err == nil || !os.IsNotExist(err) {
 		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
-
-	// Empty trash will empty it
 	v.EmptyTrash()
 
 	// Untrash won't find it
@@ -881,73 +870,70 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	}
 
 	// Get block won't find it
-	buf, err = v.Get(TestHash)
+	err = checkGet()
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
-  // Third set of tests
+	// Third set: If the same data block gets written again after
+	// being trashed, and then the trash gets emptied, the newer
+	// un-trashed copy doesn't get deleted along with it.
 
-	// Still with trashLifetime = 1ns: put, trash, put one more, trash etc
-	// put block and backdate it
 	v.PutRaw(TestHash, TestBlock)
 	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
 
-	// Trash
+	trashLifetime = time.Nanosecond
 	err = v.Trash(TestHash)
-	if err == MethodDisabledError || err == ErrNotImplemented {
-		return
+	if err != nil {
+		t.Fatal(err)
 	}
-	buf, err = v.Get(TestHash)
+	err = checkGet()
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
-	// put again
-	err = v.Put(TestHash, TestBlock)
-	if err != nil {
-		t.Fatal(err)
-	}
+	v.PutRaw(TestHash, TestBlock)
 	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
 
-	// Empty trash will empty the trashed block but the second one is untouched
+	// EmptyTrash should not delete the untrashed copy.
 	v.EmptyTrash()
-
-	// Get block should work because of the second block
-	buf, err = v.Get(TestHash)
+	err = checkGet()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Compare(buf, TestBlock) != 0 {
-		t.Fatalf("Got data %+q, expected %+q", buf, TestBlock)
-	}
-	bufs.Put(buf)
 
-	// set trashLifetime to one hour
-	trashLifetime = 1 * time.Hour
+	// Fourth set: If the same data block gets trashed twice with
+	// different deadlines A and C, and then the trash is emptied
+	// at intermediate time B (A < B < C), it is still possible to
+	// untrash the block whose deadline is "C".
 
-	// trash block
+	v.PutRaw(TestHash, TestBlock)
+	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
+
+	trashLifetime = time.Nanosecond
 	err = v.Trash(TestHash)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// Empty trash won't empty this second block which is still within trashLifetime
-	v.EmptyTrash()
+	v.PutRaw(TestHash, TestBlock)
+	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
 
-	// Untrash; the second block which is still within trashLifetime will be rescued
+	trashLifetime = time.Hour
+	err = v.Trash(TestHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// EmptyTrash should not prevent us from recovering the
+	// time.Hour ("C") trash
+	v.EmptyTrash()
 	err = v.Untrash(TestHash)
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// Get block should work because of the second block
-	buf, err = v.Get(TestHash)
+	err = checkGet()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Compare(buf, TestBlock) != 0 {
-		t.Fatalf("Got data %+q, expected %+q", buf, TestBlock)
-	}
-	bufs.Put(buf)
 }
