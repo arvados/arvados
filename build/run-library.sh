@@ -244,10 +244,6 @@ fpm_build () {
   # that will take precedence, as desired.
   COMMAND_ARR+=(--iteration "$(default_iteration "$PACKAGE" "$VERSION")")
 
-  # 'dir' type packages are provided in the form /path/to/source=/path/to/dest
-  # so strip off the 2nd part to check for fpm-info below.
-  PACKAGE_DIR=$(echo $PACKAGE | sed 's/\/=.*//')
-
   # Append --depends X and other arguments specified by fpm-info.sh in
   # the package source dir. These are added last so they can override
   # the arguments added by this script.
@@ -255,19 +251,19 @@ fpm_build () {
   declare -a build_depends=()
   declare -a fpm_depends=()
   declare -a fpm_exclude=()
-  FPM_INFO=""
-  if [[ -d "$PACKAGE_DIR" ]]; then
-      FPM_INFO="$PACKAGE_DIR/fpm-info.sh"
-  elif [[ -e "${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE}/fpm-info.sh" ]]; then
-      FPM_INFO="${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE}/fpm-info.sh"
-      debug_echo "Found fpm-info.sh in backports: $FPM_INFO"
-  elif [[ -e "${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE_NAME}/fpm-info.sh" ]]; then
-      FPM_INFO="${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE_NAME}/fpm-info.sh"
-  fi
-  if [[ -e "$FPM_INFO" ]]; then
-      debug_echo "Loading fpm overrides from $FPM_INFO"
-      source "$FPM_INFO"
-  fi
+  declare -a fpm_dirs=(
+      # source dir part of 'dir' package ("/source=/dest" => "/source"):
+      "${PACKAGE%%=/*}"
+      # backports ("llfuse==0.41.1" => "backports/python-llfuse")
+      "${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE%%[<=>]*}")
+  for pkgdir in "${fpm_dirs[@]}"; do
+      fpminfo="$pkgdir/fpm-info.sh"
+      if [[ -e "$fpminfo" ]]; then
+          debug_echo "Loading fpm overrides from $fpminfo"
+          source "$fpminfo"
+          break
+      fi
+  done
   for pkg in "${build_depends[@]}"; do
       if [[ $TARGET =~ debian|ubuntu ]]; then
           pkg_deb=$(ls "$WORKSPACE/packages/$TARGET/$pkg_"*.deb | sort -rg | awk 'NR==1')
