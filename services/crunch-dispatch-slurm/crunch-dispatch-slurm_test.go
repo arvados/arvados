@@ -92,14 +92,19 @@ func (s *TestSuite) Test_doMain(c *C) {
 		sigChan <- syscall.SIGINT
 	}()
 
-	err := doMain()
-	c.Check(err, IsNil)
-
 	// There should be no queued containers now
 	params := arvadosclient.Dict{
 		"filters": [][]string{[]string{"state", "=", "Queued"}},
 	}
 	var containers ContainerList
+	err := arv.List("containers", params, &containers)
+	c.Check(err, IsNil)
+	c.Assert(len(containers.Items), Equals, 1)
+
+	err = doMain()
+	c.Check(err, IsNil)
+
+	// There should be no queued containers now
 	err = arv.List("containers", params, &containers)
 	c.Check(err, IsNil)
 	c.Assert(len(containers.Items), Equals, 0)
