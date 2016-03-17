@@ -315,13 +315,19 @@ class DockerContainerCleanerTestCase(DockerImageUseRecorderTestCase):
     TEST_CLASS = cleaner.DockerImageCleaner
     TEST_CLASS_INIT_KWARGS = {'remove_containers_onexit': True}
 
+    def test_container_deletion_deletes_volumes(self):
+        cid = MockDockerId()
+        self.events.append(MockEvent('die', docker_id=cid))
+        self.recorder.run()
+        self.docker_client.remove_container.assert_called_with(cid, v=True)
+
     @mock.patch('arvados_docker.cleaner.logger')
     def test_failed_container_deletion_handling(self, mockLogger):
         cid = MockDockerId()
         self.docker_client.remove_container.side_effect = MockException(500)
         self.events.append(MockEvent('die', docker_id=cid))
         self.recorder.run()
-        self.docker_client.remove_container.assert_called_with(cid)
+        self.docker_client.remove_container.assert_called_with(cid, v=True)
         self.assertEqual("Failed to remove container %s: %s",
                          mockLogger.warning.call_args[0][0])
         self.assertEqual(cid,
@@ -413,13 +419,13 @@ class ContainerRemovalTestCase(unittest.TestCase):
     def test_remove_onexit(self):
         self.args.remove_stopped_containers = 'onexit'
         cleaner.run(self.args, self.docker_client)
-        self.docker_client.remove_container.assert_called_once_with(self.newCID)
+        self.docker_client.remove_container.assert_called_once_with(self.newCID, v=True)
 
     def test_remove_always(self):
         self.args.remove_stopped_containers = 'always'
         cleaner.run(self.args, self.docker_client)
-        self.docker_client.remove_container.assert_any_call(self.existingCID)
-        self.docker_client.remove_container.assert_any_call(self.newCID)
+        self.docker_client.remove_container.assert_any_call(self.existingCID, v=True)
+        self.docker_client.remove_container.assert_any_call(self.newCID, v=True)
         self.assertEqual(2, self.docker_client.remove_container.call_count)
 
     def test_remove_never(self):
@@ -439,5 +445,5 @@ class ContainerRemovalTestCase(unittest.TestCase):
             mock.call.events(since=mock.ANY),
             mock.call.containers(filters={'status':'exited'})])
         # Asked to delete the container twice?
-        self.docker_client.remove_container.assert_has_calls([mock.call(self.existingCID)] * 2)
+        self.docker_client.remove_container.assert_has_calls([mock.call(self.existingCID, v=True)] * 2)
         self.assertEqual(2, self.docker_client.remove_container.call_count)
