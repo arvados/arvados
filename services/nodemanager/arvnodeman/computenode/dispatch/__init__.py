@@ -46,7 +46,7 @@ class ComputeNodeStateChangeBase(config.actor_class, RetryMixin):
     def subscribe(self, subscriber):
         if self.subscribers is None:
             try:
-                subscriber(self._later)
+                subscriber(self.actor_ref.proxy())
             except pykka.ActorDeadError:
                 pass
         else:
