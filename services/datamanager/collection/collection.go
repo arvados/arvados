@@ -132,7 +132,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections, err e
 		"select":  fieldsWanted,
 		"order":   []string{"modified_at ASC", "uuid ASC"},
 		"filters": [][]string{[]string{"modified_at", ">=", "1900-01-01T00:00:00Z"}},
-		"offset": 0}
+		"offset":  0}
 
 	if params.BatchSize > 0 {
 		sdkParams["limit"] = params.BatchSize
@@ -262,12 +262,12 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections, err e
 	}
 	if totalCollections < finalNumberOfCollectionsAvailable {
 		err = fmt.Errorf("API server indicates a total of %d collections "+
-				"available up to %v, but we only retrieved %d. "+
-				"Refusing to continue as this could indicate an "+
-				"otherwise undetected failure.",
-				finalNumberOfCollectionsAvailable, 
-				sdkParams["filters"].([][]string)[0][2],
-				totalCollections)
+			"available up to %v, but we only retrieved %d. "+
+			"Refusing to continue as this could indicate an "+
+			"otherwise undetected failure.",
+			finalNumberOfCollectionsAvailable,
+			sdkParams["filters"].([][]string)[0][2],
+			totalCollections)
 		return
 	}
 
