@@ -406,7 +406,7 @@ class ComputeNodeMonitorActor(config.actor_class):
         first_ping_s = arvados_node.get('first_ping_at')
         if (self.arvados_node is not None) or (not first_ping_s):
             return None
-        elif ((arvados_node['ip_address'] in self.cloud_node.private_ips) and
+        elif ((arvados_node['info'].get('ec2_instance_id') == self._cloud.node_id(self.cloud_node)) and
               (arvados_timestamp(first_ping_s) >= self.cloud_node_start_time)):
             self._later.update_arvados_node(arvados_node)
             return self.cloud_node.id

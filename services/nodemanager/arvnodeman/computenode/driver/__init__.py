@@ -196,6 +196,11 @@ class BaseComputeNodeDriver(RetryMixin):
             lambda self, value: setattr(self.real, attr_name, value),
             doc=getattr(getattr(NodeDriver, attr_name), '__doc__', None))
 
+    # node id
+    @classmethod
+    def node_id(cls):
+        raise NotImplementedError("BaseComputeNodeDriver.node_id")
+
     _locals = locals()
     for _attr_name in dir(NodeDriver):
         if (not _attr_name.startswith('_')) and (_attr_name not in _locals):
