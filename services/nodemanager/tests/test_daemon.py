@@ -60,7 +60,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.cloud_factory().node_start_time.return_value = time.time()
         self.cloud_updates = mock.MagicMock(name='updates_mock')
         self.timer = testutil.MockTimer(deliver_immediately=False)
-        self.cloud_factory().node_id.return_value = '2'
+        self.cloud_factory().node_id.side_effect = lambda node: node.id
 
         self.node_setup = mock.MagicMock(name='setup_mock')
         self.node_setup.start.side_effect = self.mock_node_start
@@ -113,7 +113,6 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.assertTrue(self.node_setup.start.called)
 
     def check_monitors_arvados_nodes(self, *arv_nodes):
-        logging.info("XYZ %s\n\n%s", arv_nodes, self.monitored_arvados_nodes())
         self.assertItemsEqual(arv_nodes, self.monitored_arvados_nodes())
 
     def test_node_pairing(self):
@@ -126,7 +125,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
     def test_node_pairing_after_arvados_update(self):
         cloud_node = testutil.cloud_node_mock(2)
         self.make_daemon([cloud_node],
-                         [testutil.arvados_node_mock(2, ip_address=None)])
+                         [testutil.arvados_node_mock(1, ip_address=None)])
         arv_node = testutil.arvados_node_mock(2)
         self.daemon.update_arvados_nodes([arv_node]).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
