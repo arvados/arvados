@@ -11,6 +11,7 @@ import cwltool.draft2tool
 import cwltool.workflow
 import cwltool.main
 from cwltool.process import shortname
+from cwltool.errors import WorkflowException
 import threading
 import cwltool.docker
 import fnmatch
@@ -228,8 +229,11 @@ class ArvadosJob(object):
                     self.builder.outdir = outdir
                     self.builder.pathmapper.keepdir = keepdir
                     outputs = self.collect_outputs("keep:" + record["output"])
+            except WorkflowException as e:
+                logger.error("Error while collecting job outputs:\n%s", e, exc_info=(e if self.arvrunner.debug else False))
+                processStatus = "permanentFail"
             except Exception as e:
-                logger.exception("Got exception while collecting job outputs:")
+                logger.exception("Got unknown exception while collecting job outputs:")
                 processStatus = "permanentFail"
 
             self.output_callback(outputs, processStatus)
@@ -353,6 +357,8 @@ class ArvCwlRunner(object):
     def arvExecutor(self, tool, job_order, input_basedir, args, **kwargs):
         events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#job"]], self.on_message)
 
+        self.debug = args.debug
+
         try:
             self.api.collections().get(uuid=crunchrunner_pdh).execute()
         except arvados.errors.ApiError as e:
@@ -426,7 +432,7 @@ class ArvCwlRunner(object):
                 if sys.exc_info()[0] is KeyboardInterrupt:
                     logger.error("Interrupted, marking pipeline as failed")
                 else:
-                    logger.exception("Caught unhandled exception, marking pipeline as failed")
+                    logger.error("Caught unhandled exception, marking pipeline as failed.  Error was: %s", sys.exc_info()[0], exc_info=(sys.exc_info()[1] if self.debug else False))
                 self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
                                                      body={"state": "Failed"}).execute(num_retries=self.num_retries)
             finally:
