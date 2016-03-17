@@ -108,6 +108,7 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
         cache_pos, cache_data = self._readline_cache
         if self.tell() == cache_pos:
             data = [cache_data]
+            self._filepos += len(cache_data)
         else:
             data = ['']
         data_size = len(data[-1])
@@ -123,6 +124,7 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
         except ValueError:
             nextline_index = len(data)
         nextline_index = min(nextline_index, size)
+        self._filepos -= len(data) - nextline_index
         self._readline_cache = (self.tell(), data[nextline_index:])
         return data[:nextline_index]
 
