@@ -232,7 +232,8 @@ class ArvadosJob(object):
 
 
 class ArvPathMapper(cwltool.pathmapper.PathMapper):
-    def __init__(self, arvrunner, referenced_files, basedir, **kwargs):
+    def __init__(self, arvrunner, referenced_files, basedir,
+                 collection_pattern, file_pattern, **kwargs):
         self._pathmap = arvrunner.get_uploaded()
         uploadfiles = []
 
@@ -240,10 +241,10 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
 
         for src in referenced_files:
             if isinstance(src, basestring) and pdh_path.match(src):
-                self._pathmap[src] = (src, "$(task.keep)/%s" % src[5:])
+                self._pathmap[src] = (src, collection_pattern % src[5:])
             if src not in self._pathmap:
                 ab = cwltool.pathmapper.abspath(src, basedir)
-                st = arvados.commands.run.statfile("", ab, fnPattern="$(task.keep)/%s/%s")
+                st = arvados.commands.run.statfile("", ab, fnPattern=file_pattern)
                 if kwargs.get("conformance_test"):
                     self._pathmap[src] = (src, ab)
                 elif isinstance(st, arvados.commands.run.UploadFile):
@@ -258,7 +259,7 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
                                              arvrunner.api,
                                              dry_run=kwargs.get("dry_run"),
                                              num_retries=3,
-                                             fnPattern="$(task.keep)/%s/%s",
+                                             fnPattern=file_pattern,
                                              project=arvrunner.project_uuid)
 
         for src, ab, st in uploadfiles:
@@ -285,7 +286,10 @@ class ArvadosCommandTool(cwltool.draft2tool.CommandLineTool):
         return ArvadosJob(self.arvrunner)
 
     def makePathMapper(self, reffiles, input_basedir, **kwargs):
-        return ArvPathMapper(self.arvrunner, reffiles, input_basedir, **kwargs)
+        return ArvPathMapper(self.arvrunner, reffiles, input_basedir,
+                             "$(task.keep)/%s",
+                             "$(task.keep)/%s/%s",
+                             **kwargs)
 
 
 class ArvCwlRunner(object):
@@ -344,7 +348,45 @@ class ArvCwlRunner(object):
     def add_uploaded(self, src, pair):
         self.uploaded[src] = pair
 
+    def upload_docker(self, tool):
+        pass
+
+    def submit(self, tool, job_order, input_basedir, args, **kwargs):
+        files = set()
+        def visitFiles(self, path):
+            files.add(path)
+
+        adjustFiles(process.scandeps("", tool.tool,
+                                     set(("run")),
+                                     set(("$schemas", "path"))),
+                    visitFiles)
+        adjustFiles(job_order, visitFiles)
+
+        mapper = ArvPathMapper(self, files, "",
+                               "$(task.keep)/%s",
+                               "$(task.keep)/%s/%s",
+                               **kwargs)
+
+        job_order = adjustFiles(job_order, lambda p: mapper.mapper(p))
+
+        response = self.api.jobs().create(body={
+            "script": "cwl-runner",
+            "script_version": "8654-arv-jobs-cwl-runner",
+            "repository": "arvados",
+            "script_parameters": job_order,
+            "runtime_constraints": {
+                "docker_image": "arvados/jobs"
+            }
+        }, find_or_create=args.enable_reuse).execute(num_retries=self.num_retries)
+        print response["uuid"]
+        return None
+
+
     def arvExecutor(self, tool, job_order, input_basedir, args, **kwargs):
+        if args.submit:
+            self.submit(tool, job_order, input_basedir, args, **kwargs)
+            return
+
         events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#job"]], self.on_message)
 
         try:
@@ -440,6 +482,7 @@ def main(args, stdout, stderr, api_client=None):
                         default=True, dest="enable_reuse",
                         help="")
     parser.add_argument("--project-uuid", type=str, help="Project that will own the workflow jobs")
+    parser.add_argument("--submit", type=str, help="Submit job and print job uuid.")
 
     try:
         runner = ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
