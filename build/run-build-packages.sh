@@ -422,7 +422,7 @@ fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curover
 # So we build this thing separately.
 #
 # Ward, 2016-03-17
-fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t deb --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies --log info -n python-schema-salad --iteration 1 --python-bin python2.7 --python-easyinstall easy_install-2.7 --python-package-name-prefix python --depends python2.7 -v 1.7.20160316203940 schema_salad
+fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t deb --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies -n python-schema-salad --iteration 1 --python-bin python2.7 --python-easyinstall easy_install-2.7 --python-package-name-prefix python --depends python2.7 -v 1.7.20160316203940 schema_salad
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
 fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t deb --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies -n python-cwltool --iteration 1 --python-bin python2.7 --python-easyinstall easy_install-2.7 --python-package-name-prefix python --depends python2.7 -v 1.0.20160316204054 cwltool
