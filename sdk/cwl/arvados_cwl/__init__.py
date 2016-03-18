@@ -223,8 +223,14 @@ class ArvadosJob(object):
                         g = keepre.match(l)
                         if g:
                             keepdir = g.group(1)
-                        if tmpdir and outdir and keepdir:
-                            break
+
+                        # It turns out if the job fails and restarts it can
+                        # come up on a different compute node, so we have to
+                        # read the log to the end to be sure instead of taking the
+                        # easy way out.
+                        #
+                        #if tmpdir and outdir and keepdir:
+                        #    break
 
                     self.builder.outdir = outdir
                     self.builder.pathmapper.keepdir = keepdir
