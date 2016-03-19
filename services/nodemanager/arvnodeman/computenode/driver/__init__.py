@@ -104,8 +104,10 @@ class BaseComputeNodeDriver(RetryMixin):
             self.SEARCH_CACHE[cache_key] = results[0]
         return self.SEARCH_CACHE[cache_key]
 
-    def list_nodes(self):
-        return self.real.list_nodes(**self.list_kwargs)
+    def list_nodes(self, **kwargs):
+        l = self.list_kwargs.copy()
+        l.update(kwargs)
+        return self.real.list_nodes(**l)
 
     def arvados_create_kwargs(self, size, arvados_node):
         """Return dynamic keyword arguments for create_node.
