@@ -2,6 +2,8 @@
 
 . `dirname "$(readlink -f "$0")"`/libcloud-pin
 
+. `dirname "$(readlink -f "$0")"`/run-library.sh
+
 read -rd "\000" helpmessage <<EOF
 $(basename $0): Install and test Arvados components.
 
@@ -122,24 +124,6 @@ fatal() {
     clear_temp
     echo >&2 "Fatal: $* (encountered in ${FUNCNAME[1]} at ${BASH_SOURCE[1]} line ${BASH_LINENO[0]})"
     exit 1
-}
-
-report_outcomes() {
-    for x in "${successes[@]}"
-    do
-        echo "Pass: $x"
-    done
-
-    if [[ ${#failures[@]} == 0 ]]
-    then
-        echo "All test suites passed."
-    else
-        echo "Failures (${#failures[@]}):"
-        for x in "${failures[@]}"
-        do
-            echo "Fail: $x"
-        done
-    fi
 }
 
 exit_cleanly() {
@@ -470,23 +454,6 @@ then
     gem install --user-install bundler || fatal 'Could not install bundler'
 fi
 
-checkexit() {
-    if [[ "$1" != "0" ]]; then
-        title "!!!!!! $2 FAILED !!!!!!"
-        failures+=("$2 (`timer`)")
-    else
-        successes+=("$2 (`timer`)")
-    fi
-}
-
-timer_reset() {
-    t0=$SECONDS
-}
-
-timer() {
-    echo -n "$(($SECONDS - $t0))s"
-}
-
 retry() {
     while ! ${@} && [[ "$retry" == 1 ]]
     do
@@ -597,11 +564,6 @@ do_install_once() {
     else
         title "Skipping $1 install"
     fi
-}
-
-title () {
-    txt="********** $1 **********"
-    printf "\n%*s%s\n\n" $((($COLUMNS-${#txt})/2)) "" "$txt"
 }
 
 bundle_install_trylocal() {

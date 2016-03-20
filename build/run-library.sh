@@ -342,3 +342,44 @@ install_package() {
     $SUDO yum -q -y install $PACKAGES
   fi
 }
+
+title () {
+    txt="********** $1 **********"
+    printf "\n%*s%s\n\n" $((($COLUMNS-${#txt})/2)) "" "$txt"
+}
+
+checkexit() {
+    if [[ "$1" != "0" ]]; then
+        title "!!!!!! $2 FAILED !!!!!!"
+        failures+=("$2 (`timer`)")
+    else
+        successes+=("$2 (`timer`)")
+    fi
+}
+
+timer_reset() {
+    t0=$SECONDS
+}
+
+timer() {
+    echo -n "$(($SECONDS - $t0))s"
+}
+
+report_outcomes() {
+    for x in "${successes[@]}"
+    do
+        echo "Pass: $x"
+    done
+
+    if [[ ${#failures[@]} == 0 ]]
+    then
+        echo "All test suites passed."
+    else
+        echo "Failures (${#failures[@]}):"
+        for x in "${failures[@]}"
+        do
+            echo "Fail: $x"
+        done
+    fi
+}
+
