@@ -72,6 +72,7 @@ exit_cleanly() {
     exit ${#failures}
 }
 
+COLUMNS=80
 . $WORKSPACE/build/run-library.sh
 
 title "Start build packages"
@@ -81,8 +82,6 @@ $WORKSPACE/build/run-build-packages-one-target.sh --target $TARGET
 
 checkexit $? "build packages"
 title "End of build packages (`timer`)"
-
-#/usr/bin/sudo chown jenkins:jenkins $WORKSPACE/packages -R
 
 title "Start test packages"
 timer_reset

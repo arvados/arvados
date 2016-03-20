@@ -2,6 +2,7 @@
 
 . `dirname "$(readlink -f "$0")"`/libcloud-pin
 
+COLUMNS=80
 . `dirname "$(readlink -f "$0")"`/run-library.sh
 
 read -rd "\000" helpmessage <<EOF
@@ -102,8 +103,6 @@ VENV3DIR=
 PYTHONPATH=
 GEMHOME=
 PERLINSTALLBASE=
-
-COLUMNS=80
 
 skip_install=
 temp=
