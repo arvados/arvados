@@ -361,7 +361,7 @@ class NodeManagerDaemonActor(actor_class):
             arvados_client=self._new_arvados(),
             arvados_node=arvados_node,
             cloud_client=self._new_cloud(),
-            cloud_size=cloud_size).tell_proxy()
+            cloud_size=cloud_size).proxy()
         self.booting[new_setup.actor_ref.actor_urn] = new_setup
         self.sizes_booting_shutdown[new_setup.actor_ref.actor_urn] = cloud_size
 
@@ -411,8 +411,8 @@ class NodeManagerDaemonActor(actor_class):
         shutdown = self._node_shutdown.start(
             timer_actor=self._timer, cloud_client=self._new_cloud(),
             arvados_client=self._new_arvados(),
-            node_monitor=node_actor.actor_ref, cancellable=cancellable).proxy()
-        self.shutdowns[cloud_node_id] = shutdown
+            node_monitor=node_actor.actor_ref, cancellable=cancellable)
+        self.shutdowns[cloud_node_id] = shutdown.proxy()
         self.sizes_booting_shutdown[cloud_node_id] = cloud_node_obj.size
         shutdown.tell_proxy().subscribe(self._later.node_finished_shutdown)
 

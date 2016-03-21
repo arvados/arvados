@@ -39,14 +39,14 @@ class ComputeNodeStateChangeBase(config.actor_class, RetryMixin):
     def _finished(self):
         if self.subscribers is None:
             raise Exception("Actor tried to finish twice")
-        _notify_subscribers(self._later, self.subscribers)
+        _notify_subscribers(self.actor_ref.proxy(), self.subscribers)
         self.subscribers = None
         self._logger.info("finished")
 
     def subscribe(self, subscriber):
         if self.subscribers is None:
             try:
-                subscriber(self._later)
+                subscriber(self.actor_ref.proxy())
             except pykka.ActorDeadError:
                 pass
         else:
@@ -391,7 +391,7 @@ class ComputeNodeMonitorActor(config.actor_class):
             eligible = self.shutdown_eligible()
             if eligible is True:
                 self._debug("Suggesting shutdown.")
-                _notify_subscribers(self._later, self.subscribers)
+                _notify_subscribers(self.actor_ref.proxy(), self.subscribers)
             elif self._shutdowns.window_open():
                 self._debug("Cannot shut down because %s", eligible)
             elif self.last_shutdown_opening != next_opening:
@@ -406,7 +406,7 @@ class ComputeNodeMonitorActor(config.actor_class):
         first_ping_s = arvados_node.get('first_ping_at')
         if (self.arvados_node is not None) or (not first_ping_s):
             return None
-        elif ((arvados_node['ip_address'] in self.cloud_node.private_ips) and
+        elif ((arvados_node['info'].get('ec2_instance_id') == self._cloud.node_id(self.cloud_node)) and
               (arvados_timestamp(first_ping_s) >= self.cloud_node_start_time)):
             self._later.update_arvados_node(arvados_node)
             return self.cloud_node.id

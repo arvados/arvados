@@ -223,3 +223,6 @@ func (v *MockVolume) Writable() bool {
 func (v *MockVolume) Replication() int {
 	return 1
 }
+
+func (v *MockVolume) EmptyTrash() {
+}

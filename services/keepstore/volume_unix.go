@@ -23,9 +23,6 @@ type unixVolumeAdder struct {
 }
 
 func (vs *unixVolumeAdder) Set(value string) error {
-	if trashLifetime != 0 {
-		return ErrNotImplemented
-	}
 	if dirs := strings.Split(value, ","); len(dirs) > 1 {
 		log.Print("DEPRECATED: using comma-separated volume list.")
 		for _, dir := range dirs {
@@ -365,21 +362,21 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 	}
 }
 
-// Delete deletes the block data from the unix storage
+// Trash trashes the block data from the unix storage
+// If trashLifetime == 0, the block is deleted
+// Else, the block is renamed as path/{loc}.trash.{deadline},
+// where deadline = now + trashLifetime
 func (v *UnixVolume) Trash(loc string) error {
 	// Touch() must be called before calling Write() on a block.  Touch()
 	// also uses lockfile().  This avoids a race condition between Write()
-	// and Delete() because either (a) the file will be deleted and Touch()
+	// and Trash() because either (a) the file will be trashed and Touch()
 	// will signal to the caller that the file is not present (and needs to
 	// be re-written), or (b) Touch() will update the file's timestamp and
-	// Delete() will read the correct up-to-date timestamp and choose not to
-	// delete the file.
+	// Trash() will read the correct up-to-date timestamp and choose not to
+	// trash the file.
 
 	if v.readonly {
 		return MethodDisabledError
-	}
-	if trashLifetime != 0 {
-		return ErrNotImplemented
 	}
 	if v.locker != nil {
 		v.locker.Lock()
@@ -408,13 +405,47 @@ func (v *UnixVolume) Trash(loc string) error {
 			return nil
 		}
 	}
-	return os.Remove(p)
+
+	if trashLifetime == 0 {
+		return os.Remove(p)
+	}
+	return os.Rename(p, fmt.Sprintf("%v.trash.%d", p, time.Now().Add(trashLifetime).Unix()))
 }
 
 // Untrash moves block from trash back into store
-// TBD
-func (v *UnixVolume) Untrash(loc string) error {
-	return ErrNotImplemented
+// Look for path/{loc}.trash.{deadline} in storage,
+// and rename the first such file as path/{loc}
+func (v *UnixVolume) Untrash(loc string) (err error) {
+	if v.readonly {
+		return MethodDisabledError
+	}
+
+	files, err := ioutil.ReadDir(v.blockDir(loc))
+	if err != nil {
+		return err
+	}
+
+	if len(files) == 0 {
+		return os.ErrNotExist
+	}
+
+	foundTrash := false
+	prefix := fmt.Sprintf("%v.trash.", loc)
+	for _, f := range files {
+		if strings.HasPrefix(f.Name(), prefix) {
+			foundTrash = true
+			err = os.Rename(v.blockPath(f.Name()), v.blockPath(loc))
+			if err == nil {
+				break
+			}
+		}
+	}
+
+	if foundTrash == false {
+		return os.ErrNotExist
+	}
+
+	return
 }
 
 // blockDir returns the fully qualified directory name for the directory
@@ -507,4 +538,51 @@ func (v *UnixVolume) translateError(err error) error {
 	default:
 		return err
 	}
+}
+
+var trashLocRegexp = regexp.MustCompile(`/([0-9a-f]{32})\.trash\.(\d+)$`)
+
+// EmptyTrash walks hierarchy looking for {hash}.trash.*
+// and deletes those with deadline < now.
+func (v *UnixVolume) EmptyTrash() {
+	var bytesDeleted, bytesInTrash int64
+	var blocksDeleted, blocksInTrash int
+
+	err := filepath.Walk(v.root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Printf("EmptyTrash: filepath.Walk: %v: %v", path, err)
+			return nil
+		}
+		if info.Mode().IsDir() {
+			return nil
+		}
+		matches := trashLocRegexp.FindStringSubmatch(path)
+		if len(matches) != 3 {
+			return nil
+		}
+		deadline, err := strconv.ParseInt(matches[2], 10, 64)
+		if err != nil {
+			log.Printf("EmptyTrash: %v: ParseInt(%v): %v", path, matches[2], err)
+			return nil
+		}
+		bytesInTrash += info.Size()
+		blocksInTrash++
+		if deadline > time.Now().Unix() {
+			return nil
+		}
+		err = os.Remove(path)
+		if err != nil {
+			log.Printf("EmptyTrash: Remove %v: %v", path, err)
+			return nil
+		}
+		bytesDeleted += info.Size()
+		blocksDeleted++
+		return nil
+	})
+
+	if err != nil {
+		log.Printf("EmptyTrash error for %v: %v", v.String(), err)
+	}
+
+	log.Printf("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
 }

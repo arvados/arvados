@@ -69,6 +69,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
                          blob_str,
                          'wrong content from Keep.get(md5(<binarydata>))')
 
+    @unittest.skip("unreliable test - please fix and close #8752")
     def test_KeepSingleCopyRWTest(self):
         blob_str = '\xff\xfe\xfd\xfc\x00\x01\x02\x03'
         blob_locator = self.keep_client.put(blob_str, copies=1)

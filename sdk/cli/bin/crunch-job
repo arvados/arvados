@@ -432,7 +432,7 @@ fi
 
   # Determine whether this version of Docker supports memory+swap limits.
   ($exited, $stdout, $stderr) = srun_sync(
-    ["srun", "--nodelist=" . $node[0]],
+    ["srun", "--nodes=1"],
     [$docker_bin, 'run', '--help'],
     {label => "check --memory-swap feature"});
   $docker_limitmem = ($stdout =~ /--memory-swap/);
@@ -455,7 +455,7 @@ fi
       $try_user_arg = "--user=$try_user";
     }
     my ($exited, $stdout, $stderr) = srun_sync(
-      ["srun", "--nodelist=" . $node[0]],
+      ["srun", "--nodes=1"],
       ["/bin/sh", "-ec",
        "$docker_bin run $docker_run_args $try_user_arg $docker_hash id --user"],
       {label => $label});

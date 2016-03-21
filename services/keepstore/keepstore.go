@@ -57,7 +57,13 @@ var neverDelete = true
 
 // trashLifetime is the time duration after a block is trashed
 // during which it can be recovered using an /untrash request
+// Use 10s or 10m or 10h to set as 10 seconds or minutes or hours respectively.
 var trashLifetime time.Duration
+
+// trashCheckInterval is the time duration at which the emptyTrash goroutine
+// will check and delete expired trashed blocks. Default is one day.
+// Use 10s or 10m or 10h to set as 10 seconds or minutes or hours respectively.
+var trashCheckInterval time.Duration
 
 var maxBuffers = 128
 var bufs *bufferPool
@@ -209,7 +215,12 @@ func main() {
 		&trashLifetime,
 		"trash-lifetime",
 		0*time.Second,
-		"Interval after a block is trashed during which it can be recovered using an /untrash request")
+		"Time duration after a block is trashed during which it can be recovered using an /untrash request")
+	flag.DurationVar(
+		&trashCheckInterval,
+		"trash-check-interval",
+		24*time.Hour,
+		"Time duration at which the emptyTrash goroutine will check and delete expired trashed blocks. Default is one day.")
 
 	flag.Parse()
 
@@ -321,12 +332,17 @@ func main() {
 	trashq = NewWorkQueue()
 	go RunTrashWorker(trashq)
 
+	// Start emptyTrash goroutine
+	doneEmptyingTrash := make(chan bool)
+	go emptyTrash(doneEmptyingTrash, trashCheckInterval)
+
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.
 	term := make(chan os.Signal, 1)
 	go func(sig <-chan os.Signal) {
 		s := <-sig
 		log.Println("caught signal:", s)
+		doneEmptyingTrash <- true
 		listener.Close()
 	}(term)
 	signal.Notify(term, syscall.SIGTERM)
@@ -335,4 +351,23 @@ func main() {
 	log.Println("listening at", listen)
 	srv := &http.Server{Addr: listen}
 	srv.Serve(listener)
+}
+
+// At every trashCheckInterval tick, invoke EmptyTrash on all volumes.
+func emptyTrash(doneEmptyingTrash chan bool, trashCheckInterval time.Duration) {
+	ticker := time.NewTicker(trashCheckInterval)
+
+	for {
+		select {
+		case <-ticker.C:
+			for _, v := range volumes {
+				if v.Writable() {
+					v.EmptyTrash()
+				}
+			}
+		case <-doneEmptyingTrash:
+			ticker.Stop()
+			return
+		}
+	}
 }

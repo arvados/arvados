@@ -19,10 +19,11 @@ Gem::Specification.new do |s|
                    "lib/arvados/collection.rb", "lib/arvados/keep.rb",
                    "README", "LICENSE-2.0.txt"]
   s.required_ruby_version = '>= 2.1.0'
-  s.add_dependency('google-api-client', '~> 0.6.3', '>= 0.6.3')
-  s.add_dependency('activesupport', '>= 3.2.13')
-  s.add_dependency('json', '~> 1.7', '>= 1.7.7')
+  # activesupport <4.2.6 only because https://dev.arvados.org/issues/8222
+  s.add_dependency('activesupport', '>= 3.2.13', '< 4.2.6')
   s.add_dependency('andand', '~> 1.3', '>= 1.3.3')
+  s.add_dependency('google-api-client', '~> 0.6.3', '>= 0.6.3')
+  s.add_dependency('json', '~> 1.7', '>= 1.7.7')
   s.add_runtime_dependency('jwt', '>= 0.1.5', '< 1.0.0')
   s.homepage    =
     'https://arvados.org'

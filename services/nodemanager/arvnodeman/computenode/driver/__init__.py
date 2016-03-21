@@ -104,8 +104,10 @@ class BaseComputeNodeDriver(RetryMixin):
             self.SEARCH_CACHE[cache_key] = results[0]
         return self.SEARCH_CACHE[cache_key]
 
-    def list_nodes(self):
-        return self.real.list_nodes(**self.list_kwargs)
+    def list_nodes(self, **kwargs):
+        l = self.list_kwargs.copy()
+        l.update(kwargs)
+        return self.real.list_nodes(**l)
 
     def arvados_create_kwargs(self, size, arvados_node):
         """Return dynamic keyword arguments for create_node.
@@ -195,6 +197,11 @@ class BaseComputeNodeDriver(RetryMixin):
             lambda self: getattr(self.real, attr_name),
             lambda self, value: setattr(self.real, attr_name, value),
             doc=getattr(getattr(NodeDriver, attr_name), '__doc__', None))
+
+    # node id
+    @classmethod
+    def node_id(cls):
+        raise NotImplementedError("BaseComputeNodeDriver.node_id")
 
     _locals = locals()
     for _attr_name in dir(NodeDriver):

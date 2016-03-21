@@ -92,3 +92,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         time_str = node.extra['launch_time'].split('.', 2)[0] + 'UTC'
         return time.mktime(time.strptime(
                 time_str,'%Y-%m-%dT%H:%M:%S%Z')) - time.timezone
+
+    @classmethod
+    def node_id(cls, node):
+        return node.id
