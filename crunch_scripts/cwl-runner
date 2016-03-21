@@ -22,7 +22,7 @@ try:
 
     def keeppath(v):
         if arvados.util.keep_locator_pattern.match(v):
-            job_order_object[k] = "file://%s/%s" % (os.environ['TASK_KEEPMOUNT'], v)
+            return "file://%s/%s" % (os.environ['TASK_KEEPMOUNT'], v)
 
     adjustFiles(job_order_object, keeppath)
 

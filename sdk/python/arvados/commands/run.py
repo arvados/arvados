@@ -151,7 +151,7 @@ def uploadfiles(files, api, dry_run=False, num_retries=0, project=None, fnPatter
         body = {"owner_uuid": project, "manifest_text": collection.manifest_text()}
         if name is not None:
             body["name"] = name
-        item = api.collections().create(body=body).execute()
+        item = api.collections().create(body=body, ensure_unique_name=True).execute()
         pdh = item["portable_data_hash"]
         logger.info("Uploaded to %s", item["uuid"])
 
