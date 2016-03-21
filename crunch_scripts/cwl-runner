@@ -20,9 +20,11 @@ try:
 
     print job_order_object
 
-    for k,v in job_order_object.items():
+    def keeppath(v):
         if arvados.util.keep_locator_pattern.match(v):
             job_order_object[k] = "file://%s/%s" % (os.environ['TASK_KEEPMOUNT'], v)
+
+    adjustFiles(job_order_object, keeppath)
 
     runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
 

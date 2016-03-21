@@ -101,7 +101,7 @@ def statfile(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)"):
 
     return prefix+fn
 
-def uploadfiles(files, api, dry_run=False, num_retries=0, project=None, fnPattern="$(file %s/%s)"):
+def uploadfiles(files, api, dry_run=False, num_retries=0, project=None, fnPattern="$(file %s/%s)", name=None):
     # Find the smallest path prefix that includes all the files that need to be uploaded.
     # This starts at the root and iteratively removes common parent directory prefixes
     # until all file pathes no longer have a common parent.
@@ -148,7 +148,10 @@ def uploadfiles(files, api, dry_run=False, num_retries=0, project=None, fnPatter
                 stream = sp[0]
                 collection.start_new_stream(stream)
             collection.write_file(f.fn, sp[1])
-        item = api.collections().create(body={"owner_uuid": project, "manifest_text": collection.manifest_text()}).execute()
+        body = {"owner_uuid": project, "manifest_text": collection.manifest_text()}
+        if name is not None:
+            body["name"] = name
+        item = api.collections().create(body=body).execute()
         pdh = item["portable_data_hash"]
         logger.info("Uploaded to %s", item["uuid"])
 
