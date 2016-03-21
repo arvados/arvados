@@ -24,6 +24,8 @@ try:
         if arvados.util.keep_locator_pattern.match(v):
             return "file://%s/%s" % (os.environ['TASK_KEEPMOUNT'], v)
 
+    job_order_object["cwl:tool"] = keeppath(job_order_object["cwl:tool"])
+
     adjustFiles(job_order_object, keeppath)
 
     runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
