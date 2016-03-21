@@ -31,7 +31,7 @@ setup(name='arvados-cwl-runner',
       ],
       install_requires=[
           'cwltool>=1.0.20160311170456',
-          'arvados-python-client>=0.1.20160219154918'
+          'arvados-python-client>=0.1.20160321204431'
       ],
       test_suite='tests',
       tests_require=['mock>=1.0'],
