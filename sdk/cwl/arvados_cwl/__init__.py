@@ -460,11 +460,15 @@ class ArvCwlRunner(object):
         if kwargs.get("conformance_test"):
             return cwltool.main.single_job_executor(tool, job_order, input_basedir, args, **kwargs)
         else:
+            components = {}
+            if "cwl_runner_job" in kwargs:
+                components[os.path.basename(tool.tool["id"])] = {"job": kwargs["cwl_runner_job"]}
+
             self.pipeline = self.api.pipeline_instances().create(
                 body={
                     "owner_uuid": self.project_uuid,
                     "name": shortname(tool.tool["id"]),
-                    "components": {},
+                    "components": components,
                     "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
 
             logger.info("Pipeline instance %s", self.pipeline["uuid"])

@@ -35,7 +35,7 @@ try:
     np = argparse.Namespace()
     np.project_uuid = arvados.current_job()["owner_uuid"]
     np.enable_reuse = True
-    outputObj = runner.arvExecutor(t, job_order_object, "", np)
+    outputObj = runner.arvExecutor(t, job_order_object, "", np, cwl_runner_job=arvados.current_job())
 
     files = {}
     def capture(path):
