@@ -36,6 +36,7 @@ try:
     np.project_uuid = arvados.current_job()["owner_uuid"]
     np.enable_reuse = True
     np.submit = False
+    np.debug = True
     outputObj = runner.arvExecutor(t, job_order_object, "", np, cwl_runner_job=arvados.current_job())
 
     files = {}
