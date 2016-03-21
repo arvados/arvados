@@ -37,7 +37,7 @@ try:
     np.enable_reuse = True
     np.submit = False
     np.debug = True
-    outputObj = runner.arvExecutor(t, job_order_object, "", np, cwl_runner_job=arvados.current_job())
+    outputObj = runner.arvExecutor(t, job_order_object, "", np, cwl_runner_job={"uuid": arvados.current_job()["uuid"], "state": arvados.current_job()["state"]})
 
     files = {}
     def capture(path):
