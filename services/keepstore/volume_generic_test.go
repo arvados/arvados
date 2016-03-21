@@ -730,16 +730,16 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 	err = v.Trash(TestHash)
 	if v.Writable() == false {
 		if err != MethodDisabledError {
-			t.Error(err)
+			t.Fatal(err)
 		}
 	} else if err != nil {
 		if err != ErrNotImplemented {
-			t.Error(err)
+			t.Fatal(err)
 		}
 	} else {
 		_, err = v.Get(TestHash)
 		if err == nil || !os.IsNotExist(err) {
-			t.Errorf("os.IsNotExist(%v) should have been true", err)
+			t.Fatalf("os.IsNotExist(%v) should have been true", err)
 		}
 
 		// Untrash
@@ -755,7 +755,7 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 		t.Fatal(err)
 	}
 	if bytes.Compare(buf, TestBlock) != 0 {
-		t.Errorf("Got data %+q, expected %+q", buf, TestBlock)
+		t.Fatalf("Got data %+q, expected %+q", buf, TestBlock)
 	}
 	bufs.Put(buf)
 }
@@ -859,7 +859,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	err = v.Trash(TestHash)
 	err = checkGet()
 	if err == nil || !os.IsNotExist(err) {
-		t.Errorf("os.IsNotExist(%v) should have been true", err)
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 	v.EmptyTrash()
 

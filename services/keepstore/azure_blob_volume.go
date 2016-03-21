@@ -321,10 +321,6 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 		return MethodDisabledError
 	}
 
-	if trashLifetime != 0 {
-		return ErrNotImplemented
-	}
-
 	// Ideally we would use If-Unmodified-Since, but that
 	// particular condition seems to be ignored by Azure. Instead,
 	// we get the Etag before checking Mtime, and use If-Match to
@@ -339,9 +335,20 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 	} else if time.Since(t) < blobSignatureTTL {
 		return nil
 	}
-	return v.bsClient.DeleteBlob(v.containerName, loc, map[string]string{
-		"If-Match": props.Etag,
+	if trashLifetime == 0 {
+		return v.bsClient.DeleteBlob(v.containerName, loc, map[string]string{
+			"If-Match": props.Etag,
+		})
+	}
+	// Mark as trash
+	err = v.bsClient.CreateBlockBlobFromReader(v.containerName, loc, 0, bytes.NewReader([]byte("")))
+	if err != nil {
+		return err
+	}
+	err = v.bsClient.SetBlobMetadata(v.containerName, loc, map[string]string{
+		"expires_at": fmt.Sprintf("%d", time.Now().Add(trashLifetime).Unix()),
 	})
+	return v.bsClient.GetBlobMetadata(v.containerName, loc)
 }
 
 // Untrash a Keep block.

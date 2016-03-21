@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/base64"
+	"encoding/gob"
 	"encoding/xml"
 	"flag"
 	"fmt"
@@ -74,6 +75,7 @@ func (h *azStubHandler) PutRaw(container, hash string, data []byte) {
 	h.blobs[container+"|"+hash] = &azBlob{
 		Data:        data,
 		Mtime:       time.Now(),
+		Metadata:    make(map[string]string),
 		Uncommitted: make(map[string][]byte),
 	}
 }
@@ -201,6 +203,22 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 		blob.Mtime = time.Now()
 		blob.Etag = makeEtag()
+	case r.Method == "GET" && r.Form.Get("comp") == "metadata" && hash != "":
+		// "Get Blob Metadata" API
+		if !blobExists {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		buf := new(bytes.Buffer)
+		encoder := gob.NewEncoder(buf)
+		err = encoder.Encode(blob.Metadata)
+		if err != nil {
+			log.Print(err)
+			rw.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		rw.Write(buf.Bytes())
+		rw.Header().Set("Content-Length", strconv.Itoa(len(buf.Bytes())))
 	case (r.Method == "GET" || r.Method == "HEAD") && hash != "":
 		// "Get Blob" API
 		if !blobExists {
