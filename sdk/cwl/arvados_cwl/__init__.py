@@ -466,6 +466,10 @@ class ArvCwlRunner(object):
     def arvExecutor(self, tool, job_order, input_basedir, args, **kwargs):
         self.debug = args.debug
 
+        if args.quiet:
+            logger.setLevel(logging.WARN)
+            logging.getLogger('arvados.arv-run').setLevel(logging.WARN)
+
         try:
             self.api.collections().get(uuid=crunchrunner_pdh).execute()
         except arvados.errors.ApiError as e:
