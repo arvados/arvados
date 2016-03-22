@@ -367,9 +367,17 @@ class ArvCwlRunner(object):
         self.uploaded[src] = pair
 
     def upload_docker(self, tool):
-        pass
+        if isinstance(tool, cwltool.draft2tool.CommandLineTool):
+            (docker_req, docker_is_req) = get_feature(tool, "DockerRequirement")
+            if docker_req:
+                arv_docker_get_image(self.api, docker_req, True, self.project_uuid)
+        elif isinstance(tool, cwltool.workflow.Workflow):
+            for s in tool.steps:
+                self.upload_docker(s.embedded_tool)
 
     def submit(self, tool, job_order, input_basedir, args, **kwargs):
+        self.upload_docker(tool)
+
         workflowfiles = set()
         jobfiles = set()
         workflowfiles.add(tool.tool["id"])
