@@ -148,12 +148,21 @@ def uploadfiles(files, api, dry_run=False, num_retries=0, project=None, fnPatter
                 stream = sp[0]
                 collection.start_new_stream(stream)
             collection.write_file(f.fn, sp[1])
-        body = {"owner_uuid": project, "manifest_text": collection.manifest_text()}
-        if name is not None:
-            body["name"] = name
-        item = api.collections().create(body=body, ensure_unique_name=True).execute()
+
+        exists = api.collections().list(filters=[["owner_uuid", "=", project],
+                                                 ["portable_data_hash", "=", collection.portable_data_hash()],
+                                                 ["name", "=", name]]).execute(num_retries=num_retries)
+        if exists["items"]:
+            item = exists["items"][0]
+            logger.info("Using collection %s", item["uuid"])
+        else:
+            body = {"owner_uuid": project, "manifest_text": collection.manifest_text()}
+            if name is not None:
+                body["name"] = name
+            item = api.collections().create(body=body, ensure_unique_name=True).execute()
+            logger.info("Uploaded to %s", item["uuid"])
+
         pdh = item["portable_data_hash"]
-        logger.info("Uploaded to %s", item["uuid"])
 
     for c in files:
         c.fn = fnPattern % (pdh, c.fn)
