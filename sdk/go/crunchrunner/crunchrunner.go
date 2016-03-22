@@ -117,6 +117,8 @@ func setupCommand(cmd *exec.Cmd, taskp TaskDef, outdir string, replacements map[
 		cmd.Stdout = os.Stdout
 	}
 
+	cmd.Stderr = os.Stderr
+
 	if taskp.Env != nil {
 		// Set up subprocess environment
 		cmd.Env = os.Environ()
