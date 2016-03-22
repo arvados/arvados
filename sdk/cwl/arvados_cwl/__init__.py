@@ -215,7 +215,7 @@ class ArvadosJob(object):
                     tmpdir = None
                     outdir = None
                     keepdir = None
-                    for l in log.readlines():
+                    for l in log:
                         g = tmpdirre.match(l)
                         if g:
                             tmpdir = g.group(1)
