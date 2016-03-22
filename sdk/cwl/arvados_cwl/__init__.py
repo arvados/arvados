@@ -290,9 +290,6 @@ class RunnerJob(object):
                       set(("$import", "run")),
                       set(("$include", "$schemas", "path")),
                       loadref)
-        print self.tool.tool
-        print sc
-
         adjustFiles(sc, functools.partial(visitFiles, workflowfiles))
         adjustFiles(self.job_order, functools.partial(visitFiles, jobfiles))
 
