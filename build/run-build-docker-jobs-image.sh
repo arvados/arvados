@@ -54,21 +54,23 @@ do
     esac
 done
 
-
 EXITCODE=0
 
-COLUMNS=80
-
-title () {
-    printf "\n%*s\n\n" $(((${#title}+$COLUMNS)/2)) "********** $1 **********"
+exit_cleanly() {
+    trap - INT
+    report_outcomes
+    exit $EXITCODE
 }
+
+COLUMNS=80
+. $WORKSPACE/build/run-library.sh
 
 docker_push () {
     if [[ ! -z "$tags" ]]
     then
         for tag in $( echo $tags|tr "," " " )
         do
-             $DOCKER tag -f $1 $1:$tag
+             $DOCKER tag $1 $1:$tag
         done
     fi
 
@@ -82,17 +84,9 @@ docker_push () {
     done
 
     if [[ "$ECODE" != "0" ]]; then
-        title "!!!!!! docker push $* failed !!!!!!"
         EXITCODE=$(($EXITCODE + $ECODE))
     fi
-}
-
-timer_reset() {
-    t0=$SECONDS
-}
-
-timer() {
-    echo -n "$(($SECONDS - $t0))s"
+    checkexit $ECODE "docker push $*"
 }
 
 # Sanity check
@@ -136,10 +130,10 @@ cp $HOME/docker/config.yml .
 ECODE=$?
 
 if [[ "$ECODE" != "0" ]]; then
-    title "!!!!!! docker BUILD FAILED !!!!!!"
     EXITCODE=$(($EXITCODE + $ECODE))
 fi
 
+checkexit $ECODE "docker build"
 title "docker build complete (`timer`)"
 
 title "uploading images"
@@ -155,10 +149,10 @@ else
         docker login -u arvados
 
         docker_push arvados/jobs
-        title "upload arvados images complete (`timer`)"
+        title "upload arvados images finished (`timer`)"
     else
-        title "upload arvados images SKIPPED because no --upload option set"
+        title "upload arvados images SKIPPED because no --upload option set (`timer`)"
     fi
 fi
 
-exit $EXITCODE
+exit_cleanly
