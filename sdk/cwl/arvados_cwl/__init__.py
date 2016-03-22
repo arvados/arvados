@@ -232,6 +232,34 @@ class ArvadosJob(object):
                         #if tmpdir and outdir and keepdir:
                         #    break
 
+                        # Create a collection located in the same project as the pipeline with the contents of the output.
+                        # First, get output record.
+                        collections = self.arvrunner.api.collections().list(limit=1,
+                                                                           filters=[['portable_data_hash', '=', record["output"]]],
+                                                                           select=["portable_data_hash", "manifest_text"]
+                        ).execute(num_retries=self.arvrunner.num_retries)
+
+                        if collections["items"]:
+                            colname = "Output %s of %s" % (record["output"][0:7], self.name)
+
+                            # check if there is a name collision.
+                            name_collision = self.arvrunner.api.collections().list(filters=[["owner_uuid", "=", self.arvrunner.project_uuid],
+                                                                                            ["name", "=", name]]
+                            ).execute(num_retries=self.arvrunner.num_retries)
+
+                            if not name_collision["items"]:
+                                # Create new collection in the parent project
+                                # with the output contents.
+                                self.arvrunner.api.collections().create(body={
+                                    "owner_uuid": self.arvrunner.project_uuid,
+                                    "name": colname,
+                                    "portable_data_hash": collections[0]["portable_data_hash"],
+                                    "manifest_text": collections[0]["manifest_text"]
+                                }, ensure_unique_name=True).execute(num_retries=self.arvrunner.num_retries)
+
+                            # else: there is already a collection with the same name and the
+                            # same contents, so nothing to do.
+
                     self.builder.outdir = outdir
                     self.builder.pathmapper.keepdir = keepdir
                     outputs = self.collect_outputs("keep:" + record["output"])
