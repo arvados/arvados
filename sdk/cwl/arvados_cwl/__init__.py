@@ -286,11 +286,14 @@ class RunnerJob(object):
         def loadref(b, u):
             return document_loader.resolve_ref(u, base_url=b)[0]
 
-        adjustFiles(scandeps("", self.tool.tool,
-                             set(("run",)),
-                             set(("$schemas", "path")),
-                             loadref),
-                    functools.partial(visitFiles, workflowfiles))
+        sc = scandeps("", self.tool.tool,
+                      set(("$import", "run")),
+                      set(("$include", "$schemas", "path")),
+                      loadref)
+        print self.tool.tool
+        print sc
+
+        adjustFiles(sc, functools.partial(visitFiles, workflowfiles))
         adjustFiles(self.job_order, functools.partial(visitFiles, jobfiles))
 
         workflowmapper = ArvPathMapper(self.arvrunner, workflowfiles, "",
@@ -335,13 +338,14 @@ class RunnerJob(object):
         else:
             processStatus = "permanentFail"
 
-        outc = arvados.collection.Collection(record["output"])
-        with outc.open("cwl.output.json") as f:
-            outputs = json.load(f)
-
-        self.arvrunner.output_callback(outputs, processStatus)
-
-        del self.arvrunner.jobs[record["uuid"]]
+        outputs = None
+        try:
+            outc = arvados.collection.Collection(record["output"])
+            with outc.open("cwl.output.json") as f:
+                outputs = json.load(f)
+            self.arvrunner.output_callback(outputs, processStatus)
+        finally:
+            del self.arvrunner.jobs[record["uuid"]]
 
 class ArvPathMapper(cwltool.pathmapper.PathMapper):
     def __init__(self, arvrunner, referenced_files, basedir,
