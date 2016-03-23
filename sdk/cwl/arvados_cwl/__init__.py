@@ -213,7 +213,15 @@ class ArvadosJob(object):
                     tmpdir = None
                     outdir = None
                     keepdir = None
-                    for l in log.readlines():
+                    for l in log:
+                        # Determine the tmpdir, outdir and keepdir paths from
+                        # the job run.  Unfortunately, we can't take the first
+                        # values we find (which are expected to be near the
+                        # top) and stop scanning because if the node fails and
+                        # the job restarts on a different node these values
+                        # will different runs, and we need to know about the
+                        # final run that actually produced output.
+
                         g = tmpdirre.match(l)
                         if g:
                             tmpdir = g.group(1)
@@ -224,41 +232,39 @@ class ArvadosJob(object):
                         if g:
                             keepdir = g.group(1)
 
-                        # It turns out if the job fails and restarts it can
-                        # come up on a different compute node, so we have to
-                        # read the log to the end to be sure instead of taking the
-                        # easy way out.
-                        #
-                        #if tmpdir and outdir and keepdir:
-                        #    break
+                    colname = "Output %s of %s" % (record["output"][0:7], self.name)
 
-                        # Create a collection located in the same project as the pipeline with the contents of the output.
+                    # check if collection already exists with same owner, name and content
+                    collection_exists = self.arvrunner.api.collections().list(
+                        filters=[["owner_uuid", "=", self.arvrunner.project_uuid],
+                                 ['portable_data_hash', '=', record["output"]],
+                                 ["name", "=", colname]]
+                    ).execute(num_retries=self.arvrunner.num_retries)
+
+                    if not collection_exists["items"]:
+                        # Create a collection located in the same project as the
+                        # pipeline with the contents of the output.
                         # First, get output record.
-                        collections = self.arvrunner.api.collections().list(limit=1,
-                                                                           filters=[['portable_data_hash', '=', record["output"]]],
-                                                                           select=["portable_data_hash", "manifest_text"]
+                        collections = self.arvrunner.api.collections().list(
+                            limit=1,
+                            filters=[['portable_data_hash', '=', record["output"]]],
+                            select=["manifest_text"]
                         ).execute(num_retries=self.arvrunner.num_retries)
 
-                        if collections["items"]:
-                            colname = "Output %s of %s" % (record["output"][0:7], self.name)
+                        if not collections["items"]:
+                            raise WorkflowException(
+                                "Job output '%s' cannot be found on API server" % (
+                                    record["output"]))
 
-                            # check if there is a name collision.
-                            name_collision = self.arvrunner.api.collections().list(filters=[["owner_uuid", "=", self.arvrunner.project_uuid],
-                                                                                            ["name", "=", name]]
-                            ).execute(num_retries=self.arvrunner.num_retries)
-
-                            if not name_collision["items"]:
-                                # Create new collection in the parent project
-                                # with the output contents.
-                                self.arvrunner.api.collections().create(body={
-                                    "owner_uuid": self.arvrunner.project_uuid,
-                                    "name": colname,
-                                    "portable_data_hash": collections[0]["portable_data_hash"],
-                                    "manifest_text": collections[0]["manifest_text"]
-                                }, ensure_unique_name=True).execute(num_retries=self.arvrunner.num_retries)
-
-                            # else: there is already a collection with the same name and the
-                            # same contents, so nothing to do.
+                        # Create new collection in the parent project
+                        # with the output contents.
+                        self.arvrunner.api.collections().create(body={
+                            "owner_uuid": self.arvrunner.project_uuid,
+                            "name": colname,
+                            "portable_data_hash": record["output"],
+                            "manifest_text": collections["items"][0]["manifest_text"]
+                        }, ensure_unique_name=True).execute(
+                            num_retries=self.arvrunner.num_retries)
 
                     self.builder.outdir = outdir
                     self.builder.pathmapper.keepdir = keepdir
