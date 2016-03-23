@@ -67,11 +67,7 @@ class TestJob(unittest.TestCase):
                     'task.env': {'TMPDIR': '$(task.tmpdir)'},
                     'command': ['ls']
                 }],
-<<<<<<< HEAD
                 'crunchrunner': arvados_cwl.crunchrunner_pdh + '/crunchrunner'
-=======
-                'crunchrunner': 'ff6fc71e593081ef9733afacaeee15ea+140/crunchrunner'
->>>>>>> master
             },
             'script_version': 'master',
             'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
