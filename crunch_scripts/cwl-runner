@@ -37,6 +37,7 @@ try:
     np.enable_reuse = True
     np.submit = False
     np.debug = True
+    np.quiet = False
     outputObj = runner.arvExecutor(t, job_order_object, "", np, cwl_runner_job={"uuid": arvados.current_job()["uuid"], "state": arvados.current_job()["state"]})
 
     files = {}
