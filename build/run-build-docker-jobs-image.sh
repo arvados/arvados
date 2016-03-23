@@ -125,7 +125,11 @@ rm -f config.yml
 # Get test config.yml file
 cp $HOME/docker/config.yml .
 
-./build.sh jobs-image
+if [[ ! -z "$tags" ]]; then
+  COMMIT=${tags/,*/} ./build.sh jobs-image
+else
+  ./build.sh jobs-image
+fi
 
 ECODE=$?
 
