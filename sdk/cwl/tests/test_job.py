@@ -26,7 +26,7 @@ class TestJob(unittest.TestCase):
                     'task.env': {'TMPDIR': '$(task.tmpdir)'},
                     'command': ['ls']
                 }],
-                'crunchrunner': 'ff6fc71e593081ef9733afacaeee15ea+140/crunchrunner'
+                'crunchrunner': arvados_cwl.crunchrunner_pdh + '/crunchrunner'
             },
             'script_version': 'master',
             'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
@@ -67,7 +67,11 @@ class TestJob(unittest.TestCase):
                     'task.env': {'TMPDIR': '$(task.tmpdir)'},
                     'command': ['ls']
                 }],
+<<<<<<< HEAD
+                'crunchrunner': arvados_cwl.crunchrunner_pdh + '/crunchrunner'
+=======
                 'crunchrunner': 'ff6fc71e593081ef9733afacaeee15ea+140/crunchrunner'
+>>>>>>> master
             },
             'script_version': 'master',
             'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
@@ -79,3 +83,80 @@ class TestJob(unittest.TestCase):
                 'min_scratch_mb_per_node': 5024 # tmpdirSize + outdirSize
             }
         }, find_or_create=True)
+
+    @mock.patch("arvados.collection.Collection")
+    def test_done(self, col):
+        api = mock.MagicMock()
+
+        runner = mock.MagicMock()
+        runner.api = api
+        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+        runner.num_retries = 0
+
+        col().open.return_value = []
+        api.collections().list().execute.side_effect = ({"items": []},
+                                                        {"items": [{"manifest_text": "XYZ"}]})
+
+        arvjob = arvados_cwl.ArvadosJob(runner)
+        arvjob.name = "testjob"
+        arvjob.builder = mock.MagicMock()
+        arvjob.output_callback = mock.MagicMock()
+        arvjob.collect_outputs = mock.MagicMock()
+
+        arvjob.done({
+            "state": "Complete",
+            "output": "99999999999999999999999999999993+99",
+            "log": "99999999999999999999999999999994+99",
+            "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+        })
+
+        api.collections().list.assert_has_calls([
+            mock.call(),
+            mock.call(filters=[['owner_uuid', '=', 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'],
+                          ['portable_data_hash', '=', '99999999999999999999999999999993+99'],
+                          ['name', '=', 'Output 9999999 of testjob']]),
+            mock.call().execute(num_retries=0),
+            mock.call(limit=1, filters=[['portable_data_hash', '=', '99999999999999999999999999999993+99']],
+                 select=['manifest_text']),
+            mock.call().execute(num_retries=0)])
+
+        api.collections().create.assert_called_with(
+            ensure_unique_name=True,
+            body={'portable_data_hash': '99999999999999999999999999999993+99',
+                  'manifest_text': 'XYZ',
+                  'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                  'name': 'Output 9999999 of testjob'})
+
+    @mock.patch("arvados.collection.Collection")
+    def test_done_use_existing_collection(self, col):
+        api = mock.MagicMock()
+
+        runner = mock.MagicMock()
+        runner.api = api
+        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+        runner.num_retries = 0
+
+        col().open.return_value = []
+        api.collections().list().execute.side_effect = ({"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2"}]},)
+
+        arvjob = arvados_cwl.ArvadosJob(runner)
+        arvjob.name = "testjob"
+        arvjob.builder = mock.MagicMock()
+        arvjob.output_callback = mock.MagicMock()
+        arvjob.collect_outputs = mock.MagicMock()
+
+        arvjob.done({
+            "state": "Complete",
+            "output": "99999999999999999999999999999993+99",
+            "log": "99999999999999999999999999999994+99",
+            "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+        })
+
+        api.collections().list.assert_has_calls([
+            mock.call(),
+            mock.call(filters=[['owner_uuid', '=', 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'],
+                               ['portable_data_hash', '=', '99999999999999999999999999999993+99'],
+                               ['name', '=', 'Output 9999999 of testjob']]),
+            mock.call().execute(num_retries=0)])
+
+        self.assertFalse(api.collections().create.called)
