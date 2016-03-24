@@ -120,7 +120,7 @@ func testCompareNonexistent(t TB, factory TestableVolumeFactory) {
 	defer v.Teardown()
 
 	err := v.Compare(TestHash, TestBlock)
-	if err != os.ErrNotExist {
+	if err != os.ErrNotExist && !strings.Contains(err.Error(), "Not Found") {
 		t.Errorf("Got err %T %q, expected os.ErrNotExist", err, err)
 	}
 }
@@ -455,7 +455,8 @@ func testDeleteOldBlock(t TB, factory TestableVolumeFactory) {
 	if err := v.Trash(TestHash); err != nil {
 		t.Error(err)
 	}
-	if _, err := v.Get(TestHash); err == nil || !os.IsNotExist(err) {
+	_, err := v.Get(TestHash)
+	if err == nil || (!os.IsNotExist(err) && !strings.Contains(err.Error(), "Not Found")) {
 		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
 }
@@ -738,7 +739,7 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 		}
 	} else {
 		_, err = v.Get(TestHash)
-		if err == nil || !os.IsNotExist(err) {
+		if err == nil || (!os.IsNotExist(err) && !strings.Contains(err.Error(), "Not Found")) {
 			t.Fatalf("os.IsNotExist(%v) should have been true", err)
 		}
 
@@ -799,7 +800,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	}
 
 	err = checkGet()
-	if err == nil || !os.IsNotExist(err) {
+	if err == nil || (!os.IsNotExist(err) && !strings.Contains(err.Error(), "Not Found")) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
@@ -819,7 +820,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	// Untrash should fail if the only block in the trash has
 	// already been untrashed.
 	err = v.Untrash(TestHash)
-	if err == nil || !os.IsNotExist(err) {
+	if err == nil || (!os.IsNotExist(err) && !strings.Contains(err.Error(), "Not Found")) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
@@ -839,7 +840,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 		t.Fatal(err)
 	}
 	err = checkGet()
-	if err == nil || !os.IsNotExist(err) {
+	if err == nil || (!os.IsNotExist(err) && !strings.Contains(err.Error(), "Not Found")) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
@@ -858,20 +859,20 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	// goes away.
 	err = v.Trash(TestHash)
 	err = checkGet()
-	if err == nil || !os.IsNotExist(err) {
+	if err == nil || (!os.IsNotExist(err) && !strings.Contains(err.Error(), "Not Found")) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 	v.EmptyTrash()
 
 	// Untrash won't find it
 	err = v.Untrash(TestHash)
-	if err == nil || !os.IsNotExist(err) {
+	if err == nil || (!os.IsNotExist(err) && !strings.Contains(err.Error(), "Not Found")) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
 	// Get block won't find it
 	err = checkGet()
-	if err == nil || !os.IsNotExist(err) {
+	if err == nil || (!os.IsNotExist(err) && !strings.Contains(err.Error(), "Not Found")) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
@@ -888,7 +889,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 		t.Fatal(err)
 	}
 	err = checkGet()
-	if err == nil || !os.IsNotExist(err) {
+	if err == nil || (!os.IsNotExist(err) && !strings.Contains(err.Error(), "Not Found")) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 

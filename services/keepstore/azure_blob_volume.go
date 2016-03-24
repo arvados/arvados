@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -133,6 +134,18 @@ func (v *AzureBlobVolume) Check() error {
 	return nil
 }
 
+// Return NotFoundError if trash marker is found on the block
+func (v *AzureBlobVolume) checkTrashed(loc string) error {
+	metadata, err := v.bsClient.GetBlobMetadata(v.containerName, loc)
+	if err != nil {
+		return err
+	}
+	if metadata["expires_at"] != "" {
+		return v.translateError(NotFoundError)
+	}
+	return nil
+}
+
 // Get reads a Keep block that has been stored as a block blob in the
 // container.
 //
@@ -140,6 +153,9 @@ func (v *AzureBlobVolume) Check() error {
 // unexpectedly empty, assume a PutBlob operation is in progress, and
 // wait for it to finish writing.
 func (v *AzureBlobVolume) Get(loc string) ([]byte, error) {
+	if err := v.checkTrashed(loc); err != nil {
+		return nil, err
+	}
 	var deadline time.Time
 	haveDeadline := false
 	buf, err := v.get(loc)
@@ -244,6 +260,9 @@ func (v *AzureBlobVolume) get(loc string) ([]byte, error) {
 
 // Compare the given data with existing stored data.
 func (v *AzureBlobVolume) Compare(loc string, expect []byte) error {
+	if err := v.checkTrashed(loc); err != nil {
+		return err
+	}
 	rdr, err := v.bsClient.GetBlob(v.containerName, loc)
 	if err != nil {
 		return v.translateError(err)
@@ -260,18 +279,40 @@ func (v *AzureBlobVolume) Put(loc string, block []byte) error {
 	return v.bsClient.CreateBlockBlobFromReader(v.containerName, loc, uint64(len(block)), bytes.NewReader(block))
 }
 
+func (v *AzureBlobVolume) addToMetadata(loc, name, value string) error {
+	metadata, err := v.bsClient.GetBlobMetadata(v.containerName, loc)
+	if err != nil {
+		return err
+	}
+	metadata[name] = value
+	return v.bsClient.SetBlobMetadata(v.containerName, loc, metadata)
+}
+
+func (v *AzureBlobVolume) removeFromMetadata(loc, name string) error {
+	metadata, err := v.bsClient.GetBlobMetadata(v.containerName, loc)
+	if err != nil {
+		return err
+	}
+	delete(metadata, name)
+	return v.bsClient.SetBlobMetadata(v.containerName, loc, metadata)
+}
+
 // Touch updates the last-modified property of a block blob.
 func (v *AzureBlobVolume) Touch(loc string) error {
 	if v.readonly {
 		return MethodDisabledError
 	}
-	return v.bsClient.SetBlobMetadata(v.containerName, loc, map[string]string{
-		"touch": fmt.Sprintf("%d", time.Now()),
-	})
+	if err := v.checkTrashed(loc); err != nil {
+		return err
+	}
+	return v.addToMetadata(loc, "touch", fmt.Sprintf("%d", time.Now()))
 }
 
 // Mtime returns the last-modified property of a block blob.
 func (v *AzureBlobVolume) Mtime(loc string) (time.Time, error) {
+	if err := v.checkTrashed(loc); err != nil {
+		return time.Time{}, err
+	}
 	props, err := v.bsClient.GetBlobProperties(v.containerName, loc)
 	if err != nil {
 		return time.Time{}, err
@@ -341,20 +382,34 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 		})
 	}
 	// Mark as trash
-	err = v.bsClient.CreateBlockBlobFromReader(v.containerName, loc, 0, bytes.NewReader([]byte("")))
+	err = v.addToMetadata(loc, "expires_at", fmt.Sprintf("%d", time.Now().Add(trashLifetime).Unix()))
 	if err != nil {
 		return err
 	}
-	err = v.bsClient.SetBlobMetadata(v.containerName, loc, map[string]string{
-		"expires_at": fmt.Sprintf("%d", time.Now().Add(trashLifetime).Unix()),
-	})
-	return v.bsClient.GetBlobMetadata(v.containerName, loc)
+	return v.bsClient.CreateBlockBlobFromReader(v.containerName,
+		fmt.Sprintf("trash.%d.%v", time.Now().Add(trashLifetime).Unix(), loc), 0, nil)
 }
 
 // Untrash a Keep block.
-// TBD
+// Delete the expires_at metadata attribute and trash marker
 func (v *AzureBlobVolume) Untrash(loc string) error {
-	return ErrNotImplemented
+	// if expires_at does not exist, return NotFoundError
+	metadata, err := v.bsClient.GetBlobMetadata(v.containerName, loc)
+	if err != nil {
+		return err
+	}
+	if metadata["expires_at"] == "" {
+		return v.translateError(NotFoundError)
+	}
+	// reset expires_at metadata attribute
+	err = v.removeFromMetadata(loc, "expires_at")
+	if err != nil {
+		return err
+	}
+
+	// delete trash marker if exists
+	_, err = v.bsClient.DeleteBlobIfExists(v.containerName, fmt.Sprintf("trash.%v.%v", metadata["expires_at"], loc), map[string]string{})
+	return err
 }
 
 // Status returns a VolumeStatus struct with placeholder data.
@@ -403,8 +458,65 @@ func (v *AzureBlobVolume) isKeepBlock(s string) bool {
 	return keepBlockRegexp.MatchString(s)
 }
 
+var azTrashLocRegexp = regexp.MustCompile(`trash\.(\d+)\.([0-9a-f]{32})$`)
+
 // EmptyTrash looks for trashed blocks that exceeded trashLifetime
 // and deletes them from the volume.
-// TBD
 func (v *AzureBlobVolume) EmptyTrash() {
+	var bytesDeleted, bytesInTrash int64
+	var blocksDeleted, blocksInTrash int
+	var noMoreOldMarkers bool
+	params := storage.ListBlobsParameters{
+		Prefix: "trash.",
+	}
+	for {
+		resp, err := v.bsClient.ListBlobs(v.containerName, params)
+		if err != nil {
+			log.Printf("EmptyTrash: ListBlobs: %v", err)
+			break
+		}
+		for _, b := range resp.Blobs {
+			matches := azTrashLocRegexp.FindStringSubmatch(b.Name)
+			if len(matches) != 3 {
+				log.Printf("EmptyTrash: regexp mismatch for: %v", b.Name)
+				continue
+			}
+			blocksInTrash++
+			deadline, err := strconv.ParseInt(matches[1], 10, 64)
+			if err != nil {
+				log.Printf("EmptyTrash: %v: ParseInt(%v): %v", matches[1], err)
+				continue
+			}
+			if deadline > time.Now().Unix() {
+				noMoreOldMarkers = true
+				break
+			}
+
+			metadata, err := v.bsClient.GetBlobMetadata(v.containerName, matches[2])
+			if err != nil {
+				log.Printf("EmptyTrash: %v: GetBlobMetadata(%v): %v", matches[2], err)
+				continue
+			}
+
+			// Make sure the marker is for the current block, not an older one
+			if metadata["expires_at"] == matches[1] {
+				err = v.bsClient.DeleteBlob(v.containerName, matches[2], map[string]string{})
+				if err != nil {
+					log.Printf("EmptyTrash: %v: DeleteBlob(%v): %v", matches[2], err)
+				}
+				blocksDeleted++
+			}
+
+			err = v.bsClient.DeleteBlob(v.containerName, b.Name, map[string]string{})
+			if err != nil {
+				log.Printf("EmptyTrash: %v: DeleteBlob(%v): %v", b.Name, err)
+			}
+		}
+		if resp.NextMarker == "" || noMoreOldMarkers == true {
+			break
+		}
+		params.Marker = resp.NextMarker
+	}
+
+	log.Printf("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
 }

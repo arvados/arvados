@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/base64"
-	"encoding/gob"
 	"encoding/xml"
 	"flag"
 	"fmt"
@@ -72,10 +71,12 @@ func (h *azStubHandler) TouchWithDate(container, hash string, t time.Time) {
 func (h *azStubHandler) PutRaw(container, hash string, data []byte) {
 	h.Lock()
 	defer h.Unlock()
+	metadata := make(map[string]string)
+	metadata["last_write_at"] = fmt.Sprintf("%d", time.Now().Unix())
 	h.blobs[container+"|"+hash] = &azBlob{
 		Data:        data,
 		Mtime:       time.Now(),
-		Metadata:    make(map[string]string),
+		Metadata:    metadata,
 		Uncommitted: make(map[string][]byte),
 	}
 }
@@ -138,6 +139,7 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			h.blobs[container+"|"+hash] = &azBlob{
 				Mtime:       time.Now(),
 				Uncommitted: make(map[string][]byte),
+				Metadata:    make(map[string]string),
 				Etag:        makeEtag(),
 			}
 			h.unlockAndRace()
@@ -146,6 +148,7 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			Data:        body,
 			Mtime:       time.Now(),
 			Uncommitted: make(map[string][]byte),
+			Metadata:    make(map[string]string),
 			Etag:        makeEtag(),
 		}
 		rw.WriteHeader(http.StatusCreated)
@@ -203,22 +206,16 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		}
 		blob.Mtime = time.Now()
 		blob.Etag = makeEtag()
-	case r.Method == "GET" && r.Form.Get("comp") == "metadata" && hash != "":
+	case (r.Method == "GET" || r.Method == "HEAD") && r.Form.Get("comp") == "metadata" && hash != "":
 		// "Get Blob Metadata" API
 		if !blobExists {
 			rw.WriteHeader(http.StatusNotFound)
 			return
 		}
-		buf := new(bytes.Buffer)
-		encoder := gob.NewEncoder(buf)
-		err = encoder.Encode(blob.Metadata)
-		if err != nil {
-			log.Print(err)
-			rw.WriteHeader(http.StatusInternalServerError)
-			return
+		for k, v := range blob.Metadata {
+			rw.Header().Set(k, v)
 		}
-		rw.Write(buf.Bytes())
-		rw.Header().Set("Content-Length", strconv.Itoa(len(buf.Bytes())))
+		return
 	case (r.Method == "GET" || r.Method == "HEAD") && hash != "":
 		// "Get Blob" API
 		if !blobExists {
