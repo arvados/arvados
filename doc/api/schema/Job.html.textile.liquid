@@ -47,6 +47,7 @@ See "Specifying Git versions":#script_version below for more detail about accept
 |arvados_sdk_version|string|Git commit hash that specifies the SDK version to use from the Arvados repository|This is set by searching the Arvados repository for a match for the arvados_sdk_version runtime constraint.|
 |docker_image_locator|string|Portable data hash of the collection that contains the Docker image to use|This is set by searching readable collections for a match for the docker_image runtime constraint.|
 |runtime_constraints|hash|Constraints that must be satisfied by the job/task scheduler in order to run the job.|See below.|
+|components|hash|Name and uuid pairs representing the child work units of this job. The uuids can be of different object types.|Example components hash: @{"name1": "zzzzz-8i9sb-xyz...", "name2": "zzzzz-d1hrv-xyz...",}@|
 
 h3(#script_version). Specifying Git versions
 

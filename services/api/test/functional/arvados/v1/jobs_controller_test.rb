@@ -433,4 +433,49 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_equal('077ba2ad3ea24a929091a9e6ce545c93199b8e57',
                  internal_tag(json_response['uuid']))
   end
+
+  test 'get job with components' do
+    authorize_with :active
+    get :show, {id: jobs(:running_job_with_components).uuid}
+    assert_response :success
+    assert_not_nil json_response["components"]
+    assert_equal ["component1", "component2"], json_response["components"].keys
+  end
+
+  test 'update job with components with no lock' do
+    authorize_with :active
+    put :update, {
+      id: jobs(:running_job_with_components).uuid,
+      job: {
+        components: {}
+      }
+    }
+    assert_response 403
+  end
+
+  test 'update job with components' do
+    authorize_with :admin
+    put :update, {
+      id: jobs(:running_job_with_components).uuid,
+      job: {
+        components: {}
+      }
+    }
+    assert_response :success
+  end
+
+  test 'add components to job locked by active user as system user' do
+    authorize_with :system_user
+    put :update, {
+      id: jobs(:running).uuid,
+      job: {
+        components: {"component1" => "value1", "component2" => "value2"}
+      }
+    }
+    assert_response :success
+    assert_not_nil json_response["components"]
+    keys = json_response["components"].keys
+    assert_equal ["component1", "component2"], keys
+    assert_equal "value1", json_response["components"][keys[0]]
+  end
 end
