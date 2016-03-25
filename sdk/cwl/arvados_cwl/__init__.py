@@ -21,6 +21,7 @@ import os
 import sys
 import functools
 import json
+import pkg_resources  # part of setuptools
 
 from cwltool.process import get_feature, adjustFiles, scandeps
 from arvados.api import OrderedJsonModel
@@ -603,6 +604,15 @@ class ArvCwlRunner(object):
 
             return self.final_output
 
+def versionstring():
+    cwlpkg = pkg_resources.require("cwltool")
+    arvpkg = pkg_resources.require("arvados-python-client")
+    arvcwlpkg = pkg_resources.require("arvados-cwl-runner")
+
+    return "%s\n%s %s\n%s %s\n%s %s" % (sys.argv[0],
+                                        "arvados-cwl-runner", arvcwlpkg[0].version,
+                                        "arvados-python-client", cwlpkg[0].version,
+                                        "cwltool", arvpkg[0].version)
 
 def main(args, stdout, stderr, api_client=None):
     args.insert(0, "--leave-outputs")
@@ -633,4 +643,5 @@ def main(args, stdout, stderr, api_client=None):
                              stderr=stderr,
                              executor=runner.arvExecutor,
                              makeTool=runner.arvMakeTool,
-                             parser=parser)
+                             parser=parser,
+                             versionfunc=versionstring)
