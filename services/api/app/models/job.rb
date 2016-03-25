@@ -78,12 +78,7 @@ class Job < ArvadosModel
   end
 
   def queue_position
-    Job::queue.each_with_index do |job, index|
-      if job[:uuid] == self.uuid
-        return index
-      end
-    end
-    nil
+    state == Queued ? 0 : nil
   end
 
   def self.running
