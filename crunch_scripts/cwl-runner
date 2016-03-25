@@ -18,8 +18,6 @@ api = arvados.api("v1")
 try:
     job_order_object = arvados.current_job()['script_parameters']
 
-    print job_order_object
-
     def keeppath(v):
         if arvados.util.keep_locator_pattern.match(v):
             return "file://%s/%s" % (os.environ['TASK_KEEPMOUNT'], v)

@@ -372,9 +372,12 @@ class RunnerJob(object):
 
         outputs = None
         try:
-            outc = arvados.collection.Collection(record["output"])
-            with outc.open("cwl.output.json") as f:
-                outputs = json.load(f)
+            try:
+                outc = arvados.collection.Collection(record["output"])
+                with outc.open("cwl.output.json") as f:
+                    outputs = json.load(f)
+            except Exception as e:
+                logger.error("While getting final output object: %s", e)
             self.arvrunner.output_callback(outputs, processStatus)
         finally:
             del self.arvrunner.jobs[record["uuid"]]
@@ -383,20 +386,22 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
     def __init__(self, arvrunner, referenced_files, basedir,
                  collection_pattern, file_pattern, name=None, **kwargs):
         self._pathmap = arvrunner.get_uploaded()
-        uploadfiles = []
+        uploadfiles = set()
 
         pdh_path = re.compile(r'^keep:[0-9a-f]{32}\+\d+/.+')
 
         for src in referenced_files:
             if isinstance(src, basestring) and pdh_path.match(src):
                 self._pathmap[src] = (src, collection_pattern % src[5:])
+            if "#" in src:
+                src = src[:src.index("#")]
             if src not in self._pathmap:
                 ab = cwltool.pathmapper.abspath(src, basedir)
                 st = arvados.commands.run.statfile("", ab, fnPattern=file_pattern)
                 if kwargs.get("conformance_test"):
                     self._pathmap[src] = (src, ab)
                 elif isinstance(st, arvados.commands.run.UploadFile):
-                    uploadfiles.append((src, ab, st))
+                    uploadfiles.add((src, ab, st))
                 elif isinstance(st, arvados.commands.run.ArvFile):
                     self._pathmap[src] = (ab, st.fn)
                 else:
@@ -609,7 +614,7 @@ def versionstring():
     arvpkg = pkg_resources.require("arvados-python-client")
     arvcwlpkg = pkg_resources.require("arvados-cwl-runner")
 
-    return "%s\n%s %s\n%s %s\n%s %s" % (sys.argv[0],
+    return "%s %s, %s %s, %s %s" % (sys.argv[0],
                                         "arvados-cwl-runner", arvcwlpkg[0].version,
                                         "arvados-python-client", cwlpkg[0].version,
                                         "cwltool", arvpkg[0].version)

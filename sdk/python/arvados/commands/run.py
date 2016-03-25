@@ -34,6 +34,12 @@ class ArvFile(object):
         self.prefix = prefix
         self.fn = fn
 
+    def __hash__(self):
+        return (self.prefix+self.fn).__hash__()
+
+    def __eq__(self, other):
+        return (self.prefix == other.prefix) and (self.fn == other.fn)
+
 class UploadFile(ArvFile):
     pass
 
