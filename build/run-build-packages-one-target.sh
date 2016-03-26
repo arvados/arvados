@@ -132,7 +132,8 @@ if test -z "$packages" ; then
         keep-rsync
         keepstore
         keep-web
-        libarvados-perl"
+        libarvados-perl
+        python-arvados-cwl-runner"
 
     case "$TARGET" in
         centos6)

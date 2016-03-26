@@ -93,8 +93,8 @@ case "$TARGET" in
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
-            'pycurl<7.21.5' contextlib2 pyyaml 'rdflib>=4.2.0' 'rdflib-jsonld>=0.3.0' \
-            shellescape mistune)
+            'pycurl<7.21.5' contextlib2 pyyaml 'rdflib>=4.2.0' \
+            shellescape mistune typing avro)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
     debian8)
@@ -107,8 +107,8 @@ case "$TARGET" in
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
-            'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' 'rdflib-jsonld>=0.3.0' \
-            shellescape mistune)
+            'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
+            shellescape mistune typing avro)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
     ubuntu1204)
@@ -122,7 +122,7 @@ case "$TARGET" in
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             contextlib2 'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
-            'rdflib-jsonld>=0.3.0' shellescape mistune)
+            shellescape mistune typing avro)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
     ubuntu1404)
@@ -134,7 +134,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(pyasn1==0.1.7 pyasn1-modules==0.0.5 llfuse==0.41.1 ciso8601 \
             google-api-python-client==1.4.2 six uritemplate oauth2client==1.5.2 httplib2 \
             rsa 'pycurl<7.21.5' backports.ssl_match_hostname pyyaml 'rdflib>=4.2.0' \
-            'rdflib-jsonld>=0.3.0' shellescape mistune)
+            shellescape mistune typing avro)
         PYTHON3_BACKPORTS=(docker-py requests websocket-client)
         ;;
     centos6)
@@ -148,7 +148,7 @@ case "$TARGET" in
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname 'pycurl<7.21.5' \
             python-daemon lockfile llfuse==0.41.1 'pbr<1.0' pyyaml \
-            'rdflib>=4.2.0' 'rdflib-jsonld>=0.3.0' shellescape mistune)
+            'rdflib>=4.2.0' shellescape mistune typing avro)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         export PYCURL_SSL_LIBRARY=nss
         ;;
@@ -426,6 +426,9 @@ fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t deb --exclud
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
 fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t deb --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies -n python-cwltool --iteration 1 --python-bin python2.7 --python-easyinstall easy_install-2.7 --python-package-name-prefix python --depends python2.7 -v 1.0.20160316204054 cwltool
+
+# FPM eats the trailing .0 in the python-rdflib-jsonld package when built with 'rdflib-jsonld>=0.3.0'. Force the version. Ward, 2016-03-25
+fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t deb --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies --verbose --log info -n python-rdflib-jsonld --iteration 1 --python-bin python2.7 --python-easyinstall easy_install-2.7 --python-package-name-prefix python --depends python2.7 -v 0.3.0 rdflib-jsonld
 
 # The PAM module
 if [[ $TARGET =~ debian|ubuntu ]]; then
