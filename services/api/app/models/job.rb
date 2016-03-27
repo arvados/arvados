@@ -78,6 +78,12 @@ class Job < ArvadosModel
   end
 
   def queue_position
+    # We used to report this accurately, but the implementation made queue
+    # API requests O(n**2) for the size of the queue.  See #8800.
+    # We've soft-disabled it because it's not clear we even want this
+    # functionality: now that we have Node Manager with support for multiple
+    # node sizes, "queue position" tells you very little about when a job will
+    # run.
     state == Queued ? 0 : nil
   end
 
