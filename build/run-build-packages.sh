@@ -93,8 +93,8 @@ case "$TARGET" in
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
-            'pycurl<7.21.5' contextlib2 pyyaml 'rdflib>=4.2.0' 'rdflib-jsonld>=0.3.0' \
-            shellescape mistune)
+            'pycurl<7.21.5' contextlib2 pyyaml 'rdflib>=4.2.0' \
+            shellescape mistune typing avro)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
     debian8)
@@ -107,8 +107,8 @@ case "$TARGET" in
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
-            'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' 'rdflib-jsonld>=0.3.0' \
-            shellescape mistune)
+            'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
+            shellescape mistune typing avro)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
     ubuntu1204)
@@ -122,7 +122,7 @@ case "$TARGET" in
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             contextlib2 'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
-            'rdflib-jsonld>=0.3.0' shellescape mistune)
+            shellescape mistune typing avro isodate)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         ;;
     ubuntu1404)
@@ -134,7 +134,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(pyasn1==0.1.7 pyasn1-modules==0.0.5 llfuse==0.41.1 ciso8601 \
             google-api-python-client==1.4.2 six uritemplate oauth2client==1.5.2 httplib2 \
             rsa 'pycurl<7.21.5' backports.ssl_match_hostname pyyaml 'rdflib>=4.2.0' \
-            'rdflib-jsonld>=0.3.0' shellescape mistune)
+            shellescape mistune typing avro)
         PYTHON3_BACKPORTS=(docker-py requests websocket-client)
         ;;
     centos6)
@@ -148,7 +148,8 @@ case "$TARGET" in
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname 'pycurl<7.21.5' \
             python-daemon lockfile llfuse==0.41.1 'pbr<1.0' pyyaml \
-            'rdflib>=4.2.0' 'rdflib-jsonld>=0.3.0' shellescape mistune)
+            'rdflib>=4.2.0' shellescape mistune typing avro requests \
+            isodate pyparsing sparqlwrapper html5lib keepalive)
         PYTHON3_BACKPORTS=(docker-py six requests websocket-client)
         export PYCURL_SSL_LIBRARY=nss
         ;;
@@ -405,7 +406,7 @@ fpm_build $WORKSPACE/sdk/python "${PYTHON2_PKG_PREFIX}-arvados-python-client" 'C
 # cwl-runner
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/sdk/cwl/build"
-fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/cwl/arvados_cwl_runner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados CWL runner"
+fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/cwl/arvados_cwl_runner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados CWL runner" --iteration 2
 
 # schema_salad. This is a python dependency of arvados-cwl-runner,
 # but we can't use the usual PYTHONPACKAGES way to build this package due to the
@@ -422,10 +423,13 @@ fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curover
 # So we build this thing separately.
 #
 # Ward, 2016-03-17
-fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t deb --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies -n python-schema-salad --iteration 1 --python-bin python2.7 --python-easyinstall easy_install-2.7 --python-package-name-prefix python --depends python2.7 -v 1.7.20160316203940 schema_salad
+fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t $FORMAT --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies -n "${PYTHON2_PKG_PREFIX}-schema-salad" --iteration 1 --python-bin python2.7 --python-easyinstall "$EASY_INSTALL2" --python-package-name-prefix "$PYTHON2_PKG_PREFIX" --depends "$PYTHON2_PACKAGE" -v 1.7.20160316203940 schema_salad
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
-fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t deb --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies -n python-cwltool --iteration 1 --python-bin python2.7 --python-easyinstall easy_install-2.7 --python-package-name-prefix python --depends python2.7 -v 1.0.20160316204054 cwltool
+fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t $FORMAT --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies -n "${PYTHON2_PKG_PREFIX}-cwltool" --iteration 1 --python-bin python2.7 --python-easyinstall "$EASY_INSTALL2" --python-package-name-prefix "$PYTHON2_PKG_PREFIX" --depends "$PYTHON2_PACKAGE" -v 1.0.20160316204054 cwltool
+
+# FPM eats the trailing .0 in the python-rdflib-jsonld package when built with 'rdflib-jsonld>=0.3.0'. Force the version. Ward, 2016-03-25
+fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t $FORMAT --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies --verbose --log info -n "${PYTHON2_PKG_PREFIX}-rdflib-jsonld" --iteration 1 --python-bin python2.7 --python-easyinstall "$EASY_INSTALL2" --python-package-name-prefix "$PYTHON2_PKG_PREFIX" --depends "$PYTHON2_PACKAGE" -v 0.3.0 rdflib-jsonld
 
 # The PAM module
 if [[ $TARGET =~ debian|ubuntu ]]; then

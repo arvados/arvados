@@ -257,7 +257,7 @@ func (v *AzureBlobVolume) Put(loc string, block []byte) error {
 	if v.readonly {
 		return MethodDisabledError
 	}
-	return v.bsClient.CreateBlockBlobFromReader(v.containerName, loc, uint64(len(block)), bytes.NewReader(block))
+	return v.bsClient.CreateBlockBlobFromReader(v.containerName, loc, uint64(len(block)), bytes.NewReader(block), nil)
 }
 
 // Touch updates the last-modified property of a block blob.
