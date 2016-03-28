@@ -110,3 +110,13 @@ echo z1.test > /var/tmp/arv-node-data/meta-data/instance-type
         self.driver_mock().create_node.side_effect = IOError
         n = driver.create_node(testutil.MockSize(1), arv_node)
         self.assertEqual('compute-000000000000001-zzzzz', n.name)
+
+    def test_ex_fetch_nic_false(self):
+        arv_node = testutil.arvados_node_mock(1, hostname=None)
+        driver = self.new_driver(create_kwargs={"tag_arvados-class": "dynamic-compute"})
+        nodelist = [testutil.cloud_node_mock(1, tags={"arvados-class": "dynamic-compute"})]
+        nodelist[0].name = 'compute-000000000000001-zzzzz'
+        self.driver_mock().list_nodes.return_value = nodelist
+        n = driver.list_nodes()
+        self.assertEqual(nodelist, n)
+        self.driver_mock().list_nodes.assert_called_with(ex_fetch_nic=False, ex_resource_group='TestResourceGroup')

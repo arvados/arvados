@@ -316,7 +316,6 @@ class JobTest < ActiveSupport::TestCase
 
     assert_not_nil job1.queue_position, "Expected non-nil queue position for job1"
     assert_not_nil job2.queue_position, "Expected non-nil queue position for job2"
-    assert_not_equal job1.queue_position, job2.queue_position
   end
 
   SDK_MASTER = "ca68b24e51992e790f29df5cc4bc54ce1da4a1c2"

@@ -217,7 +217,7 @@ keep-proxy-image: debian-arvados-image $(BUILD) $(KEEP_PROXY_DEPS)
 	date >keep-proxy-image
 
 jobs-image: debian-arvados-image $(BUILD) $(JOBS_DEPS)
-	$(DOCKER_BUILD) -t arvados/jobs jobs
+	$(DOCKER_BUILD) --build-arg COMMIT=$(COMMIT) -t arvados/jobs jobs
 	date >jobs-image
 
 java-bwa-samtools-image: jobs-image $(BUILD) $(JAVA_BWA_SAMTOOLS_DEPS)

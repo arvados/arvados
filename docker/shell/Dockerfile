@@ -5,7 +5,7 @@ MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 RUN apt-get update -q
 RUN apt-get install -qy \
-    python-pip python-pyvcf python-gflags python-google-api-python-client \
+    python-pip python-gflags python-google-api-python-client \
     python-virtualenv libattr1-dev libfuse-dev python-dev python-llfuse fuse \
     crunchstat python-arvados-fuse cron vim supervisor openssh-server
 

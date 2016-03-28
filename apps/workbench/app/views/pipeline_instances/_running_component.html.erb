@@ -61,16 +61,6 @@
             <div class="col-md-6">
               <% queuetime = Time.now - Time.parse(current_job[:created_at].to_s) %>
               Queued for <%= render_runtime(queuetime, false) %>.
-              <% begin %>
-                <% if current_job[:queue_position] == 0 %>
-                  This job is next in the queue to run.
-                <% elsif current_job[:queue_position] == 1 %>
-                  There is 1 job in the queue ahead of this one.
-                <% elsif current_job[:queue_position] %>
-                  There are <%= current_job[:queue_position] %> jobs in the queue ahead of this one.
-                <% end %>
-              <% rescue %>
-              <% end %>
             </div>
           <% elsif current_job[:state] == "Running" %>
             <%# column offset 8 %>
