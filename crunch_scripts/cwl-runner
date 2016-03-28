@@ -13,6 +13,8 @@ import argparse
 from arvados.api import OrderedJsonModel
 from cwltool.process import adjustFiles
 
+print cwltool.main.versionstring()
+
 api = arvados.api("v1")
 
 try:
