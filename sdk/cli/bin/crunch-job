@@ -109,6 +109,9 @@ unless (defined $ENV{"CRUNCH_TMP"}) {
   }
 }
 
+$ENV{"HOST_CRUNCHRUNNER_BIN"} ||= `which crunchrunner`;
+$ENV{"HOST_CERTS"} ||= "/etc/ssl/certs/ca-certificates.crt";
+
 # Create the tmp directory if it does not exist
 if ( ! -d $ENV{"CRUNCH_TMP"} ) {
   make_path $ENV{"CRUNCH_TMP"} or die "Failed to create temporary working directory: " . $ENV{"CRUNCH_TMP"};
@@ -916,6 +919,11 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       #
       # For now, use the same approach as TASK_WORK above.
       $ENV{"JOB_WORK"} = "/tmp/crunch-job-work";
+
+      # Bind mount the crunchrunner binary and host TLS certificates file into
+      # the container.
+      $command .= "--volume=\Q$ENV{HOST_CRUNCHRUNNER_BIN}:/usr/lib/crunchrunner/crunchrunner\E ";
+      $command .= "--volume=\Q$ENV{HOST_CERTS}:/usr/lib/crunchrunner/ca-certificates.crt\E ";
 
       while (my ($env_key, $env_val) = each %ENV)
       {
