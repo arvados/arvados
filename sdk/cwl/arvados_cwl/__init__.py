@@ -26,10 +26,6 @@ from arvados.api import OrderedJsonModel
 logger = logging.getLogger('arvados.cwl-runner')
 logger.setLevel(logging.INFO)
 
-crunchrunner_pdh = "ff6fc71e593081ef9733afacaeee15ea+140"
-crunchrunner_download = "https://cloud.curoverse.com/collections/download/qr1hi-4zz18-n3m1yxd0vx78jic/1i1u2qtq66k1atziv4ocfgsg5nu5tj11n4r6e0bhvjg03rix4m/crunchrunner"
-certs_download = "https://cloud.curoverse.com/collections/download/qr1hi-4zz18-n3m1yxd0vx78jic/1i1u2qtq66k1atziv4ocfgsg5nu5tj11n4r6e0bhvjg03rix4m/ca-certificates.crt"
-
 tmpdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.tmpdir\)=(.*)")
 outdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.outdir\)=(.*)")
 keepre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.keep\)=(.*)")
@@ -152,6 +148,8 @@ class ArvadosJob(object):
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if docker_req and kwargs.get("use_container") is not False:
             runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvrunner.project_uuid)
+        else:
+            runtime_constraints["docker_image"] = "arvados/jobs"
 
         resources = self.builder.resources
         if resources is not None:
@@ -166,7 +164,7 @@ class ArvadosJob(object):
                 "repository": "arvados",
                 "script_version": "master",
                 "minimum_script_version": "9e5b98e8f5f4727856b53447191f9c06e3da2ba6",
-                "script_parameters": {"tasks": [script_parameters], "crunchrunner": crunchrunner_pdh+"/crunchrunner"},
+                "script_parameters": {"tasks": [script_parameters]},
                 "runtime_constraints": runtime_constraints
             }, find_or_create=kwargs.get("enable_reuse", True)).execute(num_retries=self.arvrunner.num_retries)
 
@@ -398,22 +396,6 @@ class ArvCwlRunner(object):
         events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#job"]], self.on_message)
 
         self.debug = args.debug
-
-        try:
-            self.api.collections().get(uuid=crunchrunner_pdh).execute()
-        except arvados.errors.ApiError as e:
-            import httplib2
-            h = httplib2.Http(ca_certs=arvados.util.ca_certs_path())
-            resp, content = h.request(crunchrunner_download, "GET")
-            resp2, content2 = h.request(certs_download, "GET")
-            with arvados.collection.Collection() as col:
-                with col.open("crunchrunner", "w") as f:
-                    f.write(content)
-                with col.open("ca-certificates.crt", "w") as f:
-                    f.write(content2)
-
-                col.save_new("crunchrunner binary", ensure_unique_name=True)
-
         self.fs_access = CollectionFsAccess(input_basedir)
 
         kwargs["fs_access"] = self.fs_access
