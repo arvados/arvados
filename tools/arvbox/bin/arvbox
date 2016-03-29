@@ -39,10 +39,6 @@ if test -z "$ARVADOS_ROOT" ; then
     ARVADOS_ROOT="$ARVBOX_DATA/arvados"
 fi
 
-if test -z "$ARVADOS_DEV_ROOT" ; then
-    ARVADOS_DEV_ROOT="$ARVBOX_DATA/arvados-dev"
-fi
-
 if test -z "$SSO_ROOT" ; then
     SSO_ROOT="$ARVBOX_DATA/sso-devise-omniauth-provider"
 fi
@@ -165,10 +161,6 @@ run() {
         if test "$1" = test ; then
             shift
 
-            if ! test -d "$ARVADOS_DEV_ROOT" ; then
-                git clone https://github.com/curoverse/arvados-dev.git "$ARVADOS_DEV_ROOT"
-            fi
-
             mkdir -p $VAR_DATA/test
 
             docker run \
@@ -176,7 +168,6 @@ run() {
                    --name=$ARVBOX_CONTAINER \
                    --privileged \
                    "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
-                   "--volume=$ARVADOS_DEV_ROOT:/usr/src/arvados-dev:rw" \
                    "--volume=$SSO_ROOT:/usr/src/sso:rw" \
                    "--volume=$PG_DATA:/var/lib/postgresql:rw" \
                    "--volume=$VAR_DATA:/var/lib/arvados:rw" \
@@ -203,7 +194,7 @@ run() {
             docker exec -ti \
                    $ARVBOX_CONTAINER \
                    /usr/local/lib/arvbox/runsu.sh \
-                   /usr/src/arvados-dev/jenkins/run-tests.sh \
+                   /usr/src/arvados/build/run-tests.sh \
                    --temp /var/lib/arvados/test \
                    WORKSPACE=/usr/src/arvados \
                    GEM_HOME=/var/lib/gems \
