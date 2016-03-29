@@ -137,11 +137,11 @@ if test -z "$packages" ; then
     case "$TARGET" in
         centos6)
             packages="$packages python27-python-arvados-fuse
-                  python27-python-arvados-python-client"
+                  python27-python-arvados-python-client python27-python-arvados-cwl-runner"
             ;;
         *)
             packages="$packages python-arvados-fuse
-                  python-arvados-python-client"
+                  python-arvados-python-client python-arvados-cwl-runner"
             ;;
     esac
 fi

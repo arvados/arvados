@@ -144,7 +144,7 @@ class Arvados::V1::JobsController < ApplicationController
               end
             end
           end
-          job_queue = Job.queue
+          job_queue = Job.queue.select(:uuid)
           n_queued_before_me = 0
           job_queue.each do |j|
             break if j.uuid == @job.uuid
@@ -153,7 +153,7 @@ class Arvados::V1::JobsController < ApplicationController
           yield "#{db_current_time}" \
             " job #{@job.uuid}" \
             " queue_position #{n_queued_before_me}" \
-            " queue_size #{job_queue.size}" \
+            " queue_size #{job_queue.count}" \
             " nodes_idle #{nodes_in_state[:idle]}" \
             " nodes_alloc #{nodes_in_state[:alloc]}\n"
           last_ack_at = db_current_time
