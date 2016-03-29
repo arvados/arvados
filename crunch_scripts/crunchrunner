@@ -1,2 +1,2 @@
 #!/bin/sh
-exec $TASK_KEEPMOUNT/$JOB_PARAMETER_CRUNCHRUNNER
+exec /usr/local/bin/crunchrunner

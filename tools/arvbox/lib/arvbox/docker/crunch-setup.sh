@@ -12,7 +12,8 @@ export GOPATH=$PWD
 mkdir -p "$GOPATH/src/git.curoverse.com"
 ln -sfn "/usr/src/arvados" "$GOPATH/src/git.curoverse.com/arvados.git"
 flock /var/lib/arvados/gostuff.lock go get -t "git.curoverse.com/arvados.git/services/crunchstat"
-install bin/crunchstat /usr/local/bin
+flock /var/lib/arvados/gostuff.lock go get -t "git.curoverse.com/arvados.git/sdk/go/crunchrunner"
+install bin/crunchstat bin/crunchrunner /usr/local/bin
 
 export ARVADOS_API_HOST=$localip:${services[api]}
 export ARVADOS_API_HOST_INSECURE=1
