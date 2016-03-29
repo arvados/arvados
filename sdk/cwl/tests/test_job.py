@@ -25,14 +25,14 @@ class TestJob(unittest.TestCase):
                 'tasks': [{
                     'task.env': {'TMPDIR': '$(task.tmpdir)'},
                     'command': ['ls']
-                }],
-                'crunchrunner': arvados_cwl.crunchrunner_pdh + '/crunchrunner'
+                }]
             },
             'script_version': 'master',
             'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
             'repository': 'arvados',
             'script': 'crunchrunner',
             'runtime_constraints': {
+                'docker_image': 'arvados/jobs',
                 'min_cores_per_node': 1,
                 'min_ram_mb_per_node': 1024,
                 'min_scratch_mb_per_node': 2048 # tmpdirSize + outdirSize
@@ -66,14 +66,14 @@ class TestJob(unittest.TestCase):
                 'tasks': [{
                     'task.env': {'TMPDIR': '$(task.tmpdir)'},
                     'command': ['ls']
-                }],
-                'crunchrunner': arvados_cwl.crunchrunner_pdh + '/crunchrunner'
+                }]
             },
             'script_version': 'master',
             'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
             'repository': 'arvados',
             'script': 'crunchrunner',
             'runtime_constraints': {
+                'docker_image': 'arvados/jobs',
                 'min_cores_per_node': 3,
                 'min_ram_mb_per_node': 3000,
                 'min_scratch_mb_per_node': 5024 # tmpdirSize + outdirSize
