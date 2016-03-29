@@ -622,6 +622,7 @@ def versionstring():
 def main(args, stdout, stderr, api_client=None):
     args.insert(0, "--leave-outputs")
     parser = cwltool.main.arg_parser()
+
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--enable-reuse", action="store_true",
                         default=True, dest="enable_reuse",
@@ -629,11 +630,20 @@ def main(args, stdout, stderr, api_client=None):
     exgroup.add_argument("--disable-reuse", action="store_false",
                         default=True, dest="enable_reuse",
                         help="")
+
     parser.add_argument("--project-uuid", type=str, help="Project that will own the workflow jobs")
-    parser.add_argument("--submit", action="store_true", help="Submit job and print job uuid.",
-                        default=False)
-    parser.add_argument("--wait", action="store_true", help="Wait for completion after submitting cwl-runner job.",
-                        default=False)
+
+    exgroup = parser.add_mutually_exclusive_group()
+    exgroup.add_argument("--submit", action="store_true", help="Submit runner job so workflow can run unattended.",
+                        default=True, dest="submit")
+    exgroup.add_argument("--local", action="store_false", help="Workflow runner runs on local host and submits jobs.",
+                        default=True, dest="submit")
+
+    exgroup = parser.add_mutually_exclusive_group()
+    exgroup.add_argument("--wait", action="store_true", help="After submitting workflow runner job, wait for completion.",
+                        default=True, dest="wait")
+    exgroup.add_argument("--no-wait", action="store_false", help="Exit after submitting workflow runner job.",
+                        default=True, dest="wait")
 
     try:
         if api_client is None:
