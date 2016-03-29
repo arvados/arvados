@@ -598,9 +598,9 @@ def versionstring():
     arvcwlpkg = pkg_resources.require("arvados-cwl-runner")
 
     return "%s %s, %s %s, %s %s" % (sys.argv[0],
-                                        "arvados-cwl-runner", arvcwlpkg[0].version,
-                                        "arvados-python-client", cwlpkg[0].version,
-                                        "cwltool", arvpkg[0].version)
+                                    arvcwlpkg[0].version,
+                                    "arvados-python-client", cwlpkg[0].version,
+                                    "cwltool", arvpkg[0].version)
 
 def main(args, stdout, stderr, api_client=None):
     args.insert(0, "--leave-outputs")
