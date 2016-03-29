@@ -110,11 +110,12 @@ unless (defined $ENV{"CRUNCH_TMP"}) {
 }
 
 $ENV{"HOST_CRUNCHRUNNER_BIN"} ||= `which crunchrunner`;
-unless (defined($ENV{"HOST_CERTS"}) {
+unless (defined($ENV{"HOST_CERTS"})) {
   if (-f "/etc/ssl/certs/ca-certificates.crt") {
     $ENV{"HOST_CERTS"} = "/etc/ssl/certs/ca-certificates.crt";
-  } else if (-f "/etc/pki/tls/certs/ca-bundle.crt") {
+  } elsif (-f "/etc/pki/tls/certs/ca-bundle.crt") {
     $ENV{"HOST_CERTS"} = "/etc/pki/tls/certs/ca-bundle.crt";
+  }
 }
 
 # Create the tmp directory if it does not exist
