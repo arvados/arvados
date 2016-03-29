@@ -1,2 +1,2 @@
 #!/bin/sh
-exec /usr/lib/crunchrunner/crunchrunner
+exec /usr/local/bin/crunchrunner

@@ -327,14 +327,23 @@ func main() {
 		log.Fatal(err)
 	}
 
-	certpath := path.Join(path.Dir(os.Args[0]), "ca-certificates.crt")
-	certdata, err := ioutil.ReadFile(certpath)
-	if err == nil {
-		log.Printf("Using TLS certificates at %v", certpath)
-		certs := x509.NewCertPool()
-		certs.AppendCertsFromPEM(certdata)
-		api.Client.Transport.(*http.Transport).TLSClientConfig.RootCAs = certs
+	// Container may not have certificates installed, so need to look for
+	// /etc/arvados/ca-certificates.crt in addition to normal system certs.
+	var certFiles = []string{
+		"/etc/ssl/certs/ca-certificates.crt", // Debian
+		"/etc/pki/tls/certs/ca-bundle.crt",   // Red Hat
+		"/etc/arvados/ca-certificates.crt",
 	}
+
+	certs := x509.NewCertPool()
+	for _, file := range certFiles {
+		data, err := ioutil.ReadFile(file)
+		if err == nil {
+			log.Printf("Using TLS certificates at %v", file)
+			certs.AppendCertsFromPEM(data)
+		}
+	}
+	api.Client.Transport.(*http.Transport).TLSClientConfig.RootCAs = certs
 
 	jobUuid := os.Getenv("JOB_UUID")
 	taskUuid := os.Getenv("TASK_UUID")

@@ -110,7 +110,12 @@ unless (defined $ENV{"CRUNCH_TMP"}) {
 }
 
 $ENV{"HOST_CRUNCHRUNNER_BIN"} ||= `which crunchrunner`;
-$ENV{"HOST_CERTS"} ||= "/etc/ssl/certs/ca-certificates.crt";
+unless (defined($ENV{"HOST_CERTS"}) {
+  if (-f "/etc/ssl/certs/ca-certificates.crt") {
+    $ENV{"HOST_CERTS"} = "/etc/ssl/certs/ca-certificates.crt";
+  } else if (-f "/etc/pki/tls/certs/ca-bundle.crt") {
+    $ENV{"HOST_CERTS"} = "/etc/pki/tls/certs/ca-bundle.crt";
+}
 
 # Create the tmp directory if it does not exist
 if ( ! -d $ENV{"CRUNCH_TMP"} ) {
@@ -922,8 +927,8 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 
       # Bind mount the crunchrunner binary and host TLS certificates file into
       # the container.
-      $command .= "--volume=\Q$ENV{HOST_CRUNCHRUNNER_BIN}:/usr/lib/crunchrunner/crunchrunner\E ";
-      $command .= "--volume=\Q$ENV{HOST_CERTS}:/usr/lib/crunchrunner/ca-certificates.crt\E ";
+      $command .= "--volume=\Q$ENV{HOST_CRUNCHRUNNER_BIN}:/usr/local/bin/crunchrunner\E ";
+      $command .= "--volume=\Q$ENV{HOST_CERTS}:/etc/arvados/ca-certificates.crt\E ";
 
       while (my ($env_key, $env_val) = each %ENV)
       {
