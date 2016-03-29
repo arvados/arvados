@@ -442,40 +442,70 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_equal ["component1", "component2"], json_response["components"].keys
   end
 
-  test 'update job with components with no lock' do
+  [
+    [:active, :success],
+    [:system_user, :success],
+    [:admin, 403],
+  ].each do |user, expected|
+    test "add components to job locked by active user as #{user} user and expect #{expected}" do
+      authorize_with user
+      put :update, {
+        id: jobs(:running).uuid,
+        job: {
+          components: {"component1" => "value1", "component2" => "value2"}
+        }
+      }
+      assert_response expected
+      if expected == :success
+        assert_not_nil json_response["components"]
+        keys = json_response["components"].keys
+        assert_equal ["component1", "component2"], keys
+        assert_equal "value1", json_response["components"][keys[0]]
+      end
+    end
+  end
+
+  test 'get_delete components_get again for job with components' do
     authorize_with :active
-    put :update, {
-      id: jobs(:running_job_with_components).uuid,
-      job: {
-        components: {}
-      }
-    }
-    assert_response 403
-  end
-
-  test 'update job with components' do
-    authorize_with :admin
-    put :update, {
-      id: jobs(:running_job_with_components).uuid,
-      job: {
-        components: {}
-      }
-    }
-    assert_response :success
-  end
-
-  test 'add components to job locked by active user as system user' do
-    authorize_with :system_user
-    put :update, {
-      id: jobs(:running).uuid,
-      job: {
-        components: {"component1" => "value1", "component2" => "value2"}
-      }
-    }
+    get :show, {id: jobs(:running_job_with_components).uuid}
     assert_response :success
     assert_not_nil json_response["components"]
-    keys = json_response["components"].keys
-    assert_equal ["component1", "component2"], keys
-    assert_equal "value1", json_response["components"][keys[0]]
+    assert_equal ["component1", "component2"], json_response["components"].keys
+
+    # delete second component
+    @test_counter = 0  # Reset executed action counter
+    @controller = Arvados::V1::JobsController.new
+    put :update, {
+      id: jobs(:running_job_with_components).uuid,
+      job: {
+        components: {"component1" => "zzzzz-8i9sb-jobuuid00000001"}
+      }
+    }
+    assert_response :success
+
+    @test_counter = 0  # Reset executed action counter
+    @controller = Arvados::V1::JobsController.new
+    get :show, {id: jobs(:running_job_with_components).uuid}
+    assert_response :success
+    assert_not_nil json_response["components"]
+    assert_equal ["component1"], json_response["components"].keys
+
+    # delete all components
+    @test_counter = 0  # Reset executed action counter
+    @controller = Arvados::V1::JobsController.new
+    put :update, {
+      id: jobs(:running_job_with_components).uuid,
+      job: {
+        components: {}
+      }
+    }
+    assert_response :success
+
+    @test_counter = 0  # Reset executed action counter
+    @controller = Arvados::V1::JobsController.new
+    get :show, {id: jobs(:running_job_with_components).uuid}
+    assert_response :success
+    assert_not_nil json_response["components"]
+    assert_equal [], json_response["components"].keys
   end
 end
