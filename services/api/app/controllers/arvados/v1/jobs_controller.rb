@@ -1,4 +1,5 @@
 class Arvados::V1::JobsController < ApplicationController
+  accept_attribute_as_json :components, Hash
   accept_attribute_as_json :script_parameters, Hash
   accept_attribute_as_json :runtime_constraints, Hash
   accept_attribute_as_json :tasks_summary, Hash

@@ -389,7 +389,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_response :success
 
     # verify that the user can no longer see the project
-    @counter = 0  # Reset executed action counter
+    @test_counter = 0  # Reset executed action counter
     @controller = Arvados::V1::GroupsController.new
     authorize_with :project_viewer
     get :index, filters: [['group_class', '=', 'project']], format: :json
@@ -401,7 +401,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_equal false, found_projects.include?(groups(:starred_and_shared_active_user_project).uuid)
 
     # share the project
-    @counter = 0
+    @test_counter = 0
     @controller = Arvados::V1::LinksController.new
     authorize_with :system_user
     post :create, link: {
@@ -412,7 +412,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     }
 
     # verify that project_viewer user can now see shared project again
-    @counter = 0
+    @test_counter = 0
     @controller = Arvados::V1::GroupsController.new
     authorize_with :project_viewer
     get :index, filters: [['group_class', '=', 'project']], format: :json

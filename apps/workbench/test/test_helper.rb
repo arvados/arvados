@@ -233,12 +233,12 @@ end
 
 class ActionController::TestCase
   setup do
-    @counter = 0
+    @test_counter = 0
   end
 
   def check_counter action
-    @counter += 1
-    if @counter == 2
+    @test_counter += 1
+    if @test_counter == 2
       assert_equal 1, 2, "Multiple actions in controller test"
     end
   end
