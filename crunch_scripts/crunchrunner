@@ -1,2 +1,7 @@
 #!/bin/sh
-exec $TASK_KEEPMOUNT/$JOB_PARAMETER_CRUNCHRUNNER
+
+if test -n "$JOB_PARAMETER_CRUNCHRUNNER" ; then
+    exec $TASK_KEEPMOUNT/$JOB_PARAMETER_CRUNCHRUNNER
+else
+    exec /usr/local/bin/crunchrunner
+fi
