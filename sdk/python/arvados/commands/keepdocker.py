@@ -283,15 +283,15 @@ def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None)
     return [(image['collection'], image) for image in images
             if image['collection'] in existing_coll_uuids]
 
-def main(arguments=None):
+def main(arguments=None, stdout=sys.stdout):
     args = arg_parser.parse_args(arguments)
     api = arvados.api('v1')
 
     if args.image is None or args.image == 'images':
-        fmt = "{:30}  {:10}  {:12}  {:29}  {:20}"
-        print fmt.format("REPOSITORY", "TAG", "IMAGE ID", "COLLECTION", "CREATED")
+        fmt = "{:30}  {:10}  {:12}  {:29}  {:20}\n"
+        stdout.write(fmt.format("REPOSITORY", "TAG", "IMAGE ID", "COLLECTION", "CREATED"))
         for i, j in list_images_in_arv(api, args.retries):
-            print(fmt.format(j["repo"], j["tag"], j["dockerhash"][0:12], i, j["timestamp"].strftime("%c")))
+            stdout.write(fmt.format(j["repo"], j["tag"], j["dockerhash"][0:12], i, j["timestamp"].strftime("%c")))
         sys.exit(0)
 
     # Pull the image if requested, unless the image is specified as a hash
@@ -375,7 +375,7 @@ def main(arguments=None):
                     make_link(api, args.retries, 'docker_image_repo+tag',
                               image_repo_tag, **link_base)
 
-                print(coll_uuid)
+                stdout.write(coll_uuid + "\n")
 
                 sys.exit(0)
 

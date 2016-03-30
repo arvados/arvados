@@ -52,7 +52,7 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
         if image_tag:
             args.append(image_tag)
         logger.info("Uploading Docker image %s", ":".join(args[1:]))
-        arvados.commands.keepdocker.main(args)
+        arvados.commands.keepdocker.main(args, stdout=sys.stderr)
 
     return dockerRequirement["dockerImageId"]
 
