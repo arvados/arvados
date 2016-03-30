@@ -347,7 +347,7 @@ class RunnerJob(object):
 
         response = self.arvrunner.api.jobs().create(body={
             "script": "cwl-runner",
-            "script_version": "8654-arv-jobs-cwl-runner",
+            "script_version": "master",
             "repository": "arvados",
             "script_parameters": self.job_order,
             "runtime_constraints": {
