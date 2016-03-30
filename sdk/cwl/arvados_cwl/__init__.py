@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# Implement cwl-runner interface for submitting and running jobs on Arvados.
+
 import argparse
 import arvados
 import arvados.events
@@ -35,6 +37,8 @@ keepre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.ke
 
 
 def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid):
+    """Check if a Docker image is available in Keep, if not, upload it using arv-keepdocker."""
+
     if "dockerImageId" not in dockerRequirement and "dockerPull" in dockerRequirement:
         dockerRequirement["dockerImageId"] = dockerRequirement["dockerPull"]
 
@@ -58,6 +62,8 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
 
 
 class CollectionFsAccess(cwltool.process.StdFsAccess):
+    """Implement the cwltool FsAccess interface for Arvados Collections."""
+
     def __init__(self, basedir):
         self.collections = {}
         self.basedir = basedir
@@ -114,6 +120,8 @@ class CollectionFsAccess(cwltool.process.StdFsAccess):
             return os.path.exists(self._abs(fn))
 
 class ArvadosJob(object):
+    """Submit and manage a Crunch job for executing a CWL CommandLineTool."""
+
     def __init__(self, runner):
         self.arvrunner = runner
         self.running = False
@@ -283,6 +291,8 @@ class ArvadosJob(object):
 
 
 class RunnerJob(object):
+    """Submit and manage a Crunch job that runs crunch_scripts/cwl-runner."""
+
     def __init__(self, runner, tool, job_order, enable_reuse):
         self.arvrunner = runner
         self.tool = tool
@@ -381,6 +391,8 @@ class RunnerJob(object):
             del self.arvrunner.jobs[record["uuid"]]
 
 class ArvPathMapper(cwltool.pathmapper.PathMapper):
+    """Convert container-local paths to and from Keep collection ids."""
+
     def __init__(self, arvrunner, referenced_files, basedir,
                  collection_pattern, file_pattern, name=None, **kwargs):
         self._pathmap = arvrunner.get_uploaded()
@@ -430,6 +442,8 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
 
 
 class ArvadosCommandTool(cwltool.draft2tool.CommandLineTool):
+    """Wrap cwltool CommandLineTool to override selected methods."""
+
     def __init__(self, arvrunner, toolpath_object, **kwargs):
         super(ArvadosCommandTool, self).__init__(toolpath_object, **kwargs)
         self.arvrunner = arvrunner
@@ -445,6 +459,9 @@ class ArvadosCommandTool(cwltool.draft2tool.CommandLineTool):
 
 
 class ArvCwlRunner(object):
+    """Execute a CWL tool or workflow, submit crunch jobs, wait for them to
+    complete, and report output."""
+
     def __init__(self, api_client):
         self.api = api_client
         self.jobs = {}
@@ -593,6 +610,8 @@ class ArvCwlRunner(object):
             return self.final_output
 
 def versionstring():
+    """Print version string of key packages for provenance and debugging."""
+
     cwlpkg = pkg_resources.require("cwltool")
     arvpkg = pkg_resources.require("arvados-python-client")
     arvcwlpkg = pkg_resources.require("arvados-cwl-runner")

@@ -110,7 +110,7 @@ def statfile(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)"):
 def uploadfiles(files, api, dry_run=False, num_retries=0, project=None, fnPattern="$(file %s/%s)", name=None):
     # Find the smallest path prefix that includes all the files that need to be uploaded.
     # This starts at the root and iteratively removes common parent directory prefixes
-    # until all file pathes no longer have a common parent.
+    # until all file paths no longer have a common parent.
     n = True
     pathprefix = "/"
     while n:

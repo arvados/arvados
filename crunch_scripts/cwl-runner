@@ -1,5 +1,13 @@
 #!/usr/bin/env python
 
+# Crunch script integration for running arvados-cwl-runner (importing
+# arvados_cwl module) inside a crunch job.
+#
+# This gets the job record, transforms the script parameters into a valid CWL
+# input object, then executes the CWL runner to run the underlying workflow or
+# tool.  When the workflow completes, record the output object in an output
+# collection for this runner job.
+
 import arvados
 import arvados_cwl
 import arvados.collection
@@ -13,7 +21,8 @@ import argparse
 from arvados.api import OrderedJsonModel
 from cwltool.process import adjustFiles
 
-print cwltool.main.versionstring()
+# Print package versions
+logging.info(cwltool.main.versionstring())
 
 api = arvados.api("v1")
 
@@ -32,13 +41,13 @@ try:
 
     t = cwltool.main.load_tool(job_order_object, False, True, runner.arvMakeTool, True)
 
-    np = argparse.Namespace()
-    np.project_uuid = arvados.current_job()["owner_uuid"]
-    np.enable_reuse = True
-    np.submit = False
-    np.debug = True
-    np.quiet = False
-    outputObj = runner.arvExecutor(t, job_order_object, "", np, cwl_runner_job={"uuid": arvados.current_job()["uuid"], "state": arvados.current_job()["state"]})
+    args = argparse.Namespace()
+    args.project_uuid = arvados.current_job()["owner_uuid"]
+    args.enable_reuse = True
+    args.submit = False
+    args.debug = True
+    args.quiet = False
+    outputObj = runner.arvExecutor(t, job_order_object, "", args, cwl_runner_job={"uuid": arvados.current_job()["uuid"], "state": arvados.current_job()["state"]})
 
     files = {}
     def capture(path):
