@@ -109,15 +109,6 @@ unless (defined $ENV{"CRUNCH_TMP"}) {
   }
 }
 
-$ENV{"HOST_CRUNCHRUNNER_BIN"} ||= `which crunchrunner`;
-unless (defined($ENV{"HOST_CERTS"})) {
-  if (-f "/etc/ssl/certs/ca-certificates.crt") {
-    $ENV{"HOST_CERTS"} = "/etc/ssl/certs/ca-certificates.crt";
-  } elsif (-f "/etc/pki/tls/certs/ca-bundle.crt") {
-    $ENV{"HOST_CERTS"} = "/etc/pki/tls/certs/ca-bundle.crt";
-  }
-}
-
 # Create the tmp directory if it does not exist
 if ( ! -d $ENV{"CRUNCH_TMP"} ) {
   make_path $ENV{"CRUNCH_TMP"} or die "Failed to create temporary working directory: " . $ENV{"CRUNCH_TMP"};
@@ -861,7 +852,10 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
         .q{&& MEM=$(awk '($1 == "MemTotal:"){print $2}' </proc/meminfo) }
         .q{&& SWAP=$(awk '($1 == "SwapTotal:"){print $2}' </proc/meminfo) }
         ."&& MEMLIMIT=\$(( (\$MEM * 95) / ($ENV{CRUNCH_NODE_SLOTS} * 100) )) "
-        ."&& let SWAPLIMIT=\$MEMLIMIT+\$SWAP ";
+        ."&& let SWAPLIMIT=\$MEMLIMIT+\$SWAP "
+        ."&& if which crunchrunner >/dev/null ; then VOLUME_CRUNCHRUNNER=\"--volume=\$(which crunchrunner):/usr/local/bin/crunchrunner\" ; fi "
+        ."&& if test -f /etc/ssl/certs/ca-certificates.crt ; then VOLUME_CERTS=\"--volume=/etc/ssl/certs/ca-certificates.crt:/etc/arvados/ca-certificates.crt\" ; fi "
+        ."&& if test -f /etc/pki/tls/certs/ca-bundle.crt ; then VOLUME_CERTS=\"--volume=/etc/pki/tls/certs/ca-bundle.crt:/etc/arvados/ca-certificates.crt\" ; fi ";
 
     $command .= "&& exec arv-mount --read-write --mount-by-pdh=by_pdh --mount-tmp=tmp --crunchstat-interval=10 --allow-other $arv_file_cache \Q$keep_mnt\E --exec ";
     $ENV{TASK_KEEPMOUNT} = "$keep_mnt/by_pdh";
@@ -928,8 +922,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
 
       # Bind mount the crunchrunner binary and host TLS certificates file into
       # the container.
-      $command .= "--volume=\Q$ENV{HOST_CRUNCHRUNNER_BIN}:/usr/local/bin/crunchrunner\E ";
-      $command .= "--volume=\Q$ENV{HOST_CERTS}:/etc/arvados/ca-certificates.crt\E ";
+      $command .= "\"\$VOLUME_CRUNCHRUNNER\" \"\$VOLUME_CERTS\" ";
 
       while (my ($env_key, $env_val) = each %ENV)
       {
