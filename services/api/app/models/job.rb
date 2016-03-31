@@ -95,8 +95,7 @@ class Job < ArvadosModel
   end
 
   def lock locked_by_uuid
-    transaction do
-      self.reload
+    with_lock do
       unless self.state == Queued and self.is_locked_by_uuid.nil?
         raise AlreadyLockedError
       end
