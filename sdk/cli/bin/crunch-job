@@ -1459,6 +1459,9 @@ sub readfrompipes
 sub preprocess_stderr
 {
   my $jobstepidx = shift;
+  # slotindex is only defined for children running Arvados job tasks.
+  # Be prepared to handle the undef case (for setup srun calls, etc.).
+  my $job_slot_index = $jobstep[$jobstepidx]->{slotindex};
 
   while ($jobstep[$jobstepidx]->{stderr} =~ /^(.*?)\n/) {
     my $line = $1;
@@ -1468,19 +1471,16 @@ sub preprocess_stderr
       # whoa.
       $main::please_freeze = 1;
     }
-    elsif (!exists $jobstep[$jobstepidx]->{slotindex}) {
-      # Skip the following tempfail checks if this srun proc isn't
-      # attached to a particular worker slot.
-    }
     elsif ($line =~ /srun: error: (Node failure on|Aborting, .*\bio error\b)/) {
-      my $job_slot_index = $jobstep[$jobstepidx]->{slotindex};
-      $slot[$job_slot_index]->{node}->{fail_count}++;
       $jobstep[$jobstepidx]->{tempfail} = 1;
-      ban_node_by_slot($job_slot_index);
+      if (defined($job_slot_index)) {
+        $slot[$job_slot_index]->{node}->{fail_count}++;
+        ban_node_by_slot($job_slot_index);
+      }
     }
     elsif ($line =~ /srun: error: (Unable to create job step|.*: Communication connection failure)/) {
       $jobstep[$jobstepidx]->{tempfail} = 1;
-      ban_node_by_slot($jobstep[$jobstepidx]->{slotindex});
+      ban_node_by_slot($job_slot_index) if (defined($job_slot_index));
     }
     elsif ($line =~ /\bKeep(Read|Write|Request)Error:/) {
       $jobstep[$jobstepidx]->{tempfail} = 1;
@@ -1970,6 +1970,11 @@ sub srun_sync
   delete $reader{$jobstepidx};
 
   my $j = pop @jobstep;
+  # If the srun showed signs of tempfail, ensure the caller treats that as a
+  # failure case.
+  if ($main::please_freeze || $j->{tempfail}) {
+    $exited ||= 255;
+  }
   return ($exited, $j->{stdout_captured}, $j->{stderr_captured});
 }
 
