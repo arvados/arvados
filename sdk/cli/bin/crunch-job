@@ -854,8 +854,8 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
         ."&& MEMLIMIT=\$(( (\$MEM * 95) / ($ENV{CRUNCH_NODE_SLOTS} * 100) )) "
         ."&& let SWAPLIMIT=\$MEMLIMIT+\$SWAP "
         ."&& if which crunchrunner >/dev/null ; then VOLUME_CRUNCHRUNNER=\"--volume=\$(which crunchrunner):/usr/local/bin/crunchrunner\" ; fi "
-        ."&& if test -f /etc/ssl/certs/ca-certificates.crt ; then VOLUME_CERTS=\"--volume=/etc/ssl/certs/ca-certificates.crt\" ; fi "
-        ."&& if test -f /etc/pki/tls/certs/ca-bundle.crt ; then VOLUME_CERTS=\"--volume=/etc/pki/tls/certs/ca-bundle.crt\" ; fi ";
+        ."&& if test -f /etc/ssl/certs/ca-certificates.crt ; then VOLUME_CERTS=\"--volume=/etc/ssl/certs/ca-certificates.crt:/etc/arvados/ca-certificates.crt\" ; fi "
+        ."&& if test -f /etc/pki/tls/certs/ca-bundle.crt ; then VOLUME_CERTS=\"--volume=/etc/pki/tls/certs/ca-bundle.crt:/etc/arvados/ca-certificates.crt\" ; fi ";
 
     $command .= "&& exec arv-mount --read-write --mount-by-pdh=by_pdh --mount-tmp=tmp --crunchstat-interval=10 --allow-other $arv_file_cache \Q$keep_mnt\E --exec ";
     $ENV{TASK_KEEPMOUNT} = "$keep_mnt/by_pdh";
