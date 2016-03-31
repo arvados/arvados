@@ -30,7 +30,7 @@ class TestSubmit(unittest.TestCase):
 
         api.collections().create.assert_has_calls([
             mock.call(),
-            mock.call(body={'manifest_text': './tool b0fa9cffda3d37ba401bc338bb0b54a6+257 0:16:blub.txt 16:241:submit_tool.cwl\n./wf 888e237b758adf86ca66c36f7bd88a24+175 0:175:submit_wf.cwl\n',
+            mock.call(body={'manifest_text': './tool 84ec4df683711de31b782505389a8843+429 0:16:blub.txt 16:413:submit_tool.cwl\n./wf 81d977a245a41b8e79859fbe00623fd0+344 0:344:submit_wf.cwl\n',
                             'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
                             'name': 'submit_wf.cwl'
                         }, ensure_unique_name=True),
