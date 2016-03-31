@@ -31,19 +31,21 @@ class TestSubmit(unittest.TestCase):
         api.collections().create.assert_has_calls([
             mock.call(),
             mock.call(body={'manifest_text': './tool b0fa9cffda3d37ba401bc338bb0b54a6+257 0:16:blub.txt 16:241:submit_tool.cwl\n./wf 888e237b758adf86ca66c36f7bd88a24+175 0:175:submit_wf.cwl\n',
-                                                                   'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
-                                                                   'name': 'submit_wf.cwl'
-                                                               }, ensure_unique_name=True),
-                                                   mock.call().execute(),
-                                                   mock.call(body={'manifest_text': '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
-                                                                  'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
-                                                                  'name': 'submit_test_job.json'
-                                                               }, ensure_unique_name=True),
-                                                   mock.call().execute()])
-        api.jobs().create.assert_called_with(body={
-            'runtime_constraints': {
-                'docker_image': 'arvados/jobs'
-            },
+                            'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
+                            'name': 'submit_wf.cwl'
+                        }, ensure_unique_name=True),
+            mock.call().execute(),
+            mock.call(body={'manifest_text': '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
+                            'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
+                            'name': '#'
+                        }, ensure_unique_name=True),
+            mock.call().execute()])
+
+        api.jobs().create.assert_called_with(
+            body={
+                'runtime_constraints': {
+                    'docker_image': 'arvados/jobs'
+                },
             'script_parameters': {
                 'x': {
                     'path': '99999999999999999999999999999992+99/blorp.txt',
@@ -52,7 +54,7 @@ class TestSubmit(unittest.TestCase):
                 'cwl:tool': '99999999999999999999999999999991+99/wf/submit_wf.cwl'
             },
             'repository': 'arvados',
-            'script_version': 'master',
-            'script': 'cwl-runner'
-        },
-                                             find_or_create=True)
+                'script_version': 'master',
+                'script': 'cwl-runner'
+            },
+            find_or_create=True)

@@ -1,3 +1,8 @@
+# Test case for arvados-cwl-runner
+#
+# Used to test whether scanning a workflow file for dependencies
+# (e.g. submit_tool.cwl) and uploading to Keep works as intended.
+
 class: Workflow
 inputs:
   - id: x

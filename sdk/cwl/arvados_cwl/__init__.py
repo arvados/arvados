@@ -612,14 +612,13 @@ class ArvCwlRunner(object):
 def versionstring():
     """Print version string of key packages for provenance and debugging."""
 
-    cwlpkg = pkg_resources.require("cwltool")
-    arvpkg = pkg_resources.require("arvados-python-client")
     arvcwlpkg = pkg_resources.require("arvados-cwl-runner")
+    arvpkg = pkg_resources.require("arvados-python-client")
+    cwlpkg = pkg_resources.require("cwltool")
 
-    return "%s %s, %s %s, %s %s" % (sys.argv[0],
-                                    arvcwlpkg[0].version,
-                                    "arvados-python-client", cwlpkg[0].version,
-                                    "cwltool", arvpkg[0].version)
+    return "%s %s, %s %s, %s %s" % (sys.argv[0], arvcwlpkg[0].version,
+                                    "arvados-python-client", arvpkg[0].version,
+                                    "cwltool", cwlpkg[0].version)
 
 def main(args, stdout, stderr, api_client=None):
     args.insert(0, "--leave-outputs")
@@ -636,15 +635,15 @@ def main(args, stdout, stderr, api_client=None):
     parser.add_argument("--project-uuid", type=str, help="Project that will own the workflow jobs")
 
     exgroup = parser.add_mutually_exclusive_group()
-    exgroup.add_argument("--submit", action="store_true", help="Submit runner job so workflow can run unattended.",
+    exgroup.add_argument("--submit", action="store_true", help="Submit workflow to run on Arvados.",
                         default=True, dest="submit")
-    exgroup.add_argument("--local", action="store_false", help="Workflow runner runs on local host and submits jobs.",
+    exgroup.add_argument("--local", action="store_false", help="Run workflow on local host (submits jobs to Arvados).",
                         default=True, dest="submit")
 
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--wait", action="store_true", help="After submitting workflow runner job, wait for completion.",
                         default=True, dest="wait")
-    exgroup.add_argument("--no-wait", action="store_false", help="Exit after submitting workflow runner job.",
+    exgroup.add_argument("--no-wait", action="store_false", help="Submit workflow runner job and exit.",
                         default=True, dest="wait")
 
     try:
