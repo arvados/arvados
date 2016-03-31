@@ -178,6 +178,8 @@ if ($jobspec =~ /^[-a-z\d]+$/)
 {
   # $jobspec is an Arvados UUID, not a JSON job specification
   $Job = api_call("jobs/get", uuid => $jobspec);
+  $job_id = $Job->{'uuid'};
+  log_writer_start("${job_id}.log.txt");
   $local_job = 0;
 }
 else
@@ -200,6 +202,7 @@ my ($exited, $stdout, $stderr) = srun_sync(
   {label => "sanity check"});
 if ($exited != 0) {
   Log(undef, "Sanity check failed: ".exit_status_s($exited));
+  save_meta();
   exit EX_TEMPFAIL;
 }
 Log(undef, "Sanity check OK");
@@ -213,6 +216,7 @@ if (!$local_job) {
     eval { api_call("jobs/lock", uuid => $Job->{uuid}); };
     if ($@) {
       Log(undef, "Error while locking job, exiting ".EX_TEMPFAIL);
+      save_meta();
       exit EX_TEMPFAIL;
     };
   }
@@ -230,11 +234,9 @@ else
   $local_job->{'state'} = 'Running';
 
   $Job = api_call("jobs/create", job => $local_job);
+  $job_id = $Job->{'uuid'};
+  log_writer_start("${job_id}.log.txt");
 }
-$job_id = $Job->{'uuid'};
-
-my $keep_logfile = $job_id . '.log.txt';
-log_writer_start($keep_logfile);
 
 $Job->{'runtime_constraints'} ||= {};
 $Job->{'runtime_constraints'}->{'max_tasks_per_node'} ||= 0;
@@ -409,6 +411,7 @@ if (!defined $no_clear_tmp) {
     ['bash', '-ec', '-o', 'pipefail', 'mount -t fuse,fuse.keep | awk "(index(\$3, \"$CRUNCH_TMP\") == 1){print \$3}" | xargs -r -n 1 fusermount -u -z; sleep 1; rm -rf $JOB_WORK $CRUNCH_INSTALL $CRUNCH_TMP/task $CRUNCH_TMP/src* $CRUNCH_TMP/*.cid'],
     {label => "clean work dirs"});
   if ($exited != 0) {
+    save_meta();
     exit(EX_RETRY_UNLOCKED);
   }
 }
@@ -436,6 +439,7 @@ fi
     {label => "load docker image"});
   if ($exited != 0)
   {
+    save_meta();
     exit(EX_RETRY_UNLOCKED);
   }
 
