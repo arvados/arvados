@@ -1984,6 +1984,11 @@ sub srun_sync
   delete $reader{$jobstepidx};
 
   my $j = pop @jobstep;
+  # If the srun showed signs of tempfail, ensure the caller treats that as a
+  # failure case.
+  if ($main::please_freeze || $j->{tempfail}) {
+    $exited ||= 255;
+  }
   return ($exited, $j->{stdout_captured}, $j->{stderr_captured});
 }
 
