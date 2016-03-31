@@ -2,6 +2,7 @@ class Job < ArvadosModel
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
+  serialize :components, Hash
   attr_protected :arvados_sdk_version, :docker_image_locator
   serialize :script_parameters, Hash
   serialize :runtime_constraints, Hash
@@ -52,6 +53,7 @@ class Job < ArvadosModel
     t.add :queue_position
     t.add :node_uuids
     t.add :description
+    t.add :components
   end
 
   # Supported states for a job
@@ -239,7 +241,8 @@ class Job < ArvadosModel
           output_changed? or
           log_changed? or
           tasks_summary_changed? or
-          state_changed?
+          state_changed? or
+          components_changed?
         logger.warn "User #{current_user.uuid if current_user} tried to change protected job attributes on locked #{self.class.to_s} #{uuid_was}"
         return false
       end
