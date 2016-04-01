@@ -279,17 +279,13 @@ class ComputeNodeUpdateActor(config.actor_class):
             self.next_request_time = time.time()
             try:
                 result = orig_func(self, *args, **kwargs)
-            except self._cloud.CLOUD_ERRORS as error:
-                self.error_streak += 1
-                self.next_request_time += min(2 ** self.error_streak,
-                                              self.max_retry_wait)
-                self._logger.error(
-                    "Caught cloud error (no retry): %s",
-                    error, exc_info=error)
             except Exception as error:
-                self._logger.error(
-                    "Caught unknown error (no retry): %s",
-                    error, exc_info=error)
+                if self._cloud.is_cloud_exception(error):
+                    self.error_streak += 1
+                    self.next_request_time += min(2 ** self.error_streak,
+                                                  self.max_retry_wait)
+                self._logger.warn(
+                    "Unhandled exception: %s", error, exc_info=error)
             else:
                 self.error_streak = 0
                 return result

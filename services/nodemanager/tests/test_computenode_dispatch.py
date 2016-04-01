@@ -267,6 +267,16 @@ class ComputeNodeUpdateActorTestCase(testutil.ActorTestMixin,
         self.updater.sync_node(cloud_node, arv_node).get(self.TIMEOUT)
         self.driver().sync_node.assert_called_with(cloud_node, arv_node)
 
+    @testutil.no_sleep
+    def test_node_sync_error(self):
+        self.make_actor()
+        cloud_node = testutil.cloud_node_mock()
+        arv_node = testutil.arvados_node_mock()
+        self.driver().sync_node.side_effect = (IOError, Exception, True)
+        self.updater.sync_node(cloud_node, arv_node).get(self.TIMEOUT)
+        self.updater.sync_node(cloud_node, arv_node).get(self.TIMEOUT)
+        self.updater.sync_node(cloud_node, arv_node).get(self.TIMEOUT)
+        self.driver().sync_node.assert_called_with(cloud_node, arv_node)
 
 class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
                                       unittest.TestCase):
