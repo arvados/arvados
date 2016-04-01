@@ -9,6 +9,8 @@ class TestJob(unittest.TestCase):
     def test_run(self):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+        runner.ignore_docker_for_reuse = False
+
         tool = {
             "inputs": [],
             "outputs": [],
@@ -18,32 +20,41 @@ class TestJob(unittest.TestCase):
         arvtool.formatgraph = None
         for j in arvtool.job({}, "", mock.MagicMock()):
             j.run()
-        runner.api.jobs().create.assert_called_with(body={
-            'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-            'runtime_constraints': {},
-            'script_parameters': {
-                'tasks': [{
-                    'task.env': {'TMPDIR': '$(task.tmpdir)'},
-                    'command': ['ls']
-                }]
+            runner.api.jobs().create.assert_called_with(
+                body={
+                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                    'runtime_constraints': {},
+                    'script_parameters': {
+                        'tasks': [{
+                            'task.env': {'TMPDIR': '$(task.tmpdir)'},
+                            'command': ['ls']
+                        }]
             },
             'script_version': 'master',
-            'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
-            'repository': 'arvados',
-            'script': 'crunchrunner',
-            'runtime_constraints': {
-                'docker_image': 'arvados/jobs',
-                'min_cores_per_node': 1,
-                'min_ram_mb_per_node': 1024,
-                'min_scratch_mb_per_node': 2048 # tmpdirSize + outdirSize
-            }
-        }, find_or_create=True)
+                    'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
+                    'repository': 'arvados',
+                    'script': 'crunchrunner',
+                    'runtime_constraints': {
+                        'docker_image': 'arvados/jobs',
+                        'min_cores_per_node': 1,
+                        'min_ram_mb_per_node': 1024,
+                        'min_scratch_mb_per_node': 2048 # tmpdirSize + outdirSize
+                    }
+        },
+                                                    find_or_create=True,
+                filters=[['repository', '=', 'arvados'],
+                         ['script', '=', 'crunchrunner'],
+                         ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
+                         ['docker_image_locator', 'in docker', 'arvados/jobs']]
+            )
 
     # The test passes some fields in builder.resources
     # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     def test_resource_requirements(self):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+        runner.ignore_docker_for_reuse = False
+
         tool = {
             "inputs": [],
             "outputs": [],
@@ -59,26 +70,32 @@ class TestJob(unittest.TestCase):
         arvtool.formatgraph = None
         for j in arvtool.job({}, "", mock.MagicMock()):
             j.run()
-        runner.api.jobs().create.assert_called_with(body={
-            'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-            'runtime_constraints': {},
-            'script_parameters': {
-                'tasks': [{
-                    'task.env': {'TMPDIR': '$(task.tmpdir)'},
-                    'command': ['ls']
-                }]
+        runner.api.jobs().create.assert_called_with(
+            body={
+                'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                'runtime_constraints': {},
+                'script_parameters': {
+                    'tasks': [{
+                        'task.env': {'TMPDIR': '$(task.tmpdir)'},
+                        'command': ['ls']
+                    }]
             },
             'script_version': 'master',
-            'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
-            'repository': 'arvados',
-            'script': 'crunchrunner',
-            'runtime_constraints': {
-                'docker_image': 'arvados/jobs',
-                'min_cores_per_node': 3,
-                'min_ram_mb_per_node': 3000,
-                'min_scratch_mb_per_node': 5024 # tmpdirSize + outdirSize
-            }
-        }, find_or_create=True)
+                'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
+                'repository': 'arvados',
+                'script': 'crunchrunner',
+                'runtime_constraints': {
+                    'docker_image': 'arvados/jobs',
+                    'min_cores_per_node': 3,
+                    'min_ram_mb_per_node': 3000,
+                    'min_scratch_mb_per_node': 5024 # tmpdirSize + outdirSize
+                }
+        },
+            find_or_create=True,
+            filters=[['repository', '=', 'arvados'],
+                     ['script', '=', 'crunchrunner'],
+                     ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
+                     ['docker_image_locator', 'in docker', 'arvados/jobs']])
 
     @mock.patch("arvados.collection.Collection")
     def test_done(self, col):
@@ -88,6 +105,7 @@ class TestJob(unittest.TestCase):
         runner.api = api
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.num_retries = 0
+        runner.ignore_docker_for_reuse = False
 
         col().open.return_value = []
         api.collections().list().execute.side_effect = ({"items": []},
