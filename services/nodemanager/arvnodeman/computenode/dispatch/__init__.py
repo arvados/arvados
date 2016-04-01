@@ -256,12 +256,6 @@ class ComputeNodeUpdateActor(config.actor_class):
     this to perform maintenance tasks on themselves.  Having a
     dedicated actor for this gives us the opportunity to control the
     flow of requests; e.g., by backing off when errors occur.
-
-    This actor is most like a "traditional" Pykka actor: there's no
-    subscribing, but instead methods return real driver results.  If
-    you're interested in those results, you should get them from the
-    Future that the proxy method returns.  Be prepared to handle exceptions
-    from the cloud driver when you do.
     """
     def __init__(self, cloud_factory, max_retry_wait=180):
         super(ComputeNodeUpdateActor, self).__init__()
@@ -269,6 +263,12 @@ class ComputeNodeUpdateActor(config.actor_class):
         self.max_retry_wait = max_retry_wait
         self.error_streak = 0
         self.next_request_time = time.time()
+
+    def _set_logger(self):
+        self._logger = logging.getLogger("%s.%s" % (self.__class__.__name__, self.actor_urn[33:]))
+
+    def on_start(self):
+        self._set_logger()
 
     def _throttle_errors(orig_func):
         @functools.wraps(orig_func)
@@ -280,10 +280,12 @@ class ComputeNodeUpdateActor(config.actor_class):
             try:
                 result = orig_func(self, *args, **kwargs)
             except Exception as error:
-                self.error_streak += 1
-                self.next_request_time += min(2 ** self.error_streak,
-                                              self.max_retry_wait)
-                raise
+                if self._cloud.is_cloud_exception(error):
+                    self.error_streak += 1
+                    self.next_request_time += min(2 ** self.error_streak,
+                                                  self.max_retry_wait)
+                self._logger.warn(
+                    "Unhandled exception: %s", error, exc_info=error)
             else:
                 self.error_streak = 0
                 return result
