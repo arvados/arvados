@@ -23,12 +23,10 @@ WORKSPACE=path         Path to the Arvados source tree to build packages from
 
 EOF
 
-EXITCODE=0
-
 exit_cleanly() {
     trap - INT
     report_outcomes
-    exit $EXITCODE
+    exit ${#failures[@]}
 }
 
 gem_wrapper() {
@@ -53,6 +51,9 @@ python_wrapper() {
   timer_reset
 
   cd "$package_directory"
+  if [[ $DEBUG > 0 ]]; then
+    echo `pwd`
+  fi
   handle_python_package
 
   checkexit $? "$package_name python package build"
@@ -140,6 +141,7 @@ fi
 chmod o+r "$WORKSPACE" -R
 
 # More cleanup - make sure all executables that we'll package are 755
+cd "$WORKSPACE"
 find -type d -name 'bin' |xargs -I {} find {} -type f |xargs -I {} chmod 755 {}
 
 # Now fix our umask to something better suited to building and publishing
@@ -147,8 +149,6 @@ find -type d -name 'bin' |xargs -I {} find {} -type f |xargs -I {} chmod 755 {}
 umask 0022
 
 debug_echo "umask is" `umask`
-
-FPM_GEM_PREFIX=$($GEM environment gemdir)
 
 gem_wrapper arvados "$WORKSPACE/sdk/ruby"
 gem_wrapper arvados-cli "$WORKSPACE/sdk/cli"
@@ -171,6 +171,11 @@ if [ $((${#failures[@]} - $GEM_BUILD_FAILURES)) -ne 0 ]; then
 fi
 
 if [[ "$UPLOAD" != 0 ]]; then
+
+  if [[ ! -e "$WORKSPACE/packages" ]]; then
+    mkdir -p "$WORKSPACE/packages"
+  fi
+
   title "Start upload python packages"
   timer_reset
 
