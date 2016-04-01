@@ -1152,13 +1152,6 @@ sub reapchildren
                     . $slot[$proc{$pid}->{slot}]->{cpu});
     my $jobstepidx = $proc{$pid}->{jobstepidx};
 
-    if (!WIFEXITED($childstatus))
-    {
-      # child did not exit (may be temporarily stopped)
-      Log ($jobstepidx, "child $pid did not actually exit in reapchildren, ignoring for now.");
-      next;
-    }
-
     $children_reaped++;
     my $elapsed = time - $proc{$pid}->{time};
     my $Jobstep = $jobstep[$jobstepidx];
