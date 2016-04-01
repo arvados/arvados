@@ -1,2 +1,2 @@
 # apt.arvados.org
-deb http://apt.arvados.org/ wheezy main
+deb http://apt.arvados.org/ jessie main
