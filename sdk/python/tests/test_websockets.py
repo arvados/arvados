@@ -120,3 +120,56 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
     def isotz(self, offset):
         """Convert minutes-east-of-UTC to ISO8601 time zone designator"""
         return '{:+03d}{:02d}'.format(offset/60, offset%60)
+
+    # Test websocket reconnection on unexecpted close
+    def _test_websocket_reconnect(self, close_unexpected):
+        run_test_server.authorize_with('active')
+        events = Queue.Queue(100)
+
+        filters = [['object_uuid', 'is_a', 'arvados#human']]
+        filters.append(['created_at', '>=', self.localiso(self.TIME_PAST)])
+        self.ws = arvados.events.subscribe(
+            arvados.api('v1'), filters,
+            events.put_nowait,
+            poll_fallback=False,
+            last_log_id=None)
+        self.assertIsInstance(self.ws, arvados.events.EventClient)
+        self.assertEqual(200, events.get(True, 5)['status'])
+
+        # create obj
+        human = arvados.api('v1').humans().create(body={}).execute()
+
+        # expect an event
+        self.assertIn(human['uuid'], events.get(True, 5)['object_uuid'])
+        with self.assertRaises(Queue.Empty):
+            self.assertEqual(events.get(True, 2), None)
+
+        # create one more obj
+        human2 = arvados.api('v1').humans().create(body={}).execute()
+
+        # close (im)properly
+        if close_unexpected:
+            self.ws.close_connection()
+        else:
+            self.ws.close()
+
+        # (un)expect the object creation event
+        if close_unexpected:
+            log_object_uuids = []
+            for i in range(0, 2):
+                event = events.get(True, 5)
+                if event.get('object_uuid') != None:
+                    log_object_uuids.append(event['object_uuid'])
+            with self.assertRaises(Queue.Empty):
+                self.assertEqual(events.get(True, 2), None)
+            self.assertNotIn(human['uuid'], log_object_uuids)
+            self.assertIn(human2['uuid'], log_object_uuids)
+        else:
+            with self.assertRaises(Queue.Empty):
+                self.assertEqual(events.get(True, 2), None)
+
+    def test_websocket_reconnect_on_unexpected_close(self):
+        self._test_websocket_reconnect(True)
+
+    def test_websocket_no_reconnect_on_close_by_user(self):
+        self._test_websocket_reconnect(False)

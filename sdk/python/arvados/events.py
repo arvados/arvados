@@ -14,8 +14,8 @@ from ws4py.client.threadedclient import WebSocketClient
 _logger = logging.getLogger('arvados.events')
 
 
-class EventClient(WebSocketClient):
-    def __init__(self, url, filters, on_event, last_log_id):
+class _EventClient(WebSocketClient):
+    def __init__(self, url, filters, on_event, last_log_id, on_closed=None):
         ssl_options = {'ca_certs': arvados.util.ca_certs_path()}
         if config.flag_is_true('ARVADOS_API_HOST_INSECURE'):
             ssl_options['cert_reqs'] = ssl.CERT_NONE
@@ -26,19 +26,21 @@ class EventClient(WebSocketClient):
         # IPv4 addresses (common with "localhost"), only one of them
         # will be attempted -- and it might not be the right one. See
         # ws4py's WebSocketBaseClient.__init__.
-        super(EventClient, self).__init__(url, ssl_options=ssl_options)
+        super(_EventClient, self).__init__(url, ssl_options=ssl_options)
         self.filters = filters
         self.on_event = on_event
         self.last_log_id = last_log_id
         self._closing_lock = threading.RLock()
         self._closing = False
         self._closed = threading.Event()
+        self.on_closed = on_closed
 
     def opened(self):
         self.subscribe(self.filters, self.last_log_id)
 
     def closed(self, code, reason=None):
         self._closed.set()
+        self.on_closed()
 
     def received_message(self, m):
         with self._closing_lock:
@@ -51,7 +53,7 @@ class EventClient(WebSocketClient):
         :timeout: is the number of seconds to wait for ws4py to
         indicate that the connection has closed.
         """
-        super(EventClient, self).close(code, reason)
+        super(_EventClient, self).close(code, reason)
         with self._closing_lock:
             # make sure we don't process any more messages.
             self._closing = True
@@ -66,6 +68,49 @@ class EventClient(WebSocketClient):
 
     def unsubscribe(self, filters):
         self.send(json.dumps({"method": "unsubscribe", "filters": filters}))
+
+
+class EventClient(object):
+    def __init__(self, url, filters, on_event_cb, last_log_id):
+        self.url = url
+        self.filters = filters
+        self.on_event_cb = on_event_cb
+        self.last_log_id = last_log_id
+        self.is_closed = False
+        self.subscriptions = {}
+        self.subscriptions[str(filters)] = filters
+        self.ec = _EventClient(url, filters, self.on_event, last_log_id, self.on_closed)
+
+    def connect(self):
+        self.ec.connect()
+
+    def close_connection(self):
+        self.ec.close_connection()
+
+    def subscribe(self, filters, last_log_id=None):
+        self.subscriptions[str(filters)] = filters
+        self.ec.subscribe(filters, last_log_id)
+
+    def unsubscribe(self, filters):
+        del self.subscriptions[str(filters)]
+        self.ec.unsubscribe(filters)
+
+    def close(self, code=1000, reason='', timeout=0):
+        self.is_closed = True
+        self.ec.close(code, reason, timeout)
+
+    def on_event(self, m):
+        if m.get('id') != None:
+            self.last_log_id = m.get('id')
+        self.on_event_cb(m)
+
+    def on_closed(self):
+        if self.is_closed == False:
+            filters = []
+            for s in self.subscriptions:
+                filters.append(self.subscriptions[s])
+            self.ec = _EventClient(self.url, self.filters, self.on_event, self.last_log_id, self.on_closed)
+            self.ec.connect()
 
 
 class PollClient(threading.Thread):
