@@ -23,7 +23,6 @@ class TmpCollectionTest(IntegrationTest):
             f.write("bloop%i" % i)
             cw.save_new()
             pdh.append(cw.portable_data_hash())
-            print cw.portable_data_hash(), cw.manifest_text()
         self.pool_test(self.mnt, pdh)
 
     @staticmethod

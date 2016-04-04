@@ -320,6 +320,10 @@ class CollectionDirectoryBase(Directory):
         self.flush()
         src.flush()
 
+    def clear(self, force=False):
+        super(CollectionDirectoryBase, self).clear(force)
+        self.collection = None
+
 
 class CollectionDirectory(CollectionDirectoryBase):
     """Represents the root of a directory tree representing a collection."""
