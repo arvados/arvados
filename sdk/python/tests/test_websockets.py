@@ -144,14 +144,14 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         with self.assertRaises(Queue.Empty):
             self.assertEqual(events.get(True, 2), None)
 
-        # create one more obj
-        human2 = arvados.api('v1').humans().create(body={}).execute()
-
         # close (im)properly
         if close_unexpected:
             self.ws.close_connection()
         else:
             self.ws.close()
+
+        # create one more obj
+        human2 = arvados.api('v1').humans().create(body={}).execute()
 
         # (un)expect the object creation event
         if close_unexpected:
