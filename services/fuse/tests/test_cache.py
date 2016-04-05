@@ -21,6 +21,11 @@ class TmpCollectionTest(IntegrationTest):
             cw = arvados.collection.Collection()
             f = cw.open("blurg%i" % i, "w")
             f.write("bloop%i" % i)
+
+            cw.mkdirs("dir%i" % i)
+            f = cw.open("dir%i/blurg" % i, "w")
+            f.write("dirbloop%i" % i)
+
             cw.save_new()
             pdh.append(cw.portable_data_hash())
         self.pool_test(self.mnt, pdh)
@@ -30,6 +35,11 @@ class TmpCollectionTest(IntegrationTest):
         for i,v in enumerate(pdh):
             j = os.path.join(mnt, "by_id", v, "blurg%i" % i)
             self.assertTrue(os.path.exists(j))
+            j = os.path.join(mnt, "by_id", v, "dir%i/blurg" % i)
+            self.assertTrue(os.path.exists(j))
+
         for i,v in enumerate(pdh):
             j = os.path.join(mnt, "by_id", v, "blurg%i" % i)
+            self.assertTrue(os.path.exists(j))
+            j = os.path.join(mnt, "by_id", v, "dir%i/blurg" % i)
             self.assertTrue(os.path.exists(j))

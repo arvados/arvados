@@ -321,8 +321,9 @@ class CollectionDirectoryBase(Directory):
         src.flush()
 
     def clear(self, force=False):
-        super(CollectionDirectoryBase, self).clear(force)
+        r = super(CollectionDirectoryBase, self).clear(force)
         self.collection = None
+        return r
 
 
 class CollectionDirectory(CollectionDirectoryBase):
