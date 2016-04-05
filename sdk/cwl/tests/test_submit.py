@@ -48,14 +48,14 @@ class TestSubmit(unittest.TestCase):
                 'runtime_constraints': {
                     'docker_image': 'arvados/jobs'
                 },
-            'script_parameters': {
-                'x': {
-                    'path': '99999999999999999999999999999992+99/blorp.txt',
-                    'class': 'File'
+                'script_parameters': {
+                    'x': {
+                        'path': '99999999999999999999999999999992+99/blorp.txt',
+                        'class': 'File'
+                    },
+                    'cwl:tool': '99999999999999999999999999999991+99/wf/submit_wf.cwl'
                 },
-                'cwl:tool': '99999999999999999999999999999991+99/wf/submit_wf.cwl'
-            },
-            'repository': 'arvados',
+                'repository': 'arvados',
                 'script_version': 'master',
                 'script': 'cwl-runner'
             },
