@@ -366,6 +366,7 @@ class RunnerJob(object):
         self.job_order["cwl:tool"] = workflowmapper.mapper(self.tool.tool["id"])[1]
 
         response = self.arvrunner.api.jobs().create(body={
+            "owner_uuid": self.arvrunner.project_uuid,
             "script": "cwl-runner",
             "script_version": "master",
             "repository": "arvados",

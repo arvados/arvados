@@ -17,7 +17,8 @@ class TestSubmit(unittest.TestCase):
             return "%s+%i" % (hashlib.md5(p).hexdigest(), len(p))
         keep().put.side_effect = putstub
         keepdocker.return_value = True
-        api.users().current().execute.return_value = {"uuid": "zzzzz-tpzed-zzzzzzzzzzzzzzz"}
+        user_uuid = "zzzzz-tpzed-zzzzzzzzzzzzzzz"
+        api.users().current().execute.return_value = {"uuid": user_uuid}
         api.collections().list().execute.return_value = {"items": []}
         api.collections().create().execute.side_effect = ({"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz1",
                                                            "portable_data_hash": "99999999999999999999999999999991+99"},
@@ -43,6 +44,7 @@ class TestSubmit(unittest.TestCase):
 
         api.jobs().create.assert_called_with(
             body={
+                'owner_uuid': user_uuid,
                 'runtime_constraints': {
                     'docker_image': 'arvados/jobs'
                 },
@@ -54,6 +56,47 @@ class TestSubmit(unittest.TestCase):
                 'cwl:tool': '99999999999999999999999999999991+99/wf/submit_wf.cwl'
             },
             'repository': 'arvados',
+                'script_version': 'master',
+                'script': 'cwl-runner'
+            },
+            find_or_create=True)
+
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    @mock.patch("arvados.collection.KeepClient")
+    @mock.patch("arvados.events.subscribe")
+    def test_submit_with_project_uuid(self, events, keep, keepdocker):
+        api = mock.MagicMock()
+        def putstub(p, **kwargs):
+            return "%s+%i" % (hashlib.md5(p).hexdigest(), len(p))
+        keep().put.side_effect = putstub
+        keepdocker.return_value = True
+        api.users().current().execute.return_value = {"uuid": "zzzzz-tpzed-zzzzzzzzzzzzzzz"}
+        api.collections().list().execute.return_value = {"items": []}
+        api.collections().create().execute.side_effect = ({"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz1",
+                                                           "portable_data_hash": "99999999999999999999999999999991+99"},
+                                                          {"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2",
+                                                           "portable_data_hash": "99999999999999999999999999999992+99"})
+        api.jobs().create().execute.return_value = {"uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz", "state": "Queued"}
+        project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+
+        arvados_cwl.main(["--debug", "--submit", "--project-uuid", project_uuid,
+                          "--no-wait", "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                         sys.stdout, sys.stderr, api_client=api)
+
+        api.jobs().create.assert_called_with(
+            body={
+                'owner_uuid': project_uuid,
+                'runtime_constraints': {
+                    'docker_image': 'arvados/jobs'
+                },
+                'script_parameters': {
+                    'x': {
+                        'path': '99999999999999999999999999999992+99/blorp.txt',
+                        'class': 'File'
+                    },
+                    'cwl:tool': '99999999999999999999999999999991+99/wf/submit_wf.cwl'
+                },
+                'repository': 'arvados',
                 'script_version': 'master',
                 'script': 'cwl-runner'
             },
