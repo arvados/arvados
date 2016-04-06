@@ -416,8 +416,17 @@ if ($docker_locator = $Job->{docker_image_locator}) {
   Log (undef, "docker image hash is $docker_hash");
   $docker_stream =~ s/^\.//;
   my $docker_install_script = qq{
-if ! $docker_bin images -q --no-trunc --all | grep -qxF \Q$docker_hash\E; then
-    arv-get \Q$docker_locator$docker_stream/$docker_hash.tar\E | $docker_bin load
+if $docker_bin images -q --no-trunc --all | grep -qxF \Q$docker_hash\E; then
+    exit 0
+fi
+declare -a exit_codes=("\${PIPESTATUS[@]}")
+if [ 0 != "\${exit_codes[0]}" ]; then
+   exit "\${exit_codes[0]}"  # `docker images` failed
+elif [ 1 != "\${exit_codes[1]}" ]; then
+   exit "\${exit_codes[1]}"  # `grep` encountered an error
+else
+   # Everything worked fine, but grep didn't find the image on this host.
+   arv-get \Q$docker_locator$docker_stream/$docker_hash.tar\E | $docker_bin load
 fi
 };
 
