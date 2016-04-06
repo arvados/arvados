@@ -151,6 +151,9 @@ class NodeManagerDaemonActor(actor_class):
     def _update_poll_time(self, poll_key):
         self.last_polls[poll_key] = time.time()
 
+    def _resume_node(self, node_record):
+        node_record.actor.resume_node()
+
     def _pair_nodes(self, node_record, arvados_node):
         self._logger.info("Cloud node %s is now paired with Arvados node %s",
                           node_record.cloud_node.name, arvados_node['uuid'])
@@ -218,6 +221,11 @@ class NodeManagerDaemonActor(actor_class):
                 if cloud_rec.actor.offer_arvados_pair(arv_node).get():
                     self._pair_nodes(cloud_rec, arv_node)
                     break
+        for rec in self.arvados_nodes.nodes.itervalues():
+            if (rec.arvados_node["info"].get("slurm_state") == "down" and
+                rec.cloud_node is not None and
+                rec.cloud_node.id not in self.shutdowns):
+                self._resume_node(rec)
 
     def _nodes_booting(self, size):
         s = sum(1
@@ -238,8 +246,15 @@ class NodeManagerDaemonActor(actor_class):
                   for c in self.cloud_nodes.nodes.itervalues()
                   if size is None or c.cloud_node.size.id == size.id)
 
+    def _nodes_down(self, size):
+        return sum(1 for down in
+                   pykka.get_all(rec.actor.in_state('down') for rec in
+                                 self.cloud_nodes.nodes.itervalues()
+                                 if size is None or rec.cloud_node.size.id == size.id)
+                   if down)
+
     def _nodes_up(self, size):
-        up = self._nodes_booting(size) + self._nodes_booted(size)
+        up = (self._nodes_booting(size) + self._nodes_booted(size)) - self._nodes_down(size)
         return up
 
     def _total_price(self):
