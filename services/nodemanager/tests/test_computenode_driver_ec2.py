@@ -15,9 +15,6 @@ from . import testutil
 class EC2ComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
     TEST_CLASS = ec2.ComputeNodeDriver
 
-    def cloud_name_from_arv_node(self, arv_node):
-        return '{n[hostname]}.{n[domain]}'.format(n=arv_node)
-
     def test_driver_instantiation(self):
         kwargs = {'key': 'testkey'}
         driver = self.new_driver(auth_kwargs=kwargs)

@@ -28,10 +28,6 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         return super(GCEComputeNodeDriverTestCase, self).new_driver(
             auth_kwargs, list_kwargs, create_kwargs)
 
-    def cloud_name_from_arv_node(self, arv_node):
-        uuid_parts = arv_node['uuid'].split('-', 2)
-        return 'compute-{parts[2]}-{parts[0]}'.format(parts=uuid_parts)
-
     def test_driver_instantiation(self):
         kwargs = {'user_id': 'foo'}
         driver = self.new_driver(auth_kwargs=kwargs)

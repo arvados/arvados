@@ -144,10 +144,10 @@ class DriverTestMixin(object):
             self.assertIs(driver.real, driver_mock2)
 
     def test_create_can_find_node_after_timeout(self):
+        driver = self.new_driver()
         arv_node = arvados_node_mock()
         cloud_node = cloud_node_mock()
-        cloud_node.name = self.cloud_name_from_arv_node(arv_node)
-        driver = self.new_driver()
+        cloud_node.name = driver.create_cloud_name(arv_node)
         create_method = self.driver_mock().create_node
         create_method.side_effect = cloud_types.LibcloudError("fake timeout")
         list_method = self.driver_mock().list_nodes
@@ -156,8 +156,8 @@ class DriverTestMixin(object):
         self.assertIs(cloud_node, actual)
 
     def test_create_can_raise_exception_after_timeout(self):
-        arv_node = arvados_node_mock()
         driver = self.new_driver()
+        arv_node = arvados_node_mock()
         create_method = self.driver_mock().create_node
         create_method.side_effect = cloud_types.LibcloudError("fake timeout")
         list_method = self.driver_mock().list_nodes

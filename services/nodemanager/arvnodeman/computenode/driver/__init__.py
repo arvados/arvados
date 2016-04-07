@@ -80,20 +80,6 @@ class BaseComputeNodeDriver(RetryMixin):
         return 'auth', key
 
     def search_for_now(self, term, list_method, key=attrgetter('id'), **kwargs):
-        """Call a cloud list API method and return one matching item.
-
-        See search_for() for details of arguments and exceptions.
-        This method does not cache results.
-        """
-        items = getattr(self.real, list_method)(**kwargs)
-        results = [item for item in items if key(item) == term]
-        count = len(results)
-        if count != 1:
-            raise ValueError("{} returned {} results for {!r}".format(
-                    list_method, count, term))
-        return results[0]
-
-    def search_for(self, term, list_method, key=attrgetter('id'), **kwargs):
         """Return one matching item from a list of cloud objects.
 
         Raises ValueError if the number of matching objects is not exactly 1.
@@ -106,6 +92,21 @@ class BaseComputeNodeDriver(RetryMixin):
           value search for a `term` match on each item.  Returns the
           object's 'id' attribute by default.
         """
+        items = getattr(self.real, list_method)(**kwargs)
+        results = [item for item in items if key(item) == term]
+        count = len(results)
+        if count != 1:
+            raise ValueError("{} returned {} results for {!r}".format(
+                    list_method, count, term))
+        return results[0]
+
+    def search_for(self, term, list_method, key=attrgetter('id'), **kwargs):
+        """Return one cached matching item from a list of cloud objects.
+
+        See search_for_now() for details of arguments and exceptions.
+        This method caches results, so it's good to find static cloud objects
+        like node sizes, regions, etc.
+        """
         cache_key = (list_method, term)
         if cache_key not in self.SEARCH_CACHE:
             self.SEARCH_CACHE[cache_key] = self.search_for_now(
@@ -116,6 +117,18 @@ class BaseComputeNodeDriver(RetryMixin):
         l = self.list_kwargs.copy()
         l.update(kwargs)
         return self.real.list_nodes(**l)
+
+    def create_cloud_name(self, arvados_node):
+        """Return a cloud node name for the given Arvados node record.
+
+        Subclasses must override this method.  It should return a string
+        that can be used as the name for a newly-created cloud node,
+        based on identifying information in the Arvados node record.
+
+        Arguments:
+        * arvados_node: This Arvados node record to seed the new cloud node.
+        """
+        raise NotImplementedError("BaseComputeNodeDriver.create_cloud_name")
 
     def arvados_create_kwargs(self, size, arvados_node):
         """Return dynamic keyword arguments for create_node.

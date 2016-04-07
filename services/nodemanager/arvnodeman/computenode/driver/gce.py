@@ -60,9 +60,12 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             self.create_kwargs['ex_metadata']['sshKeys'] = (
                 'root:' + ssh_file.read().strip())
 
+    def create_cloud_name(self, arvados_node):
+        uuid_parts = arvados_node['uuid'].split('-', 2)
+        return 'compute-{parts[2]}-{parts[0]}'.format(parts=uuid_parts)
+
     def arvados_create_kwargs(self, size, arvados_node):
-        cluster_id, _, node_id = arvados_node['uuid'].split('-')
-        name = 'compute-{}-{}'.format(node_id, cluster_id)
+        name = self.create_cloud_name(arvados_node)
         disks = [
             {'autoDelete': True,
              'boot': True,
