@@ -147,16 +147,16 @@ func setupBlockHashFile(c *C, name string, blocks []string) string {
 	return file.Name()
 }
 
-func checkErrorLog(c *C, blocks []string, msg string) {
+func checkErrorLog(c *C, blocks []string, prefix, suffix string) {
 	buf, _ := ioutil.ReadFile(tempLogFileName)
 	if len(blocks) == 0 {
-		expected := `HEAD .*` + msg
+		expected := prefix + `.*` + suffix
 		match, _ := regexp.MatchString(expected, string(buf))
 		c.Assert(match, Equals, false)
 		return
 	}
 	for _, hash := range blocks {
-		expected := hash + `.*` + msg
+		expected := prefix + `.*` + hash + `.*` + suffix
 		match, _ := regexp.MatchString(expected, string(buf))
 		c.Assert(match, Equals, true)
 	}
@@ -166,35 +166,35 @@ func (s *ServerRequiredSuite) TestBlockCheck(c *C) {
 	setupKeepBlockCheck(c, false)
 	setupTestData(c)
 	performKeepBlockCheck(kc, blobSigningKey, "", allLocators)
-	checkErrorLog(c, []string{}, "Block not found") // no errors
+	checkErrorLog(c, []string{}, "head", "Block not found") // no errors
 }
 
 func (s *ServerRequiredSuite) TestBlockCheckWithBlobSigning(c *C) {
 	setupKeepBlockCheck(c, true)
 	setupTestData(c)
 	performKeepBlockCheck(kc, blobSigningKey, "", allLocators)
-	checkErrorLog(c, []string{}, "Block not found") // no errors
+	checkErrorLog(c, []string{}, "head", "Block not found") // no errors
 }
 
 func (s *ServerRequiredSuite) TestBlockCheck_NoSuchBlock(c *C) {
 	setupKeepBlockCheck(c, false)
 	setupTestData(c)
 	performKeepBlockCheck(kc, blobSigningKey, "", []string{TestHash, TestHash2})
-	checkErrorLog(c, []string{TestHash, TestHash2}, "Block not found")
+	checkErrorLog(c, []string{TestHash, TestHash2}, "head", "Block not found")
 }
 
 func (s *ServerRequiredSuite) TestBlockCheck_NoSuchBlock_WithMatchingPrefix(c *C) {
 	setupKeepBlockCheck(c, false)
 	setupTestData(c)
 	performKeepBlockCheck(kc, blobSigningKey, "aaa", []string{TestHash, TestHash2})
-	checkErrorLog(c, []string{TestHash, TestHash2}, "Block not found")
+	checkErrorLog(c, []string{TestHash, TestHash2}, "head", "Block not found")
 }
 
 func (s *ServerRequiredSuite) TestBlockCheck_NoSuchBlock_WithPrefixMismatch(c *C) {
 	setupKeepBlockCheck(c, false)
 	setupTestData(c)
 	performKeepBlockCheck(kc, blobSigningKey, "999", []string{TestHash, TestHash2})
-	checkErrorLog(c, []string{}, "Block not found") // no errors
+	checkErrorLog(c, []string{}, "head", "Block not found") // no errors
 }
 
 // Setup block-check using keepServicesJSON with fake keepservers.
@@ -203,14 +203,14 @@ func (s *ServerRequiredSuite) TestErrorDuringKeepBlockCheck_FakeKeepservers(c *C
 	keepServicesJSON = testKeepServicesJSON
 	setupKeepBlockCheck(c, false)
 	performKeepBlockCheck(kc, blobSigningKey, "", []string{TestHash, TestHash2})
-	checkErrorLog(c, []string{TestHash, TestHash2}, "timeout")
+	checkErrorLog(c, []string{TestHash, TestHash2}, "head", "no such host")
 }
 
 func (s *ServerRequiredSuite) TestBlockCheck_BadSignature(c *C) {
 	setupKeepBlockCheck(c, true)
 	setupTestData(c)
 	performKeepBlockCheck(kc, "badblobsigningkey", "", []string{TestHash, TestHash2})
-	checkErrorLog(c, []string{TestHash, TestHash2}, "HTTP 403")
+	checkErrorLog(c, []string{TestHash, TestHash2}, "head", "HTTP 403")
 }
 
 // Test keep-block-check initialization with keepServicesJSON
@@ -305,5 +305,5 @@ func (s *DoMainTestSuite) Test_doMain(c *C) {
 
 	err := doMain()
 	c.Check(err, IsNil)
-	checkErrorLog(c, []string{TestHash, TestHash2}, "Block not found")
+	checkErrorLog(c, []string{TestHash, TestHash2}, "head", "Block not found")
 }
