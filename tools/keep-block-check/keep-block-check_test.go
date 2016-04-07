@@ -96,7 +96,7 @@ func setupKeepBlockCheck(c *C, enforcePermissions bool) {
 	arvadostest.StartKeep(2, enforcePermissions)
 
 	// setup keepclients
-  var err error
+	var err error
 	kc, err = setupKeepClient(config, keepServicesJSON)
 	c.Check(err, IsNil)
 }
@@ -120,11 +120,13 @@ func setupConfigFile(c *C, fileName string) string {
 	file, err := ioutil.TempFile(os.TempDir(), fileName)
 	c.Check(err, IsNil)
 
+	// Add config to file. While at it, throw some extra white space
 	fileContent := "ARVADOS_API_HOST=" + os.Getenv("ARVADOS_API_HOST") + "\n"
 	fileContent += "ARVADOS_API_TOKEN=" + arvadostest.DataManagerToken + "\n"
+	fileContent += "\n"
 	fileContent += "ARVADOS_API_HOST_INSECURE=" + os.Getenv("ARVADOS_API_HOST_INSECURE") + "\n"
-	fileContent += "ARVADOS_EXTERNAL_CLIENT=false\n"
-	fileContent += "ARVADOS_BLOB_SIGNING_KEY=abcdefg"
+	fileContent += " ARVADOS_EXTERNAL_CLIENT = false \n"
+	fileContent += "ARVADOS_BLOB_SIGNING_KEY=abcdefg\n"
 
 	_, err = file.Write([]byte(fileContent))
 	c.Check(err, IsNil)
@@ -137,10 +139,12 @@ func setupBlockHashFile(c *C, name string, blocks []string) string {
 	file, err := ioutil.TempFile(os.TempDir(), name)
 	c.Check(err, IsNil)
 
+	// Add the hashes to the file. While at it, throw some extra white space
 	fileContent := ""
 	for _, hash := range blocks {
-		fileContent += fmt.Sprintf("%s\n", hash)
+		fileContent += fmt.Sprintf(" %s \n", hash)
 	}
+	fileContent += "\n"
 	_, err = file.Write([]byte(fileContent))
 	c.Check(err, IsNil)
 
@@ -165,35 +169,49 @@ func checkErrorLog(c *C, blocks []string, prefix, suffix string) {
 func (s *ServerRequiredSuite) TestBlockCheck(c *C) {
 	setupKeepBlockCheck(c, false)
 	setupTestData(c)
-	performKeepBlockCheck(kc, blobSigningKey, "", allLocators)
+	err := performKeepBlockCheck(kc, blobSigningKey, "", allLocators)
+	c.Check(err, IsNil)
 	checkErrorLog(c, []string{}, "head", "Block not found") // no errors
 }
 
 func (s *ServerRequiredSuite) TestBlockCheckWithBlobSigning(c *C) {
 	setupKeepBlockCheck(c, true)
 	setupTestData(c)
-	performKeepBlockCheck(kc, blobSigningKey, "", allLocators)
+	err := performKeepBlockCheck(kc, blobSigningKey, "", allLocators)
+	c.Check(err, IsNil)
 	checkErrorLog(c, []string{}, "head", "Block not found") // no errors
 }
 
 func (s *ServerRequiredSuite) TestBlockCheck_NoSuchBlock(c *C) {
 	setupKeepBlockCheck(c, false)
 	setupTestData(c)
-	performKeepBlockCheck(kc, blobSigningKey, "", []string{TestHash, TestHash2})
+	allLocators = append(allLocators, TestHash)
+	allLocators = append(allLocators, TestHash2)
+	err := performKeepBlockCheck(kc, blobSigningKey, "", allLocators)
+	c.Check(err, NotNil)
+	c.Assert(err.Error(), Equals, "Head information not found for 2 out of 7 blocks with matching prefix.")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "head", "Block not found")
 }
 
 func (s *ServerRequiredSuite) TestBlockCheck_NoSuchBlock_WithMatchingPrefix(c *C) {
 	setupKeepBlockCheck(c, false)
 	setupTestData(c)
-	performKeepBlockCheck(kc, blobSigningKey, "aaa", []string{TestHash, TestHash2})
+	allLocators = append(allLocators, TestHash)
+	allLocators = append(allLocators, TestHash2)
+	err := performKeepBlockCheck(kc, blobSigningKey, "aaa", allLocators)
+	c.Check(err, NotNil)
+	// Of the 7 blocks given, only two match the prefix and hence only those are checked
+	c.Assert(err.Error(), Equals, "Head information not found for 2 out of 2 blocks with matching prefix.")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "head", "Block not found")
 }
 
 func (s *ServerRequiredSuite) TestBlockCheck_NoSuchBlock_WithPrefixMismatch(c *C) {
 	setupKeepBlockCheck(c, false)
 	setupTestData(c)
-	performKeepBlockCheck(kc, blobSigningKey, "999", []string{TestHash, TestHash2})
+	allLocators = append(allLocators, TestHash)
+	allLocators = append(allLocators, TestHash2)
+	err := performKeepBlockCheck(kc, blobSigningKey, "999", allLocators)
+	c.Check(err, IsNil)
 	checkErrorLog(c, []string{}, "head", "Block not found") // no errors
 }
 
@@ -202,14 +220,16 @@ func (s *ServerRequiredSuite) TestBlockCheck_NoSuchBlock_WithPrefixMismatch(c *C
 func (s *ServerRequiredSuite) TestErrorDuringKeepBlockCheck_FakeKeepservers(c *C) {
 	keepServicesJSON = testKeepServicesJSON
 	setupKeepBlockCheck(c, false)
-	performKeepBlockCheck(kc, blobSigningKey, "", []string{TestHash, TestHash2})
+	err := performKeepBlockCheck(kc, blobSigningKey, "", []string{TestHash, TestHash2})
+	c.Assert(err.Error(), Equals, "Head information not found for 2 out of 2 blocks with matching prefix.")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "head", "no such host")
 }
 
 func (s *ServerRequiredSuite) TestBlockCheck_BadSignature(c *C) {
 	setupKeepBlockCheck(c, true)
 	setupTestData(c)
-	performKeepBlockCheck(kc, "badblobsigningkey", "", []string{TestHash, TestHash2})
+	err := performKeepBlockCheck(kc, "badblobsigningkey", "", []string{TestHash, TestHash2})
+	c.Assert(err.Error(), Equals, "Head information not found for 2 out of 2 blocks with matching prefix.")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "head", "HTTP 403")
 }
 
@@ -290,20 +310,21 @@ func (s *DoMainTestSuite) Test_doMain_WithNoSuchBlockHashFile(c *C) {
 }
 
 func (s *DoMainTestSuite) Test_doMain(c *C) {
+	// Start keepservers.
+	arvadostest.StartKeep(2, false)
+	defer arvadostest.StopKeep(2)
+
 	config := setupConfigFile(c, "config")
 	defer os.Remove(config)
 
 	locatorFile := setupBlockHashFile(c, "block-hash", []string{TestHash, TestHash2})
 	defer os.Remove(locatorFile)
 
-	// Start keepservers.
-	arvadostest.StartKeep(2, false)
-	defer arvadostest.StopKeep(2)
-
 	args := []string{"-config", config, "-block-hash-file", locatorFile}
 	os.Args = append(os.Args, args...)
 
 	err := doMain()
-	c.Check(err, IsNil)
+	c.Check(err, NotNil)
+	c.Assert(err.Error(), Equals, "Head information not found for 2 out of 2 blocks with matching prefix.")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "head", "Block not found")
 }

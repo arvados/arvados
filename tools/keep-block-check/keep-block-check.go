@@ -68,8 +68,7 @@ func doMain() error {
 		return fmt.Errorf("Error configuring keepclient: %s", err.Error())
 	}
 
-	performKeepBlockCheck(kc, blobSigningKey, *prefix, blockLocators)
-	return nil
+	return performKeepBlockCheck(kc, blobSigningKey, *prefix, blockLocators)
 }
 
 type apiConfig struct {
@@ -159,7 +158,7 @@ func setupKeepClient(config apiConfig, keepServicesJSON string) (kc *keepclient.
 	return
 }
 
-// Get list of block locators from the given file
+// Get list of unique block locators from the given file
 func getBlockLocators(locatorFile string) (locators []string, err error) {
 	if locatorFile == "" {
 		err = errors.New("block-hash-file not specified")
@@ -172,23 +171,33 @@ func getBlockLocators(locatorFile string) (locators []string, err error) {
 		return
 	}
 
+	locatorMap := make(map[string]string)
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
 		if line == "" {
 			continue
 		}
-		locators = append(locators, strings.TrimSpace(line))
+		trimmedLine := strings.TrimSpace(line)
+		locatorMap[trimmedLine] = trimmedLine
+	}
+
+	for _, locator := range locatorMap {
+		locators = append(locators, locator)
 	}
 
 	return
 }
 
 // Get block headers from keep. Log any errors.
-func performKeepBlockCheck(kc *keepclient.KeepClient, blobSigningKey, prefix string, blockLocators []string) {
+func performKeepBlockCheck(kc *keepclient.KeepClient, blobSigningKey, prefix string, blockLocators []string) error {
+	totalBlocks := 0
+	notFoundBlocks := 0
 	for _, locator := range blockLocators {
 		if !strings.HasPrefix(locator, prefix) {
 			continue
 		}
+
+		totalBlocks++
 		getLocator := locator
 		if blobSigningKey != "" {
 			expiresAt := time.Now().AddDate(0, 0, 1)
@@ -197,7 +206,13 @@ func performKeepBlockCheck(kc *keepclient.KeepClient, blobSigningKey, prefix str
 
 		_, _, err := kc.Ask(getLocator)
 		if err != nil {
+			notFoundBlocks++
 			log.Printf("Error getting head info for block: %v %v", locator, err)
 		}
 	}
+	if notFoundBlocks > 0 {
+		return fmt.Errorf("Head information not found for %d out of %d blocks with matching prefix.", notFoundBlocks, totalBlocks)
+	}
+
+	return nil
 }
