@@ -221,6 +221,6 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
 
         # verify log messages to ensure retry happened
         log_messages = log_file.read()
-        found = log_messages.find("Error during websocket reconnect. Will retry")
+        found = log_messages.find("Error 'EventClient.connect error' during websocket reconnect. Will retry")
         self.assertNotEqual(found, -1)
         rootLogger.removeHandler(fileHandler)
