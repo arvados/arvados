@@ -221,9 +221,13 @@ class NodeManagerDaemonActor(actor_class):
                 if cloud_rec.actor.offer_arvados_pair(arv_node).get():
                     self._pair_nodes(cloud_rec, arv_node)
                     break
-        for rec in self.arvados_nodes.nodes.itervalues():
-            if (rec.arvados_node["info"].get("slurm_state") == "down" and
-                rec.cloud_node is not None and
+        for rec in self.cloud_nodes.nodes.itervalues():
+            # crunch-dispatch turns all slurm states that are not either "idle"
+            # or "alloc" into "down", but in case that behavior changes, assume
+            # any state that is not "idle" or "alloc" could be a state we want
+            # to try to resume from.
+            if (rec.arvados_node is not None and
+                rec.arvados_node["info"].get("slurm_state") not in ("idle", "alloc") and
                 rec.cloud_node.id not in self.shutdowns):
                 self._resume_node(rec)
 
@@ -247,6 +251,9 @@ class NodeManagerDaemonActor(actor_class):
                   if size is None or c.cloud_node.size.id == size.id)
 
     def _nodes_down(self, size):
+        # Make sure to iterate over self.cloud_nodes because what we're
+        # counting here are compute nodes that are reported by the cloud
+        # provider but are considered "down" by Arvados.
         return sum(1 for down in
                    pykka.get_all(rec.actor.in_state('down') for rec in
                                  self.cloud_nodes.nodes.itervalues()

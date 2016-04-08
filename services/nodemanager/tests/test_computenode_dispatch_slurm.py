@@ -119,12 +119,8 @@ class SLURMComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.make_actor(arv_node=arv_node)
         check_output.return_value = "drain\n"
         self.node_actor.resume_node().get(self.TIMEOUT)
-        check_output.assert_has_calls([mock.call(['sinfo', '--noheader', '-o', '%t', '-n', arv_node['hostname']]),
-                                       mock.call(['sinfo', '--noheader', '-o', '%t', '-n', arv_node['hostname']]),
-                                       mock.call(['sinfo', '--noheader', '-o', '%t', '-n', arv_node['hostname']]),
-                                       mock.call(['scontrol', 'update', 'NodeName=' + arv_node['hostname'], 'State=RESUME'])],
-                                      any_order=True)
-        self.assertEqual(4, check_output.call_count)
+        self.assertIn(mock.call(['sinfo', '--noheader', '-o', '%t', '-n', arv_node['hostname']]), check_output.call_args_list)
+        self.assertIn(mock.call(['scontrol', 'update', 'NodeName=' + arv_node['hostname'], 'State=RESUME']), check_output.call_args_list)
 
     @mock.patch("subprocess.check_output")
     def test_no_resume_idle_node(self, check_output):
@@ -132,39 +128,26 @@ class SLURMComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.make_actor(arv_node=arv_node)
         check_output.return_value = "idle\n"
         self.node_actor.resume_node().get(self.TIMEOUT)
-        check_output.assert_has_calls([mock.call(['sinfo', '--noheader', '-o', '%t', '-n', arv_node['hostname']]),
-                                       mock.call(['sinfo', '--noheader', '-o', '%t', '-n', arv_node['hostname']]),
-                                       mock.call(['sinfo', '--noheader', '-o', '%t', '-n', arv_node['hostname']])],
-                                      any_order=True)
-        self.assertEqual(3, check_output.call_count)
-
+        self.assertIn(mock.call(['sinfo', '--noheader', '-o', '%t', '-n', arv_node['hostname']]), check_output.call_args_list)
+        self.assertNotIn(mock.call(['scontrol', 'update', 'NodeName=' + arv_node['hostname'], 'State=RESUME']), check_output.call_args_list)
 
     @mock.patch("subprocess.check_output")
     def test_resume_node_exception(self, check_output):
         arv_node = testutil.arvados_node_mock()
         self.make_actor(arv_node=arv_node)
         check_output.side_effect = Exception()
-        check_output.return_value = "drain\n"
         self.node_actor.resume_node().get(self.TIMEOUT)
-        check_output.assert_has_calls([mock.call(['sinfo', '--noheader', '-o', '%t', '-n', arv_node['hostname']]),
-                                       mock.call(['sinfo', '--noheader', '-o', '%t', '-n', arv_node['hostname']]),
-                                       mock.call(['sinfo', '--noheader', '-o', '%t', '-n', arv_node['hostname']])],
-                                      any_order=True)
-        self.assertEqual(3, check_output.call_count)
-
+        self.assertIn(mock.call(['sinfo', '--noheader', '-o', '%t', '-n', arv_node['hostname']]), check_output.call_args_list)
+        self.assertNotIn(mock.call(['scontrol', 'update', 'NodeName=' + arv_node['hostname'], 'State=RESUME']), check_output.call_args_list)
 
     @mock.patch("subprocess.check_output")
     def test_shutdown_down_node(self, check_output):
         check_output.return_value = "down\n"
-        self.make_actor()
-        self.assertEquals('shutdown window is not open.', self.node_actor.shutdown_eligible().get(self.TIMEOUT))
-        self.shutdowns._set_state(True, 600)
-        self.assertTrue(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+        self.make_actor(arv_node=testutil.arvados_node_mock())
+        self.assertIs(True, self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
     @mock.patch("subprocess.check_output")
     def test_no_shutdown_drain_node(self, check_output):
         check_output.return_value = "drain\n"
-        self.make_actor()
-        self.assertEquals('shutdown window is not open.', self.node_actor.shutdown_eligible().get(self.TIMEOUT))
-        self.shutdowns._set_state(True, 600)
-        self.assertTrue(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+        self.make_actor(arv_node=testutil.arvados_node_mock())
+        self.assertEquals('node is draining', self.node_actor.shutdown_eligible().get(self.TIMEOUT))

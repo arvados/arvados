@@ -76,8 +76,11 @@ class ComputeNodeMonitorActor(SlurmMixin, MonitorActorBase):
             state = self._get_slurm_state(self.arvados_node['hostname'])
             # Automatically eligible for shutdown if it's down or failed, but
             # not drain to avoid a race condition with resume_node().
-            if state in self.SLURM_END_STATES and state not in self.SLURM_DRAIN_STATES:
-                return True
+            if state in self.SLURM_END_STATES:
+                if state in self.SLURM_DRAIN_STATES:
+                    return "node is draining"
+                else:
+                    return True
         return super(ComputeNodeMonitorActor, self).shutdown_eligible()
 
     def resume_node(self):
