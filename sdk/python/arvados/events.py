@@ -109,6 +109,7 @@ class EventClient(object):
 
     def on_closed(self):
         if self.is_closed == False:
+            _logger.warn("Unexpected close. Reconnecting.")
             self.ec = _EventClient(self.url, self.filters, self.on_event, self.last_log_id, self.on_closed)
             while True:
               try:
@@ -117,7 +118,7 @@ class EventClient(object):
                       self.ec.subscribe(self.subscriptions[s], self.last_log_id)
                   break
               except:
-                  _logger.warn("Failed to reconnect to websockets on %s. Will retry after 5s." % endpoint)
+                  _logger.warn("Error during websocket reconnect. Will retry after 5s.")
                   time.sleep(5)
 
 
