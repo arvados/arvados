@@ -12,6 +12,11 @@ try:
 except ImportError:
     tagger = egg_info_cmd.egg_info
 
+if sys.version_info < (3, 3):
+    docker_py_req = 'docker-py==1.7.1'
+else:
+    docker_py_req = 'docker-py'
+
 setup(name="arvados-docker-cleaner",
       version="0.1",
       description="Arvados Docker cleaner",
@@ -25,7 +30,7 @@ setup(name="arvados-docker-cleaner",
           ('share/doc/arvados-docker-cleaner', ['agpl-3.0.txt']),
       ],
       install_requires=[
-        'docker-py',
+          docker_py_req,
         ],
       tests_require=[
         'pbr<1.7.0',
