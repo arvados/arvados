@@ -86,13 +86,13 @@ class BaseComputeNodeDriver(RetryMixin):
 
         Arguments:
         * term: The value that identifies a matching item.
-        * list_method: A string that names the method to call on this
-          instance's libcloud driver for a list of objects.
+        * list_method: A string that names the method to call for a
+          list of objects.
         * key: A function that accepts a cloud object and returns a
           value search for a `term` match on each item.  Returns the
           object's 'id' attribute by default.
         """
-        items = getattr(self.real, list_method)(**kwargs)
+        items = getattr(self, list_method)(**kwargs)
         results = [item for item in items if key(item) == term]
         count = len(results)
         if count != 1:

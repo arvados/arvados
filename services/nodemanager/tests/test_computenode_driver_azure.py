@@ -120,3 +120,17 @@ echo z1.test > /var/tmp/arv-node-data/meta-data/instance-type
         n = driver.list_nodes()
         self.assertEqual(nodelist, n)
         self.driver_mock().list_nodes.assert_called_with(ex_fetch_nic=False, ex_resource_group='TestResourceGroup')
+
+    def test_create_can_find_node_after_timeout(self):
+        super(AzureComputeNodeDriverTestCase,
+              self).test_create_can_find_node_after_timeout(
+                  create_kwargs={'tag_arvados-class': 'test'},
+                  node_extra={'tags': {'arvados-class': 'test'}})
+
+    def test_node_found_after_timeout_has_fixed_size(self):
+        size = testutil.MockSize(4)
+        node_props = {'hardwareProfile': {'vmSize': size.id}}
+        cloud_node = testutil.cloud_node_mock(
+            size=None, tags={'arvados-class': 'test'}, properties=node_props)
+        self.check_node_found_after_timeout_has_fixed_size(
+            size, cloud_node, {'tag_arvados-class': 'test'})

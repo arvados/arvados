@@ -231,6 +231,11 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         self.assertIs(node, nodelist[0])
         self.assertIs(size, nodelist[0].size)
 
+    def test_node_found_after_timeout_has_fixed_size(self):
+        size = testutil.MockSize(4)
+        cloud_node = testutil.cloud_node_mock(size=size.id)
+        self.check_node_found_after_timeout_has_fixed_size(size, cloud_node)
+
     def test_list_empty_nodes(self):
         self.driver_mock().list_nodes.return_value = []
         self.assertEqual([], self.new_driver().list_nodes())
