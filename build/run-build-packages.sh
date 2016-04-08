@@ -458,6 +458,11 @@ cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/dockercleaner/build"
 fpm_build $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner"
 
+# The Arvados crunchstat-summary tool
+cd $WORKSPACE/packages/$TARGET
+rm -rf "$WORKSPACE/tools/crunchstat-summary/build"
+fpm_build $WORKSPACE/tools/crunchstat-summary ${PYTHON2_PKG_PREFIX}-crunchstat-summary 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/tools/crunchstat-summary/crunchstat_summary.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=Crunchstat-summary reads Arvados Crunch log files and summarize resource usage"
+
 # Forked libcloud
 LIBCLOUD_DIR=$(mktemp -d)
 (
