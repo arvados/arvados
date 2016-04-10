@@ -9,6 +9,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	"git.curoverse.com/arvados.git/services/datamanager/collection"
 	"git.curoverse.com/arvados.git/services/datamanager/keep"
+	"log"
+	"os"
 	"sort"
 )
 
@@ -274,4 +276,38 @@ func (rlbs ReplicationLevelBlockSetMap) SummarizeBuckets(
 	}
 
 	return
+}
+
+func LogKeepIndex(ts string, keepServerInfo keep.ReadServers) {
+	for svr, contents := range keepServerInfo.ServerToContents {
+		fn := fmt.Sprintf("%s_%s_index.txt", ts, svr.UUID)
+		idxfile, err := os.Create(fn)
+		if err != nil {
+			log.Printf("Could not open '%v' for writing: %v", fn, err)
+		} else {
+			for digest, _ := range contents.BlockDigestToInfo {
+				fmt.Fprintf(idxfile, "%016x%016x+%d\n", digest.Digest.H, digest.Digest.L, digest.Size)
+			}
+			idxfile.Close()
+		}
+	}
+}
+
+func LogMissingBlocks(ts string, readCollections collection.ReadCollections, rs ReplicationSummary) {
+	for ci, _ := range rs.CollectionsNotFullyInKeep {
+		uuid := readCollections.CollectionIndexToUUID[ci]
+		fn := fmt.Sprintf("%s_%s_missing.txt", ts, uuid)
+		idxfile, err := os.Create(fn)
+		if err != nil {
+			log.Printf("Could not open '%v' for writing: %v", fn, err)
+		} else {
+			collection := readCollections.UUIDToCollection[uuid]
+			for digest, sz := range collection.BlockDigestToSize {
+				bds := blockdigest.DigestWithSize{digest, uint32(sz)}
+				if _, ok := rs.CollectionBlocksNotInKeep[bds]; ok {
+					fmt.Fprintf(idxfile, "%016x%016x+%d\n", bds.Digest.H, bds.Digest.L, bds.Size)
+				}
+			}
+		}
+	}
 }

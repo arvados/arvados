@@ -24,6 +24,7 @@ var (
 	minutesBetweenRuns  int
 	collectionBatchSize int
 	dryRun              bool
+	extraReports        bool
 )
 
 func init() {
@@ -47,6 +48,10 @@ func init() {
 		"dry-run",
 		false,
 		"Perform a dry run. Log how many blocks would be deleted/moved, but do not issue any changes to keepstore.")
+	flag.BoolVar(&extraReports,
+		"extra-reports",
+		false,
+		"Log extra reports: keepstore indexes, collections missing blocks.")
 }
 
 func main() {
@@ -128,6 +133,12 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 
 	replicationSummary := buckets.SummarizeBuckets(readCollections)
 	replicationCounts := replicationSummary.ComputeCounts()
+
+	if extraReports {
+		ts := time.Now()
+		summary.LogKeepIndex(ts.Format(time.RFC3339), keepServerInfo)
+		summary.LogMissingBlocks(ts.Format(time.RFC3339), readCollections, replicationSummary)
+	}
 
 	log.Printf("Blocks In Collections: %d, "+
 		"\nBlocks In Keep: %d.",
