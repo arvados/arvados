@@ -219,7 +219,17 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
                 return orig_func(self, *args, **kwargs)
         return stop_wrapper
 
-    @ComputeNodeStateChangeBase._finish_on_exception
+    def _cancel_on_exception(orig_func):
+        @functools.wraps(orig_func)
+        def finish_wrapper(self, *args, **kwargs):
+            try:
+                return orig_func(self, *args, **kwargs)
+            except Exception as error:
+                self._logger.error("Actor error %s", error)
+                self._later.cancel_shutdown("Unhandled exception %s" % error)
+        return finish_wrapper
+
+    @_cancel_on_exception
     @_stop_if_window_closed
     @RetryMixin._retry()
     def shutdown_node(self):
@@ -386,6 +396,9 @@ class ComputeNodeMonitorActor(config.actor_class):
             return True
         else:
             return "node is not idle."
+
+    def resume_node(self):
+        pass
 
     def consider_shutdown(self):
         try:
