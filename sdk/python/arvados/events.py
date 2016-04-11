@@ -105,7 +105,10 @@ class EventClient(object):
     def on_event(self, m):
         if m.get('id') != None:
             self.last_log_id = m.get('id')
-        self.on_event_cb(m)
+        try:
+            self.on_event_cb(m)
+        except Exception as e:
+            _logger.warn("Unexpected exception from event callback.", exc_info=e)
 
     def on_closed(self):
         if self.is_closed == False:
@@ -152,14 +155,29 @@ class PollClient(threading.Thread):
             max_id = self.id
             moreitems = False
             for f in self.filters:
-                items = self.api.logs().list(order="id asc", filters=f+[["id", ">", str(self.id)]]).execute()
+                try:
+                    # If we get a transient error, we really really need to
+                    # just keep trying over and over with the same query or
+                    # we'll potentially drop events which would break the event
+                    # stream contract.
+                    items = self.api.logs().list(order="id asc", filters=f+[["id", ">", str(self.id)]]).execute(num_retries=1000000)
+                except Exception as e:
+                    # Some apparently non-retryable error happened, so log the
+                    # error and shut down gracefully.
+                    _logger.error("Got exception from log query: %s", e)
+                    with self._closing_lock:
+                        self._closing.set()
+                    return
                 for i in items["items"]:
                     if i['id'] > max_id:
                         max_id = i['id']
                     with self._closing_lock:
                         if self._closing.is_set():
                             return
-                        self.on_event(i)
+                        try:
+                            self.on_event(i)
+                        except Exception as e:
+                            _logger.warn("Unexpected exception from event callback.", exc_info=e)
                 if items["items_available"] > len(items["items"]):
                     moreitems = True
             self.id = max_id
