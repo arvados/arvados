@@ -6,6 +6,7 @@ import logging.handlers
 import mock
 import Queue
 import run_test_server
+import StringIO
 import tempfile
 import threading
 import time
@@ -132,10 +133,10 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         run_test_server.authorize_with('active')
         events = Queue.Queue(100)
 
-        log_file = tempfile.NamedTemporaryFile(suffix='log.out', delete=True)
+        logstream = StringIO.StringIO()
         rootLogger = logging.getLogger()
-        fileHandler = logging.FileHandler(log_file.name)
-        rootLogger.addHandler(fileHandler)
+        streamHandler = logging.StreamHandler(logstream)
+        rootLogger.addHandler(streamHandler)
 
         filters = [['object_uuid', 'is_a', 'arvados#human']]
         filters.append(['created_at', '>=', self.localiso(self.TIME_PAST)])
@@ -180,14 +181,14 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
                 self.assertEqual(events.get(True, 2), None)
 
         # verify log message to ensure that an (un)expected close
-        log_messages = log_file.read()
+        log_messages = logstream.getvalue()
         closeLogFound = log_messages.find("Unexpected close. Reconnecting.")
         retryLogFound = log_messages.find("Error during websocket reconnect. Will retry")
         if close_unexpected:
             self.assertNotEqual(closeLogFound, -1)
         else:
             self.assertEqual(closeLogFound, -1)
-        rootLogger.removeHandler(fileHandler)
+        rootLogger.removeHandler(streamHandler)
 
     def test_websocket_reconnect_on_unexpected_close(self):
         self._test_websocket_reconnect(True)
@@ -200,10 +201,10 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
     def test_websocket_reconnect_retry(self, event_client_connect):
         event_client_connect.side_effect = [None, Exception('EventClient.connect error'), None]
 
-        log_file = tempfile.NamedTemporaryFile(suffix='log.out', delete=True)
+        logstream = StringIO.StringIO()
         rootLogger = logging.getLogger()
-        fileHandler = logging.FileHandler(log_file.name)
-        rootLogger.addHandler(fileHandler)
+        streamHandler = logging.StreamHandler(logstream)
+        rootLogger.addHandler(streamHandler)
 
         run_test_server.authorize_with('active')
         events = Queue.Queue(100)
@@ -220,7 +221,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         self.ws.on_closed()
 
         # verify log messages to ensure retry happened
-        log_messages = log_file.read()
+        log_messages = logstream.getvalue()
         found = log_messages.find("Error 'EventClient.connect error' during websocket reconnect. Will retry")
         self.assertNotEqual(found, -1)
-        rootLogger.removeHandler(fileHandler)
+        rootLogger.removeHandler(streamHandler)
