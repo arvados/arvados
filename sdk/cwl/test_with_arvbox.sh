@@ -23,6 +23,10 @@ while test -n "$1" ; do
             config=$2
             shift ; shift
             ;;
+        -h|--help)
+            echo "$0 [--no-reset-container] [--leave-running] [--config dev|localdemo]"
+            exit
+            ;;
         -*)
             break
             ;;
