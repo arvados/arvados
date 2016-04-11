@@ -38,15 +38,18 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             auth_kwargs, list_kwargs, create_kwargs,
             driver_class)
 
+    def create_cloud_name(self, arvados_node):
+        uuid_parts = arvados_node['uuid'].split('-', 2)
+        return 'compute-{parts[2]}-{parts[0]}'.format(parts=uuid_parts)
+
     def arvados_create_kwargs(self, size, arvados_node):
-        cluster_id, _, node_id = arvados_node['uuid'].split('-')
-        name = 'compute-{}-{}'.format(node_id, cluster_id)
         tags = {
             'booted_at': time.strftime(ARVADOS_TIMEFMT, time.gmtime()),
             'arv-ping-url': self._make_ping_url(arvados_node)
         }
         tags.update(self.tags)
 
+        name = self.create_cloud_name(arvados_node)
         customdata = """#!/bin/sh
 mkdir -p    /var/tmp/arv-node-data/meta-data
 echo %s > /var/tmp/arv-node-data/arv-ping-url

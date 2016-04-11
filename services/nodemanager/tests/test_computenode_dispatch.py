@@ -361,7 +361,7 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
     def test_shutdown_without_arvados_node(self):
         self.make_actor(start_time=0)
         self.shutdowns._set_state(True, 600)
-        self.assertTrue(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+        self.assertIs(True, self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
     def test_no_shutdown_missing(self):
         arv_node = testutil.arvados_node_mock(10, job_uuid=None,
@@ -386,7 +386,7 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.make_actor(11, arv_node)
         self.shutdowns._set_state(True, 600)
         self.cloud_client.broken.return_value = True
-        self.assertTrue(self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+        self.assertIs(True, self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
     def test_no_shutdown_when_window_closed(self):
         self.make_actor(3, testutil.arvados_node_mock(3, job_uuid=None))
