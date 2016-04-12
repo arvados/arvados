@@ -91,7 +91,7 @@ func setupRsync(c *C, enforcePermissions bool, replications int) {
 	dstConfig.APIHostInsecure = matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 
 	if enforcePermissions {
-		blobSigningKey = "zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc"
+		blobSigningKey = arvadostest.BlobSigningKey
 	}
 
 	// Start Keep servers

@@ -87,6 +87,7 @@ sdk/go/crunchrunner
 sdk/cwl
 tools/crunchstat-summary
 tools/keep-rsync
+tools/keep-block-check
 
 EOF
 
@@ -714,6 +715,7 @@ gostuff=(
     services/crunch-dispatch-slurm
     services/crunch-run
     tools/keep-rsync
+    tools/keep-block-check
     )
 for g in "${gostuff[@]}"
 do
