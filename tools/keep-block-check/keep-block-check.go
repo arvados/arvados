@@ -198,7 +198,7 @@ func performKeepBlockCheck(kc *keepclient.KeepClient, blobSigningKey string, blo
 	for _, locator := range blockLocators {
 		current++
 		if verbose {
-			log.Printf("Checking block %d of %d: %v", current, totalBlocks, locator)
+			log.Printf("Verifying block %d of %d: %v", current, totalBlocks, locator)
 		}
 		getLocator := locator
 		if blobSigningKey != "" {

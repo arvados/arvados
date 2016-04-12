@@ -30,10 +30,10 @@ type ServerRequiredSuite struct{}
 type DoMainTestSuite struct{}
 
 var kc *keepclient.KeepClient
-var keepServicesJSON, blobSigningKey string
+var logBuffer bytes.Buffer
+
 var TestHash = "aaaa09c290d0fb1ca068ffaddf22cbd0"
 var TestHash2 = "aaaac516f788aec4f30932ffb6395c39"
-var allLocators []string
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	arvadostest.StartAPI()
@@ -44,12 +44,7 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	arvadostest.ResetEnv()
 }
 
-var logBuffer bytes.Buffer
-
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
-	blobSigningKey = ""
-	keepServicesJSON = ""
-
 	logOutput := io.MultiWriter(&logBuffer)
 	log.SetOutput(logOutput)
 }
@@ -63,12 +58,7 @@ func (s *ServerRequiredSuite) TearDownTest(c *C) {
 func (s *DoMainTestSuite) SetUpSuite(c *C) {
 }
 
-var testArgs = []string{}
-
 func (s *DoMainTestSuite) SetUpTest(c *C) {
-	blobSigningKey = ""
-	keepServicesJSON = ""
-
 	logOutput := io.MultiWriter(&logBuffer)
 	log.SetOutput(logOutput)
 }
@@ -76,17 +66,13 @@ func (s *DoMainTestSuite) SetUpTest(c *C) {
 func (s *DoMainTestSuite) TearDownTest(c *C) {
 	log.SetOutput(os.Stdout)
 	log.Printf("%v", logBuffer.String())
-	testArgs = []string{}
 }
 
-func setupKeepBlockCheck(c *C, enforcePermissions bool) {
+func setupKeepBlockCheck(c *C, enforcePermissions bool, keepServicesJSON string) {
 	var config apiConfig
 	config.APIHost = os.Getenv("ARVADOS_API_HOST")
 	config.APIToken = arvadostest.DataManagerToken
 	config.APIHostInsecure = matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
-	if enforcePermissions {
-		blobSigningKey = arvadostest.BlobSigningKey
-	}
 
 	// Start Keep servers
 	arvadostest.StartKeep(2, enforcePermissions)
@@ -98,8 +84,8 @@ func setupKeepBlockCheck(c *C, enforcePermissions bool) {
 }
 
 // Setup test data
-func setupTestData(c *C) {
-	allLocators = []string{}
+func setupTestData(c *C) []string {
+	allLocators := []string{}
 
 	// Put a few blocks
 	for i := 0; i < 5; i++ {
@@ -107,6 +93,8 @@ func setupTestData(c *C) {
 		c.Check(err, IsNil)
 		allLocators = append(allLocators, strings.Split(hash, "+A")[0])
 	}
+
+	return allLocators
 }
 
 func setupConfigFile(c *C, fileName string) string {
@@ -161,42 +149,42 @@ func checkNoErrorsLogged(c *C, prefix, suffix string) {
 }
 
 func (s *ServerRequiredSuite) TestBlockCheck(c *C) {
-	setupKeepBlockCheck(c, false)
-	setupTestData(c)
-	err := performKeepBlockCheck(kc, blobSigningKey, allLocators, true)
+	setupKeepBlockCheck(c, false, "")
+	allLocators := setupTestData(c)
+	err := performKeepBlockCheck(kc, "", allLocators, true)
 	c.Check(err, IsNil)
 	checkNoErrorsLogged(c, "Error verifying block", "Block not found")
 }
 
 func (s *ServerRequiredSuite) TestBlockCheckWithBlobSigning(c *C) {
-	setupKeepBlockCheck(c, true)
-	setupTestData(c)
-	err := performKeepBlockCheck(kc, blobSigningKey, allLocators, true)
+	setupKeepBlockCheck(c, true, "")
+	allLocators := setupTestData(c)
+	err := performKeepBlockCheck(kc, arvadostest.BlobSigningKey, allLocators, true)
 	c.Check(err, IsNil)
 	checkNoErrorsLogged(c, "Error verifying block", "Block not found")
 }
 
 func (s *ServerRequiredSuite) TestBlockCheck_NoSuchBlock(c *C) {
-	setupKeepBlockCheck(c, false)
-	setupTestData(c)
+	setupKeepBlockCheck(c, false, "")
+	allLocators := setupTestData(c)
 	allLocators = append(allLocators, TestHash)
 	allLocators = append(allLocators, TestHash2)
-	err := performKeepBlockCheck(kc, blobSigningKey, allLocators, true)
+	err := performKeepBlockCheck(kc, "", allLocators, true)
 	c.Check(err, NotNil)
 	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 7 blocks with matching prefix.")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "Error verifying block", "Block not found")
 }
 
 func (s *ServerRequiredSuite) TestBlockCheck_NoSuchBlock_WithMatchingPrefix(c *C) {
-	setupKeepBlockCheck(c, false)
-	setupTestData(c)
+	setupKeepBlockCheck(c, false, "")
+	allLocators := setupTestData(c)
 	allLocators = append(allLocators, TestHash)
 	allLocators = append(allLocators, TestHash2)
 	locatorFile := setupBlockHashFile(c, "block-hash", allLocators)
 	defer os.Remove(locatorFile)
 	locators, err := getBlockLocators(locatorFile, "aaa")
 	c.Check(err, IsNil)
-	err = performKeepBlockCheck(kc, blobSigningKey, locators, true)
+	err = performKeepBlockCheck(kc, "", locators, true)
 	c.Check(err, NotNil)
 	// Of the 7 blocks in allLocators, only two match the prefix and hence only those are checked
 	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix.")
@@ -204,26 +192,26 @@ func (s *ServerRequiredSuite) TestBlockCheck_NoSuchBlock_WithMatchingPrefix(c *C
 }
 
 func (s *ServerRequiredSuite) TestBlockCheck_NoSuchBlock_WithPrefixMismatch(c *C) {
-	setupKeepBlockCheck(c, false)
-	setupTestData(c)
+	setupKeepBlockCheck(c, false, "")
+	allLocators := setupTestData(c)
 	allLocators = append(allLocators, TestHash)
 	allLocators = append(allLocators, TestHash2)
 	locatorFile := setupBlockHashFile(c, "block-hash", allLocators)
 	defer os.Remove(locatorFile)
 	locators, err := getBlockLocators(locatorFile, "999")
 	c.Check(err, IsNil)
-	err = performKeepBlockCheck(kc, blobSigningKey, locators, true)
-	c.Check(err, IsNil) // there were no matching locators and hence no errors
+	err = performKeepBlockCheck(kc, "", locators, true)
+	c.Check(err, IsNil) // there were no matching locators in file and hence nothing was checked
 }
 
 func (s *ServerRequiredSuite) TestBlockCheck_BadSignature(c *C) {
-	setupKeepBlockCheck(c, true)
+	setupKeepBlockCheck(c, true, "")
 	setupTestData(c)
 	err := performKeepBlockCheck(kc, "badblobsigningkey", []string{TestHash, TestHash2}, false)
 	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix.")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "Error verifying block", "HTTP 403")
 	// verbose logging not requested
-	c.Assert(strings.Contains(logBuffer.String(), "Checking block 1 of 2"), Equals, false)
+	c.Assert(strings.Contains(logBuffer.String(), "Verifying block 1 of 2"), Equals, false)
 }
 
 var testKeepServicesJSON = `{
@@ -254,17 +242,15 @@ var testKeepServicesJSON = `{
 // Setup block-check using keepServicesJSON with fake keepservers.
 // Expect error during performKeepBlockCheck due to unreachable keepservers.
 func (s *ServerRequiredSuite) TestErrorDuringKeepBlockCheck_FakeKeepservers(c *C) {
-	keepServicesJSON = testKeepServicesJSON
-	setupKeepBlockCheck(c, false)
-	err := performKeepBlockCheck(kc, blobSigningKey, []string{TestHash, TestHash2}, true)
+	setupKeepBlockCheck(c, false, testKeepServicesJSON)
+	err := performKeepBlockCheck(kc, "", []string{TestHash, TestHash2}, true)
 	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix.")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "Error verifying block", "")
 }
 
 // Test keep-block-check initialization with keepServicesJSON
 func (s *ServerRequiredSuite) TestKeepBlockCheck_InitializeWithKeepServicesJSON(c *C) {
-	keepServicesJSON = testKeepServicesJSON
-	setupKeepBlockCheck(c, false)
+	setupKeepBlockCheck(c, false, testKeepServicesJSON)
 	found := 0
 	for k := range kc.LocalRoots() {
 		if k == "zzzzz-bi6l4-123456789012340" || k == "zzzzz-bi6l4-123456789012341" {
@@ -293,16 +279,14 @@ func (s *ServerRequiredSuite) TestLoadConfig(c *C) {
 
 func (s *DoMainTestSuite) Test_doMain_WithNoConfig(c *C) {
 	args := []string{"-prefix", "a"}
-	testArgs = append(testArgs, args...)
-	err := doMain(testArgs)
+	err := doMain(args)
 	c.Check(err, NotNil)
 	c.Assert(strings.Contains(err.Error(), "config file not specified"), Equals, true)
 }
 
 func (s *DoMainTestSuite) Test_doMain_WithNoSuchConfigFile(c *C) {
 	args := []string{"-config", "no-such-file"}
-	testArgs = append(testArgs, args...)
-	err := doMain(testArgs)
+	err := doMain(args)
 	c.Check(err, NotNil)
 	c.Assert(strings.Contains(err.Error(), "no such file or directory"), Equals, true)
 }
@@ -311,14 +295,12 @@ func (s *DoMainTestSuite) Test_doMain_WithNoBlockHashFile(c *C) {
 	config := setupConfigFile(c, "config")
 	defer os.Remove(config)
 
-	args := []string{"-config", config}
-	testArgs = append(testArgs, args...)
-
 	// Start keepservers.
 	arvadostest.StartKeep(2, false)
 	defer arvadostest.StopKeep(2)
 
-	err := doMain(testArgs)
+	args := []string{"-config", config}
+	err := doMain(args)
 	c.Assert(strings.Contains(err.Error(), "block-hash-file not specified"), Equals, true)
 }
 
@@ -326,14 +308,11 @@ func (s *DoMainTestSuite) Test_doMain_WithNoSuchBlockHashFile(c *C) {
 	config := setupConfigFile(c, "config")
 	defer os.Remove(config)
 
-	args := []string{"-config", config, "-block-hash-file", "no-such-file"}
-	testArgs = append(testArgs, args...)
-
-	// Start keepservers.
 	arvadostest.StartKeep(2, false)
 	defer arvadostest.StopKeep(2)
 
-	err := doMain(testArgs)
+	args := []string{"-config", config, "-block-hash-file", "no-such-file"}
+	err := doMain(args)
 	c.Assert(strings.Contains(err.Error(), "no such file or directory"), Equals, true)
 }
 
@@ -349,11 +328,9 @@ func (s *DoMainTestSuite) Test_doMain(c *C) {
 	defer os.Remove(locatorFile)
 
 	args := []string{"-config", config, "-block-hash-file", locatorFile, "-v"}
-	testArgs = append(testArgs, args...)
-
-	err := doMain(testArgs)
+	err := doMain(args)
 	c.Check(err, NotNil)
 	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix.")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "Error verifying block", "Block not found")
-	c.Assert(strings.Contains(logBuffer.String(), "Checking block 1 of 2"), Equals, true)
+	c.Assert(strings.Contains(logBuffer.String(), "Verifying block 1 of 2"), Equals, true)
 }
