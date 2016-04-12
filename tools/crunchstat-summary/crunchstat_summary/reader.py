@@ -3,6 +3,7 @@ from __future__ import print_function
 import arvados
 import Queue
 import threading
+import _strptime
 
 from crunchstat_summary import logger
 
