@@ -101,8 +101,13 @@ wait_for_arvbox() {
 }
 
 run() {
+    if docker ps -a --filter "status=running" | grep -E "$ARVBOX_CONTAINER$" -q ; then
+        echo "Container $ARVBOX_CONTAINER is already running"
+        exit 0
+    fi
+
     if docker ps -a | grep -E "$ARVBOX_CONTAINER$" -q ; then
-        echo "Container $ARVBOX_CONTAINER is already running, use stop, restart or rebuild"
+        echo "Container $ARVBOX_CONTAINER already exists but is not running; use restart or rebuild"
         exit 1
     fi
 
@@ -247,11 +252,11 @@ build() {
         echo "Could not find Dockerfile (expected it at $ARVBOX_DOCKER/Dockerfile.base)"
         exit 1
     fi
-    docker build -t arvados/arvbox-base -f "$ARVBOX_DOCKER/Dockerfile.base" "$ARVBOX_DOCKER"
+    docker build $NO_CACHE -t arvados/arvbox-base -f "$ARVBOX_DOCKER/Dockerfile.base" "$ARVBOX_DOCKER"
     if test "$1" = localdemo -o "$1" = publicdemo ; then
-        docker build -t arvados/arvbox-demo -f "$ARVBOX_DOCKER/Dockerfile.demo" "$ARVBOX_DOCKER"
+        docker build $NO_CACHE -t arvados/arvbox-demo -f "$ARVBOX_DOCKER/Dockerfile.demo" "$ARVBOX_DOCKER"
     else
-        docker build -t arvados/arvbox-dev -f "$ARVBOX_DOCKER/Dockerfile.dev" "$ARVBOX_DOCKER"
+        docker build $NO_CACHE -t arvados/arvbox-dev -f "$ARVBOX_DOCKER/Dockerfile.dev" "$ARVBOX_DOCKER"
     fi
 }
 
@@ -277,6 +282,11 @@ case "$subcmd" in
         build $@
         ;;
 
+    rebuild)
+        check $@
+        NO_CACHE=--no-cache build $@
+        ;;
+
     start|run)
         check $@
         run $@
@@ -300,7 +310,7 @@ case "$subcmd" in
         run $@
         ;;
 
-    rebuild)
+    reboot)
         check $@
         stop
         build $@
@@ -413,9 +423,8 @@ case "$subcmd" in
     *)
         echo "Arvados-in-a-box                      http://arvados.org"
         echo
-        echo "$(basename $0) (build|start|run|open|shell|ip|stop|rebuild|reset|destroy|log|svrestart)"
-        echo
-        echo "build <config>      build arvbox Docker image"
+        echo "build   <config>      build arvbox Docker image"
+        echo "rebuild <config>      build arvbox Docker image, no layer cache"
         echo "start|run <config>  start $ARVBOX_CONTAINER container"
         echo "open       open arvbox workbench in a web browser"
         echo "shell      enter arvbox shell"
@@ -424,7 +433,7 @@ case "$subcmd" in
         echo "status     print some information about current arvbox"
         echo "stop       stop arvbox container"
         echo "restart <config>  stop, then run again"
-        echo "rebuild <config>  stop, build arvbox Docker image, run"
+        echo "reboot  <config>  stop, build arvbox Docker image, run"
         echo "reset      delete arvbox arvados data (be careful!)"
         echo "destroy    delete all arvbox code and data (be careful!)"
         echo "log <service> tail log of specified service"
