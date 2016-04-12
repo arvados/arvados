@@ -393,7 +393,7 @@ def main(arguments=None, stdout=sys.stdout):
         put_args += ['--name', collection_name]
 
     coll_uuid = arv_put.main(
-        put_args + ['--filename', outfile_name, image_file.name]).strip()
+        put_args + ['--filename', outfile_name, image_file.name], stdout=stdout).strip()
 
     # Read the image metadata and make Arvados links from it.
     image_file.seek(0)
