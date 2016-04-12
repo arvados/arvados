@@ -144,7 +144,15 @@ class PollClient(threading.Thread):
             self.id = self.last_log_id
         else:
             for f in self.filters:
-                items = self.api.logs().list(limit=1, order="id desc", filters=f).execute()['items']
+                try:
+                    items = self.api.logs().list(limit=1, order="id desc", filters=f).execute(num_retries=1000000)['items']
+                except Exception as e:
+                    # Some apparently non-retryable error happened, so log the
+                    # error and shut down gracefully.
+                    _logger.error("Got exception from log query: %s", e)
+                    with self._closing_lock:
+                        self._closing.set()
+                    return
                 if items:
                     if items[0]['id'] > self.id:
                         self.id = items[0]['id']
