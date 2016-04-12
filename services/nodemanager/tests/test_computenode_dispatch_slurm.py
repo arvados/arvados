@@ -151,3 +151,27 @@ class SLURMComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         check_output.return_value = "drain\n"
         self.make_actor(arv_node=testutil.arvados_node_mock())
         self.assertEquals('node is draining', self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+
+    @mock.patch("subprocess.check_output")
+    def test_shutdown_node_that_never_pinged(self, check_output):
+        check_output.side_effect = Exception(
+            "tested code tried to call `sinfo` without a node name")
+        arv_node = testutil.arvados_node_mock()
+        arv_node.update(first_ping_at=None, last_ping_at=None, slot_number=None,
+                        hostname=None, ip_address=None)
+        self.make_actor(arv_node=arv_node)
+        self.shutdowns._set_state(True, 300)
+        self.assertIs(True, self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+        check_output.assert_not_called()
+
+    @mock.patch("subprocess.check_output")
+    def test_no_shutdown_node_still_awaiting_ping(self, check_output):
+        check_output.side_effect = Exception(
+            "tested code tried to call `sinfo` without a node name")
+        arv_node = testutil.arvados_node_mock()
+        arv_node.update(first_ping_at=None, last_ping_at=None, slot_number=None,
+                        hostname=None, ip_address=None)
+        self.make_actor(arv_node=arv_node)
+        self.assertIn('shutdown window is not open',
+                      self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+        check_output.assert_not_called()
