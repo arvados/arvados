@@ -279,7 +279,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.last_setup.arvados_node.get.return_value = arv_node
         return self.last_setup
 
-    def test_no_new_node_when_booted_node_not_usable(self):
+    def test_new_node_when_booted_node_not_usable(self):
         cloud_node = testutil.cloud_node_mock(4)
         arv_node = testutil.arvados_node_mock(4, crunch_worker_state='down')
         setup = self.start_node_boot(cloud_node, arv_node)
@@ -290,7 +290,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.update_server_wishlist(
             [testutil.MockSize(1)]).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
-        self.assertEqual(1, self.node_setup.start.call_count)
+        self.assertEqual(2, self.node_setup.start.call_count)
 
     def test_no_duplication_when_booting_node_listed_fast(self):
         # Test that we don't start two ComputeNodeMonitorActors when
@@ -718,3 +718,25 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         # test for that.
         self.assertEqual(2, sizecounts[small.id])
         self.assertEqual(1, sizecounts[big.id])
+
+    @mock.patch("arvnodeman.daemon.NodeManagerDaemonActor._resume_node")
+    def test_resume_drained_nodes(self, resume_node):
+        cloud_node = testutil.cloud_node_mock(1)
+        arv_node = testutil.arvados_node_mock(1, info={"ec2_instance_id": "1", "slurm_state": "down"})
+        self.make_daemon([cloud_node], [arv_node])
+        resume_node.assert_called_with(self.daemon.cloud_nodes.get(self.TIMEOUT).nodes.values()[0])
+        self.stop_proxy(self.daemon)
+
+    @mock.patch("arvnodeman.daemon.NodeManagerDaemonActor._resume_node")
+    def test_no_resume_shutdown_nodes(self, resume_node):
+        cloud_node = testutil.cloud_node_mock(1)
+        arv_node = testutil.arvados_node_mock(1, info={"ec2_instance_id": "1", "slurm_state": "down"})
+
+        self.make_daemon([cloud_node], [])
+
+        self.node_shutdown = mock.MagicMock(name='shutdown_mock')
+        self.daemon.shutdowns.get(self.TIMEOUT)[cloud_node.id] = self.node_shutdown
+
+        self.daemon.update_arvados_nodes([arv_node]).get(self.TIMEOUT)
+        self.stop_proxy(self.daemon)
+        resume_node.assert_not_called()

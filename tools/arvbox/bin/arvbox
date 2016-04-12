@@ -47,6 +47,8 @@ PG_DATA="$ARVBOX_DATA/postgres"
 VAR_DATA="$ARVBOX_DATA/var"
 PASSENGER="$ARVBOX_DATA/passenger"
 GEMS="$ARVBOX_DATA/gems"
+PIPCACHE="$ARVBOX_DATA/pip"
+GOSTUFF="$ARVBOX_DATA/gopath"
 
 getip() {
     docker inspect $ARVBOX_CONTAINER | grep \"IPAddress\" | head -n1 | tr -d ' ":,\n' | cut -c10-
@@ -149,7 +151,8 @@ run() {
         updateconf
         wait_for_arvbox
     else
-        mkdir -p "$PG_DATA" "$VAR_DATA" "$PASSENGER" "$GEMS"
+        mkdir -p "$PG_DATA" "$VAR_DATA" "$PASSENGER" "$GEMS" "$PIPCACHE" "$GOSTUFF"
+
 
         if ! test -d "$ARVADOS_ROOT" ; then
             git clone https://github.com/curoverse/arvados.git "$ARVADOS_ROOT"
@@ -173,6 +176,8 @@ run() {
                    "--volume=$VAR_DATA:/var/lib/arvados:rw" \
                    "--volume=$PASSENGER:/var/lib/passenger:rw" \
                    "--volume=$GEMS:/var/lib/gems:rw" \
+                   "--volume=$PIPCACHE:/var/lib/pip:rw" \
+                   "--volume=$GOSTUFF:/var/lib/gopath:rw" \
                    arvados/arvbox-dev \
                    /usr/local/bin/runsvinit -svdir=/etc/test-service
 
@@ -210,6 +215,8 @@ run() {
                    "--volume=$VAR_DATA:/var/lib/arvados:rw" \
                    "--volume=$PASSENGER:/var/lib/passenger:rw" \
                    "--volume=$GEMS:/var/lib/gems:rw" \
+                   "--volume=$PIPCACHE:/var/lib/pip:rw" \
+                   "--volume=$GOSTUFF:/var/lib/gopath:rw" \
                    $PUBLIC \
                    arvados/arvbox-dev
             updateconf

@@ -5,10 +5,10 @@ set -eux -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
 
-mkdir -p ~/.pip /var/lib/arvados/pip
+mkdir -p ~/.pip /var/lib/pip
 cat > ~/.pip/pip.conf <<EOF
 [global]
-download_cache = /var/lib/arvados/pip
+download_cache = /var/lib/pip
 EOF
 
 cd /usr/src/arvados/sdk/cli

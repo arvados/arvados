@@ -64,8 +64,10 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
     def _init_subnet_id(self, subnet_id):
         return 'ex_subnet', self.search_for(subnet_id, 'ex_list_subnets')
 
+    create_cloud_name = staticmethod(arvados_node_fqdn)
+
     def arvados_create_kwargs(self, size, arvados_node):
-        return {'name': arvados_node_fqdn(arvados_node),
+        return {'name': self.create_cloud_name(arvados_node),
                 'ex_userdata': self._make_ping_url(arvados_node)}
 
     def post_create_node(self, cloud_node):

@@ -6,14 +6,18 @@ set -eux -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
 
-mkdir -p /var/lib/arvados/gostuff
-cd /var/lib/arvados/gostuff
+mkdir -p /var/lib/gopath
+cd /var/lib/gopath
 
 export GOPATH=$PWD
 mkdir -p "$GOPATH/src/git.curoverse.com"
 ln -sfn "/usr/src/arvados" "$GOPATH/src/git.curoverse.com/arvados.git"
-flock /var/lib/arvados/gostuff.lock go get -t "git.curoverse.com/arvados.git/services/keepstore"
+flock /var/lib/gopath/gopath.lock go get -t "git.curoverse.com/arvados.git/services/keepstore"
 install bin/keepstore /usr/local/bin
+
+if test "$1" = "--only-deps" ; then
+    exit
+fi
 
 mkdir -p /var/lib/arvados/$1
 
@@ -47,5 +51,6 @@ exec /usr/local/bin/keepstore \
      -listen=:$2 \
      -enforce-permissions=true \
      -blob-signing-key-file=/var/lib/arvados/blob_signing_key \
+     -data-manager-token-file=/var/lib/arvados/superuser_token \
      -max-buffers=20 \
      -volume=/var/lib/arvados/$1
