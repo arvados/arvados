@@ -89,7 +89,7 @@ case "$TARGET" in
         PYTHON2_PKG_PREFIX=python
         PYTHON3_PACKAGE=python$PYTHON3_VERSION
         PYTHON3_PKG_PREFIX=python3
-        PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
+        PYTHON_BACKPORTS=(python-gflags<3 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
@@ -103,7 +103,7 @@ case "$TARGET" in
         PYTHON2_PKG_PREFIX=python
         PYTHON3_PACKAGE=python$PYTHON3_VERSION
         PYTHON3_PKG_PREFIX=python3
-        PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
+        PYTHON_BACKPORTS=(python-gflags<3 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
@@ -117,7 +117,7 @@ case "$TARGET" in
         PYTHON2_PKG_PREFIX=python
         PYTHON3_PACKAGE=python$PYTHON3_VERSION
         PYTHON3_PKG_PREFIX=python3
-        PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
+        PYTHON_BACKPORTS=(python-gflags<3 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
@@ -143,7 +143,7 @@ case "$TARGET" in
         PYTHON2_PKG_PREFIX=$PYTHON2_PACKAGE
         PYTHON3_PACKAGE=$(rpm -qf "$(which python$PYTHON3_VERSION)" --queryformat '%{NAME}\n')
         PYTHON3_PKG_PREFIX=$PYTHON3_PACKAGE
-        PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
+        PYTHON_BACKPORTS=(python-gflags<3 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname 'pycurl<7.21.5' \
