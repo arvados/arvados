@@ -91,6 +91,9 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	resp.Header().Set("Content-Length", strconv.Itoa(len(block)))
 	resp.Header().Set("Content-Type", "application/octet-stream")
 	resp.Write(block)
+	go func() {
+		resp.(http.CloseNotifier).CloseNotify()
+	}()
 }
 
 // PutBlockHandler is a HandleFunc to address Put block requests.

@@ -511,8 +511,7 @@ func TestDeleteHandler(t *testing.T) {
 	}
 
 	// Unauthenticated request returns PermissionError.
-	var response *httptest.ResponseRecorder
-	response = IssueRequest(unauthReq)
+	response := IssueRequest(unauthReq)
 	ExpectStatusCode(t,
 		"unauthenticated request",
 		PermissionError.HTTPCode,
@@ -805,10 +804,22 @@ func TestTrashHandler(t *testing.T) {
 // Helper functions
 // ====================
 
+type ResponseRecorder struct {
+	*httptest.ResponseRecorder
+	http.CloseNotifier
+}
+
+func (responseRecorder *ResponseRecorder) CloseNotify() <-chan bool {
+	return make(chan bool)
+}
+
 // IssueTestRequest executes an HTTP request described by rt, to a
 // REST router.  It returns the HTTP response to the request.
-func IssueRequest(rt *RequestTester) *httptest.ResponseRecorder {
-	response := httptest.NewRecorder()
+func IssueRequest(rt *RequestTester) *ResponseRecorder {
+	resp := httptest.NewRecorder()
+	rwChan := make(chan http.ResponseWriter, 1)
+	closeNotifier := (<-rwChan).(http.CloseNotifier)
+	response := ResponseRecorder{resp, closeNotifier}
 	body := bytes.NewReader(rt.requestBody)
 	req, _ := http.NewRequest(rt.method, rt.uri, body)
 	if rt.apiToken != "" {
@@ -816,7 +827,7 @@ func IssueRequest(rt *RequestTester) *httptest.ResponseRecorder {
 	}
 	loggingRouter := MakeLoggingRESTRouter()
 	loggingRouter.ServeHTTP(response, req)
-	return response
+	return &response
 }
 
 // ExpectStatusCode checks whether a response has the specified status code,
@@ -825,7 +836,7 @@ func ExpectStatusCode(
 	t *testing.T,
 	testname string,
 	expectedStatus int,
-	response *httptest.ResponseRecorder) {
+	response *ResponseRecorder) {
 	if response.Code != expectedStatus {
 		t.Errorf("%s: expected status %d, got %+v",
 			testname, expectedStatus, response)
@@ -836,11 +847,12 @@ func ExpectBody(
 	t *testing.T,
 	testname string,
 	expectedBody string,
-	response *httptest.ResponseRecorder) {
+	response *ResponseRecorder) {
 	if expectedBody != "" && response.Body.String() != expectedBody {
 		t.Errorf("%s: expected response body '%s', got %+v",
 			testname, expectedBody, response)
 	}
+	response.CloseNotify()
 }
 
 // See #7121

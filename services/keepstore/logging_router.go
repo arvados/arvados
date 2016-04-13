@@ -18,6 +18,7 @@ type LoggingResponseWriter struct {
 	http.ResponseWriter
 	ResponseBody string
 	sentHdr      time.Time
+	http.CloseNotifier
 }
 
 // WriteHeader writes header to ResponseWriter
@@ -42,6 +43,10 @@ func (loggingWriter *LoggingResponseWriter) Write(data []byte) (int, error) {
 	return loggingWriter.ResponseWriter.Write(data)
 }
 
+func (loggingWriter *LoggingResponseWriter) CloseNotify() <-chan bool {
+	return loggingWriter.CloseNotifier.CloseNotify()
+}
+
 // LoggingRESTRouter is used to add logging capabilities to mux.Router
 type LoggingRESTRouter struct {
 	router *mux.Router
@@ -55,7 +60,7 @@ func MakeLoggingRESTRouter() *LoggingRESTRouter {
 
 func (loggingRouter *LoggingRESTRouter) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	t0 := time.Now()
-	loggingWriter := LoggingResponseWriter{http.StatusOK, 0, resp, "", zeroTime}
+	loggingWriter := LoggingResponseWriter{http.StatusOK, 0, resp, "", zeroTime, resp.(http.CloseNotifier)}
 	loggingRouter.router.ServeHTTP(&loggingWriter, req)
 	statusText := http.StatusText(loggingWriter.Status)
 	if loggingWriter.Status >= 400 {
@@ -66,5 +71,4 @@ func (loggingRouter *LoggingRESTRouter) ServeHTTP(resp http.ResponseWriter, req 
 	tLatency := loggingWriter.sentHdr.Sub(t0)
 	tResponse := now.Sub(loggingWriter.sentHdr)
 	log.Printf("[%s] %s %s %d %.6fs %.6fs %.6fs %d %d \"%s\"", req.RemoteAddr, req.Method, req.URL.Path[1:], req.ContentLength, tTotal.Seconds(), tLatency.Seconds(), tResponse.Seconds(), loggingWriter.Status, loggingWriter.Length, statusText)
-
 }
