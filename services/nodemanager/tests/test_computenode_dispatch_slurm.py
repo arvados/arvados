@@ -147,7 +147,14 @@ class SLURMComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.assertIs(True, self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
     @mock.patch("subprocess.check_output")
-    def test_no_shutdown_drain_node(self, check_output):
+    def test_no_shutdown_ineligible_drain_node(self, check_output):
         check_output.return_value = "drain\n"
         self.make_actor(arv_node=testutil.arvados_node_mock())
-        self.assertEquals('node is draining', self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+        self.assertIsNot(True, self.node_actor.shutdown_eligible().get(self.TIMEOUT))
+
+    @mock.patch("subprocess.check_output")
+    def test_shutdown_eligible_drain_node(self, check_output):
+        check_output.return_value = "drain\n"
+        self.make_actor(arv_node=testutil.arvados_node_mock())
+        self.shutdowns._set_state(True, 300)
+        self.assertIs(True, self.node_actor.shutdown_eligible().get(self.TIMEOUT))
