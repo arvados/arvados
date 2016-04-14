@@ -206,6 +206,7 @@ class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
         arv_node = testutil.arvados_node_mock(61)
         self.make_mocks(cloud_node, arv_node, shutdown_open=False)
         self.make_actor(cancellable=True)
+        self.shutdown_actor.cancel_shutdown("test")
         self.check_success_flag(False, 2)
         self.assertFalse(self.arvados_client.nodes().update.called)
 

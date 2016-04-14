@@ -14,6 +14,7 @@ from .. import \
     arvados_node_missing, RetryMixin
 from ...clientactor import _notify_subscribers
 from ... import config
+from .transitions import transitions
 
 class ComputeNodeStateChangeBase(config.actor_class, RetryMixin):
     """Base class for actors that change a compute node's state.
@@ -208,17 +209,6 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         self._logger.info("Shutdown cancelled: %s.", reason)
         self._finished(success_flag=False)
 
-    def _stop_if_window_closed(orig_func):
-        @functools.wraps(orig_func)
-        def stop_wrapper(self, *args, **kwargs):
-            if (self.cancellable and
-                  (self._monitor.shutdown_eligible().get() is not True)):
-                self._later.cancel_shutdown(self.WINDOW_CLOSED)
-                return None
-            else:
-                return orig_func(self, *args, **kwargs)
-        return stop_wrapper
-
     def _cancel_on_exception(orig_func):
         @functools.wraps(orig_func)
         def finish_wrapper(self, *args, **kwargs):
@@ -230,7 +220,6 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         return finish_wrapper
 
     @_cancel_on_exception
-    @_stop_if_window_closed
     @RetryMixin._retry()
     def shutdown_node(self):
         self._logger.info("Starting shutdown")
@@ -253,9 +242,6 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
     def clean_arvados_node(self, arvados_node):
         self._clean_arvados_node(arvados_node, "Shut down by Node Manager")
         self._finished(success_flag=True)
-
-    # Make the decorator available to subclasses.
-    _stop_if_window_closed = staticmethod(_stop_if_window_closed)
 
 
 class ComputeNodeUpdateActor(config.actor_class):
@@ -369,51 +355,49 @@ class ComputeNodeMonitorActor(config.actor_class):
             result = result and not self.arvados_node['job_uuid']
         return result
 
-    def shutdown_eligible(self):
-        """Return True if eligible for shutdown, or a string explaining why the node
-        is not eligible for shutdown."""
-
-        if not self._shutdowns.window_open():
-            return "shutdown window is not open."
-        if self.arvados_node is None:
-            # Node is unpaired.
-            # If it hasn't pinged Arvados after boot_fail seconds, shut it down
-            if timestamp_fresh(self.cloud_node_start_time, self.boot_fail_after):
-                return "node is still booting, will be considered a failed boot at %s" % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(self.cloud_node_start_time + self.boot_fail_after))
-            else:
-                return True
-        missing = arvados_node_missing(self.arvados_node, self.node_stale_after)
-        if missing and self._cloud.broken(self.cloud_node):
-            # Node is paired, but Arvados says it is missing and the cloud says the node
-            # is in an error state, so shut it down.
-            return True
-        if missing is None and self._cloud.broken(self.cloud_node):
-            self._logger.info(
-                "Cloud node considered 'broken' but paired node %s last_ping_at is None, " +
-                "cannot check node_stale_after (node may be shut down and we just haven't gotten the message yet).",
-                self.arvados_node['uuid'])
-        if self.in_state('idle'):
-            return True
-        else:
-            return "node is not idle."
-
-    def resume_node(self):
-        pass
-
     def consider_shutdown(self):
         try:
+            # Collect states and then consult state transition table
+            # whether we should shut down.  Possible states are:
+            #
+            # crunch_worker_state = ['unpaired', 'busy', 'idle', 'down']
+            # window = ["open", "closed"]
+            # boot_grace = ["boot wait", "boot exceeded"]
+            # idle_grace = ["not idle", "idle wait", "idle exceeded"]
+
+            if self.arvados_node is None:
+                crunch_worker_state = 'unpaired'
+            elif self.arvados_node['crunch_worker_state']:
+                crunch_worker_state = self.arvados_node['crunch_worker_state']
+            else:
+                self._debug("Node is paired but crunch_worker_state is null")
+                return
+
+            window = "open" if self._shutdowns.window_open() else "closed"
+
+            if timestamp_fresh(self.cloud_node_start_time, self.boot_fail_after):
+                boot_grace = "boot wait"
+            else:
+                boot_grace = "boot exceeded"
+
+            # API server side not implemented yet.
+            idle_grace = 'idle exceeded'
+
+            node_state = (crunch_worker_state, window, boot_grace, idle_grace)
+            self._debug("Considering shutdown, node state is %s", node_state)
+            eligible = transitions[node_state]
+
             next_opening = self._shutdowns.next_opening()
-            eligible = self.shutdown_eligible()
-            if eligible is True:
+            if eligible:
                 self._debug("Suggesting shutdown.")
                 _notify_subscribers(self.actor_ref.proxy(), self.subscribers)
-            elif self._shutdowns.window_open():
-                self._debug("Cannot shut down because %s", eligible)
             elif self.last_shutdown_opening != next_opening:
                 self._debug("Shutdown window closed.  Next at %s.",
                             time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(next_opening)))
                 self._timer.schedule(next_opening, self._later.consider_shutdown)
                 self.last_shutdown_opening = next_opening
+            else:
+              self._debug("Won't shut down")
         except Exception:
             self._logger.exception("Unexpected exception")
 
