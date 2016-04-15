@@ -400,13 +400,13 @@ class ComputeNodeMonitorActor(config.actor_class):
 
     def consider_shutdown(self):
         try:
-            eligible = self.shutdown_eligible()
+            eligible, reason = self.shutdown_eligible()
             next_opening = self._shutdowns.next_opening()
-            if eligible[0]:
-                self._debug("Suggesting shutdown because %s", eligible[1])
+            if eligible:
+                self._debug("Suggesting shutdown because %s", reason)
                 _notify_subscribers(self.actor_ref.proxy(), self.subscribers)
             else:
-                self._debug("Not eligible for shut down because %s", eligible[1])
+                self._debug("Not eligible for shut down because %s", reason)
 
                 if self.last_shutdown_opening != next_opening:
                     self._debug("Shutdown window closed.  Next at %s.",
