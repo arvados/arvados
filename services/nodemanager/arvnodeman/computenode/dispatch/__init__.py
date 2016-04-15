@@ -356,9 +356,16 @@ class ComputeNodeMonitorActor(config.actor_class):
         return result
 
     def shutdown_eligible(self):
-        # Collect states and then consult state transition table
-        # whether we should shut down.  Possible states are:
-        #
+        """Determine if node is candidate for shut down.
+
+        Returns True if the node is candidate for shut down, if not, returns a
+        string explaining why it is not a candidate for shut down.  It is very
+        import to test the return value of this method as
+        "if shutdown_eligible() is True:".
+        """
+
+        # Collect states and then consult state transition table whether we
+        # should shut down.  Possible states are:
         # crunch_worker_state = ['unpaired', 'busy', 'idle', 'down']
         # window = ["open", "closed"]
         # boot_grace = ["boot wait", "boot exceeded"]
@@ -386,9 +393,11 @@ class ComputeNodeMonitorActor(config.actor_class):
         node_state = (crunch_worker_state, window, boot_grace, idle_grace)
         t = transitions[node_state]
         self._debug("Node state is %s, transition is %s", node_state , t)
-        if t:
+        if t is not None:
+            # yes, shutdown eligible
             return True
         else:
+            # no, return a reason
             return "node state is %s" % (node_state,)
 
     def consider_shutdown(self):
