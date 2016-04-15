@@ -60,11 +60,12 @@ class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
     @RetryMixin._retry((subprocess.CalledProcessError,))
     def await_slurm_drain(self):
         output = self._get_slurm_state(self._nodename)
-        if output in self.SLURM_END_STATES:
-            self._later.shutdown_node()
-        elif output in ("alloc\n", "idle\n"):
-            # Not in "drng" so cancel self.
-            self.cancel_shutdown("slurm state is idle")
-        else:
+        if output in ("drng\n", "alloc\n"):
             self._timer.schedule(time.time() + 10,
                                  self._later.await_slurm_drain)
+        elif output in ("idle\n"):
+            # Not in "drng" so cancel self.
+            self.cancel_shutdown("slurm state is %s" % output.strip())
+        else:
+            # any other state.
+            self._later.shutdown_node()

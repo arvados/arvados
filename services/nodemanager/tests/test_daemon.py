@@ -718,25 +718,3 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         # test for that.
         self.assertEqual(2, sizecounts[small.id])
         self.assertEqual(1, sizecounts[big.id])
-
-    @mock.patch("arvnodeman.daemon.NodeManagerDaemonActor._resume_node")
-    def test_resume_drained_nodes(self, resume_node):
-        cloud_node = testutil.cloud_node_mock(1)
-        arv_node = testutil.arvados_node_mock(1, info={"ec2_instance_id": "1", "slurm_state": "down"})
-        self.make_daemon([cloud_node], [arv_node])
-        resume_node.assert_called_with(self.daemon.cloud_nodes.get(self.TIMEOUT).nodes.values()[0])
-        self.stop_proxy(self.daemon)
-
-    @mock.patch("arvnodeman.daemon.NodeManagerDaemonActor._resume_node")
-    def test_no_resume_shutdown_nodes(self, resume_node):
-        cloud_node = testutil.cloud_node_mock(1)
-        arv_node = testutil.arvados_node_mock(1, info={"ec2_instance_id": "1", "slurm_state": "down"})
-
-        self.make_daemon([cloud_node], [])
-
-        self.node_shutdown = mock.MagicMock(name='shutdown_mock')
-        self.daemon.shutdowns.get(self.TIMEOUT)[cloud_node.id] = self.node_shutdown
-
-        self.daemon.update_arvados_nodes([arv_node]).get(self.TIMEOUT)
-        self.stop_proxy(self.daemon)
-        resume_node.assert_not_called()

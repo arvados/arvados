@@ -355,8 +355,7 @@ class ComputeNodeMonitorActor(config.actor_class):
             result = result and not self.arvados_node['job_uuid']
         return result
 
-    def consider_shutdown(self):
-        try:
+    def shutdown_eligible(self):
             # Collect states and then consult state transition table
             # whether we should shut down.  Possible states are:
             #
@@ -367,11 +366,12 @@ class ComputeNodeMonitorActor(config.actor_class):
 
             if self.arvados_node is None:
                 crunch_worker_state = 'unpaired'
+            elif not timestamp_fresh(arvados_node_mtime(self.arvados_node), self.node_stale_after):
+                return "node state is stale"
             elif self.arvados_node['crunch_worker_state']:
                 crunch_worker_state = self.arvados_node['crunch_worker_state']
             else:
-                self._debug("Node is paired but crunch_worker_state is null")
-                return
+                return "node is paired but crunch_worker_state is '%s'" % self.arvados_node['crunch_worker_state']
 
             window = "open" if self._shutdowns.window_open() else "closed"
 
@@ -384,12 +384,20 @@ class ComputeNodeMonitorActor(config.actor_class):
             idle_grace = 'idle exceeded'
 
             node_state = (crunch_worker_state, window, boot_grace, idle_grace)
-            self._debug("Considering shutdown, node state is %s", node_state)
-            eligible = transitions[node_state]
+            t = transitions[node_state]
+            self._debug("Node state is %s, transition is %s", node_state , t)
+            if t:
+                return True
+            else:
+                return "node state is %s" % (node_state,)
 
+    def consider_shutdown(self):
+        try:
+            eligible = self.shutdown_eligible()
             next_opening = self._shutdowns.next_opening()
-            if eligible:
-                self._debug("Suggesting shutdown.")
+            print(self.last_shutdown_opening, next_opening)
+            if eligible is True:
+                self._debug("Suggesting shutdown")
                 _notify_subscribers(self.actor_ref.proxy(), self.subscribers)
             elif self.last_shutdown_opening != next_opening:
                 self._debug("Shutdown window closed.  Next at %s.",
