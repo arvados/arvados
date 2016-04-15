@@ -356,40 +356,40 @@ class ComputeNodeMonitorActor(config.actor_class):
         return result
 
     def shutdown_eligible(self):
-            # Collect states and then consult state transition table
-            # whether we should shut down.  Possible states are:
-            #
-            # crunch_worker_state = ['unpaired', 'busy', 'idle', 'down']
-            # window = ["open", "closed"]
-            # boot_grace = ["boot wait", "boot exceeded"]
-            # idle_grace = ["not idle", "idle wait", "idle exceeded"]
+        # Collect states and then consult state transition table
+        # whether we should shut down.  Possible states are:
+        #
+        # crunch_worker_state = ['unpaired', 'busy', 'idle', 'down']
+        # window = ["open", "closed"]
+        # boot_grace = ["boot wait", "boot exceeded"]
+        # idle_grace = ["not idle", "idle wait", "idle exceeded"]
 
-            if self.arvados_node is None:
-                crunch_worker_state = 'unpaired'
-            elif not timestamp_fresh(arvados_node_mtime(self.arvados_node), self.node_stale_after):
-                return "node state is stale"
-            elif self.arvados_node['crunch_worker_state']:
-                crunch_worker_state = self.arvados_node['crunch_worker_state']
-            else:
-                return "node is paired but crunch_worker_state is '%s'" % self.arvados_node['crunch_worker_state']
+        if self.arvados_node is None:
+            crunch_worker_state = 'unpaired'
+        elif not timestamp_fresh(arvados_node_mtime(self.arvados_node), self.node_stale_after):
+            return "node state is stale"
+        elif self.arvados_node['crunch_worker_state']:
+            crunch_worker_state = self.arvados_node['crunch_worker_state']
+        else:
+            return "node is paired but crunch_worker_state is '%s'" % self.arvados_node['crunch_worker_state']
 
-            window = "open" if self._shutdowns.window_open() else "closed"
+        window = "open" if self._shutdowns.window_open() else "closed"
 
-            if timestamp_fresh(self.cloud_node_start_time, self.boot_fail_after):
-                boot_grace = "boot wait"
-            else:
-                boot_grace = "boot exceeded"
+        if timestamp_fresh(self.cloud_node_start_time, self.boot_fail_after):
+            boot_grace = "boot wait"
+        else:
+            boot_grace = "boot exceeded"
 
-            # API server side not implemented yet.
-            idle_grace = 'idle exceeded'
+        # API server side not implemented yet.
+        idle_grace = 'idle exceeded'
 
-            node_state = (crunch_worker_state, window, boot_grace, idle_grace)
-            t = transitions[node_state]
-            self._debug("Node state is %s, transition is %s", node_state , t)
-            if t:
-                return True
-            else:
-                return "node state is %s" % (node_state,)
+        node_state = (crunch_worker_state, window, boot_grace, idle_grace)
+        t = transitions[node_state]
+        self._debug("Node state is %s, transition is %s", node_state , t)
+        if t:
+            return True
+        else:
+            return "node state is %s" % (node_state,)
 
     def consider_shutdown(self):
         try:
