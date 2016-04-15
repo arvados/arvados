@@ -395,7 +395,6 @@ class ComputeNodeMonitorActor(config.actor_class):
         try:
             eligible = self.shutdown_eligible()
             next_opening = self._shutdowns.next_opening()
-            print(self.last_shutdown_opening, next_opening)
             if eligible is True:
                 self._debug("Suggesting shutdown")
                 _notify_subscribers(self.actor_ref.proxy(), self.subscribers)
