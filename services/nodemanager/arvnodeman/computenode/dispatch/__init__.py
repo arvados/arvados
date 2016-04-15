@@ -358,10 +358,9 @@ class ComputeNodeMonitorActor(config.actor_class):
     def shutdown_eligible(self):
         """Determine if node is candidate for shut down.
 
-        Returns True if the node is candidate for shut down, if not, returns a
-        string explaining why it is not a candidate for shut down.  It is very
-        import to test the return value of this method as
-        "if shutdown_eligible() is True:".
+        Returns a tuple of (boolean, string) where the first value is whether
+        the node is candidate for shut down, and the second value is the
+        reason for the decision.
         """
 
         # Collect states and then consult state transition table whether we
@@ -374,11 +373,11 @@ class ComputeNodeMonitorActor(config.actor_class):
         if self.arvados_node is None:
             crunch_worker_state = 'unpaired'
         elif not timestamp_fresh(arvados_node_mtime(self.arvados_node), self.node_stale_after):
-            return "node state is stale"
+            return (False, "node state is stale")
         elif self.arvados_node['crunch_worker_state']:
             crunch_worker_state = self.arvados_node['crunch_worker_state']
         else:
-            return "node is paired but crunch_worker_state is '%s'" % self.arvados_node['crunch_worker_state']
+            return (False, "node is paired but crunch_worker_state is '%s'" % self.arvados_node['crunch_worker_state'])
 
         window = "open" if self._shutdowns.window_open() else "closed"
 
@@ -392,28 +391,28 @@ class ComputeNodeMonitorActor(config.actor_class):
 
         node_state = (crunch_worker_state, window, boot_grace, idle_grace)
         t = transitions[node_state]
-        self._debug("Node state is %s, transition is %s", node_state , t)
         if t is not None:
             # yes, shutdown eligible
-            return True
+            return (True, "node state is %s" % (node_state,))
         else:
             # no, return a reason
-            return "node state is %s" % (node_state,)
+            return (False, "node state is %s" % (node_state,))
 
     def consider_shutdown(self):
         try:
             eligible = self.shutdown_eligible()
             next_opening = self._shutdowns.next_opening()
-            if eligible is True:
-                self._debug("Suggesting shutdown")
+            if eligible[0]:
+                self._debug("Suggesting shutdown because %s", eligible[1])
                 _notify_subscribers(self.actor_ref.proxy(), self.subscribers)
-            elif self.last_shutdown_opening != next_opening:
-                self._debug("Shutdown window closed.  Next at %s.",
-                            time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(next_opening)))
-                self._timer.schedule(next_opening, self._later.consider_shutdown)
-                self.last_shutdown_opening = next_opening
             else:
-              self._debug("Won't shut down")
+                self._debug("Not eligible for shut down because %s", eligible[1])
+
+                if self.last_shutdown_opening != next_opening:
+                    self._debug("Shutdown window closed.  Next at %s.",
+                                time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(next_opening)))
+                    self._timer.schedule(next_opening, self._later.consider_shutdown)
+                    self.last_shutdown_opening = next_opening
         except Exception:
             self._logger.exception("Unexpected exception")
 
