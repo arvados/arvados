@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
@@ -34,6 +35,8 @@ var logBuffer bytes.Buffer
 
 var TestHash = "aaaa09c290d0fb1ca068ffaddf22cbd0"
 var TestHash2 = "aaaac516f788aec4f30932ffb6395c39"
+
+var blobSigningTTL = time.Duration(2*7*24) * time.Hour
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 	arvadostest.StartAPI()
@@ -79,7 +82,7 @@ func setupKeepBlockCheck(c *C, enforcePermissions bool, keepServicesJSON string)
 
 	// setup keepclients
 	var err error
-	kc, err = setupKeepClient(config, keepServicesJSON)
+	kc, err = setupKeepClient(config, keepServicesJSON, blobSigningTTL)
 	c.Check(err, IsNil)
 }
 
@@ -151,7 +154,7 @@ func checkNoErrorsLogged(c *C, prefix, suffix string) {
 func (s *ServerRequiredSuite) TestBlockCheck(c *C) {
 	setupKeepBlockCheck(c, false, "")
 	allLocators := setupTestData(c)
-	err := performKeepBlockCheck(kc, "", allLocators, true)
+	err := performKeepBlockCheck(kc, blobSigningTTL, "", allLocators, true)
 	c.Check(err, IsNil)
 	checkNoErrorsLogged(c, "Error verifying block", "Block not found")
 }
@@ -159,7 +162,7 @@ func (s *ServerRequiredSuite) TestBlockCheck(c *C) {
 func (s *ServerRequiredSuite) TestBlockCheckWithBlobSigning(c *C) {
 	setupKeepBlockCheck(c, true, "")
 	allLocators := setupTestData(c)
-	err := performKeepBlockCheck(kc, arvadostest.BlobSigningKey, allLocators, true)
+	err := performKeepBlockCheck(kc, blobSigningTTL, arvadostest.BlobSigningKey, allLocators, true)
 	c.Check(err, IsNil)
 	checkNoErrorsLogged(c, "Error verifying block", "Block not found")
 }
@@ -169,7 +172,7 @@ func (s *ServerRequiredSuite) TestBlockCheck_NoSuchBlock(c *C) {
 	allLocators := setupTestData(c)
 	allLocators = append(allLocators, TestHash)
 	allLocators = append(allLocators, TestHash2)
-	err := performKeepBlockCheck(kc, "", allLocators, true)
+	err := performKeepBlockCheck(kc, blobSigningTTL, "", allLocators, true)
 	c.Check(err, NotNil)
 	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 7 blocks with matching prefix.")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "Error verifying block", "Block not found")
@@ -184,7 +187,7 @@ func (s *ServerRequiredSuite) TestBlockCheck_NoSuchBlock_WithMatchingPrefix(c *C
 	defer os.Remove(locatorFile)
 	locators, err := getBlockLocators(locatorFile, "aaa")
 	c.Check(err, IsNil)
-	err = performKeepBlockCheck(kc, "", locators, true)
+	err = performKeepBlockCheck(kc, blobSigningTTL, "", locators, true)
 	c.Check(err, NotNil)
 	// Of the 7 blocks in allLocators, only two match the prefix and hence only those are checked
 	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix.")
@@ -200,14 +203,14 @@ func (s *ServerRequiredSuite) TestBlockCheck_NoSuchBlock_WithPrefixMismatch(c *C
 	defer os.Remove(locatorFile)
 	locators, err := getBlockLocators(locatorFile, "999")
 	c.Check(err, IsNil)
-	err = performKeepBlockCheck(kc, "", locators, true)
+	err = performKeepBlockCheck(kc, blobSigningTTL, "", locators, true)
 	c.Check(err, IsNil) // there were no matching locators in file and hence nothing was checked
 }
 
 func (s *ServerRequiredSuite) TestBlockCheck_BadSignature(c *C) {
 	setupKeepBlockCheck(c, true, "")
 	setupTestData(c)
-	err := performKeepBlockCheck(kc, "badblobsigningkey", []string{TestHash, TestHash2}, false)
+	err := performKeepBlockCheck(kc, blobSigningTTL, "badblobsigningkey", []string{TestHash, TestHash2}, false)
 	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix.")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "Error verifying block", "HTTP 403")
 	// verbose logging not requested
@@ -243,7 +246,7 @@ var testKeepServicesJSON = `{
 // Expect error during performKeepBlockCheck due to unreachable keepservers.
 func (s *ServerRequiredSuite) TestErrorDuringKeepBlockCheck_FakeKeepservers(c *C) {
 	setupKeepBlockCheck(c, false, testKeepServicesJSON)
-	err := performKeepBlockCheck(kc, "", []string{TestHash, TestHash2}, true)
+	err := performKeepBlockCheck(kc, blobSigningTTL, "", []string{TestHash, TestHash2}, true)
 	c.Assert(err.Error(), Equals, "Block verification failed for 2 out of 2 blocks with matching prefix.")
 	checkErrorLog(c, []string{TestHash, TestHash2}, "Error verifying block", "")
 }

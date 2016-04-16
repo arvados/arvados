@@ -29,13 +29,15 @@ var (
 
 // makePermSignature generates a SHA-1 HMAC digest for the given blob,
 // token, expiry, and site secret.
-func makePermSignature(blobHash, apiToken, expiry string, permissionSecret []byte) string {
+func makePermSignature(blobHash, apiToken, expiry string, blobSigningTTL time.Duration, permissionSecret []byte) string {
 	hmac := hmac.New(sha1.New, permissionSecret)
 	hmac.Write([]byte(blobHash))
 	hmac.Write([]byte("@"))
 	hmac.Write([]byte(apiToken))
 	hmac.Write([]byte("@"))
 	hmac.Write([]byte(expiry))
+	hmac.Write([]byte("@"))
+	hmac.Write([]byte(strconv.Itoa(int(blobSigningTTL.Seconds()))))
 	digest := hmac.Sum(nil)
 	return fmt.Sprintf("%x", digest)
 }
@@ -46,7 +48,7 @@ func makePermSignature(blobHash, apiToken, expiry string, permissionSecret []byt
 //
 // This function is intended to be used by system components and admin
 // utilities: userland programs do not know the permissionSecret.
-func SignLocator(blobLocator, apiToken string, expiry time.Time, permissionSecret []byte) string {
+func SignLocator(blobLocator, apiToken string, expiry time.Time, blobSigningTTL time.Duration, permissionSecret []byte) string {
 	if len(permissionSecret) == 0 || apiToken == "" {
 		return blobLocator
 	}
@@ -54,7 +56,7 @@ func SignLocator(blobLocator, apiToken string, expiry time.Time, permissionSecre
 	blobHash := strings.Split(blobLocator, "+")[0]
 	timestampHex := fmt.Sprintf("%08x", expiry.Unix())
 	return blobLocator +
-		"+A" + makePermSignature(blobHash, apiToken, timestampHex, permissionSecret) +
+		"+A" + makePermSignature(blobHash, apiToken, timestampHex, blobSigningTTL, permissionSecret) +
 		"@" + timestampHex
 }
 
@@ -70,7 +72,7 @@ var signedLocatorRe = regexp.MustCompile(`^([[:xdigit:]]{32}).*\+A([[:xdigit:]]{
 //
 // This function is intended to be used by system components and admin
 // utilities: userland programs do not know the permissionSecret.
-func VerifySignature(signedLocator, apiToken string, permissionSecret []byte) error {
+func VerifySignature(signedLocator, apiToken string, blobSigningTTL time.Duration, permissionSecret []byte) error {
 	matches := signedLocatorRe.FindStringSubmatch(signedLocator)
 	if matches == nil {
 		return ErrSignatureMissing
@@ -83,7 +85,7 @@ func VerifySignature(signedLocator, apiToken string, permissionSecret []byte) er
 	} else if expiryTime.Before(time.Now()) {
 		return ErrSignatureExpired
 	}
-	if signatureHex != makePermSignature(blobHash, apiToken, expiryHex, permissionSecret) {
+	if signatureHex != makePermSignature(blobHash, apiToken, expiryHex, blobSigningTTL, permissionSecret) {
 		return ErrSignatureInvalid
 	}
 	return nil

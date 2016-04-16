@@ -48,6 +48,11 @@ func doMain(args []string) error {
 		"",
 		"Block hash prefix. When a prefix is specified, only hashes listed in the file with this prefix will be checked.")
 
+	blobSigningTTL := flags.Duration(
+		"blob-signing-ttl",
+		0*time.Second,
+		"Lifetime of blob permission signatures on the keepservers. If not provided, this will be retrieved from the keepservers.")
+
 	verbose := flags.Bool(
 		"v",
 		false,
@@ -68,12 +73,12 @@ func doMain(args []string) error {
 	}
 
 	// setup keepclient
-	kc, err := setupKeepClient(config, *keepServicesJSON)
+	kc, err := setupKeepClient(config, *keepServicesJSON, *blobSigningTTL)
 	if err != nil {
 		return fmt.Errorf("Error configuring keepclient: %s", err.Error())
 	}
 
-	return performKeepBlockCheck(kc, blobSigningKey, blockLocators, *verbose)
+	return performKeepBlockCheck(kc, *blobSigningTTL, blobSigningKey, blockLocators, *verbose)
 }
 
 type apiConfig struct {
@@ -138,7 +143,7 @@ func readConfigFromFile(filename string) (config apiConfig, blobSigningKey strin
 }
 
 // setup keepclient using the config provided
-func setupKeepClient(config apiConfig, keepServicesJSON string) (kc *keepclient.KeepClient, err error) {
+func setupKeepClient(config apiConfig, keepServicesJSON string, blobSigningTTL time.Duration) (kc *keepclient.KeepClient, err error) {
 	arv := arvadosclient.ArvadosClient{
 		ApiToken:    config.APIToken,
 		ApiServer:   config.APIHost,
@@ -159,6 +164,16 @@ func setupKeepClient(config apiConfig, keepServicesJSON string) (kc *keepclient.
 		err = kc.LoadKeepServicesFromJSON(keepServicesJSON)
 		if err != nil {
 			return
+		}
+	}
+
+	// Get if blobSigningTTL is not provided
+	if blobSigningTTL == 0 {
+		value, err := arv.Discovery("blobSignatureTtl")
+		if err == nil {
+			blobSigningTTL = time.Duration(int(value.(float64))) * time.Second
+		} else {
+			return nil, err
 		}
 	}
 
@@ -191,7 +206,7 @@ func getBlockLocators(locatorFile, prefix string) (locators []string, err error)
 }
 
 // Get block headers from keep. Log any errors.
-func performKeepBlockCheck(kc *keepclient.KeepClient, blobSigningKey string, blockLocators []string, verbose bool) error {
+func performKeepBlockCheck(kc *keepclient.KeepClient, blobSigningTTL time.Duration, blobSigningKey string, blockLocators []string, verbose bool) error {
 	totalBlocks := len(blockLocators)
 	notFoundBlocks := 0
 	current := 0
@@ -203,7 +218,7 @@ func performKeepBlockCheck(kc *keepclient.KeepClient, blobSigningKey string, blo
 		getLocator := locator
 		if blobSigningKey != "" {
 			expiresAt := time.Now().AddDate(0, 0, 1)
-			getLocator = keepclient.SignLocator(locator, kc.Arvados.ApiToken, expiresAt, []byte(blobSigningKey))
+			getLocator = keepclient.SignLocator(locator, kc.Arvados.ApiToken, expiresAt, blobSigningTTL, []byte(blobSigningKey))
 		}
 
 		_, _, err := kc.Ask(getLocator)

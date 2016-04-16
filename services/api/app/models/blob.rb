@@ -112,6 +112,7 @@ class Blob
     OpenSSL::HMAC.hexdigest('sha1', key,
                             [blob_hash,
                              api_token,
-                             timestamp].join('@'))
+                             timestamp,
+                             Rails.configuration.blob_signature_ttl].join('@'))
   end
 end
