@@ -302,17 +302,17 @@ class NodeManagerDaemonActor(actor_class):
         booting_count = self._nodes_booting(size) + self._nodes_unpaired(size)
         shutdown_count = self._size_shutdowns(size)
         busy_count = self._nodes_busy(size)
-        up_count = self._nodes_up(size) - (shutdown_count + busy_count + self._nodes_missing(size))
+        idle_count = self._nodes_up(size) - (busy_count + self._nodes_missing(size))
 
         self._logger.info("%s: wishlist %i, up %i (booting %i, idle %i, busy %i), shutting down %i", size.name,
                           self._size_wishlist(size),
-                          up_count + busy_count,
+                          idle_count + busy_count,
                           booting_count,
-                          up_count - booting_count,
+                          idle_count - booting_count,
                           busy_count,
                           shutdown_count)
 
-        wanted = self._size_wishlist(size) - up_count
+        wanted = self._size_wishlist(size) - idle_count
         if wanted > 0 and self.max_total_price and ((total_price + (size.price*wanted)) > self.max_total_price):
             can_boot = int((self.max_total_price - total_price) / size.price)
             if can_boot == 0:
@@ -323,7 +323,7 @@ class NodeManagerDaemonActor(actor_class):
             return wanted
 
     def _nodes_excess(self, size):
-        up_count = self._nodes_up(size) - self._size_shutdowns(size)
+        up_count = (self._nodes_booting(size) + self._nodes_booted(size)) - self._size_shutdowns(size)
         if size.id == self.min_cloud_size.id:
             up_count -= self.min_nodes
         return up_count - self._nodes_busy(size) - self._size_wishlist(size)
