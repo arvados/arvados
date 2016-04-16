@@ -53,9 +53,12 @@ class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
     @RetryMixin._retry((subprocess.CalledProcessError,))
     def issue_slurm_drain(self):
         if self.cancel_reason is None:
-            self._set_node_state(self._nodename, 'DRAIN', 'Reason=Node Manager shutdown')
-            self._logger.info("Waiting for SLURM node %s to drain", self._nodename)
-            self._later.await_slurm_drain()
+            if self._nodename:
+                self._set_node_state(self._nodename, 'DRAIN', 'Reason=Node Manager shutdown')
+                self._logger.info("Waiting for SLURM node %s to drain", self._nodename)
+                self._later.await_slurm_drain()
+            else:
+                self._later.shutdown_node()
 
     @RetryMixin._retry((subprocess.CalledProcessError,))
     def await_slurm_drain(self):
