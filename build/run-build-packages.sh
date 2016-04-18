@@ -92,7 +92,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
-            ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
+            ciso8601 pycrypto backports.ssl_match_hostname 'llfuse>=1.0' \
             'pycurl<7.21.5' contextlib2 pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
@@ -106,7 +106,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
-            ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
+            ciso8601 pycrypto backports.ssl_match_hostname 'llfuse>=1.0' \
             'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
@@ -120,7 +120,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
-            ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
+            ciso8601 pycrypto backports.ssl_match_hostname 'llfuse>=1.0' \
             contextlib2 'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro isodate)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
@@ -131,7 +131,7 @@ case "$TARGET" in
         PYTHON2_PKG_PREFIX=python
         PYTHON3_PACKAGE=python$PYTHON3_VERSION
         PYTHON3_PKG_PREFIX=python3
-        PYTHON_BACKPORTS=(pyasn1==0.1.7 pyasn1-modules==0.0.5 llfuse==0.41.1 ciso8601 \
+        PYTHON_BACKPORTS=(pyasn1==0.1.7 pyasn1-modules==0.0.5 'llfuse>=1.0' ciso8601 \
             google-api-python-client==1.4.2 six uritemplate oauth2client==1.5.2 httplib2 \
             rsa 'pycurl<7.21.5' backports.ssl_match_hostname pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro)
@@ -147,7 +147,7 @@ case "$TARGET" in
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname 'pycurl<7.21.5' \
-            python-daemon lockfile llfuse==0.41.1 'pbr<1.0' pyyaml \
+            python-daemon lockfile 'llfuse>=1.0' 'pbr<1.0' pyyaml \
             'rdflib>=4.2.0' shellescape mistune typing avro requests \
             isodate pyparsing sparqlwrapper html5lib keepalive)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)

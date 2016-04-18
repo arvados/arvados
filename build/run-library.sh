@@ -254,7 +254,7 @@ fpm_build () {
   declare -a fpm_dirs=(
       # source dir part of 'dir' package ("/source=/dest" => "/source"):
       "${PACKAGE%%=/*}"
-      # backports ("llfuse==0.41.1" => "backports/python-llfuse")
+      # backports ("llfuse>=1.0" => "backports/python-llfuse")
       "${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE%%[<=>]*}")
   for pkgdir in "${fpm_dirs[@]}"; do
       fpminfo="$pkgdir/fpm-info.sh"
