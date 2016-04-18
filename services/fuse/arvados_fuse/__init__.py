@@ -355,13 +355,12 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def destroy(self):
-        with llfuse.lock:
-            self._shutdown_started.set()
-            if self.events:
-                self.events.close()
-                self.events = None
+        self._shutdown_started.set()
+        if self.events:
+            self.events.close()
+            self.events = None
 
-            self.inodes.clear()
+        self.inodes.clear()
 
     def access(self, inode, mode, ctx):
         return True
