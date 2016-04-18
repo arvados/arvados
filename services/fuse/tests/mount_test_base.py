@@ -47,6 +47,10 @@ class MountTestBase(unittest.TestCase):
             raise
         llfuse.close()
 
+    def listmountdir(self, *subdirs):
+        return self.pool.apply(os.listdir,
+                               (os.path.join(self.mounttmp, *subdirs), ))
+
     def make_mount(self, root_class, **root_kwargs):
         self.operations = fuse.Operations(
             os.getuid(), os.getgid(),
