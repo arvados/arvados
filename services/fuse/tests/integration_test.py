@@ -9,6 +9,7 @@ import sys
 import tempfile
 import unittest
 import run_test_server
+from . import pool
 
 def wrap_static_test_method(modName, clsName, funcName, args, kwargs):
     class Test(unittest.TestCase):
@@ -27,14 +28,9 @@ class IntegrationTest(unittest.TestCase):
         modName = inspect.getmodule(self).__name__
         clsName = self.__class__.__name__
         funcName = inspect.currentframe().f_back.f_code.co_name
-        pool = multiprocessing.Pool(1)
-        try:
-            pool.apply(
-                wrap_static_test_method,
-                (modName, clsName, '_'+funcName, args, kwargs))
-        finally:
-            pool.terminate()
-            pool.join()
+        self.pool.apply(
+            wrap_static_test_method,
+            (modName, clsName, '_'+funcName, args, kwargs))
 
     @classmethod
     def setUpClass(cls):
@@ -46,6 +42,7 @@ class IntegrationTest(unittest.TestCase):
         run_test_server.stop_keep(num_servers=2)
 
     def setUp(self):
+        self.pool = pool.Pool()
         self.mnt = tempfile.mkdtemp()
         run_test_server.authorize_with('active')
         self.api = arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
@@ -63,7 +60,7 @@ class IntegrationTest(unittest.TestCase):
                 with arvados_fuse.command.Mount(
                         arvados_fuse.command.ArgumentParser().parse_args(
                             argv + ['--foreground',
-                                    '--unmount-timeout=0.1',
+                                    '--unmount-timeout=0.5',
                                     self.mnt])):
                     return func(self, *args, **kwargs)
             return wrapper

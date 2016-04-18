@@ -5,6 +5,7 @@ import os
 import run_test_server
 import tempfile
 import unittest
+from . import pool
 
 try:
     from shlex import quote
@@ -40,16 +41,13 @@ class ExecMode(unittest.TestCase):
     def setUp(self):
         self.mnt = tempfile.mkdtemp()
         _, self.okfile = tempfile.mkstemp()
-        self.pool = multiprocessing.Pool(1)
 
     def tearDown(self):
-        self.pool.terminate()
-        self.pool.join()
         os.rmdir(self.mnt)
         os.unlink(self.okfile)
 
     def test_exec(self):
-        self.pool.apply(try_exec, (self.mnt, [
+        pool.Pool().apply(try_exec, (self.mnt, [
             'sh', '-c',
             'echo -n foo >{}; cp {} {}'.format(
                 quote(os.path.join(self.mnt, 'zzz', 'foo.txt')),

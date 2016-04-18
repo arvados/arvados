@@ -1,18 +1,17 @@
 import arvados
-import arvados.safeapi
 import arvados_fuse as fuse
+import arvados.safeapi
 import llfuse
-import os
-import shutil
-import subprocess
-import sys
-import tempfile
-import threading
-import time
-import unittest
 import logging
 import multiprocessing
+import os
 import run_test_server
+import shutil
+import subprocess
+import tempfile
+import threading
+import unittest
+from . import pool
 
 logger = logging.getLogger('arvados.arv-mount')
 
@@ -25,7 +24,7 @@ class MountTestBase(unittest.TestCase):
         # deadlocks.  The workaround is to run some of our test code in a
         # separate process.  Forturnately the multiprocessing module makes this
         # relatively easy.
-        self.pool = multiprocessing.Pool(1)
+        self.pool = pool.Pool()
 
         if local_store:
             self.keeptmp = tempfile.mkdtemp()
@@ -64,10 +63,6 @@ class MountTestBase(unittest.TestCase):
         return self.operations.inodes[llfuse.ROOT_INODE]
 
     def tearDown(self):
-        self.pool.terminate()
-        self.pool.join()
-        del self.pool
-
         if self.llfuse_thread:
             subprocess.call(["fusermount", "-u", "-z", self.mounttmp])
             self.llfuse_thread.join(timeout=1)
