@@ -524,7 +524,7 @@ func (s *TestSuite) TestFullRunStderr(c *C) {
 		t.finish <- dockerclient.WaitResult{ExitCode: 1}
 	})
 
-	c.Check(api.Calls, Equals, 8)
+	c.Assert(api.Calls, Equals, 8)
 	c.Check(api.Content[7]["container"].(arvadosclient.Dict)["log"], NotNil)
 	c.Check(api.Content[7]["container"].(arvadosclient.Dict)["exit_code"], Equals, 1)
 	c.Check(api.Content[7]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
