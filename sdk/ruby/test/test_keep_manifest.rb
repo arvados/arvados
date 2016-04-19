@@ -266,6 +266,8 @@ class ManifestTest < Minitest::Test
    [true, 'd41d8cd98f00b204e9800998ecf8427e+0', '+0','0',nil],
    [true, 'd41d8cd98f00b204e9800998ecf8427e+0+Fizz+Buzz','+0','0','+Fizz+Buzz'],
    [true, 'd41d8cd98f00b204e9800998ecf8427e+Fizz+Buzz', nil,nil,'+Fizz+Buzz'],
+   [true, 'd41d8cd98f00b204e9800998ecf8427e+0+Ad41d8cd98f00b204e9800998ecf8427e00000000+Foo', '+0','0','+Ad41d8cd98f00b204e9800998ecf8427e00000000+Foo'],
+   [true, 'd41d8cd98f00b204e9800998ecf8427e+Ad41d8cd98f00b204e9800998ecf8427e00000000+Foo', nil,nil,'+Ad41d8cd98f00b204e9800998ecf8427e00000000+Foo'],
    [true, 'd41d8cd98f00b204e9800998ecf8427e+0+Z', '+0','0','+Z'],
    [true, 'd41d8cd98f00b204e9800998ecf8427e+Z', nil,nil,'+Z'],
   ].each do |ok, locator, match2, match3, match4|
@@ -276,6 +278,18 @@ class ManifestTest < Minitest::Test
         assert_equal match2, match[2]
         assert_equal match3, match[3]
         assert_equal match4, match[4]
+      end
+    end
+    define_method "test_parse_method_on_#{locator.inspect}" do
+      loc = Keep::Locator.parse locator
+      if !ok
+        assert_nil loc
+      else
+        refute_nil loc
+        assert loc.is_a?(Keep::Locator)
+        #assert loc.hash
+        #assert loc.size
+        #assert loc.hints.is_a?(Array)
       end
     end
   end
@@ -301,6 +315,7 @@ class ManifestTest < Minitest::Test
     [true, ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:\\040\n"],
     [true, ". 00000000000000000000000000000000+0 0:0:0\n"],
     [true, ". 00000000000000000000000000000000+0 0:0:d41d8cd98f00b204e9800998ecf8427e+0+Ad41d8cd98f00b204e9800998ecf8427e00000000@ffffffff\n"],
+    [true, ". d41d8cd98f00b204e9800998ecf8427e+0+Ad41d8cd98f00b204e9800998ecf8427e00000000@ffffffff 0:0:empty.txt\n"],
     [false, '. d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt',
       "Invalid manifest: does not end with newline"],
     [false, "abc d41d8cd98f00b204e9800998ecf8427e 0:0:abc.txt\n",

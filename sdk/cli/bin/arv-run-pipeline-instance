@@ -17,7 +17,7 @@ begin
   require 'trollop'
   require 'google/api_client'
 rescue LoadError => l
-  puts $:
+  $stderr.puts $:
   abort <<-EOS
 #{$0}: fatal: #{l.message}
 Some runtime dependencies may be missing.
@@ -132,7 +132,7 @@ if $options[:instance]
     abort "#{$0}: syntax error: --instance cannot be combined with --template or --submit."
   end
 elsif not $options[:template]
-  puts "error: you must supply a --template or --instance."
+  $stderr.puts "error: you must supply a --template or --instance."
   p.educate
   abort
 end

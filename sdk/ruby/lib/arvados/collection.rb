@@ -44,7 +44,7 @@ module Arv
     end
 
     def cp_r(source, target, source_collection=nil)
-      opts = {descend_target: !source.end_with?("/")}
+      opts = {:descend_target => !source.end_with?("/")}
       copy(:merge, source.chomp("/"), target, source_collection, opts)
     end
 
@@ -70,7 +70,7 @@ module Arv
     end
 
     def rm_r(source)
-      remove(source, recursive: true)
+      remove(source, :recursive => true)
     end
 
     protected
@@ -155,7 +155,7 @@ module Arv
       modified
     end
 
-    LocatorSegment = Struct.new(:locators, :start_pos, :length)
+    Struct.new("LocatorSegment", :locators, :start_pos, :length)
 
     class LocatorRange < Range
       attr_reader :locator
@@ -187,9 +187,9 @@ module Arv
           end_index = search_for_byte(start_pos + length - 1, start_index)
         end
         seg_ranges = @ranges[start_index..end_index]
-        LocatorSegment.new(seg_ranges.map(&:locator),
-                           start_pos - seg_ranges.first.begin,
-                           length)
+        Struct::LocatorSegment.new(seg_ranges.map(&:locator),
+                                   start_pos - seg_ranges.first.begin,
+                                   length)
       end
 
       private
