@@ -522,7 +522,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
     def test_nodes_shutting_down_replaced_below_max_nodes(self):
         size = testutil.MockSize(6)
         cloud_node = testutil.cloud_node_mock(6, size=size)
-        self.make_daemon([cloud_node], [testutil.arvados_node_mock(6)],
+        self.make_daemon([cloud_node], [testutil.arvados_node_mock(6, crunch_worker_state='down')],
                          avail_sizes=[(size, {"cores":1})])
         self.assertEqual(1, self.alive_monitor_count())
         monitor = self.monitor_list()[0].proxy()
