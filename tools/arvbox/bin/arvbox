@@ -130,7 +130,8 @@ run() {
               --publish=25100:25100
               --publish=25107:25107
               --publish=25108:25108
-              --publish=8001:8001"
+              --publish=8001:8001
+              --publish=8002:8002"
     else
         PUBLIC=""
     fi
