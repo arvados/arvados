@@ -199,19 +199,20 @@ class KeepBlockCache(object):
         with self._cache_lock:
             return self._get(locator)
 
-    def reserve_cache(self, locator):
+    def reserve_cache(self, locator, reserve=True):
         '''Reserve a cache slot for the specified locator,
         or return the existing slot.'''
         with self._cache_lock:
             n = self._get(locator)
             if n:
                 return n, False
-            else:
+            elif reserve == True:
                 # Add a new cache slot for the locator
                 n = KeepBlockCache.CacheSlot(locator)
                 self._cache.insert(0, n)
                 return n, True
-
+            else:
+                return None, False
 
 class Counter(object):
     def __init__(self, v=0):
@@ -374,10 +375,10 @@ class KeepClient(object):
             s.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 75)
             return s
 
-        def get(self, locator, timeout=None):
+        def get(self, locator, method="GET", timeout=None):
             # locator is a KeepLocator object.
             url = self.root + str(locator)
-            _logger.debug("Request: GET %s", url)
+            _logger.debug("Request: %s %s", method, url)
             curl = self._get_user_agent()
             ok = None
             try:
@@ -391,7 +392,10 @@ class KeepClient(object):
                         '{}: {}'.format(k,v) for k,v in self.get_headers.iteritems()])
                     curl.setopt(pycurl.WRITEFUNCTION, response_body.write)
                     curl.setopt(pycurl.HEADERFUNCTION, self._headerfunction)
+                    if method == "HEAD":
+                        curl.setopt(pycurl.NOBODY, True)
                     self._setcurltimeouts(curl, timeout)
+
                     try:
                         curl.perform()
                     except Exception as e:
@@ -402,6 +406,7 @@ class KeepClient(object):
                         'headers': self._headers,
                         'error': False,
                     }
+
                 ok = retry.check_http_response_success(self._result['status_code'])
                 if not ok:
                     self._result['error'] = arvados.errors.HttpError(
@@ -425,11 +430,21 @@ class KeepClient(object):
                 _logger.debug("Request fail: GET %s => %s: %s",
                               url, type(self._result['error']), str(self._result['error']))
                 return None
+            if method == "HEAD":
+                _logger.info("HEAD %s: %s bytes",
+                         self._result['status_code'],
+                         self._headers.get('content-length'))
+                content_len = self._headers.get('content-length')
+                if content_len is None:
+                    content_len = self._result['body']
+                return str(content_len)
+
             _logger.info("GET %s: %s bytes in %s msec (%.3f MiB/sec)",
                          self._result['status_code'],
                          len(self._result['body']),
                          t.msecs,
                          (len(self._result['body'])/(1024.0*1024))/t.secs if t.secs > 0 else 0)
+
             if self.download_counter:
                 self.download_counter.add(len(self._result['body']))
             resp_md5 = hashlib.md5(self._result['body']).hexdigest()
@@ -871,7 +886,14 @@ class KeepClient(object):
             return None
 
     @retry.retry_method
+    def head(self, loc_s, num_retries=None):
+        return self._get_or_head(loc_s, method="HEAD", num_retries=num_retries)
+
+    @retry.retry_method
     def get(self, loc_s, num_retries=None):
+        return self._get_or_head(loc_s, method="GET", num_retries=num_retries)
+
+    def _get_or_head(self, loc_s, method="GET", num_retries=None):
         """Get data from Keep.
 
         This method fetches one or more blocks of data from Keep.  It
@@ -897,11 +919,14 @@ class KeepClient(object):
         self.get_counter.add(1)
 
         locator = KeepLocator(loc_s)
-        slot, first = self.block_cache.reserve_cache(locator.md5sum)
-        if not first:
+        slot, first = self.block_cache.reserve_cache(locator.md5sum, True if method == "GET" else False)
+        if not first and slot is not None:
             self.hits_counter.add(1)
             v = slot.get()
-            return v
+            if method == "HEAD":
+                return str(len(v))
+            else:
+                return v
 
         self.misses_counter.add(1)
 
@@ -951,14 +976,15 @@ class KeepClient(object):
                                for root in sorted_roots
                                if roots_map[root].usable()]
             for keep_service in services_to_try:
-                blob = keep_service.get(locator, timeout=self.current_timeout(num_retries-tries_left))
+                blob = keep_service.get(locator, method=method, timeout=self.current_timeout(num_retries-tries_left))
                 if blob is not None:
                     break
             loop.save_result((blob, len(services_to_try)))
 
         # Always cache the result, then return it if we succeeded.
-        slot.set(blob)
-        self.block_cache.cap_cache()
+        if method == "GET":
+            slot.set(blob)
+            self.block_cache.cap_cache()
         if loop.success():
             return blob
 

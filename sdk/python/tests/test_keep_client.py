@@ -104,6 +104,17 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
             # Must be a string type
             self.keep_client.put({})
 
+    def test_KeepHeadTest(self):
+        locator = self.keep_client.put('test_head')
+        self.assertRegexpMatches(
+            locator,
+            '^b9a772c7049325feb7130fff1f8333e9\+9',
+            'wrong md5 hash from Keep.put for "test_head": ' + locator)
+        self.assertEqual('9', self.keep_client.head(locator))
+        self.assertEqual(self.keep_client.get(locator),
+                         'test_head',
+                         'wrong content from Keep.get for "test_head"')
+
 class KeepPermissionTestCase(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
     KEEP_SERVER = {'blob_signing_key': 'abcdefghijk0123456789',
@@ -318,6 +329,23 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                 mock.responses[0].getopt(pycurl.LOW_SPEED_LIMIT),
                 int(arvados.KeepClient.DEFAULT_TIMEOUT[2]))
 
+    def test_head_timeout(self):
+        api_client = self.mock_keep_services(count=1)
+        force_timeout = socket.timeout("timed out")
+        with tutil.mock_keep_responses(force_timeout, 0) as mock:
+            keep_client = arvados.KeepClient(api_client=api_client)
+            with self.assertRaises(arvados.errors.KeepReadError):
+                keep_client.head('ffffffffffffffffffffffffffffffff')
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.CONNECTTIMEOUT_MS),
+                int(arvados.KeepClient.DEFAULT_TIMEOUT[0]*1000))
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.LOW_SPEED_TIME),
+                int(arvados.KeepClient.DEFAULT_TIMEOUT[1]))
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.LOW_SPEED_LIMIT),
+                int(arvados.KeepClient.DEFAULT_TIMEOUT[2]))
+
     def test_proxy_get_timeout(self):
         api_client = self.mock_keep_services(service_type='proxy', count=1)
         force_timeout = socket.timeout("timed out")
@@ -325,6 +353,23 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
             keep_client = arvados.KeepClient(api_client=api_client)
             with self.assertRaises(arvados.errors.KeepReadError):
                 keep_client.get('ffffffffffffffffffffffffffffffff')
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.CONNECTTIMEOUT_MS),
+                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[0]*1000))
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.LOW_SPEED_TIME),
+                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[1]))
+            self.assertEqual(
+                mock.responses[0].getopt(pycurl.LOW_SPEED_LIMIT),
+                int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[2]))
+
+    def test_proxy_head_timeout(self):
+        api_client = self.mock_keep_services(service_type='proxy', count=1)
+        force_timeout = socket.timeout("timed out")
+        with tutil.mock_keep_responses(force_timeout, 0) as mock:
+            keep_client = arvados.KeepClient(api_client=api_client)
+            with self.assertRaises(arvados.errors.KeepReadError):
+                keep_client.head('ffffffffffffffffffffffffffffffff')
             self.assertEqual(
                 mock.responses[0].getopt(pycurl.CONNECTTIMEOUT_MS),
                 int(arvados.KeepClient.DEFAULT_PROXY_TIMEOUT[0]*1000))
@@ -364,6 +409,9 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
     def test_get_error_with_no_services(self):
         self.check_no_services_error('get', arvados.errors.KeepReadError)
 
+    def test_head_error_with_no_services(self):
+        self.check_no_services_error('head', arvados.errors.KeepReadError)
+
     def test_put_error_with_no_services(self):
         self.check_no_services_error('put', arvados.errors.KeepWriteError)
 
@@ -382,6 +430,9 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
 
     def test_get_error_reflects_last_retry(self):
         self.check_errors_from_last_retry('get', arvados.errors.KeepReadError)
+
+    def test_head_error_reflects_last_retry(self):
+        self.check_errors_from_last_retry('head', arvados.errors.KeepReadError)
 
     def test_put_error_reflects_last_retry(self):
         self.check_errors_from_last_retry('put', arvados.errors.KeepWriteError)
@@ -476,6 +527,10 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
     def test_get_probe_order_against_reference_set(self):
         self._test_probe_order_against_reference_set(
             lambda i: self.keep_client.get(self.hashes[i], num_retries=1))
+
+    def test_head_probe_order_against_reference_set(self):
+        self._test_probe_order_against_reference_set(
+            lambda i: self.keep_client.head(self.hashes[i], num_retries=1))
 
     def test_put_probe_order_against_reference_set(self):
         # copies=1 prevents the test from being sensitive to races
@@ -687,6 +742,9 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
         with self.assertTakesGreater(self.TIMEOUT_TIME):
             with self.assertRaises(arvados.errors.KeepWriteError):
                 kc.put(self.DATA, copies=1, num_retries=0)
+        with self.assertTakesGreater(self.TIMEOUT_TIME):
+            with self.assertRaises(arvados.errors.KeepReadError) as e:
+                kc.head(loc, num_retries=0)
 
     def test_low_bandwidth_with_server_mid_delay_failure(self):
         kc = self.keepClient()
@@ -769,6 +827,7 @@ class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertEqual('foo', self.keepClient.get(locator))
         self.assertEqual(self.gateway_roots[0]+locator,
                          MockCurl.return_value.getopt(pycurl.URL))
+        self.assertEqual('3', self.keepClient.head(locator))
 
     @mock.patch('pycurl.Curl')
     def test_get_with_gateway_hints_in_order(self, MockCurl):
@@ -795,12 +854,46 @@ class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
                 r'keep0x')
 
     @mock.patch('pycurl.Curl')
+    def test_head_with_gateway_hints_in_order(self, MockCurl):
+        gateways = 4
+        disks = 3
+        mocks = [
+            tutil.FakeCurl.make(code=404, body='')
+            for _ in range(gateways+disks)
+        ]
+        MockCurl.side_effect = tutil.queue_with(mocks)
+        self.mock_disks_and_gateways(gateways=gateways, disks=disks)
+        locator = '+'.join(['acbd18db4cc2f85cedef654fccc4a4d8+3'] +
+                           ['K@'+gw['uuid'] for gw in self.gateways])
+        with self.assertRaises(arvados.errors.NotFoundError):
+            self.keepClient.head(locator)
+        # Gateways are tried first, in the order given.
+        for i, root in enumerate(self.gateway_roots):
+            self.assertEqual(root+locator,
+                             mocks[i].getopt(pycurl.URL))
+        # Disk services are tried next.
+        for i in range(gateways, gateways+disks):
+            self.assertRegexpMatches(
+                mocks[i].getopt(pycurl.URL),
+                r'keep0x')
+
+    @mock.patch('pycurl.Curl')
     def test_get_with_remote_proxy_hint(self, MockCurl):
         MockCurl.return_value = tutil.FakeCurl.make(
             code=200, body='foo', headers={'Content-Length': 3})
         self.mock_disks_and_gateways()
         locator = 'acbd18db4cc2f85cedef654fccc4a4d8+3+K@xyzzy'
         self.assertEqual('foo', self.keepClient.get(locator))
+        self.assertEqual('https://keep.xyzzy.arvadosapi.com/'+locator,
+                         MockCurl.return_value.getopt(pycurl.URL))
+
+    @mock.patch('pycurl.Curl')
+    def test_head_with_remote_proxy_hint(self, MockCurl):
+        MockCurl.return_value = tutil.FakeCurl.make(
+            code=200, body='foo', headers={'Content-Length': 3})
+        self.mock_disks_and_gateways()
+        locator = 'acbd18db4cc2f85cedef654fccc4a4d8+3+K@xyzzy'
+        self.assertEqual(3, int(self.keepClient.head(locator)))
         self.assertEqual('https://keep.xyzzy.arvadosapi.com/'+locator,
                          MockCurl.return_value.getopt(pycurl.URL))
 
@@ -919,6 +1012,43 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
                 (self.DEFAULT_EXPECT, 200)):
             self.check_success(locator=self.HINTED_LOCATOR)
 
+@tutil.skip_sleep
+class KeepClientRetryHeadTestCase(KeepClientRetryTestMixin, unittest.TestCase):
+    DEFAULT_EXPECT = str(len(KeepClientRetryTestMixin.TEST_DATA))
+    DEFAULT_EXCEPTION = arvados.errors.KeepReadError
+    HINTED_LOCATOR = KeepClientRetryTestMixin.TEST_LOCATOR + '+K@xyzzy'
+    TEST_PATCHER = staticmethod(tutil.mock_keep_responses)
+
+    def run_method(self, locator=KeepClientRetryTestMixin.TEST_LOCATOR,
+                   *args, **kwargs):
+        return self.new_client().head(locator, *args, **kwargs)
+
+    def test_specific_exception_when_not_found(self):
+        with tutil.mock_keep_responses(self.DEFAULT_EXPECT, 404, 200):
+            self.check_exception(arvados.errors.NotFoundError, num_retries=3)
+
+    def test_general_exception_with_mixed_errors(self):
+        # head should raise a NotFoundError if no server returns the block,
+        # and a high threshold of servers report that it's not found.
+        # This test rigs up 50/50 disagreement between two servers, and
+        # checks that it does not become a NotFoundError.
+        client = self.new_client()
+        with tutil.mock_keep_responses(self.DEFAULT_EXPECT, 404, 500):
+            with self.assertRaises(arvados.errors.KeepReadError) as exc_check:
+                client.head(self.HINTED_LOCATOR)
+            self.assertNotIsInstance(
+                exc_check.exception, arvados.errors.NotFoundError,
+                "mixed errors raised NotFoundError")
+
+    def test_hint_server_can_succeed_without_retries(self):
+        with tutil.mock_keep_responses(self.DEFAULT_EXPECT, 404, 200, 500):
+            self.check_success(locator=self.HINTED_LOCATOR)
+
+    def test_try_next_server_after_timeout(self):
+        with tutil.mock_keep_responses(
+                (socket.timeout("timed out"), 200),
+                (self.DEFAULT_EXPECT, 200)):
+            self.check_success(locator=self.HINTED_LOCATOR)
 
 @tutil.skip_sleep
 class KeepClientRetryPutTestCase(KeepClientRetryTestMixin, unittest.TestCase):
