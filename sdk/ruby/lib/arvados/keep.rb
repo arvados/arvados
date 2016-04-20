@@ -47,19 +47,19 @@ module Keep
         raise ArgumentError.new "locator is nil or empty"
       end
 
-      m = LOCATOR_REGEXP.match(tok.strip)
+      m = LOCATOR_REGEXP.match(tok)
       unless m
         raise ArgumentError.new "not a valid locator #{tok}"
       end
 
-      tokhash, _, toksize, _, trailer = m[1..5]
+      tokhash, _, toksize, _, _, trailer = m[1..6]
       tokhints = []
       if trailer
         trailer.split('+').each do |hint|
-          if hint =~ /^[[:upper:]][[:alnum:]@_-]+$/
+          if hint =~ /^[[:upper:]][[:alnum:]@_-]*$/
             tokhints.push(hint)
           else
-            raise ArgumentError.new "unknown hint #{hint}"
+            raise ArgumentError.new "invalid hint #{hint}"
           end
         end
       end
