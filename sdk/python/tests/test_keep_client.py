@@ -110,7 +110,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
             locator,
             '^b9a772c7049325feb7130fff1f8333e9\+9',
             'wrong md5 hash from Keep.put for "test_head": ' + locator)
-        self.assertEqual("true", self.keep_client.head(locator))
+        self.assertEqual("True", self.keep_client.head(locator))
         self.assertEqual(self.keep_client.get(locator),
                          'test_head',
                          'wrong content from Keep.get for "test_head"')
@@ -827,7 +827,7 @@ class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertEqual('foo', self.keepClient.get(locator))
         self.assertEqual(self.gateway_roots[0]+locator,
                          MockCurl.return_value.getopt(pycurl.URL))
-        self.assertEqual("true", self.keepClient.head(locator))
+        self.assertEqual("True", self.keepClient.head(locator))
 
     @mock.patch('pycurl.Curl')
     def test_get_with_gateway_hints_in_order(self, MockCurl):
@@ -893,7 +893,7 @@ class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
             code=200, body='foo', headers={'Content-Length': 3})
         self.mock_disks_and_gateways()
         locator = 'acbd18db4cc2f85cedef654fccc4a4d8+3+K@xyzzy'
-        self.assertEqual("true", self.keepClient.head(locator))
+        self.assertEqual("True", self.keepClient.head(locator))
         self.assertEqual('https://keep.xyzzy.arvadosapi.com/'+locator,
                          MockCurl.return_value.getopt(pycurl.URL))
 
@@ -1014,7 +1014,7 @@ class KeepClientRetryGetTestCase(KeepClientRetryTestMixin, unittest.TestCase):
 
 @tutil.skip_sleep
 class KeepClientRetryHeadTestCase(KeepClientRetryTestMixin, unittest.TestCase):
-    DEFAULT_EXPECT = "true"
+    DEFAULT_EXPECT = "True"
     DEFAULT_EXCEPTION = arvados.errors.KeepReadError
     HINTED_LOCATOR = KeepClientRetryTestMixin.TEST_LOCATOR + '+K@xyzzy'
     TEST_PATCHER = staticmethod(tutil.mock_keep_responses)

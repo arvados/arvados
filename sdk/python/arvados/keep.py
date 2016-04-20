@@ -432,7 +432,7 @@ class KeepClient(object):
                 _logger.info("HEAD %s: %s bytes",
                          self._result['status_code'],
                          self._result.get('content-length'))
-                return str(self._result.get('content-length'))
+                return True
 
             _logger.info("GET %s: %s bytes in %s msec (%.3f MiB/sec)",
                          self._result['status_code'],
@@ -980,7 +980,7 @@ class KeepClient(object):
             self.block_cache.cap_cache()
         if loop.success():
             if method == "HEAD":
-                return "true"
+                return "True"
             else:
                 return blob
 
