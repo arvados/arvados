@@ -199,20 +199,18 @@ class KeepBlockCache(object):
         with self._cache_lock:
             return self._get(locator)
 
-    def reserve_cache(self, locator, reserve=True):
+    def reserve_cache(self, locator):
         '''Reserve a cache slot for the specified locator,
         or return the existing slot.'''
         with self._cache_lock:
             n = self._get(locator)
             if n:
                 return n, False
-            elif reserve == True:
+            else:
                 # Add a new cache slot for the locator
                 n = KeepBlockCache.CacheSlot(locator)
                 self._cache.insert(0, n)
                 return n, True
-            else:
-                return None, False
 
 class Counter(object):
     def __init__(self, v=0):
@@ -433,11 +431,8 @@ class KeepClient(object):
             if method == "HEAD":
                 _logger.info("HEAD %s: %s bytes",
                          self._result['status_code'],
-                         self._headers.get('content-length'))
-                content_len = self._headers.get('content-length')
-                if content_len is None:
-                    content_len = self._result['body']
-                return str(content_len)
+                         self._result.get('content-length'))
+                return str(self._result.get('content-length'))
 
             _logger.info("GET %s: %s bytes in %s msec (%.3f MiB/sec)",
                          self._result['status_code'],
@@ -919,13 +914,11 @@ class KeepClient(object):
         self.get_counter.add(1)
 
         locator = KeepLocator(loc_s)
-        slot, first = self.block_cache.reserve_cache(locator.md5sum, True if method == "GET" else False)
-        if not first and slot is not None:
-            self.hits_counter.add(1)
-            v = slot.get()
-            if method == "HEAD":
-                return str(len(v))
-            else:
+        if method == "GET":
+            slot, first = self.block_cache.reserve_cache(locator.md5sum)
+            if not first:
+                self.hits_counter.add(1)
+                v = slot.get()
                 return v
 
         self.misses_counter.add(1)
@@ -986,7 +979,10 @@ class KeepClient(object):
             slot.set(blob)
             self.block_cache.cap_cache()
         if loop.success():
-            return blob
+            if method == "HEAD":
+                return "true"
+            else:
+                return blob
 
         # Q: Including 403 is necessary for the Keep tests to continue
         # passing, but maybe they should expect KeepReadError instead?
