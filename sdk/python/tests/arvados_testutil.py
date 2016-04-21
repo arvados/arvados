@@ -85,7 +85,8 @@ class FakeCurl:
             self._headerfunction("HTTP/1.1 {} Status".format(self._resp_code))
             for k, v in self._resp_headers.iteritems():
                 self._headerfunction(k + ': ' + str(v))
-        self._writer(self._resp_body)
+        if type(self._resp_body) is not bool:
+            self._writer(self._resp_body)
 
     def close(self):
         pass
