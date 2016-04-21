@@ -980,7 +980,7 @@ class KeepClient(object):
             self.block_cache.cap_cache()
         if loop.success():
             if method == "HEAD":
-                return "True"
+                return True
             else:
                 return blob
 
