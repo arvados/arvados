@@ -28,9 +28,9 @@ class TestJob(unittest.TestCase):
                         'tasks': [{
                             'task.env': {'TMPDIR': '$(task.tmpdir)'},
                             'command': ['ls']
-                        }]
-            },
-            'script_version': 'master',
+                        }],
+                    },
+                    'script_version': 'master',
                     'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
                     'repository': 'arvados',
                     'script': 'crunchrunner',
@@ -40,8 +40,8 @@ class TestJob(unittest.TestCase):
                         'min_ram_mb_per_node': 1024,
                         'min_scratch_mb_per_node': 2048 # tmpdirSize + outdirSize
                     }
-        },
-                                                    find_or_create=True,
+                },
+                find_or_create=True,
                 filters=[['repository', '=', 'arvados'],
                          ['script', '=', 'crunchrunner'],
                          ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
@@ -90,7 +90,7 @@ class TestJob(unittest.TestCase):
                     'min_ram_mb_per_node': 3000,
                     'min_scratch_mb_per_node': 5024 # tmpdirSize + outdirSize
                 }
-        },
+            },
             find_or_create=True,
             filters=[['repository', '=', 'arvados'],
                      ['script', '=', 'crunchrunner'],
