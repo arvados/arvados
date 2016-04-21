@@ -20,7 +20,7 @@ const (
 	knownTimestamp     = "7fffffff"
 	knownSigHint       = "+A" + knownSignature + "@" + knownTimestamp
 	knownSignedLocator = knownLocator + knownSigHint
-	blobSignatureTTL     = time.Second
+	blobSignatureTTL   = time.Second
 )
 
 func TestSignLocator(t *testing.T) {

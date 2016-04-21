@@ -189,8 +189,7 @@ func main() {
 		&permissionTTLSec,
 		"blob-signature-ttl",
 		int(time.Duration(2*7*24*time.Hour).Seconds()),
-		"Lifetime of blob permission signatures. This will become a part of the signing key, "+
-			"and will cause clients to retry or fail if changed while they are in progress. "+
+		"Lifetime of blob permission signatures. Modifying the ttl will invalidate all existing signatures"+
 			"See services/api/config/application.default.yml.")
 	flag.BoolVar(
 		&flagSerializeIO,
