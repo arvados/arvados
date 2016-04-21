@@ -16,11 +16,11 @@ const (
 		"gokee3eamvjy8qq1fvy238838enjmy5wzy2md7yvsitp5vztft6j4q866efym7e6" +
 		"vu5wm9fpnwjyxfldw3vbo01mgjs75rgo7qioh8z8ij7jpyp8508okhgbbex3ceei" +
 		"786u5rw2a9gx743dj3fgq2irk"
-	knownSignature     = "44362129a92a48d02b2e0789c597f970f3b1faf3"
+	knownSignature     = "89118b78732c33104a4d6231e8b5a5fa1e4301e3"
 	knownTimestamp     = "7fffffff"
 	knownSigHint       = "+A" + knownSignature + "@" + knownTimestamp
 	knownSignedLocator = knownLocator + knownSigHint
-	blobSignatureTTL   = time.Second
+	blobSignatureTTL   = 1209600 * time.Second
 )
 
 func TestSignLocator(t *testing.T) {

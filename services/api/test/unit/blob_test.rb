@@ -18,10 +18,11 @@ class BlobTest < ActiveSupport::TestCase
     '786u5rw2a9gx743dj3fgq2irk'
   @@known_signed_locator = 'acbd18db4cc2f85cedef654fccc4a4d8+3' +
     '+A89118b78732c33104a4d6231e8b5a5fa1e4301e3@7fffffff'
+  @@known_signature_ttl = 1209600
 
   test 'generate predictable invincible signature' do
     original_ttl = Rails.configuration.blob_signature_ttl
-    Rails.configuration.blob_signature_ttl = 1209600
+    Rails.configuration.blob_signature_ttl = @@known_signature_ttl
     signed = Blob.sign_locator @@known_locator, {
       api_token: @@known_token,
       key: @@known_key,
@@ -33,7 +34,7 @@ class BlobTest < ActiveSupport::TestCase
 
   test 'verify predictable invincible signature' do
     original_ttl = Rails.configuration.blob_signature_ttl
-    Rails.configuration.blob_signature_ttl = 1209600
+    Rails.configuration.blob_signature_ttl = @@known_signature_ttl
     assert_equal true, Blob.verify_signature!(@@known_signed_locator,
                                               api_token: @@known_token,
                                               key: @@known_key)
@@ -133,7 +134,7 @@ class BlobTest < ActiveSupport::TestCase
     }
 
     original_ttl = Rails.configuration.blob_signature_ttl
-    Rails.configuration.blob_signature_ttl = original_ttl*2
+    Rails.configuration.blob_signature_ttl = @@known_signature_ttl*2
     signed2 = Blob.sign_locator @@known_locator, {
       api_token: @@known_token,
       key: @@known_key,

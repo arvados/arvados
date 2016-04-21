@@ -49,7 +49,7 @@ func doMain(args []string) error {
 		"Block hash prefix. When a prefix is specified, only hashes listed in the file with this prefix will be checked.")
 
 	blobSignatureTTL := flags.Duration(
-		"blob-signing-ttl",
+		"blob-signature-ttl",
 		0,
 		"Lifetime of blob permission signatures on the keepservers. If not provided, this will be retrieved from the API server's discovery document.")
 

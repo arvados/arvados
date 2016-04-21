@@ -61,7 +61,7 @@ func doMain() error {
 		"Index prefix")
 
 	srcBlobSignatureTTL := flags.Duration(
-		"blob-signing-ttl",
+		"src-blob-signature-ttl",
 		0,
 		"Lifetime of blob permission signatures on source keepservers. If not provided, this will be retrieved from the API server's discovery document.")
 

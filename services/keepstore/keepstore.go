@@ -189,7 +189,7 @@ func main() {
 		&permissionTTLSec,
 		"blob-signature-ttl",
 		int(time.Duration(2*7*24*time.Hour).Seconds()),
-		"Lifetime of blob permission signatures. Modifying the ttl will invalidate all existing signatures"+
+		"Lifetime of blob permission signatures. Modifying the ttl will invalidate all existing signatures. "+
 			"See services/api/config/application.default.yml.")
 	flag.BoolVar(
 		&flagSerializeIO,
