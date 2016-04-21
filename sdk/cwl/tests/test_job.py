@@ -1,6 +1,13 @@
-import unittest
-import mock
 import arvados_cwl
+import logging
+import mock
+import unittest
+import os
+
+if not os.getenv('ARVADOS_DEBUG'):
+    logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
+    logging.getLogger('arvados.arv-run').setLevel(logging.WARN)
+
 
 class TestJob(unittest.TestCase):
 
