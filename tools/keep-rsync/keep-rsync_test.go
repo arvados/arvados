@@ -49,7 +49,7 @@ func (s *DoMainTestSuite) SetUpSuite(c *C) {
 
 var kcSrc, kcDst *keepclient.KeepClient
 var srcKeepServicesJSON, dstKeepServicesJSON, blobSigningKey string
-var blobSigningTTL = time.Duration(2*7*24) * time.Hour
+var blobSignatureTTL = time.Duration(2*7*24) * time.Hour
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
 	// reset all variables between tests
@@ -100,7 +100,7 @@ func setupRsync(c *C, enforcePermissions bool, replications int) {
 
 	// setup keepclients
 	var err error
-	kcSrc, err = setupKeepClient(srcConfig, srcKeepServicesJSON, false, 0, blobSigningTTL)
+	kcSrc, err = setupKeepClient(srcConfig, srcKeepServicesJSON, false, 0, blobSignatureTTL)
 	c.Check(err, IsNil)
 
 	kcDst, err = setupKeepClient(dstConfig, dstKeepServicesJSON, true, replications, 0)
@@ -175,7 +175,7 @@ func testNoCrosstalk(c *C, testData string, kc1, kc2 *keepclient.KeepClient) {
 	c.Assert(err, Equals, nil)
 
 	locator = strings.Split(locator, "+")[0]
-	_, _, _, err = kc2.Get(keepclient.SignLocator(locator, kc2.Arvados.ApiToken, time.Now().AddDate(0, 0, 1), blobSigningTTL, []byte(blobSigningKey)))
+	_, _, _, err = kc2.Get(keepclient.SignLocator(locator, kc2.Arvados.ApiToken, time.Now().AddDate(0, 0, 1), blobSignatureTTL, []byte(blobSigningKey)))
 	c.Assert(err, NotNil)
 	c.Check(err.Error(), Equals, "Block not found")
 }
@@ -257,7 +257,7 @@ func testKeepRsync(c *C, enforcePermissions bool, prefix string) {
 	// setupTestData
 	setupTestData(c, prefix)
 
-	err := performKeepRsync(kcSrc, kcDst, blobSigningTTL, blobSigningKey, prefix)
+	err := performKeepRsync(kcSrc, kcDst, blobSignatureTTL, blobSigningKey, prefix)
 	c.Check(err, IsNil)
 
 	// Now GetIndex from dst and verify that all 5 from src and the 2 extra blocks are found
@@ -328,7 +328,7 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_FakeSrcKeepservers(c *C) {
 
 	setupRsync(c, false, 1)
 
-	err := performKeepRsync(kcSrc, kcDst, blobSigningTTL, "", "")
+	err := performKeepRsync(kcSrc, kcDst, blobSignatureTTL, "", "")
 	log.Printf("Err = %v", err)
 	c.Check(strings.Contains(err.Error(), "no such host"), Equals, true)
 }
@@ -340,7 +340,7 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_FakeDstKeepservers(c *C) {
 
 	setupRsync(c, false, 1)
 
-	err := performKeepRsync(kcSrc, kcDst, blobSigningTTL, "", "")
+	err := performKeepRsync(kcSrc, kcDst, blobSignatureTTL, "", "")
 	log.Printf("Err = %v", err)
 	c.Check(strings.Contains(err.Error(), "no such host"), Equals, true)
 }
@@ -355,7 +355,7 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorGettingBlockFromSrc(c *C
 	// Change blob signing key to a fake key, so that Get from src fails
 	blobSigningKey = "thisisfakeblobsigningkey"
 
-	err := performKeepRsync(kcSrc, kcDst, blobSigningTTL, blobSigningKey, "")
+	err := performKeepRsync(kcSrc, kcDst, blobSignatureTTL, blobSigningKey, "")
 	c.Check(strings.Contains(err.Error(), "HTTP 403 \"Forbidden\""), Equals, true)
 }
 
@@ -369,7 +369,7 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorPuttingBlockInDst(c *C) 
 	// Increase Want_replicas on dst to result in insufficient replicas error during Put
 	kcDst.Want_replicas = 2
 
-	err := performKeepRsync(kcSrc, kcDst, blobSigningTTL, blobSigningKey, "")
+	err := performKeepRsync(kcSrc, kcDst, blobSignatureTTL, blobSigningKey, "")
 	c.Check(strings.Contains(err.Error(), "Could not write sufficient replicas"), Equals, true)
 }
 

@@ -29,7 +29,7 @@ var (
 
 // makePermSignature generates a SHA-1 HMAC digest for the given blob,
 // token, expiry, and site secret.
-func makePermSignature(blobHash, apiToken, expiry string, blobSigningTTL time.Duration, permissionSecret []byte) string {
+func makePermSignature(blobHash, apiToken, expiry, blobSignatureTTL string, permissionSecret []byte) string {
 	hmac := hmac.New(sha1.New, permissionSecret)
 	hmac.Write([]byte(blobHash))
 	hmac.Write([]byte("@"))
@@ -37,7 +37,7 @@ func makePermSignature(blobHash, apiToken, expiry string, blobSigningTTL time.Du
 	hmac.Write([]byte("@"))
 	hmac.Write([]byte(expiry))
 	hmac.Write([]byte("@"))
-	hmac.Write([]byte(strconv.Itoa(int(blobSigningTTL.Seconds()))))
+	hmac.Write([]byte(blobSignatureTTL))
 	digest := hmac.Sum(nil)
 	return fmt.Sprintf("%x", digest)
 }
@@ -48,15 +48,16 @@ func makePermSignature(blobHash, apiToken, expiry string, blobSigningTTL time.Du
 //
 // This function is intended to be used by system components and admin
 // utilities: userland programs do not know the permissionSecret.
-func SignLocator(blobLocator, apiToken string, expiry time.Time, blobSigningTTL time.Duration, permissionSecret []byte) string {
+func SignLocator(blobLocator, apiToken string, expiry time.Time, blobSignatureTTL time.Duration, permissionSecret []byte) string {
 	if len(permissionSecret) == 0 || apiToken == "" {
 		return blobLocator
 	}
 	// Strip off all hints: only the hash is used to sign.
 	blobHash := strings.Split(blobLocator, "+")[0]
 	timestampHex := fmt.Sprintf("%08x", expiry.Unix())
+	blobSignatureTTLHex := strconv.FormatInt(int64(blobSignatureTTL.Seconds()), 16)
 	return blobLocator +
-		"+A" + makePermSignature(blobHash, apiToken, timestampHex, blobSigningTTL, permissionSecret) +
+		"+A" + makePermSignature(blobHash, apiToken, timestampHex, blobSignatureTTLHex, permissionSecret) +
 		"@" + timestampHex
 }
 
@@ -72,7 +73,7 @@ var signedLocatorRe = regexp.MustCompile(`^([[:xdigit:]]{32}).*\+A([[:xdigit:]]{
 //
 // This function is intended to be used by system components and admin
 // utilities: userland programs do not know the permissionSecret.
-func VerifySignature(signedLocator, apiToken string, blobSigningTTL time.Duration, permissionSecret []byte) error {
+func VerifySignature(signedLocator, apiToken string, blobSignatureTTL time.Duration, permissionSecret []byte) error {
 	matches := signedLocatorRe.FindStringSubmatch(signedLocator)
 	if matches == nil {
 		return ErrSignatureMissing
@@ -85,7 +86,8 @@ func VerifySignature(signedLocator, apiToken string, blobSigningTTL time.Duratio
 	} else if expiryTime.Before(time.Now()) {
 		return ErrSignatureExpired
 	}
-	if signatureHex != makePermSignature(blobHash, apiToken, expiryHex, blobSigningTTL, permissionSecret) {
+	blobSignatureTTLHex := strconv.FormatInt(int64(blobSignatureTTL.Seconds()), 16)
+	if signatureHex != makePermSignature(blobHash, apiToken, expiryHex, blobSignatureTTLHex, permissionSecret) {
 		return ErrSignatureInvalid
 	}
 	return nil

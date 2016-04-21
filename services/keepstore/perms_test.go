@@ -34,7 +34,7 @@ func TestSignLocator(t *testing.T) {
 	}
 	t0 := time.Unix(tsInt, 0)
 
-	blobSignatureTTL = time.Duration(1) * time.Second
+	blobSignatureTTL = time.Second
 
 	PermissionSecret = []byte(knownKey)
 	if x := SignLocator(knownLocator, knownToken, t0); x != knownSignedLocator {
@@ -52,7 +52,7 @@ func TestVerifyLocator(t *testing.T) {
 		PermissionSecret = b
 	}(PermissionSecret)
 
-	blobSignatureTTL = time.Duration(1) * time.Second
+	blobSignatureTTL = time.Second
 
 	PermissionSecret = []byte(knownKey)
 	if err := VerifySignature(knownSignedLocator, knownToken); err != nil {

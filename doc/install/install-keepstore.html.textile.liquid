@@ -41,7 +41,7 @@ Usage of ./keepstore:
   -azure-storage-account-name="": Azure storage account name used for subsequent --azure-storage-container-volume arguments.
   -azure-storage-container-volume=[]: Use the given container as a storage volume. Can be given multiple times.
   -azure-storage-replication=3: Replication level to report to clients when data is stored in an Azure container.
-  -blob-signature-ttl=1209600: Lifetime of blob permission signatures. This will become a part of the signing key, and will cause clients to retry or fail if changed while they are in progress. See services/api/config/application.default.yml.
+  -blob-signature-ttl=1209600: Lifetime of blob permission signatures. Modifying the ttl will invalidate all existing signatures. See services/api/config/application.default.yml.
   -blob-signing-key-file="": File containing the secret key for generating and verifying blob permission signatures.
   -data-manager-token-file="": File with the API token used by the Data Manager. All DELETE requests or GET /index requests must carry this token.
   -enforce-permissions=false: Enforce permission signatures on requests.
