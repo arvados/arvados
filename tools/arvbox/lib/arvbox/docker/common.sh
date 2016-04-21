@@ -21,6 +21,7 @@ services=(
   [keepstore1]=25108
   [ssh]=22
   [doc]=8001
+  [websockets]=8002
 )
 
 if test "$(id arvbox -u 2>/dev/null)" = 0 ; then

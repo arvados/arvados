@@ -119,6 +119,13 @@ class ActorTestMixin(object):
             if result is not unassigned:
                 return result
 
+    def busywait(self, f):
+        n = 0
+        while not f() and n < 10:
+            time.sleep(.1)
+            n += 1
+        self.assertTrue(f())
+
 
 class DriverTestMixin(object):
     def setUp(self):

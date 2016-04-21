@@ -27,6 +27,11 @@ common:
   # generate permission signatures for Keep locators. It must be
   # identical to the permission key given to Keep. IMPORTANT: This is
   # a site secret. It should be at least 50 characters.
+  #
+  # Modifying blob_signing_key will invalidate all existing
+  # signatures, which can cause programs to fail (e.g., arv-put,
+  # arv-get, and Crunch jobs).  To avoid errors, rotate keys only when
+  # no such processes are running.
   blob_signing_key: ~
 
   # These settings are provided by your OAuth2 provider (e.g.,
@@ -155,12 +160,12 @@ common:
   # still has permission) the client can retrieve the collection again
   # to get fresh signatures.
   #
-  # Datamanager considers an unreferenced block older than this to be
-  # eligible for garbage collection. Therefore, it should never be
-  # smaller than the corresponding value used by any local keepstore
-  # service (see keepstore -blob-signature-ttl flag). This rule
-  # prevents datamanager from trying to garbage-collect recently
-  # written blocks while clients are still holding valid signatures.
+  # This must be exactly equal to the -blob-signature-ttl flag used by
+  # keepstore servers.  Otherwise, reading data blocks and saving
+  # collections will fail with HTTP 403 permission errors.
+  #
+  # Modifying blob_signature_ttl invalidates existing signatures; see
+  # blob_signing_key note above.
   #
   # The default is 2 weeks.
   blob_signature_ttl: 1209600

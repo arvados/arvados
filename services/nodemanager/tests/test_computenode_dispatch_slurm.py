@@ -55,30 +55,25 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
 
     def test_slurm_bypassed_when_no_arvados_node(self, proc_mock):
         # Test we correctly handle a node that failed to bootstrap.
-        proc_mock.return_value = 'idle\n'
+        proc_mock.return_value = 'down\n'
         self.make_actor(start_time=0)
         self.check_success_flag(True)
         self.assertFalse(proc_mock.called)
 
     def test_node_undrained_when_shutdown_cancelled(self, proc_mock):
         try:
-            proc_mock.side_effect = iter(['drng\n', 'idle\n'])
+            proc_mock.side_effect = iter(['', 'drng\n', 'drng\n', ''])
             self.make_mocks(arvados_node=testutil.arvados_node_mock(job_uuid=True))
+            self.timer = testutil.MockTimer(False)
             self.make_actor()
-            self.shutdown_actor.cancel_shutdown("test")
+            self.busywait(lambda: proc_mock.call_args is not None)
+            self.shutdown_actor.cancel_shutdown("test").get(self.TIMEOUT)
             self.check_success_flag(False, 2)
-            self.check_slurm_got_args(proc_mock, 'NodeName=compute99', 'State=RESUME')
-        finally:
-            self.shutdown_actor.actor_ref.stop()
-
-    def test_alloc_node_undrained_when_shutdown_cancelled(self, proc_mock):
-        try:
-            proc_mock.side_effect = iter(['alloc\n'])
-            self.make_mocks(arvados_node=testutil.arvados_node_mock(job_uuid=True))
-            self.make_actor()
-            self.shutdown_actor.cancel_shutdown("test")
-            self.check_success_flag(False, 2)
-            self.check_slurm_got_args(proc_mock, 'sinfo', '--noheader', '-o', '%t', '-n', 'compute99')
+            self.assertEqual(proc_mock.call_args_list,
+                             [mock.call(['scontrol', 'update', 'NodeName=compute99', 'State=DRAIN', 'Reason=Node Manager shutdown']),
+                              mock.call(['sinfo', '--noheader', '-o', '%t', '-n', 'compute99']),
+                              mock.call(['sinfo', '--noheader', '-o', '%t', '-n', 'compute99']),
+                              mock.call(['scontrol', 'update', 'NodeName=compute99', 'State=RESUME'])])
         finally:
             self.shutdown_actor.actor_ref.stop()
 

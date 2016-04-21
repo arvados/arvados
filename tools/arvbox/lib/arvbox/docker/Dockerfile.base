@@ -35,7 +35,7 @@ ADD fuse.conf /etc/
 ADD crunch-setup.sh gitolite.rc \
     keep-setup.sh common.sh createusers.sh \
     logger runsu.sh waitforpostgres.sh \
-    application_yml_override.py \
+    application_yml_override.py api-setup.sh \
     /usr/local/lib/arvbox/
 
 # Start the supervisor.
