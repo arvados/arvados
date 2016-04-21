@@ -17,21 +17,27 @@ class BlobTest < ActiveSupport::TestCase
     'vu5wm9fpnwjyxfldw3vbo01mgjs75rgo7qioh8z8ij7jpyp8508okhgbbex3ceei' +
     '786u5rw2a9gx743dj3fgq2irk'
   @@known_signed_locator = 'acbd18db4cc2f85cedef654fccc4a4d8+3' +
-    '+A44362129a92a48d02b2e0789c597f970f3b1faf3@7fffffff'
+    '+A89118b78732c33104a4d6231e8b5a5fa1e4301e3@7fffffff'
 
   test 'generate predictable invincible signature' do
+    original_ttl = Rails.configuration.blob_signature_ttl
+    Rails.configuration.blob_signature_ttl = 1209600
     signed = Blob.sign_locator @@known_locator, {
       api_token: @@known_token,
       key: @@known_key,
       expire: 0x7fffffff,
     }
     assert_equal @@known_signed_locator, signed
+    Rails.configuration.blob_signature_ttl = original_ttl
   end
 
   test 'verify predictable invincible signature' do
+    original_ttl = Rails.configuration.blob_signature_ttl
+    Rails.configuration.blob_signature_ttl = 1209600
     assert_equal true, Blob.verify_signature!(@@known_signed_locator,
                                               api_token: @@known_token,
                                               key: @@known_key)
+    Rails.configuration.blob_signature_ttl = original_ttl
   end
 
   test 'correct' do
@@ -125,7 +131,6 @@ class BlobTest < ActiveSupport::TestCase
       key: @@known_key,
       expire: 0x7fffffff,
     }
-    assert_equal @@known_signed_locator, signed
 
     original_ttl = Rails.configuration.blob_signature_ttl
     Rails.configuration.blob_signature_ttl = original_ttl*2
@@ -135,6 +140,7 @@ class BlobTest < ActiveSupport::TestCase
       expire: 0x7fffffff,
     }
     Rails.configuration.blob_signature_ttl = original_ttl
+
     assert_not_equal signed, signed2
   end
 end
