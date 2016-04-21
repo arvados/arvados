@@ -1,9 +1,11 @@
 import arvados
 import config
 import errors
+from retry import RetryLoop
 
 import logging
 import json
+import thread
 import threading
 import time
 import os
@@ -108,7 +110,8 @@ class EventClient(object):
         try:
             self.on_event_cb(m)
         except Exception as e:
-            _logger.warn("Unexpected exception from event callback.", exc_info=e)
+            _logger.exception("Unexpected exception from event callback.")
+            thread.interrupt_main()
 
     def on_closed(self):
         if self.is_closed == False:
@@ -144,14 +147,20 @@ class PollClient(threading.Thread):
             self.id = self.last_log_id
         else:
             for f in self.filters:
-                try:
-                    items = self.api.logs().list(limit=1, order="id desc", filters=f).execute(num_retries=1000000)['items']
-                except Exception as e:
-                    # Some apparently non-retryable error happened, so log the
-                    # error and shut down gracefully.
-                    _logger.error("Got exception from log query: %s", e)
+                for tries_left in RetryLoop(num_retries=25, backoff_start=.1, max_wait=self.poll_time):
+                    try:
+                        items = self.api.logs().list(limit=1, order="id desc", filters=f).execute()['items']
+                        break
+                    except errors.ApiError as error:
+                        pass
+                    else:
+                        tries_left = 0
+                        break
+                if tries_left == 0:
+                    _logger.exception("PollClient thread could not contact API server.")
                     with self._closing_lock:
                         self._closing.set()
+                    thread.interrupt_main()
                     return
                 if items:
                     if items[0]['id'] > self.id:
@@ -163,18 +172,17 @@ class PollClient(threading.Thread):
             max_id = self.id
             moreitems = False
             for f in self.filters:
-                try:
-                    # If we get a transient error, we really really need to
-                    # just keep trying over and over with the same query or
-                    # we'll potentially drop events which would break the event
-                    # stream contract.
-                    items = self.api.logs().list(order="id asc", filters=f+[["id", ">", str(self.id)]]).execute(num_retries=1000000)
-                except Exception as e:
-                    # Some apparently non-retryable error happened, so log the
-                    # error and shut down gracefully.
-                    _logger.error("Got exception from log query: %s", e)
+                for tries_left in RetryLoop(num_retries=25, backoff_start=.1, max_wait=self.poll_time):
+                    try:
+                        items = self.api.logs().list(order="id asc", filters=f+[["id", ">", str(self.id)]]).execute()
+                        break
+                    except errors.ApiError as error:
+                        pass
+                if tries_left == 0:
+                    _logger.exception("PollClient thread could not contact API server.")
                     with self._closing_lock:
                         self._closing.set()
+                    thread.interrupt_main()
                     return
                 for i in items["items"]:
                     if i['id'] > max_id:
@@ -185,7 +193,8 @@ class PollClient(threading.Thread):
                         try:
                             self.on_event(i)
                         except Exception as e:
-                            _logger.warn("Unexpected exception from event callback.", exc_info=e)
+                            _logger.exception("Unexpected exception from event callback.")
+                            thread.interrupt_main()
                 if items["items_available"] > len(items["items"]):
                     moreitems = True
             self.id = max_id
