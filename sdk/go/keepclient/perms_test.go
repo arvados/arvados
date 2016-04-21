@@ -16,83 +16,84 @@ const (
 		"gokee3eamvjy8qq1fvy238838enjmy5wzy2md7yvsitp5vztft6j4q866efym7e6" +
 		"vu5wm9fpnwjyxfldw3vbo01mgjs75rgo7qioh8z8ij7jpyp8508okhgbbex3ceei" +
 		"786u5rw2a9gx743dj3fgq2irk"
-	knownSignature     = "257f3f5f5f0a4e4626a18fc74bd42ec34dcb228a"
+	knownSignature     = "89118b78732c33104a4d6231e8b5a5fa1e4301e3"
 	knownTimestamp     = "7fffffff"
 	knownSigHint       = "+A" + knownSignature + "@" + knownTimestamp
 	knownSignedLocator = knownLocator + knownSigHint
+	blobSignatureTTL   = 1209600 * time.Second
 )
 
 func TestSignLocator(t *testing.T) {
 	if ts, err := parseHexTimestamp(knownTimestamp); err != nil {
 		t.Errorf("bad knownTimestamp %s", knownTimestamp)
 	} else {
-		if knownSignedLocator != SignLocator(knownLocator, knownToken, ts, []byte(knownKey)) {
+		if knownSignedLocator != SignLocator(knownLocator, knownToken, ts, blobSignatureTTL, []byte(knownKey)) {
 			t.Fail()
 		}
 	}
 }
 
 func TestVerifySignature(t *testing.T) {
-	if VerifySignature(knownSignedLocator, knownToken, []byte(knownKey)) != nil {
+	if VerifySignature(knownSignedLocator, knownToken, blobSignatureTTL, []byte(knownKey)) != nil {
 		t.Fail()
 	}
 }
 
 func TestVerifySignatureExtraHints(t *testing.T) {
-	if VerifySignature(knownLocator+"+K@xyzzy"+knownSigHint, knownToken, []byte(knownKey)) != nil {
+	if VerifySignature(knownLocator+"+K@xyzzy"+knownSigHint, knownToken, blobSignatureTTL, []byte(knownKey)) != nil {
 		t.Fatal("Verify cannot handle hint before permission signature")
 	}
 
-	if VerifySignature(knownLocator+knownSigHint+"+Zfoo", knownToken, []byte(knownKey)) != nil {
+	if VerifySignature(knownLocator+knownSigHint+"+Zfoo", knownToken, blobSignatureTTL, []byte(knownKey)) != nil {
 		t.Fatal("Verify cannot handle hint after permission signature")
 	}
 
-	if VerifySignature(knownLocator+"+K@xyzzy"+knownSigHint+"+Zfoo", knownToken, []byte(knownKey)) != nil {
+	if VerifySignature(knownLocator+"+K@xyzzy"+knownSigHint+"+Zfoo", knownToken, blobSignatureTTL, []byte(knownKey)) != nil {
 		t.Fatal("Verify cannot handle hints around permission signature")
 	}
 }
 
 // The size hint on the locator string should not affect signature validation.
 func TestVerifySignatureWrongSize(t *testing.T) {
-	if VerifySignature(knownHash+"+999999"+knownSigHint, knownToken, []byte(knownKey)) != nil {
+	if VerifySignature(knownHash+"+999999"+knownSigHint, knownToken, blobSignatureTTL, []byte(knownKey)) != nil {
 		t.Fatal("Verify cannot handle incorrect size hint")
 	}
 
-	if VerifySignature(knownHash+knownSigHint, knownToken, []byte(knownKey)) != nil {
+	if VerifySignature(knownHash+knownSigHint, knownToken, blobSignatureTTL, []byte(knownKey)) != nil {
 		t.Fatal("Verify cannot handle missing size hint")
 	}
 }
 
 func TestVerifySignatureBadSig(t *testing.T) {
 	badLocator := knownLocator + "+Aaaaaaaaaaaaaaaa@" + knownTimestamp
-	if VerifySignature(badLocator, knownToken, []byte(knownKey)) != ErrSignatureMissing {
+	if VerifySignature(badLocator, knownToken, blobSignatureTTL, []byte(knownKey)) != ErrSignatureMissing {
 		t.Fail()
 	}
 }
 
 func TestVerifySignatureBadTimestamp(t *testing.T) {
 	badLocator := knownLocator + "+A" + knownSignature + "@OOOOOOOl"
-	if VerifySignature(badLocator, knownToken, []byte(knownKey)) != ErrSignatureMissing {
+	if VerifySignature(badLocator, knownToken, blobSignatureTTL, []byte(knownKey)) != ErrSignatureMissing {
 		t.Fail()
 	}
 }
 
 func TestVerifySignatureBadSecret(t *testing.T) {
-	if VerifySignature(knownSignedLocator, knownToken, []byte("00000000000000000000")) != ErrSignatureInvalid {
+	if VerifySignature(knownSignedLocator, knownToken, blobSignatureTTL, []byte("00000000000000000000")) != ErrSignatureInvalid {
 		t.Fail()
 	}
 }
 
 func TestVerifySignatureBadToken(t *testing.T) {
-	if VerifySignature(knownSignedLocator, "00000000", []byte(knownKey)) != ErrSignatureInvalid {
+	if VerifySignature(knownSignedLocator, "00000000", blobSignatureTTL, []byte(knownKey)) != ErrSignatureInvalid {
 		t.Fail()
 	}
 }
 
 func TestVerifySignatureExpired(t *testing.T) {
 	yesterday := time.Now().AddDate(0, 0, -1)
-	expiredLocator := SignLocator(knownHash, knownToken, yesterday, []byte(knownKey))
-	if VerifySignature(expiredLocator, knownToken, []byte(knownKey)) != ErrSignatureExpired {
+	expiredLocator := SignLocator(knownHash, knownToken, yesterday, blobSignatureTTL, []byte(knownKey))
+	if VerifySignature(expiredLocator, knownToken, blobSignatureTTL, []byte(knownKey)) != ErrSignatureExpired {
 		t.Fail()
 	}
 }
