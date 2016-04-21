@@ -233,6 +233,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         arv_node = testutil.arvados_node_mock(2, job_uuid=True)
         self.make_daemon([testutil.cloud_node_mock(2, size=size)], [arv_node],
                          [size], avail_sizes=[(size, {"cores":1})])
+        self.busywait(lambda: self.node_setup.start.called)
         self.stop_proxy(self.daemon)
         self.assertTrue(self.node_setup.start.called)
 
@@ -601,13 +602,6 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
         self.assertEqual(1, self.last_shutdown.stop.call_count)
-
-    def busywait(self, f):
-        n = 0
-        while not f() and n < 10:
-            time.sleep(.1)
-            n += 1
-        self.assertTrue(f())
 
     def test_node_create_two_sizes(self):
         small = testutil.MockSize(1)
