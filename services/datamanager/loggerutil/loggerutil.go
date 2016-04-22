@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// Useful to call at the begining of execution to log info about the
+// Useful to call at the beginning of execution to log info about the
 // current run.
 func LogRunInfo(arvLogger *logger.Logger) {
 	if arvLogger != nil {

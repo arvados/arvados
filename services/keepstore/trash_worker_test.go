@@ -163,7 +163,7 @@ func TestTrashWorkerIntegration_TwoDifferentLocatorsInVolume1(t *testing.T) {
 }
 
 /* Allow default Trash Life time to be used. Thus, the newly created block
-   will not be deleted becuase its Mtime is within the trash life time.
+   will not be deleted because its Mtime is within the trash life time.
 */
 func TestTrashWorkerIntegration_SameLocatorInTwoVolumesWithDefaultTrashLifeTime(t *testing.T) {
 	neverDelete = false

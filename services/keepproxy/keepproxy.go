@@ -185,7 +185,7 @@ func CheckAuthorizationHeader(kc *keepclient.KeepClient, cache *ApiTokenCache, r
 	}
 
 	if cache.RecallToken(tok) {
-		// Valid in the cache, short circut
+		// Valid in the cache, short circuit
 		return true, tok
 	}
 
