@@ -100,10 +100,10 @@ func setupRsync(c *C, enforcePermissions bool, replications int) {
 
 	// setup keepclients
 	var err error
-	kcSrc, err = setupKeepClient(srcConfig, srcKeepServicesJSON, false, 0, blobSignatureTTL)
+	kcSrc, _, err = setupKeepClient(srcConfig, srcKeepServicesJSON, false, 0, blobSignatureTTL)
 	c.Check(err, IsNil)
 
-	kcDst, err = setupKeepClient(dstConfig, dstKeepServicesJSON, true, replications, 0)
+	kcDst, _, err = setupKeepClient(dstConfig, dstKeepServicesJSON, true, replications, 0)
 	c.Check(err, IsNil)
 
 	for uuid := range kcSrc.LocalRoots() {

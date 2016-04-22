@@ -48,7 +48,7 @@ func doMain(args []string) error {
 		"",
 		"Block hash prefix. When a prefix is specified, only hashes listed in the file with this prefix will be checked.")
 
-	blobSignatureTTL := flags.Duration(
+	blobSignatureTTLFlag := flags.Duration(
 		"blob-signature-ttl",
 		0,
 		"Lifetime of blob permission signatures on the keepservers. If not provided, this will be retrieved from the API server's discovery document.")
@@ -73,12 +73,12 @@ func doMain(args []string) error {
 	}
 
 	// setup keepclient
-	kc, err := setupKeepClient(config, *keepServicesJSON, *blobSignatureTTL)
+	kc, blobSignatureTTL, err := setupKeepClient(config, *keepServicesJSON, *blobSignatureTTLFlag)
 	if err != nil {
 		return fmt.Errorf("Error configuring keepclient: %s", err.Error())
 	}
 
-	return performKeepBlockCheck(kc, *blobSignatureTTL, blobSigningKey, blockLocators, *verbose)
+	return performKeepBlockCheck(kc, blobSignatureTTL, blobSigningKey, blockLocators, *verbose)
 }
 
 type apiConfig struct {
@@ -143,7 +143,7 @@ func readConfigFromFile(filename string) (config apiConfig, blobSigningKey strin
 }
 
 // setup keepclient using the config provided
-func setupKeepClient(config apiConfig, keepServicesJSON string, blobSignatureTTL time.Duration) (kc *keepclient.KeepClient, err error) {
+func setupKeepClient(config apiConfig, keepServicesJSON string, blobSignatureTTL time.Duration) (kc *keepclient.KeepClient, ttl time.Duration, err error) {
 	arv := arvadosclient.ArvadosClient{
 		ApiToken:    config.APIToken,
 		ApiServer:   config.APIHost,
@@ -168,12 +168,13 @@ func setupKeepClient(config apiConfig, keepServicesJSON string, blobSignatureTTL
 	}
 
 	// Get if blobSignatureTTL is not provided
+	ttl = blobSignatureTTL
 	if blobSignatureTTL == 0 {
 		value, err := arv.Discovery("blobSignatureTtl")
 		if err == nil {
-			blobSignatureTTL = time.Duration(int(value.(float64))) * time.Second
+			ttl = time.Duration(int(value.(float64))) * time.Second
 		} else {
-			return nil, err
+			return nil, 0, err
 		}
 	}
 
