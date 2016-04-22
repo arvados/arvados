@@ -71,7 +71,7 @@ func ComputePullServers(kc *keepclient.KeepClient,
 	blockToDesiredReplication map[blockdigest.DigestWithSize]int,
 	underReplicated BlockSet) (m map[Locator]PullServers) {
 	m = map[Locator]PullServers{}
-	// We use CanonicalString to avoid filling memory with dupicate
+	// We use CanonicalString to avoid filling memory with duplicate
 	// copies of the same string.
 	var cs CanonicalString
 

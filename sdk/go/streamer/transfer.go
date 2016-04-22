@@ -16,13 +16,13 @@ channel back to the transfer() function.
 Meanwhile, the transfer() function selects() on two channels, the "requests"
 channel and the "slices" channel.
 
-When a message is recieved on the "slices" channel, this means the a new
+When a message is received on the "slices" channel, this means the a new
 section of the buffer has data, or an error is signaled.  Since the data has
 been read directly into the source_buffer, it is able to simply increases the
 size of the body slice to encompass the newly filled in section.  Then any
 pending reads are serviced with handleReadRequest (described below).
 
-When a message is recieved on the "requests" channel, it means a StreamReader
+When a message is received on the "requests" channel, it means a StreamReader
 wants access to a slice of the buffer.  This is passed to handleReadRequest().
 
 The handleReadRequest() function takes a sliceRequest consisting of a buffer
