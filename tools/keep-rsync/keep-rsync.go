@@ -60,7 +60,7 @@ func doMain() error {
 		"",
 		"Index prefix")
 
-	srcBlobSignatureTTL := flags.Duration(
+	srcBlobSignatureTTLFlag := flags.Duration(
 		"src-blob-signature-ttl",
 		0,
 		"Lifetime of blob permission signatures on source keepservers. If not provided, this will be retrieved from the API server's discovery document.")
@@ -79,18 +79,18 @@ func doMain() error {
 	}
 
 	// setup src and dst keepclients
-	kcSrc, err := setupKeepClient(srcConfig, *srcKeepServicesJSON, false, 0, *srcBlobSignatureTTL)
+	kcSrc, srcBlobSignatureTTL, err := setupKeepClient(srcConfig, *srcKeepServicesJSON, false, 0, *srcBlobSignatureTTLFlag)
 	if err != nil {
 		return fmt.Errorf("Error configuring src keepclient: %s", err.Error())
 	}
 
-	kcDst, err := setupKeepClient(dstConfig, *dstKeepServicesJSON, true, *replications, 0)
+	kcDst, _, err := setupKeepClient(dstConfig, *dstKeepServicesJSON, true, *replications, 0)
 	if err != nil {
 		return fmt.Errorf("Error configuring dst keepclient: %s", err.Error())
 	}
 
 	// Copy blocks not found in dst from src
-	err = performKeepRsync(kcSrc, kcDst, *srcBlobSignatureTTL, srcBlobSigningKey, *prefix)
+	err = performKeepRsync(kcSrc, kcDst, srcBlobSignatureTTL, srcBlobSigningKey, *prefix)
 	if err != nil {
 		return fmt.Errorf("Error while syncing data: %s", err.Error())
 	}
@@ -160,7 +160,7 @@ func readConfigFromFile(filename string) (config apiConfig, blobSigningKey strin
 }
 
 // setup keepclient using the config provided
-func setupKeepClient(config apiConfig, keepServicesJSON string, isDst bool, replications int, srcBlobSignatureTTL time.Duration) (kc *keepclient.KeepClient, err error) {
+func setupKeepClient(config apiConfig, keepServicesJSON string, isDst bool, replications int, srcBlobSignatureTTL time.Duration) (kc *keepclient.KeepClient, blobSignatureTTL time.Duration, err error) {
 	arv := arvadosclient.ArvadosClient{
 		ApiToken:    config.APIToken,
 		ApiServer:   config.APIHost,
@@ -174,13 +174,13 @@ func setupKeepClient(config apiConfig, keepServicesJSON string, isDst bool, repl
 	if keepServicesJSON == "" {
 		kc, err = keepclient.MakeKeepClient(&arv)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 	} else {
 		kc = keepclient.New(&arv)
 		err = kc.LoadKeepServicesFromJSON(keepServicesJSON)
 		if err != nil {
-			return kc, err
+			return kc, 0, err
 		}
 	}
 
@@ -191,7 +191,7 @@ func setupKeepClient(config apiConfig, keepServicesJSON string, isDst bool, repl
 			if err == nil {
 				replications = int(value.(float64))
 			} else {
-				return nil, err
+				return nil, 0, err
 			}
 		}
 
@@ -199,16 +199,17 @@ func setupKeepClient(config apiConfig, keepServicesJSON string, isDst bool, repl
 	}
 
 	// If srcBlobSignatureTTL is not provided, get it from API server discovery doc
+	blobSignatureTTL = srcBlobSignatureTTL
 	if !isDst && srcBlobSignatureTTL == 0 {
 		value, err := arv.Discovery("blobSignatureTtl")
 		if err == nil {
-			srcBlobSignatureTTL = time.Duration(int(value.(float64))) * time.Second
+			blobSignatureTTL = time.Duration(int(value.(float64))) * time.Second
 		} else {
-			return nil, err
+			return nil, 0, err
 		}
 	}
 
-	return kc, nil
+	return kc, blobSignatureTTL, nil
 }
 
 // Get unique block locators from src and dst

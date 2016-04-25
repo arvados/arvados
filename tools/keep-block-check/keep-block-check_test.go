@@ -72,6 +72,10 @@ func (s *DoMainTestSuite) TearDownTest(c *C) {
 }
 
 func setupKeepBlockCheck(c *C, enforcePermissions bool, keepServicesJSON string) {
+	setupKeepBlockCheckWithTTL(c, enforcePermissions, keepServicesJSON, blobSignatureTTL)
+}
+
+func setupKeepBlockCheckWithTTL(c *C, enforcePermissions bool, keepServicesJSON string, ttl time.Duration) {
 	var config apiConfig
 	config.APIHost = os.Getenv("ARVADOS_API_HOST")
 	config.APIToken = arvadostest.DataManagerToken
@@ -82,7 +86,8 @@ func setupKeepBlockCheck(c *C, enforcePermissions bool, keepServicesJSON string)
 
 	// setup keepclients
 	var err error
-	kc, err = setupKeepClient(config, keepServicesJSON, blobSignatureTTL)
+	kc, ttl, err = setupKeepClient(config, keepServicesJSON, ttl)
+	c.Assert(ttl, Equals, blobSignatureTTL)
 	c.Check(err, IsNil)
 }
 
@@ -161,6 +166,14 @@ func (s *ServerRequiredSuite) TestBlockCheck(c *C) {
 
 func (s *ServerRequiredSuite) TestBlockCheckWithBlobSigning(c *C) {
 	setupKeepBlockCheck(c, true, "")
+	allLocators := setupTestData(c)
+	err := performKeepBlockCheck(kc, blobSignatureTTL, arvadostest.BlobSigningKey, allLocators, true)
+	c.Check(err, IsNil)
+	checkNoErrorsLogged(c, "Error verifying block", "Block not found")
+}
+
+func (s *ServerRequiredSuite) TestBlockCheckWithBlobSigningAndTTLFromDiscovery(c *C) {
+	setupKeepBlockCheckWithTTL(c, true, "", 0)
 	allLocators := setupTestData(c)
 	err := performKeepBlockCheck(kc, blobSignatureTTL, arvadostest.BlobSigningKey, allLocators, true)
 	c.Check(err, IsNil)

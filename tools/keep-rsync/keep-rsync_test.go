@@ -100,10 +100,10 @@ func setupRsync(c *C, enforcePermissions bool, replications int) {
 
 	// setup keepclients
 	var err error
-	kcSrc, err = setupKeepClient(srcConfig, srcKeepServicesJSON, false, 0, blobSignatureTTL)
+	kcSrc, _, err = setupKeepClient(srcConfig, srcKeepServicesJSON, false, 0, blobSignatureTTL)
 	c.Check(err, IsNil)
 
-	kcDst, err = setupKeepClient(dstConfig, dstKeepServicesJSON, true, replications, 0)
+	kcDst, _, err = setupKeepClient(dstConfig, dstKeepServicesJSON, true, replications, 0)
 	c.Check(err, IsNil)
 
 	for uuid := range kcSrc.LocalRoots() {
@@ -415,6 +415,18 @@ func (s *ServerNotRequiredSuite) TestLoadConfig_MissingSrcConfig(c *C) {
 func (s *ServerNotRequiredSuite) TestLoadConfig_ErrorLoadingSrcConfig(c *C) {
 	_, _, err := loadConfig("no-such-config-file")
 	c.Assert(strings.Contains(err.Error(), "no such file or directory"), Equals, true)
+}
+
+func (s *ServerNotRequiredSuite) TestSetupKeepClient_NoBlobSignatureTTL(c *C) {
+	var srcConfig apiConfig
+	srcConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
+	srcConfig.APIToken = arvadostest.DataManagerToken
+	srcConfig.APIHostInsecure = matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
+	arvadostest.StartKeep(2, false)
+
+	_, ttl, err := setupKeepClient(srcConfig, srcKeepServicesJSON, false, 0, 0)
+	c.Check(err, IsNil)
+	c.Assert(ttl, Equals, blobSignatureTTL)
 }
 
 func setupConfigFile(c *C, name string) *os.File {
