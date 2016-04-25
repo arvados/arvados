@@ -197,10 +197,25 @@ class ResumeCacheConflict(Exception):
 class ResumeCache(object):
     CACHE_DIR = '.cache/arvados/arv-put'
 
-    def __init__(self, file_spec):
+    def __init__(self, file_spec, api_client=None, num_retries=0):
         self.cache_file = open(file_spec, 'a+')
         self._lock_file(self.cache_file)
         self.filename = self.cache_file.name
+        try:
+            state = self.load()
+            locator = None
+            try:
+                if "_finished_streams" in state and len(state["_finished_streams"]) > 0:
+                    locator = state["_finished_streams"][0][1][0]
+                elif "_current_stream_locators" in state and len(state["_current_stream_locators"]) > 0:
+                    locator = state["_current_stream_locators"][0]
+                if locator is not None:
+                    kc = arvados.keep.KeepClient(api_client=api_client)
+                    kc.head(locator, num_retries=num_retries)
+            except Exception as e:
+                raise arvados.errors.KeepRequestError("Head request error for {}: {}".format(locator, e))
+        except (ValueError):
+            pass
 
     @classmethod
     def make_path(cls, args):
@@ -437,9 +452,14 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     resume_cache = None
     if args.resume:
         try:
-            resume_cache = ResumeCache(ResumeCache.make_path(args))
+            cachepath = ResumeCache.make_path(args)
+            resume_cache = ResumeCache(cachepath, api_client=api_client, num_retries=args.retries)
         except (IOError, OSError, ValueError):
             pass  # Couldn't open cache directory/file.  Continue without it.
+        except arvados.errors.KeepRequestError:
+            # delete the cache and create a new one
+            shutil.rmtree(cachepath)
+            resume_cache = ResumeCache(cachepath)
         except ResumeCacheConflict:
             print >>stderr, "\n".join([
                 "arv-put: Another process is already uploading this data.",
