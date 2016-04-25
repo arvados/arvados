@@ -500,7 +500,10 @@ for deppkg in "${PYTHON_BACKPORTS[@]}"; do
                 set -e
                 cd "$pyfpm_workdir"
                 pip install "${PIP_DOWNLOAD_SWITCHES[@]}" --download . "$deppkg"
-                tar -xf "$deppkg"-*.tar*
+                # Sometimes pip gives us a tarball, sometimes a zip file...
+                DOWNLOADED=`ls $deppkg-*`
+                [[ "$DOWNLOADED" =~ ".tar" ]] && tar -xf $DOWNLOADED
+                [[ "$DOWNLOADED" =~ ".zip" ]] && unzip $DOWNLOADED
                 cd "$deppkg"-*/
                 "python$PYTHON2_VERSION" setup.py $DASHQ_UNLESS_DEBUG egg_info build
                 chmod -R go+rX .
