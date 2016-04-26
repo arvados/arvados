@@ -20,6 +20,10 @@ RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
 RUN touch /var/lib/rpm/* && yum -q -y install python27 python33
 RUN scl enable python33 "easy_install-3.3 pip" && scl enable python27 "easy_install-2.7 pip"
 
+# fpm requires ffi which now wants xz-libs-5 which isn't packaged for centos6
+# but the library from xz-libs-4.999 appears to be good enough.
+RUN ln -s /usr/lib64/liblzma.so.0 /usr/lib64/lzma.so.5
+
 RUN cd /tmp && \
     curl -OL 'http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm' && \
     rpm -ivh rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm && \
