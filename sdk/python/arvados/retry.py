@@ -31,7 +31,8 @@ class RetryLoop(object):
             return loop.last_result()
     """
     def __init__(self, num_retries, success_check=lambda r: True,
-                 backoff_start=0, backoff_growth=2, save_results=1):
+                 backoff_start=0, backoff_growth=2, save_results=1,
+                 max_wait=60):
         """Construct a new RetryLoop.
 
         Arguments:
@@ -50,11 +51,13 @@ class RetryLoop(object):
         * save_results: Specify a number to save the last N results
           that the loop recorded.  These records are available through
           the results attribute, oldest first.  Default 1.
+        * max_wait: Maximum number of seconds to wait between retries.
         """
         self.tries_left = num_retries + 1
         self.check_result = success_check
         self.backoff_wait = backoff_start
         self.backoff_growth = backoff_growth
+        self.max_wait = max_wait
         self.next_start_time = 0
         self.results = deque(maxlen=save_results)
         self._running = None
@@ -76,6 +79,8 @@ class RetryLoop(object):
             wait_time = max(0, self.next_start_time - time.time())
             time.sleep(wait_time)
             self.backoff_wait *= self.backoff_growth
+            if self.backoff_wait > self.max_wait:
+                self.backoff_wait = self.max_wait
         self.next_start_time = time.time() + self.backoff_wait
         self.tries_left -= 1
         return self.tries_left
