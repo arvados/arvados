@@ -51,7 +51,7 @@ class RetryLoop(object):
         * save_results: Specify a number to save the last N results
           that the loop recorded.  These records are available through
           the results attribute, oldest first.  Default 1.
-        * max_wait: Maximum time to wait between retries.
+        * max_wait: Maximum number of seconds to wait between retries.
         """
         self.tries_left = num_retries + 1
         self.check_result = success_check

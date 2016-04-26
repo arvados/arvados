@@ -116,14 +116,18 @@ class EventClient(object):
     def on_closed(self):
         if self.is_closed == False:
             _logger.warn("Unexpected close. Reconnecting.")
-            self.ec = _EventClient(self.url, self.filters, self.on_event, self.last_log_id, self.on_closed)
-            while True:
+          for tries_left in RetryLoop(num_retries=25, backoff_start=.1, max_wait=15):
               try:
+                  self.ec = _EventClient(self.url, self.filters, self.on_event, self.last_log_id, self.on_closed)
                   self.ec.connect()
                   break
               except Exception as e:
-                  _logger.warn("Error '%s' during websocket reconnect. Will retry after 5s.", e, exc_info=e)
-                  time.sleep(5)
+                  _logger.warn("Error '%s' during websocket reconnect.", e)
+           if tries_left == 0:
+                _logger.exception("EventClient thread could not contact websocket server.")
+                self.is_closed = True
+                thread.interrupt_main()
+                return
 
 
 class PollClient(threading.Thread):
@@ -178,6 +182,9 @@ class PollClient(threading.Thread):
                         break
                     except errors.ApiError as error:
                         pass
+                    else:
+                        tries_left = 0
+                        break
                 if tries_left == 0:
                     _logger.exception("PollClient thread could not contact API server.")
                     with self._closing_lock:
