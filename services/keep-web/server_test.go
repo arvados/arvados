@@ -84,8 +84,14 @@ func (s *IntegrationSuite) Test1GBFile(c *check.C) {
 	s.test100BlockFile(c, 10000000)
 }
 
-func (s *IntegrationSuite) Test300MBFile(c *check.C) {
-	s.test100BlockFile(c, 3000000)
+func (s *IntegrationSuite) Test100BlockFile(c *check.C) {
+	if testing.Short() {
+		// 3 MB
+		s.test100BlockFile(c, 30000)
+	} else {
+		// 300 MB
+		s.test100BlockFile(c, 3000000)
+	}
 }
 
 func (s *IntegrationSuite) test100BlockFile(c *check.C, blocksize int) {
