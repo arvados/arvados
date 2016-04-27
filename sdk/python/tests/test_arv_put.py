@@ -160,8 +160,9 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
             self.last_cache = arv_put.ResumeCache(cachefile.name)
         self.last_cache.save(thing)
         self.last_cache.close()
-        with self.assertRaises(arvados.errors.KeepRequestError):
-            arv_put.ResumeCache(self.last_cache.filename)
+        resume_cache = arv_put.ResumeCache(self.last_cache.filename)
+        self.assertNotEqual(None, resume_cache)
+        self.assertRaises(None, resume_cache.check_cache())
 
     def test_basic_cache_storage(self):
         thing = ['test', 'list']
