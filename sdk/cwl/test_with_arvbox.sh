@@ -23,6 +23,10 @@ while test -n "$1" ; do
             config=$2
             shift ; shift
             ;;
+        -h|--help)
+            echo "$0 [--no-reset-container] [--leave-running] [--config dev|localdemo]"
+            exit
+            ;;
         -*)
             break
             ;;
@@ -58,6 +62,9 @@ git pull
 export ARVADOS_API_HOST=localhost:8000
 export ARVADOS_API_HOST_INSECURE=1
 export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados/superuser_token)
+
+arv-keepdocker --pull arvados/jobs
+
 env
 exec ./run_test.sh "$@"
 EOF

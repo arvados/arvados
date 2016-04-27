@@ -26,6 +26,7 @@ Options:
                You should provide GOPATH, GEMHOME, and VENVDIR options
                from a previous invocation if you use this option.
 --only-install Run specific install step
+--short        Skip (or scale down) some slow tests.
 WORKSPACE=path Arvados source tree to test.
 CONFIGSRC=path Dir with api server config files to copy into source tree.
                (If none given, leave config files alone in source tree.)
@@ -87,6 +88,7 @@ sdk/go/crunchrunner
 sdk/cwl
 tools/crunchstat-summary
 tools/keep-rsync
+tools/keep-block-check
 
 EOF
 
@@ -104,6 +106,7 @@ PYTHONPATH=
 GEMHOME=
 PERLINSTALLBASE=
 
+short=
 skip_install=
 temp=
 temp_preserve=
@@ -201,6 +204,9 @@ do
             ;;
         --only)
             only="$1"; skip[$1]=""; shift
+            ;;
+        --short)
+            short=1
             ;;
         --skip-install)
             skip_install=1
@@ -384,7 +390,12 @@ setup_virtualenv() {
     if ! [[ -e "$venvdest/bin/activate" ]] || ! [[ -e "$venvdest/bin/pip" ]]; then
         virtualenv --setuptools "$@" "$venvdest" || fatal "virtualenv $venvdest failed"
     fi
-    "$venvdest/bin/pip" install 'setuptools>=18' 'pip>=7'
+    if [[ $("$venvdest/bin/python" --version 2>&1) =~ \ 3\.[012]\. ]]; then
+        # pip 8.0.0 dropped support for python 3.2, e.g., debian wheezy
+        "$venvdest/bin/pip" install 'setuptools>=18' 'pip>=7,<8'
+    else
+        "$venvdest/bin/pip" install 'setuptools>=18' 'pip>=7'
+    fi
     # ubuntu1404 can't seem to install mock via tests_require, but it can do this.
     "$venvdest/bin/pip" install 'mock>=1.0' 'pbr<1.7.0'
 }
@@ -488,12 +499,12 @@ do_test_once() {
                 # does:
                 cd "$WORKSPACE/$1" && \
                     go get -t "git.curoverse.com/arvados.git/$1" && \
-                    go test ${coverflags[@]} ${testargs[$1]}
+                    go test ${short:+-short} ${coverflags[@]} ${testargs[$1]}
             else
                 # The above form gets verbose even when testargs is
                 # empty, so use this form in such cases:
                 go get -t "git.curoverse.com/arvados.git/$1" && \
-                    go test ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
+                    go test ${short:+-short} ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
             fi
             result="$?"
             go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"
@@ -503,7 +514,7 @@ do_test_once() {
             # $3 can name a path directory for us to use, including trailing
             # slash; e.g., the bin/ subdirectory of a virtualenv.
             cd "$WORKSPACE/$1" \
-                && "${3}python" setup.py test ${testargs[$1]}
+                && "${3}python" setup.py ${short:+--short-tests-only} test ${testargs[$1]}
         elif [[ "$2" != "" ]]
         then
             "test_$2"
@@ -709,6 +720,7 @@ gostuff=(
     services/crunch-dispatch-slurm
     services/crunch-run
     tools/keep-rsync
+    tools/keep-block-check
     )
 for g in "${gostuff[@]}"
 do

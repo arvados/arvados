@@ -1,5 +1,5 @@
-# Based on Debian Wheezy
-FROM arvados/debian:wheezy
+# Based on Debian Jessie
+FROM debian:jessie
 MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 ENV DEBIAN_FRONTEND noninteractive
@@ -11,7 +11,7 @@ RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3
 ARG COMMIT=latest
 RUN echo $COMMIT && apt-get update -q
 
-RUN apt-get install -qy git python-pip python-virtualenv python-arvados-python-client python-dev libcurl4-gnutls-dev
+RUN apt-get install -qy git python-pip python-virtualenv python-arvados-python-client python-dev libcurl4-gnutls-dev nodejs python-arvados-cwl-runner
 
 # Install dependencies and set up system.
 RUN /usr/sbin/adduser --disabled-password \

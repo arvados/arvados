@@ -15,6 +15,11 @@ try:
 except ImportError:
     tagger = egg_info_cmd.egg_info
 
+short_tests_only = False
+if '--short-tests-only' in sys.argv:
+    short_tests_only = True
+    sys.argv.remove('--short-tests-only')
+
 setup(name='arvados_fuse',
       version='0.1',
       description='Arvados FUSE driver',

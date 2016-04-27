@@ -7,7 +7,8 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
     HOSTGID=$(ls -nd /usr/src/arvados | sed 's/ */ /' | cut -d' ' -f5)
     FUSEGID=$(ls -nd /dev/fuse | sed 's/ */ /' | cut -d' ' -f5)
 
-    mkdir -p /var/lib/arvados/git /var/lib/gems /var/lib/passenger
+    mkdir -p /var/lib/arvados/git /var/lib/gems \
+          /var/lib/passenger /var/lib/gopath /var/lib/pip
 
     groupadd --gid $HOSTGID --non-unique arvbox
     groupadd --gid $FUSEGID --non-unique fuse
@@ -22,7 +23,8 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
 
     chown arvbox:arvbox -R /usr/local /var/lib/arvados /var/lib/gems \
           /var/lib/passenger /var/lib/postgresql \
-          /var/lib/nginx /var/log/nginx /etc/ssl/private
+          /var/lib/nginx /var/log/nginx /etc/ssl/private \
+          /var/lib/gopath /var/lib/pip
 
     mkdir -p /var/lib/gems/ruby/2.1.0
     chown arvbox:arvbox -R /var/lib/gems/ruby/2.1.0

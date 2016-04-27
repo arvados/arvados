@@ -17,7 +17,8 @@ const (
 		"gokee3eamvjy8qq1fvy238838enjmy5wzy2md7yvsitp5vztft6j4q866efym7e6" +
 		"vu5wm9fpnwjyxfldw3vbo01mgjs75rgo7qioh8z8ij7jpyp8508okhgbbex3ceei" +
 		"786u5rw2a9gx743dj3fgq2irk"
-	knownSignature     = "257f3f5f5f0a4e4626a18fc74bd42ec34dcb228a"
+	knownSignatureTTL  = 1209600 * time.Second
+	knownSignature     = "89118b78732c33104a4d6231e8b5a5fa1e4301e3"
 	knownTimestamp     = "7fffffff"
 	knownSigHint       = "+A" + knownSignature + "@" + knownTimestamp
 	knownSignedLocator = knownLocator + knownSigHint
@@ -34,6 +35,8 @@ func TestSignLocator(t *testing.T) {
 	}
 	t0 := time.Unix(tsInt, 0)
 
+	blobSignatureTTL = knownSignatureTTL
+
 	PermissionSecret = []byte(knownKey)
 	if x := SignLocator(knownLocator, knownToken, t0); x != knownSignedLocator {
 		t.Fatalf("Got %+q, expected %+q", x, knownSignedLocator)
@@ -49,6 +52,8 @@ func TestVerifyLocator(t *testing.T) {
 	defer func(b []byte) {
 		PermissionSecret = b
 	}(PermissionSecret)
+
+	blobSignatureTTL = knownSignatureTTL
 
 	PermissionSecret = []byte(knownKey)
 	if err := VerifySignature(knownSignedLocator, knownToken); err != nil {

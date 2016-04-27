@@ -36,6 +36,7 @@ class MountTestBase(unittest.TestCase):
         run_test_server.run()
         run_test_server.authorize_with("admin")
         self.api = api if api else arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
+        self.llfuse_thread = None
 
     # This is a copy of Mount's method.  TODO: Refactor MountTestBase
     # to use a Mount instead of copying its code.
@@ -67,12 +68,13 @@ class MountTestBase(unittest.TestCase):
         self.pool.join()
         del self.pool
 
-        subprocess.call(["fusermount", "-u", "-z", self.mounttmp])
-        self.llfuse_thread.join(timeout=1)
-        if self.llfuse_thread.is_alive():
-            logger.warning("MountTestBase.tearDown():"
-                           " llfuse thread still alive 1s after umount"
-                           " -- abandoning and exiting anyway")
+        if self.llfuse_thread:
+            subprocess.call(["fusermount", "-u", "-z", self.mounttmp])
+            self.llfuse_thread.join(timeout=1)
+            if self.llfuse_thread.is_alive():
+                logger.warning("MountTestBase.tearDown():"
+                               " llfuse thread still alive 1s after umount"
+                               " -- abandoning and exiting anyway")
 
         os.rmdir(self.mounttmp)
         if self.keeptmp:

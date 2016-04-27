@@ -209,6 +209,10 @@ GET:
 		}
 		var buf = make([]byte, fs.Offset+fs.Len)
 		_, err = io.ReadFull(rdr, buf)
+		errClosing := rdr.Close()
+		if err == nil {
+			err = errClosing
+		}
 		if err != nil {
 			r.err = err
 			close(r.errNotNil)

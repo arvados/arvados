@@ -130,6 +130,7 @@ if test -z "$packages" ; then
         crunchstat
         keepproxy
         keep-rsync
+        keep-block-check
         keepstore
         keep-web
         libarvados-perl"

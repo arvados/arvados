@@ -7,6 +7,7 @@ import sys
 import unittest
 from .. import run_test_server
 from ..mount_test_base import MountTestBase
+from ..slow_test import slow_test
 
 logger = logging.getLogger('arvados.arv-mount')
 
@@ -80,6 +81,7 @@ class CreateCollectionWithMultipleBlocksAndMoveAndDeleteFile(MountTestBase):
     def setUp(self):
         super(CreateCollectionWithMultipleBlocksAndMoveAndDeleteFile, self).setUp()
 
+    @slow_test
     def test_CreateCollectionWithManyBlocksAndMoveAndDeleteFile(self):
         collection = arvados.collection.Collection(api_client=self.api)
         collection.save_new()
@@ -215,6 +217,7 @@ class CreateCollectionWithManyFilesAndMoveAndDeleteFile(MountTestBase):
     def setUp(self):
         super(CreateCollectionWithManyFilesAndMoveAndDeleteFile, self).setUp()
 
+    @slow_test
     def test_CreateCollectionWithManyFilesAndMoveAndDeleteFile(self):
         collection = arvados.collection.Collection(api_client=self.api)
         collection.save_new()
@@ -327,6 +330,7 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveAndDeleteFile(MountTestB
             with open(os.path.join(self.mounttmp, collection, k)) as f:
                 self.assertEqual(v, f.read())
 
+    @slow_test
     def test_UsingMagicDirCreateCollectionWithManyFilesAndMoveAndDeleteFile(self):
         streams = 2
         files_per_stream = 200
@@ -382,6 +386,7 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveAllFilesIntoAnother(Moun
         collection.save_new()
         return collection
 
+    @slow_test
     def test_UsingMagicDirCreateCollectionWithManyFilesAndMoveAllFilesIntoAnother(self):
         streams = 2
         files_per_stream = 200
@@ -428,6 +433,7 @@ class UsingMagicDir_CreateCollectionWithManyFilesAndMoveEachFileIntoAnother(Moun
             self.pool.apply(magicDirTest_MoveFileFromCollection, (self.mounttmp, from_collection.manifest_locator(),
                   to_collection.manifest_locator(), 'stream0', 'file'+str(j)+'.txt',))
 
+    @slow_test
     def test_UsingMagicDirCreateCollectionWithManyFilesAndMoveEachFileIntoAnother(self):
         streams = 2
         files_per_stream = 200
@@ -470,6 +476,7 @@ class FuseListLargeProjectContents(MountTestBase):
             collection_contents = llfuse.listdir(os.path.join(self.mounttmp, collection_name))
             self.assertIn('baz', collection_contents)
 
+    @slow_test
     def test_listLargeProjectContents(self):
         self.make_mount(fuse.ProjectDirectory,
                         project_object=run_test_server.fixture('groups')['project_with_201_collections'])

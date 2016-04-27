@@ -238,8 +238,18 @@ class NodeManagerDaemonActor(actor_class):
                   for c in self.cloud_nodes.nodes.itervalues()
                   if size is None or c.cloud_node.size.id == size.id)
 
+    def _nodes_down(self, size):
+        # Make sure to iterate over self.cloud_nodes because what we're
+        # counting here are compute nodes that are reported by the cloud
+        # provider but are considered "down" by Arvados.
+        return sum(1 for down in
+                   pykka.get_all(rec.actor.in_state('down') for rec in
+                                 self.cloud_nodes.nodes.itervalues()
+                                 if size is None or rec.cloud_node.size.id == size.id)
+                   if down)
+
     def _nodes_up(self, size):
-        up = self._nodes_booting(size) + self._nodes_booted(size)
+        up = (self._nodes_booting(size) + self._nodes_booted(size)) - self._nodes_down(size)
         return up
 
     def _total_price(self):
@@ -292,17 +302,17 @@ class NodeManagerDaemonActor(actor_class):
         booting_count = self._nodes_booting(size) + self._nodes_unpaired(size)
         shutdown_count = self._size_shutdowns(size)
         busy_count = self._nodes_busy(size)
-        up_count = self._nodes_up(size) - (shutdown_count + busy_count + self._nodes_missing(size))
+        idle_count = self._nodes_up(size) - (busy_count + self._nodes_missing(size))
 
         self._logger.info("%s: wishlist %i, up %i (booting %i, idle %i, busy %i), shutting down %i", size.name,
                           self._size_wishlist(size),
-                          up_count + busy_count,
+                          idle_count + busy_count,
                           booting_count,
-                          up_count - booting_count,
+                          idle_count - booting_count,
                           busy_count,
                           shutdown_count)
 
-        wanted = self._size_wishlist(size) - up_count
+        wanted = self._size_wishlist(size) - idle_count
         if wanted > 0 and self.max_total_price and ((total_price + (size.price*wanted)) > self.max_total_price):
             can_boot = int((self.max_total_price - total_price) / size.price)
             if can_boot == 0:
@@ -313,7 +323,7 @@ class NodeManagerDaemonActor(actor_class):
             return wanted
 
     def _nodes_excess(self, size):
-        up_count = self._nodes_up(size) - self._size_shutdowns(size)
+        up_count = (self._nodes_booting(size) + self._nodes_booted(size)) - self._size_shutdowns(size)
         if size.id == self.min_cloud_size.id:
             up_count -= self.min_nodes
         return up_count - self._nodes_busy(size) - self._size_wishlist(size)

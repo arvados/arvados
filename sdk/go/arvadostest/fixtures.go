@@ -33,3 +33,5 @@ var (
 	}
 	MD5CollisionMD5 = "cee9a457e790cf20d4bdaa6d69f01e41"
 )
+
+const BlobSigningKey = "zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc"

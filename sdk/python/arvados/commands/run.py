@@ -34,6 +34,12 @@ class ArvFile(object):
         self.prefix = prefix
         self.fn = fn
 
+    def __hash__(self):
+        return (self.prefix+self.fn).__hash__()
+
+    def __eq__(self, other):
+        return (self.prefix == other.prefix) and (self.fn == other.fn)
+
 class UploadFile(ArvFile):
     pass
 
@@ -101,10 +107,10 @@ def statfile(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)"):
 
     return prefix+fn
 
-def uploadfiles(files, api, dry_run=False, num_retries=0, project=None, fnPattern="$(file %s/%s)"):
+def uploadfiles(files, api, dry_run=False, num_retries=0, project=None, fnPattern="$(file %s/%s)", name=None):
     # Find the smallest path prefix that includes all the files that need to be uploaded.
     # This starts at the root and iteratively removes common parent directory prefixes
-    # until all file pathes no longer have a common parent.
+    # until all file paths no longer have a common parent.
     n = True
     pathprefix = "/"
     while n:
@@ -148,9 +154,21 @@ def uploadfiles(files, api, dry_run=False, num_retries=0, project=None, fnPatter
                 stream = sp[0]
                 collection.start_new_stream(stream)
             collection.write_file(f.fn, sp[1])
-        item = api.collections().create(body={"owner_uuid": project, "manifest_text": collection.manifest_text()}).execute()
+
+        exists = api.collections().list(filters=[["owner_uuid", "=", project],
+                                                 ["portable_data_hash", "=", collection.portable_data_hash()],
+                                                 ["name", "=", name]]).execute(num_retries=num_retries)
+        if exists["items"]:
+            item = exists["items"][0]
+            logger.info("Using collection %s", item["uuid"])
+        else:
+            body = {"owner_uuid": project, "manifest_text": collection.manifest_text()}
+            if name is not None:
+                body["name"] = name
+            item = api.collections().create(body=body, ensure_unique_name=True).execute()
+            logger.info("Uploaded to %s", item["uuid"])
+
         pdh = item["portable_data_hash"]
-        logger.info("Uploaded to %s", item["uuid"])
 
     for c in files:
         c.fn = fnPattern % (pdh, c.fn)

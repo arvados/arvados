@@ -220,4 +220,5 @@ func (s *CollectionReaderUnit) TestCollectionReaderDataError(c *check.C) {
 		c.Check(err, check.NotNil)
 		c.Check(err, check.Not(check.Equals), io.EOF)
 	}
+	c.Check(rdr.Close(), check.NotNil)
 }

@@ -6,6 +6,7 @@ import datetime
 import threading
 import time
 
+import libcloud.common.types as cloud_types
 import mock
 import pykka
 
@@ -118,6 +119,13 @@ class ActorTestMixin(object):
             if result is not unassigned:
                 return result
 
+    def busywait(self, f):
+        n = 0
+        while not f() and n < 10:
+            time.sleep(.1)
+            n += 1
+        self.assertTrue(f())
+
 
 class DriverTestMixin(object):
     def setUp(self):
@@ -141,6 +149,44 @@ class DriverTestMixin(object):
             driver = self.new_driver(auth_kwargs=kwargs)
             self.assertTrue(self.driver_mock.called)
             self.assertIs(driver.real, driver_mock2)
+
+    def test_create_can_find_node_after_timeout(self, create_kwargs={}, node_extra={}):
+        driver = self.new_driver(create_kwargs=create_kwargs)
+        arv_node = arvados_node_mock()
+        cloud_node = cloud_node_mock(**node_extra)
+        cloud_node.name = driver.create_cloud_name(arv_node)
+        create_method = self.driver_mock().create_node
+        create_method.side_effect = cloud_types.LibcloudError("fake timeout")
+        list_method = self.driver_mock().list_nodes
+        list_method.return_value = [cloud_node]
+        actual = driver.create_node(MockSize(1), arv_node)
+        self.assertIs(cloud_node, actual)
+
+    def test_create_can_raise_exception_after_timeout(self):
+        driver = self.new_driver()
+        arv_node = arvados_node_mock()
+        create_method = self.driver_mock().create_node
+        create_method.side_effect = cloud_types.LibcloudError("fake timeout")
+        list_method = self.driver_mock().list_nodes
+        list_method.return_value = []
+        with self.assertRaises(cloud_types.LibcloudError) as exc_test:
+            driver.create_node(MockSize(1), arv_node)
+        self.assertIs(create_method.side_effect, exc_test.exception)
+
+    def check_node_found_after_timeout_has_fixed_size(self, size, cloud_node,
+                                                      create_kwargs={}):
+        # This method needs to be called explicitly by driver test suites
+        # that need it.
+        self.driver_mock().list_sizes.return_value = [size]
+        driver = self.new_driver(create_kwargs=create_kwargs)
+        arv_node = arvados_node_mock()
+        cloud_node.name = driver.create_cloud_name(arv_node)
+        create_method = self.driver_mock().create_node
+        create_method.side_effect = cloud_types.LibcloudError("fake timeout")
+        self.driver_mock().list_nodes.return_value = [cloud_node]
+        actual = driver.create_node(size, arv_node)
+        self.assertIs(size, actual.size)
+
 
 class RemotePollLoopActorTestMixin(ActorTestMixin):
     def build_monitor(self, *args, **kwargs):

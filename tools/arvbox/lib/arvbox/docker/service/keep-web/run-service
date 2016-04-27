@@ -1,18 +1,22 @@
 #!/bin/bash
 
 exec 2>&1
-set -eux -o pipefail
+set -ex -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
 
-mkdir -p /var/lib/arvados/gostuff
-cd /var/lib/arvados/gostuff
+mkdir -p /var/lib/gopath
+cd /var/lib/gopath
 
 export GOPATH=$PWD
 mkdir -p "$GOPATH/src/git.curoverse.com"
 ln -sfn "/usr/src/arvados" "$GOPATH/src/git.curoverse.com/arvados.git"
-flock /var/lib/arvados/gostuff.lock go get -t "git.curoverse.com/arvados.git/services/keep-web"
+flock /var/lib/gopath/gopath.lock go get -t "git.curoverse.com/arvados.git/services/keep-web"
 install bin/keep-web /usr/local/bin
+
+if test "$1" = "--only-deps" ; then
+    exit
+fi
 
 export ARVADOS_API_HOST=$localip:${services[api]}
 export ARVADOS_API_HOST_INSECURE=1

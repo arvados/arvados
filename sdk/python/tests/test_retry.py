@@ -141,7 +141,7 @@ class RetryLoopBackoffTestCase(unittest.TestCase, RetryLoopTestMixin):
 
     def test_backoff_multiplier(self, sleep_mock, time_mock):
         self.run_loop(5, 500, 501, 502, 503, 504, 505,
-                      backoff_start=5, backoff_growth=10)
+                      backoff_start=5, backoff_growth=10, max_wait=1000000000)
         self.check_backoff(sleep_mock, 5, 9)
 
 

@@ -233,6 +233,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         arv_node = testutil.arvados_node_mock(2, job_uuid=True)
         self.make_daemon([testutil.cloud_node_mock(2, size=size)], [arv_node],
                          [size], avail_sizes=[(size, {"cores":1})])
+        self.busywait(lambda: self.node_setup.start.called)
         self.stop_proxy(self.daemon)
         self.assertTrue(self.node_setup.start.called)
 
@@ -279,7 +280,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.last_setup.arvados_node.get.return_value = arv_node
         return self.last_setup
 
-    def test_no_new_node_when_booted_node_not_usable(self):
+    def test_new_node_when_booted_node_not_usable(self):
         cloud_node = testutil.cloud_node_mock(4)
         arv_node = testutil.arvados_node_mock(4, crunch_worker_state='down')
         setup = self.start_node_boot(cloud_node, arv_node)
@@ -290,7 +291,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.update_server_wishlist(
             [testutil.MockSize(1)]).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
-        self.assertEqual(1, self.node_setup.start.call_count)
+        self.assertEqual(2, self.node_setup.start.call_count)
 
     def test_no_duplication_when_booting_node_listed_fast(self):
         # Test that we don't start two ComputeNodeMonitorActors when
@@ -522,7 +523,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
     def test_nodes_shutting_down_replaced_below_max_nodes(self):
         size = testutil.MockSize(6)
         cloud_node = testutil.cloud_node_mock(6, size=size)
-        self.make_daemon([cloud_node], [testutil.arvados_node_mock(6)],
+        self.make_daemon([cloud_node], [testutil.arvados_node_mock(6, crunch_worker_state='down')],
                          avail_sizes=[(size, {"cores":1})])
         self.assertEqual(1, self.alive_monitor_count())
         monitor = self.monitor_list()[0].proxy()
@@ -601,13 +602,6 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
         self.assertEqual(1, self.last_shutdown.stop.call_count)
-
-    def busywait(self, f):
-        n = 0
-        while not f() and n < 10:
-            time.sleep(.1)
-            n += 1
-        self.assertTrue(f())
 
     def test_node_create_two_sizes(self):
         small = testutil.MockSize(1)

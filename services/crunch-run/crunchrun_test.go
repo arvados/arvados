@@ -452,7 +452,7 @@ func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
 }
 
 // Used by the TestFullRun*() test below to DRY up boilerplate setup to do full
-// dress rehersal of the Run() function, starting from a JSON container record.
+// dress rehearsal of the Run() function, starting from a JSON container record.
 func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner) {
 	rec := ContainerRecord{}
 	err := json.NewDecoder(strings.NewReader(record)).Decode(&rec)
@@ -524,7 +524,7 @@ func (s *TestSuite) TestFullRunStderr(c *C) {
 		t.finish <- dockerclient.WaitResult{ExitCode: 1}
 	})
 
-	c.Check(api.Calls, Equals, 8)
+	c.Assert(api.Calls, Equals, 8)
 	c.Check(api.Content[7]["container"].(arvadosclient.Dict)["log"], NotNil)
 	c.Check(api.Content[7]["container"].(arvadosclient.Dict)["exit_code"], Equals, 1)
 	c.Check(api.Content[7]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
