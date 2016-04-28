@@ -276,7 +276,9 @@ func (v *AzureBlobVolume) Put(loc string, block []byte) error {
 	if v.readonly {
 		return MethodDisabledError
 	}
-	return v.bsClient.CreateBlockBlobFromReader(v.containerName, loc, uint64(len(block)), bytes.NewReader(block), nil)
+	extraHeaders := make(map[string]string)
+	extraHeaders["x-ms-meta-last_write_at"] = fmt.Sprintf("%d", time.Now().Add(trashLifetime).Unix())
+	return v.bsClient.CreateBlockBlobFromReader(v.containerName, loc, uint64(len(block)), bytes.NewReader(block), extraHeaders)
 }
 
 func (v *AzureBlobVolume) addToMetadata(loc, name, value string) error {
@@ -293,7 +295,7 @@ func (v *AzureBlobVolume) removeFromMetadata(loc, name string) error {
 	if err != nil {
 		return err
 	}
-	delete(metadata, name)
+	metadata[name] = ""
 	return v.bsClient.SetBlobMetadata(v.containerName, loc, metadata)
 }
 
@@ -305,7 +307,7 @@ func (v *AzureBlobVolume) Touch(loc string) error {
 	if err := v.checkTrashed(loc); err != nil {
 		return err
 	}
-	return v.addToMetadata(loc, "touch", fmt.Sprintf("%d", time.Now()))
+	return v.addToMetadata(loc, "last_write_at", fmt.Sprintf("%d", time.Now()))
 }
 
 // Mtime returns the last-modified property of a block blob.
@@ -313,11 +315,16 @@ func (v *AzureBlobVolume) Mtime(loc string) (time.Time, error) {
 	if err := v.checkTrashed(loc); err != nil {
 		return time.Time{}, err
 	}
-	props, err := v.bsClient.GetBlobProperties(v.containerName, loc)
+	metadata, err := v.bsClient.GetBlobMetadata(v.containerName, loc)
 	if err != nil {
 		return time.Time{}, err
 	}
-	return time.Parse(time.RFC1123, props.LastModified)
+
+	last_write_at, err := strconv.ParseInt(metadata["last_write_at"], 10, 64)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Unix(last_write_at, 0), nil
 }
 
 // IndexTo writes a list of Keep blocks that are stored in the
@@ -367,27 +374,27 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 	// we get the Etag before checking Mtime, and use If-Match to
 	// ensure we don't delete data if Put() or Touch() happens
 	// between our calls to Mtime() and DeleteBlob().
-	props, err := v.bsClient.GetBlobProperties(v.containerName, loc)
-	if err != nil {
-		return err
-	}
 	if t, err := v.Mtime(loc); err != nil {
 		return err
 	} else if time.Since(t) < blobSignatureTTL {
 		return nil
 	}
 	if trashLifetime == 0 {
+		props, err := v.bsClient.GetBlobProperties(v.containerName, loc)
+		if err != nil {
+			return err
+		}
 		return v.bsClient.DeleteBlob(v.containerName, loc, map[string]string{
 			"If-Match": props.Etag,
 		})
 	}
 	// Mark as trash
-	err = v.addToMetadata(loc, "expires_at", fmt.Sprintf("%d", time.Now().Add(trashLifetime).Unix()))
+	err := v.addToMetadata(loc, "expires_at", fmt.Sprintf("%d", time.Now().Add(trashLifetime).Unix()))
 	if err != nil {
 		return err
 	}
 	return v.bsClient.CreateBlockBlobFromReader(v.containerName,
-		fmt.Sprintf("trash.%d.%v", time.Now().Add(trashLifetime).Unix(), loc), 0, nil)
+		fmt.Sprintf("trash.%d.%v", time.Now().Add(trashLifetime).Unix(), loc), 0, nil, nil)
 }
 
 // Untrash a Keep block.

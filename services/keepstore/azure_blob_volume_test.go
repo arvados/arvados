@@ -66,6 +66,7 @@ func (h *azStubHandler) TouchWithDate(container, hash string, t time.Time) {
 		return
 	}
 	blob.Mtime = t
+	blob.Metadata["last_write_at"] = fmt.Sprintf("%d", t.Unix())
 }
 
 func (h *azStubHandler) PutRaw(container, hash string, data []byte) {
@@ -144,11 +145,18 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			}
 			h.unlockAndRace()
 		}
+		metadata := make(map[string]string)
+		for k, v := range r.Header {
+			if strings.HasPrefix(strings.ToLower(k), "x-ms-meta-") {
+				name := k[len("x-ms-meta-"):]
+				metadata[strings.ToLower(name)] = v[0]
+			}
+		}
 		h.blobs[container+"|"+hash] = &azBlob{
 			Data:        body,
 			Mtime:       time.Now(),
 			Uncommitted: make(map[string][]byte),
-			Metadata:    make(map[string]string),
+			Metadata:    metadata,
 			Etag:        makeEtag(),
 		}
 		rw.WriteHeader(http.StatusCreated)
@@ -198,10 +206,10 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			rw.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		blob.Metadata = make(map[string]string)
 		for k, v := range r.Header {
 			if strings.HasPrefix(strings.ToLower(k), "x-ms-meta-") {
-				blob.Metadata[k] = v[0]
+				name := k[len("x-ms-meta-"):]
+				blob.Metadata[strings.ToLower(name)] = v[0]
 			}
 		}
 		blob.Mtime = time.Now()
@@ -213,7 +221,7 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for k, v := range blob.Metadata {
-			rw.Header().Set(k, v)
+			rw.Header().Set(fmt.Sprintf("x-ms-meta-%s", k), v)
 		}
 		return
 	case (r.Method == "GET" || r.Method == "HEAD") && hash != "":
