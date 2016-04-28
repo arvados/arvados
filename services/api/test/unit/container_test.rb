@@ -1,6 +1,14 @@
 require 'test_helper'
 
 class ContainerTest < ActiveSupport::TestCase
+  def minimal_new
+    c = Container.new
+    c.command = ["echo", "foo"]
+    c.container_image = "img"
+    c.output_path = "/tmp"
+    c
+  end
+
   def check_illegal_modify c
     c.reload
     c.command = ["echo", "bar"]
@@ -90,10 +98,7 @@ class ContainerTest < ActiveSupport::TestCase
 
   test "Container create" do
     act_as_system_user do
-      c = Container.new
-      c.command = ["echo", "foo"]
-      c.container_image = "img"
-      c.cwd = "/tmp"
+      c = minimal_new
       c.environment = {}
       c.mounts = {"BAR" => "FOO"}
       c.output_path = "/tmp"
@@ -112,10 +117,7 @@ class ContainerTest < ActiveSupport::TestCase
 
   test "Container running" do
     act_as_system_user do
-      c = Container.new
-      c.command = ["echo", "foo"]
-      c.container_image = "img"
-      c.output_path = "/tmp"
+      c = minimal_new
       c.save!
 
       c.reload
@@ -145,10 +147,7 @@ class ContainerTest < ActiveSupport::TestCase
 
   test "Container queued cancel" do
     act_as_system_user do
-      c = Container.new
-      c.command = ["echo", "foo"]
-      c.container_image = "img"
-      c.output_path = "/tmp"
+      c = minimal_new
       c.save!
 
       c.reload
@@ -161,10 +160,7 @@ class ContainerTest < ActiveSupport::TestCase
 
   test "Container running cancel" do
     act_as_system_user do
-      c = Container.new
-      c.command = ["echo", "foo"]
-      c.container_image = "img"
-      c.output_path = "/tmp"
+      c = minimal_new
       c.save!
 
       c.reload
@@ -181,10 +177,7 @@ class ContainerTest < ActiveSupport::TestCase
 
   test "Container create forbidden for non-admin" do
     set_user_from_auth :active_trustedclient
-    c = Container.new
-    c.command = ["echo", "foo"]
-    c.container_image = "img"
-    c.cwd = "/tmp"
+    c = minimal_new
     c.environment = {}
     c.mounts = {"BAR" => "FOO"}
     c.output_path = "/tmp"
@@ -197,10 +190,7 @@ class ContainerTest < ActiveSupport::TestCase
 
   test "Container only set exit code on complete" do
     act_as_system_user do
-      c = Container.new
-      c.command = ["echo", "foo"]
-      c.container_image = "img"
-      c.output_path = "/tmp"
+      c = minimal_new
       c.save!
 
       c.reload
