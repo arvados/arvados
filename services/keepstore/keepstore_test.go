@@ -66,12 +66,13 @@ func TestGetBlock(t *testing.T) {
 	}
 
 	// Check that GetBlock returns success.
-	result, err := GetBlock(TestHash)
+	buf := make([]byte, BlockSize)
+	size, err := GetBlock(TestHash, buf, nil)
 	if err != nil {
 		t.Errorf("GetBlock error: %s", err)
 	}
-	if fmt.Sprint(result) != fmt.Sprint(TestBlock) {
-		t.Errorf("expected %s, got %s", TestBlock, result)
+	if bytes.Compare(buf[:size], TestBlock) != 0 {
+		t.Errorf("got %v, expected %v", buf[:size], TestBlock)
 	}
 }
 
@@ -86,9 +87,10 @@ func TestGetBlockMissing(t *testing.T) {
 	defer KeepVM.Close()
 
 	// Check that GetBlock returns failure.
-	result, err := GetBlock(TestHash)
+	buf := make([]byte, BlockSize)
+	size, err := GetBlock(TestHash, buf, nil)
 	if err != NotFoundError {
-		t.Errorf("Expected NotFoundError, got %v", result)
+		t.Errorf("Expected NotFoundError, got %v, err %v", buf[:size], err)
 	}
 }
 
@@ -107,9 +109,10 @@ func TestGetBlockCorrupt(t *testing.T) {
 	vols[0].Put(TestHash, BadBlock)
 
 	// Check that GetBlock returns failure.
-	result, err := GetBlock(TestHash)
+	buf := make([]byte, BlockSize)
+	size, err := GetBlock(TestHash, buf, nil)
 	if err != DiskHashError {
-		t.Errorf("Expected DiskHashError, got %v (buf: %v)", err, result)
+		t.Errorf("Expected DiskHashError, got %v (buf: %v)", err, buf[:size])
 	}
 }
 
@@ -133,13 +136,14 @@ func TestPutBlockOK(t *testing.T) {
 	}
 
 	vols := KeepVM.AllReadable()
-	result, err := vols[1].Get(TestHash)
+	buf := make([]byte, BlockSize)
+	n, err := vols[1].Get(TestHash, buf)
 	if err != nil {
 		t.Fatalf("Volume #0 Get returned error: %v", err)
 	}
-	if string(result) != string(TestBlock) {
+	if string(buf[:n]) != string(TestBlock) {
 		t.Fatalf("PutBlock stored '%s', Get retrieved '%s'",
-			string(TestBlock), string(result))
+			string(TestBlock), string(buf[:n]))
 	}
 }
 
@@ -162,14 +166,14 @@ func TestPutBlockOneVol(t *testing.T) {
 		t.Fatalf("PutBlock: n %d err %v", n, err)
 	}
 
-	result, err := GetBlock(TestHash)
+	buf := make([]byte, BlockSize)
+	size, err := GetBlock(TestHash, buf, nil)
 	if err != nil {
 		t.Fatalf("GetBlock: %v", err)
 	}
-	if string(result) != string(TestBlock) {
-		t.Error("PutBlock/GetBlock mismatch")
-		t.Fatalf("PutBlock stored '%s', GetBlock retrieved '%s'",
-			string(TestBlock), string(result))
+	if bytes.Compare(buf[:size], TestBlock) != 0 {
+		t.Fatalf("PutBlock stored %+q, GetBlock retrieved %+q",
+			TestBlock, buf[:size])
 	}
 }
 
@@ -191,7 +195,7 @@ func TestPutBlockMD5Fail(t *testing.T) {
 	}
 
 	// Confirm that GetBlock fails to return anything.
-	if result, err := GetBlock(TestHash); err != NotFoundError {
+	if result, err := GetBlock(TestHash, make([]byte, BlockSize), nil); err != NotFoundError {
 		t.Errorf("GetBlock succeeded after a corrupt block store (result = %s, err = %v)",
 			string(result), err)
 	}
@@ -216,10 +220,11 @@ func TestPutBlockCorrupt(t *testing.T) {
 	}
 
 	// The block on disk should now match TestBlock.
-	if block, err := GetBlock(TestHash); err != nil {
+	buf := make([]byte, BlockSize)
+	if size, err := GetBlock(TestHash, buf, nil); err != nil {
 		t.Errorf("GetBlock: %v", err)
-	} else if bytes.Compare(block, TestBlock) != 0 {
-		t.Errorf("GetBlock returned: '%s'", string(block))
+	} else if bytes.Compare(buf[:size], TestBlock) != 0 {
+		t.Errorf("Got %+q, expected %+q", buf[:size], TestBlock)
 	}
 }
 
@@ -290,12 +295,13 @@ func TestPutBlockTouchFails(t *testing.T) {
 		t.Errorf("mtime was changed on vols[0]:\noldMtime = %v\nnewMtime = %v\n",
 			oldMtime, newMtime)
 	}
-	result, err := vols[1].Get(TestHash)
+	buf := make([]byte, BlockSize)
+	n, err := vols[1].Get(TestHash, buf)
 	if err != nil {
 		t.Fatalf("vols[1]: %v", err)
 	}
-	if bytes.Compare(result, TestBlock) != 0 {
-		t.Errorf("new block does not match test block\nnew block = %v\n", result)
+	if bytes.Compare(buf[:n], TestBlock) != 0 {
+		t.Errorf("new block does not match test block\nnew block = %v\n", buf[:n])
 	}
 }
 

@@ -181,26 +181,24 @@ func (v *UnixVolume) stat(path string) (os.FileInfo, error) {
 	return stat, err
 }
 
-// Get retrieves a block identified by the locator string "loc", and
-// returns its contents as a byte slice.
-//
-// Get returns a nil buffer IFF it returns a non-nil error.
-func (v *UnixVolume) Get(loc string) ([]byte, error) {
+// Get retrieves a block, copies it to the given slice, and returns
+// the number of bytes copied.
+func (v *UnixVolume) Get(loc string, buf []byte) (int, error) {
 	path := v.blockPath(loc)
 	stat, err := v.stat(path)
 	if err != nil {
-		return nil, v.translateError(err)
+		return 0, v.translateError(err)
 	}
-	buf := bufs.Get(int(stat.Size()))
+	if stat.Size() > int64(len(buf)) {
+		return 0, TooLongError
+	}
+	var read int
+	size := int(stat.Size())
 	err = v.getFunc(path, func(rdr io.Reader) error {
-		_, err = io.ReadFull(rdr, buf)
+		read, err = io.ReadFull(rdr, buf[:size])
 		return err
 	})
-	if err != nil {
-		bufs.Put(buf)
-		return nil, err
-	}
-	return buf, nil
+	return read, err
 }
 
 // Compare returns nil if Get(loc) would return the same content as

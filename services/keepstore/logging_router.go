@@ -19,6 +19,19 @@ type LoggingResponseWriter struct {
 	sentHdr      time.Time
 }
 
+func (w *LoggingResponseWriter) CloseNotify() <-chan bool {
+	wrapped, ok := w.ResponseWriter.(http.CloseNotifier)
+	if !ok {
+		// If upstream doesn't implement CloseNotifier, we can
+		// satisfy the interface by returning a channel that
+		// never sends anything (the interface doesn't
+		// guarantee that anything will ever be sent on the
+		// channel even if the client disconnects).
+		return nil
+	}
+	return wrapped.CloseNotify()
+}
+
 // WriteHeader writes header to ResponseWriter
 func (loggingWriter *LoggingResponseWriter) WriteHeader(code int) {
 	if loggingWriter.sentHdr == zeroTime {
