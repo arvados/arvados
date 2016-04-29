@@ -8,4 +8,16 @@ class ActiveSupport::TestCase
       $stderr.puts "#{t1 - t0}s #{label}"
     end
   end
+
+  def vmpeak c
+    open("/proc/self/status").each_line do |line|
+      print "Begin #{c} #{line}" if (line =~ /^VmHWM:/)
+    end
+    n = yield
+    open("/proc/self/status").each_line do |line|
+      print "End #{c} #{line}" if (line =~ /^VmHWM:/)
+    end
+    n
+  end
+
 end
