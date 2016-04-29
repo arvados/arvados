@@ -81,6 +81,7 @@ sdk/python
 sdk/ruby
 sdk/go/arvadosclient
 sdk/go/keepclient
+sdk/go/httpserver
 sdk/go/manifest
 sdk/go/blockdigest
 sdk/go/streamer
@@ -703,6 +704,7 @@ declare -a gostuff
 gostuff=(
     sdk/go/arvadosclient
     sdk/go/blockdigest
+    sdk/go/httpserver
     sdk/go/manifest
     sdk/go/streamer
     sdk/go/crunchrunner
