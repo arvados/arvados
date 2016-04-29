@@ -93,6 +93,36 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	resp.Write(block)
 }
 
+var errClientDisconnected = fmt.Errorf("client disconnected")
+
+// Get a buffer from the pool -- but give up and return a non-nil
+// error if resp implements http.CloseNotifier and tells us that the
+// client has disconnected before we get a buffer.
+func getBufferForResponseWriter(resp http.ResponseWriter, bufSize int) ([]byte, error) {
+	var closeNotifier <-chan bool
+	if resp, ok := resp.(http.CloseNotifier); ok {
+		closeNotifier = resp.CloseNotify()
+	}
+	var buf []byte
+	bufReady := make(chan []byte)
+	go func() {
+		bufReady <- bufs.Get(bufSize)
+		close(bufReady)
+	}()
+	select {
+	case buf = <-bufReady:
+		return buf, nil
+	case <-closeNotifier:
+		go func() {
+			// Even if closeNotifier happened first, we
+			// need to keep waiting for our buf so we can
+			// return it to the pool.
+			bufs.Put(<-bufReady)
+		}()
+		return nil, errClientDisconnected
+	}
+}
+
 // PutBlockHandler is a HandleFunc to address Put block requests.
 func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
@@ -116,8 +146,13 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	buf := bufs.Get(int(req.ContentLength))
-	_, err := io.ReadFull(req.Body, buf)
+	buf, err := getBufferForResponseWriter(resp, int(req.ContentLength))
+	if err != nil {
+		http.Error(resp, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+
+	_, err = io.ReadFull(req.Body, buf)
 	if err != nil {
 		http.Error(resp, err.Error(), 500)
 		bufs.Put(buf)
