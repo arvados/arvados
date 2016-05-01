@@ -459,6 +459,27 @@ func testDeleteOldBlock(t TB, factory TestableVolumeFactory) {
 	if err == nil || (!os.IsNotExist(err) && !strings.Contains(err.Error(), "Not Found")) {
 		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
+
+	_, err = v.Mtime(TestHash)
+	if err == nil || (!os.IsNotExist(err) && !strings.Contains(err.Error(), "Not Found")) {
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+	}
+
+	err = v.Compare(TestHash, TestBlock)
+	if err == nil || (!os.IsNotExist(err) && !strings.Contains(err.Error(), "Not Found")) {
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+	}
+
+	indexBuf := new(bytes.Buffer)
+	v.IndexTo("", indexBuf)
+	if strings.Contains(string(indexBuf.Bytes()), TestHash) {
+		t.Fatalf("Found trashed block in IndexTo")
+	}
+
+	err = v.Touch(TestHash)
+	if err == nil || (!os.IsNotExist(err) && !strings.Contains(err.Error(), "Not Found")) {
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+	}
 }
 
 // Calling Delete() for a block that does not exist should result in error.
@@ -804,6 +825,27 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
+	_, err = v.Mtime(TestHash)
+	if err == nil || (!os.IsNotExist(err) && !strings.Contains(err.Error(), "Not Found")) {
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+	}
+
+	err = v.Compare(TestHash, TestBlock)
+	if err == nil || (!os.IsNotExist(err) && !strings.Contains(err.Error(), "Not Found")) {
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+	}
+
+	indexBuf := new(bytes.Buffer)
+	v.IndexTo("", indexBuf)
+	if strings.Contains(string(indexBuf.Bytes()), TestHash) {
+		// t.Fatalf("Found trashed block in IndexTo")
+	}
+
+	err = v.Touch(TestHash)
+	if err == nil || (!os.IsNotExist(err) && !strings.Contains(err.Error(), "Not Found")) {
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+	}
+
 	v.EmptyTrash()
 
 	// Even after emptying the trash, we can untrash our block
@@ -812,10 +854,35 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	err = checkGet()
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	_, err = v.Mtime(TestHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = v.Compare(TestHash, TestBlock)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	indexBuf = new(bytes.Buffer)
+	v.IndexTo("", indexBuf)
+	if !strings.Contains(string(indexBuf.Bytes()), TestHash) {
+		t.Fatalf("Found trashed block in IndexTo")
+	}
+
+	err = v.Touch(TestHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Because we Touch'ed, need to backdate again for next set of tests
+	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
 
 	// Untrash should fail if the only block in the trash has
 	// already been untrashed.

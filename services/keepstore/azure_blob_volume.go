@@ -320,11 +320,11 @@ func (v *AzureBlobVolume) Mtime(loc string) (time.Time, error) {
 		return time.Time{}, err
 	}
 
-	last_write_at, err := strconv.ParseInt(metadata["last_write_at"], 10, 64)
+	lastWriteAt, err := strconv.ParseInt(metadata["last_write_at"], 10, 64)
 	if err != nil {
 		return time.Time{}, err
 	}
-	return time.Unix(last_write_at, 0), nil
+	return time.Unix(lastWriteAt, 0), nil
 }
 
 // IndexTo writes a list of Keep blocks that are stored in the
@@ -354,6 +354,9 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 				// value.
 				continue
 			}
+			//if b.Metadata["expired_at"] != "" {
+			//	continue
+			//}
 			fmt.Fprintf(writer, "%s+%d %d\n", b.Name, b.Properties.ContentLength, t.Unix())
 		}
 		if resp.NextMarker == "" {
