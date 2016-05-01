@@ -814,7 +814,7 @@ func IssueRequest(rt *RequestTester) *httptest.ResponseRecorder {
 	if rt.apiToken != "" {
 		req.Header.Set("Authorization", "OAuth2 "+rt.apiToken)
 	}
-	loggingRouter := MakeLoggingRESTRouter()
+	loggingRouter := MakeRESTRouter()
 	loggingRouter.ServeHTTP(response, req)
 	return response
 }

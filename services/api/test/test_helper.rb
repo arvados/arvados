@@ -44,6 +44,10 @@ class ActiveSupport::TestCase
 
   include ArvadosTestSupport
 
+  setup do
+    Rails.logger.warn "\n\n#{'=' * 70}\n#{self.class}\##{method_name}\n#{'-' * 70}\n\n"
+  end
+
   teardown do
     Thread.current[:api_client_ip_address] = nil
     Thread.current[:api_client_authorization] = nil

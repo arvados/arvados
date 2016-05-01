@@ -47,6 +47,8 @@ Usage of ./keepstore:
   -enforce-permissions=false: Enforce permission signatures on requests.
   -listen=":25107": Listening address, in the form "host:port". e.g., 10.0.1.24:8000. Omit the host part to listen on all interfaces.
   -max-buffers=128: Maximum RAM to use for data buffers, given in multiples of block size (64 MiB). When this limit is reached, HTTP requests requiring buffers (like GET and PUT) will wait for buffer space to be released.
+  -max-requests int
+   Maximum concurrent requests. When this limit is reached, new requests will receive 503 responses. Note: this limit does not include idle connections from clients using HTTP keepalive, so it does not strictly limit the number of concurrent connections. (default 2 * max-buffers)
   -never-delete=false: If set, nothing will be deleted. HTTP 405 will be returned for valid DELETE requests.
   -permission-key-file="": Synonym for -blob-signing-key-file.
   -permission-ttl=0: Synonym for -blob-signature-ttl.

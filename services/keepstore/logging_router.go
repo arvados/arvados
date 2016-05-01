@@ -4,7 +4,6 @@ package main
 // LoggingResponseWriter
 
 import (
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"strings"
@@ -44,13 +43,7 @@ func (loggingWriter *LoggingResponseWriter) Write(data []byte) (int, error) {
 
 // LoggingRESTRouter is used to add logging capabilities to mux.Router
 type LoggingRESTRouter struct {
-	router *mux.Router
-}
-
-// MakeLoggingRESTRouter initializes LoggingRESTRouter
-func MakeLoggingRESTRouter() *LoggingRESTRouter {
-	router := MakeRESTRouter()
-	return (&LoggingRESTRouter{router})
+	router http.Handler
 }
 
 func (loggingRouter *LoggingRESTRouter) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
