@@ -26,4 +26,8 @@ export CRUNCH_JOB_DOCKER_BIN=docker
 export HOME=/tmp/$1
 
 cd /usr/src/arvados/services/api
-exec bundle exec ./script/crunch-dispatch.rb development
+if test "$1" = "crunch0" ; then
+    exec bundle exec ./script/crunch-dispatch.rb development --jobs --pipelines
+else
+    exec bundle exec ./script/crunch-dispatch.rb development --jobs
+fi
