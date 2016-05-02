@@ -92,7 +92,11 @@ class BaseComputeNodeDriver(RetryMixin):
           value search for a `term` match on each item.  Returns the
           object's 'id' attribute by default.
         """
-        items = getattr(self, list_method)(**kwargs)
+        try:
+            list_func = getattr(self, list_method)
+        except AttributeError:
+            list_func = getattr(self.real, list_method)
+        items = list_func(**kwargs)
         results = [item for item in items if key(item) == term]
         count = len(results)
         if count != 1:
