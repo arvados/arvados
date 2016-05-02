@@ -22,6 +22,13 @@ class ComputeNodeDriverTestCase(unittest.TestCase):
         self.assertIs(image, driver.search_for_now('id_1', 'list_images'))
         self.assertEqual(1, self.driver_mock().list_images.call_count)
 
+    def test_search_for_now_uses_private_method(self):
+        net = testutil.cloud_object_mock(1)
+        self.driver_mock().ex_list_networks.return_value = [net]
+        driver = driver_base.BaseComputeNodeDriver({}, {}, {}, self.driver_mock)
+        self.assertIs(net, driver.search_for_now('id_1', 'ex_list_networks'))
+        self.assertEqual(1, self.driver_mock().ex_list_networks.call_count)
+
     def test_search_for_now_raises_ValueError_on_zero_results(self):
         self.driver_mock().list_images.return_value = []
         driver = driver_base.BaseComputeNodeDriver({}, {}, {}, self.driver_mock)
