@@ -226,6 +226,23 @@ class ResumeCache(object):
         self.cache_file.seek(0)
         return json.load(self.cache_file)
 
+    def check_cache(self, api_client=None, num_retries=0):
+        try:
+            state = self.load()
+            locator = None
+            try:
+                if "_finished_streams" in state and len(state["_finished_streams"]) > 0:
+                    locator = state["_finished_streams"][0][1][0]
+                elif "_current_stream_locators" in state and len(state["_current_stream_locators"]) > 0:
+                    locator = state["_current_stream_locators"][0]
+                if locator is not None:
+                    kc = arvados.keep.KeepClient(api_client=api_client)
+                    kc.head(locator, num_retries=num_retries)
+            except Exception as e:
+                self.restart()
+        except (ValueError):
+            pass
+
     def save(self, data):
         try:
             new_cache_fd, new_cache_name = tempfile.mkstemp(
@@ -438,6 +455,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     if args.resume:
         try:
             resume_cache = ResumeCache(ResumeCache.make_path(args))
+            resume_cache.check_cache(api_client=api_client, num_retries=args.retries)
         except (IOError, OSError, ValueError):
             pass  # Couldn't open cache directory/file.  Continue without it.
         except ResumeCacheConflict:

@@ -127,6 +127,43 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
             else:
                 config['ARVADOS_API_HOST'] = orig_host
 
+    @mock.patch('arvados.keep.KeepClient.head')
+    def test_resume_cache_with_current_stream_locators(self, keep_client_head):
+        keep_client_head.side_effect = [True]
+        thing = {}
+        thing['_current_stream_locators'] = ['098f6bcd4621d373cade4e832627b4f6+4', '1f253c60a2306e0ee12fb6ce0c587904+6']
+        with tempfile.NamedTemporaryFile() as cachefile:
+            self.last_cache = arv_put.ResumeCache(cachefile.name)
+        self.last_cache.save(thing)
+        self.last_cache.close()
+        resume_cache = arv_put.ResumeCache(self.last_cache.filename)
+        self.assertNotEqual(None, resume_cache)
+
+    @mock.patch('arvados.keep.KeepClient.head')
+    def test_resume_cache_with_finished_streams(self, keep_client_head):
+        keep_client_head.side_effect = [True]
+        thing = {}
+        thing['_finished_streams'] = [['.', ['098f6bcd4621d373cade4e832627b4f6+4', '1f253c60a2306e0ee12fb6ce0c587904+6']]]
+        with tempfile.NamedTemporaryFile() as cachefile:
+            self.last_cache = arv_put.ResumeCache(cachefile.name)
+        self.last_cache.save(thing)
+        self.last_cache.close()
+        resume_cache = arv_put.ResumeCache(self.last_cache.filename)
+        self.assertNotEqual(None, resume_cache)
+
+    @mock.patch('arvados.keep.KeepClient.head')
+    def test_resume_cache_with_finished_streams_error_on_head(self, keep_client_head):
+        keep_client_head.side_effect = Exception('Locator not found')
+        thing = {}
+        thing['_finished_streams'] = [['.', ['098f6bcd4621d373cade4e832627b4f6+4', '1f253c60a2306e0ee12fb6ce0c587904+6']]]
+        with tempfile.NamedTemporaryFile() as cachefile:
+            self.last_cache = arv_put.ResumeCache(cachefile.name)
+        self.last_cache.save(thing)
+        self.last_cache.close()
+        resume_cache = arv_put.ResumeCache(self.last_cache.filename)
+        self.assertNotEqual(None, resume_cache)
+        self.assertRaises(None, resume_cache.check_cache())
+
     def test_basic_cache_storage(self):
         thing = ['test', 'list']
         with tempfile.NamedTemporaryFile() as cachefile:
