@@ -548,9 +548,12 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
             status = 1
 
     # Print the locator (uuid) of the new collection.
-    stdout.write(output)
-    if not output.endswith('\n'):
-        stdout.write('\n')
+    try:
+        stdout.write(output)
+        if not output.endswith('\n'):
+            stdout.write('\n')
+    except NameError:
+        status = status or 1
 
     for sigcode, orig_handler in orig_signal_handlers.items():
         signal.signal(sigcode, orig_handler)
