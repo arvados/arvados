@@ -17,7 +17,7 @@ module LoadParam
       @where = params[:where]
     elsif params[:where].is_a? String
       begin
-        @where = Oj.load(params[:where])
+        @where = Oj.strict_load(params[:where])
         raise unless @where.is_a? Hash
       rescue
         raise ArgumentError.new("Could not parse \"where\" param as an object")
@@ -33,7 +33,7 @@ module LoadParam
       @filters += params[:filters]
     elsif params[:filters].is_a? String and !params[:filters].empty?
       begin
-        f = Oj.load params[:filters]
+        f = Oj.strict_load params[:filters]
         if not f.nil?
           raise unless f.is_a? Array
           @filters += f
@@ -72,7 +72,7 @@ module LoadParam
       (case params[:order]
        when String
          if params[:order].starts_with? '['
-           od = Oj.load(params[:order])
+           od = Oj.strict_load(params[:order])
            raise unless od.is_a? Array
            od
          else
@@ -142,7 +142,7 @@ module LoadParam
       @select = params[:select]
     when String
       begin
-        @select = Oj.load params[:select]
+        @select = Oj.strict_load params[:select]
         raise unless @select.is_a? Array or @select.nil?
       rescue
         raise ArgumentError.new("Could not parse \"select\" param as an array")
