@@ -37,7 +37,7 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
 
     def test_empty_list(self):
         answer = arvados.api('v1').humans().list(
-            filters=[['uuid', 'is', None]]).execute()
+            filters=[['uuid', '=', None]]).execute()
         self.assertEqual(answer['items_available'], len(answer['items']))
 
     def test_nonempty_list(self):

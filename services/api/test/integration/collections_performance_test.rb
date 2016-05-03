@@ -14,7 +14,7 @@ class CollectionsApiPerformanceTest < ActionDispatch::IntegrationTest
                     api_token: api_token(:active))
     end
     json = time_block "JSON encode #{bigmanifest.length>>20}MiB manifest" do
-      Oj.dump({manifest_text: bigmanifest})
+      Oj.dump({"manifest_text" => bigmanifest})
     end
     time_block 'create' do
       post '/arvados/v1/collections', {collection: json}, auth(:active)
