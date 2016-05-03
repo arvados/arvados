@@ -25,14 +25,13 @@ Gem::Specification.new do |s|
   s.executables << "arv-tag"
   s.required_ruby_version = '>= 2.1.0'
   s.add_runtime_dependency 'arvados', '~> 0.1', '>= 0.1.20150128223554'
-  s.add_runtime_dependency 'google-api-client', '~> 0.6.3', '>= 0.6.3'
+  s.add_runtime_dependency 'google-api-client', '~> 0.6', '>= 0.6.3', '<0.9'
   s.add_runtime_dependency 'activesupport', '~> 3.2', '>= 3.2.13'
   s.add_runtime_dependency 'json', '~> 1.7', '>= 1.7.7'
   s.add_runtime_dependency 'trollop', '~> 2.0'
   s.add_runtime_dependency 'andand', '~> 1.3', '>= 1.3.3'
   s.add_runtime_dependency 'oj', '~> 2.0', '>= 2.0.3'
   s.add_runtime_dependency 'curb', '~> 0.8'
-  s.add_runtime_dependency('jwt', '>= 0.1.5', '< 1.0.0')
   s.homepage    =
     'https://arvados.org'
 end
