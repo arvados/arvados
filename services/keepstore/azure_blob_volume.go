@@ -210,7 +210,7 @@ func (v *AzureBlobVolume) get(loc string, buf []byte) (int, error) {
 			if startPos == 0 && endPos == expectSize {
 				rdr, err = v.bsClient.GetBlob(v.containerName, loc)
 			} else {
-				rdr, err = v.bsClient.GetBlobRange(v.containerName, loc, fmt.Sprintf("%d-%d", startPos, endPos-1))
+				rdr, err = v.bsClient.GetBlobRange(v.containerName, loc, fmt.Sprintf("%d-%d", startPos, endPos-1), nil)
 			}
 			if err != nil {
 				errors[p] = err
