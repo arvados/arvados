@@ -4,26 +4,27 @@
 
 import argparse
 import arvados
-import arvados.events
+import arvados.collection
 import arvados.commands.keepdocker
 import arvados.commands.run
-import arvados.collection
+import arvados.events
 import arvados.util
+import copy
+import cwltool.docker
 import cwltool.draft2tool
-import cwltool.workflow
+from cwltool.errors import WorkflowException
 import cwltool.main
 from cwltool.process import shortname
-from cwltool.errors import WorkflowException
-import threading
-import cwltool.docker
+import cwltool.workflow
 import fnmatch
-import logging
-import re
-import os
-import sys
 import functools
 import json
+import logging
+import os
 import pkg_resources  # part of setuptools
+import re
+import sys
+import threading
 
 from cwltool.process import get_feature, adjustFiles, scandeps
 from arvados.api import OrderedJsonModel
@@ -322,7 +323,13 @@ class RunnerJob(object):
             for s in tool.steps:
                 self.upload_docker(s.embedded_tool)
 
-    def run(self, dry_run=False, pull_image=True, **kwargs):
+    def arvados_job_spec(self, dry_run=False, pull_image=True, **kwargs):
+        """Create an Arvados job specification for this workflow.
+
+        The returned dict can be used to create a job (i.e., passed as
+        the +body+ argument to jobs().create()), or as a component in
+        a pipeline template or pipeline instance.
+        """
         self.upload_docker(self.tool)
 
         workflowfiles = set()
@@ -364,9 +371,7 @@ class RunnerJob(object):
             del self.job_order["id"]
 
         self.job_order["cwl:tool"] = workflowmapper.mapper(self.tool.tool["id"])[1]
-
-        response = self.arvrunner.api.jobs().create(body={
-            "owner_uuid": self.arvrunner.project_uuid,
+        return {
             "script": "cwl-runner",
             "script_version": "master",
             "repository": "arvados",
@@ -374,9 +379,19 @@ class RunnerJob(object):
             "runtime_constraints": {
                 "docker_image": "arvados/jobs"
             }
-        }, find_or_create=self.enable_reuse).execute(num_retries=self.arvrunner.num_retries)
+        }
 
-        self.arvrunner.jobs[response["uuid"]] = self
+    def run(self, *args, **kwargs):
+        job_spec = self.arvados_job_spec(*args, **kwargs)
+        job_spec.setdefault("owner_uuid", self.arvrunner.project_uuid)
+
+        response = self.arvrunner.api.jobs().create(
+            body=job_spec,
+            find_or_create=self.enable_reuse
+        ).execute(num_retries=self.arvrunner.num_retries)
+
+        self.uuid = response["uuid"]
+        self.arvrunner.jobs[self.uuid] = self
 
         logger.info("Submitted job %s", response["uuid"])
 
@@ -400,6 +415,99 @@ class RunnerJob(object):
             self.arvrunner.output_callback(outputs, processStatus)
         finally:
             del self.arvrunner.jobs[record["uuid"]]
+
+
+class RunnerTemplate(object):
+    """An Arvados pipeline template that invokes a CWL workflow."""
+
+    type_to_dataclass = {
+        'boolean': 'boolean',
+        'File': 'File',
+        'float': 'number',
+        'int': 'number',
+        'string': 'text',
+    }
+
+    def __init__(self, runner, tool, job_order, enable_reuse):
+        self.runner = runner
+        self.tool = tool
+        self.job = RunnerJob(
+            runner=runner,
+            tool=tool,
+            job_order=job_order,
+            enable_reuse=enable_reuse)
+
+    def pipeline_component_spec(self):
+        """Return a component that Workbench and a-r-p-i will understand.
+
+        Specifically, translate CWL input specs to Arvados pipeline
+        format, like {"dataclass":"File","value":"xyz"}.
+        """
+        spec = self.job.arvados_job_spec()
+
+        # Most of the component spec is exactly the same as the job
+        # spec (script, script_version, etc.).
+        # spec['script_parameters'] isn't right, though. A component
+        # spec's script_parameters hash is a translation of
+        # self.tool.tool['inputs'] with defaults/overrides taken from
+        # the job order. So we move the job parameters out of the way
+        # and build a new spec['script_parameters'].
+        job_params = spec['script_parameters']
+        spec['script_parameters'] = {}
+
+        for param in self.tool.tool['inputs']:
+            param = copy.deepcopy(param)
+
+            # Data type and "required" flag...
+            types = param['type']
+            if not isinstance(types, list):
+                types = [types]
+            param['required'] = 'null' not in types
+            non_null_types = set(types) - set(['null'])
+            if len(non_null_types) == 1:
+                the_type = [c for c in non_null_types][0]
+                dataclass = self.type_to_dataclass.get(the_type)
+                if dataclass:
+                    param['dataclass'] = dataclass
+            # Note: If we didn't figure out a single appropriate
+            # dataclass, we just left that attribute out.  We leave
+            # the "type" attribute there in any case, which might help
+            # downstream.
+
+            # Title and description...
+            title = param.pop('label', '')
+            descr = param.pop('description', '').rstrip('\n')
+            if title:
+                param['title'] = title
+            if descr:
+                param['description'] = descr
+
+            # Fill in the value from the current job order, if any.
+            param_id = shortname(param.pop('id'))
+            value = job_params.get(param_id)
+            if value is None:
+                pass
+            elif not isinstance(value, dict):
+                param['value'] = value
+            elif param.get('dataclass') == 'File' and value.get('path'):
+                param['value'] = value['path']
+
+            spec['script_parameters'][param_id] = param
+        spec['script_parameters']['cwl:tool'] = job_params['cwl:tool']
+        return spec
+
+    def save(self):
+        job_spec = self.pipeline_component_spec()
+        response = self.runner.api.pipeline_templates().create(body={
+            "components": {
+                self.job.name: job_spec,
+            },
+            "name": self.job.name,
+            "owner_uuid": self.runner.project_uuid,
+        }).execute(num_retries=self.runner.num_retries)
+        self.uuid = response["uuid"]
+        logger.info("Created template %s", self.uuid)
+
 
 class ArvPathMapper(cwltool.pathmapper.PathMapper):
     """Convert container-local paths to and from Keep collection ids."""
@@ -502,7 +610,6 @@ class ArvCwlRunner(object):
                                                      body={"state": "Failed"}).execute(num_retries=self.num_retries)
         self.final_output = out
 
-
     def on_message(self, event):
         if "object_uuid" in event:
             if event["object_uuid"] in self.jobs and event["event_type"] == "update":
@@ -541,11 +648,17 @@ class ArvCwlRunner(object):
         self.project_uuid = args.project_uuid if args.project_uuid else useruuid
         self.pipeline = None
 
+        if args.create_template:
+            tmpl = RunnerTemplate(self, tool, job_order, args.enable_reuse)
+            tmpl.save()
+            # cwltool.main will write our return value to stdout.
+            return tmpl.uuid
+
         if args.submit:
             runnerjob = RunnerJob(self, tool, job_order, args.enable_reuse)
             if not args.wait:
                 runnerjob.run()
-                return
+                return runnerjob.uuid
 
         events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#job"]], self.on_message)
 
@@ -655,6 +768,7 @@ def main(args, stdout, stderr, api_client=None):
                         default=True, dest="submit")
     exgroup.add_argument("--local", action="store_false", help="Run workflow on local host (submits jobs to Arvados).",
                         default=True, dest="submit")
+    exgroup.add_argument("--create-template", action="store_true", help="Create an Arvados pipeline template.")
 
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--wait", action="store_true", help="After submitting workflow runner job, wait for completion.",

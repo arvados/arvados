@@ -19,7 +19,7 @@ from cStringIO import StringIO
 import arvados
 import arvados.commands.put as arv_put
 
-from arvados_testutil import ArvadosBaseTestCase
+from arvados_testutil import ArvadosBaseTestCase, fake_httplib2_response
 import run_test_server
 
 class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
@@ -126,6 +126,43 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
                 del config['ARVADOS_API_HOST']
             else:
                 config['ARVADOS_API_HOST'] = orig_host
+
+    @mock.patch('arvados.keep.KeepClient.head')
+    def test_resume_cache_with_current_stream_locators(self, keep_client_head):
+        keep_client_head.side_effect = [True]
+        thing = {}
+        thing['_current_stream_locators'] = ['098f6bcd4621d373cade4e832627b4f6+4', '1f253c60a2306e0ee12fb6ce0c587904+6']
+        with tempfile.NamedTemporaryFile() as cachefile:
+            self.last_cache = arv_put.ResumeCache(cachefile.name)
+        self.last_cache.save(thing)
+        self.last_cache.close()
+        resume_cache = arv_put.ResumeCache(self.last_cache.filename)
+        self.assertNotEqual(None, resume_cache)
+
+    @mock.patch('arvados.keep.KeepClient.head')
+    def test_resume_cache_with_finished_streams(self, keep_client_head):
+        keep_client_head.side_effect = [True]
+        thing = {}
+        thing['_finished_streams'] = [['.', ['098f6bcd4621d373cade4e832627b4f6+4', '1f253c60a2306e0ee12fb6ce0c587904+6']]]
+        with tempfile.NamedTemporaryFile() as cachefile:
+            self.last_cache = arv_put.ResumeCache(cachefile.name)
+        self.last_cache.save(thing)
+        self.last_cache.close()
+        resume_cache = arv_put.ResumeCache(self.last_cache.filename)
+        self.assertNotEqual(None, resume_cache)
+
+    @mock.patch('arvados.keep.KeepClient.head')
+    def test_resume_cache_with_finished_streams_error_on_head(self, keep_client_head):
+        keep_client_head.side_effect = Exception('Locator not found')
+        thing = {}
+        thing['_finished_streams'] = [['.', ['098f6bcd4621d373cade4e832627b4f6+4', '1f253c60a2306e0ee12fb6ce0c587904+6']]]
+        with tempfile.NamedTemporaryFile() as cachefile:
+            self.last_cache = arv_put.ResumeCache(cachefile.name)
+        self.last_cache.save(thing)
+        self.last_cache.close()
+        resume_cache = arv_put.ResumeCache(self.last_cache.filename)
+        self.assertNotEqual(None, resume_cache)
+        self.assertRaises(None, resume_cache.check_cache())
 
     def test_basic_cache_storage(self):
         thing = ['test', 'list']
@@ -422,6 +459,20 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
         self.assertRaises(SystemExit,
                           self.call_main_with_args,
                           ['--project-uuid', self.Z_UUID, '--stream'])
+
+    def test_api_error_handling(self):
+        collections_mock = mock.Mock(name='arv.collections()')
+        coll_create_mock = collections_mock().create().execute
+        coll_create_mock.side_effect = arvados.errors.ApiError(
+            fake_httplib2_response(403), '{}')
+        arv_put.api_client = arvados.api('v1')
+        arv_put.api_client.collections = collections_mock
+        with self.assertRaises(SystemExit) as exc_test:
+            self.call_main_with_args(['/dev/null'])
+        self.assertLess(0, exc_test.exception.args[0])
+        self.assertLess(0, coll_create_mock.call_count)
+        self.assertEqual("", self.main_stdout.getvalue())
+
 
 class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                             ArvadosBaseTestCase):

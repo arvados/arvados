@@ -56,7 +56,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     ws_helper do |ws|
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         status = d["status"]
         ws.close
       end
@@ -75,7 +75,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         status = d["status"]
         ws.close
       end
@@ -97,7 +97,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -134,7 +134,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -174,7 +174,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -213,7 +213,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -257,7 +257,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -297,7 +297,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -342,7 +342,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -390,7 +390,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -435,7 +435,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -507,7 +507,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -531,7 +531,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         status = d["status"]
         ws.close
       end
@@ -549,7 +549,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         status = d["status"]
         ws.close
       end
@@ -567,7 +567,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         status = d["status"]
         ws.close
       end
@@ -590,7 +590,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         case state
         when (1..EventBus::MAX_FILTERS)
           assert_equal 200, d["status"]
@@ -625,7 +625,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -664,7 +664,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.load event.data
+        d = Oj.strict_load event.data
         case state
         when 1
           assert_equal 200, d["status"]

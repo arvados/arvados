@@ -26,7 +26,7 @@ require 'mocha/mini_test'
 
 module ArvadosTestSupport
   def json_response
-    Oj.load response.body
+    Oj.strict_load response.body
   end
 
   def api_token(api_client_auth_name)

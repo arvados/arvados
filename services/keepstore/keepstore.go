@@ -91,6 +91,7 @@ var (
 	TooLongError        = &KeepError{413, "Block is too large"}
 	MethodDisabledError = &KeepError{405, "Method disabled"}
 	ErrNotImplemented   = &KeepError{500, "Unsupported configuration"}
+	ErrClientDisconnect = &KeepError{503, "Client disconnected"}
 )
 
 func (e *KeepError) Error() string {

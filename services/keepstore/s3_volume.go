@@ -153,20 +153,18 @@ func (v *S3Volume) Check() error {
 	return nil
 }
 
-func (v *S3Volume) Get(loc string) ([]byte, error) {
+func (v *S3Volume) Get(loc string, buf []byte) (int, error) {
 	rdr, err := v.Bucket.GetReader(loc)
 	if err != nil {
-		return nil, v.translateError(err)
+		return 0, v.translateError(err)
 	}
 	defer rdr.Close()
-	buf := bufs.Get(BlockSize)
 	n, err := io.ReadFull(rdr, buf)
 	switch err {
 	case nil, io.EOF, io.ErrUnexpectedEOF:
-		return buf[:n], nil
+		return n, nil
 	default:
-		bufs.Put(buf)
-		return nil, v.translateError(err)
+		return 0, v.translateError(err)
 	}
 }
 

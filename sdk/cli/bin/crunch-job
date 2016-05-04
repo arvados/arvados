@@ -416,7 +416,7 @@ if ($docker_locator = $Job->{docker_image_locator}) {
   Log (undef, "docker image hash is $docker_hash");
   $docker_stream =~ s/^\.//;
   my $docker_install_script = qq{
-if $docker_bin images -q --no-trunc --all | grep -qxF \Q$docker_hash\E; then
+if $docker_bin images -q --no-trunc --all | grep -xF \Q$docker_hash\E >/dev/null; then
     exit 0
 fi
 declare -a exit_codes=("\${PIPESTATUS[@]}")

@@ -10,17 +10,14 @@ import (
 // for example, a single mounted disk, a RAID array, an Amazon S3 volume,
 // etc.
 type Volume interface {
-	// Get a block. IFF the returned error is nil, the caller must
-	// put the returned slice back into the buffer pool when it's
-	// finished with it. (Otherwise, the buffer pool will be
-	// depleted and eventually -- when all available buffers are
-	// used and not returned -- operations will reach deadlock.)
+	// Get a block: copy the block data into buf, and return the
+	// number of bytes copied.
 	//
 	// loc is guaranteed to consist of 32 or more lowercase hex
 	// digits.
 	//
-	// Get should not verify the integrity of the returned data:
-	// it should just return whatever was found in its backing
+	// Get should not verify the integrity of the data: it should
+	// just return whatever was found in its backing
 	// store. (Integrity checking is the caller's responsibility.)
 	//
 	// If an error is encountered that prevents it from
@@ -36,10 +33,12 @@ type Volume interface {
 	// access log if the block is not found on any other volumes
 	// either).
 	//
-	// If the data in the backing store is bigger than BlockSize,
-	// Get is permitted to return an error without reading any of
-	// the data.
-	Get(loc string) ([]byte, error)
+	// If the data in the backing store is bigger than len(buf),
+	// then Get is permitted to return an error without reading
+	// any of the data.
+	//
+	// len(buf) will not exceed BlockSize.
+	Get(loc string, buf []byte) (int, error)
 
 	// Compare the given data with the stored data (i.e., what Get
 	// would return). If equal, return nil. If not, return

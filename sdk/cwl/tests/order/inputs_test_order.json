@@ -1,0 +1,9 @@
+{
+    "fileInput": {
+        "class": "File",
+        "path": "../input/blorp.txt"
+    },
+    "boolInput": true,
+    "floatInput": 1.234,
+    "optionalFloatInput": null
+}

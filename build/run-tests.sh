@@ -494,22 +494,23 @@ do_test_once() {
             # before trying "go test". Otherwise, coverage-reporting
             # mode makes Go show the wrong line numbers when reporting
             # compilation errors.
+            go get -t "git.curoverse.com/arvados.git/$1" || return 1
             if [[ -n "${testargs[$1]}" ]]
             then
                 # "go test -check.vv giturl" doesn't work, but this
                 # does:
-                cd "$WORKSPACE/$1" && \
-                    go get -t "git.curoverse.com/arvados.git/$1" && \
-                    go test ${short:+-short} ${coverflags[@]} ${testargs[$1]}
+                cd "$WORKSPACE/$1" && go test ${short:+-short} ${coverflags[@]} ${testargs[$1]}
             else
                 # The above form gets verbose even when testargs is
                 # empty, so use this form in such cases:
-                go get -t "git.curoverse.com/arvados.git/$1" && \
-                    go test ${short:+-short} ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
+                go test ${short:+-short} ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
             fi
             result="$?"
-            go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"
-            rm "$WORKSPACE/tmp/.$covername.tmp"
+            if [[ -f "$WORKSPACE/tmp/.$covername.tmp" ]]
+            then
+                go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"
+                rm "$WORKSPACE/tmp/.$covername.tmp"
+            fi
         elif [[ "$2" == "pip" ]]
         then
             # $3 can name a path directory for us to use, including trailing

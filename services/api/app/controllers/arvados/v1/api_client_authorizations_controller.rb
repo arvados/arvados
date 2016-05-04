@@ -15,7 +15,7 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
       new(user_id: system_user.id,
           api_client_id: params[:api_client_id] || current_api_client.andand.id,
           created_by_ip_address: remote_ip,
-          scopes: Oj.load(params[:scopes] || '["all"]'))
+          scopes: Oj.strict_load(params[:scopes] || '["all"]'))
     @object.save!
     show
   end

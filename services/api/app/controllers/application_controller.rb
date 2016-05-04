@@ -327,7 +327,7 @@ class ApplicationController < ActionController::Base
     return @attrs if @attrs
     @attrs = params[resource_name]
     if @attrs.is_a? String
-      @attrs = Oj.load @attrs, symbol_keys: true
+      @attrs = Oj.strict_load @attrs, symbol_keys: true
     end
     unless @attrs.is_a? Hash
       message = "No #{resource_name}"
@@ -441,7 +441,7 @@ class ApplicationController < ActionController::Base
 
   def load_json_value(hash, key, must_be_class=nil)
     if hash[key].is_a? String
-      hash[key] = Oj.load(hash[key], symbol_keys: false)
+      hash[key] = Oj.strict_load(hash[key], symbol_keys: false)
       if must_be_class and !hash[key].is_a? must_be_class
         raise TypeError.new("parameter #{key.to_s} must be a #{must_be_class.to_s}")
       end

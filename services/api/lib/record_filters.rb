@@ -126,6 +126,8 @@ module RecordFilters
             end
           end
           cond_out << cond.join(' OR ')
+        else
+          raise ArgumentError.new("Invalid operator '#{operator}'")
         end
       end
       conds_out << cond_out.join(' OR ') if cond_out.any?

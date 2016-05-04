@@ -1,6 +1,7 @@
 require 'minitest/autorun'
 require 'digest/md5'
 require 'active_support/core_ext'
+require 'tempfile'
 
 class TestCollectionCreate < Minitest::Test
   def setup
@@ -16,7 +17,22 @@ class TestCollectionCreate < Minitest::Test
     end
     assert /^([0-9a-z]{5}-4zz18-[0-9a-z]{15})?$/.match(out)
     assert_equal '', err
-    $stderr.puts err
+  end
+
+  def test_read_resource_object_from_file
+    tempfile = Tempfile.new('collection')
+    begin
+      tempfile.write({manifest_text: foo_manifest}.to_json)
+      tempfile.close
+      out, err = capture_subprocess_io do
+        assert_arv('--format', 'uuid',
+                   'collection', 'create', '--collection', tempfile.path)
+      end
+      assert /^([0-9a-z]{5}-4zz18-[0-9a-z]{15})?$/.match(out)
+      assert_equal '', err
+    ensure
+      tempfile.unlink
+    end
   end
 
   protected

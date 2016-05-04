@@ -162,7 +162,7 @@ class EventBus
     begin
       begin
         # Parse event data as JSON
-        p = (Oj.load event.data).symbolize_keys
+        p = (Oj.strict_load event.data).symbolize_keys
         filter = Filter.new(p)
       rescue Oj::Error => e
         ws.send ({status: 400, message: "malformed request"}.to_json)

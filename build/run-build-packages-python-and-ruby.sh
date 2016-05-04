@@ -179,8 +179,8 @@ if [[ "$UPLOAD" != 0 ]]; then
   title "Start upload python packages"
   timer_reset
 
-  if [ "$GEM_BUILD_FAILURES" -eq 0 ]; then
-    /usr/local/arvados-dev/jenkins/run_upload_packages.py --workspace $WORKSPACE python
+  if [ "$PYTHON_BUILD_FAILURES" -eq 0 ]; then
+    /usr/local/arvados-dev/jenkins/run_upload_packages.py -v --workspace $WORKSPACE python
   else
     echo "Skipping python packages upload, there were errors building the packages"
   fi
@@ -190,8 +190,8 @@ if [[ "$UPLOAD" != 0 ]]; then
   title "Start upload ruby gems"
   timer_reset
 
-  if [ "$PYTHON_BUILD_FAILURES" -eq 0 ]; then
-    /usr/local/arvados-dev/jenkins/run_upload_packages.py --workspace $WORKSPACE gems
+  if [ "$GEM_BUILD_FAILURES" -eq 0 ]; then
+    /usr/local/arvados-dev/jenkins/run_upload_packages.py -v --workspace $WORKSPACE gems
   else
     echo "Skipping ruby gem upload, there were errors building the packages"
   fi
