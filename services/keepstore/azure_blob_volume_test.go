@@ -425,13 +425,12 @@ func TestAzureBlobVolumeRangeFenceposts(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		gotData, err := v.Get(hash)
+		gotData := make([]byte, len(data))
+		gotLen, err := v.Get(hash, gotData)
 		if err != nil {
 			t.Error(err)
 		}
 		gotHash := fmt.Sprintf("%x", md5.Sum(gotData))
-		gotLen := len(gotData)
-		bufs.Put(gotData)
 		if gotLen != size {
 			t.Error("length mismatch: got %d != %d", gotLen, size)
 		}
@@ -477,11 +476,10 @@ func TestAzureBlobVolumeCreateBlobRace(t *testing.T) {
 	// Wait for the stub's Put to create the empty blob
 	v.azHandler.race <- continuePut
 	go func() {
-		buf, err := v.Get(TestHash)
+		buf := make([]byte, len(TestBlock))
+		_, err := v.Get(TestHash, buf)
 		if err != nil {
 			t.Error(err)
-		} else {
-			bufs.Put(buf)
 		}
 		close(allDone)
 	}()
@@ -521,15 +519,15 @@ func TestAzureBlobVolumeCreateBlobRaceDeadline(t *testing.T) {
 	allDone := make(chan struct{})
 	go func() {
 		defer close(allDone)
-		buf, err := v.Get(TestHash)
+		buf := make([]byte, BlockSize)
+		n, err := v.Get(TestHash, buf)
 		if err != nil {
 			t.Error(err)
 			return
 		}
-		if len(buf) != 0 {
-			t.Errorf("Got %+q, expected empty buf", buf)
+		if n != 0 {
+			t.Errorf("Got %+q, expected empty buf", buf[:n])
 		}
-		bufs.Put(buf)
 	}()
 	select {
 	case <-allDone:

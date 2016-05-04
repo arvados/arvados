@@ -45,12 +45,13 @@ func testGetBlock(t TB, factory TestableVolumeManagerFactory, testHash string, t
 	testableVolumes[1].PutRaw(testHash, testBlock)
 
 	// Get should pass
-	buf, err := GetBlock(testHash)
+	buf := make([]byte, len(testBlock))
+	n, err := GetBlock(testHash, buf, nil)
 	if err != nil {
 		t.Fatalf("Error while getting block %s", err)
 	}
-	if bytes.Compare(buf, testBlock) != 0 {
-		t.Errorf("Put succeeded but Get returned %+v, expected %+v", buf, testBlock)
+	if bytes.Compare(buf[:n], testBlock) != 0 {
+		t.Errorf("Put succeeded but Get returned %+v, expected %+v", buf[:n], testBlock)
 	}
 }
 
@@ -64,9 +65,10 @@ func testPutRawBadDataGetBlock(t TB, factory TestableVolumeManagerFactory,
 	testableVolumes[1].PutRaw(testHash, badData)
 
 	// Get should fail
-	_, err := GetBlock(testHash)
+	buf := make([]byte, BlockSize)
+	size, err := GetBlock(testHash, buf, nil)
 	if err == nil {
-		t.Fatalf("Expected error while getting corrupt block %v", testHash)
+		t.Fatalf("Got %+q, expected error while getting corrupt block %v", buf[:size], testHash)
 	}
 }
 
@@ -85,11 +87,12 @@ func testPutBlock(t TB, factory TestableVolumeManagerFactory, testHash string, t
 	}
 
 	// Check that PutBlock stored the data as expected
-	buf, err := GetBlock(testHash)
+	buf := make([]byte, BlockSize)
+	size, err := GetBlock(testHash, buf, nil)
 	if err != nil {
 		t.Fatalf("Error during GetBlock for %q: %s", testHash, err)
-	} else if bytes.Compare(buf, testBlock) != 0 {
-		t.Errorf("Get response incorrect. Expected %q; found %q", testBlock, buf)
+	} else if bytes.Compare(buf[:size], testBlock) != 0 {
+		t.Errorf("Get response incorrect. Expected %q; found %q", testBlock, buf[:size])
 	}
 }
 
@@ -109,10 +112,11 @@ func testPutBlockCorrupt(t TB, factory TestableVolumeManagerFactory,
 
 	// Put succeeded and overwrote the badData in one volume,
 	// and Get should return the testBlock now, ignoring the bad data.
-	buf, err := GetBlock(testHash)
+	buf := make([]byte, BlockSize)
+	size, err := GetBlock(testHash, buf, nil)
 	if err != nil {
 		t.Fatalf("Error during GetBlock for %q: %s", testHash, err)
-	} else if bytes.Compare(buf, testBlock) != 0 {
-		t.Errorf("Get response incorrect. Expected %q; found %q", testBlock, buf)
+	} else if bytes.Compare(buf[:size], testBlock) != 0 {
+		t.Errorf("Get response incorrect. Expected %q; found %q", testBlock, buf[:size])
 	}
 }

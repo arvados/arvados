@@ -79,18 +79,61 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	block, err := GetBlock(mux.Vars(req)["hash"])
+	// TODO: Probe volumes to check whether the block _might_
+	// exist. Some volumes/types could support a quick existence
+	// check without causing other operations to suffer. If all
+	// volumes support that, and assure us the block definitely
+	// isn't here, we can return 404 now instead of waiting for a
+	// buffer.
+
+	buf, err := getBufferForResponseWriter(resp, bufs, BlockSize)
 	if err != nil {
-		// This type assertion is safe because the only errors
-		// GetBlock can return are DiskHashError or NotFoundError.
-		http.Error(resp, err.Error(), err.(*KeepError).HTTPCode)
+		http.Error(resp, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
-	defer bufs.Put(block)
+	defer bufs.Put(buf)
 
-	resp.Header().Set("Content-Length", strconv.Itoa(len(block)))
+	size, err := GetBlock(mux.Vars(req)["hash"], buf, resp)
+	if err != nil {
+		code := http.StatusInternalServerError
+		if err, ok := err.(*KeepError); ok {
+			code = err.HTTPCode
+		}
+		http.Error(resp, err.Error(), code)
+		return
+	}
+
+	resp.Header().Set("Content-Length", strconv.Itoa(size))
 	resp.Header().Set("Content-Type", "application/octet-stream")
-	resp.Write(block)
+	resp.Write(buf[:size])
+}
+
+// Get a buffer from the pool -- but give up and return a non-nil
+// error if resp implements http.CloseNotifier and tells us that the
+// client has disconnected before we get a buffer.
+func getBufferForResponseWriter(resp http.ResponseWriter, bufs *bufferPool, bufSize int) ([]byte, error) {
+	var closeNotifier <-chan bool
+	if resp, ok := resp.(http.CloseNotifier); ok {
+		closeNotifier = resp.CloseNotify()
+	}
+	var buf []byte
+	bufReady := make(chan []byte)
+	go func() {
+		bufReady <- bufs.Get(bufSize)
+		close(bufReady)
+	}()
+	select {
+	case buf = <-bufReady:
+		return buf, nil
+	case <-closeNotifier:
+		go func() {
+			// Even if closeNotifier happened first, we
+			// need to keep waiting for our buf so we can
+			// return it to the pool.
+			bufs.Put(<-bufReady)
+		}()
+		return nil, ErrClientDisconnect
+	}
 }
 
 // PutBlockHandler is a HandleFunc to address Put block requests.
@@ -116,8 +159,13 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	buf := bufs.Get(int(req.ContentLength))
-	_, err := io.ReadFull(req.Body, buf)
+	buf, err := getBufferForResponseWriter(resp, bufs, int(req.ContentLength))
+	if err != nil {
+		http.Error(resp, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+
+	_, err = io.ReadFull(req.Body, buf)
 	if err != nil {
 		http.Error(resp, err.Error(), 500)
 		bufs.Put(buf)
@@ -481,7 +529,6 @@ func UntrashHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
-// ==============================
 // GetBlock and PutBlock implement lower-level code for handling
 // blocks by rooting through volumes connected to the local machine.
 // Once the handler has determined that system policy permits the
@@ -492,24 +539,21 @@ func UntrashHandler(resp http.ResponseWriter, req *http.Request) {
 // should be the only part of the code that cares about which volume a
 // block is stored on, so it should be responsible for figuring out
 // which volume to check for fetching blocks, storing blocks, etc.
-// ==============================
 
-// GetBlock fetches and returns the block identified by "hash".
-//
-// On success, GetBlock returns a byte slice with the block data, and
-// a nil error.
+// GetBlock fetches the block identified by "hash" into the provided
+// buf, and returns the data size.
 //
 // If the block cannot be found on any volume, returns NotFoundError.
 //
 // If the block found does not have the correct MD5 hash, returns
 // DiskHashError.
 //
-func GetBlock(hash string) ([]byte, error) {
+func GetBlock(hash string, buf []byte, resp http.ResponseWriter) (int, error) {
 	// Attempt to read the requested hash from a keep volume.
 	errorToCaller := NotFoundError
 
 	for _, vol := range KeepVM.AllReadable() {
-		buf, err := vol.Get(hash)
+		size, err := vol.Get(hash, buf)
 		if err != nil {
 			// IsNotExist is an expected error and may be
 			// ignored. All other errors are logged. In
@@ -523,23 +567,22 @@ func GetBlock(hash string) ([]byte, error) {
 		}
 		// Check the file checksum.
 		//
-		filehash := fmt.Sprintf("%x", md5.Sum(buf))
+		filehash := fmt.Sprintf("%x", md5.Sum(buf[:size]))
 		if filehash != hash {
 			// TODO: Try harder to tell a sysadmin about
 			// this.
 			log.Printf("%s: checksum mismatch for request %s (actual %s)",
 				vol, hash, filehash)
 			errorToCaller = DiskHashError
-			bufs.Put(buf)
 			continue
 		}
 		if errorToCaller == DiskHashError {
 			log.Printf("%s: checksum mismatch for request %s but a good copy was found on another volume and returned",
 				vol, hash)
 		}
-		return buf, nil
+		return size, nil
 	}
-	return nil, errorToCaller
+	return 0, errorToCaller
 }
 
 // PutBlock Stores the BLOCK (identified by the content id HASH) in Keep.

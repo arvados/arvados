@@ -113,17 +113,16 @@ func (v *MockVolume) Compare(loc string, buf []byte) error {
 	}
 }
 
-func (v *MockVolume) Get(loc string) ([]byte, error) {
+func (v *MockVolume) Get(loc string, buf []byte) (int, error) {
 	v.gotCall("Get")
 	<-v.Gate
 	if v.Bad {
-		return nil, errors.New("Bad volume")
+		return 0, errors.New("Bad volume")
 	} else if block, ok := v.Store[loc]; ok {
-		buf := bufs.Get(len(block))
-		copy(buf, block)
-		return buf, nil
+		copy(buf[:len(block)], block)
+		return len(block), nil
 	}
-	return nil, os.ErrNotExist
+	return 0, os.ErrNotExist
 }
 
 func (v *MockVolume) Put(loc string, block []byte) error {
