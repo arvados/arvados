@@ -295,6 +295,7 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 						ContentLength: int64(len(blob.Data)),
 						Etag:          blob.Etag,
 					},
+					Metadata: blob.Metadata,
 				})
 			}
 		}

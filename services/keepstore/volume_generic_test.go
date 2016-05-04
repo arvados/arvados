@@ -830,7 +830,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	indexBuf := new(bytes.Buffer)
 	v.IndexTo("", indexBuf)
 	if strings.Contains(string(indexBuf.Bytes()), TestHash) {
-		//t.Fatalf("Found trashed block in IndexTo")
+		t.Fatalf("Found trashed block in IndexTo")
 	}
 
 	err = v.Touch(TestHash)

@@ -351,9 +351,10 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 				// value.
 				continue
 			}
-			//if b.Metadata["expired_at"] != "" {
-			//	continue
-			//}
+			if b.Metadata["expires_at"] != "" {
+				// Trashed blob; exclude it from response
+				continue
+			}
 			fmt.Fprintf(writer, "%s+%d %d\n", b.Name, b.Properties.ContentLength, t.Unix())
 		}
 		if resp.NextMarker == "" {
