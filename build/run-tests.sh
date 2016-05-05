@@ -754,7 +754,7 @@ stop_services
 test_apiserver() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
-        && RAILS_ENV=test bundle exec rake test TESTOPTS=-v ${testargs[services/api]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=-v ${testargs[services/api]}
 }
 do_test services/api apiserver
 
@@ -800,21 +800,21 @@ done
 test_workbench() {
     start_nginx_proxy_services \
         && cd "$WORKSPACE/apps/workbench" \
-        && RAILS_ENV=test bundle exec rake test TESTOPTS=-v ${testargs[apps/workbench]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=-v ${testargs[apps/workbench]}
 }
 do_test apps/workbench workbench
 
 test_workbench_benchmark() {
     start_nginx_proxy_services \
         && cd "$WORKSPACE/apps/workbench" \
-        && RAILS_ENV=test bundle exec rake test:benchmark ${testargs[apps/workbench_benchmark]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:benchmark ${testargs[apps/workbench_benchmark]}
 }
 do_test apps/workbench_benchmark workbench_benchmark
 
 test_workbench_profile() {
     start_nginx_proxy_services \
         && cd "$WORKSPACE/apps/workbench" \
-        && RAILS_ENV=test bundle exec rake test:profile ${testargs[apps/workbench_profile]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:profile ${testargs[apps/workbench_profile]}
 }
 do_test apps/workbench_profile workbench_profile
 
