@@ -44,6 +44,7 @@ type Mount struct {
 	PortableDataHash string `json:"portable_data_hash"`
 	UUID             string `json:"uuid"`
 	DeviceType       string `json:"device_type"`
+	Path             string `json:"path"`
 }
 
 // Collection record returned by the API server.
@@ -99,7 +100,7 @@ type ContainerRunner struct {
 	NewLogWriter
 	loggingDone   chan bool
 	CrunchLog     *ThrottledLogger
-	Stdout        *ThrottledLogger
+	Stdout        io.WriteCloser
 	Stderr        *ThrottledLogger
 	LogCollection *CollectionWriter
 	LogsPDH       *string
@@ -246,6 +247,22 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	runner.Binds = nil
 
 	for bind, mnt := range runner.ContainerRecord.Mounts {
+		if bind == "stdout" {
+			// Is it a "file" mount kind?
+			if mnt.Kind != "file" {
+				return fmt.Errorf("Unsupported mount kind '%s' for stdout. Only 'file' is supported.", mnt.Kind)
+			}
+
+			// Does path start with OutputPath?
+			prefix := runner.ContainerRecord.OutputPath
+			if !strings.HasSuffix(prefix, "/") {
+				prefix += "/"
+			}
+			if !strings.HasPrefix(mnt.Path, prefix) {
+				return fmt.Errorf("Stdout path does not start with OutputPath: %s, %s", mnt.Path, prefix)
+			}
+		}
+
 		if mnt.Kind == "collection" {
 			var src string
 			if mnt.UUID != "" && mnt.PortableDataHash != "" {
@@ -295,6 +312,15 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", runner.HostOutputDir, bind))
 			} else {
 				runner.Binds = append(runner.Binds, bind)
+			}
+		} else if mnt.Kind == "file" {
+			runner.HostOutputDir = runner.ContainerRecord.OutputPath
+			st, staterr := os.Stat(runner.HostOutputDir)
+			if staterr != nil {
+				return fmt.Errorf("While getting stat on output_path %v: %v", runner.HostOutputDir, staterr)
+			}
+			if st.IsDir() != true {
+				return fmt.Errorf("Given output_path '%v' is not a directory", runner.HostOutputDir)
 			}
 		} else {
 			return fmt.Errorf("Unknown mount kind '%s'", mnt.Kind)
@@ -383,7 +409,39 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 
 	runner.loggingDone = make(chan bool)
 
-	runner.Stdout = NewThrottledLogger(runner.NewLogWriter("stdout"))
+	var stdoutMnt Mount
+	for bind, mnt := range runner.ContainerRecord.Mounts {
+		if bind == "stdout" {
+			stdoutMnt = mnt
+			break
+		}
+	}
+	if stdoutMnt.Path != "" {
+		stdoutPath := stdoutMnt.Path[len(runner.ContainerRecord.OutputPath):]
+		index := strings.LastIndex(stdoutPath, "/")
+		if index > 0 {
+			stdoutSubdirs := stdoutPath[:index]
+			if stdoutSubdirs != "" {
+				st, err := os.Stat(runner.HostOutputDir)
+				if err != nil {
+					return fmt.Errorf("While Stat on temp dir: %v", err)
+				}
+				path := runner.HostOutputDir + stdoutSubdirs
+				err = os.MkdirAll(path, st.Mode()|os.ModeSetgid|0777)
+				if err != nil {
+					return fmt.Errorf("While MkdirAll %q: %v", path, err)
+				}
+				st, err = os.Stat(path)
+			}
+		}
+		stdoutFile, err := os.Create(runner.HostOutputDir + "/" + stdoutPath)
+		if err != nil {
+			return fmt.Errorf("While creating stdout file: %v", err)
+		}
+		runner.Stdout = stdoutFile
+	} else {
+		runner.Stdout = NewThrottledLogger(runner.NewLogWriter("stdout"))
+	}
 	runner.Stderr = NewThrottledLogger(runner.NewLogWriter("stderr"))
 
 	go runner.ProcessDockerAttach(containerReader)
