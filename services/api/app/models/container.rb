@@ -27,6 +27,7 @@ class Container < ArvadosModel
     t.add :environment
     t.add :exit_code
     t.add :finished_at
+    t.add :locked_by_uuid
     t.add :log
     t.add :mounts
     t.add :output
@@ -71,6 +72,13 @@ class Container < ArvadosModel
       end
       self.priority = max
       self.save!
+    end
+  end
+
+  def locked_by_uuid
+    # Stub to permit a single dispatch to recognize its own containers
+    if current_user.is_admin
+      Thread.current[:api_client_authorization].andand.uuid
     end
   end
 
