@@ -26,6 +26,14 @@ class EventClientTestCase(unittest.TestCase):
             yield arvados.events.EventClient(TEST_WS_URL, filters, callback,
                                              last_log_id), ws_mock
 
+    def test_client_init(self):
+        with self.mocked_client() as client_tuple:
+            client, ws_mock = client_tuple
+            ws_mock.assert_called_with(TEST_WS_URL, [[]], client.on_event, None,
+                                       client.on_closed)
+            ws_mock().connect.assert_called()
+            self.assertIs(ws_mock().daemon, True)
+
     def test_subscribe_calls_ws(self):
         ws_filter = ['kind', '=', 'arvados#test']
         with self.mocked_client() as client_tuple:
@@ -41,19 +49,10 @@ class EventClientTestCase(unittest.TestCase):
             client.unsubscribe(ws_filter)
             ws_mock().unsubscribe.assert_called_with(ws_filter)
 
-    # PollClient doesn't have this method, but for now you have to call it
-    # for anything to work.
-    def test_connect_calls_ws(self):
-        with self.mocked_client() as client_tuple:
-            client, ws_mock = client_tuple
-            client.connect()
-            ws_mock().connect.assert_called()
-
     def test_close_calls_ws(self):
         with self.mocked_client() as client_tuple:
             client, ws_mock = client_tuple
             ws_mock().close.side_effect = lambda *args: client.on_closed()
-            client.connect()
             client.close()
             ws_mock().close.assert_called()
             # Check on_closed did not try to reconnect.
@@ -62,6 +61,12 @@ class EventClientTestCase(unittest.TestCase):
     def test_run_forever_calls_ws(self):
         with self.mocked_client() as client_tuple:
             client, ws_mock = client_tuple
-            client.connect()
             client.run_forever()
             ws_mock().run_forever.assert_called()
+
+    def test_reconnect_rebuilds_and_reconnects_underlying_client(self):
+        with self.mocked_client() as client_tuple:
+            client, ws_mock = client_tuple
+            client.on_closed()
+            self.assertEqual(2, ws_mock.call_count)
+            self.assertEqual(2, ws_mock().connect.call_count)
