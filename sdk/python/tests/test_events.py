@@ -58,3 +58,10 @@ class EventClientTestCase(unittest.TestCase):
             ws_mock().close.assert_called()
             # Check on_closed did not try to reconnect.
             ws_mock().connect.assert_called_once()
+
+    def test_run_forever_calls_ws(self):
+        with self.mocked_client() as client_tuple:
+            client, ws_mock = client_tuple
+            client.connect()
+            client.run_forever()
+            ws_mock().run_forever.assert_called()
