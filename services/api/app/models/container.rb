@@ -42,6 +42,7 @@ class Container < ArvadosModel
   States =
     [
      (Queued = 'Queued'),
+     (Locked = 'Locked'),
      (Running = 'Running'),
      (Complete = 'Complete'),
      (Cancelled = 'Cancelled')
@@ -49,7 +50,8 @@ class Container < ArvadosModel
 
   State_transitions = {
     nil => [Queued],
-    Queued => [Running, Cancelled],
+    Queued => [Locked, Cancelled],
+    Locked => [Queued, Running, Cancelled],
     Running => [Complete, Cancelled]
   }
 
@@ -102,47 +104,40 @@ class Container < ArvadosModel
   end
 
   def validate_change
-    permitted = []
+    permitted = [:state]
 
     if self.new_record?
-      permitted.push :owner_uuid, :command, :container_image, :cwd, :environment,
-                     :mounts, :output_path, :priority, :runtime_constraints, :state
+      permitted.push(:owner_uuid, :command, :container_image, :cwd,
+                     :environment, :mounts, :output_path, :priority,
+                     :runtime_constraints)
     end
 
     case self.state
-    when Queued
-      # permit priority change only.
+    when Queued, Locked
       permitted.push :priority
 
     when Running
+      permitted.push :priority, :progress
       if self.state_changed?
-        # At point of state change, can set state and started_at
-        permitted.push :state, :started_at
-      else
-        # While running, can update priority and progress.
-        permitted.push :priority, :progress
+        permitted.push :started_at
       end
 
     when Complete
-      if self.state_changed?
-        permitted.push :state, :finished_at, :output, :log, :exit_code
-      else
-        errors.add :state, "cannot update record"
+      if self.state_was == Running
+        permitted.push :finished_at, :output, :log, :exit_code
       end
 
     when Cancelled
-      if self.state_changed?
-        if self.state_was == Running
-          permitted.push :state, :finished_at, :output, :log
-        elsif self.state_was == Queued
-          permitted.push :state, :finished_at
-        end
-      else
-        errors.add :state, "cannot update record"
+      case self.state_was
+      when Running
+        permitted.push :finished_at, :output, :log
+      when Queued, Locked
+        permitted.push :finished_at
       end
 
     else
-      errors.add :state, "invalid state"
+      # The state_transitions check will add an error message for this
+      return false
     end
 
     check_update_whitelist permitted
