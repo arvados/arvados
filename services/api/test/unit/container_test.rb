@@ -9,91 +9,42 @@ class ContainerTest < ActiveSupport::TestCase
     c
   end
 
+  def show_errors c
+    return lambda { c.errors.full_messages.inspect }
+  end
+
+  def check_illegal_updates c, bad_updates
+    bad_updates.each do |u|
+      refute c.update_attributes(u), u.inspect
+      refute c.valid?
+      c.reload
+    end
+  end
+
   def check_illegal_modify c
-    c.reload
-    c.command = ["echo", "bar"]
-    assert_raises(ActiveRecord::RecordInvalid) do
-      c.save!
-    end
-
-    c.reload
-    c.container_image = "img2"
-    assert_raises(ActiveRecord::RecordInvalid) do
-      c.save!
-    end
-
-    c.reload
-    c.cwd = "/tmp2"
-    assert_raises(ActiveRecord::RecordInvalid) do
-      c.save!
-    end
-
-    c.reload
-    c.environment = {"FOO" => "BAR"}
-    assert_raises(ActiveRecord::RecordInvalid) do
-      c.save!
-    end
-
-    c.reload
-    c.mounts = {"FOO" => "BAR"}
-    assert_raises(ActiveRecord::RecordInvalid) do
-      c.save!
-    end
-
-    c.reload
-    c.output_path = "/tmp3"
-    assert_raises(ActiveRecord::RecordInvalid) do
-      c.save!
-    end
-
-    c.reload
-    c.runtime_constraints = {"FOO" => "BAR"}
-    assert_raises(ActiveRecord::RecordInvalid) do
-      c.save!
-    end
+    check_illegal_updates c, [{command: ["echo", "bar"]},
+                              {container_image: "img2"},
+                              {cwd: "/tmp2"},
+                              {environment: {"FOO" => "BAR"}},
+                              {mounts: {"FOO" => "BAR"}},
+                              {output_path: "/tmp3"},
+                              {runtime_constraints: {"FOO" => "BAR"}}]
   end
 
   def check_bogus_states c
-    c.reload
-    c.state = nil
-    assert_raises(ActiveRecord::RecordInvalid) do
-      c.save!
-    end
-
-    c.reload
-    c.state = "Flubber"
-    assert_raises(ActiveRecord::RecordInvalid) do
-      c.save!
-    end
+    check_illegal_updates c, [{state: nil},
+                              {state: "Flubber"}]
   end
 
-  def check_no_change_from_complete c
+  def check_no_change_from_cancelled c
     check_illegal_modify c
     check_bogus_states c
 
-    c.reload
-    c.priority = 3
-    assert_raises(ActiveRecord::RecordInvalid) do
-      c.save!
-    end
-
-    c.reload
-    c.state = "Queued"
-    assert_raises(ActiveRecord::RecordInvalid) do
-      c.save!
-    end
-
-    c.reload
-    c.state = "Running"
-    assert_raises(ActiveRecord::RecordInvalid) do
-      c.save!
-    end
-
-    c.reload
-    c.state = "Complete"
-    assert_raises(ActiveRecord::RecordInvalid) do
-      c.save!
-    end
+    check_illegal_updates c, [{ priority: 3 },
+                              { state: Container::Queued },
+                              { state: Container::Locked },
+                              { state: Container::Running },
+                              { state: Container::Complete }]
   end
 
   test "Container create" do
@@ -120,28 +71,48 @@ class ContainerTest < ActiveSupport::TestCase
       c = minimal_new
       c.save!
 
-      c.reload
-      c.state = "Complete"
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.save!
-      end
+      check_illegal_updates c, [{state: Container::Running},
+                                {state: Container::Complete}]
 
-      c.reload
-      c.state = "Running"
-      c.save!
+      c.update_attributes! state: Container::Locked
+      c.update_attributes! state: Container::Running
 
       check_illegal_modify c
       check_bogus_states c
 
+      check_illegal_updates c, [{state: Container::Queued}]
       c.reload
-      c.state = "Queued"
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.save!
-      end
 
-      c.reload
-      c.priority = 3
+      c.update_attributes! priority: 3
+    end
+  end
+
+  test "Lock and unlock" do
+    act_as_system_user do
+      c = minimal_new
       c.save!
+      assert_equal Container::Queued, c.state
+
+      refute c.update_attributes(state: Container::Running), "not locked"
+      c.reload
+      refute c.update_attributes(state: Container::Complete), "not locked"
+      c.reload
+
+      assert c.update_attributes(state: Container::Locked), show_errors(c)
+      assert c.update_attributes(state: Container::Queued), show_errors(c)
+
+      refute c.update_attributes(state: Container::Running), "not locked"
+      c.reload
+
+      assert c.update_attributes(state: Container::Locked), show_errors(c)
+      assert c.update_attributes(state: Container::Running), show_errors(c)
+
+      refute c.update_attributes(state: Container::Locked), "already running"
+      c.reload
+      refute c.update_attributes(state: Container::Queued), "already running"
+      c.reload
+
+      assert c.update_attributes(state: Container::Complete), show_errors(c)
     end
   end
 
@@ -149,12 +120,18 @@ class ContainerTest < ActiveSupport::TestCase
     act_as_system_user do
       c = minimal_new
       c.save!
+      assert c.update_attributes(state: Container::Cancelled), show_errors(c)
+      check_no_change_from_cancelled c
+    end
+  end
 
-      c.reload
-      c.state = "Cancelled"
+  test "Container locked cancel" do
+    act_as_system_user do
+      c = minimal_new
       c.save!
-
-      check_no_change_from_complete c
+      assert c.update_attributes(state: Container::Locked), show_errors(c)
+      assert c.update_attributes(state: Container::Cancelled), show_errors(c)
+      check_no_change_from_cancelled c
     end
   end
 
@@ -162,16 +139,11 @@ class ContainerTest < ActiveSupport::TestCase
     act_as_system_user do
       c = minimal_new
       c.save!
-
-      c.reload
-      c.state = "Running"
-      c.save!
-
-      c.reload
-      c.state = "Cancelled"
-      c.save!
-
-      check_no_change_from_complete c
+      c.update_attributes! state: Container::Queued
+      c.update_attributes! state: Container::Locked
+      c.update_attributes! state: Container::Running
+      c.update_attributes! state: Container::Cancelled
+      check_no_change_from_cancelled c
     end
   end
 
@@ -192,28 +164,13 @@ class ContainerTest < ActiveSupport::TestCase
     act_as_system_user do
       c = minimal_new
       c.save!
+      c.update_attributes! state: Container::Locked
+      c.update_attributes! state: Container::Running
 
-      c.reload
-      c.state = "Running"
-      c.save!
+      check_illegal_updates c, [{exit_code: 1},
+                                {exit_code: 1, state: Container::Cancelled}]
 
-      c.reload
-      c.exit_code = 1
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.save!
-      end
-
-      c.reload
-      c.exit_code = 1
-      c.state = "Cancelled"
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.save!
-      end
-
-      c.reload
-      c.exit_code = 1
-      c.state = "Complete"
-      c.save!
+      assert c.update_attributes(exit_code: 1, state: Container::Complete)
     end
   end
 end
