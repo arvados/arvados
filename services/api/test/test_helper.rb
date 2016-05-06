@@ -106,6 +106,10 @@ class ActiveSupport::TestCase
     ArvadosApiToken.new.call("rack.input" => "",
                              "HTTP_AUTHORIZATION" => "OAuth2 #{t}")
   end
+
+  def slow_test
+    skip "RAILS_TEST_SHORT is set" unless (ENV['RAILS_TEST_SHORT'] || '').empty?
+  end
 end
 
 class ActionController::TestCase
