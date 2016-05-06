@@ -489,10 +489,10 @@ var azTrashLocRegexp = regexp.MustCompile(`trash\.(\d+)\.([0-9a-f]{32})$`)
 func (v *AzureBlobVolume) EmptyTrash() {
 	var bytesDeleted, bytesInTrash int64
 	var blocksDeleted, blocksInTrash int
-	var noMoreOldMarkers bool
 	params := storage.ListBlobsParameters{
 		Prefix: "trash.",
 	}
+blobListPage:
 	for {
 		resp, err := v.bsClient.ListBlobs(v.containerName, params)
 		if err != nil {
@@ -512,8 +512,7 @@ func (v *AzureBlobVolume) EmptyTrash() {
 				continue
 			}
 			if deadline > time.Now().Unix() {
-				noMoreOldMarkers = true
-				break
+				break blobListPage
 			}
 
 			metadata, err := v.bsClient.GetBlobMetadata(v.containerName, matches[2])
@@ -536,7 +535,7 @@ func (v *AzureBlobVolume) EmptyTrash() {
 				log.Printf("EmptyTrash: %v: DeleteBlob(%v): %v", b.Name, err)
 			}
 		}
-		if resp.NextMarker == "" || noMoreOldMarkers == true {
+		if resp.NextMarker == "" {
 			break
 		}
 		params.Marker = resp.NextMarker
