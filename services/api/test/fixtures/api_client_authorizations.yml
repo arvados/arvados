@@ -273,7 +273,7 @@ fuse:
 
 dispatch1:
   uuid: zzzzz-gj3su-k9dvestay1plssr
-  api_client: trusted
+  api_client: untrusted
   user: system_user
   api_token: kwi8oowusvbutahacwk2geulqewy5oaqmpalczfna4b6bb0hfw
   expires_at: 2038-01-01 00:00:00
