@@ -6,6 +6,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -140,9 +141,10 @@ func dispatchSlurm(priorityPollInterval int, crunchRunCommand, finishCommand str
 
 // sbatchCmd
 func sbatchFunc(container Container) *exec.Cmd {
+	memPerCPU := math.Ceil(float64(container.RuntimeConstraints["ram"]) / float64(container.RuntimeConstraints["vcpus"]*1048576))
 	return exec.Command("sbatch", "--share", "--parsable",
 		"--job-name="+container.UUID,
-		"--mem="+strconv.Itoa(container.RuntimeConstraints["ram"]),
+		"--mem-per-cpu="+strconv.Itoa(int(memPerCPU)),
 		"--cpus-per-task="+strconv.Itoa(container.RuntimeConstraints["vcpus"]))
 }
 
