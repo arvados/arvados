@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -113,10 +114,11 @@ func (s *TestSuite) Test_doMain(c *C) {
 	err = doMain()
 	c.Check(err, IsNil)
 
+	item := containers.Items[0]
 	sbatchCmdComps := []string{"sbatch", "--share", "--parsable",
-		fmt.Sprintf("--job-name=%s", containers.Items[0].UUID),
-		fmt.Sprintf("--mem=%s", strconv.Itoa(containers.Items[0].RuntimeConstraints["ram"])),
-		fmt.Sprintf("--cpus-per-task=%s", strconv.Itoa(containers.Items[0].RuntimeConstraints["vcpus"]))}
+		fmt.Sprintf("--job-name=%s", item.UUID),
+		fmt.Sprintf("--mem-per-cpu=%s", strconv.Itoa(int(math.Ceil(float64(item.RuntimeConstraints["ram"])/float64(item.RuntimeConstraints["vcpus"]*1048576))))),
+		fmt.Sprintf("--cpus-per-task=%s", strconv.Itoa(item.RuntimeConstraints["vcpus"]))}
 	c.Check(sbatchCmdLine, DeepEquals, sbatchCmdComps)
 
 	c.Check(striggerCmdLine, DeepEquals, []string{"strigger", "--set", "--jobid=zzzzz-dz642-queuedcontainer\n", "--fini",
