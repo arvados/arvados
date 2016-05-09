@@ -16,9 +16,12 @@ class Container < ArvadosModel
   validates :command, :container_image, :output_path, :cwd, :priority, :presence => true
   validate :validate_state_change
   validate :validate_change
+  validate :validate_lock
+  after_validation :assign_auth
   after_save :handle_completed
 
   has_many :container_requests, :foreign_key => :container_uuid, :class_name => 'ContainerRequest', :primary_key => :uuid
+  belongs_to :auth, :class_name => 'ApiClientAuthorization', :foreign_key => :auth_uuid, :primary_key => :uuid
 
   api_accessible :user, extend: :common do |t|
     t.add :command
@@ -37,6 +40,7 @@ class Container < ArvadosModel
     t.add :runtime_constraints
     t.add :started_at
     t.add :state
+    t.add :auth_uuid
   end
 
   # Supported states for a container
@@ -61,24 +65,14 @@ class Container < ArvadosModel
   end
 
   def update_priority!
-    if [Queued, Running].include? self.state
+    if [Queued, Locked, Running].include? self.state
       # Update the priority of this container to the maximum priority of any of
       # its committed container requests and save the record.
-      max = 0
-      ContainerRequest.where(container_uuid: uuid).each do |cr|
-        if cr.state == ContainerRequest::Committed and cr.priority > max
-          max = cr.priority
-        end
-      end
-      self.priority = max
+      self.priority = ContainerRequest.
+        where(container_uuid: uuid,
+              state: ContainerRequest::Committed).
+        maximum('priority')
       self.save!
-    end
-  end
-
-  def locked_by_uuid
-    # Stub to permit a single dispatch to recognize its own containers
-    if current_user.is_admin
-      Thread.current[:api_client_authorization].andand.uuid
     end
   end
 
@@ -149,6 +143,52 @@ class Container < ArvadosModel
     end
 
     check_update_whitelist permitted
+  end
+
+  def validate_lock
+    if locked_by_uuid_was
+      if locked_by_uuid_was != Thread.current[:api_client_authorization].uuid
+        # Notably, prohibit changing state or locked_by_uuid:
+        check_update_whitelist [:priority]
+      end
+    end
+
+    if [Locked, Running].include? self.state
+      need_lock = Thread.current[:api_client_authorization].uuid
+    else
+      need_lock = nil
+    end
+    if self.locked_by_uuid_changed?
+      if self.locked_by_uuid != need_lock
+        return errors.add :locked_by_uuid, "can only change to #{need_lock}"
+      end
+    end
+    self.locked_by_uuid = need_lock
+  end
+
+  def assign_auth
+    if self.auth_uuid_changed?
+      return errors.add :auth_uuid, 'is readonly'
+    end
+    if not [Locked, Running].include? self.state
+      # don't need one
+      self.auth.andand.update_attributes(expires_at: db_current_time)
+      self.auth = nil
+      return
+    elsif self.auth
+      # already have one
+      return
+    end
+    cr = ContainerRequest.
+      where('container_uuid=? and priority>0', self.uuid).
+      order('priority desc').
+      first
+    if !cr
+      return errors.add :auth_uuid, "cannot be assigned because priority <= 0"
+    end
+    self.auth = ApiClientAuthorization.
+      create!(user_id: User.find_by_uuid(cr.modified_by_user_uuid).id,
+              api_client_id: 0)
   end
 
   def handle_completed

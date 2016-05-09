@@ -28,7 +28,9 @@ Server::Application.routes.draw do
       end
       resources :humans
       resources :job_tasks
-      resources :containers
+      resources :containers do
+        get 'auth', on: :member
+      end
       resources :container_requests
       resources :jobs do
         get 'queue', on: :collection

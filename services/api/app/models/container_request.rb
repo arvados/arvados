@@ -78,32 +78,32 @@ class ContainerRequest < ArvadosModel
     self.cwd ||= "."
   end
 
-  # Turn a container request into a container.
+  # Create a new container (or find an existing one) to satisfy this
+  # request.
   def resolve
-    # In the future this will do things like resolve symbolic git and keep
-    # references to content addresses.
-    Container.create!({ :command => self.command,
-                        :container_image => self.container_image,
-                        :cwd => self.cwd,
-                        :environment => self.environment,
-                        :mounts => self.mounts,
-                        :output_path => self.output_path,
-                        :runtime_constraints => self.runtime_constraints })
+    # TODO: resolve symbolic git and keep references to content
+    # addresses.
+    c = act_as_system_user do
+      Container.create!(command: self.command,
+                        container_image: self.container_image,
+                        cwd: self.cwd,
+                        environment: self.environment,
+                        mounts: self.mounts,
+                        output_path: self.output_path,
+                        runtime_constraints: self.runtime_constraints)
+    end
+    self.container_uuid = c.uuid
   end
 
   def set_container
-    if self.container_uuid_changed?
-      if not current_user.andand.is_admin and not self.container_uuid.nil?
-        errors.add :container_uuid, "can only be updated to nil."
-      end
-    else
-      if self.state_changed?
-        if self.state == Committed and (self.state_was == Uncommitted or self.state_was.nil?)
-          act_as_system_user do
-            self.container_uuid = self.resolve.andand.uuid
-          end
-        end
-      end
+    if (container_uuid_changed? and
+        not current_user.andand.is_admin and
+        not container_uuid.nil?)
+      errors.add :container_uuid, "can only be updated to nil."
+      return false
+    end
+    if state_changed? and state == Committed and container_uuid.nil?
+      resolve
     end
   end
 
@@ -158,16 +158,14 @@ class ContainerRequest < ArvadosModel
   end
 
   def update_priority
-    if [Committed, Final].include? self.state and (self.state_changed? or
-                                                   self.priority_changed? or
-                                                   self.container_uuid_changed?)
-      [self.container_uuid_was, self.container_uuid].each do |cuuid|
-        unless cuuid.nil?
-          c = Container.find_by_uuid cuuid
-          act_as_system_user do
-            c.update_priority!
-          end
-        end
+    if self.state_changed? or
+        self.priority_changed? or
+        self.container_uuid_changed?
+      act_as_system_user do
+        Container.
+          where('uuid in (?)',
+                [self.container_uuid_was, self.container_uuid].compact).
+          map(&:update_priority!)
       end
     end
   end
