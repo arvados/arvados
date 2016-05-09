@@ -86,12 +86,6 @@ class EventClient(object):
         self.is_closed = False
         self.ec = _EventClient(url, self.filters, self.on_event, last_log_id, self.on_closed)
 
-    def connect(self):
-        self.ec.connect()
-
-    def close_connection(self):
-        self.ec.close_connection()
-
     def subscribe(self, f, last_log_id=None):
         self.filters.append(f)
         self.ec.subscribe(f, last_log_id)
@@ -128,6 +122,11 @@ class EventClient(object):
                 self.is_closed = True
                 thread.interrupt_main()
                 return
+
+    def _delegate_to_ec(attr_name):
+        return property(lambda self: getattr(self.ec, attr_name))
+    for _method_name in ['connect', 'close_connection', 'run_forever']:
+        locals()[_method_name] = _delegate_to_ec(_method_name)
 
 
 class PollClient(threading.Thread):

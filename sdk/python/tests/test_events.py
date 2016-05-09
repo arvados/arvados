@@ -253,7 +253,6 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         client.unsubscribe(filters[:])
         websocket_client().unsubscribe.assert_called_with(filters)
 
-    @unittest.expectedFailure
     @mock.patch('arvados.events._EventClient')
     def test_run_forever(self, websocket_client):
         client = arvados.events.EventClient(
