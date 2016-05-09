@@ -26,7 +26,7 @@ require 'mocha/mini_test'
 
 module ArvadosTestSupport
   def json_response
-    Oj.load response.body
+    Oj.strict_load response.body
   end
 
   def api_token(api_client_auth_name)
@@ -105,6 +105,10 @@ class ActiveSupport::TestCase
     t = t.api_token if t.respond_to? :api_token
     ArvadosApiToken.new.call("rack.input" => "",
                              "HTTP_AUTHORIZATION" => "OAuth2 #{t}")
+  end
+
+  def slow_test
+    skip "RAILS_TEST_SHORT is set" unless (ENV['RAILS_TEST_SHORT'] || '').empty?
   end
 end
 

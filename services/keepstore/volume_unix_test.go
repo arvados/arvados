@@ -106,12 +106,13 @@ func TestGetNotFound(t *testing.T) {
 	defer v.Teardown()
 	v.Put(TestHash, TestBlock)
 
-	buf, err := v.Get(TestHash2)
+	buf := make([]byte, BlockSize)
+	n, err := v.Get(TestHash2, buf)
 	switch {
 	case os.IsNotExist(err):
 		break
 	case err == nil:
-		t.Errorf("Read should have failed, returned %s", string(buf))
+		t.Errorf("Read should have failed, returned %+q", buf[:n])
 	default:
 		t.Errorf("Read expected ErrNotExist, got: %s", err)
 	}
@@ -151,7 +152,8 @@ func TestUnixVolumeReadonly(t *testing.T) {
 
 	v.PutRaw(TestHash, TestBlock)
 
-	_, err := v.Get(TestHash)
+	buf := make([]byte, BlockSize)
+	_, err := v.Get(TestHash, buf)
 	if err != nil {
 		t.Errorf("got err %v, expected nil", err)
 	}

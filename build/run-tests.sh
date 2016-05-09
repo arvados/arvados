@@ -494,22 +494,23 @@ do_test_once() {
             # before trying "go test". Otherwise, coverage-reporting
             # mode makes Go show the wrong line numbers when reporting
             # compilation errors.
+            go get -t "git.curoverse.com/arvados.git/$1" || return 1
             if [[ -n "${testargs[$1]}" ]]
             then
                 # "go test -check.vv giturl" doesn't work, but this
                 # does:
-                cd "$WORKSPACE/$1" && \
-                    go get -t "git.curoverse.com/arvados.git/$1" && \
-                    go test ${short:+-short} ${coverflags[@]} ${testargs[$1]}
+                cd "$WORKSPACE/$1" && go test ${short:+-short} ${coverflags[@]} ${testargs[$1]}
             else
                 # The above form gets verbose even when testargs is
                 # empty, so use this form in such cases:
-                go get -t "git.curoverse.com/arvados.git/$1" && \
-                    go test ${short:+-short} ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
+                go test ${short:+-short} ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
             fi
             result="$?"
-            go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"
-            rm "$WORKSPACE/tmp/.$covername.tmp"
+            if [[ -f "$WORKSPACE/tmp/.$covername.tmp" ]]
+            then
+                go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"
+                rm "$WORKSPACE/tmp/.$covername.tmp"
+            fi
         elif [[ "$2" == "pip" ]]
         then
             # $3 can name a path directory for us to use, including trailing
@@ -753,7 +754,7 @@ stop_services
 test_apiserver() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
-        && RAILS_ENV=test bundle exec rake test TESTOPTS=-v ${testargs[services/api]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=-v ${testargs[services/api]}
 }
 do_test services/api apiserver
 
@@ -799,21 +800,21 @@ done
 test_workbench() {
     start_nginx_proxy_services \
         && cd "$WORKSPACE/apps/workbench" \
-        && RAILS_ENV=test bundle exec rake test TESTOPTS=-v ${testargs[apps/workbench]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=-v ${testargs[apps/workbench]}
 }
 do_test apps/workbench workbench
 
 test_workbench_benchmark() {
     start_nginx_proxy_services \
         && cd "$WORKSPACE/apps/workbench" \
-        && RAILS_ENV=test bundle exec rake test:benchmark ${testargs[apps/workbench_benchmark]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:benchmark ${testargs[apps/workbench_benchmark]}
 }
 do_test apps/workbench_benchmark workbench_benchmark
 
 test_workbench_profile() {
     start_nginx_proxy_services \
         && cd "$WORKSPACE/apps/workbench" \
-        && RAILS_ENV=test bundle exec rake test:profile ${testargs[apps/workbench_profile]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:profile ${testargs[apps/workbench_profile]}
 }
 do_test apps/workbench_profile workbench_profile
 

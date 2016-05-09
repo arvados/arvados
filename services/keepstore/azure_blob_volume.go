@@ -139,11 +139,11 @@ func (v *AzureBlobVolume) Check() error {
 // If the block is younger than azureWriteRaceInterval and is
 // unexpectedly empty, assume a PutBlob operation is in progress, and
 // wait for it to finish writing.
-func (v *AzureBlobVolume) Get(loc string) ([]byte, error) {
+func (v *AzureBlobVolume) Get(loc string, buf []byte) (int, error) {
 	var deadline time.Time
 	haveDeadline := false
-	buf, err := v.get(loc)
-	for err == nil && len(buf) == 0 && loc != "d41d8cd98f00b204e9800998ecf8427e" {
+	size, err := v.get(loc, buf)
+	for err == nil && size == 0 && loc != "d41d8cd98f00b204e9800998ecf8427e" {
 		// Seeing a brand new empty block probably means we're
 		// in a race with CreateBlob, which under the hood
 		// (apparently) does "CreateEmpty" and "CommitData"
@@ -163,34 +163,32 @@ func (v *AzureBlobVolume) Get(loc string) ([]byte, error) {
 		} else if time.Now().After(deadline) {
 			break
 		}
-		bufs.Put(buf)
 		time.Sleep(azureWriteRacePollTime)
-		buf, err = v.get(loc)
+		size, err = v.get(loc, buf)
 	}
 	if haveDeadline {
-		log.Printf("Race ended with len(buf)==%d", len(buf))
+		log.Printf("Race ended with size==%d", size)
 	}
-	return buf, err
+	return size, err
 }
 
-func (v *AzureBlobVolume) get(loc string) ([]byte, error) {
-	expectSize := BlockSize
+func (v *AzureBlobVolume) get(loc string, buf []byte) (int, error) {
+	expectSize := len(buf)
 	if azureMaxGetBytes < BlockSize {
 		// Unfortunately the handler doesn't tell us how long the blob
 		// is expected to be, so we have to ask Azure.
 		props, err := v.bsClient.GetBlobProperties(v.containerName, loc)
 		if err != nil {
-			return nil, v.translateError(err)
+			return 0, v.translateError(err)
 		}
 		if props.ContentLength > int64(BlockSize) || props.ContentLength < 0 {
-			return nil, fmt.Errorf("block %s invalid size %d (max %d)", loc, props.ContentLength, BlockSize)
+			return 0, fmt.Errorf("block %s invalid size %d (max %d)", loc, props.ContentLength, BlockSize)
 		}
 		expectSize = int(props.ContentLength)
 	}
 
-	buf := bufs.Get(expectSize)
 	if expectSize == 0 {
-		return buf, nil
+		return 0, nil
 	}
 
 	// We'll update this actualSize if/when we get the last piece.
@@ -212,7 +210,7 @@ func (v *AzureBlobVolume) get(loc string) ([]byte, error) {
 			if startPos == 0 && endPos == expectSize {
 				rdr, err = v.bsClient.GetBlob(v.containerName, loc)
 			} else {
-				rdr, err = v.bsClient.GetBlobRange(v.containerName, loc, fmt.Sprintf("%d-%d", startPos, endPos-1))
+				rdr, err = v.bsClient.GetBlobRange(v.containerName, loc, fmt.Sprintf("%d-%d", startPos, endPos-1), nil)
 			}
 			if err != nil {
 				errors[p] = err
@@ -235,11 +233,10 @@ func (v *AzureBlobVolume) get(loc string) ([]byte, error) {
 	wg.Wait()
 	for _, err := range errors {
 		if err != nil {
-			bufs.Put(buf)
-			return nil, v.translateError(err)
+			return 0, v.translateError(err)
 		}
 	}
-	return buf[:actualSize], nil
+	return actualSize, nil
 }
 
 // Compare the given data with existing stored data.

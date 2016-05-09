@@ -508,6 +508,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     if args.progress:  # Print newline to split stderr from stdout for humans.
         print >>stderr
 
+    output = None
     if args.stream:
         output = writer.manifest_text()
         if args.normalize:
@@ -548,9 +549,12 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
             status = 1
 
     # Print the locator (uuid) of the new collection.
-    stdout.write(output)
-    if not output.endswith('\n'):
-        stdout.write('\n')
+    if output is None:
+        status = status or 1
+    else:
+        stdout.write(output)
+        if not output.endswith('\n'):
+            stdout.write('\n')
 
     for sigcode, orig_handler in orig_signal_handlers.items():
         signal.signal(sigcode, orig_handler)
