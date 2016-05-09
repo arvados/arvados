@@ -1,35 +1,38 @@
 #!/usr/bin/env ruby
 
-dispatch_argv = []
-ARGV.reject! do |arg|
-  dispatch_argv.push(arg) if /^--/ =~ arg
-end
-
 ENV["RAILS_ENV"] = ARGV[0] || ENV["RAILS_ENV"] || "development"
 require File.dirname(__FILE__) + '/../config/boot'
 require File.dirname(__FILE__) + '/../config/environment'
+include DbCurrentTime
 
-User.all.each do |u|
-  u.calculate_group_permissions
+def update_permissions
+  timestamp = DbCurrentTime::db_current_time.to_i
+  Rails.logger.info "Begin updating permission cache"
+  User.all.each do |u|
+    u.calculate_group_permissions
+  end
+  Rails.cache.write "last_updated_permissions", timestamp
+  Rails.logger.info "Permission cache updated"
 end
 
 ActiveRecord::Base.connection_pool.with_connection do |connection|
   conn = connection.instance_variable_get(:@connection)
   begin
     conn.async_exec "LISTEN invalidate_permissions_cache"
+
+    # Initial refresh of permissions graph
+    update_permissions
+
     while true
       # wait_for_notify will block until there is a change
-      # notification from Postgres about the logs table, then push
-      # the notification into the EventMachine channel.  Each
-      # websocket connection subscribes to the other end of the
-      # channel and calls #push_events to actually dispatch the
-      # events to the client.
+      # notification from Postgres about the permission cache,
+      # and then rebuild the permission cache.
       conn.wait_for_notify do |channel, pid, payload|
-        Rails.logger.info "Begin updating permission cache"
-        User.all.each do |u|
-          u.calculate_group_permissions
+        last_updated = Rails.cache.read("last_updated_permissions")
+        Rails.logger.info "Got notify #{payload} last update #{last_updated}"
+        if last_updated.nil? || last_updated.to_i <= payload.to_i
+          update_permissions
         end
-        Rails.logger.info "Permission cache updated"
       end
     end
   ensure

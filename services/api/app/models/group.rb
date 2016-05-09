@@ -20,14 +20,14 @@ class Group < ArvadosModel
     if uuid_changed? or owner_uuid_changed?
       # This can change users' permissions on other groups as well as
       # this one.
-      invalidate_permissions_cache
+      invalidate_permissions_cache db_current_time.to_i
     end
   end
 
   def invalidate_permissions_cache
     # Ensure a new group can be accessed by the appropriate users
     # immediately after being created.
-    User.invalidate_permissions_cache
+    User.invalidate_permissions_cache db_current_time.to_i
   end
 
   def assign_name

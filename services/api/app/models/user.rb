@@ -123,9 +123,9 @@ class User < ArvadosModel
     true
   end
 
-  def self.invalidate_permissions_cache
+  def self.invalidate_permissions_cache timestamp
     if Rails.configuration.async_permissions_update
-      connection.execute "NOTIFY invalidate_permissions_cache"
+      connection.execute "NOTIFY invalidate_permissions_cache, '#{timestamp}'"
     else
       Rails.cache.delete_matched(/^groups_for_user_/)
     end
@@ -191,9 +191,12 @@ class User < ArvadosModel
   # permission links reachable from self.uuid, and then calling
   # search_permissions
   def group_permissions
-    Rails.cache.fetch "groups_for_user_#{self.uuid}" do
-      calculate_group_permissions
+    r = Rails.cache.read "groups_for_user_#{self.uuid}"
+    while r.nil?
+      sleep(0.1)
+      r = Rails.cache.read "groups_for_user_#{self.uuid}"
     end
+    r
   end
 
   def self.setup(user, openid_prefix, repo_name=nil, vm_uuid=nil)
