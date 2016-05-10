@@ -141,7 +141,7 @@ func (s *TestSuite) Test_doMain(c *C) {
 
 func (s *MockArvadosServerSuite) Test_APIErrorGettingContainers(c *C) {
 	apiStubResponses := make(map[string]arvadostest.StubResponse)
-	apiStubResponses["/arvados/v1/api_client_authorizations"] = arvadostest.StubResponse{200, string(`{"items":[{"uuid":"` + arvadostest.Dispatch1AuthUUID + `"}]}`)}
+	apiStubResponses["/arvados/v1/api_client_authorizations/current"] = arvadostest.StubResponse{200, `{"uuid":"` + arvadostest.Dispatch1AuthUUID + `"}`}
 	apiStubResponses["/arvados/v1/containers"] = arvadostest.StubResponse{500, string(`{}`)}
 
 	testWithServerStub(c, apiStubResponses, "echo", "Error getting list of queued containers")

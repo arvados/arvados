@@ -103,15 +103,12 @@ type apiClientAuthorizationList struct {
 // This is because, once one or more crunch jobs are running,
 // we would need to wait for them complete.
 func runQueuedContainers(pollInterval, priorityPollInterval int, crunchRunCommand, finishCommand string) {
-	var authList apiClientAuthorizationList
-	err := arv.List("api_client_authorizations", map[string]interface{}{
-		"filters": [][]interface{}{{"api_token", "=", arv.ApiToken}},
-	}, &authList)
-	if err != nil || len(authList.Items) != 1 {
-		log.Printf("Error getting my token UUID: %v (%d)", err, len(authList.Items))
+	var auth apiClientAuthorization
+	err := arv.Call("GET", "api_client_authorizations", "", "current", nil, &auth)
+	if err != nil {
+		log.Printf("Error getting my token UUID: %v", err)
 		return
 	}
-	auth := authList.Items[0]
 
 	ticker := time.NewTicker(time.Duration(pollInterval) * time.Second)
 	for {
