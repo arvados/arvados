@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path"
 	"strings"
 	"sync"
 	"syscall"
@@ -313,17 +314,6 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			} else {
 				runner.Binds = append(runner.Binds, bind)
 			}
-		} else if mnt.Kind == "file" {
-			runner.HostOutputDir = runner.ContainerRecord.OutputPath
-			st, staterr := os.Stat(runner.HostOutputDir)
-			if staterr != nil {
-				return fmt.Errorf("While getting stat on output_path %v: %v", runner.HostOutputDir, staterr)
-			}
-			if st.IsDir() != true {
-				return fmt.Errorf("Given output_path '%v' is not a directory", runner.HostOutputDir)
-			}
-		} else {
-			return fmt.Errorf("Unknown mount kind '%s'", mnt.Kind)
 		}
 	}
 
@@ -409,32 +399,24 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 
 	runner.loggingDone = make(chan bool)
 
-	var stdoutMnt Mount
-	for bind, mnt := range runner.ContainerRecord.Mounts {
-		if bind == "stdout" {
-			stdoutMnt = mnt
-			break
-		}
-	}
-	if stdoutMnt.Path != "" {
+	if stdoutMnt, ok := runner.ContainerRecord.Mounts["stdout"]; ok {
 		stdoutPath := stdoutMnt.Path[len(runner.ContainerRecord.OutputPath):]
 		index := strings.LastIndex(stdoutPath, "/")
 		if index > 0 {
-			stdoutSubdirs := stdoutPath[:index]
-			if stdoutSubdirs != "" {
+			subdirs := stdoutPath[:index]
+			if subdirs != "" {
 				st, err := os.Stat(runner.HostOutputDir)
 				if err != nil {
 					return fmt.Errorf("While Stat on temp dir: %v", err)
 				}
-				path := runner.HostOutputDir + stdoutSubdirs
-				err = os.MkdirAll(path, st.Mode()|os.ModeSetgid|0777)
+				stdoutPath := path.Join(runner.HostOutputDir, subdirs)
+				err = os.MkdirAll(stdoutPath, st.Mode()|os.ModeSetgid|0777)
 				if err != nil {
-					return fmt.Errorf("While MkdirAll %q: %v", path, err)
+					return fmt.Errorf("While MkdirAll %q: %v", stdoutPath, err)
 				}
-				st, err = os.Stat(path)
 			}
 		}
-		stdoutFile, err := os.Create(runner.HostOutputDir + "/" + stdoutPath)
+		stdoutFile, err := os.Create(path.Join(runner.HostOutputDir, stdoutPath))
 		if err != nil {
 			return fmt.Errorf("While creating stdout file: %v", err)
 		}

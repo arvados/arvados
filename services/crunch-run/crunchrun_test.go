@@ -734,34 +734,27 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 }
 
 func (s *TestSuite) TestStdout(c *C) {
-	tmpdir, _ := ioutil.TempDir("", "test-stdout")
-	defer func() {
-		os.RemoveAll(tmpdir)
-	}()
-
 	helperRecord := `{`
 	helperRecord += `"command": ["/bin/sh", "-c", "echo $FROBIZ"],`
 	helperRecord += `"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",`
 	helperRecord += `"cwd": "/bin",`
 	helperRecord += `"environment": {"FROBIZ": "bilbo"},`
-	helperRecord += `"mounts": {"stdout": {"kind": "file", "path": "` + tmpdir + `/a/b/c.out"} },`
-	helperRecord += `"output_path": "` + tmpdir + `",`
+	helperRecord += `"mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"} },`
+	helperRecord += `"output_path": "/tmp",`
 	helperRecord += `"priority": 1,`
 	helperRecord += `"runtime_constraints": {}`
 	helperRecord += `}`
 
-	api, cr := FullRunHelper(c, helperRecord, func(t *TestDockerClient) {
+	api, _ := FullRunHelper(c, helperRecord, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
+
 	c.Check(api.Calls, Equals, 6)
 	c.Check(api.Content[5]["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
 	c.Check(api.Content[5]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
-	stdout := cr.HostOutputDir + "/a/b/c.out"
-	data, err := ioutil.ReadFile(stdout)
-	c.Check(err, IsNil)
-	c.Check("bilbo\n", Equals, string(data))
+	c.Check(api.Content[2]["collection"].(arvadosclient.Dict)["manifest_text"], Equals, "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out\n")
 }
 
 // Used by the TestStdoutWithWrongPath*()
@@ -811,26 +804,4 @@ func (s *TestSuite) TestStdoutWithWrongKindCollection(c *C) {
 
 	c.Check(err, NotNil)
 	c.Check(strings.Contains(err.Error(), "Unsupported mount kind 'collection' for stdout"), Equals, true)
-}
-
-func (s *TestSuite) TestStdoutNoSuchDir(c *C) {
-	tmpdir, _ := ioutil.TempDir("", "test-stdout")
-	defer func() {
-		os.RemoveAll(tmpdir)
-	}()
-
-	helperRecord := `{`
-	helperRecord += `"command": ["/bin/sh", "-c", "echo $FROBIZ"],`
-	helperRecord += `"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",`
-	helperRecord += `"cwd": "/bin",`
-	helperRecord += `"environment": {"FROBIZ": "bilbo"},`
-	helperRecord += `"mounts": {"stdout": {"kind": "file", "path": "` + tmpdir + `/nosuchsubdir/a/b/c.out"} },`
-	helperRecord += `"output_path": "` + tmpdir + `/nosuchsubdir",`
-	helperRecord += `"priority": 1,`
-	helperRecord += `"runtime_constraints": {}`
-	helperRecord += `}`
-
-	_, _, err := StdoutErrorRunHelper(c, helperRecord, func(t *TestDockerClient) {})
-	c.Check(err, NotNil)
-	c.Check(strings.Contains(err.Error(), "/nosuchsubdir: no such file or directory"), Equals, true)
 }
