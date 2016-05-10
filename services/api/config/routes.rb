@@ -15,6 +15,7 @@ Server::Application.routes.draw do
     namespace :v1 do
       resources :api_client_authorizations do
         post 'create_system_auth', on: :collection
+        get 'current', on: :collection
       end
       resources :api_clients
       resources :authorized_keys
