@@ -515,21 +515,31 @@ blobListPage:
 				break blobListPage
 			}
 
+			// Get the Etag before checking expires_at, and use it to delete blob
+			props, err := v.bsClient.GetBlobProperties(v.containerName, matches[2])
+			if err != nil {
+				log.Printf("EmptyTrash: %v: GetBlobProperties(%v): %v", matches[2], err)
+				continue
+			}
+
+			// Make sure the marker is for the current block, not an older one
 			metadata, err := v.bsClient.GetBlobMetadata(v.containerName, matches[2])
 			if err != nil {
 				log.Printf("EmptyTrash: %v: GetBlobMetadata(%v): %v", matches[2], err)
 				continue
 			}
-
-			// Make sure the marker is for the current block, not an older one
 			if metadata["expires_at"] == matches[1] {
-				err = v.bsClient.DeleteBlob(v.containerName, matches[2], map[string]string{})
+				err = v.bsClient.DeleteBlob(v.containerName, matches[2], map[string]string{
+					"If-Match": props.Etag,
+				})
 				if err != nil {
 					log.Printf("EmptyTrash: %v: DeleteBlob(%v): %v", matches[2], err)
+					continue
 				}
 				blocksDeleted++
 			}
 
+			// Delete the marker also
 			err = v.bsClient.DeleteBlob(v.containerName, b.Name, map[string]string{})
 			if err != nil {
 				log.Printf("EmptyTrash: %v: DeleteBlob(%v): %v", b.Name, err)

@@ -801,6 +801,12 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 			return err
 		}
 
+		indexBuf := new(bytes.Buffer)
+		v.IndexTo("", indexBuf)
+		if !strings.Contains(string(indexBuf.Bytes()), TestHash) {
+			return os.ErrNotExist
+		}
+
 		return nil
 	}
 
@@ -829,12 +835,6 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
-	indexBuf := new(bytes.Buffer)
-	v.IndexTo("", indexBuf)
-	if strings.Contains(string(indexBuf.Bytes()), TestHash) {
-		t.Fatalf("Found trashed block in IndexTo")
-	}
-
 	err = v.Touch(TestHash)
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
@@ -852,12 +852,6 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	err = checkGet()
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	indexBuf = new(bytes.Buffer)
-	v.IndexTo("", indexBuf)
-	if !strings.Contains(string(indexBuf.Bytes()), TestHash) {
-		t.Fatalf("Found trashed block in IndexTo")
 	}
 
 	err = v.Touch(TestHash)
