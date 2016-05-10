@@ -108,10 +108,10 @@ func runQueuedContainers(pollInterval, priorityPollInterval int, crunchRunComman
 
 // Container data
 type Container struct {
-	UUID               string         `json:"uuid"`
-	State              string         `json:"state"`
-	Priority           int            `json:"priority"`
-	RuntimeConstraints map[string]int `json:"runtime_constraints"`
+	UUID               string           `json:"uuid"`
+	State              string           `json:"state"`
+	Priority           int              `json:"priority"`
+	RuntimeConstraints map[string]int64 `json:"runtime_constraints"`
 }
 
 // ContainerList is a list of the containers from api
@@ -145,7 +145,7 @@ func sbatchFunc(container Container) *exec.Cmd {
 	return exec.Command("sbatch", "--share", "--parsable",
 		"--job-name="+container.UUID,
 		"--mem-per-cpu="+strconv.Itoa(int(memPerCPU)),
-		"--cpus-per-task="+strconv.Itoa(container.RuntimeConstraints["vcpus"]))
+		"--cpus-per-task="+strconv.Itoa(int(container.RuntimeConstraints["vcpus"])))
 }
 
 var sbatchCmd = sbatchFunc

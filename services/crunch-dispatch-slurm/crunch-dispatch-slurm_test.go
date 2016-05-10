@@ -118,7 +118,7 @@ func (s *TestSuite) Test_doMain(c *C) {
 	sbatchCmdComps := []string{"sbatch", "--share", "--parsable",
 		fmt.Sprintf("--job-name=%s", item.UUID),
 		fmt.Sprintf("--mem-per-cpu=%s", strconv.Itoa(int(math.Ceil(float64(item.RuntimeConstraints["ram"])/float64(item.RuntimeConstraints["vcpus"]*1048576))))),
-		fmt.Sprintf("--cpus-per-task=%s", strconv.Itoa(item.RuntimeConstraints["vcpus"]))}
+		fmt.Sprintf("--cpus-per-task=%s", strconv.Itoa(int(item.RuntimeConstraints["vcpus"])))}
 	c.Check(sbatchCmdLine, DeepEquals, sbatchCmdComps)
 
 	c.Check(striggerCmdLine, DeepEquals, []string{"strigger", "--set", "--jobid=zzzzz-dz642-queuedcontainer\n", "--fini",
