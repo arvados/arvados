@@ -4,12 +4,15 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 
+	"fmt"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"syscall"
 	"testing"
@@ -68,12 +71,12 @@ func (s *TestSuite) Test_doMain(c *C) {
 	var striggerCmdLine []string
 
 	// Override sbatchCmd
-	defer func(orig func(string) *exec.Cmd) {
+	defer func(orig func(Container) *exec.Cmd) {
 		sbatchCmd = orig
 	}(sbatchCmd)
-	sbatchCmd = func(uuid string) *exec.Cmd {
-		sbatchCmdLine = sbatchFunc(uuid).Args
-		return exec.Command("echo", uuid)
+	sbatchCmd = func(container Container) *exec.Cmd {
+		sbatchCmdLine = sbatchFunc(container).Args
+		return exec.Command("echo", container.UUID)
 	}
 
 	// Override striggerCmd
@@ -111,7 +114,13 @@ func (s *TestSuite) Test_doMain(c *C) {
 	err = doMain()
 	c.Check(err, IsNil)
 
-	c.Check(sbatchCmdLine, DeepEquals, []string{"sbatch", "--job-name=zzzzz-dz642-queuedcontainer", "--share", "--parsable"})
+	item := containers.Items[0]
+	sbatchCmdComps := []string{"sbatch", "--share", "--parsable",
+		fmt.Sprintf("--job-name=%s", item.UUID),
+		fmt.Sprintf("--mem-per-cpu=%s", strconv.Itoa(int(math.Ceil(float64(item.RuntimeConstraints["ram"])/float64(item.RuntimeConstraints["vcpus"]*1048576))))),
+		fmt.Sprintf("--cpus-per-task=%s", strconv.Itoa(int(item.RuntimeConstraints["vcpus"])))}
+	c.Check(sbatchCmdLine, DeepEquals, sbatchCmdComps)
+
 	c.Check(striggerCmdLine, DeepEquals, []string{"strigger", "--set", "--jobid=zzzzz-dz642-queuedcontainer\n", "--fini",
 		"--program=/usr/bin/crunch-finish-slurm.sh " + os.Getenv("ARVADOS_API_HOST") + " 4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h 1 zzzzz-dz642-queuedcontainer"})
 

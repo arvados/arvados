@@ -10,6 +10,9 @@ queued:
   output: test
   output_path: test
   command: ["echo", "hello"]
+  runtime_constraints:
+    ram: 12000000000
+    vcpus: 4
 
 completed:
   uuid: zzzzz-dz642-compltcontainer
@@ -23,3 +26,6 @@ completed:
   output: test
   output_path: test
   command: ["echo", "hello"]
+  runtime_constraints:
+    ram: 12000000000
+    vcpus: 4

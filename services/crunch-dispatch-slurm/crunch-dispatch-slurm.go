@@ -6,9 +6,11 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"io/ioutil"
 	"log"
+	"math"
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
 	"sync"
 	"syscall"
 	"time"
@@ -106,9 +108,10 @@ func runQueuedContainers(pollInterval, priorityPollInterval int, crunchRunComman
 
 // Container data
 type Container struct {
-	UUID     string `json:"uuid"`
-	State    string `json:"state"`
-	Priority int    `json:"priority"`
+	UUID               string           `json:"uuid"`
+	State              string           `json:"state"`
+	Priority           int              `json:"priority"`
+	RuntimeConstraints map[string]int64 `json:"runtime_constraints"`
 }
 
 // ContainerList is a list of the containers from api
@@ -137,8 +140,12 @@ func dispatchSlurm(priorityPollInterval int, crunchRunCommand, finishCommand str
 }
 
 // sbatchCmd
-func sbatchFunc(uuid string) *exec.Cmd {
-	return exec.Command("sbatch", "--job-name="+uuid, "--share", "--parsable")
+func sbatchFunc(container Container) *exec.Cmd {
+	memPerCPU := math.Ceil((float64(container.RuntimeConstraints["ram"])) / (float64(container.RuntimeConstraints["vcpus"]*1048576)))
+	return exec.Command("sbatch", "--share", "--parsable",
+		"--job-name="+container.UUID,
+		"--mem-per-cpu="+strconv.Itoa(int(memPerCPU)),
+		"--cpus-per-task="+strconv.Itoa(int(container.RuntimeConstraints["vcpus"])))
 }
 
 var sbatchCmd = sbatchFunc
@@ -170,7 +177,7 @@ func submit(container Container, crunchRunCommand string) (jobid string, submitE
 	}()
 
 	// Create the command and attach to stdin/stdout
-	cmd := sbatchCmd(container.UUID)
+	cmd := sbatchCmd(container)
 	stdinWriter, stdinerr := cmd.StdinPipe()
 	if stdinerr != nil {
 		submitErr = fmt.Errorf("Error creating stdin pipe %v: %q", container.UUID, stdinerr)
