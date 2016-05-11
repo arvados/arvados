@@ -350,6 +350,16 @@ class ComputeNodeMonitorActor(config.actor_class):
         state = self.arvados_node['crunch_worker_state']
         if not state:
             return None
+
+        # There's a window between when a node pings for the first time and the
+        # value of 'slurm_state' is synchronized by crunch-dispatch.  In this
+        # window, the node will still report as 'down'.  Check first_ping_at
+        # and implement a grace period where the node should will be considered
+        # 'idle'.
+        if state == 'down' and timestamp_fresh(
+                arvados_timestamp(self.arvados_node['first_ping_at']), self.poll_stale_after):
+            state = 'idle'
+
         result = state in states
         if state == 'idle':
             result = result and not self.arvados_node['job_uuid']
