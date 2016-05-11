@@ -146,18 +146,27 @@ class Container < ArvadosModel
   end
 
   def validate_lock
+    # If the Container is already locked by someone other than the
+    # current api_client_auth, disallow all changes -- except
+    # priority, which needs to change to reflect max(priority) of
+    # relevant ContainerRequests.
     if locked_by_uuid_was
       if locked_by_uuid_was != Thread.current[:api_client_authorization].uuid
-        # Notably, prohibit changing state or locked_by_uuid:
         check_update_whitelist [:priority]
       end
     end
 
     if [Locked, Running].include? self.state
-      need_lock = Thread.current[:api_client_authorization].uuid
+      # If the Container was already locked, locked_by_uuid must not
+      # changes. Otherwise, the current auth gets the lock.
+      need_lock = locked_by_uuid_was || Thread.current[:api_client_authorization].uuid
     else
       need_lock = nil
     end
+
+    # The caller can provide a new value for locked_by_uuid, but only
+    # if it's exactly what we expect. This allows a caller to perform
+    # an update like {"state":"Unlocked","locked_by_uuid":null}.
     if self.locked_by_uuid_changed?
       if self.locked_by_uuid != need_lock
         return errors.add :locked_by_uuid, "can only change to #{need_lock}"
