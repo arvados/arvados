@@ -245,11 +245,18 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         rootLogger.removeHandler(streamHandler)
 
     @mock.patch('arvados.events._EventClient')
-    def test_unsubscribe(self, websocket_client):
-        events = Queue.Queue(10)
+    def test_subscribe_method(self, websocket_client):
         filters = [['object_uuid', 'is_a', 'arvados#human']]
         client = arvados.events.EventClient(
-            self.MOCK_WS_URL, filters[:], events.put_nowait, None)
+            self.MOCK_WS_URL, [], lambda event: None, None)
+        client.subscribe(filters[:], 99)
+        websocket_client().subscribe.assert_called_with(filters, 99)
+
+    @mock.patch('arvados.events._EventClient')
+    def test_unsubscribe(self, websocket_client):
+        filters = [['object_uuid', 'is_a', 'arvados#human']]
+        client = arvados.events.EventClient(
+            self.MOCK_WS_URL, filters[:], lambda event: None, None)
         client.unsubscribe(filters[:])
         websocket_client().unsubscribe.assert_called_with(filters)
 
@@ -292,7 +299,7 @@ class PollClientTestCase(unittest.TestCase):
     def callback(self, event):
         with self.callback_cond:
             self.recv_events.append(event)
-            self.callback_cond.notifyAll()
+            self.callback_cond.notify_all()
 
     def build_client(self, filters=None, callback=None, last_log_id=None, poll_time=99):
         if filters is None:
