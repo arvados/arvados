@@ -20,7 +20,7 @@ class Group < ArvadosModel
     if uuid_changed? or owner_uuid_changed?
       # This can change users' permissions on other groups as well as
       # this one.
-      invalidate_permissions_cache db_current_time.to_i
+      invalidate_permissions_cache
     end
   end
 
