@@ -83,7 +83,7 @@ class EventClient(object):
             self.filters = [[]]
         self.on_event_cb = on_event_cb
         self.last_log_id = last_log_id
-        self.is_closed = False
+        self.is_closed = threading.Event()
         self._setup_event_client()
 
     def _setup_event_client(self):
@@ -105,7 +105,7 @@ class EventClient(object):
         self.ec.unsubscribe(f)
 
     def close(self, code=1000, reason='', timeout=0):
-        self.is_closed = True
+        self.is_closed.set()
         self.ec.close(code, reason, timeout)
 
     def on_event(self, m):
@@ -118,7 +118,7 @@ class EventClient(object):
             thread.interrupt_main()
 
     def on_closed(self):
-        if self.is_closed == False:
+        if not self.is_closed.is_set():
             _logger.warn("Unexpected close. Reconnecting.")
             for tries_left in RetryLoop(num_retries=25, backoff_start=.1, max_wait=15):
                 try:
@@ -128,14 +128,14 @@ class EventClient(object):
                     _logger.warn("Error '%s' during websocket reconnect.", e)
             if tries_left == 0:
                 _logger.exception("EventClient thread could not contact websocket server.")
-                self.is_closed = True
+                self.is_closed.set()
                 thread.interrupt_main()
                 return
 
-    def _delegate_to_ec(attr_name):
-        return property(lambda self: getattr(self.ec, attr_name))
-    for _method_name in ['connect', 'close_connection', 'run_forever']:
-        locals()[_method_name] = _delegate_to_ec(_method_name)
+    def run_forever(self):
+        # Have to poll here to let KeyboardInterrupt get raised.
+        while not self.is_closed.wait(1):
+            pass
 
 
 class PollClient(threading.Thread):
