@@ -66,7 +66,7 @@ class Link < ArvadosModel
       # permissions for head_uuid and tail_uuid, and invalidate the
       # cache for only those users. (This would require a browseable
       # cache.)
-      User.invalidate_permissions_cache
+      User.invalidate_permissions_cache db_current_time.to_i
     end
   end
 

@@ -345,6 +345,12 @@ common:
 
   crunch_log_partial_line_throttle_period: 5
 
+  # Enable asynchronous permission graph rebuild.  Must run
+  # script/permission-updater.rb as a separate process.  When the permission
+  # cache is invalidated, the background process will update the permission
+  # graph cache.  This feature is experimental!
+  async_permissions_update: false
+
 development:
   force_ssl: false
   cache_classes: false

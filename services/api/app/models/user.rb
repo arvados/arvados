@@ -123,8 +123,13 @@ class User < ArvadosModel
     true
   end
 
-  def self.invalidate_permissions_cache
-    Rails.cache.delete_matched(/^groups_for_user_/)
+  def self.invalidate_permissions_cache(timestamp=nil)
+    if Rails.configuration.async_permissions_update
+      timestamp = DbCurrentTime::db_current_time.to_i if timestamp.nil?
+      connection.execute "NOTIFY invalidate_permissions_cache, '#{timestamp}'"
+    else
+      Rails.cache.delete_matched(/^groups_for_user_/)
+    end
   end
 
   # Return a hash of {group_uuid: perm_hash} where perm_hash[:read]
@@ -134,8 +139,7 @@ class User < ArvadosModel
   # The permission graph is built by repeatedly enumerating all
   # permission links reachable from self.uuid, and then calling
   # search_permissions
-  def group_permissions
-    Rails.cache.fetch "groups_for_user_#{self.uuid}" do
+  def calculate_group_permissions
       permissions_from = {}
       todo = {self.uuid => true}
       done = {}
@@ -182,8 +186,27 @@ class User < ArvadosModel
           end
         end
       end
-      search_permissions(self.uuid, permissions_from)
+      perms = search_permissions(self.uuid, permissions_from)
+      Rails.cache.write "groups_for_user_#{self.uuid}", perms
+      perms
+  end
+
+  # Return a hash of {group_uuid: perm_hash} where perm_hash[:read]
+  # and perm_hash[:write] are true if this user can read and write
+  # objects owned by group_uuid.
+  def group_permissions
+    r = Rails.cache.read "groups_for_user_#{self.uuid}"
+    if r.nil?
+      if Rails.configuration.async_permissions_update
+        while r.nil?
+          sleep(0.1)
+          r = Rails.cache.read "groups_for_user_#{self.uuid}"
+        end
+      else
+        r = calculate_group_permissions
+      end
     end
+    r
   end
 
   def self.setup(user, openid_prefix, repo_name=nil, vm_uuid=nil)
