@@ -902,11 +902,14 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 
 	// Trash it again, and this time call EmptyTrash so it really
 	// goes away.
+	// (In Azure volumes, un/trash changes Mtime, so first backdate again)
+	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
 	err = v.Trash(TestHash)
 	err = checkGet()
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
+	// EmptryTrash
 	v.EmptyTrash()
 
 	// Untrash won't find it

@@ -66,14 +66,12 @@ func (h *azStubHandler) TouchWithDate(container, hash string, t time.Time) {
 		return
 	}
 	blob.Mtime = t
-	blob.Metadata["last_write_at"] = fmt.Sprintf("%d", t.Unix())
 }
 
 func (h *azStubHandler) PutRaw(container, hash string, data []byte) {
 	h.Lock()
 	defer h.Unlock()
 	metadata := make(map[string]string)
-	metadata["last_write_at"] = fmt.Sprintf("%d", time.Now().Unix())
 	h.blobs[container+"|"+hash] = &azBlob{
 		Data:        data,
 		Mtime:       time.Now(),
