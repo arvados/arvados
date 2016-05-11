@@ -11,4 +11,12 @@ class Arvados::V1::ContainersController < ApplicationController
     @object = @object.auth
     show
   end
+
+  # Updates use row locking to resolve races between multiple
+  # dispatchers trying to lock the same container.
+  def update
+    @object.with_lock do
+      super
+    end
+  end
 end
