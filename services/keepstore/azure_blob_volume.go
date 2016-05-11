@@ -134,16 +134,16 @@ func (v *AzureBlobVolume) Check() error {
 	return nil
 }
 
-// Return NotFoundError if trash marker is found on the block
-func (v *AzureBlobVolume) checkTrashed(loc string) (bool, error) {
+// Return NotFoundError if expires_at metadata attribute is found on the block
+func (v *AzureBlobVolume) checkTrashed(loc string) (bool, map[string]string, error) {
 	metadata, err := v.bsClient.GetBlobMetadata(v.containerName, loc)
 	if err != nil {
-		return false, v.translateError(err)
+		return false, metadata, v.translateError(err)
 	}
 	if metadata["expires_at"] != "" {
-		return true, nil
+		return true, metadata, nil
 	}
-	return false, nil
+	return false, metadata, nil
 }
 
 // Get reads a Keep block that has been stored as a block blob in the
@@ -153,7 +153,7 @@ func (v *AzureBlobVolume) checkTrashed(loc string) (bool, error) {
 // unexpectedly empty, assume a PutBlob operation is in progress, and
 // wait for it to finish writing.
 func (v *AzureBlobVolume) Get(loc string, buf []byte) (int, error) {
-	trashed, err := v.checkTrashed(loc)
+	trashed, _, err := v.checkTrashed(loc)
 	if err != nil {
 		return 0, err
 	}
@@ -261,7 +261,7 @@ func (v *AzureBlobVolume) get(loc string, buf []byte) (int, error) {
 
 // Compare the given data with existing stored data.
 func (v *AzureBlobVolume) Compare(loc string, expect []byte) error {
-	trashed, err := v.checkTrashed(loc)
+	trashed, _, err := v.checkTrashed(loc)
 	if err != nil {
 		return err
 	}
@@ -286,51 +286,41 @@ func (v *AzureBlobVolume) Put(loc string, block []byte) error {
 	return v.bsClient.CreateBlockBlobFromReader(v.containerName, loc, uint64(len(block)), bytes.NewReader(block), extraHeaders)
 }
 
-func (v *AzureBlobVolume) addToMetadata(loc, name, value string) error {
-	metadata, err := v.bsClient.GetBlobMetadata(v.containerName, loc)
-	if err != nil {
-		return err
-	}
-	metadata[name] = value
-	return v.bsClient.SetBlobMetadata(v.containerName, loc, metadata)
-}
-
-func (v *AzureBlobVolume) removeFromMetadata(loc, name string) error {
-	metadata, err := v.bsClient.GetBlobMetadata(v.containerName, loc)
-	if err != nil {
-		return err
-	}
-	metadata[name] = ""
-	return v.bsClient.SetBlobMetadata(v.containerName, loc, metadata)
-}
-
 // Touch updates the last-modified property of a block blob.
 func (v *AzureBlobVolume) Touch(loc string) error {
 	if v.readonly {
 		return MethodDisabledError
 	}
-	trashed, err := v.checkTrashed(loc)
+	trashed, metadata, err := v.checkTrashed(loc)
 	if err != nil {
 		return err
 	}
 	if trashed {
 		return os.ErrNotExist
 	}
-	return v.addToMetadata(loc, "last_write_at", fmt.Sprintf("%d", time.Now()))
+
+	metadata["last_write_at"] = fmt.Sprintf("%d", time.Now())
+	return v.bsClient.SetBlobMetadata(v.containerName, loc, metadata)
 }
 
-// Mtime returns the last-modified property of a block blob.
+// Mtime returns the last-write-at metadata property of a block blob.
+// For blobs stored before #8556, returns the last-modified property.
 func (v *AzureBlobVolume) Mtime(loc string) (time.Time, error) {
-	trashed, err := v.checkTrashed(loc)
+	trashed, metadata, err := v.checkTrashed(loc)
 	if err != nil {
 		return time.Time{}, err
 	}
 	if trashed {
 		return time.Time{}, os.ErrNotExist
 	}
-	metadata, err := v.bsClient.GetBlobMetadata(v.containerName, loc)
-	if err != nil {
-		return time.Time{}, v.translateError(err)
+
+	// If it's an old blob before #8556, return last-modified property
+	if metadata["last_write_at"] == "" {
+		props, err := v.bsClient.GetBlobProperties(v.containerName, loc)
+		if err != nil {
+			return time.Time{}, err
+		}
+		return time.Parse(time.RFC1123, props.LastModified)
 	}
 
 	lastWriteAt, err := strconv.ParseInt(metadata["last_write_at"], 10, 64)
@@ -406,7 +396,12 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 		})
 	}
 	// Mark as trash
-	err = v.addToMetadata(loc, "expires_at", fmt.Sprintf("%d", time.Now().Add(trashLifetime).Unix()))
+	metadata, err := v.bsClient.GetBlobMetadata(v.containerName, loc)
+	if err != nil {
+		return err
+	}
+	metadata["expires_at"] = fmt.Sprintf("%d", time.Now().Add(trashLifetime).Unix())
+	err = v.bsClient.SetBlobMetadata(v.containerName, loc, metadata)
 	if err != nil {
 		return err
 	}
@@ -425,8 +420,10 @@ func (v *AzureBlobVolume) Untrash(loc string) error {
 	if metadata["expires_at"] == "" {
 		return os.ErrNotExist
 	}
+
 	// reset expires_at metadata attribute
-	err = v.removeFromMetadata(loc, "expires_at")
+	metadata["expires_at"] = ""
+	err = v.bsClient.SetBlobMetadata(v.containerName, loc, metadata)
 	if err != nil {
 		return v.translateError(err)
 	}
@@ -519,6 +516,13 @@ blobListPage:
 			props, err := v.bsClient.GetBlobProperties(v.containerName, matches[2])
 			if err != nil {
 				log.Printf("EmptyTrash: GetBlobProperties(%v): %v", matches[2], err)
+				if os.IsNotExist(v.translateError(err)) {
+					// Delete the trash marker for non-existing blob
+					err = v.bsClient.DeleteBlob(v.containerName, b.Name, map[string]string{})
+					if err != nil {
+						log.Printf("EmptyTrash: Delete Trash Marker (%v): %v", b.Name, err)
+					}
+				}
 				continue
 			}
 
@@ -542,7 +546,7 @@ blobListPage:
 			// Delete the marker also
 			err = v.bsClient.DeleteBlob(v.containerName, b.Name, map[string]string{})
 			if err != nil {
-				log.Printf("EmptyTrash: DeleteBlob(%v): %v", b.Name, err)
+				log.Printf("EmptyTrash: Delete Trash Marker(%v): %v", b.Name, err)
 			}
 		}
 		if resp.NextMarker == "" {
