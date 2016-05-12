@@ -131,10 +131,14 @@ func dispatchLocal(pollInterval time.Duration, crunchRunCommand string) {
 		return
 	}
 
-	for i := 0; i < len(containers.Items); i++ {
-		log.Printf("About to run queued container %v", containers.Items[i].UUID)
+	for _, c := range containers.Items {
+		log.Printf("About to run queued container %v", c.UUID)
 		// Run the container
-		go run(containers.Items[i].UUID, crunchRunCommand, pollInterval)
+		waitGroup.Add(1)
+		go func(c Container) {
+			run(c.UUID, crunchRunCommand, pollInterval)
+			waitGroup.Done()
+		}(c)
 	}
 }
 
@@ -186,10 +190,6 @@ func run(uuid string, crunchRunCommand string, pollInterval time.Duration) {
 	}()
 
 	log.Printf("Starting container %v", uuid)
-
-	// Add this crunch job to waitGroup
-	waitGroup.Add(1)
-	defer waitGroup.Done()
 
 	updateState(uuid, "Running")
 
