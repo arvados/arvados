@@ -40,7 +40,7 @@ Error loading gems: #{error}
 
 Please install all required gems:
 
-  gem install activesupport andand curb google-api-client json oj trollop yaml
+  gem install arvados activesupport andand curb json oj trollop
 
   EOS
 end
