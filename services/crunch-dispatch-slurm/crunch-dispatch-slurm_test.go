@@ -77,7 +77,7 @@ func (s *TestSuite) Test_doMain(c *C) {
 	}(sbatchCmd)
 	sbatchCmd = func(container Container) *exec.Cmd {
 		sbatchCmdLine = sbatchFunc(container).Args
-		return exec.Command("echo", container.UUID)
+		return exec.Command("sh")
 	}
 
 	// Override striggerCmd
