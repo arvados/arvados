@@ -147,7 +147,7 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 		sigChan <- syscall.SIGTERM
 	}()
 
-	runQueuedContainers(1, 1, crunchCmd)
+	runQueuedContainers(time.Second, time.Second, crunchCmd)
 
 	// Wait for all running crunch jobs to complete / terminate
 	waitGroup.Wait()
