@@ -4,12 +4,11 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 
-	"io/ioutil"
+	"bytes"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -101,7 +100,7 @@ func (s *MockArvadosServerSuite) Test_APIErrorUpdatingContainerState(c *C) {
 	apiStubResponses["/arvados/v1/containers/zzzzz-dz642-xxxxxxxxxxxxxx1"] =
 		arvadostest.StubResponse{500, string(`{}`)}
 
-	testWithServerStub(c, apiStubResponses, "echo", "Error updating container state")
+	testWithServerStub(c, apiStubResponses, "echo", "Error updating container zzzzz-dz642-xxxxxxxxxxxxxx1 to 'Locked' state")
 }
 
 func (s *MockArvadosServerSuite) Test_ContainerStillInRunningAfterRun(c *C) {
@@ -122,7 +121,7 @@ func (s *MockArvadosServerSuite) Test_ErrorRunningContainer(c *C) {
 	apiStubResponses["/arvados/v1/containers/zzzzz-dz642-xxxxxxxxxxxxxx3"] =
 		arvadostest.StubResponse{200, string(`{"uuid":"zzzzz-dz642-xxxxxxxxxxxxxx3", "state":"Running", "priority":1}`)}
 
-	testWithServerStub(c, apiStubResponses, "nosuchcommand", "Error running container for zzzzz-dz642-xxxxxxxxxxxxxx3")
+	testWithServerStub(c, apiStubResponses, "nosuchcommand", "Error starting crunch-run for zzzzz-dz642-xxxxxxxxxxxxxx3")
 }
 
 func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubResponse, crunchCmd string, expected string) {
@@ -139,21 +138,19 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 		Retries:   0,
 	}
 
-	tempfile, err := ioutil.TempFile(os.TempDir(), "temp-log-file")
-	c.Check(err, IsNil)
-	defer os.Remove(tempfile.Name())
-	log.SetOutput(tempfile)
+	buf := bytes.NewBuffer(nil)
+	log.SetOutput(buf)
+	defer log.SetOutput(os.Stderr)
 
 	go func() {
 		time.Sleep(2 * time.Second)
 		sigChan <- syscall.SIGTERM
 	}()
 
-	runQueuedContainers(1, 1, crunchCmd)
+	runQueuedContainers(time.Second, time.Second, crunchCmd)
 
 	// Wait for all running crunch jobs to complete / terminate
 	waitGroup.Wait()
 
-	buf, _ := ioutil.ReadFile(tempfile.Name())
-	c.Check(strings.Contains(string(buf), expected), Equals, true)
+	c.Check(buf.String(), Matches, `(?ms).*`+expected+`.*`)
 }

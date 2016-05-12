@@ -1,6 +1,6 @@
 queued:
   uuid: zzzzz-dz642-queuedcontainer
-  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  owner_uuid: zzzzz-tpzed-000000000000000
   state: Queued
   priority: 1
   created_at: 2016-01-11 11:11:11.111111111 Z
@@ -16,7 +16,7 @@ queued:
 
 completed:
   uuid: zzzzz-dz642-compltcontainer
-  owner_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  owner_uuid: zzzzz-tpzed-000000000000000
   state: Complete
   priority: 1
   created_at: 2016-01-11 11:11:11.111111111 Z
