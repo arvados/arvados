@@ -88,7 +88,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
     Manager to handle).
     """
     def __init__(self, timer_actor, arvados_client, cloud_client,
-                 cloud_size, arvados_node=None,
+                 cloud_size, arvados_node,
                  retry_wait=1, max_retry_wait=180):
         super(ComputeNodeSetupActor, self).__init__(
             cloud_client, arvados_client, timer_actor,
@@ -96,16 +96,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         self.cloud_size = cloud_size
         self.arvados_node = None
         self.cloud_node = None
-        if arvados_node is None:
-            self._later.create_arvados_node()
-        else:
-            self._later.prepare_arvados_node(arvados_node)
-
-    @ComputeNodeStateChangeBase._finish_on_exception
-    @RetryMixin._retry(config.ARVADOS_ERRORS)
-    def create_arvados_node(self):
-        self.arvados_node = self._arvados.nodes().create(body={}).execute()
-        self._later.create_cloud_node()
+        self._later.prepare_arvados_node(arvados_node)
 
     @ComputeNodeStateChangeBase._finish_on_exception
     @RetryMixin._retry(config.ARVADOS_ERRORS)
@@ -353,12 +344,19 @@ class ComputeNodeMonitorActor(config.actor_class):
 
         # There's a window between when a node pings for the first time and the
         # value of 'slurm_state' is synchronized by crunch-dispatch.  In this
-        # window, the node will still report as 'down'.  Check first_ping_at
-        # and implement a grace period where the node should will be considered
-        # 'idle'.
-        if state == 'down' and timestamp_fresh(
-                arvados_timestamp(self.arvados_node['first_ping_at']), self.poll_stale_after):
+        # window, the node will still report as 'down'.  Check that
+        # first_ping_at is truthy and consider the node 'idle' during the
+        # initial boot grace period.
+        if (state == 'down' and
+            self.arvados_node['first_ping_at'] and
+            timestamp_fresh(self.cloud_node_start_time,
+                            self.boot_fail_after)):
             state = 'idle'
+
+        # "missing" means last_ping_at is stale, this should be
+        # considered "down"
+        if arvados_node_missing(self.arvados_node, self.node_stale_after):
+            state = 'down'
 
         result = state in states
         if state == 'idle':
@@ -384,8 +382,12 @@ class ComputeNodeMonitorActor(config.actor_class):
             crunch_worker_state = 'unpaired'
         elif not timestamp_fresh(arvados_node_mtime(self.arvados_node), self.node_stale_after):
             return (False, "node state is stale")
-        elif self.arvados_node['crunch_worker_state']:
-            crunch_worker_state = self.arvados_node['crunch_worker_state']
+        elif self.in_state('down'):
+            crunch_worker_state = 'down'
+        elif self.in_state('idle'):
+            crunch_worker_state = 'idle'
+        elif self.in_state('busy'):
+            crunch_worker_state = 'busy'
         else:
             return (False, "node is paired but crunch_worker_state is '%s'" % self.arvados_node['crunch_worker_state'])
 
