@@ -398,7 +398,7 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 }
 
 // Untrash a Keep block.
-// Delete the expires_at metadata attribute and trash marker
+// Delete the expires_at metadata attribute
 func (v *AzureBlobVolume) Untrash(loc string) error {
 	// if expires_at does not exist, return NotFoundError
 	metadata, err := v.bsClient.GetBlobMetadata(v.containerName, loc)

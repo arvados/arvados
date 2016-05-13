@@ -71,11 +71,10 @@ func (h *azStubHandler) TouchWithDate(container, hash string, t time.Time) {
 func (h *azStubHandler) PutRaw(container, hash string, data []byte) {
 	h.Lock()
 	defer h.Unlock()
-	metadata := make(map[string]string)
 	h.blobs[container+"|"+hash] = &azBlob{
 		Data:        data,
 		Mtime:       time.Now(),
-		Metadata:    metadata,
+		Metadata:    make(map[string]string),
 		Uncommitted: make(map[string][]byte),
 	}
 }

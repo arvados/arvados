@@ -120,7 +120,7 @@ func testCompareNonexistent(t TB, factory TestableVolumeFactory) {
 	defer v.Teardown()
 
 	err := v.Compare(TestHash, TestBlock)
-	if err == nil || !os.IsNotExist(err) {
+	if err != os.ErrNotExist {
 		t.Errorf("Got err %T %q, expected os.ErrNotExist", err, err)
 	}
 }
@@ -450,12 +450,11 @@ func testDeleteOldBlock(t TB, factory TestableVolumeFactory) {
 		t.Error(err)
 	}
 	data := make([]byte, BlockSize)
-	_, err := v.Get(TestHash, data)
-	if err == nil || !os.IsNotExist(err) {
+	if _, err := v.Get(TestHash, data); err == nil || !os.IsNotExist(err) {
 		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
 
-	_, err = v.Mtime(TestHash)
+	_, err := v.Mtime(TestHash)
 	if err == nil {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
