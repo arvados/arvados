@@ -1,23 +1,21 @@
 import arvados
-import arvados.events
-import arvados.errors
-from datetime import datetime, timedelta, tzinfo
+import io
 import logging
-import logging.handlers
 import mock
 import Queue
 import run_test_server
-import StringIO
-import tempfile
 import threading
 import time
 import unittest
+
+import arvados_testutil
 
 class WebsocketTest(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
 
     TIME_PAST = time.time()-3600
     TIME_FUTURE = time.time()+3600
+    MOCK_WS_URL = 'wss://[{}]/'.format(arvados_testutil.TEST_HOST)
 
     def setUp(self):
         self.ws = None
@@ -153,7 +151,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         run_test_server.authorize_with('active')
         events = Queue.Queue(100)
 
-        logstream = StringIO.StringIO()
+        logstream = io.BytesIO()
         rootLogger = logging.getLogger()
         streamHandler = logging.StreamHandler(logstream)
         rootLogger.addHandler(streamHandler)
@@ -178,7 +176,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
 
         # close (im)properly
         if close_unexpected:
-            self.ws.close_connection()
+            self.ws.ec.close_connection()
         else:
             self.ws.close()
 
@@ -221,7 +219,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
     def test_websocket_reconnect_retry(self, event_client_connect):
         event_client_connect.side_effect = [None, Exception('EventClient.connect error'), None]
 
-        logstream = StringIO.StringIO()
+        logstream = io.BytesIO()
         rootLogger = logging.getLogger()
         streamHandler = logging.StreamHandler(logstream)
         rootLogger.addHandler(streamHandler)
@@ -245,3 +243,130 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         found = log_messages.find("Error 'EventClient.connect error' during websocket reconnect.")
         self.assertNotEqual(found, -1)
         rootLogger.removeHandler(streamHandler)
+
+    @mock.patch('arvados.events._EventClient')
+    def test_subscribe_method(self, websocket_client):
+        filters = [['object_uuid', 'is_a', 'arvados#human']]
+        client = arvados.events.EventClient(
+            self.MOCK_WS_URL, [], lambda event: None, None)
+        client.subscribe(filters[:], 99)
+        websocket_client().subscribe.assert_called_with(filters, 99)
+
+    @mock.patch('arvados.events._EventClient')
+    def test_unsubscribe(self, websocket_client):
+        filters = [['object_uuid', 'is_a', 'arvados#human']]
+        client = arvados.events.EventClient(
+            self.MOCK_WS_URL, filters[:], lambda event: None, None)
+        client.unsubscribe(filters[:])
+        websocket_client().unsubscribe.assert_called_with(filters)
+
+    @mock.patch('arvados.events._EventClient')
+    def test_run_forever_survives_reconnects(self, websocket_client):
+        connection_cond = threading.Condition()
+        def ws_connect():
+            with connection_cond:
+                connection_cond.notify_all()
+        websocket_client().connect.side_effect = ws_connect
+        client = arvados.events.EventClient(
+            self.MOCK_WS_URL, [], lambda event: None, None)
+        with connection_cond:
+            forever_thread = threading.Thread(target=client.run_forever)
+            forever_thread.start()
+            # Simulate an unexpected disconnect, and wait for reconnect.
+            close_thread = threading.Thread(target=client.on_closed)
+            close_thread.start()
+            connection_cond.wait()
+        close_thread.join()
+        run_forever_alive = forever_thread.is_alive()
+        client.close()
+        forever_thread.join()
+        self.assertTrue(run_forever_alive)
+        self.assertEqual(2, websocket_client().connect.call_count)
+
+
+class PollClientTestCase(unittest.TestCase):
+    class MockLogs(object):
+        def __init__(self):
+            self.logs = []
+            self.lock = threading.Lock()
+
+        def add(self, log):
+            with self.lock:
+                self.logs.append(log)
+
+        def return_list(self, num_retries=None):
+            with self.lock:
+                retval = self.logs
+                self.logs = []
+            return {'items': retval, 'items_available': len(retval)}
+
+
+    def setUp(self):
+        self.logs = self.MockLogs()
+        self.arv = mock.MagicMock(name='arvados.api()')
+        self.arv.logs().list().execute.side_effect = self.logs.return_list
+        self.callback_cond = threading.Condition()
+        self.recv_events = []
+
+    def tearDown(self):
+        if hasattr(self, 'client'):
+            self.client.close(timeout=None)
+
+    def callback(self, event):
+        with self.callback_cond:
+            self.recv_events.append(event)
+            self.callback_cond.notify_all()
+
+    def build_client(self, filters=None, callback=None, last_log_id=None, poll_time=99):
+        if filters is None:
+            filters = []
+        if callback is None:
+            callback = self.callback
+        self.client = arvados.events.PollClient(
+            self.arv, filters, callback, poll_time, last_log_id)
+
+    def was_filter_used(self, target):
+        return any(target in call[-1].get('filters', [])
+                   for call in self.arv.logs().list.call_args_list)
+
+    def test_callback(self):
+        test_log = {'id': 12345, 'testkey': 'testtext'}
+        self.logs.add({'id': 123})
+        self.build_client(poll_time=.01)
+        with self.callback_cond:
+            self.client.start()
+            self.callback_cond.wait()
+            self.logs.add(test_log.copy())
+            self.callback_cond.wait()
+        self.client.close(timeout=None)
+        self.assertIn(test_log, self.recv_events)
+
+    def test_subscribe(self):
+        client_filter = ['kind', '=', 'arvados#test']
+        self.build_client()
+        self.client.subscribe([client_filter[:]])
+        with self.callback_cond:
+            self.client.start()
+            self.callback_cond.wait()
+        self.client.close(timeout=None)
+        self.assertTrue(self.was_filter_used(client_filter))
+
+    def test_unsubscribe(self):
+        client_filter = ['kind', '=', 'arvados#test']
+        self.build_client()
+        self.client.subscribe([client_filter[:]])
+        self.client.unsubscribe([client_filter[:]])
+        self.client.start()
+        self.client.close(timeout=None)
+        self.assertFalse(self.was_filter_used(client_filter))
+
+    def test_run_forever(self):
+        self.build_client()
+        with self.callback_cond:
+            self.client.start()
+            forever_thread = threading.Thread(target=self.client.run_forever)
+            forever_thread.start()
+            self.callback_cond.wait()
+        self.assertTrue(forever_thread.is_alive())
+        self.client.close()
+        forever_thread.join()

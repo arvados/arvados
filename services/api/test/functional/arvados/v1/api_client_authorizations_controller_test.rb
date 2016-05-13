@@ -168,4 +168,17 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
     }
     assert_response 403
   end
+
+  test "get current token" do
+    authorize_with :active
+    get :current
+    assert_response :success
+    assert_equal(json_response['api_token'],
+                 api_client_authorizations(:active).api_token)
+  end
+
+  test "get current token, no auth" do
+    get :current
+    assert_response 401
+  end
 end

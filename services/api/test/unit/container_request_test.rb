@@ -306,18 +306,18 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal "Committed", cr.state
 
     c = Container.find_by_uuid cr.container_uuid
-    assert_equal "Queued", c.state
+    assert_equal Container::Queued, c.state
 
     act_as_system_user do
-      c.state = "Running"
-      c.save!
+      c.update_attributes! state: Container::Locked
+      c.update_attributes! state: Container::Running
     end
 
     cr.reload
     assert_equal "Committed", cr.state
 
     act_as_system_user do
-      c.state = "Complete"
+      c.update_attributes! state: Container::Complete
       c.save!
     end
 

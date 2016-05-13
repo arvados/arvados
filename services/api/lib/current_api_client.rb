@@ -124,12 +124,18 @@ module CurrentApiClient
   end
 
   def act_as_user user
+    #auth_was = Thread.current[:api_client_authorization]
     user_was = Thread.current[:user]
     Thread.current[:user] = user
+    #Thread.current[:api_client_authorization] = ApiClientAuthorization.
+    #  where('user_id=? and scopes is null', user.id).
+    #  order('expires_at desc').
+    #  first
     begin
       yield
     ensure
       Thread.current[:user] = user_was
+      #Thread.current[:api_client_authorization] = auth_was
     end
   end
 

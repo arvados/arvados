@@ -273,7 +273,7 @@ func newAPIServerError(ServerAddress string, resp *http.Response) APIServerError
 // Returns a non-nil error if an error occurs making the API call, the
 // API responds with a non-successful HTTP status, or an error occurs
 // parsing the response body.
-func (c ArvadosClient) Call(method string, resourceType string, uuid string, action string, parameters Dict, output interface{}) error {
+func (c ArvadosClient) Call(method, resourceType, uuid, action string, parameters Dict, output interface{}) error {
 	reader, err := c.CallRaw(method, resourceType, uuid, action, parameters)
 	if reader != nil {
 		defer reader.Close()

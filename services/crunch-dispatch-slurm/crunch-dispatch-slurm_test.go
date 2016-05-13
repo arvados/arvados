@@ -4,8 +4,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 
+	"bytes"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math"
 	"net/http"
@@ -52,6 +52,7 @@ func (s *TestSuite) SetUpTest(c *C) {
 	if err != nil {
 		c.Fatalf("Error making arvados client: %s", err)
 	}
+	os.Setenv("ARVADOS_API_TOKEN", arvadostest.Dispatch1Token)
 }
 
 func (s *TestSuite) TearDownTest(c *C) {
@@ -76,7 +77,7 @@ func (s *TestSuite) Test_doMain(c *C) {
 	}(sbatchCmd)
 	sbatchCmd = func(container Container) *exec.Cmd {
 		sbatchCmdLine = sbatchFunc(container).Args
-		return exec.Command("echo", container.UUID)
+		return exec.Command("sh")
 	}
 
 	// Override striggerCmd
@@ -89,10 +90,12 @@ func (s *TestSuite) Test_doMain(c *C) {
 			apiHost, apiToken, apiInsecure).Args
 		go func() {
 			time.Sleep(5 * time.Second)
-			arv.Update("containers", containerUUID,
-				arvadosclient.Dict{
-					"container": arvadosclient.Dict{"state": "Complete"}},
-				nil)
+			for _, state := range []string{"Running", "Complete"} {
+				arv.Update("containers", containerUUID,
+					arvadosclient.Dict{
+						"container": arvadosclient.Dict{"state": state}},
+					nil)
+			}
 		}()
 		return exec.Command("echo", "strigger")
 	}
@@ -122,7 +125,7 @@ func (s *TestSuite) Test_doMain(c *C) {
 	c.Check(sbatchCmdLine, DeepEquals, sbatchCmdComps)
 
 	c.Check(striggerCmdLine, DeepEquals, []string{"strigger", "--set", "--jobid=zzzzz-dz642-queuedcontainer\n", "--fini",
-		"--program=/usr/bin/crunch-finish-slurm.sh " + os.Getenv("ARVADOS_API_HOST") + " 4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h 1 zzzzz-dz642-queuedcontainer"})
+		"--program=/usr/bin/crunch-finish-slurm.sh " + os.Getenv("ARVADOS_API_HOST") + " " + arvadostest.Dispatch1Token + " 1 zzzzz-dz642-queuedcontainer"})
 
 	// There should be no queued containers now
 	err = arv.List("containers", params, &containers)
@@ -138,6 +141,7 @@ func (s *TestSuite) Test_doMain(c *C) {
 
 func (s *MockArvadosServerSuite) Test_APIErrorGettingContainers(c *C) {
 	apiStubResponses := make(map[string]arvadostest.StubResponse)
+	apiStubResponses["/arvados/v1/api_client_authorizations/current"] = arvadostest.StubResponse{200, `{"uuid":"` + arvadostest.Dispatch1AuthUUID + `"}`}
 	apiStubResponses["/arvados/v1/containers"] = arvadostest.StubResponse{500, string(`{}`)}
 
 	testWithServerStub(c, apiStubResponses, "echo", "Error getting list of queued containers")
@@ -157,18 +161,18 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 		Retries:   0,
 	}
 
-	tempfile, err := ioutil.TempFile(os.TempDir(), "temp-log-file")
-	c.Check(err, IsNil)
-	defer os.Remove(tempfile.Name())
-	log.SetOutput(tempfile)
+	buf := bytes.NewBuffer(nil)
+	log.SetOutput(buf)
+	defer log.SetOutput(os.Stderr)
 
 	go func() {
-		time.Sleep(2 * time.Second)
+		for i := 0; i < 80 && !strings.Contains(buf.String(), expected); i++ {
+			time.Sleep(100 * time.Millisecond)
+		}
 		sigChan <- syscall.SIGTERM
 	}()
 
 	runQueuedContainers(2, 1, crunchCmd, crunchCmd)
 
-	buf, _ := ioutil.ReadFile(tempfile.Name())
-	c.Check(strings.Contains(string(buf), expected), Equals, true)
+	c.Check(buf.String(), Matches, `(?ms).*`+expected+`.*`)
 }

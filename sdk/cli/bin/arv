@@ -14,24 +14,33 @@ if RUBY_VERSION < '1.9.3' then
 end
 
 begin
-  require 'curb'
-  require 'rubygems'
-  require 'arvados/google_api_client'
   require 'json'
-  require 'pp'
-  require 'trollop'
-  require 'andand'
-  require 'oj'
-  require 'active_support/inflector'
-  require 'yaml'
-  require 'tempfile'
   require 'net/http'
-rescue LoadError
+  require 'pp'
+  require 'tempfile'
+  require 'yaml'
+rescue LoadError => error
+  abort "Error loading libraries: #{error}\n"
+end
+
+begin
+  require 'rubygems'
+  # Load the gems with more requirements first, so we respect any version
+  # constraints they put on gems loaded later.
+  require 'arvados/google_api_client'
+  require 'active_support/inflector'
+  require 'andand'
+  require 'curb'
+  require 'oj'
+  require 'trollop'
+rescue LoadError => error
   abort <<-EOS
+
+Error loading gems: #{error}
 
 Please install all required gems:
 
-  gem install activesupport andand curb google-api-client json oj trollop yaml
+  gem install arvados activesupport andand curb json oj trollop
 
   EOS
 end
