@@ -292,8 +292,9 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         setup = self.start_node_boot(cloud_node, arv_node)
         self.daemon.node_up(setup).get(self.TIMEOUT)
         self.assertEqual(1, self.alive_monitor_count())
-        self.daemon.update_cloud_nodes([cloud_node])
         self.daemon.update_arvados_nodes([arv_node])
+        self.daemon.update_cloud_nodes([cloud_node])
+        self.monitor_list()[0].proxy().cloud_node_start_time = time.time()-1801
         self.daemon.update_server_wishlist(
             [testutil.MockSize(1)]).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
@@ -314,16 +315,6 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         setup = self.start_node_boot(cloud_node, id_num=2)
         self.daemon.node_up(setup)
         self.daemon.update_cloud_nodes([cloud_node]).get(self.TIMEOUT)
-        self.assertEqual(1, self.alive_monitor_count())
-
-    def test_node_counted_after_boot_with_slow_listing(self):
-        # Test that, after we boot a compute node, we assume it exists
-        # even it doesn't appear in the listing (e.g., because of delays
-        # propagating tags).
-        setup = self.start_node_boot()
-        self.daemon.node_up(setup).get(self.TIMEOUT)
-        self.assertEqual(1, self.alive_monitor_count())
-        self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
         self.assertEqual(1, self.alive_monitor_count())
 
     def test_booted_unlisted_node_counted(self):
@@ -455,8 +446,9 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
 
     def test_shutdown_declined_at_wishlist_capacity(self):
         cloud_node = testutil.cloud_node_mock(1)
+        arv_node = testutil.arvados_node_mock(1)
         size = testutil.MockSize(1)
-        self.make_daemon(cloud_nodes=[cloud_node], want_sizes=[size])
+        self.make_daemon(cloud_nodes=[cloud_node], arvados_nodes=[arv_node], want_sizes=[size])
         self.assertEqual(1, self.alive_monitor_count())
         monitor = self.monitor_list()[0].proxy()
         self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
@@ -465,7 +457,8 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
 
     def test_shutdown_declined_below_min_nodes(self):
         cloud_node = testutil.cloud_node_mock(1)
-        self.make_daemon(cloud_nodes=[cloud_node], min_nodes=1)
+        arv_node = testutil.arvados_node_mock(1)
+        self.make_daemon(cloud_nodes=[cloud_node], arvados_nodes=[arv_node], min_nodes=1)
         self.assertEqual(1, self.alive_monitor_count())
         monitor = self.monitor_list()[0].proxy()
         self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)

@@ -88,7 +88,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
     Manager to handle).
     """
     def __init__(self, timer_actor, arvados_client, cloud_client,
-                 cloud_size, arvados_node,
+                 cloud_size, arvados_node=None,
                  retry_wait=1, max_retry_wait=180):
         super(ComputeNodeSetupActor, self).__init__(
             cloud_client, arvados_client, timer_actor,
@@ -96,7 +96,16 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         self.cloud_size = cloud_size
         self.arvados_node = None
         self.cloud_node = None
-        self._later.prepare_arvados_node(arvados_node)
+        if arvados_node is None:
+            self._later.create_arvados_node()
+        else:
+            self._later.prepare_arvados_node(arvados_node)
+
+    @ComputeNodeStateChangeBase._finish_on_exception
+    @RetryMixin._retry(config.ARVADOS_ERRORS)
+    def create_arvados_node(self):
+        self.arvados_node = self._arvados.nodes().create(body={}).execute()
+        self._later.create_cloud_node()
 
     @ComputeNodeStateChangeBase._finish_on_exception
     @RetryMixin._retry(config.ARVADOS_ERRORS)
@@ -350,7 +359,8 @@ class ComputeNodeMonitorActor(config.actor_class):
         if (state == 'down' and
             self.arvados_node['first_ping_at'] and
             timestamp_fresh(self.cloud_node_start_time,
-                            self.boot_fail_after)):
+                            self.boot_fail_after) and
+            not self._cloud.broken(self.cloud_node)):
             state = 'idle'
 
         # "missing" means last_ping_at is stale, this should be
@@ -361,6 +371,7 @@ class ComputeNodeMonitorActor(config.actor_class):
         result = state in states
         if state == 'idle':
             result = result and not self.arvados_node['job_uuid']
+
         return result
 
     def shutdown_eligible(self):

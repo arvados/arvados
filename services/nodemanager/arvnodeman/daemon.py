@@ -254,11 +254,12 @@ class NodeManagerDaemonActor(actor_class):
         return sum(1 for down in
                    pykka.get_all(rec.actor.in_state('down') for rec in
                                  self.cloud_nodes.nodes.itervalues()
-                                 if size is None or rec.cloud_node.size.id == size.id)
+                                 if ((size is None or rec.cloud_node.size.id == size.id) and
+                                     rec.cloud_node.id not in self.shutdowns))
                    if down)
 
     def _nodes_up(self, size):
-        up = (self._nodes_booting(size) + self._nodes_unpaired(size) + self._nodes_paired(size)) - self._nodes_down(size)
+        up = (self._nodes_booting(size) + self._nodes_unpaired(size) + self._nodes_paired(size)) - (self._nodes_down(size) + self._size_shutdowns(size))
         return up
 
     def _total_price(self):
@@ -280,17 +281,12 @@ class NodeManagerDaemonActor(actor_class):
         return sum(1 for c in self.last_wishlist if c.id == size.id)
 
     def _size_shutdowns(self, size):
-        sh = 0
-        for c in self.shutdowns.iterkeys():
-            try:
-                if self.sizes_booting_shutdown[c].id == size.id:
-                    sh += 1
-            except pykka.ActorDeadError:
-                pass
-        return sh
+        return sum(1
+                  for c in self.shutdowns.iterkeys()
+                  if size is None or self.sizes_booting_shutdown[c].id == size.id)
 
     def _nodes_wanted(self, size):
-        total_up_count = self._nodes_up(None)
+        total_up_count = self._nodes_up(None) + self._nodes_down(None)
         under_min = self.min_nodes - total_up_count
         over_max = total_up_count - self.max_nodes
         total_price = self._total_price()
@@ -370,23 +366,17 @@ class NodeManagerDaemonActor(actor_class):
         nodes_wanted = self._nodes_wanted(cloud_size)
         if nodes_wanted < 1:
             return None
+        arvados_node = self.arvados_nodes.find_stale_node(self.node_stale_after)
         self._logger.info("Want %i more %s nodes.  Booting a node.",
                           nodes_wanted, cloud_size.name)
-
-        arvados_client=self._new_arvados()
-        arvados_node = self.arvados_nodes.find_stale_node(self.node_stale_after)
-        if not arvados_node:
-            arvados_node = arvados_client.nodes().create(body={}).execute()
-            self._register_arvados_node(arvados_node["uuid"], arvados_node)
-
         new_setup = self._node_setup.start(
             timer_actor=self._timer,
-            arvados_client=arvados_client,
+            arvados_client=self._new_arvados(),
             arvados_node=arvados_node,
             cloud_client=self._new_cloud(),
             cloud_size=cloud_size).proxy()
-        self.booting[arvados_node['uuid']] = new_setup
-        self.sizes_booting_shutdown[arvados_node['uuid']] = cloud_size
+        self.booting[new_setup.actor_ref.actor_urn] = new_setup
+        self.sizes_booting_shutdown[new_setup.actor_ref.actor_urn] = cloud_size
 
         if arvados_node is not None:
             self.arvados_nodes[arvados_node['uuid']].assignment_time = (
@@ -409,10 +399,8 @@ class NodeManagerDaemonActor(actor_class):
         if cloud_node is not None:
             # Node creation succeeded.  Update cloud node list.
             self._register_cloud_node(cloud_node)
-            arvuuid = arvados_node["uuid"]
-            if arvuuid in self.booting:
-                del self.booting[arvuuid]
-                del self.sizes_booting_shutdown[arvuuid]
+        del self.booting[setup_proxy.actor_ref.actor_urn]
+        del self.sizes_booting_shutdown[setup_proxy.actor_ref.actor_urn]
 
     @_check_poll_freshness
     def stop_booting_node(self, size):
@@ -444,13 +432,15 @@ class NodeManagerDaemonActor(actor_class):
     @_check_poll_freshness
     def node_can_shutdown(self, node_actor):
         if self._nodes_excess(node_actor.cloud_node.get().size) > 0:
+            print("excess")
             self._begin_node_shutdown(node_actor, cancellable=True)
         elif self.cloud_nodes.nodes.get(node_actor.cloud_node.get().id).arvados_node is None:
             # Node is unpaired, which means it probably exceeded its booting
             # grace period without a ping, so shut it down so we can boot a new
             # node in its place.
+            print("unpaired")
             self._begin_node_shutdown(node_actor, cancellable=False)
-        elif node_actor.in_state('down'):
+        elif node_actor.in_state('down').get():
             # Node is down and unlikely to come back.
             self._begin_node_shutdown(node_actor, cancellable=False)
 
