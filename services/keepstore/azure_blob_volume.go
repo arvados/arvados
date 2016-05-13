@@ -378,18 +378,23 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 	} else if time.Since(t) < blobSignatureTTL {
 		return nil
 	}
+
+	// If trashLifetime == 0, just delete it
 	if trashLifetime == 0 {
 		return v.bsClient.DeleteBlob(v.containerName, loc, map[string]string{
 			"If-Match": props.Etag,
 		})
 	}
-	// Mark as trash
+
+	// Otherwise, mark as trash
 	metadata, err := v.bsClient.GetBlobMetadata(v.containerName, loc)
 	if err != nil {
 		return err
 	}
 	metadata["expires_at"] = fmt.Sprintf("%d", time.Now().Add(trashLifetime).Unix())
-	return v.bsClient.SetBlobMetadata(v.containerName, loc, metadata)
+	return v.bsClient.SetBlobMetadata(v.containerName, loc, metadata, map[string]string{
+		"If-Match": props.Etag,
+	})
 }
 
 // Untrash a Keep block.
@@ -406,7 +411,7 @@ func (v *AzureBlobVolume) Untrash(loc string) error {
 
 	// reset expires_at metadata attribute
 	metadata["expires_at"] = ""
-	err = v.bsClient.SetBlobMetadata(v.containerName, loc, metadata)
+	err = v.bsClient.SetBlobMetadata(v.containerName, loc, metadata, nil)
 	return v.translateError(err)
 }
 
