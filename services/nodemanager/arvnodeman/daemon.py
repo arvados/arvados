@@ -214,11 +214,13 @@ class NodeManagerDaemonActor(actor_class):
             # A recently booted node is a node that successfully completed the
             # setup actor but has not yet appeared in the cloud node list.
             # This will have the tag _nodemanager_recently_booted on it, which
-            # means we don't want to forget about it yet.  Once it appears in
-            # the cloud list, the object in record.cloud_node will be replaced
-            # by a new one that lacks the "_nodemanager_recently_booted" tag.
-            # However if node is being shut down, forget about it.
-            if (not hasattr(record.cloud_node, "_nodemanager_recently_booted")) or shutdown:
+            # means (if we're not shutting it down) we want to put it back into
+            # the cloud node list.  Once it really appears in the cloud list,
+            # the object in record.cloud_node will be replaced by a new one
+            # that lacks the "_nodemanager_recently_booted" tag.
+            if hasattr(record.cloud_node, "_nodemanager_recently_booted"):
+                self.cloud_nodes.add(record)
+            else:
                 record.actor.stop()
                 record.cloud_node = None
 
@@ -459,11 +461,20 @@ class NodeManagerDaemonActor(actor_class):
             shutdown_actor, 'cloud_node', 'success', 'cancel_reason')
         cloud_node_id = cloud_node.id
         shutdown_actor.stop()
+
         if not success:
             if cancel_reason == self._node_shutdown.NODE_BROKEN:
                 self.cloud_nodes.blacklist(cloud_node_id)
             del self.shutdowns[cloud_node_id]
             del self.sizes_booting_shutdown[cloud_node_id]
+        else:
+            # If the node went from being booted to being shut down without ever
+            # appearing in the cloud node list, it will have the
+            # _nodemanager_recently_booted tag, so get rid of it so that the node
+            # can be forgotten completely.
+            if hasattr(self.cloud_nodes[cloud_node_id].cloud_node, "_nodemanager_recently_booted"):
+                del self.cloud_nodes[cloud_node_id].cloud_node._nodemanager_recently_booted
+
         # On success, we want to leave the entry in self.shutdowns so that it
         # won't try to shut down the node again.  It should disappear from the
         # cloud node list, and the entry in self.shutdowns will get cleaned up
