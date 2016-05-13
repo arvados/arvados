@@ -317,6 +317,16 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.update_cloud_nodes([cloud_node]).get(self.TIMEOUT)
         self.assertEqual(1, self.alive_monitor_count())
 
+    def test_node_counted_after_boot_with_slow_listing(self):
+        # Test that, after we boot a compute node, we assume it exists
+        # even it doesn't appear in the listing (e.g., because of delays
+        # propagating tags).
+        setup = self.start_node_boot()
+        self.daemon.node_up(setup).get(self.TIMEOUT)
+        self.assertEqual(1, self.alive_monitor_count())
+        self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
+        self.assertEqual(1, self.alive_monitor_count())
+
     def test_booted_unlisted_node_counted(self):
         setup = self.start_node_boot(id_num=1)
         self.daemon.node_up(setup)

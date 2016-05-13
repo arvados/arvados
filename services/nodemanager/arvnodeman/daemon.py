@@ -202,15 +202,25 @@ class NodeManagerDaemonActor(actor_class):
         self.try_pairing()
 
         for key, record in self.cloud_nodes.orphans.iteritems():
-            if key in self.shutdowns:
+            shutdown = key in self.shutdowns
+            if shutdown:
                 try:
                     self.shutdowns[key].stop().get()
                 except pykka.ActorDeadError:
                     pass
                 del self.shutdowns[key]
                 del self.sizes_booting_shutdown[key]
-            record.actor.stop()
-            record.cloud_node = None
+
+            # A recently booted node is a node that successfully completed the
+            # setup actor but has not yet appeared in the cloud node list.
+            # This will have the tag _nodemanager_recently_booted on it, which
+            # means we don't want to forget about it yet.  Once it appears in
+            # the cloud list, the object in record.cloud_node will be replaced
+            # by a new one that lacks the "_nodemanager_recently_booted" tag.
+            # However if node is being shut down, forget about it.
+            if (not hasattr(record.cloud_node, "_nodemanager_recently_booted")) or shutdown:
+                record.actor.stop()
+                record.cloud_node = None
 
     def _register_arvados_node(self, key, arv_node):
         self._logger.info("Registering new Arvados node %s", key)
@@ -230,7 +240,6 @@ class NodeManagerDaemonActor(actor_class):
                     self._pair_nodes(record, arv_rec.arvados_node)
                     break
 
-
     def _nodes_booting(self, size):
         s = sum(1
                 for c in self.booting.iterkeys()
@@ -242,24 +251,24 @@ class NodeManagerDaemonActor(actor_class):
                    for c in self.cloud_nodes.unpaired()
                    if size is None or c.cloud_node.size.id == size.id)
 
-    def _nodes_paired(self, size):
-        return sum(1
-                  for c in self.cloud_nodes.paired()
-                  if size is None or c.cloud_node.size.id == size.id)
-
     def _nodes_down(self, size):
         # Make sure to iterate over self.cloud_nodes because what we're
         # counting here are compute nodes that are reported by the cloud
         # provider but are considered "down" by Arvados.
         return sum(1 for down in
                    pykka.get_all(rec.actor.in_state('down') for rec in
-                                 self.cloud_nodes.nodes.itervalues()
+                                 self.cloud_nodes.paired()
                                  if ((size is None or rec.cloud_node.size.id == size.id) and
                                      rec.cloud_node.id not in self.shutdowns))
                    if down)
 
+    def _nodes_size(self, size):
+        return sum(1
+                  for c in self.cloud_nodes.nodes.itervalues()
+                  if size is None or c.cloud_node.size.id == size.id)
+
     def _nodes_up(self, size):
-        up = (self._nodes_booting(size) + self._nodes_unpaired(size) + self._nodes_paired(size)) - (self._nodes_down(size) + self._size_shutdowns(size))
+        up = (self._nodes_booting(size) + self._nodes_size(size)) - (self._nodes_down(size) + self._size_shutdowns(size))
         return up
 
     def _total_price(self):
@@ -286,7 +295,7 @@ class NodeManagerDaemonActor(actor_class):
                   if size is None or self.sizes_booting_shutdown[c].id == size.id)
 
     def _nodes_wanted(self, size):
-        total_up_count = self._nodes_up(None) + self._nodes_down(None)
+        total_up_count = self._nodes_booting(None) + self._nodes_size(None)
         under_min = self.min_nodes - total_up_count
         over_max = total_up_count - self.max_nodes
         total_price = self._total_price()
@@ -298,12 +307,12 @@ class NodeManagerDaemonActor(actor_class):
 
         up_count = self._nodes_up(size)
         booting_count = self._nodes_booting(size)
+        total_count = self._nodes_size(size)
         unpaired_count = self._nodes_unpaired(size)
-        paired_count = self._nodes_paired(size)
         busy_count = self._nodes_busy(size)
         down_count = self._nodes_down(size)
-        idle_count = paired_count - (busy_count+down_count)
         shutdown_count = self._size_shutdowns(size)
+        idle_count = total_count - (unpaired_count+busy_count+down_count+shutdown_count)
 
         self._logger.info("%s: wishlist %i, up %i (booting %i, unpaired %i, idle %i, busy %i), down %i, shutdown %i", size.name,
                           self._size_wishlist(size),
@@ -398,6 +407,7 @@ class NodeManagerDaemonActor(actor_class):
         # successful and so there isn't anything to do.
         if cloud_node is not None:
             # Node creation succeeded.  Update cloud node list.
+            cloud_node._nodemanager_recently_booted = True
             self._register_cloud_node(cloud_node)
         del self.booting[setup_proxy.actor_ref.actor_urn]
         del self.sizes_booting_shutdown[setup_proxy.actor_ref.actor_urn]
