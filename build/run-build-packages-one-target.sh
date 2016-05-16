@@ -128,9 +128,10 @@ if test -z "$packages" ; then
         arvados-src
         arvados-workbench
         crunchstat
+        keep-balance
+        keep-block-check
         keepproxy
         keep-rsync
-        keep-block-check
         keepstore
         keep-web
         libarvados-perl"
