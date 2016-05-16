@@ -384,6 +384,8 @@ package_go_binary services/keepstore keepstore \
     "Keep storage daemon, accessible to clients on the LAN"
 package_go_binary services/keepproxy keepproxy \
     "Make a Keep cluster accessible to clients that are not on the LAN"
+package_go_binary services/keep-balance keep-balance \
+    "Rebalance and garbage-collect data blocks stored in Arvados Keep"
 package_go_binary services/keep-web keep-web \
     "Static web hosting service for user data stored in Arvados Keep"
 package_go_binary services/datamanager arvados-data-manager \

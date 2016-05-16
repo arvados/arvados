@@ -20,10 +20,12 @@ ubuntu1404/generated: common-generated-all
 	test -d ubuntu1404/generated || mkdir ubuntu1404/generated
 	cp -rlt ubuntu1404/generated common-generated/*
 
-common-generated-all: common-generated/golang-amd64.tar.gz
+GOTARBALL=go1.6.2.linux-amd64.tar.gz
 
-common-generated/golang-amd64.tar.gz: common-generated
-	wget -cqO common-generated/golang-amd64.tar.gz http://storage.googleapis.com/golang/go1.4.2.linux-amd64.tar.gz
+common-generated-all: common-generated/$(GOTARBALL)
+
+common-generated/$(GOTARBALL): common-generated
+	wget -cqO common-generated/$(GOTARBALL) http://storage.googleapis.com/golang/$(GOTARBALL)
 
 common-generated:
 	mkdir common-generated
