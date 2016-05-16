@@ -172,6 +172,12 @@ fi
 
 if [[ "$UPLOAD" != 0 ]]; then
 
+  if [[ $DEBUG > 0 ]]; then
+    EXTRA_UPLOAD_FLAGS=" --verbose"
+  else
+    EXTRA_UPLOAD_FLAGS=""
+  fi
+
   if [[ ! -e "$WORKSPACE/packages" ]]; then
     mkdir -p "$WORKSPACE/packages"
   fi
@@ -180,7 +186,7 @@ if [[ "$UPLOAD" != 0 ]]; then
   timer_reset
 
   if [ "$PYTHON_BUILD_FAILURES" -eq 0 ]; then
-    /usr/local/arvados-dev/jenkins/run_upload_packages.py -v --workspace $WORKSPACE python
+    /usr/local/arvados-dev/jenkins/run_upload_packages.py -v$EXTRA_UPLOAD_FLAGS --workspace $WORKSPACE python
   else
     echo "Skipping python packages upload, there were errors building the packages"
   fi
@@ -191,7 +197,7 @@ if [[ "$UPLOAD" != 0 ]]; then
   timer_reset
 
   if [ "$GEM_BUILD_FAILURES" -eq 0 ]; then
-    /usr/local/arvados-dev/jenkins/run_upload_packages.py -v --workspace $WORKSPACE gems
+    /usr/local/arvados-dev/jenkins/run_upload_packages.py -v$EXTRA_UPLOAD_FLAGS --workspace $WORKSPACE gems
   else
     echo "Skipping ruby gem upload, there were errors building the packages"
   fi
