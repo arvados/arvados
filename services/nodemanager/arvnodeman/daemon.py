@@ -429,13 +429,11 @@ class NodeManagerDaemonActor(actor_class):
     @_check_poll_freshness
     def node_can_shutdown(self, node_actor):
         if self._nodes_excess(node_actor.cloud_node.get().size) > 0:
-            print("excess")
             self._begin_node_shutdown(node_actor, cancellable=True)
         elif self.cloud_nodes.nodes.get(node_actor.cloud_node.get().id).arvados_node is None:
             # Node is unpaired, which means it probably exceeded its booting
             # grace period without a ping, so shut it down so we can boot a new
             # node in its place.
-            print("unpaired")
             self._begin_node_shutdown(node_actor, cancellable=False)
         elif node_actor.in_state('down').get():
             # Node is down and unlikely to come back.
