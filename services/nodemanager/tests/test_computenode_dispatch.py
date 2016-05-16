@@ -300,17 +300,24 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
 
     def test_in_state_when_unpaired(self):
         self.make_actor()
-        self.assertIsNone(self.node_state('idle', 'busy'))
+        self.assertTrue(self.node_state('unpaired'))
 
     def test_in_state_when_pairing_stale(self):
         self.make_actor(arv_node=testutil.arvados_node_mock(
                 job_uuid=None, age=90000))
-        self.assertIsNone(self.node_state('idle', 'busy'))
+        self.assertTrue(self.node_state('down'))
 
     def test_in_state_when_no_state_available(self):
         self.make_actor(arv_node=testutil.arvados_node_mock(
                 crunch_worker_state=None))
-        self.assertIsNone(self.node_state('idle', 'busy'))
+        print(self.node_actor.get_state().get())
+        self.assertTrue(self.node_state('idle'))
+
+    def test_in_state_when_no_state_available_old(self):
+        self.make_actor(arv_node=testutil.arvados_node_mock(
+                crunch_worker_state=None, age=90000))
+        print(self.node_actor.get_state().get())
+        self.assertTrue(self.node_state('down'))
 
     def test_in_idle_state(self):
         self.make_actor(2, arv_node=testutil.arvados_node_mock(job_uuid=None))
@@ -397,11 +404,11 @@ class ComputeNodeMonitorActorTestCase(testutil.ActorTestMixin,
         self.assertEquals((False, "node state is ('busy', 'open', 'boot wait', 'idle exceeded')"),
                           self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
-    def test_no_shutdown_when_node_state_unknown(self):
+    def test_shutdown_when_node_state_unknown(self):
         self.make_actor(5, testutil.arvados_node_mock(
             5, crunch_worker_state=None))
         self.shutdowns._set_state(True, 600)
-        self.assertEquals((False, "node is paired but crunch_worker_state is 'None'"),
+        self.assertEquals((True, "node state is ('idle', 'open', 'boot wait', 'idle exceeded')"),
                           self.node_actor.shutdown_eligible().get(self.TIMEOUT))
 
     def test_no_shutdown_when_node_state_stale(self):

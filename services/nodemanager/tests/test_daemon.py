@@ -215,8 +215,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         mock_node_monitor.proxy.return_value = mock.NonCallableMock(cloud_node=get_cloud_node)
         mock_shutdown = self.node_shutdown.start(node_monitor=mock_node_monitor)
 
-        self.daemon.shutdowns.get()[cloud_nodes[1].id] = mock_shutdown.proxy()
-        self.daemon.sizes_booting_shutdown.get()[cloud_nodes[1].id] = size
+        self.daemon.cloud_nodes.get()[cloud_nodes[1].id].shutdown_actor = mock_shutdown.proxy()
 
         self.assertEqual(2, self.alive_monitor_count())
         for mon_ref in self.monitor_list():
@@ -680,7 +679,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
             self.daemon.node_can_shutdown(c.actor)
 
         booting = self.daemon.booting.get()
-        shutdowns = self.daemon.shutdowns.get()
+        cloud_nodes = self.daemon.cloud_nodes.get()
 
         self.stop_proxy(self.daemon)
 
@@ -696,8 +695,9 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
 
         # shutting down a small node
         sizecounts = {a[0].id: 0 for a in avail_sizes}
-        for b in shutdowns.itervalues():
-            sizecounts[b.cloud_node.get().size.id] += 1
+        for b in cloud_nodes.nodes.itervalues():
+            if b.shutdown_actor is not None:
+                sizecounts[b.cloud_node.size.id] += 1
         self.assertEqual(1, sizecounts[small.id])
         self.assertEqual(0, sizecounts[big.id])
 

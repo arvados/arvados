@@ -339,17 +339,20 @@ class ComputeNodeMonitorActor(config.actor_class):
         self._last_log = msg
         self._logger.debug(msg, *args)
 
-    def in_state(self, *states):
-        # Return a boolean to say whether or not our Arvados node record is in
-        # one of the given states.  If state information is not
-        # available--because this node has no Arvados record, the record is
-        # stale, or the record has no state information--return None.
-        if (self.arvados_node is None) or not timestamp_fresh(
-              arvados_node_mtime(self.arvados_node), self.node_stale_after):
-            return None
+    def get_state(self):
+        """Get node state, one of ['unpaired', 'busy', 'idle', 'down']."""
+
+        # If this node is not associated with an Arvados node, return 'unpaired'.
+        if self.arvados_node is None:
+            return 'unpaired'
+
         state = self.arvados_node['crunch_worker_state']
-        if not state:
-            return None
+
+        # If state information is not available because it is missing or the
+        # record is stale, return 'down'.
+        if not state or not timestamp_fresh(arvados_node_mtime(self.arvados_node),
+                                            self.node_stale_after):
+            state = 'down'
 
         # There's a window between when a node pings for the first time and the
         # value of 'slurm_state' is synchronized by crunch-dispatch.  In this
@@ -368,11 +371,13 @@ class ComputeNodeMonitorActor(config.actor_class):
         if arvados_node_missing(self.arvados_node, self.node_stale_after):
             state = 'down'
 
-        result = state in states
-        if state == 'idle':
-            result = result and not self.arvados_node['job_uuid']
+        if state == 'idle' and self.arvados_node['job_uuid']:
+            state = 'busy'
 
-        return result
+        return state
+
+    def in_state(self, *states):
+        return self.get_state() in states
 
     def shutdown_eligible(self):
         """Determine if node is candidate for shut down.
@@ -389,18 +394,10 @@ class ComputeNodeMonitorActor(config.actor_class):
         # boot_grace = ["boot wait", "boot exceeded"]
         # idle_grace = ["not idle", "idle wait", "idle exceeded"]
 
-        if self.arvados_node is None:
-            crunch_worker_state = 'unpaired'
-        elif not timestamp_fresh(arvados_node_mtime(self.arvados_node), self.node_stale_after):
+        if self.arvados_node and not timestamp_fresh(arvados_node_mtime(self.arvados_node), self.node_stale_after):
             return (False, "node state is stale")
-        elif self.in_state('down'):
-            crunch_worker_state = 'down'
-        elif self.in_state('idle'):
-            crunch_worker_state = 'idle'
-        elif self.in_state('busy'):
-            crunch_worker_state = 'busy'
-        else:
-            return (False, "node is paired but crunch_worker_state is '%s'" % self.arvados_node['crunch_worker_state'])
+
+        crunch_worker_state = self.get_state()
 
         window = "open" if self._shutdowns.window_open() else "closed"
 
