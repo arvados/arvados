@@ -371,8 +371,13 @@ class ComputeNodeMonitorActor(config.actor_class):
         if arvados_node_missing(self.arvados_node, self.node_stale_after):
             state = 'down'
 
-        if state == 'idle' and self.arvados_node['job_uuid']:
-            state = 'busy'
+        # Turns out using 'job_uuid' this way is a bad idea.  The node record
+        # is assigned the job_uuid before the job is locked (which removes it
+        # from the queue) which means the job will be double-counted as both in
+        # the wishlist and but also keeping a node busy.  This end result is
+        # excess nodes being booted.
+        #if state == 'idle' and self.arvados_node['job_uuid']:
+        #    state = 'busy'
 
         return state
 
