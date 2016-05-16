@@ -322,7 +322,8 @@ func (v *AzureBlobVolume) Mtime(loc string) (time.Time, error) {
 // container.
 func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 	params := storage.ListBlobsParameters{
-		Prefix: prefix,
+		Prefix:  prefix,
+		Include: "metadata",
 	}
 	for {
 		resp, err := v.bsClient.ListBlobs(v.containerName, params)
@@ -387,12 +388,9 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 	}
 
 	// Otherwise, mark as trash
-	metadata, err := v.bsClient.GetBlobMetadata(v.containerName, loc)
-	if err != nil {
-		return err
-	}
-	metadata["expires_at"] = fmt.Sprintf("%d", time.Now().Add(trashLifetime).Unix())
-	return v.bsClient.SetBlobMetadata(v.containerName, loc, metadata, map[string]string{
+	return v.bsClient.SetBlobMetadata(v.containerName, loc, map[string]string{
+		"expires_at": fmt.Sprintf("%d", time.Now().Add(trashLifetime).Unix()),
+	}, map[string]string{
 		"If-Match": props.Etag,
 	})
 }
@@ -466,7 +464,7 @@ func (v *AzureBlobVolume) isKeepBlock(s string) bool {
 func (v *AzureBlobVolume) EmptyTrash() {
 	var bytesDeleted, bytesInTrash int64
 	var blocksDeleted, blocksInTrash int
-	params := storage.ListBlobsParameters{}
+	params := storage.ListBlobsParameters{Include: "metadata"}
 
 	for {
 		resp, err := v.bsClient.ListBlobs(v.containerName, params)
@@ -475,35 +473,23 @@ func (v *AzureBlobVolume) EmptyTrash() {
 			break
 		}
 		for _, b := range resp.Blobs {
-			blocksInTrash++
-
-			// Get the Etag before checking expires_at, and use it to delete blob
-			props, err := v.bsClient.GetBlobProperties(v.containerName, b.Name)
-			if err != nil {
-				log.Printf("EmptyTrash: GetBlobProperties(%v): %v", b.Name, err)
-				continue
-			}
-
 			// Check if it is expired
-			metadata, err := v.bsClient.GetBlobMetadata(v.containerName, b.Name)
-			if err != nil {
-				log.Printf("EmptyTrash: GetBlobMetadata(%v): %v", b.Name, err)
-				continue
-			}
-
-			expiresAtMetadata := metadata["expires_at"]
+			expiresAtMetadata := b.Metadata["expires_at"]
 			if expiresAtMetadata == "" {
 				continue
 			}
+
+			blocksInTrash++
+
 			expiresAt, err := strconv.ParseInt(expiresAtMetadata, 10, 64)
 			if err != nil {
 				log.Printf("EmptyTrash: ParseInt(%v): %v", expiresAtMetadata, err)
 				continue
 			}
 
-			if expiresAt <= time.Now().Add(-1*trashLifetime).Unix() {
+			if expiresAt <= time.Now().Unix() {
 				err = v.bsClient.DeleteBlob(v.containerName, b.Name, map[string]string{
-					"If-Match": props.Etag,
+					"If-Match": b.Properties.Etag,
 				})
 				if err != nil {
 					log.Printf("EmptyTrash: DeleteBlob(%v): %v", b.Name, err)

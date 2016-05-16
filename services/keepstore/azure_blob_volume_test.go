@@ -285,15 +285,20 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			}
 			if len(resp.Blobs) > 0 || marker == "" || marker == hash {
 				blob := h.blobs[container+"|"+hash]
-				resp.Blobs = append(resp.Blobs, storage.Blob{
+				bmeta := map[string]string(nil)
+				if r.Form.Get("include") == "metadata" {
+					bmeta = blob.Metadata
+				}
+				b := storage.Blob{
 					Name: hash,
 					Properties: storage.BlobProperties{
 						LastModified:  blob.Mtime.Format(time.RFC1123),
 						ContentLength: int64(len(blob.Data)),
 						Etag:          blob.Etag,
 					},
-					Metadata: blob.Metadata,
-				})
+					Metadata: bmeta,
+				}
+				resp.Blobs = append(resp.Blobs, b)
 			}
 		}
 		buf, err := xml.Marshal(resp)
