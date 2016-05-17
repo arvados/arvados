@@ -24,7 +24,10 @@ class BogusActor(arvnodeman.baseactor.BaseNodeManagerActor):
         raise self.exp
 
     def ping(self):
+        # Called by WatchdogActorTest, this delay is longer than the test timeout
+        # of 1 second, which should cause the watchdog ping to fail.
         time.sleep(2)
+        return True
 
 class ActorUnhandledExceptionTest(unittest.TestCase):
     def test_fatal_error(self):
