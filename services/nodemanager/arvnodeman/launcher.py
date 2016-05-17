@@ -99,6 +99,9 @@ def main(args=None):
     args = parse_cli(args)
     config = load_config(args.config)
 
+    # Create a new process group.
+    os.setsid()
+
     if not args.foreground:
         daemon.DaemonContext().open()
     for sigcode in [signal.SIGINT, signal.SIGQUIT, signal.SIGTERM]:
@@ -126,7 +129,11 @@ def main(args=None):
             node_setup, node_shutdown, node_monitor,
             max_total_price=config.getfloat('Daemon', 'max_total_price')).tell_proxy()
 
-        WatchdogActor.start(config.getint('Daemon', 'watchdog'))
+        WatchdogActor.start(config.getint('Daemon', 'watchdog'),
+                            cloud_node_poller.actor_ref,
+                            arvados_node_poller.actor_ref,
+                            job_queue_poller.actor_ref,
+                            node_daemon.actor_ref)
 
         signal.pause()
         daemon_stopped = node_daemon.actor_ref.actor_stopped.is_set
