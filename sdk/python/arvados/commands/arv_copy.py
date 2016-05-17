@@ -294,9 +294,9 @@ def migrate_repository_filter(repo_filter, src_repository, dst_repository):
         raise ValueError("component does not specify a source repository")
     elif dst_repository is None:
         raise ValueError("no destination repository specified to update repository filter")
-    elif repo_filter == ['repository', '=', src_repository]:
+    elif repo_filter[1:] == ['=', src_repository]:
         repo_filter[2] = dst_repository
-    elif repo_filter == ['repository', 'in', [src_repository]]:
+    elif repo_filter[1:] == ['in', [src_repository]]:
         repo_filter[2] = [dst_repository]
     else:
         raise ValueError("repository filter is not a simple source match")
