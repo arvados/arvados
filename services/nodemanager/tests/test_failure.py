@@ -4,6 +4,7 @@ from __future__ import absolute_import, print_function
 
 import errno
 import logging
+import time
 import threading
 import unittest
 
@@ -22,18 +23,30 @@ class BogusActor(arvnodeman.baseactor.BaseNodeManagerActor):
     def doStuff(self):
         raise self.exp
 
+    def ping(self):
+        time.sleep(2)
+
 class ActorUnhandledExceptionTest(unittest.TestCase):
     def test_fatal_error(self):
         for e in (MemoryError(), threading.ThreadError(), OSError(errno.ENOMEM, "")):
-            with mock.patch('os.killpg') as killpg_mock:
+            with mock.patch('os.kill') as kill_mock:
                 act = BogusActor.start(e).tell_proxy()
                 act.doStuff()
                 act.actor_ref.stop(block=True)
-                self.assertTrue(killpg_mock.called)
+                self.assertTrue(kill_mock.called)
 
-    def test_nonfatal_error(self):
-        with mock.patch('os.killpg') as killpg_mock:
-            act = BogusActor.start(OSError(errno.ENOENT, "")).tell_proxy()
-            act.doStuff()
-            act.actor_ref.stop(block=True)
-            self.assertFalse(killpg_mock.called)
+    @mock.patch('os.kill')
+    def test_nonfatal_error(self, kill_mock):
+        act = BogusActor.start(OSError(errno.ENOENT, "")).tell_proxy()
+        act.doStuff()
+        act.actor_ref.stop(block=True)
+        self.assertFalse(kill_mock.called)
+
+class WatchdogActorTest(unittest.TestCase):
+    @mock.patch('os.kill')
+    def test_time_timout(self, kill_mock):
+        act = BogusActor.start(OSError(errno.ENOENT, ""))
+        watch = arvnodeman.baseactor.WatchdogActor.start(1)
+        watch.stop(block=True)
+        act.stop(block=True)
+        self.assertTrue(kill_mock.called)
