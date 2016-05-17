@@ -67,10 +67,6 @@ class _BaseNodeTracker(object):
         return (record for record in self.nodes.itervalues()
                 if getattr(record, self.PAIR_ATTR) is None)
 
-    def paired(self):
-        return (record for record in self.nodes.itervalues()
-                if getattr(record, self.PAIR_ATTR) is not None)
-
 
 class _CloudNodeTracker(_BaseNodeTracker):
     RECORD_ATTR = 'cloud_node'
