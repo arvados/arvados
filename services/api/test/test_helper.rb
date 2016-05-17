@@ -36,6 +36,10 @@ module ArvadosTestSupport
   def auth(api_client_auth_name)
     {'HTTP_AUTHORIZATION' => "OAuth2 #{api_token(api_client_auth_name)}"}
   end
+
+  def show_errors model
+    return lambda { model.errors.full_messages.inspect }
+  end
 end
 
 class ActiveSupport::TestCase

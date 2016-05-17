@@ -264,7 +264,7 @@ func (v *AzureBlobVolume) Touch(loc string) error {
 	}
 	return v.bsClient.SetBlobMetadata(v.containerName, loc, map[string]string{
 		"touch": fmt.Sprintf("%d", time.Now()),
-	})
+	}, nil)
 }
 
 // Mtime returns the last-modified property of a block blob.
