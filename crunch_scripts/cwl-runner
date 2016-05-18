@@ -38,7 +38,7 @@ try:
     job_order_object["cwl:tool"] = keeppath(job_order_object["cwl:tool"])
 
     for k,v in job_order_object.items():
-        if arvados.util.keep_locator_pattern.match(v):
+        if isinstance(v, basestring) and arvados.util.keep_locator_pattern.match(v):
             job_order_object[k] = {
                 "class": "File",
                 "path": keeppath(v)
