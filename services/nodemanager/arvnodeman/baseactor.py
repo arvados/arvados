@@ -84,7 +84,7 @@ class BaseNodeManagerActor(pykka.ThreadingActor):
         if (exception_type in (threading.ThreadError, MemoryError) or
             exception_type is OSError and exception_value.errno == errno.ENOMEM):
             lg.critical("Unhandled exception is a fatal error, killing Node Manager")
-            os.killpg(os.getpgid(0), signal.SIGKILL)
+            os.kill(os.getpid(), signal.SIGKILL)
 
     def ping(self):
         return True
@@ -101,7 +101,7 @@ class WatchdogActor(pykka.ThreadingActor):
     def kill_self(self, act):
         lg = getattr(self, "_logger", logging)
         lg.critical("Actor %s watchdog ping time out, killing Node Manager", act)
-        os.killpg(os.getpgid(0), signal.SIGKILL)
+        os.kill(os.getpid(), signal.SIGKILL)
 
     def on_start(self):
         self._later.run()

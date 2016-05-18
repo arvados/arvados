@@ -99,9 +99,6 @@ def main(args=None):
     args = parse_cli(args)
     config = load_config(args.config)
 
-    # Create a new process group.
-    os.setsid()
-
     if not args.foreground:
         daemon.DaemonContext().open()
     for sigcode in [signal.SIGINT, signal.SIGQUIT, signal.SIGTERM]:
