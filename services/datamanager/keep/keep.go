@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"math"
 )
 
 // ServerAddress struct
@@ -109,8 +110,7 @@ func GetKeepServersAndSummarize(params GetKeepServersParams) (results ReadServer
 	log.Printf("Returned %d keep disks", len(results.ServerToContents))
 
 	results.Summarize(params.Logger)
-	log.Printf("Replication level distribution: %v",
-		results.BlockReplicationCounts)
+	log.Printf("Replication level distribution: \n%v", results.Histogram(params.Logger, 60))
 
 	return
 }
@@ -454,6 +454,46 @@ func (readServers *ReadServers) Summarize(arvLogger *logger.Logger) {
 			keepInfo["distinct_blocks_stored"] = len(readServers.BlockToServers)
 		})
 	}
+}
+
+func (readServers *ReadServers) Histogram(arvLogger *logger.Logger, histogramHashColumns int) (hist string) {
+     hist = Histogram(readServers.BlockReplicationCounts, histogramHashColumns, arvLogger)
+     return
+}
+
+func Histogram(histMap map[int]int, histogramHashColumns int, arvLogger *logger.Logger) (hist string) {
+	histogram := make(map[int]int)
+	histogramMaxCount := 0
+	histogramMaxValue := 0
+
+	for k := range histMap {
+	      	 if k > histogramMaxValue {
+	       	      	histogramMaxValue = k
+	    	 }
+	}
+	for i := 1; i <= histogramMaxValue; i++ {
+	        count, ok := histMap[i]
+		if ok {
+		     	histogram[i] = count
+			if count > histogramMaxCount {
+			   	histogramMaxCount = count
+			}
+		} else {
+		     	histogram[i] = 0
+		}
+	}
+	multiplier := 1.0
+	if int(10*math.Log10(float64(histogramMaxCount+1))+1) > histogramHashColumns {
+	        multiplier = float64(histogramHashColumns) / float64(int(10*math.Log10(float64(histogramMaxCount+1)))+1)
+	}
+	histLines := []string{}
+	for i := 1; i <= histogramMaxValue; i++ {
+	    	count := histogram[i]
+		hash_count := int((multiplier*10*math.Log10(float64(count+1)))+1)
+	        histLines = append(histLines, fmt.Sprintf("%2d: %v (%v)", i, strings.Repeat("#", hash_count), count))
+	}
+	hist = strings.Join(histLines, "\n")
+	return
 }
 
 // TrashRequest struct
