@@ -32,6 +32,8 @@ try:
     def keeppath(v):
         if arvados.util.keep_locator_pattern.match(v):
             return "file://%s/%s" % (os.environ['TASK_KEEPMOUNT'], v)
+        else:
+            return v
 
     job_order_object["cwl:tool"] = keeppath(job_order_object["cwl:tool"])
 
@@ -55,7 +57,8 @@ try:
     args.debug = True
     args.quiet = False
     args.ignore_docker_for_reuse = False
-    outputObj = runner.arvExecutor(t, job_order_object, "", args, cwl_runner_job={"uuid": arvados.current_job()["uuid"], "state": arvados.current_job()["state"]})
+    args.cwl_runner_job={"uuid": arvados.current_job()["uuid"], "state": arvados.current_job()["state"]}
+    outputObj = runner.arvExecutor(t, job_order_object, **vars(args))
 
     files = {}
     def capture(path):
