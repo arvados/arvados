@@ -3,6 +3,8 @@ from __future__ import absolute_import, print_function
 import errno
 import logging
 import os
+import signal
+import time
 import threading
 import traceback
 
@@ -82,4 +84,37 @@ class BaseNodeManagerActor(pykka.ThreadingActor):
         if (exception_type in (threading.ThreadError, MemoryError) or
             exception_type is OSError and exception_value.errno == errno.ENOMEM):
             lg.critical("Unhandled exception is a fatal error, killing Node Manager")
-            os.killpg(os.getpgid(0), 9)
+            os.killpg(os.getpgid(0), signal.SIGKILL)
+
+    def ping(self):
+        return True
+
+
+class WatchdogActor(pykka.ThreadingActor):
+    def __init__(self, timeout, *args, **kwargs):
+         super(pykka.ThreadingActor, self).__init__(*args, **kwargs)
+         self.timeout = timeout
+         self.actors = [a.proxy() for a in args]
+         self.actor_ref = TellableActorRef(self)
+         self._later = self.actor_ref.tell_proxy()
+
+    def kill_self(self, act):
+        lg = getattr(self, "_logger", logging)
+        lg.critical("Actor %s watchdog ping time out, killing Node Manager", act)
+        os.killpg(os.getpgid(0), signal.SIGKILL)
+
+    def on_start(self):
+        self._later.run()
+
+    def run(self):
+        for a in self.actors:
+            try:
+                a.ping().get(self.timeout)
+            except pykka.ActorDeadError:
+                pass
+            except pykka.Timeout:
+                self.kill_self(a)
+                return
+
+        time.sleep(20)
+        self._later.run()
