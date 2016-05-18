@@ -180,8 +180,16 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections, err e
 	remainingCollections := 1
 	var totalCollections int
 	var previousTotalCollections int
-	for remainingCollections > 0 {
+	continueRetrievingCollections := true
+	for continueRetrievingCollections {
 		// We're still finding new collections
+		if remainingCollections <= 0 {
+		   	// this will be our last time through the loop
+			log.Printf("no more collections remain, waiting 1s before making one final retrieval to ensure we have all collections up to the final timestamp")
+			time.Sleep(1000 * time.Millisecond)
+			sdkParams["filters"].([][]string)[0][1] = "=="
+		   	continueRetrievingCollections = false
+		}
 
 		// Write the heap profile for examining memory usage
 		err = WriteHeapProfile()
@@ -245,6 +253,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections, err e
 				collectionInfo["max_manifest_size"] = maxManifestSize
 			})
 		}
+
 	}
 
 	// Make one final API request to verify that we have processed all collections available up to the latest modification date
