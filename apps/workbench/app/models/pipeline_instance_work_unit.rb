@@ -1,0 +1,55 @@
+class PipelineInstanceWorkUnit < ProxyWorkUnit
+  def children
+    items = []
+
+    jobs = {}
+    results = Job.where(uuid: self.proxied.job_ids.values).results
+    results.each do |j|
+      jobs[j.uuid] = j.work_unit("job #{items.size}")
+    end
+
+    components = self.proxied.components
+    components.each do |name, c|
+      if c.is_a?(Hash)
+        job = c[:job]
+        if job and job[:uuid] and jobs[job[:uuid]]
+          items << jobs[job[:uuid]]
+        else
+          items << ProxyWorkUnit.new(c, name)
+        end
+      end
+    end
+
+    items
+  end
+
+  def progress
+    if self.proxied.state == 'Complete'
+      return 1.0
+    end
+
+    done = 0
+    failed = 0
+    todo = 0
+    children.each do |c|
+      if c.success?.nil?
+        todo = todo+1
+      elsif c.success?
+        done = done+1
+      else
+        failed = failed+1
+      end
+    end
+
+    if done + failed + todo > 0
+      total = done + failed + todo
+      (done+failed).to_f / total
+    else
+      0.0
+    end
+  end
+
+  def log_collection
+    self.proxied.job_log_ids
+  end
+end
