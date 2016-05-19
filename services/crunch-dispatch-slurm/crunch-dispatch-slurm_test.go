@@ -3,6 +3,7 @@ package main
 import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/dispatch"
 
 	"bytes"
 	"fmt"
@@ -12,9 +13,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"os/exec"
-	"strconv"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
@@ -47,11 +46,6 @@ func (s *TestSuite) SetUpTest(c *C) {
 	args := []string{"crunch-dispatch-slurm"}
 	os.Args = args
 
-	var err error
-	arv, err = arvadosclient.MakeArvadosClient()
-	if err != nil {
-		c.Fatalf("Error making arvados client: %s", err)
-	}
 	os.Setenv("ARVADOS_API_TOKEN", arvadostest.Dispatch1Token)
 }
 
@@ -64,18 +58,18 @@ func (s *MockArvadosServerSuite) TearDownTest(c *C) {
 	arvadostest.ResetEnv()
 }
 
-func (s *TestSuite) Test_doMain(c *C) {
-	args := []string{"-poll-interval", "2", "-container-priority-poll-interval", "1", "-crunch-run-command", "echo"}
-	os.Args = append(os.Args, args...)
+func (s *TestSuite) TestIntegration(c *C) {
+	arv, err := arvadosclient.MakeArvadosClient()
+	c.Assert(err, IsNil)
 
 	var sbatchCmdLine []string
 	var striggerCmdLine []string
 
 	// Override sbatchCmd
-	defer func(orig func(Container) *exec.Cmd) {
+	defer func(orig func(dispatch.Container) *exec.Cmd) {
 		sbatchCmd = orig
 	}(sbatchCmd)
-	sbatchCmd = func(container Container) *exec.Cmd {
+	sbatchCmd = func(container dispatch.Container) *exec.Cmd {
 		sbatchCmdLine = sbatchFunc(container).Args
 		return exec.Command("sh")
 	}
@@ -90,41 +84,65 @@ func (s *TestSuite) Test_doMain(c *C) {
 			apiHost, apiToken, apiInsecure).Args
 		go func() {
 			time.Sleep(5 * time.Second)
-			for _, state := range []string{"Running", "Complete"} {
-				arv.Update("containers", containerUUID,
-					arvadosclient.Dict{
-						"container": arvadosclient.Dict{"state": state}},
-					nil)
-			}
+			arv.Update("containers", containerUUID,
+				arvadosclient.Dict{
+					"container": arvadosclient.Dict{"state": dispatch.Complete}},
+				nil)
 		}()
-		return exec.Command("echo", "strigger")
+		return exec.Command("echo", striggerCmdLine...)
 	}
 
-	go func() {
-		time.Sleep(8 * time.Second)
-		sigChan <- syscall.SIGINT
-	}()
+	// Override squeueCmd
+	defer func(orig func() *exec.Cmd) {
+		squeueCmd = orig
+	}(squeueCmd)
+	squeueCmd = func() *exec.Cmd {
+		return exec.Command("echo")
+	}
 
 	// There should be no queued containers now
 	params := arvadosclient.Dict{
 		"filters": [][]string{[]string{"state", "=", "Queued"}},
 	}
-	var containers ContainerList
-	err := arv.List("containers", params, &containers)
+	var containers dispatch.ContainerList
+	err = arv.List("containers", params, &containers)
 	c.Check(err, IsNil)
 	c.Check(len(containers.Items), Equals, 1)
 
-	err = doMain()
-	c.Check(err, IsNil)
+	echo := "echo"
+	crunchRunCommand = &echo
+	finishCmd := "/usr/bin/crunch-finish-slurm.sh"
+	finishCommand = &finishCmd
+
+	doneProcessing := make(chan struct{})
+	dispatcher := dispatch.Dispatcher{
+		Arv:          arv,
+		PollInterval: time.Duration(1) * time.Second,
+		RunContainer: func(dispatcher *dispatch.Dispatcher,
+			container dispatch.Container,
+			status chan dispatch.Container) {
+			go func() {
+				time.Sleep(1)
+				dispatcher.UpdateState(container.UUID, dispatch.Running)
+				dispatcher.UpdateState(container.UUID, dispatch.Complete)
+			}()
+			run(dispatcher, container, status)
+			doneProcessing <- struct{}{}
+		},
+		DoneProcessing: doneProcessing}
+
+	err = dispatcher.RunDispatcher()
+	c.Assert(err, IsNil)
 
 	item := containers.Items[0]
 	sbatchCmdComps := []string{"sbatch", "--share", "--parsable",
 		fmt.Sprintf("--job-name=%s", item.UUID),
-		fmt.Sprintf("--mem-per-cpu=%s", strconv.Itoa(int(math.Ceil(float64(item.RuntimeConstraints["ram"])/float64(item.RuntimeConstraints["vcpus"]*1048576))))),
-		fmt.Sprintf("--cpus-per-task=%s", strconv.Itoa(int(item.RuntimeConstraints["vcpus"])))}
+		fmt.Sprintf("--mem-per-cpu=%d", int(math.Ceil(float64(item.RuntimeConstraints["ram"])/float64(item.RuntimeConstraints["vcpus"]*1048576)))),
+		fmt.Sprintf("--cpus-per-task=%d", int(item.RuntimeConstraints["vcpus"])),
+		fmt.Sprintf("--priority=%d", item.Priority)}
 	c.Check(sbatchCmdLine, DeepEquals, sbatchCmdComps)
 
-	c.Check(striggerCmdLine, DeepEquals, []string{"strigger", "--set", "--jobid=zzzzz-dz642-queuedcontainer\n", "--fini",
+	c.Check(striggerCmdLine, DeepEquals, []string{"strigger", "--set", "--jobid=zzzzz-dz642-queuedcontainer", "--fini",
 		"--program=/usr/bin/crunch-finish-slurm.sh " + os.Getenv("ARVADOS_API_HOST") + " " + arvadostest.Dispatch1Token + " 1 zzzzz-dz642-queuedcontainer"})
 
 	// There should be no queued containers now
@@ -133,7 +151,7 @@ func (s *TestSuite) Test_doMain(c *C) {
 	c.Check(len(containers.Items), Equals, 0)
 
 	// Previously "Queued" container should now be in "Complete" state
-	var container Container
+	var container dispatch.Container
 	err = arv.Get("containers", "zzzzz-dz642-queuedcontainer", nil, &container)
 	c.Check(err, IsNil)
 	c.Check(container.State, Equals, "Complete")
@@ -144,7 +162,7 @@ func (s *MockArvadosServerSuite) Test_APIErrorGettingContainers(c *C) {
 	apiStubResponses["/arvados/v1/api_client_authorizations/current"] = arvadostest.StubResponse{200, `{"uuid":"` + arvadostest.Dispatch1AuthUUID + `"}`}
 	apiStubResponses["/arvados/v1/containers"] = arvadostest.StubResponse{500, string(`{}`)}
 
-	testWithServerStub(c, apiStubResponses, "echo", "Error getting list of queued containers")
+	testWithServerStub(c, apiStubResponses, "echo", "Error getting list of containers")
 }
 
 func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubResponse, crunchCmd string, expected string) {
@@ -153,7 +171,7 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	api := httptest.NewServer(&apiStub)
 	defer api.Close()
 
-	arv = arvadosclient.ArvadosClient{
+	arv := arvadosclient.ArvadosClient{
 		Scheme:    "http",
 		ApiServer: api.URL[7:],
 		ApiToken:  "abc123",
@@ -165,14 +183,36 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	log.SetOutput(buf)
 	defer log.SetOutput(os.Stderr)
 
+	crunchRunCommand = &crunchCmd
+	finishCmd := "/usr/bin/crunch-finish-slurm.sh"
+	finishCommand = &finishCmd
+
+	doneProcessing := make(chan struct{})
+	dispatcher := dispatch.Dispatcher{
+		Arv:          arv,
+		PollInterval: time.Duration(1) * time.Second,
+		RunContainer: func(dispatcher *dispatch.Dispatcher,
+			container dispatch.Container,
+			status chan dispatch.Container) {
+			go func() {
+				time.Sleep(1)
+				dispatcher.UpdateState(container.UUID, dispatch.Running)
+				dispatcher.UpdateState(container.UUID, dispatch.Complete)
+			}()
+			run(dispatcher, container, status)
+			doneProcessing <- struct{}{}
+		},
+		DoneProcessing: doneProcessing}
+
 	go func() {
 		for i := 0; i < 80 && !strings.Contains(buf.String(), expected); i++ {
 			time.Sleep(100 * time.Millisecond)
 		}
-		sigChan <- syscall.SIGTERM
+		dispatcher.DoneProcessing <- struct{}{}
 	}()
 
-	runQueuedContainers(2, 1, crunchCmd, crunchCmd)
+	err := dispatcher.RunDispatcher()
+	c.Assert(err, IsNil)
 
 	c.Check(buf.String(), Matches, `(?ms).*`+expected+`.*`)
 }
