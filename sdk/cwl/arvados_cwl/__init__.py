@@ -807,7 +807,7 @@ def main(args, stdout, stderr, api_client=None):
 
     job_order_object = None
     arvargs = parser.parse_args(args)
-    if arvargs.create_template:
+    if arvargs.create_template and not arvargs.job_order:
         job_order_object = ({}, "")
 
     try:
