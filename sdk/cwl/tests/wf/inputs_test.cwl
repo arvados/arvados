@@ -2,6 +2,7 @@
 # various input types as script_parameters in pipeline templates.
 
 class: Workflow
+cwlVersion: draft-3
 inputs:
   - id: "#fileInput"
     type: File
