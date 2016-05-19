@@ -203,6 +203,7 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			rw.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		blob.Metadata = make(map[string]string)
 		for k, v := range r.Header {
 			if strings.HasPrefix(strings.ToLower(k), "x-ms-meta-") {
 				name := k[len("x-ms-meta-"):]

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/AdRoll/goamz/aws"
@@ -310,7 +311,8 @@ func (v *S3Volume) isKeepBlock(s string) bool {
 func (v *S3Volume) translateError(err error) error {
 	switch err := err.(type) {
 	case *s3.Error:
-		if err.StatusCode == http.StatusNotFound && err.Code == "NoSuchKey" {
+		if (err.StatusCode == http.StatusNotFound && err.Code == "NoSuchKey") ||
+			strings.Contains(err.Error(), "Not Found") {
 			return os.ErrNotExist
 		}
 		// Other 404 errors like NoSuchVersion and

@@ -455,7 +455,7 @@ func testDeleteOldBlock(t TB, factory TestableVolumeFactory) {
 	}
 
 	_, err := v.Mtime(TestHash)
-	if err == nil {
+	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 

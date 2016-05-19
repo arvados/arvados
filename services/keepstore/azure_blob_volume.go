@@ -134,7 +134,7 @@ func (v *AzureBlobVolume) Check() error {
 	return nil
 }
 
-// Return NotFoundError if expires_at metadata attribute is found on the block
+// Return true if expires_at metadata attribute is found on the block
 func (v *AzureBlobVolume) checkTrashed(loc string) (bool, map[string]string, error) {
 	metadata, err := v.bsClient.GetBlobMetadata(v.containerName, loc)
 	if err != nil {
@@ -473,30 +473,33 @@ func (v *AzureBlobVolume) EmptyTrash() {
 			break
 		}
 		for _, b := range resp.Blobs {
-			// Check if it is expired
-			expiresAtMetadata := b.Metadata["expires_at"]
-			if expiresAtMetadata == "" {
+			// Check if the block is expired
+			if b.Metadata["expires_at"] == "" {
 				continue
 			}
 
 			blocksInTrash++
+			bytesInTrash += b.Properties.ContentLength
 
-			expiresAt, err := strconv.ParseInt(expiresAtMetadata, 10, 64)
+			expiresAt, err := strconv.ParseInt(b.Metadata["expires_at"], 10, 64)
 			if err != nil {
-				log.Printf("EmptyTrash: ParseInt(%v): %v", expiresAtMetadata, err)
+				log.Printf("EmptyTrash: ParseInt(%v): %v", b.Metadata["expires_at"], err)
 				continue
 			}
 
-			if expiresAt <= time.Now().Unix() {
-				err = v.bsClient.DeleteBlob(v.containerName, b.Name, map[string]string{
-					"If-Match": b.Properties.Etag,
-				})
-				if err != nil {
-					log.Printf("EmptyTrash: DeleteBlob(%v): %v", b.Name, err)
-					continue
-				}
-				blocksDeleted++
+			if expiresAt > time.Now().Unix() {
+				continue
 			}
+
+			err = v.bsClient.DeleteBlob(v.containerName, b.Name, map[string]string{
+				"If-Match": b.Properties.Etag,
+			})
+			if err != nil {
+				log.Printf("EmptyTrash: DeleteBlob(%v): %v", b.Name, err)
+				continue
+			}
+			blocksDeleted++
+			bytesDeleted += b.Properties.ContentLength
 		}
 		if resp.NextMarker == "" {
 			break
