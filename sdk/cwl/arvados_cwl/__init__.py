@@ -575,8 +575,8 @@ class ArvadosCommandTool(CommandLineTool):
     def makeJobRunner(self):
         return ArvadosJob(self.arvrunner)
 
-    def makePathMapper(self, reffiles, input_basedir, **kwargs):
-        return ArvPathMapper(self.arvrunner, reffiles, input_basedir,
+    def makePathMapper(self, reffiles, **kwargs):
+        return ArvPathMapper(self.arvrunner, reffiles, kwargs["basedir"],
                              "$(task.keep)/%s",
                              "$(task.keep)/%s/%s",
                              **kwargs)
