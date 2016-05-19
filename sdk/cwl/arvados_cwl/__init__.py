@@ -24,8 +24,9 @@ import pkg_resources  # part of setuptools
 import re
 import sys
 import threading
-from schema_salad.ref_resolver import Loader
+from cwltool.load_tool import fetch_document
 from cwltool.builder import Builder
+import urlparse
 
 from cwltool.process import shortname, get_feature, adjustFiles, adjustFileObjs, scandeps
 from arvados.api import OrderedJsonModel
@@ -343,11 +344,11 @@ class RunnerJob(object):
             files.add(path)
             return path
 
-        document_loader = Loader({"cwl": "https://w3id.org/cwl/cwl#", "id": "@id"})
+        document_loader, workflowobj, uri = fetch_document(self.tool.tool["id"])
         def loadref(b, u):
-            return document_loader.resolve_ref(u, base_url=b)[0]
+            return document_loader.fetch(urlparse.urljoin(b, u))
 
-        sc = scandeps("", self.tool.tool,
+        sc = scandeps(uri, workflowobj,
                       set(("$import", "run")),
                       set(("$include", "$schemas", "path")),
                       loadref)
@@ -752,13 +753,15 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser = argparse.ArgumentParser(description='Arvados executor for Common Workflow Language')
 
     parser.add_argument("--conformance-test", action="store_true")
-    parser.add_argument("--basedir", type=str)
+    parser.add_argument("--basedir", type=str,
+                        help="Base directory used to resolve relative references in the input, default to directory of input object file or current directory (if inputs piped/provided on command line).")
     parser.add_argument("--outdir", type=str, default=os.path.abspath('.'),
                         help="Output directory, default current directory")
 
     parser.add_argument("--eval-timeout",
-                        help="Time to wait for a Javascript expression to evaluate before giving an error.",
-                        type=float)
+                        help="Time to wait for a Javascript expression to evaluate before giving an error, default 20s.",
+                        type=float,
+                        default=20)
     parser.add_argument("--version", action="store_true", help="Print version and exit")
 
     exgroup = parser.add_mutually_exclusive_group()
@@ -776,7 +779,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         default=True, dest="enable_reuse",
                         help="")
 
-    parser.add_argument("--project-uuid", type=str, help="Project that will own the workflow jobs")
+    parser.add_argument("--project-uuid", type=str, help="Project that will own the workflow jobs, if not provided, will go to home project.")
     parser.add_argument("--ignore-docker-for-reuse", action="store_true",
                         help="Ignore Docker image version when deciding whether to reuse past jobs.",
                         default=False)
