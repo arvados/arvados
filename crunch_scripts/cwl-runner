@@ -20,6 +20,7 @@ import json
 import argparse
 from arvados.api import OrderedJsonModel
 from cwltool.process import adjustFiles
+from cwltool.load_tool import load_tool
 
 # Print package versions
 logging.info(cwltool.main.versionstring())
@@ -48,7 +49,7 @@ try:
 
     runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
 
-    t = cwltool.main.load_tool(job_order_object, False, True, runner.arvMakeTool, True)
+    t = load_tool(job_order_object, runner.arvMakeTool)
 
     args = argparse.Namespace()
     args.project_uuid = arvados.current_job()["owner_uuid"]
