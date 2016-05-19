@@ -88,9 +88,9 @@ class TestSubmit(unittest.TestCase):
             mock.call(),
             mock.call(body={
                 'manifest_text':
-                './tool 84ec4df683711de31b782505389a8843+429 '
-                '0:16:blub.txt 16:413:submit_tool.cwl\n./wf '
-                '81d977a245a41b8e79859fbe00623fd0+344 0:344:submit_wf.cwl\n',
+                './tool a3954c369b8924d40547ec8cf5f6a7f4+449 '
+                '0:16:blub.txt 16:433:submit_tool.cwl\n./wf '
+                'e046cace0b1a0a6ee645f6ea8688f7e2+364 0:364:submit_wf.cwl\n',
                 'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
                 'name': 'submit_wf.cwl',
             }, ensure_unique_name=True),
@@ -161,7 +161,7 @@ class TestCreateTemplate(unittest.TestCase):
             "owner_uuid": project_uuid,
         }
         stubs.api.pipeline_templates().create.assert_called_with(
-            body=JsonDiffMatcher(expect_template))
+            body=JsonDiffMatcher(expect_template), ensure_unique_name=True)
 
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_pipeline_template_uuid + '\n')
@@ -226,7 +226,7 @@ class TestTemplateInputs(unittest.TestCase):
         expect_template["owner_uuid"] = stubs.fake_user_uuid
 
         stubs.api.pipeline_templates().create.assert_called_with(
-            body=JsonDiffMatcher(expect_template))
+            body=JsonDiffMatcher(expect_template), ensure_unique_name=True)
 
     @stubs
     def test_inputs(self, stubs):
@@ -247,4 +247,4 @@ class TestTemplateInputs(unittest.TestCase):
         params["boolInput"]["value"] = True
 
         stubs.api.pipeline_templates().create.assert_called_with(
-            body=JsonDiffMatcher(expect_template))
+            body=JsonDiffMatcher(expect_template), ensure_unique_name=True)
