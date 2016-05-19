@@ -58,6 +58,7 @@ try:
     args.debug = True
     args.quiet = False
     args.ignore_docker_for_reuse = False
+    args.basedir = os.getcwd()
     args.cwl_runner_job={"uuid": arvados.current_job()["uuid"], "state": arvados.current_job()["state"]}
     outputObj = runner.arvExecutor(t, job_order_object, **vars(args))
 

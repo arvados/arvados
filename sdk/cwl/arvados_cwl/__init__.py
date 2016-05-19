@@ -67,8 +67,8 @@ class CollectionFsAccess(cwltool.process.StdFsAccess):
     """Implement the cwltool FsAccess interface for Arvados Collections."""
 
     def __init__(self, basedir):
+        super(CollectionFsAccess, self).__init__(basedir)
         self.collections = {}
-        self.basedir = basedir
 
     def get_collection(self, path):
         p = path.split("/")
