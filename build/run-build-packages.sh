@@ -82,13 +82,18 @@ declare -a PYTHON_BACKPORTS PYTHON3_BACKPORTS
 PYTHON2_VERSION=2.7
 PYTHON3_VERSION=$(python3 -c 'import sys; print("{v.major}.{v.minor}".format(v=sys.version_info))')
 
+## These defaults are suitable for any Debian-based distribution.
+# You can customize them as needed in distro sections below.
+PYTHON2_PACKAGE=python$PYTHON2_VERSION
+PYTHON2_PKG_PREFIX=python
+
+PYTHON3_PACKAGE=python$PYTHON3_VERSION
+PYTHON3_PKG_PREFIX=python3
+## End Debian Python defaults.
+
 case "$TARGET" in
     debian7)
         FORMAT=deb
-        PYTHON2_PACKAGE=python$PYTHON2_VERSION
-        PYTHON2_PKG_PREFIX=python
-        PYTHON3_PACKAGE=python$PYTHON3_VERSION
-        PYTHON3_PKG_PREFIX=python3
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
@@ -99,10 +104,6 @@ case "$TARGET" in
         ;;
     debian8)
         FORMAT=deb
-        PYTHON2_PACKAGE=python$PYTHON2_VERSION
-        PYTHON2_PKG_PREFIX=python
-        PYTHON3_PACKAGE=python$PYTHON3_VERSION
-        PYTHON3_PKG_PREFIX=python3
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
@@ -113,10 +114,6 @@ case "$TARGET" in
         ;;
     ubuntu1204)
         FORMAT=deb
-        PYTHON2_PACKAGE=python$PYTHON2_VERSION
-        PYTHON2_PKG_PREFIX=python
-        PYTHON3_PACKAGE=python$PYTHON3_VERSION
-        PYTHON3_PKG_PREFIX=python3
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
@@ -127,10 +124,6 @@ case "$TARGET" in
         ;;
     ubuntu1404)
         FORMAT=deb
-        PYTHON2_PACKAGE=python$PYTHON2_VERSION
-        PYTHON2_PKG_PREFIX=python
-        PYTHON3_PACKAGE=python$PYTHON3_VERSION
-        PYTHON3_PKG_PREFIX=python3
         PYTHON_BACKPORTS=(pyasn1==0.1.7 pyasn1-modules==0.0.5 llfuse==0.41.1 ciso8601 \
             google-api-python-client==1.4.2 six uritemplate oauth2client==1.5.2 httplib2 \
             rsa 'pycurl<7.21.5' backports.ssl_match_hostname pyyaml 'rdflib>=4.2.0' \
