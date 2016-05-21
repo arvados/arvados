@@ -77,7 +77,7 @@
 </p>
 
 <p>
-  <%= render partial: 'work_unit/component_detail', locals: {current_obj: wu} %>
+  <%= render(partial: 'work_unit/component_detail', locals: {current_obj: wu}) %>
 </p>
 
 <%# Work unit children %>
@@ -101,5 +101,5 @@
 
 <% wu.children.each_with_index do |c, i| %>
   <% @descendent_count += 1 %>
-  <%= render partial: 'work_unit/show_child', locals: {current_obj: c, i: @descendent_count, expanded: false} %>
+  <%= render(partial: 'work_unit/show_child', locals: {current_obj: c, i: @descendent_count, expanded: false}) %>
 <% end %>
