@@ -2,10 +2,10 @@ require 'test_helper'
 
 class WorkUnitTest < ActiveSupport::TestCase
   [
-    [Job, 'running_job_with_components', "jwu", 2, "running", nil, 0.2],
-    [PipelineInstance, 'pipeline_in_running_state', nil, 1, "running", nil, 0.0],
-    [PipelineInstance, 'has_component_with_completed_jobs', nil, 3, "complete", true, 1.0],
-    [PipelineInstance, 'pipeline_with_tagged_collection_input', "pwu", 1, "ready", nil, 0.0],
+    [Job, 'running_job_with_components', "jwu", 2, "Running", nil, 0.2],
+    [PipelineInstance, 'pipeline_in_running_state', nil, 1, "Running", nil, 0.0],
+    [PipelineInstance, 'has_component_with_completed_jobs', nil, 3, "Complete", true, 1.0],
+    [PipelineInstance, 'pipeline_with_tagged_collection_input', "pwu", 1, "Ready", nil, 0.0],
   ].each do |type, name, label, num_children, state, success, progress|
     test "children of #{name}" do
       use_token 'admin'

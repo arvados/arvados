@@ -42,7 +42,7 @@ class JobWorkUnit < ProxyWorkUnit
   end
 
   def log_collection
-    [self.proxied.log]
+    self.proxied.log
   end
 
   def output

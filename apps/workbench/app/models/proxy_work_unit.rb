@@ -33,9 +33,9 @@ class ProxyWorkUnit < WorkUnit
 
   def state_label
     if ["Running", "RunningOnServer", "RunningOnClient"].include? self.proxied[:state].to_s
-      "running"
+      "Running"
     else
-      self.proxied[:state].to_s.downcase
+      self.proxied[:state].to_s
     end
   end
 
@@ -70,7 +70,7 @@ class ProxyWorkUnit < WorkUnit
     self.proxied[:script]
   end
 
-  def script_repository
+  def repository
     self.proxied[:repository]
   end
 
@@ -84,5 +84,9 @@ class ProxyWorkUnit < WorkUnit
 
   def runtime_constraints
     self.proxied[:runtime_constraints]
+  end
+
+  def children
+    []
   end
 end

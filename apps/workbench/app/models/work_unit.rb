@@ -60,8 +60,8 @@ class WorkUnit
     # returns script for this work unit, if any
   end
 
-  def script_repository
-    # returns this work unit's script_repository, if any
+  def repository
+    # returns this work unit's script repository, if any
   end
 
   def script_version

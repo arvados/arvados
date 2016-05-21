@@ -1,0 +1,105 @@
+<%# Work unit status %>
+
+<div class="pull-right" style="padding-left: 1em">
+  Current state: <span class="badge badge-<%= wu.state_bootstrap_class %>" data-wu-state="<%= wu.state_label %>">
+    <% if wu.state_label == "running" %>
+      Active
+    <% else %>
+      <%= wu.state_label %>
+    <% end %>
+  </span>&nbsp;
+</div>
+
+<% if wu.state_label == 'Paused' %>
+  <p>
+    This work unit is paused. Work unit children that are
+    already running will continue to run, but no new work units will be submitted.
+  </p>
+<% end %>
+
+<% runningtime = determine_wallclock_runtime(wu.children) %>
+
+<p>
+  <% if wu.started_at %>
+    This work unit started at <%= render_localized_date(wu.started_at) %>.
+    It
+    <% if wu.state_label == 'Complete' %>
+      completed in
+    <% elsif wu.state_label == 'Failed' %>
+      failed after
+    <% else %>
+      has been active for
+    <% end %>
+
+    <% walltime = if wu.finished_at then
+                    wu.finished_at - wu.started_at
+                  else
+                    Time.now - wu.started_at
+                  end %>
+
+    <%= if walltime > runningtime
+          render_runtime(walltime, false)
+        else
+          render_runtime(runningtime, false)
+        end %><% if wu.finished_at %> at <%= render_localized_date(wu.finished_at) %><% end %>.
+    <% else %>
+      It is <%= if wu.state_label == 'Running' then 'active' else wu.state.downcase end %>.
+        <% walltime = 0%>
+    <% end %>
+
+  <% if wu.state_label == 'Failed' %>
+    Check the Log tab for more detail about why it failed.
+  <% end %>
+</p>
+
+<p>
+    It
+    <% if wu.state_label == 'Running' %>
+      has run
+    <% else %>
+      ran
+    <% end %>
+    for
+    <%
+        cputime = wu.children.map { |c|
+        if c.started_at
+          (c.runtime_constraints.andand[:min_nodes] || 1) * ((c.finished_at || Time.now()) - c.started_at)
+        else
+          0
+        end
+       }.reduce(:+) || 0 %>
+    <%= render_runtime(runningtime, false) %><% if (walltime - runningtime) > 0 %>
+      (<%= render_runtime(walltime - runningtime, false) %> queued)<% end %><% if cputime == 0 %>.<% else %>
+      and used
+    <%= render_runtime(cputime, false) %>
+    of node allocation time (<%= (cputime/runningtime).round(1) %>&Cross; scaling).
+    <% end %>
+</p>
+
+<p>
+  <%= render partial: 'work_unit/component_detail', locals: {current_obj: wu} %>
+</p>
+
+<%# Work unit children %>
+
+<%
+  job_uuids = wu.children.collect {|c| c.uuid}.compact
+  if job_uuids.any?
+    resource_class = resource_class_for_uuid(job_uuids.first, friendly_name: true)
+    preload_objects_for_dataclass resource_class, job_uuids
+  end
+
+  job_collections = wu.children.collect {|j| j.output}.compact
+  job_collections.concat wu.children.collect {|j| j.docker_image}.uniq.compact
+  job_collections_pdhs = job_collections.select {|x| !(m = CollectionsHelper.match(x)).nil?}.uniq.compact
+  job_collections_uuids = job_collections - job_collections_pdhs
+  preload_collections_for_objects job_collections_uuids if job_collections_uuids.any?
+  preload_for_pdhs job_collections_pdhs if job_collections_pdhs.any?
+%>
+
+<% @descendent_count = 0 if !@descendent_count %>
+
+<% wu.children.each_with_index do |c, i| %>
+  <% @descendent_count += 1 %>
+  <%= render partial: 'work_unit/show_child', locals: {current_obj: c, i: @descendent_count, expanded: false} %>
+<% end %>

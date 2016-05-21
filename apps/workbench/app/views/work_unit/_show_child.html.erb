@@ -1,0 +1,103 @@
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <%# column offset 0 %>
+        <div class="col-md-2" style="word-break:break-all;">
+          <h4 class="panel-title">
+            <a data-toggle="collapse" href="#collapse<%= i %>">
+              <%= current_obj.label %> <span class="caret"></span>
+            </a>
+          </h4>
+        </div>
+
+        <%# column offset 2 %>
+        <div class="col-md-2 pipeline-instance-spacing">
+          <%= current_obj.progress %>
+        </div>
+
+        <%# column offset 4 %>
+        <% if not current_obj %>
+          <div class="col-md-8"></div>
+        <% else %>
+          <div class="col-md-1">
+              <% if current_obj.state_label.in? ["Complete", "Failed", "Cancelled"] %>
+                <% if current_obj.log_collection %>
+                  <% logCollection = Collection.find? current_obj.log_collection %>
+                  <% if logCollection %>
+                    <%= link_to "Log", job_path(current_obj.uuid, anchor: "Log") %>
+                  <% else %>
+                    Log unavailable
+                  <% end %>
+                <% end %>
+              <% elsif current_obj.state_label == "Running" %>
+                <% job = Job.find? current_obj.uuid %>
+                <% if job %>
+                  <%= link_to "Log", job_path(current_obj.uuid, anchor: "Log") %>
+                <% else %>
+                  Log unavailable
+                <% end %>
+              <% end %>
+          </div>
+
+          <%# column offset 5 %>
+          <% if current_obj.state_label != "Queued" %>
+          <div class="col-md-3">
+            <% if current_obj.started_at %>
+              <% walltime = ((if current_obj.finished_at then current_obj.finished_at else Time.now() end) - current_obj.started_at) %>
+              <% cputime = (current_obj.runtime_constraints.andand[:min_nodes] || 1) *
+                           ((current_obj.finished_at || Time.now()) - current_obj.started_at) %>
+              <%= render_runtime(walltime, false) %>
+              <% if cputime > 0 %> / <%= render_runtime(cputime, false) %> (<%= (cputime/walltime).round(1) %>&Cross;)<% end %>
+            <% end %>
+          </div>
+          <% end %>
+
+          <% if current_obj.state_label == "Queued" %>
+            <%# column offset 5 %>
+            <div class="col-md-6">
+              <% queuetime = Time.now - Time.parse(current_obj.created_at.to_s) %>
+              Queued for <%= render_runtime(queuetime, false) %>.
+            </div>
+          <% elsif current_obj.state_label == "Running" %>
+            <%# column offset 8 %>
+            <div class="col-md-3">
+              <span class="task-summary-status">
+                <%= current_obj.tasks_summary[:done] %>&nbsp;<%= "task".pluralize(current_obj.tasks_summary[:done]) %> done,
+                <%= current_obj.tasks_summary[:failed] %>&nbsp;failed,
+                <%= current_obj.tasks_summary[:running] %>&nbsp;running,
+                <%= current_obj.tasks_summary[:todo] %>&nbsp;pending
+              </span>
+            </div>
+          <% elsif current_obj.state_label.in? ["Complete", "Failed", "Cancelled"] %>
+            <%# column offset 8 %>
+            <div class="col-md-4 text-overflow-ellipsis">
+              <% if current_obj.output %>
+                <%= link_to_arvados_object_if_readable(current_obj.output, 'Output data not available', friendly_name: true) %>
+              <% elsif current_obj.output %>
+                <%= link_to_arvados_object_if_readable(current_obj.output, 'Output data not available', link_text: "Output of #{current_obj.label}") %>
+              <% else %>
+                No output.
+              <% end %>
+            </div>
+          <% end %>
+
+          <% if current_obj.state_label.in? ["Queued", "Running"] and @object.editable? %>
+            <%# column offset 11 %>
+            <div class="col-md-1 pipeline-instance-spacing">
+              <%= form_tag "/jobs/#{current_obj.uuid}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
+                <%= hidden_field_tag :return_to, url_for(@object) %>
+                <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-job-button"} %>
+              <% end %>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div id="collapse<%= i %>" class="panel-collapse collapse <%= if expanded then 'in' end %>">
+    <div class="panel-body">
+      <%= render partial: 'work_unit/show_component', locals: {wu: current_obj} %>
+  </div>
+</div>

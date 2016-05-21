@@ -5,7 +5,7 @@ class PipelineInstanceWorkUnit < ProxyWorkUnit
     jobs = {}
     results = Job.where(uuid: self.proxied.job_ids.values).results
     results.each do |j|
-      jobs[j.uuid] = j.work_unit("job #{items.size}")
+      jobs[j.uuid] = j
     end
 
     components = self.proxied.components
@@ -13,7 +13,7 @@ class PipelineInstanceWorkUnit < ProxyWorkUnit
       if c.is_a?(Hash)
         job = c[:job]
         if job and job[:uuid] and jobs[job[:uuid]]
-          items << jobs[job[:uuid]]
+          items << jobs[job[:uuid]].work_unit(name)
         else
           items << ProxyWorkUnit.new(c, name)
         end
@@ -47,9 +47,5 @@ class PipelineInstanceWorkUnit < ProxyWorkUnit
     else
       0.0
     end
-  end
-
-  def log_collection
-    self.proxied.job_log_ids
   end
 end
