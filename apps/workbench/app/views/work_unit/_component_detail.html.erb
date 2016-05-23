@@ -2,7 +2,7 @@
         <div class="row">
           <div class="col-md-5">
             <table>
-              <% [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :priority].each do |k| %>
+              <% [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :output, :priority].each do |k| %>
                 <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
                 <% unless val.nil? %>
                 <tr>
@@ -16,6 +16,8 @@
                       <%= link_to_arvados_object_if_readable(val, val, friendly_name: true) %>
                     <% elsif k.to_s.end_with? '_at' %>
                       <%= render_localized_date(val) %>
+                    <% elsif k == :output %>
+                      <%= link_to_arvados_object_if_readable(val, 'Output data not available', friendly_name: true) %>
                     <% else %>
                       <%= val %>
                     <% end %>
@@ -79,6 +81,7 @@
             </table>
           </div>
         </div>
+
         <% unless current_obj.parameters.nil? %>
         <div class="row">
           <div class="col-md-6">

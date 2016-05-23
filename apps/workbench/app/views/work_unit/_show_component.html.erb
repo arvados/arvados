@@ -1,18 +1,20 @@
 <%# Work unit status %>
 
-<div class="pull-right" style="padding-left: 1em">
-  Current state: <span class="badge badge-<%= wu.state_bootstrap_class %>" data-wu-state="<%= wu.state_label %>">
-    <% if wu.state_label == "running" %>
-      Active
-    <% else %>
-      <%= wu.state_label %>
-    <% end %>
-  </span>&nbsp;
-</div>
+<% if wu.state_label %>
+  <div class="pull-right" style="padding-left: 1em">
+    Current state: <span class="badge badge-<%= wu.state_bootstrap_class %>" data-wu-state="<%= wu.state_label %>">
+      <% if wu.state_label == "running" %>
+        Active
+      <% else %>
+        <%= wu.state_label %>
+      <% end %>
+    </span>&nbsp;
+  </div>
+<% end %>
 
 <% if wu.state_label == 'Paused' %>
   <p>
-    This work unit is paused. Work unit children that are
+    This <%= wu.title %> is paused. Children that are
     already running will continue to run, but no new work units will be submitted.
   </p>
 <% end %>
@@ -21,7 +23,7 @@
 
 <p>
   <% if wu.started_at %>
-    This work unit started at <%= render_localized_date(wu.started_at) %>.
+    This <%= wu.title %> started at <%= render_localized_date(wu.started_at) %>.
     It
     <% if wu.state_label == 'Complete' %>
       completed in
@@ -42,39 +44,41 @@
         else
           render_runtime(runningtime, false)
         end %><% if wu.finished_at %> at <%= render_localized_date(wu.finished_at) %><% end %>.
-    <% else %>
-      It is <%= if wu.state_label == 'Running' then 'active' else wu.state.downcase end %>.
-        <% walltime = 0%>
-    <% end %>
+  <% else %>
+    <% if wu.state_label %> This <%= wu.title %> is <%= if wu.state_label == 'Running' then 'active' else wu.state_label.downcase end %>. <% end %>
+      <% walltime = 0%>
+  <% end %>
 
   <% if wu.state_label == 'Failed' %>
     Check the Log tab for more detail about why it failed.
   <% end %>
 </p>
 
-<p>
-    It
-    <% if wu.state_label == 'Running' %>
-      has run
-    <% else %>
-      ran
-    <% end %>
-    for
-    <%
-        cputime = wu.children.map { |c|
-        if c.started_at
-          (c.runtime_constraints.andand[:min_nodes] || 1) * ((c.finished_at || Time.now()) - c.started_at)
-        else
-          0
-        end
-       }.reduce(:+) || 0 %>
-    <%= render_runtime(runningtime, false) %><% if (walltime - runningtime) > 0 %>
-      (<%= render_runtime(walltime - runningtime, false) %> queued)<% end %><% if cputime == 0 %>.<% else %>
-      and used
-    <%= render_runtime(cputime, false) %>
-    of node allocation time (<%= (cputime/runningtime).round(1) %>&Cross; scaling).
-    <% end %>
-</p>
+<% if wu.state_label %>
+  <p>
+      It
+      <% if wu.state_label == 'Running' %>
+        has run
+      <% else %>
+        ran
+      <% end %>
+      for
+      <%
+          cputime = wu.children.map { |c|
+          if c.started_at
+            (c.runtime_constraints.andand[:min_nodes] || 1) * ((c.finished_at || Time.now()) - c.started_at)
+          else
+            0
+          end
+         }.reduce(:+) || 0 %>
+      <%= render_runtime(runningtime, false) %><% if (walltime - runningtime) > 0 %>
+        (<%= render_runtime(walltime - runningtime, false) %> queued)<% end %><% if cputime == 0 %>.<% else %>
+        and used
+      <%= render_runtime(cputime, false) %>
+      of node allocation time (<%= (cputime/runningtime).round(1) %>&Cross; scaling).
+      <% end %>
+  </p>
+<% end %>
 
 <p>
   <%= render(partial: 'work_unit/component_detail', locals: {current_obj: wu}) %>
@@ -83,18 +87,18 @@
 <%# Work unit children %>
 
 <%
-  job_uuids = wu.children.collect {|c| c.uuid}.compact
-  if job_uuids.any?
-    resource_class = resource_class_for_uuid(job_uuids.first, friendly_name: true)
-    preload_objects_for_dataclass resource_class, job_uuids
+  uuids = wu.children.collect {|c| c.uuid}.compact
+  if uuids.any?
+    resource_class = resource_class_for_uuid(uuids.first, friendly_name: true)
+    preload_objects_for_dataclass resource_class, uuids
   end
 
-  job_collections = wu.children.collect {|j| j.output}.compact
-  job_collections.concat wu.children.collect {|j| j.docker_image}.uniq.compact
-  job_collections_pdhs = job_collections.select {|x| !(m = CollectionsHelper.match(x)).nil?}.uniq.compact
-  job_collections_uuids = job_collections - job_collections_pdhs
-  preload_collections_for_objects job_collections_uuids if job_collections_uuids.any?
-  preload_for_pdhs job_collections_pdhs if job_collections_pdhs.any?
+  collections = wu.children.collect {|j| j.output}.compact
+  collections.concat wu.children.collect {|j| j.docker_image}.uniq.compact
+  collections_pdhs = collections.select {|x| !(m = CollectionsHelper.match(x)).nil?}.uniq.compact
+  collections_uuids = collections - collections_pdhs
+  preload_collections_for_objects collections_uuids if collections_uuids.any?
+  preload_for_pdhs collections_pdhs if collections_pdhs.any?
 %>
 
 <% @descendent_count = 0 if !@descendent_count %>

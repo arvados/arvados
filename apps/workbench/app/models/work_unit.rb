@@ -91,4 +91,20 @@ class WorkUnit
   def output
     # returns uuid or pdh of output data, if any
   end
+
+  def can_cancel?
+    # returns if this work unit is cancelable
+  end
+
+  def uri
+    # returns the uri for this work unit
+  end
+
+  def child_summary
+    # summary status of any children of this work unit
+  end
+
+  def title
+    # title for the work unit
+  end
 end
