@@ -49,11 +49,11 @@ type GetCollectionsParams struct {
 
 // SdkCollectionInfo holds collection info from api
 type SdkCollectionInfo struct {
-	UUID         string    `json:"uuid"`
-	OwnerUUID    string    `json:"owner_uuid"`
-	Redundancy   int       `json:"redundancy"`
-	ModifiedAt   time.Time `json:"modified_at"`
-	ManifestText string    `json:"manifest_text"`
+	UUID                 string    `json:"uuid"`
+	OwnerUUID            string    `json:"owner_uuid"`
+	ReplicationDesired   int       `json:"replication_desired"`
+	ModifiedAt           time.Time `json:"modified_at"`
+	ManifestText         string    `json:"manifest_text"`
 }
 
 // SdkCollectionList lists collections from api
@@ -125,7 +125,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections, err e
 	fieldsWanted := []string{"manifest_text",
 		"owner_uuid",
 		"uuid",
-		"redundancy",
+		"replication_desired",
 		"modified_at"}
 
 	sdkParams := arvadosclient.Dict{
@@ -297,7 +297,7 @@ func ProcessCollections(arvLogger *logger.Logger,
 	for _, sdkCollection := range receivedCollections {
 		collection := Collection{UUID: StrCopy(sdkCollection.UUID),
 			OwnerUUID:         StrCopy(sdkCollection.OwnerUUID),
-			ReplicationLevel:  sdkCollection.Redundancy,
+			ReplicationLevel:  sdkCollection.ReplicationDesired,
 			BlockDigestToSize: make(map[blockdigest.BlockDigest]int)}
 
 		if sdkCollection.ModifiedAt.IsZero() {

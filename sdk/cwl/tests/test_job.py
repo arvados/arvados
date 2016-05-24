@@ -3,6 +3,7 @@ import logging
 import mock
 import unittest
 import os
+import cwltool.process
 
 if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
@@ -17,15 +18,16 @@ class TestJob(unittest.TestCase):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("draft-3")
 
         tool = {
             "inputs": [],
             "outputs": [],
             "baseCommand": "ls"
         }
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool)
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, avsc_names=avsc_names, basedir="")
         arvtool.formatgraph = None
-        for j in arvtool.job({}, "", mock.MagicMock()):
+        for j in arvtool.job({}, mock.MagicMock(), basedir=""):
             j.run()
             runner.api.jobs().create.assert_called_with(
                 body={
@@ -61,6 +63,7 @@ class TestJob(unittest.TestCase):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("draft-3")
 
         tool = {
             "inputs": [],
@@ -73,9 +76,9 @@ class TestJob(unittest.TestCase):
             }],
             "baseCommand": "ls"
         }
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool)
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, avsc_names=avsc_names)
         arvtool.formatgraph = None
-        for j in arvtool.job({}, "", mock.MagicMock()):
+        for j in arvtool.job({}, mock.MagicMock(), basedir=""):
             j.run()
         runner.api.jobs().create.assert_called_with(
             body={

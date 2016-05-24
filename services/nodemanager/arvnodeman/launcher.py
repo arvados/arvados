@@ -12,6 +12,7 @@ import daemon
 import pykka
 
 from . import config as nmconfig
+from .baseactor import WatchdogActor
 from .daemon import NodeManagerDaemonActor
 from .jobqueue import JobQueueMonitorActor, ServerCalculator
 from .nodelist import ArvadosNodeListMonitorActor, CloudNodeListMonitorActor
@@ -124,6 +125,12 @@ def main(args=None):
             config.getint('Daemon', 'node_stale_after'),
             node_setup, node_shutdown, node_monitor,
             max_total_price=config.getfloat('Daemon', 'max_total_price')).tell_proxy()
+
+        WatchdogActor.start(config.getint('Daemon', 'watchdog'),
+                            cloud_node_poller.actor_ref,
+                            arvados_node_poller.actor_ref,
+                            job_queue_poller.actor_ref,
+                            node_daemon.actor_ref)
 
         signal.pause()
         daemon_stopped = node_daemon.actor_ref.actor_stopped.is_set

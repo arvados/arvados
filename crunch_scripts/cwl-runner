@@ -20,6 +20,7 @@ import json
 import argparse
 from arvados.api import OrderedJsonModel
 from cwltool.process import adjustFiles
+from cwltool.load_tool import load_tool
 
 # Print package versions
 logging.info(cwltool.main.versionstring())
@@ -32,14 +33,23 @@ try:
     def keeppath(v):
         if arvados.util.keep_locator_pattern.match(v):
             return "file://%s/%s" % (os.environ['TASK_KEEPMOUNT'], v)
+        else:
+            return v
 
     job_order_object["cwl:tool"] = keeppath(job_order_object["cwl:tool"])
+
+    for k,v in job_order_object.items():
+        if isinstance(v, basestring) and arvados.util.keep_locator_pattern.match(v):
+            job_order_object[k] = {
+                "class": "File",
+                "path": keeppath(v)
+            }
 
     adjustFiles(job_order_object, keeppath)
 
     runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
 
-    t = cwltool.main.load_tool(job_order_object, False, True, runner.arvMakeTool, True)
+    t = load_tool(job_order_object, runner.arvMakeTool)
 
     args = argparse.Namespace()
     args.project_uuid = arvados.current_job()["owner_uuid"]
@@ -48,7 +58,9 @@ try:
     args.debug = True
     args.quiet = False
     args.ignore_docker_for_reuse = False
-    outputObj = runner.arvExecutor(t, job_order_object, "", args, cwl_runner_job={"uuid": arvados.current_job()["uuid"], "state": arvados.current_job()["state"]})
+    args.basedir = os.getcwd()
+    args.cwl_runner_job={"uuid": arvados.current_job()["uuid"], "state": arvados.current_job()["state"]}
+    outputObj = runner.arvExecutor(t, job_order_object, **vars(args))
 
     files = {}
     def capture(path):

@@ -4,6 +4,7 @@
 # (e.g. submit_tool.cwl) and uploading to Keep works as intended.
 
 class: Workflow
+cwlVersion: draft-3
 inputs:
   - id: x
     type: File

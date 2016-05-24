@@ -17,6 +17,7 @@
 # arv-copy will issue an error.
 
 import argparse
+import contextlib
 import getpass
 import os
 import re
@@ -34,6 +35,8 @@ import arvados.commands._util as arv_cmd
 import arvados.commands.keepdocker
 
 from arvados.api import OrderedJsonModel
+
+COMMIT_HASH_RE = re.compile(r'^[0-9a-f]{1,40}$')
 
 logger = logging.getLogger('arvados.arv-copy')
 
@@ -70,6 +73,9 @@ def main():
     copy_opts.add_argument(
         '-f', '--force', dest='force', action='store_true',
         help='Perform copy even if the object appears to exist at the remote destination.')
+    copy_opts.add_argument(
+        '--force-filters', action='store_true', default=False,
+        help="Copy pipeline template filters verbatim, even if they act differently on the destination cluster.")
     copy_opts.add_argument(
         '--src', dest='source_arvados', required=True,
         help='The name of the source Arvados instance (required) - points at an Arvados config file. May be either a pathname to a config file, or (for example) "foo" as shorthand for $HOME/.config/arvados/foo.conf.')
@@ -265,6 +271,94 @@ def copy_pipeline_instance(pi_uuid, src, dst, args):
     new_pi = dst.pipeline_instances().create(body=pi, ensure_unique_name=True).execute(num_retries=args.retries)
     return new_pi
 
+def filter_iter(arg):
+    """Iterate a filter string-or-list.
+
+    Pass in a filter field that can either be a string or list.
+    This will iterate elements as if the field had been written as a list.
+    """
+    if isinstance(arg, basestring):
+        return iter((arg,))
+    else:
+        return iter(arg)
+
+def migrate_repository_filter(repo_filter, src_repository, dst_repository):
+    """Update a single repository filter in-place for the destination.
+
+    If the filter checks that the repository is src_repository, it is
+    updated to check that the repository is dst_repository.  If it does
+    anything else, this function raises ValueError.
+    """
+    if src_repository is None:
+        raise ValueError("component does not specify a source repository")
+    elif dst_repository is None:
+        raise ValueError("no destination repository specified to update repository filter")
+    elif repo_filter[1:] == ['=', src_repository]:
+        repo_filter[2] = dst_repository
+    elif repo_filter[1:] == ['in', [src_repository]]:
+        repo_filter[2] = [dst_repository]
+    else:
+        raise ValueError("repository filter is not a simple source match")
+
+def migrate_script_version_filter(version_filter):
+    """Update a single script_version filter in-place for the destination.
+
+    Currently this function checks that all the filter operands are Git
+    commit hashes.  If they're not, it raises ValueError to indicate that
+    the filter is not portable.  It could be extended to make other
+    transformations in the future.
+    """
+    if not all(COMMIT_HASH_RE.match(v) for v in filter_iter(version_filter[2])):
+        raise ValueError("script_version filter is not limited to commit hashes")
+
+def attr_filtered(filter_, *attr_names):
+    """Return True if filter_ applies to any of attr_names, else False."""
+    return any((name == 'any') or (name in attr_names)
+               for name in filter_iter(filter_[0]))
+
+@contextlib.contextmanager
+def exception_handler(handler, *exc_types):
+    """If any exc_types are raised in the block, call handler on the exception."""
+    try:
+        yield
+    except exc_types as error:
+        handler(error)
+
+def migrate_components_filters(template_components, dst_git_repo):
+    """Update template component filters in-place for the destination.
+
+    template_components is a dictionary of components in a pipeline template.
+    This method walks over each component's filters, and updates them to have
+    identical semantics on the destination cluster.  It returns a list of
+    error strings that describe what filters could not be updated safely.
+
+    dst_git_repo is the name of the destination Git repository, which can
+    be None if that is not known.
+    """
+    errors = []
+    for cname, cspec in template_components.iteritems():
+        def add_error(errmsg):
+            errors.append("{}: {}".format(cname, errmsg))
+        if not isinstance(cspec, dict):
+            add_error("value is not a component definition")
+            continue
+        src_repository = cspec.get('repository')
+        filters = cspec.get('filters', [])
+        if not isinstance(filters, list):
+            add_error("filters are not a list")
+            continue
+        for cfilter in filters:
+            if not (isinstance(cfilter, list) and (len(cfilter) == 3)):
+                add_error("malformed filter {!r}".format(cfilter))
+                continue
+            if attr_filtered(cfilter, 'repository'):
+                with exception_handler(add_error, ValueError):
+                    migrate_repository_filter(cfilter, src_repository, dst_git_repo)
+            if attr_filtered(cfilter, 'script_version'):
+                with exception_handler(add_error, ValueError):
+                    migrate_script_version_filter(cfilter)
+    return errors
+
 # copy_pipeline_template(pt_uuid, src, dst, args)
 #
 #    Copies a pipeline template identified by pt_uuid from src to dst.
@@ -280,6 +374,12 @@ def copy_pipeline_instance(pi_uuid, src, dst, args):
 def copy_pipeline_template(pt_uuid, src, dst, args):
     # fetch the pipeline template from the source instance
     pt = src.pipeline_templates().get(uuid=pt_uuid).execute(num_retries=args.retries)
+
+    if not args.force_filters:
+        filter_errors = migrate_components_filters(pt['components'], args.dst_git_repo)
+        if filter_errors:
+            abort("Template filters cannot be copied safely. Use --force-filters to copy anyway.\n" +
+                  "\n".join(filter_errors))
 
     if args.recursive:
         check_git_availability()
