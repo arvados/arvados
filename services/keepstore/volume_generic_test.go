@@ -453,6 +453,27 @@ func testDeleteOldBlock(t TB, factory TestableVolumeFactory) {
 	if _, err := v.Get(TestHash, data); err == nil || !os.IsNotExist(err) {
 		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
+
+	_, err := v.Mtime(TestHash)
+	if err == nil || !os.IsNotExist(err) {
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+	}
+
+	err = v.Compare(TestHash, TestBlock)
+	if err == nil || !os.IsNotExist(err) {
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+	}
+
+	indexBuf := new(bytes.Buffer)
+	v.IndexTo("", indexBuf)
+	if strings.Contains(string(indexBuf.Bytes()), TestHash) {
+		t.Fatalf("Found trashed block in IndexTo")
+	}
+
+	err = v.Touch(TestHash)
+	if err == nil || !os.IsNotExist(err) {
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+	}
 }
 
 // Calling Delete() for a block that does not exist should result in error.
@@ -723,11 +744,11 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 	err = v.Trash(TestHash)
 	if v.Writable() == false {
 		if err != MethodDisabledError {
-			t.Error(err)
+			t.Fatal(err)
 		}
 	} else if err != nil {
 		if err != ErrNotImplemented {
-			t.Error(err)
+			t.Fatal(err)
 		}
 	} else {
 		_, err = v.Get(TestHash, buf)
@@ -768,6 +789,23 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 		if bytes.Compare(buf[:n], TestBlock) != 0 {
 			t.Fatalf("Got data %+q, expected %+q", buf[:n], TestBlock)
 		}
+
+		_, err = v.Mtime(TestHash)
+		if err != nil {
+			return err
+		}
+
+		err = v.Compare(TestHash, TestBlock)
+		if err != nil {
+			return err
+		}
+
+		indexBuf := new(bytes.Buffer)
+		v.IndexTo("", indexBuf)
+		if !strings.Contains(string(indexBuf.Bytes()), TestHash) {
+			return os.ErrNotExist
+		}
+
 		return nil
 	}
 
@@ -783,6 +821,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 		t.Fatal(err)
 	}
 
+	// Trash the block
 	err = v.Trash(TestHash)
 	if err == MethodDisabledError || err == ErrNotImplemented {
 		// Skip the trash tests for read-only volumes, and
@@ -795,6 +834,11 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
+	err = v.Touch(TestHash)
+	if err == nil || !os.IsNotExist(err) {
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+	}
+
 	v.EmptyTrash()
 
 	// Even after emptying the trash, we can untrash our block
@@ -803,10 +847,19 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	err = checkGet()
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	err = v.Touch(TestHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Because we Touch'ed, need to backdate again for next set of tests
+	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
 
 	// Untrash should fail if the only block in the trash has
 	// already been untrashed.
@@ -848,11 +901,14 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 
 	// Trash it again, and this time call EmptyTrash so it really
 	// goes away.
+	// (In Azure volumes, un/trash changes Mtime, so first backdate again)
+	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
 	err = v.Trash(TestHash)
 	err = checkGet()
 	if err == nil || !os.IsNotExist(err) {
-		t.Errorf("os.IsNotExist(%v) should have been true", err)
+		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
+	// EmptryTrash
 	v.EmptyTrash()
 
 	// Untrash won't find it

@@ -74,6 +74,7 @@ func (h *azStubHandler) PutRaw(container, hash string, data []byte) {
 	h.blobs[container+"|"+hash] = &azBlob{
 		Data:        data,
 		Mtime:       time.Now(),
+		Metadata:    make(map[string]string),
 		Uncommitted: make(map[string][]byte),
 	}
 }
@@ -136,14 +137,23 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			h.blobs[container+"|"+hash] = &azBlob{
 				Mtime:       time.Now(),
 				Uncommitted: make(map[string][]byte),
+				Metadata:    make(map[string]string),
 				Etag:        makeEtag(),
 			}
 			h.unlockAndRace()
+		}
+		metadata := make(map[string]string)
+		for k, v := range r.Header {
+			if strings.HasPrefix(strings.ToLower(k), "x-ms-meta-") {
+				name := k[len("x-ms-meta-"):]
+				metadata[strings.ToLower(name)] = v[0]
+			}
 		}
 		h.blobs[container+"|"+hash] = &azBlob{
 			Data:        body,
 			Mtime:       time.Now(),
 			Uncommitted: make(map[string][]byte),
+			Metadata:    metadata,
 			Etag:        makeEtag(),
 		}
 		rw.WriteHeader(http.StatusCreated)
@@ -196,11 +206,22 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 		blob.Metadata = make(map[string]string)
 		for k, v := range r.Header {
 			if strings.HasPrefix(strings.ToLower(k), "x-ms-meta-") {
-				blob.Metadata[k] = v[0]
+				name := k[len("x-ms-meta-"):]
+				blob.Metadata[strings.ToLower(name)] = v[0]
 			}
 		}
 		blob.Mtime = time.Now()
 		blob.Etag = makeEtag()
+	case (r.Method == "GET" || r.Method == "HEAD") && r.Form.Get("comp") == "metadata" && hash != "":
+		// "Get Blob Metadata" API
+		if !blobExists {
+			rw.WriteHeader(http.StatusNotFound)
+			return
+		}
+		for k, v := range blob.Metadata {
+			rw.Header().Set(fmt.Sprintf("x-ms-meta-%s", k), v)
+		}
+		return
 	case (r.Method == "GET" || r.Method == "HEAD") && hash != "":
 		// "Get Blob" API
 		if !blobExists {
@@ -265,14 +286,20 @@ func (h *azStubHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			}
 			if len(resp.Blobs) > 0 || marker == "" || marker == hash {
 				blob := h.blobs[container+"|"+hash]
-				resp.Blobs = append(resp.Blobs, storage.Blob{
+				bmeta := map[string]string(nil)
+				if r.Form.Get("include") == "metadata" {
+					bmeta = blob.Metadata
+				}
+				b := storage.Blob{
 					Name: hash,
 					Properties: storage.BlobProperties{
 						LastModified:  blob.Mtime.Format(time.RFC1123),
 						ContentLength: int64(len(blob.Data)),
 						Etag:          blob.Etag,
 					},
-				})
+					Metadata: bmeta,
+				}
+				resp.Blobs = append(resp.Blobs, b)
 			}
 		}
 		buf, err := xml.Marshal(resp)
