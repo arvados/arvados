@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"runtime"
 	"strings"
@@ -447,9 +448,11 @@ type balancerStats struct {
 	lost, overrep, unref, garbage, underrep, justright blocksNBytes
 	desired, current                                   blocksNBytes
 	pulls, trashes                                     int
+	replHistogram                                      []int
 }
 
 func (bal *Balancer) getStatistics() (s balancerStats) {
+	s.replHistogram = make([]int, 2)
 	bal.BlockStateMap.Apply(func(blkid arvados.SizedDigest, blk *BlockState) {
 		surplus := len(blk.Replicas) - blk.Desired
 		bytes := blkid.Size()
@@ -493,6 +496,11 @@ func (bal *Balancer) getStatistics() (s balancerStats) {
 			s.current.blocks++
 			s.current.bytes += bytes * int64(len(blk.Replicas))
 		}
+
+		for len(s.replHistogram) <= len(blk.Replicas) {
+			s.replHistogram = append(s.replHistogram, 0)
+		}
+		s.replHistogram[len(blk.Replicas)]++
 	})
 	for _, srv := range bal.KeepServices {
 		s.pulls += len(srv.ChangeSet.Pulls)
@@ -521,6 +529,25 @@ func (bal *Balancer) PrintStatistics() {
 		bal.logf("%s: %v\n", srv, srv.ChangeSet)
 	}
 	bal.logf("===")
+	bal.printHistogram(s, 60)
+	bal.logf("===")
+}
+
+func (bal *Balancer) printHistogram(s balancerStats, hashColumns int) {
+	bal.logf("Replication level distribution (counting N replicas on a single server as N):")
+	maxCount := 0
+	for _, count := range s.replHistogram {
+		if maxCount < count {
+			maxCount = count
+		}
+	}
+	hashes := strings.Repeat("#", hashColumns)
+	countWidth := 1 + int(math.Log10(float64(maxCount+1)))
+	scaleCount := 10 * float64(hashColumns) / math.Floor(1+10*math.Log10(float64(maxCount+1)))
+	for repl, count := range s.replHistogram {
+		nHashes := int(scaleCount * math.Log10(float64(count+1)))
+		bal.logf("%2d: %*d %s", repl, countWidth, count, hashes[:nHashes])
+	}
 }
 
 // CheckSanityLate checks for configuration and runtime errors after
