@@ -98,8 +98,9 @@ class WatchdogActor(pykka.ThreadingActor):
          self.actor_ref = TellableActorRef(self)
          self._later = self.actor_ref.tell_proxy()
 
-    def kill_self(self, act):
+    def kill_self(self, e, act):
         lg = getattr(self, "_logger", logging)
+        lg.critical("Watchdog exception", exc_info=e)
         lg.critical("Actor %s watchdog ping time out, killing Node Manager", act)
         os.kill(os.getpid(), signal.SIGKILL)
 
@@ -113,5 +114,5 @@ class WatchdogActor(pykka.ThreadingActor):
                 a.ping().get(self.timeout)
             time.sleep(20)
             self._later.run()
-        except:
-            self.kill_self(a)
+        except Exception as e:
+            self.kill_self(e, a)
