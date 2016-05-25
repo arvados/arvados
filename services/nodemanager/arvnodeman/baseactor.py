@@ -107,14 +107,11 @@ class WatchdogActor(pykka.ThreadingActor):
         self._later.run()
 
     def run(self):
-        for a in self.actors:
-            try:
+        a = None
+        try:
+            for a in self.actors:
                 a.ping().get(self.timeout)
-            except pykka.ActorDeadError:
-                pass
-            except pykka.Timeout:
-                self.kill_self(a)
-                return
-
-        time.sleep(20)
-        self._later.run()
+            time.sleep(20)
+            self._later.run()
+        except:
+            self.kill_self(a)
