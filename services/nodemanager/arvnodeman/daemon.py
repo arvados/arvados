@@ -436,8 +436,11 @@ class NodeManagerDaemonActor(actor_class):
             self._begin_node_shutdown(node_actor, cancellable=False)
 
     def node_finished_shutdown(self, shutdown_actor):
-        cloud_node, success, cancel_reason = self._get_actor_attrs(
-            shutdown_actor, 'cloud_node', 'success', 'cancel_reason')
+        try:
+            cloud_node, success, cancel_reason = self._get_actor_attrs(
+                shutdown_actor, 'cloud_node', 'success', 'cancel_reason')
+        except pykka.ActorDeadError:
+            return
         cloud_node_id = cloud_node.id
         record = self.cloud_nodes[cloud_node_id]
         shutdown_actor.stop()

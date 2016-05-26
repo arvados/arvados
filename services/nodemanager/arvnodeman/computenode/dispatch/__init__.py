@@ -223,6 +223,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
     @RetryMixin._retry()
     def shutdown_node(self):
         self._logger.info("Starting shutdown")
+        arv_node = self._arvados_node()
         if not self._cloud.destroy_node(self.cloud_node):
             if self._cloud.broken(self.cloud_node):
                 self._later.cancel_shutdown(self.NODE_BROKEN)
@@ -231,7 +232,6 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
                 # Force a retry.
                 raise cloud_types.LibcloudError("destroy_node failed")
         self._logger.info("Shutdown success")
-        arv_node = self._arvados_node()
         if arv_node is None:
             self._finished(success_flag=True)
         else:
