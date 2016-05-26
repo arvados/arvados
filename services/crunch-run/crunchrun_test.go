@@ -18,6 +18,7 @@ import (
 	"os/exec"
 	"sort"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -40,6 +41,7 @@ type ArvTestClient struct {
 	ContainerRecord
 	Logs          map[string]*bytes.Buffer
 	WasSetRunning bool
+	sync.Mutex
 }
 
 type KeepTestClient struct {
@@ -130,6 +132,9 @@ func (this *ArvTestClient) Create(resourceType string,
 	parameters arvadosclient.Dict,
 	output interface{}) error {
 
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
+
 	this.Calls += 1
 	this.Content = append(this.Content, parameters)
 
@@ -168,13 +173,35 @@ func (this *ArvTestClient) Get(resourceType string, uuid string, parameters arva
 }
 
 func (this *ArvTestClient) Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error) {
+	this.Mutex.Lock()
+	defer this.Mutex.Unlock()
 	this.Calls += 1
 	this.Content = append(this.Content, parameters)
 	if resourceType == "containers" {
 		if parameters["container"].(arvadosclient.Dict)["state"] == "Running" {
 			this.WasSetRunning = true
 		}
+	}
+	return nil
+}
 
+// CalledWith returns the parameters from the first API call whose
+// parameters match jpath/string. E.g., CalledWith(c, "foo.bar",
+// "baz") returns parameters with parameters["foo"]["bar"]=="baz". If
+// no call matches, it returns nil.
+func (this *ArvTestClient) CalledWith(jpath, expect string) arvadosclient.Dict {
+	call: for _, content := range this.Content {
+		var v interface{} = content
+		for _, k := range strings.Split(jpath, ".") {
+			if dict, ok := v.(arvadosclient.Dict); !ok {
+				continue call
+			} else {
+				v = dict[k]
+			}
+		}
+		if v, ok := v.(string); ok && v == expect {
+			return content
+		}
 	}
 	return nil
 }
@@ -613,7 +640,7 @@ func (s *TestSuite) TestCancel(c *C) {
 
 	go func() {
 		for cr.ContainerID == "" {
-			time.Sleep(1 * time.Second)
+			time.Sleep(time.Millisecond)
 		}
 		cr.SigChan <- syscall.SIGINT
 	}()
@@ -751,10 +778,10 @@ func (s *TestSuite) TestStdout(c *C) {
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
-	c.Check(api.Calls, Equals, 6)
+	c.Assert(api.Calls, Equals, 6)
 	c.Check(api.Content[5]["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
 	c.Check(api.Content[5]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
-	c.Check(api.Content[2]["collection"].(arvadosclient.Dict)["manifest_text"], Equals, "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out\n")
+	c.Check(api.CalledWith("collection.manifest_text", "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out\n"), Not(IsNil))
 }
 
 // Used by the TestStdoutWithWrongPath*()
