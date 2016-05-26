@@ -633,7 +633,7 @@ func (s *TestSuite) TestCancel(c *C) {
 
 	go func() {
 		for cr.ContainerID == "" {
-			time.Sleep(time.Second)
+			time.Sleep(1 * time.Second)
 		}
 		cr.SigChan <- syscall.SIGINT
 	}()
