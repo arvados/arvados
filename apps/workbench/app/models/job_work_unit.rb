@@ -1,7 +1,7 @@
 class JobWorkUnit < ProxyWorkUnit
   def children
     # Job tasks
-    uuid = (self.proxied.uuid if self.proxied.respond_to?(:uuid)) || self.proxied[:uuid]
+    uuid = get(:uuid)
     tasks = JobTask.filter([['job_uuid', '=', uuid]]).results
     items = []
     tasks.each do |t|
@@ -14,12 +14,12 @@ class JobWorkUnit < ProxyWorkUnit
   end
 
   def progress
-    state = (self.proxied.state if self.proxied.respond_to?(:state)) || self.proxied[:state]
+    state = get(:state)
     if state == 'Complete'
       return 1.0
     end
 
-    tasks_summary = (self.proxied.tasks_summary if self.proxied.respond_to?(:tasks_summary)) || self.proxied[:tasks_summary]
+    tasks_summary = get(:tasks_summary)
     failed = tasks_summary[:failed] || 0 rescue 0
     done = tasks_summary[:done] || 0 rescue 0
     running = tasks_summary[:running] || 0 rescue 0
@@ -33,32 +33,36 @@ class JobWorkUnit < ProxyWorkUnit
   end
 
   def docker_image
-    (self.proxied.docker_image_locator if self.proxied.respond_to?(:docker_image_locator)) || self.proxied[:docker_image_locator]
+    get(:docker_image_locator)
   end
 
   def nondeterministic
-    (self.proxied.nondeterministic if self.proxied.respond_to?(:nondeterministic)) || self.proxied[:nondeterministic]
+    get(:nondeterministic)
   end
 
   def priority
-    (self.proxied.priority if self.proxied.respond_to?(:priority)) || self.proxied[:priority]
+    get(:priority)
   end
 
   def log_collection
-    (self.proxied.log if self.proxied.respond_to?(:log)) || self.proxied[:log]
+    get(:log)
   end
 
   def output
-    (self.proxied.output if self.proxied.respond_to?(:output)) || self.proxied[:output]
+    get(:output)
+  end
+
+  def can_cancel?
+    true
   end
 
   def uri
-    uuid = (self.proxied.uuid if self.proxied.respond_to?(:uuid)) || self.proxied[:uuid]
+    uuid = get(:uuid)
     "/jobs/#{uuid}"
   end
 
   def child_summary
-    (self.proxied.tasks_summary if self.proxied.respond_to?(:tasks_summary)) || self.proxied[:tasks_summary]
+    get(:tasks_summary)
   end
 
   def title

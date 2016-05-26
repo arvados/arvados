@@ -8,7 +8,7 @@ class PipelineInstanceWorkUnit < ProxyWorkUnit
       jobs[j.uuid] = j
     end
 
-    components = (self.proxied.components if self.proxied.respond_to?(:components)) || self.proxied[:components]
+    components = get(:components)
     components.each do |name, c|
       if c.is_a?(Hash)
         job = c[:job]
@@ -22,6 +22,7 @@ class PipelineInstanceWorkUnit < ProxyWorkUnit
           items << ProxyWorkUnit.new(c, name)
         end
       else
+        self.unreadable_children = true
         break
       end
     end
@@ -30,7 +31,7 @@ class PipelineInstanceWorkUnit < ProxyWorkUnit
   end
 
   def progress
-    state = (self.proxied.state if self.proxied.respond_to?(:state)) || self.proxied[:state]
+    state = get(:state)
     if state == 'Complete'
       return 1.0
     end
@@ -56,12 +57,8 @@ class PipelineInstanceWorkUnit < ProxyWorkUnit
     end
   end
 
-  def can_cancel?
-    true
-  end
-
   def uri
-    uuid = (self.proxied.uuid if self.proxied.respond_to?(:uuid)) || self.proxied[:uuid]
+    uuid = get(:uuid)
     "/pipeline_instances/#{uuid}"
   end
 

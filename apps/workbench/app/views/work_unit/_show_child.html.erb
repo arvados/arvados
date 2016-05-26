@@ -13,7 +13,7 @@
 
         <%# column offset 2 %>
         <div class="col-md-2 pipeline-instance-spacing">
-          <span class="label label-<%= current_obj.state_bootstrap_class %>"><%= current_obj.progress%></span>
+          <%= render partial: 'work_unit/progress', locals: {wu: current_obj} %>
         </div>
 
         <%# column offset 4 %>

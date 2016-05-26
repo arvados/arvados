@@ -107,4 +107,8 @@ class WorkUnit
   def title
     # title for the work unit
   end
+
+  def has_unreadable_children
+    # accept it if you can't understand your own children
+  end
 end

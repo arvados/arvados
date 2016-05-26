@@ -3,6 +3,7 @@ class ProxyWorkUnit < WorkUnit
 
   attr_accessor :lbl
   attr_accessor :proxied
+  attr_accessor :unreadable_children
 
   def initialize proxied, label
     self.lbl = label
@@ -14,30 +15,42 @@ class ProxyWorkUnit < WorkUnit
   end
 
   def uuid
-    (self.proxied.uuid if self.proxied.respond_to?(:uuid)) || self.proxied[:uuid]
+    get(:uuid)
   end
 
   def modified_by_user_uuid
-    (self.proxied.modified_by_user_uuid if self.proxied.respond_to?(:modified_by_user_uuid)) || self.proxied[:modified_by_user_uuid]
+    get(:modified_by_user_uuid)
   end
 
   def created_at
-    t= (self.proxied.created_at if self.proxied.respond_to?(:created_at)) || self.proxied[:created_at]
-    t.to_datetime if t
+    t = get(:created_at)
+    if t.andand.class == String
+      Time.parse t
+    else
+      t
+    end
   end
 
   def started_at
-    t = (self.proxied.started_at if self.proxied.respond_to?(:started_at)) || self.proxied[:started_at]
-    t.to_datetime if t
+    t = get(:started_at)
+    if t.andand.class == String
+      Time.parse t
+    else
+      t
+    end
   end
 
   def finished_at
-    t = (self.proxied.finished_at if self.proxied.respond_to?(:finished_at)) || self.proxied[:finished_at]
-    t.to_datetime if t
+    t = get(:finished_at)
+    if t.andand.class == String
+      Time.parse t
+    else
+      t
+    end
   end
 
   def state_label
-    state = (self.proxied.state if self.proxied.respond_to?(:state)) || self.proxied[:state]
+    state = get(:state)
     if ["Running", "RunningOnServer", "RunningOnClient"].include? state
       "Running"
     else
@@ -46,7 +59,7 @@ class ProxyWorkUnit < WorkUnit
   end
 
   def state_bootstrap_class
-    state = (self.proxied.state if self.proxied.respond_to?(:state)) || self.proxied[:state]
+    state = get(:state)
     case state
     when 'Complete'
       'success'
@@ -60,7 +73,7 @@ class ProxyWorkUnit < WorkUnit
   end
 
   def success?
-    state = (self.proxied.state if self.proxied.respond_to?(:state)) || self.proxied[:state]
+    state = get(:state)
     if state == 'Complete'
       true
     elsif state == 'Failed'
@@ -71,27 +84,27 @@ class ProxyWorkUnit < WorkUnit
   end
 
   def parameters
-    (self.proxied.script_parameters if self.proxied.respond_to?(:script_parameters)) || self.proxied[:script_parameters]
+    get(:script_parameters)
   end
 
   def repository
-    (self.proxied.repository if self.proxied.respond_to?(:repository)) || self.proxied[:repository]
+    get(:repository)
   end
 
   def script
-    (self.proxied.script if self.proxied.respond_to?(:script)) || self.proxied[:script]
+    get(:script)
   end
 
   def script_version
-    (self.proxied.send(:script_version) if self.proxied.respond_to?(:script_version)) || self.proxied[:script_version]
+    get(:script_version)
   end
 
   def supplied_script_version
-    (self.proxied.supplied_script_version if self.proxied.respond_to?(:supplied_script_version)) || self.proxied[:supplied_script_version]
+    get(:supplied_script_version)
   end
 
   def runtime_constraints
-    (self.proxied.runtime_constraints if self.proxied.respond_to?(:runtime_constraints)) || self.proxied[:runtime_constraints]
+    get(:runtime_constraints)
   end
 
   def children
@@ -100,5 +113,19 @@ class ProxyWorkUnit < WorkUnit
 
   def title
     "work unit"
+  end
+
+  def has_unreadable_children
+    self.unreadable_children
+  end
+
+  protected
+
+  def get key
+    if self.proxied.respond_to? key
+      self.proxied.send(key)
+    elsif self.proxied.is_a?(Hash)
+      self.proxied[key]
+    end
   end
 end
