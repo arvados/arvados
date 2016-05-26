@@ -56,6 +56,9 @@ var hwImageId = "9c31ee32b3d15268a0754e8edc74d4f815ee014b693bc5109058e431dd5caea
 var otherManifest = ". 68a84f561b1d1708c6baff5e019a9ab3+46+Ae5d0af96944a3690becb1decdf60cc1c937f556d@5693216f 0:46:md5sum.txt\n"
 var otherPDH = "a3e8f74c6f101eae01fa08bfb4e49b3a+54"
 
+var fakeAuthUUID = "zzzzz-gj3su-55pqoyepgi2glem"
+var fakeAuthToken = "a3ltuwzqcu2u4sc0q7yhpc2w7s00fdcqecg5d6e0u3pfohmbjt"
+
 type TestDockerClient struct {
 	imageLoaded string
 	logReader   io.ReadCloser
@@ -156,6 +159,19 @@ func (this *ArvTestClient) Create(resourceType string,
 	}
 
 	return nil
+}
+
+func (this *ArvTestClient) Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error {
+	switch {
+	case method == "GET" && resourceType == "containers" && action == "auth":
+		return json.Unmarshal([]byte(`{
+			"kind": "arvados#api_client_authorization",
+			"uuid": "`+fakeAuthUUID+`",
+			"api_token": "`+fakeAuthToken+`"
+			}`), output)
+	default:
+		return fmt.Errorf("Not found")
+	}
 }
 
 func (this *ArvTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
@@ -277,6 +293,10 @@ func (this ArvErrorTestClient) Create(resourceType string,
 	parameters arvadosclient.Dict,
 	output interface{}) error {
 	return nil
+}
+
+func (this ArvErrorTestClient) Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error {
+	return errors.New("ArvError")
 }
 
 func (this ArvErrorTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
@@ -689,11 +709,13 @@ func (s *TestSuite) TestFullRunSetEnv(c *C) {
 }
 
 type ArvMountCmdLine struct {
-	Cmd []string
+	Cmd   []string
+	token string
 }
 
-func (am *ArvMountCmdLine) ArvMountTest(c []string) (*exec.Cmd, error) {
+func (am *ArvMountCmdLine) ArvMountTest(c []string, token string) (*exec.Cmd, error) {
 	am.Cmd = c
+	am.token = token
 	return nil, nil
 }
 

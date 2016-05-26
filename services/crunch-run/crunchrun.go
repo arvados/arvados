@@ -27,6 +27,7 @@ type IArvadosClient interface {
 	Create(resourceType string, parameters arvadosclient.Dict, output interface{}) error
 	Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error
 	Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error)
+	Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) (err error)
 }
 
 // ErrCancelled is the error returned when the container is cancelled.
@@ -69,10 +70,16 @@ type ContainerRecord struct {
 	Output             string                 `json:"output"`
 }
 
+// APIClientAuthorization is an arvados#api_client_authorization resource.
+type APIClientAuthorization struct {
+	UUID     string `json:"uuid"`
+	APIToken string `json:"api_token"`
+}
+
 // NewLogWriter is a factory function to create a new log writer.
 type NewLogWriter func(name string) io.WriteCloser
 
-type RunArvMount func([]string) (*exec.Cmd, error)
+type RunArvMount func(args []string, tok string) (*exec.Cmd, error)
 
 type MkTempDir func(string, string) (string, error)
 
@@ -189,8 +196,19 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 	return nil
 }
 
-func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string) (c *exec.Cmd, err error) {
+func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string, token string) (c *exec.Cmd, err error) {
 	c = exec.Command("arv-mount", arvMountCmd...)
+
+	// Copy our environment, but override ARVADOS_API_TOKEN with
+	// the container auth token.
+	c.Env = nil
+	for _, s := range os.Environ() {
+		if !strings.HasPrefix(s, "ARVADOS_API_TOKEN=") {
+			c.Env = append(c.Env, s)
+		}
+	}
+	c.Env = append(c.Env, "ARVADOS_API_TOKEN="+token)
+
 	nt := NewThrottledLogger(runner.NewLogWriter("arv-mount"))
 	c.Stdout = nt
 	c.Stderr = nt
@@ -328,7 +346,12 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	}
 	arvMountCmd = append(arvMountCmd, runner.ArvMountPoint)
 
-	runner.ArvMount, err = runner.RunArvMount(arvMountCmd)
+	token, err := runner.ContainerToken()
+	if err != nil {
+		return fmt.Errorf("could not get container token: %s", err)
+	}
+
+	runner.ArvMount, err = runner.RunArvMount(arvMountCmd, token)
 	if err != nil {
 		return fmt.Errorf("While trying to start arv-mount: %v", err)
 	}
@@ -607,6 +630,14 @@ func (runner *ContainerRunner) CommitLogs() error {
 func (runner *ContainerRunner) UpdateContainerRecordRunning() error {
 	return runner.ArvClient.Update("containers", runner.ContainerRecord.UUID,
 		arvadosclient.Dict{"container": arvadosclient.Dict{"state": "Running"}}, nil)
+}
+
+// ContainerToken returns the api_token the container (and any
+// arv-mount processes) are allowed to use.
+func (runner *ContainerRunner) ContainerToken() (string, error) {
+	var auth APIClientAuthorization
+	err := runner.ArvClient.Call("GET", "containers", runner.ContainerRecord.UUID, "auth", nil, &auth)
+	return auth.APIToken, err
 }
 
 // UpdateContainerRecordComplete updates the container record state on API
