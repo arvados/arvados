@@ -79,18 +79,21 @@ func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 	stdout.Print("Doing stuff")
 	cr.CrunchLog.Print("Goodbye")
 	stdout.Print("Blurb")
-
 	cr.CrunchLog.Close()
-	logtext1 := "2015-12-29T15:51:45.000000001Z Hello world!\n" +
-		"2015-12-29T15:51:45.000000003Z Goodbye\n"
-	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["event_type"], Equals, "crunch-run")
-	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"], Equals, logtext1)
-
 	stdout.Close()
-	logtext2 := "2015-12-29T15:51:45.000000002Z Doing stuff\n" +
-		"2015-12-29T15:51:45.000000004Z Blurb\n"
-	c.Check(api.Content[1]["log"].(arvadosclient.Dict)["event_type"], Equals, "stdout")
-	c.Check(api.Content[1]["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"], Equals, logtext2)
+
+	logText := make(map[string]string)
+	for _, content := range api.Content {
+		log := content["log"].(arvadosclient.Dict)
+		logText[log["event_type"].(string)] += log["properties"].(map[string]string)["text"]
+	}
+
+	c.Check(logText["crunch-run"], Equals, `2015-12-29T15:51:45.000000001Z Hello world!
+2015-12-29T15:51:45.000000003Z Goodbye
+`)
+	c.Check(logText["stdout"], Equals, `2015-12-29T15:51:45.000000002Z Doing stuff
+2015-12-29T15:51:45.000000004Z Blurb
+`)
 
 	mt, err := cr.LogCollection.ManifestText()
 	c.Check(err, IsNil)
