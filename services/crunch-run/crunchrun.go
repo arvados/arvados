@@ -55,19 +55,23 @@ type CollectionRecord struct {
 	PortableDataHash string `json:"portable_data_hash"`
 }
 
+type RuntimeConstraints struct {
+	API *bool
+}
+
 // ContainerRecord is the container record returned by the API server.
 type ContainerRecord struct {
-	UUID               string                 `json:"uuid"`
-	Command            []string               `json:"command"`
-	ContainerImage     string                 `json:"container_image"`
-	Cwd                string                 `json:"cwd"`
-	Environment        map[string]string      `json:"environment"`
-	Mounts             map[string]Mount       `json:"mounts"`
-	OutputPath         string                 `json:"output_path"`
-	Priority           int                    `json:"priority"`
-	RuntimeConstraints map[string]interface{} `json:"runtime_constraints"`
-	State              string                 `json:"state"`
-	Output             string                 `json:"output"`
+	UUID               string             `json:"uuid"`
+	Command            []string           `json:"command"`
+	ContainerImage     string             `json:"container_image"`
+	Cwd                string             `json:"cwd"`
+	Environment        map[string]string  `json:"environment"`
+	Mounts             map[string]Mount   `json:"mounts"`
+	OutputPath         string             `json:"output_path"`
+	Priority           int                `json:"priority"`
+	RuntimeConstraints RuntimeConstraints `json:"runtime_constraints"`
+	State              string             `json:"state"`
+	Output             string             `json:"output"`
 }
 
 // APIClientAuthorization is an arvados#api_client_authorization resource.
@@ -103,6 +107,7 @@ type ContainerRunner struct {
 	Kc        IKeepClient
 	ContainerRecord
 	dockerclient.ContainerConfig
+	token       string
 	ContainerID string
 	ExitCode    *int
 	NewLogWriter
@@ -469,9 +474,22 @@ func (runner *ContainerRunner) StartContainer() (err error) {
 	if runner.ContainerRecord.Cwd != "." {
 		runner.ContainerConfig.WorkingDir = runner.ContainerRecord.Cwd
 	}
+
 	for k, v := range runner.ContainerRecord.Environment {
 		runner.ContainerConfig.Env = append(runner.ContainerConfig.Env, k+"="+v)
 	}
+	if wantAPI := runner.ContainerRecord.RuntimeConstraints.API; wantAPI != nil && *wantAPI {
+		tok, err := runner.ContainerToken()
+		if err != nil {
+			return err
+		}
+		runner.ContainerConfig.Env = append(runner.ContainerConfig.Env,
+			"ARVADOS_API_TOKEN="+tok,
+			"ARVADOS_API_HOST="+os.Getenv("ARVADOS_API_HOST"),
+			"ARVADOS_API_HOST_INSECURE="+os.Getenv("ARVADOS_API_HOST_INSECURE"),
+		)
+	}
+
 	runner.ContainerConfig.NetworkDisabled = true
 	runner.ContainerID, err = runner.Docker.CreateContainer(&runner.ContainerConfig, "", nil)
 	if err != nil {
@@ -635,9 +653,17 @@ func (runner *ContainerRunner) UpdateContainerRecordRunning() error {
 // ContainerToken returns the api_token the container (and any
 // arv-mount processes) are allowed to use.
 func (runner *ContainerRunner) ContainerToken() (string, error) {
+	if runner.token != "" {
+		return runner.token, nil
+	}
+
 	var auth APIClientAuthorization
 	err := runner.ArvClient.Call("GET", "containers", runner.ContainerRecord.UUID, "auth", nil, &auth)
-	return auth.APIToken, err
+	if err != nil {
+		return "", err
+	}
+	runner.token = auth.APIToken
+	return runner.token, nil
 }
 
 // UpdateContainerRecordComplete updates the container record state on API
