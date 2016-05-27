@@ -478,7 +478,7 @@ func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
 // dress rehearsal of the Run() function, starting from a JSON container record.
 func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner) {
 	rec := ContainerRecord{}
-	err := json.NewDecoder(strings.NewReader(record)).Decode(&rec)
+	err := json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
 	docker := NewTestDockerClient()
@@ -617,7 +617,7 @@ func (s *TestSuite) TestCancel(c *C) {
 }`
 
 	rec := ContainerRecord{}
-	err := json.NewDecoder(strings.NewReader(record)).Decode(&rec)
+	err := json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
 	docker := NewTestDockerClient()
@@ -782,7 +782,7 @@ func (s *TestSuite) TestStdout(c *C) {
 // Used by the TestStdoutWithWrongPath*()
 func StdoutErrorRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner, err error) {
 	rec := ContainerRecord{}
-	err = json.NewDecoder(strings.NewReader(record)).Decode(&rec)
+	err = json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
 	docker := NewTestDockerClient()
