@@ -3,12 +3,6 @@ class JobWorkUnit < ProxyWorkUnit
     uuid = get(:uuid)
     items = []
 
-    # Job tasks - for now do not include job tasks
-    # tasks = JobTask.filter([['job_uuid', '=', uuid]]).results
-    # tasks.each do |t|
-    #   items << t.work_unit("task #{items.size}")
-    # end
-
     # Jobs components
     components = get(:components)
     uuids = components.andand.collect {|_, v| v}
@@ -67,6 +61,10 @@ class JobWorkUnit < ProxyWorkUnit
     get(:output)
   end
 
+  def child_summary
+    get(:tasks_summary)
+  end
+
   def can_cancel?
     true
   end
@@ -74,10 +72,6 @@ class JobWorkUnit < ProxyWorkUnit
   def uri
     uuid = get(:uuid)
     "/jobs/#{uuid}"
-  end
-
-  def child_summary
-    get(:tasks_summary)
   end
 
   def title

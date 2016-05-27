@@ -1,6 +1,5 @@
 class WorkUnit
-  # This is just an abstract class that documents the WorkUnit interface; a
-  # class can implement the interface without being a subclass of WorkUnit.
+  # This is an abstract class that documents the WorkUnit interface
 
   def label
     # returns the label that was assigned when creating the work unit
@@ -39,12 +38,12 @@ class WorkUnit
   end
 
   def success?
-    # returnis true if the work unit finished successfully,
+    # returns true if the work unit finished successfully,
     # false if it has a permanent failure,
     # and nil if the final state is not determined.
   end
 
-  def progress 
+  def progress
     # returns a number between 0 and 1
   end
 
@@ -92,16 +91,20 @@ class WorkUnit
     # returns uuid or pdh of output data, if any
   end
 
+  def child_summary
+    # summary status of any children of this work unit
+  end
+
   def can_cancel?
-    # returns if this work unit is cancelable
+    # returns true if this work unit can be canceled
+  end
+
+  def readable?
+    # is the proxied object readable by current user?
   end
 
   def uri
     # returns the uri for this work unit
-  end
-
-  def child_summary
-    # summary status of any children of this work unit
   end
 
   def title

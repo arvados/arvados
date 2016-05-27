@@ -4,7 +4,7 @@
             <table>
               <% [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :output, :priority].each do |k| %>
                 <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
-                <% unless val.nil? %>
+                <% if val %>
                 <tr>
                   <td style="padding-right: 1em">
                     <%= k.to_s %>:
@@ -40,7 +40,7 @@
                  %>
               <% [:script, :repository, :script_version, :supplied_script_version, :nondeterministic].each do |k| %>
                 <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
-                <% unless val.nil? %>
+                <% if val %>
                 <tr>
                   <td style="padding-right: 1em">
                     <%= k.to_s %>:

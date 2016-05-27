@@ -25,15 +25,14 @@
                 <% if current_obj.log_collection %>
                   <% logCollection = Collection.find? current_obj.log_collection %>
                   <% if logCollection %>
-                    <%= link_to "Log", job_path(current_obj.uuid, anchor: "Log") %>
+                    <%= link_to "Log", "#{current_obj.uri}#Log" %>
                   <% else %>
                     Log unavailable
                   <% end %>
                 <% end %>
               <% elsif current_obj.state_label == "Running" %>
-                <% job = Job.find? current_obj.uuid %>
-                <% if job %>
-                  <%= link_to "Log", job_path(current_obj.uuid, anchor: "Log") %>
+                <% if current_obj.readable? %>
+                  <%= link_to "Log", "#{current_obj.uri}#Log" %>
                 <% else %>
                   Log unavailable
                 <% end %>
@@ -64,10 +63,18 @@
               <%# column offset 8 %>
               <div class="col-md-3">
                 <span class="task-summary-status">
-                  <%= current_obj.child_summary[:done] %>&nbsp;<%= "task".pluralize(current_obj.child_summary[:done]) %> done,
-                  <%= current_obj.child_summary[:failed] %>&nbsp;failed,
-                  <%= current_obj.child_summary[:running] %>&nbsp;running,
-                  <%= current_obj.child_summary[:todo] %>&nbsp;pending
+                  <% if current_obj.child_summary[:done] %>
+                    <%= current_obj.child_summary[:done] %>&nbsp;<%= "child".pluralize(current_obj.child_summary[:done]) %> done,
+                  <% end %>
+                  <% if current_obj.child_summary[:failed] %>
+                    <%= current_obj.child_summary[:failed] %>&nbsp;failed,
+                  <% end %>
+                  <% if current_obj.child_summary[:running] %>
+                    <%= current_obj.child_summary[:running] %>&nbsp;running,
+                  <% end %>
+                  <% if current_obj.child_summary[:todo] %>
+                    <%= current_obj.child_summary[:todo] %>&nbsp;pending
+                  <% end %>
                 </span>
               </div>
             <% end %>
@@ -84,12 +91,12 @@
             </div>
           <% end %>
 
-          <% if current_obj.state_label.in? ["Queued", "Running"] and @object.work_unit.can_cancel? and @object.editable? %>
+          <% if current_obj.state_label.in? ["Queued", "Running"] and current_obj.can_cancel? and @object.editable? %>
             <%# column offset 11 %>
             <div class="col-md-1 pipeline-instance-spacing">
               <%= form_tag "#{current_obj.uri}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
                 <%= hidden_field_tag :return_to, url_for(@object) %>
-                <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-job-button"} %>
+                <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-child-button"} %>
               <% end %>
             </div>
           <% end %>

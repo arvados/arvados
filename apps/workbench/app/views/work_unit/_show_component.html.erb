@@ -12,7 +12,7 @@
                 <div class="col-md-1">
                   <%= form_tag "#{wu.uri}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
                     <%= hidden_field_tag :return_to, url_for(@object) %>
-                    <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-job-button"} %>
+                    <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-obj-button"} %>
                   <% end %>
                 </div>
             <% end %>
@@ -29,7 +29,7 @@
       <% if wu.state_label == 'Paused' %>
         <p>
           This <%= wu.title %> is paused. Children that are
-          already running will continue to run, but no new work units will be submitted.
+          already running will continue to run, but no new work will be submitted.
         </p>
       <% end %>
 
@@ -60,7 +60,7 @@
               end %><% if wu.finished_at %> at <%= render_localized_date(wu.finished_at) %><% end %>.
         <% else %>
           <% if wu.state_label %> This <%= wu.title %> is <%= if wu.state_label == 'Running' then 'active' else wu.state_label.downcase end %>. <% end %>
-            <% walltime = 0%>
+            <% walltime = 0 %>
         <% end %>
 
         <% if wu.state_label == 'Failed' %>
@@ -122,7 +122,7 @@
              locals: {error_name: "Unreadable components", backtrace: nil, wu: wu}) %>
 <% else %>
   <% @descendent_count = 0 if !@descendent_count %>
-  <% wu.children.each_with_index do |c, i| %>
+  <% wu.children.each do |c| %>
     <% @descendent_count += 1 %>
     <%= render(partial: 'work_unit/show_child', locals: {current_obj: c, i: @descendent_count, expanded: false}) %>
   <% end %>

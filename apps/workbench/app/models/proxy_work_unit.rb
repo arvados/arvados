@@ -24,29 +24,20 @@ class ProxyWorkUnit < WorkUnit
 
   def created_at
     t = get(:created_at)
-    if t.andand.class == String
-      Time.parse t
-    else
-      t
-    end
+    t = Time.parse(t) if (t.andand.class == String)
+    t
   end
 
   def started_at
     t = get(:started_at)
-    if t.andand.class == String
-      Time.parse t
-    else
-      t
-    end
+    t = Time.parse(t) if (t.andand.class == String)
+    t
   end
 
   def finished_at
     t = get(:finished_at)
-    if t.andand.class == String
-      Time.parse t
-    else
-      t
-    end
+    t = Time.parse(t) if (t.andand.class == String)
+    t
   end
 
   def state_label
@@ -117,6 +108,11 @@ class ProxyWorkUnit < WorkUnit
 
   def has_unreadable_children
     self.unreadable_children
+  end
+
+  def readable?
+    resource_class = ArvadosBase::resource_class_for_uuid(uuid)
+    resource_class.where(uuid: [uuid]).first rescue nil
   end
 
   protected
