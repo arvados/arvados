@@ -423,6 +423,9 @@ func (s *TestSuite) TestRunContainer(c *C) {
 	err := cr.LoadImage()
 	c.Check(err, IsNil)
 
+	err = cr.CreateContainer()
+	c.Check(err, IsNil)
+
 	err = cr.StartContainer()
 	c.Check(err, IsNil)
 
@@ -475,7 +478,7 @@ func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
 	*cr.ExitCode = 42
 	cr.finalState = "Complete"
 
-	err := cr.UpdateContainerRecordComplete()
+	err := cr.UpdateContainerRecordFinal()
 	c.Check(err, IsNil)
 
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["log"], Equals, *cr.LogsPDH)
@@ -490,7 +493,7 @@ func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
 	cr.Cancelled = true
 	cr.finalState = "Cancelled"
 
-	err := cr.UpdateContainerRecordComplete()
+	err := cr.UpdateContainerRecordFinal()
 	c.Check(err, IsNil)
 
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["log"], IsNil)
@@ -668,10 +671,6 @@ func (s *TestSuite) TestCancel(c *C) {
 	err = cr.Run()
 
 	c.Check(err, IsNil)
-
-	c.Check(api.Calls, Equals, 6)
-	c.Check(api.Content[5]["container"].(arvadosclient.Dict)["log"], NotNil)
-
 	if err != nil {
 		for k, v := range api.Logs {
 			c.Log(k)
@@ -679,8 +678,9 @@ func (s *TestSuite) TestCancel(c *C) {
 		}
 	}
 
+	c.Assert(api.Calls, Equals, 6)
+	c.Check(api.Content[5]["container"].(arvadosclient.Dict)["log"], IsNil)
 	c.Check(api.Content[5]["container"].(arvadosclient.Dict)["state"], Equals, "Cancelled")
-
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "foo\n"), Equals, true)
 
 }
