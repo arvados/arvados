@@ -86,11 +86,11 @@ done
 set -e
 
 if [[ -n "$test_packages" ]]; then
-    if [[ -n "$(find $WORKSPACE/packages/$TARGET -name *.rpm)" ]] ; then
+    if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.rpm')" ]] ; then
         createrepo $WORKSPACE/packages/$TARGET
     fi
 
-    if [[ -n "$(find $WORKSPACE/packages/$TARGET -name *.deb)" ]] ; then
+    if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.deb')" ]] ; then
         (cd $WORKSPACE/packages/$TARGET
          dpkg-scanpackages .  2> >(grep -v 'warning' 1>&2) | gzip -c > Packages.gz
         )
