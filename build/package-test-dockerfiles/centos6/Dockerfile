@@ -1,7 +1,7 @@
 FROM centos:6
 MAINTAINER Peter Amstutz <peter.amstutz@curoverse.com>
 
-RUN yum -q install --assumeyes scl-utils centos-release-SCL \
+RUN yum -q install --assumeyes scl-utils centos-release-scl \
     which tar
 
 # Install RVM
