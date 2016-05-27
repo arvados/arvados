@@ -159,7 +159,8 @@ func run(dispatcher *dispatch.Dispatcher,
 	if err != nil {
 		log.Printf("Error getting final container state: %v", err)
 	}
-	if container.State != dispatch.Complete && container.State != dispatch.Cancelled {
+	if container.LockedByUUID == dispatcher.Auth.UUID &&
+		(container.State == dispatch.Locked || container.State == dispatch.Running) {
 		log.Printf("After %s process termination, container state for %v is %q.  Updating it to %q",
 			*crunchRunCommand, container.State, uuid, dispatch.Cancelled)
 		dispatcher.UpdateState(uuid, dispatch.Cancelled)
