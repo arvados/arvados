@@ -1,15 +1,30 @@
 class JobWorkUnit < ProxyWorkUnit
   def children
-    # Job tasks
     uuid = get(:uuid)
-    tasks = JobTask.filter([['job_uuid', '=', uuid]]).results
     items = []
-    tasks.each do |t|
-      items << t.work_unit("task #{items.size}")
+
+    # Job tasks - for now do not include job tasks
+    # tasks = JobTask.filter([['job_uuid', '=', uuid]]).results
+    # tasks.each do |t|
+    #   items << t.work_unit("task #{items.size}")
+    # end
+
+    # Jobs components
+    components = get(:components)
+    uuids = components.andand.collect {|_, v| v}
+    return items if (!uuids or uuids.empty?)
+
+    rcs = {}
+    uuids.each do |u|
+      r = ArvadosBase::resource_class_for_uuid(u)
+      rcs[r] = [] unless rcs[r]
+      rcs[r] << u
     end
-
-    # Jobs submitted by this job  --  TBD
-
+    rcs.each do |rc, ids|
+      rc.where(uuid: ids).each do |obj|
+        items << obj.work_unit(components.key(obj.uuid))
+      end
+    end
     items
   end
 

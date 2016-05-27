@@ -82,7 +82,7 @@
           </div>
         </div>
 
-        <% unless current_obj.parameters.nil? %>
+        <% if current_obj.parameters and !current_obj.parameters.empty? %>
         <div class="row">
           <div class="col-md-6">
             <p>script_parameters:</p>

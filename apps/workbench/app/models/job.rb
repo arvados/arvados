@@ -54,7 +54,7 @@ class Job < ArvadosBase
       flat_map { |log| log.properties[:text].split("\n") rescue [] }
   end
 
-  def work_unit(label="")
+  def work_unit(label=nil)
     JobWorkUnit.new(self, label)
   end
 end

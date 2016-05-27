@@ -84,7 +84,7 @@
             </div>
           <% end %>
 
-          <% if current_obj.state_label.in? ["Queued", "Running"] and @object.work_unit(@object.name).can_cancel? and @object.editable? %>
+          <% if current_obj.state_label.in? ["Queued", "Running"] and @object.work_unit.can_cancel? and @object.editable? %>
             <%# column offset 11 %>
             <div class="col-md-1 pipeline-instance-spacing">
               <%= form_tag "#{current_obj.uri}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
