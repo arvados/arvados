@@ -433,7 +433,7 @@ fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t $FORMAT --ex
 
 # And schema_salad now depends on ruamel-yaml, which apparently has a braindead setup.py that requires special arguments to build (otherwise, it aborts with 'error: you have to install with "pip install ."'). Sigh. 
 # Ward, 2016-05-26
-fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t deb --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies --verbose --log info --iteration 1 --python-bin python2.7 --python-easyinstall easy_install-2.7 --python-package-name-prefix python --depends python2.7 --python-setup-py-arguments "--single-version-externally-managed" --debug ruamel.yaml
+fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t $FORMAT --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies --iteration 1 --python-bin python2.7 --python-easyinstall "$EASY_INSTALL2" --python-package-name-prefix "$PYTHON2_PKG_PREFIX" --depends "$PYTHON2_PACKAGE" --python-setup-py-arguments "--single-version-externally-managed" ruamel.yaml
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
 fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t $FORMAT --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies -n "${PYTHON2_PKG_PREFIX}-cwltool" --iteration 1 --python-bin python2.7 --python-easyinstall "$EASY_INSTALL2" --python-package-name-prefix "$PYTHON2_PKG_PREFIX" --depends "$PYTHON2_PACKAGE" -v 1.0.20160519182434 cwltool
