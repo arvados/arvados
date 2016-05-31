@@ -192,6 +192,8 @@ fpm_build () {
   VERSION=$1
   shift
 
+  local default_iteration_value="$(default_iteration "$PACKAGE" "$VERSION")"
+
   case "$PACKAGE_TYPE" in
       python)
           # All Arvados Python2 packages depend on Python 2.7.
@@ -199,7 +201,12 @@ fpm_build () {
           set -- "$@" --python-bin python2.7 \
               --python-easyinstall "$EASY_INSTALL2" \
               --python-package-name-prefix "$PYTHON2_PKG_PREFIX" \
+              --prefix "$PYTHON2_PREFIX" \
+              --python-install-lib "$PYTHON2_INSTALL_LIB" \
+              --exclude "${PYTHON2_INSTALL_LIB#/}/tests" \
               --depends "$PYTHON2_PACKAGE"
+          # Fix --iteration for #9242.
+          default_iteration_value=$(($default_iteration_value + 1))
           ;;
       python3)
           # fpm does not actually support a python3 package type.  Instead
@@ -210,19 +217,21 @@ fpm_build () {
           set -- "$@" --python-bin python3 \
               --python-easyinstall "$EASY_INSTALL3" \
               --python-package-name-prefix "$PYTHON3_PKG_PREFIX" \
+              --prefix "$PYTHON3_PREFIX" \
+              --python-install-lib "$PYTHON3_INSTALL_LIB" \
+              --exclude "${PYTHON3_INSTALL_LIB#/}/tests" \
               --depends "$PYTHON3_PACKAGE"
+          # Fix --iteration for #9242.
+          default_iteration_value=$(($default_iteration_value + 1))
           ;;
   esac
 
   declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "-s" "$PACKAGE_TYPE" "-t" "$FORMAT")
-  if [ python = "$PACKAGE_TYPE" ]; then
-    COMMAND_ARR+=(--exclude=\*/{dist,site}-packages/tests/\*)
-    if [ deb = "$FORMAT" ]; then
-        # Dependencies are built from setup.py.  Since setup.py will never
-        # refer to Debian package iterations, it doesn't make sense to
-        # enforce those in the .deb dependencies.
-        COMMAND_ARR+=(--deb-ignore-iteration-in-dependencies)
-    fi
+  if [ python = "$PACKAGE_TYPE" ] && [ deb = "$FORMAT" ]; then
+      # Dependencies are built from setup.py.  Since setup.py will never
+      # refer to Debian package iterations, it doesn't make sense to
+      # enforce those in the .deb dependencies.
+      COMMAND_ARR+=(--deb-ignore-iteration-in-dependencies)
   fi
 
   if [[ "${DEBUG:-0}" != "0" ]]; then
@@ -242,7 +251,7 @@ fpm_build () {
   fi
   # We can always add an --iteration here.  If another one is specified in $@,
   # that will take precedence, as desired.
-  COMMAND_ARR+=(--iteration "$(default_iteration "$PACKAGE" "$VERSION")")
+  COMMAND_ARR+=(--iteration "$default_iteration_value")
 
   # Append --depends X and other arguments specified by fpm-info.sh in
   # the package source dir. These are added last so they can override
