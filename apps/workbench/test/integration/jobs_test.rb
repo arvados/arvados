@@ -129,7 +129,7 @@ class JobsTest < ActionDispatch::IntegrationTest
 
   [
     ['active', true],
-    ['job_reader', false],
+    ['job_reader2', false],
   ].each do |user, readable|
     test "view job with components as #{user} user" do
       job = api_fixture('jobs')['running_job_with_components']
@@ -142,26 +142,28 @@ class JobsTest < ActionDispatch::IntegrationTest
       assert page.has_text? job['script_version']
       assert page.has_no_text? 'script_parameters'
 
+      # The job_reader2 is allowed to read job, component2, and component2_child1,
+      # and component2_child2 only as a component of the pipeline component2
       if readable
         assert page.has_link? 'component1'
         assert page.has_link? 'component2'
       else
-        # children are not readable by user
         assert page.has_no_link? 'component1'
-        assert page.has_no_link? 'component2'
-        return
+        assert page.has_link? 'component2'
       end
 
-      click_link('component1')
-      within('#collapse1') do
-        assert(has_text? component1['uuid'])
-        assert(has_text? component1['script_version'])
-        assert(has_text? 'script_parameters')
+      if readable
+        click_link('component1')
+        within('#collapse1') do
+          assert(has_text? component1['uuid'])
+          assert(has_text? component1['script_version'])
+          assert(has_text? 'script_parameters')
+        end
+        click_link('component1')
       end
-      click_link('component1')
 
       click_link('component2')
-      within('#collapse2') do
+      within('.panel-collapse') do
         assert(has_text? component2['uuid'])
         assert(has_text? component2['script_version'])
         assert(has_no_text? 'script_parameters')
@@ -169,16 +171,20 @@ class JobsTest < ActionDispatch::IntegrationTest
         assert(has_link? 'running')
 
         click_link('previous')
-        within('#collapse3') do
+        within('.panel-collapse') do
           assert(has_text? component2_child1['uuid'])
           assert(has_text? component2_child1['script_version'])
         end
         click_link('previous')
 
         click_link('running')
-        within('#collapse4') do
+        within('.panel-collapse') do
           assert(has_text? component2_child2['uuid'])
-          assert(has_text? component2_child2['script_version'])
+          if readable
+            assert(has_text? component2_child2['script_version'])
+          else
+            assert(has_no_text? component2_child2['script_version'])
+          end
         end
       end
     end
