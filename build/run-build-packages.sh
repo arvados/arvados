@@ -432,14 +432,14 @@ fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curover
 # So we build this thing separately.
 #
 # Ward, 2016-03-17
-fpm_build schema_salad schema_salad "" python 1.7.20160316203940
+fpm_build schema_salad schema_salad "" python 1.11.20160506154702
 
 # And schema_salad now depends on ruamel-yaml, which apparently has a braindead setup.py that requires special arguments to build (otherwise, it aborts with 'error: you have to install with "pip install ."'). Sigh.
 # Ward, 2016-05-26
 fpm_build ruamel.yaml ruamel.yaml "" python "" --python-setup-py-arguments "--single-version-externally-managed"
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
-fpm_build cwltool cwltool "" python 1.0.20160427142240
+fpm_build cwltool cwltool "" python 1.0.20160519182434
 
 # FPM eats the trailing .0 in the python-rdflib-jsonld package when built with 'rdflib-jsonld>=0.3.0'. Force the version. Ward, 2016-03-25
 fpm_build rdflib-jsonld rdflib-jsonld "" python 0.3.0
