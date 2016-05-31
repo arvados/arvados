@@ -3,6 +3,7 @@ class ProxyWorkUnit < WorkUnit
 
   attr_accessor :lbl
   attr_accessor :proxied
+  attr_accessor :my_children
   attr_accessor :unreadable_children
 
   def initialize proxied, label
@@ -71,6 +72,76 @@ class ProxyWorkUnit < WorkUnit
       false
     else
       nil
+    end
+  end
+
+  def child_summary
+    done = 0
+    failed = 0
+    todo = 0
+    running = 0
+    children.each do |c|
+      case c.state_label
+      when 'Complete'
+        done = done+1
+      when 'Failed', 'Cancelled'
+        failed = failed+1
+      when 'Running'
+        running = running+1
+      else
+        todo = todo+1
+      end
+    end
+
+    summary = {}
+    summary[:done] = done
+    summary[:failed] = failed
+    summary[:todo] = todo
+    summary[:running] = running
+    summary
+  end
+
+  def child_summary_str
+    summary = child_summary
+    summary_txt = ''
+
+    if state_label == 'Running'
+      if summary[:done]
+        summary_txt += "#{summary[:done]} #{'child'.pluralize(summary[:done])} done,"
+      end
+      if summary[:failed]
+        summary_txt += "#{summary[:failed]} failed,"
+      end
+      if summary[:running]
+        summary_txt += "#{summary[:running]} running,"
+      end
+      if summary[:todo]
+        summary_txt += "#{summary[:todo]} pending"
+      end
+    end
+    summary_txt
+  end
+
+  def progress
+    state = get(:state)
+    if state == 'Complete'
+      return 1.0
+    elsif state == 'Failed' or state== 'Cancelled'
+      return 0.0
+    end
+
+    summary = child_summary
+    return 0.0 if summary.nil?
+
+    done = summary[:done] || 0
+    running = summary[:running] || 0
+    failed = summary[:failed] || 0
+    todo = summary[:todo] || 0
+    total = done + running + failed + todo
+    if total > 0
+      (done+failed).to_f / total
+    else
+      0.0
     end
   end
 

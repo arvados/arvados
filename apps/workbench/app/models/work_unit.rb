@@ -95,6 +95,10 @@ class WorkUnit
     # summary status of any children of this work unit
   end
 
+  def child_summary_str
+    # textual representation of child summary
+  end
+
   def can_cancel?
     # returns true if this work unit can be canceled
   end

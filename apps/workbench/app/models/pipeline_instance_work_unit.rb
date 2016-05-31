@@ -1,5 +1,7 @@
 class PipelineInstanceWorkUnit < ProxyWorkUnit
   def children
+    return self.my_children if self.my_children
+
     items = []
 
     jobs = {}
@@ -27,34 +29,7 @@ class PipelineInstanceWorkUnit < ProxyWorkUnit
       end
     end
 
-    items
-  end
-
-  def progress
-    state = get(:state)
-    if state == 'Complete'
-      return 1.0
-    end
-
-    done = 0
-    failed = 0
-    todo = 0
-    children.each do |c|
-      if c.success?.nil?
-        todo = todo+1
-      elsif c.success?
-        done = done+1
-      else
-        failed = failed+1
-      end
-    end
-
-    if done + failed + todo > 0
-      total = done + failed + todo
-      (done+failed).to_f / total
-    else
-      0.0
-    end
+    self.my_children = items
   end
 
   def uri

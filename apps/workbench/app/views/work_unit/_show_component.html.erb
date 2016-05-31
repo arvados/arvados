@@ -4,10 +4,18 @@
   <div class="row-fluid">
     <%# Need additional handling for main object display  %>
     <% if @object.uuid == wu.uuid %>
-      <div class="col-md-2 pull-right">
+    <div class="container-fluid">
+      <div class="pull-right">
         <div class="container-fluid">
-          <div class="row-fluid">
-            <%# column offset 0 %>
+          <div class="row-fulid pipeline-instance-spacing">
+            <% if wu.state_label == 'Running' and wu.child_summary_str %>
+              <div class="col-md-8">
+                <%= wu.child_summary_str %>
+              </div>
+            <% end %>
+            <div class="col-md-3">
+              <%= render partial: 'work_unit/progress', locals: {wu: wu} %>
+            </div>
             <% if wu.state_label.in? ["Queued", "Running"] and wu.can_cancel? and @object.editable? %>
                 <div class="col-md-1">
                   <%= form_tag "#{wu.uri}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
@@ -16,13 +24,10 @@
                   <% end %>
                 </div>
             <% end %>
-            <%# column offset 1 %>
-            <div class="pull-right col-md-5 pipeline-instance-spacing">
-              <%= render partial: 'work_unit/progress', locals: {wu: wu} %>
-            </div>
           </div>
         </div>
       </div>
+    </div>
     <% end %>
 
     <div class="col-md-10" >

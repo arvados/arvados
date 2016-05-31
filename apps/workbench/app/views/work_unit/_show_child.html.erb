@@ -63,17 +63,8 @@
               <%# column offset 8 %>
               <div class="col-md-3">
                 <span class="task-summary-status">
-                  <% if current_obj.child_summary[:done] %>
-                    <%= current_obj.child_summary[:done] %>&nbsp;<%= "child".pluralize(current_obj.child_summary[:done]) %> done,
-                  <% end %>
-                  <% if current_obj.child_summary[:failed] %>
-                    <%= current_obj.child_summary[:failed] %>&nbsp;failed,
-                  <% end %>
-                  <% if current_obj.child_summary[:running] %>
-                    <%= current_obj.child_summary[:running] %>&nbsp;running,
-                  <% end %>
-                  <% if current_obj.child_summary[:todo] %>
-                    <%= current_obj.child_summary[:todo] %>&nbsp;pending
+                  <% if current_obj.child_summary_str %>
+                    <%= current_obj.child_summary_str %>
                   <% end %>
                 </span>
               </div>
