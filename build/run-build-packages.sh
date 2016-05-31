@@ -86,9 +86,13 @@ PYTHON3_VERSION=$(python3 -c 'import sys; print("{v.major}.{v.minor}".format(v=s
 # You can customize them as needed in distro sections below.
 PYTHON2_PACKAGE=python$PYTHON2_VERSION
 PYTHON2_PKG_PREFIX=python
+PYTHON2_PREFIX=/usr
+PYTHON2_INSTALL_LIB=lib/python$PYTHON2_VERSION/dist-packages
 
 PYTHON3_PACKAGE=python$PYTHON3_VERSION
 PYTHON3_PKG_PREFIX=python3
+PYTHON3_PREFIX=/usr
+PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/dist-packages
 ## End Debian Python defaults.
 
 case "$TARGET" in
@@ -134,8 +138,12 @@ case "$TARGET" in
         FORMAT=rpm
         PYTHON2_PACKAGE=$(rpm -qf "$(which python$PYTHON2_VERSION)" --queryformat '%{NAME}\n')
         PYTHON2_PKG_PREFIX=$PYTHON2_PACKAGE
+        PYTHON2_PREFIX=/opt/rh/python27/root/usr
+        PYTHON2_INSTALL_LIB=lib64/python$PYTHON2_VERSION
         PYTHON3_PACKAGE=$(rpm -qf "$(which python$PYTHON3_VERSION)" --queryformat '%{NAME}\n')
         PYTHON3_PKG_PREFIX=$PYTHON3_PACKAGE
+        PYTHON3_PREFIX=/opt/rh/python33/root/usr
+        PYTHON3_INSTALL_LIB=lib64/python$PYTHON3_VERSION
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
@@ -405,7 +413,7 @@ fpm_build $WORKSPACE/sdk/python "${PYTHON2_PKG_PREFIX}-arvados-python-client" 'C
 # cwl-runner
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/sdk/cwl/build"
-fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/cwl/arvados_cwl_runner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados CWL runner" --iteration 2
+fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/cwl/arvados_cwl_runner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados CWL runner" --iteration 3
 
 # schema_salad. This is a python dependency of arvados-cwl-runner,
 # but we can't use the usual PYTHONPACKAGES way to build this package due to the
@@ -422,17 +430,17 @@ fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curover
 # So we build this thing separately.
 #
 # Ward, 2016-03-17
-fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t $FORMAT --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies -n "${PYTHON2_PKG_PREFIX}-schema-salad" --iteration 1 --python-bin python2.7 --python-easyinstall "$EASY_INSTALL2" --python-package-name-prefix "$PYTHON2_PKG_PREFIX" --depends "$PYTHON2_PACKAGE" -v 1.11.20160506154702 schema_salad
+fpm_build schema_salad schema_salad "" python 1.7.20160316203940
 
-# And schema_salad now depends on ruamel-yaml, which apparently has a braindead setup.py that requires special arguments to build (otherwise, it aborts with 'error: you have to install with "pip install ."'). Sigh. 
+# And schema_salad now depends on ruamel-yaml, which apparently has a braindead setup.py that requires special arguments to build (otherwise, it aborts with 'error: you have to install with "pip install ."'). Sigh.
 # Ward, 2016-05-26
-fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t $FORMAT --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies --iteration 1 --python-bin python2.7 --python-easyinstall "$EASY_INSTALL2" --python-package-name-prefix "$PYTHON2_PKG_PREFIX" --depends "$PYTHON2_PACKAGE" --python-setup-py-arguments "--single-version-externally-managed" ruamel.yaml
+fpm_build ruamel.yaml ruamel.yaml "" python "" --python-setup-py-arguments "--single-version-externally-managed"
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
-fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t $FORMAT --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies -n "${PYTHON2_PKG_PREFIX}-cwltool" --iteration 1 --python-bin python2.7 --python-easyinstall "$EASY_INSTALL2" --python-package-name-prefix "$PYTHON2_PKG_PREFIX" --depends "$PYTHON2_PACKAGE" -v 1.0.20160519182434 cwltool
+fpm_build cwltool cwltool "" python 1.0.20160427142240
 
 # FPM eats the trailing .0 in the python-rdflib-jsonld package when built with 'rdflib-jsonld>=0.3.0'. Force the version. Ward, 2016-03-25
-fpm --maintainer='Ward Vandewege <ward@curoverse.com>' -s python -t $FORMAT --exclude=*/dist-packages/tests/* --exclude=*/site-packages/tests/* --deb-ignore-iteration-in-dependencies --verbose --log info -n "${PYTHON2_PKG_PREFIX}-rdflib-jsonld" --iteration 1 --python-bin python2.7 --python-easyinstall "$EASY_INSTALL2" --python-package-name-prefix "$PYTHON2_PKG_PREFIX" --depends "$PYTHON2_PACKAGE" -v 0.3.0 rdflib-jsonld
+fpm_build rdflib-jsonld rdflib-jsonld "" python 0.3.0
 
 # The PAM module
 if [[ $TARGET =~ debian|ubuntu ]]; then
@@ -506,9 +514,7 @@ for deppkg in "${PYTHON_BACKPORTS[@]}"; do
                 "python$PYTHON2_VERSION" setup.py $DASHQ_UNLESS_DEBUG egg_info build
                 chmod -R go+rX .
                 set +e
-                # --iteration 2 provides an upgrade for previously built
-                # buggy packages.
-                fpm_build . "$outname" "" python "" --iteration 2
+                fpm_build . "$outname" "" python "" --iteration 3
                 # The upload step uses the package timestamp to determine
                 # whether it's new.  --no-clobber plays nice with that.
                 mv --no-clobber "$outname"*.$FORMAT "$WORKSPACE/packages/$TARGET"
