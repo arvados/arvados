@@ -139,11 +139,11 @@ case "$TARGET" in
         PYTHON2_PACKAGE=$(rpm -qf "$(which python$PYTHON2_VERSION)" --queryformat '%{NAME}\n')
         PYTHON2_PKG_PREFIX=$PYTHON2_PACKAGE
         PYTHON2_PREFIX=/opt/rh/python27/root/usr
-        PYTHON2_INSTALL_LIB=lib64/python$PYTHON2_VERSION
+        PYTHON2_INSTALL_LIB=lib/python$PYTHON2_VERSION/site-packages
         PYTHON3_PACKAGE=$(rpm -qf "$(which python$PYTHON3_VERSION)" --queryformat '%{NAME}\n')
         PYTHON3_PKG_PREFIX=$PYTHON3_PACKAGE
         PYTHON3_PREFIX=/opt/rh/python33/root/usr
-        PYTHON3_INSTALL_LIB=lib64/python$PYTHON3_VERSION
+        PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/site-packages
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
