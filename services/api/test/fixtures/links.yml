@@ -703,7 +703,7 @@ job_reader_can_read_previous_job_run:
   head_uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
 
 job_reader_can_read_foo_repo:
-  # Permission link giving job_reader2 permission
+  # Permission link giving job_reader permission
   # to read foo_repo
   uuid: zzzzz-o0j2j-072ec05dc9487f8
   owner_uuid: zzzzz-tpzed-000000000000000
