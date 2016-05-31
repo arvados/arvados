@@ -440,7 +440,7 @@ fpm_build ruamel.yaml ruamel.yaml "" python "" --python-setup-py-arguments "--si
 fpm_build cwltool cwltool "" python 1.0.20160427142240
 
 # FPM eats the trailing .0 in the python-rdflib-jsonld package when built with 'rdflib-jsonld>=0.3.0'. Force the version. Ward, 2016-03-25
-fpm_build rdflib-jsonld rdflib-jsonld "" python 0.3.0 --verbose --log info
+fpm_build rdflib-jsonld rdflib-jsonld "" python 0.3.0
 
 # The PAM module
 if [[ $TARGET =~ debian|ubuntu ]]; then
