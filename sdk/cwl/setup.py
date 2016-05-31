@@ -30,8 +30,11 @@ setup(name='arvados-cwl-runner',
           'bin/arvados-cwl-runner'
       ],
       install_requires=[
-          'cwltool==1.0.20160427142240',
+          'cwltool==1.0.20160519182434',
           'arvados-python-client>=0.1.20160322001610'
+      ],
+      data_files=[
+          ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),
       ],
       test_suite='tests',
       tests_require=['mock>=1.0'],

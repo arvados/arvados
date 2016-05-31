@@ -538,7 +538,7 @@ func (v *UnixVolume) translateError(err error) error {
 	}
 }
 
-var trashLocRegexp = regexp.MustCompile(`/([0-9a-f]{32})\.trash\.(\d+)$`)
+var unixTrashLocRegexp = regexp.MustCompile(`/([0-9a-f]{32})\.trash\.(\d+)$`)
 
 // EmptyTrash walks hierarchy looking for {hash}.trash.*
 // and deletes those with deadline < now.
@@ -554,7 +554,7 @@ func (v *UnixVolume) EmptyTrash() {
 		if info.Mode().IsDir() {
 			return nil
 		}
-		matches := trashLocRegexp.FindStringSubmatch(path)
+		matches := unixTrashLocRegexp.FindStringSubmatch(path)
 		if len(matches) != 3 {
 			return nil
 		}
