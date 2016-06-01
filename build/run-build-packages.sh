@@ -155,6 +155,26 @@ case "$TARGET" in
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         export PYCURL_SSL_LIBRARY=nss
         ;;
+    centos7)
+        FORMAT=rpm
+        PYTHON2_PACKAGE=$(rpm -qf "$(which python$PYTHON2_VERSION)" --queryformat '%{NAME}\n')
+        PYTHON2_PKG_PREFIX=$PYTHON2_PACKAGE
+        PYTHON2_INSTALL_LIB=lib/python$PYTHON2_VERSION/site-packages
+        PYTHON3_PACKAGE=$(rpm -qf "$(which python$PYTHON3_VERSION)" --queryformat '%{NAME}\n')
+        PYTHON3_PKG_PREFIX=$PYTHON3_PACKAGE
+        PYTHON3_PREFIX=/opt/rh/python33/root/usr
+        PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/site-packages
+        PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
+            oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
+            rsa uritemplate httplib2 ws4py pykka pyexecjs jsonschema \
+            ciso8601 pycrypto 'pycurl<7.21.5' \
+            python-daemon llfuse==0.41.1 'pbr<1.0' pyyaml \
+            'rdflib>=4.2.0' shellescape mistune typing avro \
+            isodate pyparsing sparqlwrapper html5lib keepalive \
+            ruamel.ordereddict)
+        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
+        export PYCURL_SSL_LIBRARY=nss
+        ;;
     *)
         echo -e "$0: Unknown target '$TARGET'.\n" >&2
         exit 1
@@ -432,17 +452,17 @@ fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curover
 # So we build this thing separately.
 #
 # Ward, 2016-03-17
-fpm_build schema_salad schema_salad "" python 1.11.20160506154702
+fpm_build schema_salad "" "" python 1.11.20160506154702
 
 # And schema_salad now depends on ruamel-yaml, which apparently has a braindead setup.py that requires special arguments to build (otherwise, it aborts with 'error: you have to install with "pip install ."'). Sigh.
 # Ward, 2016-05-26
-fpm_build ruamel.yaml ruamel.yaml "" python "" --python-setup-py-arguments "--single-version-externally-managed"
+fpm_build ruamel.yaml "" "" python "" --python-setup-py-arguments "--single-version-externally-managed"
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
-fpm_build cwltool cwltool "" python 1.0.20160519182434
+fpm_build cwltool "" "" python 1.0.20160519182434
 
 # FPM eats the trailing .0 in the python-rdflib-jsonld package when built with 'rdflib-jsonld>=0.3.0'. Force the version. Ward, 2016-03-25
-fpm_build rdflib-jsonld rdflib-jsonld "" python 0.3.0
+fpm_build rdflib-jsonld "" "" python 0.3.0
 
 # The PAM module
 if [[ $TARGET =~ debian|ubuntu ]]; then

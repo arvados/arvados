@@ -178,8 +178,8 @@ fpm_build () {
   # pip).
   PACKAGE=$1
   shift
-  # The name of the package to build.  Defaults to $PACKAGE.
-  PACKAGE_NAME=${1:-$PACKAGE}
+  # The name of the package to build.
+  PACKAGE_NAME=$1
   shift
   # Optional: the vendor of the package.  Should be "Curoverse, Inc." for
   # packages of our own software.  Passed to fpm --vendor.
@@ -238,7 +238,7 @@ fpm_build () {
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
 
-  if [[ "$PACKAGE_NAME" != "$PACKAGE" ]]; then
+  if [[ -n "$PACKAGE_NAME" ]]; then
     COMMAND_ARR+=('-n' "$PACKAGE_NAME")
   fi
 
@@ -265,6 +265,9 @@ fpm_build () {
       "${PACKAGE%%=/*}"
       # backports ("llfuse==0.41.1" => "backports/python-llfuse")
       "${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE%%[<=>]*}")
+  if [[ -n "$PACKAGE_NAME" ]]; then
+      fpm_dirs+=("${WORKSPACE}/backports/${PACKAGE_NAME}")
+  fi
   for pkgdir in "${fpm_dirs[@]}"; do
       fpminfo="$pkgdir/fpm-info.sh"
       if [[ -e "$fpminfo" ]]; then
@@ -391,4 +394,3 @@ report_outcomes() {
         done
     fi
 }
-
