@@ -1,12 +1,12 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
-
-	"bytes"
-	"fmt"
+	"io"
 	"log"
 	"math"
 	"net/http"
@@ -35,35 +35,43 @@ var initialArgs []string
 
 func (s *TestSuite) SetUpSuite(c *C) {
 	initialArgs = os.Args
-	arvadostest.StartAPI()
 }
 
 func (s *TestSuite) TearDownSuite(c *C) {
-	arvadostest.StopAPI()
 }
 
 func (s *TestSuite) SetUpTest(c *C) {
 	args := []string{"crunch-dispatch-slurm"}
 	os.Args = args
 
+	arvadostest.StartAPI()
 	os.Setenv("ARVADOS_API_TOKEN", arvadostest.Dispatch1Token)
 }
 
 func (s *TestSuite) TearDownTest(c *C) {
-	arvadostest.ResetEnv()
 	os.Args = initialArgs
+	arvadostest.StopAPI()
 }
 
 func (s *MockArvadosServerSuite) TearDownTest(c *C) {
 	arvadostest.ResetEnv()
 }
 
-func (s *TestSuite) TestIntegration(c *C) {
+func (s *TestSuite) TestIntegrationNormal(c *C) {
+	s.integrationTest(c, false)
+}
+
+func (s *TestSuite) TestIntegrationMissingFromSqueue(c *C) {
+	s.integrationTest(c, true)
+}
+
+func (s *TestSuite) integrationTest(c *C, missingFromSqueue bool) {
+	arvadostest.ResetEnv()
+
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, IsNil)
 
 	var sbatchCmdLine []string
-	var striggerCmdLine []string
 
 	// Override sbatchCmd
 	defer func(orig func(dispatch.Container) *exec.Cmd) {
@@ -74,30 +82,16 @@ func (s *TestSuite) TestIntegration(c *C) {
 		return exec.Command("sh")
 	}
 
-	// Override striggerCmd
-	defer func(orig func(jobid, containerUUID, finishCommand,
-		apiHost, apiToken, apiInsecure string) *exec.Cmd) {
-		striggerCmd = orig
-	}(striggerCmd)
-	striggerCmd = func(jobid, containerUUID, finishCommand, apiHost, apiToken, apiInsecure string) *exec.Cmd {
-		striggerCmdLine = striggerFunc(jobid, containerUUID, finishCommand,
-			apiHost, apiToken, apiInsecure).Args
-		go func() {
-			time.Sleep(5 * time.Second)
-			arv.Update("containers", containerUUID,
-				arvadosclient.Dict{
-					"container": arvadosclient.Dict{"state": dispatch.Complete}},
-				nil)
-		}()
-		return exec.Command("echo", striggerCmdLine...)
-	}
-
 	// Override squeueCmd
 	defer func(orig func() *exec.Cmd) {
 		squeueCmd = orig
 	}(squeueCmd)
 	squeueCmd = func() *exec.Cmd {
-		return exec.Command("echo")
+		if missingFromSqueue {
+			return exec.Command("echo")
+		} else {
+			return exec.Command("echo", "zzzzz-dz642-queuedcontainer")
+		}
 	}
 
 	// There should be no queued containers now
@@ -111,8 +105,6 @@ func (s *TestSuite) TestIntegration(c *C) {
 
 	echo := "echo"
 	crunchRunCommand = &echo
-	finishCmd := "/usr/bin/crunch-finish-slurm.sh"
-	finishCommand = &finishCmd
 
 	doneProcessing := make(chan struct{})
 	dispatcher := dispatch.Dispatcher{
@@ -122,8 +114,8 @@ func (s *TestSuite) TestIntegration(c *C) {
 			container dispatch.Container,
 			status chan dispatch.Container) {
 			go func() {
-				time.Sleep(1)
 				dispatcher.UpdateState(container.UUID, dispatch.Running)
+				time.Sleep(3 * time.Second)
 				dispatcher.UpdateState(container.UUID, dispatch.Complete)
 			}()
 			run(dispatcher, container, status)
@@ -131,8 +123,14 @@ func (s *TestSuite) TestIntegration(c *C) {
 		},
 		DoneProcessing: doneProcessing}
 
+	squeueUpdater.SqueueDone = make(chan struct{})
+	go squeueUpdater.SyncSqueue(time.Duration(500) * time.Millisecond)
+
 	err = dispatcher.RunDispatcher()
 	c.Assert(err, IsNil)
+
+	squeueUpdater.SqueueDone <- struct{}{}
+	close(squeueUpdater.SqueueDone)
 
 	item := containers.Items[0]
 	sbatchCmdComps := []string{"sbatch", "--share", "--parsable",
@@ -140,10 +138,14 @@ func (s *TestSuite) TestIntegration(c *C) {
 		fmt.Sprintf("--mem-per-cpu=%d", int(math.Ceil(float64(item.RuntimeConstraints["ram"])/float64(item.RuntimeConstraints["vcpus"]*1048576)))),
 		fmt.Sprintf("--cpus-per-task=%d", int(item.RuntimeConstraints["vcpus"])),
 		fmt.Sprintf("--priority=%d", item.Priority)}
-	c.Check(sbatchCmdLine, DeepEquals, sbatchCmdComps)
 
-	c.Check(striggerCmdLine, DeepEquals, []string{"strigger", "--set", "--jobid=zzzzz-dz642-queuedcontainer", "--fini",
-		"--program=/usr/bin/crunch-finish-slurm.sh " + os.Getenv("ARVADOS_API_HOST") + " " + arvadostest.Dispatch1Token + " 1 zzzzz-dz642-queuedcontainer"})
+	if missingFromSqueue {
+		// not in squeue when run() started, so it will have called sbatch
+		c.Check(sbatchCmdLine, DeepEquals, sbatchCmdComps)
+	} else {
+		// already in squeue when run() started, will have just monitored it instead
+		c.Check(sbatchCmdLine, DeepEquals, []string(nil))
+	}
 
 	// There should be no queued containers now
 	err = arv.List("containers", params, &containers)
@@ -154,7 +156,11 @@ func (s *TestSuite) TestIntegration(c *C) {
 	var container dispatch.Container
 	err = arv.Get("containers", "zzzzz-dz642-queuedcontainer", nil, &container)
 	c.Check(err, IsNil)
-	c.Check(container.State, Equals, "Complete")
+	if missingFromSqueue {
+		c.Check(container.State, Equals, "Cancelled")
+	} else {
+		c.Check(container.State, Equals, "Complete")
+	}
 }
 
 func (s *MockArvadosServerSuite) Test_APIErrorGettingContainers(c *C) {
@@ -180,12 +186,10 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	}
 
 	buf := bytes.NewBuffer(nil)
-	log.SetOutput(buf)
+	log.SetOutput(io.MultiWriter(buf, os.Stderr))
 	defer log.SetOutput(os.Stderr)
 
 	crunchRunCommand = &crunchCmd
-	finishCmd := "/usr/bin/crunch-finish-slurm.sh"
-	finishCommand = &finishCmd
 
 	doneProcessing := make(chan struct{})
 	dispatcher := dispatch.Dispatcher{
@@ -195,7 +199,7 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 			container dispatch.Container,
 			status chan dispatch.Container) {
 			go func() {
-				time.Sleep(1)
+				time.Sleep(1 * time.Second)
 				dispatcher.UpdateState(container.UUID, dispatch.Running)
 				dispatcher.UpdateState(container.UUID, dispatch.Complete)
 			}()

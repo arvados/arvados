@@ -1,3 +1,6 @@
+// Framework for monitoring the Arvados container Queue, Locks container
+// records, and runs goroutine callbacks which implement execution and
+// monitoring of the containers.
 package dispatch
 
 import (
@@ -28,7 +31,7 @@ type apiClientAuthorizationList struct {
 	Items []apiClientAuthorization `json:"items"`
 }
 
-// Container data
+// Represents an Arvados container record
 type Container struct {
 	UUID               string           `json:"uuid"`
 	State              string           `json:"state"`
@@ -45,9 +48,27 @@ type ContainerList struct {
 
 // Dispatcher holds the state of the dispatcher
 type Dispatcher struct {
-	Arv            arvadosclient.ArvadosClient
-	RunContainer   func(*Dispatcher, Container, chan Container)
-	PollInterval   time.Duration
+	// The Arvados client
+	Arv arvadosclient.ArvadosClient
+
+	// When a new queued container appears and is either already owned by
+	// this dispatcher or is successfully locked, the dispatcher will call
+	// go RunContainer().  The RunContainer() goroutine gets a channel over
+	// which it will receive updates to the container state.  The
+	// RunContainer() goroutine should only assume status updates come when
+	// the container record changes on the API server; if it needs to
+	// monitor the job submission to the underlying slurm/grid engine/etc
+	// queue it should spin up its own polling goroutines.  When the
+	// channel is closed, that means the container is no longer being
+	// handled by this dispatcher and the goroutine should terminate.  The
+	// goroutine is responsible for draining the 'status' channel, failure
+	// to do so may deadlock the dispatcher.
+	RunContainer func(*Dispatcher, Container, chan Container)
+
+	// Amount of time to wait between polling for updates.
+	PollInterval time.Duration
+
+	// Channel used to signal that RunDispatcher loop should exit.
 	DoneProcessing chan struct{}
 
 	mineMutex  sync.Mutex
@@ -159,7 +180,7 @@ func (dispatcher *Dispatcher) handleUpdate(container Container) {
 		// back to Queued and then locked by another dispatcher,
 		// LockedByUUID will be different.  In either case, we want
 		// to stop monitoring it.
-		log.Printf("Container %v now in state %v with locked_by_uuid %v", container.UUID, container.State, container.LockedByUUID)
+		log.Printf("Container %v now in state %q with locked_by_uuid %q", container.UUID, container.State, container.LockedByUUID)
 		dispatcher.notMine(container.UUID)
 		return
 	}
@@ -191,7 +212,7 @@ func (dispatcher *Dispatcher) UpdateState(uuid, newState string) error {
 			"container": arvadosclient.Dict{"state": newState}},
 		nil)
 	if err != nil {
-		log.Printf("Error updating container %s to '%s' state: %q", uuid, newState, err)
+		log.Printf("Error updating container %s to state %q: %q", uuid, newState, err)
 	}
 	return err
 }
@@ -199,14 +220,6 @@ func (dispatcher *Dispatcher) UpdateState(uuid, newState string) error {
 // RunDispatcher runs the main loop of the dispatcher until receiving a message
 // on the dispatcher.DoneProcessing channel.  It also installs a signal handler
 // to terminate gracefully on SIGINT, SIGTERM or SIGQUIT.
-//
-// When a new queued container appears and is successfully locked, the
-// dispatcher will call RunContainer() followed by MonitorContainer().  If a
-// container appears that is Locked or Running but not known to the dispatcher,
-// it will only call monitorContainer().  The monitorContainer() callback is
-// passed a channel over which it will receive updates to the container state.
-// The callback is responsible for draining the channel, if it fails to do so
-// it will deadlock the dispatcher.
 func (dispatcher *Dispatcher) RunDispatcher() (err error) {
 	err = dispatcher.Arv.Call("GET", "api_client_authorizations", "", "current", nil, &dispatcher.Auth)
 	if err != nil {
