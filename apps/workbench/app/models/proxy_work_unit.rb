@@ -169,6 +169,26 @@ class ProxyWorkUnit < WorkUnit
     get(:runtime_constraints)
   end
 
+  def docker_image
+    get(:docker_image_locator)
+  end
+
+  def nondeterministic
+    get(:nondeterministic)
+  end
+
+  def priority
+    get(:priority)
+  end
+
+  def log_collection
+    get(:log)
+  end
+
+  def output
+    get(:output)
+  end
+
   def children
     []
   end

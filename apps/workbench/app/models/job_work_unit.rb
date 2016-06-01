@@ -23,26 +23,6 @@ class JobWorkUnit < ProxyWorkUnit
     self.my_children = items
   end
 
-  def docker_image
-    get(:docker_image_locator)
-  end
-
-  def nondeterministic
-    get(:nondeterministic)
-  end
-
-  def priority
-    get(:priority)
-  end
-
-  def log_collection
-    get(:log)
-  end
-
-  def output
-    get(:output)
-  end
-
   def child_summary
     if children.any?
       super
