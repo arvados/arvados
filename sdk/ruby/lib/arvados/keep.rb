@@ -2,23 +2,11 @@ module Keep
   class Locator
     # A Locator is used to parse and manipulate Keep locator strings.
     #
-    # Locators obey the following syntax:
-    #
-    #   locator      ::= address hint*
-    #   address      ::= digest size-hint
-    #   digest       ::= <32 hexadecimal digits>
-    #   size-hint    ::= "+" [0-9]+
-    #   hint         ::= "+" hint-type hint-content
-    #   hint-type    ::= [A-Z]
-    #   hint-content ::= [A-Za-z0-9@_-]+
-    #
-    # Individual hints may have their own required format:
-    #
-    #   sign-hint      ::= "+A" <40 lowercase hex digits> "@" sign-timestamp
-    #   sign-timestamp ::= <8 lowercase hex digits>
+    # Locator format is documented at
+    # https://dev.arvados.org/projects/arvados/wiki/Keep_locator_format
     attr_reader :hash, :hints, :size
 
-    LOCATOR_REGEXP = /^([[:xdigit:]]{32})(\+([[:digit:]]+))?((\+([[:upper:]][[:alnum:]@_-]*))+)?\z/
+    LOCATOR_REGEXP = /^([0-9a-f]{32})(\+([0-9]+))((\+([A-Z][-A-Za-z0-9@_]*))+)?\z/
 
     def initialize(hasharg, sizearg, hintarg)
       @hash = hasharg
