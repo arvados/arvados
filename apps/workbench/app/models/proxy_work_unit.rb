@@ -106,16 +106,16 @@ class ProxyWorkUnit < WorkUnit
     summary_txt = ''
 
     if state_label == 'Running'
-      if summary[:done]
+      done = summary[:done] || 0
+      running = summary[:running] || 0
+      failed = summary[:failed] || 0
+      todo = summary[:todo] || 0
+      total = done + running + failed + todo
+
+      if total > 0
         summary_txt += "#{summary[:done]} #{'child'.pluralize(summary[:done])} done,"
-      end
-      if summary[:failed]
         summary_txt += "#{summary[:failed]} failed,"
-      end
-      if summary[:running]
         summary_txt += "#{summary[:running]} running,"
-      end
-      if summary[:todo]
         summary_txt += "#{summary[:todo]} pending"
       end
     end
