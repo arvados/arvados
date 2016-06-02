@@ -68,7 +68,7 @@ class ProxyWorkUnit < WorkUnit
     state = get(:state)
     if state == 'Complete'
       true
-    elsif state == 'Failed'
+    elsif state == 'Failed' or state == 'Cancelled'
       false
     else
       nil
@@ -126,7 +126,7 @@ class ProxyWorkUnit < WorkUnit
     state = get(:state)
     if state == 'Complete'
       return 1.0
-    elsif state == 'Failed' or state== 'Cancelled'
+    elsif state == 'Failed' or state == 'Cancelled'
       return 0.0
     end
 
