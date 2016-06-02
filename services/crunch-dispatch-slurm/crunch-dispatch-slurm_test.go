@@ -123,14 +123,12 @@ func (s *TestSuite) integrationTest(c *C, missingFromSqueue bool) {
 		},
 		DoneProcessing: doneProcessing}
 
-	squeueUpdater.SqueueDone = make(chan struct{})
-	go squeueUpdater.SyncSqueue(time.Duration(500) * time.Millisecond)
+	squeueUpdater.StartMonitor(time.Duration(500) * time.Millisecond)
 
 	err = dispatcher.RunDispatcher()
 	c.Assert(err, IsNil)
 
-	squeueUpdater.SqueueDone <- struct{}{}
-	close(squeueUpdater.SqueueDone)
+	squeueUpdater.Done()
 
 	item := containers.Items[0]
 	sbatchCmdComps := []string{"sbatch", "--share", "--parsable",

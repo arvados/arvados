@@ -3,7 +3,6 @@ package main
 // Dispatcher service for Crunch that submits containers to the slurm queue.
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -14,15 +13,8 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 	"time"
 )
-
-type Squeue struct {
-	sync.Mutex
-	squeueContents []string
-	SqueueDone     chan struct{}
-}
 
 func main() {
 	err := doMain()
@@ -59,22 +51,19 @@ func doMain() error {
 	}
 	arv.Retries = 25
 
+	squeueUpdater.StartMonitor(time.Duration(*pollInterval) * time.Second)
+	defer squeueUpdater.Done()
+
 	dispatcher := dispatch.Dispatcher{
 		Arv:            arv,
 		RunContainer:   run,
 		PollInterval:   time.Duration(*pollInterval) * time.Second,
 		DoneProcessing: make(chan struct{})}
 
-	squeueUpdater.SqueueDone = make(chan struct{})
-	go squeueUpdater.SyncSqueue(time.Duration(*pollInterval) * time.Second)
-
 	err = dispatcher.RunDispatcher()
 	if err != nil {
 		return err
 	}
-
-	squeueUpdater.SqueueDone <- struct{}{}
-	close(squeueUpdater.SqueueDone)
 
 	return nil
 }
@@ -89,14 +78,8 @@ func sbatchFunc(container dispatch.Container) *exec.Cmd {
 		fmt.Sprintf("--priority=%d", container.Priority))
 }
 
-// squeueFunc
-func squeueFunc() *exec.Cmd {
-	return exec.Command("squeue", "--format=%j")
-}
-
 // Wrap these so that they can be overridden by tests
 var sbatchCmd = sbatchFunc
-var squeueCmd = squeueFunc
 
 // Submit job to slurm using sbatch.
 func submit(dispatcher *dispatch.Dispatcher,
@@ -138,6 +121,10 @@ func submit(dispatcher *dispatch.Dispatcher,
 		submitErr = fmt.Errorf("Error creating stderr pipe %v: %q", container.UUID, stderrErr)
 		return
 	}
+
+	// Mutex between squeue sync and running sbatch or scancel.
+	squeueUpdater.SlurmLock.Lock()
+	defer squeueUpdater.SlurmLock.Unlock()
 
 	err := cmd.Start()
 	if err != nil {
@@ -183,90 +170,24 @@ func submit(dispatcher *dispatch.Dispatcher,
 	return
 }
 
-func (squeue *Squeue) runSqueue() ([]string, error) {
-	var newSqueueContents []string
-
-	cmd := squeueCmd()
-	sq, err := cmd.StdoutPipe()
-	if err != nil {
-		return nil, err
-	}
-	cmd.Start()
-	scanner := bufio.NewScanner(sq)
-	for scanner.Scan() {
-		newSqueueContents = append(newSqueueContents, scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		cmd.Wait()
-		return nil, err
-	}
-
-	err = cmd.Wait()
-	if err != nil {
-		return nil, err
-	}
-
-	return newSqueueContents, nil
-}
-
-func (squeue *Squeue) CheckSqueue(uuid string, check bool) (bool, error) {
-	if check {
-		n, err := squeue.runSqueue()
-		if err != nil {
-			return false, err
-		}
-		squeue.Lock()
-		squeue.squeueContents = n
-		squeue.Unlock()
-	}
-
-	if uuid != "" {
-		squeue.Lock()
-		defer squeue.Unlock()
-		for _, k := range squeue.squeueContents {
-			if k == uuid {
-				return true, nil
-			}
-		}
-	}
-	return false, nil
-}
-
-func (squeue *Squeue) SyncSqueue(pollInterval time.Duration) {
-	// TODO: considering using "squeue -i" instead of polling squeue.
-	ticker := time.NewTicker(pollInterval)
-	for {
-		select {
-		case <-squeueUpdater.SqueueDone:
-			return
-		case <-ticker.C:
-			squeue.CheckSqueue("", true)
-		}
-	}
-}
-
-// Run or monitor a container.
-//
 // If the container is marked as Locked, check if it is already in the slurm
 // queue.  If not, submit it.
 //
 // If the container is marked as Running, check if it is in the slurm queue.
 // If not, mark it as Cancelled.
-//
-// Monitor status updates.  If the priority changes to zero, cancel the
-// container using scancel.
-func run(dispatcher *dispatch.Dispatcher,
-	container dispatch.Container,
-	status chan dispatch.Container) {
+func monitorSubmitOrCancel(dispatcher *dispatch.Dispatcher, container dispatch.Container, monitorDone *bool) {
+	submitted := false
+	for !*monitorDone {
+		if inQ, err := squeueUpdater.CheckSqueue(container.UUID); err != nil {
+			// Most recent run of squeue had an error, so do nothing.
+			continue
+		} else if inQ {
+			// Found in the queue, so continue monitoring
+			submitted = true
+		} else if container.State == dispatch.Locked && !submitted {
+			// Not in queue but in Locked state and we haven't
+			// submitted it yet, so submit it.
 
-	uuid := container.UUID
-
-	if container.State == dispatch.Locked {
-		if inQ, err := squeueUpdater.CheckSqueue(container.UUID, true); err != nil {
-			// maybe squeue is broken, put it back in the queue
-			log.Printf("Error running squeue: %v", err)
-			dispatcher.UpdateState(container.UUID, dispatch.Queued)
-		} else if !inQ {
 			log.Printf("About to submit queued container %v", container.UUID)
 
 			if _, err := submit(dispatcher, container, *crunchRunCommand); err != nil {
@@ -275,64 +196,66 @@ func run(dispatcher *dispatch.Dispatcher,
 				// maybe sbatch is broken, put it back to queued
 				dispatcher.UpdateState(container.UUID, dispatch.Queued)
 			}
-		}
-	}
+			submitted = true
+		} else {
+			// Not in queue and we are not going to submit it.
+			// Refresh the container state. If it is
+			// Complete/Cancelled, do nothing, if it is Locked then
+			// release it back to the Queue, if it is Running then
+			// clean up the record.
 
-	log.Printf("Monitoring container %v started", uuid)
+			var con dispatch.Container
+			err := dispatcher.Arv.Get("containers", container.UUID, nil, &con)
+			if err != nil {
+				log.Printf("Error getting final container state: %v", err)
+			}
 
-	// periodically check squeue
-	doneSqueue := make(chan struct{})
-	go func() {
-		squeueUpdater.CheckSqueue(container.UUID, true)
-		ticker := time.NewTicker(dispatcher.PollInterval)
-		for {
-			select {
-			case <-ticker.C:
-				if inQ, err := squeueUpdater.CheckSqueue(container.UUID, false); err != nil {
-					log.Printf("Error running squeue: %v", err)
-					// don't cancel, just leave it the way it is
-				} else if !inQ {
-					var con dispatch.Container
-					err := dispatcher.Arv.Get("containers", uuid, nil, &con)
-					if err != nil {
-						log.Printf("Error getting final container state: %v", err)
-					}
-
-					var st string
-					switch con.State {
-					case dispatch.Locked:
-						st = dispatch.Queued
-					case dispatch.Running:
-						st = dispatch.Cancelled
-					default:
-						st = ""
-					}
-
-					if st != "" {
-						log.Printf("Container %s in state %v but missing from slurm queue, changing to %v.",
-							uuid, con.State, st)
-						dispatcher.UpdateState(uuid, st)
-					}
-				}
-			case <-doneSqueue:
-				close(doneSqueue)
-				ticker.Stop()
+			var st string
+			switch con.State {
+			case dispatch.Locked:
+				st = dispatch.Queued
+			case dispatch.Running:
+				st = dispatch.Cancelled
+			default:
+				// Container state is Queued, Complete or Cancelled so stop monitoring it.
 				return
 			}
+
+			log.Printf("Container %s in state %v but missing from slurm queue, changing to %v.",
+				container.UUID, con.State, st)
+			dispatcher.UpdateState(container.UUID, st)
 		}
-	}()
+	}
+}
+
+// Run or monitor a container.
+//
+// Monitor status updates.  If the priority changes to zero, cancel the
+// container using scancel.
+func run(dispatcher *dispatch.Dispatcher,
+	container dispatch.Container,
+	status chan dispatch.Container) {
+
+	log.Printf("Monitoring container %v started", container.UUID)
+	defer log.Printf("Monitoring container %v finished", container.UUID)
+
+	monitorDone := false
+	go monitorSubmitOrCancel(dispatcher, container, &monitorDone)
 
 	for container = range status {
 		if container.State == dispatch.Locked || container.State == dispatch.Running {
 			if container.Priority == 0 {
 				log.Printf("Canceling container %s", container.UUID)
 
+				// Mutex between squeue sync and running sbatch or scancel.
+				squeueUpdater.SlurmLock.Lock()
 				err := exec.Command("scancel", "--name="+container.UUID).Run()
+				squeueUpdater.SlurmLock.Unlock()
+
 				if err != nil {
 					log.Printf("Error stopping container %s with scancel: %v",
 						container.UUID, err)
-					if inQ, err := squeueUpdater.CheckSqueue(container.UUID, true); err != nil {
-						log.Printf("Error running squeue: %v", err)
+					if inQ, err := squeueUpdater.CheckSqueue(container.UUID); err != nil {
 						continue
 					} else if inQ {
 						log.Printf("Container %s is still in squeue after scancel.",
@@ -345,8 +268,5 @@ func run(dispatcher *dispatch.Dispatcher,
 			}
 		}
 	}
-
-	doneSqueue <- struct{}{}
-
-	log.Printf("Monitoring container %v finished", uuid)
+	monitorDone = true
 }
