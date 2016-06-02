@@ -55,19 +55,23 @@ type CollectionRecord struct {
 	PortableDataHash string `json:"portable_data_hash"`
 }
 
+type RuntimeConstraints struct {
+	API *bool
+}
+
 // ContainerRecord is the container record returned by the API server.
 type ContainerRecord struct {
-	UUID               string                 `json:"uuid"`
-	Command            []string               `json:"command"`
-	ContainerImage     string                 `json:"container_image"`
-	Cwd                string                 `json:"cwd"`
-	Environment        map[string]string      `json:"environment"`
-	Mounts             map[string]Mount       `json:"mounts"`
-	OutputPath         string                 `json:"output_path"`
-	Priority           int                    `json:"priority"`
-	RuntimeConstraints map[string]interface{} `json:"runtime_constraints"`
-	State              string                 `json:"state"`
-	Output             string                 `json:"output"`
+	UUID               string             `json:"uuid"`
+	Command            []string           `json:"command"`
+	ContainerImage     string             `json:"container_image"`
+	Cwd                string             `json:"cwd"`
+	Environment        map[string]string  `json:"environment"`
+	Mounts             map[string]Mount   `json:"mounts"`
+	OutputPath         string             `json:"output_path"`
+	Priority           int                `json:"priority"`
+	RuntimeConstraints RuntimeConstraints `json:"runtime_constraints"`
+	State              string             `json:"state"`
+	Output             string             `json:"output"`
 }
 
 // APIClientAuthorization is an arvados#api_client_authorization resource.
@@ -468,7 +472,7 @@ func (runner *ContainerRunner) CreateContainer() error {
 	for k, v := range runner.ContainerRecord.Environment {
 		runner.ContainerConfig.Env = append(runner.ContainerConfig.Env, k+"="+v)
 	}
-	if wantAPI, ok := runner.ContainerRecord.RuntimeConstraints["API"].(bool); ok && wantAPI {
+	if wantAPI := runner.ContainerRecord.RuntimeConstraints.API; wantAPI != nil && *wantAPI {
 		tok, err := runner.ContainerToken()
 		if err != nil {
 			return err
