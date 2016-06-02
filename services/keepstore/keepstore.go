@@ -332,12 +332,8 @@ func main() {
 	}
 
 	// Initialize Pull queue and worker
-	arv, err := arvadosclient.MakeArvadosClient()
-	if err != nil {
-		log.Fatalf("MakeArvadosClient: %s", err)
-	}
 	keepClient := &keepclient.KeepClient{
-		Arvados:       &arv,
+		Arvados:       &arvadosclient.ArvadosClient{},
 		Want_replicas: 1,
 		Client:        &http.Client{},
 	}
