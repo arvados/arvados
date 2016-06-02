@@ -795,7 +795,7 @@ func (runner *ContainerRunner) Run() (err error) {
 	if err != nil {
 		return
 	}
-	runner.finalState = "Complete"
+	runner.finalState = "Cancelled"
 
 	err = runner.StartContainer()
 	if err != nil {
@@ -803,6 +803,9 @@ func (runner *ContainerRunner) Run() (err error) {
 	}
 
 	err = runner.WaitFinish()
+	if err == nil {
+		runner.finalState = "Complete"
+	}
 	return
 }
 
