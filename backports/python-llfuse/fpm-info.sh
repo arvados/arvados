@@ -10,4 +10,4 @@ case "$TARGET" in
 esac
 
 # FIXME: Remove this line after #6885 is done.
-fpm_args+=(--iteration 2)
+fpm_args+=(--iteration 3)

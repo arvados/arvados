@@ -70,6 +70,7 @@ services/fuse
 services/keep-web
 services/keepproxy
 services/keepstore
+services/keep-balance
 services/login-sync
 services/nodemanager
 services/crunch-run
@@ -79,6 +80,7 @@ sdk/cli
 sdk/pam
 sdk/python
 sdk/ruby
+sdk/go/arvados
 sdk/go/arvadosclient
 sdk/go/keepclient
 sdk/go/httpserver
@@ -150,6 +152,8 @@ sanity_checks() {
     echo -n 'go: '
     go version \
         || fatal "No go binary. See http://golang.org/doc/install"
+    [[ $(go version) =~ go1.([0-9]+) ]] && [[ ${BASH_REMATCH[1]} -ge 6 ]] \
+        || fatal "Go >= 1.6 required. See http://golang.org/doc/install"
     echo -n 'gcc: '
     gcc --version | egrep ^gcc \
         || fatal "No gcc. Try: apt-get install build-essential"
@@ -499,7 +503,7 @@ do_test_once() {
             then
                 # "go test -check.vv giturl" doesn't work, but this
                 # does:
-                cd "$WORKSPACE/$1" && go test ${short:+-short} ${coverflags[@]} ${testargs[$1]}
+                cd "$WORKSPACE/$1" && go test ${short:+-short} ${testargs[$1]}
             else
                 # The above form gets verbose even when testargs is
                 # empty, so use this form in such cases:
@@ -703,6 +707,7 @@ do_install services/api apiserver
 
 declare -a gostuff
 gostuff=(
+    sdk/go/arvados
     sdk/go/arvadosclient
     sdk/go/blockdigest
     sdk/go/httpserver
@@ -714,6 +719,7 @@ gostuff=(
     services/keep-web
     services/keepstore
     sdk/go/keepclient
+    services/keep-balance
     services/keepproxy
     services/datamanager/summary
     services/datamanager/collection

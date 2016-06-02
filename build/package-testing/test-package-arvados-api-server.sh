@@ -7,7 +7,7 @@ case "$TARGET" in
         apt-get install -y nginx
         dpkg-reconfigure arvados-api-server
         ;;
-    centos6)
+    centos*)
         yum install --assumeyes httpd
         yum reinstall --assumeyes arvados-api-server
         ;;

@@ -18,7 +18,7 @@ case "$TARGET" in
     debian*|ubuntu*)
         FORMAT=deb
         ;;
-    centos6)
+    centos*)
         FORMAT=rpm
         ;;
     *)
@@ -75,12 +75,9 @@ fi
 if [[ ! -e "/etc/arvados/sso/database.yml" ]]; then
   # We need to set up our database configuration now.
   if [[ "$FORMAT" == "rpm" ]]; then
-    # postgres packaging on CentOS6 is kind of primitive, needs an initdb
     service postgresql initdb
-    if [ "$TARGET" = "centos6" ]; then
-      sed -i -e "s/127.0.0.1\/32          ident/127.0.0.1\/32          md5/" /var/lib/pgsql/data/pg_hba.conf
-      sed -i -e "s/::1\/128               ident/::1\/128               md5/" /var/lib/pgsql/data/pg_hba.conf
-    fi
+    sed -i -e "s/127.0.0.1\/32          ident/127.0.0.1\/32          md5/" /var/lib/pgsql/data/pg_hba.conf
+    sed -i -e "s/::1\/128               ident/::1\/128               md5/" /var/lib/pgsql/data/pg_hba.conf
   fi
   service postgresql start
 
