@@ -91,6 +91,11 @@ class WorkUnit
     # returns uuid or pdh of output data, if any
   end
 
+  def outputs
+    # returns array containing uuid or pdh of output data of all children
+    # if no children, return output data if any
+  end
+
   def child_summary
     # summary status of any children of this work unit
   end

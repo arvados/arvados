@@ -189,6 +189,17 @@ class ProxyWorkUnit < WorkUnit
     get(:output)
   end
 
+  def outputs
+    items = []
+    children.each do |c|
+      items << c.output if c.output
+    end
+    if !items.any?
+      items << get(:output) if get(:output)
+    end
+    items
+  end
+
   def children
     []
   end

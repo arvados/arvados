@@ -828,9 +828,43 @@ class ApplicationController < ActionController::Base
     pi
   end
 
+  helper_method :running_processes
+  def running_processes lim
+    lim = 8 if lim.nil?
+
+    pipelines = PipelineInstance.limit(lim).order(["started_at desc", "created_at desc"]).filter([["state", "in", ["RunningOnServer", "RunningOnClient"]]])
+
+    crs = ContainerRequest.order(["modified_at desc"]).filter([["requesting_container_uuid", "!=", nil], ["state", "=", "Committed"]])
+    cr_uuids = crs.results.collect { |c| c.container_uuid }
+    containers = Container.limit(lim).order(["started_at desc", "created_at desc"]).filter([["uuid", "in", cr_uuids], ["state", "=", "Running"]]).results if cr_uuids.any?
+
+    procs = {}
+    pipelines.results.each { |pi| procs[pi] = (pi.started_at || pi.created_at)}
+    containers.each { |c| procs[c] = c.created_at } if !containers.nil?
+
+    Hash[procs.sort_by {|key, value| value}].keys.reverse.first(lim)
+  end
+
   helper_method :finished_pipelines
   def finished_pipelines lim
     PipelineInstance.limit(lim).order(["finished_at desc"]).filter([["state", "in", ["Complete", "Failed", "Paused"]], ["finished_at", "!=", nil]])
+  end
+
+  helper_method :finished_processes
+  def finished_processes lim
+    lim = 8 if lim.nil?
+
+    pipelines = PipelineInstance.limit(lim).order(["finished_at desc"]).filter([["state", "in", ["Complete", "Failed", "Paused"]], ["finished_at", "!=", nil]])
+
+    crs = ContainerRequest.order(["modified_at desc"]).filter([["requesting_container_uuid", "!=", nil], ["state", "=", "Final"]])
+    cr_uuids = crs.results.collect { |c| c.container_uuid }
+    containers = Container.limit(lim).order(["finished_at desc"]).filter([["uuid", "in", cr_uuids], ["state", "in", ["Complete", "Canceled"]], ["finished_at", "!=", nil]]).results if cr_uuids.any?
+
+    procs = {}
+    pipelines.results.each { |pi| procs[pi] = pi.finished_at }
+    containers.each { |pi| procs[pi] = pi.finished_at } if !containers.nil?
+
+    Hash[procs.sort_by {|key, value| value}].keys.reverse.first(lim)
   end
 
   helper_method :recent_collections
