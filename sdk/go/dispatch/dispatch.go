@@ -176,7 +176,7 @@ func (dispatcher *Dispatcher) pollContainers() {
 func (dispatcher *Dispatcher) handleUpdate(container Container) {
 	if container.LockedByUUID != dispatcher.Auth.UUID && container.State != Queued {
 		// If container is Complete, Cancelled, or Queued, LockedByUUID
-		// will be nil.  If the container was formally Locked, moved
+		// will be nil.  If the container was formerly Locked, moved
 		// back to Queued and then locked by another dispatcher,
 		// LockedByUUID will be different.  In either case, we want
 		// to stop monitoring it.
