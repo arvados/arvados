@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+// Squeue implements asynchronous polling monitor of the SLURM queue using the
+// command 'squeue'.
 type Squeue struct {
 	squeueContents []string
 	squeueDone     chan struct{}
@@ -23,6 +25,9 @@ func squeueFunc() *exec.Cmd {
 
 var squeueCmd = squeueFunc
 
+// RunSqueue runs squeue once and captures the output.  If there is an error,
+// set "squeueError".  If it succeeds, set "squeueContents" and then wake up
+// any goroutines waiting squeueCond in CheckSqueue().
 func (squeue *Squeue) RunSqueue() error {
 	var newSqueueContents []string
 
@@ -73,8 +78,9 @@ func (squeue *Squeue) RunSqueue() error {
 	return nil
 }
 
-// Check if a container UUID is in the slurm queue.  This will block until the
-// next successful update from SLURM.
+// CheckSqueue checks if a given container UUID is in the slurm queue.  This
+// does not run squeue directly, but instead blocks until woken up by next
+// successful update of squeue.
 func (squeue *Squeue) CheckSqueue(uuid string) (bool, error) {
 	squeueUpdater.squeueCond.L.Lock()
 	// block until next squeue broadcast signaling an update.
@@ -95,6 +101,7 @@ func (squeue *Squeue) CheckSqueue(uuid string) (bool, error) {
 	return false, nil
 }
 
+// StartMonitor starts the squeue monitoring goroutine.
 func (squeue *Squeue) StartMonitor(pollInterval time.Duration) {
 	squeueUpdater.squeueCond = sync.NewCond(&sync.Mutex{})
 	squeueUpdater.squeueDone = make(chan struct{})
@@ -102,11 +109,14 @@ func (squeue *Squeue) StartMonitor(pollInterval time.Duration) {
 	go squeueUpdater.SyncSqueue(pollInterval)
 }
 
+// Done stops the squeue monitoring goroutine.
 func (squeue *Squeue) Done() {
 	squeueUpdater.squeueDone <- struct{}{}
 	close(squeueUpdater.squeueDone)
 }
 
+// SyncSqueue periodically polls RunSqueue() at the given duration until
+// terminated by calling Done().
 func (squeue *Squeue) SyncSqueue(pollInterval time.Duration) {
 	ticker := time.NewTicker(pollInterval)
 	for {
