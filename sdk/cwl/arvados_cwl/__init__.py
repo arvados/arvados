@@ -313,8 +313,8 @@ class RunnerJob(object):
         self.running = False
         self.enable_reuse = enable_reuse
 
-    def update_pipeline_component(self, record):
-        pass
+    #def update_pipeline_component(self, record):
+    #    pass
 
     def upload_docker(self, tool):
         if isinstance(tool, CommandLineTool):
@@ -662,7 +662,23 @@ class ArvCwlRunner(object):
 
         if kwargs.get("submit"):
             runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"))
-            if not kwargs.get("wait"):
+
+        components = {}
+        if kwargs.get("submit"):
+            components[os.path.basename(tool.tool["id"])] = {"job": runnerjob}
+        elif "cwl_runner_job" in kwargs:
+            components[os.path.basename(tool.tool["id"])] = {"job": kwargs["cwl_runner_job"]}
+
+        self.pipeline = self.api.pipeline_instances().create(
+            body={
+                "owner_uuid": self.project_uuid,
+                "name": shortname(tool.tool["id"]),
+                "components": components,
+                "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
+
+        logger.info("Pipeline instance %s", self.pipeline["uuid"])
+
+        if kwargs.get("submit") and not kwargs.get("wait"):
                 runnerjob.run()
                 return runnerjob.uuid
 
@@ -684,19 +700,6 @@ class ArvCwlRunner(object):
             if kwargs.get("submit"):
                 jobiter = iter((runnerjob,))
             else:
-                components = {}
-                if "cwl_runner_job" in kwargs:
-                    components[os.path.basename(tool.tool["id"])] = {"job": kwargs["cwl_runner_job"]}
-
-                self.pipeline = self.api.pipeline_instances().create(
-                    body={
-                        "owner_uuid": self.project_uuid,
-                        "name": shortname(tool.tool["id"]),
-                        "components": components,
-                        "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
-
-                logger.info("Pipeline instance %s", self.pipeline["uuid"])
-
                 jobiter = tool.job(job_order,
                                    self.output_callback,
                                    docker_outdir="$(task.outdir)",
