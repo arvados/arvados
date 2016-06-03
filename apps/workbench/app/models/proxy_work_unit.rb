@@ -145,36 +145,8 @@ class ProxyWorkUnit < WorkUnit
     end
   end
 
-  def parameters
-    get(:script_parameters)
-  end
-
-  def repository
-    get(:repository)
-  end
-
-  def script
-    get(:script)
-  end
-
-  def script_version
-    get(:script_version)
-  end
-
-  def supplied_script_version
-    get(:supplied_script_version)
-  end
-
   def runtime_constraints
     get(:runtime_constraints)
-  end
-
-  def docker_image
-    get(:docker_image_locator)
-  end
-
-  def nondeterministic
-    get(:nondeterministic)
   end
 
   def priority
@@ -194,7 +166,7 @@ class ProxyWorkUnit < WorkUnit
   end
 
   def title
-    "work unit"
+    "process"
   end
 
   def has_unreadable_children
