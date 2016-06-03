@@ -180,22 +180,6 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         first('button', text: 'x').click
       end
       assert_text 'Active processes' # seeing dashboard now
-      if token == 'active'
-        within('.active-processes') do
-          assert_text 'zzzzz-dz642-runningcontainr'
-          assert_text 'zzzzz-dz642-runningcontain2'
-          assert_text 'zzzzz-d1hrv-partdonepipelin'
-          assert_no_text 'zzzzz-d1hrv-twodonepipeline'
-          assert_no_text 'zzzzz-xvhdp-cr4queuedcontnr'
-        end
-        within('.finished-processes') do
-          assert_text 'zzzzz-d1hrv-twodonepipeline'
-          assert_text 'zzzzz-dz642-compltcontainer'
-          assert_text 'zzzzz-dz642-compltcontainr2'
-          assert_no_text 'zzzzz-d1hrv-partdonepipelin'
-          assert_no_text 'zzzzz-dz642-runningcontainr'
-        end
-      end
     end
   end
 
@@ -255,6 +239,33 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
       # look for unique property in the current page
       assert_text look_for
+    end
+  end
+
+  test "dashboard panes" do
+    visit page_with_token('active')
+
+    assert_text 'Active processes' # seeing dashboard now
+    within('.active-processes') do
+      assert_text 'zzzzz-dz642-runningcontainr'
+      assert_text 'zzzzz-dz642-runningcontain2'
+      assert_text 'zzzzz-d1hrv-partdonepipelin'
+      assert_no_text 'zzzzz-d1hrv-twodonepipeline'
+      assert_no_text 'zzzzz-xvhdp-cr4queuedcontnr'
+    end
+    within('.finished-processes') do
+      assert_text 'zzzzz-d1hrv-twodonepipeline'
+      assert_text 'zzzzz-dz642-compltcontainer'
+      assert_text 'zzzzz-dz642-compltcontainr2'
+      assert_no_text 'zzzzz-d1hrv-partdonepipelin'
+      assert_no_text 'zzzzz-dz642-runningcontainr'
+    end
+
+    within('.compute-node-summary-pane') do
+      click_link 'Details'
+      assert_text 'zzzzz-dz642-lockedcontainer'
+      assert_text 'zzzzz-dz642-queuedcontainer'
+      assert_text '"foo" job submitted'
     end
   end
 end

@@ -1,26 +1,27 @@
 <h4>Queue</h4>
-<% queue = Job.queue %>
+<% queue = queued_processes %>
 <% if queue.any? %>
 
-<% queue.each do |j| %>
+<% queue.each do |p| %>
+  <% wu = p.work_unit %>
   <div class="row">
     <div class="col-md-3 text-overflow-ellipsis">
-      <%= link_to_if_arvados_object j, friendly_name: true %>
+      <%= link_to_if_arvados_object p, friendly_name: true %>
     </div>
     <div class="col-md-4">
-      <%= render_localized_date(j[:created_at]) %>
+      <%= render_localized_date(p.created_at) %>
     </div>
     <div class="col-md-3">
-      <%= render_runtime(Time.now - j[:created_at], false) %>
+      <%= render_runtime(Time.now - p.created_at, false) %>
     </div>
     <div class="col-md-2">
-      <%= j[:priority] %>
+      <%= p.priority %>
     </div>
   </div>
 <% end %>
   <div class="row">
     <div class="col-md-3">
-      <b>Job</b>
+      <b>Process</b>
     </div>
     <div class="col-md-4">
       <b>Submitted</b>
@@ -38,7 +39,7 @@
   <div>
   </div>
 <% else %>
-  There are currently no jobs in your queue.
+  There are currently no processes in your queue.
 <% end %>
 
 <h4>Node status</h4>

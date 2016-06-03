@@ -867,6 +867,18 @@ class ApplicationController < ActionController::Base
     Hash[procs.sort_by {|key, value| value}].keys.reverse.first(lim)
   end
 
+  helper_method :queued_processes
+  def queued_processes
+    procs = {}
+    queued_jobs = Job.queue
+    queued_jobs.each { |j| procs[j] = j.priority }
+
+    queued_containers = Container.order(["priority desc", "created_at desc"]).filter([["state", "in", ["Queued", "Locked"]]])
+    queued_containers.results.each { |c| procs[c] = c.priority }
+
+    Hash[procs.sort_by {|key, value| value}].keys.reverse
+  end
+
   helper_method :recent_collections
   def recent_collections lim
     c = Collection.limit(lim).order(["modified_at desc"]).filter([["owner_uuid", "is_a", "arvados#group"]])

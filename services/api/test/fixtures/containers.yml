@@ -48,6 +48,22 @@ running-older:
     ram: 12000000000
     vcpus: 4
 
+locked:
+  uuid: zzzzz-dz642-lockedcontainer
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Locked
+  priority: 2
+  created_at: 2016-01-01 11:11:11.111111111 Z
+  updated_at: 2016-01-01 11:11:11.111111111 Z
+  container_image: test
+  cwd: test
+  output: test
+  output_path: test
+  command: ["echo", "hello"]
+  runtime_constraints:
+    ram: 12000000000
+    vcpus: 4
+
 completed:
   uuid: zzzzz-dz642-compltcontainer
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
