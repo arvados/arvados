@@ -142,8 +142,15 @@ prepare_database() {
 }
 
 configure_version() {
-  WEB_SERVICE=${WEB_SERVICE:-$(service --status-all 2>/dev/null \
-      | grep -Eo '\bnginx|httpd[^[:space:]]*' || true)}
+  if [ -n "$WEB_SERVICE" ]; then
+      SERVICE_MANAGER=$(guess_service_manager)
+  elif WEB_SERVICE=$(list_services_systemd | grep -E '^(nginx|httpd)'); then
+      SERVICE_MANAGER=systemd
+  elif WEB_SERVICE=$(list_services_service \
+                         | grep -Eo '\b(nginx|httpd)[^[:space:]]*'); then
+      SERVICE_MANAGER=service
+  fi
+
   if [ -z "$WEB_SERVICE" ]; then
     report_web_service_warning "Web service (Nginx or Apache) not found"
   elif [ "$WEB_SERVICE" != "$(echo "$WEB_SERVICE" | head -n 1)" ]; then
@@ -234,8 +241,8 @@ configure_version() {
 
   setup_before_nginx_restart
 
-  if [ ! -z "$WEB_SERVICE" ]; then
-      service "$WEB_SERVICE" restart
+  if [ -n "$SERVICE_MANAGER" ]; then
+      service_command "$SERVICE_MANAGER" restart "$WEB_SERVICE"
   fi
 }
 
