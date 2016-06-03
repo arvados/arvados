@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	. "gopkg.in/check.v1"
+	"testing"
 	"time"
 )
 
@@ -46,13 +47,16 @@ func (s *LoggingTestSuite) TestWriteLogs(c *C) {
 }
 
 func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
+	if testing.Short() {
+		return
+	}
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 	cr.CrunchLog.Immediate = nil
 
-	for i := 0; i < 2000000; i += 1 {
+	for i := 0; i < 2000000; i++ {
 		cr.CrunchLog.Printf("Hello %d", i)
 	}
 	cr.CrunchLog.Print("Goodbye")
