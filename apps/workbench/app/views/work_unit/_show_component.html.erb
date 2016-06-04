@@ -8,7 +8,7 @@
       <div class="pull-right">
         <div class="container-fluid">
           <div class="row-fulid pipeline-instance-spacing">
-            <% if wu.state_label == 'Running' and wu.child_summary_str %>
+            <% if wu.is_running? and wu.child_summary_str %>
               <div class="col-md-8">
                 <%= wu.child_summary_str %>
               </div>
@@ -16,7 +16,7 @@
             <div class="col-md-3">
               <%= render partial: 'work_unit/progress', locals: {wu: wu} %>
             </div>
-            <% if wu.state_label.in? ["Queued", "Running"] and wu.can_cancel? and @object.editable? %>
+            <% if wu.can_be_canceled? and @object.editable? %>
                 <div class="col-md-1">
                   <%= form_tag "#{wu.uri}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
                     <%= hidden_field_tag :return_to, url_for(@object) %>
@@ -31,33 +31,25 @@
     <% end %>
 
     <div class="col-md-10" >
-      <% if wu.state_label == 'Paused' %>
+      <% if wu.is_paused? %>
         <p>
-          This <%= wu.title %> is paused. Children that are
-          already running will continue to run, but no new work will be submitted.
+          This <%= wu.title %> is paused. Children that are already running
+          will continue to run, but no new processes will be submitted.
         </p>
       <% end %>
 
       <% runningtime = determine_wallclock_runtime(wu.children) %>
+      <% walltime = 0 %>
+      <% if wu.started_at %>
+        <% walltime = if wu.finished_at then (wu.finished_at - wu.started_at) else (Time.now - wu.started_at) end %>
+      <% end %>
 
       <p>
-        <% if wu.started_at %>
-          This <%= wu.title %> started at <%= render_localized_date(wu.started_at) %>.
-          It
-          <% if wu.state_label == 'Complete' %>
-            completed in
-          <% elsif wu.state_label == 'Failed' %>
-            failed after
-          <% else %>
-            has been active for
-          <% end %>
-
-          <% walltime = if wu.finished_at then
-                          wu.finished_at - wu.started_at
-                        else
-                          Time.now - wu.started_at
-                        end %>
-
+        <% active_for_str = wu.started_and_active_for_str %>
+        <% if active_for_str %>
+          <%= active_for_str[0] %>
+          <%= render_localized_date(wu.started_at) %>.
+          <%= active_for_str[1] %>
           <%= if walltime > runningtime
                 render_runtime(walltime, false)
               else
@@ -65,23 +57,17 @@
               end %><% if wu.finished_at %> at <%= render_localized_date(wu.finished_at) %><% end %>.
         <% else %>
           <% if wu.state_label %> This <%= wu.title %> is <%= if wu.state_label == 'Running' then 'active' else wu.state_label.downcase end %>. <% end %>
-            <% walltime = 0 %>
         <% end %>
 
-        <% if wu.state_label == 'Failed' %>
+        <% if wu.is_failed? %>
           Check the Log tab for more detail about why it failed.
         <% end %>
       </p>
 
-      <% if wu.state_label %>
+      <% ran_for_str = wu.ran_for_str %>
+      <% if ran_for_str %>
         <p>
-            It
-            <% if wu.state_label == 'Running' %>
-              has run
-            <% else %>
-              ran
-            <% end %>
-            for
+            <%= ran_for_str %>
             <%
                 cputime = wu.children.map { |c|
                 if c.started_at
