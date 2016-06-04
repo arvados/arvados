@@ -101,7 +101,7 @@ class JobsTest < ActionDispatch::IntegrationTest
       if expect_options
         assert_text 'supplied_script_version: master'
       else
-        assert_no_text 'supplied_script_version: (none)'
+        assert_no_text 'supplied_script_version'
       end
 
       assert_triggers_dom_event 'shown.bs.modal' do

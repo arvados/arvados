@@ -165,16 +165,16 @@ class ProxyWorkUnit < WorkUnit
     get(:supplied_script_version)
   end
 
-  def runtime_constraints
-    get(:runtime_constraints)
-  end
-
   def docker_image
     get(:docker_image_locator)
   end
 
   def nondeterministic
     get(:nondeterministic)
+  end
+
+  def runtime_constraints
+    get(:runtime_constraints)
   end
 
   def priority
@@ -205,7 +205,7 @@ class ProxyWorkUnit < WorkUnit
   end
 
   def title
-    "work unit"
+    "process"
   end
 
   def has_unreadable_children
@@ -215,6 +215,108 @@ class ProxyWorkUnit < WorkUnit
   def readable?
     resource_class = ArvadosBase::resource_class_for_uuid(uuid)
     resource_class.where(uuid: [uuid]).first rescue nil
+  end
+
+  def link_to_log
+    if state_label.in? ["Complete", "Failed", "Cancelled"]
+      lc = log_collection
+      if lc
+        logCollection = Collection.find? lc
+        if logCollection
+          ApplicationController.helpers.link_to("Log", "#{uri}#Log")
+        else
+          "Log unavailable"
+        end
+      end
+    elsif state_label == "Running"
+      if readable?
+        ApplicationController.helpers.link_to("Log", "#{uri}#Log")
+      else
+        "Log unavailable"
+      end
+    end
+  end
+
+  def walltime
+    if state_label != "Queued"
+      if started_at
+        ((if finished_at then finished_at else Time.now() end) - started_at)
+      end
+    end
+  end
+
+  def cputime
+    if state_label != "Queued"
+      if started_at
+        (runtime_constraints.andand[:min_nodes] || 1) *
+             ((finished_at || Time.now()) - started_at)
+      end
+    end
+  end
+
+  def queuedtime
+    if state_label == "Queued"
+      Time.now - Time.parse(created_at.to_s)
+    end
+  end
+
+  def show_child_summary
+    if state_label == "Running"
+      if child_summary
+        child_summary_str
+      end
+    end
+  end
+
+  def is_running?
+    state_label == 'Running'
+  end
+
+  def is_paused?
+    state_label == 'Paused'
+  end
+
+  def is_finished?
+    state_label.in? ["Complete", "Failed", "Cancelled"]
+  end
+
+  def is_failed?
+    state_label == 'Failed'
+  end
+
+  def can_be_canceled?
+    state_label.in? ["Queued", "Running"] and can_cancel?
+  end
+
+  def ran_for_str
+    ran_for = nil
+    if state_label
+      ran_for = "It "
+      if state_label == 'Running'
+        ran_for << "has run"
+      else
+        ran_for << "ran"
+      end
+      ran_for << " for"
+    end
+    ran_for
+  end
+
+  def started_and_active_for_str
+    active_for = nil
+
+    if started_at
+      active_for_1 = "This #{title} started at "
+      active_for_2 = "It "
+      if state_label == 'Complete'
+        active_for_2 << "completed in "
+      elsif state_label == 'Failed'
+        active_for_2 << "failed after "
+      else
+        active_for_2 << "has been active for "
+      end
+      [active_for_1, active_for_2]
+    end
   end
 
   protected

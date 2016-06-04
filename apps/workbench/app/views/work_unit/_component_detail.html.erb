@@ -1,6 +1,9 @@
       <div class="container">
         <div class="row">
           <div class="col-md-5">
+            <% if current_obj.uuid.nil? %>
+              No <%= current_obj.title %> has been submitted yet.
+            <% else %>
             <table>
               <% [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :output, :priority].each do |k| %>
                 <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
@@ -26,6 +29,7 @@
                 <% end %>
               <% end %>
             </table>
+            <% end %>
           </div>
           <div class="col-md-6">
             <table>

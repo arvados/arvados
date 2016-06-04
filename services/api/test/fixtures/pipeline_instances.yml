@@ -42,6 +42,8 @@ has_component_with_completed_jobs:
   state: Complete
   uuid: zzzzz-d1hrv-i3e77t9z5y8j9cc
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  started_at: <%= 10.minute.ago.to_s(:db) %>
+  finished_at: <%= 9.minute.ago.to_s(:db) %>
   components:
    foo:
     script: foo
