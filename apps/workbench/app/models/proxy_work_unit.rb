@@ -223,8 +223,6 @@ class ProxyWorkUnit < WorkUnit
       else
         "Log unavailable"
       end
-    else
-      ""
     end
   end
 
