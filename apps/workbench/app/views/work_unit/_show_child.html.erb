@@ -21,60 +21,36 @@
           <div class="col-md-8"></div>
         <% else %>
           <div class="col-md-1">
-              <% if current_obj.state_label.in? ["Complete", "Failed", "Cancelled"] %>
-                <% if current_obj.log_collection %>
-                  <% logCollection = Collection.find? current_obj.log_collection %>
-                  <% if logCollection %>
-                    <%= link_to "Log", "#{current_obj.uri}#Log" %>
-                  <% else %>
-                    Log unavailable
-                  <% end %>
-                <% end %>
-              <% elsif current_obj.state_label == "Running" %>
-                <% if current_obj.readable? %>
-                  <%= link_to "Log", "#{current_obj.uri}#Log" %>
-                <% else %>
-                  Log unavailable
-                <% end %>
-              <% end %>
+            <%= current_obj.link_to_log %>
           </div>
 
           <%# column offset 5 %>
-          <% if current_obj.state_label != "Queued" %>
+          <% walltime = current_obj.walltime %>
+          <% cputime = current_obj.cputime %>
+          <% if walltime and cputime %>
           <div class="col-md-3">
-            <% if current_obj.started_at %>
-              <% walltime = ((if current_obj.finished_at then current_obj.finished_at else Time.now() end) - current_obj.started_at) %>
-              <% cputime = (current_obj.runtime_constraints.andand[:min_nodes] || 1) *
-                           ((current_obj.finished_at || Time.now()) - current_obj.started_at) %>
               <%= render_runtime(walltime, false) %>
               <% if cputime > 0 %> / <%= render_runtime(cputime, false) %> (<%= (cputime/walltime).round(1) %>&Cross;)<% end %>
-            <% end %>
           </div>
           <% end %>
 
-          <% if current_obj.state_label == "Queued" %>
+          <% queuetime = current_obj.queuedtime %>
+          <% if queuetime %>
             <%# column offset 5 %>
             <div class="col-md-6">
-              <% queuetime = Time.now - Time.parse(current_obj.created_at.to_s) %>
               Queued for <%= render_runtime(queuetime, false) %>.
             </div>
-          <% elsif current_obj.state_label == "Running" %>
-            <% if current_obj.child_summary %>
-              <%# column offset 8 %>
-              <div class="col-md-3">
-                <span class="task-summary-status">
-                  <% if current_obj.child_summary_str %>
-                    <%= current_obj.child_summary_str %>
-                  <% end %>
-                </span>
-              </div>
-            <% end %>
-          <% elsif current_obj.state_label.in? ["Complete", "Failed", "Cancelled"] %>
+          <% elsif current_obj.show_child_summary %>
+            <%# column offset 8 %>
+            <div class="col-md-3">
+              <span class="task-summary-status">
+                <%= current_obj.child_summary_str %>
+              </span>
+            </div>
+          <% elsif current_obj.is_finished? %>
             <%# column offset 8 %>
             <div class="col-md-4 text-overflow-ellipsis">
               <% if current_obj.output %>
-                <%= link_to_arvados_object_if_readable(current_obj.output, 'Output data not available', friendly_name: true) %>
-              <% elsif current_obj.output %>
                 <%= link_to_arvados_object_if_readable(current_obj.output, 'Output data not available', link_text: "Output of #{current_obj.label}") %>
               <% else %>
                 No output.
@@ -82,7 +58,7 @@
             </div>
           <% end %>
 
-          <% if current_obj.state_label.in? ["Queued", "Running"] and current_obj.can_cancel? and @object.editable? %>
+          <% if current_obj.can_be_canceled? and @object.editable? %>
             <%# column offset 11 %>
             <div class="col-md-1 pipeline-instance-spacing">
               <%= form_tag "#{current_obj.uri}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>

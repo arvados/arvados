@@ -118,4 +118,53 @@ class WorkUnit
   def has_unreadable_children
     # accept it if you can't understand your own children
   end
+
+  # view helper methods
+  def link_to_log
+    # display a link to log if present
+  end
+
+  def walltime
+    # return walltime for a running or completed work unit
+  end
+
+  def cputime
+    # return cputime for a running or completed work unit
+  end
+
+  def queuedtime
+    # return queued time if the work unit is queued
+  end
+
+  def show_child_summary
+    # child summary for a running work unit
+  end
+
+  def is_running?
+    # is the work unit in running state?
+  end
+
+  def is_paused?
+    # is the work unit in paused state?
+  end
+
+  def is_finished?
+    # is the work unit in finished state?
+  end
+
+  def is_failed?
+    # is this work unit in failed state?
+  end
+
+  def can_be_canceled?
+    # true if work unit is in queued or running states and supports can_cancel?
+  end
+
+  def ran_for_str
+    # display string for how long it has run
+  end
+
+  def started_and_active_for_str
+    # display string for how long it has been active
+  end
 end
