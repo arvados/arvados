@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	. "gopkg.in/check.v1"
+	"testing"
 	"time"
 )
 
@@ -46,13 +47,16 @@ func (s *LoggingTestSuite) TestWriteLogs(c *C) {
 }
 
 func (s *LoggingTestSuite) TestWriteLogsLarge(c *C) {
+	if testing.Short() {
+		return
+	}
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
 	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
 	cr.CrunchLog.Immediate = nil
 
-	for i := 0; i < 2000000; i += 1 {
+	for i := 0; i < 2000000; i++ {
 		cr.CrunchLog.Printf("Hello %d", i)
 	}
 	cr.CrunchLog.Print("Goodbye")
@@ -79,18 +83,21 @@ func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 	stdout.Print("Doing stuff")
 	cr.CrunchLog.Print("Goodbye")
 	stdout.Print("Blurb")
-
 	cr.CrunchLog.Close()
-	logtext1 := "2015-12-29T15:51:45.000000001Z Hello world!\n" +
-		"2015-12-29T15:51:45.000000003Z Goodbye\n"
-	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["event_type"], Equals, "crunch-run")
-	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"], Equals, logtext1)
-
 	stdout.Close()
-	logtext2 := "2015-12-29T15:51:45.000000002Z Doing stuff\n" +
-		"2015-12-29T15:51:45.000000004Z Blurb\n"
-	c.Check(api.Content[1]["log"].(arvadosclient.Dict)["event_type"], Equals, "stdout")
-	c.Check(api.Content[1]["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"], Equals, logtext2)
+
+	logText := make(map[string]string)
+	for _, content := range api.Content {
+		log := content["log"].(arvadosclient.Dict)
+		logText[log["event_type"].(string)] += log["properties"].(map[string]string)["text"]
+	}
+
+	c.Check(logText["crunch-run"], Equals, `2015-12-29T15:51:45.000000001Z Hello world!
+2015-12-29T15:51:45.000000003Z Goodbye
+`)
+	c.Check(logText["stdout"], Equals, `2015-12-29T15:51:45.000000002Z Doing stuff
+2015-12-29T15:51:45.000000004Z Blurb
+`)
 
 	mt, err := cr.LogCollection.ManifestText()
 	c.Check(err, IsNil)
