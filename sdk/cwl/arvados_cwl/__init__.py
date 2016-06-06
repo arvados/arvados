@@ -824,6 +824,15 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     exgroup.add_argument("--no-wait", action="store_false", help="Submit workflow runner job and exit.",
                         default=True, dest="wait")
 
+    exgroup = parser.add_mutually_exclusive_group()
+    exgroup.add_argument("--crunch1", action="store_false",
+                        default=False, dest="crunch2",
+                        help="Use Crunch v1 Jobs API")
+
+    exgroup.add_argument("--crunch2", action="store_true",
+                        default=False, dest="crunch2",
+                        help="Use Crunch v2 Containers API")
+
     parser.add_argument("workflow", type=str, nargs="?", default=None)
     parser.add_argument("job_order", nargs=argparse.REMAINDER)
 
