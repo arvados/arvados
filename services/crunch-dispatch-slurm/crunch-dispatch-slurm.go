@@ -78,8 +78,14 @@ func sbatchFunc(container dispatch.Container) *exec.Cmd {
 		fmt.Sprintf("--priority=%d", container.Priority))
 }
 
+// scancelCmd
+func scancelFunc(container dispatch.Container) *exec.Cmd {
+	return exec.Command("scancel", "--name="+container.UUID)
+}
+
 // Wrap these so that they can be overridden by tests
 var sbatchCmd = sbatchFunc
+var scancelCmd = scancelFunc
 
 // Submit job to slurm using sbatch.
 func submit(dispatcher *dispatch.Dispatcher,
@@ -178,10 +184,7 @@ func submit(dispatcher *dispatch.Dispatcher,
 func monitorSubmitOrCancel(dispatcher *dispatch.Dispatcher, container dispatch.Container, monitorDone *bool) {
 	submitted := false
 	for !*monitorDone {
-		if inQ, err := squeueUpdater.CheckSqueue(container.UUID); err != nil {
-			// Most recent run of squeue had an error, so do nothing.
-			continue
-		} else if inQ {
+		if squeueUpdater.CheckSqueue(container.UUID) {
 			// Found in the queue, so continue monitoring
 			submitted = true
 		} else if container.State == dispatch.Locked && !submitted {
@@ -249,15 +252,13 @@ func run(dispatcher *dispatch.Dispatcher,
 
 				// Mutex between squeue sync and running sbatch or scancel.
 				squeueUpdater.SlurmLock.Lock()
-				err := exec.Command("scancel", "--name="+container.UUID).Run()
+				err := scancelCmd(container).Run()
 				squeueUpdater.SlurmLock.Unlock()
 
 				if err != nil {
 					log.Printf("Error stopping container %s with scancel: %v",
 						container.UUID, err)
-					if inQ, err := squeueUpdater.CheckSqueue(container.UUID); err != nil {
-						continue
-					} else if inQ {
+					if squeueUpdater.CheckSqueue(container.UUID) {
 						log.Printf("Container %s is still in squeue after scancel.",
 							container.UUID)
 						continue
