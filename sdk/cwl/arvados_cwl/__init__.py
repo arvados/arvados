@@ -214,6 +214,18 @@ class ArvadosJob(object):
                                                                                  body={
                                                                                     "components": self.arvrunner.pipeline["components"]
                                                                                  }).execute(num_retries=self.arvrunner.num_retries)
+        if self.arvrunner.uuid:
+            try:
+                job = self.arvrunner.api.jobs().get(uuid=self.arvrunner.uuid).execute()
+                if job:
+                    components = job["components"]
+                    components['component'+str(len(components))] = record["uuid"]
+                    self.arvrunner.api.jobs().update(uuid=self.arvrunner.uuid,
+                        body={
+                            "components": components
+                        }).execute(num_retries=self.arvrunner.num_retries)
+            except Exception as e:
+                logger.info("Error adding to components: %s", e)
 
     def done(self, record):
         try:
@@ -313,8 +325,8 @@ class RunnerJob(object):
         self.running = False
         self.enable_reuse = enable_reuse
 
-    #def update_pipeline_component(self, record):
-    #    pass
+    def update_pipeline_component(self, record):
+        pass
 
     def upload_docker(self, tool):
         if isinstance(tool, CommandLineTool):
@@ -595,6 +607,7 @@ class ArvCwlRunner(object):
         self.final_output = None
         self.uploaded = {}
         self.num_retries = 4
+        self.uuid = None
 
     def arvMakeTool(self, toolpath_object, **kwargs):
         if "class" in toolpath_object and toolpath_object["class"] == "CommandLineTool":
@@ -666,17 +679,15 @@ class ArvCwlRunner(object):
         components = {}
         if kwargs.get("submit"):
             components[os.path.basename(tool.tool["id"])] = {"job": runnerjob}
-        elif "cwl_runner_job" in kwargs:
-            components[os.path.basename(tool.tool["id"])] = {"job": kwargs["cwl_runner_job"]}
 
-        self.pipeline = self.api.pipeline_instances().create(
-            body={
-                "owner_uuid": self.project_uuid,
-                "name": shortname(tool.tool["id"]),
-                "components": components,
-                "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
-
-        logger.info("Pipeline instance %s", self.pipeline["uuid"])
+        if kwargs.get("submit") or "cwl_runner_job" not in kwargs:
+            self.pipeline = self.api.pipeline_instances().create(
+                body={
+                    "owner_uuid": self.project_uuid,
+                    "name": shortname(tool.tool["id"]),
+                    "components": components,
+                    "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
+            logger.info("Pipeline instance %s", self.pipeline["uuid"])
 
         if kwargs.get("submit") and not kwargs.get("wait"):
                 runnerjob.run()
@@ -700,6 +711,8 @@ class ArvCwlRunner(object):
             if kwargs.get("submit"):
                 jobiter = iter((runnerjob,))
             else:
+                if "cwl_runner_job" in kwargs:
+                    uuid = kwargs.get("cwl_runner_job").get('uuid')
                 jobiter = tool.job(job_order,
                                    self.output_callback,
                                    docker_outdir="$(task.outdir)",
