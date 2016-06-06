@@ -61,6 +61,8 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
         logger.info("Uploading Docker image %s", ":".join(args[1:]))
         arvados.commands.keepdocker.main(args, stdout=sys.stderr)
 
+    # XXX return PDH instead
+
     return dockerRequirement["dockerImageId"]
 
 
@@ -591,7 +593,10 @@ class ArvadosCommandTool(CommandLineTool):
         self.arvrunner = arvrunner
 
     def makeJobRunner(self):
-        return ArvadosJob(self.arvrunner)
+        if kwargs.get("crunch2"):
+            return ArvadosContainer(self.arvrunner)
+        else:
+            return ArvadosJob(self.arvrunner)
 
     def makePathMapper(self, reffiles, **kwargs):
         return ArvPathMapper(self.arvrunner, reffiles, kwargs["basedir"],
@@ -704,8 +709,12 @@ class ArvCwlRunner(object):
         kwargs["fs_access"] = self.fs_access
         kwargs["enable_reuse"] = kwargs.get("enable_reuse")
 
-        kwargs["outdir"] = "$(task.outdir)"
-        kwargs["tmpdir"] = "$(task.tmpdir)"
+        if kwargs.get("crunch2"):
+            kwargs["outdir"] = "/var/spool/cwl"
+            kwargs["tmpdir"] = "/tmp"
+        else:
+            kwargs["outdir"] = "$(task.outdir)"
+            kwargs["tmpdir"] = "$(task.tmpdir)"
 
         if kwargs.get("conformance_test"):
             return cwltool.main.single_job_executor(tool, job_order, **kwargs)
