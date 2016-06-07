@@ -29,6 +29,7 @@ class Collection < ArvadosModel
     t.add :replication_desired
     t.add :replication_confirmed
     t.add :replication_confirmed_at
+    t.add :expires_at
   end
 
   def self.attributes_required_columns
