@@ -239,39 +239,8 @@ class ProxyWorkUnit < WorkUnit
     state_label == 'Failed'
   end
 
-  def ran_for_str
-    ran_for = nil
-    if state_label
-      ran_for = "It "
-      if state_label == 'Running'
-        ran_for << "has run"
-      else
-        ran_for << "ran"
-      end
-      ran_for << " for"
-    end
-    ran_for
-  end
-
-  def started_and_active_for_str
-    active_for = nil
-
-    if started_at
-      active_for_1 = "This #{title} started at "
-      active_for_2 = "It "
-      if state_label == 'Complete'
-        active_for_2 << "completed in "
-      elsif state_label == 'Failed'
-        active_for_2 << "failed after "
-      else
-        active_for_2 << "has been active for "
-      end
-      [active_for_1, active_for_2]
-    end
-  end
-
   def show_runtime
-    runningtime = ApplicationController.helpers.determine_wallclock_runtime(children)
+    runningtime = ApplicationController.helpers.determine_wallclock_runtime(if children.any? then children else [@proxied] end)
 
     walltime = 0
     if started_at
@@ -326,13 +295,20 @@ class ProxyWorkUnit < WorkUnit
       end
       resp << " for "
 
-      cpu_time = children.map { |c|
-        if c.started_at
-           (c.runtime_constraints.andand[:min_nodes] || 1) * ((c.finished_at || Time.now()) - c.started_at)
-        else
-          0
+      cpu_time = 0
+      if children.any?
+        cpu_time = children.map { |c|
+          if c.started_at
+             (c.runtime_constraints.andand[:min_nodes] || 1) * ((c.finished_at || Time.now()) - c.started_at)
+          else
+            0
+          end
+        }.reduce(:+) || 0
+      else
+        if started_at
+          cpu_time = (runtime_constraints.andand[:min_nodes] || 1) * ((finished_at || Time.now()) - started_at)
         end
-      }.reduce(:+) || 0
+      end
 
       resp << ApplicationController.helpers.render_time(runningtime, false)
       if (walltime - runningtime) > 0
