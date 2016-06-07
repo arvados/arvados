@@ -156,10 +156,6 @@ class WorkUnit
     # is this work unit in failed state?
   end
 
-  def can_be_canceled?
-    # true if work unit is in queued or running states and supports can_cancel?
-  end
-
   def ran_for_str
     # display string for how long it has run
   end

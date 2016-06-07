@@ -1,6 +1,6 @@
 class JobWorkUnit < ProxyWorkUnit
   def children
-    return self.my_children if self.my_children
+    return @my_children if @my_children
 
     # Jobs components
     items = []
@@ -20,7 +20,7 @@ class JobWorkUnit < ProxyWorkUnit
       end
     end
 
-    self.my_children = items
+    @my_children = items
   end
 
   def child_summary
@@ -31,8 +31,52 @@ class JobWorkUnit < ProxyWorkUnit
     end
   end
 
+  def parameters
+    get(:script_parameters)
+  end
+
+  def repository
+    get(:repository)
+  end
+
+  def script
+    get(:script)
+  end
+
+  def script_version
+    get(:script_version)
+  end
+
+  def supplied_script_version
+    get(:supplied_script_version)
+  end
+
+  def docker_image
+    get(:docker_image_locator)
+  end
+
+  def nondeterministic
+    get(:nondeterministic)
+  end
+
+  def runtime_constraints
+    get(:runtime_constraints)
+  end
+
+  def priority
+    get(:priority)
+  end
+
+  def log_collection
+    get(:log)
+  end
+
+  def output
+    get(:output)
+  end
+
   def can_cancel?
-    true
+    state_label.in? ["Queued", "Running"]
   end
 
   def uri
