@@ -406,6 +406,14 @@ class RunnerJob(object):
 
         logger.info("Submitted job %s", response["uuid"])
 
+        if kwargs.get("submit"):
+            self.pipeline = self.arvrunner.api.pipeline_instances().create(
+                body={
+                    "owner_uuid": self.arvrunner.project_uuid,
+                    "name": shortname(self.tool.tool["id"]),
+                    "components": {"cwl-runner": {"job": {"uuid": self.uuid, "state": response["state"]} } },
+                    "state": "RunningOnClient"}).execute(num_retries=self.arvrunner.num_retries)
+
         if response["state"] in ("Complete", "Failed", "Cancelled"):
             self.done(response)
 
@@ -673,16 +681,13 @@ class ArvCwlRunner(object):
         if kwargs.get("submit"):
             runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"))
 
-        components = {}
-        if kwargs.get("submit"):
-            components[os.path.basename(tool.tool["id"])] = {"job": runnerjob}
-
-        if "cwl_runner_job" not in kwargs:
+        if not kwargs.get("submit") and "cwl_runner_job" not in kwargs:
+            # Create pipeline for local run
             self.pipeline = self.api.pipeline_instances().create(
                 body={
                     "owner_uuid": self.project_uuid,
                     "name": shortname(tool.tool["id"]),
-                    "components": components,
+                    "components": {},
                     "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
             logger.info("Pipeline instance %s", self.pipeline["uuid"])
 
