@@ -2,20 +2,20 @@
 <% queue = queued_processes %>
 <% if queue.any? %>
 
-<% queue.each do |p| %>
-  <% wu = p.work_unit %>
+<% queue.each do |q| %>
+  <% wu = q.work_unit %>
   <div class="row">
     <div class="col-md-3 text-overflow-ellipsis">
-      <%= link_to_if_arvados_object p, friendly_name: true %>
+      <%= link_to_if_arvados_object q, friendly_name: true %>
     </div>
     <div class="col-md-4">
-      <%= render_localized_date(p.created_at) %>
+      <%= render_localized_date(wu.created_at) %>
     </div>
     <div class="col-md-3">
-      <%= render_runtime(Time.now - p.created_at, false) %>
+      <%= render_runtime(Time.now - wu.created_at, false) %>
     </div>
     <div class="col-md-2">
-      <%= p.priority %>
+      <%= wu.priority %>
     </div>
   </div>
 <% end %>
@@ -32,11 +32,6 @@
     <div class="col-md-2">
       <b>Priority</b>
     </div>
-  </div>
-  <% if Job.queue_size > queue.size %>
-    <i>Note: some items in the queue are not visible to you.</i>
-  <% end %>
-  <div>
   </div>
 <% else %>
   There are currently no processes in your queue.

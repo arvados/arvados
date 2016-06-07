@@ -834,7 +834,7 @@ class ApplicationController < ActionController::Base
 
     pipelines = PipelineInstance.limit(lim).order(["started_at desc", "created_at desc"]).filter([["state", "in", ["RunningOnServer", "RunningOnClient"]]])
 
-    crs = ContainerRequest.order(["modified_at desc"]).filter([["requesting_container_uuid", "!=", nil], ["state", "=", "Committed"]])
+    crs = ContainerRequest.order(["modified_at desc"]).filter([["requesting_container_uuid", "=", nil], ["state", "=", "Committed"]])
     cr_uuids = crs.results.collect { |c| c.container_uuid }
     containers = Container.limit(lim).order(["started_at desc", "created_at desc"]).filter([["uuid", "in", cr_uuids], ["state", "=", "Running"]]).results if cr_uuids.any?
 
@@ -856,7 +856,7 @@ class ApplicationController < ActionController::Base
 
     pipelines = PipelineInstance.limit(lim).order(["finished_at desc"]).filter([["state", "in", ["Complete", "Failed", "Paused"]], ["finished_at", "!=", nil]])
 
-    crs = ContainerRequest.order(["modified_at desc"]).filter([["requesting_container_uuid", "!=", nil], ["state", "=", "Final"]])
+    crs = ContainerRequest.order(["modified_at desc"]).filter([["requesting_container_uuid", "=", nil], ["state", "=", "Final"]])
     cr_uuids = crs.results.collect { |c| c.container_uuid }
     containers = Container.limit(lim).order(["finished_at desc"]).filter([["uuid", "in", cr_uuids], ["state", "in", ["Complete", "Canceled"]], ["finished_at", "!=", nil]]).results if cr_uuids.any?
 

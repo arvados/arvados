@@ -13,7 +13,6 @@ queued:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-queuedcontainer
-  requesting_container_uuid: zzzzz-dz642-requestingcntnr
 
 running:
   uuid: zzzzz-xvhdp-cr4runningcntnr
@@ -30,7 +29,6 @@ running:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-runningcontainr
-  requesting_container_uuid: zzzzz-dz642-requestingcntnr
 
 running-older:
   uuid: zzzzz-xvhdp-cr4runningcntn2
@@ -47,7 +45,6 @@ running-older:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-runningcontain2
-  requesting_container_uuid: zzzzz-dz642-requestingcntnr
 
 completed:
   uuid: zzzzz-xvhdp-cr4completedctr
@@ -64,7 +61,6 @@ completed:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-compltcontainer
-  requesting_container_uuid: zzzzz-dz642-requestingcntnr
 
 completed-older:
   uuid: zzzzz-xvhdp-cr4completedcr2
@@ -81,4 +77,20 @@ completed-older:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-compltcontainr2
+
+cr_for_requester:
+  uuid: zzzzz-xvhdp-cr4requestercnt
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: requester_cr
+  state: Final
+  priority: 1
+  created_at: 2016-01-11 11:11:11.111111111 Z
+  updated_at: 2016-01-11 11:11:11.111111111 Z
+  modified_at: 2016-01-11 11:11:11.111111111 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: test
+  cwd: test
+  output_path: test
+  command: ["echo", "hello"]
+  container_uuid: zzzzz-dz642-requestercntnr1
   requesting_container_uuid: zzzzz-dz642-requestingcntnr

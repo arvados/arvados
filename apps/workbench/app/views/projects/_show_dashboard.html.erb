@@ -38,9 +38,9 @@
 
               <%
                 children = wu.children
-                running = children.select { |c| c.andand.state_label == "Running" }
-                queued = children.select { |c| c.andand.state_label == "Queued" }
-                %>
+                running = children.select { |c| c.state_label == "Running" }
+                queued = children.select { |c| c.state_label == "Queued" }
+              %>
 
               <div class="clearfix">
                 Started at <%= render_localized_date(wu.started_at || wu.created_at, "noseconds") %>.
