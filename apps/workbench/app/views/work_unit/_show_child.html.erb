@@ -1,0 +1,72 @@
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="col-md-2" style="word-break:break-all;">
+          <h4 class="panel-title">
+            <a data-toggle="collapse" href="#collapse<%= i %>">
+              <%= current_obj.label %> <span class="caret"></span>
+            </a>
+          </h4>
+        </div>
+
+        <div class="col-md-2 pipeline-instance-spacing">
+          <%= render partial: 'work_unit/progress', locals: {wu: current_obj} %>
+        </div>
+
+        <% if not current_obj %>
+          <div class="col-md-8"></div>
+        <% else %>
+          <div class="col-md-1">
+            <%= current_obj.link_to_log %>
+          </div>
+
+          <% walltime = current_obj.walltime %>
+          <% cputime = current_obj.cputime %>
+          <div class="col-md-3">
+          <% if walltime and cputime %>
+            <%= render_runtime(walltime, false) %>
+            <% if cputime > 0 %> / <%= render_runtime(cputime, false) %> (<%= (cputime/walltime).round(1) %>&Cross;)<% end %>
+          <% end %>
+          </div>
+
+          <% queuetime = current_obj.queuedtime %>
+          <% if queuetime %>
+            <div class="col-md-3">
+              Queued for <%= render_runtime(queuetime, false) %>.
+            </div>
+          <% elsif current_obj.is_running? %>
+            <div class="col-md-3">
+              <span class="task-summary-status">
+                <%= current_obj.child_summary_str %>
+              </span>
+            </div>
+          <% elsif current_obj.is_finished? %>
+            <div class="col-md-3 text-overflow-ellipsis">
+              <% if current_obj.output %>
+                <%= link_to_arvados_object_if_readable(current_obj.output, 'Output data not available', link_text: "Output of #{current_obj.label}") %>
+              <% else %>
+                No output.
+              <% end %>
+            </div>
+          <% end %>
+
+          <div class="col-md-1 pipeline-instance-spacing">
+          <% if current_obj.can_cancel? and @object.editable? %>
+              <%= form_tag "#{current_obj.uri}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
+                <%= hidden_field_tag :return_to, url_for(@object) %>
+                <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-child-button"} %>
+              <% end %>
+          <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div id="collapse<%= i %>" class="panel-collapse collapse <%= if expanded then 'in' end %>">
+    <div class="panel-body">
+      <%= render partial: 'work_unit/show_component', locals: {wu: current_obj} %>
+    </div>
+  </div>
+</div>

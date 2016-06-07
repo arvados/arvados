@@ -132,6 +132,10 @@ class PipelineInstance < ArvadosBase
     end
   end
 
+  def work_unit(label=nil)
+    PipelineInstanceWorkUnit.new(self, label || self.name)
+  end
+
   private
 
   def components_map
