@@ -194,11 +194,7 @@ class ArvadosJob(object):
 
             self.arvrunner.jobs[response["uuid"]] = self
 
-            self.arvrunner.pipeline["components"][self.name] = {"job": response}
-            self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().update(uuid=self.arvrunner.pipeline["uuid"],
-                                                                                     body={
-                                                                                         "components": self.arvrunner.pipeline["components"]
-                                                                                     }).execute(num_retries=self.arvrunner.num_retries)
+            self.update_pipeline_component(response)
 
             logger.info("Job %s (%s) is %s", self.name, response["uuid"], response["state"])
 
