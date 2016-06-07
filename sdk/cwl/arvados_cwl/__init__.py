@@ -194,11 +194,7 @@ class ArvadosJob(object):
 
             self.arvrunner.jobs[response["uuid"]] = self
 
-            self.arvrunner.pipeline["components"][self.name] = {"job": response}
-            self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().update(uuid=self.arvrunner.pipeline["uuid"],
-                                                                                     body={
-                                                                                         "components": self.arvrunner.pipeline["components"]
-                                                                                     }).execute(num_retries=self.arvrunner.num_retries)
+            self.update_pipeline_component(response)
 
             logger.info("Job %s (%s) is %s", self.name, response["uuid"], response["state"])
 
@@ -209,11 +205,24 @@ class ArvadosJob(object):
             self.output_callback({}, "permanentFail")
 
     def update_pipeline_component(self, record):
-        self.arvrunner.pipeline["components"][self.name] = {"job": record}
-        self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().update(uuid=self.arvrunner.pipeline["uuid"],
+        if self.arvrunner.pipeline:
+            self.arvrunner.pipeline["components"][self.name] = {"job": record}
+            self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().update(uuid=self.arvrunner.pipeline["uuid"],
                                                                                  body={
                                                                                     "components": self.arvrunner.pipeline["components"]
                                                                                  }).execute(num_retries=self.arvrunner.num_retries)
+        if self.arvrunner.uuid:
+            try:
+                job = self.arvrunner.api.jobs().get(uuid=self.arvrunner.uuid).execute()
+                if job:
+                    components = job["components"]
+                    components[self.name] = record["uuid"]
+                    self.arvrunner.api.jobs().update(uuid=self.arvrunner.uuid,
+                        body={
+                            "components": components
+                        }).execute(num_retries=self.arvrunner.num_retries)
+            except Exception as e:
+                logger.info("Error adding to components: %s", e)
 
     def done(self, record):
         try:
@@ -595,6 +604,7 @@ class ArvCwlRunner(object):
         self.final_output = None
         self.uploaded = {}
         self.num_retries = 4
+        self.uuid = None
 
     def arvMakeTool(self, toolpath_object, **kwargs):
         if "class" in toolpath_object and toolpath_object["class"] == "CommandLineTool":
@@ -662,7 +672,21 @@ class ArvCwlRunner(object):
 
         if kwargs.get("submit"):
             runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"))
-            if not kwargs.get("wait"):
+
+        components = {}
+        if kwargs.get("submit"):
+            components[os.path.basename(tool.tool["id"])] = {"job": runnerjob}
+
+        if "cwl_runner_job" not in kwargs:
+            self.pipeline = self.api.pipeline_instances().create(
+                body={
+                    "owner_uuid": self.project_uuid,
+                    "name": shortname(tool.tool["id"]),
+                    "components": components,
+                    "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
+            logger.info("Pipeline instance %s", self.pipeline["uuid"])
+
+        if kwargs.get("submit") and not kwargs.get("wait"):
                 runnerjob.run()
                 return runnerjob.uuid
 
@@ -684,19 +708,8 @@ class ArvCwlRunner(object):
             if kwargs.get("submit"):
                 jobiter = iter((runnerjob,))
             else:
-                components = {}
                 if "cwl_runner_job" in kwargs:
-                    components[os.path.basename(tool.tool["id"])] = {"job": kwargs["cwl_runner_job"]}
-
-                self.pipeline = self.api.pipeline_instances().create(
-                    body={
-                        "owner_uuid": self.project_uuid,
-                        "name": shortname(tool.tool["id"]),
-                        "components": components,
-                        "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
-
-                logger.info("Pipeline instance %s", self.pipeline["uuid"])
-
+                    self.uuid = kwargs.get("cwl_runner_job").get('uuid')
                 jobiter = tool.job(job_order,
                                    self.output_callback,
                                    docker_outdir="$(task.outdir)",
