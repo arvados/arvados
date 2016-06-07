@@ -215,14 +215,6 @@ class ProxyWorkUnit < WorkUnit
     end
   end
 
-  def show_child_summary
-    if state_label == "Running"
-      if child_summary
-        child_summary_str
-      end
-    end
-  end
-
   def is_running?
     state_label == 'Running'
   end

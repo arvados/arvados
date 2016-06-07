@@ -141,10 +141,6 @@ class WorkUnit
     # return queued time if the work unit is queued
   end
 
-  def show_child_summary
-    # child summary for a running work unit
-  end
-
   def is_running?
     # is the work unit in running state?
   end

@@ -1,19 +1,18 @@
 package main
 
+// Dispatcher service for Crunch that submits containers to the slurm queue.
+
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/dispatch"
 	"io/ioutil"
 	"log"
 	"math"
 	"os"
 	"os/exec"
-	"os/signal"
-	"strconv"
-	"sync"
-	"syscall"
+	"strings"
 	"time"
 )
 
@@ -25,12 +24,8 @@ func main() {
 }
 
 var (
-	arv              arvadosclient.ArvadosClient
-	runningCmds      map[string]*exec.Cmd
-	runningCmdsMutex sync.Mutex
-	waitGroup        sync.WaitGroup
-	doneProcessing   chan bool
-	sigChan          chan os.Signal
+	crunchRunCommand *string
+	squeueUpdater    Squeue
 )
 
 func doMain() error {
@@ -41,160 +36,60 @@ func doMain() error {
 		10,
 		"Interval in seconds to poll for queued containers")
 
-	priorityPollInterval := flags.Int(
-		"container-priority-poll-interval",
-		60,
-		"Interval in seconds to check priority of a dispatched container")
-
-	crunchRunCommand := flags.String(
+	crunchRunCommand = flags.String(
 		"crunch-run-command",
 		"/usr/bin/crunch-run",
 		"Crunch command to run container")
 
-	finishCommand := flags.String(
-		"finish-command",
-		"/usr/bin/crunch-finish-slurm.sh",
-		"Command to run from strigger when job is finished")
-
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
 
-	var err error
-	arv, err = arvadosclient.MakeArvadosClient()
+	arv, err := arvadosclient.MakeArvadosClient()
+	if err != nil {
+		log.Printf("Error making Arvados client: %v", err)
+		return err
+	}
+	arv.Retries = 25
+
+	squeueUpdater.StartMonitor(time.Duration(*pollInterval) * time.Second)
+	defer squeueUpdater.Done()
+
+	dispatcher := dispatch.Dispatcher{
+		Arv:            arv,
+		RunContainer:   run,
+		PollInterval:   time.Duration(*pollInterval) * time.Second,
+		DoneProcessing: make(chan struct{})}
+
+	err = dispatcher.RunDispatcher()
 	if err != nil {
 		return err
 	}
 
-	// Channel to terminate
-	doneProcessing = make(chan bool)
-
-	// Graceful shutdown
-	sigChan = make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
-	go func(sig <-chan os.Signal) {
-		for sig := range sig {
-			log.Printf("Caught signal: %v", sig)
-			doneProcessing <- true
-		}
-	}(sigChan)
-
-	// Run all queued containers
-	runQueuedContainers(*pollInterval, *priorityPollInterval, *crunchRunCommand, *finishCommand)
-
-	// Wait for all running crunch jobs to complete / terminate
-	waitGroup.Wait()
-
 	return nil
 }
 
-type apiClientAuthorization struct {
-	UUID     string `json:"uuid"`
-	APIToken string `json:"api_token"`
-}
-
-type apiClientAuthorizationList struct {
-	Items []apiClientAuthorization `json:"items"`
-}
-
-// Poll for queued containers using pollInterval.
-// Invoke dispatchSlurm for each ticker cycle, which will run all the queued containers.
-//
-// Any errors encountered are logged but the program would continue to run (not exit).
-// This is because, once one or more crunch jobs are running,
-// we would need to wait for them complete.
-func runQueuedContainers(pollInterval, priorityPollInterval int, crunchRunCommand, finishCommand string) {
-	var auth apiClientAuthorization
-	err := arv.Call("GET", "api_client_authorizations", "", "current", nil, &auth)
-	if err != nil {
-		log.Printf("Error getting my token UUID: %v", err)
-		return
-	}
-
-	ticker := time.NewTicker(time.Duration(pollInterval) * time.Second)
-	for {
-		select {
-		case <-ticker.C:
-			dispatchSlurm(auth, time.Duration(priorityPollInterval)*time.Second, crunchRunCommand, finishCommand)
-		case <-doneProcessing:
-			ticker.Stop()
-			return
-		}
-	}
-}
-
-// Container data
-type Container struct {
-	UUID               string           `json:"uuid"`
-	State              string           `json:"state"`
-	Priority           int              `json:"priority"`
-	RuntimeConstraints map[string]int64 `json:"runtime_constraints"`
-	LockedByUUID       string           `json:"locked_by_uuid"`
-}
-
-// ContainerList is a list of the containers from api
-type ContainerList struct {
-	Items []Container `json:"items"`
-}
-
-// Get the list of queued containers from API server and invoke run
-// for each container.
-func dispatchSlurm(auth apiClientAuthorization, pollInterval time.Duration, crunchRunCommand, finishCommand string) {
-	params := arvadosclient.Dict{
-		"filters": [][]interface{}{{"state", "in", []string{"Queued", "Locked"}}},
-	}
-
-	var containers ContainerList
-	err := arv.List("containers", params, &containers)
-	if err != nil {
-		log.Printf("Error getting list of queued containers: %q", err)
-		return
-	}
-
-	for _, container := range containers.Items {
-		if container.State == "Locked" {
-			if container.LockedByUUID != auth.UUID {
-				// Locked by a different dispatcher
-				continue
-			} else if checkMine(container.UUID) {
-				// I already have a goroutine running
-				// for this container: it just hasn't
-				// gotten past Locked state yet.
-				continue
-			}
-			log.Printf("WARNING: found container %s already locked by my token %s, but I didn't submit it. "+
-				"Assuming it was left behind by a previous dispatch process, and waiting for it to finish.",
-				container.UUID, auth.UUID)
-			setMine(container.UUID, true)
-			go func() {
-				waitContainer(container, pollInterval)
-				setMine(container.UUID, false)
-			}()
-		}
-		go run(container, crunchRunCommand, finishCommand, pollInterval)
-	}
-}
-
 // sbatchCmd
-func sbatchFunc(container Container) *exec.Cmd {
+func sbatchFunc(container dispatch.Container) *exec.Cmd {
 	memPerCPU := math.Ceil((float64(container.RuntimeConstraints["ram"])) / (float64(container.RuntimeConstraints["vcpus"] * 1048576)))
 	return exec.Command("sbatch", "--share", "--parsable",
-		"--job-name="+container.UUID,
-		"--mem-per-cpu="+strconv.Itoa(int(memPerCPU)),
-		"--cpus-per-task="+strconv.Itoa(int(container.RuntimeConstraints["vcpus"])))
+		fmt.Sprintf("--job-name=%s", container.UUID),
+		fmt.Sprintf("--mem-per-cpu=%d", int(memPerCPU)),
+		fmt.Sprintf("--cpus-per-task=%d", int(container.RuntimeConstraints["vcpus"])),
+		fmt.Sprintf("--priority=%d", container.Priority))
 }
 
+// scancelCmd
+func scancelFunc(container dispatch.Container) *exec.Cmd {
+	return exec.Command("scancel", "--name="+container.UUID)
+}
+
+// Wrap these so that they can be overridden by tests
 var sbatchCmd = sbatchFunc
-
-// striggerCmd
-func striggerFunc(jobid, containerUUID, finishCommand, apiHost, apiToken, apiInsecure string) *exec.Cmd {
-	return exec.Command("strigger", "--set", "--jobid="+jobid, "--fini",
-		fmt.Sprintf("--program=%s %s %s %s %s", finishCommand, apiHost, apiToken, apiInsecure, containerUUID))
-}
-
-var striggerCmd = striggerFunc
+var scancelCmd = scancelFunc
 
 // Submit job to slurm using sbatch.
-func submit(container Container, crunchRunCommand string) (jobid string, submitErr error) {
+func submit(dispatcher *dispatch.Dispatcher,
+	container dispatch.Container, crunchRunCommand string) (jobid string, submitErr error) {
 	submitErr = nil
 
 	defer func() {
@@ -204,7 +99,7 @@ func submit(container Container, crunchRunCommand string) (jobid string, submitE
 			// OK, no cleanup needed
 			return
 		}
-		err := arv.Update("containers", container.UUID,
+		err := dispatcher.Arv.Update("containers", container.UUID,
 			arvadosclient.Dict{
 				"container": arvadosclient.Dict{"state": "Queued"}},
 			nil)
@@ -233,6 +128,10 @@ func submit(container Container, crunchRunCommand string) (jobid string, submitE
 		return
 	}
 
+	// Mutex between squeue sync and running sbatch or scancel.
+	squeueUpdater.SlurmLock.Lock()
+	defer squeueUpdater.SlurmLock.Unlock()
+
 	err := cmd.Start()
 	if err != nil {
 		submitErr = fmt.Errorf("Error starting %v: %v", cmd.Args, err)
@@ -244,7 +143,6 @@ func submit(container Container, crunchRunCommand string) (jobid string, submitE
 		b, _ := ioutil.ReadAll(stdoutReader)
 		stdoutReader.Close()
 		stdoutChan <- b
-		close(stdoutChan)
 	}()
 
 	stderrChan := make(chan []byte)
@@ -252,7 +150,6 @@ func submit(container Container, crunchRunCommand string) (jobid string, submitE
 		b, _ := ioutil.ReadAll(stderrReader)
 		stderrReader.Close()
 		stderrChan <- b
-		close(stderrChan)
 	}()
 
 	// Send a tiny script on stdin to execute the crunch-run command
@@ -265,168 +162,112 @@ func submit(container Container, crunchRunCommand string) (jobid string, submitE
 	stdoutMsg := <-stdoutChan
 	stderrmsg := <-stderrChan
 
+	close(stdoutChan)
+	close(stderrChan)
+
 	if err != nil {
 		submitErr = fmt.Errorf("Container submission failed %v: %v %v", cmd.Args, err, stderrmsg)
 		return
 	}
 
 	// If everything worked out, got the jobid on stdout
-	jobid = string(stdoutMsg)
+	jobid = strings.TrimSpace(string(stdoutMsg))
 
 	return
 }
 
-// finalizeRecordOnFinish uses 'strigger' command to register a script that will run on
-// the slurm controller when the job finishes.
-func finalizeRecordOnFinish(jobid, containerUUID, finishCommand, apiHost, apiToken, apiInsecure string) {
-	cmd := striggerCmd(jobid, containerUUID, finishCommand, apiHost, apiToken, apiInsecure)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err := cmd.Run()
-	if err != nil {
-		log.Printf("While setting up strigger: %v", err)
-		// BUG: we drop the error here and forget about it. A
-		// human has to notice the container is stuck in
-		// Running state, and fix it manually.
+// If the container is marked as Locked, check if it is already in the slurm
+// queue.  If not, submit it.
+//
+// If the container is marked as Running, check if it is in the slurm queue.
+// If not, mark it as Cancelled.
+func monitorSubmitOrCancel(dispatcher *dispatch.Dispatcher, container dispatch.Container, monitorDone *bool) {
+	submitted := false
+	for !*monitorDone {
+		if squeueUpdater.CheckSqueue(container.UUID) {
+			// Found in the queue, so continue monitoring
+			submitted = true
+		} else if container.State == dispatch.Locked && !submitted {
+			// Not in queue but in Locked state and we haven't
+			// submitted it yet, so submit it.
+
+			log.Printf("About to submit queued container %v", container.UUID)
+
+			if _, err := submit(dispatcher, container, *crunchRunCommand); err != nil {
+				log.Printf("Error submitting container %s to slurm: %v",
+					container.UUID, err)
+				// maybe sbatch is broken, put it back to queued
+				dispatcher.UpdateState(container.UUID, dispatch.Queued)
+			}
+			submitted = true
+		} else {
+			// Not in queue and we are not going to submit it.
+			// Refresh the container state. If it is
+			// Complete/Cancelled, do nothing, if it is Locked then
+			// release it back to the Queue, if it is Running then
+			// clean up the record.
+
+			var con dispatch.Container
+			err := dispatcher.Arv.Get("containers", container.UUID, nil, &con)
+			if err != nil {
+				log.Printf("Error getting final container state: %v", err)
+			}
+
+			var st string
+			switch con.State {
+			case dispatch.Locked:
+				st = dispatch.Queued
+			case dispatch.Running:
+				st = dispatch.Cancelled
+			default:
+				// Container state is Queued, Complete or Cancelled so stop monitoring it.
+				return
+			}
+
+			log.Printf("Container %s in state %v but missing from slurm queue, changing to %v.",
+				container.UUID, con.State, st)
+			dispatcher.UpdateState(container.UUID, st)
+		}
 	}
 }
 
-// Run a queued container: [1] Set container state to locked. [2]
-// Execute crunch-run as a slurm batch job. [3] waitContainer().
-func run(container Container, crunchRunCommand, finishCommand string, pollInterval time.Duration) {
-	setMine(container.UUID, true)
-	defer setMine(container.UUID, false)
+// Run or monitor a container.
+//
+// Monitor status updates.  If the priority changes to zero, cancel the
+// container using scancel.
+func run(dispatcher *dispatch.Dispatcher,
+	container dispatch.Container,
+	status chan dispatch.Container) {
 
-	// Update container status to Locked. This will fail if
-	// another dispatcher (token) has already locked it. It will
-	// succeed if *this* dispatcher has already locked it.
-	err := arv.Update("containers", container.UUID,
-		arvadosclient.Dict{
-			"container": arvadosclient.Dict{"state": "Locked"}},
-		nil)
-	if err != nil {
-		log.Printf("Error updating container state to 'Locked' for %v: %q", container.UUID, err)
-		return
-	}
-
-	log.Printf("About to submit queued container %v", container.UUID)
-
-	jobid, err := submit(container, crunchRunCommand)
-	if err != nil {
-		log.Printf("Error submitting container %s to slurm: %v", container.UUID, err)
-		return
-	}
-
-	insecure := "0"
-	if arv.ApiInsecure {
-		insecure = "1"
-	}
-	finalizeRecordOnFinish(jobid, container.UUID, finishCommand, arv.ApiServer, arv.ApiToken, insecure)
-
-	// Update container status to Running. This will fail if
-	// another dispatcher (token) has already locked it. It will
-	// succeed if *this* dispatcher has already locked it.
-	err = arv.Update("containers", container.UUID,
-		arvadosclient.Dict{
-			"container": arvadosclient.Dict{"state": "Running"}},
-		nil)
-	if err != nil {
-		log.Printf("Error updating container state to 'Running' for %v: %q", container.UUID, err)
-	}
-	log.Printf("Submitted container %v to slurm", container.UUID)
-	waitContainer(container, pollInterval)
-}
-
-// Wait for a container to finish. Cancel the slurm job if the
-// container priority changes to zero before it ends.
-func waitContainer(container Container, pollInterval time.Duration) {
 	log.Printf("Monitoring container %v started", container.UUID)
 	defer log.Printf("Monitoring container %v finished", container.UUID)
 
-	pollTicker := time.NewTicker(pollInterval)
-	defer pollTicker.Stop()
-	for _ = range pollTicker.C {
-		var updated Container
-		err := arv.Get("containers", container.UUID, nil, &updated)
-		if err != nil {
-			log.Printf("Error getting container %s: %q", container.UUID, err)
-			continue
-		}
-		if updated.State == "Complete" || updated.State == "Cancelled" {
-			return
-		}
-		if updated.Priority != 0 {
-			continue
-		}
+	monitorDone := false
+	go monitorSubmitOrCancel(dispatcher, container, &monitorDone)
 
-		// Priority is zero, but state is Running or Locked
-		log.Printf("Canceling container %s", container.UUID)
+	for container = range status {
+		if container.State == dispatch.Locked || container.State == dispatch.Running {
+			if container.Priority == 0 {
+				log.Printf("Canceling container %s", container.UUID)
 
-		err = exec.Command("scancel", "--name="+container.UUID).Run()
-		if err != nil {
-			log.Printf("Error stopping container %s with scancel: %v", container.UUID, err)
-			if inQ, err := checkSqueue(container.UUID); err != nil {
-				log.Printf("Error running squeue: %v", err)
-				continue
-			} else if inQ {
-				log.Printf("Container %s is still in squeue; will retry", container.UUID)
-				continue
+				// Mutex between squeue sync and running sbatch or scancel.
+				squeueUpdater.SlurmLock.Lock()
+				err := scancelCmd(container).Run()
+				squeueUpdater.SlurmLock.Unlock()
+
+				if err != nil {
+					log.Printf("Error stopping container %s with scancel: %v",
+						container.UUID, err)
+					if squeueUpdater.CheckSqueue(container.UUID) {
+						log.Printf("Container %s is still in squeue after scancel.",
+							container.UUID)
+						continue
+					}
+				}
+
+				err = dispatcher.UpdateState(container.UUID, dispatch.Cancelled)
 			}
 		}
-
-		err = arv.Update("containers", container.UUID,
-			arvadosclient.Dict{
-				"container": arvadosclient.Dict{"state": "Cancelled"}},
-			nil)
-		if err != nil {
-			log.Printf("Error updating state for container %s: %s", container.UUID, err)
-			continue
-		}
-
-		return
 	}
-}
-
-func checkSqueue(uuid string) (bool, error) {
-	cmd := exec.Command("squeue", "--format=%j")
-	sq, err := cmd.StdoutPipe()
-	if err != nil {
-		return false, err
-	}
-	cmd.Start()
-	defer cmd.Wait()
-	scanner := bufio.NewScanner(sq)
-	found := false
-	for scanner.Scan() {
-		if scanner.Text() == uuid {
-			found = true
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return false, err
-	}
-	return found, nil
-}
-
-var mineMutex sync.RWMutex
-var mineMap = make(map[string]bool)
-
-// Goroutine-safely add/remove uuid to the set of "my" containers,
-// i.e., ones for which this process has a goroutine running.
-func setMine(uuid string, t bool) {
-	mineMutex.Lock()
-	if t {
-		mineMap[uuid] = true
-	} else {
-		delete(mineMap, uuid)
-	}
-	mineMutex.Unlock()
-}
-
-// Check whether there is already a goroutine running for this
-// container.
-func checkMine(uuid string) bool {
-	mineMutex.RLocker().Lock()
-	defer mineMutex.RLocker().Unlock()
-	return mineMap[uuid]
+	monitorDone = true
 }

@@ -56,6 +56,9 @@ var hwImageId = "9c31ee32b3d15268a0754e8edc74d4f815ee014b693bc5109058e431dd5caea
 var otherManifest = ". 68a84f561b1d1708c6baff5e019a9ab3+46+Ae5d0af96944a3690becb1decdf60cc1c937f556d@5693216f 0:46:md5sum.txt\n"
 var otherPDH = "a3e8f74c6f101eae01fa08bfb4e49b3a+54"
 
+var fakeAuthUUID = "zzzzz-gj3su-55pqoyepgi2glem"
+var fakeAuthToken = "a3ltuwzqcu2u4sc0q7yhpc2w7s00fdcqecg5d6e0u3pfohmbjt"
+
 type TestDockerClient struct {
 	imageLoaded string
 	logReader   io.ReadCloser
@@ -156,6 +159,19 @@ func (this *ArvTestClient) Create(resourceType string,
 	}
 
 	return nil
+}
+
+func (this *ArvTestClient) Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error {
+	switch {
+	case method == "GET" && resourceType == "containers" && action == "auth":
+		return json.Unmarshal([]byte(`{
+			"kind": "arvados#api_client_authorization",
+			"uuid": "`+fakeAuthUUID+`",
+			"api_token": "`+fakeAuthToken+`"
+			}`), output)
+	default:
+		return fmt.Errorf("Not found")
+	}
 }
 
 func (this *ArvTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
@@ -277,6 +293,10 @@ func (this ArvErrorTestClient) Create(resourceType string,
 	parameters arvadosclient.Dict,
 	output interface{}) error {
 	return nil
+}
+
+func (this ArvErrorTestClient) Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error {
+	return errors.New("ArvError")
 }
 
 func (this ArvErrorTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
@@ -403,6 +423,9 @@ func (s *TestSuite) TestRunContainer(c *C) {
 	err := cr.LoadImage()
 	c.Check(err, IsNil)
 
+	err = cr.CreateContainer()
+	c.Check(err, IsNil)
+
 	err = cr.StartContainer()
 	c.Check(err, IsNil)
 
@@ -455,7 +478,7 @@ func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
 	*cr.ExitCode = 42
 	cr.finalState = "Complete"
 
-	err := cr.UpdateContainerRecordComplete()
+	err := cr.UpdateContainerRecordFinal()
 	c.Check(err, IsNil)
 
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["log"], Equals, *cr.LogsPDH)
@@ -470,7 +493,7 @@ func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
 	cr.Cancelled = true
 	cr.finalState = "Cancelled"
 
-	err := cr.UpdateContainerRecordComplete()
+	err := cr.UpdateContainerRecordFinal()
 	c.Check(err, IsNil)
 
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["log"], IsNil)
@@ -482,7 +505,7 @@ func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
 // dress rehearsal of the Run() function, starting from a JSON container record.
 func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner) {
 	rec := ContainerRecord{}
-	err := json.NewDecoder(strings.NewReader(record)).Decode(&rec)
+	err := json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
 	docker := NewTestDockerClient()
@@ -621,7 +644,7 @@ func (s *TestSuite) TestCancel(c *C) {
 }`
 
 	rec := ContainerRecord{}
-	err := json.NewDecoder(strings.NewReader(record)).Decode(&rec)
+	err := json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
 	docker := NewTestDockerClient()
@@ -648,10 +671,6 @@ func (s *TestSuite) TestCancel(c *C) {
 	err = cr.Run()
 
 	c.Check(err, IsNil)
-
-	c.Check(api.Calls, Equals, 6)
-	c.Check(api.Content[5]["container"].(arvadosclient.Dict)["log"], NotNil)
-
 	if err != nil {
 		for k, v := range api.Logs {
 			c.Log(k)
@@ -659,8 +678,9 @@ func (s *TestSuite) TestCancel(c *C) {
 		}
 	}
 
+	c.Assert(api.Calls, Equals, 6)
+	c.Check(api.Content[5]["container"].(arvadosclient.Dict)["log"], IsNil)
 	c.Check(api.Content[5]["container"].(arvadosclient.Dict)["state"], Equals, "Cancelled")
-
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "foo\n"), Equals, true)
 
 }
@@ -689,11 +709,13 @@ func (s *TestSuite) TestFullRunSetEnv(c *C) {
 }
 
 type ArvMountCmdLine struct {
-	Cmd []string
+	Cmd   []string
+	token string
 }
 
-func (am *ArvMountCmdLine) ArvMountTest(c []string) (*exec.Cmd, error) {
+func (am *ArvMountCmdLine) ArvMountTest(c []string, token string) (*exec.Cmd, error) {
 	am.Cmd = c
+	am.token = token
 	return nil, nil
 }
 
@@ -787,7 +809,7 @@ func (s *TestSuite) TestStdout(c *C) {
 // Used by the TestStdoutWithWrongPath*()
 func StdoutErrorRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner, err error) {
 	rec := ContainerRecord{}
-	err = json.NewDecoder(strings.NewReader(record)).Decode(&rec)
+	err = json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
 	docker := NewTestDockerClient()
