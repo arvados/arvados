@@ -209,8 +209,9 @@ class ArvadosJob(object):
             self.output_callback({}, "permanentFail")
 
     def update_pipeline_component(self, record):
-        self.arvrunner.pipeline["components"][self.name] = {"job": record}
-        self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().update(uuid=self.arvrunner.pipeline["uuid"],
+        if self.arvrunner.pipeline:
+            self.arvrunner.pipeline["components"][self.name] = {"job": record}
+            self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().update(uuid=self.arvrunner.pipeline["uuid"],
                                                                                  body={
                                                                                     "components": self.arvrunner.pipeline["components"]
                                                                                  }).execute(num_retries=self.arvrunner.num_retries)
@@ -219,7 +220,7 @@ class ArvadosJob(object):
                 job = self.arvrunner.api.jobs().get(uuid=self.arvrunner.uuid).execute()
                 if job:
                     components = job["components"]
-                    components['component'+str(len(components))] = record["uuid"]
+                    components[self.name] = record["uuid"]
                     self.arvrunner.api.jobs().update(uuid=self.arvrunner.uuid,
                         body={
                             "components": components
@@ -680,7 +681,7 @@ class ArvCwlRunner(object):
         if kwargs.get("submit"):
             components[os.path.basename(tool.tool["id"])] = {"job": runnerjob}
 
-        if kwargs.get("submit") or "cwl_runner_job" not in kwargs:
+        if "cwl_runner_job" not in kwargs:
             self.pipeline = self.api.pipeline_instances().create(
                 body={
                     "owner_uuid": self.project_uuid,
@@ -712,7 +713,7 @@ class ArvCwlRunner(object):
                 jobiter = iter((runnerjob,))
             else:
                 if "cwl_runner_job" in kwargs:
-                    uuid = kwargs.get("cwl_runner_job").get('uuid')
+                    self.uuid = kwargs.get("cwl_runner_job").get('uuid')
                 jobiter = tool.job(job_order,
                                    self.output_callback,
                                    docker_outdir="$(task.outdir)",
