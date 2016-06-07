@@ -32,7 +32,7 @@
 
           <% queuetime = current_obj.queuedtime %>
           <% if queuetime %>
-            <div class="col-md-6">
+            <div class="col-md-3">
               Queued for <%= render_runtime(queuetime, false) %>.
             </div>
           <% elsif current_obj.show_child_summary %>
@@ -42,7 +42,7 @@
               </span>
             </div>
           <% elsif current_obj.is_finished? %>
-            <div class="col-md-4 text-overflow-ellipsis">
+            <div class="col-md-3 text-overflow-ellipsis">
               <% if current_obj.output %>
                 <%= link_to_arvados_object_if_readable(current_obj.output, 'Output data not available', link_text: "Output of #{current_obj.label}") %>
               <% else %>

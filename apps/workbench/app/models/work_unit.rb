@@ -155,12 +155,4 @@ class WorkUnit
   def is_failed?
     # is this work unit in failed state?
   end
-
-  def ran_for_str
-    # display string for how long it has run
-  end
-
-  def started_and_active_for_str
-    # display string for how long it has been active
-  end
 end
