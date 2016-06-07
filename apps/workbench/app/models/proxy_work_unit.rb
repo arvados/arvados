@@ -7,12 +7,12 @@ class ProxyWorkUnit < WorkUnit
   attr_accessor :unreadable_children
 
   def initialize proxied, label
-    self.lbl = label
-    self.proxied = proxied
+    @lbl = label
+    @proxied = proxied
   end
 
   def label
-    self.lbl
+    @lbl
   end
 
   def uuid
@@ -145,48 +145,8 @@ class ProxyWorkUnit < WorkUnit
     end
   end
 
-  def parameters
-    get(:script_parameters)
-  end
-
-  def repository
-    get(:repository)
-  end
-
-  def script
-    get(:script)
-  end
-
-  def script_version
-    get(:script_version)
-  end
-
-  def supplied_script_version
-    get(:supplied_script_version)
-  end
-
-  def docker_image
-    get(:docker_image_locator)
-  end
-
-  def nondeterministic
-    get(:nondeterministic)
-  end
-
-  def runtime_constraints
-    get(:runtime_constraints)
-  end
-
-  def priority
-    get(:priority)
-  end
-
-  def log_collection
-    get(:log)
-  end
-
-  def output
-    get(:output)
+  def children
+    []
   end
 
   def outputs
@@ -200,16 +160,12 @@ class ProxyWorkUnit < WorkUnit
     items
   end
 
-  def children
-    []
-  end
-
   def title
     "process"
   end
 
   def has_unreadable_children
-    self.unreadable_children
+    @unreadable_children
   end
 
   def readable?
@@ -248,8 +204,7 @@ class ProxyWorkUnit < WorkUnit
   def cputime
     if state_label != "Queued"
       if started_at
-        (runtime_constraints.andand[:min_nodes] || 1) *
-             ((finished_at || Time.now()) - started_at)
+        (runtime_constraints.andand[:min_nodes] || 1) * ((finished_at || Time.now()) - started_at)
       end
     end
   end
@@ -284,10 +239,6 @@ class ProxyWorkUnit < WorkUnit
     state_label == 'Failed'
   end
 
-  def can_be_canceled?
-    state_label.in? ["Queued", "Running"] and can_cancel?
-  end
-
   def ran_for_str
     ran_for = nil
     if state_label
@@ -319,13 +270,98 @@ class ProxyWorkUnit < WorkUnit
     end
   end
 
+  def show_runtime
+    runningtime = ApplicationController.helpers.determine_wallclock_runtime(children)
+
+    walltime = 0
+    if started_at
+      walltime = if finished_at then (finished_at - started_at) else (Time.now - started_at) end
+    end
+
+    resp = '<p>'
+
+    if started_at
+      resp << "This #{title} started at "
+      resp << ApplicationController.helpers.render_localized_date(started_at)
+      resp << ". It "
+      if state_label == 'Complete'
+        resp << "completed in "
+      elsif state_label == 'Failed'
+         resp << "failed after "
+      else
+        resp << "has been active for "
+      end
+
+      if walltime > runningtime
+        resp << ApplicationController.helpers.render_time(walltime, false)
+      else
+       resp << ApplicationController.helpers.render_time(runningtime, false)
+      end
+
+      if finished_at
+        resp << " at "
+        resp << ApplicationController.helpers.render_localized_date(finished_at)
+      end
+      resp << "."
+    else
+      if state_label
+        resp << "This #{title} is "
+        resp << if state_label == 'Running' then 'active' else state_label.downcase end
+        resp << "."
+      end
+    end
+
+    if is_failed?
+      resp << " Check the Log tab for more detail about why it failed."
+    end
+    resp << "</p>"
+
+    resp << "<p>"
+    if state_label
+      resp << "It "
+      if state_label == 'Running'
+        resp << "has run"
+      else
+        resp << "ran"
+      end
+      resp << " for "
+
+      cpu_time = children.map { |c|
+        if c.started_at
+           (c.runtime_constraints.andand[:min_nodes] || 1) * ((c.finished_at || Time.now()) - c.started_at)
+        else
+          0
+        end
+      }.reduce(:+) || 0
+
+      resp << ApplicationController.helpers.render_time(runningtime, false)
+      if (walltime - runningtime) > 0
+        resp << "("
+        resp << ApplicationController.helpers.render_time(walltime - runningtime, false)
+        resp << "queued)"
+      end
+      if cpu_time == 0
+        resp << "."
+      else
+        resp << " and used "
+        resp << ApplicationController.helpers.render_time(cpu_time, false)
+        resp << " of node allocation time ("
+        resp << (cpu_time/runningtime).round(1).to_s
+        resp << "&Cross; scaling)."
+      end
+    end
+    resp << "</p>"
+
+    resp
+  end
+
   protected
 
   def get key
-    if self.proxied.respond_to? key
-      self.proxied.send(key)
-    elsif self.proxied.is_a?(Hash)
-      self.proxied[key]
+    if @proxied.respond_to? key
+      @proxied.send(key)
+    elsif @proxied.is_a?(Hash)
+      @proxied[key]
     end
   end
 end

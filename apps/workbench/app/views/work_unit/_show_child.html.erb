@@ -2,7 +2,6 @@
   <div class="panel-heading">
     <div class="container-fluid">
       <div class="row-fluid">
-        <%# column offset 0 %>
         <div class="col-md-2" style="word-break:break-all;">
           <h4 class="panel-title">
             <a data-toggle="collapse" href="#collapse<%= i %>">
@@ -11,12 +10,10 @@
           </h4>
         </div>
 
-        <%# column offset 2 %>
         <div class="col-md-2 pipeline-instance-spacing">
           <%= render partial: 'work_unit/progress', locals: {wu: current_obj} %>
         </div>
 
-        <%# column offset 4 %>
         <% if not current_obj %>
           <div class="col-md-8"></div>
         <% else %>
@@ -24,31 +21,27 @@
             <%= current_obj.link_to_log %>
           </div>
 
-          <%# column offset 5 %>
           <% walltime = current_obj.walltime %>
           <% cputime = current_obj.cputime %>
-          <% if walltime and cputime %>
           <div class="col-md-3">
-              <%= render_runtime(walltime, false) %>
-              <% if cputime > 0 %> / <%= render_runtime(cputime, false) %> (<%= (cputime/walltime).round(1) %>&Cross;)<% end %>
-          </div>
+          <% if walltime and cputime %>
+            <%= render_runtime(walltime, false) %>
+            <% if cputime > 0 %> / <%= render_runtime(cputime, false) %> (<%= (cputime/walltime).round(1) %>&Cross;)<% end %>
           <% end %>
+          </div>
 
           <% queuetime = current_obj.queuedtime %>
           <% if queuetime %>
-            <%# column offset 5 %>
             <div class="col-md-6">
               Queued for <%= render_runtime(queuetime, false) %>.
             </div>
           <% elsif current_obj.show_child_summary %>
-            <%# column offset 8 %>
             <div class="col-md-3">
               <span class="task-summary-status">
                 <%= current_obj.child_summary_str %>
               </span>
             </div>
           <% elsif current_obj.is_finished? %>
-            <%# column offset 8 %>
             <div class="col-md-4 text-overflow-ellipsis">
               <% if current_obj.output %>
                 <%= link_to_arvados_object_if_readable(current_obj.output, 'Output data not available', link_text: "Output of #{current_obj.label}") %>
@@ -58,15 +51,14 @@
             </div>
           <% end %>
 
-          <% if current_obj.can_be_canceled? and @object.editable? %>
-            <%# column offset 11 %>
-            <div class="col-md-1 pipeline-instance-spacing">
+          <div class="col-md-1 pipeline-instance-spacing">
+          <% if current_obj.can_cancel? and @object.editable? %>
               <%= form_tag "#{current_obj.uri}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
                 <%= hidden_field_tag :return_to, url_for(@object) %>
                 <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-child-button"} %>
               <% end %>
-            </div>
           <% end %>
+          </div>
         <% end %>
       </div>
     </div>

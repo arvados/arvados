@@ -20,6 +20,22 @@ class ContainerWorkUnit < ProxyWorkUnit
     get(:container_image)
   end
 
+  def runtime_constraints
+    get(:runtime_constraints)
+  end
+
+  def priority
+    get(:priority)
+  end
+
+  def log_collection
+    get(:log)
+  end
+
+  def output
+    get(:output)
+  end
+
   def uri
     uuid = get(:uuid)
     "/containers/#{uuid}"

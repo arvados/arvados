@@ -498,6 +498,10 @@ module ApplicationHelper
     raw("<span class='utc-date' data-utc-date='#{date}' data-utc-date-opts='noseconds'>#{date}</span>")
   end
 
+  def render_time duration, use_words, round_to_min=true
+    render_runtime duration, use_words, round_to_min
+  end
+
 private
   def is_textile?( object, attr )
     is_textile = object.textile_attributes.andand.include?(attr)

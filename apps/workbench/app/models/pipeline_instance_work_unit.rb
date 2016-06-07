@@ -1,11 +1,11 @@
 class PipelineInstanceWorkUnit < ProxyWorkUnit
   def children
-    return self.my_children if self.my_children
+    return @my_children if @my_children
 
     items = []
 
     jobs = {}
-    results = Job.where(uuid: self.proxied.job_ids.values).results
+    results = Job.where(uuid: @proxied.job_ids.values).results
     results.each do |j|
       jobs[j.uuid] = j
     end
@@ -21,15 +21,15 @@ class PipelineInstanceWorkUnit < ProxyWorkUnit
             items << JobWorkUnit.new(job, name)
           end
         else
-          items << ProxyWorkUnit.new(c, name)
+          items << JobWorkUnit.new(c, name)
         end
       else
-        self.unreadable_children = true
+        @unreadable_children = true
         break
       end
     end
 
-    self.my_children = items
+    @my_children = items
   end
 
   def uri
