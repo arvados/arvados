@@ -23,7 +23,16 @@ class ArvadosContainer(object):
             "state": "Committed"
         }
         runtime_constraints = {}
-        mounts = {}
+        mounts = {
+            "/var/spool/cwl": {
+                "kind": "tmp"
+            },
+            "/tmp": {
+                "kind": "tmp"
+            }
+        }
+
+        # TODO mount normal inputs...
 
         if self.generatefiles:
             vwd = arvados.collection.Collection()
