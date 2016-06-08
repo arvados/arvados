@@ -196,7 +196,7 @@ func (dispatcher *Dispatcher) handleUpdate(container Container) {
 		return
 	}
 
-	if container.State == Queued {
+	if container.State == Queued && container.Priority > 0 {
 		// Try to take the lock
 		if err := dispatcher.UpdateState(container.UUID, Locked); err != nil {
 			return
