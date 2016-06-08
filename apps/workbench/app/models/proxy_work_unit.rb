@@ -221,7 +221,7 @@ class ProxyWorkUnit < WorkUnit
   end
 
   def show_runtime
-    runningtime = ApplicationController.helpers.determine_wallclock_runtime(if children.any? then children else [@proxied] end)
+    runningtime = ApplicationController.helpers.determine_wallclock_runtime(if children.any? then children else [self] end)
 
     walltime = 0
     if started_at
