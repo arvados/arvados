@@ -1,6 +1,8 @@
 {% include 'notebox_begin' %}
 
-On older Red Hat-based systems, these packages require the python27 Software Collection.  The Software Collection will be installed automatically as long as Software Collections are enabled on your system.
+{% if rh_version %} On CentOS {{rh_version}} and RHEL {{rh_version}},
+{% else %} On CentOS and RHEL,
+{% endif %} these packages require a more recent version of Python from Software Collections.  The Software Collection will be installed automatically as long as Software Collections are enabled on your system.
 
 To "enable Software Collections on CentOS":https://wiki.centos.org/AdditionalResources/Repositories/SCL, run:
 
