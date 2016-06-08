@@ -12,10 +12,6 @@ h3(#install_ruby_and_bundler). Install Ruby and Bundler
 
 {% include 'install_ruby_and_bundler' %}
 
-h3(#install_postgres). Install PostgreSQL
-
-{% include 'install_postgres' %}
-
 h2(#install_apiserver). Install API server and dependencies
 
 On a Debian-based system, install the following packages:
@@ -36,36 +32,11 @@ On a Red Hat-based system, install the following packages:
 
 h2(#configure). Set up the database
 
-Generate a new database password. Nobody ever needs to memorize it or type it, so we'll make a strong one:
+Configure the API server to connect to your database by updating @/etc/arvados/api/database.yml@. Replace the @xxxxxxxx@ database password placeholder with the "password you generated during database setup":install-postgresql.html#api. Be sure to update the @production@ section.
 
 <notextile>
-<pre><code>~$ <span class="userinput">ruby -e 'puts rand(2**128).to_s(36)'</span>
-6gqa1vu492idd7yca9tfandj3
+<pre><code>~$ <span class="userinput">editor /etc/arvados/api/database.yml</span>
 </code></pre></notextile>
-
-Create a new database user.
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo -u postgres createuser --encrypted -R -S --pwprompt arvados</span>
-[sudo] password for <b>you</b>: <span class="userinput">yourpassword</span>
-Enter password for new role: <span class="userinput">paste-password-you-generated</span>
-Enter it again: <span class="userinput">paste-password-again</span>
-</code></pre></notextile>
-
-{% assign pg_hba_path = "/opt/rh/postgresql92/root/var/lib/pgsql/data/pg_hba.conf" %}
-{% assign pg_service = "postgresql92-postgresql" %}
-{% include 'install_redhat_postgres_auth' %}
-
-Create the database:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo -u postgres createdb arvados_production -T template0 -E UTF8 -O arvados</span>
-</code></pre>
-</notextile>
-
-h2. Configure the database connection
-
-Edit @/etc/arvados/api/database.yml@ and replace the @xxxxxxxx@ database password placeholders with the PostgreSQL password you generated above.
 
 h2(#configure_application). Configure the API server
 
