@@ -1,0 +1,17 @@
+# Start a shell for the postgres user.  On CentOS 6:
+  <notextile><pre>~$ <span class="userinput">sudo -u postgres scl enable rh-postgresql94 bash</span>
+</pre></notextile> On any other distribution:
+  <notextile><pre>~$ <span class="userinput">sudo -u postgres bash</span></pre></notextile>
+# Generate a new database password:
+  <notextile><pre>$ <span class="userinput">ruby -e 'puts rand(2**128).to_s(36)'</span>
+yourgeneratedpassword
+</pre></notextile> Record this.  You'll need it when you set up the Rails server later.
+# Create a database user with the password you generated:
+  <notextile><pre><code>$ <span class="userinput">createuser --encrypted -R -S --pwprompt {{service_role}}</span>
+Enter password for new role: <span class="userinput">yourgeneratedpassword</span>
+Enter it again: <span class="userinput">yourgeneratedpassword</span>
+</code></pre></notextile>
+# Create a database owned by the new user:
+  <notextile><pre><code>$ <span class="userinput">createdb {{service_database}} -T template0 -E UTF8 -O {{service_role}}</span></code></pre></notextile>
+# Exit the postgres user shell:
+  <notextile><pre>$ <span class="userinput">exit</span></pre></notextile>

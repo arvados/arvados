@@ -148,6 +148,7 @@ navbar:
       - install/arvbox.html.textile.liquid
     - Manual installation:
       - install/install-manual-prerequisites.html.textile.liquid
+      - install/install-postgresql.html.textile.liquid
       - install/install-sso.html.textile.liquid
       - install/install-api-server.html.textile.liquid
       - install/install-arv-git-httpd.html.textile.liquid
