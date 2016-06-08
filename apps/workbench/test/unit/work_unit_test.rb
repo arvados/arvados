@@ -10,10 +10,10 @@ class WorkUnitTest < ActiveSupport::TestCase
     [PipelineInstance, 'pipeline_in_running_state', nil, 1, "Running", nil, 0.0],
     [PipelineInstance, 'has_component_with_completed_jobs', nil, 3, "Complete", true, 1.0],
     [PipelineInstance, 'pipeline_with_tagged_collection_input', "pwu", 1, "Ready", nil, 0.0],
-    [Container, 'requester', 'cwu', 3, "Complete", true, 1.0],
+    [Container, 'requester', 'cwu', 1, "Complete", true, 1.0],
   ].each do |type, fixture, label, num_children, state, success, progress|
     test "children of #{fixture}" do
-      use_token 'admin'
+      use_token 'active'
       obj = find_fixture(type, fixture)
       wu = obj.work_unit(label)
 
