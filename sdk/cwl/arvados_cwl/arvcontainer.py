@@ -1,3 +1,10 @@
+import logging
+import arvados.collection
+from cwltool.process import get_feature
+from .arvdocker import arv_docker_get_image
+
+logger = logging.getLogger('arvados.cwl-runner')
+
 class ArvadosContainer(object):
     """Submit and manage a Crunch job for executing a CWL CommandLineTool."""
 
@@ -7,12 +14,13 @@ class ArvadosContainer(object):
 
     def run(self, dry_run=False, pull_image=True, **kwargs):
         container_request = {
-            "command": self.command_line
+            "command": self.command_line,
             "owner_uuid": self.arvrunner.project_uuid,
             "name": self.name,
-            "output_path", "/var/spool/cwl",
-            "cwd", "/var/spool/cwl",
-            "priority": 1
+            "output_path": "/var/spool/cwl",
+            "cwd": "/var/spool/cwl",
+            "priority": 1,
+            "state": "Committed"
         }
         runtime_constraints = {}
         mounts = {}
@@ -46,7 +54,7 @@ class ArvadosContainer(object):
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if not docker_req:
-            docker_req = "arvados/jobs"
+            docker_req = {"dockerImageId": "arvados/jobs"}
 
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
                                                                      docker_req,

@@ -27,6 +27,8 @@ import threading
 from cwltool.load_tool import fetch_document
 from cwltool.builder import Builder
 import urlparse
+from .arvcontainer import ArvadosContainer
+from .arvdocker import arv_docker_get_image
 
 from cwltool.process import shortname, get_feature, adjustFiles, adjustFileObjs, scandeps
 from arvados.api import OrderedJsonModel
@@ -39,31 +41,6 @@ outdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.
 keepre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.keep\)=(.*)")
 
 
-def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid):
-    """Check if a Docker image is available in Keep, if not, upload it using arv-keepdocker."""
-
-    if "dockerImageId" not in dockerRequirement and "dockerPull" in dockerRequirement:
-        dockerRequirement["dockerImageId"] = dockerRequirement["dockerPull"]
-
-    sp = dockerRequirement["dockerImageId"].split(":")
-    image_name = sp[0]
-    image_tag = sp[1] if len(sp) > 1 else None
-
-    images = arvados.commands.keepdocker.list_images_in_arv(api_client, 3,
-                                                            image_name=image_name,
-                                                            image_tag=image_tag)
-
-    if not images:
-        imageId = cwltool.docker.get_image(dockerRequirement, pull_image)
-        args = ["--project-uuid="+project_uuid, image_name]
-        if image_tag:
-            args.append(image_tag)
-        logger.info("Uploading Docker image %s", ":".join(args[1:]))
-        arvados.commands.keepdocker.main(args, stdout=sys.stderr)
-
-    # XXX return PDH instead
-
-    return dockerRequirement["dockerImageId"]
 
 
 class CollectionFsAccess(cwltool.process.StdFsAccess):
@@ -588,12 +565,13 @@ class ArvPathMapper(cwltool.pathmapper.PathMapper):
 class ArvadosCommandTool(CommandLineTool):
     """Wrap cwltool CommandLineTool to override selected methods."""
 
-    def __init__(self, arvrunner, toolpath_object, **kwargs):
+    def __init__(self, arvrunner, toolpath_object, crunch2, **kwargs):
         super(ArvadosCommandTool, self).__init__(toolpath_object, **kwargs)
         self.arvrunner = arvrunner
+        self.crunch2 = crunch2
 
     def makeJobRunner(self):
-        if kwargs.get("crunch2"):
+        if self.crunch2:
             return ArvadosContainer(self.arvrunner)
         else:
             return ArvadosJob(self.arvrunner)
@@ -609,7 +587,7 @@ class ArvCwlRunner(object):
     """Execute a CWL tool or workflow, submit crunch jobs, wait for them to
     complete, and report output."""
 
-    def __init__(self, api_client):
+    def __init__(self, api_client, crunch2):
         self.api = api_client
         self.jobs = {}
         self.lock = threading.Lock()
@@ -618,10 +596,11 @@ class ArvCwlRunner(object):
         self.uploaded = {}
         self.num_retries = 4
         self.uuid = None
+        self.crunch2 = crunch2
 
     def arvMakeTool(self, toolpath_object, **kwargs):
         if "class" in toolpath_object and toolpath_object["class"] == "CommandLineTool":
-            return ArvadosCommandTool(self, toolpath_object, **kwargs)
+            return ArvadosCommandTool(self, toolpath_object, crunch2=self.crunch2, **kwargs)
         else:
             return cwltool.workflow.defaultMakeTool(toolpath_object, **kwargs)
 
@@ -709,7 +688,7 @@ class ArvCwlRunner(object):
         kwargs["fs_access"] = self.fs_access
         kwargs["enable_reuse"] = kwargs.get("enable_reuse")
 
-        if kwargs.get("crunch2"):
+        if self.crunch2:
             kwargs["outdir"] = "/var/spool/cwl"
             kwargs["tmpdir"] = "/tmp"
         else:
@@ -849,7 +828,7 @@ def main(args, stdout, stderr, api_client=None):
     try:
         if api_client is None:
             api_client=arvados.api('v1', model=OrderedJsonModel())
-        runner = ArvCwlRunner(api_client)
+        runner = ArvCwlRunner(api_client, crunch2=arvargs.crunch2)
     except Exception as e:
         logger.error(e)
         return 1
