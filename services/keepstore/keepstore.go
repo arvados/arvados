@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io/ioutil"
 	"log"
@@ -90,6 +92,7 @@ var (
 	TooLongError        = &KeepError{413, "Block is too large"}
 	MethodDisabledError = &KeepError{405, "Method disabled"}
 	ErrNotImplemented   = &KeepError{500, "Unsupported configuration"}
+	ErrClientDisconnect = &KeepError{503, "Client disconnected"}
 )
 
 func (e *KeepError) Error() string {
@@ -145,6 +148,7 @@ func main() {
 		blobSigningKeyFile   string
 		permissionTTLSec     int
 		pidfile              string
+		maxRequests          int
 	)
 	flag.StringVar(
 		&dataManagerTokenFile,
@@ -162,6 +166,11 @@ func main() {
 		"listen",
 		DefaultAddr,
 		"Listening address, in the form \"host:port\". e.g., 10.0.1.24:8000. Omit the host part to listen on all interfaces.")
+	flag.IntVar(
+		&maxRequests,
+		"max-requests",
+		0,
+		"Maximum concurrent requests. When this limit is reached, new requests will receive 503 responses. Note: this limit does not include idle connections from clients using HTTP keepalive, so it does not strictly limit the number of concurrent connections. (default 2 * max-buffers)")
 	flag.BoolVar(
 		&neverDelete,
 		"never-delete",
@@ -189,7 +198,7 @@ func main() {
 		&permissionTTLSec,
 		"blob-signature-ttl",
 		int(time.Duration(2*7*24*time.Hour).Seconds()),
-		"Lifetime of blob permission signatures. "+
+		"Lifetime of blob permission signatures. Modifying the ttl will invalidate all existing signatures. "+
 			"See services/api/config/application.default.yml.")
 	flag.BoolVar(
 		&flagSerializeIO,
@@ -302,13 +311,18 @@ func main() {
 		}
 	}
 
+	if maxRequests <= 0 {
+		maxRequests = maxBuffers * 2
+		log.Printf("-max-requests <1 or not specified; defaulting to maxBuffers * 2 == %d", maxRequests)
+	}
+
 	// Start a round-robin VolumeManager with the volumes we have found.
 	KeepVM = MakeRRVolumeManager(volumes)
 
-	// Tell the built-in HTTP server to direct all requests to the REST router.
-	loggingRouter := MakeLoggingRESTRouter()
-	http.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
-		loggingRouter.ServeHTTP(resp, req)
+	// Middleware stack: logger, maxRequests limiter, method handlers
+	http.Handle("/", &LoggingRESTRouter{
+		httpserver.NewRequestLimiter(maxRequests,
+			MakeRESTRouter()),
 	})
 
 	// Set up a TCP listener.
@@ -319,7 +333,7 @@ func main() {
 
 	// Initialize Pull queue and worker
 	keepClient := &keepclient.KeepClient{
-		Arvados:       nil,
+		Arvados:       &arvadosclient.ArvadosClient{},
 		Want_replicas: 1,
 		Client:        &http.Client{},
 	}

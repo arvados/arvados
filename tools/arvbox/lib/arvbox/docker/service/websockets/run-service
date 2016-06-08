@@ -1,0 +1,30 @@
+#!/bin/bash
+
+exec 2>&1
+set -ex -o pipefail
+
+. /usr/local/lib/arvbox/common.sh
+
+cd /usr/src/arvados/services/api
+export RAILS_ENV=development
+
+run_bundler --without=development
+
+if test "$1" = "--only-deps" ; then
+    exit
+fi
+
+flock /var/lib/arvados/api.lock /usr/local/lib/arvbox/api-setup.sh
+
+set +u
+if test "$1" = "--only-setup" ; then
+    exit
+fi
+
+export ARVADOS_WEBSOCKETS=ws-only
+
+# serving ssl directly doesn't work, gets
+# Rack app error: #<TypeError: no implicit conversion of Puma::MiniSSL::Socket into Integer>
+#exec bundle exec puma -b "ssl://0.0.0.0:${services[websockets]}?cert=/var/lib/arvados/self-signed.pem&key=/var/lib/arvados/self-signed.key"
+
+exec bundle exec puma -p${services[websockets]}

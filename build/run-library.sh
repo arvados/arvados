@@ -178,8 +178,8 @@ fpm_build () {
   # pip).
   PACKAGE=$1
   shift
-  # The name of the package to build.  Defaults to $PACKAGE.
-  PACKAGE_NAME=${1:-$PACKAGE}
+  # The name of the package to build.
+  PACKAGE_NAME=$1
   shift
   # Optional: the vendor of the package.  Should be "Curoverse, Inc." for
   # packages of our own software.  Passed to fpm --vendor.
@@ -192,6 +192,8 @@ fpm_build () {
   VERSION=$1
   shift
 
+  local default_iteration_value="$(default_iteration "$PACKAGE" "$VERSION")"
+
   case "$PACKAGE_TYPE" in
       python)
           # All Arvados Python2 packages depend on Python 2.7.
@@ -199,7 +201,12 @@ fpm_build () {
           set -- "$@" --python-bin python2.7 \
               --python-easyinstall "$EASY_INSTALL2" \
               --python-package-name-prefix "$PYTHON2_PKG_PREFIX" \
+              --prefix "$PYTHON2_PREFIX" \
+              --python-install-lib "$PYTHON2_INSTALL_LIB" \
+              --exclude "${PYTHON2_INSTALL_LIB#/}/tests" \
               --depends "$PYTHON2_PACKAGE"
+          # Fix --iteration for #9242.
+          default_iteration_value=$(($default_iteration_value + 1))
           ;;
       python3)
           # fpm does not actually support a python3 package type.  Instead
@@ -210,26 +217,28 @@ fpm_build () {
           set -- "$@" --python-bin python3 \
               --python-easyinstall "$EASY_INSTALL3" \
               --python-package-name-prefix "$PYTHON3_PKG_PREFIX" \
+              --prefix "$PYTHON3_PREFIX" \
+              --python-install-lib "$PYTHON3_INSTALL_LIB" \
+              --exclude "${PYTHON3_INSTALL_LIB#/}/tests" \
               --depends "$PYTHON3_PACKAGE"
+          # Fix --iteration for #9242.
+          default_iteration_value=$(($default_iteration_value + 1))
           ;;
   esac
 
   declare -a COMMAND_ARR=("fpm" "--maintainer=Ward Vandewege <ward@curoverse.com>" "-s" "$PACKAGE_TYPE" "-t" "$FORMAT")
-  if [ python = "$PACKAGE_TYPE" ]; then
-    COMMAND_ARR+=(--exclude=\*/{dist,site}-packages/tests/\*)
-    if [ deb = "$FORMAT" ]; then
-        # Dependencies are built from setup.py.  Since setup.py will never
-        # refer to Debian package iterations, it doesn't make sense to
-        # enforce those in the .deb dependencies.
-        COMMAND_ARR+=(--deb-ignore-iteration-in-dependencies)
-    fi
+  if [ python = "$PACKAGE_TYPE" ] && [ deb = "$FORMAT" ]; then
+      # Dependencies are built from setup.py.  Since setup.py will never
+      # refer to Debian package iterations, it doesn't make sense to
+      # enforce those in the .deb dependencies.
+      COMMAND_ARR+=(--deb-ignore-iteration-in-dependencies)
   fi
 
   if [[ "${DEBUG:-0}" != "0" ]]; then
     COMMAND_ARR+=('--verbose' '--log' 'info')
   fi
 
-  if [[ "$PACKAGE_NAME" != "$PACKAGE" ]]; then
+  if [[ -n "$PACKAGE_NAME" ]]; then
     COMMAND_ARR+=('-n' "$PACKAGE_NAME")
   fi
 
@@ -242,7 +251,7 @@ fpm_build () {
   fi
   # We can always add an --iteration here.  If another one is specified in $@,
   # that will take precedence, as desired.
-  COMMAND_ARR+=(--iteration "$(default_iteration "$PACKAGE" "$VERSION")")
+  COMMAND_ARR+=(--iteration "$default_iteration_value")
 
   # Append --depends X and other arguments specified by fpm-info.sh in
   # the package source dir. These are added last so they can override
@@ -256,6 +265,9 @@ fpm_build () {
       "${PACKAGE%%=/*}"
       # backports ("llfuse==0.41.1" => "backports/python-llfuse")
       "${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE%%[<=>]*}")
+  if [[ -n "$PACKAGE_NAME" ]]; then
+      fpm_dirs+=("${WORKSPACE}/backports/${PACKAGE_NAME}")
+  fi
   for pkgdir in "${fpm_dirs[@]}"; do
       fpminfo="$pkgdir/fpm-info.sh"
       if [[ -e "$fpminfo" ]]; then
@@ -341,4 +353,44 @@ install_package() {
   elif [[ "$FORMAT" == "rpm" ]]; then
     $SUDO yum -q -y install $PACKAGES
   fi
+}
+
+title () {
+    txt="********** $1 **********"
+    printf "\n%*s%s\n\n" $((($COLUMNS-${#txt})/2)) "" "$txt"
+}
+
+checkexit() {
+    if [[ "$1" != "0" ]]; then
+        title "!!!!!! $2 FAILED !!!!!!"
+        failures+=("$2 (`timer`)")
+    else
+        successes+=("$2 (`timer`)")
+    fi
+}
+
+timer_reset() {
+    t0=$SECONDS
+}
+
+timer() {
+    echo -n "$(($SECONDS - $t0))s"
+}
+
+report_outcomes() {
+    for x in "${successes[@]}"
+    do
+        echo "Pass: $x"
+    done
+
+    if [[ ${#failures[@]} == 0 ]]
+    then
+        echo "All test suites passed."
+    else
+        echo "Failures (${#failures[@]}):"
+        for x in "${failures[@]}"
+        do
+            echo "Fail: $x"
+        done
+    fi
 }

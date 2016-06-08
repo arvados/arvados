@@ -17,7 +17,7 @@ class BlobTest < ActiveSupport::TestCase
     'vu5wm9fpnwjyxfldw3vbo01mgjs75rgo7qioh8z8ij7jpyp8508okhgbbex3ceei' +
     '786u5rw2a9gx743dj3fgq2irk'
   @@known_signed_locator = 'acbd18db4cc2f85cedef654fccc4a4d8+3' +
-    '+A257f3f5f5f0a4e4626a18fc74bd42ec34dcb228a@7fffffff'
+    '+A89118b78732c33104a4d6231e8b5a5fa1e4301e3@7fffffff'
 
   test 'generate predictable invincible signature' do
     signed = Blob.sign_locator @@known_locator, {
@@ -117,5 +117,24 @@ class BlobTest < ActiveSupport::TestCase
     assert_raise Blob::InvalidSignatureError do
       Blob.verify_signature!(@@blob_locator, api_token: @@api_token, key: @@key)
     end
+  end
+
+  test 'signature changes when ttl changes' do
+    signed = Blob.sign_locator @@known_locator, {
+      api_token: @@known_token,
+      key: @@known_key,
+      expire: 0x7fffffff,
+    }
+
+    original_ttl = Rails.configuration.blob_signature_ttl
+    Rails.configuration.blob_signature_ttl = original_ttl*2
+    signed2 = Blob.sign_locator @@known_locator, {
+      api_token: @@known_token,
+      key: @@known_key,
+      expire: 0x7fffffff,
+    }
+    Rails.configuration.blob_signature_ttl = original_ttl
+
+    assert_not_equal signed, signed2
   end
 end

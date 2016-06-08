@@ -163,7 +163,7 @@ func TestTrashWorkerIntegration_TwoDifferentLocatorsInVolume1(t *testing.T) {
 }
 
 /* Allow default Trash Life time to be used. Thus, the newly created block
-   will not be deleted becuase its Mtime is within the trash life time.
+   will not be deleted because its Mtime is within the trash life time.
 */
 func TestTrashWorkerIntegration_SameLocatorInTwoVolumesWithDefaultTrashLifeTime(t *testing.T) {
 	neverDelete = false
@@ -290,26 +290,27 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 	expectEqualWithin(t, time.Second, 0, func() interface{} { return trashq.Status().InProgress })
 
 	// Verify Locator1 to be un/deleted as expected
-	data, _ := GetBlock(testData.Locator1)
+	buf := make([]byte, BlockSize)
+	size, err := GetBlock(testData.Locator1, buf, nil)
 	if testData.ExpectLocator1 {
-		if len(data) == 0 {
+		if size == 0 || err != nil {
 			t.Errorf("Expected Locator1 to be still present: %s", testData.Locator1)
 		}
 	} else {
-		if len(data) > 0 {
+		if size > 0 || err == nil {
 			t.Errorf("Expected Locator1 to be deleted: %s", testData.Locator1)
 		}
 	}
 
 	// Verify Locator2 to be un/deleted as expected
 	if testData.Locator1 != testData.Locator2 {
-		data, _ = GetBlock(testData.Locator2)
+		size, err = GetBlock(testData.Locator2, buf, nil)
 		if testData.ExpectLocator2 {
-			if len(data) == 0 {
+			if size == 0 || err != nil {
 				t.Errorf("Expected Locator2 to be still present: %s", testData.Locator2)
 			}
 		} else {
-			if len(data) > 0 {
+			if size > 0 || err == nil {
 				t.Errorf("Expected Locator2 to be deleted: %s", testData.Locator2)
 			}
 		}
@@ -321,7 +322,8 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 	if testData.DifferentMtimes {
 		locatorFoundIn := 0
 		for _, volume := range KeepVM.AllReadable() {
-			if _, err := volume.Get(testData.Locator1); err == nil {
+			buf := make([]byte, BlockSize)
+			if _, err := volume.Get(testData.Locator1, buf); err == nil {
 				locatorFoundIn = locatorFoundIn + 1
 			}
 		}

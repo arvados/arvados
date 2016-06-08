@@ -1,0 +1,75 @@
+<%# Work unit status %>
+
+<div class="container-fluid>
+  <div class="row-fluid">
+    <%# Need additional handling for main object display  %>
+    <% if @object.uuid == wu.uuid %>
+    <div class="container-fluid">
+      <div class="pull-right">
+        <div class="container-fluid">
+          <div class="row-fulid pipeline-instance-spacing">
+            <div class="col-md-8">
+            <% if wu.is_running? and wu.child_summary_str %>
+                <%= wu.child_summary_str %>
+            <% end %>
+            </div>
+            <div class="col-md-3">
+              <%= render partial: 'work_unit/progress', locals: {wu: wu} %>
+            </div>
+            <div class="col-md-1">
+              <% if wu.can_cancel? and @object.editable? %>
+                  <%= form_tag "#{wu.uri}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
+                    <%= hidden_field_tag :return_to, url_for(@object) %>
+                    <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-obj-button"} %>
+                  <% end %>
+              <% end %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <% end %>
+
+    <div class="col-md-10" >
+      <% if wu.is_paused? %>
+        <p>
+          This <%= wu.title %> is paused. Children that are already running
+          will continue to run, but no new processes will be submitted.
+        </p>
+      <% end %>
+
+      <%= raw(wu.show_runtime) %>
+    </div>
+  </div>
+
+<p>
+  <%= render(partial: 'work_unit/component_detail', locals: {current_obj: wu}) %>
+</p>
+
+<%# Work unit children %>
+
+<%
+  uuids = wu.children.collect {|c| c.uuid}.compact
+  if uuids.any?
+    resource_class = resource_class_for_uuid(uuids.first, friendly_name: true)
+    preload_objects_for_dataclass resource_class, uuids
+  end
+
+  collections = wu.children.collect {|j| j.output}.compact
+  collections.concat wu.children.collect {|j| j.docker_image}.uniq.compact
+  collections_pdhs = collections.select {|x| !(m = CollectionsHelper.match(x)).nil?}.uniq.compact
+  collections_uuids = collections - collections_pdhs
+  preload_collections_for_objects collections_uuids if collections_uuids.any?
+  preload_for_pdhs collections_pdhs if collections_pdhs.any?
+%>
+
+<% if wu.has_unreadable_children %>
+  <%= render(partial: "pipeline_instances/show_components_json",
+             locals: {error_name: "Unreadable components", backtrace: nil, wu: wu}) %>
+<% else %>
+  <% @descendent_count = 0 if !@descendent_count %>
+  <% wu.children.each do |c| %>
+    <% @descendent_count += 1 %>
+    <%= render(partial: 'work_unit/show_child', locals: {current_obj: c, i: @descendent_count, expanded: false}) %>
+  <% end %>
+<% end %>

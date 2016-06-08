@@ -499,6 +499,35 @@ job_in_publicly_accessible_project_but_other_objects_elsewhere:
   log: zzzzz-4zz18-fy296fx3hot09f7
   output: zzzzz-4zz18-bv31uwvy3neko21
 
+running_job_with_components:
+  uuid: zzzzz-8i9sb-with2components
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  created_at: <%= 3.minute.ago.to_s(:db) %>
+  started_at: <%= 3.minute.ago.to_s(:db) %>
+  finished_at: ~
+  script: hash
+  repository: active/foo
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
+  running: true
+  success: ~
+  output: ~
+  priority: 0
+  log: ~
+  is_locked_by_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  tasks_summary:
+    failed: 0
+    todo: 3
+    running: 1
+    done: 1
+  runtime_constraints: {}
+  state: Running
+  components:
+    component1: zzzzz-8i9sb-jyq01m7in1jlofj
+    component2: zzzzz-d1hrv-partdonepipelin
+
 # Test Helper trims the rest of the file
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper

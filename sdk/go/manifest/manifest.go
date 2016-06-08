@@ -265,7 +265,7 @@ func (m *Manifest) FileSegmentIterByName(filepath string) <-chan *FileSegment {
 	return ch
 }
 
-// Blocks may appear mulitple times within the same manifest if they
+// Blocks may appear multiple times within the same manifest if they
 // are used by multiple files. In that case this Iterator will output
 // the same block multiple times.
 //

@@ -86,11 +86,11 @@ done
 set -e
 
 if [[ -n "$test_packages" ]]; then
-    if [[ -n "$(find $WORKSPACE/packages/$TARGET -name *.rpm)" ]] ; then
+    if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.rpm')" ]] ; then
         createrepo $WORKSPACE/packages/$TARGET
     fi
 
-    if [[ -n "$(find $WORKSPACE/packages/$TARGET -name *.deb)" ]] ; then
+    if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.deb')" ]] ; then
         (cd $WORKSPACE/packages/$TARGET
          dpkg-scanpackages .  2> >(grep -v 'warning' 1>&2) | gzip -c > Packages.gz
         )
@@ -128,6 +128,8 @@ if test -z "$packages" ; then
         arvados-src
         arvados-workbench
         crunchstat
+        keep-balance
+        keep-block-check
         keepproxy
         keep-rsync
         keepstore
@@ -137,11 +139,11 @@ if test -z "$packages" ; then
     case "$TARGET" in
         centos6)
             packages="$packages python27-python-arvados-fuse
-                  python27-python-arvados-python-client"
+                  python27-python-arvados-python-client python27-python-arvados-cwl-runner"
             ;;
         *)
             packages="$packages python-arvados-fuse
-                  python-arvados-python-client"
+                  python-arvados-python-client python-arvados-cwl-runner"
             ;;
     esac
 fi

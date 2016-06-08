@@ -49,11 +49,11 @@ type GetCollectionsParams struct {
 
 // SdkCollectionInfo holds collection info from api
 type SdkCollectionInfo struct {
-	UUID         string    `json:"uuid"`
-	OwnerUUID    string    `json:"owner_uuid"`
-	Redundancy   int       `json:"redundancy"`
-	ModifiedAt   time.Time `json:"modified_at"`
-	ManifestText string    `json:"manifest_text"`
+	UUID                 string    `json:"uuid"`
+	OwnerUUID            string    `json:"owner_uuid"`
+	ReplicationDesired   int       `json:"replication_desired"`
+	ModifiedAt           time.Time `json:"modified_at"`
+	ManifestText         string    `json:"manifest_text"`
 }
 
 // SdkCollectionList lists collections from api
@@ -125,14 +125,14 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections, err e
 	fieldsWanted := []string{"manifest_text",
 		"owner_uuid",
 		"uuid",
-		"redundancy",
+		"replication_desired",
 		"modified_at"}
 
 	sdkParams := arvadosclient.Dict{
 		"select":  fieldsWanted,
 		"order":   []string{"modified_at ASC", "uuid ASC"},
 		"filters": [][]string{[]string{"modified_at", ">=", "1900-01-01T00:00:00Z"}},
-		"offset": 0}
+		"offset":  0}
 
 	if params.BatchSize > 0 {
 		sdkParams["limit"] = params.BatchSize
@@ -262,12 +262,12 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections, err e
 	}
 	if totalCollections < finalNumberOfCollectionsAvailable {
 		err = fmt.Errorf("API server indicates a total of %d collections "+
-				"available up to %v, but we only retrieved %d. "+
-				"Refusing to continue as this could indicate an "+
-				"otherwise undetected failure.",
-				finalNumberOfCollectionsAvailable, 
-				sdkParams["filters"].([][]string)[0][2],
-				totalCollections)
+			"available up to %v, but we only retrieved %d. "+
+			"Refusing to continue as this could indicate an "+
+			"otherwise undetected failure.",
+			finalNumberOfCollectionsAvailable,
+			sdkParams["filters"].([][]string)[0][2],
+			totalCollections)
 		return
 	}
 
@@ -297,7 +297,7 @@ func ProcessCollections(arvLogger *logger.Logger,
 	for _, sdkCollection := range receivedCollections {
 		collection := Collection{UUID: StrCopy(sdkCollection.UUID),
 			OwnerUUID:         StrCopy(sdkCollection.OwnerUUID),
-			ReplicationLevel:  sdkCollection.Redundancy,
+			ReplicationLevel:  sdkCollection.ReplicationDesired,
 			BlockDigestToSize: make(map[blockdigest.BlockDigest]int)}
 
 		if sdkCollection.ModifiedAt.IsZero() {

@@ -4,7 +4,6 @@ package main
 // LoggingResponseWriter
 
 import (
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"strings"
@@ -20,51 +19,59 @@ type LoggingResponseWriter struct {
 	sentHdr      time.Time
 }
 
-// WriteHeader writes header to ResponseWriter
-func (loggingWriter *LoggingResponseWriter) WriteHeader(code int) {
-	if loggingWriter.sentHdr == zeroTime {
-		loggingWriter.sentHdr = time.Now()
+// CloseNotify implements http.CloseNotifier.
+func (resp *LoggingResponseWriter) CloseNotify() <-chan bool {
+	wrapped, ok := resp.ResponseWriter.(http.CloseNotifier)
+	if !ok {
+		// If upstream doesn't implement CloseNotifier, we can
+		// satisfy the interface by returning a channel that
+		// never sends anything (the interface doesn't
+		// guarantee that anything will ever be sent on the
+		// channel even if the client disconnects).
+		return nil
 	}
-	loggingWriter.Status = code
-	loggingWriter.ResponseWriter.WriteHeader(code)
+	return wrapped.CloseNotify()
+}
+
+// WriteHeader writes header to ResponseWriter
+func (resp *LoggingResponseWriter) WriteHeader(code int) {
+	if resp.sentHdr == zeroTime {
+		resp.sentHdr = time.Now()
+	}
+	resp.Status = code
+	resp.ResponseWriter.WriteHeader(code)
 }
 
 var zeroTime time.Time
 
-func (loggingWriter *LoggingResponseWriter) Write(data []byte) (int, error) {
-	if loggingWriter.Length == 0 && len(data) > 0 && loggingWriter.sentHdr == zeroTime {
-		loggingWriter.sentHdr = time.Now()
+func (resp *LoggingResponseWriter) Write(data []byte) (int, error) {
+	if resp.Length == 0 && len(data) > 0 && resp.sentHdr == zeroTime {
+		resp.sentHdr = time.Now()
 	}
-	loggingWriter.Length += len(data)
-	if loggingWriter.Status >= 400 {
-		loggingWriter.ResponseBody += string(data)
+	resp.Length += len(data)
+	if resp.Status >= 400 {
+		resp.ResponseBody += string(data)
 	}
-	return loggingWriter.ResponseWriter.Write(data)
+	return resp.ResponseWriter.Write(data)
 }
 
 // LoggingRESTRouter is used to add logging capabilities to mux.Router
 type LoggingRESTRouter struct {
-	router *mux.Router
+	router http.Handler
 }
 
-// MakeLoggingRESTRouter initializes LoggingRESTRouter
-func MakeLoggingRESTRouter() *LoggingRESTRouter {
-	router := MakeRESTRouter()
-	return (&LoggingRESTRouter{router})
-}
-
-func (loggingRouter *LoggingRESTRouter) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (loggingRouter *LoggingRESTRouter) ServeHTTP(wrappedResp http.ResponseWriter, req *http.Request) {
 	t0 := time.Now()
-	loggingWriter := LoggingResponseWriter{http.StatusOK, 0, resp, "", zeroTime}
-	loggingRouter.router.ServeHTTP(&loggingWriter, req)
-	statusText := http.StatusText(loggingWriter.Status)
-	if loggingWriter.Status >= 400 {
-		statusText = strings.Replace(loggingWriter.ResponseBody, "\n", "", -1)
+	resp := LoggingResponseWriter{http.StatusOK, 0, wrappedResp, "", zeroTime}
+	loggingRouter.router.ServeHTTP(&resp, req)
+	statusText := http.StatusText(resp.Status)
+	if resp.Status >= 400 {
+		statusText = strings.Replace(resp.ResponseBody, "\n", "", -1)
 	}
 	now := time.Now()
 	tTotal := now.Sub(t0)
-	tLatency := loggingWriter.sentHdr.Sub(t0)
-	tResponse := now.Sub(loggingWriter.sentHdr)
-	log.Printf("[%s] %s %s %d %.6fs %.6fs %.6fs %d %d \"%s\"", req.RemoteAddr, req.Method, req.URL.Path[1:], req.ContentLength, tTotal.Seconds(), tLatency.Seconds(), tResponse.Seconds(), loggingWriter.Status, loggingWriter.Length, statusText)
+	tLatency := resp.sentHdr.Sub(t0)
+	tResponse := now.Sub(resp.sentHdr)
+	log.Printf("[%s] %s %s %d %.6fs %.6fs %.6fs %d %d \"%s\"", req.RemoteAddr, req.Method, req.URL.Path[1:], req.ContentLength, tTotal.Seconds(), tLatency.Seconds(), tResponse.Seconds(), resp.Status, resp.Length, statusText)
 
 }

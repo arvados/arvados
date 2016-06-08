@@ -13,6 +13,9 @@ const (
 	FooBarDirCollection   = "zzzzz-4zz18-foonbarfilesdir"
 	FooPdh                = "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"
 	HelloWorldPdh         = "55713e6a34081eb03609e7ad5fcad129+62"
+
+	Dispatch1Token    = "kwi8oowusvbutahacwk2geulqewy5oaqmpalczfna4b6bb0hfw"
+	Dispatch1AuthUUID = "zzzzz-gj3su-k9dvestay1plssr"
 )
 
 // A valid manifest designed to test various edge cases and parsing
@@ -33,3 +36,5 @@ var (
 	}
 	MD5CollisionMD5 = "cee9a457e790cf20d4bdaa6d69f01e41"
 )
+
+const BlobSigningKey = "zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc"

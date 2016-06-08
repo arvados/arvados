@@ -26,7 +26,7 @@ require 'mocha/mini_test'
 
 module ArvadosTestSupport
   def json_response
-    Oj.load response.body
+    Oj.strict_load response.body
   end
 
   def api_token(api_client_auth_name)
@@ -36,6 +36,10 @@ module ArvadosTestSupport
   def auth(api_client_auth_name)
     {'HTTP_AUTHORIZATION' => "OAuth2 #{api_token(api_client_auth_name)}"}
   end
+
+  def show_errors model
+    return lambda { model.errors.full_messages.inspect }
+  end
 end
 
 class ActiveSupport::TestCase
@@ -43,6 +47,10 @@ class ActiveSupport::TestCase
   fixtures :all
 
   include ArvadosTestSupport
+
+  setup do
+    Rails.logger.warn "\n\n#{'=' * 70}\n#{self.class}\##{method_name}\n#{'-' * 70}\n\n"
+  end
 
   teardown do
     Thread.current[:api_client_ip_address] = nil
@@ -102,16 +110,20 @@ class ActiveSupport::TestCase
     ArvadosApiToken.new.call("rack.input" => "",
                              "HTTP_AUTHORIZATION" => "OAuth2 #{t}")
   end
+
+  def slow_test
+    skip "RAILS_TEST_SHORT is set" unless (ENV['RAILS_TEST_SHORT'] || '').empty?
+  end
 end
 
 class ActionController::TestCase
   setup do
-    @counter = 0
+    @test_counter = 0
   end
 
   def check_counter action
-    @counter += 1
-    if @counter == 2
+    @test_counter += 1
+    if @test_counter == 2
       assert_equal 1, 2, "Multiple actions in functional test"
     end
   end

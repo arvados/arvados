@@ -15,6 +15,11 @@ try:
 except ImportError:
     tagger = egg_info_cmd.egg_info
 
+short_tests_only = False
+if '--short-tests-only' in sys.argv:
+    short_tests_only = True
+    sys.argv.remove('--short-tests-only')
+
 setup(name='arvados-python-client',
       version='0.1',
       description='Arvados client library',
@@ -41,6 +46,7 @@ setup(name='arvados-python-client',
       install_requires=[
           'google-api-python-client==1.4.2',
           'oauth2client >=1.4.6, <2',
+          'pyasn1-modules==0.0.5',
           'ciso8601',
           'httplib2',
           'pycurl >=7.19.5.1, <7.21.5',

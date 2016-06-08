@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/AdRoll/goamz/aws"
@@ -153,20 +154,18 @@ func (v *S3Volume) Check() error {
 	return nil
 }
 
-func (v *S3Volume) Get(loc string) ([]byte, error) {
+func (v *S3Volume) Get(loc string, buf []byte) (int, error) {
 	rdr, err := v.Bucket.GetReader(loc)
 	if err != nil {
-		return nil, v.translateError(err)
+		return 0, v.translateError(err)
 	}
 	defer rdr.Close()
-	buf := bufs.Get(BlockSize)
 	n, err := io.ReadFull(rdr, buf)
 	switch err {
 	case nil, io.EOF, io.ErrUnexpectedEOF:
-		return buf[:n], nil
+		return n, nil
 	default:
-		bufs.Put(buf)
-		return nil, v.translateError(err)
+		return 0, v.translateError(err)
 	}
 }
 
@@ -312,7 +311,8 @@ func (v *S3Volume) isKeepBlock(s string) bool {
 func (v *S3Volume) translateError(err error) error {
 	switch err := err.(type) {
 	case *s3.Error:
-		if err.StatusCode == http.StatusNotFound && err.Code == "NoSuchKey" {
+		if (err.StatusCode == http.StatusNotFound && err.Code == "NoSuchKey") ||
+			strings.Contains(err.Error(), "Not Found") {
 			return os.ErrNotExist
 		}
 		// Other 404 errors like NoSuchVersion and

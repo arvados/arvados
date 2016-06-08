@@ -21,6 +21,7 @@ services=(
   [keepstore1]=25108
   [ssh]=22
   [doc]=8001
+  [websockets]=8002
 )
 
 if test "$(id arvbox -u 2>/dev/null)" = 0 ; then
@@ -37,13 +38,13 @@ run_bundler() {
     else
         frozen=""
     fi
-    if ! flock /var/lib/arvados/gems.lock bundle install --path $GEM_HOME --local --no-deployment $frozen "$@" ; then
-        flock /var/lib/arvados/gems.lock bundle install --path $GEM_HOME --no-deployment $frozen "$@"
+    if ! flock /var/lib/gems/gems.lock bundle install --path $GEM_HOME --local --no-deployment $frozen "$@" ; then
+        flock /var/lib/gems/gems.lock bundle install --path $GEM_HOME --no-deployment $frozen "$@"
     fi
 }
 
 pip_install() {
-    pushd /var/lib/arvados/pip
+    pushd /var/lib/pip
     for p in $(ls http*.tar.gz) ; do
         if test -f $p ; then
             ln -sf $p $(echo $p | sed 's/.*%2F\(.*\)/\1/')
@@ -56,7 +57,7 @@ pip_install() {
     done
     popd
 
-    if ! pip install --no-index --find-links /var/lib/arvados/pip $1 ; then
+    if ! pip install --no-index --find-links /var/lib/pip $1 ; then
         pip install $1
     fi
 }

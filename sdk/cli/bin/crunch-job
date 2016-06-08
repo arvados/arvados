@@ -416,8 +416,17 @@ if ($docker_locator = $Job->{docker_image_locator}) {
   Log (undef, "docker image hash is $docker_hash");
   $docker_stream =~ s/^\.//;
   my $docker_install_script = qq{
-if ! $docker_bin images -q --no-trunc --all | grep -qxF \Q$docker_hash\E; then
-    arv-get \Q$docker_locator$docker_stream/$docker_hash.tar\E | $docker_bin load
+if $docker_bin images -q --no-trunc --all | grep -xF \Q$docker_hash\E >/dev/null; then
+    exit 0
+fi
+declare -a exit_codes=("\${PIPESTATUS[@]}")
+if [ 0 != "\${exit_codes[0]}" ]; then
+   exit "\${exit_codes[0]}"  # `docker images` failed
+elif [ 1 != "\${exit_codes[1]}" ]; then
+   exit "\${exit_codes[1]}"  # `grep` encountered an error
+else
+   # Everything worked fine, but grep didn't find the image on this host.
+   arv-get \Q$docker_locator$docker_stream/$docker_hash.tar\E | $docker_bin load
 fi
 };
 
@@ -852,7 +861,11 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
         .q{&& MEM=$(awk '($1 == "MemTotal:"){print $2}' </proc/meminfo) }
         .q{&& SWAP=$(awk '($1 == "SwapTotal:"){print $2}' </proc/meminfo) }
         ."&& MEMLIMIT=\$(( (\$MEM * 95) / ($ENV{CRUNCH_NODE_SLOTS} * 100) )) "
-        ."&& let SWAPLIMIT=\$MEMLIMIT+\$SWAP ";
+        ."&& let SWAPLIMIT=\$MEMLIMIT+\$SWAP "
+        .q{&& declare -a VOLUMES=() }
+        .q{&& if which crunchrunner >/dev/null ; then VOLUMES+=("--volume=$(which crunchrunner):/usr/local/bin/crunchrunner") ; fi }
+        .q{&& if test -f /etc/ssl/certs/ca-certificates.crt ; then VOLUMES+=("--volume=/etc/ssl/certs/ca-certificates.crt:/etc/arvados/ca-certificates.crt") ; }
+        .q{elif test -f /etc/pki/tls/certs/ca-bundle.crt ; then VOLUMES+=("--volume=/etc/pki/tls/certs/ca-bundle.crt:/etc/arvados/ca-certificates.crt") ; fi };
 
     $command .= "&& exec arv-mount --read-write --mount-by-pdh=by_pdh --mount-tmp=tmp --crunchstat-interval=10 --allow-other $arv_file_cache \Q$keep_mnt\E --exec ";
     $ENV{TASK_KEEPMOUNT} = "$keep_mnt/by_pdh";
@@ -916,6 +929,10 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
       #
       # For now, use the same approach as TASK_WORK above.
       $ENV{"JOB_WORK"} = "/tmp/crunch-job-work";
+
+      # Bind mount the crunchrunner binary and host TLS certificates file into
+      # the container.
+      $command .= '"${VOLUMES[@]}" ';
 
       while (my ($env_key, $env_val) = each %ENV)
       {
@@ -1144,13 +1161,6 @@ sub reapchildren
                     . "."
                     . $slot[$proc{$pid}->{slot}]->{cpu});
     my $jobstepidx = $proc{$pid}->{jobstepidx};
-
-    if (!WIFEXITED($childstatus))
-    {
-      # child did not exit (may be temporarily stopped)
-      Log ($jobstepidx, "child $pid did not actually exit in reapchildren, ignoring for now.");
-      next;
-    }
 
     $children_reaped++;
     my $elapsed = time - $proc{$pid}->{time};
@@ -1459,6 +1469,9 @@ sub readfrompipes
 sub preprocess_stderr
 {
   my $jobstepidx = shift;
+  # slotindex is only defined for children running Arvados job tasks.
+  # Be prepared to handle the undef case (for setup srun calls, etc.).
+  my $job_slot_index = $jobstep[$jobstepidx]->{slotindex};
 
   while ($jobstep[$jobstepidx]->{stderr} =~ /^(.*?)\n/) {
     my $line = $1;
@@ -1468,19 +1481,16 @@ sub preprocess_stderr
       # whoa.
       $main::please_freeze = 1;
     }
-    elsif (!exists $jobstep[$jobstepidx]->{slotindex}) {
-      # Skip the following tempfail checks if this srun proc isn't
-      # attached to a particular worker slot.
-    }
     elsif ($line =~ /srun: error: (Node failure on|Aborting, .*\bio error\b)/) {
-      my $job_slot_index = $jobstep[$jobstepidx]->{slotindex};
-      $slot[$job_slot_index]->{node}->{fail_count}++;
       $jobstep[$jobstepidx]->{tempfail} = 1;
-      ban_node_by_slot($job_slot_index);
+      if (defined($job_slot_index)) {
+        $slot[$job_slot_index]->{node}->{fail_count}++;
+        ban_node_by_slot($job_slot_index);
+      }
     }
     elsif ($line =~ /srun: error: (Unable to create job step|.*: Communication connection failure)/) {
       $jobstep[$jobstepidx]->{tempfail} = 1;
-      ban_node_by_slot($jobstep[$jobstepidx]->{slotindex});
+      ban_node_by_slot($job_slot_index) if (defined($job_slot_index));
     }
     elsif ($line =~ /\bKeep(Read|Write|Request)Error:/) {
       $jobstep[$jobstepidx]->{tempfail} = 1;
@@ -1970,6 +1980,11 @@ sub srun_sync
   delete $reader{$jobstepidx};
 
   my $j = pop @jobstep;
+  # If the srun showed signs of tempfail, ensure the caller treats that as a
+  # failure case.
+  if ($main::please_freeze || $j->{tempfail}) {
+    $exited ||= 255;
+  }
   return ($exited, $j->{stdout_captured}, $j->{stderr_captured});
 }
 

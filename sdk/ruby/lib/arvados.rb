@@ -209,7 +209,7 @@ class Arvados
                 :parameters => parameters,
                 :body_object => body,
                 :headers => {
-                  authorization: 'OAuth2 '+arvados.config['ARVADOS_API_TOKEN']
+                  :authorization => 'OAuth2 '+arvados.config['ARVADOS_API_TOKEN']
                 })
       resp = JSON.parse result.body, :symbolize_names => true
       if resp[:errors]
@@ -217,7 +217,7 @@ class Arvados
       elsif resp[:uuid] and resp[:etag]
         self.new(resp)
       elsif resp[:items].is_a? Array
-        resp.merge(items: resp[:items].collect do |i|
+        resp.merge(:items => resp[:items].collect do |i|
                      self.new(i)
                    end)
       else

@@ -2,6 +2,9 @@
 
 . `dirname "$(readlink -f "$0")"`/libcloud-pin
 
+COLUMNS=80
+. `dirname "$(readlink -f "$0")"`/run-library.sh
+
 read -rd "\000" helpmessage <<EOF
 $(basename $0): Install and test Arvados components.
 
@@ -23,6 +26,7 @@ Options:
                You should provide GOPATH, GEMHOME, and VENVDIR options
                from a previous invocation if you use this option.
 --only-install Run specific install step
+--short        Skip (or scale down) some slow tests.
 WORKSPACE=path Arvados source tree to test.
 CONFIGSRC=path Dir with api server config files to copy into source tree.
                (If none given, leave config files alone in source tree.)
@@ -66,6 +70,7 @@ services/fuse
 services/keep-web
 services/keepproxy
 services/keepstore
+services/keep-balance
 services/login-sync
 services/nodemanager
 services/crunch-run
@@ -75,8 +80,10 @@ sdk/cli
 sdk/pam
 sdk/python
 sdk/ruby
+sdk/go/arvados
 sdk/go/arvadosclient
 sdk/go/keepclient
+sdk/go/httpserver
 sdk/go/manifest
 sdk/go/blockdigest
 sdk/go/streamer
@@ -84,6 +91,7 @@ sdk/go/crunchrunner
 sdk/cwl
 tools/crunchstat-summary
 tools/keep-rsync
+tools/keep-block-check
 
 EOF
 
@@ -101,8 +109,7 @@ PYTHONPATH=
 GEMHOME=
 PERLINSTALLBASE=
 
-COLUMNS=80
-
+short=
 skip_install=
 temp=
 temp_preserve=
@@ -122,24 +129,6 @@ fatal() {
     clear_temp
     echo >&2 "Fatal: $* (encountered in ${FUNCNAME[1]} at ${BASH_SOURCE[1]} line ${BASH_LINENO[0]})"
     exit 1
-}
-
-report_outcomes() {
-    for x in "${successes[@]}"
-    do
-        echo "Pass: $x"
-    done
-
-    if [[ ${#failures[@]} == 0 ]]
-    then
-        echo "All test suites passed."
-    else
-        echo "Failures (${#failures[@]}):"
-        for x in "${failures[@]}"
-        do
-            echo "Fail: $x"
-        done
-    fi
 }
 
 exit_cleanly() {
@@ -163,6 +152,8 @@ sanity_checks() {
     echo -n 'go: '
     go version \
         || fatal "No go binary. See http://golang.org/doc/install"
+    [[ $(go version) =~ go1.([0-9]+) ]] && [[ ${BASH_REMATCH[1]} -ge 6 ]] \
+        || fatal "Go >= 1.6 required. See http://golang.org/doc/install"
     echo -n 'gcc: '
     gcc --version | egrep ^gcc \
         || fatal "No gcc. Try: apt-get install build-essential"
@@ -218,6 +209,9 @@ do
             ;;
         --only)
             only="$1"; skip[$1]=""; shift
+            ;;
+        --short)
+            short=1
             ;;
         --skip-install)
             skip_install=1
@@ -401,7 +395,12 @@ setup_virtualenv() {
     if ! [[ -e "$venvdest/bin/activate" ]] || ! [[ -e "$venvdest/bin/pip" ]]; then
         virtualenv --setuptools "$@" "$venvdest" || fatal "virtualenv $venvdest failed"
     fi
-    "$venvdest/bin/pip" install 'setuptools>=18' 'pip>=7'
+    if [[ $("$venvdest/bin/python" --version 2>&1) =~ \ 3\.[012]\. ]]; then
+        # pip 8.0.0 dropped support for python 3.2, e.g., debian wheezy
+        "$venvdest/bin/pip" install 'setuptools>=18' 'pip>=7,<8'
+    else
+        "$venvdest/bin/pip" install 'setuptools>=18' 'pip>=7'
+    fi
     # ubuntu1404 can't seem to install mock via tests_require, but it can do this.
     "$venvdest/bin/pip" install 'mock>=1.0' 'pbr<1.7.0'
 }
@@ -470,23 +469,6 @@ then
     gem install --user-install bundler || fatal 'Could not install bundler'
 fi
 
-checkexit() {
-    if [[ "$1" != "0" ]]; then
-        title "!!!!!! $2 FAILED !!!!!!"
-        failures+=("$2 (`timer`)")
-    else
-        successes+=("$2 (`timer`)")
-    fi
-}
-
-timer_reset() {
-    t0=$SECONDS
-}
-
-timer() {
-    echo -n "$(($SECONDS - $t0))s"
-}
-
 retry() {
     while ! ${@} && [[ "$retry" == 1 ]]
     do
@@ -516,28 +498,29 @@ do_test_once() {
             # before trying "go test". Otherwise, coverage-reporting
             # mode makes Go show the wrong line numbers when reporting
             # compilation errors.
+            go get -t "git.curoverse.com/arvados.git/$1" || return 1
             if [[ -n "${testargs[$1]}" ]]
             then
                 # "go test -check.vv giturl" doesn't work, but this
                 # does:
-                cd "$WORKSPACE/$1" && \
-                    go get -t "git.curoverse.com/arvados.git/$1" && \
-                    go test ${coverflags[@]} ${testargs[$1]}
+                cd "$WORKSPACE/$1" && go test ${short:+-short} ${testargs[$1]}
             else
                 # The above form gets verbose even when testargs is
                 # empty, so use this form in such cases:
-                go get -t "git.curoverse.com/arvados.git/$1" && \
-                    go test ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
+                go test ${short:+-short} ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
             fi
             result="$?"
-            go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"
-            rm "$WORKSPACE/tmp/.$covername.tmp"
+            if [[ -f "$WORKSPACE/tmp/.$covername.tmp" ]]
+            then
+                go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"
+                rm "$WORKSPACE/tmp/.$covername.tmp"
+            fi
         elif [[ "$2" == "pip" ]]
         then
             # $3 can name a path directory for us to use, including trailing
             # slash; e.g., the bin/ subdirectory of a virtualenv.
             cd "$WORKSPACE/$1" \
-                && "${3}python" setup.py test ${testargs[$1]}
+                && "${3}python" setup.py ${short:+--short-tests-only} test ${testargs[$1]}
         elif [[ "$2" != "" ]]
         then
             "test_$2"
@@ -597,11 +580,6 @@ do_install_once() {
     else
         title "Skipping $1 install"
     fi
-}
-
-title () {
-    txt="********** $1 **********"
-    printf "\n%*s%s\n\n" $((($COLUMNS-${#txt})/2)) "" "$txt"
 }
 
 bundle_install_trylocal() {
@@ -729,8 +707,10 @@ do_install services/api apiserver
 
 declare -a gostuff
 gostuff=(
+    sdk/go/arvados
     sdk/go/arvadosclient
     sdk/go/blockdigest
+    sdk/go/httpserver
     sdk/go/manifest
     sdk/go/streamer
     sdk/go/crunchrunner
@@ -739,6 +719,7 @@ gostuff=(
     services/keep-web
     services/keepstore
     sdk/go/keepclient
+    services/keep-balance
     services/keepproxy
     services/datamanager/summary
     services/datamanager/collection
@@ -748,6 +729,7 @@ gostuff=(
     services/crunch-dispatch-slurm
     services/crunch-run
     tools/keep-rsync
+    tools/keep-block-check
     )
 for g in "${gostuff[@]}"
 do
@@ -778,7 +760,7 @@ stop_services
 test_apiserver() {
     rm -f "$WORKSPACE/services/api/git-commit.version"
     cd "$WORKSPACE/services/api" \
-        && RAILS_ENV=test bundle exec rake test TESTOPTS=-v ${testargs[services/api]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=-v ${testargs[services/api]}
 }
 do_test services/api apiserver
 
@@ -824,21 +806,21 @@ done
 test_workbench() {
     start_nginx_proxy_services \
         && cd "$WORKSPACE/apps/workbench" \
-        && RAILS_ENV=test bundle exec rake test TESTOPTS=-v ${testargs[apps/workbench]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=-v ${testargs[apps/workbench]}
 }
 do_test apps/workbench workbench
 
 test_workbench_benchmark() {
     start_nginx_proxy_services \
         && cd "$WORKSPACE/apps/workbench" \
-        && RAILS_ENV=test bundle exec rake test:benchmark ${testargs[apps/workbench_benchmark]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:benchmark ${testargs[apps/workbench_benchmark]}
 }
 do_test apps/workbench_benchmark workbench_benchmark
 
 test_workbench_profile() {
     start_nginx_proxy_services \
         && cd "$WORKSPACE/apps/workbench" \
-        && RAILS_ENV=test bundle exec rake test:profile ${testargs[apps/workbench_profile]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:profile ${testargs[apps/workbench_profile]}
 }
 do_test apps/workbench_profile workbench_profile
 

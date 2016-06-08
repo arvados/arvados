@@ -14,6 +14,7 @@ from .. import \
     arvados_node_missing, RetryMixin
 from ...clientactor import _notify_subscribers
 from ... import config
+from .transitions import transitions
 
 class ComputeNodeStateChangeBase(config.actor_class, RetryMixin):
     """Base class for actors that change a compute node's state.
@@ -208,22 +209,21 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         self._logger.info("Shutdown cancelled: %s.", reason)
         self._finished(success_flag=False)
 
-    def _stop_if_window_closed(orig_func):
+    def _cancel_on_exception(orig_func):
         @functools.wraps(orig_func)
-        def stop_wrapper(self, *args, **kwargs):
-            if (self.cancellable and
-                  (self._monitor.shutdown_eligible().get() is not True)):
-                self._later.cancel_shutdown(self.WINDOW_CLOSED)
-                return None
-            else:
+        def finish_wrapper(self, *args, **kwargs):
+            try:
                 return orig_func(self, *args, **kwargs)
-        return stop_wrapper
+            except Exception as error:
+                self._logger.error("Actor error %s", error)
+                self._later.cancel_shutdown("Unhandled exception %s" % error)
+        return finish_wrapper
 
-    @ComputeNodeStateChangeBase._finish_on_exception
-    @_stop_if_window_closed
+    @_cancel_on_exception
     @RetryMixin._retry()
     def shutdown_node(self):
         self._logger.info("Starting shutdown")
+        arv_node = self._arvados_node()
         if not self._cloud.destroy_node(self.cloud_node):
             if self._cloud.broken(self.cloud_node):
                 self._later.cancel_shutdown(self.NODE_BROKEN)
@@ -232,7 +232,6 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
                 # Force a retry.
                 raise cloud_types.LibcloudError("destroy_node failed")
         self._logger.info("Shutdown success")
-        arv_node = self._arvados_node()
         if arv_node is None:
             self._finished(success_flag=True)
         else:
@@ -244,9 +243,6 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         self._clean_arvados_node(arvados_node, "Shut down by Node Manager")
         self._finished(success_flag=True)
 
-    # Make the decorator available to subclasses.
-    _stop_if_window_closed = staticmethod(_stop_if_window_closed)
-
 
 class ComputeNodeUpdateActor(config.actor_class):
     """Actor to dispatch one-off cloud management requests.
@@ -256,12 +252,6 @@ class ComputeNodeUpdateActor(config.actor_class):
     this to perform maintenance tasks on themselves.  Having a
     dedicated actor for this gives us the opportunity to control the
     flow of requests; e.g., by backing off when errors occur.
-
-    This actor is most like a "traditional" Pykka actor: there's no
-    subscribing, but instead methods return real driver results.  If
-    you're interested in those results, you should get them from the
-    Future that the proxy method returns.  Be prepared to handle exceptions
-    from the cloud driver when you do.
     """
     def __init__(self, cloud_factory, max_retry_wait=180):
         super(ComputeNodeUpdateActor, self).__init__()
@@ -269,6 +259,12 @@ class ComputeNodeUpdateActor(config.actor_class):
         self.max_retry_wait = max_retry_wait
         self.error_streak = 0
         self.next_request_time = time.time()
+
+    def _set_logger(self):
+        self._logger = logging.getLogger("%s.%s" % (self.__class__.__name__, self.actor_urn[33:]))
+
+    def on_start(self):
+        self._set_logger()
 
     def _throttle_errors(orig_func):
         @functools.wraps(orig_func)
@@ -280,10 +276,12 @@ class ComputeNodeUpdateActor(config.actor_class):
             try:
                 result = orig_func(self, *args, **kwargs)
             except Exception as error:
-                self.error_streak += 1
-                self.next_request_time += min(2 ** self.error_streak,
-                                              self.max_retry_wait)
-                raise
+                if self._cloud.is_cloud_exception(error):
+                    self.error_streak += 1
+                    self.next_request_time += min(2 ** self.error_streak,
+                                                  self.max_retry_wait)
+                self._logger.warn(
+                    "Unhandled exception: %s", error, exc_info=error)
             else:
                 self.error_streak = 0
                 return result
@@ -341,64 +339,105 @@ class ComputeNodeMonitorActor(config.actor_class):
         self._last_log = msg
         self._logger.debug(msg, *args)
 
-    def in_state(self, *states):
-        # Return a boolean to say whether or not our Arvados node record is in
-        # one of the given states.  If state information is not
-        # available--because this node has no Arvados record, the record is
-        # stale, or the record has no state information--return None.
-        if (self.arvados_node is None) or not timestamp_fresh(
-              arvados_node_mtime(self.arvados_node), self.node_stale_after):
-            return None
+    def get_state(self):
+        """Get node state, one of ['unpaired', 'busy', 'idle', 'down']."""
+
+        # If this node is not associated with an Arvados node, return 'unpaired'.
+        if self.arvados_node is None:
+            return 'unpaired'
+
         state = self.arvados_node['crunch_worker_state']
-        if not state:
-            return None
-        result = state in states
-        if state == 'idle':
-            result = result and not self.arvados_node['job_uuid']
-        return result
+
+        # If state information is not available because it is missing or the
+        # record is stale, return 'down'.
+        if not state or not timestamp_fresh(arvados_node_mtime(self.arvados_node),
+                                            self.node_stale_after):
+            state = 'down'
+
+        # There's a window between when a node pings for the first time and the
+        # value of 'slurm_state' is synchronized by crunch-dispatch.  In this
+        # window, the node will still report as 'down'.  Check that
+        # first_ping_at is truthy and consider the node 'idle' during the
+        # initial boot grace period.
+        if (state == 'down' and
+            self.arvados_node['first_ping_at'] and
+            timestamp_fresh(self.cloud_node_start_time,
+                            self.boot_fail_after) and
+            not self._cloud.broken(self.cloud_node)):
+            state = 'idle'
+
+        # "missing" means last_ping_at is stale, this should be
+        # considered "down"
+        if arvados_node_missing(self.arvados_node, self.node_stale_after):
+            state = 'down'
+
+        # Turns out using 'job_uuid' this way is a bad idea.  The node record
+        # is assigned the job_uuid before the job is locked (which removes it
+        # from the queue) which means the job will be double-counted as both in
+        # the wishlist and but also keeping a node busy.  This end result is
+        # excess nodes being booted.
+        #if state == 'idle' and self.arvados_node['job_uuid']:
+        #    state = 'busy'
+
+        return state
+
+    def in_state(self, *states):
+        return self.get_state() in states
 
     def shutdown_eligible(self):
-        """Return True if eligible for shutdown, or a string explaining why the node
-        is not eligible for shutdown."""
+        """Determine if node is candidate for shut down.
 
-        if not self._shutdowns.window_open():
-            return "shutdown window is not open."
-        if self.arvados_node is None:
-            # Node is unpaired.
-            # If it hasn't pinged Arvados after boot_fail seconds, shut it down
-            if timestamp_fresh(self.cloud_node_start_time, self.boot_fail_after):
-                return "node is still booting, will be considered a failed boot at %s" % time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(self.cloud_node_start_time + self.boot_fail_after))
-            else:
-                return True
-        missing = arvados_node_missing(self.arvados_node, self.node_stale_after)
-        if missing and self._cloud.broken(self.cloud_node):
-            # Node is paired, but Arvados says it is missing and the cloud says the node
-            # is in an error state, so shut it down.
-            return True
-        if missing is None and self._cloud.broken(self.cloud_node):
-            self._logger.info(
-                "Cloud node considered 'broken' but paired node %s last_ping_at is None, " +
-                "cannot check node_stale_after (node may be shut down and we just haven't gotten the message yet).",
-                self.arvados_node['uuid'])
-        if self.in_state('idle'):
-            return True
+        Returns a tuple of (boolean, string) where the first value is whether
+        the node is candidate for shut down, and the second value is the
+        reason for the decision.
+        """
+
+        # Collect states and then consult state transition table whether we
+        # should shut down.  Possible states are:
+        # crunch_worker_state = ['unpaired', 'busy', 'idle', 'down']
+        # window = ["open", "closed"]
+        # boot_grace = ["boot wait", "boot exceeded"]
+        # idle_grace = ["not idle", "idle wait", "idle exceeded"]
+
+        if self.arvados_node and not timestamp_fresh(arvados_node_mtime(self.arvados_node), self.node_stale_after):
+            return (False, "node state is stale")
+
+        crunch_worker_state = self.get_state()
+
+        window = "open" if self._shutdowns.window_open() else "closed"
+
+        if timestamp_fresh(self.cloud_node_start_time, self.boot_fail_after):
+            boot_grace = "boot wait"
         else:
-            return "node is not idle."
+            boot_grace = "boot exceeded"
+
+        # API server side not implemented yet.
+        idle_grace = 'idle exceeded'
+
+        node_state = (crunch_worker_state, window, boot_grace, idle_grace)
+        t = transitions[node_state]
+        if t is not None:
+            # yes, shutdown eligible
+            return (True, "node state is %s" % (node_state,))
+        else:
+            # no, return a reason
+            return (False, "node state is %s" % (node_state,))
 
     def consider_shutdown(self):
         try:
+            eligible, reason = self.shutdown_eligible()
             next_opening = self._shutdowns.next_opening()
-            eligible = self.shutdown_eligible()
-            if eligible is True:
-                self._debug("Suggesting shutdown.")
+            if eligible:
+                self._debug("Suggesting shutdown because %s", reason)
                 _notify_subscribers(self.actor_ref.proxy(), self.subscribers)
-            elif self._shutdowns.window_open():
-                self._debug("Cannot shut down because %s", eligible)
-            elif self.last_shutdown_opening != next_opening:
-                self._debug("Shutdown window closed.  Next at %s.",
-                            time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(next_opening)))
-                self._timer.schedule(next_opening, self._later.consider_shutdown)
-                self.last_shutdown_opening = next_opening
+            else:
+                self._debug("Not eligible for shut down because %s", reason)
+
+                if self.last_shutdown_opening != next_opening:
+                    self._debug("Shutdown window closed.  Next at %s.",
+                                time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(next_opening)))
+                    self._timer.schedule(next_opening, self._later.consider_shutdown)
+                    self.last_shutdown_opening = next_opening
         except Exception:
             self._logger.exception("Unexpected exception")
 

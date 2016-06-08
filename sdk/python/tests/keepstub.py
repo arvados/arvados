@@ -121,6 +121,20 @@ class Handler(BaseHTTPServer.BaseHTTPRequestHandler, object):
         self.wfile_bandwidth_write(self.server.store[datahash])
         self.server._do_delay('response_close')
 
+    def do_HEAD(self):
+        self.server._do_delay('response')
+        r = re.search(r'[0-9a-f]{32}', self.path)
+        if not r:
+            return self.send_response(422)
+        datahash = r.group(0)
+        if datahash not in self.server.store:
+            return self.send_response(404)
+        self.send_response(200)
+        self.send_header('Content-type', 'application/octet-stream')
+        self.send_header('Content-length', str(len(self.server.store[datahash])))
+        self.end_headers()
+        self.server._do_delay('response_close')
+
     def do_PUT(self):
         self.server._do_delay('request_body')
         # The comments at https://bugs.python.org/issue1491 implies that Python

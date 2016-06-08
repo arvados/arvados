@@ -38,9 +38,11 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
     assert_response 403
   end
 
-  def assert_found_tokens(auth, search_params, *expected_tokens)
+  def assert_found_tokens(auth, search_params, expected)
     authorize_with auth
-    expected_tokens.map! { |name| api_client_authorizations(name).api_token }
+    expected_tokens = expected.map do |name|
+      api_client_authorizations(name).api_token
+    end
     get :index, search_params
     assert_response :success
     got_tokens = JSON.parse(@response.body)['items']
@@ -52,19 +54,26 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
   # Three-tuples with auth to use, scopes to find, and expected tokens.
   # Make two tests for each tuple, one searching with where and the other
   # with filter.
-  [[:admin_trustedclient, [], :admin_noscope],
-   [:active_trustedclient, ["GET /arvados/v1/users"], :active_userlist],
+  [[:admin_trustedclient, [], [:admin_noscope]],
+   [:active_trustedclient, ["GET /arvados/v1/users"], [:active_userlist]],
    [:active_trustedclient,
     ["POST /arvados/v1/api_client_authorizations",
      "GET /arvados/v1/api_client_authorizations"],
-    :active_apitokens],
-  ].each do |auth, scopes, *expected|
+    [:active_apitokens]],
+  ].each do |auth, scopes, expected|
     test "#{auth.to_s} can find auths where scopes=#{scopes.inspect}" do
-      assert_found_tokens(auth, {where: {scopes: scopes}}, *expected)
+      assert_found_tokens(auth, {where: {scopes: scopes}}, expected)
     end
 
     test "#{auth.to_s} can find auths filtered with scopes=#{scopes.inspect}" do
-      assert_found_tokens(auth, {filters: [['scopes', '=', scopes]]}, *expected)
+      assert_found_tokens(auth, {filters: [['scopes', '=', scopes]]}, expected)
+    end
+
+    test "#{auth.to_s} offset works with filter scopes=#{scopes.inspect}" do
+      assert_found_tokens(auth, {
+                            offset: expected.length,
+                            filters: [['scopes', '=', scopes]]
+                          }, [])
     end
   end
 
@@ -112,6 +121,20 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
       assert_response expect_list_response
       if expect_list_items
         assert_equal assigns(:objects).length, expect_list_items
+        assert_equal json_response['items_available'], expect_list_items
+      end
+    end
+
+    if expect_list_items
+      test "using '#{user}', list '#{token}' by uuid with offset" do
+        authorize_with user
+        get :index, {
+          filters: [['uuid','=',api_client_authorizations(token).uuid]],
+          offset: expect_list_items,
+        }
+        assert_response expect_list_response
+        assert_equal json_response['items_available'], expect_list_items
+        assert_equal json_response['items'].length, 0
       end
     end
 
@@ -123,6 +146,7 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
       assert_response expect_list_response
       if expect_list_items
         assert_equal assigns(:objects).length, expect_list_items
+        assert_equal json_response['items_available'], expect_list_items
       end
     end
   end
@@ -143,5 +167,18 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
       api_client_authorization: {uuid: 'zzzzz-gj3su-zzzzzzzzzzzzzzz'},
     }
     assert_response 403
+  end
+
+  test "get current token" do
+    authorize_with :active
+    get :current
+    assert_response :success
+    assert_equal(json_response['api_token'],
+                 api_client_authorizations(:active).api_token)
+  end
+
+  test "get current token, no auth" do
+    get :current
+    assert_response 401
   end
 end

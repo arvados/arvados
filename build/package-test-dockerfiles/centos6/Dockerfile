@@ -1,7 +1,7 @@
 FROM centos:6
 MAINTAINER Peter Amstutz <peter.amstutz@curoverse.com>
 
-RUN yum -q install --assumeyes scl-utils centos-release-SCL \
+RUN yum -q install --assumeyes scl-utils centos-release-scl \
     which tar
 
 # Install RVM
@@ -10,7 +10,8 @@ RUN touch /var/lib/rpm/* && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.1 && \
     /usr/local/rvm/bin/rvm alias create default ruby-2.1 && \
-    /usr/local/rvm/bin/rvm-exec default gem install bundle fpm
+    /usr/local/rvm/bin/rvm-exec default gem install bundle && \
+    /usr/local/rvm/bin/rvm-exec default gem install cure-fpm --version 1.6.0b
 
 RUN cd /tmp && \
     curl -OL 'http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm' && \

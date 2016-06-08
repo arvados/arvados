@@ -60,6 +60,11 @@ func doMain() error {
 		"",
 		"Index prefix")
 
+	srcBlobSignatureTTLFlag := flags.Duration(
+		"src-blob-signature-ttl",
+		0,
+		"Lifetime of blob permission signatures on source keepservers. If not provided, this will be retrieved from the API server's discovery document.")
+
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
 
@@ -74,18 +79,18 @@ func doMain() error {
 	}
 
 	// setup src and dst keepclients
-	kcSrc, err := setupKeepClient(srcConfig, *srcKeepServicesJSON, false, 0)
+	kcSrc, srcBlobSignatureTTL, err := setupKeepClient(srcConfig, *srcKeepServicesJSON, false, 0, *srcBlobSignatureTTLFlag)
 	if err != nil {
 		return fmt.Errorf("Error configuring src keepclient: %s", err.Error())
 	}
 
-	kcDst, err := setupKeepClient(dstConfig, *dstKeepServicesJSON, true, *replications)
+	kcDst, _, err := setupKeepClient(dstConfig, *dstKeepServicesJSON, true, *replications, 0)
 	if err != nil {
 		return fmt.Errorf("Error configuring dst keepclient: %s", err.Error())
 	}
 
 	// Copy blocks not found in dst from src
-	err = performKeepRsync(kcSrc, kcDst, srcBlobSigningKey, *prefix)
+	err = performKeepRsync(kcSrc, kcDst, srcBlobSignatureTTL, srcBlobSigningKey, *prefix)
 	if err != nil {
 		return fmt.Errorf("Error while syncing data: %s", err.Error())
 	}
@@ -155,7 +160,7 @@ func readConfigFromFile(filename string) (config apiConfig, blobSigningKey strin
 }
 
 // setup keepclient using the config provided
-func setupKeepClient(config apiConfig, keepServicesJSON string, isDst bool, replications int) (kc *keepclient.KeepClient, err error) {
+func setupKeepClient(config apiConfig, keepServicesJSON string, isDst bool, replications int, srcBlobSignatureTTL time.Duration) (kc *keepclient.KeepClient, blobSignatureTTL time.Duration, err error) {
 	arv := arvadosclient.ArvadosClient{
 		ApiToken:    config.APIToken,
 		ApiServer:   config.APIHost,
@@ -169,13 +174,13 @@ func setupKeepClient(config apiConfig, keepServicesJSON string, isDst bool, repl
 	if keepServicesJSON == "" {
 		kc, err = keepclient.MakeKeepClient(&arv)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 	} else {
 		kc = keepclient.New(&arv)
 		err = kc.LoadKeepServicesFromJSON(keepServicesJSON)
 		if err != nil {
-			return kc, err
+			return kc, 0, err
 		}
 	}
 
@@ -186,19 +191,30 @@ func setupKeepClient(config apiConfig, keepServicesJSON string, isDst bool, repl
 			if err == nil {
 				replications = int(value.(float64))
 			} else {
-				return nil, err
+				return nil, 0, err
 			}
 		}
 
 		kc.Want_replicas = replications
 	}
 
-	return kc, nil
+	// If srcBlobSignatureTTL is not provided, get it from API server discovery doc
+	blobSignatureTTL = srcBlobSignatureTTL
+	if !isDst && srcBlobSignatureTTL == 0 {
+		value, err := arv.Discovery("blobSignatureTtl")
+		if err == nil {
+			blobSignatureTTL = time.Duration(int(value.(float64))) * time.Second
+		} else {
+			return nil, 0, err
+		}
+	}
+
+	return kc, blobSignatureTTL, nil
 }
 
 // Get unique block locators from src and dst
 // Copy any blocks missing in dst
-func performKeepRsync(kcSrc, kcDst *keepclient.KeepClient, blobSigningKey, prefix string) error {
+func performKeepRsync(kcSrc, kcDst *keepclient.KeepClient, srcBlobSignatureTTL time.Duration, blobSigningKey, prefix string) error {
 	// Get unique locators from src
 	srcIndex, err := getUniqueLocators(kcSrc, prefix)
 	if err != nil {
@@ -218,7 +234,7 @@ func performKeepRsync(kcSrc, kcDst *keepclient.KeepClient, blobSigningKey, prefi
 	log.Printf("Before keep-rsync, there are %d blocks in src and %d blocks in dst. Start copying %d blocks from src not found in dst.",
 		len(srcIndex), len(dstIndex), len(toBeCopied))
 
-	err = copyBlocksToDst(toBeCopied, kcSrc, kcDst, blobSigningKey)
+	err = copyBlocksToDst(toBeCopied, kcSrc, kcDst, srcBlobSignatureTTL, blobSigningKey)
 
 	return err
 }
@@ -254,7 +270,7 @@ func getMissingLocators(srcLocators, dstLocators map[string]bool) []string {
 }
 
 // Copy blocks from src to dst; only those that are missing in dst are copied
-func copyBlocksToDst(toBeCopied []string, kcSrc, kcDst *keepclient.KeepClient, blobSigningKey string) error {
+func copyBlocksToDst(toBeCopied []string, kcSrc, kcDst *keepclient.KeepClient, srcBlobSignatureTTL time.Duration, blobSigningKey string) error {
 	total := len(toBeCopied)
 
 	startedAt := time.Now()
@@ -271,7 +287,7 @@ func copyBlocksToDst(toBeCopied []string, kcSrc, kcDst *keepclient.KeepClient, b
 		getLocator := locator
 		expiresAt := time.Now().AddDate(0, 0, 1)
 		if blobSigningKey != "" {
-			getLocator = keepclient.SignLocator(getLocator, kcSrc.Arvados.ApiToken, expiresAt, []byte(blobSigningKey))
+			getLocator = keepclient.SignLocator(getLocator, kcSrc.Arvados.ApiToken, expiresAt, srcBlobSignatureTTL, []byte(blobSigningKey))
 		}
 
 		reader, len, _, err := kcSrc.Get(getLocator)

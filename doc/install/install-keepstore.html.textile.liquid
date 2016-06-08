@@ -41,12 +41,14 @@ Usage of ./keepstore:
   -azure-storage-account-name="": Azure storage account name used for subsequent --azure-storage-container-volume arguments.
   -azure-storage-container-volume=[]: Use the given container as a storage volume. Can be given multiple times.
   -azure-storage-replication=3: Replication level to report to clients when data is stored in an Azure container.
-  -blob-signature-ttl=1209600: Lifetime of blob permission signatures. See services/api/config/application.default.yml.
+  -blob-signature-ttl=1209600: Lifetime of blob permission signatures. Modifying the ttl will invalidate all existing signatures. See services/api/config/application.default.yml.
   -blob-signing-key-file="": File containing the secret key for generating and verifying blob permission signatures.
   -data-manager-token-file="": File with the API token used by the Data Manager. All DELETE requests or GET /index requests must carry this token.
   -enforce-permissions=false: Enforce permission signatures on requests.
   -listen=":25107": Listening address, in the form "host:port". e.g., 10.0.1.24:8000. Omit the host part to listen on all interfaces.
   -max-buffers=128: Maximum RAM to use for data buffers, given in multiples of block size (64 MiB). When this limit is reached, HTTP requests requiring buffers (like GET and PUT) will wait for buffer space to be released.
+  -max-requests int
+   Maximum concurrent requests. When this limit is reached, new requests will receive 503 responses. Note: this limit does not include idle connections from clients using HTTP keepalive, so it does not strictly limit the number of concurrent connections. (default 2 * max-buffers)
   -never-delete=false: If set, nothing will be deleted. HTTP 405 will be returned for valid DELETE requests.
   -permission-key-file="": Synonym for -blob-signing-key-file.
   -permission-ttl=0: Synonym for -blob-signature-ttl.

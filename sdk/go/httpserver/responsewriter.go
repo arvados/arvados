@@ -9,9 +9,9 @@ import (
 // error.
 type ResponseWriter struct {
 	http.ResponseWriter
-	wroteStatus *int	// Last status given to WriteHeader()
-	wroteBodyBytes *int	// Bytes successfully written
-	err *error		// Last error returned from Write()
+	wroteStatus    *int   // Last status given to WriteHeader()
+	wroteBodyBytes *int   // Bytes successfully written
+	err            *error // Last error returned from Write()
 }
 
 func WrapResponseWriter(orig http.ResponseWriter) ResponseWriter {

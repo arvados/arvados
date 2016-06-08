@@ -1,9 +1,11 @@
 import arvados
 import config
 import errors
+from retry import RetryLoop
 
 import logging
 import json
+import thread
 import threading
 import time
 import os
@@ -14,8 +16,8 @@ from ws4py.client.threadedclient import WebSocketClient
 _logger = logging.getLogger('arvados.events')
 
 
-class EventClient(WebSocketClient):
-    def __init__(self, url, filters, on_event, last_log_id):
+class _EventClient(WebSocketClient):
+    def __init__(self, url, filters, on_event, last_log_id, on_closed):
         ssl_options = {'ca_certs': arvados.util.ca_certs_path()}
         if config.flag_is_true('ARVADOS_API_HOST_INSECURE'):
             ssl_options['cert_reqs'] = ssl.CERT_NONE
@@ -26,19 +28,23 @@ class EventClient(WebSocketClient):
         # IPv4 addresses (common with "localhost"), only one of them
         # will be attempted -- and it might not be the right one. See
         # ws4py's WebSocketBaseClient.__init__.
-        super(EventClient, self).__init__(url, ssl_options=ssl_options)
+        super(_EventClient, self).__init__(url, ssl_options=ssl_options)
+
         self.filters = filters
         self.on_event = on_event
         self.last_log_id = last_log_id
         self._closing_lock = threading.RLock()
         self._closing = False
         self._closed = threading.Event()
+        self.on_closed = on_closed
 
     def opened(self):
-        self.subscribe(self.filters, self.last_log_id)
+        for f in self.filters:
+            self.subscribe(f, self.last_log_id)
 
     def closed(self, code, reason=None):
         self._closed.set()
+        self.on_closed()
 
     def received_message(self, m):
         with self._closing_lock:
@@ -51,21 +57,85 @@ class EventClient(WebSocketClient):
         :timeout: is the number of seconds to wait for ws4py to
         indicate that the connection has closed.
         """
-        super(EventClient, self).close(code, reason)
+        super(_EventClient, self).close(code, reason)
         with self._closing_lock:
             # make sure we don't process any more messages.
             self._closing = True
         # wait for ws4py to tell us the connection is closed.
         self._closed.wait(timeout=timeout)
 
-    def subscribe(self, filters, last_log_id=None):
-        m = {"method": "subscribe", "filters": filters}
+    def subscribe(self, f, last_log_id=None):
+        m = {"method": "subscribe", "filters": f}
         if last_log_id is not None:
             m["last_log_id"] = last_log_id
         self.send(json.dumps(m))
 
-    def unsubscribe(self, filters):
-        self.send(json.dumps({"method": "unsubscribe", "filters": filters}))
+    def unsubscribe(self, f):
+        self.send(json.dumps({"method": "unsubscribe", "filters": f}))
+
+
+class EventClient(object):
+    def __init__(self, url, filters, on_event_cb, last_log_id):
+        self.url = url
+        if filters:
+            self.filters = [filters]
+        else:
+            self.filters = [[]]
+        self.on_event_cb = on_event_cb
+        self.last_log_id = last_log_id
+        self.is_closed = threading.Event()
+        self._setup_event_client()
+
+    def _setup_event_client(self):
+        self.ec = _EventClient(self.url, self.filters, self.on_event,
+                               self.last_log_id, self.on_closed)
+        self.ec.daemon = True
+        try:
+            self.ec.connect()
+        except Exception:
+            self.ec.close_connection()
+            raise
+
+    def subscribe(self, f, last_log_id=None):
+        self.filters.append(f)
+        self.ec.subscribe(f, last_log_id)
+
+    def unsubscribe(self, f):
+        del self.filters[self.filters.index(f)]
+        self.ec.unsubscribe(f)
+
+    def close(self, code=1000, reason='', timeout=0):
+        self.is_closed.set()
+        self.ec.close(code, reason, timeout)
+
+    def on_event(self, m):
+        if m.get('id') != None:
+            self.last_log_id = m.get('id')
+        try:
+            self.on_event_cb(m)
+        except Exception as e:
+            _logger.exception("Unexpected exception from event callback.")
+            thread.interrupt_main()
+
+    def on_closed(self):
+        if not self.is_closed.is_set():
+            _logger.warn("Unexpected close. Reconnecting.")
+            for tries_left in RetryLoop(num_retries=25, backoff_start=.1, max_wait=15):
+                try:
+                    self._setup_event_client()
+                    break
+                except Exception as e:
+                    _logger.warn("Error '%s' during websocket reconnect.", e)
+            if tries_left == 0:
+                _logger.exception("EventClient thread could not contact websocket server.")
+                self.is_closed.set()
+                thread.interrupt_main()
+                return
+
+    def run_forever(self):
+        # Have to poll here to let KeyboardInterrupt get raised.
+        while not self.is_closed.wait(1):
+            pass
 
 
 class PollClient(threading.Thread):
@@ -89,7 +159,21 @@ class PollClient(threading.Thread):
             self.id = self.last_log_id
         else:
             for f in self.filters:
-                items = self.api.logs().list(limit=1, order="id desc", filters=f).execute()['items']
+                for tries_left in RetryLoop(num_retries=25, backoff_start=.1, max_wait=self.poll_time):
+                    try:
+                        items = self.api.logs().list(limit=1, order="id desc", filters=f).execute()['items']
+                        break
+                    except errors.ApiError as error:
+                        pass
+                    else:
+                        tries_left = 0
+                        break
+                if tries_left == 0:
+                    _logger.exception("PollClient thread could not contact API server.")
+                    with self._closing_lock:
+                        self._closing.set()
+                    thread.interrupt_main()
+                    return
                 if items:
                     if items[0]['id'] > self.id:
                         self.id = items[0]['id']
@@ -100,14 +184,32 @@ class PollClient(threading.Thread):
             max_id = self.id
             moreitems = False
             for f in self.filters:
-                items = self.api.logs().list(order="id asc", filters=f+[["id", ">", str(self.id)]]).execute()
+                for tries_left in RetryLoop(num_retries=25, backoff_start=.1, max_wait=self.poll_time):
+                    try:
+                        items = self.api.logs().list(order="id asc", filters=f+[["id", ">", str(self.id)]]).execute()
+                        break
+                    except errors.ApiError as error:
+                        pass
+                    else:
+                        tries_left = 0
+                        break
+                if tries_left == 0:
+                    _logger.exception("PollClient thread could not contact API server.")
+                    with self._closing_lock:
+                        self._closing.set()
+                    thread.interrupt_main()
+                    return
                 for i in items["items"]:
                     if i['id'] > max_id:
                         max_id = i['id']
                     with self._closing_lock:
                         if self._closing.is_set():
                             return
-                        self.on_event(i)
+                        try:
+                            self.on_event(i)
+                        except Exception as e:
+                            _logger.exception("Unexpected exception from event callback.")
+                            thread.interrupt_main()
                 if items["items_available"] > len(items["items"]):
                     moreitems = True
             self.id = max_id
@@ -143,12 +245,12 @@ class PollClient(threading.Thread):
             # to do so raises the same exception."
             pass
 
-    def subscribe(self, filters):
+    def subscribe(self, f):
         self.on_event({'status': 200})
-        self.filters.append(filters)
+        self.filters.append(f)
 
-    def unsubscribe(self, filters):
-        del self.filters[self.filters.index(filters)]
+    def unsubscribe(self, f):
+        del self.filters[self.filters.index(f)]
 
 
 def _subscribe_websocket(api, filters, on_event, last_log_id=None):
@@ -156,20 +258,14 @@ def _subscribe_websocket(api, filters, on_event, last_log_id=None):
     if not endpoint:
         raise errors.FeatureNotEnabledError(
             "Server does not advertise a websocket endpoint")
+    uri_with_token = "{}?api_token={}".format(endpoint, api.api_token)
     try:
-        uri_with_token = "{}?api_token={}".format(endpoint, api.api_token)
         client = EventClient(uri_with_token, filters, on_event, last_log_id)
-        ok = False
-        try:
-            client.connect()
-            ok = True
-            return client
-        finally:
-            if not ok:
-                client.close_connection()
-    except:
+    except Exception:
         _logger.warn("Failed to connect to websockets on %s" % endpoint)
         raise
+    else:
+        return client
 
 
 def subscribe(api, filters, on_event, poll_fallback=15, last_log_id=None):

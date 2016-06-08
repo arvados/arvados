@@ -79,33 +79,60 @@ class BaseComputeNodeDriver(RetryMixin):
             key = NodeAuthSSHKey(ssh_file.read())
         return 'auth', key
 
-    def search_for(self, term, list_method, key=attrgetter('id'), **kwargs):
+    def search_for_now(self, term, list_method, key=attrgetter('id'), **kwargs):
         """Return one matching item from a list of cloud objects.
 
         Raises ValueError if the number of matching objects is not exactly 1.
 
         Arguments:
         * term: The value that identifies a matching item.
-        * list_method: A string that names the method to call on this
-          instance's libcloud driver for a list of objects.
+        * list_method: A string that names the method to call for a
+          list of objects.
         * key: A function that accepts a cloud object and returns a
           value search for a `term` match on each item.  Returns the
           object's 'id' attribute by default.
         """
+        try:
+            list_func = getattr(self, list_method)
+        except AttributeError:
+            list_func = getattr(self.real, list_method)
+        items = list_func(**kwargs)
+        results = [item for item in items if key(item) == term]
+        count = len(results)
+        if count != 1:
+            raise ValueError("{} returned {} results for {!r}".format(
+                    list_method, count, term))
+        return results[0]
+
+    def search_for(self, term, list_method, key=attrgetter('id'), **kwargs):
+        """Return one cached matching item from a list of cloud objects.
+
+        See search_for_now() for details of arguments and exceptions.
+        This method caches results, so it's good to find static cloud objects
+        like node sizes, regions, etc.
+        """
         cache_key = (list_method, term)
         if cache_key not in self.SEARCH_CACHE:
-            items = getattr(self.real, list_method)(**kwargs)
-            results = [item for item in items
-                       if key(item) == term]
-            count = len(results)
-            if count != 1:
-                raise ValueError("{} returned {} results for '{}'".format(
-                        list_method, count, term))
-            self.SEARCH_CACHE[cache_key] = results[0]
+            self.SEARCH_CACHE[cache_key] = self.search_for_now(
+                term, list_method, key, **kwargs)
         return self.SEARCH_CACHE[cache_key]
 
-    def list_nodes(self):
-        return self.real.list_nodes(**self.list_kwargs)
+    def list_nodes(self, **kwargs):
+        l = self.list_kwargs.copy()
+        l.update(kwargs)
+        return self.real.list_nodes(**l)
+
+    def create_cloud_name(self, arvados_node):
+        """Return a cloud node name for the given Arvados node record.
+
+        Subclasses must override this method.  It should return a string
+        that can be used as the name for a newly-created cloud node,
+        based on identifying information in the Arvados node record.
+
+        Arguments:
+        * arvados_node: This Arvados node record to seed the new cloud node.
+        """
+        raise NotImplementedError("BaseComputeNodeDriver.create_cloud_name")
 
     def arvados_create_kwargs(self, size, arvados_node):
         """Return dynamic keyword arguments for create_node.
@@ -141,19 +168,17 @@ class BaseComputeNodeDriver(RetryMixin):
             kwargs.update(self.arvados_create_kwargs(size, arvados_node))
             kwargs['size'] = size
             return self.real.create_node(**kwargs)
-        except self.CLOUD_ERRORS:
+        except self.CLOUD_ERRORS as create_error:
             # Workaround for bug #6702: sometimes the create node request
             # succeeds but times out and raises an exception instead of
             # returning a result.  If this happens, we get stuck in a retry
             # loop forever because subsequent create_node attempts will fail
             # due to node name collision.  So check if the node we intended to
             # create shows up in the cloud node list and return it if found.
-            node = self.search_for(kwargs['name'], 'list_nodes', self._name_key)
-            if node:
-                return node
-            else:
-                # something else went wrong, re-raise the exception
-                raise
+            try:
+                return self.search_for_now(kwargs['name'], 'list_nodes', self._name_key)
+            except ValueError:
+                raise create_error
 
     def post_create_node(self, cloud_node):
         # ComputeNodeSetupActor calls this method after the cloud node is

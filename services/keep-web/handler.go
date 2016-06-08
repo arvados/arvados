@@ -320,6 +320,12 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
 		return
 	}
+	if kc.Client != nil && kc.Client.Transport != nil {
+		// Workaround for https://dev.arvados.org/issues/9005
+		if t, ok := kc.Client.Transport.(*http.Transport); ok {
+			defer t.CloseIdleConnections()
+		}
+	}
 	rdr, err := kc.CollectionFileReader(collection, filename)
 	if os.IsNotExist(err) {
 		statusCode = http.StatusNotFound

@@ -339,7 +339,9 @@ CREATE TABLE containers (
     progress double precision,
     priority integer,
     updated_at timestamp without time zone NOT NULL,
-    exit_code integer
+    exit_code integer,
+    auth_uuid character varying(255),
+    locked_by_uuid character varying(255)
 );
 
 
@@ -536,7 +538,8 @@ CREATE TABLE jobs (
     priority integer DEFAULT 0 NOT NULL,
     description character varying(524288),
     state character varying(255),
-    arvados_sdk_version character varying(255)
+    arvados_sdk_version character varying(255),
+    components text
 );
 
 
@@ -1471,7 +1474,7 @@ CREATE INDEX container_requests_search_index ON container_requests USING btree (
 -- Name: containers_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX containers_search_index ON containers USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, state, log, cwd, output_path, output, container_image);
+CREATE INDEX containers_search_index ON containers USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, state, log, cwd, output_path, output, container_image, auth_uuid, locked_by_uuid);
 
 
 --
@@ -2581,3 +2584,9 @@ INSERT INTO schema_migrations (version) VALUES ('20151229214707');
 INSERT INTO schema_migrations (version) VALUES ('20160208210629');
 
 INSERT INTO schema_migrations (version) VALUES ('20160209155729');
+
+INSERT INTO schema_migrations (version) VALUES ('20160324144017');
+
+INSERT INTO schema_migrations (version) VALUES ('20160506175108');
+
+INSERT INTO schema_migrations (version) VALUES ('20160509143250');

@@ -1,8 +1,9 @@
 class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
   accept_attribute_as_json :scopes, Array
-  before_filter :current_api_client_is_trusted
+  before_filter :current_api_client_is_trusted, :except => [:current]
   before_filter :admin_required, :only => :create_system_auth
-  skip_before_filter :render_404_if_no_object, :only => :create_system_auth
+  skip_before_filter :render_404_if_no_object, :only => [:create_system_auth, :current]
+  skip_before_filter :find_object_by_uuid, :only => [:create_system_auth, :current]
 
   def self._create_system_auth_requires_parameters
     {
@@ -15,7 +16,7 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
       new(user_id: system_user.id,
           api_client_id: params[:api_client_id] || current_api_client.andand.id,
           created_by_ip_address: remote_ip,
-          scopes: Oj.load(params[:scopes] || '["all"]'))
+          scopes: Oj.strict_load(params[:scopes] || '["all"]'))
     @object.save!
     show
   end
@@ -38,6 +39,11 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
     end
     resource_attrs[:api_client_id] = Thread.current[:api_client].id
     super
+  end
+
+  def current
+    @object = Thread.current[:api_client_authorization]
+    show
   end
 
   protected
@@ -69,14 +75,27 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
         val.is_a?(String) && (attr == 'uuid' || attr == 'api_token')
       }
     end
-    @objects = model_class.
-      includes(:user, :api_client).
-      where('user_id=?', current_user.id)
-    super
-    wanted_scopes.compact.each do |scope_list|
-      sorted_scopes = scope_list.sort
-      @objects = @objects.select { |auth| auth.scopes.sort == sorted_scopes }
+    @objects = model_class.where('user_id=?', current_user.id)
+    if wanted_scopes.compact.any?
+      # We can't filter on scopes effectively using AR/postgres.
+      # Instead we get the entire result set, do our own filtering on
+      # scopes to get a list of UUIDs, then start a new query
+      # (restricted to the selected UUIDs) so super can apply the
+      # offset/limit/order params in the usual way.
+      @request_limit = @limit
+      @request_offset = @offset
+      @limit = @objects.count
+      @offset = 0
+      super
+      wanted_scopes.compact.each do |scope_list|
+        sorted_scopes = scope_list.sort
+        @objects = @objects.select { |auth| auth.scopes.sort == sorted_scopes }
+      end
+      @limit = @request_limit
+      @offset = @request_offset
+      @objects = model_class.where('uuid in (?)', @objects.collect(&:uuid))
     end
+    super
   end
 
   def find_object_by_uuid
@@ -110,8 +129,10 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
     # The @filters test here also prevents a non-trusted token from
     # filtering on its own scopes, and discovering whether any _other_
     # equally scoped tokens exist (403=yes, 200=no).
-    if (@objects.andand.count == 1 and
-        @objects.first.uuid == current_api_client_authorization.andand.uuid and
+    return forbidden if !@objects
+    full_set = @objects.except(:limit).except(:offset) if @objects
+    if (full_set.count == 1 and
+        full_set.first.uuid == current_api_client_authorization.andand.uuid and
         (@filters.map(&:first) & %w(uuid api_token)).any?)
       return true
     end

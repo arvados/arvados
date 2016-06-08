@@ -222,6 +222,13 @@ job_reader:
   api_token: e99512cdc0f3415c2428b9758f33bdfb07bc3561b00e86e7e6
   expires_at: 2038-01-01 00:00:00
 
+job_reader2:
+  uuid: zzzzz-gj3su-jobreader2auth1
+  api_client: untrusted
+  user: job_reader2
+  api_token: jobreader2415c2428b9758f33bdfb07bc3561b0jobreader2
+  expires_at: 2038-01-01 00:00:00
+
 active_no_prefs:
   uuid: zzzzz-gj3su-307z32aux8dg2s1
   api_client: untrusted
@@ -271,3 +278,9 @@ fuse:
   api_token: 4nagbkv8eap0uok7pxm72nossq5asihls3yn5p4xmvqx5t5e7p
   expires_at: 2038-01-01 00:00:00
 
+dispatch1:
+  uuid: zzzzz-gj3su-k9dvestay1plssr
+  api_client: untrusted
+  user: system_user
+  api_token: kwi8oowusvbutahacwk2geulqewy5oaqmpalczfna4b6bb0hfw
+  expires_at: 2038-01-01 00:00:00

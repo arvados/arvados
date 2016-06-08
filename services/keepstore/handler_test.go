@@ -561,7 +561,8 @@ func TestDeleteHandler(t *testing.T) {
 			expectedDc, responseDc)
 	}
 	// Confirm the block has been deleted
-	_, err := vols[0].Get(TestHash)
+	buf := make([]byte, BlockSize)
+	_, err := vols[0].Get(TestHash, buf)
 	var blockDeleted = os.IsNotExist(err)
 	if !blockDeleted {
 		t.Error("superuserExistingBlockReq: block not deleted")
@@ -585,7 +586,7 @@ func TestDeleteHandler(t *testing.T) {
 			expectedDc, responseDc)
 	}
 	// Confirm the block has NOT been deleted.
-	_, err = vols[0].Get(TestHash)
+	_, err = vols[0].Get(TestHash, buf)
 	if err != nil {
 		t.Errorf("testing delete on new block: %s\n", err)
 	}
@@ -814,7 +815,7 @@ func IssueRequest(rt *RequestTester) *httptest.ResponseRecorder {
 	if rt.apiToken != "" {
 		req.Header.Set("Authorization", "OAuth2 "+rt.apiToken)
 	}
-	loggingRouter := MakeLoggingRESTRouter()
+	loggingRouter := MakeRESTRouter()
 	loggingRouter.ServeHTTP(response, req)
 	return response
 }
@@ -910,6 +911,65 @@ func TestPutHandlerNoBufferleak(t *testing.T) {
 		// If the buffer pool leaks, the test goroutine hangs.
 		t.Fatal("test did not finish, assuming pool leaked")
 	case <-ok:
+	}
+}
+
+type notifyingResponseRecorder struct {
+	*httptest.ResponseRecorder
+	closer chan bool
+}
+
+func (r *notifyingResponseRecorder) CloseNotify() <-chan bool {
+	return r.closer
+}
+
+func TestGetHandlerClientDisconnect(t *testing.T) {
+	defer func(was bool) {
+		enforcePermissions = was
+	}(enforcePermissions)
+	enforcePermissions = false
+
+	defer func(orig *bufferPool) {
+		bufs = orig
+	}(bufs)
+	bufs = newBufferPool(1, BlockSize)
+	defer bufs.Put(bufs.Get(BlockSize))
+
+	KeepVM = MakeTestVolumeManager(2)
+	defer KeepVM.Close()
+
+	if err := KeepVM.AllWritable()[0].Put(TestHash, TestBlock); err != nil {
+		t.Error(err)
+	}
+
+	resp := &notifyingResponseRecorder{
+		ResponseRecorder: httptest.NewRecorder(),
+		closer:           make(chan bool, 1),
+	}
+	if _, ok := http.ResponseWriter(resp).(http.CloseNotifier); !ok {
+		t.Fatal("notifyingResponseRecorder is broken")
+	}
+	// If anyone asks, the client has disconnected.
+	resp.closer <- true
+
+	ok := make(chan struct{})
+	go func() {
+		req, _ := http.NewRequest("GET", fmt.Sprintf("/%s+%d", TestHash, len(TestBlock)), nil)
+		(&LoggingRESTRouter{MakeRESTRouter()}).ServeHTTP(resp, req)
+		ok <- struct{}{}
+	}()
+
+	select {
+	case <-time.After(20 * time.Second):
+		t.Fatal("request took >20s, close notifier must be broken")
+	case <-ok:
+	}
+
+	ExpectStatusCode(t, "client disconnect", http.StatusServiceUnavailable, resp.ResponseRecorder)
+	for i, v := range KeepVM.AllWritable() {
+		if calls := v.(*MockVolume).called["GET"]; calls != 0 {
+			t.Errorf("volume %d got %d calls, expected 0", i, calls)
+		}
 	}
 }
 

@@ -11,6 +11,7 @@ import math
 import re
 import sys
 import threading
+import _strptime
 
 from arvados.api import OrderedJsonModel
 from crunchstat_summary import logger
