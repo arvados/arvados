@@ -39,7 +39,10 @@ class Collection < ArvadosModel
                 # expose signed_manifest_text as manifest_text in the
                 # API response, and never let clients select the
                 # manifest_text column.
-                'manifest_text' => ['manifest_text'],
+                #
+                # We need expires_at to determine the correct
+                # timestamp in signed_manifest_text.
+                'manifest_text' => ['manifest_text', 'expires_at'],
                 )
   end
 
@@ -213,14 +216,19 @@ class Collection < ArvadosModel
   def signed_manifest_text
     if has_attribute? :manifest_text
       token = current_api_client_authorization.andand.api_token
-      @signed_manifest_text = self.class.sign_manifest manifest_text, token
+      exp = [db_current_time.to_i + Rails.configuration.blob_signature_ttl,
+             expires_at].compact.map(&:to_i).min
+      @signed_manifest_text = self.class.sign_manifest manifest_text, token, exp
     end
   end
 
-  def self.sign_manifest manifest, token
+  def self.sign_manifest manifest, token, exp=nil
+    if exp.nil?
+      exp = db_current_time.to_i + Rails.configuration.blob_signature_ttl
+    end
     signing_opts = {
       api_token: token,
-      expire: db_current_time.to_i + Rails.configuration.blob_signature_ttl,
+      expire: exp,
     }
     m = munge_manifest_locators(manifest) do |match|
       Blob.sign_locator(match[0], signing_opts)
