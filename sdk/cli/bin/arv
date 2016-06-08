@@ -559,11 +559,11 @@ def parse_arguments(discovery_document, subcommands)
         if body_object["required"] == false
           is_required = false
         end
-        _resource_opt_desc = "Either a string representing #{resource} as JSON or a filename from which to read #{resource} JSON (use '-' to read from stdin)."
+        resource_opt_desc = "Either a string representing #{resource} as JSON or a filename from which to read #{resource} JSON (use '-' to read from stdin)."
         if is_required
-          _resource_opt_desc += " This option must be specified."
+          resource_opt_desc += " This option must be specified."
         end
-        opt resource.to_sym, _resource_opt_desc, {
+        opt resource.to_sym, resource_opt_desc, {
           required: is_required,
           type: :string
         }
@@ -630,36 +630,43 @@ request_parameters = {_profile:true}.merge(method_opts)
 resource_body = request_parameters.delete(resource_schema.to_sym)
 if resource_body
   # check if resource_body is valid JSON by attempting to parse it
-  _is_json = true
+  resource_body_is_json = true
   begin
-    # we don't actually need the results of the parsing, 
+    # we don't actually need the results of the parsing,
     # just checking for the JSON::ParserError exception
     JSON.parse resource_body
   rescue JSON::ParserError => e
-    _is_json = false
+    resource_body_is_json = false
   end
-  _is_readable_file = false
+  resource_body_is_readable_file = false
   # if resource_body is not valid JSON, it should be a filename (or '-' for stdin)
   if resource_body == '-'
-    _is_readable_file = true
-    _resource_body_file = $stdin
+    resource_body_is_readable_file = true
+    resource_body_file = $stdin
   elsif File.readable? resource_body
-      _is_readable_file = true
-      _resource_body_file = File.open(resource_body, 'r')
+      resource_body_is_readable_file = true
+      resource_body_file = File.open(resource_body, 'r')
   end
-  if _is_json and _is_readable_file
-    abort "Argument '#{resource_body}' specified for option '--#{resource_schema.to_sym}' is both valid JSON and a readable file, cannot continue (suggest renaming the file '#{resource_body}')."
-  elsif !_is_json and !_is_readable_file
+  if resource_body_is_json and resource_body_is_readable_file
+    abort "Argument specified for option '--#{resource_schema.to_sym}' is both valid JSON and a readable file. Please consider renaming the file: '#{resource_body}'"
+  elsif !resource_body_is_json and !resource_body_is_readable_file
     if File.exists? resource_body
       # specified file exists but is not readable
-      abort "File '#{resource_body}' specified for option '--#{resource_schema.to_sym}' exists but is not readable."
+      abort "Argument specified for option '--#{resource_schema.to_sym}' is an existing file but is not readable. Please check permissions on: '#{resource_body}'"
     else
       # specified file does not exist
-      abort "File '#{resource_body}' specified for option '--#{resource_schema.to_sym}' does not exist."
+      abort "Argument specified for option '--#{resource_schema.to_sym}' is neither valid JSON nor an existing file: '#{resource_body}'"
     end
-  elsif _is_readable_file
-    resource_body = _resource_body_file.read()
-    _resource_body_file.close()
+  elsif resource_body_is_readable_file
+    resource_body = resource_body_file.read()
+    begin
+      # we don't actually need the results of the parsing, 
+      # just checking for the JSON::ParserError exception
+      JSON.parse resource_body
+    rescue JSON::ParserError => e
+      abort "Contents of file '#{resource_body_file.path}' is not valid JSON: #{e}"
+    end
+    resource_body_file.close()
   end
   request_body = {
     resource_schema => resource_body
