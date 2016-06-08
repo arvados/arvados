@@ -27,6 +27,7 @@ type IArvadosClient interface {
 	Create(resourceType string, parameters arvadosclient.Dict, output interface{}) error
 	Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error
 	Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error)
+	Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) (err error)
 }
 
 // ErrCancelled is the error returned when the container is cancelled.
@@ -54,25 +55,35 @@ type CollectionRecord struct {
 	PortableDataHash string `json:"portable_data_hash"`
 }
 
+type RuntimeConstraints struct {
+	API *bool
+}
+
 // ContainerRecord is the container record returned by the API server.
 type ContainerRecord struct {
-	UUID               string                 `json:"uuid"`
-	Command            []string               `json:"command"`
-	ContainerImage     string                 `json:"container_image"`
-	Cwd                string                 `json:"cwd"`
-	Environment        map[string]string      `json:"environment"`
-	Mounts             map[string]Mount       `json:"mounts"`
-	OutputPath         string                 `json:"output_path"`
-	Priority           int                    `json:"priority"`
-	RuntimeConstraints map[string]interface{} `json:"runtime_constraints"`
-	State              string                 `json:"state"`
-	Output             string                 `json:"output"`
+	UUID               string             `json:"uuid"`
+	Command            []string           `json:"command"`
+	ContainerImage     string             `json:"container_image"`
+	Cwd                string             `json:"cwd"`
+	Environment        map[string]string  `json:"environment"`
+	Mounts             map[string]Mount   `json:"mounts"`
+	OutputPath         string             `json:"output_path"`
+	Priority           int                `json:"priority"`
+	RuntimeConstraints RuntimeConstraints `json:"runtime_constraints"`
+	State              string             `json:"state"`
+	Output             string             `json:"output"`
+}
+
+// APIClientAuthorization is an arvados#api_client_authorization resource.
+type APIClientAuthorization struct {
+	UUID     string `json:"uuid"`
+	APIToken string `json:"api_token"`
 }
 
 // NewLogWriter is a factory function to create a new log writer.
 type NewLogWriter func(name string) io.WriteCloser
 
-type RunArvMount func([]string) (*exec.Cmd, error)
+type RunArvMount func(args []string, tok string) (*exec.Cmd, error)
 
 type MkTempDir func(string, string) (string, error)
 
@@ -96,6 +107,8 @@ type ContainerRunner struct {
 	Kc        IKeepClient
 	ContainerRecord
 	dockerclient.ContainerConfig
+	dockerclient.HostConfig
+	token       string
 	ContainerID string
 	ExitCode    *int
 	NewLogWriter
@@ -189,8 +202,19 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 	return nil
 }
 
-func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string) (c *exec.Cmd, err error) {
+func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string, token string) (c *exec.Cmd, err error) {
 	c = exec.Command("arv-mount", arvMountCmd...)
+
+	// Copy our environment, but override ARVADOS_API_TOKEN with
+	// the container auth token.
+	c.Env = nil
+	for _, s := range os.Environ() {
+		if !strings.HasPrefix(s, "ARVADOS_API_TOKEN=") {
+			c.Env = append(c.Env, s)
+		}
+	}
+	c.Env = append(c.Env, "ARVADOS_API_TOKEN="+token)
+
 	nt := NewThrottledLogger(runner.NewLogWriter("arv-mount"))
 	c.Stdout = nt
 	c.Stderr = nt
@@ -328,7 +352,12 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	}
 	arvMountCmd = append(arvMountCmd, runner.ArvMountPoint)
 
-	runner.ArvMount, err = runner.RunArvMount(arvMountCmd)
+	token, err := runner.ContainerToken()
+	if err != nil {
+		return fmt.Errorf("could not get container token: %s", err)
+	}
+
+	runner.ArvMount, err = runner.RunArvMount(arvMountCmd, token)
 	if err != nil {
 		return fmt.Errorf("While trying to start arv-mount: %v", err)
 	}
@@ -431,43 +460,51 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 	return nil
 }
 
-// StartContainer creates the container and runs it.
-func (runner *ContainerRunner) StartContainer() (err error) {
+// CreateContainer creates the docker container.
+func (runner *ContainerRunner) CreateContainer() error {
 	runner.CrunchLog.Print("Creating Docker container")
-
-	runner.CancelLock.Lock()
-	defer runner.CancelLock.Unlock()
-
-	if runner.Cancelled {
-		return ErrCancelled
-	}
 
 	runner.ContainerConfig.Cmd = runner.ContainerRecord.Command
 	if runner.ContainerRecord.Cwd != "." {
 		runner.ContainerConfig.WorkingDir = runner.ContainerRecord.Cwd
 	}
+
 	for k, v := range runner.ContainerRecord.Environment {
 		runner.ContainerConfig.Env = append(runner.ContainerConfig.Env, k+"="+v)
 	}
+	if wantAPI := runner.ContainerRecord.RuntimeConstraints.API; wantAPI != nil && *wantAPI {
+		tok, err := runner.ContainerToken()
+		if err != nil {
+			return err
+		}
+		runner.ContainerConfig.Env = append(runner.ContainerConfig.Env,
+			"ARVADOS_API_TOKEN="+tok,
+			"ARVADOS_API_HOST="+os.Getenv("ARVADOS_API_HOST"),
+			"ARVADOS_API_HOST_INSECURE="+os.Getenv("ARVADOS_API_HOST_INSECURE"),
+		)
+	}
+
 	runner.ContainerConfig.NetworkDisabled = true
+
+	var err error
 	runner.ContainerID, err = runner.Docker.CreateContainer(&runner.ContainerConfig, "", nil)
 	if err != nil {
 		return fmt.Errorf("While creating container: %v", err)
 	}
-	hostConfig := &dockerclient.HostConfig{Binds: runner.Binds,
+
+	runner.HostConfig = dockerclient.HostConfig{Binds: runner.Binds,
 		LogConfig: dockerclient.LogConfig{Type: "none"}}
 
-	err = runner.AttachStreams()
-	if err != nil {
-		return err
-	}
+	return runner.AttachStreams()
+}
 
+// StartContainer starts the docker container created by CreateContainer.
+func (runner *ContainerRunner) StartContainer() error {
 	runner.CrunchLog.Printf("Starting Docker container id '%s'", runner.ContainerID)
-	err = runner.Docker.StartContainer(runner.ContainerID, hostConfig)
+	err := runner.Docker.StartContainer(runner.ContainerID, &runner.HostConfig)
 	if err != nil {
-		return fmt.Errorf("While starting container: %v", err)
+		return fmt.Errorf("could not start container: %v", err)
 	}
-
 	return nil
 }
 
@@ -581,6 +618,15 @@ func (runner *ContainerRunner) CommitLogs() error {
 	runner.CrunchLog = NewThrottledLogger(&ArvLogWriter{runner.ArvClient, runner.ContainerRecord.UUID,
 		"crunch-run", nil})
 
+	if runner.LogsPDH != nil {
+		// If we have already assigned something to LogsPDH,
+		// we must be closing the re-opened log, which won't
+		// end up getting attached to the container record and
+		// therefore doesn't need to be saved as a collection
+		// -- it exists only to send logs to other channels.
+		return nil
+	}
+
 	mt, err := runner.LogCollection.ManifestText()
 	if err != nil {
 		return fmt.Errorf("While creating log manifest: %v", err)
@@ -597,35 +643,62 @@ func (runner *ContainerRunner) CommitLogs() error {
 		return fmt.Errorf("While creating log collection: %v", err)
 	}
 
-	runner.LogsPDH = new(string)
-	*runner.LogsPDH = response.PortableDataHash
+	runner.LogsPDH = &response.PortableDataHash
 
 	return nil
 }
 
 // UpdateContainerRecordRunning updates the container state to "Running"
 func (runner *ContainerRunner) UpdateContainerRecordRunning() error {
+	runner.CancelLock.Lock()
+	defer runner.CancelLock.Unlock()
+	if runner.Cancelled {
+		return ErrCancelled
+	}
 	return runner.ArvClient.Update("containers", runner.ContainerRecord.UUID,
 		arvadosclient.Dict{"container": arvadosclient.Dict{"state": "Running"}}, nil)
 }
 
+// ContainerToken returns the api_token the container (and any
+// arv-mount processes) are allowed to use.
+func (runner *ContainerRunner) ContainerToken() (string, error) {
+	if runner.token != "" {
+		return runner.token, nil
+	}
+
+	var auth APIClientAuthorization
+	err := runner.ArvClient.Call("GET", "containers", runner.ContainerRecord.UUID, "auth", nil, &auth)
+	if err != nil {
+		return "", err
+	}
+	runner.token = auth.APIToken
+	return runner.token, nil
+}
+
 // UpdateContainerRecordComplete updates the container record state on API
 // server to "Complete" or "Cancelled"
-func (runner *ContainerRunner) UpdateContainerRecordComplete() error {
+func (runner *ContainerRunner) UpdateContainerRecordFinal() error {
 	update := arvadosclient.Dict{}
-	if runner.LogsPDH != nil {
-		update["log"] = *runner.LogsPDH
-	}
-	if runner.ExitCode != nil {
-		update["exit_code"] = *runner.ExitCode
-	}
-	if runner.OutputPDH != nil {
-		update["output"] = runner.OutputPDH
-	}
-
 	update["state"] = runner.finalState
-
+	if runner.finalState == "Complete" {
+		if runner.LogsPDH != nil {
+			update["log"] = *runner.LogsPDH
+		}
+		if runner.ExitCode != nil {
+			update["exit_code"] = *runner.ExitCode
+		}
+		if runner.OutputPDH != nil {
+			update["output"] = *runner.OutputPDH
+		}
+	}
 	return runner.ArvClient.Update("containers", runner.ContainerRecord.UUID, arvadosclient.Dict{"container": update}, nil)
+}
+
+// IsCancelled returns the value of Cancelled, with goroutine safety.
+func (runner *ContainerRunner) IsCancelled() bool {
+	runner.CancelLock.Lock()
+	defer runner.CancelLock.Unlock()
+	return runner.Cancelled
 }
 
 // NewArvLogWriter creates an ArvLogWriter
@@ -644,93 +717,99 @@ func (runner *ContainerRunner) Run() (err error) {
 		runner.CrunchLog.Printf("Executing on host '%s'", hostname)
 	}
 
-	var runerr, waiterr error
+	// Clean up temporary directories _after_ finalizing
+	// everything (if we've made any by then)
+	defer runner.CleanupDirs()
+
+	runner.finalState = "Queued"
 
 	defer func() {
-		if err != nil {
-			runner.CrunchLog.Print(err)
-		}
-
-		if runner.Cancelled {
-			runner.finalState = "Cancelled"
-		} else {
-			runner.finalState = "Complete"
-		}
-
-		// (6) capture output
-		outputerr := runner.CaptureOutput()
-		if outputerr != nil {
-			runner.CrunchLog.Print(outputerr)
-		}
-
-		// (7) clean up temporary directories
-		runner.CleanupDirs()
-
-		// (8) write logs
-		logerr := runner.CommitLogs()
-		if logerr != nil {
-			runner.CrunchLog.Print(logerr)
-		}
-
-		// (9) update container record with results
-		updateerr := runner.UpdateContainerRecordComplete()
-		if updateerr != nil {
-			runner.CrunchLog.Print(updateerr)
-		}
-
-		runner.CrunchLog.Close()
-
-		if err == nil {
-			if runerr != nil {
-				err = runerr
-			} else if waiterr != nil {
-				err = waiterr
-			} else if logerr != nil {
-				err = logerr
-			} else if updateerr != nil {
-				err = updateerr
+		// checkErr prints e (unless it's nil) and sets err to
+		// e (unless err is already non-nil). Thus, if err
+		// hasn't already been assigned when Run() returns,
+		// this cleanup func will cause Run() to return the
+		// first non-nil error that is passed to checkErr().
+		checkErr := func(e error) {
+			if e == nil {
+				return
+			}
+			runner.CrunchLog.Print(e)
+			if err == nil {
+				err = e
 			}
 		}
+
+		// Log the error encountered in Run(), if any
+		checkErr(err)
+
+		if runner.finalState == "Queued" {
+			runner.UpdateContainerRecordFinal()
+			return
+		}
+
+		if runner.IsCancelled() {
+			runner.finalState = "Cancelled"
+			// but don't return yet -- we still want to
+			// capture partial output and write logs
+		}
+
+		checkErr(runner.CaptureOutput())
+		checkErr(runner.CommitLogs())
+		checkErr(runner.UpdateContainerRecordFinal())
+
+		// The real log is already closed, but then we opened
+		// a new one in case we needed to log anything while
+		// finalizing.
+		runner.CrunchLog.Close()
 	}()
 
 	err = runner.ArvClient.Get("containers", runner.ContainerRecord.UUID, nil, &runner.ContainerRecord)
 	if err != nil {
-		return fmt.Errorf("While getting container record: %v", err)
-	}
-
-	// (1) setup signal handling
-	runner.SetupSignals()
-
-	// (2) check for and/or load image
-	err = runner.LoadImage()
-	if err != nil {
-		return fmt.Errorf("While loading container image: %v", err)
-	}
-
-	// (3) set up FUSE mount and binds
-	err = runner.SetupMounts()
-	if err != nil {
-		return fmt.Errorf("While setting up mounts: %v", err)
-	}
-
-	// (3) create and start container
-	err = runner.StartContainer()
-	if err != nil {
-		if err == ErrCancelled {
-			err = nil
-		}
+		err = fmt.Errorf("While getting container record: %v", err)
 		return
 	}
 
-	// (4) update container record state
-	err = runner.UpdateContainerRecordRunning()
+	// setup signal handling
+	runner.SetupSignals()
+
+	// check for and/or load image
+	err = runner.LoadImage()
 	if err != nil {
-		runner.CrunchLog.Print(err)
+		err = fmt.Errorf("While loading container image: %v", err)
+		return
 	}
 
-	// (5) wait for container to finish
-	waiterr = runner.WaitFinish()
+	// set up FUSE mount and binds
+	err = runner.SetupMounts()
+	if err != nil {
+		err = fmt.Errorf("While setting up mounts: %v", err)
+		return
+	}
 
+	err = runner.CreateContainer()
+	if err != nil {
+		return
+	}
+
+	if runner.IsCancelled() {
+		return
+	}
+
+	err = runner.UpdateContainerRecordRunning()
+	if err != nil {
+		return
+	}
+	runner.finalState = "Cancelled"
+
+	err = runner.StartContainer()
+	if err != nil {
+		return
+	}
+
+	err = runner.WaitFinish()
+	if err == nil {
+		runner.finalState = "Complete"
+	}
 	return
 }
 

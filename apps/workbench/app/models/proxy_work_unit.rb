@@ -204,14 +204,6 @@ class ProxyWorkUnit < WorkUnit
     end
   end
 
-  def show_child_summary
-    if state_label == "Running"
-      if child_summary
-        child_summary_str
-      end
-    end
-  end
-
   def is_running?
     state_label == 'Running'
   end
@@ -229,7 +221,7 @@ class ProxyWorkUnit < WorkUnit
   end
 
   def show_runtime
-    runningtime = ApplicationController.helpers.determine_wallclock_runtime(if children.any? then children else [@proxied] end)
+    runningtime = ApplicationController.helpers.determine_wallclock_runtime(if children.any? then children else [self] end)
 
     walltime = 0
     if started_at

@@ -35,7 +35,7 @@
             <div class="col-md-3">
               Queued for <%= render_runtime(queuetime, false) %>.
             </div>
-          <% elsif current_obj.show_child_summary %>
+          <% elsif current_obj.is_running? %>
             <div class="col-md-3">
               <span class="task-summary-status">
                 <%= current_obj.child_summary_str %>
