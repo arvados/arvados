@@ -4,6 +4,7 @@ from cwltool.process import get_feature, adjustFiles
 from .arvdocker import arv_docker_get_image
 from . import done
 from cwltool.errors import WorkflowException
+from cwltool.process import UnsupportedRequirement
 
 logger = logging.getLogger('arvados.cwl-runner')
 
@@ -42,6 +43,8 @@ class ArvadosContainer(object):
             }
 
         if self.generatefiles:
+            raise UnsupportedRequirement("Stdin redirection currently not suppported")
+
             vwd = arvados.collection.Collection()
             container_request["task.vwd"] = {}
             for t in self.generatefiles:
@@ -60,13 +63,12 @@ class ArvadosContainer(object):
         if self.environment:
             container_request["environment"].update(self.environment)
 
-        # TODO, not supported by crunchv2 yet
-        #if self.stdin:
-        #    container_request["task.stdin"] = self.pathmapper.mapper(self.stdin)[1]
+        if self.stdin:
+            raise UnsupportedRequirement("Stdin redirection currently not suppported")
 
         if self.stdout:
             mounts["stdout"] = {"kind": "file",
-                                "path": self.stdout}
+                                "path": "/var/spool/cwl/%s" % (self.stdout)}
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if not docker_req:

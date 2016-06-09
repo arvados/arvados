@@ -31,7 +31,7 @@ from .arvcontainer import ArvadosContainer
 from .arvjob import ArvadosJob
 from .arvdocker import arv_docker_get_image
 
-from cwltool.process import shortname, get_feature, adjustFiles, adjustFileObjs, scandeps
+from cwltool.process import shortname, get_feature, adjustFiles, adjustFileObjs, scandeps, UnsupportedRequirement
 from arvados.api import OrderedJsonModel
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -477,7 +477,7 @@ class ArvCwlRunner(object):
         if kwargs.get("submit"):
             runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"))
 
-        if not kwargs.get("submit") and "cwl_runner_job" not in kwargs:
+        if not kwargs.get("submit") and "cwl_runner_job" not in kwargs and not self.crunch2:
             # Create pipeline for local run
             self.pipeline = self.api.pipeline_instances().create(
                 body={
@@ -543,11 +543,13 @@ class ArvCwlRunner(object):
                     self.cond.wait(1)
 
                 events.close()
+            except UnsupportedRequirement:
+                raise
             except:
                 if sys.exc_info()[0] is KeyboardInterrupt:
                     logger.error("Interrupted, marking pipeline as failed")
                 else:
-                    logger.error("Caught unhandled exception, marking pipeline as failed.  Error was: %s", sys.exc_info()[0], exc_info=(sys.exc_info()[1] if self.debug else False))
+                    logger.error("Caught unhandled exception, marking pipeline as failed.  Error was: %s", sys.exc_info()[1], exc_info=(sys.exc_info()[1] if self.debug else False))
                 if self.pipeline:
                     self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
                                                          body={"state": "Failed"}).execute(num_retries=self.num_retries)
