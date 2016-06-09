@@ -55,8 +55,8 @@ On CentOS 6 and RHEL 6:
 On other Red Hat-based systems:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install python-arvados-python-client crunchrunner</span>
-~$ <span class="userinput">sudo yum install --disablerepo=epel python-arvados-fuse</span>
+<pre><code>~$ <span class="userinput">echo 'exclude=python2-llfuse' | sudo tee -a /etc/yum.conf</span>
+~$ <span class="userinput">sudo yum install python-arvados-python-client python-arvados-fuse crunchrunner</span>
 </code></pre>
 </notextile>
 
