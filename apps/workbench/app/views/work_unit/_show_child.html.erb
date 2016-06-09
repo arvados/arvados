@@ -43,8 +43,13 @@
             </div>
           <% elsif current_obj.is_finished? %>
             <div class="col-md-3 text-overflow-ellipsis">
-              <% if current_obj.output %>
-                <%= link_to_arvados_object_if_readable(current_obj.output, 'Output data not available', link_text: "Output of #{current_obj.label}") %>
+              <% outputs = current_obj.outputs %>
+              <% if outputs.any? %>
+                <% if outputs.size == 1 %>
+                  <%= link_to_arvados_object_if_readable(outputs[0], 'Output data not available', link_text: "Output of #{current_obj.label}") %>
+                <% else %>
+                  <%= render partial: 'work_unit/show_outputs', locals: {id: current_obj.uuid, outputs: outputs, align:"pull-right"} %>
+                <% end %>
               <% else %>
                 No output.
               <% end %>

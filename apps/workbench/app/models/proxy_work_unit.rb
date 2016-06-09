@@ -35,6 +35,12 @@ class ProxyWorkUnit < WorkUnit
     t
   end
 
+  def modified_at
+    t = get(:modified_at)
+    t = Time.parse(t) if (t.andand.class == String)
+    t
+  end
+
   def finished_at
     t = get(:finished_at)
     t = Time.parse(t) if (t.andand.class == String)
@@ -150,14 +156,7 @@ class ProxyWorkUnit < WorkUnit
   end
 
   def outputs
-    items = []
-    children.each do |c|
-      items << c.output if c.output
-    end
-    if !items.any?
-      items << get(:output) if get(:output)
-    end
-    items
+    []
   end
 
   def title

@@ -71,8 +71,15 @@ class JobWorkUnit < ProxyWorkUnit
     get(:log)
   end
 
-  def output
-    get(:output)
+  def outputs
+    items = []
+    children.each do |c|
+      items.concat c.outputs
+    end
+    if !items.any?
+      items << get(:output) if get(:output)
+    end
+    items
   end
 
   def can_cancel?

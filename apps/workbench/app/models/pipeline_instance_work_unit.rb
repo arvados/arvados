@@ -32,6 +32,17 @@ class PipelineInstanceWorkUnit < ProxyWorkUnit
     @my_children = items
   end
 
+  def outputs
+    items = []
+    components = get(:components)
+    components.each do |name, c|
+      if c.is_a?(Hash)
+        items << c[:output_uuid] if c[:output_uuid]
+      end
+    end
+    items
+  end
+
   def uri
     uuid = get(:uuid)
     "/pipeline_instances/#{uuid}"

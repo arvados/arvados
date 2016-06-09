@@ -1,31 +1,72 @@
   <div class="row">
     <div class="col-md-6">
       <div class="panel panel-default" style="min-height: 10.5em">
-        <div class="panel-heading"><span class="panel-title">Active processes</span>
+        <div class="panel-heading"><span class="panel-title">Recent processes</span>
           <% if current_user.andand.is_active %>
-          <span class="pull-right">
-          <%= link_to(
-          choose_pipeline_templates_path(
-            title: 'Choose a pipeline to run:',
-            action_name: 'Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i>',
-            action_href: pipeline_instances_path,
-            action_method: 'post',
-            action_data: {'selection_param' => 'pipeline_instance[pipeline_template_uuid]', 'pipeline_instance[owner_uuid]' => current_user.uuid, 'success' => 'redirect-to-created-object'}.to_json),
-          { class: "btn btn-primary btn-xs", remote: true }) do %>
-            <i class="fa fa-fw fa-gear"></i> Run a pipeline...
-          <% end %>
-          </span>
+            <span class="pull-right">
+              <span>
+                <%= link_to(
+                choose_pipeline_templates_path(
+                  title: 'Choose a pipeline to run:',
+                  action_name: 'Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i>',
+                  action_href: pipeline_instances_path,
+                  action_method: 'post',
+                  action_data: {'selection_param' => 'pipeline_instance[pipeline_template_uuid]', 'pipeline_instance[owner_uuid]' => current_user.uuid, 'success' => 'redirect-to-created-object'}.to_json),
+                { class: "btn btn-primary btn-xs", remote: true }) do %>
+                  <i class="fa fa-fw fa-gear"></i> Run a pipeline...
+                <% end %>
+              </span>
+              <span>
+                  <%= link_to pipeline_instances_path, class: 'btn btn-default btn-xs' do %>
+                    All pipelines <i class="fa fa-fw fa-arrow-circle-right"></i>
+                  <% end %>
+              </span>
+            </span>
           <% end %>
         </div>
 
-        <% _running_processes = running_processes(8) %>
-        <% _finished_processes = finished_processes(8) %>
-        <div class="panel-body active-processes">
-          <% if _running_processes.empty? %>
-            No processes are currently running.
+        <% _recent_processes = recent_processes(12) %>
+        <div class="panel-body recent-processes">
+          <% if _recent_processes.empty? %>
+            No recent processes.
           <% else %>
-          <% _running_processes.each do |p| %>
+          <% _recent_processes.each do |p| %>
             <% wu = p.work_unit %>
+            <% if wu.is_finished? %>
+            <div class="dashboard-panel-info-row">
+              <div class="row">
+                <div class="col-md-6 text-overflow-ellipsis">
+                  <%= link_to_if_arvados_object p, {friendly_name: true} %>
+                </div>
+                <div class="col-md-2">
+                  <span class="label label-<%=wu.state_bootstrap_class%>"><%=wu.state_label%></span>
+                </div>
+                <div class="col-md-4">
+                  <%= render_localized_date(wu.finished_at || wu.modified_at, "noseconds") %>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-12">
+                  <% if wu.started_at and wu.finished_at %>
+                    <% wu_time = wu.finished_at - wu.started_at %>
+                    Active for <%= render_runtime(wu_time, false) %>
+                  <% end %>
+
+                  <span class="pull-right text-overflow-ellipsis" style="max-width: 100%">
+                    <% outputs = wu.outputs %>
+                    <% if outputs.size == 0 %>
+                      No output.
+                    <% elsif outputs.size == 1 %>
+                      <i class="fa fa-fw fa-archive"></i> <%= link_to_if_arvados_object outputs[0], friendly_name: true %>
+                    <% else %>
+                      <%= render partial: 'work_unit/show_outputs', locals: {id: wu.uuid, outputs: outputs, align:"pull-right"} %>
+                    <% end %>
+                  </span>
+                </div>
+              </div>
+
+            </div>
+            <% else %>
             <div class="dashboard-panel-info-row">
               <div class="clearfix">
                 <%= link_to_if_arvados_object p, {friendly_name: true} %>
@@ -57,66 +98,8 @@
                 </div>
               </div>
             </div>
-          <% end %>
-          <% end %>
-        </div>
-      </div>
-
-      <div class="panel panel-default">
-        <div class="panel-heading"><span class="panel-title">Recently finished processes</span>
-          <span class="pull-right">
-            <%= link_to pipeline_instances_path, class: 'btn btn-default btn-xs' do %>
-              All pipelines <i class="fa fa-fw fa-arrow-circle-right"></i>
             <% end %>
-          </span>
-        </div>
-        <div class="panel-body finished-processes">
-          <% _finished_processes.each do |p| %>
-            <% wu = p.work_unit %>
-            <div class="dashboard-panel-info-row">
-              <div class="row">
-                <div class="col-md-6 text-overflow-ellipsis">
-                  <%= link_to_if_arvados_object p, {friendly_name: true} %>
-                </div>
-                <div class="col-md-2">
-                  <span class="label label-<%=wu.state_bootstrap_class%>"><%=wu.state_label%></span>
-                </div>
-                <div class="col-md-4">
-                  <%= render_localized_date(wu.finished_at || wu.modified_at, "noseconds") %>
-                </div>
-              </div>
-              <div class="row">
-                <div class="col-md-12">
-                  <% if wu.started_at and wu.finished_at %>
-                    <% wu_time = wu.finished_at - wu.started_at %>
-                    Active for <%= render_runtime(wu_time, false) %>
-                  <% end %>
-
-                  <span class="pull-right text-overflow-ellipsis" style="max-width: 100%">
-                    <% outputs = wu.outputs %>
-                    <% if outputs.size == 0 %>
-                      No output.
-                    <% elsif outputs.size == 1 %>
-                      <i class="fa fa-fw fa-archive"></i> <%= link_to_if_arvados_object outputs[0], friendly_name: true %>
-                    <% else %>
-                      <a href="#<%= wu.uuid %>-outputs" data-toggle="collapse">Outputs <span class="caret"></span></a>
-                    <% end %>
-                  </span>
-                </div>
-              </div>
-
-              <div class="row collapse" id="<%= wu.uuid %>-outputs" >
-                <div class="col-md-12">
-                  <div class="pull-right" style="max-width: 100%">
-                    <% outputs.each do |out| %>
-                      <div class="text-overflow-ellipsis">
-                        <i class="fa fa-fw fa-archive"></i> <%= link_to_if_arvados_object out, friendly_name: true %>
-                      </div>
-                    <% end %>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <% end %>
           <% end %>
         </div>
       </div>
@@ -125,11 +108,20 @@
     <div class="col-md-6">
       <% nodes = Node.all %>
       <div class="panel panel-default" style="min-height: 10.5em">
-        <div class="panel-heading"><span class="panel-title">Compute and job status</span>
+        <div class="panel-heading"><span class="panel-title">Compute node status</span>
           <span class="pull-right">
-            <%= link_to jobs_path, class: 'btn btn-default btn-xs' do %>
-              All jobs <i class="fa fa-fw fa-arrow-circle-right"></i>
+            <% if current_user.andand.is_admin %>
+              <span>
+                <%= link_to nodes_path, class: 'btn btn-default btn-xs' do %>
+                  All nodes <i class="fa fa-fw fa-arrow-circle-right"></i>
+                <% end %>
+              </span>
             <% end %>
+            <span>
+              <%= link_to jobs_path, class: 'btn btn-default btn-xs' do %>
+                All jobs <i class="fa fa-fw fa-arrow-circle-right"></i>
+              <% end %>
+            </span>
           </span>
         </div>
         <div class="panel-body compute-node-summary-pane">

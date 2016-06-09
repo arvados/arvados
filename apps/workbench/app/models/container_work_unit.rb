@@ -10,7 +10,7 @@ class ContainerWorkUnit < ProxyWorkUnit
 
     containers = Container.where(uuid: crs.keys).results
     containers.each do |c|
-      items << ContainerWorkUnit.new(c, crs[c.uuid])
+      items << c.work_unit(crs[c.uuid])
     end
 
     self.my_children = items
@@ -32,8 +32,10 @@ class ContainerWorkUnit < ProxyWorkUnit
     get(:log)
   end
 
-  def output
-    get(:output)
+  def outputs
+    items = []
+    items << get(:output) if get(:output)
+    items
   end
 
   def uri
