@@ -20,7 +20,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
         assert page.has_text?('Save profile'), 'No text - Save profile'
         add_profile user
       else
-        assert page.has_text?('Recent processes'), 'Not found text - Recent processes'
+        assert page.has_text?('Recent pipelines and processes'), 'Not found text - Recent pipelines and processes'
         assert page.has_no_text?('Save profile'), 'Found text - Save profile'
       end
     elsif invited
@@ -119,7 +119,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     end
 
     # profile saved and in home page now
-    assert page.has_text?('Recent processes'), 'No text - Recent processes'
+    assert page.has_text?('Recent pipelines and processes'), 'No text - Recent pipelines and processes'
   end
 
   [

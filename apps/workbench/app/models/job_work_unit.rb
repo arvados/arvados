@@ -73,12 +73,7 @@ class JobWorkUnit < ProxyWorkUnit
 
   def outputs
     items = []
-    children.each do |c|
-      items.concat c.outputs
-    end
-    if !items.any?
-      items << get(:output) if get(:output)
-    end
+    items << get(:output) if get(:output)
     items
   end
 

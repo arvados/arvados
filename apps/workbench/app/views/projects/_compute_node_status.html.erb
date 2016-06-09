@@ -1,9 +1,6 @@
 <h4>Node status</h4>
-<% active_nodes = 0 %>
 <div class="compute-summary-nodelist">
-    <% nodes.sort_by { |n| n.hostname || "" }.each do |n| %>
-      <% if n.crunch_worker_state.in? ["busy", "idle"] and (Time.now - n[:last_ping_at]) < 3600 %>
-        <% active_nodes += 1 %>
+    <% nodes.each do |n| %>
         <div class="compute-summary">
           <a data-toggle="collapse" href="#detail_<%= n.hostname %>" class="compute-summary-head label label-<%= if n.crunch_worker_state == 'busy' then 'primary' else 'default' end %>">
             <%= n.hostname %>
@@ -15,9 +12,5 @@
             <% end %>
           </div>
         </div>
-      <% end %>
-    <% end %>
-    <% if active_nodes == 0 %>
-      No active nodes
     <% end %>
 </div>
