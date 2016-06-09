@@ -102,9 +102,9 @@ func (dispatcher *Dispatcher) notMine(uuid string) {
 	}
 }
 
-// Check if there is a channel for updates associated with this container.  If
-// so (and update is true) send the container record on the channel and return
-// true, if not return false.
+// checkMine returns true/false if there is a channel for updates associated
+// with container c.  If update is true, also send the container record on
+// the channel.
 func (dispatcher *Dispatcher) checkMine(c Container, update bool) bool {
 	dispatcher.mineMutex.Lock()
 	defer dispatcher.mineMutex.Unlock()
@@ -177,6 +177,10 @@ func (dispatcher *Dispatcher) pollContainers() {
 
 func (dispatcher *Dispatcher) handleUpdate(container Container) {
 	if container.State == Queued && dispatcher.checkMine(container, false) {
+		// If we previously started the job, something failed, and it
+		// was re-queued, this dispatcher might still be monitoring it.
+		// Stop the existing monitor, then try to lock and run it
+		// again.
 		dispatcher.notMine(container.UUID)
 	}
 
