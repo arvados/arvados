@@ -28,6 +28,7 @@ from cwltool.load_tool import fetch_document
 from cwltool.builder import Builder
 import urlparse
 from .arvcontainer import ArvadosContainer
+from .arvjob import ArvadosJob
 from .arvdocker import arv_docker_get_image
 
 from cwltool.process import shortname, get_feature, adjustFiles, adjustFileObjs, scandeps
@@ -35,10 +36,6 @@ from arvados.api import OrderedJsonModel
 
 logger = logging.getLogger('arvados.cwl-runner')
 logger.setLevel(logging.INFO)
-
-tmpdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.tmpdir\)=(.*)")
-outdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.outdir\)=(.*)")
-keepre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.keep\)=(.*)")
 
 class CollectionFsAccess(cwltool.process.StdFsAccess):
     """Implement the cwltool FsAccess interface for Arvados Collections."""
@@ -98,194 +95,6 @@ class CollectionFsAccess(cwltool.process.StdFsAccess):
         else:
             return os.path.exists(self._abs(fn))
 
-class ArvadosJob(object):
-    """Submit and manage a Crunch job for executing a CWL CommandLineTool."""
-
-    def __init__(self, runner):
-        self.arvrunner = runner
-        self.running = False
-
-    def run(self, dry_run=False, pull_image=True, **kwargs):
-        script_parameters = {
-            "command": self.command_line
-        }
-        runtime_constraints = {}
-
-        if self.generatefiles:
-            vwd = arvados.collection.Collection()
-            script_parameters["task.vwd"] = {}
-            for t in self.generatefiles:
-                if isinstance(self.generatefiles[t], dict):
-                    src, rest = self.arvrunner.fs_access.get_collection(self.generatefiles[t]["path"].replace("$(task.keep)/", "keep:"))
-                    vwd.copy(rest, t, source_collection=src)
-                else:
-                    with vwd.open(t, "w") as f:
-                        f.write(self.generatefiles[t])
-            vwd.save_new()
-            for t in self.generatefiles:
-                script_parameters["task.vwd"][t] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), t)
-
-        script_parameters["task.env"] = {"TMPDIR": "$(task.tmpdir)"}
-        if self.environment:
-            script_parameters["task.env"].update(self.environment)
-
-        if self.stdin:
-            script_parameters["task.stdin"] = self.pathmapper.mapper(self.stdin)[1]
-
-        if self.stdout:
-            script_parameters["task.stdout"] = self.stdout
-
-        (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
-        if docker_req and kwargs.get("use_container") is not False:
-            runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvrunner.project_uuid)
-        else:
-            runtime_constraints["docker_image"] = "arvados/jobs"
-
-        resources = self.builder.resources
-        if resources is not None:
-            runtime_constraints["min_cores_per_node"] = resources.get("cores", 1)
-            runtime_constraints["min_ram_mb_per_node"] = resources.get("ram")
-            runtime_constraints["min_scratch_mb_per_node"] = resources.get("tmpdirSize", 0) + resources.get("outdirSize", 0)
-
-        filters = [["repository", "=", "arvados"],
-                   ["script", "=", "crunchrunner"],
-                   ["script_version", "in git", "9e5b98e8f5f4727856b53447191f9c06e3da2ba6"]]
-        if not self.arvrunner.ignore_docker_for_reuse:
-            filters.append(["docker_image_locator", "in docker", runtime_constraints["docker_image"]])
-
-        try:
-            response = self.arvrunner.api.jobs().create(
-                body={
-                    "owner_uuid": self.arvrunner.project_uuid,
-                    "script": "crunchrunner",
-                    "repository": "arvados",
-                    "script_version": "master",
-                    "minimum_script_version": "9e5b98e8f5f4727856b53447191f9c06e3da2ba6",
-                    "script_parameters": {"tasks": [script_parameters]},
-                    "runtime_constraints": runtime_constraints
-                },
-                filters=filters,
-                find_or_create=kwargs.get("enable_reuse", True)
-            ).execute(num_retries=self.arvrunner.num_retries)
-
-            self.arvrunner.jobs[response["uuid"]] = self
-
-            self.update_pipeline_component(response)
-
-            logger.info("Job %s (%s) is %s", self.name, response["uuid"], response["state"])
-
-            if response["state"] in ("Complete", "Failed", "Cancelled"):
-                self.done(response)
-        except Exception as e:
-            logger.error("Got error %s" % str(e))
-            self.output_callback({}, "permanentFail")
-
-    def update_pipeline_component(self, record):
-        if self.arvrunner.pipeline:
-            self.arvrunner.pipeline["components"][self.name] = {"job": record}
-            self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().update(uuid=self.arvrunner.pipeline["uuid"],
-                                                                                 body={
-                                                                                    "components": self.arvrunner.pipeline["components"]
-                                                                                 }).execute(num_retries=self.arvrunner.num_retries)
-        if self.arvrunner.uuid:
-            try:
-                job = self.arvrunner.api.jobs().get(uuid=self.arvrunner.uuid).execute()
-                if job:
-                    components = job["components"]
-                    components[self.name] = record["uuid"]
-                    self.arvrunner.api.jobs().update(uuid=self.arvrunner.uuid,
-                        body={
-                            "components": components
-                        }).execute(num_retries=self.arvrunner.num_retries)
-            except Exception as e:
-                logger.info("Error adding to components: %s", e)
-
-    def done(self, record):
-        try:
-            self.update_pipeline_component(record)
-        except:
-            pass
-
-        try:
-            if record["state"] == "Complete":
-                processStatus = "success"
-            else:
-                processStatus = "permanentFail"
-
-            try:
-                outputs = {}
-                if record["output"]:
-                    logc = arvados.collection.Collection(record["log"])
-                    log = logc.open(logc.keys()[0])
-                    tmpdir = None
-                    outdir = None
-                    keepdir = None
-                    for l in log:
-                        # Determine the tmpdir, outdir and keepdir paths from
-                        # the job run.  Unfortunately, we can't take the first
-                        # values we find (which are expected to be near the
-                        # top) and stop scanning because if the node fails and
-                        # the job restarts on a different node these values
-                        # will different runs, and we need to know about the
-                        # final run that actually produced output.
-
-                        g = tmpdirre.match(l)
-                        if g:
-                            tmpdir = g.group(1)
-                        g = outdirre.match(l)
-                        if g:
-                            outdir = g.group(1)
-                        g = keepre.match(l)
-                        if g:
-                            keepdir = g.group(1)
-
-                    colname = "Output %s of %s" % (record["output"][0:7], self.name)
-
-                    # check if collection already exists with same owner, name and content
-                    collection_exists = self.arvrunner.api.collections().list(
-                        filters=[["owner_uuid", "=", self.arvrunner.project_uuid],
-                                 ['portable_data_hash', '=', record["output"]],
-                                 ["name", "=", colname]]
-                    ).execute(num_retries=self.arvrunner.num_retries)
-
-                    if not collection_exists["items"]:
-                        # Create a collection located in the same project as the
-                        # pipeline with the contents of the output.
-                        # First, get output record.
-                        collections = self.arvrunner.api.collections().list(
-                            limit=1,
-                            filters=[['portable_data_hash', '=', record["output"]]],
-                            select=["manifest_text"]
-                        ).execute(num_retries=self.arvrunner.num_retries)
-
-                        if not collections["items"]:
-                            raise WorkflowException(
-                                "Job output '%s' cannot be found on API server" % (
-                                    record["output"]))
-
-                        # Create new collection in the parent project
-                        # with the output contents.
-                        self.arvrunner.api.collections().create(body={
-                            "owner_uuid": self.arvrunner.project_uuid,
-                            "name": colname,
-                            "portable_data_hash": record["output"],
-                            "manifest_text": collections["items"][0]["manifest_text"]
-                        }, ensure_unique_name=True).execute(
-                            num_retries=self.arvrunner.num_retries)
-
-                    self.builder.outdir = outdir
-                    self.builder.pathmapper.keepdir = keepdir
-                    outputs = self.collect_outputs("keep:" + record["output"])
-            except WorkflowException as e:
-                logger.error("Error while collecting job outputs:\n%s", e, exc_info=(e if self.arvrunner.debug else False))
-                processStatus = "permanentFail"
-            except Exception as e:
-                logger.exception("Got unknown exception while collecting job outputs:")
-                processStatus = "permanentFail"
-
-            self.output_callback(outputs, processStatus)
-        finally:
-            del self.arvrunner.jobs[record["uuid"]]
 
 
 class RunnerJob(object):
@@ -574,10 +383,16 @@ class ArvadosCommandTool(CommandLineTool):
             return ArvadosJob(self.arvrunner)
 
     def makePathMapper(self, reffiles, **kwargs):
-        return ArvPathMapper(self.arvrunner, reffiles, kwargs["basedir"],
-                             "$(task.keep)/%s",
-                             "$(task.keep)/%s/%s",
-                             **kwargs)
+        if self.crunch2:
+            return ArvPathMapper(self.arvrunner, reffiles, kwargs["basedir"],
+                                 "/keep/%s",
+                                 "/keep/%s/%s",
+                                 **kwargs)
+        else:
+            return ArvPathMapper(self.arvrunner, reffiles, kwargs["basedir"],
+                                 "$(task.keep)/%s",
+                                 "$(task.keep)/%s/%s",
+                                 **kwargs)
 
 
 class ArvCwlRunner(object):
@@ -676,7 +491,10 @@ class ArvCwlRunner(object):
                 runnerjob.run()
                 return runnerjob.uuid
 
-        events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#job"]], self.on_message)
+        if self.crunch2:
+            events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#container"]], self.on_message)
+        else:
+            events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#job"]], self.on_message)
 
         self.debug = kwargs.get("debug")
         self.ignore_docker_for_reuse = kwargs.get("ignore_docker_for_reuse")
