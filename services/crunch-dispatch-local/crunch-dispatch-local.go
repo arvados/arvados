@@ -4,6 +4,7 @@ package main
 
 import (
 	"flag"
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
 	"log"
@@ -76,7 +77,7 @@ func doMain() error {
 	return nil
 }
 
-func startFunc(container dispatch.Container, cmd *exec.Cmd) error {
+func startFunc(container arvados.Container, cmd *exec.Cmd) error {
 	return cmd.Start()
 }
 
@@ -91,8 +92,8 @@ var startCmd = startFunc
 // If the container is in any other state, or is not Complete/Cancelled after
 // crunch-run terminates, mark the container as Cancelled.
 func run(dispatcher *dispatch.Dispatcher,
-	container dispatch.Container,
-	status chan dispatch.Container) {
+	container arvados.Container,
+	status chan arvados.Container) {
 
 	uuid := container.UUID
 

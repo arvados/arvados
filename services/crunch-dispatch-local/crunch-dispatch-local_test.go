@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
@@ -64,16 +65,16 @@ func (s *TestSuite) TestIntegration(c *C) {
 	doneProcessing := make(chan struct{})
 	dispatcher := dispatch.Dispatcher{
 		Arv:          arv,
-		PollInterval: time.Duration(1) * time.Second,
+		PollInterval: time.Second,
 		RunContainer: func(dispatcher *dispatch.Dispatcher,
-			container dispatch.Container,
-			status chan dispatch.Container) {
+			container arvados.Container,
+			status chan arvados.Container) {
 			run(dispatcher, container, status)
 			doneProcessing <- struct{}{}
 		},
 		DoneProcessing: doneProcessing}
 
-	startCmd = func(container dispatch.Container, cmd *exec.Cmd) error {
+	startCmd = func(container arvados.Container, cmd *exec.Cmd) error {
 		dispatcher.UpdateState(container.UUID, "Running")
 		dispatcher.UpdateState(container.UUID, "Complete")
 		return cmd.Start()
@@ -89,16 +90,16 @@ func (s *TestSuite) TestIntegration(c *C) {
 	params := arvadosclient.Dict{
 		"filters": [][]string{[]string{"state", "=", "Queued"}},
 	}
-	var containers dispatch.ContainerList
+	var containers arvados.ContainerList
 	err = arv.List("containers", params, &containers)
 	c.Check(err, IsNil)
 	c.Assert(len(containers.Items), Equals, 0)
 
 	// Previously "Queued" container should now be in "Complete" state
-	var container dispatch.Container
+	var container arvados.Container
 	err = arv.Get("containers", "zzzzz-dz642-queuedcontainer", nil, &container)
 	c.Check(err, IsNil)
-	c.Check(container.State, Equals, "Complete")
+	c.Check(string(container.State), Equals, "Complete")
 }
 
 func (s *MockArvadosServerSuite) Test_APIErrorGettingContainers(c *C) {
@@ -168,14 +169,14 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 		Arv:          arv,
 		PollInterval: time.Duration(1) * time.Second,
 		RunContainer: func(dispatcher *dispatch.Dispatcher,
-			container dispatch.Container,
-			status chan dispatch.Container) {
+			container arvados.Container,
+			status chan arvados.Container) {
 			run(dispatcher, container, status)
 			doneProcessing <- struct{}{}
 		},
 		DoneProcessing: doneProcessing}
 
-	startCmd = func(container dispatch.Container, cmd *exec.Cmd) error {
+	startCmd = func(container arvados.Container, cmd *exec.Cmd) error {
 		dispatcher.UpdateState(container.UUID, "Running")
 		dispatcher.UpdateState(container.UUID, "Complete")
 		return cmd.Start()
