@@ -7,6 +7,7 @@ require 'oj'
 require 'faye/websocket'
 require 'record_filters'
 require 'load_param'
+require 'set'
 
 # Patch in user, last_log_id and filters fields into the Faye::Websocket class.
 module Faye
@@ -14,6 +15,7 @@ module Faye
     attr_accessor :user
     attr_accessor :last_log_id
     attr_accessor :filters
+    attr_accessor :sent_ids
   end
 end
 
@@ -114,7 +116,9 @@ class EventBus
 
         lastid = nil
         logs.limit(limit).each do |l|
-          ws.send(l.as_api_response.to_json)
+          if ws.sent_ids.add?(l.id) != nil
+            ws.send(l.as_api_response.to_json)
+          end
           lastid = l.id
           count += 1
         end
@@ -225,6 +229,7 @@ class EventBus
     ws.user = current_user
     ws.filters = []
     ws.last_log_id = nil
+    ws.sent_ids = Set.new
 
     # Subscribe to internal postgres notifications through @channel.  This will
     # call push_events when a notification comes through.
