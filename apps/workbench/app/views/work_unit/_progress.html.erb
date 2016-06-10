@@ -1,5 +1,5 @@
 <% if wu.is_running? %>
-  <% if @object.uuid == wu.uuid and wu.progress == 0.0 %>
+  <% if @object.andand.uuid == wu.uuid and wu.progress == 0.0 %>
     <span class="label label-<%= wu.state_bootstrap_class %>"> Active </span>
   <% else%>
     <div class="progress" style="margin-bottom: 0px">

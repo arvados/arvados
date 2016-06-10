@@ -55,7 +55,8 @@
     preload_objects_for_dataclass resource_class, uuids
   end
 
-  collections = wu.children.collect {|j| j.output}.compact
+  collections = wu.children.collect {|j| j.outputs}.compact
+  collections = collections.flatten.uniq
   collections.concat wu.children.collect {|j| j.docker_image}.uniq.compact
   collections_pdhs = collections.select {|x| !(m = CollectionsHelper.match(x)).nil?}.uniq.compact
   collections_uuids = collections - collections_pdhs

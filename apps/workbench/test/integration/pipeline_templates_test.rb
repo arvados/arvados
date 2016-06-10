@@ -35,7 +35,7 @@ class PipelineTemplatesTest < ActionDispatch::IntegrationTest
     assert page.has_text? 'Textile description for pipeline template'
     assert page.has_link? 'Go to dashboard'
     click_link 'Go to dashboard'
-    assert page.has_text? 'Active pipelines'
+    assert page.has_text? 'Recent pipelines and processes'
 
     # again visit recent templates page and verify edited description
     visit page_with_token("active", "/pipeline_templates")

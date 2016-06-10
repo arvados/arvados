@@ -1,6 +1,6 @@
 queued:
   uuid: zzzzz-dz642-queuedcontainer
-  owner_uuid: zzzzz-tpzed-000000000000000
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   state: Queued
   priority: 1
   created_at: 2016-01-11 11:11:11.111111111 Z
@@ -14,9 +14,111 @@ queued:
     ram: 12000000000
     vcpus: 4
 
+running:
+  uuid: zzzzz-dz642-runningcontainr
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Running
+  priority: 1
+  created_at: <%= 1.minute.ago.to_s(:db) %>
+  updated_at: <%= 1.minute.ago.to_s(:db) %>
+  started_at: <%= 1.minute.ago.to_s(:db) %>
+  container_image: test
+  cwd: test
+  output: test
+  output_path: test
+  command: ["echo", "hello"]
+  runtime_constraints:
+    ram: 12000000000
+    vcpus: 4
+
+running-older:
+  uuid: zzzzz-dz642-runningcontain2
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Running
+  priority: 1
+  created_at: <%= 2.minute.ago.to_s(:db) %>
+  updated_at: <%= 2.minute.ago.to_s(:db) %>
+  started_at: <%= 2.minute.ago.to_s(:db) %>
+  container_image: test
+  cwd: test
+  output: test
+  output_path: test
+  command: ["echo", "hello"]
+  runtime_constraints:
+    ram: 12000000000
+    vcpus: 4
+
+locked:
+  uuid: zzzzz-dz642-lockedcontainer
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Locked
+  priority: 2
+  created_at: <%= 2.minute.ago.to_s(:db) %>
+  updated_at: <%= 2.minute.ago.to_s(:db) %>
+  container_image: test
+  cwd: test
+  output: test
+  output_path: test
+  command: ["echo", "hello"]
+  runtime_constraints:
+    ram: 12000000000
+    vcpus: 4
+
 completed:
   uuid: zzzzz-dz642-compltcontainer
-  owner_uuid: zzzzz-tpzed-000000000000000
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Complete
+  priority: 1
+  created_at: 2016-01-11 11:11:11.111111111 Z
+  updated_at: 2016-01-11 11:11:11.111111111 Z
+  started_at: 2016-01-11 11:11:11.111111111 Z
+  finished_at: 2016-01-12 11:12:13.111111111 Z
+  container_image: test
+  cwd: test
+  output: test
+  output_path: test
+  command: ["echo", "hello"]
+  runtime_constraints:
+    ram: 12000000000
+    vcpus: 4
+
+completed_older:
+  uuid: zzzzz-dz642-compltcontainr2
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Complete
+  priority: 1
+  created_at: 2016-01-11 11:11:11.111111111 Z
+  updated_at: 2016-01-11 11:11:11.111111111 Z
+  started_at: 2016-01-13 11:11:11.111111111 Z
+  finished_at: 2016-01-14 11:12:13.111111111 Z
+  container_image: test
+  cwd: test
+  output: test
+  output_path: test
+  command: ["echo", "hello"]
+  runtime_constraints:
+    ram: 12000000000
+    vcpus: 4
+
+requester:
+  uuid: zzzzz-dz642-requestingcntnr
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  state: Complete
+  priority: 1
+  created_at: 2016-01-11 11:11:11.111111111 Z
+  updated_at: 2016-01-11 11:11:11.111111111 Z
+  container_image: test
+  cwd: test
+  output: test
+  output_path: test
+  command: ["echo", "hello"]
+  runtime_constraints:
+    ram: 12000000000
+    vcpus: 4
+
+requester_container:
+  uuid: zzzzz-dz642-requestercntnr1
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   state: Complete
   priority: 1
   created_at: 2016-01-11 11:11:11.111111111 Z

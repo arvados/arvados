@@ -71,8 +71,10 @@ class JobWorkUnit < ProxyWorkUnit
     get(:log)
   end
 
-  def output
-    get(:output)
+  def outputs
+    items = []
+    items << get(:output) if get(:output)
+    items
   end
 
   def can_cancel?

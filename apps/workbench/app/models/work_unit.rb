@@ -21,6 +21,10 @@ class WorkUnit
     # returns created_at timestamp
   end
 
+  def modified_at
+    # returns modified_at timestamp
+  end
+
   def started_at
     # returns started_at timestamp for this work unit
   end
@@ -87,8 +91,8 @@ class WorkUnit
     # returns if this is nondeterministic
   end
 
-  def output
-    # returns uuid or pdh of output data, if any
+  def outputs
+    # returns array containing uuid or pdh of output data
   end
 
   def child_summary

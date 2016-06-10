@@ -179,7 +179,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
         first('button', text: 'x').click
       end
-      assert_text 'Active pipelines' # seeing dashboard now
+      assert_text 'Recent pipelines and processes' # seeing dashboard now
     end
   end
 
@@ -239,6 +239,32 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
       # look for unique property in the current page
       assert_text look_for
+    end
+  end
+
+  [
+    ['active', false],
+    ['admin', true],
+  ].each do |token, is_admin|
+    test "visit dashboard as #{token}" do
+      visit page_with_token(token)
+
+      assert_text 'Recent pipelines and processes' # seeing dashboard now
+      within('.recent-processes') do
+        page.has_button? 'Run a pipeline'
+        page.has_link? 'All pipelines'
+        assert_text 'zzzzz-d1hrv-partdonepipelin'
+        assert_text 'zzzzz-d1hrv-twodonepipeline'
+        assert_text 'zzzzz-dz642-runningcontainr'
+        assert_text 'zzzzz-dz642-runningcontain2'
+      end
+
+      within('.compute-node-summary-pane') do
+        page.has_link?('All nodes') if is_admin
+        page.has_link? 'All jobs'
+        click_link 'Details'
+        assert_text 'compute0'
+      end
     end
   end
 end

@@ -25,19 +25,25 @@ class ProxyWorkUnit < WorkUnit
 
   def created_at
     t = get(:created_at)
-    t = Time.parse(t) if (t.andand.class == String)
+    t = Time.parse(t) if (t.is_a? String)
     t
   end
 
   def started_at
     t = get(:started_at)
-    t = Time.parse(t) if (t.andand.class == String)
+    t = Time.parse(t) if (t.is_a? String)
+    t
+  end
+
+  def modified_at
+    t = get(:modified_at)
+    t = Time.parse(t) if (t.is_a? String)
     t
   end
 
   def finished_at
     t = get(:finished_at)
-    t = Time.parse(t) if (t.andand.class == String)
+    t = Time.parse(t) if (t.is_a? String)
     t
   end
 
@@ -146,6 +152,10 @@ class ProxyWorkUnit < WorkUnit
   end
 
   def children
+    []
+  end
+
+  def outputs
     []
   end
 
