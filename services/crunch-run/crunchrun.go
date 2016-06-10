@@ -46,12 +46,6 @@ type CollectionRecord struct {
 	PortableDataHash string `json:"portable_data_hash"`
 }
 
-// APIClientAuthorization is an arvados#api_client_authorization resource.
-type APIClientAuthorization struct {
-	UUID     string `json:"uuid"`
-	APIToken string `json:"api_token"`
-}
-
 // NewLogWriter is a factory function to create a new log writer.
 type NewLogWriter func(name string) io.WriteCloser
 
@@ -639,7 +633,7 @@ func (runner *ContainerRunner) ContainerToken() (string, error) {
 		return runner.token, nil
 	}
 
-	var auth APIClientAuthorization
+	var auth arvados.APIClientAuthorization
 	err := runner.ArvClient.Call("GET", "containers", runner.Container.UUID, "auth", nil, &auth)
 	if err != nil {
 		return "", err
