@@ -22,15 +22,6 @@ const (
 	Cancelled = arvados.ContainerStateCancelled
 )
 
-type apiClientAuthorization struct {
-	UUID     string `json:"uuid"`
-	APIToken string `json:"api_token"`
-}
-
-type apiClientAuthorizationList struct {
-	Items []apiClientAuthorization `json:"items"`
-}
-
 // Dispatcher holds the state of the dispatcher
 type Dispatcher struct {
 	// The Arvados client
@@ -58,7 +49,7 @@ type Dispatcher struct {
 
 	mineMutex  sync.Mutex
 	mineMap    map[string]chan arvados.Container
-	Auth       apiClientAuthorization
+	Auth       arvados.APIClientAuthorization
 	containers chan arvados.Container
 }
 
