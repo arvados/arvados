@@ -6,6 +6,7 @@ import logging
 from operator import attrgetter
 
 import libcloud.common.types as cloud_types
+from libcloud.common.exceptions import BaseHTTPError
 from libcloud.compute.base import NodeDriver, NodeAuthSSHKey
 
 from ...config import NETWORK_ERRORS
@@ -24,7 +25,7 @@ class BaseComputeNodeDriver(RetryMixin):
     Subclasses must implement arvados_create_kwargs, sync_node,
     node_fqdn, and node_start_time.
     """
-    CLOUD_ERRORS = NETWORK_ERRORS + (cloud_types.LibcloudError,)
+    CLOUD_ERRORS = NETWORK_ERRORS + (cloud_types.LibcloudError, BaseHTTPError)
 
     @RetryMixin._retry()
     def _create_driver(self, driver_class, **auth_kwargs):
