@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
@@ -38,7 +39,7 @@ type ArvTestClient struct {
 	Total   int64
 	Calls   int
 	Content []arvadosclient.Dict
-	ContainerRecord
+	arvados.Container
 	Logs          map[string]*bytes.Buffer
 	WasSetRunning bool
 	sync.Mutex
@@ -183,7 +184,7 @@ func (this *ArvTestClient) Get(resourceType string, uuid string, parameters arva
 		}
 	}
 	if resourceType == "containers" {
-		(*output.(*ContainerRecord)) = this.ContainerRecord
+		(*output.(*arvados.Container)) = this.Container
 	}
 	return nil
 }
@@ -206,7 +207,8 @@ func (this *ArvTestClient) Update(resourceType string, uuid string, parameters a
 // "baz") returns parameters with parameters["foo"]["bar"]=="baz". If
 // no call matches, it returns nil.
 func (this *ArvTestClient) CalledWith(jpath, expect string) arvadosclient.Dict {
-	call: for _, content := range this.Content {
+call:
+	for _, content := range this.Content {
 		var v interface{} = content
 		for _, k := range strings.Split(jpath, ".") {
 			if dict, ok := v.(arvadosclient.Dict); !ok {
@@ -255,7 +257,7 @@ func (s *TestSuite) TestLoadImage(c *C) {
 	_, err = cr.Docker.InspectImage(hwImageId)
 	c.Check(err, NotNil)
 
-	cr.ContainerRecord.ContainerImage = hwPDH
+	cr.Container.ContainerImage = hwPDH
 
 	// (1) Test loading image from keep
 	c.Check(kc.Called, Equals, false)
@@ -340,7 +342,7 @@ func (this KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, file
 func (s *TestSuite) TestLoadImageArvError(c *C) {
 	// (1) Arvados error
 	cr := NewContainerRunner(ArvErrorTestClient{}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	cr.ContainerRecord.ContainerImage = hwPDH
+	cr.Container.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
 	c.Check(err.Error(), Equals, "While getting container image collection: ArvError")
@@ -350,7 +352,7 @@ func (s *TestSuite) TestLoadImageKeepError(c *C) {
 	// (2) Keep error
 	docker := NewTestDockerClient()
 	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	cr.ContainerRecord.ContainerImage = hwPDH
+	cr.Container.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
 	c.Check(err.Error(), Equals, "While creating ManifestFileReader for container image: KeepError")
@@ -359,7 +361,7 @@ func (s *TestSuite) TestLoadImageKeepError(c *C) {
 func (s *TestSuite) TestLoadImageCollectionError(c *C) {
 	// (3) Collection doesn't contain image
 	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	cr.ContainerRecord.ContainerImage = otherPDH
+	cr.Container.ContainerImage = otherPDH
 
 	err := cr.LoadImage()
 	c.Check(err.Error(), Equals, "First file in the container image collection does not end in .tar")
@@ -369,7 +371,7 @@ func (s *TestSuite) TestLoadImageKeepReadError(c *C) {
 	// (4) Collection doesn't contain image
 	docker := NewTestDockerClient()
 	cr := NewContainerRunner(&ArvTestClient{}, KeepReadErrorTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	cr.ContainerRecord.ContainerImage = hwPDH
+	cr.Container.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
 	c.Check(err, NotNil)
@@ -418,8 +420,8 @@ func (s *TestSuite) TestRunContainer(c *C) {
 
 	var logs TestLogs
 	cr.NewLogWriter = logs.NewTestLoggingWriter
-	cr.ContainerRecord.ContainerImage = hwPDH
-	cr.ContainerRecord.Command = []string{"./hw"}
+	cr.Container.ContainerImage = hwPDH
+	cr.Container.Command = []string{"./hw"}
 	err := cr.LoadImage()
 	c.Check(err, IsNil)
 
@@ -455,18 +457,18 @@ func (s *TestSuite) TestCommitLogs(c *C) {
 	c.Check(*cr.LogsPDH, Equals, "63da7bdacf08c40f604daad80c261e9a+60")
 }
 
-func (s *TestSuite) TestUpdateContainerRecordRunning(c *C) {
+func (s *TestSuite) TestUpdateContainerRunning(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
-	err := cr.UpdateContainerRecordRunning()
+	err := cr.UpdateContainerRunning()
 	c.Check(err, IsNil)
 
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["state"], Equals, "Running")
 }
 
-func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
+func (s *TestSuite) TestUpdateContainerComplete(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
@@ -478,7 +480,7 @@ func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
 	*cr.ExitCode = 42
 	cr.finalState = "Complete"
 
-	err := cr.UpdateContainerRecordFinal()
+	err := cr.UpdateContainerFinal()
 	c.Check(err, IsNil)
 
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["log"], Equals, *cr.LogsPDH)
@@ -486,14 +488,14 @@ func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 }
 
-func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
+func (s *TestSuite) TestUpdateContainerCancelled(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.Cancelled = true
 	cr.finalState = "Cancelled"
 
-	err := cr.UpdateContainerRecordFinal()
+	err := cr.UpdateContainerFinal()
 	c.Check(err, IsNil)
 
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["log"], IsNil)
@@ -504,7 +506,7 @@ func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
 // Used by the TestFullRun*() test below to DRY up boilerplate setup to do full
 // dress rehearsal of the Run() function, starting from a JSON container record.
 func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner) {
-	rec := ContainerRecord{}
+	rec := arvados.Container{}
 	err := json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
@@ -512,7 +514,7 @@ func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvT
 	docker.fn = fn
 	docker.RemoveImage(hwImageId, true)
 
-	api = &ArvTestClient{ContainerRecord: rec}
+	api = &ArvTestClient{Container: rec}
 	cr = NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
@@ -643,7 +645,7 @@ func (s *TestSuite) TestCancel(c *C) {
     "runtime_constraints": {}
 }`
 
-	rec := ContainerRecord{}
+	rec := arvados.Container{}
 	err := json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
@@ -656,7 +658,7 @@ func (s *TestSuite) TestCancel(c *C) {
 	}
 	docker.RemoveImage(hwImageId, true)
 
-	api := &ArvTestClient{ContainerRecord: rec}
+	api := &ArvTestClient{Container: rec}
 	cr := NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
@@ -735,8 +737,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	}
 
 	{
-		cr.ContainerRecord.Mounts = make(map[string]Mount)
-		cr.ContainerRecord.Mounts["/tmp"] = Mount{Kind: "tmp"}
+		cr.Container.Mounts = make(map[string]arvados.Mount)
+		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
 		cr.OutputPath = "/tmp"
 
 		err := cr.SetupMounts()
@@ -748,8 +750,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 	{
 		i = 0
-		cr.ContainerRecord.Mounts = make(map[string]Mount)
-		cr.ContainerRecord.Mounts["/keeptmp"] = Mount{Kind: "collection", Writable: true}
+		cr.Container.Mounts = make(map[string]arvados.Mount)
+		cr.Container.Mounts["/keeptmp"] = arvados.Mount{Kind: "collection", Writable: true}
 		cr.OutputPath = "/keeptmp"
 
 		os.MkdirAll("/tmp/mktmpdir1/tmp0", os.ModePerm)
@@ -763,9 +765,9 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 	{
 		i = 0
-		cr.ContainerRecord.Mounts = make(map[string]Mount)
-		cr.ContainerRecord.Mounts["/keepinp"] = Mount{Kind: "collection", PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53"}
-		cr.ContainerRecord.Mounts["/keepout"] = Mount{Kind: "collection", Writable: true}
+		cr.Container.Mounts = make(map[string]arvados.Mount)
+		cr.Container.Mounts["/keepinp"] = arvados.Mount{Kind: "collection", PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53"}
+		cr.Container.Mounts["/keepout"] = arvados.Mount{Kind: "collection", Writable: true}
 		cr.OutputPath = "/keepout"
 
 		os.MkdirAll("/tmp/mktmpdir1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
@@ -808,7 +810,7 @@ func (s *TestSuite) TestStdout(c *C) {
 
 // Used by the TestStdoutWithWrongPath*()
 func StdoutErrorRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner, err error) {
-	rec := ContainerRecord{}
+	rec := arvados.Container{}
 	err = json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
@@ -816,7 +818,7 @@ func StdoutErrorRunHelper(c *C, record string, fn func(t *TestDockerClient)) (ap
 	docker.fn = fn
 	docker.RemoveImage(hwImageId, true)
 
-	api = &ArvTestClient{ContainerRecord: rec}
+	api = &ArvTestClient{Container: rec}
 	cr = NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
