@@ -9,7 +9,9 @@
               <% keys << :outputs if @object.uuid == current_obj.uuid %>
               <% keys.each do |k| %>
                 <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
-                <% if val %>
+                <% has_val = val %>
+                <% has_val = val.andand.any? if k == :outputs %>
+                <% if has_val %>
                 <tr>
                   <td style="padding-right: 1em">
                     <%= k.to_s %>:
