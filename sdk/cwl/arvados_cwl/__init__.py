@@ -19,6 +19,7 @@ import arvados.events
 from .arvcontainer import ArvadosContainer, RunnerContainer
 from .arvjob import ArvadosJob, RunnerJob, RunnerTemplate
 from .arvtool import ArvadosCommandTool
+from .fsaccess import CollectionFsAccess
 
 from cwltool.process import shortname, UnsupportedRequirement
 from arvados.api import OrderedJsonModel
@@ -184,6 +185,9 @@ class ArvCwlRunner(object):
             if self.pipeline:
                 self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
                                                      body={"state": "Failed"}).execute(num_retries=self.num_retries)
+            if runnerjob and self.crunch2:
+                self.api.container_requests().update(uuid=runnerjob.uuid,
+                                                     body={"priority": "0"}).execute(num_retries=self.num_retries)
         finally:
             self.cond.release()
 

@@ -152,7 +152,7 @@ class RunnerContainer(Runner):
         workflowname = os.path.basename(self.tool.tool["id"])
         workflowpath = "/var/lib/cwl/workflow/%s" % workflowname
         workflowcollection = workflowmapper.mapper(self.tool.tool["id"])[1]
-        workflowcollection = workflowcollection[5:workflowcollection.index('/')]
+        workflowcollection = workflowcollection[workflowcollection.index('/')]
         jobpath = "/var/lib/cwl/job/cwl.input.json"
 
         container_image = arv_docker_get_image(self.arvrunner.api,
@@ -181,11 +181,16 @@ class RunnerContainer(Runner):
                 "stdout": {
                     "kind": "file",
                     "path": "/var/spool/cwl/cwl.output.json"
+                },
+                "/var/spool/cwl": {
+                    "kind": "collection",
+                    "writable": True
                 }
             },
             "runtime_constraints": {
                 "vcpus": 1,
-                "ram": 1024*1024*256
+                "ram": 1024*1024*256,
+                "API": True
             }
         }
 
