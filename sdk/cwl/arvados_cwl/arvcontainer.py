@@ -1,10 +1,15 @@
 import logging
+import json
+import os
+
+from cwltool.errors import WorkflowException
+from cwltool.process import get_feature, adjustFiles, UnsupportedRequirement, shortname
+
 import arvados.collection
-from cwltool.process import get_feature, adjustFiles
+
 from .arvdocker import arv_docker_get_image
 from . import done
-from cwltool.errors import WorkflowException
-from cwltool.process import UnsupportedRequirement
+from .runner import Runner
 
 logger = logging.getLogger('arvados.cwl-runner')
 
@@ -45,7 +50,7 @@ class ArvadosContainer(object):
         if self.generatefiles:
             raise UnsupportedRequirement("Generate files not supported")
 
-            vwd = arvados.collection.Collection()
+            vwd = arvados.collection.Collection(api_client=self.arvrunner.api_client)
             container_request["task.vwd"] = {}
             for t in self.generatefiles:
                 if isinstance(self.generatefiles[t], dict):
@@ -124,3 +129,78 @@ class ArvadosContainer(object):
             self.output_callback(outputs, processStatus)
         finally:
             del self.arvrunner.jobs[record["uuid"]]
+
+
+class RunnerContainer(Runner):
+    """Submit and manage a container that runs arvados-cwl-runner."""
+
+    def arvados_job_spec(self, dry_run=False, pull_image=True, **kwargs):
+        """Create an Arvados job specification for this workflow.
+
+        The returned dict can be used to create a job (i.e., passed as
+        the +body+ argument to jobs().create()), or as a component in
+        a pipeline template or pipeline instance.
+        """
+
+        workflowmapper = super(RunnerContainer, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)
+
+        with arvados.collection.Collection(api_client=self.arvrunner.api) as jobobj:
+            with jobobj.open("cwl.input.json", "w") as f:
+                json.dump(self.job_order, f, sort_keys=True, indent=4)
+            jobobj.save_new(owner_uuid=self.arvrunner.project_uuid)
+
+        workflowname = os.path.basename(self.tool.tool["id"])
+        workflowpath = "/var/lib/cwl/workflow/%s" % workflowname
+        workflowcollection = workflowmapper.mapper(self.tool.tool["id"])[1]
+        workflowcollection = workflowcollection[5:workflowcollection.index('/')]
+        jobpath = "/var/lib/cwl/job/cwl.input.json"
+
+        container_image = arv_docker_get_image(self.arvrunner.api,
+                                               {"dockerImageId": "arvados/jobs"},
+                                               pull_image,
+                                               self.arvrunner.project_uuid)
+
+        return {
+            "command": ["arvados-cwl-runner", "--local", "--crunch2", workflowpath, jobpath],
+            "owner_uuid": self.arvrunner.project_uuid,
+            "name": self.name,
+            "output_path": "/var/spool/cwl",
+            "cwd": "/var/spool/cwl",
+            "priority": 1,
+            "state": "Committed",
+            "container_image": container_image,
+            "mounts": {
+                workflowpath: {
+                    "kind": "collection",
+                    "portable_data_hash": "%s" % workflowcollection
+                },
+                jobpath: {
+                    "kind": "collection",
+                    "portable_data_hash": "%s/cwl.input.json" % jobobj.portable_data_hash()
+                },
+                "stdout": {
+                    "kind": "file",
+                    "path": "/var/spool/cwl/cwl.output.json"
+                }
+            },
+            "runtime_constraints": {
+                "vcpus": 1,
+                "ram": 1024*1024*256
+            }
+        }
+
+    def run(self, *args, **kwargs):
+        job_spec = self.arvados_job_spec(*args, **kwargs)
+        job_spec.setdefault("owner_uuid", self.arvrunner.project_uuid)
+
+        response = self.arvrunner.api.container_requests().create(
+            body=job_spec
+        ).execute(num_retries=self.arvrunner.num_retries)
+
+        self.uuid = response["uuid"]
+        self.arvrunner.jobs[response["container_uuid"]] = self
+
+        logger.info("Submitted container %s", response["uuid"])
+
+        if response["state"] in ("Complete", "Failed", "Cancelled"):
+            self.done(response)

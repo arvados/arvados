@@ -3,397 +3,28 @@
 # Implement cwl-runner interface for submitting and running jobs on Arvados.
 
 import argparse
-import arvados
-import arvados.collection
-import arvados.commands.keepdocker
-import arvados.commands.run
-import arvados.events
-import arvados.util
-import copy
-import cwltool.docker
-from cwltool.draft2tool import revmap_file, remove_hostfs, CommandLineTool
+import logging
+import os
+import sys
+import threading
+import pkg_resources  # part of setuptools
+
 from cwltool.errors import WorkflowException
 import cwltool.main
 import cwltool.workflow
-import fnmatch
-from functools import partial
-import json
-import logging
-import os
-import pkg_resources  # part of setuptools
-import re
-import sys
-import threading
-from cwltool.load_tool import fetch_document
-from cwltool.builder import Builder
-import urlparse
-from .arvcontainer import ArvadosContainer
-from .arvjob import ArvadosJob
-from .arvdocker import arv_docker_get_image
 
-from cwltool.process import shortname, get_feature, adjustFiles, adjustFileObjs, scandeps, UnsupportedRequirement
+import arvados
+import arvados.events
+
+from .arvcontainer import ArvadosContainer, RunnerContainer
+from .arvjob import ArvadosJob, RunnerJob, RunnerTemplate
+from .arvtool import ArvadosCommandTool
+
+from cwltool.process import shortname, UnsupportedRequirement
 from arvados.api import OrderedJsonModel
 
 logger = logging.getLogger('arvados.cwl-runner')
 logger.setLevel(logging.INFO)
-
-class CollectionFsAccess(cwltool.process.StdFsAccess):
-    """Implement the cwltool FsAccess interface for Arvados Collections."""
-
-    def __init__(self, basedir):
-        super(CollectionFsAccess, self).__init__(basedir)
-        self.collections = {}
-
-    def get_collection(self, path):
-        p = path.split("/")
-        if p[0].startswith("keep:") and arvados.util.keep_locator_pattern.match(p[0][5:]):
-            pdh = p[0][5:]
-            if pdh not in self.collections:
-                self.collections[pdh] = arvados.collection.CollectionReader(pdh)
-            return (self.collections[pdh], "/".join(p[1:]))
-        else:
-            return (None, path)
-
-    def _match(self, collection, patternsegments, parent):
-        if not patternsegments:
-            return []
-
-        if not isinstance(collection, arvados.collection.RichCollectionBase):
-            return []
-
-        ret = []
-        # iterate over the files and subcollections in 'collection'
-        for filename in collection:
-            if patternsegments[0] == '.':
-                # Pattern contains something like "./foo" so just shift
-                # past the "./"
-                ret.extend(self._match(collection, patternsegments[1:], parent))
-            elif fnmatch.fnmatch(filename, patternsegments[0]):
-                cur = os.path.join(parent, filename)
-                if len(patternsegments) == 1:
-                    ret.append(cur)
-                else:
-                    ret.extend(self._match(collection[filename], patternsegments[1:], cur))
-        return ret
-
-    def glob(self, pattern):
-        collection, rest = self.get_collection(pattern)
-        patternsegments = rest.split("/")
-        return self._match(collection, patternsegments, "keep:" + collection.manifest_locator())
-
-    def open(self, fn, mode):
-        collection, rest = self.get_collection(fn)
-        if collection:
-            return collection.open(rest, mode)
-        else:
-            return open(self._abs(fn), mode)
-
-    def exists(self, fn):
-        collection, rest = self.get_collection(fn)
-        if collection:
-            return collection.exists(rest)
-        else:
-            return os.path.exists(self._abs(fn))
-
-
-
-class RunnerJob(object):
-    """Submit and manage a Crunch job that runs crunch_scripts/cwl-runner."""
-
-    def __init__(self, runner, tool, job_order, enable_reuse):
-        self.arvrunner = runner
-        self.tool = tool
-        self.job_order = job_order
-        self.running = False
-        self.enable_reuse = enable_reuse
-
-    def update_pipeline_component(self, record):
-        pass
-
-    def upload_docker(self, tool):
-        if isinstance(tool, CommandLineTool):
-            (docker_req, docker_is_req) = get_feature(tool, "DockerRequirement")
-            if docker_req:
-                arv_docker_get_image(self.arvrunner.api, docker_req, True, self.arvrunner.project_uuid)
-        elif isinstance(tool, cwltool.workflow.Workflow):
-            for s in tool.steps:
-                self.upload_docker(s.embedded_tool)
-
-    def arvados_job_spec(self, dry_run=False, pull_image=True, **kwargs):
-        """Create an Arvados job specification for this workflow.
-
-        The returned dict can be used to create a job (i.e., passed as
-        the +body+ argument to jobs().create()), or as a component in
-        a pipeline template or pipeline instance.
-        """
-        self.upload_docker(self.tool)
-
-        workflowfiles = set()
-        jobfiles = set()
-        workflowfiles.add(self.tool.tool["id"])
-
-        self.name = os.path.basename(self.tool.tool["id"])
-
-        def visitFiles(files, path):
-            files.add(path)
-            return path
-
-        document_loader, workflowobj, uri = fetch_document(self.tool.tool["id"])
-        def loadref(b, u):
-            return document_loader.fetch(urlparse.urljoin(b, u))
-
-        sc = scandeps(uri, workflowobj,
-                      set(("$import", "run")),
-                      set(("$include", "$schemas", "path")),
-                      loadref)
-        adjustFiles(sc, partial(visitFiles, workflowfiles))
-        adjustFiles(self.job_order, partial(visitFiles, jobfiles))
-
-        workflowmapper = ArvPathMapper(self.arvrunner, workflowfiles, "",
-                                       "%s",
-                                       "%s/%s",
-                                       name=self.name,
-                                       **kwargs)
-
-        jobmapper = ArvPathMapper(self.arvrunner, jobfiles, "",
-                                  "%s",
-                                  "%s/%s",
-                                  name=os.path.basename(self.job_order.get("id", "#")),
-                                  **kwargs)
-
-        adjustFiles(self.job_order, lambda p: jobmapper.mapper(p)[1])
-
-        if "id" in self.job_order:
-            del self.job_order["id"]
-
-        self.job_order["cwl:tool"] = workflowmapper.mapper(self.tool.tool["id"])[1]
-        return {
-            "script": "cwl-runner",
-            "script_version": "master",
-            "repository": "arvados",
-            "script_parameters": self.job_order,
-            "runtime_constraints": {
-                "docker_image": "arvados/jobs"
-            }
-        }
-
-    def run(self, *args, **kwargs):
-        job_spec = self.arvados_job_spec(*args, **kwargs)
-        job_spec.setdefault("owner_uuid", self.arvrunner.project_uuid)
-
-        response = self.arvrunner.api.jobs().create(
-            body=job_spec,
-            find_or_create=self.enable_reuse
-        ).execute(num_retries=self.arvrunner.num_retries)
-
-        self.uuid = response["uuid"]
-        self.arvrunner.jobs[self.uuid] = self
-
-        logger.info("Submitted job %s", response["uuid"])
-
-        if kwargs.get("submit"):
-            self.pipeline = self.arvrunner.api.pipeline_instances().create(
-                body={
-                    "owner_uuid": self.arvrunner.project_uuid,
-                    "name": shortname(self.tool.tool["id"]),
-                    "components": {"cwl-runner": {"job": {"uuid": self.uuid, "state": response["state"]} } },
-                    "state": "RunningOnClient"}).execute(num_retries=self.arvrunner.num_retries)
-
-        if response["state"] in ("Complete", "Failed", "Cancelled"):
-            self.done(response)
-
-    def done(self, record):
-        if record["state"] == "Complete":
-            processStatus = "success"
-        else:
-            processStatus = "permanentFail"
-
-        outputs = None
-        try:
-            try:
-                outc = arvados.collection.Collection(record["output"])
-                with outc.open("cwl.output.json") as f:
-                    outputs = json.load(f)
-                def keepify(path):
-                    if not path.startswith("keep:"):
-                        return "keep:%s/%s" % (record["output"], path)
-                adjustFiles(outputs, keepify)
-            except Exception as e:
-                logger.error("While getting final output object: %s", e)
-            self.arvrunner.output_callback(outputs, processStatus)
-        finally:
-            del self.arvrunner.jobs[record["uuid"]]
-
-
-class RunnerTemplate(object):
-    """An Arvados pipeline template that invokes a CWL workflow."""
-
-    type_to_dataclass = {
-        'boolean': 'boolean',
-        'File': 'File',
-        'float': 'number',
-        'int': 'number',
-        'string': 'text',
-    }
-
-    def __init__(self, runner, tool, job_order, enable_reuse):
-        self.runner = runner
-        self.tool = tool
-        self.job = RunnerJob(
-            runner=runner,
-            tool=tool,
-            job_order=job_order,
-            enable_reuse=enable_reuse)
-
-    def pipeline_component_spec(self):
-        """Return a component that Workbench and a-r-p-i will understand.
-
-        Specifically, translate CWL input specs to Arvados pipeline
-        format, like {"dataclass":"File","value":"xyz"}.
-        """
-        spec = self.job.arvados_job_spec()
-
-        # Most of the component spec is exactly the same as the job
-        # spec (script, script_version, etc.).
-        # spec['script_parameters'] isn't right, though. A component
-        # spec's script_parameters hash is a translation of
-        # self.tool.tool['inputs'] with defaults/overrides taken from
-        # the job order. So we move the job parameters out of the way
-        # and build a new spec['script_parameters'].
-        job_params = spec['script_parameters']
-        spec['script_parameters'] = {}
-
-        for param in self.tool.tool['inputs']:
-            param = copy.deepcopy(param)
-
-            # Data type and "required" flag...
-            types = param['type']
-            if not isinstance(types, list):
-                types = [types]
-            param['required'] = 'null' not in types
-            non_null_types = set(types) - set(['null'])
-            if len(non_null_types) == 1:
-                the_type = [c for c in non_null_types][0]
-                dataclass = self.type_to_dataclass.get(the_type)
-                if dataclass:
-                    param['dataclass'] = dataclass
-            # Note: If we didn't figure out a single appropriate
-            # dataclass, we just left that attribute out.  We leave
-            # the "type" attribute there in any case, which might help
-            # downstream.
-
-            # Title and description...
-            title = param.pop('label', '')
-            descr = param.pop('description', '').rstrip('\n')
-            if title:
-                param['title'] = title
-            if descr:
-                param['description'] = descr
-
-            # Fill in the value from the current job order, if any.
-            param_id = shortname(param.pop('id'))
-            value = job_params.get(param_id)
-            if value is None:
-                pass
-            elif not isinstance(value, dict):
-                param['value'] = value
-            elif param.get('dataclass') == 'File' and value.get('path'):
-                param['value'] = value['path']
-
-            spec['script_parameters'][param_id] = param
-        spec['script_parameters']['cwl:tool'] = job_params['cwl:tool']
-        return spec
-
-    def save(self):
-        job_spec = self.pipeline_component_spec()
-        response = self.runner.api.pipeline_templates().create(body={
-            "components": {
-                self.job.name: job_spec,
-            },
-            "name": self.job.name,
-            "owner_uuid": self.runner.project_uuid,
-        }, ensure_unique_name=True).execute(num_retries=self.runner.num_retries)
-        self.uuid = response["uuid"]
-        logger.info("Created template %s", self.uuid)
-
-
-class ArvPathMapper(cwltool.pathmapper.PathMapper):
-    """Convert container-local paths to and from Keep collection ids."""
-
-    def __init__(self, arvrunner, referenced_files, input_basedir,
-                 collection_pattern, file_pattern, name=None, **kwargs):
-        self._pathmap = arvrunner.get_uploaded()
-        uploadfiles = set()
-
-        pdh_path = re.compile(r'^keep:[0-9a-f]{32}\+\d+/.+')
-
-        for src in referenced_files:
-            if isinstance(src, basestring) and pdh_path.match(src):
-                self._pathmap[src] = (src, collection_pattern % src[5:])
-            if "#" in src:
-                src = src[:src.index("#")]
-            if src not in self._pathmap:
-                ab = cwltool.pathmapper.abspath(src, input_basedir)
-                st = arvados.commands.run.statfile("", ab, fnPattern=file_pattern)
-                if kwargs.get("conformance_test"):
-                    self._pathmap[src] = (src, ab)
-                elif isinstance(st, arvados.commands.run.UploadFile):
-                    uploadfiles.add((src, ab, st))
-                elif isinstance(st, arvados.commands.run.ArvFile):
-                    self._pathmap[src] = (ab, st.fn)
-                else:
-                    raise cwltool.workflow.WorkflowException("Input file path '%s' is invalid" % st)
-
-        if uploadfiles:
-            arvados.commands.run.uploadfiles([u[2] for u in uploadfiles],
-                                             arvrunner.api,
-                                             dry_run=kwargs.get("dry_run"),
-                                             num_retries=3,
-                                             fnPattern=file_pattern,
-                                             name=name,
-                                             project=arvrunner.project_uuid)
-
-        for src, ab, st in uploadfiles:
-            arvrunner.add_uploaded(src, (ab, st.fn))
-            self._pathmap[src] = (ab, st.fn)
-
-        self.keepdir = None
-
-    def reversemap(self, target):
-        if target.startswith("keep:"):
-            return (target, target)
-        elif self.keepdir and target.startswith(self.keepdir):
-            return (target, "keep:" + target[len(self.keepdir)+1:])
-        else:
-            return super(ArvPathMapper, self).reversemap(target)
-
-
-class ArvadosCommandTool(CommandLineTool):
-    """Wrap cwltool CommandLineTool to override selected methods."""
-
-    def __init__(self, arvrunner, toolpath_object, crunch2, **kwargs):
-        super(ArvadosCommandTool, self).__init__(toolpath_object, **kwargs)
-        self.arvrunner = arvrunner
-        self.crunch2 = crunch2
-
-    def makeJobRunner(self):
-        if self.crunch2:
-            return ArvadosContainer(self.arvrunner)
-        else:
-            return ArvadosJob(self.arvrunner)
-
-    def makePathMapper(self, reffiles, **kwargs):
-        if self.crunch2:
-            return ArvPathMapper(self.arvrunner, reffiles, kwargs["basedir"],
-                                 "/keep/%s",
-                                 "/keep/%s/%s",
-                                 **kwargs)
-        else:
-            return ArvPathMapper(self.arvrunner, reffiles, kwargs["basedir"],
-                                 "$(task.keep)/%s",
-                                 "$(task.keep)/%s/%s",
-                                 **kwargs)
-
 
 class ArvCwlRunner(object):
     """Execute a CWL tool or workflow, submit crunch jobs, wait for them to
@@ -475,7 +106,10 @@ class ArvCwlRunner(object):
             return tmpl.uuid
 
         if kwargs.get("submit"):
-            runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"))
+            if self.crunch2:
+                runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"))
+            else:
+                runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"))
 
         if not kwargs.get("submit") and "cwl_runner_job" not in kwargs and not self.crunch2:
             # Create pipeline for local run
@@ -510,56 +144,54 @@ class ArvCwlRunner(object):
             kwargs["outdir"] = "$(task.outdir)"
             kwargs["tmpdir"] = "$(task.tmpdir)"
 
-        if kwargs.get("conformance_test"):
-            return cwltool.main.single_job_executor(tool, job_order, **kwargs)
+        if kwargs.get("submit"):
+            jobiter = iter((runnerjob,))
         else:
-            if kwargs.get("submit"):
-                jobiter = iter((runnerjob,))
-            else:
-                if "cwl_runner_job" in kwargs:
-                    self.uuid = kwargs.get("cwl_runner_job").get('uuid')
-                jobiter = tool.job(job_order,
-                                   self.output_callback,
-                                   docker_outdir="$(task.outdir)",
-                                   **kwargs)
+            if "cwl_runner_job" in kwargs:
+                self.uuid = kwargs.get("cwl_runner_job").get('uuid')
+            jobiter = tool.job(job_order,
+                               self.output_callback,
+                               docker_outdir="$(task.outdir)",
+                               **kwargs)
 
-            try:
-                self.cond.acquire()
-                # Will continue to hold the lock for the duration of this code
-                # except when in cond.wait(), at which point on_message can update
-                # job state and process output callbacks.
+        try:
+            self.cond.acquire()
+            # Will continue to hold the lock for the duration of this code
+            # except when in cond.wait(), at which point on_message can update
+            # job state and process output callbacks.
 
-                for runnable in jobiter:
-                    if runnable:
-                        runnable.run(**kwargs)
-                    else:
-                        if self.jobs:
-                            self.cond.wait(1)
-                        else:
-                            logger.error("Workflow is deadlocked, no runnable jobs and not waiting on any pending jobs.")
-                            break
-
-                while self.jobs:
-                    self.cond.wait(1)
-
-                events.close()
-            except UnsupportedRequirement:
-                raise
-            except:
-                if sys.exc_info()[0] is KeyboardInterrupt:
-                    logger.error("Interrupted, marking pipeline as failed")
+            for runnable in jobiter:
+                if runnable:
+                    runnable.run(**kwargs)
                 else:
-                    logger.error("Caught unhandled exception, marking pipeline as failed.  Error was: %s", sys.exc_info()[1], exc_info=(sys.exc_info()[1] if self.debug else False))
-                if self.pipeline:
-                    self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
-                                                         body={"state": "Failed"}).execute(num_retries=self.num_retries)
-            finally:
-                self.cond.release()
+                    if self.jobs:
+                        self.cond.wait(1)
+                    else:
+                        logger.error("Workflow is deadlocked, no runnable jobs and not waiting on any pending jobs.")
+                        break
 
-            if self.final_output is None:
-                raise cwltool.workflow.WorkflowException("Workflow did not return a result.")
+            while self.jobs:
+                self.cond.wait(1)
 
-            return self.final_output
+            events.close()
+        except UnsupportedRequirement:
+            raise
+        except:
+            if sys.exc_info()[0] is KeyboardInterrupt:
+                logger.error("Interrupted, marking pipeline as failed")
+            else:
+                logger.error("Caught unhandled exception, marking pipeline as failed.  Error was: %s", sys.exc_info()[1], exc_info=(sys.exc_info()[1] if self.debug else False))
+            if self.pipeline:
+                self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
+                                                     body={"state": "Failed"}).execute(num_retries=self.num_retries)
+        finally:
+            self.cond.release()
+
+        if self.final_output is None:
+            raise cwltool.workflow.WorkflowException("Workflow did not return a result.")
+
+        return self.final_output
+
 
 def versionstring():
     """Print version string of key packages for provenance and debugging."""
@@ -571,6 +203,7 @@ def versionstring():
     return "%s %s, %s %s, %s %s" % (sys.argv[0], arvcwlpkg[0].version,
                                     "arvados-python-client", arvpkg[0].version,
                                     "cwltool", cwlpkg[0].version)
+
 
 def arg_parser():  # type: () -> argparse.ArgumentParser
     parser = argparse.ArgumentParser(description='Arvados executor for Common Workflow Language')
@@ -633,6 +266,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("job_order", nargs=argparse.REMAINDER)
 
     return parser
+
 
 def main(args, stdout, stderr, api_client=None):
     parser = arg_parser()
