@@ -3,7 +3,6 @@ package arvados
 import (
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -73,7 +72,7 @@ func (c *Client) DoAndDecode(dst interface{}, req *http.Request) error {
 		return err
 	}
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("request failed (%s): %s", req.URL, resp.Status)
+		return newTransactionError(req, resp, buf)
 	}
 	if dst == nil {
 		return nil
