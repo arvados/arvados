@@ -1,5 +1,10 @@
 import fnmatch
+import os
+
 import cwltool.process
+
+import arvados.util
+import arvados.collection
 
 class CollectionFsAccess(cwltool.process.StdFsAccess):
     """Implement the cwltool FsAccess interface for Arvados Collections."""

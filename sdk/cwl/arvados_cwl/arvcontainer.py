@@ -152,7 +152,7 @@ class RunnerContainer(Runner):
         workflowname = os.path.basename(self.tool.tool["id"])
         workflowpath = "/var/lib/cwl/workflow/%s" % workflowname
         workflowcollection = workflowmapper.mapper(self.tool.tool["id"])[1]
-        workflowcollection = workflowcollection[workflowcollection.index('/')]
+        workflowcollection = workflowcollection[:workflowcollection.index('/')]
         jobpath = "/var/lib/cwl/job/cwl.input.json"
 
         container_image = arv_docker_get_image(self.arvrunner.api,
@@ -170,7 +170,7 @@ class RunnerContainer(Runner):
             "state": "Committed",
             "container_image": container_image,
             "mounts": {
-                workflowpath: {
+                "/var/lib/cwl/workflow": {
                     "kind": "collection",
                     "portable_data_hash": "%s" % workflowcollection
                 },
