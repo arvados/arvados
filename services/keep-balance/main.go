@@ -31,6 +31,11 @@ type Config struct {
 
 	// Number of collections to request in each API call
 	CollectionBatchSize int
+
+	// Max collections to buffer in memory (bigger values consume
+	// more memory, but can reduce store-and-forward latency when
+	// fetching pages)
+	CollectionBuffers int
 }
 
 // RunOptions controls runtime behavior. The flags/options that belong

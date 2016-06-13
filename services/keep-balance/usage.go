@@ -17,7 +17,8 @@ var exampleConfigFile = []byte(`
 	    "disk"
 	],
 	"RunPeriod": "600s",
-	"CollectionBatchSize": 100000
+	"CollectionBatchSize": 100000,
+	"CollectionBuffers": 1000
     }`)
 
 func usage() {
