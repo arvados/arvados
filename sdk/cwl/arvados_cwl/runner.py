@@ -1,14 +1,20 @@
 import os
 import urlparse
 from functools import partial
+import logging
+import json
 
 from cwltool.draft2tool import CommandLineTool
 import cwltool.workflow
 from cwltool.process import get_feature, scandeps, adjustFiles
 from cwltool.load_tool import fetch_document
 
+import arvados.collection
+
 from .arvdocker import arv_docker_get_image
 from .pathmapper import ArvPathMapper
+
+logger = logging.getLogger('arvados.cwl-runner')
 
 class Runner(object):
     def __init__(self, runner, tool, job_order, enable_reuse):
