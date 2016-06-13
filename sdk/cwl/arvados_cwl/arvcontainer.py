@@ -43,7 +43,7 @@ class ArvadosContainer(object):
             }
 
         if self.generatefiles:
-            raise UnsupportedRequirement("Stdin redirection currently not suppported")
+            raise UnsupportedRequirement("Generate files not supported")
 
             vwd = arvados.collection.Collection()
             container_request["task.vwd"] = {}
