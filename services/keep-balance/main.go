@@ -28,6 +28,9 @@ type Config struct {
 
 	// How often to check
 	RunPeriod arvados.Duration
+
+	// Number of collections to request in each API call
+	CollectionBatchSize int
 }
 
 // RunOptions controls runtime behavior. The flags/options that belong

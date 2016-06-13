@@ -16,7 +16,8 @@ var exampleConfigFile = []byte(`
 	"KeepServiceTypes": [
 	    "disk"
 	],
-	"RunPeriod": "600s"
+	"RunPeriod": "600s",
+	"CollectionBatchSize": 100000
     }`)
 
 func usage() {
