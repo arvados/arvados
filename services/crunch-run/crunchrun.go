@@ -482,9 +482,10 @@ func (runner *ContainerRunner) CreateContainer() error {
 			"ARVADOS_API_HOST="+os.Getenv("ARVADOS_API_HOST"),
 			"ARVADOS_API_HOST_INSECURE="+os.Getenv("ARVADOS_API_HOST_INSECURE"),
 		)
+		runner.ContainerConfig.NetworkDisabled = false
+	} else {
+		runner.ContainerConfig.NetworkDisabled = true
 	}
-
-	runner.ContainerConfig.NetworkDisabled = true
 
 	var err error
 	runner.ContainerID, err = runner.Docker.CreateContainer(&runner.ContainerConfig, "", nil)
