@@ -11,6 +11,7 @@ class WorkUnitTest < ActiveSupport::TestCase
     [PipelineInstance, 'has_component_with_completed_jobs', nil, 3, "Complete", true, 1.0],
     [PipelineInstance, 'pipeline_with_tagged_collection_input', "pwu", 1, "Ready", nil, 0.0],
     [Container, 'requester', 'cwu', 1, "Complete", true, 1.0],
+    [ContainerRequest, 'cr_for_requester', 'cwu', 1, "Complete", true, 1.0],
   ].each do |type, fixture, label, num_children, state, success, progress|
     test "children of #{fixture}" do
       use_token 'active'
