@@ -369,7 +369,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   [
-    ['active', 'zzzzz-dz642-requestercntnr1'],
+    ['active', 'zzzzz-dz642-runningcontainr'],
     ['active_no_prefs', nil],
   ].each do |token, expected|
     test "create as #{token} and expect requesting_container_uuid to be #{expected}" do

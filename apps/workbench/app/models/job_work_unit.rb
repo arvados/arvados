@@ -81,6 +81,11 @@ class JobWorkUnit < ProxyWorkUnit
     state_label.in? ["Queued", "Running"]
   end
 
+  def uri
+    uuid = get(:uuid)
+    "/jobs/#{uuid}"
+  end
+
   def title
     "job"
   end

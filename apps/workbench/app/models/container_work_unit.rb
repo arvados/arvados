@@ -44,6 +44,12 @@ class ContainerWorkUnit < ProxyWorkUnit
     "container"
   end
 
+  def uri
+    uuid = get(:uuid)
+    "/#{@proxied.class.table_name}/#{uuid}" rescue nil
+  end
+
+
   def can_cancel?
     @proxied.is_a?(ContainerRequest) && state_label.in?(["Queued", "Locked", "Running"]) && priority > 0
   end

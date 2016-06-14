@@ -303,4 +303,27 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       end
     end
   end
+
+  [
+    ['jobs', 'running_job_with_components'],
+    ['pipeline_instances', 'has_component_with_completed_jobs'],
+    ['container_requests', 'running'],
+    ['container_requests', 'completed'],
+  ].each do |type, fixture|
+    test "edit description for #{type}/#{fixture}" do
+      obj = api_fixture(type)[fixture]
+      visit page_with_token "active", "/#{type}/#{obj['uuid']}"
+
+      within('.arv-description-as-subtitle') do
+        find('.fa-pencil').click
+        find('.editable-input textarea').set('*Textile description for object*')
+        find('.editable-submit').click
+      end
+      wait_for_ajax
+
+      # verify description
+      assert page.has_no_text? '*Textile description for object*'
+      assert page.has_text? 'Textile description for object'
+    end
+  end
 end

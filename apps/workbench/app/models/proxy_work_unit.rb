@@ -322,11 +322,6 @@ class ProxyWorkUnit < WorkUnit
     resp
   end
 
-  def uri
-    uuid = get(:uuid)
-    "/#{@proxied.class.table_name}/#{uuid}"
-  end
-
   protected
 
   def get key, obj=@proxied

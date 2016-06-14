@@ -43,6 +43,11 @@ class PipelineInstanceWorkUnit < ProxyWorkUnit
     items
   end
 
+  def uri
+    uuid = get(:uuid)
+    "/pipeline_instances/#{uuid}"
+  end
+
   def title
     "pipeline"
   end
