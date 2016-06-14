@@ -132,25 +132,25 @@ func (*TestDockerClient) RemoveImage(name string, force bool) ([]*dockerclient.I
 	return nil, nil
 }
 
-func (this *ArvTestClient) Create(resourceType string,
+func (client *ArvTestClient) Create(resourceType string,
 	parameters arvadosclient.Dict,
 	output interface{}) error {
 
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
+	client.Mutex.Lock()
+	defer client.Mutex.Unlock()
 
-	this.Calls += 1
-	this.Content = append(this.Content, parameters)
+	client.Calls += 1
+	client.Content = append(client.Content, parameters)
 
 	if resourceType == "logs" {
 		et := parameters["log"].(arvadosclient.Dict)["event_type"].(string)
-		if this.Logs == nil {
-			this.Logs = make(map[string]*bytes.Buffer)
+		if client.Logs == nil {
+			client.Logs = make(map[string]*bytes.Buffer)
 		}
-		if this.Logs[et] == nil {
-			this.Logs[et] = &bytes.Buffer{}
+		if client.Logs[et] == nil {
+			client.Logs[et] = &bytes.Buffer{}
 		}
-		this.Logs[et].Write([]byte(parameters["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"]))
+		client.Logs[et].Write([]byte(parameters["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"]))
 	}
 
 	if resourceType == "collections" && output != nil {
@@ -162,7 +162,7 @@ func (this *ArvTestClient) Create(resourceType string,
 	return nil
 }
 
-func (this *ArvTestClient) Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error {
+func (client *ArvTestClient) Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error {
 	switch {
 	case method == "GET" && resourceType == "containers" && action == "auth":
 		return json.Unmarshal([]byte(`{
@@ -175,7 +175,7 @@ func (this *ArvTestClient) Call(method, resourceType, uuid, action string, param
 	}
 }
 
-func (this *ArvTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
+func (client *ArvTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
 	if resourceType == "collections" {
 		if uuid == hwPDH {
 			output.(*arvados.Collection).ManifestText = hwManifest
@@ -184,19 +184,19 @@ func (this *ArvTestClient) Get(resourceType string, uuid string, parameters arva
 		}
 	}
 	if resourceType == "containers" {
-		(*output.(*arvados.Container)) = this.Container
+		(*output.(*arvados.Container)) = client.Container
 	}
 	return nil
 }
 
-func (this *ArvTestClient) Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error) {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
-	this.Calls += 1
-	this.Content = append(this.Content, parameters)
+func (client *ArvTestClient) Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error) {
+	client.Mutex.Lock()
+	defer client.Mutex.Unlock()
+	client.Calls += 1
+	client.Content = append(client.Content, parameters)
 	if resourceType == "containers" {
 		if parameters["container"].(arvadosclient.Dict)["state"] == "Running" {
-			this.WasSetRunning = true
+			client.WasSetRunning = true
 		}
 	}
 	return nil
@@ -206,9 +206,9 @@ func (this *ArvTestClient) Update(resourceType string, uuid string, parameters a
 // parameters match jpath/string. E.g., CalledWith(c, "foo.bar",
 // "baz") returns parameters with parameters["foo"]["bar"]=="baz". If
 // no call matches, it returns nil.
-func (this *ArvTestClient) CalledWith(jpath, expect string) arvadosclient.Dict {
+func (client *ArvTestClient) CalledWith(jpath, expect string) arvadosclient.Dict {
 call:
-	for _, content := range this.Content {
+	for _, content := range client.Content {
 		var v interface{} = content
 		for _, k := range strings.Split(jpath, ".") {
 			if dict, ok := v.(arvadosclient.Dict); !ok {
@@ -224,8 +224,8 @@ call:
 	return nil
 }
 
-func (this *KeepTestClient) PutHB(hash string, buf []byte) (string, int, error) {
-	this.Content = buf
+func (client *KeepTestClient) PutHB(hash string, buf []byte) (string, int, error) {
+	client.Content = buf
 	return fmt.Sprintf("%s+%d", hash, len(buf)), len(buf), nil
 }
 
@@ -234,14 +234,14 @@ type FileWrapper struct {
 	len uint64
 }
 
-func (this FileWrapper) Len() uint64 {
-	return this.len
+func (fw FileWrapper) Len() uint64 {
+	return fw.len
 }
 
-func (this *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
+func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
 	if filename == hwImageId+".tar" {
 		rdr := ioutil.NopCloser(&bytes.Buffer{})
-		this.Called = true
+		client.Called = true
 		return FileWrapper{rdr, 1321984}, nil
 	}
 	return nil, nil
@@ -291,51 +291,51 @@ type ArvErrorTestClient struct{}
 type KeepErrorTestClient struct{}
 type KeepReadErrorTestClient struct{}
 
-func (this ArvErrorTestClient) Create(resourceType string,
+func (client ArvErrorTestClient) Create(resourceType string,
 	parameters arvadosclient.Dict,
 	output interface{}) error {
 	return nil
 }
 
-func (this ArvErrorTestClient) Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error {
+func (client ArvErrorTestClient) Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error {
 	return errors.New("ArvError")
 }
 
-func (this ArvErrorTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
+func (client ArvErrorTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
 	return errors.New("ArvError")
 }
 
-func (this ArvErrorTestClient) Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error) {
+func (client ArvErrorTestClient) Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error) {
 	return nil
 }
 
-func (this KeepErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
+func (client KeepErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
 	return "", 0, errors.New("KeepError")
 }
 
-func (this KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
+func (client KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
 	return nil, errors.New("KeepError")
 }
 
-func (this KeepReadErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
+func (client KeepReadErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
 	return "", 0, nil
 }
 
 type ErrorReader struct{}
 
-func (this ErrorReader) Read(p []byte) (n int, err error) {
+func (ErrorReader) Read(p []byte) (n int, err error) {
 	return 0, errors.New("ErrorReader")
 }
 
-func (this ErrorReader) Close() error {
+func (ErrorReader) Close() error {
 	return nil
 }
 
-func (this ErrorReader) Len() uint64 {
+func (ErrorReader) Len() uint64 {
 	return 0
 }
 
-func (this KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
+func (KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
 	return ErrorReader{}, nil
 }
 
@@ -381,21 +381,21 @@ type ClosableBuffer struct {
 	bytes.Buffer
 }
 
+func (*ClosableBuffer) Close() error {
+	return nil
+}
+
 type TestLogs struct {
 	Stdout ClosableBuffer
 	Stderr ClosableBuffer
 }
 
-func (this *ClosableBuffer) Close() error {
-	return nil
-}
-
-func (this *TestLogs) NewTestLoggingWriter(logstr string) io.WriteCloser {
+func (tl *TestLogs) NewTestLoggingWriter(logstr string) io.WriteCloser {
 	if logstr == "stdout" {
-		return &this.Stdout
+		return &tl.Stdout
 	}
 	if logstr == "stderr" {
-		return &this.Stderr
+		return &tl.Stderr
 	}
 	return nil
 }
