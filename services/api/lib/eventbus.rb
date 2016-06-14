@@ -116,8 +116,13 @@ class EventBus
 
         lastid = nil
         logs.limit(limit).each do |l|
-          if ws.sent_ids.add?(l.id) != nil
+          if not ws.sent_ids.include?(l.id)
+            # only send if not a duplicate
             ws.send(l.as_api_response.to_json)
+          end
+          if not ws.last_log_id.nil?
+            # only record ids from "catchup" messages and not notifies
+            ws.sent_ids << l.id
           end
           lastid = l.id
           count += 1
@@ -135,9 +140,6 @@ class EventBus
           # Done catching up
           ws.last_log_id = nil
         end
-      elsif !notify_id.nil?
-        # No filters set up, so just record the sequence number
-        ws.last_log_id = notify_id
       end
     rescue ArgumentError => e
       # There was some kind of user error.
