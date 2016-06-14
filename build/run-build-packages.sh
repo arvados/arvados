@@ -400,26 +400,32 @@ fi
 # Go binaries
 cd $WORKSPACE/packages/$TARGET
 export GOPATH=$(mktemp -d)
-package_go_binary services/keepstore keepstore \
-    "Keep storage daemon, accessible to clients on the LAN"
-package_go_binary services/keepproxy keepproxy \
-    "Make a Keep cluster accessible to clients that are not on the LAN"
-package_go_binary services/keep-balance keep-balance \
-    "Rebalance and garbage-collect data blocks stored in Arvados Keep"
-package_go_binary services/keep-web keep-web \
-    "Static web hosting service for user data stored in Arvados Keep"
-package_go_binary services/datamanager arvados-data-manager \
-    "Ensure block replication levels, report disk usage, and determine which blocks should be deleted when space is needed"
-package_go_binary services/arv-git-httpd arvados-git-httpd \
-    "Provide authenticated http access to Arvados-hosted git repositories"
-package_go_binary services/crunchstat crunchstat \
-    "Gather cpu/memory/network statistics of running Crunch jobs"
-package_go_binary tools/keep-rsync keep-rsync \
-    "Copy all data from one set of Keep servers to another"
-package_go_binary tools/keep-block-check keep-block-check \
-    "Verify that all data from one set of Keep servers to another was copied"
 package_go_binary sdk/go/crunchrunner crunchrunner \
     "Crunchrunner executes a command inside a container and uploads the output"
+package_go_binary services/arv-git-httpd arvados-git-httpd \
+    "Provide authenticated http access to Arvados-hosted git repositories"
+package_go_binary services/crunch-dispatch-local crunch-dispatch-local \
+    "Dispatch Crunch containers on the local system"
+package_go_binary services/crunch-dispatch-slurm crunch-dispatch-slurm \
+    "Dispatch Crunch containers to a SLURM cluster"
+package_go_binary services/crunch-run crunch-run \
+    "Supervise a single Crunch container"
+package_go_binary services/crunchstat crunchstat \
+    "Gather cpu/memory/network statistics of running Crunch jobs"
+package_go_binary services/datamanager arvados-data-manager \
+    "Ensure block replication levels, report disk usage, and determine which blocks should be deleted when space is needed"
+package_go_binary services/keep-balance keep-balance \
+    "Rebalance and garbage-collect data blocks stored in Arvados Keep"
+package_go_binary services/keepproxy keepproxy \
+    "Make a Keep cluster accessible to clients that are not on the LAN"
+package_go_binary services/keepstore keepstore \
+    "Keep storage daemon, accessible to clients on the LAN"
+package_go_binary services/keep-web keep-web \
+    "Static web hosting service for user data stored in Arvados Keep"
+package_go_binary tools/keep-block-check keep-block-check \
+    "Verify that all data from one set of Keep servers to another was copied"
+package_go_binary tools/keep-rsync keep-rsync \
+    "Copy all data from one set of Keep servers to another"
 
 # The Python SDK
 # Please resist the temptation to add --no-python-fix-name to the fpm call here
