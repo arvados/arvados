@@ -40,12 +40,6 @@ type IKeepClient interface {
 	ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error)
 }
 
-// Collection record returned by the API server.
-type CollectionRecord struct {
-	ManifestText     string `json:"manifest_text"`
-	PortableDataHash string `json:"portable_data_hash"`
-}
-
 // NewLogWriter is a factory function to create a new log writer.
 type NewLogWriter func(name string) io.WriteCloser
 
@@ -128,7 +122,7 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 
 	runner.CrunchLog.Printf("Fetching Docker image from collection '%s'", runner.Container.ContainerImage)
 
-	var collection CollectionRecord
+	var collection arvados.Collection
 	err = runner.ArvClient.Get("collections", runner.Container.ContainerImage, nil, &collection)
 	if err != nil {
 		return fmt.Errorf("While getting container image collection: %v", err)
@@ -527,7 +521,7 @@ func (runner *ContainerRunner) CaptureOutput() error {
 		}
 		defer file.Close()
 
-		rec := CollectionRecord{}
+		var rec arvados.Collection
 		err = json.NewDecoder(file).Decode(&rec)
 		if err != nil {
 			return fmt.Errorf("While reading FUSE metafile: %v", err)
@@ -535,7 +529,7 @@ func (runner *ContainerRunner) CaptureOutput() error {
 		manifestText = rec.ManifestText
 	}
 
-	var response CollectionRecord
+	var response arvados.Collection
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{
 			"collection": arvadosclient.Dict{
@@ -599,7 +593,7 @@ func (runner *ContainerRunner) CommitLogs() error {
 		return fmt.Errorf("While creating log manifest: %v", err)
 	}
 
-	var response CollectionRecord
+	var response arvados.Collection
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{
 			"collection": arvadosclient.Dict{
