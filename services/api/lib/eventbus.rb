@@ -188,6 +188,9 @@ class EventBus
           # Set or reset the last_log_id.  The event bus only reports events
           # for rows that come after last_log_id.
           ws.last_log_id = p[:last_log_id].to_i
+          # Reset sent_ids for consistency
+          # (always re-deliver all matching messages following last_log_id)
+          ws.sent_ids = Set.new
         end
 
         if ws.filters.length < MAX_FILTERS
