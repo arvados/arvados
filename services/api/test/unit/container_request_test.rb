@@ -368,4 +368,15 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal 0, c2.priority
   end
 
+  [
+    ['active', 'zzzzz-dz642-requestercntnr1'],
+    ['active_no_prefs', nil],
+  ].each do |token, expected|
+    test "create as #{token} and expect requesting_container_uuid to be #{expected}" do
+      set_user_from_auth token
+      cr = ContainerRequest.create(container_image: "img", output_path: "/tmp", command: ["echo", "foo"])
+      assert_not_nil cr.uuid, 'uuid should be set for newly created container_request'
+      assert_equal expected, cr.requesting_container_uuid
+    end
+  end
 end

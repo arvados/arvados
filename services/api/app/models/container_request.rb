@@ -18,6 +18,7 @@ class ContainerRequest < ArvadosModel
   validate :validate_state_change
   validate :validate_change
   after_save :update_priority
+  before_create :set_requesting_container_uuid
 
   api_accessible :user, extend: :common do |t|
     t.add :command
@@ -170,4 +171,12 @@ class ContainerRequest < ArvadosModel
     end
   end
 
+  def set_requesting_container_uuid
+    return true if self.requesting_container_uuid   # already set
+
+    token_uuid = current_api_client_authorization.andand.uuid
+    container = Container.where('auth_uuid=?', token_uuid).order('created_at desc').first
+    self.requesting_container_uuid = container.uuid if container
+    true
+  end
 end
