@@ -155,7 +155,7 @@ func (this *ArvTestClient) Create(resourceType string,
 
 	if resourceType == "collections" && output != nil {
 		mt := parameters["collection"].(arvadosclient.Dict)["manifest_text"].(string)
-		outmap := output.(*CollectionRecord)
+		outmap := output.(*arvados.Collection)
 		outmap.PortableDataHash = fmt.Sprintf("%x+%d", md5.Sum([]byte(mt)), len(mt))
 	}
 
@@ -178,9 +178,9 @@ func (this *ArvTestClient) Call(method, resourceType, uuid, action string, param
 func (this *ArvTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
 	if resourceType == "collections" {
 		if uuid == hwPDH {
-			output.(*CollectionRecord).ManifestText = hwManifest
+			output.(*arvados.Collection).ManifestText = hwManifest
 		} else if uuid == otherPDH {
-			output.(*CollectionRecord).ManifestText = otherManifest
+			output.(*arvados.Collection).ManifestText = otherManifest
 		}
 	}
 	if resourceType == "containers" {
