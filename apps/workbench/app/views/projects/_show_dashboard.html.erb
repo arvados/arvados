@@ -1,9 +1,10 @@
   <div class="row">
     <div class="col-md-6">
       <div class="panel panel-default" style="min-height: 10.5em">
-        <div class="panel-heading"><span class="panel-title">Recent pipelines and processes</span>
+        <div class="panel-heading">
+          <span class="panel-title">Recent pipelines and processes</span>
           <% if current_user.andand.is_active %>
-            <span class="pull-right">
+            <span class="pull-right recent-processes-actions">
               <span>
                 <%= link_to(
                 choose_pipeline_templates_path(
@@ -109,7 +110,7 @@
       <% nodes = Node.all %>
       <div class="panel panel-default" style="min-height: 10.5em">
         <div class="panel-heading"><span class="panel-title">Compute node status</span>
-          <span class="pull-right">
+          <span class="pull-right compute-node-actions">
             <% if current_user.andand.is_admin %>
               <span>
                 <%= link_to nodes_path, class: 'btn btn-default btn-xs' do %>

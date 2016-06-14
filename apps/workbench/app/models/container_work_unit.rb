@@ -45,7 +45,7 @@ class ContainerWorkUnit < ProxyWorkUnit
   end
 
   def can_cancel?
-    @proxied.is_a?(ContainerRequest) && state_label.in?(["Queued", "Locked", "Running"])
+    @proxied.is_a?(ContainerRequest) && state_label.in?(["Queued", "Locked", "Running"]) && priority > 0
   end
 
   def container_uuid

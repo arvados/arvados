@@ -250,20 +250,56 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       visit page_with_token(token)
 
       assert_text 'Recent pipelines and processes' # seeing dashboard now
+      within('.recent-processes-actions') do
+        assert page.has_link?('Run a pipeline')
+        assert page.has_link?('All pipelines')
+      end
+
       within('.recent-processes') do
-        page.has_button? 'Run a pipeline'
-        page.has_link? 'All pipelines'
         assert_text 'zzzzz-d1hrv-partdonepipelin'
         assert_text 'zzzzz-d1hrv-twodonepipeline'
         assert_text 'zzzzz-dz642-runningcontainr'
         assert_text 'zzzzz-dz642-runningcontain2'
       end
 
+      within('.compute-node-actions') do
+        if is_admin
+          assert page.has_link?('All nodes')
+        else
+          assert page.has_no_link?('All nodes')
+        end
+        assert page.has_link? 'All jobs'
+      end
+
       within('.compute-node-summary-pane') do
-        page.has_link?('All nodes') if is_admin
-        page.has_link? 'All jobs'
         click_link 'Details'
         assert_text 'compute0'
+      end
+    end
+  end
+
+  [
+    ['jobs', 'running_job_with_components', true],
+    ['pipeline_instances', 'components_is_jobspec', false],
+    ['containers', 'running', false],
+    ['container_requests', 'running', true],
+  ].each do |type, fixture, cancelable|
+    test "cancel button for #{type}/#{fixture}" do
+      if cancelable
+        need_selenium 'to cancel'
+      end
+
+      obj = api_fixture(type)[fixture]
+      visit page_with_token "active", "/#{type}/#{obj['uuid']}"
+
+      assert_text 'created_at'
+      if cancelable
+        assert page.has_button?('Cancel'), 'No Cancel button'
+        click_button 'Cancel'
+        wait_for_ajax
+        assert page.has_no_button?('Cancel'), 'Cancel button not expected after clicking'
+      else
+        assert page.has_no_button?('Cancel'), 'Cancel button not expected'
       end
     end
   end
