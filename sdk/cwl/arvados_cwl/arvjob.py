@@ -42,7 +42,7 @@ class ArvadosJob(object):
                     vwd.copy(rest, t, source_collection=src)
                 else:
                     with vwd.open(t, "w") as f:
-                        f.write(self.generatefiles[t])
+                        f.write(self.generatefiles[t].encode('utf-8'))
             vwd.save_new()
             for t in self.generatefiles:
                 script_parameters["task.vwd"][t] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), t)
