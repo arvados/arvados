@@ -148,8 +148,7 @@ handle_rails_package() {
     local -a pos_args=("$srcdir/=$railsdir" "$pkgname" "Curoverse, Inc." dir
                        "$(cat "$version_file")")
     local license_arg="$license_path=$railsdir/$(basename "$license_path")"
-    # --iteration=5 accommodates the package script bugfixes #8371 and #8413.
-    local -a switches=(--iteration=5
+    local -a switches=(--iteration=6
                        --after-install "$scripts_dir/postinst"
                        --before-remove "$scripts_dir/prerm"
                        --after-remove "$scripts_dir/postrm")

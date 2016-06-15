@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
@@ -38,7 +39,7 @@ type ArvTestClient struct {
 	Total   int64
 	Calls   int
 	Content []arvadosclient.Dict
-	ContainerRecord
+	arvados.Container
 	Logs          map[string]*bytes.Buffer
 	WasSetRunning bool
 	sync.Mutex
@@ -131,37 +132,37 @@ func (*TestDockerClient) RemoveImage(name string, force bool) ([]*dockerclient.I
 	return nil, nil
 }
 
-func (this *ArvTestClient) Create(resourceType string,
+func (client *ArvTestClient) Create(resourceType string,
 	parameters arvadosclient.Dict,
 	output interface{}) error {
 
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
+	client.Mutex.Lock()
+	defer client.Mutex.Unlock()
 
-	this.Calls += 1
-	this.Content = append(this.Content, parameters)
+	client.Calls += 1
+	client.Content = append(client.Content, parameters)
 
 	if resourceType == "logs" {
 		et := parameters["log"].(arvadosclient.Dict)["event_type"].(string)
-		if this.Logs == nil {
-			this.Logs = make(map[string]*bytes.Buffer)
+		if client.Logs == nil {
+			client.Logs = make(map[string]*bytes.Buffer)
 		}
-		if this.Logs[et] == nil {
-			this.Logs[et] = &bytes.Buffer{}
+		if client.Logs[et] == nil {
+			client.Logs[et] = &bytes.Buffer{}
 		}
-		this.Logs[et].Write([]byte(parameters["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"]))
+		client.Logs[et].Write([]byte(parameters["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"]))
 	}
 
 	if resourceType == "collections" && output != nil {
 		mt := parameters["collection"].(arvadosclient.Dict)["manifest_text"].(string)
-		outmap := output.(*CollectionRecord)
+		outmap := output.(*arvados.Collection)
 		outmap.PortableDataHash = fmt.Sprintf("%x+%d", md5.Sum([]byte(mt)), len(mt))
 	}
 
 	return nil
 }
 
-func (this *ArvTestClient) Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error {
+func (client *ArvTestClient) Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error {
 	switch {
 	case method == "GET" && resourceType == "containers" && action == "auth":
 		return json.Unmarshal([]byte(`{
@@ -174,28 +175,28 @@ func (this *ArvTestClient) Call(method, resourceType, uuid, action string, param
 	}
 }
 
-func (this *ArvTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
+func (client *ArvTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
 	if resourceType == "collections" {
 		if uuid == hwPDH {
-			output.(*CollectionRecord).ManifestText = hwManifest
+			output.(*arvados.Collection).ManifestText = hwManifest
 		} else if uuid == otherPDH {
-			output.(*CollectionRecord).ManifestText = otherManifest
+			output.(*arvados.Collection).ManifestText = otherManifest
 		}
 	}
 	if resourceType == "containers" {
-		(*output.(*ContainerRecord)) = this.ContainerRecord
+		(*output.(*arvados.Container)) = client.Container
 	}
 	return nil
 }
 
-func (this *ArvTestClient) Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error) {
-	this.Mutex.Lock()
-	defer this.Mutex.Unlock()
-	this.Calls += 1
-	this.Content = append(this.Content, parameters)
+func (client *ArvTestClient) Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error) {
+	client.Mutex.Lock()
+	defer client.Mutex.Unlock()
+	client.Calls += 1
+	client.Content = append(client.Content, parameters)
 	if resourceType == "containers" {
 		if parameters["container"].(arvadosclient.Dict)["state"] == "Running" {
-			this.WasSetRunning = true
+			client.WasSetRunning = true
 		}
 	}
 	return nil
@@ -205,8 +206,9 @@ func (this *ArvTestClient) Update(resourceType string, uuid string, parameters a
 // parameters match jpath/string. E.g., CalledWith(c, "foo.bar",
 // "baz") returns parameters with parameters["foo"]["bar"]=="baz". If
 // no call matches, it returns nil.
-func (this *ArvTestClient) CalledWith(jpath, expect string) arvadosclient.Dict {
-	call: for _, content := range this.Content {
+func (client *ArvTestClient) CalledWith(jpath, expect string) arvadosclient.Dict {
+call:
+	for _, content := range client.Content {
 		var v interface{} = content
 		for _, k := range strings.Split(jpath, ".") {
 			if dict, ok := v.(arvadosclient.Dict); !ok {
@@ -222,8 +224,8 @@ func (this *ArvTestClient) CalledWith(jpath, expect string) arvadosclient.Dict {
 	return nil
 }
 
-func (this *KeepTestClient) PutHB(hash string, buf []byte) (string, int, error) {
-	this.Content = buf
+func (client *KeepTestClient) PutHB(hash string, buf []byte) (string, int, error) {
+	client.Content = buf
 	return fmt.Sprintf("%s+%d", hash, len(buf)), len(buf), nil
 }
 
@@ -232,14 +234,14 @@ type FileWrapper struct {
 	len uint64
 }
 
-func (this FileWrapper) Len() uint64 {
-	return this.len
+func (fw FileWrapper) Len() uint64 {
+	return fw.len
 }
 
-func (this *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
+func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
 	if filename == hwImageId+".tar" {
 		rdr := ioutil.NopCloser(&bytes.Buffer{})
-		this.Called = true
+		client.Called = true
 		return FileWrapper{rdr, 1321984}, nil
 	}
 	return nil, nil
@@ -255,7 +257,7 @@ func (s *TestSuite) TestLoadImage(c *C) {
 	_, err = cr.Docker.InspectImage(hwImageId)
 	c.Check(err, NotNil)
 
-	cr.ContainerRecord.ContainerImage = hwPDH
+	cr.Container.ContainerImage = hwPDH
 
 	// (1) Test loading image from keep
 	c.Check(kc.Called, Equals, false)
@@ -286,61 +288,63 @@ func (s *TestSuite) TestLoadImage(c *C) {
 }
 
 type ArvErrorTestClient struct{}
-type KeepErrorTestClient struct{}
-type KeepReadErrorTestClient struct{}
 
-func (this ArvErrorTestClient) Create(resourceType string,
+func (ArvErrorTestClient) Create(resourceType string,
 	parameters arvadosclient.Dict,
 	output interface{}) error {
 	return nil
 }
 
-func (this ArvErrorTestClient) Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error {
+func (ArvErrorTestClient) Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error {
 	return errors.New("ArvError")
 }
 
-func (this ArvErrorTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
+func (ArvErrorTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
 	return errors.New("ArvError")
 }
 
-func (this ArvErrorTestClient) Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error) {
+func (ArvErrorTestClient) Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error) {
 	return nil
 }
 
-func (this KeepErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
+type KeepErrorTestClient struct{}
+
+func (KeepErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
 	return "", 0, errors.New("KeepError")
 }
 
-func (this KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
+func (KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
 	return nil, errors.New("KeepError")
 }
 
-func (this KeepReadErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
+type KeepReadErrorTestClient struct{}
+
+func (KeepReadErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
 	return "", 0, nil
 }
 
 type ErrorReader struct{}
 
-func (this ErrorReader) Read(p []byte) (n int, err error) {
+func (ErrorReader) Read(p []byte) (n int, err error) {
 	return 0, errors.New("ErrorReader")
 }
 
-func (this ErrorReader) Close() error {
+func (ErrorReader) Close() error {
 	return nil
 }
 
-func (this ErrorReader) Len() uint64 {
+func (ErrorReader) Len() uint64 {
 	return 0
 }
 
-func (this KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
+func (KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
 	return ErrorReader{}, nil
 }
 
 func (s *TestSuite) TestLoadImageArvError(c *C) {
 	// (1) Arvados error
 	cr := NewContainerRunner(ArvErrorTestClient{}, &KeepTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	cr.ContainerRecord.ContainerImage = hwPDH
+	cr.Container.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
 	c.Check(err.Error(), Equals, "While getting container image collection: ArvError")
@@ -350,7 +354,7 @@ func (s *TestSuite) TestLoadImageKeepError(c *C) {
 	// (2) Keep error
 	docker := NewTestDockerClient()
 	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	cr.ContainerRecord.ContainerImage = hwPDH
+	cr.Container.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
 	c.Check(err.Error(), Equals, "While creating ManifestFileReader for container image: KeepError")
@@ -359,7 +363,7 @@ func (s *TestSuite) TestLoadImageKeepError(c *C) {
 func (s *TestSuite) TestLoadImageCollectionError(c *C) {
 	// (3) Collection doesn't contain image
 	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	cr.ContainerRecord.ContainerImage = otherPDH
+	cr.Container.ContainerImage = otherPDH
 
 	err := cr.LoadImage()
 	c.Check(err.Error(), Equals, "First file in the container image collection does not end in .tar")
@@ -369,7 +373,7 @@ func (s *TestSuite) TestLoadImageKeepReadError(c *C) {
 	// (4) Collection doesn't contain image
 	docker := NewTestDockerClient()
 	cr := NewContainerRunner(&ArvTestClient{}, KeepReadErrorTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	cr.ContainerRecord.ContainerImage = hwPDH
+	cr.Container.ContainerImage = hwPDH
 
 	err := cr.LoadImage()
 	c.Check(err, NotNil)
@@ -379,21 +383,21 @@ type ClosableBuffer struct {
 	bytes.Buffer
 }
 
+func (*ClosableBuffer) Close() error {
+	return nil
+}
+
 type TestLogs struct {
 	Stdout ClosableBuffer
 	Stderr ClosableBuffer
 }
 
-func (this *ClosableBuffer) Close() error {
-	return nil
-}
-
-func (this *TestLogs) NewTestLoggingWriter(logstr string) io.WriteCloser {
+func (tl *TestLogs) NewTestLoggingWriter(logstr string) io.WriteCloser {
 	if logstr == "stdout" {
-		return &this.Stdout
+		return &tl.Stdout
 	}
 	if logstr == "stderr" {
-		return &this.Stderr
+		return &tl.Stderr
 	}
 	return nil
 }
@@ -418,8 +422,8 @@ func (s *TestSuite) TestRunContainer(c *C) {
 
 	var logs TestLogs
 	cr.NewLogWriter = logs.NewTestLoggingWriter
-	cr.ContainerRecord.ContainerImage = hwPDH
-	cr.ContainerRecord.Command = []string{"./hw"}
+	cr.Container.ContainerImage = hwPDH
+	cr.Container.Command = []string{"./hw"}
 	err := cr.LoadImage()
 	c.Check(err, IsNil)
 
@@ -455,18 +459,18 @@ func (s *TestSuite) TestCommitLogs(c *C) {
 	c.Check(*cr.LogsPDH, Equals, "63da7bdacf08c40f604daad80c261e9a+60")
 }
 
-func (s *TestSuite) TestUpdateContainerRecordRunning(c *C) {
+func (s *TestSuite) TestUpdateContainerRunning(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
-	err := cr.UpdateContainerRecordRunning()
+	err := cr.UpdateContainerRunning()
 	c.Check(err, IsNil)
 
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["state"], Equals, "Running")
 }
 
-func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
+func (s *TestSuite) TestUpdateContainerComplete(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
@@ -478,7 +482,7 @@ func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
 	*cr.ExitCode = 42
 	cr.finalState = "Complete"
 
-	err := cr.UpdateContainerRecordFinal()
+	err := cr.UpdateContainerFinal()
 	c.Check(err, IsNil)
 
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["log"], Equals, *cr.LogsPDH)
@@ -486,14 +490,14 @@ func (s *TestSuite) TestUpdateContainerRecordComplete(c *C) {
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
 }
 
-func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
+func (s *TestSuite) TestUpdateContainerCancelled(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.Cancelled = true
 	cr.finalState = "Cancelled"
 
-	err := cr.UpdateContainerRecordFinal()
+	err := cr.UpdateContainerFinal()
 	c.Check(err, IsNil)
 
 	c.Check(api.Content[0]["container"].(arvadosclient.Dict)["log"], IsNil)
@@ -504,7 +508,7 @@ func (s *TestSuite) TestUpdateContainerRecordCancelled(c *C) {
 // Used by the TestFullRun*() test below to DRY up boilerplate setup to do full
 // dress rehearsal of the Run() function, starting from a JSON container record.
 func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner) {
-	rec := ContainerRecord{}
+	rec := arvados.Container{}
 	err := json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
@@ -512,7 +516,7 @@ func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvT
 	docker.fn = fn
 	docker.RemoveImage(hwImageId, true)
 
-	api = &ArvTestClient{ContainerRecord: rec}
+	api = &ArvTestClient{Container: rec}
 	cr = NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
@@ -643,7 +647,7 @@ func (s *TestSuite) TestCancel(c *C) {
     "runtime_constraints": {}
 }`
 
-	rec := ContainerRecord{}
+	rec := arvados.Container{}
 	err := json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
@@ -656,7 +660,7 @@ func (s *TestSuite) TestCancel(c *C) {
 	}
 	docker.RemoveImage(hwImageId, true)
 
-	api := &ArvTestClient{ContainerRecord: rec}
+	api := &ArvTestClient{Container: rec}
 	cr := NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
@@ -735,8 +739,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	}
 
 	{
-		cr.ContainerRecord.Mounts = make(map[string]Mount)
-		cr.ContainerRecord.Mounts["/tmp"] = Mount{Kind: "tmp"}
+		cr.Container.Mounts = make(map[string]arvados.Mount)
+		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
 		cr.OutputPath = "/tmp"
 
 		err := cr.SetupMounts()
@@ -748,8 +752,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 	{
 		i = 0
-		cr.ContainerRecord.Mounts = make(map[string]Mount)
-		cr.ContainerRecord.Mounts["/keeptmp"] = Mount{Kind: "collection", Writable: true}
+		cr.Container.Mounts = make(map[string]arvados.Mount)
+		cr.Container.Mounts["/keeptmp"] = arvados.Mount{Kind: "collection", Writable: true}
 		cr.OutputPath = "/keeptmp"
 
 		os.MkdirAll("/tmp/mktmpdir1/tmp0", os.ModePerm)
@@ -763,9 +767,9 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 	{
 		i = 0
-		cr.ContainerRecord.Mounts = make(map[string]Mount)
-		cr.ContainerRecord.Mounts["/keepinp"] = Mount{Kind: "collection", PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53"}
-		cr.ContainerRecord.Mounts["/keepout"] = Mount{Kind: "collection", Writable: true}
+		cr.Container.Mounts = make(map[string]arvados.Mount)
+		cr.Container.Mounts["/keepinp"] = arvados.Mount{Kind: "collection", PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53"}
+		cr.Container.Mounts["/keepout"] = arvados.Mount{Kind: "collection", Writable: true}
 		cr.OutputPath = "/keepout"
 
 		os.MkdirAll("/tmp/mktmpdir1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
@@ -808,7 +812,7 @@ func (s *TestSuite) TestStdout(c *C) {
 
 // Used by the TestStdoutWithWrongPath*()
 func StdoutErrorRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner, err error) {
-	rec := ContainerRecord{}
+	rec := arvados.Container{}
 	err = json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
@@ -816,7 +820,7 @@ func StdoutErrorRunHelper(c *C, record string, fn func(t *TestDockerClient)) (ap
 	docker.fn = fn
 	docker.RemoveImage(hwImageId, true)
 
-	api = &ArvTestClient{ContainerRecord: rec}
+	api = &ArvTestClient{Container: rec}
 	cr = NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest

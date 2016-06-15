@@ -238,6 +238,7 @@ debug_echo "umask is" `umask`
 
 if [[ ! -d "$WORKSPACE/packages/$TARGET" ]]; then
   mkdir -p $WORKSPACE/packages/$TARGET
+  chown --reference="$WORKSPACE" "$WORKSPACE/packages/$TARGET"
 fi
 
 # Perl packages
