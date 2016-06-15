@@ -225,7 +225,7 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 	// collQ buffers incoming collections so we can start fetching
 	// the next page without waiting for the current page to
 	// finish processing.
-	collQ := make(chan arvados.Collection, 1000)
+	collQ := make(chan arvados.Collection, bufs)
 
 	// Start a goroutine to process collections. (We could use a
 	// worker pool here, but even with a single worker we already
