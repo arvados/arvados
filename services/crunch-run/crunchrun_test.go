@@ -288,36 +288,38 @@ func (s *TestSuite) TestLoadImage(c *C) {
 }
 
 type ArvErrorTestClient struct{}
-type KeepErrorTestClient struct{}
-type KeepReadErrorTestClient struct{}
 
-func (client ArvErrorTestClient) Create(resourceType string,
+func (ArvErrorTestClient) Create(resourceType string,
 	parameters arvadosclient.Dict,
 	output interface{}) error {
 	return nil
 }
 
-func (client ArvErrorTestClient) Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error {
+func (ArvErrorTestClient) Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error {
 	return errors.New("ArvError")
 }
 
-func (client ArvErrorTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
+func (ArvErrorTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
 	return errors.New("ArvError")
 }
 
-func (client ArvErrorTestClient) Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error) {
+func (ArvErrorTestClient) Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error) {
 	return nil
 }
 
-func (client KeepErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
+type KeepErrorTestClient struct{}
+
+func (KeepErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
 	return "", 0, errors.New("KeepError")
 }
 
-func (client KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
+func (KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
 	return nil, errors.New("KeepError")
 }
 
-func (client KeepReadErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
+type KeepReadErrorTestClient struct{}
+
+func (KeepReadErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
 	return "", 0, nil
 }
 
