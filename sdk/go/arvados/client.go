@@ -3,8 +3,10 @@ package arvados
 import (
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -80,6 +82,57 @@ func (c *Client) DoAndDecode(dst interface{}, req *http.Request) error {
 	return json.Unmarshal(buf, dst)
 }
 
+// Convert an arbitrary struct to url.Values. For example,
+//
+//     Foo{Bar: []int{1,2,3}, Baz: "waz"}
+//
+// becomes
+//
+//     url.Values{`bar`:`{"a":[1,2,3]}`,`Baz`:`waz`}
+//
+// params itself is returned if it is already an url.Values.
+func anythingToValues(params interface{}) (url.Values, error) {
+	if v, ok := params.(url.Values); ok {
+		return v, nil
+	}
+	// TODO: Do this more efficiently, possibly using
+	// json.Decode/Encode, so the whole thing doesn't have to get
+	// encoded, decoded, and re-encoded.
+	j, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
+	}
+	var generic map[string]interface{}
+	err = json.Unmarshal(j, &generic)
+	if err != nil {
+		return nil, err
+	}
+	urlValues := url.Values{}
+	for k, v := range generic {
+		if v, ok := v.(string); ok {
+			urlValues.Set(k, v)
+			continue
+		}
+		if v, ok := v.(float64); ok {
+			// Unmarshal decodes all numbers as float64,
+			// which can be written as 1.2345e4 in JSON,
+			// but this form is not accepted for ints in
+			// url params. If a number fits in an int64,
+			// encode it as int64 rather than float64.
+			if v, frac := math.Modf(v); frac == 0 && v <= math.MaxInt64 && v >= math.MinInt64 {
+				urlValues.Set(k, fmt.Sprintf("%d", int64(v)))
+				continue
+			}
+		}
+		j, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		urlValues.Set(k, string(j))
+	}
+	return urlValues, nil
+}
+
 // RequestAndDecode performs an API request and unmarshals the
 // response (which must be JSON) into dst. Method and body arguments
 // are the same as for http.NewRequest(). The given path is added to
@@ -89,38 +142,9 @@ func (c *Client) DoAndDecode(dst interface{}, req *http.Request) error {
 // path must not contain a query string.
 func (c *Client) RequestAndDecode(dst interface{}, method, path string, body io.Reader, params interface{}) error {
 	urlString := c.apiURL(path)
-	var urlValues url.Values
-	if v, ok := params.(url.Values); ok {
-		urlValues = v
-	} else if params != nil {
-		// Convert an arbitrary struct to url.Values. For
-		// example, Foo{Bar: []int{1,2,3}, Baz: "waz"} becomes
-		// url.Values{`bar`:`{"a":[1,2,3]}`,`Baz`:`waz`}
-		//
-		// TODO: Do this more efficiently, possibly using
-		// json.Decode/Encode, so the whole thing doesn't have
-		// to get encoded, decoded, and re-encoded.
-		j, err := json.Marshal(params)
-		if err != nil {
-			return err
-		}
-		var generic map[string]interface{}
-		err = json.Unmarshal(j, &generic)
-		if err != nil {
-			return err
-		}
-		urlValues = url.Values{}
-		for k, v := range generic {
-			if v, ok := v.(string); ok {
-				urlValues.Set(k, v)
-				continue
-			}
-			j, err := json.Marshal(v)
-			if err != nil {
-				return err
-			}
-			urlValues.Set(k, string(j))
-		}
+	urlValues, err := anythingToValues(params)
+	if err != nil {
+		return err
 	}
 	if (method == "GET" || body != nil) && urlValues != nil {
 		// FIXME: what if params don't fit in URL
