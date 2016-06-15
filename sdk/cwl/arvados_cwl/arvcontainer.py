@@ -111,7 +111,17 @@ class ArvadosContainer(object):
     def done(self, record):
         try:
             if record["state"] == "Complete":
-                processStatus = "success"
+                rcode = record["exit_code"]
+                if self.successCodes and rcode in self.successCodes:
+                    processStatus = "success"
+                elif self.temporaryFailCodes and rcode in self.temporaryFailCodes:
+                    processStatus = "temporaryFail"
+                elif self.permanentFailCodes and rcode in self.permanentFailCodes:
+                    processStatus = "permanentFail"
+                elif rcode == 0:
+                    processStatus = "success"
+                else:
+                    processStatus = "permanentFail"
             else:
                 processStatus = "permanentFail"
 
@@ -152,7 +162,7 @@ class RunnerContainer(Runner):
         workflowname = os.path.basename(self.tool.tool["id"])
         workflowpath = "/var/lib/cwl/workflow/%s" % workflowname
         workflowcollection = workflowmapper.mapper(self.tool.tool["id"])[1]
-        workflowcollection = workflowcollection[:workflowcollection.index('/')]
+        workflowcollection = workflowcollection[5:workflowcollection.index('/')]
         jobpath = "/var/lib/cwl/job/cwl.input.json"
 
         container_image = arv_docker_get_image(self.arvrunner.api,
@@ -195,6 +205,7 @@ class RunnerContainer(Runner):
         }
 
     def run(self, *args, **kwargs):
+        kwargs["keepprefix"] = "keep:"
         job_spec = self.arvados_job_spec(*args, **kwargs)
         job_spec.setdefault("owner_uuid", self.arvrunner.project_uuid)
 

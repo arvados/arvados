@@ -31,7 +31,7 @@ class ArvCwlRunner(object):
     """Execute a CWL tool or workflow, submit crunch jobs, wait for them to
     complete, and report output."""
 
-    def __init__(self, api_client, crunch2):
+    def __init__(self, api_client, crunch2=False):
         self.api = api_client
         self.jobs = {}
         self.lock = threading.Lock()
@@ -54,12 +54,12 @@ class ArvCwlRunner(object):
             if self.pipeline:
                 self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
                                                      body={"state": "Complete"}).execute(num_retries=self.num_retries)
-
         else:
             logger.warn("Overall job status is %s", processStatus)
             if self.pipeline:
                 self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
                                                      body={"state": "Failed"}).execute(num_retries=self.num_retries)
+        self.final_status = processStatus
         self.final_output = out
 
     def on_message(self, event):
@@ -190,6 +190,9 @@ class ArvCwlRunner(object):
                                                      body={"priority": "0"}).execute(num_retries=self.num_retries)
         finally:
             self.cond.release()
+
+        if self.final_status == "UnsupportedRequirement":
+            raise UnsupportedRequirement("Check log for details.")
 
         if self.final_output is None:
             raise cwltool.workflow.WorkflowException("Workflow did not return a result.")

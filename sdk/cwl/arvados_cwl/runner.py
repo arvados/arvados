@@ -6,7 +6,7 @@ import json
 
 from cwltool.draft2tool import CommandLineTool
 import cwltool.workflow
-from cwltool.process import get_feature, scandeps, adjustFiles
+from cwltool.process import get_feature, scandeps, adjustFiles, UnsupportedRequirement
 from cwltool.load_tool import fetch_document
 
 import arvados.collection
@@ -61,15 +61,16 @@ class Runner(object):
         adjustFiles(sc, partial(visitFiles, workflowfiles))
         adjustFiles(self.job_order, partial(visitFiles, jobfiles))
 
+        keepprefix = kwargs.get("keepprefix", "")
         workflowmapper = ArvPathMapper(self.arvrunner, workflowfiles, "",
-                                       "%s",
-                                       "%s/%s",
+                                       keepprefix+"%s",
+                                       keepprefix+"%s/%s",
                                        name=self.name,
                                        **kwargs)
 
         jobmapper = ArvPathMapper(self.arvrunner, jobfiles, "",
-                                  "%s",
-                                  "%s/%s",
+                                  keepprefix+"%s",
+                                  keepprefix+"%s/%s",
                                   name=os.path.basename(self.job_order.get("id", "#")),
                                   **kwargs)
 
@@ -83,7 +84,15 @@ class Runner(object):
 
     def done(self, record):
         if record["state"] == "Complete":
-            processStatus = "success"
+            if record.get("exit_code") is not None:
+                if record["exit_code"] == 33:
+                    processStatus = "UnsupportedRequirement"
+                elif record["exit_code"] == 0:
+                    processStatus = "success"
+                else:
+                    processStatus = "permanentFail"
+            else:
+                processStatus = "success"
         else:
             processStatus = "permanentFail"
 
@@ -96,6 +105,8 @@ class Runner(object):
                 def keepify(path):
                     if not path.startswith("keep:"):
                         return "keep:%s/%s" % (record["output"], path)
+                    else:
+                        return path
                 adjustFiles(outputs, keepify)
             except Exception as e:
                 logger.error("While getting final output object: %s", e)
