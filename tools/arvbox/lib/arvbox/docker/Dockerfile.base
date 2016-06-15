@@ -1,15 +1,19 @@
 FROM debian:8
 
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -yq install \
+RUN apt-get update
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get -yq --no-install-recommends install \
     postgresql-9.4 git gcc runit \
     ruby rake bundler curl libpq-dev \
     libcurl4-openssl-dev libssl-dev zlib1g-dev libpcre3-dev \
     openssh-server python-setuptools netcat-traditional \
+    python-epydoc graphviz bzip2
+
+RUN DEBIAN_FRONTEND=noninteractive apt-get -yq --no-install-recommends install \
     libpython-dev fuse libfuse-dev python-pip python-yaml \
     pkg-config libattr1-dev python-llfuse python-pycurl \
     libwww-perl libio-socket-ssl-perl libcrypt-ssleay-perl \
-    libjson-perl nginx gitolite3 lsof python-epydoc graphviz \
+    libjson-perl nginx gitolite3 lsof \
     apt-transport-https ca-certificates slurm-wlm
 
 RUN cd /usr/local && \
