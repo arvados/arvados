@@ -1079,14 +1079,14 @@ class RetryNeedsMultipleServices(unittest.TestCase, tutil.ApiClientMock):
                 'acbd18db4cc2f85cedef654fccc4a4d8+3',
                 Exception('mock err'), 200, 200) as req_mock:
             self.keep_client.put('foo', num_retries=1, copies=2)
-        self.assertTrue(3, req_mock.call_count)
+        self.assertEqual(3, req_mock.call_count)
 
     def test_success_after_retryable_error(self):
         with tutil.mock_keep_responses(
                 'acbd18db4cc2f85cedef654fccc4a4d8+3',
                 500, 200, 200) as req_mock:
             self.keep_client.put('foo', num_retries=1, copies=2)
-        self.assertTrue(3, req_mock.call_count)
+        self.assertEqual(3, req_mock.call_count)
 
     def test_fail_after_final_error(self):
         # First retry loop gets a 200 (can't achieve replication by
@@ -1097,4 +1097,4 @@ class RetryNeedsMultipleServices(unittest.TestCase, tutil.ApiClientMock):
                 200, 400, 200) as req_mock:
             with self.assertRaises(arvados.errors.KeepWriteError):
                 self.keep_client.put('foo', num_retries=1, copies=2)
-        self.assertTrue(2, req_mock.call_count)
+        self.assertEqual(2, req_mock.call_count)
