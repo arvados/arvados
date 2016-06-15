@@ -8,19 +8,27 @@ h2. Install dependencies
 
 First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
 
-{% include 'note_python27_sc' %}
+{% include 'note_python_sc' %}
+
+On CentOS 6 and RHEL 6:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install perl python27-python-virtualenv fuse python27-python-arvados-python-client python27-python-arvados-fuse crunchrunner crunchstat arvados-docker-cleaner iptables ca-certificates</span>
+</code></pre>
+</notextile>
+
+On other Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">echo 'exclude=python2-llfuse' | sudo tee -a /etc/yum.conf</span>
+~$ <span class="userinput">sudo yum install perl python-virtualenv fuse python-arvados-python-client python-arvados-fuse crunchrunner crunchstat arvados-docker-cleaner iptables ca-certificates</span>
+</code></pre>
+</notextile>
 
 On Debian-based systems:
 
 <notextile>
 <pre><code>~$ <span class="userinput">sudo apt-get install perl python-virtualenv fuse python-arvados-python-client python-arvados-fuse crunchrunner crunchstat arvados-docker-cleaner iptables ca-certificates</span>
-</code></pre>
-</notextile>
-
-On Red Hat-based systems:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo yum install perl python27-python-virtualenv fuse python27-python-arvados-python-client python27-python-arvados-fuse crunchrunner crunchstat arvados-docker-cleaner iptables ca-certificates</span>
 </code></pre>
 </notextile>
 
@@ -97,6 +105,9 @@ exec svlogd -tt main
 EOF</span>
 /etc/sv/arvados-docker-cleaner$ <span class="userinput">sudo sh -c 'cat &gt;run' &lt;&lt;'EOF'
 #!/bin/sh
+if [ -d /opt/rh/python33 ]; then
+  source scl_source enable python33
+fi
 exec python3 -m arvados_docker.cleaner --quota <b>50G</b>
 EOF</span>
 /etc/sv/arvados-docker-cleaner$ <span class="userinput">sudo chmod +x run log/run</span>
