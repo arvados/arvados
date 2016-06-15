@@ -1064,6 +1064,18 @@ class KeepClientRetryPutTestCase(KeepClientRetryTestMixin, unittest.TestCase):
         with tutil.mock_keep_responses(self.DEFAULT_EXPECT, 200):
             self.check_exception(copies=2, num_retries=3)
 
+# @tutil.skip_sleep
+class KeepClientAvoidClientOverreplicationTestCase(unittest.TestCase, tutil.ApiClientMock):
+    def setUp(self):
+        self.api_client = self.mock_keep_services(count=4)
+        self.keep_client = arvados.KeepClient(api_client=self.api_client)
+
+    def test_only_send_enough_on_success(self):
+        with tutil.mock_keep_responses(
+                'acbd18db4cc2f85cedef654fccc4a4d8+3',
+                200, 200, 200, 200) as req_mock:
+            self.keep_client.put('foo', num_retries=1, copies=2)
+        self.assertEqual(3, req_mock.call_count)
 
 @tutil.skip_sleep
 class RetryNeedsMultipleServices(unittest.TestCase, tutil.ApiClientMock):
