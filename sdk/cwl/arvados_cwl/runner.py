@@ -23,6 +23,7 @@ class Runner(object):
         self.job_order = job_order
         self.running = False
         self.enable_reuse = enable_reuse
+        self.uuid = None
 
     def update_pipeline_component(self, record):
         pass
@@ -51,8 +52,14 @@ class Runner(object):
             return path
 
         document_loader, workflowobj, uri = fetch_document(self.tool.tool["id"])
+        loaded = set()
         def loadref(b, u):
-            return document_loader.fetch(urlparse.urljoin(b, u))
+            joined = urlparse.urljoin(b, u)
+            if joined not in loaded:
+                loaded.add(joined)
+                return document_loader.fetch(urlparse.urljoin(b, u))
+            else:
+                return {}
 
         sc = scandeps(uri, workflowobj,
                       set(("$import", "run")),

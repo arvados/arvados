@@ -37,6 +37,7 @@ class ArvCwlRunner(object):
         self.lock = threading.Lock()
         self.cond = threading.Condition(self.lock)
         self.final_output = None
+        self.final_status = None
         self.uploaded = {}
         self.num_retries = 4
         self.uuid = None
@@ -106,31 +107,6 @@ class ArvCwlRunner(object):
             # cwltool.main will write our return value to stdout.
             return tmpl.uuid
 
-        if kwargs.get("submit"):
-            if self.crunch2:
-                runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"))
-            else:
-                runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"))
-
-        if not kwargs.get("submit") and "cwl_runner_job" not in kwargs and not self.crunch2:
-            # Create pipeline for local run
-            self.pipeline = self.api.pipeline_instances().create(
-                body={
-                    "owner_uuid": self.project_uuid,
-                    "name": shortname(tool.tool["id"]),
-                    "components": {},
-                    "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
-            logger.info("Pipeline instance %s", self.pipeline["uuid"])
-
-        if kwargs.get("submit") and not kwargs.get("wait"):
-                runnerjob.run()
-                return runnerjob.uuid
-
-        if self.crunch2:
-            events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#container"]], self.on_message)
-        else:
-            events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#job"]], self.on_message)
-
         self.debug = kwargs.get("debug")
         self.ignore_docker_for_reuse = kwargs.get("ignore_docker_for_reuse")
         self.fs_access = CollectionFsAccess(kwargs["basedir"])
@@ -145,7 +121,38 @@ class ArvCwlRunner(object):
             kwargs["outdir"] = "$(task.outdir)"
             kwargs["tmpdir"] = "$(task.tmpdir)"
 
+        runnerjob = None
         if kwargs.get("submit"):
+            if self.crunch2:
+                if tool.tool["class"] == "CommandLineTool":
+                    runnerjob = tool.job(job_order,
+                                         self.output_callback,
+                                         **kwargs).next()
+                else:
+                    runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"))
+            else:
+                runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"))
+
+        if not kwargs.get("submit") and "cwl_runner_job" not in kwargs and not self.crunch2:
+            # Create pipeline for local run
+            self.pipeline = self.api.pipeline_instances().create(
+                body={
+                    "owner_uuid": self.project_uuid,
+                    "name": shortname(tool.tool["id"]),
+                    "components": {},
+                    "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
+            logger.info("Pipeline instance %s", self.pipeline["uuid"])
+
+        if runnerjob and not kwargs.get("wait"):
+            runnerjob.run()
+            return runnerjob.uuid
+
+        if self.crunch2:
+            events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#container"]], self.on_message)
+        else:
+            events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#job"]], self.on_message)
+
+        if runnerjob:
             jobiter = iter((runnerjob,))
         else:
             if "cwl_runner_job" in kwargs:
@@ -185,7 +192,7 @@ class ArvCwlRunner(object):
             if self.pipeline:
                 self.api.pipeline_instances().update(uuid=self.pipeline["uuid"],
                                                      body={"state": "Failed"}).execute(num_retries=self.num_retries)
-            if runnerjob and self.crunch2:
+            if runnerjob and runnerjob.uuid and self.crunch2:
                 self.api.container_requests().update(uuid=runnerjob.uuid,
                                                      body={"priority": "0"}).execute(num_retries=self.num_retries)
         finally:
