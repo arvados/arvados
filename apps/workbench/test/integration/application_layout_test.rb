@@ -256,10 +256,20 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       end
 
       within('.recent-processes') do
-        assert_text 'zzzzz-d1hrv-partdonepipelin'
+        assert_text 'running_with_job'
+        within('.row-zzzzz-d1hrv-runningpipeline') do
+          assert_text 'foo'
+        end
+
         assert_text 'zzzzz-d1hrv-twodonepipeline'
-        assert_text 'zzzzz-dz642-runningcontainr'
-        assert_text 'zzzzz-dz642-runningcontain2'
+        within('.row-zzzzz-d1hrv-twodonepipeline')do
+          assert_text 'No output'
+        end
+
+        assert_text 'completed container request'
+        within('.row-zzzzz-xvhdp-cr4completedctr')do
+          assert page.has_link? 'foo_file'
+        end
       end
 
       within('.compute-node-actions') do
