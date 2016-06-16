@@ -14,30 +14,14 @@ class ContainerWorkUnit < ProxyWorkUnit
   def children
     return self.my_children if self.my_children
 
+    container_uuid = nil
+    container_uuid = if @proxied.is_a?(Container) then uuid else get(:container_uuid) end
+
     items = []
-
-    if @proxied.is_a?(Container)
-      # If @proxied is a container, get all containter_requests where this is
-      # requesting_container_uuid and containers for their container_uuids
-      crs = {}
-      reqs = ContainerRequest.where(requesting_container_uuid: uuid).results
-      reqs.each { |cr| crs[cr.container_uuid] = cr.name }
-
-      containers = Container.where(uuid: crs.keys).results
-      containers.each do |c|
-        items << c.work_unit(crs[c.uuid] || 'this container')
-      end
-
-      self.my_children = items
-    else
-      # Else for a container_request, get all container_requests whose
-      # requesting_container_uuid is this container_request's container_uuid.
-      container_uuid = get(:container_uuid)
-      if container_uuid
-        reqs = ContainerRequest.where(requesting_container_uuid: container_uuid).results
-        reqs.each do |cr|
-          items << cr.work_unit(cr.name || 'this container')
-        end
+    if container_uuid
+      reqs = ContainerRequest.where(requesting_container_uuid: container_uuid).results
+      reqs.each do |cr|
+        items << cr.work_unit(cr.name || 'this container')
       end
     end
 
