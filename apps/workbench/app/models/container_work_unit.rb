@@ -1,12 +1,12 @@
 class ContainerWorkUnit < ProxyWorkUnit
-  attr_accessor :related
+  attr_accessor :container
 
   def initialize proxied, label
     super
     if @proxied.is_a?(ContainerRequest)
       container_uuid = get(:container_uuid)
       if container_uuid
-        @related = Container.where(uuid: container_uuid).first rescue nil
+        @container = Container.where(uuid: container_uuid).first
       end
     end
   end
@@ -17,6 +17,8 @@ class ContainerWorkUnit < ProxyWorkUnit
     items = []
 
     if @proxied.is_a?(Container)
+      # If @proxied is a container, get all containter_requests where this is
+      # requesting_container_uuid and containers for their container_uuids
       crs = {}
       reqs = ContainerRequest.where(requesting_container_uuid: uuid).results
       reqs.each { |cr| crs[cr.container_uuid] = cr.name }
@@ -28,6 +30,8 @@ class ContainerWorkUnit < ProxyWorkUnit
 
       self.my_children = items
     else
+      # Else for a container_request, get all container_requests whose
+      # requesting_container_uuid is this container_request's container_uuid.
       container_uuid = get(:container_uuid)
       if container_uuid
         reqs = ContainerRequest.where(requesting_container_uuid: container_uuid).results
@@ -58,8 +62,8 @@ class ContainerWorkUnit < ProxyWorkUnit
     get(:container_uuid)
   end
 
-  # For the following properties, use value from the @related container if exists
-  # This applies to a ContainerRequest in Committed or Final state with container_uuid
+  # For the following properties, use value from the @container if exists
+  # This applies to a ContainerRequest with container_uuid
 
   def started_at
     t = get_combined(:started_at)
@@ -133,6 +137,6 @@ class ContainerWorkUnit < ProxyWorkUnit
 
   protected
   def get_combined key
-    get(key, @related) || get(key, @proxied)
+    get(key, @container) || get(key, @proxied)
   end
 end
