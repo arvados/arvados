@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"sync"
 	"testing"
 )
@@ -79,5 +80,74 @@ func TestCurrentUser(t *testing.T) {
 	u, err = c.CurrentUser()
 	if err == nil {
 		t.Errorf("got nil error, expected something awful")
+	}
+}
+
+func TestAnythingToValues(t *testing.T) {
+	type testCase struct {
+		in interface{}
+		// ok==nil means anythingToValues should return an
+		// error, otherwise it's a func that returns true if
+		// out is correct
+		ok func(out url.Values) bool
+	}
+	for _, tc := range []testCase{
+		{
+			in: map[string]interface{}{"foo": "bar"},
+			ok: func(out url.Values) bool {
+				return out.Get("foo") == "bar"
+			},
+		},
+		{
+			in: map[string]interface{}{"foo": 2147483647},
+			ok: func(out url.Values) bool {
+				return out.Get("foo") == "2147483647"
+			},
+		},
+		{
+			in: map[string]interface{}{"foo": 1.234},
+			ok: func(out url.Values) bool {
+				return out.Get("foo") == "1.234"
+			},
+		},
+		{
+			in: map[string]interface{}{"foo": "1.234"},
+			ok: func(out url.Values) bool {
+				return out.Get("foo") == "1.234"
+			},
+		},
+		{
+			in: map[string]interface{}{"foo": map[string]interface{}{"bar":1.234}},
+			ok: func(out url.Values) bool {
+				return out.Get("foo") == `{"bar":1.234}`
+			},
+		},
+		{
+			in: url.Values{"foo": {"bar"}},
+			ok: func(out url.Values) bool {
+				return out.Get("foo") == "bar"
+			},
+		},
+		{
+			in: 1234,
+			ok: nil,
+		},
+		{
+			in: []string{"foo"},
+			ok: nil,
+		},
+	} {
+		t.Logf("%#v", tc.in)
+		out, err := anythingToValues(tc.in)
+		switch {
+		case tc.ok == nil:
+			if err == nil {
+				t.Errorf("got %#v, expected error", out)
+			}
+		case err != nil:
+			t.Errorf("got err %#v, expected nil", err)
+		case !tc.ok(out):
+			t.Errorf("got %#v but tc.ok() says that is wrong", out)
+		}
 	}
 }

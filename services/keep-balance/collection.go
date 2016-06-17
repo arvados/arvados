@@ -22,7 +22,10 @@ func countCollections(c *arvados.Client, params arvados.ResourceListParams) (int
 // The progress function is called periodically with done (number of
 // times f has been called) and total (number of times f is expected
 // to be called).
-func EachCollection(c *arvados.Client, f func(arvados.Collection) error, progress func(done, total int)) error {
+//
+// If pageSize > 0 it is used as the maximum page size in each API
+// call; otherwise the maximum allowed page size is requested.
+func EachCollection(c *arvados.Client, pageSize int, f func(arvados.Collection) error, progress func(done, total int)) error {
 	if progress == nil {
 		progress = func(_, _ int) {}
 	}
@@ -32,7 +35,11 @@ func EachCollection(c *arvados.Client, f func(arvados.Collection) error, progres
 		return err
 	}
 
-	limit := 1000
+	limit := pageSize
+	if limit <= 0 {
+		// Use the maximum page size the server allows
+		limit = 1<<31 - 1
+	}
 	params := arvados.ResourceListParams{
 		Limit:  &limit,
 		Order:  "modified_at, uuid",

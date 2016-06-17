@@ -80,7 +80,7 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (err error) {
 			return
 		}
 	}
-	if err = bal.GetCurrentState(&config.Client); err != nil {
+	if err = bal.GetCurrentState(&config.Client, config.CollectionBatchSize, config.CollectionBuffers); err != nil {
 		return
 	}
 	bal.ComputeChangeSets()
@@ -190,7 +190,7 @@ func (bal *Balancer) ClearTrashLists(c *arvados.Client) error {
 // collection manifests in the database (API server).
 //
 // It encodes the resulting information in BlockStateMap.
-func (bal *Balancer) GetCurrentState(c *arvados.Client) error {
+func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) error {
 	defer timeMe(bal.Logger, "GetCurrentState")()
 	bal.BlockStateMap = NewBlockStateMap()
 
@@ -224,10 +224,8 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client) error {
 
 	// collQ buffers incoming collections so we can start fetching
 	// the next page without waiting for the current page to
-	// finish processing. (1000 happens to match the page size
-	// used by (*arvados.Client)EachCollection(), but it's OK if
-	// they don't match.)
-	collQ := make(chan arvados.Collection, 1000)
+	// finish processing.
+	collQ := make(chan arvados.Collection, bufs)
 
 	// Start a goroutine to process collections. (We could use a
 	// worker pool here, but even with a single worker we already
@@ -252,7 +250,7 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err = EachCollection(c,
+		err = EachCollection(c, pageSize,
 			func(coll arvados.Collection) error {
 				collQ <- coll
 				if len(errs) > 0 {

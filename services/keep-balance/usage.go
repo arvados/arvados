@@ -16,7 +16,9 @@ var exampleConfigFile = []byte(`
 	"KeepServiceTypes": [
 	    "disk"
 	],
-	"RunPeriod": "600s"
+	"RunPeriod": "600s",
+	"CollectionBatchSize": 100000,
+	"CollectionBuffers": 1000
     }`)
 
 func usage() {
@@ -70,6 +72,19 @@ Committing:
 
     Use the -commit-pull and -commit-trash flags to implement the
     computed changes.
+
+Tuning resource usage:
+
+    CollectionBatchSize limits the number of collections retrieved per
+    API transaction. If this is zero or omitted, page size is
+    determined by the API server's own page size limits (see
+    max_items_per_response and max_index_database_read configs).
+
+    CollectionBuffers sets the size of an internal queue of
+    collections. Higher values use more memory, and improve throughput
+    by allowing keep-balance to fetch the next page of collections
+    while the current page is still being processed. If this is zero
+    or omitted, pages are processed serially.
 
 Limitations:
 
