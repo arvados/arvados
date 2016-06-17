@@ -75,6 +75,7 @@ class EventBus
     @channel = EventMachine::Channel.new
     @mtx = Mutex.new
     @bgthread = false
+    @connection_count = 0
   end
 
   # Push out any pending events to the connection +ws+
@@ -221,10 +222,17 @@ class EventBus
 
   # Constant maximum number of filters, to avoid silly huge database queries.
   MAX_FILTERS = 16
+  MAX_NOTIFY_BACKLOG = 1000
+  MAX_CONNECTIONS = 500
+
+  def overloaded?
+    @mtx.synchronize do
+      @connection_count >= MAX_CONNECTIONS
+    end
+  end
 
   # Called by RackSocket when a new websocket connection has been established.
   def on_connect ws
-
     # Disconnect if no valid API token.
     # current_user is included from CurrentApiClient
     if not current_user
@@ -240,6 +248,10 @@ class EventBus
     ws.sent_ids = Set.new
     ws.queue = Queue.new
     ws.frame_mtx = Mutex.new
+
+    @mtx.synchronize do
+      @connection_count += 1
+    end
 
     # Subscribe to internal postgres notifications through @channel and
     # forward them to the thread associated with the connection.
@@ -274,7 +286,7 @@ class EventBus
       # Loop and react to socket events.
       loop do
         eventType, msg = ws.queue.pop
-        if ws.queue.length > 1000
+        if ws.queue.length > MAX_NOTIFY_BACKLOG
           ws.send ({status: 500, message: 'Notify backlog too long'}.to_json)
           ws.close
         else
@@ -286,6 +298,9 @@ class EventBus
             break
           end
         end
+      end
+      @mtx.synchronize do
+        @connection_count -= 1
       end
     end
 
