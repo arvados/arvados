@@ -8,6 +8,7 @@ require 'faye/websocket'
 require 'record_filters'
 require 'load_param'
 require 'set'
+require 'thread'
 
 # Patch in user, last_log_id and filters fields into the Faye::Websocket class.
 module Faye
@@ -16,7 +17,28 @@ module Faye
     attr_accessor :last_log_id
     attr_accessor :filters
     attr_accessor :sent_ids
-    attr_accessor :notify_queue
+    attr_accessor :queue
+    attr_accessor :frame_mtx
+  end
+end
+
+module WebSocket
+  class Driver
+
+    class Hybi < Driver
+      alias_method :_frame, :frame
+
+      def frame(data, type = nil, code = nil)
+        # Most of the sending activity will be from the thread set up in
+        # on_connect.  However, there is also some automatic activity in the
+        # form of ping/pong messages, so ensure that the frame method (which
+        # actually packs and sends one complete message to the underlying
+        # socket) can only be called by one thread at a time.
+        @socket.frame_mtx.synchronize do
+          _frame(data, type, code)
+        end
+      end
+    end
   end
 end
 
@@ -63,11 +85,9 @@ class EventBus
   #
   # It queries the database for log rows that are either
   #  a) greater than ws.last_log_id, which is the last log id which was a candidate to be sent out
-  #  b) if ws.last_log_id is nil, then it queries rows starting with notify_id
+  #  b) if ws.last_log_id is nil, then it queries the row notify_id
   #
-  # Regular Arvados permissions are applied using readable_by() and filters using record_filters()
-  # To avoid clogging up the database, queries are limited to batches of 100.  It will schedule a new
-  # push_events call if there are more log rows to send.
+  # Regular Arvados permissions are applied using readable_by() and filters using record_filters().
   def push_events ws, notify_id
     begin
       # Must have at least one filter set up to receive events
@@ -79,18 +99,14 @@ class EventBus
         cond_out = []
         param_out = []
 
-        if not notify_id.nil?
-          ws.notify_queue.unshift notify_id
-        end
-
         if not ws.last_log_id.nil?
           # We are catching up from some starting point.
           cond_id = "logs.id > ?"
           param_out << ws.last_log_id
-        elsif ws.notify_queue.length > 0
+        elsif not notify_id.nil?
           # Get next row being notified.
           cond_id = "logs.id = ?"
-          param_out << ws.notify_queue.pop
+          param_out << notify_id
         else
           # No log id to start from, nothing to do, return
           return
@@ -116,11 +132,7 @@ class EventBus
         end
 
         # Execute query and actually send the matching log rows
-        count = 0
-        limit = 10
-
-        lastid = nil
-        logs.limit(limit).each do |l|
+        logs.each do |l|
           if not ws.sent_ids.include?(l.id)
             # only send if not a duplicate
             ws.send(l.as_api_response.to_json)
@@ -129,28 +141,8 @@ class EventBus
             # record ids only when sending "catchup" messages, not notifies
             ws.sent_ids << l.id
           end
-          lastid = l.id
-          count += 1
         end
-
-        if count == limit
-          # Number of rows returned was capped by limit(), we need to schedule
-          # another query to get more logs (will start from last_log_id
-          # reported by current query)
-          ws.last_log_id = lastid
-          EventMachine::next_tick do
-            push_events ws, nil
-          end
-        elsif !ws.last_log_id.nil?
-          # Done catching up
-          ws.last_log_id = nil
-        end
-
-        if ws.notify_queue.length > 0
-          EventMachine::next_tick do
-            push_events ws, nil
-          end
-        end
+        ws.last_log_id = nil
       end
     rescue ArgumentError => e
       # There was some kind of user error.
@@ -246,23 +238,55 @@ class EventBus
     ws.filters = []
     ws.last_log_id = nil
     ws.sent_ids = Set.new
-    ws.notify_queue = Array.new
+    ws.queue = Queue.new
+    ws.frame_mtx = Mutex.new
 
-    # Subscribe to internal postgres notifications through @channel.  This will
-    # call push_events when a notification comes through.
+    # Subscribe to internal postgres notifications through @channel and
+    # forward them to the thread associated with the connection.
     sub = @channel.subscribe do |msg|
-      push_events ws, msg
+      if msg != :term
+        ws.queue << [:notify, msg]
+      else
+        ws.close
+      end
     end
 
     # Set up callback for inbound message dispatch.
     ws.on :message do |event|
-      handle_message ws, event
+      ws.queue << [:message, event]
     end
 
     # Set up socket close callback
     ws.on :close do |event|
       @channel.unsubscribe sub
-      ws = nil
+      ws.queue.clear
+      ws.queue << [:close, nil]
+    end
+
+    # Spin off a new thread to handle sending events to the client.  We need a
+    # separate thread per connection so that a slow client doesn't interfere
+    # with other clients.
+    #
+    # We don't want the loop in the request thread because on a TERM signal,
+    # Puma waits for outstanding requests to complete, and long-lived websocket
+    # connections may not complete in a timely manner.
+    Thread.new do
+      # Loop and react to socket events.
+      loop do
+        eventType, msg = ws.queue.pop
+        if ws.queue.length > 1000
+          ws.send ({status: 500, message: 'Notify backlog too long'}.to_json)
+          ws.close
+        else
+          if eventType == :message
+            handle_message ws, msg
+          elsif eventType == :notify
+            push_events ws, msg
+          elsif eventType == :close
+            break
+          end
+        end
+      end
     end
 
     # Start up thread to monitor the Postgres database, if none exists already.
@@ -298,8 +322,5 @@ class EventBus
       end
     end
 
-    # Since EventMachine is an asynchronous event based dispatcher, #on_connect
-    # does not block but instead returns immediately after having set up the
-    # websocket and notification channel callbacks.
   end
 end
