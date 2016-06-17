@@ -34,9 +34,16 @@ class ContainerWorkUnit < ProxyWorkUnit
 
   def uri
     uuid = get(:uuid)
-    "/#{@proxied.class.table_name}/#{uuid}" rescue nil
-  end
 
+    return nil unless uuid
+
+    if @proxied.class.respond_to? :table_name
+      "/#{@proxied.class.table_name}/#{uuid}"
+    else
+      resource_class = ArvadosBase.resource_class_for_uuid(uuid)
+      "#{resource_class.table_name}/#{uuid}" if resource_class
+    end
+  end
 
   def can_cancel?
     @proxied.is_a?(ContainerRequest) && state_label.in?(["Queued", "Locked", "Running"]) && priority > 0
