@@ -155,4 +155,28 @@ class WorkUnit
   def is_failed?
     # is this work unit in failed state?
   end
+
+  def command
+    # command to execute
+  end
+
+  def cwd
+    # initial workind directory
+  end
+
+  def environment
+    # environment variables
+  end
+
+  def mounts
+    # mounts
+  end
+
+  def output_path
+    # path to a directory or file to save output
+  end
+
+  def container_uuid
+    # container_uuid of a container_request
+  end
 end

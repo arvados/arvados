@@ -5,7 +5,7 @@
               No <%= current_obj.title %> has been submitted yet.
             <% else %>
             <table>
-              <% keys = [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :priority] %>
+              <% keys = [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :container_uuid, :priority] %>
               <% keys << :outputs if @object.uuid == current_obj.uuid %>
               <% keys.each do |k| %>
                 <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
@@ -50,7 +50,8 @@
                  # ...and the api server provides an http:// or https:// url
                  repo = nil unless repo.andand.http_fetch_url
                  %>
-              <% [:script, :repository, :script_version, :supplied_script_version, :nondeterministic].each do |k| %>
+              <% [:script, :repository, :script_version, :supplied_script_version, :nondeterministic,
+                  :command, :cwd, :environment, :mounts, :output_path].each do |k| %>
                 <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
                 <% if val %>
                 <tr>
@@ -80,6 +81,16 @@
                     <%= current_obj.runtime_constraints[:docker_image] %>
                   </td>
                 </tr>
+                <tr>
+                  <td style="padding-right: 1em">
+                    docker_image_locator:
+                  </td>
+                  <td>
+                    <%= link_to_arvados_object_if_readable(current_obj.docker_image,
+                      current_obj.docker_image, friendly_name: true) %>
+                  </td>
+                </tr>
+              <% elsif current_obj.docker_image %>
                 <tr>
                   <td style="padding-right: 1em">
                     docker_image_locator:

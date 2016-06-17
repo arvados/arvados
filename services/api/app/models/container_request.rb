@@ -129,8 +129,8 @@ class ContainerRequest < ArvadosModel
         errors.add :priority, "cannot be nil"
       end
 
-      # Can update priority, container count.
-      permitted.push :priority, :container_count_max, :container_uuid
+      # Can update priority, container count, name and description
+      permitted.push :priority, :container_count_max, :container_uuid, :name, :description
 
       if self.state_changed?
         # Allow create-and-commit in a single operation.
@@ -141,12 +141,12 @@ class ContainerRequest < ArvadosModel
       end
 
     when Final
-      if not current_user.andand.is_admin
+      if not current_user.andand.is_admin and not (self.name_changed? || self.description_changed?)
         errors.add :state, "of container request can only be set to Final by system."
       end
 
-      if self.state_changed?
-          permitted.push :state
+      if self.state_changed? || self.name_changed? || self.description_changed?
+          permitted.push :state, :name, :description
       else
         errors.add :state, "does not allow updates"
       end

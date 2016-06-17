@@ -57,7 +57,7 @@ class ProxyWorkUnit < WorkUnit
   end
 
   def state_bootstrap_class
-    state = get(:state)
+    state = state_label
     case state
     when 'Complete'
       'success'
@@ -71,7 +71,7 @@ class ProxyWorkUnit < WorkUnit
   end
 
   def success?
-    state = get(:state)
+    state = state_label
     if state == 'Complete'
       true
     elsif state == 'Failed' or state == 'Cancelled'
@@ -129,7 +129,7 @@ class ProxyWorkUnit < WorkUnit
   end
 
   def progress
-    state = get(:state)
+    state = state_label
     if state == 'Complete'
       return 1.0
     elsif state == 'Failed' or state == 'Cancelled'
@@ -324,11 +324,11 @@ class ProxyWorkUnit < WorkUnit
 
   protected
 
-  def get key
-    if @proxied.respond_to? key
-      @proxied.send(key)
-    elsif @proxied.is_a?(Hash)
-      @proxied[key]
+  def get key, obj=@proxied
+    if obj.respond_to? key
+      obj.send(key)
+    elsif obj.is_a?(Hash)
+      obj[key]
     end
   end
 end
