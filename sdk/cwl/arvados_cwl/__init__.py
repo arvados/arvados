@@ -267,14 +267,9 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     exgroup.add_argument("--no-wait", action="store_false", help="Submit workflow runner job and exit.",
                         default=True, dest="wait")
 
-    exgroup = parser.add_mutually_exclusive_group()
-    exgroup.add_argument("--crunch1", action="store_false",
-                        default=False, dest="crunch2",
-                        help="Use Crunch v1 Jobs API")
-
-    exgroup.add_argument("--crunch2", action="store_true",
-                        default=False, dest="crunch2",
-                        help="Use Crunch v2 Containers API")
+    parser.add_argument("--api", type=str,
+                        default=None,
+                        help="Select work submission API, one of 'jobs' or 'containers'.")
 
     parser.add_argument("workflow", type=str, nargs="?", default=None)
     parser.add_argument("job_order", nargs=argparse.REMAINDER)
@@ -293,7 +288,7 @@ def main(args, stdout, stderr, api_client=None):
     try:
         if api_client is None:
             api_client=arvados.api('v1', model=OrderedJsonModel())
-        runner = ArvCwlRunner(api_client, crunch2=arvargs.crunch2)
+        runner = ArvCwlRunner(api_client, crunch2=(arvargs.api == "containers"))
     except Exception as e:
         logger.error(e)
         return 1
