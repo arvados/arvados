@@ -70,6 +70,20 @@ common:
   # websockets, otherwise none at all.
   websocket_address: false
 
+  # Maximum number of websocket connections allowed
+  websocket_max_connections: 500
+
+  # Maximum number of events a single connection can be backlogged
+  websocket_max_notify_backlog: 1000
+
+  # Maximum number of subscriptions a single websocket connection can have
+  # active.
+  websocket_max_filters: 10
+
+  # When using multithreaded websocket server, set the size of the database
+  # connection pool.
+  websocket_db_pool: 50
+
   # Git repositories must be readable by api server, or you won't be
   # able to submit crunch jobs. To pass the test suites, put a clone
   # of the arvados tree in {git_repositories_dir}/arvados.git or
