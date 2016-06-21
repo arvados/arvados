@@ -383,7 +383,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     ws_helper :admin, false do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe', filters: [['object_uuid', 'is_a', 'arvados#human']]}.to_json)
-        EM::Timer.new 3 do
+        EM::Timer.new 6 do
           # Set a time limit on the test because after unsubscribing the server
           # still has to process the next event (and then hopefully correctly
           # decides not to send it because we unsubscribed.)
