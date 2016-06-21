@@ -19,6 +19,7 @@ class ArvadosContainer(object):
     def __init__(self, runner):
         self.arvrunner = runner
         self.running = False
+        self.uuid = None
 
     def update_pipeline_component(self, r):
         pass

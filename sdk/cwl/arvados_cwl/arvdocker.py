@@ -1,6 +1,7 @@
 import logging
 import cwltool.docker
 import arvados.commands.keepdocker
+import sys
 
 logger = logging.getLogger('arvados.cwl-runner')
 

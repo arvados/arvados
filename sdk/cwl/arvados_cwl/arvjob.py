@@ -26,6 +26,7 @@ class ArvadosJob(object):
     def __init__(self, runner):
         self.arvrunner = runner
         self.running = False
+        self.uuid = None
 
     def run(self, dry_run=False, pull_image=True, **kwargs):
         script_parameters = {
