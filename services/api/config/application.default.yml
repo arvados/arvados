@@ -80,10 +80,6 @@ common:
   # active.
   websocket_max_filters: 10
 
-  # When using multithreaded websocket server, set the size of the database
-  # connection pool.
-  websocket_db_pool: 50
-
   # Git repositories must be readable by api server, or you won't be
   # able to submit crunch jobs. To pass the test suites, put a clone
   # of the arvados tree in {git_repositories_dir}/arvados.git or
