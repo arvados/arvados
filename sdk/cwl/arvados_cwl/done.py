@@ -1,3 +1,5 @@
+from cwltool.errors import WorkflowException
+
 def done(self, record, tmpdir, outdir, keepdir):
     colname = "Output %s of %s" % (record["output"][0:7], self.name)
 

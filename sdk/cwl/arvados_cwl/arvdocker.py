@@ -1,7 +1,10 @@
 import logging
-import cwltool.docker
-import arvados.commands.keepdocker
 import sys
+
+import cwltool.docker
+from cwltool.errors import WorkflowException
+import arvados.commands.keepdocker
+
 
 logger = logging.getLogger('arvados.cwl-runner')
 
@@ -25,7 +28,10 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
         if image_tag:
             args.append(image_tag)
         logger.info("Uploading Docker image %s", ":".join(args[1:]))
-        arvados.commands.keepdocker.main(args, stdout=sys.stderr)
+        try:
+            arvados.commands.keepdocker.main(args, stdout=sys.stderr)
+        except SystemExit:
+            raise WorkflowException()
 
     images = arvados.commands.keepdocker.list_images_in_arv(api_client, 3,
                                                             image_name=image_name,

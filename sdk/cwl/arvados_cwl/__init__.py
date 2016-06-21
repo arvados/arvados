@@ -212,7 +212,7 @@ class ArvCwlRunner(object):
             raise UnsupportedRequirement("Check log for details.")
 
         if self.final_output is None:
-            raise cwltool.workflow.WorkflowException("Workflow did not return a result.")
+            raise WorkflowException("Workflow did not return a result.")
 
         return self.final_output
 
