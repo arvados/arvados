@@ -25,7 +25,7 @@ class TestJob(unittest.TestCase):
             "outputs": [],
             "baseCommand": "ls"
         }
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, False, avsc_names=avsc_names, basedir="")
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names, basedir="")
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir=""):
             j.run()
@@ -76,7 +76,7 @@ class TestJob(unittest.TestCase):
             }],
             "baseCommand": "ls"
         }
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, False, avsc_names=avsc_names)
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names)
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir=""):
             j.run()

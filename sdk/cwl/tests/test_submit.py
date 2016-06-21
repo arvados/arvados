@@ -90,27 +90,32 @@ def stubs(func):
         stubs.expect_container_spec = {
             'priority': 1,
             'mounts': {
+                '/var/spool/cwl': {
+                    'writable': True,
+                    'kind': 'collection'
+                },
+                '/var/lib/cwl/workflow': {
+                    'portable_data_hash': '99999999999999999999999999999991+99',
+                    'kind': 'collection'
+                },
                 'stdout': {
                     'path': '/var/spool/cwl/cwl.output.json',
                     'kind': 'file'
                 },
-                '/var/lib/cwl/workflow/submit_wf.cwl': {
-                    'portable_data_hash': '999999999999999999999999991+99',
-                    'kind': 'collection'
-                },
                 '/var/lib/cwl/job/cwl.input.json': {
-                    'portable_data_hash': '102435082199e5229f99b01165b67096+60/cwl.input.json',
+                    'portable_data_hash': '33be5c865fe12e1e4788d2f1bc627f7a+60/cwl.input.json',
                     'kind': 'collection'
                 }
             },
             'state': 'Committed',
             'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
-            'command': ['arvados-cwl-runner', '--local', '--crunch2', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/job/cwl.input.json'],
+            'command': ['arvados-cwl-runner', '--local', '--api=containers', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/job/cwl.input.json'],
             'name': 'submit_wf.cwl',
             'container_image': '99999999999999999999999999999993+99',
             'output_path': '/var/spool/cwl',
             'cwd': '/var/spool/cwl',
             'runtime_constraints': {
+                'API': True,
                 'vcpus': 1,
                 'ram': 268435456
             }
@@ -177,7 +182,7 @@ class TestSubmit(unittest.TestCase):
     def test_submit_container(self, stubs):
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--crunch2", "--debug",
+            ["--submit", "--no-wait", "--api=containers", "--debug",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)

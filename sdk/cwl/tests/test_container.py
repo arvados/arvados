@@ -31,7 +31,7 @@ class TestContainer(unittest.TestCase):
             "outputs": [],
             "baseCommand": "ls"
         }
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, True, avsc_names=avsc_names, basedir="")
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names, basedir="")
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_run"):
             j.run()
@@ -80,7 +80,7 @@ class TestContainer(unittest.TestCase):
             }],
             "baseCommand": "ls"
         }
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, True, avsc_names=avsc_names)
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names)
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_resource_requirements"):
             j.run()
@@ -125,12 +125,14 @@ class TestContainer(unittest.TestCase):
         arvjob.builder = mock.MagicMock()
         arvjob.output_callback = mock.MagicMock()
         arvjob.collect_outputs = mock.MagicMock()
+        arvjob.successCodes = [0]
 
         arvjob.done({
             "state": "Complete",
             "output": "99999999999999999999999999999993+99",
             "log": "99999999999999999999999999999994+99",
-            "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+            "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
+            "exit_code": 0
         })
 
         api.collections().list.assert_has_calls([
@@ -167,12 +169,14 @@ class TestContainer(unittest.TestCase):
         arvjob.builder = mock.MagicMock()
         arvjob.output_callback = mock.MagicMock()
         arvjob.collect_outputs = mock.MagicMock()
+        arvjob.successCodes = [0]
 
         arvjob.done({
             "state": "Complete",
             "output": "99999999999999999999999999999993+99",
             "log": "99999999999999999999999999999994+99",
-            "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+            "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
+            "exit_code": 0
         })
 
         api.collections().list.assert_has_calls([

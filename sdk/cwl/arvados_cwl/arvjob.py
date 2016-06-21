@@ -90,7 +90,7 @@ class ArvadosJob(object):
                 find_or_create=kwargs.get("enable_reuse", True)
             ).execute(num_retries=self.arvrunner.num_retries)
 
-            self.arvrunner.jobs[response["uuid"]] = self
+            self.arvrunner.processes[response["uuid"]] = self
 
             self.update_pipeline_component(response)
 
@@ -171,7 +171,7 @@ class ArvadosJob(object):
 
             self.output_callback(outputs, processStatus)
         finally:
-            del self.arvrunner.jobs[record["uuid"]]
+            del self.arvrunner.processes[record["uuid"]]
 
 
 class RunnerJob(Runner):
@@ -208,7 +208,7 @@ class RunnerJob(Runner):
         ).execute(num_retries=self.arvrunner.num_retries)
 
         self.uuid = response["uuid"]
-        self.arvrunner.jobs[self.uuid] = self
+        self.arvrunner.processes[self.uuid] = self
 
         logger.info("Submitted job %s", response["uuid"])
 

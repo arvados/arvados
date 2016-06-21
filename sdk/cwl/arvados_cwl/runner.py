@@ -119,4 +119,4 @@ class Runner(object):
                 logger.error("While getting final output object: %s", e)
             self.arvrunner.output_callback(outputs, processStatus)
         finally:
-            del self.arvrunner.jobs[record["uuid"]]
+            del self.arvrunner.processes[record["uuid"]]

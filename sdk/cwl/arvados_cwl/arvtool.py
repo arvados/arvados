@@ -6,10 +6,10 @@ from .pathmapper import ArvPathMapper
 class ArvadosCommandTool(CommandLineTool):
     """Wrap cwltool CommandLineTool to override selected methods."""
 
-    def __init__(self, arvrunner, toolpath_object, crunch2, **kwargs):
+    def __init__(self, arvrunner, toolpath_object, **kwargs):
         super(ArvadosCommandTool, self).__init__(toolpath_object, **kwargs)
         self.arvrunner = arvrunner
-        self.crunch2 = crunch2
+        self.crunch2 = (kwargs["work_api"] == "containers")
 
     def makeJobRunner(self):
         if self.crunch2:

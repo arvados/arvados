@@ -98,7 +98,7 @@ class ArvadosContainer(object):
                 body=container_request
             ).execute(num_retries=self.arvrunner.num_retries)
 
-            self.arvrunner.jobs[response["container_uuid"]] = self
+            self.arvrunner.processes[response["container_uuid"]] = self
 
             logger.info("Container %s (%s) request state is %s", self.name, response["container_uuid"], response["state"])
 
@@ -138,7 +138,7 @@ class ArvadosContainer(object):
 
             self.output_callback(outputs, processStatus)
         finally:
-            del self.arvrunner.jobs[record["uuid"]]
+            del self.arvrunner.processes[record["uuid"]]
 
 
 class RunnerContainer(Runner):
@@ -171,7 +171,7 @@ class RunnerContainer(Runner):
                                                self.arvrunner.project_uuid)
 
         return {
-            "command": ["arvados-cwl-runner", "--local", "--crunch2", workflowpath, jobpath],
+            "command": ["arvados-cwl-runner", "--local", "--api=containers", workflowpath, jobpath],
             "owner_uuid": self.arvrunner.project_uuid,
             "name": self.name,
             "output_path": "/var/spool/cwl",
@@ -214,7 +214,7 @@ class RunnerContainer(Runner):
         ).execute(num_retries=self.arvrunner.num_retries)
 
         self.uuid = response["uuid"]
-        self.arvrunner.jobs[response["container_uuid"]] = self
+        self.arvrunner.processes[response["container_uuid"]] = self
 
         logger.info("Submitted container %s", response["uuid"])
 
