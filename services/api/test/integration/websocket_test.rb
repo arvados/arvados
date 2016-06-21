@@ -31,7 +31,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       ws.on :open do |event|
         opened = true
         if timeout
-          EM::Timer.new 4 do
+          EM::Timer.new 8 do
             too_long = true if close_status.nil?
             EM.stop_event_loop
           end
@@ -597,10 +597,10 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       ws.on :message do |event|
         d = Oj.strict_load event.data
         case state
-        when (1..EventBus::MAX_FILTERS)
+        when (1..Rails.configuration.websocket_max_filters)
           assert_equal 200, d["status"]
           state += 1
-        when (EventBus::MAX_FILTERS+1)
+        when (Rails.configuration.websocket_max_filters+1)
           assert_equal 403, d["status"]
           ws.close
         end
@@ -608,7 +608,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     end
 
-    assert_equal 17, state
+    assert_equal Rails.configuration.websocket_max_filters+1, state
 
   end
 
