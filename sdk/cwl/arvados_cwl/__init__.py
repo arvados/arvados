@@ -34,7 +34,7 @@ class ArvCwlRunner(object):
 
     """
 
-    def __init__(self, api_client, work_api):
+    def __init__(self, api_client, work_api=None):
         self.api = api_client
         self.processes = {}
         self.lock = threading.Lock()
@@ -45,6 +45,10 @@ class ArvCwlRunner(object):
         self.num_retries = 4
         self.uuid = None
         self.work_api = work_api
+
+        if self.work_api is None:
+            # todo: autodetect API to use.
+            self.work_api = "jobs"
 
         if self.work_api not in ("containers", "jobs"):
             raise Exception("Unsupported API '%s'" % self.work_api)
@@ -289,9 +293,6 @@ def main(args, stdout, stderr, api_client=None):
     arvargs = parser.parse_args(args)
     if arvargs.create_template and not arvargs.job_order:
         job_order_object = ({}, "")
-
-    if arvargs.work_api is None:
-        arvargs.work_api = "jobs"
 
     try:
         if api_client is None:
