@@ -14,7 +14,7 @@ from .runner import Runner
 logger = logging.getLogger('arvados.cwl-runner')
 
 class ArvadosContainer(object):
-    """Submit and manage a Crunch job for executing a CWL CommandLineTool."""
+    """Submit and manage a Crunch container request for executing a CWL CommandLineTool."""
 
     def __init__(self, runner):
         self.arvrunner = runner
@@ -51,20 +51,6 @@ class ArvadosContainer(object):
         if self.generatefiles:
             raise UnsupportedRequirement("Generate files not supported")
 
-            vwd = arvados.collection.Collection(api_client=self.arvrunner.api_client)
-            container_request["task.vwd"] = {}
-            for t in self.generatefiles:
-                if isinstance(self.generatefiles[t], dict):
-                    src, rest = self.arvrunner.fs_access.get_collection(self.generatefiles[t]["path"].replace("$(task.keep)/", "keep:"))
-                    vwd.copy(rest, t, source_collection=src)
-                else:
-                    with vwd.open(t, "w") as f:
-                        f.write(self.generatefiles[t])
-            vwd.save_new()
-            # TODO
-            # for t in self.generatefiles:
-            #     container_request["task.vwd"][t] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), t)
-
         container_request["environment"] = {"TMPDIR": "/tmp"}
         if self.environment:
             container_request["environment"].update(self.environment)
@@ -89,7 +75,6 @@ class ArvadosContainer(object):
         if resources is not None:
             runtime_constraints["vcpus"] = resources.get("cores", 1)
             runtime_constraints["ram"] = resources.get("ram") * 2**20
-            #runtime_constraints["min_scratch_mb_per_node"] = resources.get("tmpdirSize", 0) + resources.get("outdirSize", 0)
 
         container_request["mounts"] = mounts
         container_request["runtime_constraints"] = runtime_constraints
@@ -146,11 +131,10 @@ class RunnerContainer(Runner):
     """Submit and manage a container that runs arvados-cwl-runner."""
 
     def arvados_job_spec(self, dry_run=False, pull_image=True, **kwargs):
-        """Create an Arvados job specification for this workflow.
+        """Create an Arvados container request for this workflow.
 
-        The returned dict can be used to create a job (i.e., passed as
-        the +body+ argument to jobs().create()), or as a component in
-        a pipeline template or pipeline instance.
+        The returned dict can be used to create a container passed as
+        the +body+ argument to container_requests().create().
         """
 
         workflowmapper = super(RunnerContainer, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)

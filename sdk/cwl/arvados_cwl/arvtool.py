@@ -9,21 +9,21 @@ class ArvadosCommandTool(CommandLineTool):
     def __init__(self, arvrunner, toolpath_object, **kwargs):
         super(ArvadosCommandTool, self).__init__(toolpath_object, **kwargs)
         self.arvrunner = arvrunner
-        self.crunch2 = (kwargs["work_api"] == "containers")
+        self.work_api = kwargs["work_api"]
 
     def makeJobRunner(self):
-        if self.crunch2:
+        if self.work_api == "containers":
             return ArvadosContainer(self.arvrunner)
-        else:
+        elif self.work_api == "jobs":
             return ArvadosJob(self.arvrunner)
 
     def makePathMapper(self, reffiles, **kwargs):
-        if self.crunch2:
+        if self.work_api == "containers":
             return ArvPathMapper(self.arvrunner, reffiles, kwargs["basedir"],
                                  "/keep/%s",
                                  "/keep/%s/%s",
                                  **kwargs)
-        else:
+        elif self.work_api == "jobs":
             return ArvPathMapper(self.arvrunner, reffiles, kwargs["basedir"],
                                  "$(task.keep)/%s",
                                  "$(task.keep)/%s/%s",
