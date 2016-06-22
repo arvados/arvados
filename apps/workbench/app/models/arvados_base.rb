@@ -124,36 +124,40 @@ class ArvadosBase < ActiveRecord::Base
     find(*args) rescue nil
   end
 
+  def self.unscoped
+    ArvadosResourceList.new(self)
+  end
+
   def self.order(*args)
-    ArvadosResourceList.new(self).order(*args)
+    new_resource_list.order(*args)
   end
 
   def self.filter(*args)
-    ArvadosResourceList.new(self).filter(*args)
+    new_resource_list.filter(*args)
   end
 
   def self.where(*args)
-    ArvadosResourceList.new(self).where(*args)
+    new_resource_list.where(*args)
   end
 
   def self.limit(*args)
-    ArvadosResourceList.new(self).limit(*args)
+    new_resource_list.limit(*args)
   end
 
   def self.select(*args)
-    ArvadosResourceList.new(self).select(*args)
+    new_resource_list.select(*args)
   end
 
   def self.distinct(*args)
-    ArvadosResourceList.new(self).distinct(*args)
+    new_resource_list.distinct(*args)
   end
 
   def self.eager(*args)
-    ArvadosResourceList.new(self).eager(*args)
+    new_resource_list.eager(*args)
   end
 
   def self.all
-    ArvadosResourceList.new(self)
+    new_resource_list
   end
 
   def self.permit_attribute_params raw_params
@@ -464,7 +468,20 @@ class ArvadosBase < ActiveRecord::Base
     Thread.current[:user] ||= User.current if Thread.current[:arvados_api_token]
     Thread.current[:user]
   end
+
   def current_user
     self.class.current_user
+  end
+
+  def self.set_default_scope &block
+    @default_scope_block = block
+  end
+
+  set_default_scope do
+    ArvadosResourceList.new(self)
+  end
+
+  def self.new_resource_list
+    @default_scope_block.call
   end
 end
