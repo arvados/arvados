@@ -19,7 +19,9 @@ ArvadosWorkbench::Application.routes.draw do
   resources :api_client_authorizations
   resources :virtual_machines
   resources :containers
-  resources :container_requests
+  resources :container_requests do
+    post 'cancel', :on => :member
+  end
   get '/virtual_machines/:id/webshell/:login' => 'virtual_machines#webshell', :as => :webshell_virtual_machine
   resources :authorized_keys
   resources :job_tasks

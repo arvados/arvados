@@ -1,15 +1,4 @@
-<div class="arv-log-refresh-control"
-     data-load-throttle="15000"
-     ></div>
-<%=
-   pj = {}
-   pj[:job] = @object
-   pj[:name] = @object[:name] || "this job"
-   pj[:progress_bar] = render(partial: "job_progress",
-                              locals: {:j => @object })
-   tasks = JobTask.filter([['job_uuid', '=', @object.uuid]]).results
-   render(partial: 'work_unit/show_component', locals: {wu: @object.work_unit(@object[:name] || "this job")})
-%>
+<%= render(partial: 'work_unit/show_status', locals: {current_obj: @object, name: @object[:name] || 'this job'}) %>
 
 <div class="panel panel-default">
   <div class="panel-heading">

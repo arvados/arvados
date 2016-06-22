@@ -251,6 +251,7 @@ class KeepClient(object):
             self._started = 0
             self._want_copies = want_copies
             self._done = 0
+            self._thread_failures = 0
             self._response = None
             self._start_lock = threading.Condition()
             if (not max_service_replicas) or (max_service_replicas >= want_copies):
@@ -260,6 +261,7 @@ class KeepClient(object):
             _logger.debug("Limiter max threads is %d", max_threads)
             self._todo_lock = threading.Semaphore(max_threads)
             self._done_lock = threading.Lock()
+            self._thread_failures_lock = threading.Lock()
             self._local = threading.local()
 
         def __enter__(self):
@@ -276,7 +278,14 @@ class KeepClient(object):
             return self
 
         def __exit__(self, type, value, traceback):
-            self._todo_lock.release()
+            with self._thread_failures_lock:
+                if self._thread_failures > 0:
+                    self._thread_failures -= 1
+                    self._todo_lock.release()
+
+            # If work is finished, release al pending threads
+            if not self.shall_i_proceed():
+                self._todo_lock.release()
 
         def set_sequence(self, sequence):
             self._local.sequence = sequence
@@ -294,9 +303,14 @@ class KeepClient(object):
             Records a response body (a locator, possibly signed) returned by
             the Keep server, and the number of replicas it stored.
             """
-            with self._done_lock:
-                self._done += replicas_stored
-                self._response = response_body
+            if replicas_stored == 0:
+                # Failure notification, should start a new thread to try to reach full replication
+                with self._thread_failures_lock:
+                    self._thread_failures += 1
+            else:
+                with self._done_lock:
+                    self._done += replicas_stored
+                    self._response = response_body
 
         def response(self):
             """Return the body from the response to a PUT request."""
@@ -612,6 +626,10 @@ class KeepClient(object):
                               self.args['data_hash'],
                               result['status_code'],
                               result['body'])
+            if not self._success:
+                # Notify the failure so that the Thread limiter allows
+                # a new one to run.
+                limiter.save_response(None, 0)
 
 
     def __init__(self, api_client=None, proxy=None,
@@ -1036,7 +1054,7 @@ class KeepClient(object):
 
         headers = {}
         # Tell the proxy how many copies we want it to store
-        headers['X-Keep-Desired-Replication'] = str(copies)
+        headers['X-Keep-Desired-Replicas'] = str(copies)
         roots_map = {}
         loop = retry.RetryLoop(num_retries, self._check_loop_result,
                                backoff_start=2)

@@ -835,12 +835,9 @@ class ApplicationController < ActionController::Base
     pipelines = PipelineInstance.limit(lim).order(["created_at desc"])
 
     crs = ContainerRequest.limit(lim).order(["created_at desc"]).filter([["requesting_container_uuid", "=", nil]])
-    cr_uuids = crs.results.collect { |c| c.container_uuid }
-    containers = Container.order(["created_at desc"]).results if cr_uuids.any?
-
     procs = {}
     pipelines.results.each { |pi| procs[pi] = pi.created_at }
-    containers.each { |c| procs[c] = c.created_at } if !containers.nil?
+    crs.results.each { |c| procs[c] = c.created_at }
 
     Hash[procs.sort_by {|key, value| value}].keys.reverse.first(lim)
   end

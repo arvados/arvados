@@ -42,6 +42,7 @@ has_component_with_completed_jobs:
   state: Complete
   uuid: zzzzz-d1hrv-i3e77t9z5y8j9cc
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 11.minute.ago.to_s(:db) %>
   started_at: <%= 10.minute.ago.to_s(:db) %>
   finished_at: <%= 9.minute.ago.to_s(:db) %>
   components:
@@ -258,7 +259,7 @@ pipeline_in_publicly_accessible_project:
   name: Pipeline in publicly accessible project
   pipeline_template_uuid: zzzzz-p5p6p-tmpltpublicproj
   state: Complete
-  created_at: <%= 1.minute.ago.to_s(:db) %>
+  created_at: <%= 30.minute.ago.to_s(:db) %>
   components:
     foo:
       script: foo
@@ -377,6 +378,7 @@ running_pipeline_with_complete_job:
   uuid: zzzzz-d1hrv-partdonepipelin
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   state: RunningOnServer
+  created_at: <%= 15.minute.ago.to_s(:db) %>
   components:
    previous:
     job:
@@ -390,8 +392,9 @@ complete_pipeline_with_two_jobs:
   uuid: zzzzz-d1hrv-twodonepipeline
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   state: Complete
-  started_at: <%= 10.minute.ago.to_s(:db) %>
-  finished_at: <%= 9.minute.ago.to_s(:db) %>
+  created_at: <%= 3.minute.ago.to_s(:db) %>
+  started_at: <%= 2.minute.ago.to_s(:db) %>
+  finished_at: <%= 1.minute.ago.to_s(:db) %>
   components:
    ancient:
     job:
@@ -405,6 +408,7 @@ complete_pipeline_with_two_jobs:
 failed_pipeline_with_two_jobs:
   uuid: zzzzz-d1hrv-twofailpipeline
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 55.minute.ago.to_s(:db) %>
   state: Failed
   components:
    ancient:

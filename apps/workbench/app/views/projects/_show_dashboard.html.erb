@@ -1,9 +1,10 @@
   <div class="row">
     <div class="col-md-6">
       <div class="panel panel-default" style="min-height: 10.5em">
-        <div class="panel-heading"><span class="panel-title">Recent pipelines and processes</span>
+        <div class="panel-heading">
+          <span class="panel-title">Recent pipelines and processes</span>
           <% if current_user.andand.is_active %>
-            <span class="pull-right">
+            <span class="pull-right recent-processes-actions">
               <span>
                 <%= link_to(
                 choose_pipeline_templates_path(
@@ -33,7 +34,7 @@
           <% _recent_processes.each do |p| %>
             <% wu = p.work_unit %>
             <% if wu.is_finished? %>
-            <div class="dashboard-panel-info-row">
+            <div class="dashboard-panel-info-row row-<%=wu.uuid%>">
               <div class="row">
                 <div class="col-md-6 text-overflow-ellipsis">
                   <%= link_to_if_arvados_object p, {friendly_name: true} %>
@@ -67,7 +68,7 @@
 
             </div>
             <% else %>
-            <div class="dashboard-panel-info-row">
+            <div class="dashboard-panel-info-row row-<%=wu.uuid%>">
               <div class="clearfix">
                 <%= link_to_if_arvados_object p, {friendly_name: true} %>
                 <div class="pull-right" style="width: 40%">
@@ -109,7 +110,7 @@
       <% nodes = Node.all %>
       <div class="panel panel-default" style="min-height: 10.5em">
         <div class="panel-heading"><span class="panel-title">Compute node status</span>
-          <span class="pull-right">
+          <span class="pull-right compute-node-actions">
             <% if current_user.andand.is_admin %>
               <span>
                 <%= link_to nodes_path, class: 'btn btn-default btn-xs' do %>
