@@ -10,14 +10,20 @@ if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.arv-run').setLevel(logging.WARN)
 
 
-class TestJob(unittest.TestCase):
+class TestContainer(unittest.TestCase):
 
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
-    def test_run(self):
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_run(self, keepdocker):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("draft-3")
 
         tool = {
@@ -25,45 +31,43 @@ class TestJob(unittest.TestCase):
             "outputs": [],
             "baseCommand": "ls"
         }
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names, basedir="")
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names, basedir="")
         arvtool.formatgraph = None
-        for j in arvtool.job({}, mock.MagicMock(), basedir=""):
+        for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_run"):
             j.run()
-            runner.api.jobs().create.assert_called_with(
+            runner.api.container_requests().create.assert_called_with(
                 body={
-                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-                    'runtime_constraints': {},
-                    'script_parameters': {
-                        'tasks': [{
-                            'task.env': {'TMPDIR': '$(task.tmpdir)'},
-                            'command': ['ls']
-                        }],
+                    'environment': {
+                        'TMPDIR': '/tmp'
                     },
-                    'script_version': 'master',
-                    'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
-                    'repository': 'arvados',
-                    'script': 'crunchrunner',
+                    'name': 'test_run',
                     'runtime_constraints': {
-                        'docker_image': 'arvados/jobs',
-                        'min_cores_per_node': 1,
-                        'min_ram_mb_per_node': 1024,
-                        'min_scratch_mb_per_node': 2048 # tmpdirSize + outdirSize
-                    }
-                },
-                find_or_create=True,
-                filters=[['repository', '=', 'arvados'],
-                         ['script', '=', 'crunchrunner'],
-                         ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
-                         ['docker_image_locator', 'in docker', 'arvados/jobs']]
-            )
+                        'vcpus': 1,
+                        'ram': 1073741824
+                    }, 'priority': 1,
+                    'mounts': {
+                        '/var/spool/cwl': {'kind': 'tmp'}
+                    },
+                    'state': 'Committed',
+                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                    'output_path': '/var/spool/cwl',
+                    'container_image': '99999999999999999999999999999993+99',
+                    'command': ['ls'],
+                    'cwd': '/var/spool/cwl'
+                })
 
     # The test passes some fields in builder.resources
     # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
-    def test_resource_requirements(self):
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_resource_requirements(self, keepdocker):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("draft-3")
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
 
         tool = {
             "inputs": [],
@@ -76,36 +80,31 @@ class TestJob(unittest.TestCase):
             }],
             "baseCommand": "ls"
         }
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names)
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names)
         arvtool.formatgraph = None
-        for j in arvtool.job({}, mock.MagicMock(), basedir=""):
+        for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_resource_requirements"):
             j.run()
-        runner.api.jobs().create.assert_called_with(
+
+        runner.api.container_requests().create.assert_called_with(
             body={
-                'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-                'runtime_constraints': {},
-                'script_parameters': {
-                    'tasks': [{
-                        'task.env': {'TMPDIR': '$(task.tmpdir)'},
-                        'command': ['ls']
-                    }]
-            },
-            'script_version': 'master',
-                'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
-                'repository': 'arvados',
-                'script': 'crunchrunner',
+                'environment': {
+                    'TMPDIR': '/tmp'
+                },
+                'name': 'test_resource_requirements',
                 'runtime_constraints': {
-                    'docker_image': 'arvados/jobs',
-                    'min_cores_per_node': 3,
-                    'min_ram_mb_per_node': 3000,
-                    'min_scratch_mb_per_node': 5024 # tmpdirSize + outdirSize
-                }
-            },
-            find_or_create=True,
-            filters=[['repository', '=', 'arvados'],
-                     ['script', '=', 'crunchrunner'],
-                     ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
-                     ['docker_image_locator', 'in docker', 'arvados/jobs']])
+                    'vcpus': 3,
+                    'ram': 3145728000
+                }, 'priority': 1,
+                'mounts': {
+                    '/var/spool/cwl': {'kind': 'tmp'}
+                },
+                'state': 'Committed',
+                'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                'output_path': '/var/spool/cwl',
+                'container_image': '99999999999999999999999999999993+99',
+                'command': ['ls'],
+                'cwd': '/var/spool/cwl'
+            })
 
     @mock.patch("arvados.collection.Collection")
     def test_done(self, col):
@@ -121,17 +120,19 @@ class TestJob(unittest.TestCase):
         api.collections().list().execute.side_effect = ({"items": []},
                                                         {"items": [{"manifest_text": "XYZ"}]})
 
-        arvjob = arvados_cwl.ArvadosJob(runner)
+        arvjob = arvados_cwl.ArvadosContainer(runner)
         arvjob.name = "testjob"
         arvjob.builder = mock.MagicMock()
         arvjob.output_callback = mock.MagicMock()
         arvjob.collect_outputs = mock.MagicMock()
+        arvjob.successCodes = [0]
 
         arvjob.done({
             "state": "Complete",
             "output": "99999999999999999999999999999993+99",
             "log": "99999999999999999999999999999994+99",
-            "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+            "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
+            "exit_code": 0
         })
 
         api.collections().list.assert_has_calls([
@@ -163,17 +164,19 @@ class TestJob(unittest.TestCase):
         col().open.return_value = []
         api.collections().list().execute.side_effect = ({"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2"}]},)
 
-        arvjob = arvados_cwl.ArvadosJob(runner)
+        arvjob = arvados_cwl.ArvadosContainer(runner)
         arvjob.name = "testjob"
         arvjob.builder = mock.MagicMock()
         arvjob.output_callback = mock.MagicMock()
         arvjob.collect_outputs = mock.MagicMock()
+        arvjob.successCodes = [0]
 
         arvjob.done({
             "state": "Complete",
             "output": "99999999999999999999999999999993+99",
             "log": "99999999999999999999999999999994+99",
-            "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+            "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
+            "exit_code": 0
         })
 
         api.collections().list.assert_has_calls([

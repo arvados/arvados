@@ -30,7 +30,7 @@ def stubs(func):
             return "%s+%i" % (hashlib.md5(p).hexdigest(), len(p))
         stubs.KeepClient().put.side_effect = putstub
 
-        stubs.keepdocker.return_value = True
+        stubs.keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         stubs.fake_user_uuid = "zzzzz-tpzed-zzzzzzzzzzzzzzz"
 
         stubs.api = mock.MagicMock()
@@ -44,12 +44,28 @@ def stubs(func):
         }, {
             "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2",
             "portable_data_hash": "99999999999999999999999999999992+99",
+        },
+        {
+            "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz4",
+            "portable_data_hash": "99999999999999999999999999999994+99",
+            "manifest_text": ""
         })
+        stubs.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
         stubs.expect_job_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         stubs.api.jobs().create().execute.return_value = {
             "uuid": stubs.expect_job_uuid,
             "state": "Queued",
         }
+
+        stubs.expect_container_request_uuid = "zzzzz-xvhdp-zzzzzzzzzzzzzzz"
+        stubs.api.container_requests().create().execute.return_value = {
+            "uuid": stubs.expect_container_request_uuid,
+            "container_uuid": "zzzzz-dz642-zzzzzzzzzzzzzzz",
+            "state": "Queued"
+        }
+
         stubs.expect_pipeline_template_uuid = "zzzzz-d1hrv-zzzzzzzzzzzzzzz"
         stubs.api.pipeline_templates().create().execute.return_value = {
             "uuid": stubs.expect_pipeline_template_uuid,
@@ -69,6 +85,40 @@ def stubs(func):
             'repository': 'arvados',
             'script_version': 'master',
             'script': 'cwl-runner'
+        }
+
+        stubs.expect_container_spec = {
+            'priority': 1,
+            'mounts': {
+                '/var/spool/cwl': {
+                    'writable': True,
+                    'kind': 'collection'
+                },
+                '/var/lib/cwl/workflow': {
+                    'portable_data_hash': '99999999999999999999999999999991+99',
+                    'kind': 'collection'
+                },
+                'stdout': {
+                    'path': '/var/spool/cwl/cwl.output.json',
+                    'kind': 'file'
+                },
+                '/var/lib/cwl/job/cwl.input.json': {
+                    'portable_data_hash': '33be5c865fe12e1e4788d2f1bc627f7a+60/cwl.input.json',
+                    'kind': 'collection'
+                }
+            },
+            'state': 'Committed',
+            'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
+            'command': ['arvados-cwl-runner', '--local', '--api=containers', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/job/cwl.input.json'],
+            'name': 'submit_wf.cwl',
+            'container_image': '99999999999999999999999999999993+99',
+            'output_path': '/var/spool/cwl',
+            'cwd': '/var/spool/cwl',
+            'runtime_constraints': {
+                'API': True,
+                'vcpus': 1,
+                'ram': 268435456
+            }
         }
         return func(self, stubs, *args, **kwargs)
     return wrapped
@@ -127,6 +177,41 @@ class TestSubmit(unittest.TestCase):
         stubs.api.jobs().create.assert_called_with(
             body=expect_body,
             find_or_create=True)
+
+    @stubs
+    def test_submit_container(self, stubs):
+        capture_stdout = cStringIO.StringIO()
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug",
+             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+            capture_stdout, sys.stderr, api_client=stubs.api)
+        self.assertEqual(exited, 0)
+
+        stubs.api.collections().create.assert_has_calls([
+            mock.call(),
+            mock.call(body={
+                'manifest_text':
+                './tool a3954c369b8924d40547ec8cf5f6a7f4+449 '
+                '0:16:blub.txt 16:433:submit_tool.cwl\n./wf '
+                'e046cace0b1a0a6ee645f6ea8688f7e2+364 0:364:submit_wf.cwl\n',
+                'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
+                'name': 'submit_wf.cwl',
+            }, ensure_unique_name=True),
+            mock.call().execute(),
+            mock.call(body={
+                'manifest_text':
+                '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
+                'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
+                'name': '#',
+            }, ensure_unique_name=True),
+            mock.call().execute()])
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["owner_uuid"] = stubs.fake_user_uuid
+        stubs.api.container_requests().create.assert_called_with(
+            body=expect_container)
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
 
 
 class TestCreateTemplate(unittest.TestCase):
