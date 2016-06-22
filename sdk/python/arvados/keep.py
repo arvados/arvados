@@ -1054,7 +1054,7 @@ class KeepClient(object):
 
         headers = {}
         # Tell the proxy how many copies we want it to store
-        headers['X-Keep-Desired-Replication'] = str(copies)
+        headers['X-Keep-Desired-Replicas'] = str(copies)
         roots_map = {}
         loop = retry.RetryLoop(num_retries, self._check_loop_result,
                                backoff_start=2)
