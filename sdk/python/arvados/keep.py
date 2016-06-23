@@ -606,6 +606,13 @@ class KeepClient(object):
         def start(self):
             for worker in self.workers:
                 worker.start()
+        
+        def join(self):
+            self.queue.join()
+            with self.queue.retries_notification:
+                self.queue.retries_notification.notify_all()
+            for worker in self.workers:
+                worker.join()
     
     
     class KeepWriterThreadNew(threading.Thread):
