@@ -199,7 +199,7 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 		return err
 	}
 	bal.DefaultReplication = dd.DefaultCollectionReplication
-	bal.MinMtime = time.Now().Unix() - dd.BlobSignatureTTL
+	bal.MinMtime = time.Now().UnixNano() - dd.BlobSignatureTTL*1e9
 
 	errs := make(chan error, 2+len(bal.KeepServices))
 	wg := sync.WaitGroup{}

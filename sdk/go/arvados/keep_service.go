@@ -30,6 +30,7 @@ type KeepServiceList struct {
 // us about a stored block.
 type KeepServiceIndexEntry struct {
 	SizedDigest
+	// Time of last write, in nanoseconds since Unix epoch
 	Mtime int64
 }
 
