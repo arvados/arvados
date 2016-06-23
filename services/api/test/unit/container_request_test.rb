@@ -1,6 +1,24 @@
 require 'test_helper'
 
 class ContainerRequestTest < ActiveSupport::TestCase
+  def create_minimal_req! attrs={}
+    defaults = {
+      command: ["echo", "foo"],
+      container_image: "img",
+      cwd: "/tmp",
+      environment: {},
+      mounts: {"/out" => {"kind" => "tmp", "capacity" => 1000000}},
+      output_path: "/out",
+      priority: 1,
+      runtime_constraints: {},
+      name: "foo",
+      description: "bar",
+    }
+    cr = ContainerRequest.create!(defaults.merge(attrs))
+    cr.reload
+    return cr
+  end
+
   def check_illegal_modify c
       assert_raises(ActiveRecord::RecordInvalid) do
         c.reload
@@ -129,21 +147,9 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   test "Container request commit" do
-    set_user_from_auth :active_trustedclient
-    cr = ContainerRequest.new
-    cr.command = ["echo", "foo"]
-    cr.container_image = "img"
-    cr.cwd = "/tmp"
-    cr.environment = {}
-    cr.mounts = {"BAR" => "FOO"}
-    cr.output_path = "/tmpout"
-    cr.priority = 1
-    cr.runtime_constraints = {}
-    cr.name = "foo"
-    cr.description = "bar"
-    cr.save!
+    set_user_from_auth :active
+    cr = create_minimal_req!(runtime_constraints: {"vcpus" => [2,3]})
 
-    cr.reload
     assert_nil cr.container_uuid
 
     cr.reload
@@ -152,14 +158,16 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     cr.reload
 
+    assert_not_nil cr.container_uuid
     c = Container.find_by_uuid cr.container_uuid
+    assert_not_nil c
     assert_equal ["echo", "foo"], c.command
     assert_equal "img", c.container_image
     assert_equal "/tmp", c.cwd
     assert_equal({}, c.environment)
-    assert_equal({"BAR" => "FOO"}, c.mounts)
-    assert_equal "/tmpout", c.output_path
-    assert_equal({}, c.runtime_constraints)
+    assert_equal({"/out" => {"kind"=>"tmp", "capacity"=>1000000}}, c.mounts)
+    assert_equal "/out", c.output_path
+    assert_equal({"vcpus" => 2}, c.runtime_constraints)
     assert_equal 1, c.priority
 
     assert_raises(ActiveRecord::RecordInvalid) do
@@ -377,6 +385,25 @@ class ContainerRequestTest < ActiveSupport::TestCase
       cr = ContainerRequest.create(container_image: "img", output_path: "/tmp", command: ["echo", "foo"])
       assert_not_nil cr.uuid, 'uuid should be set for newly created container_request'
       assert_equal expected, cr.requesting_container_uuid
+    end
+  end
+
+  [[{"vcpus" => [2, nil]},
+    lambda { |resolved| resolved["vcpus"] == 2 }],
+   [{"vcpus" => [3, 7]},
+    lambda { |resolved| resolved["vcpus"] == 3 }],
+   [{"vcpus" => 4},
+    lambda { |resolved| resolved["vcpus"] == 4 }],
+   [{"ram" => [1000000000, 2000000000]},
+    lambda { |resolved| resolved["ram"] == 1000000000 }],
+   [{"ram" => [1234234234]},
+    lambda { |resolved| resolved["ram"] == 1234234234 }],
+  ].each do |rc, okfunc|
+    test "resolve runtime constraint range #{rc} to values" do
+      cr = ContainerRequest.new(runtime_constraints: rc)
+      resolved = cr.send :runtime_constraints_for_container
+      assert(okfunc.call(resolved),
+             "container runtime_constraints was #{resolved.inspect}")
     end
   end
 end

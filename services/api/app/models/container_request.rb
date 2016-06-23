@@ -82,8 +82,7 @@ class ContainerRequest < ArvadosModel
   # Create a new container (or find an existing one) to satisfy this
   # request.
   def resolve
-    # TODO: resolve symbolic git and keep references to content
-    # addresses.
+    # TODO: resolve mounts and container_image to content addresses.
     c = act_as_system_user do
       Container.create!(command: self.command,
                         container_image: self.container_image,
@@ -91,9 +90,30 @@ class ContainerRequest < ArvadosModel
                         environment: self.environment,
                         mounts: self.mounts,
                         output_path: self.output_path,
-                        runtime_constraints: self.runtime_constraints)
+                        runtime_constraints: runtime_constraints_for_container)
     end
     self.container_uuid = c.uuid
+  end
+
+  # Return a runtime_constraints hash that complies with
+  # self.runtime_constraints but is suitable for saving in a container
+  # record, i.e., has specific values instead of ranges.
+  #
+  # Doing this as a step separate from other resolutions, like "git
+  # revision range to commit hash", makes sense only when there is no
+  # opportunity to reuse an existing container (e.g., container reuse
+  # is not implemented yet, or we have already found that no existing
+  # containers are suitable).
+  def runtime_constraints_for_container
+    rc = {}
+    runtime_constraints.each do |k, v|
+      if v.is_a? Array
+        rc[k] = v[0]
+      else
+        rc[k] = v
+      end
+    end
+    rc
   end
 
   def set_container
