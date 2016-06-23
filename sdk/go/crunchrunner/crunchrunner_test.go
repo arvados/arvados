@@ -53,7 +53,7 @@ func (s *TestSuite) TestSimpleRun(c *C) {
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
 		"",
-		Job{Script_parameters: Tasks{[]TaskDef{TaskDef{
+		Job{Script_parameters: Tasks{[]TaskDef{{
 			Command: []string{"echo", "foo"}}}}},
 		Task{Sequence: 0})
 	c.Check(err, IsNil)
@@ -89,8 +89,8 @@ func (s *TestSuite) TestSimpleRunSubtask(c *C) {
 		tmpdir,
 		"",
 		Job{Script_parameters: Tasks{[]TaskDef{
-			TaskDef{Command: []string{"echo", "bar"}},
-			TaskDef{Command: []string{"echo", "foo"}}}}},
+			{Command: []string{"echo", "bar"}},
+			{Command: []string{"echo", "foo"}}}}},
 		Task{Parameters: TaskDef{
 			Command: []string{"echo", "foo"},
 			Stdout:  "output.txt"},
@@ -118,7 +118,7 @@ func (s *TestSuite) TestRedirect(c *C) {
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
 		"",
-		Job{Script_parameters: Tasks{[]TaskDef{TaskDef{
+		Job{Script_parameters: Tasks{[]TaskDef{{
 			Command: []string{"cat"},
 			Stdout:  "output.txt",
 			Stdin:   tmpfile.Name()}}}},
@@ -140,7 +140,7 @@ func (s *TestSuite) TestEnv(c *C) {
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
 		"",
-		Job{Script_parameters: Tasks{[]TaskDef{TaskDef{
+		Job{Script_parameters: Tasks{[]TaskDef{{
 			Command: []string{"/bin/sh", "-c", "echo $BAR"},
 			Stdout:  "output.txt",
 			Env:     map[string]string{"BAR": "foo"}}}}},
@@ -161,7 +161,7 @@ func (s *TestSuite) TestEnvSubstitute(c *C) {
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
 		"foo\n",
-		Job{Script_parameters: Tasks{[]TaskDef{TaskDef{
+		Job{Script_parameters: Tasks{[]TaskDef{{
 			Command: []string{"/bin/sh", "-c", "echo $BAR"},
 			Stdout:  "output.txt",
 			Env:     map[string]string{"BAR": "$(task.keep)"}}}}},
@@ -182,7 +182,7 @@ func (s *TestSuite) TestEnvReplace(c *C) {
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
 		"",
-		Job{Script_parameters: Tasks{[]TaskDef{TaskDef{
+		Job{Script_parameters: Tasks{[]TaskDef{{
 			Command: []string{"/bin/sh", "-c", "echo $PATH"},
 			Stdout:  "output.txt",
 			Env:     map[string]string{"PATH": "foo"}}}}},
@@ -211,12 +211,12 @@ func (t SubtaskTestClient) Update(resourceType string, uuid string, parameters a
 func (s *TestSuite) TestScheduleSubtask(c *C) {
 
 	api := SubtaskTestClient{c, []Task{
-		Task{Job_uuid: "zzzz-8i9sb-111111111111111",
+		{Job_uuid: "zzzz-8i9sb-111111111111111",
 			Created_by_job_task_uuid: "zzzz-ot0gb-111111111111111",
 			Sequence:                 1,
 			Parameters: TaskDef{
 				Command: []string{"echo", "bar"}}},
-		Task{Job_uuid: "zzzz-8i9sb-111111111111111",
+		{Job_uuid: "zzzz-8i9sb-111111111111111",
 			Created_by_job_task_uuid: "zzzz-ot0gb-111111111111111",
 			Sequence:                 1,
 			Parameters: TaskDef{
@@ -234,8 +234,8 @@ func (s *TestSuite) TestScheduleSubtask(c *C) {
 		tmpdir,
 		"",
 		Job{Script_parameters: Tasks{[]TaskDef{
-			TaskDef{Command: []string{"echo", "bar"}},
-			TaskDef{Command: []string{"echo", "foo"}}}}},
+			{Command: []string{"echo", "bar"}},
+			{Command: []string{"echo", "foo"}}}}},
 		Task{Sequence: 0})
 	c.Check(err, IsNil)
 
@@ -252,7 +252,7 @@ func (s *TestSuite) TestRunFail(c *C) {
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
 		"",
-		Job{Script_parameters: Tasks{[]TaskDef{TaskDef{
+		Job{Script_parameters: Tasks{[]TaskDef{{
 			Command: []string{"/bin/sh", "-c", "exit 1"}}}}},
 		Task{Sequence: 0})
 	c.Check(err, FitsTypeOf, PermFail{})
@@ -269,7 +269,7 @@ func (s *TestSuite) TestRunSuccessCode(c *C) {
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
 		"",
-		Job{Script_parameters: Tasks{[]TaskDef{TaskDef{
+		Job{Script_parameters: Tasks{[]TaskDef{{
 			Command:      []string{"/bin/sh", "-c", "exit 1"},
 			SuccessCodes: []int{0, 1}}}}},
 		Task{Sequence: 0})
@@ -287,7 +287,7 @@ func (s *TestSuite) TestRunFailCode(c *C) {
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
 		"",
-		Job{Script_parameters: Tasks{[]TaskDef{TaskDef{
+		Job{Script_parameters: Tasks{[]TaskDef{{
 			Command:            []string{"/bin/sh", "-c", "exit 0"},
 			PermanentFailCodes: []int{0, 1}}}}},
 		Task{Sequence: 0})
@@ -305,7 +305,7 @@ func (s *TestSuite) TestRunTempFailCode(c *C) {
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
 		"",
-		Job{Script_parameters: Tasks{[]TaskDef{TaskDef{
+		Job{Script_parameters: Tasks{[]TaskDef{{
 			Command:            []string{"/bin/sh", "-c", "exit 1"},
 			TemporaryFailCodes: []int{1}}}}},
 		Task{Sequence: 0})
@@ -329,7 +329,7 @@ func (s *TestSuite) TestVwd(c *C) {
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
 		"",
-		Job{Script_parameters: Tasks{[]TaskDef{TaskDef{
+		Job{Script_parameters: Tasks{[]TaskDef{{
 			Command: []string{"ls", "output.txt"},
 			Vwd: map[string]string{
 				"output.txt": tmpfile.Name()}}}}},
@@ -361,7 +361,7 @@ func (s *TestSuite) TestSubstitutionStdin(c *C) {
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
 		keepmount,
-		Job{Script_parameters: Tasks{[]TaskDef{TaskDef{
+		Job{Script_parameters: Tasks{[]TaskDef{{
 			Command: []string{"cat"},
 			Stdout:  "output.txt",
 			Stdin:   "$(task.keep)/file1.txt"}}}},
@@ -389,7 +389,7 @@ func (s *TestSuite) TestSubstitutionCommandLine(c *C) {
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
 		keepmount,
-		Job{Script_parameters: Tasks{[]TaskDef{TaskDef{
+		Job{Script_parameters: Tasks{[]TaskDef{{
 			Command: []string{"cat", "$(task.keep)/file1.txt"},
 			Stdout:  "output.txt"}}}},
 		Task{Sequence: 0})
@@ -417,7 +417,7 @@ func (s *TestSuite) TestSignal(c *C) {
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
 		"",
-		Job{Script_parameters: Tasks{[]TaskDef{TaskDef{
+		Job{Script_parameters: Tasks{[]TaskDef{{
 			Command: []string{"sleep", "4"}}}}},
 		Task{Sequence: 0})
 	c.Check(err, FitsTypeOf, PermFail{})
@@ -437,7 +437,7 @@ func (s *TestSuite) TestQuoting(c *C) {
 		"zzzz-ot0gb-111111111111111",
 		tmpdir,
 		"",
-		Job{Script_parameters: Tasks{[]TaskDef{TaskDef{
+		Job{Script_parameters: Tasks{[]TaskDef{{
 			Command: []string{"echo", "foo"},
 			Stdout:  "s ub:dir/:e vi\nl"}}}},
 		Task{Sequence: 0})

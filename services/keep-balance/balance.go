@@ -619,7 +619,7 @@ func (bal *Balancer) commitAsync(c *arvados.Client, label string, f func(srv *Ke
 		}(srv)
 	}
 	var lastErr error
-	for _ = range bal.KeepServices {
+	for range bal.KeepServices {
 		if err := <-errs; err != nil {
 			bal.logf("%v", err)
 			lastErr = err

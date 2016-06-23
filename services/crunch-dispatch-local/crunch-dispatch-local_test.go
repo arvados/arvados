@@ -88,7 +88,7 @@ func (s *TestSuite) TestIntegration(c *C) {
 
 	// There should be no queued containers now
 	params := arvadosclient.Dict{
-		"filters": [][]string{[]string{"state", "=", "Queued"}},
+		"filters": [][]string{{"state", "=", "Queued"}},
 	}
 	var containers arvados.ContainerList
 	err = arv.List("containers", params, &containers)

@@ -118,7 +118,7 @@ func GetKeepServersAndSummarize(params GetKeepServersParams) (results ReadServer
 // GetKeepServers from api server
 func GetKeepServers(params GetKeepServersParams) (results ReadServers, err error) {
 	sdkParams := arvadosclient.Dict{
-		"filters": [][]string{[]string{"service_type", "!=", "proxy"}},
+		"filters": [][]string{{"service_type", "!=", "proxy"}},
 	}
 	if params.Limit > 0 {
 		sdkParams["limit"] = params.Limit

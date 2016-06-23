@@ -86,7 +86,7 @@ func (s *s3VolumeAdder) Set(bucketName string) error {
 }
 
 func s3regions() (okList []string) {
-	for r, _ := range aws.Regions {
+	for r := range aws.Regions {
 		okList = append(okList, r)
 	}
 	return
