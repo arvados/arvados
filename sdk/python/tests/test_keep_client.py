@@ -1065,6 +1065,56 @@ class KeepClientRetryPutTestCase(KeepClientRetryTestMixin, unittest.TestCase):
             self.check_exception(copies=2, num_retries=3)
 
 
+class KeepClientAvoidClientOverreplicationTestCaseNew(unittest.TestCase, tutil.ApiClientMock):
+    
+    
+    class FakeKeepService(object):
+        def __init__(self, delay, will_succeed, replicas=1):
+            self.delay = delay
+            self.success = will_succeed
+            self._result = {}
+            self._result['headers'] = {}
+            self._result['headers']['x-keep-replicas-stored'] = str(replicas)
+        
+        def put(self, data_hash, data, timeout):
+            time.sleep(self.delay)
+            return self.success
+        
+        def last_result(self):
+            return self._result
+    
+    
+    def test_only_write_enough_on_success(self):
+        copies = 3
+        pool = arvados.KeepClient.KeepWriterThreadPool(
+            data = 'foo',
+            data_hash = 'acbd18db4cc2f85cedef654fccc4a4d8+3',
+            copies = copies
+        )
+        for i in range(10):
+            ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
+            pool.add_task(ks, None)
+        pool.start()
+        pool.join()
+        self.assertEqual(pool.done(), copies)
+
+    def test_only_write_enough_on_partial_success(self):
+        copies = 3
+        pool = arvados.KeepClient.KeepWriterThreadPool(
+            data = 'foo',
+            data_hash = 'acbd18db4cc2f85cedef654fccc4a4d8+3',
+            copies = copies
+        )
+        for i in range(5):
+            ks = self.FakeKeepService(delay=i/10.0, will_succeed=False)
+            pool.add_task(ks, None)
+            ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
+            pool.add_task(ks, None)
+        pool.start()
+        pool.join()
+        self.assertEqual(pool.done(), copies)
+    
+
 class KeepClientAvoidClientOverreplicationTestCase(unittest.TestCase, tutil.ApiClientMock):
 
 

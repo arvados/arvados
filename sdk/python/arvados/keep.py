@@ -568,7 +568,7 @@ class KeepClient(object):
 
     class KeepWriterQueue(Queue.Queue):
         def __init__(self, copies):
-            super(KeepClient.KeepWriterQueue, self).__init__()
+            Queue.Queue.__init__(self) # Old-style superclass
             self.wanted_copies = copies
             self.successful_copies = 0
             self.successful_copies_lock = threading.Lock()
@@ -589,18 +589,21 @@ class KeepClient(object):
     
     
     class KeepWriterThreadPool(object):
-        def __init__(self, data, data_hash, num_threads, copies=2):
+        def __init__(self, data, data_hash, copies=2, num_threads=None):
             self.wanted_copies = copies
+            if num_threads is None:
+                num_threads = copies
             self.workers = []
             self.queue = KeepClient.KeepWriterQueue(copies)
             # Start workers
             for _ in range(num_threads):
-                self.workers.append(KeepClient.KeepWriterThreadNew(self.queue, data, data_hash))
+                w = KeepClient.KeepWriterThreadNew(self.queue, data, data_hash)
+                self.workers.append(w)
         
         def add_task(self, ks, service_root):
             self.queue.put((ks, service_root))
         
-        def successful_copies(self):
+        def done(self):
             return self.queue.successful_copies
         
         def start(self):
@@ -621,7 +624,6 @@ class KeepClient(object):
             self.queue = queue
             self.data = data
             self.data_hash = data_hash
-            self.daemon = True
         
         def run(self):
             while not self.queue.empty():
@@ -636,9 +638,9 @@ class KeepClient(object):
                     # Get to work
                     service, service_root = self.queue.get()
                     
-                    success = bool(self.service.put(self.data_hash,
-                                                    self.data,
-                                                    timeout=None))
+                    success = bool(service.put(self.data_hash,
+                                                self.data,
+                                                timeout=None))
                     result = service.last_result()
                     if success:
                         _logger.debug("KeepWriterThread %s succeeded %s+%i %s",
@@ -1153,7 +1155,7 @@ class KeepClient(object):
 
         headers = {}
         # Tell the proxy how many copies we want it to store
-        headers['X-Keep-Desired-Replication'] = str(copies)
+        headers['X-Keep-Desired-Replicas'] = str(copies)
         roots_map = {}
         loop = retry.RetryLoop(num_retries, self._check_loop_result,
                                backoff_start=2)
