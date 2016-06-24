@@ -82,16 +82,16 @@ class ContainerRequest < ArvadosModel
   # Create a new container (or find an existing one) to satisfy this
   # request.
   def resolve
-    # TODO: resolve container_image to a content address.
     c_mounts = mounts_for_container
     c_runtime_constraints = runtime_constraints_for_container
+    c_container_image = container_image_for_container
     c = act_as_system_user do
       Container.create!(command: self.command,
-                        container_image: self.container_image,
                         cwd: self.cwd,
                         environment: self.environment,
-                        mounts: c_mounts,
                         output_path: self.output_path,
+                        container_image: c_container_image,
+                        mounts: c_mounts,
                         runtime_constraints: c_runtime_constraints)
     end
     self.container_uuid = c.uuid
@@ -147,6 +147,15 @@ class ContainerRequest < ArvadosModel
       end
     end
     return c_mounts
+  end
+
+  # Return a container_image PDH suitable for a Container.
+  def container_image_for_container
+    coll = Collection.for_latest_docker_image(container_image)
+    if !coll
+      raise ActiveRecord::RecordNotFound.new "docker image #{container_image.inspect} not found"
+    end
+    return coll.portable_data_hash
   end
 
   def set_container

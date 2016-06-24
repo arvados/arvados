@@ -4,7 +4,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   def create_minimal_req! attrs={}
     defaults = {
       command: ["echo", "foo"],
-      container_image: "img",
+      container_image: links(:docker_image_collection_tag).name,
       cwd: "/tmp",
       environment: {},
       mounts: {"/out" => {"kind" => "tmp", "capacity" => 1000000}},
@@ -79,7 +79,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c = Container.find_by_uuid cr.container_uuid
     assert_not_nil c
     assert_equal ["echo", "foo"], c.command
-    assert_equal "img", c.container_image
+    assert_equal collections(:docker_image).portable_data_hash, c.container_image
     assert_equal "/tmp", c.cwd
     assert_equal({}, c.environment)
     assert_equal({"/out" => {"kind"=>"tmp", "capacity"=>1000000}}, c.mounts)
@@ -309,6 +309,39 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr = ContainerRequest.new(mounts: m)
     assert_raises(ArgumentError) do
       cr.send :mounts_for_container
+    end
+  end
+
+  ['arvados/apitestfixture:latest',
+   'arvados/apitestfixture',
+   'd8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678',
+  ].each do |tag|
+    test "container_image_for_container(#{tag.inspect})" do
+      set_user_from_auth :active
+      cr = ContainerRequest.new(container_image: tag)
+      resolved = cr.send :container_image_for_container
+      assert_equal resolved, collections(:docker_image).portable_data_hash
+    end
+  end
+
+  test "container_image_for_container(pdh)" do
+    set_user_from_auth :active
+    pdh = collections(:docker_image).portable_data_hash
+    cr = ContainerRequest.new(container_image: pdh)
+    resolved = cr.send :container_image_for_container
+    assert_equal resolved, pdh
+  end
+
+  ['acbd18db4cc2f85cedef654fccc4a4d8+3',
+   'ENOEXIST',
+   'arvados/apitestfixture:ENOEXIST',
+  ].each do |img|
+    test "container_image_for_container(#{img.inspect}) => 404" do
+      set_user_from_auth :active
+      cr = ContainerRequest.new(container_image: img)
+      assert_raises(ActiveRecord::RecordNotFound) do
+        cr.send :container_image_for_container
+      end
     end
   end
 end
