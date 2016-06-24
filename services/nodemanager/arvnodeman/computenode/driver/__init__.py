@@ -211,8 +211,10 @@ class BaseComputeNodeDriver(RetryMixin):
         # libcloud compute drivers typically raise bare Exceptions to
         # represent API errors.  Return True for any exception that is
         # exactly an Exception, or a better-known higher-level exception.
-        if (exception is BaseHTTPError and
-            self.message and self.message.startswith("InvalidInstanceID.NotFound")):
+        if (type(exception) is BaseHTTPError and
+            exception.message and
+            (exception.message.startswith("InvalidInstanceID.NotFound") or
+             exception.message.startswith("InstanceLimitExceeded"))):
             return True
         return (isinstance(exception, cls.CLOUD_ERRORS) or
                 type(exception) is Exception)
