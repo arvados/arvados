@@ -107,7 +107,7 @@
     </div>
 
     <div class="col-md-6">
-      <% nodes = Node.all %>
+      <% nodes = Node.filter([["last_ping_at", ">", Time.now - 3600]]) %>
       <div class="panel panel-default" style="min-height: 10.5em">
         <div class="panel-heading"><span class="panel-title">Compute node status</span>
           <span class="pull-right compute-node-actions">
@@ -130,7 +130,7 @@
             <%= render partial: 'compute_node_summary', locals: {nodes: nodes} %>
             <% active_nodes = [] %>
             <% nodes.sort_by { |n| n.hostname || "" }.each do |n| %>
-              <% if n.crunch_worker_state.in? ["busy", "idle"] and (Time.now - n[:last_ping_at]) < 3600 %>
+              <% if n.crunch_worker_state.in? ["busy", "idle"] %>
                 <% active_nodes << n %>
               <% end %>
             <% end %>
