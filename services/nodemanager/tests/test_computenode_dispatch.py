@@ -86,6 +86,14 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
         self.make_actor()
         self.wait_for_assignment(self.setup_actor, 'cloud_node')
 
+    def test_failed_cloud_calls_delete_arvados_node(self):
+        self.make_mocks()
+        self.cloud_client.create_node.side_effect = Exception("test cloud creation error")
+        self.cloud_client.is_cloud_exception.return_value = False
+        self.make_actor()
+        self.wait_for_assignment(self.setup_actor, 'success')
+        self.assertTrue(self.api_client.nodes().delete().execute.called)
+
     def test_failed_post_create_retried(self):
         self.make_mocks()
         self.cloud_client.post_create_node.side_effect = [

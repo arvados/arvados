@@ -96,6 +96,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         self.cloud_size = cloud_size
         self.arvados_node = None
         self.cloud_node = None
+        self.success = None
         if arvados_node is None:
             self._later.create_arvados_node()
         else:
@@ -153,6 +154,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
 
     @RetryMixin._retry(config.ARVADOS_ERRORS)
     def _finished(self, success_flag=False):
+        self.success = success_flag
         if success_flag is not True and self.arvados_node:
             # Delete arvados node record on setup failure, this is safe to do
             # because this actor has already claimed the node record.  This
