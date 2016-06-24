@@ -153,9 +153,8 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         self._later.post_create()
 
     @RetryMixin._retry(config.ARVADOS_ERRORS)
-    def _finished(self, success_flag=False):
-        self.success = success_flag
-        if success_flag is not True and self.arvados_node:
+    def _finished(self):
+        if self.success is not True and self.arvados_node:
             # Delete arvados node record on setup failure, this is safe to do
             # because this actor has already claimed the node record.  This
             # addresses the failure mode where node manager is unable to create
@@ -165,13 +164,15 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
             # which can result in the node table filling up with unused
             # records.
             self._arvados.nodes().delete(uuid=self.arvados_node['uuid']).execute()
+            self.success = False
         return super(ComputeNodeSetupActor, self)._finished()
 
     @RetryMixin._retry()
     def post_create(self):
         self._cloud.post_create_node(self.cloud_node)
         self._logger.info("%s post-create work done.", self.cloud_node.id)
-        self._finished(True)
+        self.success = True
+        self._finished()
 
     def stop_if_no_cloud_node(self):
         if self.cloud_node is not None:
