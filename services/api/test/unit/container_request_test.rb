@@ -126,20 +126,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   test "Container request priority must be non-nil" do
-    set_user_from_auth :active_trustedclient
-    cr = ContainerRequest.new
-    cr.command = ["echo", "foo"]
-    cr.container_image = "img"
-    cr.cwd = "/tmp"
-    cr.environment = {}
-    cr.mounts = {"BAR" => "FOO"}
-    cr.output_path = "/tmpout"
-    cr.runtime_constraints = {}
-    cr.name = "foo"
-    cr.description = "bar"
-    cr.save!
-
-    cr.reload
+    set_user_from_auth :active
+    cr = create_minimal_req!(priority: nil)
     cr.state = "Committed"
     assert_raises(ActiveRecord::RecordInvalid) do
       cr.save!
@@ -404,6 +392,70 @@ class ContainerRequestTest < ActiveSupport::TestCase
       resolved = cr.send :runtime_constraints_for_container
       assert(okfunc.call(resolved),
              "container runtime_constraints was #{resolved.inspect}")
+    end
+  end
+
+  [[{"/out" => {
+        "kind" => "collection",
+        "uuid" => "zzzzz-4zz18-znfnqtbbv4spc3w",
+        "path" => "/foo"}},
+    lambda do |resolved|
+      resolved["/out"] == {
+        "portable_data_hash" => "1f4b0bc7583c2a7f9102c395f4ffc5e3+45",
+        "kind" => "collection",
+        "path" => "/foo",
+      }
+    end],
+   [{"/out" => {
+        "kind" => "collection",
+        "uuid" => "zzzzz-4zz18-znfnqtbbv4spc3w",
+        "portable_data_hash" => "1f4b0bc7583c2a7f9102c395f4ffc5e3+45",
+        "path" => "/foo"}},
+    lambda do |resolved|
+      resolved["/out"] == {
+        "portable_data_hash" => "1f4b0bc7583c2a7f9102c395f4ffc5e3+45",
+        "kind" => "collection",
+        "path" => "/foo",
+      }
+    end],
+  ].each do |mounts, okfunc|
+    test "resolve mounts #{mounts.inspect} to values" do
+      set_user_from_auth :active
+      cr = ContainerRequest.new(mounts: mounts)
+      resolved = cr.send :mounts_for_container
+      assert(okfunc.call(resolved),
+             "mounts_for_container returned #{resolved.inspect}")
+    end
+  end
+
+  test 'mount unreadable collection' do
+    set_user_from_auth :spectator
+    m = {
+      "/foo" => {
+        "kind" => "collection",
+        "uuid" => "zzzzz-4zz18-znfnqtbbv4spc3w",
+        "path" => "/foo",
+      },
+    }
+    cr = ContainerRequest.new(mounts: m)
+    assert_raises(ActiveRecord::RecordNotFound) do
+      cr.send :mounts_for_container
+    end
+  end
+
+  test 'mount collection with mismatched UUID and PDH' do
+    set_user_from_auth :active
+    m = {
+      "/foo" => {
+        "kind" => "collection",
+        "uuid" => "zzzzz-4zz18-znfnqtbbv4spc3w",
+        "portable_data_hash" => "fa7aeb5140e2848d39b416daeef4ffc5+45",
+        "path" => "/foo",
+      },
+    }
+    cr = ContainerRequest.new(mounts: m)
+    assert_raises(ArgumentError) do
+      cr.send :mounts_for_container
     end
   end
 end

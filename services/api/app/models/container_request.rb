@@ -82,15 +82,17 @@ class ContainerRequest < ArvadosModel
   # Create a new container (or find an existing one) to satisfy this
   # request.
   def resolve
-    # TODO: resolve mounts and container_image to content addresses.
+    # TODO: resolve container_image to a content address.
+    c_mounts = mounts_for_container
+    c_runtime_constraints = runtime_constraints_for_container
     c = act_as_system_user do
       Container.create!(command: self.command,
                         container_image: self.container_image,
                         cwd: self.cwd,
                         environment: self.environment,
-                        mounts: self.mounts,
+                        mounts: c_mounts,
                         output_path: self.output_path,
-                        runtime_constraints: runtime_constraints_for_container)
+                        runtime_constraints: c_runtime_constraints)
     end
     self.container_uuid = c.uuid
   end
@@ -114,6 +116,37 @@ class ContainerRequest < ArvadosModel
       end
     end
     rc
+  end
+
+  # Return a mounts hash suitable for a Container, i.e., with every
+  # readonly collection UUID resolved to a PDH.
+  def mounts_for_container
+    c_mounts = {}
+    mounts.each do |k, mount|
+      mount = mount.dup
+      c_mounts[k] = mount
+      if mount['kind'] != 'collection'
+        next
+      end
+      if (uuid = mount.delete 'uuid')
+        c = Collection.
+          readable_by(current_user).
+          where(uuid: uuid).
+          select(:portable_data_hash).
+          first
+        if !c
+          raise ActiveRecord::RecordNotFound.new "cannot mount collection #{uuid.inspect}: not found"
+        end
+        if mount['portable_data_hash'].nil?
+          # PDH not supplied by client
+          mount['portable_data_hash'] = c.portable_data_hash
+        elsif mount['portable_data_hash'] != c.portable_data_hash
+          # UUID and PDH supplied by client, but they don't agree
+          raise ArgumentError.new "cannot mount collection #{uuid.inspect}: current portable_data_hash #{c.portable_data_hash.inspect} does not match #{c['portable_data_hash'].inspect} in request"
+        end
+      end
+    end
+    return c_mounts
   end
 
   def set_container
