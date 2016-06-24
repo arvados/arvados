@@ -27,9 +27,12 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert_text '123 hello'
   end
 
-
-  [["pipeline_instances", api_fixture("pipeline_instances")['pipeline_with_newer_template']['uuid']],
-   ["jobs", api_fixture("jobs")['running']['uuid']]].each do |c|
+  [
+   ["pipeline_instances", api_fixture("pipeline_instances")['pipeline_with_newer_template']['uuid']],
+   ["jobs", api_fixture("jobs")['running']['uuid']],
+   ["containers", api_fixture("containers")['running']['uuid']],
+   ["container_requests", api_fixture("container_requests")['running']['uuid']],
+  ].each do |c|
     test "test live logging scrolling #{c[0]}" do
 
       controller = c[0]

@@ -179,4 +179,12 @@ class WorkUnit
   def container_uuid
     # container_uuid of a container_request
   end
+
+  def live_log_lines(limit)
+    # fetch log entries from logs table for @proxied
+  end
+
+  def render_log
+    # return partial and locals to be rendered
+  end
 end
