@@ -9,6 +9,8 @@
   end
 %>
 
+<% object = @object unless object %>
+
 <div class="selection-action-container" style="padding-left: <%=padding_left%>">
   <% if Collection.creatable? and (!defined? no_checkboxes or !no_checkboxes) %>
     <div class="row">
@@ -19,7 +21,7 @@
             <li><%= link_to "Create new collection with selected files", '#',
                     method: :post,
                     'data-href' => combine_selected_path(
-                      action_data: {current_project_uuid: @object.owner_uuid}.to_json
+                      action_data: {current_project_uuid: object.owner_uuid}.to_json
                     ),
                     'data-selection-param-name' => 'selection[]',
                     'data-selection-action' => 'combine-collections',
@@ -39,7 +41,7 @@
     <p/>
   <% end %>
 
-  <% file_tree = @object.andand.files_tree %>
+  <% file_tree = object.andand.files_tree %>
   <% if file_tree.nil? or file_tree.empty? %>
     <p>This collection is empty.</p>
   <% else %>
@@ -59,8 +61,8 @@
         <ul class="collection_files">
       <% else %>
         <% link_params = {controller: 'collections', action: 'show_file',
-                          uuid: @object.portable_data_hash, file: file_path, size: size} %>
-         <div class="collection_files_row filterable <%=preview_selectable%>" href="<%=@object.uuid%>/<%=file_path%>">
+                          uuid: object.portable_data_hash, file: file_path, size: size} %>
+         <div class="collection_files_row filterable <%=preview_selectable%>" href="<%=object.uuid%>/<%=file_path%>">
           <div class="collection_files_buttons pull-right">
             <%= raw(human_readable_bytes_html(size)) %>
             <%= link_to(raw('<i class="fa fa-search"></i>'),
@@ -73,27 +75,27 @@
 
           <div class="collection_files_name">
             <% if (!defined? no_checkboxes or !no_checkboxes) and current_user %>
-            <%= check_box_tag 'uuids[]', "#{@object.uuid}/#{file_path}", false, {
+            <%= check_box_tag 'uuids[]', "#{object.uuid}/#{file_path}", false, {
                   :class => "persistent-selection",
                   :friendly_type => "File",
-                  :friendly_name => "#{@object.uuid}/#{file_path}",
+                  :friendly_name => "#{object.uuid}/#{file_path}",
                   :href => url_for(controller: 'collections', action: 'show_file',
-                                   uuid: @object.portable_data_hash, file: file_path),
+                                   uuid: object.portable_data_hash, file: file_path),
                   :title => "Include #{file_path} in your selections",
-                  :id => "#{@object.uuid}_file_#{index}",
+                  :id => "#{object.uuid}_file_#{index}",
                 } %>
             <span>&nbsp;</span>
             <% end %>
         <% if CollectionsHelper::is_image(filename) %>
             <i class="fa fa-fw fa-bar-chart-o"></i> <%= filename %></div>
           <div class="collection_files_inline">
-            <%= link_to(image_tag("#{url_for @object}/#{file_path}"),
+            <%= link_to(image_tag("#{url_for object}/#{file_path}"),
                         link_params.merge(disposition: 'inline'),
                         {title: file_path}) %>
           </div>
          </div>
         <% else %>
-            <i class="fa fa-fw fa-file" href="<%=@object.uuid%>/<%=file_path%>" ></i> <%= filename %></div>
+            <i class="fa fa-fw fa-file" href="<%=object.uuid%>/<%=file_path%>" ></i> <%= filename %></div>
          </div>
         <% end %>
         </li>

@@ -1,0 +1,29 @@
+<% wu = obj.work_unit(name) %>
+
+<% if !wu.log_collection %>
+  <%# Still running. Show running log. %>
+  <div id="event_log_div"
+       class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window"
+       data-object-uuid="<%= wu.uuid %>"
+    ><%= wu.live_log_lines(Rails.configuration.running_job_log_records_to_fetch).join("\n") %>
+  </div>
+
+  <%# Applying a long throttle suppresses the auto-refresh of this
+      partial that would normally be triggered by arv-log-event. %>
+  <div class="arv-log-refresh-control"
+       data-load-throttle="86486400000" <%# 1001 nights %>>
+  </div>
+
+<% else %>
+  <%# Finished running. Show log if exists. %>
+  <% log = Collection.find wu.log_collection rescue nil %>
+  <% if log %>
+    <div>
+      <% log_url = url_for log %>
+      <p> <a href="<%= log_url %>">Download the full log</a> </p>
+      <%= render(partial: wu.render_log(log)[0], locals: wu.render_log(log)[1]) %>
+    </div>
+  <% else %>
+    <div> Log not accessible </div>
+  <% end %>
+<% end %>

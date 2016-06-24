@@ -124,6 +124,17 @@ class ContainerWorkUnit < ProxyWorkUnit
     get_combined(:output_path)
   end
 
+  def live_log_lines(limit=2000)
+    event_types = ["stdout", "stderr", "arv-mount", "crunch-run"]
+    log_lines = Log.where(event_type: event_types, object_uuid: uuid).order("id DESC").limit(limit)
+    log_lines.results.reverse.
+      flat_map { |log| log.properties[:text].split("\n") rescue [] }
+  end
+
+  def render_log(log)
+    ['collections/show_files', {object: log, no_checkboxes: true}]
+  end
+
   # End combined propeties
 
   protected
