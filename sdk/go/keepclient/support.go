@@ -184,13 +184,13 @@ func (this *KeepClient) putReplicas(
 		}()
 	}()
 
-	// Desired number of replicas
-	remaining_replicas := this.Want_replicas
+	replicasDone := 0
+	replicasTodo := this.Want_replicas
 
 	replicasPerThread := this.replicasPerService
 	if replicasPerThread < 1 {
 		// unlimited or unknown
-		replicasPerThread = remaining_replicas
+		replicasPerThread = replicasTodo
 	}
 
 	retriesRemaining := 1 + this.Retries
@@ -200,8 +200,8 @@ func (this *KeepClient) putReplicas(
 		retriesRemaining -= 1
 		next_server = 0
 		retryServers = []string{}
-		for remaining_replicas > 0 {
-			for active*replicasPerThread < remaining_replicas {
+		for replicasTodo > 0 {
+			for active*replicasPerThread < replicasTodo {
 				// Start some upload requests
 				if next_server < len(sv) {
 					DebugPrintf("DEBUG: [%08x] Begin upload %s to %s", requestID, hash, sv[next_server])
@@ -210,14 +210,14 @@ func (this *KeepClient) putReplicas(
 					active += 1
 				} else {
 					if active == 0 && retriesRemaining == 0 {
-						return locator, (this.Want_replicas - remaining_replicas), InsufficientReplicasError
+						return locator, replicasDone, InsufficientReplicasError
 					} else {
 						break
 					}
 				}
 			}
 			DebugPrintf("DEBUG: [%08x] Replicas remaining to write: %v active uploads: %v",
-				requestID, remaining_replicas, active)
+				requestID, replicasTodo, active)
 
 			// Now wait for something to happen.
 			if active > 0 {
@@ -226,7 +226,8 @@ func (this *KeepClient) putReplicas(
 
 				if status.statusCode == 200 {
 					// good news!
-					remaining_replicas -= status.replicas_stored
+					replicasDone += status.replicas_stored
+					replicasTodo -= status.replicas_stored
 					locator = status.response
 				} else if status.statusCode == 0 || status.statusCode == 408 || status.statusCode == 429 ||
 					(status.statusCode >= 500 && status.statusCode != 503) {
@@ -242,5 +243,5 @@ func (this *KeepClient) putReplicas(
 		sv = retryServers
 	}
 
-	return locator, this.Want_replicas, nil
+	return locator, replicasDone, nil
 }
