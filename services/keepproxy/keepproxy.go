@@ -424,7 +424,7 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	if req.Header.Get("X-Keep-Desired-Replicas") != "" {
 		var r int
 		_, err := fmt.Sscanf(req.Header.Get(keepclient.X_Keep_Desired_Replicas), "%d", &r)
-		if err != nil {
+		if err == nil {
 			kc.Want_replicas = r
 		}
 	}
