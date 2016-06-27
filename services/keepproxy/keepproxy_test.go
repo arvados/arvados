@@ -109,6 +109,23 @@ func runProxy(c *C, args []string, bogusClientToken bool) *keepclient.KeepClient
 	return kc
 }
 
+func (s *ServerRequiredSuite) TestDesiredReplicas(c *C) {
+	kc := runProxy(c, nil, false)
+	defer closeListener()
+
+	content := []byte("TestDesiredReplicas")
+	hash := fmt.Sprintf("%x", md5.Sum(content))
+
+	for _, kc.Want_replicas = range []int{0, 1, 2} {
+		locator, rep, err := kc.PutB(content)
+		c.Check(err, Equals, nil)
+		c.Check(rep, Equals, kc.Want_replicas)
+		if rep > 0 {
+			c.Check(locator, Matches, fmt.Sprintf(`^%s\+%d(\+.+)?$`, hash, len(content)))
+		}
+	}
+}
+
 func (s *ServerRequiredSuite) TestPutAskGet(c *C) {
 	kc := runProxy(c, nil, false)
 	defer closeListener()
