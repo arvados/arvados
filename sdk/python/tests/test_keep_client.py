@@ -1066,65 +1066,58 @@ class KeepClientRetryPutTestCase(KeepClientRetryTestMixin, unittest.TestCase):
 
 
 class KeepClientAvoidClientOverreplicationTestCase(unittest.TestCase, tutil.ApiClientMock):
-
-
-    class KeepFakeWriterThread(threading.Thread):
-        """
-        Just Simulating the real KeepClient.KeepWriterThread, to test the ThreadLimiter.
-        """
-        def __init__(self, delay, will_succeed, thread_limiter):
-            super(KeepClientAvoidClientOverreplicationTestCase.KeepFakeWriterThread, self).__init__()
-            self.delay = delay # in seconds
+    
+    
+    class FakeKeepService(object):
+        def __init__(self, delay, will_succeed, replicas=1):
+            self.delay = delay
             self.success = will_succeed
-            self.limiter = thread_limiter
-
-        def run(self):
-            with self.limiter:
-                if not self.limiter.shall_i_proceed():
-                    return
-                time.sleep(self.delay)
-                if self.success:
-                    self.limiter.save_response('foo', 1)
-                else:
-                    self.limiter.save_response(None, 0)
-
+            self._result = {}
+            self._result['headers'] = {}
+            self._result['headers']['x-keep-replicas-stored'] = str(replicas)
+            self._result['body'] = 'foobar'
+        
+        def put(self, data_hash, data, timeout):
+            time.sleep(self.delay)
+            return self.success
+        
+        def last_result(self):
+            return self._result
+        
+        def finished(self):
+            return False
+    
+    
     def test_only_write_enough_on_success(self):
         copies = 3
-        threads = []
-        limiter = arvados.KeepClient.ThreadLimiter(want_copies=copies, max_service_replicas=1)
-        # Setting up fake writer threads with different delays so that the bug is revealed
-        for i in range(copies*2):
-            t = self.KeepFakeWriterThread(
-                    delay=i/10.0,
-                    will_succeed=True,
-                    thread_limiter=limiter)
-            t.start()
-            threads.append(t)
-        for t in threads:
-            t.join()
-        self.assertEqual(limiter.done(), copies)
+        pool = arvados.KeepClient.KeepWriterThreadPool(
+            data = 'foo',
+            data_hash = 'acbd18db4cc2f85cedef654fccc4a4d8+3',
+            max_service_replicas = copies,
+            copies = copies
+        )
+        for i in range(10):
+            ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
+            pool.add_task(ks, None)
+        pool.join()
+        self.assertEqual(pool.done(), copies)
 
-    def test_only_write_enough_on_partial_failure(self):
+    def test_only_write_enough_on_partial_success(self):
         copies = 3
-        threads = []
-        limiter = arvados.KeepClient.ThreadLimiter(want_copies=copies, max_service_replicas=1)
-        for i in range(copies):
-            t = self.KeepFakeWriterThread(
-                    delay=i/10.0,
-                    will_succeed=False,
-                    thread_limiter=limiter)
-            t.start()
-            threads.append(t)
-            t = self.KeepFakeWriterThread(
-                    delay=i/10.0,
-                    will_succeed=True,
-                    thread_limiter=limiter)
-            t.start()
-            threads.append(t)
-        for t in threads:
-            t.join()
-        self.assertEqual(limiter.done(), copies)
-
+        pool = arvados.KeepClient.KeepWriterThreadPool(
+            data = 'foo',
+            data_hash = 'acbd18db4cc2f85cedef654fccc4a4d8+3',
+            max_service_replicas = copies,
+            copies = copies
+        )
+        for i in range(5):
+            ks = self.FakeKeepService(delay=i/10.0, will_succeed=False)
+            pool.add_task(ks, None)
+            ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
+            pool.add_task(ks, None)
+        pool.join()
+        self.assertEqual(pool.done(), copies)
+    
 
 @tutil.skip_sleep
 class RetryNeedsMultipleServices(unittest.TestCase, tutil.ApiClientMock):
