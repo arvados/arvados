@@ -1,97 +1,43 @@
 require 'test_helper'
 
 class ContainerRequestTest < ActiveSupport::TestCase
-  def check_illegal_modify c
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.command = ["echo", "bar"]
-        c.save!
-      end
-
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.container_image = "img2"
-        c.save!
-      end
-
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.cwd = "/tmp2"
-        c.save!
-      end
-
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.environment = {"FOO" => "BAR"}
-        c.save!
-      end
-
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.mounts = {"FOO" => "BAR"}
-        c.save!
-      end
-
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.output_path = "/tmp3"
-        c.save!
-      end
-
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.runtime_constraints = {"FOO" => "BAR"}
-        c.save!
-      end
-
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.name = "baz"
-        c.save!
-      end
-
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.description = "baz"
-        c.save!
-      end
-
+  def create_minimal_req! attrs={}
+    defaults = {
+      command: ["echo", "foo"],
+      container_image: links(:docker_image_collection_tag).name,
+      cwd: "/tmp",
+      environment: {},
+      mounts: {"/out" => {"kind" => "tmp", "capacity" => 1000000}},
+      output_path: "/out",
+      runtime_constraints: {},
+      name: "foo",
+      description: "bar",
+    }
+    cr = ContainerRequest.create!(defaults.merge(attrs))
+    cr.reload
+    return cr
   end
 
-  def check_bogus_states c
+  def check_bogus_states cr
+    [nil, "Flubber"].each do |state|
       assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.state = nil
-        c.save!
+        cr.state = state
+        cr.save!
       end
-
-      assert_raises(ActiveRecord::RecordInvalid) do
-        c.reload
-        c.state = "Flubber"
-        c.save!
-      end
+      cr.reload
+    end
   end
 
   test "Container request create" do
-    set_user_from_auth :active_trustedclient
-    cr = ContainerRequest.new
-    cr.command = ["echo", "foo"]
-    cr.container_image = "img"
-    cr.cwd = "/tmp"
-    cr.environment = {}
-    cr.mounts = {"BAR" => "FOO"}
-    cr.output_path = "/tmpout"
-    cr.runtime_constraints = {}
-    cr.name = "foo"
-    cr.description = "bar"
-    cr.save!
+    set_user_from_auth :active
+    cr = create_minimal_req!
 
     assert_nil cr.container_uuid
     assert_nil cr.priority
 
     check_bogus_states cr
 
-    cr.reload
+    # Ensure we can modify all attributes
     cr.command = ["echo", "foo3"]
     cr.container_image = "img3"
     cr.cwd = "/tmp3"
@@ -99,7 +45,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.mounts = {"BAR" => "BAZ"}
     cr.output_path = "/tmp4"
     cr.priority = 2
-    cr.runtime_constraints = {"X" => "Y"}
+    cr.runtime_constraints = {"vcpus" => 4}
     cr.name = "foo3"
     cr.description = "bar3"
     cr.save!
@@ -108,20 +54,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   test "Container request priority must be non-nil" do
-    set_user_from_auth :active_trustedclient
-    cr = ContainerRequest.new
-    cr.command = ["echo", "foo"]
-    cr.container_image = "img"
-    cr.cwd = "/tmp"
-    cr.environment = {}
-    cr.mounts = {"BAR" => "FOO"}
-    cr.output_path = "/tmpout"
-    cr.runtime_constraints = {}
-    cr.name = "foo"
-    cr.description = "bar"
-    cr.save!
-
-    cr.reload
+    set_user_from_auth :active
+    cr = create_minimal_req!(priority: nil)
     cr.state = "Committed"
     assert_raises(ActiveRecord::RecordInvalid) do
       cr.save!
@@ -129,37 +63,28 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   test "Container request commit" do
-    set_user_from_auth :active_trustedclient
-    cr = ContainerRequest.new
-    cr.command = ["echo", "foo"]
-    cr.container_image = "img"
-    cr.cwd = "/tmp"
-    cr.environment = {}
-    cr.mounts = {"BAR" => "FOO"}
-    cr.output_path = "/tmpout"
-    cr.priority = 1
-    cr.runtime_constraints = {}
-    cr.name = "foo"
-    cr.description = "bar"
-    cr.save!
+    set_user_from_auth :active
+    cr = create_minimal_req!(runtime_constraints: {"vcpus" => [2,3]})
 
-    cr.reload
     assert_nil cr.container_uuid
 
     cr.reload
     cr.state = "Committed"
+    cr.priority = 1
     cr.save!
 
     cr.reload
 
+    assert_not_nil cr.container_uuid
     c = Container.find_by_uuid cr.container_uuid
+    assert_not_nil c
     assert_equal ["echo", "foo"], c.command
-    assert_equal "img", c.container_image
+    assert_equal collections(:docker_image).portable_data_hash, c.container_image
     assert_equal "/tmp", c.cwd
     assert_equal({}, c.environment)
-    assert_equal({"BAR" => "FOO"}, c.mounts)
-    assert_equal "/tmpout", c.output_path
-    assert_equal({}, c.runtime_constraints)
+    assert_equal({"/out" => {"kind"=>"tmp", "capacity"=>1000000}}, c.mounts)
+    assert_equal "/out", c.output_path
+    assert_equal({"vcpus" => 2}, c.runtime_constraints)
     assert_equal 1, c.priority
 
     assert_raises(ActiveRecord::RecordInvalid) do
@@ -174,181 +99,105 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c.reload
     assert_equal 0, cr.priority
     assert_equal 0, c.priority
-
   end
 
 
   test "Container request max priority" do
-    set_user_from_auth :active_trustedclient
-    cr = ContainerRequest.new
-    cr.state = "Committed"
-    cr.container_image = "img"
-    cr.command = ["foo", "bar"]
-    cr.output_path = "/tmp"
-    cr.cwd = "/tmp"
-    cr.priority = 5
-    cr.save!
+    set_user_from_auth :active
+    cr = create_minimal_req!(priority: 5, state: "Committed")
 
     c = Container.find_by_uuid cr.container_uuid
     assert_equal 5, c.priority
 
-    cr2 = ContainerRequest.new
-    cr2.container_image = "img"
-    cr2.command = ["foo", "bar"]
-    cr2.output_path = "/tmp"
-    cr2.cwd = "/tmp"
+    cr2 = create_minimal_req!
     cr2.priority = 10
-    cr2.save!
-
+    cr2.state = "Committed"
+    cr2.container_uuid = cr.container_uuid
     act_as_system_user do
-      cr2.state = "Committed"
-      cr2.container_uuid = cr.container_uuid
       cr2.save!
     end
 
+    # cr and cr2 have priority 5 and 10, and are being satisfied by
+    # the same container c, so c's priority should be
+    # max(priority)=10.
     c.reload
     assert_equal 10, c.priority
 
-    cr2.reload
-    cr2.priority = 0
-    cr2.save!
+    cr2.update_attributes!(priority: 0)
 
     c.reload
     assert_equal 5, c.priority
 
-    cr.reload
-    cr.priority = 0
-    cr.save!
+    cr.update_attributes!(priority: 0)
 
     c.reload
     assert_equal 0, c.priority
-
   end
 
 
   test "Independent container requests" do
-    set_user_from_auth :active_trustedclient
-    cr = ContainerRequest.new
-    cr.state = "Committed"
-    cr.container_image = "img"
-    cr.command = ["foo", "bar"]
-    cr.output_path = "/tmp"
-    cr.cwd = "/tmp"
-    cr.priority = 5
-    cr.save!
+    set_user_from_auth :active
+    cr1 = create_minimal_req!(command: ["foo", "1"], priority: 5, state: "Committed")
+    cr2 = create_minimal_req!(command: ["foo", "2"], priority: 10, state: "Committed")
 
-    cr2 = ContainerRequest.new
-    cr2.state = "Committed"
-    cr2.container_image = "img"
-    cr2.command = ["foo", "bar"]
-    cr2.output_path = "/tmp"
-    cr2.cwd = "/tmp"
-    cr2.priority = 10
-    cr2.save!
-
-    c = Container.find_by_uuid cr.container_uuid
-    assert_equal 5, c.priority
+    c1 = Container.find_by_uuid cr1.container_uuid
+    assert_equal 5, c1.priority
 
     c2 = Container.find_by_uuid cr2.container_uuid
     assert_equal 10, c2.priority
 
-    cr.priority = 0
-    cr.save!
+    cr1.update_attributes!(priority: 0)
 
-    c.reload
-    assert_equal 0, c.priority
+    c1.reload
+    assert_equal 0, c1.priority
 
     c2.reload
     assert_equal 10, c2.priority
   end
 
-
-  test "Container cancelled finalizes request" do
-    set_user_from_auth :active_trustedclient
-    cr = ContainerRequest.new
-    cr.state = "Committed"
-    cr.container_image = "img"
-    cr.command = ["foo", "bar"]
-    cr.output_path = "/tmp"
-    cr.cwd = "/tmp"
-    cr.priority = 5
-    cr.save!
-
-    cr.reload
-    assert_equal "Committed", cr.state
-
-    c = Container.find_by_uuid cr.container_uuid
-    assert_equal "Queued", c.state
+  test "Request is finalized when its container is cancelled" do
+    set_user_from_auth :active
+    cr = create_minimal_req!(priority: 1, state: "Committed")
 
     act_as_system_user do
-      c.state = "Cancelled"
-      c.save!
+      Container.find_by_uuid(cr.container_uuid).
+        update_attributes!(state: Container::Cancelled)
     end
 
     cr.reload
     assert_equal "Final", cr.state
-
   end
 
+  test "Request is finalized when its container is completed" do
+    set_user_from_auth :active
+    cr = create_minimal_req!(priority: 1, state: "Committed")
 
-  test "Container complete finalizes request" do
-    set_user_from_auth :active_trustedclient
-    cr = ContainerRequest.new
-    cr.state = "Committed"
-    cr.container_image = "img"
-    cr.command = ["foo", "bar"]
-    cr.output_path = "/tmp"
-    cr.cwd = "/tmp"
-    cr.priority = 5
-    cr.save!
-
-    cr.reload
-    assert_equal "Committed", cr.state
-
-    c = Container.find_by_uuid cr.container_uuid
-    assert_equal Container::Queued, c.state
-
-    act_as_system_user do
-      c.update_attributes! state: Container::Locked
-      c.update_attributes! state: Container::Running
+    c = act_as_system_user do
+      c = Container.find_by_uuid(cr.container_uuid)
+      c.update_attributes!(state: Container::Locked)
+      c.update_attributes!(state: Container::Running)
+      c
     end
 
     cr.reload
     assert_equal "Committed", cr.state
 
     act_as_system_user do
-      c.update_attributes! state: Container::Complete
-      c.save!
+      c.update_attributes!(state: Container::Complete)
     end
 
     cr.reload
     assert_equal "Final", cr.state
-
   end
 
   test "Container makes container request, then is cancelled" do
-    set_user_from_auth :active_trustedclient
-    cr = ContainerRequest.new
-    cr.state = "Committed"
-    cr.container_image = "img"
-    cr.command = ["foo", "bar"]
-    cr.output_path = "/tmp"
-    cr.cwd = "/tmp"
-    cr.priority = 5
-    cr.save!
+    set_user_from_auth :active
+    cr = create_minimal_req!(priority: 5, state: "Committed")
 
     c = Container.find_by_uuid cr.container_uuid
     assert_equal 5, c.priority
 
-    cr2 = ContainerRequest.new
-    cr2.state = "Committed"
-    cr2.container_image = "img"
-    cr2.command = ["foo", "bar"]
-    cr2.output_path = "/tmp"
-    cr2.cwd = "/tmp"
-    cr2.priority = 10
-    cr2.requesting_container_uuid = c.uuid
-    cr2.save!
+    cr2 = create_minimal_req!(priority: 10, state: "Committed", requesting_container_uuid: c.uuid)
 
     c2 = Container.find_by_uuid cr2.container_uuid
     assert_equal 10, c2.priority
@@ -377,6 +226,122 @@ class ContainerRequestTest < ActiveSupport::TestCase
       cr = ContainerRequest.create(container_image: "img", output_path: "/tmp", command: ["echo", "foo"])
       assert_not_nil cr.uuid, 'uuid should be set for newly created container_request'
       assert_equal expected, cr.requesting_container_uuid
+    end
+  end
+
+  [[{"vcpus" => [2, nil]},
+    lambda { |resolved| resolved["vcpus"] == 2 }],
+   [{"vcpus" => [3, 7]},
+    lambda { |resolved| resolved["vcpus"] == 3 }],
+   [{"vcpus" => 4},
+    lambda { |resolved| resolved["vcpus"] == 4 }],
+   [{"ram" => [1000000000, 2000000000]},
+    lambda { |resolved| resolved["ram"] == 1000000000 }],
+   [{"ram" => [1234234234]},
+    lambda { |resolved| resolved["ram"] == 1234234234 }],
+  ].each do |rc, okfunc|
+    test "resolve runtime constraint range #{rc} to values" do
+      cr = ContainerRequest.new(runtime_constraints: rc)
+      resolved = cr.send :runtime_constraints_for_container
+      assert(okfunc.call(resolved),
+             "container runtime_constraints was #{resolved.inspect}")
+    end
+  end
+
+  [[{"/out" => {
+        "kind" => "collection",
+        "uuid" => "zzzzz-4zz18-znfnqtbbv4spc3w",
+        "path" => "/foo"}},
+    lambda do |resolved|
+      resolved["/out"] == {
+        "portable_data_hash" => "1f4b0bc7583c2a7f9102c395f4ffc5e3+45",
+        "kind" => "collection",
+        "path" => "/foo",
+      }
+    end],
+   [{"/out" => {
+        "kind" => "collection",
+        "uuid" => "zzzzz-4zz18-znfnqtbbv4spc3w",
+        "portable_data_hash" => "1f4b0bc7583c2a7f9102c395f4ffc5e3+45",
+        "path" => "/foo"}},
+    lambda do |resolved|
+      resolved["/out"] == {
+        "portable_data_hash" => "1f4b0bc7583c2a7f9102c395f4ffc5e3+45",
+        "kind" => "collection",
+        "path" => "/foo",
+      }
+    end],
+  ].each do |mounts, okfunc|
+    test "resolve mounts #{mounts.inspect} to values" do
+      set_user_from_auth :active
+      cr = ContainerRequest.new(mounts: mounts)
+      resolved = cr.send :mounts_for_container
+      assert(okfunc.call(resolved),
+             "mounts_for_container returned #{resolved.inspect}")
+    end
+  end
+
+  test 'mount unreadable collection' do
+    set_user_from_auth :spectator
+    m = {
+      "/foo" => {
+        "kind" => "collection",
+        "uuid" => "zzzzz-4zz18-znfnqtbbv4spc3w",
+        "path" => "/foo",
+      },
+    }
+    cr = ContainerRequest.new(mounts: m)
+    assert_raises(ActiveRecord::RecordNotFound) do
+      cr.send :mounts_for_container
+    end
+  end
+
+  test 'mount collection with mismatched UUID and PDH' do
+    set_user_from_auth :active
+    m = {
+      "/foo" => {
+        "kind" => "collection",
+        "uuid" => "zzzzz-4zz18-znfnqtbbv4spc3w",
+        "portable_data_hash" => "fa7aeb5140e2848d39b416daeef4ffc5+45",
+        "path" => "/foo",
+      },
+    }
+    cr = ContainerRequest.new(mounts: m)
+    assert_raises(ArgumentError) do
+      cr.send :mounts_for_container
+    end
+  end
+
+  ['arvados/apitestfixture:latest',
+   'arvados/apitestfixture',
+   'd8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678',
+  ].each do |tag|
+    test "container_image_for_container(#{tag.inspect})" do
+      set_user_from_auth :active
+      cr = ContainerRequest.new(container_image: tag)
+      resolved = cr.send :container_image_for_container
+      assert_equal resolved, collections(:docker_image).portable_data_hash
+    end
+  end
+
+  test "container_image_for_container(pdh)" do
+    set_user_from_auth :active
+    pdh = collections(:docker_image).portable_data_hash
+    cr = ContainerRequest.new(container_image: pdh)
+    resolved = cr.send :container_image_for_container
+    assert_equal resolved, pdh
+  end
+
+  ['acbd18db4cc2f85cedef654fccc4a4d8+3',
+   'ENOEXIST',
+   'arvados/apitestfixture:ENOEXIST',
+  ].each do |img|
+    test "container_image_for_container(#{img.inspect}) => 404" do
+      set_user_from_auth :active
+      cr = ContainerRequest.new(container_image: img)
+      assert_raises(ActiveRecord::RecordNotFound) do
+        cr.send :container_image_for_container
+      end
     end
   end
 end
