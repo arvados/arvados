@@ -11,7 +11,7 @@ class ContainerRequestsControllerTest < ActionController::TestCase
     get :show, {id: cr['uuid'], tab_pane: 'Log'}, session_for(:active)
     assert_response :success
 
-    assert_includes @response.body, "<a href=\"/collections/#{container['log']}\">Download the full log</a>"
-    assert_includes @response.body, "<div class=\"collection_files_row filterable \" href=\"#{container['log']}/baz\">"
+    assert_select "a", {:href=>"/collections/#{container['log']}", :text=>"Download the full log"}
+    assert_select "a", {:href=>"#{container['log']}/baz"}
   end
 end

@@ -184,7 +184,7 @@ class WorkUnit
     # fetch log entries from logs table for @proxied
   end
 
-  def render_log(log)
+  def render_log
     # return partial and locals to be rendered
   end
 end

@@ -16,12 +16,12 @@
 
 <% else %>
   <%# Finished running. Show log if exists. %>
-  <% log = Collection.find wu.log_collection rescue nil %>
-  <% if log %>
+  <% render_log = wu.render_log %>
+  <% if render_log %>
     <div>
-      <% log_url = url_for log %>
+      <% log_url = url_for render_log[:log] %>
       <p> <a href="<%= log_url %>">Download the full log</a> </p>
-      <%= render(partial: wu.render_log(log)[0], locals: wu.render_log(log)[1]) %>
+      <%= render(partial: render_log[:partial], locals: render_log[:locals]) %>
     </div>
   <% else %>
     <div> Log not accessible </div>

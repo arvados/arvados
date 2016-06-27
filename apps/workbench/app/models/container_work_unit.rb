@@ -131,8 +131,11 @@ class ContainerWorkUnit < ProxyWorkUnit
       flat_map { |log| log.properties[:text].split("\n") rescue [] }
   end
 
-  def render_log(log)
-    ['collections/show_files', {object: log, no_checkboxes: true}]
+  def render_log
+    collection = Collection.find(log_collection) rescue nil
+    if collection
+      return {log: collection, partial: 'collections/show_files', locals: {object: collection, no_checkboxes: true}}
+    end
   end
 
   # End combined propeties
