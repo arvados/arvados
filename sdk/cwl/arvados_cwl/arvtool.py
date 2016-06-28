@@ -28,3 +28,7 @@ class ArvadosCommandTool(CommandLineTool):
                                  "$(task.keep)/%s",
                                  "$(task.keep)/%s/%s",
                                  **kwargs)
+
+    def job(self, joborder, output_callback, **kwargs):
+        kwargs["outdir"] = "$(task.outdir)"
+        return super(ArvadosCommandTool, self).job(joborder, output_callback, **kwargs)
