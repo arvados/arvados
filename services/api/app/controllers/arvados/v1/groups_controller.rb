@@ -61,10 +61,21 @@ class Arvados::V1::GroupsController < ApplicationController
     request_orders = @orders.clone
     @orders = []
 
-    [Group,
-     Job, PipelineInstance, PipelineTemplate,
+    request_filters = @filters
+
+    klasses = [Group,
+     Job, PipelineInstance, PipelineTemplate, ContainerRequest,
      Collection,
-     Human, Specimen, Trait].each do |klass|
+     Human, Specimen, Trait]
+
+    table_names = klasses.map(&:table_name)
+    request_filters.each do |col, op, val|
+      if col.index('.') && !table_names.include?(col.split('.', 2)[0])
+        raise ArgumentError.new("Invalid attribute '#{col}' in filter")
+      end
+    end
+
+    klasses.each do |klass|
       # If the currently requested orders specifically match the
       # table_name for the current klass, apply that order.
       # Otherwise, order by recency.
@@ -80,6 +91,16 @@ class Arvados::V1::GroupsController < ApplicationController
       elsif klass == Group
         where_conds[:group_class] = "project"
       end
+
+      @filters = request_filters.map do |col, op, val|
+        if !col.index('.')
+          [col, op, val]
+        elsif (col = col.split('.', 2))[0] == klass.table_name
+          [col[1], op, val]
+        else
+          nil
+        end
+      end.compact
 
       @objects = klass.readable_by(*@read_users).
         order(request_order).where(where_conds)

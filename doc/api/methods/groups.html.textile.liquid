@@ -29,6 +29,8 @@ table(table table-bordered table-condensed).
 
 Note: Because adding access tokens to manifests can be computationally expensive, the @manifest_text@ field is not included in listed collections.  If you need it, request a "list of collections":{{site.baseurl}}/api/methods/collections.html with the filter @["owner_uuid", "=", GROUP_UUID]@, and @"manifest_text"@ listed in the select parameter.
 
+Note: Use filters with the attribute format @<item type>.<field name>@ to filter items of a specific type. For example: @["pipeline_instances.state", "=", "Complete"]@ to filter @pipeline_instances@ where @state@ is @Complete@. All other types of items owned by this group will be unimpacted by this filter and will still be included.
+
 h2. create
 
 Create a new Group.
