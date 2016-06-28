@@ -29,7 +29,8 @@ class TestContainer(unittest.TestCase):
         tool = {
             "inputs": [],
             "outputs": [],
-            "baseCommand": "ls"
+            "baseCommand": "ls",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}]
         }
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names, basedir="")
         arvtool.formatgraph = None
@@ -52,7 +53,7 @@ class TestContainer(unittest.TestCase):
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
                     'container_image': '99999999999999999999999999999993+99',
-                    'command': ['ls'],
+                    'command': ['ls', '/var/spool/cwl'],
                     'cwd': '/var/spool/cwl'
                 })
 
@@ -126,6 +127,7 @@ class TestContainer(unittest.TestCase):
         arvjob.output_callback = mock.MagicMock()
         arvjob.collect_outputs = mock.MagicMock()
         arvjob.successCodes = [0]
+        arvjob.outdir = "/var/spool/cwl"
 
         arvjob.done({
             "state": "Complete",
@@ -170,6 +172,7 @@ class TestContainer(unittest.TestCase):
         arvjob.output_callback = mock.MagicMock()
         arvjob.collect_outputs = mock.MagicMock()
         arvjob.successCodes = [0]
+        arvjob.outdir = "/var/spool/cwl"
 
         arvjob.done({
             "state": "Complete",

@@ -47,7 +47,7 @@ try:
 
     adjustFiles(job_order_object, keeppath)
 
-    runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()), work_api="jobs")
+    runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
 
     t = load_tool(job_order_object, runner.arvMakeTool)
 

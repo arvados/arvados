@@ -28,3 +28,10 @@ class ArvadosCommandTool(CommandLineTool):
                                  "$(task.keep)/%s",
                                  "$(task.keep)/%s/%s",
                                  **kwargs)
+
+    def job(self, joborder, output_callback, **kwargs):
+        if self.work_api == "containers":
+            kwargs["outdir"] = "/var/spool/cwl"
+        elif self.work_api == "jobs":
+            kwargs["outdir"] = "$(task.outdir)"
+        return super(ArvadosCommandTool, self).job(joborder, output_callback, **kwargs)

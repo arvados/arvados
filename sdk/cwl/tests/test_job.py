@@ -23,7 +23,8 @@ class TestJob(unittest.TestCase):
         tool = {
             "inputs": [],
             "outputs": [],
-            "baseCommand": "ls"
+            "baseCommand": "ls",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}]
         }
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names, basedir="")
         arvtool.formatgraph = None
@@ -36,7 +37,7 @@ class TestJob(unittest.TestCase):
                     'script_parameters': {
                         'tasks': [{
                             'task.env': {'TMPDIR': '$(task.tmpdir)'},
-                            'command': ['ls']
+                            'command': ['ls', '$(task.outdir)']
                         }],
                     },
                     'script_version': 'master',

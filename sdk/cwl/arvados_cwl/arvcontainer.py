@@ -29,14 +29,14 @@ class ArvadosContainer(object):
             "command": self.command_line,
             "owner_uuid": self.arvrunner.project_uuid,
             "name": self.name,
-            "output_path": "/var/spool/cwl",
-            "cwd": "/var/spool/cwl",
+            "output_path": self.outdir,
+            "cwd": self.outdir,
             "priority": 1,
             "state": "Committed"
         }
         runtime_constraints = {}
         mounts = {
-            "/var/spool/cwl": {
+            self.outdir: {
                 "kind": "tmp"
             }
         }
@@ -60,7 +60,7 @@ class ArvadosContainer(object):
 
         if self.stdout:
             mounts["stdout"] = {"kind": "file",
-                                "path": "/var/spool/cwl/%s" % (self.stdout)}
+                                "path": "%s/%s" % (self.outdir, self.stdout)}
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if not docker_req:
@@ -114,7 +114,7 @@ class ArvadosContainer(object):
             try:
                 outputs = {}
                 if record["output"]:
-                    outputs = done.done(self, record, "/tmp", "/var/spool/cwl", "/keep")
+                    outputs = done.done(self, record, "/tmp", self.outdir, "/keep")
             except WorkflowException as e:
                 logger.error("Error while collecting container outputs:\n%s", e, exc_info=(e if self.arvrunner.debug else False))
                 processStatus = "permanentFail"
