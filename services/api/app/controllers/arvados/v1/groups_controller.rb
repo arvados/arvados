@@ -62,7 +62,7 @@ class Arvados::V1::GroupsController < ApplicationController
     @orders = []
 
     [Group,
-     Job, PipelineInstance, PipelineTemplate,
+     Job, PipelineInstance, PipelineTemplate, ContainerRequest,
      Collection,
      Human, Specimen, Trait].each do |klass|
       # If the currently requested orders specifically match the
@@ -79,6 +79,8 @@ class Arvados::V1::GroupsController < ApplicationController
         @select = klass.selectable_attributes - ["manifest_text"]
       elsif klass == Group
         where_conds[:group_class] = "project"
+      elsif klass == ContainerRequest
+        where_conds[:requesting_container_uuid] = nil
       end
 
       @objects = klass.readable_by(*@read_users).

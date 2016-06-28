@@ -115,7 +115,7 @@ class ApplicationController < ActionController::Base
   # Column names should always be qualified by a table name and a direction is optional, defaulting to asc
   # (e.g. "collections.name" or "collections.name desc").
   # If a column name is specified, that table will be sorted by that column.
-  # If there are objects from different models that will be shown (such as in Jobs and Pipelines tab),
+  # If there are objects from different models that will be shown (such as in Pipelines and processes tab),
   # then a sort column name can optionally be specified for each model, passed as an comma-separated list (e.g. "jobs.script, pipeline_instances.name")
   # Currently only one sort column name and direction can be specified for each model.
   def load_filters_and_paging_params

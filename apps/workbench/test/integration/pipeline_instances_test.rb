@@ -82,7 +82,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
       wait_for_ajax
     end
 
-    click_link 'Jobs and pipelines'
+    click_link 'Pipelines and processes'
     find('tr[data-kind="arvados#pipelineInstance"]', text: '(none)').
       find('a', text: 'Show').
       click

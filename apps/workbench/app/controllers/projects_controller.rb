@@ -63,8 +63,8 @@ class ProjectsController < ApplicationController
       }
     pane_list <<
       {
-        :name => 'Jobs_and_pipelines',
-        :filters => [%w(uuid is_a) + [%w(arvados#job arvados#pipelineInstance)]]
+        :name => 'Pipelines_and_processes',
+        :filters => [%w(uuid is_a) + [%w(arvados#containerRequest arvados#pipelineInstance)]]
       }
     pane_list <<
       {

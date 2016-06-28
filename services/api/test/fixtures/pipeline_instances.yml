@@ -445,13 +445,13 @@ pipeline_<%=i%>_of_10:
           title: foo instance input
 <% end %>
 
-# pipelines in project_with_2_pipelines_and_100_jobs
+# pipelines in project_with_2_pipelines_and_60_crs
 <% for i in 1..2 do %>
-pipeline_<%=i%>_of_2_pipelines_and_100_jobs:
+pipeline_<%=i%>_of_2_pipelines_and_60_crs:
   name: pipeline_<%= i %>
   state: New
   uuid: zzzzz-d1hrv-abcgneyn6brx<%= i.to_s.rjust(3, '0') %>
-  owner_uuid: zzzzz-j7d0g-nnjobspipelines
+  owner_uuid: zzzzz-j7d0g-nnncrspipelines
   created_at: <%= i.minute.ago.to_s(:db) %>
   components:
     foo:

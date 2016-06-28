@@ -151,7 +151,7 @@ function mergeInfiniteContentParams($container) {
     // For example, filterable.js writes filters in
     // infiniteContentParamsFilterable ("search for text foo")
     // without worrying about clobbering the filters set up by the
-    // tab pane ("only show jobs and pipelines in this tab").
+    // tab pane ("only show pipelines and processes in this tab").
     $.each($container.data(), function(datakey, datavalue) {
         // Note: We attach these data to DOM elements using
         // <element data-foo-bar="baz">. We store/retrieve them

@@ -7,6 +7,10 @@ class ContainerRequest < ArvadosBase
     [ 'description' ]
   end
 
+  def self.goes_in_projects?
+    true
+  end
+
   def work_unit(label=nil)
     ContainerWorkUnit.new(self, label)
   end
