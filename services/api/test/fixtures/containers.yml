@@ -76,6 +76,7 @@ completed:
   finished_at: 2016-01-12 11:12:13.111111111 Z
   container_image: test
   cwd: test
+  log: ea10d51bcf88862dbcc36eb292017dfd+45
   output: zzzzz-4zz18-znfnqtbbv4spc3w
   output_path: test
   command: ["echo", "hello"]
