@@ -61,6 +61,10 @@ class Arvados::V1::GroupsController < ApplicationController
     request_orders = @orders.clone
     @orders = []
 
+    table_filters = []
+    @filters.each {|f| table_filters << f if f[0].split('.').size == 2}
+    @filters = @filters - table_filters
+
     [Group,
      Job, PipelineInstance, PipelineTemplate, ContainerRequest,
      Collection,
@@ -79,8 +83,14 @@ class Arvados::V1::GroupsController < ApplicationController
         @select = klass.selectable_attributes - ["manifest_text"]
       elsif klass == Group
         where_conds[:group_class] = "project"
-      elsif klass == ContainerRequest
-        where_conds[:requesting_container_uuid] = nil
+      end
+
+      table_filters.each do |f|
+        splits = f[0].split('.')
+        if splits.size == 2
+          tc = splits[0].classify.constantize rescue nil
+          where_conds[f[0].to_s] = f[2] if tc == klass
+        end
       end
 
       @objects = klass.readable_by(*@read_users).

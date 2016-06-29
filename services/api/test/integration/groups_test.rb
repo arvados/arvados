@@ -91,4 +91,19 @@ class GroupsTest < ActionDispatch::IntegrationTest
     }, auth(:active)
     assert_response 422
   end
+
+  [
+    ['modified_by_user_uuid', 200],
+    ['container_requests.requesting_container_uuid', 200],
+    ['no_such_table.uuid', 200],
+    ['container_requests.no_such_column', 422],
+  ].each do |filter, resp|
+    test "get contents with '#{filter}' filter" do
+      get "/arvados/v1/groups/contents", {
+        :filters => [[filter, '=', nil]].to_json
+      }, auth(:active)
+      assert_response resp
+      assert_not_empty json_response['items'] if resp == 200
+    end
+  end
 end
