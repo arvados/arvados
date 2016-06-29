@@ -9,7 +9,7 @@ class ContainersControllerTest < ActionController::TestCase
     get :show, {id: container['uuid'], tab_pane: 'Log'}, session_for(:active)
     assert_response :success
 
-    assert_select "a", {:href=>"/collections/#{container['log']}", :text=>"Download the full log"}
+    assert_select "a", {:href=>"/collections/#{container['log']}", :text=>"Download the log"}
     assert_select "a", {:href=>"#{container['log']}/baz"}
   end
 end
