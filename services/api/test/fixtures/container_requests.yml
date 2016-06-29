@@ -125,7 +125,7 @@ running_anonymous_accessible:
   cwd: test
   output_path: test
   command: ["echo", "hello"]
-  container_uuid: zzzzz-dz642-runningcontainr
+  container_uuid: zzzzz-dz642-runningcontain2
 
 # Test Helper trims the rest of the file
 
