@@ -65,15 +65,24 @@ exit_cleanly() {
 COLUMNS=80
 . $WORKSPACE/build/run-library.sh
 
-docker_push () {
+
+docker_tag_and_push () {
+    ## 2016-06-29
+    ## this was hitting bug https://github.com/docker/docker/issues/7336
+
     if [[ ! -z "$tags" ]]
     then
         for tag in $( echo $tags|tr "," " " )
         do
              $DOCKER tag $1 $1:$tag
+             docker_push $*
         done
+    else
+        docker_push $*
     fi
+}
 
+docker_push () {
     # Sometimes docker push fails; retry it a few times if necessary.
     for i in `seq 1 5`; do
         $DOCKER push $*
@@ -152,7 +161,7 @@ else
         ## even though credentials are already in .dockercfg
         docker login -u arvados
 
-        docker_push arvados/jobs
+        docker_tag_and_push arvados/jobs
         title "upload arvados images finished (`timer`)"
     else
         title "upload arvados images SKIPPED because no --upload option set (`timer`)"
