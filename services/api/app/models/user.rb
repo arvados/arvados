@@ -312,8 +312,8 @@ class User < ArvadosModel
       self.class.
           where("username like '#{pattern}'").
           select(:username).
-          order(username: :asc).
-          find_each do |other_user|
+          order('username asc').
+          each do |other_user|
         if other_user.username > next_username
           break
         elsif other_user.username == next_username

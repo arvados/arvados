@@ -93,6 +93,16 @@ class UserTest < ActiveSupport::TestCase
   test "new username set with deduplication" do
     name = users(:active).username
     check_new_username_setting(name, "#{name}2")
+    check_new_username_setting(name, "#{name}3")
+    # Insert some out-of-order conflicts, to ensure our "sort by
+    # username, stop when we see a hole" strategy doesn't depend on
+    # insert order.
+    check_new_username_setting("#{name}13", "#{name}13")
+    check_new_username_setting("#{name}5", "#{name}5")
+    check_new_username_setting(name, "#{name}4")
+    6.upto(12).each do |n|
+      check_new_username_setting(name, "#{name}#{n}")
+    end
   end
 
   test "new username set avoiding blacklist" do
