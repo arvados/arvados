@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"git.curoverse.com/arvados.git/lib/crunchstat"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
@@ -91,6 +92,12 @@ type ContainerRunner struct {
 	SigChan        chan os.Signal
 	ArvMountExit   chan error
 	finalState     string
+
+	statLogger   io.WriteCloser
+	statReporter *crunchstat.Reporter
+	statInterval time.Duration
+	cgroupRoot   string
+	cgroupParent string
 }
 
 // SetupSignals sets up signal handling to gracefully terminate the underlying
@@ -366,11 +373,31 @@ func (runner *ContainerRunner) ProcessDockerAttach(containerReader io.Reader) {
 				runner.CrunchLog.Printf("While closing stderr logs: %v", closeerr)
 			}
 
+			if runner.statReporter != nil {
+				runner.statReporter.Stop()
+				closeerr = runner.statLogger.Close()
+				if closeerr != nil {
+					runner.CrunchLog.Printf("While closing crunchstat logs: %v", closeerr)
+				}
+			}
+
 			runner.loggingDone <- true
 			close(runner.loggingDone)
 			return
 		}
 	}
+}
+
+func (runner *ContainerRunner) StartCrunchstat() {
+	runner.statLogger = NewThrottledLogger(runner.NewLogWriter("crunchstat"))
+	runner.statReporter = &crunchstat.Reporter{
+		CID:          runner.ContainerID,
+		Logger:       log.New(runner.statLogger, "", 0),
+		CgroupParent: runner.cgroupParent,
+		CgroupRoot:   runner.cgroupRoot,
+		Poll:         runner.statInterval,
+	}
+	runner.statReporter.Start()
 }
 
 // AttachLogs connects the docker container stdout and stderr logs to the
@@ -752,6 +779,8 @@ func (runner *ContainerRunner) Run() (err error) {
 		return
 	}
 
+	runner.StartCrunchstat()
+
 	if runner.IsCancelled() {
 		return
 	}
@@ -792,6 +821,9 @@ func NewContainerRunner(api IArvadosClient,
 }
 
 func main() {
+	statInterval := flag.Duration("crunchstat-interval", 10*time.Second, "resource usage statistics reporting period")
+	cgroupRoot := flag.String("cgroup-root", "/sys/fs/cgroup", "path to sysfs cgroup tree")
+	cgroupParent := flag.String("cgroup-parent", "docker", "name of container's parent cgroup")
 	flag.Parse()
 
 	containerId := flag.Arg(0)
@@ -816,6 +848,9 @@ func main() {
 	}
 
 	cr := NewContainerRunner(api, kc, docker, containerId)
+	cr.statInterval = *statInterval
+	cr.cgroupRoot = *cgroupRoot
+	cr.cgroupParent = *cgroupParent
 
 	err = cr.Run()
 	if err != nil {
