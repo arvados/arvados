@@ -46,8 +46,9 @@ func RFC3339Timestamp(t time.Time) string {
 	return t.Format(RFC3339NanoFixed)
 }
 
-// Write to the internal buffer.  Prepend a timestamp to each line of the input
-// data.
+// Write prepends a timestamp to each line of the input data and
+// appends to the internal buffer. Each line is also logged to
+// tl.Immediate, if tl.Immediate is not nil.
 func (tl *ThrottledLogger) Write(p []byte) (n int, err error) {
 	tl.Mutex.Lock()
 	if tl.buf == nil {
@@ -57,13 +58,20 @@ func (tl *ThrottledLogger) Write(p []byte) (n int, err error) {
 
 	now := tl.Timestamper(time.Now().UTC())
 	sc := bufio.NewScanner(bytes.NewBuffer(p))
-	for sc.Scan() {
-		_, err = fmt.Fprintf(tl.buf, "%s %s\n", now, sc.Text())
+	for err == nil && sc.Scan() {
+		out := fmt.Sprintf("%s %s\n", now, sc.Bytes())
 		if tl.Immediate != nil {
-			tl.Immediate.Printf("%s %s\n", now, sc.Text())
+			tl.Immediate.Print(out[:len(out)-1])
+		}
+		_, err = io.WriteString(tl.buf, out)
+	}
+	if err == nil {
+		err = sc.Err()
+		if err == nil {
+			n = len(p)
 		}
 	}
-	return len(p), err
+	return
 }
 
 // Periodically check the current buffer; if not empty, send it on the
