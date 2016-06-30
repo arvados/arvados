@@ -1,3 +1,5 @@
+// Package crunchstat reports resource usage (CPU, memory, disk,
+// network) for a cgroup.
 package crunchstat
 
 import (
@@ -14,7 +16,7 @@ import (
 	"time"
 )
 
-// This magically allows us to look up user_hz via _SC_CLK_TCK:
+// This magically allows us to look up userHz via _SC_CLK_TCK:
 
 /*
 #include <unistd.h>
@@ -28,42 +30,53 @@ import "C"
 // log.Logger.
 type Reporter struct {
 	// CID of the container to monitor. If empty, read the CID
-	// from CIDFile.
+	// from CIDFile (first waiting until a non-empty file appears
+	// at CIDFile). If CIDFile is also empty, report host
+	// statistics.
 	CID string
-	// Where cgroup special files live on this system
-	CgroupRoot   string
-	CgroupParent string
-	// Path to a file we can read CID from. If CIDFile is empty or
-	// nonexistent, wait for it to appear.
+
+	// Path to a file we can read CID from.
 	CIDFile string
 
-	// Interval between samples
+	// Where cgroup accounting files live on this system, e.g.,
+	// "/sys/fs/cgroup".
+	CgroupRoot   string
+
+	// Parent cgroup, e.g., "docker".
+	CgroupParent string
+
+	// Interval between samples. Must be positive.
 	Poll time.Duration
 
-	// Where to write statistics.
+	// Where to write statistics. Must not be nil.
 	Logger *log.Logger
 
 	reportedStatFile map[string]string
-	lastNetSample    map[string]IoSample
-	lastDiskSample   map[string]IoSample
-	lastCPUSample    CpuSample
+	lastNetSample    map[string]ioSample
+	lastDiskSample   map[string]ioSample
+	lastCPUSample    cpuSample
 
 	done chan struct{}
 }
 
-// Wait (if necessary) for the CID to appear in CIDFile, then start
-// reporting statistics.
+// Start starts monitoring in a new goroutine, and returns
+// immediately.
 //
-// Start should not be called more than once on a Reporter.
+// The monitoring goroutine waits for a non-empty CIDFile to appear
+// (unless CID is non-empty). Then it waits for the accounting files
+// to appear for the monitored container. Then it collects and reports
+// statistics until Stop is called.
 //
-// Public data fields should not be changed after calling Start.
+// Callers should not call Start more than once.
+//
+// Callers should not modify public data fields after calling Start.
 func (r *Reporter) Start() {
 	r.done = make(chan struct{})
 	go r.run()
 }
 
-// Stop reporting statistics. Do not call more than once, or before
-// calling Start.
+// Stop reporting. Do not call more than once, or before calling
+// Start.
 //
 // Nothing will be logged after Stop returns.
 func (r *Reporter) Stop() {
@@ -157,13 +170,13 @@ func (r *Reporter) getContainerNetStats() (io.Reader, error) {
 	return nil, errors.New("Could not read stats for any proc in container")
 }
 
-type IoSample struct {
+type ioSample struct {
 	sampleTime time.Time
 	txBytes    int64
 	rxBytes    int64
 }
 
-func (r *Reporter) DoBlkIoStats() {
+func (r *Reporter) doBlkIOStats() {
 	c, err := r.openStatFile("blkio", "blkio.io_service_bytes", true)
 	if err != nil {
 		return
@@ -171,17 +184,17 @@ func (r *Reporter) DoBlkIoStats() {
 	defer c.Close()
 	b := bufio.NewScanner(c)
 	var sampleTime = time.Now()
-	newSamples := make(map[string]IoSample)
+	newSamples := make(map[string]ioSample)
 	for b.Scan() {
 		var device, op string
 		var val int64
 		if _, err := fmt.Sscanf(string(b.Text()), "%s %s %d", &device, &op, &val); err != nil {
 			continue
 		}
-		var thisSample IoSample
+		var thisSample ioSample
 		var ok bool
 		if thisSample, ok = newSamples[device]; !ok {
-			thisSample = IoSample{sampleTime, -1, -1}
+			thisSample = ioSample{sampleTime, -1, -1}
 		}
 		switch op {
 		case "Read":
@@ -207,19 +220,19 @@ func (r *Reporter) DoBlkIoStats() {
 	}
 }
 
-type MemSample struct {
+type memSample struct {
 	sampleTime time.Time
 	memStat    map[string]int64
 }
 
-func (r *Reporter) DoMemoryStats() {
+func (r *Reporter) doMemoryStats() {
 	c, err := r.openStatFile("memory", "memory.stat", true)
 	if err != nil {
 		return
 	}
 	defer c.Close()
 	b := bufio.NewScanner(c)
-	thisSample := MemSample{time.Now(), make(map[string]int64)}
+	thisSample := memSample{time.Now(), make(map[string]int64)}
 	wantStats := [...]string{"cache", "swap", "pgmajfault", "rss"}
 	for b.Scan() {
 		var stat string
@@ -238,7 +251,7 @@ func (r *Reporter) DoMemoryStats() {
 	r.Logger.Printf("mem%s\n", outstat.String())
 }
 
-func (r *Reporter) DoNetworkStats() {
+func (r *Reporter) doNetworkStats() {
 	sampleTime := time.Now()
 	stats, err := r.getContainerNetStats()
 	if err != nil {
@@ -265,7 +278,7 @@ func (r *Reporter) DoNetworkStats() {
 		if rx, err = strconv.ParseInt(words[1], 10, 64); err != nil {
 			continue
 		}
-		nextSample := IoSample{}
+		nextSample := ioSample{}
 		nextSample.sampleTime = sampleTime
 		nextSample.txBytes = tx
 		nextSample.rxBytes = rx
@@ -282,7 +295,7 @@ func (r *Reporter) DoNetworkStats() {
 	}
 }
 
-type CpuSample struct {
+type cpuSample struct {
 	hasData    bool // to distinguish the zero value from real data
 	sampleTime time.Time
 	user       float64
@@ -292,7 +305,7 @@ type CpuSample struct {
 
 // Return the number of CPUs available in the container. Return 0 if
 // we can't figure out the real number of CPUs.
-func (r *Reporter) GetCpuCount() int64 {
+func (r *Reporter) getCPUCount() int64 {
 	cpusetFile, err := r.openStatFile("cpuset", "cpuset.cpus", true)
 	if err != nil {
 		return 0
@@ -307,13 +320,13 @@ func (r *Reporter) GetCpuCount() int64 {
 		if n == 2 {
 			cpus += (max - min) + 1
 		} else {
-			cpus += 1
+			cpus++
 		}
 	}
 	return cpus
 }
 
-func (r *Reporter) DoCpuStats() {
+func (r *Reporter) doCPUStats() {
 	statFile, err := r.openStatFile("cpuacct", "cpuacct.stat", true)
 	if err != nil {
 		return
@@ -324,12 +337,12 @@ func (r *Reporter) DoCpuStats() {
 		return
 	}
 
-	nextSample := CpuSample{true, time.Now(), 0, 0, r.GetCpuCount()}
+	nextSample := cpuSample{true, time.Now(), 0, 0, r.getCPUCount()}
 	var userTicks, sysTicks int64
 	fmt.Sscanf(string(b), "user %d\nsystem %d", &userTicks, &sysTicks)
-	user_hz := float64(C.sysconf(C._SC_CLK_TCK))
-	nextSample.user = float64(userTicks) / user_hz
-	nextSample.sys = float64(sysTicks) / user_hz
+	userHz := float64(C.sysconf(C._SC_CLK_TCK))
+	nextSample.user = float64(userTicks) / userHz
+	nextSample.sys = float64(sysTicks) / userHz
 
 	delta := ""
 	if r.lastCPUSample.hasData {
@@ -352,15 +365,15 @@ func (r *Reporter) run() {
 		return
 	}
 
-	r.lastNetSample = make(map[string]IoSample)
-	r.lastDiskSample = make(map[string]IoSample)
+	r.lastNetSample = make(map[string]ioSample)
+	r.lastDiskSample = make(map[string]ioSample)
 
 	ticker := time.NewTicker(r.Poll)
 	for {
-		r.DoMemoryStats()
-		r.DoCpuStats()
-		r.DoBlkIoStats()
-		r.DoNetworkStats()
+		r.doMemoryStats()
+		r.doCPUStats()
+		r.doBlkIOStats()
+		r.doNetworkStats()
 		select {
 		case <-r.done:
 			return
@@ -372,7 +385,7 @@ func (r *Reporter) run() {
 // If CID is empty, wait for it to appear in CIDFile. Return true if
 // we get it before r.done indicates someone called Stop.
 func (r *Reporter) waitForCIDFile() bool {
-	if r.CID != "" {
+	if r.CID != "" || r.CIDFile == "" {
 		return true
 	}
 
