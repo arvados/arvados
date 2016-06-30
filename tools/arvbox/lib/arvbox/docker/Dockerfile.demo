@@ -1,8 +1,12 @@
 FROM arvados/arvbox-base
+ARG arvados_version=master
+ARG sso_version=master
 
 RUN cd /usr/src && \
-    git clone https://github.com/curoverse/arvados.git && \
-    git clone https://github.com/curoverse/sso-devise-omniauth-provider.git sso
+    git clone --no-checkout https://github.com/curoverse/arvados.git && \
+    git -C arvados checkout ${arvados_version} && \
+    git clone --no-checkout https://github.com/curoverse/sso-devise-omniauth-provider.git sso && \
+    git -C sso checkout ${sso_version}
 
 ADD service/ /var/lib/arvbox/service
 RUN rmdir /etc/service && ln -sf /var/lib/arvbox/service /etc
