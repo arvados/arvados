@@ -157,17 +157,18 @@ func ReadWriteLines(in io.Reader, writer io.Writer, done chan<- bool) {
 // (b) batches log messages and only calls the underlying Writer at most once
 // per second.
 func NewThrottledLogger(writer io.WriteCloser) *ThrottledLogger {
-	alw := &ThrottledLogger{}
-	alw.flusherDone = make(chan bool)
-	alw.writer = writer
-	alw.Logger = log.New(alw, "", 0)
-	alw.Timestamper = RFC3339Timestamp
-	go alw.flusher()
-	return alw
+	tl := &ThrottledLogger{}
+	tl.flusherDone = make(chan bool)
+	tl.writer = writer
+	tl.Logger = log.New(tl, "", 0)
+	tl.Timestamper = RFC3339Timestamp
+	go tl.flusher()
+	return tl
 }
 
-// ArvLogWriter implements a writer that writes to each of a WriteCloser
-// (typically CollectionFileWriter) and creates an API server log entry.
+// ArvLogWriter is an io.WriteCloser that processes each write by
+// writing it through to another io.WriteCloser (typically a
+// CollectionFileWriter) and creating an Arvados log entry.
 type ArvLogWriter struct {
 	ArvClient     IArvadosClient
 	UUID          string
