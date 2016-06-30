@@ -29,7 +29,7 @@ table(table table-bordered table-condensed).
 
 Note: Because adding access tokens to manifests can be computationally expensive, the @manifest_text@ field is not included in listed collections.  If you need it, request a "list of collections":{{site.baseurl}}/api/methods/collections.html with the filter @["owner_uuid", "=", GROUP_UUID]@, and @"manifest_text"@ listed in the select parameter.
 
-Note: Use filters such as @["pipeline_instances.state", "in", ["Complete", "Failed"]@ to filter contents of a specific type.
+Note: Use filters such as @["pipeline_instances.state", "in", ["Complete", "Failed"]]@ to filter contents of a specific type.
 
 h2. create
 
