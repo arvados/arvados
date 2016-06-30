@@ -70,7 +70,7 @@ func (r *Reporter) Stop() {
 	close(r.done)
 }
 
-func (r *Reporter) readAllOrWarn(in *os.File) ([]byte, error) {
+func (r *Reporter) readAllOrWarn(in io.Reader) ([]byte, error) {
 	content, err := ioutil.ReadAll(in)
 	if err != nil {
 		r.Logger.Print(err)
@@ -79,14 +79,20 @@ func (r *Reporter) readAllOrWarn(in *os.File) ([]byte, error) {
 }
 
 // Open the cgroup stats file in /sys/fs corresponding to the target
-// cgroup, and return an *os.File. If no stats file is available,
+// cgroup, and return an io.ReadCloser. If no stats file is available,
 // return nil.
+//
+// Log the file that was opened, if it isn't the same file opened on
+// the last openStatFile for this stat.
+//
+// Log "not available" if no file is found and either this stat has
+// been available in the past, or verbose==true.
 //
 // TODO: Instead of trying all options, choose a process in the
 // container, and read /proc/PID/cgroup to determine the appropriate
 // cgroup root for the given statgroup. (This will avoid falling back
 // to host-level stats during container setup and teardown.)
-func (r *Reporter) openStatFile(statgroup string, stat string) (*os.File, error) {
+func (r *Reporter) openStatFile(statgroup, stat string, verbose bool) (io.ReadCloser, error) {
 	var paths []string
 	if r.CID != "" {
 		// Collect container's stats
@@ -112,16 +118,16 @@ func (r *Reporter) openStatFile(statgroup string, stat string) (*os.File, error)
 			path = ""
 		}
 	}
-	if pathWas, ok := r.reportedStatFile[stat]; !ok || pathWas != path {
+	if pathWas := r.reportedStatFile[stat]; pathWas != path {
 		// Log whenever we start using a new/different cgroup
 		// stat file for a given statistic. This typically
 		// happens 1 to 3 times per statistic, depending on
 		// whether we happen to collect stats [a] before any
 		// processes have been created in the container and
 		// [b] after all contained processes have exited.
-		if path == "" {
+		if path == "" && verbose {
 			r.Logger.Printf("notice: stats not available: stat %s, statgroup %s, cid %s, parent %s, root %s\n", stat, statgroup, r.CID, r.CgroupParent, r.CgroupRoot)
-		} else if ok {
+		} else if pathWas != "" {
 			r.Logger.Printf("notice: stats moved from %s to %s\n", r.reportedStatFile[stat], path)
 		} else {
 			r.Logger.Printf("notice: reading stats from %s\n", path)
@@ -132,7 +138,7 @@ func (r *Reporter) openStatFile(statgroup string, stat string) (*os.File, error)
 }
 
 func (r *Reporter) getContainerNetStats() (io.Reader, error) {
-	procsFile, err := r.openStatFile("cpuacct", "cgroup.procs")
+	procsFile, err := r.openStatFile("cpuacct", "cgroup.procs", true)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +164,7 @@ type IoSample struct {
 }
 
 func (r *Reporter) DoBlkIoStats() {
-	c, err := r.openStatFile("blkio", "blkio.io_service_bytes")
+	c, err := r.openStatFile("blkio", "blkio.io_service_bytes", true)
 	if err != nil {
 		return
 	}
@@ -207,7 +213,7 @@ type MemSample struct {
 }
 
 func (r *Reporter) DoMemoryStats() {
-	c, err := r.openStatFile("memory", "memory.stat")
+	c, err := r.openStatFile("memory", "memory.stat", true)
 	if err != nil {
 		return
 	}
@@ -287,7 +293,7 @@ type CpuSample struct {
 // Return the number of CPUs available in the container. Return 0 if
 // we can't figure out the real number of CPUs.
 func (r *Reporter) GetCpuCount() int64 {
-	cpusetFile, err := r.openStatFile("cpuset", "cpuset.cpus")
+	cpusetFile, err := r.openStatFile("cpuset", "cpuset.cpus", true)
 	if err != nil {
 		return 0
 	}
@@ -308,7 +314,7 @@ func (r *Reporter) GetCpuCount() int64 {
 }
 
 func (r *Reporter) DoCpuStats() {
-	statFile, err := r.openStatFile("cpuacct", "cpuacct.stat")
+	statFile, err := r.openStatFile("cpuacct", "cpuacct.stat", true)
 	if err != nil {
 		return
 	}
@@ -337,13 +343,15 @@ func (r *Reporter) DoCpuStats() {
 	r.lastCPUSample = nextSample
 }
 
-// Report stats periodically until someone closes or sends to r.done.
+// Report stats periodically until r.done indicates someone called
+// Stop.
 func (r *Reporter) run() {
-	if !r.waitForCIDFile() {
+	r.reportedStatFile = make(map[string]string)
+
+	if !r.waitForCIDFile() || !r.waitForCgroup() {
 		return
 	}
 
-	r.reportedStatFile = make(map[string]string)
 	r.lastNetSample = make(map[string]IoSample)
 	r.lastDiskSample = make(map[string]IoSample)
 
@@ -362,7 +370,7 @@ func (r *Reporter) run() {
 }
 
 // If CID is empty, wait for it to appear in CIDFile. Return true if
-// we get it before someone calls Stop().
+// we get it before r.done indicates someone called Stop.
 func (r *Reporter) waitForCIDFile() bool {
 	if r.CID != "" {
 		return true
@@ -380,6 +388,31 @@ func (r *Reporter) waitForCIDFile() bool {
 		case <-ticker.C:
 		case <-r.done:
 			r.Logger.Printf("CID never appeared in %+q: %v", r.CIDFile, err)
+			return false
+		}
+	}
+}
+
+// Wait for the cgroup stats files to appear in cgroup_root. Return
+// true if they appear before r.done indicates someone called Stop. If
+// they don't appear within one poll interval, log a warning and keep
+// waiting.
+func (r *Reporter) waitForCgroup() bool {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	warningTimer := time.After(r.Poll)
+	for {
+		c, err := r.openStatFile("cpuacct", "cgroup.procs", false)
+		if err == nil {
+			c.Close()
+			return true
+		}
+		select {
+		case <-ticker.C:
+		case <-warningTimer:
+			r.Logger.Printf("cgroup stats files have not appeared after %v (config error?) -- still waiting...", r.Poll)
+		case <-r.done:
+			r.Logger.Printf("cgroup stats files never appeared for %v", r.CID)
 			return false
 		}
 	}
