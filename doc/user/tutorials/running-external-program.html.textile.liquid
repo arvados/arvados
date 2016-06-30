@@ -4,6 +4,8 @@ navsection: userguide
 title: "Writing a pipeline template"
 ...
 
+{% include 'pipeline_deprecation_notice' %}
+
 This tutorial demonstrates how to construct a two stage pipeline template that uses the "bwa mem":http://bio-bwa.sourceforge.net/ tool to produce a "Sequence Alignment/Map (SAM)":https://samtools.github.io/ file, then uses the "Picard SortSam tool":http://picard.sourceforge.net/command-line-overview.shtml#SortSam to produce a BAM (Binary Alignment/Map) file.
 
 {% include 'tutorial_expectations' %}
@@ -64,7 +66,7 @@ For more information and examples for writing pipelines, see the "pipeline templ
 
 h2. Re-using your pipeline run
 
-Arvados allows users to re-use jobs that have the same inputs in order to save computing time and resources. Users are able to change a job downstream without re-computing earlier jobs. This section shows which version control parameters should be tuned to make sure Arvados will not re-compute your jobs. 
+Arvados allows users to re-use jobs that have the same inputs in order to save computing time and resources. Users are able to change a job downstream without re-computing earlier jobs. This section shows which version control parameters should be tuned to make sure Arvados will not re-compute your jobs.
 
 Note: Job reuse can only happen if all input collections do not change.
 
