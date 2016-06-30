@@ -61,9 +61,7 @@ class Arvados::V1::GroupsController < ApplicationController
     request_orders = @orders.clone
     @orders = []
 
-    table_filters = []
-    @filters.each {|f| table_filters << f if f[0].split('.').size == 2}
-    @filters = @filters - table_filters
+    request_filters = @filters
 
     [Group,
      Job, PipelineInstance, PipelineTemplate, ContainerRequest,
@@ -85,13 +83,15 @@ class Arvados::V1::GroupsController < ApplicationController
         where_conds[:group_class] = "project"
       end
 
-      table_filters.each do |f|
-        splits = f[0].split('.')
-        if splits.size == 2
-          tc = splits[0].classify.constantize rescue nil
-          where_conds[f[0].to_s] = f[2] if tc == klass
+      @filters = request_filters.map do |col, op, val|
+        if !col.index('.')
+          [col, op, val]
+        elsif (col = col.split('.', 2))[0] == klass.table_name
+          [col[1], op, val]
+        else
+          nil
         end
-      end
+      end.compact
 
       @objects = klass.readable_by(*@read_users).
         order(request_order).where(where_conds)
