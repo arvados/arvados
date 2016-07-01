@@ -1,7 +1,12 @@
 require 'bundler'
+require 'socket'
 
 $ARV_API_SERVER_DIR = File.expand_path('../..', __FILE__)
-SERVER_PID_PATH = 'tmp/pids/passenger.3002.pid'
+
+s = TCPServer.new('0.0.0.0', 0)
+WEBSOCKET_PORT = s.addr[1]
+s.close
+SERVER_PID_PATH = "tmp/pids/passenger.#{WEBSOCKET_PORT}.pid"
 
 class WebsocketTestRunner < MiniTest::Unit
   def _system(*cmd)
@@ -15,7 +20,7 @@ class WebsocketTestRunner < MiniTest::Unit
   def _run(args=[])
     server_pid = Dir.chdir($ARV_API_SERVER_DIR) do |apidir|
       # Only passenger seems to be able to run the websockets server successfully.
-      _system('passenger', 'start', '-d', '-p3002')
+      _system('passenger', 'start', '-d', "-p#{WEBSOCKET_PORT}")
       timeout = Time.now.tv_sec + 10
       begin
         sleep 0.2
@@ -35,7 +40,7 @@ class WebsocketTestRunner < MiniTest::Unit
       super(args)
     ensure
       Dir.chdir($ARV_API_SERVER_DIR) do
-        _system('passenger', 'stop', '-p3002')
+        _system('passenger', 'stop', "-p#{WEBSOCKET_PORT}")
       end
       # DatabaseCleaner leaves the database empty. Prefer to leave it full.
       dc = DatabaseController.new
