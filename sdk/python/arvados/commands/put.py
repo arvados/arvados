@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import pwd
+import time
 import signal
 import socket
 import sys
@@ -274,6 +275,57 @@ class ResumeCache(object):
     def restart(self):
         self.destroy()
         self.__init__(self.filename)
+
+
+class ArvPutCollection(object):
+    def __init__(self, cache=None, reporter=None, bytes_expected=None, **kwargs):
+        self.collection_flush_time = 60
+        self.bytes_written = 0
+        self._seen_inputs = []
+        self.cache = cache
+        self.reporter = reporter
+        self.bytes_expected = bytes_expected
+        # super(ArvPutCollection, self).__init__(**kwargs)
+        self.collection = arvados.collection.Collection()
+        self.collection.save_new()
+
+    def write_file(self, source, filename):
+        with self.collection as c:
+            with open(source, 'r') as source_fd:
+                output = c.open(filename, 'w')
+                start_time = time.time()
+                while True:
+                    data = source_fd.read(arvados.config.KEEP_BLOCK_SIZE)
+                    if not data:
+                        break
+                    output.write(data)
+                    output.flush()
+                    # Is it time to update the collection?
+                    if (time.time() - start_time) > self.collection_flush_time:
+                        self.collection.save()
+                        start_time = time.time()
+                # File write finished
+                output.close()
+                self.collection.save() # TODO: Is this necessary?
+
+    def write_directory_tree(self, path, stream_name='.', max_manifest_depth=-1):
+        if os.path.isdir(path):
+            for item in os.listdir(path):
+                if os.path.isdir(item):
+                    self.write_directory_tree(os.path.join(path, item), 
+                                    os.path.join(stream_name, path, item))
+                else:
+                    self.write_file(os.path.join(path, item), 
+                                    os.path.join(stream_name, item))
+
+    def manifest(self):
+        print "BLOCK SIZE: %d" % arvados.config.KEEP_BLOCK_SIZE
+        print "MANIFEST Locator:\n%s\nMANIFEST TEXT:\n%s" % (self.collection.manifest_locator(), self.collection.manifest_text())
+        return True
+    
+    def report_progress(self):
+        if self.reporter is not None:
+            self.reporter(self.bytes_written, self.bytes_expected)
 
 
 class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
