@@ -86,10 +86,20 @@ class Arvados::V1::GroupsController < ApplicationController
       @filters = request_filters.map do |col, op, val|
         if !col.index('.')
           [col, op, val]
-        elsif (col = col.split('.', 2))[0] == klass.table_name
-          [col[1], op, val]
         else
-          nil
+          cs = col.split('.')
+          if cs.size != 2 || cs[0] == "" || cs[1] == ""
+            raise ArgumentError.new("Invalid attribute '#{col}' in filter")
+          elsif cs[0] == klass.table_name
+            [cs[1], op, val]
+          else
+            begin
+              cs[0].classify.constantize
+              nil
+            rescue
+              raise ArgumentError.new("Invalid attribute '#{col}' in filter")
+            end
+          end
         end
       end.compact
 
