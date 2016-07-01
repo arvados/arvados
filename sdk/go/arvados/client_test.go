@@ -117,7 +117,7 @@ func TestAnythingToValues(t *testing.T) {
 			},
 		},
 		{
-			in: map[string]interface{}{"foo": map[string]interface{}{"bar":1.234}},
+			in: map[string]interface{}{"foo": map[string]interface{}{"bar": 1.234}},
 			ok: func(out url.Values) bool {
 				return out.Get("foo") == `{"bar":1.234}`
 			},

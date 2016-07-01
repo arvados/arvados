@@ -350,7 +350,7 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 				// Trashed blob; exclude it from response
 				continue
 			}
-			fmt.Fprintf(writer, "%s+%d %d\n", b.Name, b.Properties.ContentLength, t.Unix())
+			fmt.Fprintf(writer, "%s+%d %d\n", b.Name, b.Properties.ContentLength, t.UnixNano())
 		}
 		if resp.NextMarker == "" {
 			return nil

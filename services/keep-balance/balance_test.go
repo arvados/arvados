@@ -76,7 +76,7 @@ func (bal *balancerSuite) SetUpTest(c *check.C) {
 		bal.KeepServices[srv.UUID] = srv
 	}
 
-	bal.MinMtime = time.Now().Unix() - bal.signatureTTL
+	bal.MinMtime = time.Now().UnixNano() - bal.signatureTTL*1e9
 }
 
 func (bal *balancerSuite) TestPerfect(c *check.C) {
@@ -240,7 +240,7 @@ func (bal *balancerSuite) srvList(knownBlockID int, order slots) (srvs []*KeepSe
 // replList is like srvList but returns an "existing replicas" slice,
 // suitable for a BlockState test fixture.
 func (bal *balancerSuite) replList(knownBlockID int, order slots) (repls []Replica) {
-	mtime := time.Now().Unix() - bal.signatureTTL - 86400
+	mtime := time.Now().UnixNano() - (bal.signatureTTL+86400)*1e9
 	for _, srv := range bal.srvList(knownBlockID, order) {
 		repls = append(repls, Replica{srv, mtime})
 		mtime++

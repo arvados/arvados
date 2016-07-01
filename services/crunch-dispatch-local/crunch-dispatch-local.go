@@ -168,7 +168,7 @@ func run(dispatcher *dispatch.Dispatcher,
 	}
 
 	// drain any subsequent status changes
-	for _ = range status {
+	for range status {
 	}
 
 	log.Printf("Finalized container %v", uuid)

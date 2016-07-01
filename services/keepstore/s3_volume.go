@@ -86,7 +86,7 @@ func (s *s3VolumeAdder) Set(bucketName string) error {
 }
 
 func s3regions() (okList []string) {
-	for r, _ := range aws.Regions {
+	for r := range aws.Regions {
 		okList = append(okList, r)
 	}
 	return
@@ -249,7 +249,7 @@ func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 			if !v.isKeepBlock(key.Key) {
 				continue
 			}
-			fmt.Fprintf(writer, "%s+%d %d\n", key.Key, key.Size, t.Unix())
+			fmt.Fprintf(writer, "%s+%d %d\n", key.Key, key.Size, t.UnixNano())
 		}
 		if !listResp.IsTruncated {
 			break

@@ -85,21 +85,21 @@ func VerifyToCollectionIndexSet(
 }
 
 func TestToCollectionIndexSet(t *testing.T) {
-	VerifyToCollectionIndexSet(t, []int{6}, map[int][]int{6: []int{0}}, []int{0})
-	VerifyToCollectionIndexSet(t, []int{4}, map[int][]int{4: []int{1}}, []int{1})
-	VerifyToCollectionIndexSet(t, []int{4}, map[int][]int{4: []int{1, 9}}, []int{1, 9})
+	VerifyToCollectionIndexSet(t, []int{6}, map[int][]int{6: {0}}, []int{0})
+	VerifyToCollectionIndexSet(t, []int{4}, map[int][]int{4: {1}}, []int{1})
+	VerifyToCollectionIndexSet(t, []int{4}, map[int][]int{4: {1, 9}}, []int{1, 9})
 	VerifyToCollectionIndexSet(t, []int{5, 6},
-		map[int][]int{5: []int{2, 3}, 6: []int{3, 4}},
+		map[int][]int{5: {2, 3}, 6: {3, 4}},
 		[]int{2, 3, 4})
 	VerifyToCollectionIndexSet(t, []int{5, 6},
-		map[int][]int{5: []int{8}, 6: []int{4}},
+		map[int][]int{5: {8}, 6: {4}},
 		[]int{4, 8})
-	VerifyToCollectionIndexSet(t, []int{6}, map[int][]int{5: []int{0}}, []int{})
+	VerifyToCollectionIndexSet(t, []int{6}, map[int][]int{5: {0}}, []int{})
 }
 
 func TestSimpleSummary(t *testing.T) {
 	rc := collection.MakeTestReadCollections([]collection.TestCollectionSpec{
-		collection.TestCollectionSpec{ReplicationLevel: 1, Blocks: []int{1, 2}},
+		{ReplicationLevel: 1, Blocks: []int{1, 2}},
 	})
 	rc.Summarize(nil)
 	cIndex := rc.CollectionIndicesForTesting()
@@ -128,7 +128,7 @@ func TestSimpleSummary(t *testing.T) {
 
 func TestMissingBlock(t *testing.T) {
 	rc := collection.MakeTestReadCollections([]collection.TestCollectionSpec{
-		collection.TestCollectionSpec{ReplicationLevel: 1, Blocks: []int{1, 2}},
+		{ReplicationLevel: 1, Blocks: []int{1, 2}},
 	})
 	rc.Summarize(nil)
 	cIndex := rc.CollectionIndicesForTesting()
@@ -159,7 +159,7 @@ func TestMissingBlock(t *testing.T) {
 
 func TestUnderAndOverReplicatedBlocks(t *testing.T) {
 	rc := collection.MakeTestReadCollections([]collection.TestCollectionSpec{
-		collection.TestCollectionSpec{ReplicationLevel: 2, Blocks: []int{1, 2}},
+		{ReplicationLevel: 2, Blocks: []int{1, 2}},
 	})
 	rc.Summarize(nil)
 	cIndex := rc.CollectionIndicesForTesting()
@@ -190,9 +190,9 @@ func TestUnderAndOverReplicatedBlocks(t *testing.T) {
 
 func TestMixedReplication(t *testing.T) {
 	rc := collection.MakeTestReadCollections([]collection.TestCollectionSpec{
-		collection.TestCollectionSpec{ReplicationLevel: 1, Blocks: []int{1, 2}},
-		collection.TestCollectionSpec{ReplicationLevel: 1, Blocks: []int{3, 4}},
-		collection.TestCollectionSpec{ReplicationLevel: 2, Blocks: []int{5, 6}},
+		{ReplicationLevel: 1, Blocks: []int{1, 2}},
+		{ReplicationLevel: 1, Blocks: []int{3, 4}},
+		{ReplicationLevel: 2, Blocks: []int{5, 6}},
 	})
 	rc.Summarize(nil)
 	cIndex := rc.CollectionIndicesForTesting()

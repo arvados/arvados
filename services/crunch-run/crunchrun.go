@@ -102,7 +102,7 @@ func (runner *ContainerRunner) SetupSignals() {
 	signal.Notify(runner.SigChan, syscall.SIGQUIT)
 
 	go func(sig <-chan os.Signal) {
-		for _ = range sig {
+		for range sig {
 			if !runner.Cancelled {
 				runner.CancelLock.Lock()
 				runner.Cancelled = true
