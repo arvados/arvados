@@ -236,7 +236,7 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 	// Create TrashRequest for the test
 	trashRequest := TrashRequest{
 		Locator:    testData.DeleteLocator,
-		BlockMtime: oldBlockTime.Unix(),
+		BlockMtime: oldBlockTime.UnixNano(),
 	}
 
 	// Run trash worker and put the trashRequest on trashq

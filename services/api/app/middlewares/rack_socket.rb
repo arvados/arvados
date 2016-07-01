@@ -69,6 +69,10 @@ class RackSocket
   def call env
     request = Rack::Request.new(env)
     if request.path_info == @endpoint and Faye::WebSocket.websocket?(env)
+      if @handler.overloaded?
+        return [503, {"Content-Type" => "text/plain"}, ["Too many connections, try again later."]]
+      end
+
       ws = Faye::WebSocket.new(env, nil, :ping => 30)
 
       # Notify handler about new connection

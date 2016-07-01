@@ -382,7 +382,7 @@ case "$subcmd" in
 
     log)
         if test -n "$1" ; then
-            exec docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM less --follow-name +GF "/etc/service/$1/log/main/current"
+            exec docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM less --follow-name -R +GF "/etc/service/$1/log/main/current"
         else
             exec docker exec -ti $ARVBOX_CONTAINER /usr/bin/env TERM=$TERM tail $(docker exec -ti $ARVBOX_CONTAINER find -L /etc -path '/etc/service/*/log/main/current' -printf " %p")
         fi

@@ -127,6 +127,9 @@ if test -z "$packages" ; then
         arvados-node-manager
         arvados-src
         arvados-workbench
+        crunch-dispatch-local
+        crunch-dispatch-slurm
+        crunch-run
         crunchstat
         keep-balance
         keep-block-check

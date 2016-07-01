@@ -22,7 +22,7 @@ func RunTrashWorker(trashq *WorkQueue) {
 
 // TrashItem deletes the indicated block from every writable volume.
 func TrashItem(trashRequest TrashRequest) {
-	reqMtime := time.Unix(trashRequest.BlockMtime, 0)
+	reqMtime := time.Unix(0, trashRequest.BlockMtime)
 	if time.Since(reqMtime) < blobSignatureTTL {
 		log.Printf("WARNING: data manager asked to delete a %v old block %v (BlockMtime %d = %v), but my blobSignatureTTL is %v! Skipping.",
 			time.Since(reqMtime),
@@ -39,8 +39,8 @@ func TrashItem(trashRequest TrashRequest) {
 			log.Printf("%v Delete(%v): %v", volume, trashRequest.Locator, err)
 			continue
 		}
-		if trashRequest.BlockMtime != mtime.Unix() {
-			log.Printf("%v Delete(%v): mtime on volume is %v does not match trash list value %v", volume, trashRequest.Locator, mtime.Unix(), trashRequest.BlockMtime)
+		if trashRequest.BlockMtime != mtime.UnixNano() {
+			log.Printf("%v Delete(%v): stored mtime %v does not match trash list value %v", volume, trashRequest.Locator, mtime.UnixNano(), trashRequest.BlockMtime)
 			continue
 		}
 

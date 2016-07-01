@@ -49,11 +49,11 @@ type GetCollectionsParams struct {
 
 // SdkCollectionInfo holds collection info from api
 type SdkCollectionInfo struct {
-	UUID                 string    `json:"uuid"`
-	OwnerUUID            string    `json:"owner_uuid"`
-	ReplicationDesired   int       `json:"replication_desired"`
-	ModifiedAt           time.Time `json:"modified_at"`
-	ManifestText         string    `json:"manifest_text"`
+	UUID               string    `json:"uuid"`
+	OwnerUUID          string    `json:"owner_uuid"`
+	ReplicationDesired int       `json:"replication_desired"`
+	ModifiedAt         time.Time `json:"modified_at"`
+	ManifestText       string    `json:"manifest_text"`
 }
 
 // SdkCollectionList lists collections from api
@@ -131,7 +131,7 @@ func GetCollections(params GetCollectionsParams) (results ReadCollections, err e
 	sdkParams := arvadosclient.Dict{
 		"select":  fieldsWanted,
 		"order":   []string{"modified_at ASC", "uuid ASC"},
-		"filters": [][]string{[]string{"modified_at", ">=", "1900-01-01T00:00:00Z"}},
+		"filters": [][]string{{"modified_at", ">=", "1900-01-01T00:00:00Z"}},
 		"offset":  0}
 
 	if params.BatchSize > 0 {

@@ -69,9 +69,8 @@ module PipelineInstancesHelper
   def determine_wallclock_runtime jobs
     timestamps = []
     jobs.each do |j|
-      insert_at = 0
-      started_at = j[:started_at]
-      finished_at = (if j[:finished_at] then j[:finished_at] else Time.now end)
+      started_at = (j.started_at if j.respond_to?(:started_at)) || (j[:started_at] if j.is_a?(Hash))
+      finished_at = (j.finished_at if j.respond_to?(:finished_at)) || (j[:finished_at] if j.is_a?(Hash)) || Time.now
       if started_at
         timestamps = merge_range timestamps, started_at, finished_at
       end

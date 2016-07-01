@@ -367,7 +367,7 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	kc := *this.KeepClient
 	var err error
-	var expectLength int64 = -1
+	var expectLength int64
 	var status = http.StatusInternalServerError
 	var wroteReplicas int
 	var locatorOut string = "-"
@@ -381,15 +381,8 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 
 	locatorIn := mux.Vars(req)["locator"]
 
-	if req.Header.Get("Content-Length") != "" {
-		_, err := fmt.Sscanf(req.Header.Get("Content-Length"), "%d", &expectLength)
-		if err != nil {
-			resp.Header().Set("Content-Length", fmt.Sprintf("%d", expectLength))
-		}
-
-	}
-
-	if expectLength < 0 {
+	_, err = fmt.Sscanf(req.Header.Get("Content-Length"), "%d", &expectLength)
+	if err != nil || expectLength < 0 {
 		err = LengthRequiredError
 		status = http.StatusLengthRequired
 		return
@@ -424,7 +417,7 @@ func (this PutBlockHandler) ServeHTTP(resp http.ResponseWriter, req *http.Reques
 	if req.Header.Get("X-Keep-Desired-Replicas") != "" {
 		var r int
 		_, err := fmt.Sscanf(req.Header.Get(keepclient.X_Keep_Desired_Replicas), "%d", &r)
-		if err != nil {
+		if err == nil {
 			kc.Want_replicas = r
 		}
 	}

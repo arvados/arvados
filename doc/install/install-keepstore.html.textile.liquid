@@ -35,28 +35,66 @@ Verify that Keepstore is functional:
 
 <notextile>
 <pre><code>~$ <span class="userinput">keepstore -h</span>
-2015/05/08 13:41:16 keepstore starting, pid 2565
+2016/07/01 14:06:21 keepstore starting, pid 32339
 Usage of ./keepstore:
-  -azure-storage-account-key-file="": File containing the account key used for subsequent --azure-storage-container-volume arguments.
-  -azure-storage-account-name="": Azure storage account name used for subsequent --azure-storage-container-volume arguments.
-  -azure-storage-container-volume=[]: Use the given container as a storage volume. Can be given multiple times.
-  -azure-storage-replication=3: Replication level to report to clients when data is stored in an Azure container.
-  -blob-signature-ttl=1209600: Lifetime of blob permission signatures. Modifying the ttl will invalidate all existing signatures. See services/api/config/application.default.yml.
-  -blob-signing-key-file="": File containing the secret key for generating and verifying blob permission signatures.
-  -data-manager-token-file="": File with the API token used by the Data Manager. All DELETE requests or GET /index requests must carry this token.
-  -enforce-permissions=false: Enforce permission signatures on requests.
-  -listen=":25107": Listening address, in the form "host:port". e.g., 10.0.1.24:8000. Omit the host part to listen on all interfaces.
-  -max-buffers=128: Maximum RAM to use for data buffers, given in multiples of block size (64 MiB). When this limit is reached, HTTP requests requiring buffers (like GET and PUT) will wait for buffer space to be released.
+  -azure-max-get-bytes int
+    	Maximum bytes to request in a single GET request. If smaller than 67108864, use multiple concurrent range requests to retrieve a block. (default 67108864)
+  -azure-storage-account-key-file string
+    	File containing the account key used for subsequent --azure-storage-container-volume arguments.
+  -azure-storage-account-name string
+    	Azure storage account name used for subsequent --azure-storage-container-volume arguments.
+  -azure-storage-container-volume value
+    	Use the given container as a storage volume. Can be given multiple times. (default [])
+  -azure-storage-replication int
+    	Replication level to report to clients when data is stored in an Azure container. (default 3)
+  -blob-signature-ttl int
+    	Lifetime of blob permission signatures in seconds. Modifying the ttl will invalidate all existing signatures. See services/api/config/application.default.yml. (default 1209600)
+  -blob-signing-key-file string
+    	File containing the secret key for generating and verifying blob permission signatures.
+  -data-manager-token-file string
+    	File with the API token used by the Data Manager. All DELETE requests or GET /index requests must carry this token.
+  -enforce-permissions
+    	Enforce permission signatures on requests.
+  -listen string
+    	Listening address, in the form "host:port". e.g., 10.0.1.24:8000. Omit the host part to listen on all interfaces. (default ":25107")
+  -max-buffers int
+    	Maximum RAM to use for data buffers, given in multiples of block size (64 MiB). When this limit is reached, HTTP requests requiring buffers (like GET and PUT) will wait for buffer space to be released. (default 128)
   -max-requests int
-   Maximum concurrent requests. When this limit is reached, new requests will receive 503 responses. Note: this limit does not include idle connections from clients using HTTP keepalive, so it does not strictly limit the number of concurrent connections. (default 2 * max-buffers)
-  -never-delete=false: If set, nothing will be deleted. HTTP 405 will be returned for valid DELETE requests.
-  -permission-key-file="": Synonym for -blob-signing-key-file.
-  -permission-ttl=0: Synonym for -blob-signature-ttl.
-  -pid="": Path to write pid file during startup. This file is kept open and locked with LOCK_EX until keepstore exits, so `fuser -k pidfile` is one way to shut down. Exit immediately if there is an error opening, locking, or writing the pid file.
-  -readonly=false: Do not write, delete, or touch anything on the following volumes.
-  -serialize=false: Serialize read and write operations on the following volumes.
-  -volume=[]: Local storage directory. Can be given more than once to add multiple directories. If none are supplied, the default is to use all directories named "keep" that exist in the top level directory of a mount point at startup time. Can be a comma-separated list, but this is deprecated: use multiple -volume arguments instead.
-  -volumes=[]: Deprecated synonym for -volume.
+    	Maximum concurrent requests. When this limit is reached, new requests will receive 503 responses. Note: this limit does not include idle connections from clients using HTTP keepalive, so it does not strictly limit the number of concurrent connections. (default 2 * max-buffers)
+  -never-delete
+    	If true, nothing will be deleted. Warning: the relevant features in keepstore and data manager have not been extensively tested. You should leave this option alone unless you can afford to lose data. (default true)
+  -permission-key-file string
+    	Synonym for -blob-signing-key-file.
+  -permission-ttl int
+    	Synonym for -blob-signature-ttl.
+  -pid fuser -k pidfile
+    	Path to write pid file during startup. This file is kept open and locked with LOCK_EX until keepstore exits, so fuser -k pidfile is one way to shut down. Exit immediately if there is an error opening, locking, or writing the pid file.
+  -readonly
+    	Do not write, delete, or touch anything on the following volumes.
+  -s3-access-key-file string
+    	File containing the access key used for subsequent -s3-bucket-volume arguments.
+  -s3-bucket-volume value
+    	Use the given bucket as a storage volume. Can be given multiple times. (default [])
+  -s3-endpoint string
+    	Endpoint URL used for subsequent -s3-bucket-volume arguments. If blank, use the AWS endpoint corresponding to the -s3-region argument. For Google Storage, use "https://storage.googleapis.com".
+  -s3-region string
+    	AWS region used for subsequent -s3-bucket-volume arguments. Allowed values are ["ap-southeast-1" "eu-west-1" "us-gov-west-1" "sa-east-1" "cn-north-1" "ap-northeast-1" "ap-southeast-2" "eu-central-1" "us-east-1" "us-west-1" "us-west-2"].
+  -s3-replication int
+    	Replication level reported to clients for subsequent -s3-bucket-volume arguments. (default 2)
+  -s3-secret-key-file string
+    	File containing the secret key used for subsequent -s3-bucket-volume arguments.
+  -s3-unsafe-delete
+    	EXPERIMENTAL. Enable deletion (garbage collection), even though there are known race conditions that can cause data loss.
+  -serialize
+    	Serialize read and write operations on the following volumes.
+  -trash-check-interval duration
+    	Time duration at which the emptyTrash goroutine will check and delete expired trashed blocks. Default is one day. (default 24h0m0s)
+  -trash-lifetime duration
+    	Time duration after a block is trashed during which it can be recovered using an /untrash request
+  -volume value
+    	Local storage directory. Can be given more than once to add multiple directories. If none are supplied, the default is to use all directories named "keep" that exist in the top level directory of a mount point at startup time. Can be a comma-separated list, but this is deprecated: use multiple -volume arguments instead. (default [])
+  -volumes value
+    	Deprecated synonym for -volume. (default [])
 </code></pre>
 </notextile>
 

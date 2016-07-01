@@ -123,6 +123,7 @@ class EventClient(object):
             for tries_left in RetryLoop(num_retries=25, backoff_start=.1, max_wait=15):
                 try:
                     self._setup_event_client()
+                    _logger.warn("Reconnect successful.")
                     break
                 except Exception as e:
                     _logger.warn("Error '%s' during websocket reconnect.", e)

@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -355,9 +356,21 @@ func testIndexTo(t TB, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
 
+	// minMtime and maxMtime are the minimum and maximum
+	// acceptable values the index can report for our test
+	// blocks. 1-second precision is acceptable.
+	minMtime := time.Now().UTC().UnixNano()
+	minMtime -= minMtime % 1e9
+
 	v.PutRaw(TestHash, TestBlock)
 	v.PutRaw(TestHash2, TestBlock2)
 	v.PutRaw(TestHash3, TestBlock3)
+
+	maxMtime := time.Now().UTC().UnixNano()
+	if maxMtime%1e9 > 0 {
+		maxMtime -= maxMtime % 1e9
+		maxMtime += 1e9
+	}
 
 	// Blocks whose names aren't Keep hashes should be omitted from
 	// index
@@ -371,15 +384,21 @@ func testIndexTo(t TB, factory TestableVolumeFactory) {
 	indexRows := strings.Split(string(buf.Bytes()), "\n")
 	sort.Strings(indexRows)
 	sortedIndex := strings.Join(indexRows, "\n")
-	m, err := regexp.MatchString(
-		`^\n`+TestHash+`\+\d+ \d+\n`+
-			TestHash3+`\+\d+ \d+\n`+
-			TestHash2+`\+\d+ \d+$`,
-		sortedIndex)
-	if err != nil {
-		t.Error(err)
-	} else if !m {
+	m := regexp.MustCompile(
+		`^\n` + TestHash + `\+\d+ (\d+)\n` +
+			TestHash3 + `\+\d+ \d+\n` +
+			TestHash2 + `\+\d+ \d+$`,
+	).FindStringSubmatch(sortedIndex)
+	if m == nil {
 		t.Errorf("Got index %q for empty prefix", sortedIndex)
+	} else {
+		mtime, err := strconv.ParseInt(m[1], 10, 64)
+		if err != nil {
+			t.Error(err)
+		} else if mtime < minMtime || mtime > maxMtime {
+			t.Errorf("got %d for TestHash timestamp, expected %d <= t <= %d",
+				mtime, minMtime, maxMtime)
+		}
 	}
 
 	for _, prefix := range []string{"f", "f15", "f15ac"} {
@@ -396,7 +415,7 @@ func testIndexTo(t TB, factory TestableVolumeFactory) {
 
 	for _, prefix := range []string{"zero", "zip", "zilch"} {
 		buf = new(bytes.Buffer)
-		v.IndexTo(prefix, buf)
+		err := v.IndexTo(prefix, buf)
 		if err != nil {
 			t.Errorf("Got error on IndexTo with no such prefix %v", err.Error())
 		} else if buf.Len() != 0 {

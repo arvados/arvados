@@ -29,7 +29,7 @@ func BuildTrashLists(kc *keepclient.KeepClient,
 	ttl := int64(_ttl.(float64))
 
 	// expire unreferenced blocks more than "ttl" seconds old.
-	expiry := time.Now().UTC().Unix() - ttl
+	expiry := time.Now().UTC().UnixNano() - ttl*1e9
 
 	return buildTrashListsInternal(writableServers, keepServerInfo, expiry, keepBlocksNotInCollections), nil
 }

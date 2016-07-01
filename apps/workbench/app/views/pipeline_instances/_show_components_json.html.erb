@@ -15,6 +15,7 @@
           <pre><%= Oj.dump(@object.components, indent: 2) %></pre>
         </div>
       </div>
+      <% if backtrace %>
       <div class="panel-heading">
         <h4 class="panel-title">
           <a data-toggle="collapse" data-parent="#components-accordion" href="#components-backtrace">
@@ -27,4 +28,5 @@
           <pre><%= backtrace %></pre>
         </div>
       </div>
+      <% end %>
     </div>

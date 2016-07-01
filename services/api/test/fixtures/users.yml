@@ -209,6 +209,22 @@ job_reader:
       role: Computational biologist
     getting_started_shown: 2015-03-26 12:34:56.789000000 Z
 
+job_reader2:
+  owner_uuid: zzzzz-tpzed-000000000000000
+  uuid: zzzzz-tpzed-readjobwithcomp
+  email: job_reader2@arvados.local
+  first_name: Job
+  last_name: Reader2
+  identity_url: https://job_reader2.openid.local
+  is_active: true
+  is_admin: false
+  username: jobreader2
+  prefs:
+    profile:
+      organization: example.com
+      role: Computational biologist
+    getting_started_shown: 2015-03-26 12:34:56.789000000 Z
+
 active_no_prefs:
   owner_uuid: zzzzz-tpzed-000000000000000
   uuid: zzzzz-tpzed-a46c42d1td4aoj4

@@ -64,7 +64,7 @@ func CompareSummarizedReadCollections(c *C,
 }
 
 func (s *MySuite) TestSummarizeSimple(checker *C) {
-	rc := MakeTestReadCollections([]TestCollectionSpec{TestCollectionSpec{
+	rc := MakeTestReadCollections([]TestCollectionSpec{{
 		ReplicationLevel: 5,
 		Blocks:           []int{1, 2},
 	}})
@@ -79,7 +79,7 @@ func (s *MySuite) TestSummarizeSimple(checker *C) {
 	expected := ExpectedSummary{
 		OwnerToCollectionSize:     map[string]int{c.OwnerUUID: c.TotalSize},
 		BlockToDesiredReplication: map[blockdigest.DigestWithSize]int{blockDigest1: 5, blockDigest2: 5},
-		BlockToCollectionUuids:    map[blockdigest.DigestWithSize][]string{blockDigest1: []string{c.UUID}, blockDigest2: []string{c.UUID}},
+		BlockToCollectionUuids:    map[blockdigest.DigestWithSize][]string{blockDigest1: {c.UUID}, blockDigest2: {c.UUID}},
 	}
 
 	CompareSummarizedReadCollections(checker, rc, expected)
@@ -87,11 +87,11 @@ func (s *MySuite) TestSummarizeSimple(checker *C) {
 
 func (s *MySuite) TestSummarizeOverlapping(checker *C) {
 	rc := MakeTestReadCollections([]TestCollectionSpec{
-		TestCollectionSpec{
+		{
 			ReplicationLevel: 5,
 			Blocks:           []int{1, 2},
 		},
-		TestCollectionSpec{
+		{
 			ReplicationLevel: 8,
 			Blocks:           []int{2, 3},
 		},
@@ -117,9 +117,9 @@ func (s *MySuite) TestSummarizeOverlapping(checker *C) {
 			blockDigest3: 8,
 		},
 		BlockToCollectionUuids: map[blockdigest.DigestWithSize][]string{
-			blockDigest1: []string{c0.UUID},
-			blockDigest2: []string{c0.UUID, c1.UUID},
-			blockDigest3: []string{c1.UUID},
+			blockDigest1: {c0.UUID},
+			blockDigest2: {c0.UUID, c1.UUID},
+			blockDigest3: {c1.UUID},
 		},
 	}
 

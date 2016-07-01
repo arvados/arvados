@@ -85,8 +85,12 @@ class PipelineInstancesControllerTest < ActionController::TestCase
     assert_response :success
     assert_not_nil assigns(:object)
     assert_not_nil assigns(:object).components[:foo][:job]
-    assert assigns(:object).components[:foo][:job][:started_at].is_a? Time
-    assert assigns(:object).components[:foo][:job][:finished_at].is_a? Time
+    start_at = assigns(:object).components[:foo][:job][:started_at]
+    start_at = Time.parse(start_at) if (start_at.andand.class == String)
+    assert start_at.is_a? Time
+    finished_at = assigns(:object).components[:foo][:job][:started_at]
+    finished_at = Time.parse(finished_at) if (finished_at.andand.class == String)
+    assert finished_at.is_a? Time
   end
 
   # The next two tests ensure that a pipeline instance can be copied

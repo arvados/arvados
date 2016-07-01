@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/md5"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -9,6 +10,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -107,6 +109,62 @@ func runProxy(c *C, args []string, bogusClientToken bool) *keepclient.KeepClient
 	kc.Arvados.External = true
 
 	return kc
+}
+
+func (s *ServerRequiredSuite) TestDesiredReplicas(c *C) {
+	kc := runProxy(c, nil, false)
+	defer closeListener()
+
+	content := []byte("TestDesiredReplicas")
+	hash := fmt.Sprintf("%x", md5.Sum(content))
+
+	for _, kc.Want_replicas = range []int{0, 1, 2} {
+		locator, rep, err := kc.PutB(content)
+		c.Check(err, Equals, nil)
+		c.Check(rep, Equals, kc.Want_replicas)
+		if rep > 0 {
+			c.Check(locator, Matches, fmt.Sprintf(`^%s\+%d(\+.+)?$`, hash, len(content)))
+		}
+	}
+}
+
+func (s *ServerRequiredSuite) TestPutWrongContentLength(c *C) {
+	kc := runProxy(c, nil, false)
+	defer closeListener()
+
+	content := []byte("TestPutWrongContentLength")
+	hash := fmt.Sprintf("%x", md5.Sum(content))
+
+	// If we use http.Client to send these requests to the network
+	// server we just started, the Go http library automatically
+	// fixes the invalid Content-Length header. In order to test
+	// our server behavior, we have to call the handler directly
+	// using an httptest.ResponseRecorder.
+	rtr := MakeRESTRouter(true, true, kc)
+
+	type testcase struct {
+		sendLength   string
+		expectStatus int
+	}
+
+	for _, t := range []testcase{
+		{"1", http.StatusBadRequest},
+		{"", http.StatusLengthRequired},
+		{"-1", http.StatusLengthRequired},
+		{"abcdef", http.StatusLengthRequired},
+	} {
+		req, err := http.NewRequest("PUT",
+			fmt.Sprintf("http://%s/%s+%d", listener.Addr().String(), hash, len(content)),
+			bytes.NewReader(content))
+		c.Assert(err, IsNil)
+		req.Header.Set("Content-Length", t.sendLength)
+		req.Header.Set("Authorization", "OAuth2 4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
+		req.Header.Set("Content-Type", "application/octet-stream")
+
+		resp := httptest.NewRecorder()
+		rtr.ServeHTTP(resp, req)
+		c.Check(resp.Code, Equals, t.expectStatus)
+	}
 }
 
 func (s *ServerRequiredSuite) TestPutAskGet(c *C) {

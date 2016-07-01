@@ -89,7 +89,7 @@ func TestCopyPipeToChildLogLongLines(t *testing.T) {
 			}
 			line = line[5:]
 		}
-		if len(line) >= 6 && string(line[len(line)-6:len(line)]) == "[...]\n" {
+		if len(line) >= 6 && string(line[len(line)-6:]) == "[...]\n" {
 			line = line[:len(line)-6]
 		} else {
 			done = true

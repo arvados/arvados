@@ -525,8 +525,8 @@ running_job_with_components:
   runtime_constraints: {}
   state: Running
   components:
-    component1: zzzzz-8i9sb-jobuuid00000001
-    component2: zzzzz-d1hrv-pipelineuuid001
+    component1: zzzzz-8i9sb-jyq01m7in1jlofj
+    component2: zzzzz-d1hrv-partdonepipelin
 
 # Test Helper trims the rest of the file
 

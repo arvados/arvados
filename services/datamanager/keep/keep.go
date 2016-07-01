@@ -118,7 +118,7 @@ func GetKeepServersAndSummarize(params GetKeepServersParams) (results ReadServer
 // GetKeepServers from api server
 func GetKeepServers(params GetKeepServersParams) (results ReadServers, err error) {
 	sdkParams := arvadosclient.Dict{
-		"filters": [][]string{[]string{"service_type", "!=", "proxy"}},
+		"filters": [][]string{{"service_type", "!=", "proxy"}},
 	}
 	if params.Limit > 0 {
 		sdkParams["limit"] = params.Limit
@@ -430,13 +430,23 @@ func parseBlockInfoFromIndexLine(indexLine string) (blockInfo BlockInfo, err err
 		return
 	}
 
-	blockInfo.Mtime, err = strconv.ParseInt(tokens[1], 10, 64)
+	var ns int64
+	ns, err = strconv.ParseInt(tokens[1], 10, 64)
 	if err != nil {
 		return
 	}
-	blockInfo.Digest =
-		blockdigest.DigestWithSize{Digest: locator.Digest,
-			Size: uint32(locator.Size)}
+	if ns < 1e12 {
+		// An old version of keepstore is giving us timestamps
+		// in seconds instead of nanoseconds. (This threshold
+		// correctly handles all times between 1970-01-02 and
+		// 33658-09-27.)
+		ns = ns * 1e9
+	}
+	blockInfo.Mtime = ns
+	blockInfo.Digest = blockdigest.DigestWithSize{
+		Digest: locator.Digest,
+		Size:   uint32(locator.Size),
+	}
 	return
 }
 

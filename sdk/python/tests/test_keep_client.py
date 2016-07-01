@@ -1065,6 +1065,60 @@ class KeepClientRetryPutTestCase(KeepClientRetryTestMixin, unittest.TestCase):
             self.check_exception(copies=2, num_retries=3)
 
 
+class KeepClientAvoidClientOverreplicationTestCase(unittest.TestCase, tutil.ApiClientMock):
+    
+    
+    class FakeKeepService(object):
+        def __init__(self, delay, will_succeed, replicas=1):
+            self.delay = delay
+            self.success = will_succeed
+            self._result = {}
+            self._result['headers'] = {}
+            self._result['headers']['x-keep-replicas-stored'] = str(replicas)
+            self._result['body'] = 'foobar'
+        
+        def put(self, data_hash, data, timeout):
+            time.sleep(self.delay)
+            return self.success
+        
+        def last_result(self):
+            return self._result
+        
+        def finished(self):
+            return False
+    
+    
+    def test_only_write_enough_on_success(self):
+        copies = 3
+        pool = arvados.KeepClient.KeepWriterThreadPool(
+            data = 'foo',
+            data_hash = 'acbd18db4cc2f85cedef654fccc4a4d8+3',
+            max_service_replicas = copies,
+            copies = copies
+        )
+        for i in range(10):
+            ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
+            pool.add_task(ks, None)
+        pool.join()
+        self.assertEqual(pool.done(), copies)
+
+    def test_only_write_enough_on_partial_success(self):
+        copies = 3
+        pool = arvados.KeepClient.KeepWriterThreadPool(
+            data = 'foo',
+            data_hash = 'acbd18db4cc2f85cedef654fccc4a4d8+3',
+            max_service_replicas = copies,
+            copies = copies
+        )
+        for i in range(5):
+            ks = self.FakeKeepService(delay=i/10.0, will_succeed=False)
+            pool.add_task(ks, None)
+            ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
+            pool.add_task(ks, None)
+        pool.join()
+        self.assertEqual(pool.done(), copies)
+    
+
 @tutil.skip_sleep
 class RetryNeedsMultipleServices(unittest.TestCase, tutil.ApiClientMock):
     # Test put()s that need two distinct servers to succeed, possibly
@@ -1079,14 +1133,14 @@ class RetryNeedsMultipleServices(unittest.TestCase, tutil.ApiClientMock):
                 'acbd18db4cc2f85cedef654fccc4a4d8+3',
                 Exception('mock err'), 200, 200) as req_mock:
             self.keep_client.put('foo', num_retries=1, copies=2)
-        self.assertTrue(3, req_mock.call_count)
+        self.assertEqual(3, req_mock.call_count)
 
     def test_success_after_retryable_error(self):
         with tutil.mock_keep_responses(
                 'acbd18db4cc2f85cedef654fccc4a4d8+3',
                 500, 200, 200) as req_mock:
             self.keep_client.put('foo', num_retries=1, copies=2)
-        self.assertTrue(3, req_mock.call_count)
+        self.assertEqual(3, req_mock.call_count)
 
     def test_fail_after_final_error(self):
         # First retry loop gets a 200 (can't achieve replication by
@@ -1097,4 +1151,4 @@ class RetryNeedsMultipleServices(unittest.TestCase, tutil.ApiClientMock):
                 200, 400, 200) as req_mock:
             with self.assertRaises(arvados.errors.KeepWriteError):
                 self.keep_client.put('foo', num_retries=1, copies=2)
-        self.assertTrue(2, req_mock.call_count)
+        self.assertEqual(2, req_mock.call_count)

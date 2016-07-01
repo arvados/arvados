@@ -1,0 +1,116 @@
+      <div class="container">
+        <div class="row">
+          <div class="col-md-5">
+            <% if current_obj.uuid.nil? %>
+              No <%= current_obj.title %> has been submitted yet.
+            <% else %>
+            <table>
+              <% keys = [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :container_uuid, :priority] %>
+              <% keys << :outputs if @object.uuid == current_obj.uuid %>
+              <% keys.each do |k| %>
+                <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
+                <% has_val = val %>
+                <% has_val = val.andand.any? if k == :outputs %>
+                <% if has_val %>
+                <tr>
+                  <td style="padding-right: 1em">
+                    <%= k.to_s %>:
+                  </td>
+                  <td>
+                    <% if k == :uuid %>
+                      <%= link_to_arvados_object_if_readable(val, val, link_text: val) %>
+                    <% elsif k.to_s.end_with? 'uuid' %>
+                      <%= link_to_arvados_object_if_readable(val, val, friendly_name: true) %>
+                    <% elsif k.to_s.end_with? '_at' %>
+                      <%= render_localized_date(val) %>
+                    <% elsif k == :outputs and val.any? %>
+                      <% if val.size == 1 %>
+                        <%= link_to_arvados_object_if_readable(val[0], 'Output data not available', friendly_name: true) %>
+                      <% else %>
+                        <%= render partial: 'work_unit/show_outputs', locals: {id: current_obj.uuid, outputs: val, align:""} %>
+                      <% end %>
+                    <% else %>
+                      <%= val %>
+                    <% end %>
+                  </td>
+                </tr>
+                <% end %>
+              <% end %>
+            </table>
+            <% end %>
+          </div>
+          <div class="col-md-6">
+            <table>
+              <% # link to repo tree/file only if the repo is readable
+                 # and the commit is a sha1...
+                 repo =
+                 (/^[0-9a-f]{40}$/ =~ current_obj.script_version and
+                 Repository.where(name: current_obj.repository).first)
+
+                 # ...and the api server provides an http:// or https:// url
+                 repo = nil unless repo.andand.http_fetch_url
+                 %>
+              <% [:script, :repository, :script_version, :supplied_script_version, :nondeterministic,
+                  :command, :cwd, :environment, :mounts, :output_path].each do |k| %>
+                <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
+                <% if val %>
+                <tr>
+                  <td style="padding-right: 1em">
+                    <%= k.to_s %>:
+                  </td>
+                  <td>
+                    <% if repo and k == :repository %>
+                      <%= link_to val, show_repository_tree_path(id: repo.uuid, commit: current_obj.script_version, path: '/') %>
+                    <% elsif repo and k == :script %>
+                      <%= link_to val, show_repository_blob_path(id: repo.uuid, commit: current_obj.script_version, path: 'crunch_scripts/'+current_obj.script) %>
+                    <% elsif repo and k == :script_version %>
+                      <%= link_to val, show_repository_commit_path(id: repo.uuid, commit: current_obj.script_version) %>
+                    <% else %>
+                      <%= val %>
+                    <% end %>
+                  </td>
+                </tr>
+                <% end %>
+              <% end %>
+              <% if current_obj.runtime_constraints.andand[:docker_image] and current_obj.docker_image %>
+                <tr>
+                  <td style="padding-right: 1em">
+                    docker_image:
+                  </td>
+                  <td>
+                    <%= current_obj.runtime_constraints[:docker_image] %>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding-right: 1em">
+                    docker_image_locator:
+                  </td>
+                  <td>
+                    <%= link_to_arvados_object_if_readable(current_obj.docker_image,
+                      current_obj.docker_image, friendly_name: true) %>
+                  </td>
+                </tr>
+              <% elsif current_obj.docker_image %>
+                <tr>
+                  <td style="padding-right: 1em">
+                    docker_image_locator:
+                  </td>
+                  <td>
+                    <%= link_to_arvados_object_if_readable(current_obj.docker_image,
+                      current_obj.docker_image, friendly_name: true) %>
+                  </td>
+                </tr>
+              <% end %>
+            </table>
+          </div>
+        </div>
+
+        <% if current_obj.parameters and !current_obj.parameters.empty? %>
+        <div class="row">
+          <div class="col-md-6">
+            <p>script_parameters:</p>
+            <pre><%= JSON.pretty_generate(current_obj.parameters) rescue nil %></pre>
+          </div>
+        </div>
+        <% end %>
+      </div>

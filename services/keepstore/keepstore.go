@@ -197,8 +197,8 @@ func main() {
 	flag.IntVar(
 		&permissionTTLSec,
 		"blob-signature-ttl",
-		int(time.Duration(2*7*24*time.Hour).Seconds()),
-		"Lifetime of blob permission signatures. Modifying the ttl will invalidate all existing signatures. "+
+		2*7*24*3600,
+		"Lifetime of blob permission signatures in seconds. Modifying the ttl will invalidate all existing signatures. "+
 			"See services/api/config/application.default.yml.")
 	flag.BoolVar(
 		&flagSerializeIO,
@@ -332,12 +332,8 @@ func main() {
 	}
 
 	// Initialize Pull queue and worker
-	arv, err := arvadosclient.MakeArvadosClient()
-	if err != nil {
-		log.Fatalf("MakeArvadosClient: %s", err)
-	}
 	keepClient := &keepclient.KeepClient{
-		Arvados:       &arv,
+		Arvados:       &arvadosclient.ArvadosClient{},
 		Want_replicas: 1,
 		Client:        &http.Client{},
 	}

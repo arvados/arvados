@@ -23,9 +23,10 @@ class TestJob(unittest.TestCase):
         tool = {
             "inputs": [],
             "outputs": [],
-            "baseCommand": "ls"
+            "baseCommand": "ls",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}]
         }
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, avsc_names=avsc_names, basedir="")
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names, basedir="")
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir=""):
             j.run()
@@ -36,7 +37,7 @@ class TestJob(unittest.TestCase):
                     'script_parameters': {
                         'tasks': [{
                             'task.env': {'TMPDIR': '$(task.tmpdir)'},
-                            'command': ['ls']
+                            'command': ['ls', '$(task.outdir)']
                         }],
                     },
                     'script_version': 'master',
@@ -76,7 +77,7 @@ class TestJob(unittest.TestCase):
             }],
             "baseCommand": "ls"
         }
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, avsc_names=avsc_names)
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names)
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir=""):
             j.run()

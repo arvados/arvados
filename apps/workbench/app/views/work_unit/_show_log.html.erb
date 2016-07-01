@@ -1,0 +1,24 @@
+<% wu = obj.work_unit(name) %>
+
+<% render_log = wu.render_log %>
+<% if render_log %>
+  <div>
+    <% log_url = url_for render_log[:log] %>
+    <p> <a href="<%= log_url %>">Download the log</a> </p>
+    <%= render(partial: render_log[:partial], locals: render_log[:locals]) %>
+  </div>
+<% end %>
+
+<%# Show log in terminal window %>
+<h4>Recent logs</h4>
+<div id="event_log_div"
+     class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window"
+     data-object-uuid="<%= wu.uuid %>"
+  ><%= wu.live_log_lines(Rails.configuration.running_job_log_records_to_fetch).join("\n") %>
+</div>
+
+<%# Applying a long throttle suppresses the auto-refresh of this
+    partial that would normally be triggered by arv-log-event. %>
+<div class="arv-log-refresh-control"
+     data-load-throttle="86486400000" <%# 1001 nights %>>
+</div>

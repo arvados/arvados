@@ -138,9 +138,8 @@ func (v *UnixVolume) Touch(loc string) error {
 		return e
 	}
 	defer unlockfile(f)
-	now := time.Now().Unix()
-	utime := syscall.Utimbuf{now, now}
-	return syscall.Utime(p, &utime)
+	ts := syscall.NsecToTimespec(time.Now().UnixNano())
+	return syscall.UtimesNano(p, []syscall.Timespec{ts, ts})
 }
 
 // Mtime returns the stored timestamp for the given locator.
@@ -353,7 +352,7 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 			_, err = fmt.Fprint(w,
 				name,
 				"+", fileInfo[0].Size(),
-				" ", fileInfo[0].ModTime().Unix(),
+				" ", fileInfo[0].ModTime().UnixNano(),
 				"\n")
 		}
 		blockdir.Close()

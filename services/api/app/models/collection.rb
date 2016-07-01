@@ -15,9 +15,10 @@ class Collection < ArvadosModel
   before_validation :strip_signatures_and_update_replication_confirmed
   validate :ensure_pdh_matches_manifest_text
   before_save :set_file_names
+  before_save :expires_at_not_in_past
 
   # Query only undeleted collections by default.
-  default_scope where("expires_at IS NULL or expires_at > CURRENT_TIMESTAMP")
+  default_scope where("expires_at IS NULL or expires_at > statement_timestamp()")
 
   api_accessible :user, extend: :common do |t|
     t.add :name
@@ -28,6 +29,7 @@ class Collection < ArvadosModel
     t.add :replication_desired
     t.add :replication_confirmed
     t.add :replication_confirmed_at
+    t.add :expires_at
   end
 
   def self.attributes_required_columns
@@ -37,7 +39,10 @@ class Collection < ArvadosModel
                 # expose signed_manifest_text as manifest_text in the
                 # API response, and never let clients select the
                 # manifest_text column.
-                'manifest_text' => ['manifest_text'],
+                #
+                # We need expires_at to determine the correct
+                # timestamp in signed_manifest_text.
+                'manifest_text' => ['manifest_text', 'expires_at'],
                 )
   end
 
@@ -211,14 +216,19 @@ class Collection < ArvadosModel
   def signed_manifest_text
     if has_attribute? :manifest_text
       token = current_api_client_authorization.andand.api_token
-      @signed_manifest_text = self.class.sign_manifest manifest_text, token
+      exp = [db_current_time.to_i + Rails.configuration.blob_signature_ttl,
+             expires_at].compact.map(&:to_i).min
+      @signed_manifest_text = self.class.sign_manifest manifest_text, token, exp
     end
   end
 
-  def self.sign_manifest manifest, token
+  def self.sign_manifest manifest, token, exp=nil
+    if exp.nil?
+      exp = db_current_time.to_i + Rails.configuration.blob_signature_ttl
+    end
     signing_opts = {
       api_token: token,
-      expire: db_current_time.to_i + Rails.configuration.blob_signature_ttl,
+      expire: exp,
     }
     m = munge_manifest_locators(manifest) do |match|
       Blob.sign_locator(match[0], signing_opts)
@@ -380,5 +390,15 @@ class Collection < ArvadosModel
       raise ArvadosModel::PermissionDeniedError.new("replication_confirmed and replication_confirmed_at attributes cannot be changed, except by setting both to nil")
     end
     super
+  end
+
+  # If expires_at is being changed to a time in the past, change it to
+  # now. This allows clients to say "expires {client-current-time}"
+  # without failing due to clock skew, while avoiding odd log entries
+  # like "expiry date changed to {1 year ago}".
+  def expires_at_not_in_past
+    if expires_at_changed? and expires_at
+      self.expires_at = [db_current_time, expires_at].max
+    end
   end
 end

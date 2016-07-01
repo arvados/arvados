@@ -238,6 +238,7 @@ debug_echo "umask is" `umask`
 
 if [[ ! -d "$WORKSPACE/packages/$TARGET" ]]; then
   mkdir -p $WORKSPACE/packages/$TARGET
+  chown --reference="$WORKSPACE" "$WORKSPACE/packages/$TARGET"
 fi
 
 # Perl packages
@@ -400,26 +401,32 @@ fi
 # Go binaries
 cd $WORKSPACE/packages/$TARGET
 export GOPATH=$(mktemp -d)
-package_go_binary services/keepstore keepstore \
-    "Keep storage daemon, accessible to clients on the LAN"
-package_go_binary services/keepproxy keepproxy \
-    "Make a Keep cluster accessible to clients that are not on the LAN"
-package_go_binary services/keep-balance keep-balance \
-    "Rebalance and garbage-collect data blocks stored in Arvados Keep"
-package_go_binary services/keep-web keep-web \
-    "Static web hosting service for user data stored in Arvados Keep"
-package_go_binary services/datamanager arvados-data-manager \
-    "Ensure block replication levels, report disk usage, and determine which blocks should be deleted when space is needed"
-package_go_binary services/arv-git-httpd arvados-git-httpd \
-    "Provide authenticated http access to Arvados-hosted git repositories"
-package_go_binary services/crunchstat crunchstat \
-    "Gather cpu/memory/network statistics of running Crunch jobs"
-package_go_binary tools/keep-rsync keep-rsync \
-    "Copy all data from one set of Keep servers to another"
-package_go_binary tools/keep-block-check keep-block-check \
-    "Verify that all data from one set of Keep servers to another was copied"
 package_go_binary sdk/go/crunchrunner crunchrunner \
     "Crunchrunner executes a command inside a container and uploads the output"
+package_go_binary services/arv-git-httpd arvados-git-httpd \
+    "Provide authenticated http access to Arvados-hosted git repositories"
+package_go_binary services/crunch-dispatch-local crunch-dispatch-local \
+    "Dispatch Crunch containers on the local system"
+package_go_binary services/crunch-dispatch-slurm crunch-dispatch-slurm \
+    "Dispatch Crunch containers to a SLURM cluster"
+package_go_binary services/crunch-run crunch-run \
+    "Supervise a single Crunch container"
+package_go_binary services/crunchstat crunchstat \
+    "Gather cpu/memory/network statistics of running Crunch jobs"
+package_go_binary services/datamanager arvados-data-manager \
+    "Ensure block replication levels, report disk usage, and determine which blocks should be deleted when space is needed"
+package_go_binary services/keep-balance keep-balance \
+    "Rebalance and garbage-collect data blocks stored in Arvados Keep"
+package_go_binary services/keepproxy keepproxy \
+    "Make a Keep cluster accessible to clients that are not on the LAN"
+package_go_binary services/keepstore keepstore \
+    "Keep storage daemon, accessible to clients on the LAN"
+package_go_binary services/keep-web keep-web \
+    "Static web hosting service for user data stored in Arvados Keep"
+package_go_binary tools/keep-block-check keep-block-check \
+    "Verify that all data from one set of Keep servers to another was copied"
+package_go_binary tools/keep-rsync keep-rsync \
+    "Copy all data from one set of Keep servers to another"
 
 # The Python SDK
 # Please resist the temptation to add --no-python-fix-name to the fpm call here
@@ -452,14 +459,14 @@ fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curover
 # So we build this thing separately.
 #
 # Ward, 2016-03-17
-fpm_build schema_salad "" "" python 1.11.20160506154702
+fpm_build schema_salad "" "" python 1.12.20160610104117
 
 # And schema_salad now depends on ruamel-yaml, which apparently has a braindead setup.py that requires special arguments to build (otherwise, it aborts with 'error: you have to install with "pip install ."'). Sigh.
 # Ward, 2016-05-26
 fpm_build ruamel.yaml "" "" python "" --python-setup-py-arguments "--single-version-externally-managed"
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
-fpm_build cwltool "" "" python 1.0.20160519182434
+fpm_build cwltool "" "" python 1.0.20160630171631
 
 # FPM eats the trailing .0 in the python-rdflib-jsonld package when built with 'rdflib-jsonld>=0.3.0'. Force the version. Ward, 2016-03-25
 fpm_build rdflib-jsonld "" "" python 0.3.0

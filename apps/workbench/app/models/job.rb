@@ -53,4 +53,8 @@ class Job < ArvadosBase
     stderr_log_query(limit).results.reverse.
       flat_map { |log| log.properties[:text].split("\n") rescue [] }
   end
+
+  def work_unit(label=nil)
+    JobWorkUnit.new(self, label)
+  end
 end

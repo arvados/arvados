@@ -243,7 +243,7 @@ GET:
 	// In case we exited the above loop early: before returning,
 	// drain the toGet channel so its sender doesn't sit around
 	// blocking forever.
-	for _ = range r.toGet {
+	for range r.toGet {
 	}
 }
 

@@ -1,6 +1,8 @@
 require 'test_helper'
 
 class CollectionTest < ActiveSupport::TestCase
+  include DbCurrentTime
+
   def create_collection name, enc=nil
     txt = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:#{name}.txt\n"
     txt.force_encoding(enc) if enc
@@ -305,6 +307,29 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  test 'signature expiry does not exceed expires_at' do
+    act_as_user users(:active) do
+      t0 = db_current_time
+      c = Collection.create!(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:x\n", name: 'foo')
+      c.update_attributes! expires_at: (t0 + 1.hours)
+      c.reload
+      sig_exp = /\+A[0-9a-f]{40}\@([0-9]+)/.match(c.signed_manifest_text)[1].to_i
+      assert_operator sig_exp.to_i, :<=, (t0 + 1.hours).to_i
+    end
+  end
+
+  test 'far-future expiry date cannot be used to circumvent configured permission ttl' do
+    act_as_user users(:active) do
+      c = Collection.create!(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:x\n",
+                             name: 'foo',
+                             expires_at: db_current_time + 1.years)
+      sig_exp = /\+A[0-9a-f]{40}\@([0-9]+)/.match(c.signed_manifest_text)[1].to_i
+      expect_max_sig_exp = db_current_time.to_i + Rails.configuration.blob_signature_ttl
+      assert_operator c.expires_at.to_i, :>, expect_max_sig_exp
+      assert_operator sig_exp.to_i, :<=, expect_max_sig_exp
+    end
+  end
+
   test "create collection with properties" do
     act_as_system_user do
       c = Collection.create(manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n",
@@ -339,5 +364,15 @@ class CollectionTest < ActiveSupport::TestCase
       find_all_for_docker_image('a' * 64, nil, [users(:active)])
     coll_uuids = coll_list.map(&:uuid)
     assert_includes(coll_uuids, collections(:docker_image).uuid)
+  end
+
+  test 'expires_at cannot be set too far in the past' do
+    act_as_user users(:active) do
+      t0 = db_current_time
+      c = Collection.create!(manifest_text: '', name: 'foo')
+      c.update_attributes! expires_at: (t0 - 2.weeks)
+      c.reload
+      assert_operator c.expires_at, :>, t0
+    end
   end
 end

@@ -30,6 +30,7 @@ type KeepServiceList struct {
 // us about a stored block.
 type KeepServiceIndexEntry struct {
 	SizedDigest
+	// Time of last write, in nanoseconds since Unix epoch
 	Mtime int64
 }
 
@@ -107,6 +108,14 @@ func (s *KeepService) Index(c *Client, prefix string) ([]KeepServiceIndexEntry, 
 		mtime, err := strconv.ParseInt(fields[1], 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("Malformed index line %q: mtime: %v", line, err)
+		}
+		if mtime < 1e12 {
+			// An old version of keepstore is giving us
+			// timestamps in seconds instead of
+			// nanoseconds. (This threshold correctly
+			// handles all times between 1970-01-02 and
+			// 33658-09-27.)
+			mtime = mtime * 1e9
 		}
 		entries = append(entries, KeepServiceIndexEntry{
 			SizedDigest: SizedDigest(fields[0]),

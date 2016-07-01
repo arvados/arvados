@@ -717,6 +717,51 @@ job_reader_can_read_foo_repo:
   tail_uuid: zzzzz-tpzed-905b42d1dd4a354
   head_uuid: zzzzz-s0uqq-382brsig8rp3666
 
+job_reader2_can_read_job_with_components:
+  # Permission link giving job_reader2 permission
+  # to read running_job_with_components
+  uuid: zzzzz-o0j2j-jobcomps4jobrdr
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-06-13 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-tpzed-000000000000000
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-06-13 20:42:26 -0800
+  updated_at: 2014-06-13 20:42:26 -0800
+  link_class: permission
+  name: can_read
+  tail_uuid: zzzzz-tpzed-readjobwithcomp
+  head_uuid: zzzzz-8i9sb-with2components
+
+job_reader2_can_read_pipeline_from_job_with_components:
+  # Permission link giving job_reader2 permission
+  # to read running_job_with_components
+  uuid: zzzzz-o0j2j-pi4comps4jobrdr
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-06-13 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-tpzed-000000000000000
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-06-13 20:42:26 -0800
+  updated_at: 2014-06-13 20:42:26 -0800
+  link_class: permission
+  name: can_read
+  tail_uuid: zzzzz-tpzed-readjobwithcomp
+  head_uuid: zzzzz-d1hrv-partdonepipelin
+
+job_reader2_can_read_first_job_from_pipeline_from_job_with_components:
+  # Permission link giving job_reader2 permission
+  # to read running_job_with_components
+  uuid: zzzzz-o0j2j-job4pi4j4jobrdr
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2014-06-13 20:42:26 -0800
+  modified_by_client_uuid: zzzzz-tpzed-000000000000000
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2014-06-13 20:42:26 -0800
+  updated_at: 2014-06-13 20:42:26 -0800
+  link_class: permission
+  name: can_read
+  tail_uuid: zzzzz-tpzed-readjobwithcomp
+  head_uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
+
 baz_collection_name_in_asubproject:
   uuid: zzzzz-o0j2j-bazprojectname2
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz

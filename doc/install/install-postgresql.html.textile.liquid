@@ -1,0 +1,62 @@
+---
+layout: default
+navsection: installguide
+title: Set up PostgreSQL databases
+...
+
+Two Arvados Rails servers store data in a PostgreSQL database: the SSO server, and the API server.  The API server requires at least version 9.1 of PostgreSQL.  Beyond that, you have the flexibility to deploy PostgreSQL any way that the Rails servers will be able to connect to it.  Our recommended deployment strategy is:
+
+* Install PostgreSQL on the the same host as the SSO server, and dedicate that install to hosting the SSO database.  This provides the best security for the SSO server, because the database does not have to accept any client connections over the network.  Typical load on the SSO server is light enough that deploying both it and its database on the same host does not compromise performance.
+* If you want to provide the most scalability for your Arvados cluster, install PostgreSQL for the API server on a dedicated host.  This gives you the most flexibility to avoid resource contention, and tune performance separately for the API server and its database.  If performance is less of a concern for your installation, you can install PostgreSQL on the API server host directly, as with the SSO server.
+
+Find the section for your distribution below, and follow it to install PostgreSQL on each host where you will deploy it.  Then follow the steps in the later section(s) to set up PostgreSQL for the Arvados service(s) that need it.
+
+h2(#centos6). Install PostgreSQL on CentOS 6
+
+# Install Software Collections:
+  <notextile><pre>~$ <span class="userinput">sudo yum install centos-release-scl scl-utils</span></pre></notextile>
+# Install PostgreSQL:
+  <notextile><pre>~$ <span class="userinput">sudo yum install rh-postgresql94-postgresql-server</span></pre></notextile>
+# Initialize the database:
+  <notextile><pre>~$ <span class="userinput">sudo scl enable rh-postgresql94 "postgresql-setup initdb"</span></pre></notextile>
+# Configure the database to accept password connections:
+  <notextile><pre><code>~$ <span class="userinput">sudo sed -ri -e 's/^(host +all +all +(127\.0\.0\.1\/32|::1\/128) +)ident$/\1md5/' /var/opt/rh/rh-postgresql94/lib/pgsql/data/pg_hba.conf</span></code></pre></notextile>
+# Configure the database to launch at boot:
+  <notextile><pre>~$ <span class="userinput">sudo chkconfig rh-postgresql94-postgresql on</span></pre></notextile>
+# Start the database:
+  <notextile><pre>~$ <span class="userinput">sudo service rh-postgresql94-postgresql start</span></pre></notextile>
+# "Set up Arvados credentials and databases":#rails_setup for the services that will use this PostgreSQL install.
+
+h2(#centos7). Install PostgreSQL on CentOS 7
+
+# Install PostgreSQL:
+  <notextile><pre>~$ <span class="userinput">sudo yum install postgresql-server</span></pre></notextile>
+# Initialize the database:
+  <notextile><pre>~$ <span class="userinput">sudo postgresql-setup initdb</span></pre></notextile>
+# Configure the database to accept password connections:
+  <notextile><pre><code>~$ <span class="userinput">sudo sed -ri -e 's/^(host +all +all +(127\.0\.0\.1\/32|::1\/128) +)ident$/\1md5/' /var/lib/pgsql/data/pg_hba.conf</span></code></pre></notextile>
+# Configure the database to launch at boot:
+  <notextile><pre>~$ <span class="userinput">sudo systemctl enable postgresql</span></pre></notextile>
+# Start the database:
+  <notextile><pre>~$ <span class="userinput">sudo systemctl start postgresql</span></pre></notextile>
+# "Set up Arvados credentials and databases":#rails_setup for the services that will use this PostgreSQL install.
+
+h2(#debian). Install PostgreSQL on Debian or Ubuntu
+
+# Install PostgreSQL:
+  <notextile><pre>~$ <span class="userinput">sudo apt-get install postgresql</span></pre></notextile>
+# "Set up Arvados credentials and databases":#rails_setup for the services that will use this PostgreSQL install.
+
+<a name="rails_setup"></a>
+
+h2(#sso). Set up SSO server credentials and database
+
+{% assign service_role = "arvados_sso" %}
+{% assign service_database = "arvados_sso_production" %}
+{% include 'install_postgres_database' %}
+
+h2(#api). Set up API server credentials and database
+
+{% assign service_role = "arvados" %}
+{% assign service_database = "arvados_production" %}
+{% include 'install_postgres_database' %}

@@ -828,9 +828,18 @@ class ApplicationController < ActionController::Base
     pi
   end
 
-  helper_method :finished_pipelines
-  def finished_pipelines lim
-    PipelineInstance.limit(lim).order(["finished_at desc"]).filter([["state", "in", ["Complete", "Failed", "Paused"]], ["finished_at", "!=", nil]])
+  helper_method :recent_processes
+  def recent_processes lim
+    lim = 12 if lim.nil?
+
+    pipelines = PipelineInstance.limit(lim).order(["created_at desc"])
+
+    crs = ContainerRequest.limit(lim).order(["created_at desc"]).filter([["requesting_container_uuid", "=", nil]])
+    procs = {}
+    pipelines.results.each { |pi| procs[pi] = pi.created_at }
+    crs.results.each { |c| procs[c] = c.created_at }
+
+    Hash[procs.sort_by {|key, value| value}].keys.reverse.first(lim)
   end
 
   helper_method :recent_collections
