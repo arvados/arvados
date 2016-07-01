@@ -6,9 +6,9 @@ title: Using Common Workflow Language
 
 The "Common Workflow Language (CWL)":http://commonwl.org is a multi-vendor open standard for describing analysis tools and workflows that are portable across a variety of platforms.  CWL is the recommended way to develop and run Workflows for Arvados.  Arvados fully supports the "CWL draft-3":http://commonwl.org/draft-3 specification.
 
-h2. Getting the example files
-
 {% include 'tutorial_expectations' %}
+
+h2. Getting the example files
 
 The tutorial files are located in the documentation section Arvados source repository:
 
@@ -21,17 +21,16 @@ The tutorial files are located in the documentation section Arvados source repos
 The tutorial data is hosted on "http://cloud.curoverse.com":http://cloud.curoverse.com (also known as *qr1hi*).  If you are using a different Arvados instance, you may need to copy the data to your own instance.  The easiest way to do this is with "arv-copy":{{site.baseurl}}/user/topics/arv-copy.html (this requires signing up for a free cloud.curoverse.com account).
 
 <notextile>
-<pre><code>
-~$ <span class="userinput">arv-copy --src cloud --dst settings 2463fa9efeb75e099685528b3b9071e0+438</span>
+<pre><code>~$ <span class="userinput">arv-copy --src cloud --dst settings 2463fa9efeb75e099685528b3b9071e0+438</span>
 ~$ <span class="userinput">arv-copy --src cloud --dst settings ae480c5099b81e17267b7445e35b4bc7+180</span>
 </code></pre>
 </notextile>
 
 If you do not wish to create an account on "http://cloud.curoverse.com":http://cloud.curoverse.com, you may download the files anonymously and upload them to your local Arvados instance:
 
-https://cloud.curoverse.com/collections/2463fa9efeb75e099685528b3b9071e0+438
+"https://cloud.curoverse.com/collections/2463fa9efeb75e099685528b3b9071e0+438":https://cloud.curoverse.com/collections/2463fa9efeb75e099685528b3b9071e0+438
 
-https://cloud.curoverse.com/collections/ae480c5099b81e17267b7445e35b4bc7+180
+"https://cloud.curoverse.com/collections/ae480c5099b81e17267b7445e35b4bc7+180":https://cloud.curoverse.com/collections/ae480c5099b81e17267b7445e35b4bc7+180
 
 h2. Submitting a workflow to an Arvados cluster
 
@@ -107,7 +106,7 @@ If you reference a local file which is not in @arv-mount@, then @arvados-cwl-run
 
 h2. Registering a workflow with Workbench
 
-Use @--create-template@ to register a CWL workflow with Arvados Workbench.  This enables you to run Workflows by clicking on the "Run a pipeline..." button on the Workbench Dashboard.
+Use @--create-template@ to register a CWL workflow with Arvados Workbench.  This enables you to run Workflows by clicking on the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a pipeline...</span> on the Workbench Dashboard.
 
 <notextile>
 <pre><code>
