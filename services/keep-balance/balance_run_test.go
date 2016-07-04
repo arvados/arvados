@@ -236,7 +236,7 @@ func (s *runSuite) TestRefuseZeroCollections(c *check.C) {
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	err := (&Balancer{}).Run(s.config, opts)
+	_, err := (&Balancer{}).Run(s.config, opts)
 	c.Check(err, check.ErrorMatches, "received zero collections")
 	c.Check(trashReqs.Count(), check.Equals, 4)
 	c.Check(pullReqs.Count(), check.Equals, 0)
@@ -254,7 +254,7 @@ func (s *runSuite) TestServiceTypes(c *check.C) {
 	s.stub.serveFourDiskKeepServices()
 	indexReqs := s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
-	err := (&Balancer{}).Run(s.config, opts)
+	_, err := (&Balancer{}).Run(s.config, opts)
 	c.Check(err, check.IsNil)
 	c.Check(indexReqs.Count(), check.Equals, 0)
 	c.Check(trashReqs.Count(), check.Equals, 0)
@@ -271,7 +271,7 @@ func (s *runSuite) TestRefuseNonAdmin(c *check.C) {
 	s.stub.serveFourDiskKeepServices()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	err := (&Balancer{}).Run(s.config, opts)
+	_, err := (&Balancer{}).Run(s.config, opts)
 	c.Check(err, check.ErrorMatches, "current user .* is not .* admin user")
 	c.Check(trashReqs.Count(), check.Equals, 0)
 	c.Check(pullReqs.Count(), check.Equals, 0)
@@ -289,7 +289,7 @@ func (s *runSuite) TestDetectSkippedCollections(c *check.C) {
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
-	err := (&Balancer{}).Run(s.config, opts)
+	_, err := (&Balancer{}).Run(s.config, opts)
 	c.Check(err, check.ErrorMatches, `Retrieved 2 collections with modtime <= .* but server now reports there are 3 collections.*`)
 	c.Check(trashReqs.Count(), check.Equals, 4)
 	c.Check(pullReqs.Count(), check.Equals, 0)
@@ -308,7 +308,7 @@ func (s *runSuite) TestDryRun(c *check.C) {
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
 	var bal Balancer
-	err := bal.Run(s.config, opts)
+	_, err := bal.Run(s.config, opts)
 	c.Check(err, check.IsNil)
 	c.Check(trashReqs.Count(), check.Equals, 0)
 	c.Check(pullReqs.Count(), check.Equals, 0)
@@ -332,7 +332,7 @@ func (s *runSuite) TestCommit(c *check.C) {
 	trashReqs := s.stub.serveKeepstoreTrash()
 	pullReqs := s.stub.serveKeepstorePull()
 	var bal Balancer
-	err := bal.Run(s.config, opts)
+	_, err := bal.Run(s.config, opts)
 	c.Check(err, check.IsNil)
 	c.Check(trashReqs.Count(), check.Equals, 8)
 	c.Check(pullReqs.Count(), check.Equals, 4)
@@ -362,13 +362,14 @@ func (s *runSuite) TestRunForever(c *check.C) {
 	s.config.RunPeriod = arvados.Duration(time.Millisecond)
 	go RunForever(s.config, opts, stop)
 
-	// Each run should send 4 clear trash lists + 4 pull lists + 4
-	// trash lists. We should complete four runs in much less than
+	// Each run should send 4 pull lists + 4 trash lists. The
+	// first run should also send 4 empty trash lists at
+	// startup. We should complete all four runs in much less than
 	// a second.
 	for t0 := time.Now(); pullReqs.Count() < 16 && time.Since(t0) < 10*time.Second; {
 		time.Sleep(time.Millisecond)
 	}
 	stop <- true
 	c.Check(pullReqs.Count() >= 16, check.Equals, true)
-	c.Check(trashReqs.Count(), check.Equals, 2*pullReqs.Count())
+	c.Check(trashReqs.Count(), check.Equals, pullReqs.Count() + 4)
 }

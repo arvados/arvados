@@ -51,6 +51,12 @@ type RunOptions struct {
 	CommitTrash bool
 	Logger      *log.Logger
 	Dumper      *log.Logger
+
+	// SafeRendezvousState from the most recent balance operation,
+	// or "" if unknown. If this changes from one run to the next,
+	// we need to watch out for races. See
+	// (*Balancer)ClearTrashLists.
+	SafeRendezvousState string
 }
 
 var debugf = func(string, ...interface{}) {}
@@ -98,7 +104,7 @@ func main() {
 	if err != nil {
 		// (don't run)
 	} else if runOptions.Once {
-		err = (&Balancer{}).Run(config, runOptions)
+		_, err = (&Balancer{}).Run(config, runOptions)
 	} else {
 		err = RunForever(config, runOptions, nil)
 	}
@@ -138,7 +144,9 @@ func RunForever(config Config, runOptions RunOptions, stop <-chan interface{}) e
 			logger.Print("=======  Consider using -commit-pulls and -commit-trash flags.")
 		}
 
-		err := (&Balancer{}).Run(config, runOptions)
+		bal := &Balancer{}
+		var err error
+		runOptions, err = bal.Run(config, runOptions)
 		if err != nil {
 			logger.Print("run failed: ", err)
 		} else {
