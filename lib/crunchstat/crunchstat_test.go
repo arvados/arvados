@@ -19,10 +19,12 @@ func TestReadAllOrWarnFail(t *testing.T) {
 	logger, rcv := bufLogger()
 	rep := Reporter{Logger: logger}
 
+	done := make(chan bool)
 	var msg []byte
 	var err error
 	go func() {
 		msg, err = rcv.ReadBytes('\n')
+		close(done)
 	}()
 	{
 		// The special file /proc/self/mem can be opened for
@@ -35,6 +37,7 @@ func TestReadAllOrWarnFail(t *testing.T) {
 			t.Fatalf("Expected error, got %v", x)
 		}
 	}
+	<-done
 	if err != nil {
 		t.Fatal(err)
 	} else if matched, err := regexp.MatchString("^read /proc/self/mem: .*", string(msg)); err != nil || !matched {
