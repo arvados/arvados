@@ -40,7 +40,7 @@ type Reporter struct {
 
 	// Where cgroup accounting files live on this system, e.g.,
 	// "/sys/fs/cgroup".
-	CgroupRoot   string
+	CgroupRoot string
 
 	// Parent cgroup, e.g., "docker".
 	CgroupParent string
@@ -312,6 +312,9 @@ func (r *Reporter) getCPUCount() int64 {
 	}
 	defer cpusetFile.Close()
 	b, err := r.readAllOrWarn(cpusetFile)
+	if err != nil {
+		return 0
+	}
 	sp := strings.Split(string(b), ",")
 	cpus := int64(0)
 	for _, v := range sp {
@@ -337,12 +340,16 @@ func (r *Reporter) doCPUStats() {
 		return
 	}
 
-	nextSample := cpuSample{true, time.Now(), 0, 0, r.getCPUCount()}
 	var userTicks, sysTicks int64
 	fmt.Sscanf(string(b), "user %d\nsystem %d", &userTicks, &sysTicks)
 	userHz := float64(C.sysconf(C._SC_CLK_TCK))
-	nextSample.user = float64(userTicks) / userHz
-	nextSample.sys = float64(sysTicks) / userHz
+	nextSample := cpuSample{
+		hasData:    true,
+		sampleTime: time.Now(),
+		user:       float64(userTicks) / userHz,
+		sys:        float64(sysTicks) / userHz,
+		cpus:       r.getCPUCount(),
+	}
 
 	delta := ""
 	if r.lastCPUSample.hasData {
@@ -356,8 +363,8 @@ func (r *Reporter) doCPUStats() {
 	r.lastCPUSample = nextSample
 }
 
-// Report stats periodically until r.done indicates someone called
-// Stop.
+// Report stats periodically until we learn (via r.done) that someone
+// called Stop.
 func (r *Reporter) run() {
 	r.reportedStatFile = make(map[string]string)
 
@@ -383,7 +390,7 @@ func (r *Reporter) run() {
 }
 
 // If CID is empty, wait for it to appear in CIDFile. Return true if
-// we get it before r.done indicates someone called Stop.
+// we get it before we learn (via r.done) that someone called Stop.
 func (r *Reporter) waitForCIDFile() bool {
 	if r.CID != "" || r.CIDFile == "" {
 		return true

@@ -821,7 +821,7 @@ func NewContainerRunner(api IArvadosClient,
 }
 
 func main() {
-	statInterval := flag.Duration("crunchstat-interval", 10*time.Second, "resource usage statistics reporting period")
+	statInterval := flag.Duration("crunchstat-interval", 10*time.Second, "sampling period for periodic resource usage reporting")
 	cgroupRoot := flag.String("cgroup-root", "/sys/fs/cgroup", "path to sysfs cgroup tree")
 	cgroupParent := flag.String("cgroup-parent", "docker", "name of container's parent cgroup")
 	flag.Parse()
