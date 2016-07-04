@@ -395,7 +395,7 @@ func (runner *ContainerRunner) StartCrunchstat() {
 		Logger:       log.New(runner.statLogger, "", 0),
 		CgroupParent: runner.cgroupParent,
 		CgroupRoot:   runner.cgroupRoot,
-		Poll:         runner.statInterval,
+		PollPeriod:   runner.statInterval,
 	}
 	runner.statReporter.Start()
 }

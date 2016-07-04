@@ -46,7 +46,7 @@ type Reporter struct {
 	CgroupParent string
 
 	// Interval between samples. Must be positive.
-	Poll time.Duration
+	PollPeriod time.Duration
 
 	// Where to write statistics. Must not be nil.
 	Logger *log.Logger
@@ -368,7 +368,7 @@ func (r *Reporter) run() {
 	r.lastNetSample = make(map[string]ioSample)
 	r.lastDiskSample = make(map[string]ioSample)
 
-	ticker := time.NewTicker(r.Poll)
+	ticker := time.NewTicker(r.PollPeriod)
 	for {
 		r.doMemoryStats()
 		r.doCPUStats()
@@ -413,7 +413,7 @@ func (r *Reporter) waitForCIDFile() bool {
 func (r *Reporter) waitForCgroup() bool {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
-	warningTimer := time.After(r.Poll)
+	warningTimer := time.After(r.PollPeriod)
 	for {
 		c, err := r.openStatFile("cpuacct", "cgroup.procs", false)
 		if err == nil {
@@ -423,7 +423,7 @@ func (r *Reporter) waitForCgroup() bool {
 		select {
 		case <-ticker.C:
 		case <-warningTimer:
-			r.Logger.Printf("cgroup stats files have not appeared after %v (config error?) -- still waiting...", r.Poll)
+			r.Logger.Printf("cgroup stats files have not appeared after %v (config error?) -- still waiting...", r.PollPeriod)
 		case <-r.done:
 			r.Logger.Printf("cgroup stats files never appeared for %v", r.CID)
 			return false
