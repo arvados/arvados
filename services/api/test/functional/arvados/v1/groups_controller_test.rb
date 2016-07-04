@@ -423,4 +423,29 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     end
     assert_equal true, found_projects.include?(groups(:starred_and_shared_active_user_project).uuid)
   end
+
+  [
+    [['owner_uuid', '!=', 'zzzzz-tpzed-xurymjxw79nv3jz'], 200,
+        'zzzzz-d1hrv-subprojpipeline', 'zzzzz-d1hrv-1xfj6xkicf2muk2'],
+    [["pipeline_instances.state", "not in", ["Complete", "Failed"]], 200,
+        'zzzzz-d1hrv-1xfj6xkicf2muk2', 'zzzzz-d1hrv-i3e77t9z5y8j9cc'],
+    [['container_requests.requesting_container_uuid', '=', nil], 200,
+        'zzzzz-xvhdp-cr4queuedcontnr', 'zzzzz-xvhdp-cr4requestercn2'],
+    [['container_requests.no_such_column', '=', nil], 422],
+    [['container_requests.', '=', nil], 422],
+    [['.requesting_container_uuid', '=', nil], 422],
+    [['no_such_table.uuid', '!=', 'zzzzz-tpzed-xurymjxw79nv3jz'], 422],
+  ].each do |filter, expect_code, expect_uuid, not_expect_uuid|
+    test "get contents with '#{filter}' filter" do
+      authorize_with :active
+      get :contents, filters: [filter], format: :json
+      assert_response expect_code
+      if expect_code == 200
+        assert_not_empty json_response['items']
+        item_uuids = json_response['items'].collect {|item| item['uuid']}
+        assert_includes(item_uuids, expect_uuid)
+        assert_not_includes(item_uuids, not_expect_uuid)
+      end
+    end
+  end
 end
