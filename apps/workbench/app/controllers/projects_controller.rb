@@ -63,8 +63,8 @@ class ProjectsController < ApplicationController
       }
     pane_list <<
       {
-        :name => 'Jobs_and_pipelines',
-        :filters => [%w(uuid is_a) + [%w(arvados#job arvados#pipelineInstance)]]
+        :name => 'Pipelines_and_processes',
+        :filters => [%w(uuid is_a) + [%w(arvados#containerRequest arvados#pipelineInstance)]]
       }
     pane_list <<
       {
@@ -213,9 +213,13 @@ class ProjectsController < ApplicationController
       @name_link_for = {}
       kind_filters.each do |attr,op,val|
         (val.is_a?(Array) ? val : [val]).each do |type|
+          filters = @filters - kind_filters + [['uuid', 'is_a', type]]
+          if type == 'arvados#containerRequest'
+            filters = filters + [['container_requests.requesting_container_uuid', '=', nil]]
+          end
           objects = @object.contents(order: @order,
                                      limit: @limit,
-                                     filters: (@filters - kind_filters + [['uuid', 'is_a', type]]),
+                                     filters: filters,
                                     )
           objects.each do |object|
             @name_link_for[object.andand.uuid] = objects.links_for(object, 'name').first

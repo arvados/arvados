@@ -68,7 +68,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
     assert_selector 'a', text: 'Description'
     assert_selector 'a', text: 'Data collections'
-    assert_selector 'a', text: 'Jobs and pipelines'
+    assert_selector 'a', text: 'Pipelines and processes'
     assert_selector 'a', text: 'Pipeline templates'
     assert_selector 'a', text: 'Subprojects'
     assert_selector 'a', text: 'Advanced'
@@ -123,39 +123,35 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
   end
 
   [
-    'running_job',
-    'completed_job',
+    'running anonymously accessible cr',
     'pipelineInstance'
-  ].each do |type|
-    test "anonymous user accesses jobs and pipelines tab in shared project and clicks on #{type}" do
+  ].each do |proc|
+    test "anonymous user accesses pipelines and processes tab in shared project and clicks on '#{proc}'" do
       visit PUBLIC_PROJECT
       click_link 'Data collections'
       assert_text 'GNU General Public License'
 
-      click_link 'Jobs and pipelines'
+      click_link 'Pipelines and processes'
       assert_text 'Pipeline in publicly accessible project'
 
-      # click on the specified job
-      if type.include? 'job'
-        verify_job_row type
-      else
+      if proc.include? 'pipeline'
         verify_pipeline_instance_row
+      else
+        verify_container_request_row proc
       end
     end
   end
 
-  def verify_job_row look_for
+  def verify_container_request_row look_for
     within first('tr', text: look_for) do
       click_link 'Show'
     end
     assert_text 'Public Projects Unrestricted public data'
-    assert_text 'script_version'
+    assert_text 'command'
 
     assert_text 'zzzzz-tpzed-xurymjxw79nv3jz' # modified by user
     assert_no_selector 'a', text: 'zzzzz-tpzed-xurymjxw79nv3jz'
-    assert_no_selector 'a', text: 'Move job'
     assert_no_selector 'button', text: 'Cancel'
-    assert_no_selector 'button', text: 'Re-run job'
   end
 
   def verify_pipeline_instance_row
