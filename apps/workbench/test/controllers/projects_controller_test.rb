@@ -387,14 +387,26 @@ class ProjectsControllerTest < ActionController::TestCase
   end
 
   [
-    ["jobs", "/jobs"],
-    ["pipelines", "/pipeline_instances"],
-    ["collections", "/collections"],
-  ].each do |target,path|
-    test "test dashboard button all #{target}" do
-      get :index, {}, session_for(:active)
-      assert_includes @response.body, "href=\"#{path}\""
-      assert_includes @response.body, "All #{target}"
+    [:admin, true],
+    [:active, false],
+  ].each do |user, expect_all_nodes|
+    test "in dashboard other index page links as #{user}" do
+      get :index, {}, session_for(user)
+
+      [["processes", "/all_processes"],
+       ["collections", "/collections"],
+      ].each do |target, path|
+        assert_includes @response.body, "href=\"#{path}\""
+        assert_includes @response.body, "All #{target}"
+      end
+
+      if expect_all_nodes
+        assert_includes @response.body, "href=\"/nodes\""
+        assert_includes @response.body, "All nodes"
+      else
+        assert_not_includes @response.body, "href=\"/nodes\""
+        assert_not_includes @response.body, "All nodes"
+      end
     end
   end
 
