@@ -714,6 +714,7 @@ gostuff=(
     sdk/go/manifest
     sdk/go/streamer
     sdk/go/crunchrunner
+    lib/crunchstat
     services/arv-git-httpd
     services/crunchstat
     services/keep-web
