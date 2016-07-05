@@ -47,6 +47,13 @@ type Volume interface {
 	// was encountered opening/reading the stored data.
 	Compare(loc string, data []byte) error
 
+	// Return an io.ReadCloser that reads data for the given
+	// locator.
+	//
+	// As with Get, if the block does not exist, the returned
+	// error should satisfy os.IsNotExist(err).
+	GetReader(loc string) (io.ReadCloser, error)
+
 	// Put writes a block to an underlying storage device.
 	//
 	// loc is as described in Get.

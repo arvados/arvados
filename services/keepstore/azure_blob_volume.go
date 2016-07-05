@@ -259,6 +259,18 @@ func (v *AzureBlobVolume) get(loc string, buf []byte) (int, error) {
 	return actualSize, nil
 }
 
+func (v *AzureBlobVolume) GetReader(loc string) (io.ReadCloser, error) {
+	trashed, _, err := v.checkTrashed(loc)
+	if err != nil {
+		return nil, err
+	}
+	if trashed {
+		return nil, os.ErrNotExist
+	}
+	rdr, err := v.bsClient.GetBlob(v.containerName, loc)
+	return rdr, v.translateError(err)
+}
+
 // Compare the given data with existing stored data.
 func (v *AzureBlobVolume) Compare(loc string, expect []byte) error {
 	trashed, _, err := v.checkTrashed(loc)

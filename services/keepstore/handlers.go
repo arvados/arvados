@@ -31,16 +31,19 @@ import (
 func MakeRESTRouter() *mux.Router {
 	rest := mux.NewRouter()
 
-	rest.HandleFunc(
-		`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET", "HEAD")
-	rest.HandleFunc(
-		`/{hash:[0-9a-f]{32}}+{hints}`,
-		GetBlockHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET")
+	rest.HandleFunc(`/{hash:[0-9a-f]{32}}+{hints}`, GetBlockHandler).Methods("GET")
+
+	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, Head).Methods("HEAD")
+	rest.HandleFunc(`/{hash:[0-9a-f]{32}}+{hints}`, Head).Methods("HEAD")
 
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
+
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, DeleteHandler).Methods("DELETE")
+
 	// List all blocks stored here. Privileged client only.
 	rest.HandleFunc(`/index`, IndexHandler).Methods("GET", "HEAD")
+
 	// List blocks stored here whose hash has the given prefix.
 	// Privileged client only.
 	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
@@ -64,19 +67,65 @@ func MakeRESTRouter() *mux.Router {
 	return rest
 }
 
+func permissionOK(resp http.ResponseWriter, req *http.Request) bool {
+	if !enforcePermissions {
+		return true
+	}
+	locator := req.URL.Path[1:] // strip leading slash
+	if err := VerifySignature(locator, GetApiToken(req)); err == nil {
+		return true
+	} else {
+		http.Error(resp, err.Error(), err.(*KeepError).HTTPCode)
+		return false
+	}
+}
+
 // BadRequestHandler is a HandleFunc to address bad requests.
 func BadRequestHandler(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, BadRequestError.Error(), BadRequestError.HTTPCode)
 }
 
+// Head computes the checksum of stored data and returns 200 if it
+// finds a copy on any volume with a valid checksum.
+func Head(resp http.ResponseWriter, req *http.Request) {
+	if !permissionOK(resp, req) {
+		return
+	}
+	hash := mux.Vars(req)["hash"]
+	for _, vol := range KeepVM.AllReadable() {
+		rdr, err := vol.GetReader(hash)
+		if err != nil {
+			continue
+		}
+		h := md5.New()
+		size, err := io.Copy(h, rdr)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				log.Printf("%s: read %s: %s", vol, hash, err)
+			}
+			continue
+		}
+		err = rdr.Close()
+		if err != nil {
+			log.Printf("%s: read %s: close: %s", vol, hash, err)
+			continue
+		}
+		if h := fmt.Sprintf("%x", h.Sum(nil)); h != hash {
+			log.Printf("%s: verify %s: checksum mismatch: %s", vol, hash, h)
+			continue
+		}
+		resp.Header().Set("Content-Length", strconv.FormatInt(size, 10))
+		resp.Header().Set("Content-Type", "application/octet-stream")
+		resp.WriteHeader(http.StatusOK)
+		return
+	}
+	http.Error(resp, "Not found", http.StatusNotFound)
+}
+
 // GetBlockHandler is a HandleFunc to address Get block requests.
 func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
-	if enforcePermissions {
-		locator := req.URL.Path[1:] // strip leading slash
-		if err := VerifySignature(locator, GetApiToken(req)); err != nil {
-			http.Error(resp, err.Error(), err.(*KeepError).HTTPCode)
-			return
-		}
+	if !permissionOK(resp, req) {
+		return
 	}
 
 	// TODO: Probe volumes to check whether the block _might_

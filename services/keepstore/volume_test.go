@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"strings"
 	"sync"
@@ -123,6 +124,17 @@ func (v *MockVolume) Get(loc string, buf []byte) (int, error) {
 		return len(block), nil
 	}
 	return 0, os.ErrNotExist
+}
+
+func (v *MockVolume) GetReader(loc string) (io.ReadCloser, error) {
+	v.gotCall("GetReader")
+	<-v.Gate
+	if v.Bad {
+		return nil, errors.New("Bad volume")
+	} else if block, ok := v.Store[loc]; ok {
+		return ioutil.NopCloser(bytes.NewReader(block)), nil
+	}
+	return nil, os.ErrNotExist
 }
 
 func (v *MockVolume) Put(loc string, block []byte) error {

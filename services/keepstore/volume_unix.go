@@ -180,6 +180,25 @@ func (v *UnixVolume) stat(path string) (os.FileInfo, error) {
 	return stat, err
 }
 
+// GetReader returns a ReadCloser that respects the serialize lock.
+func (v *UnixVolume) GetReader(loc string) (io.ReadCloser, error) {
+	unlock := nop
+	if v.locker != nil {
+		v.locker.Lock()
+		unlock = v.locker.Unlock
+	}
+	path := v.blockPath(loc)
+	f, err := os.Open(path)
+	if err != nil {
+		unlock()
+		return nil, err
+	}
+	return &unlockingReadCloser{
+		ReadCloser: f,
+		unlock:     unlock,
+	}, nil
+}
+
 // Get retrieves a block, copies it to the given slice, and returns
 // the number of bytes copied.
 func (v *UnixVolume) Get(loc string, buf []byte) (int, error) {
@@ -583,3 +602,15 @@ func (v *UnixVolume) EmptyTrash() {
 
 	log.Printf("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
 }
+
+type unlockingReadCloser struct {
+	io.ReadCloser
+	unlock func()
+}
+
+func (urc *unlockingReadCloser) Close() error {
+	defer urc.unlock()
+	return urc.ReadCloser.Close()
+}
+
+func nop() {}

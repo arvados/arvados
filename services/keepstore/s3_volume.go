@@ -169,6 +169,14 @@ func (v *S3Volume) Get(loc string, buf []byte) (int, error) {
 	}
 }
 
+func (v *S3Volume) GetReader(loc string) (io.ReadCloser, error) {
+	rdr, err := v.Bucket.GetReader(loc)
+	if err != nil {
+		return nil, v.translateError(err)
+	}
+	return rdr, err
+}
+
 func (v *S3Volume) Compare(loc string, expect []byte) error {
 	rdr, err := v.Bucket.GetReader(loc)
 	if err != nil {
