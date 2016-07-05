@@ -51,6 +51,8 @@ class ProxyWorkUnit < WorkUnit
     state = get(:state)
     if ["Running", "RunningOnServer", "RunningOnClient"].include? state
       "Running"
+    elsif state == 'New'
+      "Not started"
     else
       state
     end
