@@ -237,21 +237,37 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
 class ArvadosPutCollectionTest(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
     KEEP_SERVER = {}
+    import shutil
         
-    def test_write_files(self):
-        c = arv_put.ArvPutCollection()
-        data = 'a' * 1024 * 1024 # 1 MB
-        tmpdir = tempfile.mkdtemp()
-        for size in [1, 10, 64, 128]:
-            with open(os.path.join(tmpdir, 'file_%d' % size), 'w') as f:
-                for _ in range(size):
-                    f.write(data)
-            c.write_file(f.name, os.path.basename(f.name))
-            os.unlink(f.name)
-        self.assertEqual(True, c.manifest())
-    
-    def test_write_directory(self):
-        c = arv_put.ArvPutCollection()
+    # def test_write_files(self):
+    #     c = arv_put.ArvPutCollection()
+    #     data = 'a' * 1024 * 1024 # 1 MB
+    #     tmpdir = tempfile.mkdtemp()
+    #     for size in [1, 10, 64, 128]:
+    #         with open(os.path.join(tmpdir, 'file_%d' % size), 'w') as f:
+    #             for _ in range(size):
+    #                 f.write(data)
+    #         c.write_file(f.name, os.path.basename(f.name))
+    #     shutil.rmtree(tmpdir)
+    #     self.assertEqual(True, c.manifest())
+    #
+    # def test_write_directory(self):
+    #     data = 'b' * 1024 * 1024
+    #     tmpdir = tempfile.mkdtemp()
+    #     for size in [1, 5, 10, 70]:
+    #         with open(os.path.join(tmpdir, 'file_%d' % size), 'w') as f:
+    #             for _ in range(size):
+    #                 f.write(data)
+    #     os.mkdir(os.path.join(tmpdir, 'subdir1'))
+    #     for size in [2, 4, 6]:
+    #         with open(os.path.join(tmpdir, 'subdir1', 'file_%d' % size), 'w') as f:
+    #             for _ in range(size):
+    #                 f.write(data)
+    #     c = arv_put.ArvPutUploader([tmpdir])
+    #     shutil.rmtree(tmpdir)
+    #     self.assertEqual(True, c.manifest())
+
+    def test_write_directory_twice(self):
         data = 'b' * 1024 * 1024
         tmpdir = tempfile.mkdtemp()
         for size in [1, 5, 10, 70]:
@@ -263,8 +279,11 @@ class ArvadosPutCollectionTest(run_test_server.TestCaseWithServers):
             with open(os.path.join(tmpdir, 'subdir1', 'file_%d' % size), 'w') as f:
                 for _ in range(size):
                     f.write(data)
-        c.write_directory_tree(tmpdir, os.path.join('.', os.path.basename(tmpdir)))
-        self.assertEqual(True, c.manifest())
+        c = arv_put.ArvPutUploader([tmpdir])
+        d = arv_put.ArvPutUploader([tmpdir])
+        print "ESCRIDIERON: c: %d, d: %d" % (c.bytes_written(), d.bytes_written())
+        shutil.rmtree(tmpdir)
+        self.assertEqual(0, d.bytes_written())
         
 
 class ArvadosPutCollectionWriterTest(run_test_server.TestCaseWithServers,
