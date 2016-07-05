@@ -31,7 +31,7 @@ func main() {
 	if reporter.CgroupRoot == "" {
 		reporter.Logger.Fatal("error: must provide -cgroup-root")
 	}
-	reporter.Poll = time.Duration(*pollMsec) * time.Millisecond
+	reporter.PollPeriod = time.Duration(*pollMsec) * time.Millisecond
 
 	reporter.Start()
 	err := runCommand(flag.Args(), reporter.Logger)
