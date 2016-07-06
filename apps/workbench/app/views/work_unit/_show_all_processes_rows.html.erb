@@ -8,10 +8,13 @@
       <span class="label label-<%= wu.state_bootstrap_class %>"><%= wu.state_label %></span>
     </td>
     <td>
-      <%= link_to_if_arvados_object obj.owner_uuid, friendly_name: true %>
+      <%= link_to_if_arvados_object wu.owner_uuid, friendly_name: true %>
     </td>
     <td>
-      <%= wu.created_at %>
+      <%= render_localized_date(wu.created_at) %>
+    </td>
+    <td>
+      <%= render partial: 'work_unit/show_output', locals: {wu: wu, align: ''} %>
     </td>
     <td>
       <%= render partial: 'delete_object_button', locals: {object:obj} %>
