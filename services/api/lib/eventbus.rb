@@ -93,8 +93,8 @@ class EventBus
     begin
       # Must have at least one filter set up to receive events
       if ws.filters.length > 0
-        # Start with log rows readable by user, sorted in ascending order
-        logs = Log.readable_by(ws.user).order("id asc")
+        # Start with log rows readable by user
+        logs = Log.readable_by(ws.user)
 
         cond_id = nil
         cond_out = []
@@ -132,11 +132,21 @@ class EventBus
           logs = logs.where(cond_id, *param_out)
         end
 
-        # Execute query and actually send the matching log rows
-        logs.each do |l|
+        # Execute query and actually send the matching log rows. Load
+        # the full log records only when we're ready to send them,
+        # though: otherwise, (1) postgres has to build the whole
+        # result set and return it to us before we can send the first
+        # event, and (2) we store lots of records in memory while
+        # waiting to spool them out to the client. Both of these are
+        # troublesome when log records are large (e.g., a collection
+        # update contains both old and new manifest_text).
+        #
+        # Note: find_each implies order('id asc'), which is what we
+        # want.
+        logs.select(:id).find_each do |l|
           if not ws.sent_ids.include?(l.id)
             # only send if not a duplicate
-            ws.send(l.as_api_response.to_json)
+            ws.send(Log.find(l.id).as_api_response.to_json)
           end
           if not ws.last_log_id.nil?
             # record ids only when sending "catchup" messages, not notifies
