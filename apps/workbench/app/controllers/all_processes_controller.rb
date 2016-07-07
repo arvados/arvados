@@ -23,16 +23,20 @@ class AllProcessesController < ApplicationController
   end
 
   def find_objects_for_index
+    @limit = 20
+
     @filters = @next_page_filters || @filters || []
 
-    filters = @filters + [%w(uuid is_a) + [%w(arvados#pipelineInstance)]]
-    pipelines = PipelineInstance.order(["created_at desc"]).filter(filters)
-
-    filters = @filters + [%w(uuid is_a) + [%w(arvados#containerRequest)]] + [['requesting_container_uuid', '=', nil]]
-    crs = ContainerRequest.order(["created_at desc"]).filter(filters)
-    
     procs = {}
+
+    # get next page of pipeline_instances
+    filters = @filters + [%w(uuid is_a) + [%w(arvados#pipelineInstance)]]
+    pipelines = PipelineInstance.limit(@limit).order(["created_at desc"]).filter(filters)
     pipelines.results.each { |pi| procs[pi] = pi.created_at }
+
+    # get next page of container_requests
+    filters = @filters + [%w(uuid is_a) + [%w(arvados#containerRequest)]] + [['requesting_container_uuid', '=', nil]]
+    crs = ContainerRequest.limit(@limit).order(["created_at desc"]).filter(filters)
     crs.results.each { |c| procs[c] = c.created_at }
 
     @objects = Hash[procs.sort_by {|key, value| value}].keys.reverse.first(@limit)

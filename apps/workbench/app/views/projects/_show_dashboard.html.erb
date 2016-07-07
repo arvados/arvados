@@ -18,8 +18,8 @@
                 <% end %>
               </span>
               <span>
-                  <%= link_to pipeline_instances_path, class: 'btn btn-default btn-xs' do %>
-                    All pipelines <i class="fa fa-fw fa-arrow-circle-right"></i>
+                  <%= link_to all_processes_path, class: 'btn btn-default btn-xs' do %>
+                    All processes <i class="fa fa-fw fa-arrow-circle-right"></i>
                   <% end %>
               </span>
             </span>
@@ -109,11 +109,6 @@
                 <% end %>
               </span>
             <% end %>
-            <span>
-              <%= link_to jobs_path, class: 'btn btn-default btn-xs' do %>
-                All jobs <i class="fa fa-fw fa-arrow-circle-right"></i>
-              <% end %>
-            </span>
           </span>
         </div>
         <div class="panel-body compute-node-summary-pane">
