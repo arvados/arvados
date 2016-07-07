@@ -31,7 +31,8 @@ setup(name='arvados-cwl-runner',
       ],
       install_requires=[
           'cwltool==1.0.20160630171631',
-          'arvados-python-client>=0.1.20160322001610'
+          'arvados-python-client>=0.1.20160322001610',
+          'ruamel.yaml==0.11.11', # this should be declared by schema_salad instead, but see #9567
       ],
       data_files=[
           ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),
