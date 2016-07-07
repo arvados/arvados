@@ -34,12 +34,17 @@ class AllProcessesController < ApplicationController
     pipelines = PipelineInstance.limit(@limit).order(["created_at desc"]).filter(filters)
     pipelines.results.each { |pi| procs[pi] = pi.created_at }
 
+    # get next page of jobs
+    filters = @filters + [%w(uuid is_a) + [%w(arvados#job)]]
+    jobs = Job.limit(@limit).order(["created_at desc"]).filter(filters)
+    jobs.results.each { |pi| procs[pi] = pi.created_at }
+
     # get next page of container_requests
-    filters = @filters + [%w(uuid is_a) + [%w(arvados#containerRequest)]] + [['requesting_container_uuid', '=', nil]]
+    filters = @filters + [%w(uuid is_a) + [%w(arvados#containerRequest)]]
     crs = ContainerRequest.limit(@limit).order(["created_at desc"]).filter(filters)
     crs.results.each { |c| procs[c] = c.created_at }
 
-    @objects = Hash[procs.sort_by {|key, value| value}].keys.reverse.first(@limit)
+    @objects = Hash[procs.sort_by {|key, value| value}].keys.reverse
 
     @next_page_filters = @filters.reject do |attr,op,val|
       (attr == 'created_at') or (attr == 'uuid' and op == 'not in')
