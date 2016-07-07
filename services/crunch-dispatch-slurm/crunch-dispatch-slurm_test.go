@@ -95,7 +95,7 @@ func (s *TestSuite) TestIntegrationCancel(c *C) {
 }
 
 func (s *TestSuite) TestIntegrationMissingFromSqueue(c *C) {
-	container := s.integrationTest(c, func() *exec.Cmd { return exec.Command("echo") }, []string{"sbatch", "--share", "--parsable",
+	container := s.integrationTest(c, func() *exec.Cmd { return exec.Command("echo") }, []string{"sbatch", "--share",
 		fmt.Sprintf("--job-name=%s", "zzzzz-dz642-queuedcontainer"),
 		fmt.Sprintf("--mem-per-cpu=%d", 2862),
 		fmt.Sprintf("--cpus-per-task=%d", 4),
