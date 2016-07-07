@@ -37,6 +37,10 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         def __init__(self, b, r):
             self.body = b
             self.response = r
+            self._schema = ArvadosFileWriterTestCase.MockApi.MockSchema()
+        class MockSchema(object):
+            def __init__(self):
+                self.schemas = {'Collection': {'properties': {'replication_desired': 2}}}
         class MockCollections(object):
             def __init__(self, b, r):
                 self.body = b
@@ -59,7 +63,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
     def test_truncate(self):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"})
         api = ArvadosFileWriterTestCase.MockApi({"name":"test_truncate",
-                                                 "manifest_text":". 781e5e245d69b566979b86e28d23f2c7+10 0:8:count.txt\n"},
+                                                 "manifest_text":". 781e5e245d69b566979b86e28d23f2c7+10 0:8:count.txt\n",
+                                                 "replication_desired":None},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
                                                  "manifest_text":". 781e5e245d69b566979b86e28d23f2c7+10 0:8:count.txt\n"})
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n',
@@ -86,7 +91,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
     def test_write_to_end(self):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"})
         api = ArvadosFileWriterTestCase.MockApi({"name":"test_append",
-                                                 "manifest_text": ". 781e5e245d69b566979b86e28d23f2c7+10 acbd18db4cc2f85cedef654fccc4a4d8+3 0:13:count.txt\n"},
+                                                 "manifest_text": ". 781e5e245d69b566979b86e28d23f2c7+10 acbd18db4cc2f85cedef654fccc4a4d8+3 0:13:count.txt\n",
+                                                 "replication_desired":None},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
                                                  "manifest_text": ". 781e5e245d69b566979b86e28d23f2c7+10 acbd18db4cc2f85cedef654fccc4a4d8+3 0:13:count.txt\n"})
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n',
@@ -222,7 +228,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
     def test_write_large(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
         api = ArvadosFileWriterTestCase.MockApi({"name":"test_write_large",
-                                                 "manifest_text": ". a5de24f4417cfba9d5825eadc2f4ca49+67108000 598cc1a4ccaef8ab6e4724d87e675d78+32892000 0:100000000:count.txt\n"},
+                                                 "manifest_text": ". a5de24f4417cfba9d5825eadc2f4ca49+67108000 598cc1a4ccaef8ab6e4724d87e675d78+32892000 0:100000000:count.txt\n",
+                                                 "replication_desired":None},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
                                                  "manifest_text": ". a5de24f4417cfba9d5825eadc2f4ca49+67108000 598cc1a4ccaef8ab6e4724d87e675d78+32892000 0:100000000:count.txt\n"})
         with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
@@ -313,7 +320,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
     def test_write_large_rewrite(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
         api = ArvadosFileWriterTestCase.MockApi({"name":"test_write_large",
-                                                 "manifest_text": ". 37400a68af9abdd76ca5bf13e819e42a+32892003 a5de24f4417cfba9d5825eadc2f4ca49+67108000 32892000:3:count.txt 32892006:67107997:count.txt 0:32892000:count.txt\n"},
+                                                 "manifest_text": ". 37400a68af9abdd76ca5bf13e819e42a+32892003 a5de24f4417cfba9d5825eadc2f4ca49+67108000 32892000:3:count.txt 32892006:67107997:count.txt 0:32892000:count.txt\n",
+                                                 "replication_desired":None},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
                                                  "manifest_text": ". 37400a68af9abdd76ca5bf13e819e42a+32892003 a5de24f4417cfba9d5825eadc2f4ca49+67108000 32892000:3:count.txt 32892006:67107997:count.txt 0:32892000:count.txt\n"})
         with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
@@ -335,7 +343,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
     def test_create(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
         api = ArvadosFileWriterTestCase.MockApi({"name":"test_create",
-                                                 "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n"},
+                                                 "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n",
+                                                 "replication_desired":None},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
                                                  "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n"})
         with Collection(api_client=api, keep_client=keep) as c:
@@ -356,7 +365,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
     def test_create_subdir(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
         api = ArvadosFileWriterTestCase.MockApi({"name":"test_create",
-                                                 "manifest_text":"./foo/bar 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n"},
+                                                 "manifest_text":"./foo/bar 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n",
+                                                 "replication_desired":None},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
                                                  "manifest_text":"./foo/bar 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n"})
         with Collection(api_client=api, keep_client=keep) as c:
@@ -371,7 +381,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
     def test_overwrite(self):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": "0123456789"})
         api = ArvadosFileWriterTestCase.MockApi({"name":"test_overwrite",
-                                                 "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n"},
+                                                 "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n",
+                                                 "replication_desired":None},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
                                                  "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n"})
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n',
@@ -400,7 +411,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
     def test_create_multiple(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
         api = ArvadosFileWriterTestCase.MockApi({"name":"test_create_multiple",
-                                                 "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 e8dc4081b13434b45189a720b77b6818+8 0:8:count1.txt 8:8:count2.txt\n"},
+                                                 "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 e8dc4081b13434b45189a720b77b6818+8 0:8:count1.txt 8:8:count2.txt\n",
+                                                 "replication_desired":None},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
                                                  "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 e8dc4081b13434b45189a720b77b6818+8 0:8:count1.txt 8:8:count2.txt\n"})
         with Collection(api_client=api, keep_client=keep) as c:
