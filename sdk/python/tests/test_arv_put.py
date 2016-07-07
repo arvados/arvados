@@ -8,6 +8,7 @@ import pwd
 import re
 import shutil
 import subprocess
+import multiprocessing
 import sys
 import tempfile
 import time
@@ -267,23 +268,51 @@ class ArvadosPutCollectionTest(run_test_server.TestCaseWithServers):
     #     shutil.rmtree(tmpdir)
     #     self.assertEqual(True, c.manifest())
 
-    def test_write_directory_twice(self):
-        data = 'b' * 1024 * 1024
-        tmpdir = tempfile.mkdtemp()
-        for size in [1, 5, 10, 70]:
-            with open(os.path.join(tmpdir, 'file_%d' % size), 'w') as f:
-                for _ in range(size):
-                    f.write(data)
-        os.mkdir(os.path.join(tmpdir, 'subdir1'))
-        for size in [2, 4, 6]:
-            with open(os.path.join(tmpdir, 'subdir1', 'file_%d' % size), 'w') as f:
-                for _ in range(size):
-                    f.write(data)
-        c = arv_put.ArvPutUploader([tmpdir])
-        d = arv_put.ArvPutUploader([tmpdir])
-        print "ESCRIDIERON: c: %d, d: %d" % (c.bytes_written(), d.bytes_written())
-        shutil.rmtree(tmpdir)
-        self.assertEqual(0, d.bytes_written())
+    def fake_reporter(self, written, expected):
+        # Use this callback as a intra-block pause to be able to simulate an interruption
+        print "Written %d / %d bytes" % (written, expected)
+        time.sleep(10)
+    
+    def bg_uploader(self, paths):
+        return arv_put.ArvPutUploader(paths, reporter=self.fake_reporter)
+
+    # def test_resume_large_file_upload(self):
+    #     import multiprocessing
+    #     data = 'x' * 1024 * 1024 # 1 MB
+    #     _, filename = tempfile.mkstemp()
+    #     fileobj = open(filename, 'w')
+    #     for _ in range(200):
+    #         fileobj.write(data)
+    #     fileobj.close()
+    #     uploader = multiprocessing.Process(target=self.bg_uploader, args=([filename],))
+    #     uploader.start()
+    #     time.sleep(5)
+    #     uploader.terminate()
+    #     time.sleep(1)
+    #     # cache = arv_put.ArvPutCollectionCache([filename])
+    #     # print "Collection detected: %s" % cache.collection()
+    #     # c = arv_put.ArvPutCollection(locator=cache.collection(), cache=cache)
+    #     # print "UPLOADED: %d" % c.collection[os.path.basename(filename)].size()
+    #     # self.assertLess(c.collection[os.path.basename(filename)].size(), os.path.getsize(filename))
+    #     os.unlink(filename)
+
+    # def test_write_directory_twice(self):
+    #     data = 'b' * 1024 * 1024
+    #     tmpdir = tempfile.mkdtemp()
+    #     for size in [1, 5, 10, 70]:
+    #         with open(os.path.join(tmpdir, 'file_%d' % size), 'w') as f:
+    #             for _ in range(size):
+    #                 f.write(data)
+    #     os.mkdir(os.path.join(tmpdir, 'subdir1'))
+    #     for size in [2, 4, 6]:
+    #         with open(os.path.join(tmpdir, 'subdir1', 'file_%d' % size), 'w') as f:
+    #             for _ in range(size):
+    #                 f.write(data)
+    #     c = arv_put.ArvPutUploader([tmpdir])
+    #     d = arv_put.ArvPutUploader([tmpdir])
+    #     print "ESCRIBIERON: c: %d, d: %d" % (c.bytes_written(), d.bytes_written())
+    #     shutil.rmtree(tmpdir)
+    #     self.assertEqual(0, d.bytes_written())
         
 
 class ArvadosPutCollectionWriterTest(run_test_server.TestCaseWithServers,
