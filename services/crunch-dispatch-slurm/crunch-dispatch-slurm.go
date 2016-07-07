@@ -72,7 +72,7 @@ func doMain() error {
 // sbatchCmd
 func sbatchFunc(container arvados.Container) *exec.Cmd {
 	memPerCPU := math.Ceil(float64(container.RuntimeConstraints.RAM) / (float64(container.RuntimeConstraints.VCPUs) * 1048576))
-	return exec.Command("sbatch", "--share", "--parsable",
+	return exec.Command("sbatch", "--share",
 		fmt.Sprintf("--job-name=%s", container.UUID),
 		fmt.Sprintf("--mem-per-cpu=%d", int(memPerCPU)),
 		fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs),
@@ -90,9 +90,7 @@ var scancelCmd = scancelFunc
 
 // Submit job to slurm using sbatch.
 func submit(dispatcher *dispatch.Dispatcher,
-	container arvados.Container, crunchRunCommand string) (jobid string, submitErr error) {
-	submitErr = nil
-
+	container arvados.Container, crunchRunCommand string) (submitErr error) {
 	defer func() {
 		// If we didn't get as far as submitting a slurm job,
 		// unlock the container and return it to the queue.
@@ -171,9 +169,7 @@ func submit(dispatcher *dispatch.Dispatcher,
 		return
 	}
 
-	// If everything worked out, got the jobid on stdout
-	jobid = strings.TrimSpace(string(stdoutMsg))
-
+	log.Printf("sbatch succeeded: %s", strings.TrimSpace(string(stdoutMsg)))
 	return
 }
 
@@ -194,7 +190,7 @@ func monitorSubmitOrCancel(dispatcher *dispatch.Dispatcher, container arvados.Co
 
 			log.Printf("About to submit queued container %v", container.UUID)
 
-			if _, err := submit(dispatcher, container, *crunchRunCommand); err != nil {
+			if err := submit(dispatcher, container, *crunchRunCommand); err != nil {
 				log.Printf("Error submitting container %s to slurm: %v",
 					container.UUID, err)
 				// maybe sbatch is broken, put it back to queued
