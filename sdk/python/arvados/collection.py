@@ -1135,7 +1135,8 @@ class Collection(RichCollectionBase):
                  num_retries=None,
                  parent=None,
                  apiconfig=None,
-                 block_manager=None):
+                 block_manager=None,
+                 num_write_copies=None):
         """Collection constructor.
 
         :manifest_locator_or_text:
@@ -1168,6 +1169,7 @@ class Collection(RichCollectionBase):
             self._config = config.settings()
 
         self.num_retries = num_retries if num_retries is not None else 0
+        self.num_write_copies = num_write_copies
         self._manifest_locator = None
         self._manifest_text = None
         self._api_response = None
@@ -1247,7 +1249,7 @@ class Collection(RichCollectionBase):
     @synchronized
     def _my_block_manager(self):
         if self._block_manager is None:
-            self._block_manager = _BlockManager(self._my_keep())
+            self._block_manager = _BlockManager(self._my_keep(), copies=self.num_write_copies)
         return self._block_manager
 
     def _remember_api_response(self, response):
