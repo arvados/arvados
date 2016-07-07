@@ -6,6 +6,7 @@ import (
 	"math"
 	"os"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -50,11 +51,17 @@ type Balancer struct {
 }
 
 // Run performs a balance operation using the given config and
-// runOptions. It should only be called once on a given Balancer
-// object. Typical usage:
+// runOptions, and returns RunOptions suitable for passing to a
+// subsequent balance operation.
 //
-//   err = (&Balancer{}).Run(config, runOptions)
-func (bal *Balancer) Run(config Config, runOptions RunOptions) (err error) {
+// Run should only be called once on a given Balancer object.
+//
+// Typical usage:
+//
+//   runOptions, err = (&Balancer{}).Run(config, runOptions)
+func (bal *Balancer) Run(config Config, runOptions RunOptions) (nextRunOptions RunOptions, err error) {
+	nextRunOptions = runOptions
+
 	bal.Dumper = runOptions.Dumper
 	bal.Logger = runOptions.Logger
 	if bal.Logger == nil {
@@ -75,10 +82,20 @@ func (bal *Balancer) Run(config Config, runOptions RunOptions) (err error) {
 	if err = bal.CheckSanityEarly(&config.Client); err != nil {
 		return
 	}
-	if runOptions.CommitTrash {
+	rs := bal.rendezvousState()
+	if runOptions.CommitTrash && rs != runOptions.SafeRendezvousState {
+		if runOptions.SafeRendezvousState != "" {
+			bal.logf("notice: KeepServices list has changed since last run")
+		}
+		bal.logf("clearing existing trash lists, in case the new rendezvous order differs from previous run")
 		if err = bal.ClearTrashLists(&config.Client); err != nil {
 			return
 		}
+		// The current rendezvous state becomes "safe" (i.e.,
+		// OK to compute changes for that state without
+		// clearing existing trash lists) only now, after we
+		// succeed in clearing existing trash lists.
+		nextRunOptions.SafeRendezvousState = rs
 	}
 	if err = bal.GetCurrentState(&config.Client, config.CollectionBatchSize, config.CollectionBuffers); err != nil {
 		return
@@ -156,6 +173,17 @@ func (bal *Balancer) CheckSanityEarly(c *arvados.Client) error {
 		}
 	}
 	return nil
+}
+
+// rendezvousState returns a fingerprint (e.g., a sorted list of
+// UUID+host+port) of the current set of keep services.
+func (bal *Balancer) rendezvousState() string {
+	srvs := make([]string, 0, len(bal.KeepServices))
+	for _, srv := range bal.KeepServices {
+		srvs = append(srvs, srv.String())
+	}
+	sort.Strings(srvs)
+	return strings.Join(srvs, "; ")
 }
 
 // ClearTrashLists sends an empty trash list to each keep
