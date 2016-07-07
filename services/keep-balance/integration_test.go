@@ -78,8 +78,10 @@ func (s *integrationSuite) TestBalanceAPIFixtures(c *check.C) {
 			CommitTrash: true,
 			Logger:      log.New(logBuf, "", log.LstdFlags),
 		}
-		err := (&Balancer{}).Run(s.config, opts)
+		nextOpts, err := (&Balancer{}).Run(s.config, opts)
 		c.Check(err, check.IsNil)
+		c.Check(nextOpts.SafeRendezvousState, check.Not(check.Equals), "")
+		c.Check(nextOpts.CommitPulls, check.Equals, true)
 		if iter == 0 {
 			c.Check(logBuf.String(), check.Matches, `(?ms).*ChangeSet{Pulls:1.*`)
 			c.Check(logBuf.String(), check.Not(check.Matches), `(?ms).*ChangeSet{.*Trashes:[^0]}*`)
