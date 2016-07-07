@@ -1440,7 +1440,8 @@ class Collection(RichCollectionBase):
                  create_collection_record=True,
                  owner_uuid=None,
                  ensure_unique_name=False,
-                 num_retries=None):
+                 num_retries=None,
+                 replication_desired=None):
         """Save collection to a new collection record.
 
         Commit pending buffer blocks to Keep and, when create_collection_record
@@ -1467,17 +1468,27 @@ class Collection(RichCollectionBase):
         :num_retries:
           Retry count on API calls (if None,  use the collection default)
 
+        :replication_desired:
+          How many copies should Arvados maintain. If None, API server default
+          configuration applies.
+
         """
         self._my_block_manager().commit_all()
         text = self.manifest_text(strip=False)
 
         if create_collection_record:
+            replication_attr = 'replication_desired'
+            if self._my_api()._schema.schemas['Collection']['properties'].get(replication_attr, None) is None:
+                # API called it 'redundancy' before #3410.
+                replication_attr = 'redundancy'
+
             if name is None:
                 name = "New collection"
                 ensure_unique_name = True
 
             body = {"manifest_text": text,
-                    "name": name}
+                    "name": name,
+                    replication_attr: replication_desired}
             if owner_uuid:
                 body["owner_uuid"] = owner_uuid
 
