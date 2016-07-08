@@ -8,12 +8,15 @@ import pwd
 import re
 import shutil
 import subprocess
-import multiprocessing
 import sys
 import tempfile
 import time
 import unittest
 import yaml
+import multiprocessing
+import shutil
+import hashlib
+import random
 
 from cStringIO import StringIO
 
@@ -238,81 +241,116 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
 class ArvadosPutCollectionTest(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
     KEEP_SERVER = {}
-    import shutil
-        
-    # def test_write_files(self):
-    #     c = arv_put.ArvPutCollection()
-    #     data = 'a' * 1024 * 1024 # 1 MB
-    #     tmpdir = tempfile.mkdtemp()
-    #     for size in [1, 10, 64, 128]:
-    #         with open(os.path.join(tmpdir, 'file_%d' % size), 'w') as f:
-    #             for _ in range(size):
-    #                 f.write(data)
-    #         c.write_file(f.name, os.path.basename(f.name))
-    #     shutil.rmtree(tmpdir)
-    #     self.assertEqual(True, c.manifest())
-    #
-    # def test_write_directory(self):
-    #     data = 'b' * 1024 * 1024
-    #     tmpdir = tempfile.mkdtemp()
-    #     for size in [1, 5, 10, 70]:
-    #         with open(os.path.join(tmpdir, 'file_%d' % size), 'w') as f:
-    #             for _ in range(size):
-    #                 f.write(data)
-    #     os.mkdir(os.path.join(tmpdir, 'subdir1'))
-    #     for size in [2, 4, 6]:
-    #         with open(os.path.join(tmpdir, 'subdir1', 'file_%d' % size), 'w') as f:
-    #             for _ in range(size):
-    #                 f.write(data)
-    #     c = arv_put.ArvPutUploader([tmpdir])
-    #     shutil.rmtree(tmpdir)
-    #     self.assertEqual(True, c.manifest())
+    
+    def setUp(self):
+        self.lock = multiprocessing.Lock()
 
     def fake_reporter(self, written, expected):
-        # Use this callback as a intra-block pause to be able to simulate an interruption
-        print "Written %d / %d bytes" % (written, expected)
-        time.sleep(10)
+        self.lock.release() # Allow caller process to terminate() us...
     
-    def bg_uploader(self, paths):
-        return arv_put.ArvPutUploader(paths, reporter=self.fake_reporter)
+    def bg_uploader(self, filename):
+        cache = arv_put.ArvPutCollectionCache([filename])
+        c = arv_put.ArvPutCollection(reporter=self.fake_reporter, cache=cache)
+        c.collection_flush_time = 0 # flush collection on every block flush, just for this test
+        c.write_file(filename, os.path.basename(filename))
 
-    # def test_resume_large_file_upload(self):
-    #     import multiprocessing
-    #     data = 'x' * 1024 * 1024 # 1 MB
-    #     _, filename = tempfile.mkstemp()
-    #     fileobj = open(filename, 'w')
-    #     for _ in range(200):
-    #         fileobj.write(data)
-    #     fileobj.close()
-    #     uploader = multiprocessing.Process(target=self.bg_uploader, args=([filename],))
-    #     uploader.start()
-    #     time.sleep(5)
-    #     uploader.terminate()
-    #     time.sleep(1)
-    #     # cache = arv_put.ArvPutCollectionCache([filename])
-    #     # print "Collection detected: %s" % cache.collection()
-    #     # c = arv_put.ArvPutCollection(locator=cache.collection(), cache=cache)
-    #     # print "UPLOADED: %d" % c.collection[os.path.basename(filename)].size()
-    #     # self.assertLess(c.collection[os.path.basename(filename)].size(), os.path.getsize(filename))
-    #     os.unlink(filename)
+    def test_write_collection_with_name(self):
+        name = 'This is a collection'
+        c = arv_put.ArvPutCollection(name=name)
+        self.assertEqual(name, c.name())
 
-    # def test_write_directory_twice(self):
-    #     data = 'b' * 1024 * 1024
-    #     tmpdir = tempfile.mkdtemp()
-    #     for size in [1, 5, 10, 70]:
-    #         with open(os.path.join(tmpdir, 'file_%d' % size), 'w') as f:
-    #             for _ in range(size):
-    #                 f.write(data)
-    #     os.mkdir(os.path.join(tmpdir, 'subdir1'))
-    #     for size in [2, 4, 6]:
-    #         with open(os.path.join(tmpdir, 'subdir1', 'file_%d' % size), 'w') as f:
-    #             for _ in range(size):
-    #                 f.write(data)
-    #     c = arv_put.ArvPutUploader([tmpdir])
-    #     d = arv_put.ArvPutUploader([tmpdir])
-    #     print "ESCRIBIERON: c: %d, d: %d" % (c.bytes_written(), d.bytes_written())
-    #     shutil.rmtree(tmpdir)
-    #     self.assertEqual(0, d.bytes_written())
+    def test_write_file_on_collection_without_save(self):
+        c = arv_put.ArvPutCollection(should_save=False)
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            f.write("The quick brown fox jumped over the lazy dog")
+        c.write_file(f.name, os.path.basename(f.name))
+        self.assertEqual(None, c.manifest_locator())
+        os.unlink(f.name)
+
+    def test_write_file_and_check_data_locators(self):
+        c = arv_put.ArvPutCollection(should_save=False)
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            # Writing ~90 MB, so that it writes 2 data blocks
+            for _ in range(2 * 1024 * 1024):
+                f.write("The quick brown fox jumped over the lazy dog\n")
+        c.write_file(f.name, os.path.basename(f.name))
+        self.assertEqual(2, len(c.data_locators()))
+        os.unlink(f.name)
+        
+    def test_write_directory_and_check_data_locators(self):
+        data = 'b' * 1024 * 1024 # 1 MB
+        tmpdir = tempfile.mkdtemp()
+        for size in [1, 5, 10, 70]:
+            with open(os.path.join(tmpdir, 'file_%d' % size), 'w') as f:
+                for _ in range(size):
+                    f.write(data)
+        os.mkdir(os.path.join(tmpdir, 'subdir1'))
+        for size in [2, 4, 6]:
+            with open(os.path.join(tmpdir, 'subdir1', 'file_%d' % size), 'w') as f:
+                for _ in range(size):
+                    f.write(data)
+        c = arv_put.ArvPutCollection()
+        c.write_directory_tree(tmpdir)
+        shutil.rmtree(tmpdir)
+        self.assertEqual(8, len(c.data_locators()))
+
+    def test_resume_large_file_upload(self):
+        _, filename = tempfile.mkstemp()
+        md5_original = hashlib.md5()
+        md5_uploaded = hashlib.md5()
+        fileobj = open(filename, 'w')
+        for _ in range(70):
+            data = random.choice(['x', 'y', 'z']) * 1024 * 1024 # 1 MB
+            fileobj.write(data)
+            md5_original.update(data)
+        fileobj.close()
+        self.lock.acquire()
+        uploader = multiprocessing.Process(target=self.bg_uploader, args=(filename,))
+        uploader.start()
+        self.lock.acquire() # We can now proceed, because one block and collection flush()ed
+        self.lock.release()
+        uploader.terminate()
+        uploader.join()
+        cache = arv_put.ArvPutCollectionCache([filename])
+        c = arv_put.ArvPutCollection(cache=cache)
+        self.assertLess(c.collection[os.path.basename(filename)].size(), os.path.getsize(filename))
+        c.write_file(filename, os.path.basename(filename))
+        uploaded = c.collection.open(os.path.basename(filename), 'r')
+        while True:
+            data = uploaded.read(1024*1024)
+            if not data:
+                break
+            md5_uploaded.update(data)
+        os.unlink(filename)
+        cache.destroy()
+        self.assertEqual(md5_original.hexdigest(), md5_uploaded.hexdigest())
+
+    def test_write_directory_twice(self):
+        data = 'b' * 1024 * 1024
+        tmpdir = tempfile.mkdtemp()
+        for size in [1, 5, 10, 70]:
+            with open(os.path.join(tmpdir, 'file_%d' % size), 'w') as f:
+                for _ in range(size):
+                    f.write(data)
+        os.mkdir(os.path.join(tmpdir, 'subdir1'))
+        for size in [2, 4, 6]:
+            with open(os.path.join(tmpdir, 'subdir1', 'file_%d' % size), 'w') as f:
+                for _ in range(size):
+                    f.write(data)
+        c_cache = arv_put.ArvPutCollectionCache([tmpdir])
+        c = arv_put.ArvPutCollection(cache=c_cache)
+        c.write_directory_tree(tmpdir)
+        c_cache.close()
+        d_cache = arv_put.ArvPutCollectionCache([tmpdir])
+        d = arv_put.ArvPutCollection(cache=d_cache)
+        d.write_directory_tree(tmpdir)
+        d_cache.close()
+        c_cache.destroy()
+        d_cache.destroy()
+        shutil.rmtree(tmpdir)
+        self.assertNotEqual(c.bytes_written, d.bytes_written)
+        # self.assertGreater(c.bytes_written, 0)
+        # self.assertEqual(d.bytes_written, 0)
         
 
 class ArvadosPutCollectionWriterTest(run_test_server.TestCaseWithServers,
