@@ -7,6 +7,7 @@ from cwltool.errors import WorkflowException
 from cwltool.draft2tool import revmap_file, CommandLineTool
 from cwltool.load_tool import fetch_document
 from cwltool.builder import Builder
+from cwltool.pathmapper import PathMapper
 
 import arvados.collection
 
@@ -37,14 +38,18 @@ class ArvadosJob(object):
         if self.generatefiles["listing"]:
             vwd = arvados.collection.Collection()
             script_parameters["task.vwd"] = {}
-            for f, p in self.generatefiles["listing"]:
-                if p.type == "File":
-                    pass
-                if p.type == "File" or "WritableFile":
-                    pass
-                elif p.type == "CreateFile":
-                    with open(p.target, "w") as n:
+            generatemapper = PathMapper([self.generatefiles], self.outdir,
+                                        ".", separateDirs=False)
+            for f, p in generatemapper.items():
+                if p.type == "CreateFile":
+                    with vwd.open(p.target, "w") as n:
                         n.write(p.resolved.encode("utf-8"))
+            vwd.save_new()
+            for f, p in generatemapper.items():
+                if p.type == "File":
+                    script_parameters["task.vwd"][p.target] = self.pathmapper.mapper(f).target
+                if p.type == "CreateFile":
+                    script_parameters["task.vwd"][p.target] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), p.target)
 
         # if self.generatefiles:
         #     for t in self.generatefiles:

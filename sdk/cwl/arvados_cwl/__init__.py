@@ -303,6 +303,7 @@ def main(args, stdout, stderr, api_client=None):
         return 1
 
     arvargs.conformance_test = None
+    arvargs.use_container = True
 
     return cwltool.main.main(args=arvargs,
                              stdout=stdout,
