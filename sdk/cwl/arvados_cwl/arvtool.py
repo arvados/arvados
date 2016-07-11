@@ -17,7 +17,8 @@ class ArvadosCommandTool(CommandLineTool):
         elif self.work_api == "jobs":
             return ArvadosJob(self.arvrunner)
 
-    def makePathMapper(self, reffiles, **kwargs):
+    def makePathMapper(self, reffiles, stagedir, **kwargs):
+        # type: (List[Any], unicode, **Any) -> PathMapper
         if self.work_api == "containers":
             return ArvPathMapper(self.arvrunner, reffiles, kwargs["basedir"],
                                  "/keep/%s",

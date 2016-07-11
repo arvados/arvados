@@ -4,7 +4,7 @@ import copy
 
 from cwltool.process import get_feature, shortname
 from cwltool.errors import WorkflowException
-from cwltool.draft2tool import revmap_file, remove_hostfs, CommandLineTool
+from cwltool.draft2tool import revmap_file, CommandLineTool
 from cwltool.load_tool import fetch_document
 from cwltool.builder import Builder
 
@@ -34,29 +34,42 @@ class ArvadosJob(object):
         }
         runtime_constraints = {}
 
-        if self.generatefiles:
+        if self.generatefiles["listing"]:
             vwd = arvados.collection.Collection()
             script_parameters["task.vwd"] = {}
-            for t in self.generatefiles:
-                if isinstance(self.generatefiles[t], dict):
-                    src, rest = self.arvrunner.fs_access.get_collection(self.generatefiles[t]["path"].replace("$(task.keep)/", "keep:"))
-                    vwd.copy(rest, t, source_collection=src)
-                else:
-                    with vwd.open(t, "w") as f:
-                        f.write(self.generatefiles[t].encode('utf-8'))
-            vwd.save_new()
-            for t in self.generatefiles:
-                script_parameters["task.vwd"][t] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), t)
+            for f, p in self.generatefiles["listing"]:
+                if p.type == "File":
+                    pass
+                if p.type == "File" or "WritableFile":
+                    pass
+                elif p.type == "CreateFile":
+                    with open(p.target, "w") as n:
+                        n.write(p.resolved.encode("utf-8"))
+
+        # if self.generatefiles:
+        #     for t in self.generatefiles:
+        #         if isinstance(self.generatefiles[t], dict):
+        #             src, rest = self.arvrunner.fs_access.get_collection(self.generatefiles[t]["path"].replace("$(task.keep)/", "keep:"))
+        #             vwd.copy(rest, t, source_collection=src)
+        #         else:
+        #             with vwd.open(t, "w") as f:
+        #                 f.write(t.encode('utf-8'))
+        #     vwd.save_new()
+        #     for t in self.generatefiles:
+        #         script_parameters["task.vwd"][t] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), t)
 
         script_parameters["task.env"] = {"TMPDIR": "$(task.tmpdir)"}
         if self.environment:
             script_parameters["task.env"].update(self.environment)
 
         if self.stdin:
-            script_parameters["task.stdin"] = self.pathmapper.mapper(self.stdin)[1]
+            script_parameters["task.stdin"] = self.stdin
 
         if self.stdout:
             script_parameters["task.stdout"] = self.stdout
+
+        if self.stderr:
+            script_parameters["task.stderr"] = self.stderr
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if docker_req and kwargs.get("use_container") is not False:
@@ -82,7 +95,7 @@ class ArvadosJob(object):
                     "owner_uuid": self.arvrunner.project_uuid,
                     "script": "crunchrunner",
                     "repository": "arvados",
-                    "script_version": "master",
+                    "script_version": "9570-cwl-v1.0",
                     "minimum_script_version": "9e5b98e8f5f4727856b53447191f9c06e3da2ba6",
                     "script_parameters": {"tasks": [script_parameters]},
                     "runtime_constraints": runtime_constraints

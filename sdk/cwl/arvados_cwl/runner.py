@@ -6,8 +6,9 @@ import json
 
 from cwltool.draft2tool import CommandLineTool
 import cwltool.workflow
-from cwltool.process import get_feature, scandeps, adjustFiles, UnsupportedRequirement
+from cwltool.process import get_feature, scandeps, UnsupportedRequirement
 from cwltool.load_tool import fetch_document
+from cwltool.pathmapper import adjustFiles
 
 import arvados.collection
 

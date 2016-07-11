@@ -2,9 +2,11 @@ import fnmatch
 import os
 
 import cwltool.process
+from cwltool.pathmapper import abspath
 
 import arvados.util
 import arvados.collection
+import arvados.arvfile
 
 class CollectionFsAccess(cwltool.process.StdFsAccess):
     """Implement the cwltool FsAccess interface for Arvados Collections."""
@@ -55,11 +57,33 @@ class CollectionFsAccess(cwltool.process.StdFsAccess):
         if collection:
             return collection.open(rest, mode)
         else:
-            return open(self._abs(fn), mode)
+            return super(CollectionFsAccess, self).open(self._abs(fn), mode)
 
     def exists(self, fn):
         collection, rest = self.get_collection(fn)
         if collection:
             return collection.exists(rest)
         else:
-            return os.path.exists(self._abs(fn))
+            return super(CollectionFsAccess, self).exists(fn)
+
+    def isfile(self, fn):  # type: (unicode) -> bool
+        collection, rest = self.get_collection(fn)
+        if collection:
+            return isinstance(collection.find(rest), arvados.arvfile.ArvadosFile)
+        else:
+            return super(CollectionFsAccess, self).isfile(fn)
+
+    def isdir(self, fn):  # type: (unicode) -> bool
+        collection, rest = self.get_collection(fn)
+        if collection:
+            return isinstance(collection.find(rest), arvados.arvfile.Collection)
+        else:
+            return super(CollectionFsAccess, self).isdir(fn)
+
+    def listdir(self, fn):  # type: (unicode) -> List[unicode]
+        collection, rest = self.get_collection(fn)
+        dir = collection.find(rest)
+        if collection:
+            return [abspath(l, fn) for l in dir.keys()]
+        else:
+            return super(CollectionFsAccess, self).listdir(fn)
