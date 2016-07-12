@@ -49,6 +49,8 @@ class CollectionFsAccess(cwltool.process.StdFsAccess):
 
     def glob(self, pattern):
         collection, rest = self.get_collection(pattern)
+        if collection and not rest:
+            return [pattern]
         patternsegments = rest.split("/")
         return self._match(collection, patternsegments, "keep:" + collection.manifest_locator())
 
@@ -69,21 +71,35 @@ class CollectionFsAccess(cwltool.process.StdFsAccess):
     def isfile(self, fn):  # type: (unicode) -> bool
         collection, rest = self.get_collection(fn)
         if collection:
-            return isinstance(collection.find(rest), arvados.arvfile.ArvadosFile)
+            if rest:
+                return isinstance(collection.find(rest), arvados.arvfile.ArvadosFile)
+            else:
+                return False
         else:
             return super(CollectionFsAccess, self).isfile(fn)
 
     def isdir(self, fn):  # type: (unicode) -> bool
         collection, rest = self.get_collection(fn)
         if collection:
-            return isinstance(collection.find(rest), arvados.arvfile.Collection)
+            if rest:
+                return isinstance(collection.find(rest), arvados.collection.Collection)
+            else:
+                return True
         else:
             return super(CollectionFsAccess, self).isdir(fn)
 
     def listdir(self, fn):  # type: (unicode) -> List[unicode]
         collection, rest = self.get_collection(fn)
-        dir = collection.find(rest)
+        if rest:
+            dir = collection.find(rest)
+        else:
+            dir = collection
         if collection:
             return [abspath(l, fn) for l in dir.keys()]
         else:
             return super(CollectionFsAccess, self).listdir(fn)
+
+    def join(self, path, *paths): # type: (unicode, *unicode) -> unicode
+        if paths and paths[-1].startswith("keep:") and arvados.util.keep_locator_pattern.match(paths[-1][5:]):
+            return paths[-1]
+        return os.path.join(path, *paths)

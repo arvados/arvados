@@ -51,18 +51,6 @@ class ArvadosJob(object):
                 if p.type == "CreateFile":
                     script_parameters["task.vwd"][p.target] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), p.target)
 
-        # if self.generatefiles:
-        #     for t in self.generatefiles:
-        #         if isinstance(self.generatefiles[t], dict):
-        #             src, rest = self.arvrunner.fs_access.get_collection(self.generatefiles[t]["path"].replace("$(task.keep)/", "keep:"))
-        #             vwd.copy(rest, t, source_collection=src)
-        #         else:
-        #             with vwd.open(t, "w") as f:
-        #                 f.write(t.encode('utf-8'))
-        #     vwd.save_new()
-        #     for t in self.generatefiles:
-        #         script_parameters["task.vwd"][t] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), t)
-
         script_parameters["task.env"] = {"TMPDIR": "$(task.tmpdir)"}
         if self.environment:
             script_parameters["task.env"].update(self.environment)
@@ -75,6 +63,13 @@ class ArvadosJob(object):
 
         if self.stderr:
             script_parameters["task.stderr"] = self.stderr
+
+        if self.successCodes:
+            script_parameters["task.successCodes"] = self.successCodes
+        if self.temporaryFailCodes:
+            script_parameters["task.temporaryFailCodes"] = self.temporaryFailCodes
+        if self.permanentFailCodes:
+            script_parameters["task.permanentFailCodes"] = self.permanentFailCodes
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if docker_req and kwargs.get("use_container") is not False:
