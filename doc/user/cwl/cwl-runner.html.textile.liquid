@@ -18,7 +18,7 @@ The tutorial files are located in the documentation section Arvados source repos
 </code></pre>
 </notextile>
 
-The tutorial data is hosted on "http://cloud.curoverse.com":http://cloud.curoverse.com (also known as *qr1hi*).  If you are using a different Arvados instance, you may need to copy the data to your own instance.  The easiest way to do this is with "arv-copy":{{site.baseurl}}/user/topics/arv-copy.html (this requires signing up for a free cloud.curoverse.com account).
+The tutorial data is hosted on "https://cloud.curoverse.com":https://cloud.curoverse.com (also known as *qr1hi*).  If you are using a different Arvados instance, you may need to copy the data to your own instance.  The easiest way to do this is with "arv-copy":{{site.baseurl}}/user/topics/arv-copy.html (this requires signing up for a free cloud.curoverse.com account).
 
 <notextile>
 <pre><code>~$ <span class="userinput">arv-copy --src cloud --dst settings 2463fa9efeb75e099685528b3b9071e0+438</span>
@@ -26,7 +26,7 @@ The tutorial data is hosted on "http://cloud.curoverse.com":http://cloud.curover
 </code></pre>
 </notextile>
 
-If you do not wish to create an account on "http://cloud.curoverse.com":http://cloud.curoverse.com, you may download the files anonymously and upload them to your local Arvados instance:
+If you do not wish to create an account on "https://cloud.curoverse.com":https://cloud.curoverse.com, you may download the files anonymously and upload them to your local Arvados instance:
 
 "https://cloud.curoverse.com/collections/2463fa9efeb75e099685528b3b9071e0+438":https://cloud.curoverse.com/collections/2463fa9efeb75e099685528b3b9071e0+438
 
@@ -100,7 +100,7 @@ When running a workflow on an Arvados cluster, the input files must be stored in
 
 A URI reference to Keep uses the @keep:@ scheme followed by the portable data hash, collection size, and path to the file inside the collection.  For example, @keep:2463fa9efeb75e099685528b3b9071e0+438/19.fasta.bwt@.
 
-If you reference a file in "arv-mount":{{site.baseurl}}/user/tutorials/tutorial-keep-mount.html , such as @/home/example/keep/by_id/2463fa9efeb75e099685528b3b9071e0+438/19.fasta.bwt@, then @arvados-cwl-runner@ will automatically determine the appropriate Keep URI reference.
+If you reference a file in "arv-mount":{{site.baseurl}}/user/tutorials/tutorial-keep-mount.html, such as @/home/example/keep/by_id/2463fa9efeb75e099685528b3b9071e0+438/19.fasta.bwt@, then @arvados-cwl-runner@ will automatically determine the appropriate Keep URI reference.
 
 If you reference a local file which is not in @arv-mount@, then @arvados-cwl-runner@ will upload the file to Keep and use the Keep URI reference from the upload.
 
@@ -109,8 +109,7 @@ h2. Registering a workflow with Workbench
 Use @--create-template@ to register a CWL workflow with Arvados Workbench.  This enables you to run Workflows by clicking on the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a pipeline...</span> on the Workbench Dashboard.
 
 <notextile>
-<pre><code>
-~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --create-template bwa-mem.cwl</span>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --create-template bwa-mem.cwl</span>
 arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
 2016-07-01 12:21:01 arvados.arv-run[15796] INFO: Upload local files: "bwa-mem.cwl"
 2016-07-01 12:21:01 arvados.arv-run[15796] INFO: Uploaded to 3d0ga-4zz18-7e0hedrmkuyoei3
@@ -122,8 +121,7 @@ arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107,
 You can provide a partial input file to set default values for the Workflow input parameters:
 
 <notextile>
-<pre><code>
-~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --create-template bwa-mem.cwl bwa-mem-template.yml</span>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --create-template bwa-mem.cwl bwa-mem-template.yml</span>
 arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
 2016-07-01 14:09:50 arvados.arv-run[3730] INFO: Upload local files: "bwa-mem.cwl"
 2016-07-01 14:09:50 arvados.arv-run[3730] INFO: Uploaded to 3d0ga-4zz18-0f91qkovk4ml18o
@@ -135,8 +133,6 @@ arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107,
 h2. Making workflows directly executable
 
 You can make a workflow file directly executable (@cwl-runner@ should be an alias to @arvados-cwl-runner@) by adding the following line to the top of the file:
-
-*bwa-mem.cwl*
 
 <notextile>
 <pre><code>#!/usr/bin/env cwl-runner
@@ -165,11 +161,9 @@ arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107,
 
 You can even make an input file directly executable the same way with the following two lines at the top:
 
-*bwa-mem-input.yml*
-
 <notextile>
 <pre><code>#!/usr/bin/env cwl-runner
-cwl:tool: bwa-mem.cwl
+cwl:tool: <span class="userinput">bwa-mem.cwl</span>
 </code></pre>
 </notextile>
 
@@ -195,15 +189,14 @@ arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107,
 
 h2. Developing workflows
 
-For an introduction and and detailed documentation about writing CWL, see the "User Guide":http://commonwl.org/draft-3/UserGuide.html and the "Specification":http://commonwl.org/draft-3 .
+For an introduction and and detailed documentation about writing CWL, see the "User Guide":http://commonwl.org/draft-3/UserGuide.html and the "Specification":http://commonwl.org/draft-3.
 
 To run on Arvados, a workflow should provide a @DockerRequirement@ in the @hints@ section.
 
 When developing a workflow, it is often helpful to run it on the local host to avoid the overhead of submitting to the cluster.  To execute a workflow only on the local host (without submitting jobs to an Arvados cluster) you can use the @cwltool@ command.  Note that you must also have the input data accessible on the local host.  You can use @arv-get@ to fetch the data from Keep.
 
 <notextile>
-<pre><code>
-~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arv-get 2463fa9efeb75e099685528b3b9071e0+438/ .</span>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arv-get 2463fa9efeb75e099685528b3b9071e0+438/ .</span>
 156 MiB / 156 MiB 100.0%
 ~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arv-get ae480c5099b81e17267b7445e35b4bc7+180/ .</span>
 23 MiB / 23 MiB 100.0%
