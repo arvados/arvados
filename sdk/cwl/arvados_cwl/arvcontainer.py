@@ -43,13 +43,13 @@ class ArvadosContainer(object):
         }
 
         for f in self.pathmapper.files():
-            _, p = self.pathmapper.mapper(f)
+            _, p, _ = self.pathmapper.mapper(f)
             mounts[p] = {
                 "kind": "collection",
                 "portable_data_hash": p[6:]
             }
 
-        if self.generatefiles:
+        if self.generatefiles["listing"]:
             raise UnsupportedRequirement("Generate files not supported")
 
         container_request["environment"] = {"TMPDIR": "/tmp"}
@@ -58,6 +58,9 @@ class ArvadosContainer(object):
 
         if self.stdin:
             raise UnsupportedRequirement("Stdin redirection currently not suppported")
+
+        if self.stderr:
+            raise UnsupportedRequirement("Stderr redirection currently not suppported")
 
         if self.stdout:
             mounts["stdout"] = {"kind": "file",
