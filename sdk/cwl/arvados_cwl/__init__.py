@@ -126,9 +126,11 @@ class ArvCwlRunner(object):
 
         if self.work_api == "containers":
             kwargs["outdir"] = "/var/spool/cwl"
+            kwargs["docker_outdir"] = "/var/spool/cwl"
             kwargs["tmpdir"] = "/tmp"
         elif self.work_api == "jobs":
             kwargs["outdir"] = "$(task.outdir)"
+            kwargs["docker_outdir"] = "$(task.outdir)"
             kwargs["tmpdir"] = "$(task.tmpdir)"
 
         runnerjob = None
@@ -169,7 +171,6 @@ class ArvCwlRunner(object):
                 self.uuid = kwargs.get("cwl_runner_job").get('uuid')
             jobiter = tool.job(job_order,
                                self.output_callback,
-                               docker_outdir="$(task.outdir)",
                                **kwargs)
 
         try:
