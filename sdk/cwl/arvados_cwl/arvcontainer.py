@@ -42,12 +42,22 @@ class ArvadosContainer(object):
             }
         }
 
+        dirs = set()
         for f in self.pathmapper.files():
-            _, p, _ = self.pathmapper.mapper(f)
-            mounts[p] = {
-                "kind": "collection",
-                "portable_data_hash": p[6:]
-            }
+            _, p, tp = self.pathmapper.mapper(f)
+            if tp == "Directory" and '/' not in p[6:]:
+                mounts[p] = {
+                    "kind": "collection",
+                    "portable_data_hash": p[6:]
+                }
+                dirs.add(p[6:])
+        for f in self.pathmapper.files():
+            _, p, tp = self.pathmapper.mapper(f)
+            if p[6:].split("/")[0] not in dirs:
+                mounts[p] = {
+                    "kind": "collection",
+                    "portable_data_hash": p[6:]
+                }
 
         if self.generatefiles["listing"]:
             raise UnsupportedRequirement("Generate files not supported")

@@ -1,5 +1,6 @@
 import re
 import logging
+import uuid
 
 import arvados.commands.run
 import arvados.collection
@@ -123,6 +124,9 @@ class ArvPathMapper(PathMapper):
 
                 ab = self.file_pattern % (c.portable_data_hash(), srcobj["basename"])
                 self._pathmap[srcobj["location"]] = MapperEnt(ab, ab, "File")
+                if srcobj.get("secondaryFiles"):
+                    ab = self.collection_pattern % c.portable_data_hash()
+                    self._pathmap["_:" + unicode(uuid.uuid4())] = MapperEnt(ab, ab, "Directory")
                 for loc, sub in subdirs:
                     ab = self.file_pattern % (c.portable_data_hash(), sub[2:])
                     self._pathmap[loc] = MapperEnt(ab, ab, "Directory")
