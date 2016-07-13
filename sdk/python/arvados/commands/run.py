@@ -171,6 +171,7 @@ def uploadfiles(files, api, dry_run=False, num_retries=0, project=None, fnPatter
         pdh = item["portable_data_hash"]
 
     for c in files:
+        c.keepref = "%s/%s" % (pdh, c.fn)
         c.fn = fnPattern % (pdh, c.fn)
 
     os.chdir(orgdir)

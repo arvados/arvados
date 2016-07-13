@@ -3,7 +3,8 @@ import json
 import os
 
 from cwltool.errors import WorkflowException
-from cwltool.process import get_feature, adjustFiles, UnsupportedRequirement, shortname
+from cwltool.process import get_feature, UnsupportedRequirement, shortname
+from cwltool.pathmapper import adjustFiles
 
 import arvados.collection
 
@@ -41,14 +42,24 @@ class ArvadosContainer(object):
             }
         }
 
+        dirs = set()
         for f in self.pathmapper.files():
-            _, p = self.pathmapper.mapper(f)
-            mounts[p] = {
-                "kind": "collection",
-                "portable_data_hash": p[6:]
-            }
+            _, p, tp = self.pathmapper.mapper(f)
+            if tp == "Directory" and '/' not in p[6:]:
+                mounts[p] = {
+                    "kind": "collection",
+                    "portable_data_hash": p[6:]
+                }
+                dirs.add(p[6:])
+        for f in self.pathmapper.files():
+            _, p, tp = self.pathmapper.mapper(f)
+            if p[6:].split("/")[0] not in dirs:
+                mounts[p] = {
+                    "kind": "collection",
+                    "portable_data_hash": p[6:]
+                }
 
-        if self.generatefiles:
+        if self.generatefiles["listing"]:
             raise UnsupportedRequirement("Generate files not supported")
 
         container_request["environment"] = {"TMPDIR": "/tmp"}
@@ -57,6 +68,9 @@ class ArvadosContainer(object):
 
         if self.stdin:
             raise UnsupportedRequirement("Stdin redirection currently not suppported")
+
+        if self.stderr:
+            raise UnsupportedRequirement("Stderr redirection currently not suppported")
 
         if self.stdout:
             mounts["stdout"] = {"kind": "file",

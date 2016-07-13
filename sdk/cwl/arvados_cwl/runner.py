@@ -3,11 +3,14 @@ import urlparse
 from functools import partial
 import logging
 import json
+import re
 
+import cwltool.draft2tool
 from cwltool.draft2tool import CommandLineTool
 import cwltool.workflow
-from cwltool.process import get_feature, scandeps, adjustFiles, UnsupportedRequirement
+from cwltool.process import get_feature, scandeps, UnsupportedRequirement
 from cwltool.load_tool import fetch_document
+from cwltool.pathmapper import adjustFiles
 
 import arvados.collection
 
@@ -15,6 +18,8 @@ from .arvdocker import arv_docker_get_image
 from .pathmapper import ArvPathMapper
 
 logger = logging.getLogger('arvados.cwl-runner')
+
+cwltool.draft2tool.ACCEPTLIST_RE = re.compile(r"^[a-zA-Z0-9._+-]+$")
 
 class Runner(object):
     def __init__(self, runner, tool, job_order, enable_reuse):
