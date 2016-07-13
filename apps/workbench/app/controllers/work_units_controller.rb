@@ -5,7 +5,7 @@ class WorkUnitsController < ApplicationController
         if params[:partial]
           @next_page_href = next_page_href(partial: params[:partial], filters: @filters.to_json)
           render json: {
-            content: render_to_string(partial: "work_unit/show_#{params[:partial]}",
+            content: render_to_string(partial: "work_units/show_#{params[:partial]}",
                                       formats: [:html]),
             next_page_href: @next_page_href
           }

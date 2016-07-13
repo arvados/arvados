@@ -8,6 +8,6 @@
     <% end %>
     <%= link_to_if_arvados_object outputs[0], friendly_name: true %>
   <% else %>
-    <%= render partial: 'work_unit/show_outputs', locals: {id: wu.uuid, outputs: outputs, align:align} %>
+    <%= render partial: 'work_units/show_outputs', locals: {id: wu.uuid, outputs: outputs, align:align} %>
   <% end %>
 </span>
