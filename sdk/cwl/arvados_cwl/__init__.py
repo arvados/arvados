@@ -110,6 +110,7 @@ class ArvCwlRunner(object):
         useruuid = self.api.users().current().execute()["uuid"]
         self.project_uuid = kwargs.get("project_uuid") if kwargs.get("project_uuid") else useruuid
         self.pipeline = None
+        self.fs_access = CollectionFsAccess(kwargs["basedir"], api_client=self.api)
 
         if kwargs.get("create_template"):
             tmpl = RunnerTemplate(self, tool, job_order, kwargs.get("enable_reuse"))
@@ -119,7 +120,6 @@ class ArvCwlRunner(object):
 
         self.debug = kwargs.get("debug")
         self.ignore_docker_for_reuse = kwargs.get("ignore_docker_for_reuse")
-        self.fs_access = CollectionFsAccess(kwargs["basedir"])
 
         kwargs["fs_access"] = self.fs_access
         kwargs["enable_reuse"] = kwargs.get("enable_reuse")

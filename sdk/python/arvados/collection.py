@@ -1482,6 +1482,7 @@ class Collection(RichCollectionBase):
                 body["owner_uuid"] = owner_uuid
 
             self._remember_api_response(self._my_api().collections().create(ensure_unique_name=ensure_unique_name, body=body).execute(num_retries=num_retries))
+            print self._api_response
             text = self._api_response["manifest_text"]
 
             self._manifest_locator = self._api_response["uuid"]

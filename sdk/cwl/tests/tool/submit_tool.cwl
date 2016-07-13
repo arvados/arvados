@@ -4,7 +4,7 @@
 # value blub.txt) and uploading to Keep works as intended.
 
 class: CommandLineTool
-cwlVersion: draft-3
+cwlVersion: v1.0
 requirements:
   - class: DockerRequirement
     dockerPull: debian:8
@@ -13,7 +13,7 @@ inputs:
     type: File
     default:
       class: File
-      path: blub.txt
+      location: blub.txt
     inputBinding:
       position: 1
 outputs: []

@@ -4,14 +4,14 @@
 # (e.g. submit_tool.cwl) and uploading to Keep works as intended.
 
 class: Workflow
-cwlVersion: draft-3
+cwlVersion: v1.0
 inputs:
   - id: x
     type: File
 outputs: []
 steps:
   - id: step1
-    inputs:
+    in:
       - { id: x, source: "#x" }
-    outputs: []
+    out: []
     run: ../tool/submit_tool.cwl

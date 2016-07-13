@@ -2,12 +2,12 @@
 # various input types as script_parameters in pipeline templates.
 
 class: Workflow
-cwlVersion: draft-3
+cwlVersion: v1.0
 inputs:
   - id: "#fileInput"
     type: File
     label: It's a file; we expect to find some characters in it.
-    description: |
+    doc: |
       If there were anything further to say, it would be said here,
       or here.
   - id: "#boolInput"
@@ -22,7 +22,7 @@ inputs:
 outputs: []
 steps:
   - id: step1
-    inputs:
-      - { id: x, source: "#x" }
-    outputs: []
+    in:
+      - { id: x, source: "#fileInput" }
+    out: []
     run: ../tool/submit_tool.cwl

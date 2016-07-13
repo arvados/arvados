@@ -95,7 +95,7 @@ class ArvadosJob(object):
                     "owner_uuid": self.arvrunner.project_uuid,
                     "script": "crunchrunner",
                     "repository": "arvados",
-                    "script_version": "9570-cwl-v1.0",
+                    "script_version": "master",
                     "minimum_script_version": "9e5b98e8f5f4727856b53447191f9c06e3da2ba6",
                     "script_parameters": {"tasks": [script_parameters]},
                     "runtime_constraints": runtime_constraints
@@ -297,7 +297,7 @@ class RunnerTemplate(object):
 
             # Title and description...
             title = param.pop('label', '')
-            descr = param.pop('description', '').rstrip('\n')
+            descr = param.pop('doc', '').rstrip('\n')
             if title:
                 param['title'] = title
             if descr:
@@ -310,8 +310,8 @@ class RunnerTemplate(object):
                 pass
             elif not isinstance(value, dict):
                 param['value'] = value
-            elif param.get('dataclass') == 'File' and value.get('path'):
-                param['value'] = value['path']
+            elif param.get('dataclass') == 'File' and value.get('location'):
+                param['value'] = value['location']
 
             spec['script_parameters'][param_id] = param
         spec['script_parameters']['cwl:tool'] = job_params['cwl:tool']

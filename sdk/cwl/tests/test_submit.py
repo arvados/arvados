@@ -41,17 +41,24 @@ def stubs(func):
         stubs.api.collections().create().execute.side_effect = ({
             "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz1",
             "portable_data_hash": "99999999999999999999999999999991+99",
+            "manifest_text": ""
         }, {
             "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2",
             "portable_data_hash": "99999999999999999999999999999992+99",
+            "manifest_text": "./tool 00000000000000000000000000000000+0 0:0:submit_tool.cwl 0:0:blub.txt"
         },
         {
             "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz4",
             "portable_data_hash": "99999999999999999999999999999994+99",
             "manifest_text": ""
-        })
+        },
+        {
+            "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz5",
+            "portable_data_hash": "99999999999999999999999999999995+99",
+            "manifest_text": ""
+        }        )
         stubs.api.collections().get().execute.return_value = {
-            "portable_data_hash": "99999999999999999999999999999993+99"}
+            "portable_data_hash": "99999999999999999999999999999993+99", "manifest_text": "./tool 00000000000000000000000000000000+0 0:0:submit_tool.cwl 0:0:blub.txt"}
 
         stubs.expect_job_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         stubs.api.jobs().create().execute.return_value = {
@@ -76,7 +83,8 @@ def stubs(func):
             },
             'script_parameters': {
                 'x': {
-                    'path': '99999999999999999999999999999992+99/blorp.txt',
+                    'basename': 'blorp.txt',
+                    'location': '99999999999999999999999999999994+99/blorp.txt',
                     'class': 'File'
                 },
                 'cwl:tool':
@@ -103,7 +111,7 @@ def stubs(func):
                     'kind': 'file'
                 },
                 '/var/lib/cwl/job/cwl.input.json': {
-                    'portable_data_hash': '33be5c865fe12e1e4788d2f1bc627f7a+60/cwl.input.json',
+                    'portable_data_hash': '765fda0d9897729ff467a4609879c00a+60/cwl.input.json',
                     'kind': 'collection'
                 }
             },
@@ -138,13 +146,19 @@ class TestSubmit(unittest.TestCase):
             mock.call(),
             mock.call(body={
                 'manifest_text':
-                './tool a3954c369b8924d40547ec8cf5f6a7f4+449 '
-                '0:16:blub.txt 16:433:submit_tool.cwl\n./wf '
-                'e046cace0b1a0a6ee645f6ea8688f7e2+364 0:364:submit_wf.cwl\n',
+                './tool d51232d96b6116d964a69bfb7e0c73bf+450 '
+                '0:16:blub.txt 16:434:submit_tool.cwl\n./wf '
+                '4d31c5fefd087faf67ca8db0111af36c+353 0:353:submit_wf.cwl\n',
                 'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
                 'name': 'submit_wf.cwl',
             }, ensure_unique_name=True),
             mock.call().execute(),
+            mock.call(body={'manifest_text': '. d41d8cd98f00b204e9800998ecf8427e+0 '
+                            '0:0:blub.txt 0:0:submit_tool.cwl\n',
+                            'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
+                            'name': 'New collection'},
+                      ensure_unique_name=True),
+            mock.call().execute(num_retries=4),
             mock.call(body={
                 'manifest_text':
                 '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
@@ -191,13 +205,19 @@ class TestSubmit(unittest.TestCase):
             mock.call(),
             mock.call(body={
                 'manifest_text':
-                './tool a3954c369b8924d40547ec8cf5f6a7f4+449 '
-                '0:16:blub.txt 16:433:submit_tool.cwl\n./wf '
-                'e046cace0b1a0a6ee645f6ea8688f7e2+364 0:364:submit_wf.cwl\n',
+                './tool d51232d96b6116d964a69bfb7e0c73bf+450 '
+                '0:16:blub.txt 16:434:submit_tool.cwl\n./wf '
+                '4d31c5fefd087faf67ca8db0111af36c+353 0:353:submit_wf.cwl\n',
                 'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
                 'name': 'submit_wf.cwl',
             }, ensure_unique_name=True),
             mock.call().execute(),
+            mock.call(body={'manifest_text': '. d41d8cd98f00b204e9800998ecf8427e+0 '
+                            '0:0:blub.txt 0:0:submit_tool.cwl\n',
+                            'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
+                            'name': 'New collection'},
+                      ensure_unique_name=True),
+            mock.call().execute(num_retries=4),
             mock.call(body={
                 'manifest_text':
                 '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
@@ -222,7 +242,7 @@ class TestCreateTemplate(unittest.TestCase):
         capture_stdout = cStringIO.StringIO()
 
         exited = arvados_cwl.main(
-            ["--create-template", "--no-wait",
+            ["--create-template", "--no-wait", "--debug",
              "--project-uuid", project_uuid,
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
@@ -236,7 +256,7 @@ class TestCreateTemplate(unittest.TestCase):
             'dataclass': 'File',
             'required': True,
             'type': 'File',
-            'value': '99999999999999999999999999999992+99/blorp.txt',
+            'value': '99999999999999999999999999999994+99/blorp.txt',
         }
         expect_template = {
             "components": {
@@ -327,7 +347,7 @@ class TestTemplateInputs(unittest.TestCase):
         expect_template["owner_uuid"] = stubs.fake_user_uuid
         params = expect_template[
             "components"]["inputs_test.cwl"]["script_parameters"]
-        params["fileInput"]["value"] = '99999999999999999999999999999992+99/blorp.txt'
+        params["fileInput"]["value"] = '99999999999999999999999999999994+99/blorp.txt'
         params["floatInput"]["value"] = 1.234
         params["boolInput"]["value"] = True
 
