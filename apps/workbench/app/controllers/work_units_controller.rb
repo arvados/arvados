@@ -1,4 +1,4 @@
-class AllProcessesController < ApplicationController
+class WorkUnitsController < ApplicationController
   def render_index
     respond_to do |f|
       f.json {
