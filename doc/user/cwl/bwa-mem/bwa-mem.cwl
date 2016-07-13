@@ -1,12 +1,10 @@
 #!/usr/bin/env cwl-runner
-cwlVersion: draft-3
+cwlVersion: v1.0
 class: CommandLineTool
 
 hints:
-  - class: DockerRequirement
+  DockerRequirement:
     dockerPull: biodckr/bwa
-requirements:
-  - class: InlineJavascriptRequirement
 
 baseCommand: [bwa, mem]
 
@@ -15,38 +13,33 @@ arguments:
   - {prefix: "-R", valueFrom: "@RG\tID:$(inputs.group_id)\tPL:$(inputs.PL)\tSM:$(inputs.sample_id)"}
 
 inputs:
-  - id: reference
+  reference:
     type: File
     inputBinding:
       position: 1
-      valueFrom: $(self.path.match(/(.*)\.[^.]+$/)[1])
+      valueFrom: $(self.dirname)/$(self.nameroot)
     secondaryFiles:
       - ^.ann
       - ^.amb
       - ^.pac
       - ^.sa
-    description: The index files produced by `bwa index`
-  - id: read_p1
+    doc: The index files produced by `bwa index`
+  read_p1:
     type: File
     inputBinding:
       position: 2
-    description: The reads, in fastq format.
-  - id: read_p2
-    type: ["null", File]
+    doc: The reads, in fastq format.
+  read_p2:
+    type: File?
     inputBinding:
       position: 3
-    description:  For mate paired reads, the second file (optional).
-  - id: group_id
-    type: string
-  - id: sample_id
-    type: string
-  - id: PL
-    type: string
+    doc:  For mate paired reads, the second file (optional).
+  group_id: string
+  sample_id: string
+  PL: string
 
-stdout: $(inputs.read_p1.path.match(/\/([^/]+)\.[^/.]+$/)[1] + ".sam")
+stdout: $(inputs.read_p1.nameroot).sam
 
 outputs:
-  - id: aligned_sam
-    type: File
-    outputBinding:
-      glob: $(inputs.read_p1.path.match(/\/([^/]+)\.[^/.]+$/)[1] + ".sam")
+  aligned_sam:
+    type: stdout
