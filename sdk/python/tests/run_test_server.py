@@ -192,7 +192,7 @@ def _fifo2stderr(label):
             raise
     os.mkfifo(fifo, 0700)
     subprocess.Popen(
-        ['sed', '-e', 's/^/['+label+'] /', fifo],
+        ['stdbuf', '-i0', '-oL', '-eL', 'sed', '-e', 's/^/['+label+'] /', fifo],
         stdout=sys.stderr)
     return fifo
 
