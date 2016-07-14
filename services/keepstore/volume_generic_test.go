@@ -741,7 +741,7 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
 	defer func() {
-		trashLifetime = 0 * time.Second
+		trashLifetime = 0
 	}()
 
 	trashLifetime = 3600 * time.Second
@@ -830,7 +830,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 
 	// First set: EmptyTrash before reaching the trash deadline.
 
-	trashLifetime = 1 * time.Hour
+	trashLifetime = time.Hour
 
 	v.PutRaw(TestHash, TestBlock)
 	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
@@ -880,14 +880,15 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	// Because we Touch'ed, need to backdate again for next set of tests
 	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
 
-	// Untrash should fail if the only block in the trash has
-	// already been untrashed.
+	// If the only block in the trash has already been untrashed,
+	// most volumes will fail a subsequent Untrash with a 404, but
+	// it's also acceptable for Untrash to succeed.
 	err = v.Untrash(TestHash)
-	if err == nil || !os.IsNotExist(err) {
-		t.Fatalf("os.IsNotExist(%v) should have been true", err)
+	if err != nil && !os.IsNotExist(err) {
+		t.Fatalf("Expected success or os.IsNotExist(), but got: %v", err)
 	}
 
-	// The failed Untrash should not interfere with our
+	// The additional Untrash should not interfere with our
 	// already-untrashed copy.
 	err = checkGet()
 	if err != nil {
@@ -896,7 +897,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 
 	// Second set: EmptyTrash after the trash deadline has passed.
 
-	trashLifetime = 1 * time.Nanosecond
+	trashLifetime = time.Nanosecond
 
 	err = v.Trash(TestHash)
 	if err != nil {
@@ -927,7 +928,6 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
-	// EmptryTrash
 	v.EmptyTrash()
 
 	// Untrash won't find it
