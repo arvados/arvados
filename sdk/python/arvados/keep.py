@@ -9,6 +9,7 @@ import Queue
 import re
 import socket
 import ssl
+import sys
 import threading
 import timer
 
@@ -24,12 +25,13 @@ global_client_object = None
 
 # Monkey patch TCP constants when not available (apple). Values sourced from:
 # http://www.opensource.apple.com/source/xnu/xnu-2422.115.4/bsd/netinet/tcp.h
-if not hasattr(socket, 'TCP_KEEPALIVE'):
-    socket.TCP_KEEPALIVE = 0x010
-if not hasattr(socket, 'TCP_KEEPINTVL'):
-    socket.TCP_KEEPINTVL = 0x101
-if not hasattr(socket, 'TCP_KEEPCNT'):
-    socket.TCP_KEEPCNT = 0x102
+if sys.platform == 'darwin':
+    if not hasattr(socket, 'TCP_KEEPALIVE'):
+        socket.TCP_KEEPALIVE = 0x010
+    if not hasattr(socket, 'TCP_KEEPINTVL'):
+        socket.TCP_KEEPINTVL = 0x101
+    if not hasattr(socket, 'TCP_KEEPCNT'):
+        socket.TCP_KEEPCNT = 0x102
 
 
 class KeepLocator(object):
