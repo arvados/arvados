@@ -1,27 +1,4 @@
 class WorkUnitsController < ApplicationController
-  def render_index
-    respond_to do |f|
-      f.json {
-        if params[:partial]
-          @next_page_href = next_page_href(partial: params[:partial], filters: @filters.to_json)
-          render json: {
-            content: render_to_string(partial: "work_units/show_#{params[:partial]}",
-                                      formats: [:html]),
-            next_page_href: @next_page_href
-          }
-        else
-          render json: @objects
-        end
-      }
-      f.html {
-        render
-      }
-      f.js {
-        render
-      }
-    end
-  end
-
   def find_objects_for_index
     # If it's not the index rows partial display, just return
     # The /index request will again be invoked to display the
@@ -30,6 +7,7 @@ class WorkUnitsController < ApplicationController
 
     @limit = 20
     @filters = @filters || []
+
     # get next page of pipeline_instances
     filters = @filters + [["uuid", "is_a", ["arvados#pipelineInstance"]]]
     pipelines = PipelineInstance.limit(@limit).order(["created_at desc"]).filter(filters)
@@ -58,6 +36,7 @@ class WorkUnitsController < ApplicationController
       @next_page_filters += [['created_at', '<=', last_created_at.strftime("%Y-%m-%dT%H:%M:%S.%N%z")]]
       @next_page_filters += [['uuid', 'not in', last_uuids]]
       @next_page_href = url_for(partial: :all_processes_rows,
+                                partial_path: 'work_units/',
                                 filters: @next_page_filters.to_json)
       preload_links_for_objects(@objects.to_a)
     else
