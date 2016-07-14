@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/AdRoll/goamz/aws"
@@ -41,7 +40,7 @@ func init() {
 	s3UnsafeDelete = true
 }
 
-func NewTestableS3Volume(c *check.C, readonly bool, replication int) *TestableS3Volume {
+func NewTestableS3Volume(c *check.C, raceWindow time.Duration, readonly bool, replication int) *TestableS3Volume {
 	clock := &fakeClock{}
 	srv, err := s3test.NewServer(&s3test.Config{Clock: clock})
 	c.Assert(err, check.IsNil)
@@ -59,7 +58,7 @@ func NewTestableS3Volume(c *check.C, readonly bool, replication int) *TestableS3
 	c.Assert(err, check.IsNil)
 
 	return &TestableS3Volume{
-		S3Volume:    NewS3Volume(auth, region, TestBucketName, readonly, replication),
+		S3Volume:    NewS3Volume(auth, region, TestBucketName, raceWindow, readonly, replication),
 		server:      srv,
 		serverClock: clock,
 	}
@@ -73,18 +72,20 @@ type StubbedS3Suite struct {
 
 func (s *StubbedS3Suite) TestGeneric(c *check.C) {
 	DoGenericVolumeTests(c, func(t TB) TestableVolume {
-		return NewTestableS3Volume(c, false, 2)
+		// Use a negative raceWindow so s3test's 1-second
+		// timestamp precision doesn't confuse fixRace.
+		return NewTestableS3Volume(c, -time.Second, false, 2)
 	})
 }
 
 func (s *StubbedS3Suite) TestGenericReadOnly(c *check.C) {
 	DoGenericVolumeTests(c, func(t TB) TestableVolume {
-		return NewTestableS3Volume(c, true, 2)
+		return NewTestableS3Volume(c, -time.Second, true, 2)
 	})
 }
 
 func (s *StubbedS3Suite) TestIndex(c *check.C) {
-	v := NewTestableS3Volume(c, false, 2)
+	v := NewTestableS3Volume(c, 0, false, 2)
 	v.indexPageSize = 3
 	for i := 0; i < 256; i++ {
 		v.PutRaw(fmt.Sprintf("%02x%030x", i, i), []byte{102, 111, 111})
@@ -121,9 +122,9 @@ func (v *TestableS3Volume) PutRaw(loc string, block []byte) {
 // while we do this.
 func (v *TestableS3Volume) TouchWithDate(locator string, lastPut time.Time) {
 	v.serverClock.now = &lastPut
-	err := v.Touch(locator)
-	if err != nil && !strings.Contains(err.Error(), "PutCopy returned old LastModified") {
-		log.Printf("Touch: %+v", err)
+	err := v.Bucket.Put("recent/"+locator, nil, "application/octet-stream", s3ACL, s3.Options{})
+	if err != nil {
+		panic(err)
 	}
 	v.serverClock.now = nil
 }
