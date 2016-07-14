@@ -19,6 +19,7 @@ import signal
 import socket
 import sys
 import tempfile
+import threading
 from apiclient import errors as apiclient_errors
 
 import arvados.commands._util as arv_cmd
@@ -195,6 +196,10 @@ class ResumeCacheConflict(Exception):
     pass
 
 
+class FileUploadError(Exception):
+    pass
+
+
 class ResumeCache(object):
     CACHE_DIR = '.cache/arvados/arv-put'
 
@@ -277,125 +282,257 @@ class ResumeCache(object):
         self.__init__(self.filename)
 
 
-class ArvPutCollectionCache(object):
-    def __init__(self, paths):
-        md5 = hashlib.md5()
-        md5.update(arvados.config.get('ARVADOS_API_HOST', '!nohost'))
-        realpaths = sorted(os.path.realpath(path) for path in paths)
-        self.files = {}
-        self.bytes_written = 0 # Approximate number of bytes already uploaded (partial uploaded files are counted in full)
-        for path in realpaths:
-            self._get_file_data(path)
-        # Only hash args paths
-        md5.update('\0'.join(realpaths))
-        self.cache_hash = md5.hexdigest()
-        
-        self.cache_file = open(os.path.join(
-            arv_cmd.make_home_conf_dir('.cache/arvados/arv-put', 0o700, 'raise'), 
-            self.cache_hash), 'a+')
-        self._lock_file(self.cache_file)
-        self.filename = self.cache_file.name
-        self.data = self._load()
-        for f in self.data['uploaded'].values():
-            self.bytes_written += f['size']
-    
-    def _load(self):
-        try:
-            self.cache_file.seek(0)
-            ret = json.load(self.cache_file)
-        except ValueError:
-            # File empty, set up new cache
-            ret = {
-                'col_locator' : None, # Collection 
-                'uploaded' : {}, # Uploaded file list: {path : {size, mtime}}
-            }
-        return ret
-    
-    def _save(self):
+class ArvPutUploadJob(object):
+    def __init__(self, paths, resume=True, reporter=None, bytes_expected=None,
+                name=None, owner_uuid=None, ensure_unique_name=False,
+                num_retries=None, write_copies=None, replication=None,
+                filename=None):
+        self.paths = paths
+        self.resume = resume
+        self.reporter = reporter
+        self.bytes_expected = bytes_expected
+        self.bytes_written = 0
+        self.name = name
+        self.owner_uuid = owner_uuid
+        self.ensure_unique_name = ensure_unique_name
+        self.num_retries = num_retries
+        self.write_copies = write_copies
+        self.replication = replication
+        self.filename = filename
+        self._state_lock = threading.Lock()
+        self._state = None # Previous run state (file list & manifest)
+        self._current_files = [] # Current run file list
+        self._cache_hash = None # MD5 digest based on paths & filename
+        self._cache_file = None
+        self._collection = None
+        self._collection_lock = threading.Lock()
+        self._stop_checkpointer = threading.Event()
+        self._checkpointer = threading.Thread(target=self._update_task)
+        self._update_task_time = 60.0 # How many seconds wait between update runs
+        # Load cached data if any and if needed
+        self._setup_state()
+
+    def start(self):
         """
-        Atomically save
+        Start supporting thread & file uploading
         """
-        try:
-            new_cache_fd, new_cache_name = tempfile.mkstemp(
-                dir=os.path.dirname(self.filename))
-            self._lock_file(new_cache_fd)
-            new_cache = os.fdopen(new_cache_fd, 'r+')
-            json.dump(self.data, new_cache)
-            new_cache.flush()
-            os.fsync(new_cache)
-            os.rename(new_cache_name, self.filename)
-        except (IOError, OSError, ResumeCacheConflict) as error:
+        self._checkpointer.start()
+        for path in self.paths:
             try:
-                os.unlink(new_cache_name)
-            except NameError:  # mkstemp failed.
-                pass
+                # Test for stdin first, in case some file named '-' exist
+                if path == '-':
+                    self._write_stdin(self.filename or 'stdin')
+                elif os.path.isdir(path):
+                    self._write_directory_tree(path)
+                else: #if os.path.isfile(path):
+                    self._write_file(path, self.filename or os.path.basename(path))
+                # else:
+                #     raise FileUploadError('Inadequate file type, cannot upload: %s' % path)
+            except:
+                # Stop the thread before continue complaining
+                self._stop_checkpointer.set()
+                self._checkpointer.join()
+                raise
+        # Work finished, stop updater task
+        self._stop_checkpointer.set()
+        self._checkpointer.join()
+        # Successful upload, one last _update()
+        self._update()
+
+    def save_collection(self):
+        with self._collection_lock:
+            self._my_collection().save_new(
+                                name=self.name, owner_uuid=self.owner_uuid, 
+                                ensure_unique_name=self.ensure_unique_name,
+                                num_retries=self.num_retries,
+                                replication_desired=self.replication)
+        if self.resume:
+            # Delete cache file upon successful collection saving
+            try:
+                os.unlink(self._cache_file.name)
+            except OSError as error:
+                if error.errno != errno.ENOENT:  # That's what we wanted anyway.
+                    raise
+            self._cache_file.close()
+
+    def _collection_size(self, collection):
+        """
+        Recursively get the total size of the collection
+        """
+        size = 0
+        for item in collection:
+            if isinstance(item, arvados.arvfile.ArvadosFile):
+                size += item.size()
+            elif isinstance(item, arvados.collection.Collection):
+                size += self._collection_size(item)
+        return size
+
+    def _update_task(self):
+        """
+        Periodically call support tasks. File uploading is
+        asynchronous so we poll status from the collection.
+        """
+        while not self._stop_checkpointer.wait(self._update_task_time):
+            self._update()
+
+    def _update(self):
+        """
+        Update cached manifest text and report progress.
+        """
+        with self._collection_lock:
+            self.bytes_written = self._collection_size(self._my_collection())
+            # Update cache, if resume enabled
+            if self.resume:
+                with self._state_lock:
+                    self._state['manifest'] = self._my_collection().manifest_text()
+        if self.resume:
+            self._save_state()
+        # Call the reporter, if any
+        self.report_progress()
+
+    def report_progress(self):
+        if self.reporter is not None:
+            self.reporter(self.bytes_written, self.bytes_expected)
+
+    def _write_directory_tree(self, path, stream_name="."):
+        # TODO: Check what happens when multiple directories are passes as
+        # arguments.
+        # If the code below is uncommented, integration test
+        # test_ArvPutSignedManifest (tests.test_arv_put.ArvPutIntegrationTest)
+        # fails, I suppose it is because the manifest_uuid changes because
+        # of the dir addition to stream_name.
+
+        # if stream_name == '.':
+        #     stream_name = os.path.join('.', os.path.basename(path))
+        for item in os.listdir(path):
+            if os.path.isdir(os.path.join(path, item)):
+                self._write_directory_tree(os.path.join(path, item), 
+                                os.path.join(stream_name, item))
+            elif os.path.isfile(os.path.join(path, item)):
+                self._write_file(os.path.join(path, item), 
+                                os.path.join(stream_name, item))
+            else:
+                raise FileUploadError('Inadequate file type, cannot upload: %s' % path)
+
+    def _write_stdin(self, filename):
+        with self._collection_lock:
+            output = self._my_collection().open(filename, 'w')
+        self._write(sys.stdin, output)
+        output.close()
+
+    def _write_file(self, source, filename):
+        resume_offset = 0
+        resume_upload = False
+        if self.resume:
+            # Check if file was already uploaded (at least partially)
+            with self._collection_lock:
+                try:
+                    file_in_collection = self._my_collection().find(filename)
+                except IOError:
+                    # Not found
+                    file_in_collection = None
+            # If no previous cached data on this file, store it for an eventual
+            # repeated run.
+            if source not in self._state['files'].keys():
+                with self._state_lock:
+                    self._state['files'][source] = {
+                        'mtime' : os.path.getmtime(source),
+                        'size' : os.path.getsize(source)
+                    }
+            cached_file_data = self._state['files'][source]
+            # See if this file was already uploaded at least partially
+            if file_in_collection:
+                if cached_file_data['mtime'] == os.path.getmtime(source) and cached_file_data['size'] == os.path.getsize(source):
+                    if os.path.getsize(source) == file_in_collection.size():
+                        # File already there, skip it.
+                        return
+                    elif os.path.getsize(source) > file_in_collection.size():
+                        # File partially uploaded, resume!
+                        resume_upload = True
+                        resume_offset = file_in_collection.size()
+                    else:
+                        # Inconsistent cache, re-upload the file
+                        pass
+                else:
+                    # Local file differs from cached data, re-upload it
+                    pass
+        with open(source, 'r') as source_fd:
+            if self.resume and resume_upload:
+                with self._collection_lock:
+                    # Open for appending
+                    output = self._my_collection().open(filename, 'a')
+                source_fd.seek(resume_offset)
+            else:
+                with self._collection_lock:
+                    output = self._my_collection().open(filename, 'w')
+            self._write(source_fd, output)
+            output.close()
+
+    def _write(self, source_fd, output):
+        while True:
+            data = source_fd.read(arvados.config.KEEP_BLOCK_SIZE)
+            if not data:
+                break
+            output.write(data)
+
+    def _my_collection(self):
+        """
+        Create a new collection if none cached. Load it from cache otherwise.
+        """
+        if self._collection is None:
+            with self._state_lock:
+                manifest = self._state['manifest']
+            if self.resume and manifest is not None:
+                # Create collection from saved state
+                self._collection = arvados.collection.Collection(
+                                        manifest,
+                                        num_write_copies=self.write_copies)
+            else:
+                # Create new collection
+                self._collection = arvados.collection.Collection(
+                                        num_write_copies=self.write_copies)
+        return self._collection
+
+    def _setup_state(self):
+        """
+        Create a new cache file or load a previously existing one.
+        """
+        if self.resume:
+            md5 = hashlib.md5()
+            md5.update(arvados.config.get('ARVADOS_API_HOST', '!nohost'))
+            realpaths = sorted(os.path.realpath(path) for path in self.paths)
+            md5.update('\0'.join(realpaths))
+            self._cache_hash = md5.hexdigest()
+            if self.filename:
+                md5.update(self.filename)
+            self._cache_file = open(os.path.join(
+                arv_cmd.make_home_conf_dir('.cache/arvados/arv-put', 0o700, 'raise'),
+                self._cache_hash), 'a+')
+            self._cache_file.seek(0)
+            with self._state_lock:
+                try:
+                    self._state = json.load(self._cache_file)
+                    if not 'manifest' in self._state.keys():
+                        self._state['manifest'] = ""
+                    if not 'files' in self._state.keys():
+                        self._state['files'] = {}
+                except ValueError:
+                    # File empty, set up new cache
+                    self._state = {
+                        'manifest' : None,
+                        # Previous run file list: {path : {size, mtime}}
+                        'files' : {}
+                    }
+            # Load how many bytes were uploaded on previous run
+            with self._collection_lock:
+                self.bytes_written = self._collection_size(self._my_collection())
+        # No resume required
         else:
-            self.cache_file.close()
-            self.cache_file = new_cache
-    
-    def file_uploaded(self, path):
-        if path in self.files.keys():
-            self.data['uploaded'][path] = self.files[path]
-            self._save()
-    
-    def set_collection(self, loc):
-        self.data['col_locator'] = loc
-        self._save()
-    
-    def collection(self):
-        return self.data['col_locator']
-    
-    def is_dirty(self, path):
-        if not path in self.data['uploaded'].keys():
-            # Cannot be dirty is it wasn't even uploaded
-            return False
-            
-        if (self.files[path]['mtime'] != self.data['uploaded'][path]['mtime']) or (self.files[path]['size'] != self.data['uploaded'][path]['size']):
-            return True
-        else:
-            return False
-    
-    def dirty_files(self):
-        """
-        Files that were previously uploaded but changed locally between 
-        upload runs. These files should be re-uploaded.
-        """
-        dirty = []
-        for f in self.data['uploaded'].keys():
-            if self.is_dirty(f):
-                dirty.append(f)
-        return dirty
-    
-    def uploaded_files(self):
-        """
-        Files that were uploaded and have not changed locally between 
-        upload runs. These files should be checked for partial uploads
-        """
-        uploaded = []
-        for f in self.data['uploaded'].keys():
-            if not self.is_dirty(f):
-                uploaded.append(f)
-        return uploaded
-    
-    def pending_files(self):
-        """
-        Files that should be uploaded, because of being dirty or that
-        never had the chance to be uploaded yet.
-        """
-        pending = []
-        uploaded = self.uploaded_files()
-        for f in self.files.keys():
-            if f not in uploaded:
-                pending.append(f)
-        return pending
-    
-    def _get_file_data(self, path):
-        if os.path.isfile(path):
-            self.files[path] = {'mtime': os.path.getmtime(path),
-                                'size': os.path.getsize(path)}
-        elif os.path.isdir(path):
-            for item in os.listdir(path):
-                self._get_file_data(os.path.join(path, item))
+            with self._state_lock:
+                self._state = {
+                    'manifest' : None,
+                    'files' : {} # Previous run file list: {path : {size, mtime}}
+                }
 
     def _lock_file(self, fileobj):
         try:
@@ -403,158 +540,50 @@ class ArvPutCollectionCache(object):
         except IOError:
             raise ResumeCacheConflict("{} locked".format(fileobj.name))
 
-    def close(self):
-        self.cache_file.close()
-
-    def destroy(self):
+    def _save_state(self):
+        """
+        Atomically save current state into cache.
+        """
         try:
-            os.unlink(self.filename)
-        except OSError as error:
-            if error.errno != errno.ENOENT:  # That's what we wanted anyway.
-                raise
-        self.close()
-
-
-class ArvPutCollection(object):
-    def __init__(self, cache=None, reporter=None, bytes_expected=None, 
-                name=None, owner_uuid=None, ensure_unique_name=False, 
-                num_retries=None, write_copies=None, replication=None,
-                should_save=True):
-        self.collection_flush_time = 60 # Secs
-        self.bytes_written = 0
-        self.bytes_skipped = 0
-        self.cache = cache
-        self.reporter = reporter
-        self.num_retries = num_retries
-        self.write_copies = write_copies
-        self.replication = replication
-        self.bytes_expected = bytes_expected
-        self.should_save = should_save
-        
-        locator = self.cache.collection() if self.cache else None
-        
-        if locator is None:
-            self.collection = arvados.collection.Collection(
-                                        num_write_copies=self.write_copies)
-            if self.should_save:
-                self.collection.save_new(name=name, owner_uuid=owner_uuid, 
-                                            ensure_unique_name=ensure_unique_name,
-                                            num_retries=num_retries,
-                                            replication_desired=self.replication)
-                if self.cache:
-                    self.cache.set_collection(self.collection.manifest_locator())
+            with self._state_lock:
+                state = self._state
+            new_cache_fd, new_cache_name = tempfile.mkstemp(
+                dir=os.path.dirname(self._cache_file.name))
+            self._lock_file(new_cache_fd)
+            new_cache = os.fdopen(new_cache_fd, 'r+')
+            json.dump(state, new_cache)
+            # new_cache.flush()
+            # os.fsync(new_cache)
+            os.rename(new_cache_name, self._cache_file.name)
+        except (IOError, OSError, ResumeCacheConflict) as error:
+            try:
+                os.unlink(new_cache_name)
+            except NameError:  # mkstemp failed.
+                pass
         else:
-            self.collection = arvados.collection.Collection(locator,
-                                        num_write_copies=self.write_copies)
-    
-    def name(self):
-        return self.collection.api_response()['name'] if self.collection.api_response() else None
-    
-    def save(self):
-        if self.should_save:
-            self.collection.save(num_retries=self.num_retries)
-    
+            self._cache_file.close()
+            self._cache_file = new_cache
+
+    def collection_name(self):
+        with self._collection_lock:
+            name = self._my_collection().api_response()['name'] if self._my_collection().api_response() else None
+        return name
+
     def manifest_locator(self):
-        return self.collection.manifest_locator()
+        with self._collection_lock:
+            locator = self._my_collection().manifest_locator()
+        return locator
     
     def portable_data_hash(self):
-        return self.collection.portable_data_hash()
+        with self._collection_lock:
+            datahash = self._my_collection().portable_data_hash()
+        return datahash
     
     def manifest_text(self, stream_name=".", strip=False, normalize=False):
-        return self.collection.manifest_text(stream_name, strip, normalize)
-    
-    def _write(self, source_fd, output, first_block=True):
-        start_time = time.time()
-        while True:
-            data = source_fd.read(arvados.config.KEEP_BLOCK_SIZE)
-            if not data:
-                break
-            output.write(data)
-            output.flush() # Commit block to Keep
-            self.bytes_written += len(data)
-            # Is it time to update the collection?
-            if self.should_save and ((time.time() - start_time) > self.collection_flush_time):
-                self.collection.save(num_retries=self.num_retries)
-                start_time = time.time()
-            # Once a block is written on each file, mark it as uploaded on the cache
-            if self.should_save and first_block:
-                if self.cache:
-                    self.cache.file_uploaded(source_fd.name)
-                    self.collection.save(num_retries=self.num_retries)
-                first_block = False
-            self.report_progress()
-    
-    def write_stdin(self, filename):
-        with self.collection as c:
-            output = c.open(filename, 'w')
-            self._write(sys.stdin, output)
-            output.close()
-            if self.should_save:
-                self.collection.save()
-    
-    def write_file(self, source, filename):
-        if self.cache and source in self.cache.dirty_files():
-            self.collection.remove(filename)
-        
-        resume_offset = 0
-        resume_upload = False
-        try:
-            collection_file = self.collection.find(filename)
-        except IOError:
-            # Not found
-            collection_file = None
-        
-        if collection_file:
-            if os.path.getsize(source) == collection_file.size():
-                # File already there, skip it.
-                self.bytes_skipped += os.path.getsize(source)
-                return
-            elif os.path.getsize(source) > collection_file.size():
-                # File partially uploaded, resume!
-                resume_upload = True
-                resume_offset = collection_file.size()
-                self.bytes_skipped += resume_offset
-            else:
-                # Source file smaller than uploaded file, what happened here?
-                # TODO: Raise exception of some kind?
-                return
+        with self._collection_lock:
+            manifest = self._my_collection().manifest_text(stream_name, strip, normalize)
+        return manifest
 
-        with open(source, 'r') as source_fd:
-            with self.collection as c:
-                if resume_upload:
-                    output = c.open(filename, 'a')
-                    source_fd.seek(resume_offset)
-                    first_block = False
-                else:
-                    output = c.open(filename, 'w')
-                    first_block = True
-                
-                self._write(source_fd, output, first_block)
-                output.close()
-                if self.should_save:
-                    self.collection.save() # One last save...
-
-    def write_directory_tree(self, path, stream_name='.'):
-        # TODO: Check what happens when multiple directories are passes as arguments
-        # If the below code is uncommented, integration test
-        # test_ArvPutSignedManifest (tests.test_arv_put.ArvPutIntegrationTest) fails, 
-        # I suppose it is because the manifest_uuid changes because of the dir addition to
-        # stream_name.
-        #
-        # if stream_name == '.':
-        #     stream_name = os.path.join('.', os.path.basename(path))
-        for item in os.listdir(path):
-            if os.path.isdir(os.path.join(path, item)):
-                self.write_directory_tree(os.path.join(path, item), 
-                                os.path.join(stream_name, item))
-            else:
-                self.write_file(os.path.join(path, item), 
-                                os.path.join(stream_name, item))
-
-    def report_progress(self):
-        if self.reporter is not None:
-            self.reporter(self.bytes_written+self.bytes_skipped, self.bytes_expected)
-    
     def _datablocks_on_item(self, item):
         """
         Return a list of datablock locators, recursively navigating
@@ -565,19 +594,21 @@ class ArvPutCollection(object):
             for segment in item.segments():
                 loc = segment.locator
                 if loc.startswith("bufferblock"):
-                    loc = self._bufferblocks[loc].calculate_locator()
+                    loc = item._bufferblocks[loc].calculate_locator()
                 locators.append(loc)
             return locators
         elif isinstance(item, arvados.collection.Collection) or isinstance(item, arvados.collection.Subcollection):
             l = [self._datablocks_on_item(x) for x in item.values()]
-            # Fast list flattener method taken from: 
+            # Fast list flattener method taken from:
             # http://stackoverflow.com/questions/952914/making-a-flat-list-out-of-list-of-lists-in-python
             return [loc for sublist in l for loc in sublist]
         else:
             return None
     
     def data_locators(self):
-        return self._datablocks_on_item(self.collection)
+        with self._collection_lock:
+            datablocks = self._datablocks_on_item(self._my_collection())
+        return datablocks
 
 
 class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
@@ -702,154 +733,6 @@ def desired_project_uuid(api_client, project_uuid, num_retries):
         raise ValueError("Not a valid project UUID: {}".format(project_uuid))
     return query.execute(num_retries=num_retries)['uuid']
 
-def main_new(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
-    global api_client
-
-    args = parse_arguments(arguments)
-    status = 0
-    if api_client is None:
-        api_client = arvados.api('v1')
-
-    # Determine the name to use
-    if args.name:
-        if args.stream or args.raw:
-            print >>stderr, "Cannot use --name with --stream or --raw"
-            sys.exit(1)
-        collection_name = args.name
-    else:
-        collection_name = "Saved at {} by {}@{}".format(
-            datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
-            pwd.getpwuid(os.getuid()).pw_name,
-            socket.gethostname())
-
-    if args.project_uuid and (args.stream or args.raw):
-        print >>stderr, "Cannot use --project-uuid with --stream or --raw"
-        sys.exit(1)
-
-    # Determine the parent project
-    try:
-        project_uuid = desired_project_uuid(api_client, args.project_uuid,
-                                            args.retries)
-    except (apiclient_errors.Error, ValueError) as error:
-        print >>stderr, error
-        sys.exit(1)
-
-    # write_copies diverges from args.replication here.
-    # args.replication is how many copies we will instruct Arvados to
-    # maintain (by passing it in collections().create()) after all
-    # data is written -- and if None was given, we'll use None there.
-    # Meanwhile, write_copies is how many copies of each data block we
-    # write to Keep, which has to be a number.
-    #
-    # If we simply changed args.replication from None to a default
-    # here, we'd end up erroneously passing the default replication
-    # level (instead of None) to collections().create().
-    write_copies = (args.replication or
-                    api_client._rootDesc.get('defaultCollectionReplication', 2))
-
-    if args.progress:
-        reporter = progress_writer(human_progress)
-    elif args.batch_progress:
-        reporter = progress_writer(machine_progress)
-    else:
-        reporter = None
-    bytes_expected = expected_bytes_for(args.paths)
-
-    resume_cache = None
-    if args.resume:
-        try:
-            resume_cache = ArvPutCollectionCache(args.paths)
-        except (IOError, OSError, ValueError):
-            pass  # Couldn't open cache directory/file.  Continue without it.
-        except ResumeCacheConflict:
-            print >>stderr, "\n".join([
-                "arv-put: Another process is already uploading this data.",
-                "         Use --no-resume if this is really what you want."])
-            sys.exit(1)
-
-    if args.stream or args.raw:
-        writer = ArvPutCollection(cache=resume_cache, 
-                        reporter=reporter,
-                        bytes_expected=bytes_expected,
-                        num_retries=args.retries,
-                        write_copies=write_copies,
-                        replication=args.replication,
-                        should_save=False)
-    else:
-        writer = ArvPutCollection(cache=resume_cache, 
-                        reporter=reporter,
-                        bytes_expected=bytes_expected,
-                        num_retries=args.retries,
-                        write_copies=write_copies,
-                        replication=args.replication,
-                        name=collection_name,
-                        owner_uuid=project_uuid,
-                        ensure_unique_name=True)
-
-    # Install our signal handler for each code in CAUGHT_SIGNALS, and save
-    # the originals.
-    orig_signal_handlers = {sigcode: signal.signal(sigcode, exit_signal_handler)
-                            for sigcode in CAUGHT_SIGNALS}
-
-    if resume_cache and resume_cache.bytes_written > 0:
-        print >>stderr, "\n".join([
-                "arv-put: Resuming previous upload from last checkpoint.",
-                "         Use the --no-resume option to start over."])
-
-    writer.report_progress()
-    for path in args.paths:  # Copy file data to Keep.
-        if path == '-':
-            writer.write_stdin(args.filename)
-        elif os.path.isdir(path):
-            writer.write_directory_tree(path)
-        else:
-            writer.write_file(path, args.filename or os.path.basename(path))
-
-    if args.progress:  # Print newline to split stderr from stdout for humans.
-        print >>stderr
-
-    output = None
-    if args.stream:
-        if args.normalize:
-            output = writer.manifest_text(normalize=True)
-        else:
-            output = writer.manifest_text()
-    elif args.raw:
-        output = ','.join(writer.data_locators())
-    else:
-        try:
-            writer.save()
-            print >>stderr, "Collection saved as '%s'" % writer.name()
-            if args.portable_data_hash:
-                output = writer.portable_data_hash()
-            else:
-                output = writer.manifest_locator()
-
-        except apiclient_errors.Error as error:
-            print >>stderr, (
-                "arv-put: Error creating Collection on project: {}.".format(
-                    error))
-            status = 1
-
-    # Print the locator (uuid) of the new collection.
-    if output is None:
-        status = status or 1
-    else:
-        stdout.write(output)
-        if not output.endswith('\n'):
-            stdout.write('\n')
-
-    for sigcode, orig_handler in orig_signal_handlers.items():
-        signal.signal(sigcode, orig_handler)
-
-    if status != 0:
-        sys.exit(status)
-
-    if resume_cache is not None:
-        resume_cache.destroy()
-
-    return output
-
 def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     global api_client
 
@@ -901,99 +784,56 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         reporter = progress_writer(machine_progress)
     else:
         reporter = None
+
     bytes_expected = expected_bytes_for(args.paths)
-
-    resume_cache = None
-    if args.resume:
-        try:
-            resume_cache = ResumeCache(ResumeCache.make_path(args))
-            resume_cache.check_cache(api_client=api_client, num_retries=args.retries)
-        except (IOError, OSError, ValueError):
-            pass  # Couldn't open cache directory/file.  Continue without it.
-        except ResumeCacheConflict:
-            print >>stderr, "\n".join([
-                "arv-put: Another process is already uploading this data.",
-                "         Use --no-resume if this is really what you want."])
-            sys.exit(1)
-
-    if resume_cache is None:
-        writer = ArvPutCollectionWriter(
-            resume_cache, reporter, bytes_expected,
-            num_retries=args.retries,
-            replication=write_copies)
-    else:
-        writer = ArvPutCollectionWriter.from_cache(
-            resume_cache, reporter, bytes_expected,
-            num_retries=args.retries,
-            replication=write_copies)
+    try:
+        writer = ArvPutUploadJob(paths = args.paths,
+                                resume = args.resume, 
+                                reporter = reporter,
+                                bytes_expected = bytes_expected,
+                                num_retries = args.retries,
+                                write_copies = write_copies,
+                                replication = args.replication,
+                                name = collection_name,
+                                owner_uuid = project_uuid,
+                                ensure_unique_name = True)
+    except ResumeCacheConflict:
+        print >>stderr, "\n".join([
+            "arv-put: Another process is already uploading this data.",
+            "         Use --no-resume if this is really what you want."])
+        sys.exit(1)
 
     # Install our signal handler for each code in CAUGHT_SIGNALS, and save
     # the originals.
     orig_signal_handlers = {sigcode: signal.signal(sigcode, exit_signal_handler)
                             for sigcode in CAUGHT_SIGNALS}
 
-    if writer.bytes_written > 0:  # We're resuming a previous upload.
+    if args.resume and writer.bytes_written > 0:
         print >>stderr, "\n".join([
                 "arv-put: Resuming previous upload from last checkpoint.",
                 "         Use the --no-resume option to start over."])
 
     writer.report_progress()
-    writer.do_queued_work()  # Do work resumed from cache.
-    for path in args.paths:  # Copy file data to Keep.
-        if path == '-':
-            writer.start_new_stream()
-            writer.start_new_file(args.filename)
-            r = sys.stdin.read(64*1024)
-            while r:
-                # Need to bypass _queued_file check in ResumableCollectionWriter.write() to get
-                # CollectionWriter.write().
-                super(arvados.collection.ResumableCollectionWriter, writer).write(r)
-                r = sys.stdin.read(64*1024)
-        elif os.path.isdir(path):
-            writer.write_directory_tree(
-                path, max_manifest_depth=args.max_manifest_depth)
-        else:
-            writer.start_new_stream()
-            writer.write_file(path, args.filename or os.path.basename(path))
-    writer.finish_current_stream()
-
+    output = None
+    writer.start()
     if args.progress:  # Print newline to split stderr from stdout for humans.
         print >>stderr
 
-    output = None
     if args.stream:
-        output = writer.manifest_text()
         if args.normalize:
-            output = arvados.collection.CollectionReader(output).manifest_text(normalize=True)
+            output = writer.manifest_text(normalize=True)
+        else:
+            output = writer.manifest_text()
     elif args.raw:
         output = ','.join(writer.data_locators())
     else:
         try:
-            manifest_text = writer.manifest_text()
-            if args.normalize:
-                manifest_text = arvados.collection.CollectionReader(manifest_text).manifest_text(normalize=True)
-            replication_attr = 'replication_desired'
-            if api_client._schema.schemas['Collection']['properties'].get(replication_attr, None) is None:
-                # API called it 'redundancy' before #3410.
-                replication_attr = 'redundancy'
-            # Register the resulting collection in Arvados.
-            collection = api_client.collections().create(
-                body={
-                    'owner_uuid': project_uuid,
-                    'name': collection_name,
-                    'manifest_text': manifest_text,
-                    replication_attr: args.replication,
-                    },
-                ensure_unique_name=True
-                ).execute(num_retries=args.retries)
-
-            print >>stderr, "Collection saved as '%s'" % collection['name']
-
-            if args.portable_data_hash and 'portable_data_hash' in collection and collection['portable_data_hash']:
-                output = collection['portable_data_hash']
+            writer.save_collection()
+            print >>stderr, "Collection saved as '%s'" % writer.collection_name()
+            if args.portable_data_hash:
+                output = writer.portable_data_hash()
             else:
-                output = collection['uuid']
-
+                output = writer.manifest_locator()
         except apiclient_errors.Error as error:
             print >>stderr, (
                 "arv-put: Error creating Collection on project: {}.".format(
@@ -1014,10 +854,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     if status != 0:
         sys.exit(status)
 
-    if resume_cache is not None:
-        resume_cache.destroy()
-
     return output
 
+
 if __name__ == '__main__':
-    main_new()
+    main()
