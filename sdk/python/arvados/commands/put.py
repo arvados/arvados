@@ -342,7 +342,7 @@ class ArvPutUploadJob(object):
     def save_collection(self):
         with self._collection_lock:
             self._my_collection().save_new(
-                                name=self.name, owner_uuid=self.owner_uuid, 
+                                name=self.name, owner_uuid=self.owner_uuid,
                                 ensure_unique_name=self.ensure_unique_name,
                                 num_retries=self.num_retries,
                                 replication_desired=self.replication)
@@ -406,10 +406,10 @@ class ArvPutUploadJob(object):
         #     stream_name = os.path.join('.', os.path.basename(path))
         for item in os.listdir(path):
             if os.path.isdir(os.path.join(path, item)):
-                self._write_directory_tree(os.path.join(path, item), 
+                self._write_directory_tree(os.path.join(path, item),
                                 os.path.join(stream_name, item))
             elif os.path.isfile(os.path.join(path, item)):
-                self._write_file(os.path.join(path, item), 
+                self._write_file(os.path.join(path, item),
                                 os.path.join(stream_name, item))
             else:
                 raise FileUploadError('Inadequate file type, cannot upload: %s' % path)
@@ -573,12 +573,12 @@ class ArvPutUploadJob(object):
         with self._collection_lock:
             locator = self._my_collection().manifest_locator()
         return locator
-    
+
     def portable_data_hash(self):
         with self._collection_lock:
             datahash = self._my_collection().portable_data_hash()
         return datahash
-    
+
     def manifest_text(self, stream_name=".", strip=False, normalize=False):
         with self._collection_lock:
             manifest = self._my_collection().manifest_text(stream_name, strip, normalize)
@@ -604,7 +604,7 @@ class ArvPutUploadJob(object):
             return [loc for sublist in l for loc in sublist]
         else:
             return None
-    
+
     def data_locators(self):
         with self._collection_lock:
             datablocks = self._datablocks_on_item(self._my_collection())
@@ -788,7 +788,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     bytes_expected = expected_bytes_for(args.paths)
     try:
         writer = ArvPutUploadJob(paths = args.paths,
-                                resume = args.resume, 
+                                resume = args.resume,
                                 reporter = reporter,
                                 bytes_expected = bytes_expected,
                                 num_retries = args.retries,
