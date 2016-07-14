@@ -8,7 +8,7 @@ import re
 import cwltool.draft2tool
 from cwltool.draft2tool import CommandLineTool
 import cwltool.workflow
-from cwltool.process import get_feature, scandeps, UnsupportedRequirement
+from cwltool.process import get_feature, scandeps, UnsupportedRequirement, normalizeFilesDirs
 from cwltool.load_tool import fetch_document
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
 
@@ -73,6 +73,9 @@ class Runner(object):
         adjustFileObjs(self.job_order, partial(visitFiles, jobfiles))
         adjustDirObjs(sc, partial(visitFiles, workflowfiles))
         adjustDirObjs(self.job_order, partial(visitFiles, jobfiles))
+
+        normalizeFilesDirs(jobfiles)
+        normalizeFilesDirs(workflowfiles)
 
         keepprefix = kwargs.get("keepprefix", "")
         workflowmapper = ArvPathMapper(self.arvrunner, workflowfiles, "",
