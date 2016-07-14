@@ -23,28 +23,25 @@ class WorkUnitsController < ApplicationController
   end
 
   def find_objects_for_index
+    # If it's not the index rows partial display, just return
+    # The /index request will again be invoked to display the
+    # partial at which time, we will be using the objects found.
+    return if !params[:partial]
+
     @limit = 20
-
-    @filters = @next_page_filters || @filters || []
-
-    procs = {}
-
+    @filters = @filters || []
     # get next page of pipeline_instances
-    filters = @filters + [%w(uuid is_a) + [%w(arvados#pipelineInstance)]]
+    filters = @filters + [["uuid", "is_a", ["arvados#pipelineInstance"]]]
     pipelines = PipelineInstance.limit(@limit).order(["created_at desc"]).filter(filters)
-    pipelines.results.each { |pi| procs[pi] = pi.created_at }
 
     # get next page of jobs
-    filters = @filters + [%w(uuid is_a) + [%w(arvados#job)]]
+    filters = @filters + [["uuid", "is_a", ["arvados#job"]]]
     jobs = Job.limit(@limit).order(["created_at desc"]).filter(filters)
-    jobs.results.each { |pi| procs[pi] = pi.created_at }
 
     # get next page of container_requests
-    filters = @filters + [%w(uuid is_a) + [%w(arvados#containerRequest)]]
+    filters = @filters + [["uuid", "is_a", ["arvados#containerRequest"]]]
     crs = ContainerRequest.limit(@limit).order(["created_at desc"]).filter(filters)
-    crs.results.each { |c| procs[c] = c.created_at }
-
-    @objects = Hash[procs.sort_by {|key, value| value}].keys.reverse
+    @objects = (jobs.to_a + pipelines.to_a + crs.to_a).sort_by(&:created_at).reverse.first(@limit)
 
     @next_page_filters = @filters.reject do |attr,op,val|
       (attr == 'created_at') or (attr == 'uuid' and op == 'not in')
@@ -58,11 +55,11 @@ class WorkUnitsController < ApplicationController
         last_uuids << obj.uuid if obj.created_at.eql?(last_created_at)
       end
 
-      @next_page_filters += [['created_at', '<=', last_created_at]]
+      @next_page_filters += [['created_at', '<=', last_created_at.strftime("%Y-%m-%dT%H:%M:%S.%N%z")]]
       @next_page_filters += [['uuid', 'not in', last_uuids]]
       @next_page_href = url_for(partial: :all_processes_rows,
-                                limit: @limit,
                                 filters: @next_page_filters.to_json)
+      preload_links_for_objects(@objects.to_a)
     else
       @next_page_href = nil
     end
