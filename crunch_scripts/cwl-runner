@@ -19,7 +19,7 @@ import os
 import json
 import argparse
 from arvados.api import OrderedJsonModel
-from cwltool.process import adjustFiles
+from cwltool.process import adjustFileObjs
 from cwltool.load_tool import load_tool
 
 # Print package versions
@@ -36,6 +36,9 @@ try:
         else:
             return v
 
+    def keeppathObj(v):
+        v["location"] = keeppath(v["location"])
+
     job_order_object["cwl:tool"] = keeppath(job_order_object["cwl:tool"])
 
     for k,v in job_order_object.items():
@@ -45,7 +48,7 @@ try:
                 "path": keeppath(v)
             }
 
-    adjustFiles(job_order_object, keeppath)
+    adjustFileObjs(job_order_object, keeppathObj)
 
     runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
 
@@ -63,15 +66,16 @@ try:
     outputObj = runner.arvExecutor(t, job_order_object, **vars(args))
 
     files = {}
-    def capture(path):
+    def capture(fileobj):
+        path = fileobj["location"]
         sp = path.split("/")
         col = sp[0][5:]
         if col not in files:
             files[col] = set()
         files[col].add("/".join(sp[1:]))
-        return path
+        fileobj["location"] = path
 
-    adjustFiles(outputObj, capture)
+    adjustFileObjs(outputObj, capture)
 
     final = arvados.collection.Collection()
 
@@ -80,10 +84,10 @@ try:
             for f in c:
                 final.copy(f, f, c, True)
 
-    def makeRelative(path):
-        return "/".join(path.split("/")[1:])
+    def makeRelative(fileobj):
+        fileobj["location"] = "/".join(fileobj["location"].split("/")[1:])
 
-    adjustFiles(outputObj, makeRelative)
+    adjustFileObjs(outputObj, makeRelative)
 
     with final.open("cwl.output.json", "w") as f:
         json.dump(outputObj, f, indent=4)

@@ -115,12 +115,11 @@ class Runner(object):
                 outc = arvados.collection.Collection(record["output"])
                 with outc.open("cwl.output.json") as f:
                     outputs = json.load(f)
-                def keepify(path):
+                def keepify(fileobj):
+                    path = fileobj["location"]
                     if not path.startswith("keep:"):
-                        return "keep:%s/%s" % (record["output"], path)
-                    else:
-                        return path
-                adjustFiles(outputs, keepify)
+                        fileobj["location"] = "keep:%s/%s" % (record["output"], path)
+                adjustFileObjs(outputs, keepify)
             except Exception as e:
                 logger.error("While getting final output object: %s", e)
             self.arvrunner.output_callback(outputs, processStatus)

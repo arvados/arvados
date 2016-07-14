@@ -123,6 +123,9 @@ class ArvCwlRunner(object):
 
         kwargs["fs_access"] = self.fs_access
         kwargs["enable_reuse"] = kwargs.get("enable_reuse")
+        kwargs["use_container"] = True
+        kwargs["tmpdir_prefix"] = "tmp"
+        kwargs["on_error"] = "continue"
 
         if self.work_api == "containers":
             kwargs["outdir"] = "/var/spool/cwl"
