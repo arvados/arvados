@@ -28,27 +28,27 @@ First, "add the appropriate package repository for your distribution":{{ site.ba
 On CentOS 6 and RHEL 6:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install python27-python-arvados-python-client python27-python-arvados-cwl-runner</code>
+<pre><code>~$ <span class="userinput">sudo yum install python27-python-arvados-python-client</code>
 </code></pre>
 </notextile>
 
 On other Red Hat-based systems:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install python-arvados-python-client python-arvados-cwl-runner</code>
+<pre><code>~$ <span class="userinput">sudo yum install python-arvados-python-client</code>
 </code></pre>
 </notextile>
 
 On Debian-based systems:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo apt-get install python-arvados-python-client python-arvados-cwl-runner</code>
+<pre><code>~$ <span class="userinput">sudo apt-get install python-arvados-python-client</code>
 </code></pre>
 </notextile>
 
 h4. Option 2: Install with pip
 
-Run @pip-2.7 install arvados-python-client arvados-cwl-runner@ in an appropriate installation environment, such as a virtualenv.
+Run @pip-2.7 install arvados-python-client@ in an appropriate installation environment, such as a virtualenv.
 
 If your version of @pip@ is 1.4 or newer, the @pip install@ command might give an error: "Could not find a version that satisfies the requirement arvados-python-client". If this happens, try @pip-2.7 install --pre arvados-python-client@.
 
