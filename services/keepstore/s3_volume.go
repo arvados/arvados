@@ -524,10 +524,12 @@ func (v *S3Volume) EmptyTrash() {
 		}
 		trashT, err := time.Parse(time.RFC3339, trash.LastModified)
 		if err != nil {
+			log.Printf("warning: %s: EmptyTrash: %q: parse %q: %s", v, trash.Key, trash.LastModified, err)
 			continue
 		}
 		recentT, err := v.lastModified(recent)
 		if err != nil {
+			log.Printf("warning: %s: EmptyTrash: %q: parse %q: %s", v, "recent/"+loc, recent.Header.Get("Last-Modified"), err)
 			continue
 		}
 		if trashT.Sub(recentT) < blobSignatureTTL {
