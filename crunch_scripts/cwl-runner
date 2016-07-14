@@ -32,20 +32,20 @@ try:
 
     def keeppath(v):
         if arvados.util.keep_locator_pattern.match(v):
-            return "file://%s/%s" % (os.environ['TASK_KEEPMOUNT'], v)
+            return "keep:%s" % v
         else:
             return v
 
     def keeppathObj(v):
         v["location"] = keeppath(v["location"])
 
-    job_order_object["cwl:tool"] = keeppath(job_order_object["cwl:tool"])
+    job_order_object["cwl:tool"] = "file://%s/%s" % (os.environ['TASK_KEEPMOUNT'], job_order_object["cwl:tool"])
 
     for k,v in job_order_object.items():
         if isinstance(v, basestring) and arvados.util.keep_locator_pattern.match(v):
             job_order_object[k] = {
                 "class": "File",
-                "path": keeppath(v)
+                "location": "keep:%s" % v
             }
 
     adjustFileObjs(job_order_object, keeppathObj)
