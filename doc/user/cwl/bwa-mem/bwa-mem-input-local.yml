@@ -1,4 +1,4 @@
-#!/usr/bin/env cwl-runner
+#!/usr/bin/env cwltool
 cwl:tool: bwa-mem.cwl
 reference:
   class: File
