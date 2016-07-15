@@ -8,9 +8,9 @@ import re
 import cwltool.draft2tool
 from cwltool.draft2tool import CommandLineTool
 import cwltool.workflow
-from cwltool.process import get_feature, scandeps, UnsupportedRequirement
+from cwltool.process import get_feature, scandeps, UnsupportedRequirement, normalizeFilesDirs
 from cwltool.load_tool import fetch_document
-from cwltool.pathmapper import adjustFileObjs
+from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
 
 import arvados.collection
 
@@ -71,6 +71,11 @@ class Runner(object):
                       loadref)
         adjustFileObjs(sc, partial(visitFiles, workflowfiles))
         adjustFileObjs(self.job_order, partial(visitFiles, jobfiles))
+        adjustDirObjs(sc, partial(visitFiles, workflowfiles))
+        adjustDirObjs(self.job_order, partial(visitFiles, jobfiles))
+
+        normalizeFilesDirs(jobfiles)
+        normalizeFilesDirs(workflowfiles)
 
         keepprefix = kwargs.get("keepprefix", "")
         workflowmapper = ArvPathMapper(self.arvrunner, workflowfiles, "",
@@ -88,6 +93,7 @@ class Runner(object):
         def setloc(p):
             p["location"] = jobmapper.mapper(p["location"])[1]
         adjustFileObjs(self.job_order, setloc)
+        adjustDirObjs(self.job_order, setloc)
 
         if "id" in self.job_order:
             del self.job_order["id"]
@@ -115,12 +121,12 @@ class Runner(object):
                 outc = arvados.collection.Collection(record["output"])
                 with outc.open("cwl.output.json") as f:
                     outputs = json.load(f)
-                def keepify(path):
+                def keepify(fileobj):
+                    path = fileobj["location"]
                     if not path.startswith("keep:"):
-                        return "keep:%s/%s" % (record["output"], path)
-                    else:
-                        return path
-                adjustFiles(outputs, keepify)
+                        fileobj["location"] = "keep:%s/%s" % (record["output"], path)
+                adjustFileObjs(outputs, keepify)
+                adjustDirObjs(outputs, keepify)
             except Exception as e:
                 logger.error("While getting final output object: %s", e)
             self.arvrunner.output_callback(outputs, processStatus)

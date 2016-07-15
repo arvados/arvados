@@ -17,7 +17,6 @@ class CollectionFsAccess(cwltool.process.StdFsAccess):
         self.collections = {}
 
     def get_collection(self, path):
-        print "PPP", path
         p = path.split("/")
         if p[0].startswith("keep:") and arvados.util.keep_locator_pattern.match(p[0][5:]):
             pdh = p[0][5:]
