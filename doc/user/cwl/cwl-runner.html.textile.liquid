@@ -4,7 +4,7 @@ navsection: userguide
 title: Using Common Workflow Language
 ...
 
-The "Common Workflow Language (CWL)":http://commonwl.org is a multi-vendor open standard for describing analysis tools and workflows that are portable across a variety of platforms.  CWL is the recommended way to develop and run Workflows for Arvados.  Arvados supports the "CWL v1.0":http://commonwl.org/v1.0 specification.
+The "Common Workflow Language (CWL)":http://commonwl.org is a multi-vendor open standard for describing analysis tools and workflows that are portable across a variety of platforms.  CWL is the recommended way to develop and run workflows for Arvados.  Arvados supports the "CWL v1.0":http://commonwl.org/v1.0 specification.
 
 {% include 'tutorial_expectations' %}
 
@@ -43,7 +43,7 @@ Server:
 </code></pre>
 </notextile>
 
-If this returns an error, contact the sysadmin of your cluster for assistance.  Alternately, if you have Docker installed on your local workstation, you may follow the instructions above to install @arvados-cwl-runner@.
+If this returns an error, contact the sysadmin of your cluster for assistance.  Alternatively, if you have Docker installed on your local workstation, you may follow the instructions above to install @arvados-cwl-runner@.
 
 h3. Getting the example files
 
@@ -108,8 +108,7 @@ qr1hi-8i9sb-fm2n3b1w0l6bskg
 To run a workflow with local control, use @--local@.  This means that the host where you run @arvados-cwl-runner@ will be responsible for submitting jobs. With @--local@, if you interrupt @arvados-cwl-runner@ or log out, the workflow will be terminated.
 
 <notextile>
-<pre><code>
-~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --local bwa-mem.cwl bwa-mem-input.yml</span>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --local bwa-mem.cwl bwa-mem-input.yml</span>
 arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
 2016-07-01 10:05:19 arvados.cwl-runner[16290] INFO: Pipeline instance qr1hi-d1hrv-92wcu6ldtio74r4
 2016-07-01 10:05:28 arvados.cwl-runner[16290] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-2nzzfbuf9zjrj4g) is Queued
@@ -143,7 +142,7 @@ If you reference a local file which is not in @arv-mount@, then @arvados-cwl-run
 
 h2. Registering a workflow with Workbench
 
-Use @--create-template@ to register a CWL workflow with Arvados Workbench.  This enables you to run Workflows by clicking on the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a pipeline...</span> on the Workbench Dashboard.
+Use @--create-template@ to register a CWL workflow with Arvados Workbench.  This enables you to run workflows by clicking on the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a pipeline...</span> on the Workbench Dashboard.
 
 <notextile>
 <pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --create-template bwa-mem.cwl</span>
@@ -155,7 +154,7 @@ qr1hi-p5p6p-rjleou1dwr167v5
 </code></pre>
 </notextile>
 
-You can provide a partial input file to set default values for the Workflow input parameters:
+You can provide a partial input file to set default values for the workflow input parameters:
 
 <notextile>
 <pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --create-template bwa-mem.cwl bwa-mem-template.yml</span>
@@ -295,4 +294,4 @@ Final process status is success
 </code></pre>
 </notextile>
 
-If you get the error @JavascriptException: Long-running script killed after 20 seconds.@ this may be due to the Dockerized Node.js engine taking too long to start.  You may address this by installing @Node.js@ (@apt-get install nodejs@ on Debian or Ubuntu) locally or by providing a longer timeout, for example @cwltool --eval-timeout=40@ for a 40 second timeout.
+If you get the error @JavascriptException: Long-running script killed after 20 seconds.@ this may be due to the Dockerized Node.js engine taking too long to start.  You may address this by installing Node.js locally (run @apt-get install nodejs@ on Debian or Ubuntu) or by specifying a longer timeout with the @--eval-timeout@ option.  For example, run the workflow with @cwltool --eval-timeout=40@ for a 40-second timeout.
