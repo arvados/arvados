@@ -397,9 +397,9 @@ setup_virtualenv() {
     fi
     if [[ $("$venvdest/bin/python" --version 2>&1) =~ \ 3\.[012]\. ]]; then
         # pip 8.0.0 dropped support for python 3.2, e.g., debian wheezy
-        "$venvdest/bin/pip" install 'setuptools>=18' 'pip>=7,<8'
+        "$venvdest/bin/pip" install 'setuptools>=18.5' 'pip>=7,<8'
     else
-        "$venvdest/bin/pip" install 'setuptools>=18' 'pip>=7'
+        "$venvdest/bin/pip" install 'setuptools>=18.5' 'pip>=7'
     fi
     # ubuntu1404 can't seem to install mock via tests_require, but it can do this.
     "$venvdest/bin/pip" install 'mock>=1.0' 'pbr<1.7.0'
