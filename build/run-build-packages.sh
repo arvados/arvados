@@ -150,7 +150,7 @@ case "$TARGET" in
             ciso8601 pycrypto backports.ssl_match_hostname 'pycurl<7.21.5' \
             python-daemon lockfile llfuse==0.41.1 'pbr<1.0' pyyaml \
             'rdflib>=4.2.0' shellescape mistune typing avro requests \
-            isodate pyparsing sparqlwrapper html5lib keepalive \
+            isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
             ruamel.ordereddict)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         export PYCURL_SSL_LIBRARY=nss
@@ -170,7 +170,7 @@ case "$TARGET" in
             ciso8601 pycrypto 'pycurl<7.21.5' \
             python-daemon llfuse==0.41.1 'pbr<1.0' pyyaml \
             'rdflib>=4.2.0' shellescape mistune typing avro \
-            isodate pyparsing sparqlwrapper html5lib keepalive \
+            isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
             ruamel.ordereddict)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         export PYCURL_SSL_LIBRARY=nss
