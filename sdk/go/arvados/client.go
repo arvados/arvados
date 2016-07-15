@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 )
 
 // A Client is an HTTP client with an API endpoint and a set of
@@ -20,7 +21,7 @@ import (
 // of results using List APIs.
 type Client struct {
 	// HTTP client used to make requests. If nil,
-	// http.DefaultClient or InsecureHTTPClient will be used.
+	// DefaultSecureClient or InsecureHTTPClient will be used.
 	Client *http.Client
 
 	// Hostname (or host:port) of Arvados API server.
@@ -39,7 +40,12 @@ type Client struct {
 var InsecureHTTPClient = &http.Client{
 	Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true}}}
+			InsecureSkipVerify: true}},
+	Timeout: time.Duration(5 * time.Minute)}
+
+// The default http.Client used by a Client otherwise.
+var DefaultSecureClient = &http.Client{
+	Timeout: time.Duration(5 * time.Minute)}
 
 // NewClientFromEnv creates a new Client that uses the default HTTP
 // client with the API endpoint and credentials given by the
@@ -169,7 +175,7 @@ func (c *Client) httpClient() *http.Client {
 	case c.Insecure:
 		return InsecureHTTPClient
 	default:
-		return http.DefaultClient
+		return DefaultSecureClient
 	}
 }
 
