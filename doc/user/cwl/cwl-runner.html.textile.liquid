@@ -294,3 +294,5 @@ Final process status is success
 }
 </code></pre>
 </notextile>
+
+If you get the error @JavascriptException: Long-running script killed after 20 seconds.@ this may be due to the Dockerized Node.js engine taking too long to start.  You may address this by installing @Node.js@ (@apt-get install nodejs@ on Debian or Ubuntu) locally or by providing a longer timeout, for example @cwltool --eval-timeout=40@ for a 40 second timeout.
