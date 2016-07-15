@@ -2,15 +2,18 @@ import fnmatch
 import os
 
 import cwltool.process
+from cwltool.pathmapper import abspath
 
 import arvados.util
 import arvados.collection
+import arvados.arvfile
 
 class CollectionFsAccess(cwltool.process.StdFsAccess):
     """Implement the cwltool FsAccess interface for Arvados Collections."""
 
-    def __init__(self, basedir):
+    def __init__(self, basedir, api_client=None):
         super(CollectionFsAccess, self).__init__(basedir)
+        self.api_client = api_client
         self.collections = {}
 
     def get_collection(self, path):
@@ -18,7 +21,7 @@ class CollectionFsAccess(cwltool.process.StdFsAccess):
         if p[0].startswith("keep:") and arvados.util.keep_locator_pattern.match(p[0][5:]):
             pdh = p[0][5:]
             if pdh not in self.collections:
-                self.collections[pdh] = arvados.collection.CollectionReader(pdh)
+                self.collections[pdh] = arvados.collection.CollectionReader(pdh, api_client=self.api_client)
             return (self.collections[pdh], "/".join(p[1:]))
         else:
             return (None, path)
@@ -47,6 +50,8 @@ class CollectionFsAccess(cwltool.process.StdFsAccess):
 
     def glob(self, pattern):
         collection, rest = self.get_collection(pattern)
+        if collection and not rest:
+            return [pattern]
         patternsegments = rest.split("/")
         return self._match(collection, patternsegments, "keep:" + collection.manifest_locator())
 
@@ -55,11 +60,47 @@ class CollectionFsAccess(cwltool.process.StdFsAccess):
         if collection:
             return collection.open(rest, mode)
         else:
-            return open(self._abs(fn), mode)
+            return super(CollectionFsAccess, self).open(self._abs(fn), mode)
 
     def exists(self, fn):
         collection, rest = self.get_collection(fn)
         if collection:
             return collection.exists(rest)
         else:
-            return os.path.exists(self._abs(fn))
+            return super(CollectionFsAccess, self).exists(fn)
+
+    def isfile(self, fn):  # type: (unicode) -> bool
+        collection, rest = self.get_collection(fn)
+        if collection:
+            if rest:
+                return isinstance(collection.find(rest), arvados.arvfile.ArvadosFile)
+            else:
+                return False
+        else:
+            return super(CollectionFsAccess, self).isfile(fn)
+
+    def isdir(self, fn):  # type: (unicode) -> bool
+        collection, rest = self.get_collection(fn)
+        if collection:
+            if rest:
+                return isinstance(collection.find(rest), arvados.collection.Collection)
+            else:
+                return True
+        else:
+            return super(CollectionFsAccess, self).isdir(fn)
+
+    def listdir(self, fn):  # type: (unicode) -> List[unicode]
+        collection, rest = self.get_collection(fn)
+        if rest:
+            dir = collection.find(rest)
+        else:
+            dir = collection
+        if collection:
+            return [abspath(l, fn) for l in dir.keys()]
+        else:
+            return super(CollectionFsAccess, self).listdir(fn)
+
+    def join(self, path, *paths): # type: (unicode, *unicode) -> unicode
+        if paths and paths[-1].startswith("keep:") and arvados.util.keep_locator_pattern.match(paths[-1][5:]):
+            return paths[-1]
+        return os.path.join(path, *paths)

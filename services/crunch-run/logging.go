@@ -38,17 +38,17 @@ type ThrottledLogger struct {
 	Immediate *log.Logger
 }
 
-// RFC3339Fixed is a fixed-width version of RFC3339 with microsecond precision,
-// because the RFC3339Nano format isn't fixed width.
-const RFC3339Fixed = "2006-01-02T15:04:05.000000Z07:00"
+// RFC3339NanoFixed is a fixed-width version of time.RFC3339Nano.
+const RFC3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
 
-// RFC3339Timestamp return a RFC3339 formatted timestamp using RFC3339Fixed
-func RFC3339Timestamp(now time.Time) string {
-	return now.Format(RFC3339Fixed)
+// RFC3339Timestamp formats t as RFC3339NanoFixed.
+func RFC3339Timestamp(t time.Time) string {
+	return t.Format(RFC3339NanoFixed)
 }
 
-// Write to the internal buffer.  Prepend a timestamp to each line of the input
-// data.
+// Write prepends a timestamp to each line of the input data and
+// appends to the internal buffer. Each line is also logged to
+// tl.Immediate, if tl.Immediate is not nil.
 func (tl *ThrottledLogger) Write(p []byte) (n int, err error) {
 	tl.Mutex.Lock()
 	if tl.buf == nil {
@@ -58,13 +58,20 @@ func (tl *ThrottledLogger) Write(p []byte) (n int, err error) {
 
 	now := tl.Timestamper(time.Now().UTC())
 	sc := bufio.NewScanner(bytes.NewBuffer(p))
-	for sc.Scan() {
-		_, err = fmt.Fprintf(tl.buf, "%s %s\n", now, sc.Text())
+	for err == nil && sc.Scan() {
+		out := fmt.Sprintf("%s %s\n", now, sc.Bytes())
 		if tl.Immediate != nil {
-			tl.Immediate.Printf("%s %s\n", now, sc.Text())
+			tl.Immediate.Print(out[:len(out)-1])
+		}
+		_, err = io.WriteString(tl.buf, out)
+	}
+	if err == nil {
+		err = sc.Err()
+		if err == nil {
+			n = len(p)
 		}
 	}
-	return len(p), err
+	return
 }
 
 // Periodically check the current buffer; if not empty, send it on the
@@ -158,17 +165,18 @@ func ReadWriteLines(in io.Reader, writer io.Writer, done chan<- bool) {
 // (b) batches log messages and only calls the underlying Writer at most once
 // per second.
 func NewThrottledLogger(writer io.WriteCloser) *ThrottledLogger {
-	alw := &ThrottledLogger{}
-	alw.flusherDone = make(chan bool)
-	alw.writer = writer
-	alw.Logger = log.New(alw, "", 0)
-	alw.Timestamper = RFC3339Timestamp
-	go alw.flusher()
-	return alw
+	tl := &ThrottledLogger{}
+	tl.flusherDone = make(chan bool)
+	tl.writer = writer
+	tl.Logger = log.New(tl, "", 0)
+	tl.Timestamper = RFC3339Timestamp
+	go tl.flusher()
+	return tl
 }
 
-// ArvLogWriter implements a writer that writes to each of a WriteCloser
-// (typically CollectionFileWriter) and creates an API server log entry.
+// ArvLogWriter is an io.WriteCloser that processes each write by
+// writing it through to another io.WriteCloser (typically a
+// CollectionFileWriter) and creating an Arvados log entry.
 type ArvLogWriter struct {
 	ArvClient     IArvadosClient
 	UUID          string

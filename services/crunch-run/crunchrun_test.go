@@ -14,7 +14,6 @@ import (
 	. "gopkg.in/check.v1"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"sort"
@@ -139,7 +138,7 @@ func (client *ArvTestClient) Create(resourceType string,
 	client.Mutex.Lock()
 	defer client.Mutex.Unlock()
 
-	client.Calls += 1
+	client.Calls++
 	client.Content = append(client.Content, parameters)
 
 	if resourceType == "logs" {
@@ -192,7 +191,7 @@ func (client *ArvTestClient) Get(resourceType string, uuid string, parameters ar
 func (client *ArvTestClient) Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error) {
 	client.Mutex.Lock()
 	defer client.Mutex.Unlock()
-	client.Calls += 1
+	client.Calls++
 	client.Content = append(client.Content, parameters)
 	if resourceType == "containers" {
 		if parameters["container"].(arvadosclient.Dict)["state"] == "Running" {
@@ -206,7 +205,7 @@ func (client *ArvTestClient) Update(resourceType string, uuid string, parameters
 // parameters match jpath/string. E.g., CalledWith(c, "foo.bar",
 // "baz") returns parameters with parameters["foo"]["bar"]=="baz". If
 // no call matches, it returns nil.
-func (client *ArvTestClient) CalledWith(jpath, expect string) arvadosclient.Dict {
+func (client *ArvTestClient) CalledWith(jpath string, expect interface{}) arvadosclient.Dict {
 call:
 	for _, content := range client.Content {
 		var v interface{} = content
@@ -217,7 +216,7 @@ call:
 				v = dict[k]
 			}
 		}
-		if v, ok := v.(string); ok && v == expect {
+		if v == expect {
 			return content
 		}
 	}
@@ -518,6 +517,7 @@ func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvT
 
 	api = &ArvTestClient{Container: rec}
 	cr = NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
+	cr.statInterval = 100 * time.Millisecond
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
 
@@ -553,12 +553,43 @@ func (s *TestSuite) TestFullRunHello(c *C) {
 		t.finish <- dockerclient.WaitResult{}
 	})
 
-	c.Check(api.Calls, Equals, 7)
-	c.Check(api.Content[6]["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
-	c.Check(api.Content[6]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
-
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "hello world\n"), Equals, true)
 
+}
+
+func (s *TestSuite) TestCrunchstat(c *C) {
+	api, _ := FullRunHelper(c, `{
+		"command": ["sleep", "1"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": ".",
+		"environment": {},
+		"mounts": {"/tmp": {"kind": "tmp"} },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`, func(t *TestDockerClient) {
+		time.Sleep(time.Second)
+		t.logWriter.Close()
+		t.finish <- dockerclient.WaitResult{}
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+
+	// We didn't actually start a container, so crunchstat didn't
+	// find accounting files and therefore didn't log any stats.
+	// It should have logged a "can't find accounting files"
+	// message after one poll interval, though, so we can confirm
+	// it's alive:
+	c.Assert(api.Logs["crunchstat"], NotNil)
+	c.Check(api.Logs["crunchstat"].String(), Matches, `(?ms).*cgroup stats files have not appeared after 100ms.*`)
+
+	// The "files never appeared" log assures us that we called
+	// (*crunchstat.Reporter)Stop(), and that we set it up with
+	// the correct container ID "abcde":
+	c.Check(api.Logs["crunchstat"].String(), Matches, `(?ms).*cgroup stats files never appeared for abcde\n`)
 }
 
 func (s *TestSuite) TestFullRunStderr(c *C) {
@@ -578,10 +609,10 @@ func (s *TestSuite) TestFullRunStderr(c *C) {
 		t.finish <- dockerclient.WaitResult{ExitCode: 1}
 	})
 
-	c.Assert(api.Calls, Equals, 8)
-	c.Check(api.Content[7]["container"].(arvadosclient.Dict)["log"], NotNil)
-	c.Check(api.Content[7]["container"].(arvadosclient.Dict)["exit_code"], Equals, 1)
-	c.Check(api.Content[7]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
+	final := api.CalledWith("container.state", "Complete")
+	c.Assert(final, NotNil)
+	c.Check(final["container"].(arvadosclient.Dict)["exit_code"], Equals, 1)
+	c.Check(final["container"].(arvadosclient.Dict)["log"], NotNil)
 
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "hello\n"), Equals, true)
 	c.Check(strings.HasSuffix(api.Logs["stderr"].String(), "world\n"), Equals, true)
@@ -603,12 +634,9 @@ func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
-	c.Check(api.Calls, Equals, 7)
-	c.Check(api.Content[6]["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
-	c.Check(api.Content[6]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
-
-	log.Print(api.Logs["stdout"].String())
-
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	c.Log(api.Logs["stdout"])
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "/\n"), Equals, true)
 }
 
@@ -628,10 +656,8 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
-	c.Check(api.Calls, Equals, 7)
-	c.Check(api.Content[6]["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
-	c.Check(api.Content[6]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
-
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "/bin\n"), Equals, true)
 }
 
@@ -682,9 +708,8 @@ func (s *TestSuite) TestCancel(c *C) {
 		}
 	}
 
-	c.Assert(api.Calls, Equals, 6)
-	c.Check(api.Content[5]["container"].(arvadosclient.Dict)["log"], IsNil)
-	c.Check(api.Content[5]["container"].(arvadosclient.Dict)["state"], Equals, "Cancelled")
+	c.Check(api.CalledWith("container.log", nil), NotNil)
+	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "foo\n"), Equals, true)
 
 }
@@ -705,10 +730,8 @@ func (s *TestSuite) TestFullRunSetEnv(c *C) {
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
-	c.Check(api.Calls, Equals, 7)
-	c.Check(api.Content[6]["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
-	c.Check(api.Content[6]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
-
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "bilbo\n"), Equals, true)
 }
 
@@ -787,16 +810,16 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 }
 
 func (s *TestSuite) TestStdout(c *C) {
-	helperRecord := `{`
-	helperRecord += `"command": ["/bin/sh", "-c", "echo $FROBIZ"],`
-	helperRecord += `"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",`
-	helperRecord += `"cwd": "/bin",`
-	helperRecord += `"environment": {"FROBIZ": "bilbo"},`
-	helperRecord += `"mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"} },`
-	helperRecord += `"output_path": "/tmp",`
-	helperRecord += `"priority": 1,`
-	helperRecord += `"runtime_constraints": {}`
-	helperRecord += `}`
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {"/tmp": {"kind": "tmp"}, "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"} },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
 
 	api, _ := FullRunHelper(c, helperRecord, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
@@ -804,10 +827,9 @@ func (s *TestSuite) TestStdout(c *C) {
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
-	c.Assert(api.Calls, Equals, 6)
-	c.Check(api.Content[5]["container"].(arvadosclient.Dict)["exit_code"], Equals, 0)
-	c.Check(api.Content[5]["container"].(arvadosclient.Dict)["state"], Equals, "Complete")
-	c.Check(api.CalledWith("collection.manifest_text", "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out\n"), Not(IsNil))
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(api.CalledWith("collection.manifest_text", "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out\n"), NotNil)
 }
 
 // Used by the TestStdoutWithWrongPath*()

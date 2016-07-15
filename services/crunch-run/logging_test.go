@@ -16,7 +16,11 @@ type TestTimestamper struct {
 
 func (this *TestTimestamper) Timestamp(t time.Time) string {
 	this.count += 1
-	return fmt.Sprintf("2015-12-29T15:51:45.%09dZ", this.count)
+	t, err := time.ParseInLocation(time.RFC3339Nano, fmt.Sprintf("2015-12-29T15:51:45.%09dZ", this.count), t.Location())
+	if err != nil {
+		panic(err)
+	}
+	return RFC3339Timestamp(t)
 }
 
 // Gocheck boilerplate

@@ -65,13 +65,13 @@ class DownloadTest < ActionDispatch::IntegrationTest
     within "#collection_files" do
       find('[title~=Download]').click
     end
-    wait_for_download 'w a z', 'w a z'
+    wait_for_download 'w a z', 'w a z', timeout: 6
   end
 
-  def wait_for_download filename, expect_data
+  def wait_for_download filename, expect_data, timeout: 3
     data = nil
     tries = 0
-    while tries < 20
+    while tries < timeout*10
       sleep 0.1
       tries += 1
       data = File.read(DownloadHelper.path.join filename) rescue nil

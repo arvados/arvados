@@ -110,3 +110,36 @@ cr_for_requester2:
   output_path: test
   command: ["echo", "hello"]
   requesting_container_uuid: zzzzz-dz642-requestercntnr1
+
+running_anonymous_accessible:
+  uuid: zzzzz-xvhdp-runninganonaccs
+  owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
+  name: running anonymously accessible cr
+  state: Committed
+  priority: 1
+  created_at: 2016-01-11 11:11:11.111111111 Z
+  updated_at: 2016-01-11 11:11:11.111111111 Z
+  modified_at: 2016-01-11 11:11:11.111111111 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: test
+  cwd: test
+  output_path: test
+  command: ["echo", "hello"]
+  container_uuid: zzzzz-dz642-runningcontain2
+
+# Test Helper trims the rest of the file
+
+# Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper
+
+# container requests in project_with_2_pipelines_and_60_crs
+<% for i in 1..60 do %>
+cr_<%=i%>_of_60:
+  uuid: zzzzz-xvhdp-oneof60crs<%= i.to_s.rjust(5, '0') %>
+  created_at: <%= ((i+5)/5).hour.ago.to_s(:db) %>
+  owner_uuid: zzzzz-j7d0g-nnncrspipelines
+  name: cr-<%= i.to_s %>
+  output_path: test
+  command: ["echo", "hello"]
+<% end %>
+
+# Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper

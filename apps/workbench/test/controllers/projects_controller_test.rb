@@ -421,7 +421,7 @@ class ProjectsControllerTest < ActionController::TestCase
 
   [
     ["active", 5, ["aproject", "asubproject"], "anonymously_accessible_project"],
-    ["user1_with_load", 2, ["project_with_10_collections"], "project_with_2_pipelines_and_60_jobs"],
+    ["user1_with_load", 2, ["project_with_10_collections"], "project_with_2_pipelines_and_60_crs"],
     ["admin", 5, ["anonymously_accessible_project", "subproject_in_anonymous_accessible_project"], "aproject"],
   ].each do |user, page_size, tree_segment, unexpected|
     test "build my projects tree for #{user} user and verify #{unexpected} is omitted" do

@@ -43,7 +43,7 @@ func (s *KeepSuite) TestSendTrashLists(c *C) {
 	defer server.Close()
 
 	tl := map[string]TrashList{
-		server.URL: TrashList{TrashRequest{"000000000000000000000000deadbeef", 99}}}
+		server.URL: {TrashRequest{"000000000000000000000000deadbeef", 99}}}
 
 	arv := arvadosclient.ArvadosClient{ApiToken: "abc123"}
 	kc := keepclient.KeepClient{Arvados: &arv, Client: &http.Client{}}
@@ -70,7 +70,7 @@ func (tse *TestHandlerError) ServeHTTP(writer http.ResponseWriter, req *http.Req
 
 func sendTrashListError(c *C, server *httptest.Server) {
 	tl := map[string]TrashList{
-		server.URL: TrashList{TrashRequest{"000000000000000000000000deadbeef", 99}}}
+		server.URL: {TrashRequest{"000000000000000000000000deadbeef", 99}}}
 
 	arv := arvadosclient.ArvadosClient{ApiToken: "abc123"}
 	kc := keepclient.KeepClient{Arvados: &arv, Client: &http.Client{}}

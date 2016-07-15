@@ -98,7 +98,7 @@ func TestWorkQueueDoneness(t *testing.T) {
 	gate := make(chan struct{})
 	go func() {
 		<-gate
-		for _ = range b.NextItem {
+		for range b.NextItem {
 			<-gate
 			time.Sleep(time.Millisecond)
 			b.DoneItem <- struct{}{}

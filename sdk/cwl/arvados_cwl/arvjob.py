@@ -4,7 +4,7 @@ import copy
 
 from cwltool.process import get_feature, shortname
 from cwltool.errors import WorkflowException
-from cwltool.draft2tool import revmap_file, remove_hostfs, CommandLineTool
+from cwltool.draft2tool import revmap_file, CommandLineTool
 from cwltool.load_tool import fetch_document
 from cwltool.builder import Builder
 
@@ -12,6 +12,7 @@ import arvados.collection
 
 from .arvdocker import arv_docker_get_image
 from .runner import Runner
+from .pathmapper import InitialWorkDirPathMapper
 from . import done
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -34,29 +35,41 @@ class ArvadosJob(object):
         }
         runtime_constraints = {}
 
-        if self.generatefiles:
+        if self.generatefiles["listing"]:
             vwd = arvados.collection.Collection()
             script_parameters["task.vwd"] = {}
-            for t in self.generatefiles:
-                if isinstance(self.generatefiles[t], dict):
-                    src, rest = self.arvrunner.fs_access.get_collection(self.generatefiles[t]["path"].replace("$(task.keep)/", "keep:"))
-                    vwd.copy(rest, t, source_collection=src)
-                else:
-                    with vwd.open(t, "w") as f:
-                        f.write(self.generatefiles[t].encode('utf-8'))
+            generatemapper = InitialWorkDirPathMapper([self.generatefiles], "", "",
+                                        separateDirs=False)
+            for f, p in generatemapper.items():
+                if p.type == "CreateFile":
+                    with vwd.open(p.target, "w") as n:
+                        n.write(p.resolved.encode("utf-8"))
             vwd.save_new()
-            for t in self.generatefiles:
-                script_parameters["task.vwd"][t] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), t)
+            for f, p in generatemapper.items():
+                if p.type == "File":
+                    script_parameters["task.vwd"][p.target] = p.resolved
+                if p.type == "CreateFile":
+                    script_parameters["task.vwd"][p.target] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), p.target)
 
         script_parameters["task.env"] = {"TMPDIR": "$(task.tmpdir)"}
         if self.environment:
             script_parameters["task.env"].update(self.environment)
 
         if self.stdin:
-            script_parameters["task.stdin"] = self.pathmapper.mapper(self.stdin)[1]
+            script_parameters["task.stdin"] = self.stdin
 
         if self.stdout:
             script_parameters["task.stdout"] = self.stdout
+
+        if self.stderr:
+            script_parameters["task.stderr"] = self.stderr
+
+        if self.successCodes:
+            script_parameters["task.successCodes"] = self.successCodes
+        if self.temporaryFailCodes:
+            script_parameters["task.temporaryFailCodes"] = self.temporaryFailCodes
+        if self.permanentFailCodes:
+            script_parameters["task.permanentFailCodes"] = self.permanentFailCodes
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if docker_req and kwargs.get("use_container") is not False:
@@ -284,7 +297,7 @@ class RunnerTemplate(object):
 
             # Title and description...
             title = param.pop('label', '')
-            descr = param.pop('description', '').rstrip('\n')
+            descr = param.pop('doc', '').rstrip('\n')
             if title:
                 param['title'] = title
             if descr:
@@ -297,8 +310,8 @@ class RunnerTemplate(object):
                 pass
             elif not isinstance(value, dict):
                 param['value'] = value
-            elif param.get('dataclass') == 'File' and value.get('path'):
-                param['value'] = value['path']
+            elif param.get('dataclass') == 'File' and value.get('location'):
+                param['value'] = value['location']
 
             spec['script_parameters'][param_id] = param
         spec['script_parameters']['cwl:tool'] = job_params['cwl:tool']

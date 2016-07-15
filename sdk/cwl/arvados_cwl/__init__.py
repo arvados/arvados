@@ -110,6 +110,7 @@ class ArvCwlRunner(object):
         useruuid = self.api.users().current().execute()["uuid"]
         self.project_uuid = kwargs.get("project_uuid") if kwargs.get("project_uuid") else useruuid
         self.pipeline = None
+        self.fs_access = CollectionFsAccess(kwargs["basedir"], api_client=self.api)
 
         if kwargs.get("create_template"):
             tmpl = RunnerTemplate(self, tool, job_order, kwargs.get("enable_reuse"))
@@ -119,16 +120,20 @@ class ArvCwlRunner(object):
 
         self.debug = kwargs.get("debug")
         self.ignore_docker_for_reuse = kwargs.get("ignore_docker_for_reuse")
-        self.fs_access = CollectionFsAccess(kwargs["basedir"])
 
         kwargs["fs_access"] = self.fs_access
         kwargs["enable_reuse"] = kwargs.get("enable_reuse")
+        kwargs["use_container"] = True
+        kwargs["tmpdir_prefix"] = "tmp"
+        kwargs["on_error"] = "continue"
 
         if self.work_api == "containers":
             kwargs["outdir"] = "/var/spool/cwl"
+            kwargs["docker_outdir"] = "/var/spool/cwl"
             kwargs["tmpdir"] = "/tmp"
         elif self.work_api == "jobs":
             kwargs["outdir"] = "$(task.outdir)"
+            kwargs["docker_outdir"] = "$(task.outdir)"
             kwargs["tmpdir"] = "$(task.tmpdir)"
 
         runnerjob = None
@@ -169,7 +174,6 @@ class ArvCwlRunner(object):
                 self.uuid = kwargs.get("cwl_runner_job").get('uuid')
             jobiter = tool.job(job_order,
                                self.output_callback,
-                               docker_outdir="$(task.outdir)",
                                **kwargs)
 
         try:
@@ -210,6 +214,9 @@ class ArvCwlRunner(object):
 
         if self.final_status == "UnsupportedRequirement":
             raise UnsupportedRequirement("Check log for details.")
+
+        if self.final_status != "success":
+            raise WorkflowException("Workflow failed.")
 
         if self.final_output is None:
             raise WorkflowException("Workflow did not return a result.")
@@ -303,6 +310,7 @@ def main(args, stdout, stderr, api_client=None):
         return 1
 
     arvargs.conformance_test = None
+    arvargs.use_container = True
 
     return cwltool.main.main(args=arvargs,
                              stdout=stdout,

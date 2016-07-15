@@ -61,14 +61,9 @@ class JobsController < ApplicationController
   end
 
   def logs
-    @logs = Log.select(%w(event_type object_uuid event_at properties))
-               .order('event_at DESC')
-               .filter([["event_type",  "=", "stderr"],
-                        ["object_uuid", "in", [@object.uuid]]])
-               .limit(500)
-               .results
-               .to_a
-               .map{ |e| e.serializable_hash.merge({ 'prepend' => true }) }
+    @logs = @object.
+      stderr_log_query(Rails.configuration.running_job_log_records_to_fetch).
+      map { |e| e.serializable_hash.merge({ 'prepend' => true }) }
     respond_to do |format|
       format.json { render json: @logs }
     end

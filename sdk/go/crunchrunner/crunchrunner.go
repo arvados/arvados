@@ -20,6 +20,7 @@ type TaskDef struct {
 	Env                map[string]string `json:"task.env"`
 	Stdin              string            `json:"task.stdin"`
 	Stdout             string            `json:"task.stdout"`
+	Stderr             string            `json:"task.stderr"`
 	Vwd                map[string]string `json:"task.vwd"`
 	SuccessCodes       []int             `json:"task.successCodes"`
 	PermanentFailCodes []int             `json:"task.permanentFailCodes"`
@@ -80,13 +81,13 @@ func checkOutputFilename(outdir, fn string) error {
 	return nil
 }
 
-func setupCommand(cmd *exec.Cmd, taskp TaskDef, outdir string, replacements map[string]string) (stdin, stdout string, err error) {
+func setupCommand(cmd *exec.Cmd, taskp TaskDef, outdir string, replacements map[string]string) (stdin, stdout, stderr string, err error) {
 	if taskp.Vwd != nil {
 		for k, v := range taskp.Vwd {
 			v = substitute(v, replacements)
 			err = checkOutputFilename(outdir, k)
 			if err != nil {
-				return "", "", err
+				return "", "", "", err
 			}
 			os.Symlink(v, outdir+"/"+k)
 		}
@@ -97,26 +98,39 @@ func setupCommand(cmd *exec.Cmd, taskp TaskDef, outdir string, replacements map[
 		stdin = substitute(taskp.Stdin, replacements)
 		cmd.Stdin, err = os.Open(stdin)
 		if err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 	}
 
 	if taskp.Stdout != "" {
 		err = checkOutputFilename(outdir, taskp.Stdout)
 		if err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 		// Set up stdout redirection
 		stdout = outdir + "/" + taskp.Stdout
 		cmd.Stdout, err = os.Create(stdout)
 		if err != nil {
-			return "", "", err
+			return "", "", "", err
 		}
 	} else {
 		cmd.Stdout = os.Stdout
 	}
 
-	cmd.Stderr = os.Stderr
+	if taskp.Stderr != "" {
+		err = checkOutputFilename(outdir, taskp.Stderr)
+		if err != nil {
+			return "", "", "", err
+		}
+		// Set up stderr redirection
+		stderr = outdir + "/" + taskp.Stderr
+		cmd.Stderr, err = os.Create(stderr)
+		if err != nil {
+			return "", "", "", err
+		}
+	} else {
+		cmd.Stderr = os.Stderr
+	}
 
 	if taskp.Env != nil {
 		// Set up subprocess environment
@@ -126,7 +140,7 @@ func setupCommand(cmd *exec.Cmd, taskp TaskDef, outdir string, replacements map[
 			cmd.Env = append(cmd.Env, k+"="+v)
 		}
 	}
-	return stdin, stdout, nil
+	return stdin, stdout, stderr, nil
 }
 
 // Set up signal handlers.  Go sends signal notifications to a "signal
@@ -227,8 +241,8 @@ func runner(api IArvadosClient,
 
 	cmd.Dir = outdir
 
-	var stdin, stdout string
-	stdin, stdout, err = setupCommand(cmd, taskp, outdir, replacements)
+	var stdin, stdout, stderr string
+	stdin, stdout, stderr, err = setupCommand(cmd, taskp, outdir, replacements)
 	if err != nil {
 		return err
 	}
@@ -240,7 +254,10 @@ func runner(api IArvadosClient,
 	if stdout != "" {
 		stdout = " > " + stdout
 	}
-	log.Printf("Running %v%v%v", cmd.Args, stdin, stdout)
+	if stderr != "" {
+		stderr = " 2> " + stderr
+	}
+	log.Printf("Running %v%v%v%v", cmd.Args, stdin, stdout, stderr)
 
 	var caughtSignal os.Signal
 	sigChan := setupSignals(cmd)

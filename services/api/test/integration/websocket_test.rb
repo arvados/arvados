@@ -23,9 +23,9 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     EM.run {
       if token
-        ws = Faye::WebSocket::Client.new("ws://localhost:3002/websocket?api_token=#{api_client_authorizations(token).api_token}")
+        ws = Faye::WebSocket::Client.new("ws://localhost:#{WEBSOCKET_PORT}/websocket?api_token=#{api_client_authorizations(token).api_token}")
       else
-        ws = Faye::WebSocket::Client.new("ws://localhost:3002/websocket")
+        ws = Faye::WebSocket::Client.new("ws://localhost:#{WEBSOCKET_PORT}/websocket")
       end
 
       ws.on :open do |event|
