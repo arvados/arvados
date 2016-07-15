@@ -215,6 +215,9 @@ class ArvCwlRunner(object):
         if self.final_status == "UnsupportedRequirement":
             raise UnsupportedRequirement("Check log for details.")
 
+        if self.final_status != "success":
+            raise WorkflowException("Workflow failed.")
+
         if self.final_output is None:
             raise WorkflowException("Workflow did not return a result.")
 
