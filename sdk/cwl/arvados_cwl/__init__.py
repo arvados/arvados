@@ -16,6 +16,7 @@ import cwltool.workflow
 
 import arvados
 import arvados.events
+import arvados.config
 
 from .arvcontainer import ArvadosContainer, RunnerContainer
 from .arvjob import ArvadosJob, RunnerJob, RunnerTemplate
@@ -161,6 +162,8 @@ class ArvCwlRunner(object):
         if runnerjob and not kwargs.get("wait"):
             runnerjob.run()
             return runnerjob.uuid
+
+        arvados.config.settings()["ARVADOS_DISABLE_WEBSOCKETS"] = "1"
 
         if self.work_api == "containers":
             events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#container"]], self.on_message)
