@@ -41,11 +41,11 @@ var InsecureHTTPClient = &http.Client{
 	Transport: &http.Transport{
 		TLSClientConfig: &tls.Config{
 			InsecureSkipVerify: true}},
-	Timeout: time.Duration(5 * time.Minute)}
+	Timeout: 5 * time.Minute}
 
 // The default http.Client used by a Client otherwise.
 var DefaultSecureClient = &http.Client{
-	Timeout: time.Duration(5 * time.Minute)}
+	Timeout: 5 * time.Minute}
 
 // NewClientFromEnv creates a new Client that uses the default HTTP
 // client with the API endpoint and credentials given by the
