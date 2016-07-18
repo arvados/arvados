@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	ErrS3TrashNotAvailable = fmt.Errorf("trash is not possible because -trash-lifetime=0 and -s3-unsafe-delete=false")
+	ErrS3TrashDisabled = fmt.Errorf("trash function is disabled because -trash-lifetime=0 and -s3-unsafe-delete=false")
 
 	s3AccessKeyFile string
 	s3SecretKeyFile string
@@ -162,7 +162,12 @@ func (v *S3Volume) Check() error {
 	return nil
 }
 
-func (v *S3Volume) getReaderWithFixRace(loc string) (rdr io.ReadCloser, err error) {
+// getReader wraps (Bucket)GetReader.
+//
+// In situations where (Bucket)GetReader would fail because the block
+// disappeared in a Trash race, getReader calls fixRace to recover the
+// data, and tries again.
+func (v *S3Volume) getReader(loc string) (rdr io.ReadCloser, err error) {
 	rdr, err = v.Bucket.GetReader(loc)
 	err = v.translateError(err)
 	if err == nil || !os.IsNotExist(err) {
@@ -188,7 +193,7 @@ func (v *S3Volume) getReaderWithFixRace(loc string) (rdr io.ReadCloser, err erro
 }
 
 func (v *S3Volume) Get(loc string, buf []byte) (int, error) {
-	rdr, err := v.getReaderWithFixRace(loc)
+	rdr, err := v.getReader(loc)
 	if err != nil {
 		return 0, err
 	}
@@ -203,7 +208,7 @@ func (v *S3Volume) Get(loc string, buf []byte) (int, error) {
 }
 
 func (v *S3Volume) Compare(loc string, expect []byte) error {
-	rdr, err := v.getReaderWithFixRace(loc)
+	rdr, err := v.getReader(loc)
 	if err != nil {
 		return err
 	}
@@ -341,41 +346,51 @@ func (v *S3Volume) Trash(loc string) error {
 	}
 	if trashLifetime == 0 {
 		if !s3UnsafeDelete {
-			return ErrS3TrashNotAvailable
+			return ErrS3TrashDisabled
 		}
 		return v.Bucket.Del(loc)
 	}
-
-	// Make sure we're not in the race window.
-	{
-		resp, err := v.Bucket.Head("trash/"+loc, nil)
-		err = v.translateError(err)
-		if os.IsNotExist(err) {
-			// OK, trash/X doesn't exist so we're not in
-			// the race window
-		} else if err != nil {
-			// Error looking up trash/X. Unsafe to proceed
-			// without knowing whether we're in the race
-			// window
-			return err
-		} else if t, err := v.lastModified(resp); err != nil {
-			// Can't parse timestamp
-			return err
-		} else if safeWindow := t.Add(trashLifetime).Sub(time.Now().Add(v.raceWindow)); safeWindow <= 0 {
-			// We can't count on "touch trash/X" to
-			// prolong trash/X's lifetime. The new
-			// timestamp might not become visible until
-			// now+raceWindow, and EmptyTrash is allowed
-			// to delete trash/X before then.
-			return fmt.Errorf("same block is already in trash, and safe window ended %s ago", -safeWindow)
-		}
+	err := v.checkRaceWindow(loc)
+	if err != nil {
+		return err
 	}
-
-	err := v.safeCopy("trash/"+loc, loc)
+	err = v.safeCopy("trash/"+loc, loc)
 	if err != nil {
 		return err
 	}
 	return v.translateError(v.Bucket.Del(loc))
+}
+
+// checkRaceWindow returns a non-nil error if trash/loc is, or might
+// be, in the race window (i.e., it's not safe to trash loc).
+func (v *S3Volume) checkRaceWindow(loc string) error {
+	resp, err := v.Bucket.Head("trash/"+loc, nil)
+	err = v.translateError(err)
+	if os.IsNotExist(err) {
+		// OK, trash/X doesn't exist so we're not in the race
+		// window
+		return nil
+	} else if err != nil {
+		// Error looking up trash/X. We don't know whether
+		// we're in the race window
+		return err
+	}
+	t, err := v.lastModified(resp)
+	if err != nil {
+		// Can't parse timestamp
+		return err
+	}
+	safeWindow := t.Add(trashLifetime).Sub(time.Now().Add(v.raceWindow))
+	if safeWindow <= 0 {
+		// We can't count on "touch trash/X" to prolong
+		// trash/X's lifetime. The new timestamp might not
+		// become visible until now+raceWindow, and EmptyTrash
+		// is allowed to delete trash/X before then.
+		return fmt.Errorf("same block is already in trash, and safe window ended %s ago", -safeWindow)
+	}
+	// trash/X exists, but it won't be eligible for deletion until
+	// after now+raceWindow, so it's safe to overwrite it.
+	return nil
 }
 
 func (v *S3Volume) safeCopy(dst, src string) error {
