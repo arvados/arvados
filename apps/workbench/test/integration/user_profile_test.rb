@@ -107,7 +107,7 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     assert page.has_text? profile_message.gsub(/<.*?>/,'')
     assert page.has_text?(required_field_title), 'No text - configured required field title'
 
-    page.find_field('user[prefs][:profile][:'+required_field_key+']').set 'value to fill required field'
+    page.find_field('user[prefs][profile]['+required_field_key+']').set 'value to fill required field'
 
     click_button "Save profile"
     # profile saved and in profile page now with success
