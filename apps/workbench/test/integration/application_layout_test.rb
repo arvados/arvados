@@ -252,7 +252,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       assert_text 'Recent pipelines and processes' # seeing dashboard now
       within('.recent-processes-actions') do
         assert page.has_link?('Run a pipeline')
-        assert page.has_link?('All pipelines')
+        assert page.has_link?('All processes')
       end
 
       within('.recent-processes') do
@@ -278,7 +278,6 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
         else
           assert page.has_no_link?('All nodes')
         end
-        assert page.has_link? 'All jobs'
       end
 
       within('.compute-node-summary-pane') do

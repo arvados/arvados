@@ -9,7 +9,7 @@
        data-object-uuids="<%= @object.uuid %> <%= job_uuids.join(' ') %>"
        ></div>
 
-  <%= render partial: 'work_unit/show_component', locals: {wu: @object.work_unit(@object.name)} %>
+  <%= render partial: 'work_units/show_component', locals: {wu: @object.work_unit(@object.name)} %>
 
 <% else %>
   <%# state is either New or Ready %>

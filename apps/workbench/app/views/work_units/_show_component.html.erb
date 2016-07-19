@@ -14,7 +14,7 @@
             <% end %>
             </div>
             <div class="col-md-3">
-              <%= render partial: 'work_unit/progress', locals: {wu: wu} %>
+              <%= render partial: 'work_units/progress', locals: {wu: wu} %>
             </div>
             <div class="col-md-1">
               <% if wu.can_cancel? and @object.editable? %>
@@ -43,7 +43,7 @@
   </div>
 
 <p>
-  <%= render(partial: 'work_unit/component_detail', locals: {current_obj: wu}) %>
+  <%= render(partial: 'work_units/component_detail', locals: {current_obj: wu}) %>
 </p>
 
 <%# Work unit children %>
@@ -71,6 +71,6 @@
   <% @descendent_count = 0 if !@descendent_count %>
   <% wu.children.each do |c| %>
     <% @descendent_count += 1 %>
-    <%= render(partial: 'work_unit/show_child', locals: {current_obj: c, i: @descendent_count, expanded: false}) %>
+    <%= render(partial: 'work_units/show_child', locals: {current_obj: c, i: @descendent_count, expanded: false}) %>
   <% end %>
 <% end %>
