@@ -22,9 +22,8 @@ class WorkUnitsController < ApplicationController
     @objects = (jobs.to_a + pipelines.to_a + crs.to_a).sort_by(&:created_at).reverse.first(@limit)
 
     if @objects.any?
-      @next_page_filters = next_page_filters('<=', {'created_at' => '<=', 'uuid' => 'not in'})
+      @next_page_filters = next_page_filters('<=')
       @next_page_href = url_for(partial: :all_processes_rows,
-                                partial_path: 'work_units/',
                                 filters: @next_page_filters.to_json)
       preload_links_for_objects(@objects.to_a)
     else

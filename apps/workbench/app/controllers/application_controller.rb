@@ -176,7 +176,7 @@ class ApplicationController < ActionController::Base
         if params[:partial]
           @next_page_href = next_page_href(partial: params[:partial], filters: @filters.to_json)
           render json: {
-            content: render_to_string(partial: "#{params[:partial_path] || ''}show_#{params[:partial]}",
+            content: render_to_string(partial: "show_#{params[:partial]}",
                                       formats: [:html]),
             next_page_href: @next_page_href
           }
@@ -242,11 +242,10 @@ class ApplicationController < ActionController::Base
   end
 
   helper_method :next_page_filters
-  def next_page_filters nextpage_operator, rejections
+  def next_page_filters nextpage_operator
     next_page_filters = @filters.reject do |attr, op, val|
-      if rejections.has_key?(attr)
-        attr == attr and op == rejections[attr]
-      end
+      (attr == 'created_at' and op == nextpage_operator) or
+      (attr == 'uuid' and op == 'not in')
     end
 
     if @objects.any?
@@ -257,7 +256,7 @@ class ApplicationController < ActionController::Base
         last_uuids << obj.uuid if obj.created_at.eql?(last_created_at)
       end
 
-      next_page_filters += [['created_at', nextpage_operator, last_created_at.strftime("%Y-%m-%dT%H:%M:%S.%N%z")]]
+      next_page_filters += [['created_at', nextpage_operator, last_created_at]]
       next_page_filters += [['uuid', 'not in', last_uuids]]
     end
 

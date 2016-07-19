@@ -232,8 +232,7 @@ class ProjectsController < ApplicationController
       @objects = @objects[0..@limit-1]
 
       if @objects.any?
-        @next_page_filters = next_page_filters(nextpage_operator,
-              {'created_at' => nextpage_operator, 'uuid' => 'not in'})
+        @next_page_filters = next_page_filters(nextpage_operator)
         @next_page_href = url_for(partial: :contents_rows,
                                   limit: @limit,
                                   filters: @next_page_filters.to_json)
