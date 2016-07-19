@@ -164,7 +164,7 @@ func submit(dispatcher *dispatch.Dispatcher,
 	close(stderrChan)
 
 	if err != nil {
-		submitErr = fmt.Errorf("Container submission failed %v: %v %v", cmd.Args, err, stderrmsg)
+		submitErr = fmt.Errorf("Container submission failed: %v: %v (stderr: %q)", cmd.Args, err, stderrmsg)
 		return
 	}
 
