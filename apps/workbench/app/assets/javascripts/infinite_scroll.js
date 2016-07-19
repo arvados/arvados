@@ -130,6 +130,7 @@ function maybe_load_more_content(event) {
                 $container.find(".spinner").detach();
                 $container.append(data.content);
                 $container.attr('data-infinite-content-href', data.next_page_href);
+                ping_all_scrollers();
             });
      }
 }
