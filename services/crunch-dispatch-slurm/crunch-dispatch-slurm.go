@@ -75,8 +75,7 @@ func sbatchFunc(container arvados.Container) *exec.Cmd {
 	return exec.Command("sbatch", "--share",
 		fmt.Sprintf("--job-name=%s", container.UUID),
 		fmt.Sprintf("--mem-per-cpu=%d", int(memPerCPU)),
-		fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs),
-		fmt.Sprintf("--priority=%d", container.Priority))
+		fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs))
 }
 
 // scancelCmd
