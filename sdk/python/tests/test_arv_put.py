@@ -465,16 +465,14 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
                           ['--project-uuid', self.Z_UUID, '--stream'])
 
     def test_api_error_handling(self):
-        collections_mock = mock.Mock(name='arv.collections()')
-        coll_create_mock = collections_mock().create().execute
-        coll_create_mock.side_effect = arvados.errors.ApiError(
+        coll_save_mock = mock.Mock(name='arv.collection.Collection().save_new()')
+        coll_save_mock.side_effect = arvados.errors.ApiError(
             fake_httplib2_response(403), '{}')
-        arv_put.api_client = arvados.api('v1')
-        arv_put.api_client.collections = collections_mock
+        arvados.collection.Collection.save_new = coll_save_mock
         with self.assertRaises(SystemExit) as exc_test:
             self.call_main_with_args(['/dev/null'])
         self.assertLess(0, exc_test.exception.args[0])
-        self.assertLess(0, coll_create_mock.call_count)
+        self.assertLess(0, coll_save_mock.call_count)
         self.assertEqual("", self.main_stdout.getvalue())
 
 
