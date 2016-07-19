@@ -317,8 +317,8 @@ class ArvPutUploadJob(object):
         Start supporting thread & file uploading
         """
         self._checkpointer.start()
-        for path in self.paths:
-            try:
+        try:
+            for path in self.paths:
                 # Test for stdin first, in case some file named '-' exist
                 if path == '-':
                     self._write_stdin(self.filename or 'stdin')
@@ -328,14 +328,10 @@ class ArvPutUploadJob(object):
                     self._write_file(path, self.filename or os.path.basename(path))
                 # else:
                 #     raise FileUploadError('Inadequate file type, cannot upload: %s' % path)
-            except:
-                # Stop the thread before continue complaining
-                self._stop_checkpointer.set()
-                self._checkpointer.join()
-                raise
-        # Work finished, stop updater task
-        self._stop_checkpointer.set()
-        self._checkpointer.join()
+        finally:
+            # Stop the thread before doing anything else
+            self._stop_checkpointer.set()
+            self._checkpointer.join()
         # Successful upload, one last _update()
         self._update()
 
@@ -360,16 +356,16 @@ class ArvPutUploadJob(object):
         Recursively get the total size of the collection
         """
         size = 0
-        for item in collection:
-            if isinstance(item, arvados.arvfile.ArvadosFile):
-                size += item.size()
-            elif isinstance(item, arvados.collection.Collection):
+        for item in collection.values():
+            if isinstance(item, arvados.collection.Collection):
                 size += self._collection_size(item)
+            else:
+                size += item.size()
         return size
 
     def _update_task(self):
         """
-        Periodically call support tasks. File uploading is
+        Periodically called support task. File uploading is
         asynchronous so we poll status from the collection.
         """
         while not self._stop_checkpointer.wait(self._update_task_time):
@@ -395,7 +391,7 @@ class ArvPutUploadJob(object):
             self.reporter(self.bytes_written, self.bytes_expected)
 
     def _write_directory_tree(self, path, stream_name="."):
-        # TODO: Check what happens when multiple directories are passes as
+        # TODO: Check what happens when multiple directories are passed as
         # arguments.
         # If the code below is uncommented, integration test
         # test_ArvPutSignedManifest (tests.test_arv_put.ArvPutIntegrationTest)
@@ -593,11 +589,9 @@ class ArvPutUploadJob(object):
             locators = []
             for segment in item.segments():
                 loc = segment.locator
-                if loc.startswith("bufferblock"):
-                    loc = item._bufferblocks[loc].calculate_locator()
                 locators.append(loc)
             return locators
-        elif isinstance(item, arvados.collection.Collection) or isinstance(item, arvados.collection.Subcollection):
+        elif isinstance(item, arvados.collection.Collection):
             l = [self._datablocks_on_item(x) for x in item.values()]
             # Fast list flattener method taken from:
             # http://stackoverflow.com/questions/952914/making-a-flat-list-out-of-list-of-lists-in-python
@@ -607,6 +601,8 @@ class ArvPutUploadJob(object):
 
     def data_locators(self):
         with self._collection_lock:
+            # Make sure all datablocks are flushed before getting the locators
+            self._my_collection().manifest_text()
             datablocks = self._datablocks_on_item(self._my_collection())
         return datablocks
 
