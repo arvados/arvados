@@ -895,6 +895,9 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 		t.Fatal(err)
 	}
 
+	// Untrash might have updated the timestamp, so backdate again
+	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
+
 	// Second set: EmptyTrash after the trash deadline has passed.
 
 	trashLifetime = time.Nanosecond
