@@ -427,7 +427,12 @@ func (v *S3Volume) lastModified(resp *http.Response) (t time.Time, err error) {
 }
 
 func (v *S3Volume) Untrash(loc string) error {
-	return v.safeCopy(loc, "trash/"+loc)
+	err := v.safeCopy(loc, "trash/"+loc)
+	if err != nil {
+		return err
+	}
+	err = v.Bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
+	return v.translateError(err)
 }
 
 func (v *S3Volume) Status() *VolumeStatus {
