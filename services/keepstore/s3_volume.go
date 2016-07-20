@@ -288,7 +288,7 @@ func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 	}
 	recentL := s3Lister{
 		Bucket:   v.Bucket,
-		Prefix:   "recent/"+prefix,
+		Prefix:   "recent/" + prefix,
 		PageSize: v.indexPageSize,
 	}
 	for data, recent := dataL.First(), recentL.First(); data != nil; data = dataL.Next() {
@@ -566,7 +566,7 @@ func (v *S3Volume) EmptyTrash() {
 		}
 		_, err = v.Bucket.Head(loc, nil)
 		if os.IsNotExist(err) {
-			err = v.Bucket.Del("recent/"+loc)
+			err = v.Bucket.Del("recent/" + loc)
 			if err != nil {
 				log.Printf("warning: %s: EmptyTrash: deleting %q: %s", v, "recent/"+loc, err)
 			}
@@ -580,12 +580,12 @@ func (v *S3Volume) EmptyTrash() {
 }
 
 type s3Lister struct {
-	Bucket      *s3.Bucket
-	Prefix      string
-	PageSize    int
-	nextMarker  string
-	buf         []s3.Key
-	err         error
+	Bucket     *s3.Bucket
+	Prefix     string
+	PageSize   int
+	nextMarker string
+	buf        []s3.Key
+	err        error
 }
 
 // First fetches the first page and returns the first item. It returns
