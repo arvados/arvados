@@ -342,9 +342,12 @@ setup_ruby_environment() {
         # complaint about not being in first place already.
         rvm use @default 2>/dev/null
 
-        # Create (if needed) and switch to an @arvados-tests
-        # gemset. (Leave the choice of ruby to the caller.)
-        rvm use @arvados-tests --create \
+        # Create (if needed) and switch to an @arvados-tests-* gemset,
+        # salting the gemset name so it doesn't interfere with
+        # concurrent builds in other workspaces. Leave the choice of
+        # ruby to the caller.
+        gemset="arvados-tests-$(echo -n "${WORKSPACE}" | md5sum | head -c16)"
+        rvm use "@${gemset}" --create \
             || fatal 'rvm gemset setup'
 
         rvm env
