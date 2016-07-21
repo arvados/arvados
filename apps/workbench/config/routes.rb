@@ -13,6 +13,7 @@ ArvadosWorkbench::Application.routes.draw do
   get "report_issue_popup" => 'actions#report_issue_popup', :as => :report_issue_popup
   post "report_issue" => 'actions#report_issue', :as => :report_issue
   get "star" => 'actions#star', :as => :star
+  get "all_processes" => 'work_units#index', :as => :all_processes
   resources :nodes
   resources :humans
   resources :traits

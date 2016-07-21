@@ -7,12 +7,12 @@ from cwltool.errors import WorkflowException
 from cwltool.draft2tool import revmap_file, CommandLineTool
 from cwltool.load_tool import fetch_document
 from cwltool.builder import Builder
-from cwltool.pathmapper import PathMapper
 
 import arvados.collection
 
 from .arvdocker import arv_docker_get_image
 from .runner import Runner
+from .pathmapper import InitialWorkDirPathMapper
 from . import done
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -38,8 +38,8 @@ class ArvadosJob(object):
         if self.generatefiles["listing"]:
             vwd = arvados.collection.Collection()
             script_parameters["task.vwd"] = {}
-            generatemapper = PathMapper([self.generatefiles], self.outdir,
-                                        ".", separateDirs=False)
+            generatemapper = InitialWorkDirPathMapper([self.generatefiles], "", "",
+                                        separateDirs=False)
             for f, p in generatemapper.items():
                 if p.type == "CreateFile":
                     with vwd.open(p.target, "w") as n:
@@ -47,7 +47,7 @@ class ArvadosJob(object):
             vwd.save_new()
             for f, p in generatemapper.items():
                 if p.type == "File":
-                    script_parameters["task.vwd"][p.target] = self.pathmapper.mapper(f).target
+                    script_parameters["task.vwd"][p.target] = p.resolved
                 if p.type == "CreateFile":
                     script_parameters["task.vwd"][p.target] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), p.target)
 

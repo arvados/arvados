@@ -1,0 +1,14 @@
+#!/usr/bin/env cwl-runner
+cwl:tool: bwa-mem.cwl
+reference:
+  class: File
+  location: keep:2463fa9efeb75e099685528b3b9071e0+438/19.fasta.bwt
+read_p1:
+  class: File
+  location: keep:ae480c5099b81e17267b7445e35b4bc7+180/HWI-ST1027_129_D0THKACXX.1_1.fastq
+read_p2:
+  class: File
+  location: keep:ae480c5099b81e17267b7445e35b4bc7+180/HWI-ST1027_129_D0THKACXX.1_2.fastq
+group_id: arvados_tutorial
+sample_id: HWI-ST1027_129
+PL: illumina

@@ -27,7 +27,7 @@
                       <% if val.size == 1 %>
                         <%= link_to_arvados_object_if_readable(val[0], 'Output data not available', friendly_name: true) %>
                       <% else %>
-                        <%= render partial: 'work_unit/show_outputs', locals: {id: current_obj.uuid, outputs: val, align:""} %>
+                        <%= render partial: 'work_units/show_outputs', locals: {id: current_obj.uuid, outputs: val, align:""} %>
                       <% end %>
                     <% else %>
                       <%= val %>

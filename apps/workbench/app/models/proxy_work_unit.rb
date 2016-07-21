@@ -23,6 +23,10 @@ class ProxyWorkUnit < WorkUnit
     get(:modified_by_user_uuid)
   end
 
+  def owner_uuid
+    get(:owner_uuid)
+  end
+
   def created_at
     t = get(:created_at)
     t = Time.parse(t) if (t.is_a? String)
@@ -51,6 +55,8 @@ class ProxyWorkUnit < WorkUnit
     state = get(:state)
     if ["Running", "RunningOnServer", "RunningOnClient"].include? state
       "Running"
+    elsif state == 'New'
+      "Not started"
     else
       state
     end

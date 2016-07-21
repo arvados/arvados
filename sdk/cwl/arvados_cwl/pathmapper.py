@@ -140,3 +140,17 @@ class ArvPathMapper(PathMapper):
             return (target, "keep:" + target[len(self.keepdir)+1:])
         else:
             return super(ArvPathMapper, self).reversemap(target)
+
+class InitialWorkDirPathMapper(PathMapper):
+    def setup(self, referenced_files, basedir):
+        # type: (List[Any], unicode) -> None
+
+        # Go through each file and set the target to its own directory along
+        # with any secondary files.
+        stagedir = self.stagedir
+        for fob in referenced_files:
+            self.visit(fob, stagedir, basedir)
+
+        for path, (ab, tgt, type) in self._pathmap.items():
+            if type in ("File", "Directory") and ab.startswith("keep:"):
+                self._pathmap[path] = MapperEnt("$(task.keep)/%s" % ab[5:], tgt, type)

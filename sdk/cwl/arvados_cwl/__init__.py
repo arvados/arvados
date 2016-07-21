@@ -16,6 +16,7 @@ import cwltool.workflow
 
 import arvados
 import arvados.events
+import arvados.config
 
 from .arvcontainer import ArvadosContainer, RunnerContainer
 from .arvjob import ArvadosJob, RunnerJob, RunnerTemplate
@@ -123,6 +124,9 @@ class ArvCwlRunner(object):
 
         kwargs["fs_access"] = self.fs_access
         kwargs["enable_reuse"] = kwargs.get("enable_reuse")
+        kwargs["use_container"] = True
+        kwargs["tmpdir_prefix"] = "tmp"
+        kwargs["on_error"] = "continue"
 
         if self.work_api == "containers":
             kwargs["outdir"] = "/var/spool/cwl"
@@ -158,6 +162,8 @@ class ArvCwlRunner(object):
         if runnerjob and not kwargs.get("wait"):
             runnerjob.run()
             return runnerjob.uuid
+
+        arvados.config.settings()["ARVADOS_DISABLE_WEBSOCKETS"] = "1"
 
         if self.work_api == "containers":
             events = arvados.events.subscribe(arvados.api('v1'), [["object_uuid", "is_a", "arvados#container"]], self.on_message)
@@ -211,6 +217,9 @@ class ArvCwlRunner(object):
 
         if self.final_status == "UnsupportedRequirement":
             raise UnsupportedRequirement("Check log for details.")
+
+        if self.final_status != "success":
+            raise WorkflowException("Workflow failed.")
 
         if self.final_output is None:
             raise WorkflowException("Workflow did not return a result.")

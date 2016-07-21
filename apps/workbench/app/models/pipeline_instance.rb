@@ -13,7 +13,7 @@ class PipelineInstance < ArvadosBase
       template = if lookup and lookup[self.pipeline_template_uuid]
                    lookup[self.pipeline_template_uuid]
                  else
-                   PipelineTemplate.where(uuid: self.pipeline_template_uuid).first
+                   PipelineTemplate.find(self.pipeline_template_uuid) if self.pipeline_template_uuid
                  end
       if template
         template.name

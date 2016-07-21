@@ -98,8 +98,7 @@ func (s *TestSuite) TestIntegrationMissingFromSqueue(c *C) {
 	container := s.integrationTest(c, func() *exec.Cmd { return exec.Command("echo") }, []string{"sbatch", "--share",
 		fmt.Sprintf("--job-name=%s", "zzzzz-dz642-queuedcontainer"),
 		fmt.Sprintf("--mem-per-cpu=%d", 2862),
-		fmt.Sprintf("--cpus-per-task=%d", 4),
-		fmt.Sprintf("--priority=%d", 1)},
+		fmt.Sprintf("--cpus-per-task=%d", 4)},
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
 			time.Sleep(3 * time.Second)

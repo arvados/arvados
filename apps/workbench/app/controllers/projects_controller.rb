@@ -230,23 +230,9 @@ class ProjectsController < ApplicationController
       @objects = @objects.to_a.sort_by(&:created_at)
       @objects.reverse! if nextpage_operator == '<='
       @objects = @objects[0..@limit-1]
-      @next_page_filters = @filters.reject do |attr,op,val|
-        (attr == 'created_at' and op == nextpage_operator) or
-          (attr == 'uuid' and op == 'not in')
-      end
 
       if @objects.any?
-        last_created_at = @objects.last.created_at
-
-        last_uuids = []
-        @objects.each do |obj|
-          last_uuids << obj.uuid if obj.created_at.eql?(last_created_at)
-        end
-
-        @next_page_filters += [['created_at',
-                                nextpage_operator,
-                                last_created_at]]
-        @next_page_filters += [['uuid', 'not in', last_uuids]]
+        @next_page_filters = next_page_filters(nextpage_operator)
         @next_page_href = url_for(partial: :contents_rows,
                                   limit: @limit,
                                   filters: @next_page_filters.to_json)

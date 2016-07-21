@@ -75,8 +75,7 @@ func sbatchFunc(container arvados.Container) *exec.Cmd {
 	return exec.Command("sbatch", "--share",
 		fmt.Sprintf("--job-name=%s", container.UUID),
 		fmt.Sprintf("--mem-per-cpu=%d", int(memPerCPU)),
-		fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs),
-		fmt.Sprintf("--priority=%d", container.Priority))
+		fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs))
 }
 
 // scancelCmd
@@ -165,7 +164,7 @@ func submit(dispatcher *dispatch.Dispatcher,
 	close(stderrChan)
 
 	if err != nil {
-		submitErr = fmt.Errorf("Container submission failed %v: %v %v", cmd.Args, err, stderrmsg)
+		submitErr = fmt.Errorf("Container submission failed: %v: %v (stderr: %q)", cmd.Args, err, stderrmsg)
 		return
 	}
 

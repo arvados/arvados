@@ -11,7 +11,7 @@
         </div>
 
         <div class="col-md-2 pipeline-instance-spacing">
-          <%= render partial: 'work_unit/progress', locals: {wu: current_obj} %>
+          <%= render partial: 'work_units/progress', locals: {wu: current_obj} %>
         </div>
 
         <% if not current_obj %>
@@ -48,7 +48,7 @@
                 <% if outputs.size == 1 %>
                   <%= link_to_arvados_object_if_readable(outputs[0], 'Output data not available', link_text: "Output of #{current_obj.label}") %>
                 <% else %>
-                  <%= render partial: 'work_unit/show_outputs', locals: {id: current_obj.uuid, outputs: outputs, align:"pull-right"} %>
+                  <%= render partial: 'work_units/show_outputs', locals: {id: current_obj.uuid, outputs: outputs, align:"pull-right"} %>
                 <% end %>
               <% else %>
                 No output.
@@ -71,7 +71,7 @@
 
   <div id="collapse<%= i %>" class="panel-collapse collapse <%= if expanded then 'in' end %>">
     <div class="panel-body">
-      <%= render partial: 'work_unit/show_component', locals: {wu: current_obj} %>
+      <%= render partial: 'work_units/show_component', locals: {wu: current_obj} %>
     </div>
   </div>
 </div>

@@ -6,7 +6,7 @@ title: "Installation"
 
 ...
 
-To use the @arv@ command, you can either install the @arvados-cli@ gem via RubyGems or build and install the package from source.
+Arvados CLI tools are written in Ruby and Python.  To use the @arv@ command, you can either install the @arvados-cli@ gem via RubyGems or build and install the package from source.  The @arv@ command also relies on other Arvados tools.  To get those, install the @arvados-python-client@ and @arvados-cwl-runner@ packages, either from PyPI or source.
 
 h3. Prerequisites: Ruby, Bundler, and curl libraries
 
@@ -16,15 +16,21 @@ Install curl libraries with your system's package manager. For example, on Debia
 
 <notextile>
 <pre>
-$ <code class="userinput">sudo apt-get install libcurl3 libcurl3-gnutls libcurl4-openssl-dev</code>
+~$ <code class="userinput">sudo apt-get install libcurl3 libcurl3-gnutls libcurl4-openssl-dev</code>
 </pre>
 </notextile>
 
-h3. Option 1: Install with RubyGems
+h3. Option 1: Install from RubyGems and PyPI
 
 <notextile>
 <pre>
-$ <code class="userinput">sudo -i gem install arvados-cli</code>
+~$ <code class="userinput">sudo -i gem install arvados-cli</code>
+</pre>
+</notextile>
+
+<notextile>
+<pre>
+~$ <code class="userinput">pip install arvados-python-client arvados-cwl-runner</code>
 </pre>
 </notextile>
 
@@ -32,9 +38,13 @@ h3. Option 2: Build and install from source
 
 <notextile>
 <pre>
-$ <code class="userinput">git clone https://github.com/curoverse/arvados.git</code>
-$ <code class="userinput">cd arvados/sdk/cli</code>
-$ <code class="userinput">gem build arvados-cli.gemspec</code>
-$ <code class="userinput">sudo -i gem install arvados-cli-*.gem</code>
+~$ <code class="userinput">git clone https://github.com/curoverse/arvados.git</code>
+~$ <code class="userinput">cd arvados/sdk/cli</code>
+~/arvados/sdk/cli$ <code class="userinput">gem build arvados-cli.gemspec</code>
+~/arvados/sdk/cli$ <code class="userinput">sudo -i gem install arvados-cli-*.gem</code>
+~/arvados/sdk/cli$ <code class="userinput">cd ../python</code>
+~/arvados/sdk/python$ <code class="userinput">python setup.py install</code>
+~/arvados/sdk/python$ <code class="userinput">cd ../cwl</code>
+~/arvados/sdk/cwl$ <code class="userinput">python setup.py install</code>
 </pre>
 </notextile>

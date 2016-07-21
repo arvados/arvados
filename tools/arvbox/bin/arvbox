@@ -101,6 +101,9 @@ wait_for_arvbox() {
 }
 
 run() {
+    CONFIG=$1
+    TAG=$2
+
     if docker ps -a --filter "status=running" | grep -E "$ARVBOX_CONTAINER$" -q ; then
         echo "Container $ARVBOX_CONTAINER is already running"
         exit 0
@@ -110,8 +113,13 @@ run() {
         echo "Container $ARVBOX_CONTAINER already exists but is not running; use restart or rebuild"
         exit 1
     fi
+   
+    if test ! -z "$TAG"
+    then
+	TAG=":$TAG"
+    fi
 
-    if echo "$1" | grep '^public' ; then
+    if echo "$CONFIG" | grep '^public' ; then
         if test -n "$ARVBOX_PUBLISH_IP" ; then
             localip=$ARVBOX_PUBLISH_IP
         else
@@ -136,7 +144,7 @@ run() {
         PUBLIC=""
     fi
 
-    if echo "$1" | grep 'demo$' ; then
+    if echo "$CONFIG" | grep 'demo$' ; then
         if test -d "$ARVBOX_DATA" ; then
             echo "It looks like you already have a development container named $ARVBOX_CONTAINER."
             echo "Set ARVBOX_CONTAINER to set a different name for your demo container"
@@ -153,7 +161,7 @@ run() {
                --privileged \
                --volumes-from $ARVBOX_CONTAINER-data \
                $PUBLIC \
-               arvados/arvbox-demo
+               arvados/arvbox-demo$TAG
         updateconf
         wait_for_arvbox
     else
@@ -167,8 +175,7 @@ run() {
             git clone https://github.com/curoverse/sso-devise-omniauth-provider.git "$SSO_ROOT"
         fi
 
-        if test "$1" = test ; then
-            shift
+        if test "$CONFIG" = test ; then
 
             mkdir -p $VAR_DATA/test
 
@@ -184,7 +191,7 @@ run() {
                    "--volume=$GEMS:/var/lib/gems:rw" \
                    "--volume=$PIPCACHE:/var/lib/pip:rw" \
                    "--volume=$GOSTUFF:/var/lib/gopath:rw" \
-                   arvados/arvbox-dev \
+                   arvados/arvbox-dev$TAG \
                    /usr/local/bin/runsvinit -svdir=/etc/test-service
 
             docker exec -ti \
@@ -210,7 +217,7 @@ run() {
                    WORKSPACE=/usr/src/arvados \
                    GEM_HOME=/var/lib/gems \
                    "$@"
-        elif echo "$1" | grep 'dev$' ; then
+        elif echo "$CONFIG" | grep 'dev$' ; then
             docker run \
                    --detach \
                    --name=$ARVBOX_CONTAINER \
@@ -224,12 +231,12 @@ run() {
                    "--volume=$PIPCACHE:/var/lib/pip:rw" \
                    "--volume=$GOSTUFF:/var/lib/gopath:rw" \
                    $PUBLIC \
-                   arvados/arvbox-dev
+                   arvados/arvbox-dev$TAG
             updateconf
             wait_for_arvbox
             echo "The Arvados source code is checked out at: $ARVADOS_ROOT"
         else
-            echo "Unknown configuration '$1'"
+            echo "Unknown configuration '$CONFIG'"
         fi
     fi
 }
@@ -426,7 +433,7 @@ case "$subcmd" in
         echo
         echo "build   <config>      build arvbox Docker image"
         echo "rebuild <config>      build arvbox Docker image, no layer cache"
-        echo "start|run <config>  start $ARVBOX_CONTAINER container"
+        echo "start|run <config> [tag]  start $ARVBOX_CONTAINER container"
         echo "open       open arvbox workbench in a web browser"
         echo "shell      enter arvbox shell"
         echo "ip         print arvbox docker container ip address"

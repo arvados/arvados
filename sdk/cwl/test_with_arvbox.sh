@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -x
+
 if ! which arvbox >/dev/null ; then
     export PATH=$PATH:$(readlink -f $(dirname $0)/../../tools/arvbox/bin)
 fi
@@ -8,6 +10,7 @@ reset_container=1
 leave_running=0
 config=dev
 docker_pull=1
+tag=""
 
 while test -n "$1" ; do
     arg="$1"
@@ -28,8 +31,12 @@ while test -n "$1" ; do
             docker_pull=0
             shift
             ;;
+        --tag)
+            tag=$2
+            shift ; shift
+            ;;
         -h|--help)
-            echo "$0 [--no-reset-container] [--leave-running] [--no-docker-pull] [--config dev|localdemo]"
+            echo "$0 [--no-reset-container] [--leave-running] [--no-docker-pull] [--config dev|localdemo] [--tag docker_tag]"
             exit
             ;;
         *)
@@ -46,7 +53,7 @@ if test $reset_container = 1 ; then
     arvbox reset -f
 fi
 
-arvbox start $config
+arvbox start $config $tag
 
 arvbox pipe <<EOF
 set -eu -o pipefail
@@ -69,7 +76,7 @@ export ARVADOS_API_HOST_INSECURE=1
 export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados/superuser_token)
 
 if test $docker_pull = 1 ; then
-  arv-keepdocker --pull arvados/jobs
+  arv-keepdocker --pull arvados/jobs $tag
 fi
 
 cat >/tmp/cwltest/arv-cwl-jobs <<EOF2

@@ -4,6 +4,7 @@ from __future__ import print_function
 import argparse
 import atexit
 import errno
+import glob
 import httplib2
 import os
 import pipes
@@ -12,8 +13,8 @@ import re
 import shutil
 import signal
 import socket
-import subprocess
 import string
+import subprocess
 import sys
 import tempfile
 import time
@@ -213,8 +214,14 @@ def run(leave_running_atexit=False):
     """
     global my_api_host
 
-    # Delete cached discovery document.
-    shutil.rmtree(arvados.http_cache('discovery'))
+    # Delete cached discovery documents.
+    #
+    # This will clear cached docs that belong to other processes (like
+    # concurrent test suites) even if they're still running. They should
+    # be able to tolerate that.
+    for fn in glob.glob(os.path.join(arvados.http_cache('discovery'),
+                                     '*,arvados,v1,rest,*')):
+        os.unlink(fn)
 
     pid_file = _pidfile('api')
     pid_file_ok = find_server_pid(pid_file, 0)

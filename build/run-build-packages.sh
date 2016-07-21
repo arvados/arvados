@@ -150,7 +150,7 @@ case "$TARGET" in
             ciso8601 pycrypto backports.ssl_match_hostname 'pycurl<7.21.5' \
             python-daemon lockfile llfuse==0.41.1 'pbr<1.0' pyyaml \
             'rdflib>=4.2.0' shellescape mistune typing avro requests \
-            isodate pyparsing sparqlwrapper html5lib keepalive \
+            isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
             ruamel.ordereddict)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         export PYCURL_SSL_LIBRARY=nss
@@ -170,7 +170,7 @@ case "$TARGET" in
             ciso8601 pycrypto 'pycurl<7.21.5' \
             python-daemon llfuse==0.41.1 'pbr<1.0' pyyaml \
             'rdflib>=4.2.0' shellescape mistune typing avro \
-            isodate pyparsing sparqlwrapper html5lib keepalive \
+            isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
             ruamel.ordereddict)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         export PYCURL_SSL_LIBRARY=nss
@@ -467,7 +467,7 @@ fpm_build schema_salad "" "" python 1.14.20160708181155
 fpm_build ruamel.yaml "" "" python 0.11.11 --python-setup-py-arguments "--single-version-externally-managed"
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
-fpm_build cwltool "" "" python 1.0.20160712154127
+fpm_build cwltool "" "" python 1.0.20160714182449
 
 # FPM eats the trailing .0 in the python-rdflib-jsonld package when built with 'rdflib-jsonld>=0.3.0'. Force the version. Ward, 2016-03-25
 fpm_build rdflib-jsonld "" "" python 0.3.0

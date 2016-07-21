@@ -17,6 +17,10 @@ class WorkUnit
     # returns uuid of the user who modified this work unit most recently
   end
 
+  def owner_uuid
+    # returns uuid of the owner of this work unit
+  end
+
   def created_at
     # returns created_at timestamp
   end

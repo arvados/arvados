@@ -1,0 +1,14 @@
+#!/usr/bin/env cwltool
+cwl:tool: bwa-mem.cwl
+reference:
+  class: File
+  location: 19.fasta.bwt
+read_p1:
+  class: File
+  location: HWI-ST1027_129_D0THKACXX.1_1.fastq
+read_p2:
+  class: File
+  location: HWI-ST1027_129_D0THKACXX.1_2.fastq
+group_id: arvados_tutorial
+sample_id: HWI-ST1027_129
+PL: illumina

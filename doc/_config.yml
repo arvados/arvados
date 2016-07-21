@@ -43,13 +43,16 @@ navbar:
       - user/tutorials/tutorial-keep-mount.html.textile.liquid
       - user/topics/keep.html.textile.liquid
       - user/topics/arv-copy.html.textile.liquid
-    - Run a pipeline on the command line:
+    - Using Common Workflow Language:
+      - user/cwl/intro-cwl.html.textile.liquid
+      - user/cwl/cwl-runner.html.textile.liquid
+    - Working on the command line:
       - user/topics/running-pipeline-command-line.html.textile.liquid
       - user/topics/arv-run.html.textile.liquid
-    - Working with Arvados Repositories:
+    - Working with git repositories:
       - user/tutorials/add-new-repository.html.textile.liquid
       - user/tutorials/git-arvados-guide.html.textile.liquid
-    - Develop a new pipeline:
+    - Develop an Arvados pipeline:
       - user/tutorials/intro-crunch.html.textile.liquid
       - user/tutorials/running-external-program.html.textile.liquid
       - user/topics/crunch-tools-overview.html.textile.liquid
