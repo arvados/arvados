@@ -58,7 +58,10 @@ https://arvados.org/projects/arvados/wiki/Running_tests
 
 Available tests:
 
-apps/workbench
+apps/workbench (*)
+apps/workbench_units (*)
+apps/workbench_functionals (*)
+apps/workbench_integration (*)
 apps/workbench_benchmark
 apps/workbench_profile
 doc
@@ -92,6 +95,9 @@ sdk/cwl
 tools/crunchstat-summary
 tools/keep-rsync
 tools/keep-block-check
+
+(*) apps/workbench is shorthand for apps/workbench_units +
+    apps/workbench_functionals + apps/workbench_integration
 
 EOF
 
@@ -205,7 +211,13 @@ do
             ;;
         --skip)
             skipwhat="$1"; shift
-            skip[$skipwhat]=1
+            if [[ "$skipwhat" == "apps/workbench" ]]; then
+              skip["apps/workbench_units"]=1
+              skip["apps/workbench_functionals"]=1
+              skip["apps/workbench_integration"]=1
+            else
+              skip[$skipwhat]=1
+            fi
             ;;
         --only)
             only="$1"; skip[$1]=""; shift
@@ -489,7 +501,13 @@ do_test() {
 
 do_test_once() {
     unset result
-    if [[ -z "${skip[$1]}" ]] && ( [[ -z "$only" ]] || [[ "$only" == "$1" ]] )
+    to_test=$1
+    if (( [[ "$only" == "apps/workbench" ]] ) &&
+       ( [[ "$to_test" == "apps/workbench_units" ]] || [[ "$to_test" == "apps/workbench_functionals" ]] ||
+         [[ "$to_test" == "apps/workbench_integration" ]])); then
+      to_test="apps/workbench"
+    fi
+    if [[ -z "${skip[$1]}" ]] && ( [[ -z "$only" ]] || [[ "$only" == "$to_test" ]] )
     then
         title "Running $1 tests"
         timer_reset
@@ -807,12 +825,27 @@ do
     do_test "$g" go
 done
 
-test_workbench() {
+test_workbench_units() {
     start_nginx_proxy_services \
         && cd "$WORKSPACE/apps/workbench" \
-        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test TESTOPTS=-v ${testargs[apps/workbench]}
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:units TESTOPTS=-v ${testargs[apps/workbench]}
 }
-do_test apps/workbench workbench
+do_test apps/workbench_units workbench_units
+
+test_workbench_functionals() {
+    start_nginx_proxy_services \
+        && cd "$WORKSPACE/apps/workbench" \
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:functionals TESTOPTS=-v ${testargs[apps/workbench]}
+}
+do_test apps/workbench_functionals workbench_functionals
+
+test_workbench_integration() {
+    start_nginx_proxy_services \
+        && cd "$WORKSPACE/apps/workbench" \
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:integration TESTOPTS=-v ${testargs[apps/workbench]}
+}
+do_test apps/workbench_integration workbench_integration
+
 
 test_workbench_benchmark() {
     start_nginx_proxy_services \
