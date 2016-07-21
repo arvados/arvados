@@ -14,22 +14,21 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     profile_config = Rails.configuration.user_profile_form_fields
 
     if !user
-      assert page.has_text?('Please log in'), 'Not found text - Please log in'
+      assert_text('Please log in')
     elsif user['is_active']
       if profile_config && !has_profile
-        assert page.has_text?('Save profile'), 'No text - Save profile'
+        assert_text('Save profile')
         add_profile user
       else
-        assert page.has_text?('Recent pipelines and processes'), 'Not found text - Recent pipelines and processes'
-        assert page.has_no_text?('Save profile'), 'Found text - Save profile'
+        assert_text('Recent pipelines and processes')
+        assert_no_text('Save profile')
       end
     elsif invited
-      assert page.has_text?('Please check the box below to indicate that you have read and accepted the user agreement'),
-        'Not found text - Please check the box below . . .'
-      assert page.has_no_text?('Save profile'), 'Found text - Save profile'
+      assert_text('Please check the box below to indicate that you have read and accepted the user agreement')
+      assert_no_text('Save profile')
     else
-      assert page.has_text?('Your account is inactive'), 'Not found text - Your account is inactive'
-      assert page.has_no_text?('Save profile'), 'Found text - Save profile'
+      assert_text('Your account is inactive')
+      assert_no_text('Save profile')
     end
 
     # If the user has not already seen getting_started modal, it will be shown on first visit.
@@ -47,25 +46,25 @@ class UserProfileTest < ActionDispatch::IntegrationTest
         assert page.has_link?('Log in'), 'Not found link - Log in'
       else
         # my account menu
-        assert(page.has_link?("notifications-menu"), 'no user menu')
+        assert_selector("#notifications-menu")
         page.find("#notifications-menu").click
         within('.dropdown-menu') do
           if user['is_active']
-            assert page.has_no_link?('Not active'), 'Found link - Not active'
-            assert page.has_no_link?('Sign agreements'), 'Found link - Sign agreements'
+            assert_no_selector('a', text: 'Not active')
+            assert_no_selector('a', text: 'Sign agreements')
 
-            assert page.has_link?('Virtual machines'), 'No link - Virtual machines'
-            assert page.has_link?('Repositories'), 'No link - Repositories'
-            assert page.has_link?('Current token'), 'No link - Current token'
-            assert page.has_link?('SSH keys'), 'No link - SSH Keys'
+            assert_selector('a', text: 'Virtual machines')
+            assert_selector('a', text: 'Repositories')
+            assert_selector('a', text: 'Current token')
+            assert_selector('a', text: 'SSH keys')
 
             if profile_config
-              assert page.has_link?('Manage profile'), 'No link - Manage profile'
+              assert_selector('a', text: 'Manage profile')
             else
-              assert page.has_no_link?('Manage profile'), 'Found link - Manage profile'
+              assert_no_selector('a', text: 'Manage profile')
             end
           end
-          assert page.has_link?('Log out'), 'No link - Log out'
+          assert_selector('a', text: 'Log out')
         end
       end
     end
@@ -73,45 +72,49 @@ class UserProfileTest < ActionDispatch::IntegrationTest
 
   # Check manage profile page and add missing profile to the user
   def add_profile user
-    assert page.has_no_text?('My projects'), 'Found text - My projects'
-    assert page.has_no_text?('Projects shared with me'), 'Found text - Projects shared with me'
+    assert_no_text('My projects')
+    assert_no_text('Projects shared with me')
 
-    assert page.has_text?('Profile'), 'No text - Profile'
-    assert page.has_text?('First Name'), 'No text - First Name'
-    assert page.has_text?('Last Name'), 'No text - Last Name'
-    assert page.has_text?('Identity URL'), 'No text - Identity URL'
-    assert page.has_text?('E-mail'), 'No text - E-mail'
-    assert page.has_text?(user['email']), 'No text - user email'
+    assert_text('Profile')
+    assert_text('First Name')
+    assert_text('Last Name')
+    assert_text('Identity URL')
+    assert_text('E-mail')
+    assert_text(user['email'])
 
     # Using the default profile which has message and one required field
 
     # Save profile without filling in the required field. Expect to be back in this profile page again
     click_button "Save profile"
-    assert page.has_text?('Profile'), 'No text - Profile'
-    assert page.has_text?('First Name'), 'No text - First Name'
-    assert page.has_text?('Last Name'), 'No text - Last Name'
-    assert page.has_text?('Save profile'), 'No text - Save profile'
+    assert_text('Profile')
+    assert_text('First Name')
+    assert_text('Last Name')
+    assert_text('Save profile')
 
     # This time fill in required field and then save. Expect to go to requested page after that.
     profile_message = Rails.configuration.user_profile_form_message
     required_field_title = ''
     required_field_key = ''
     profile_config = Rails.configuration.user_profile_form_fields
-    profile_config.andand.each do |entry|
+    profile_config.each do |entry|
       if entry['required']
         required_field_key = entry['key']
         required_field_title = entry['form_field_title']
+        break
       end
     end
 
     assert page.has_text? profile_message.gsub(/<.*?>/,'')
-    assert page.has_text?(required_field_title), 'No text - configured required field title'
+    assert_text(required_field_title)
 
     page.find_field('user[prefs][profile]['+required_field_key+']').set 'value to fill required field'
 
     click_button "Save profile"
     # profile saved and in profile page now with success
-    assert page.has_text?('Thank you for filling in your profile'), 'No text - Thank you for filling'
+    assert_text('Thank you for filling in your profile')
+    assert_selector('input' +
+                    '[name="user[prefs][profile]['+required_field_key+']"]' +
+                    '[value="value to fill required field"]')
     if user['prefs']['getting_started_shown']
       click_link 'Back to work!'
     else
@@ -119,48 +122,37 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     end
 
     # profile saved and in home page now
-    assert page.has_text?('Recent pipelines and processes'), 'No text - Recent pipelines and processes'
+    assert_text('Recent pipelines and processes')
   end
 
   [
-    [nil, nil, false, false],
-    ['inactive', api_fixture('users')['inactive'], true, false],
-    ['inactive_uninvited', api_fixture('users')['inactive_uninvited'], false, false],
-    ['active', api_fixture('users')['active'], true, true],
-    ['admin', api_fixture('users')['admin'], true, true],
-    ['active_no_prefs', api_fixture('users')['active_no_prefs'], true, false],
-    ['active_no_prefs_profile_no_getting_started_shown',
-      api_fixture('users')['active_no_prefs_profile_no_getting_started_shown'], true, false],
-    ['active_no_prefs_profile_with_getting_started_shown',
-      api_fixture('users')['active_no_prefs_profile_with_getting_started_shown'], true, false],
-  ].each do |token, user, invited, has_profile|
+    [nil, false, false],
+    ['inactive', true, false],
+    ['inactive_uninvited', false, false],
+    ['active', true, true],
+    ['admin', true, true],
+    ['active_no_prefs', true, false],
+    ['active_no_prefs_profile_no_getting_started_shown', true, false],
+    ['active_no_prefs_profile_with_getting_started_shown', true, false],
+  ].each do |token, invited, has_profile|
+    [true, false].each do |profile_required|
+      test "visit #{token} home page when profile is #{'not ' if !profile_required}configured" do
+        if !profile_required
+          Rails.configuration.user_profile_form_fields = false
+        else
+          # Our test config enabled profile by default. So, no need to update config
+        end
+        Rails.configuration.enable_getting_started_popup = true
 
-    test "visit home page when profile is configured for user #{token}" do
-      # Our test config enabled profile by default. So, no need to update config
-      Rails.configuration.enable_getting_started_popup = true
+        if !token
+          visit ('/')
+        else
+          visit page_with_token(token)
+        end
 
-      if !token
-        visit ('/')
-      else
-        visit page_with_token(token)
+        user = token && api_fixture('users')[token]
+        verify_homepage_with_profile user, invited, has_profile
       end
-
-      verify_homepage_with_profile user, invited, has_profile
     end
-
-    test "visit home page when profile not configured for user #{token}" do
-      Rails.configuration.user_profile_form_fields = false
-      Rails.configuration.enable_getting_started_popup = true
-
-      if !token
-        visit ('/')
-      else
-        visit page_with_token(token)
-      end
-
-      verify_homepage_with_profile user, invited, has_profile
-    end
-
   end
-
 end
