@@ -111,6 +111,9 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     click_button "Save profile"
     # profile saved and in profile page now with success
     assert_text('Thank you for filling in your profile')
+    assert_selector('input' +
+                    '[name="user[prefs][profile]['+required_field_key+']"]' +
+                    '[value="value to fill required field"]')
     if user['prefs']['getting_started_shown']
       click_link 'Back to work!'
     else
