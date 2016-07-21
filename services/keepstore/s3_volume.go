@@ -564,14 +564,14 @@ func (v *S3Volume) EmptyTrash() {
 		if !v.isKeepBlock(loc) {
 			continue
 		}
-		recent, err := v.Bucket.Head("recent/"+loc, nil)
-		if err != nil {
-			log.Printf("warning: %s: EmptyTrash: cannot delete trash %q with no corresponding recent/* marker", v, trash.Key)
-			continue
-		}
 		trashT, err := time.Parse(time.RFC3339, trash.LastModified)
 		if err != nil {
 			log.Printf("warning: %s: EmptyTrash: %q: parse %q: %s", v, trash.Key, trash.LastModified, err)
+			continue
+		}
+		recent, err := v.Bucket.Head("recent/"+loc, nil)
+		if err != nil {
+			log.Printf("warning: %s: EmptyTrash: cannot delete trash %q with no corresponding recent/* marker", v, trash.Key)
 			continue
 		}
 		recentT, err := v.lastModified(recent)
@@ -580,8 +580,27 @@ func (v *S3Volume) EmptyTrash() {
 			continue
 		}
 		if trashT.Sub(recentT) < blobSignatureTTL {
-			v.fixRace(loc)
-			continue
+			if age := now.Sub(recentT); age >= blobSignatureTTL - v.raceWindow {
+				// recent/loc is too old to protect
+				// loc from being Trashed again during
+				// the raceWindow that starts if we
+				// delete trash/X now.
+				//
+				// Note this means (trashCheckInterval
+				// < blobSignatureTTL - raceWindow) is
+				// necessary to avoid starvation.
+				log.Printf("notice: %s: EmptyTrash: detected old race for %q, calling fixRace + Touch", v, loc)
+				v.fixRace(loc)
+				v.Touch(loc)
+				continue
+			} else if _, err := v.Bucket.Head(loc, nil); os.IsNotExist(err) {
+				log.Printf("notice: %s: EmptyTrash: detected recent race for %q, calling fixRace", v, loc)
+				v.fixRace(loc)
+				continue
+			} else if err != nil {
+				log.Printf("warning: %s: EmptyTrash: HEAD %q: %s", v, loc, err)
+				continue
+			}
 		}
 		if now.Sub(trashT) < trashLifetime {
 			continue

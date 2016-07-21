@@ -142,11 +142,12 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 		canGetAfterTrash    bool
 		canUntrash          bool
 		haveTrashAfterEmpty bool
+		freshAfterEmpty     bool
 	}{
 		{
 			"No related objects",
 			none, none, none,
-			false, false, false, false, false},
+			false, false, false, false, false, false},
 		{
 			// Stored by older version, or there was a
 			// race between EmptyTrash and Put: Trash is a
@@ -154,56 +155,59 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			// old
 			"No recent/X",
 			t0.Add(-48 * time.Hour), none, none,
-			true, true, true, false, false},
+			true, true, true, false, false, false},
 		{
 			"Not trash; old enough to trash",
 			t0.Add(-24 * time.Hour), t0.Add(-2 * time.Hour), none,
-			true, true, false, false, false},
+			true, true, false, false, false, false},
 		{
 			"Not trash; not old enough to trash",
 			t0.Add(-24 * time.Hour), t0.Add(-30 * time.Minute), none,
-			true, true, true, false, false},
+			true, true, true, false, false, false},
 		{
 			"Trash + not-trash: recent race between Trash and Put",
 			t0.Add(-24 * time.Hour), t0.Add(-3 * time.Minute), t0.Add(-2 * time.Minute),
-			true, true, true, true, true},
+			true, true, true, true, true, false},
 		{
 			"Trash + not-trash, nearly eligible for deletion, prone to Trash race",
 			t0.Add(-24 * time.Hour), t0.Add(-12 * time.Hour), t0.Add(-59 * time.Minute),
-			true, false, true, true, true},
+			true, false, true, true, true, false},
 		{
 			"Trash + not-trash, eligible for deletion, prone to Trash race",
 			t0.Add(-24 * time.Hour), t0.Add(-12 * time.Hour), t0.Add(-61 * time.Minute),
-			true, false, true, true, false},
-		// FIXME: old trash never gets deleted!
-		// {
-		// 	"Not trash; old race between Trash and Put, or incomplete Trash",
-		// 	t0.Add(-24 * time.Hour), t0.Add(-12 * time.Hour), t0.Add(-12 * time.Hour),
-		// 	true, false, true, true, false},
+			true, false, true, true, false, false},
+		{
+			"Trash + not-trash, unsafe to empty; old race between Put and unfinished Trash",
+			t0.Add(-24 * time.Hour), t0.Add(-12 * time.Hour), t0.Add(-12 * time.Hour),
+			true, false, true, true, true, true},
+		{
+			"Trash + not-trash, was unsafe to empty, but since made safe by fixRace+Touch",
+			t0.Add(-time.Second), t0.Add(-time.Second), t0.Add(-12 * time.Hour),
+			true, true, true, true, false, false},
 		{
 			"Trash operation was interrupted",
 			t0.Add(-24 * time.Hour), t0.Add(-24 * time.Hour), t0.Add(-12 * time.Hour),
-			true, false, true, true, false},
+			true, false, true, true, false, false},
 		{
 			"Trash, not yet eligible for deletion",
 			none, t0.Add(-12 * time.Hour), t0.Add(-time.Minute),
-			false, false, false, true, true},
+			false, false, false, true, true, false},
 		{
 			"Trash, not yet eligible for deletion, prone to races",
 			none, t0.Add(-12 * time.Hour), t0.Add(-59 * time.Minute),
-			false, false, false, true, true},
+			false, false, false, true, true, false},
 		{
 			"Trash, eligible for deletion",
 			none, t0.Add(-12 * time.Hour), t0.Add(-2 * time.Hour),
-			false, false, false, true, false},
+			false, false, false, true, false, false},
 		{
 			"Erroneously trashed during a race, detected before trashLifetime",
 			none, t0.Add(-30 * time.Minute), t0.Add(-29 * time.Minute),
-			true, false, true, true, true},
+			true, false, true, true, true, false},
 		{
 			"Erroneously trashed during a race, rescue during EmptyTrash despite reaching trashLifetime",
 			none, t0.Add(-90 * time.Minute), t0.Add(-89 * time.Minute),
-			true, false, true, true, true},
+			true, false, true, true, true, false},
 	} {
 		c.Log("Scenario: ", test.label)
 		var loc string
@@ -245,6 +249,13 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 		v.EmptyTrash()
 		_, err = v.Bucket.Head("trash/"+loc, nil)
 		c.Check(err == nil, check.Equals, test.haveTrashAfterEmpty)
+		if test.freshAfterEmpty {
+			t, err := v.Mtime(loc)
+			c.Check(err, check.IsNil)
+			// new mtime must be current (with an
+			// allowance for 1s timestamp precision)
+			c.Check(t.After(t0.Add(-time.Second)), check.Equals, true)
+		}
 	}
 }
 
