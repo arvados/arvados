@@ -96,10 +96,11 @@ class UserProfileTest < ActionDispatch::IntegrationTest
     required_field_title = ''
     required_field_key = ''
     profile_config = Rails.configuration.user_profile_form_fields
-    profile_config.andand.each do |entry|
+    profile_config.each do |entry|
       if entry['required']
         required_field_key = entry['key']
         required_field_title = entry['form_field_title']
+        break
       end
     end
 
