@@ -399,7 +399,8 @@ def main(arguments=None, stdout=sys.stdout):
     # Read the image metadata and make Arvados links from it.
     image_file.seek(0)
     image_tar = tarfile.open(fileobj=image_file)
-    json_file = image_tar.extractfile(image_tar.getmember(image_hash + '/json'))
+    # image_hash has format: sha25-<hash>. Remove first seven characters to get hash
+    json_file = image_tar.extractfile(image_tar.getmember(image_hash[7:] + '.json'))
     image_metadata = json.load(json_file)
     json_file.close()
     image_tar.close()
