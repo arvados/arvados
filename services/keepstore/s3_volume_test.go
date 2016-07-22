@@ -132,7 +132,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 
 	t0 := time.Now()
 	nextKey := 0
-	for _, test := range []struct {
+	for _, scenario := range []struct {
 		label               string
 		data                time.Time
 		recent              time.Time
@@ -209,47 +209,53 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			none, t0.Add(-90 * time.Minute), t0.Add(-89 * time.Minute),
 			true, false, true, true, true, false},
 	} {
-		c.Log("Scenario: ", test.label)
-		var loc string
-		var blk []byte
+		c.Log("Scenario: ", scenario.label)
 
-		setup := func() {
+		// We have a few tests to run for each scenario, and
+		// the tests are expected to change state. By calling
+		// this setup func between tests, we (re)create the
+		// scenario as specified, using a new unique block
+		// locator to prevent interference from previous
+		// tests.
+
+		setup := func() (string, []byte) {
 			nextKey++
-			blk = []byte(fmt.Sprintf("%d", nextKey))
-			loc = fmt.Sprintf("%x", md5.Sum(blk))
+			blk := []byte(fmt.Sprintf("%d", nextKey))
+			loc := fmt.Sprintf("%x", md5.Sum(blk))
 			c.Log("\t", loc)
-			stubKey(test.data, loc, blk)
-			stubKey(test.recent, "recent/"+loc, nil)
-			stubKey(test.trash, "trash/"+loc, blk)
+			stubKey(scenario.data, loc, blk)
+			stubKey(scenario.recent, "recent/"+loc, nil)
+			stubKey(scenario.trash, "trash/"+loc, blk)
 			v.serverClock.now = &t0
+			return loc, blk
 		}
 
-		setup()
+		loc, blk := setup()
 		buf := make([]byte, len(blk))
 		_, err := v.Get(loc, buf)
-		c.Check(err == nil, check.Equals, test.canGet)
+		c.Check(err == nil, check.Equals, scenario.canGet)
 		if err != nil {
 			c.Check(os.IsNotExist(err), check.Equals, true)
 		}
 
-		setup()
+		loc, blk = setup()
 		err = v.Trash(loc)
-		c.Check(err == nil, check.Equals, test.canTrash)
+		c.Check(err == nil, check.Equals, scenario.canTrash)
 		_, err = v.Get(loc, buf)
-		c.Check(err == nil, check.Equals, test.canGetAfterTrash)
+		c.Check(err == nil, check.Equals, scenario.canGetAfterTrash)
 		if err != nil {
 			c.Check(os.IsNotExist(err), check.Equals, true)
 		}
 
-		setup()
+		loc, blk = setup()
 		err = v.Untrash(loc)
-		c.Check(err == nil, check.Equals, test.canUntrash)
+		c.Check(err == nil, check.Equals, scenario.canUntrash)
 
-		setup()
+		loc, blk = setup()
 		v.EmptyTrash()
 		_, err = v.Bucket.Head("trash/"+loc, nil)
-		c.Check(err == nil, check.Equals, test.haveTrashAfterEmpty)
-		if test.freshAfterEmpty {
+		c.Check(err == nil, check.Equals, scenario.haveTrashAfterEmpty)
+		if scenario.freshAfterEmpty {
 			t, err := v.Mtime(loc)
 			c.Check(err, check.IsNil)
 			// new mtime must be current (with an
