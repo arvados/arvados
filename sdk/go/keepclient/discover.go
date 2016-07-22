@@ -12,8 +12,25 @@ import (
 	"time"
 )
 
-// DiscoverKeepServers gets list of available keep services from api server
+// DiscoverKeepServers gets list of available keep services from the
+// API server.
+//
+// If a list of services is provided in the arvadosclient (e.g., from
+// an environment variable or local config), that list is used
+// instead.
 func (this *KeepClient) DiscoverKeepServers() error {
+	if this.Arvados.KeepServiceURIs != nil {
+		this.foundNonDiskSvc = true
+		this.replicasPerService = 0
+		this.setClientSettingsNonDisk()
+		roots := make(map[string]string)
+		for i, uri := range this.Arvados.KeepServiceURIs {
+			roots[fmt.Sprintf("00000-bi6l4-%015d", i)] = uri
+		}
+		this.SetServiceRoots(roots, roots, roots)
+		return nil
+	}
+
 	var list svcList
 
 	// Get keep services from api server
