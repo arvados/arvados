@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -33,6 +34,13 @@ type Client struct {
 	// Accept unverified certificates. This works only if the
 	// Client field is nil: otherwise, it has no effect.
 	Insecure bool
+
+	// Override keep service discovery with a list of base
+	// URIs. (Currently there are no Client methods for
+	// discovering keep services so this is just a convenience for
+	// callers who use a Client to initialize an
+	// arvadosclient.ArvadosClient.)
+	KeepServiceURIs []string
 }
 
 // The default http.Client used by a Client with Insecure==true and
@@ -51,10 +59,15 @@ var DefaultSecureClient = &http.Client{
 // client with the API endpoint and credentials given by the
 // ARVADOS_API_* environment variables.
 func NewClientFromEnv() *Client {
+	var svcs []string
+	if s := os.Getenv("ARVADOS_KEEP_SERVICES"); s != "" {
+		svcs = strings.Split(s, " ")
+	}
 	return &Client{
-		APIHost:   os.Getenv("ARVADOS_API_HOST"),
-		AuthToken: os.Getenv("ARVADOS_API_TOKEN"),
-		Insecure:  os.Getenv("ARVADOS_API_HOST_INSECURE") != "",
+		APIHost:         os.Getenv("ARVADOS_API_HOST"),
+		AuthToken:       os.Getenv("ARVADOS_API_TOKEN"),
+		Insecure:        os.Getenv("ARVADOS_API_HOST_INSECURE") != "",
+		KeepServiceURIs: svcs,
 	}
 }
 
