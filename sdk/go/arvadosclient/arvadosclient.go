@@ -86,6 +86,10 @@ type ArvadosClient struct {
 	// the client is outside the cluster.
 	External bool
 
+	// Use provided list of keep services, instead of using the
+	// API to discover available services.
+	KeepServiceURIs []string
+
 	// Discovery document
 	DiscoveryDoc Dict
 
@@ -112,6 +116,10 @@ func MakeArvadosClient() (ac ArvadosClient, err error) {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
 		External: external,
 		Retries:  2}
+
+	if s := os.Getenv("ARVADOS_KEEP_SERVICES"); s != "" {
+		ac.KeepServiceURIs = strings.Split(s, " ")
+	}
 
 	if ac.ApiServer == "" {
 		return ac, MissingArvadosApiHost
