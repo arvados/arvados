@@ -196,10 +196,6 @@ class ResumeCacheConflict(Exception):
     pass
 
 
-class FileUploadError(Exception):
-    pass
-
-
 class ResumeCache(object):
     CACHE_DIR = '.cache/arvados/arv-put'
 
@@ -283,15 +279,18 @@ class ResumeCache(object):
 
 
 class ArvPutUploadJob(object):
+    CACHE_DIR = '.cache/arvados/arv-put'
+
     def __init__(self, paths, resume=True, reporter=None, bytes_expected=None,
-                name=None, owner_uuid=None, ensure_unique_name=False,
-                num_retries=None, write_copies=None, replication=None,
-                filename=None):
+                 name=None, owner_uuid=None, ensure_unique_name=False,
+                 num_retries=None, write_copies=None, replication=None,
+                 filename=None, update_time=60.0):
         self.paths = paths
         self.resume = resume
         self.reporter = reporter
         self.bytes_expected = bytes_expected
         self.bytes_written = 0
+        self.bytes_skipped = 0
         self.name = name
         self.owner_uuid = owner_uuid
         self.ensure_unique_name = ensure_unique_name
@@ -302,13 +301,12 @@ class ArvPutUploadJob(object):
         self._state_lock = threading.Lock()
         self._state = None # Previous run state (file list & manifest)
         self._current_files = [] # Current run file list
-        self._cache_hash = None # MD5 digest based on paths & filename
         self._cache_file = None
         self._collection = None
         self._collection_lock = threading.Lock()
         self._stop_checkpointer = threading.Event()
         self._checkpointer = threading.Thread(target=self._update_task)
-        self._update_task_time = 60.0 # How many seconds wait between update runs
+        self._update_task_time = update_time  # How many seconds wait between update runs
         # Load cached data if any and if needed
         self._setup_state()
 
@@ -324,16 +322,18 @@ class ArvPutUploadJob(object):
                     self._write_stdin(self.filename or 'stdin')
                 elif os.path.isdir(path):
                     self._write_directory_tree(path)
-                else: #if os.path.isfile(path):
+                else:
                     self._write_file(path, self.filename or os.path.basename(path))
-                # else:
-                #     raise FileUploadError('Inadequate file type, cannot upload: %s' % path)
         finally:
             # Stop the thread before doing anything else
             self._stop_checkpointer.set()
             self._checkpointer.join()
         # Successful upload, one last _update()
         self._update()
+        if self.resume:
+            self._cache_file.close()
+            # Correct the final written bytes count
+            self.bytes_written -= self.bytes_skipped
 
     def save_collection(self):
         with self._collection_lock:
@@ -342,10 +342,11 @@ class ArvPutUploadJob(object):
                                 ensure_unique_name=self.ensure_unique_name,
                                 num_retries=self.num_retries,
                                 replication_desired=self.replication)
+
+    def destroy_cache(self):
         if self.resume:
-            # Delete cache file upon successful collection saving
             try:
-                os.unlink(self._cache_file.name)
+                os.unlink(self._cache_filename)
             except OSError as error:
                 if error.errno != errno.ENOENT:  # That's what we wanted anyway.
                     raise
@@ -357,7 +358,7 @@ class ArvPutUploadJob(object):
         """
         size = 0
         for item in collection.values():
-            if isinstance(item, arvados.collection.Collection):
+            if isinstance(item, arvados.collection.Collection) or isinstance(item, arvados.collection.Subcollection):
                 size += self._collection_size(item)
             else:
                 size += item.size()
@@ -404,11 +405,9 @@ class ArvPutUploadJob(object):
             if os.path.isdir(os.path.join(path, item)):
                 self._write_directory_tree(os.path.join(path, item),
                                 os.path.join(stream_name, item))
-            elif os.path.isfile(os.path.join(path, item)):
+            else:
                 self._write_file(os.path.join(path, item),
                                 os.path.join(stream_name, item))
-            else:
-                raise FileUploadError('Inadequate file type, cannot upload: %s' % path)
 
     def _write_stdin(self, filename):
         with self._collection_lock:
@@ -441,6 +440,7 @@ class ArvPutUploadJob(object):
                 if cached_file_data['mtime'] == os.path.getmtime(source) and cached_file_data['size'] == os.path.getsize(source):
                     if os.path.getsize(source) == file_in_collection.size():
                         # File already there, skip it.
+                        self.bytes_skipped += os.path.getsize(source)
                         return
                     elif os.path.getsize(source) > file_in_collection.size():
                         # File partially uploaded, resume!
@@ -458,6 +458,7 @@ class ArvPutUploadJob(object):
                     # Open for appending
                     output = self._my_collection().open(filename, 'a')
                 source_fd.seek(resume_offset)
+                self.bytes_skipped += resume_offset
             else:
                 with self._collection_lock:
                     output = self._my_collection().open(filename, 'w')
@@ -498,12 +499,14 @@ class ArvPutUploadJob(object):
             md5.update(arvados.config.get('ARVADOS_API_HOST', '!nohost'))
             realpaths = sorted(os.path.realpath(path) for path in self.paths)
             md5.update('\0'.join(realpaths))
-            self._cache_hash = md5.hexdigest()
             if self.filename:
                 md5.update(self.filename)
+            cache_filename = md5.hexdigest()
             self._cache_file = open(os.path.join(
-                arv_cmd.make_home_conf_dir('.cache/arvados/arv-put', 0o700, 'raise'),
-                self._cache_hash), 'a+')
+                arv_cmd.make_home_conf_dir(self.CACHE_DIR, 0o700, 'raise'),
+                cache_filename), 'a+')
+            self._cache_filename = self._cache_file.name
+            self._lock_file(self._cache_file)
             self._cache_file.seek(0)
             with self._state_lock:
                 try:
@@ -544,13 +547,13 @@ class ArvPutUploadJob(object):
             with self._state_lock:
                 state = self._state
             new_cache_fd, new_cache_name = tempfile.mkstemp(
-                dir=os.path.dirname(self._cache_file.name))
+                dir=os.path.dirname(self._cache_filename))
             self._lock_file(new_cache_fd)
             new_cache = os.fdopen(new_cache_fd, 'r+')
             json.dump(state, new_cache)
-            # new_cache.flush()
-            # os.fsync(new_cache)
-            os.rename(new_cache_name, self._cache_file.name)
+            new_cache.flush()
+            os.fsync(new_cache)
+            os.rename(new_cache_name, self._cache_filename)
         except (IOError, OSError, ResumeCacheConflict) as error:
             try:
                 os.unlink(new_cache_name)
@@ -605,81 +608,6 @@ class ArvPutUploadJob(object):
             self._my_collection().manifest_text()
             datablocks = self._datablocks_on_item(self._my_collection())
         return datablocks
-
-
-class ArvPutCollectionWriter(arvados.ResumableCollectionWriter):
-    STATE_PROPS = (arvados.ResumableCollectionWriter.STATE_PROPS +
-                   ['bytes_written', '_seen_inputs'])
-
-    def __init__(self, cache=None, reporter=None, bytes_expected=None, **kwargs):
-        self.bytes_written = 0
-        self._seen_inputs = []
-        self.cache = cache
-        self.reporter = reporter
-        self.bytes_expected = bytes_expected
-        super(ArvPutCollectionWriter, self).__init__(**kwargs)
-
-    @classmethod
-    def from_cache(cls, cache, reporter=None, bytes_expected=None,
-                   num_retries=0, replication=0):
-        try:
-            state = cache.load()
-            state['_data_buffer'] = [base64.decodestring(state['_data_buffer'])]
-            writer = cls.from_state(state, cache, reporter, bytes_expected,
-                                    num_retries=num_retries,
-                                    replication=replication)
-        except (TypeError, ValueError,
-                arvados.errors.StaleWriterStateError) as error:
-            return cls(cache, reporter, bytes_expected,
-                       num_retries=num_retries,
-                       replication=replication)
-        else:
-            return writer
-
-    def cache_state(self):
-        if self.cache is None:
-            return
-        state = self.dump_state()
-        # Transform attributes for serialization.
-        for attr, value in state.items():
-            if attr == '_data_buffer':
-                state[attr] = base64.encodestring(''.join(value))
-            elif hasattr(value, 'popleft'):
-                state[attr] = list(value)
-        self.cache.save(state)
-
-    def report_progress(self):
-        if self.reporter is not None:
-            self.reporter(self.bytes_written, self.bytes_expected)
-
-    def flush_data(self):
-        start_buffer_len = self._data_buffer_len
-        start_block_count = self.bytes_written / arvados.config.KEEP_BLOCK_SIZE
-        super(ArvPutCollectionWriter, self).flush_data()
-        if self._data_buffer_len < start_buffer_len:  # We actually PUT data.
-            self.bytes_written += (start_buffer_len - self._data_buffer_len)
-            self.report_progress()
-            if (self.bytes_written / arvados.config.KEEP_BLOCK_SIZE) > start_block_count:
-                self.cache_state()
-
-    def _record_new_input(self, input_type, source_name, dest_name):
-        # The key needs to be a list because that's what we'll get back
-        # from JSON deserialization.
-        key = [input_type, source_name, dest_name]
-        if key in self._seen_inputs:
-            return False
-        self._seen_inputs.append(key)
-        return True
-
-    def write_file(self, source, filename=None):
-        if self._record_new_input('file', source, filename):
-            super(ArvPutCollectionWriter, self).write_file(source, filename)
-
-    def write_directory_tree(self,
-                             path, stream_name='.', max_manifest_depth=-1):
-        if self._record_new_input('directory', path, stream_name):
-            super(ArvPutCollectionWriter, self).write_directory_tree(
-                path, stream_name, max_manifest_depth)
 
 
 def expected_bytes_for(pathlist):
@@ -849,6 +777,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
 
     if status != 0:
         sys.exit(status)
+    else:
+        writer.destroy_cache()
 
     return output
 

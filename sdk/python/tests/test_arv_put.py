@@ -13,8 +13,7 @@ import tempfile
 import time
 import unittest
 import yaml
-import multiprocessing
-import shutil
+import threading
 import hashlib
 import random
 
@@ -238,66 +237,34 @@ class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
                           arv_put.ResumeCache, path)
 
 
-class ArvadosPutCollectionWriterTest(run_test_server.TestCaseWithServers,
-                                     ArvadosBaseTestCase):
+class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
+                          ArvadosBaseTestCase):
     def setUp(self):
-        super(ArvadosPutCollectionWriterTest, self).setUp()
+        super(ArvPutUploadJobTest, self).setUp()
         run_test_server.authorize_with('active')
-        with tempfile.NamedTemporaryFile(delete=False) as cachefile:
-            self.cache = arv_put.ResumeCache(cachefile.name)
-            self.cache_filename = cachefile.name
+        self.exit_lock = threading.Lock()
+        self.save_manifest_lock = threading.Lock()
 
     def tearDown(self):
-        super(ArvadosPutCollectionWriterTest, self).tearDown()
-        if os.path.exists(self.cache_filename):
-            self.cache.destroy()
-        self.cache.close()
-
-    def test_writer_caches(self):
-        cwriter = arv_put.ArvPutCollectionWriter(self.cache)
-        cwriter.write_file('/dev/null')
-        cwriter.cache_state()
-        self.assertTrue(self.cache.load())
-        self.assertEqual(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
+        super(ArvPutUploadJobTest, self).tearDown()
 
     def test_writer_works_without_cache(self):
-        cwriter = arv_put.ArvPutCollectionWriter()
-        cwriter.write_file('/dev/null')
+        cwriter = arv_put.ArvPutUploadJob(['/dev/null'], resume=False)
+        cwriter.start()
         self.assertEqual(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
 
-    def test_writer_resumes_from_cache(self):
-        cwriter = arv_put.ArvPutCollectionWriter(self.cache)
-        with self.make_test_file() as testfile:
-            cwriter.write_file(testfile.name, 'test')
-            cwriter.cache_state()
-            new_writer = arv_put.ArvPutCollectionWriter.from_cache(
-                self.cache)
-            self.assertEqual(
-                ". 098f6bcd4621d373cade4e832627b4f6+4 0:4:test\n",
-                new_writer.manifest_text())
-
-    def test_new_writer_from_stale_cache(self):
-        cwriter = arv_put.ArvPutCollectionWriter(self.cache)
-        with self.make_test_file() as testfile:
-            cwriter.write_file(testfile.name, 'test')
-        new_writer = arv_put.ArvPutCollectionWriter.from_cache(self.cache)
-        new_writer.write_file('/dev/null')
-        self.assertEqual(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", new_writer.manifest_text())
-
-    def test_new_writer_from_empty_cache(self):
-        cwriter = arv_put.ArvPutCollectionWriter.from_cache(self.cache)
-        cwriter.write_file('/dev/null')
-        self.assertEqual(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:null\n", cwriter.manifest_text())
-
-    def test_writer_resumable_after_arbitrary_bytes(self):
-        cwriter = arv_put.ArvPutCollectionWriter(self.cache)
-        # These bytes are intentionally not valid UTF-8.
-        with self.make_test_file('\x00\x07\xe2') as testfile:
-            cwriter.write_file(testfile.name, 'test')
-            cwriter.cache_state()
-            new_writer = arv_put.ArvPutCollectionWriter.from_cache(
-                self.cache)
-        self.assertEqual(cwriter.manifest_text(), new_writer.manifest_text())
+    def test_writer_works_with_cache(self):
+        with tempfile.NamedTemporaryFile() as f:
+            f.write('foo')
+            f.flush()
+            cwriter = arv_put.ArvPutUploadJob([f.name])
+            cwriter.start()
+            self.assertEqual(3, cwriter.bytes_written)
+            # Don't destroy the cache, and start another upload
+            cwriter_new = arv_put.ArvPutUploadJob([f.name])
+            cwriter_new.start()
+            self.assertEqual(0, cwriter_new.bytes_written)
+            cwriter_new.destroy_cache()
 
     def make_progress_tester(self):
         progression = []
@@ -306,24 +273,94 @@ class ArvadosPutCollectionWriterTest(run_test_server.TestCaseWithServers,
         return progression, record_func
 
     def test_progress_reporting(self):
-        for expect_count in (None, 8):
-            progression, reporter = self.make_progress_tester()
-            cwriter = arv_put.ArvPutCollectionWriter(
-                reporter=reporter, bytes_expected=expect_count)
-            with self.make_test_file() as testfile:
-                cwriter.write_file(testfile.name, 'test')
-            cwriter.finish_current_stream()
-            self.assertIn((4, expect_count), progression)
+        with tempfile.NamedTemporaryFile() as f:
+            f.write('foo')
+            f.flush()
+            for expect_count in (None, 8):
+                progression, reporter = self.make_progress_tester()
+                cwriter = arv_put.ArvPutUploadJob([f.name],
+                    reporter=reporter, bytes_expected=expect_count)
+                cwriter.start()
+                cwriter.destroy_cache()
+                self.assertIn((3, expect_count), progression)
 
-    def test_resume_progress(self):
-        cwriter = arv_put.ArvPutCollectionWriter(self.cache, bytes_expected=4)
-        with self.make_test_file() as testfile:
-            # Set up a writer with some flushed bytes.
-            cwriter.write_file(testfile.name, 'test')
-            cwriter.finish_current_stream()
-            cwriter.cache_state()
-            new_writer = arv_put.ArvPutCollectionWriter.from_cache(self.cache)
-            self.assertEqual(new_writer.bytes_written, 4)
+    def test_writer_upload_directory(self):
+        tempdir = tempfile.mkdtemp()
+        subdir = os.path.join(tempdir, 'subdir')
+        os.mkdir(subdir)
+        data = "x" * 1024 # 1 KB
+        for i in range(1, 5):
+            with open(os.path.join(tempdir, str(i)), 'w') as f:
+                f.write(data * i)
+        with open(os.path.join(subdir, 'otherfile'), 'w') as f:
+            f.write(data * 5)
+        cwriter = arv_put.ArvPutUploadJob([tempdir])
+        cwriter.start()
+        cwriter.destroy_cache()
+        shutil.rmtree(tempdir)
+        self.assertEqual(1024*(1+2+3+4+5), cwriter.bytes_written)
+
+    def test_resume_large_file_upload(self):
+        # Proxying ArvadosFile.writeto() method to be able to synchronize it
+        # with partial manifest saves
+        orig_func = getattr(arvados.arvfile.ArvadosFile, 'writeto')
+        def wrapped_func(*args, **kwargs):
+            data = args[2]
+            if len(data) < arvados.config.KEEP_BLOCK_SIZE:
+                # Lock on the last block write call, waiting for the
+                # manifest to be saved
+                self.exit_lock.acquire()
+                raise SystemExit('Test exception')
+            ret = orig_func(*args, **kwargs)
+            self.save_manifest_lock.release()
+            return ret
+        setattr(arvados.arvfile.ArvadosFile, 'writeto', wrapped_func)
+        # Take advantage of the reporter feature to sync the partial
+        # manifest writing with the simulated upload error.
+        def fake_reporter(written, expected):
+            # Wait until there's something to save
+            self.save_manifest_lock.acquire()
+            # Once the partial manifest is saved, allow exiting
+            self.exit_lock.release()
+        # Create random data to be uploaded
+        md5_original = hashlib.md5()
+        _, filename = tempfile.mkstemp()
+        fileobj = open(filename, 'w')
+        # Make sure to write just a little more than one block
+        for _ in range((arvados.config.KEEP_BLOCK_SIZE/(1024*1024))+1):
+            data = random.choice(['x', 'y', 'z']) * 1024 * 1024 # 1 MB
+            md5_original.update(data)
+            fileobj.write(data)
+        fileobj.close()
+        self.exit_lock.acquire()
+        self.save_manifest_lock.acquire()
+        writer = arv_put.ArvPutUploadJob([filename],
+                                         reporter=fake_reporter,
+                                         update_time=0.1)
+        # First upload: partially completed with simulated error
+        try:
+            self.assertRaises(SystemExit, writer.start())
+        except SystemExit:
+            # Avoid getting a ResumeCacheConflict on the 2nd run
+            writer._cache_file.close()
+        self.assertLess(writer.bytes_written, os.path.getsize(filename))
+
+        # Restore the ArvadosFile.writeto() method to before retrying
+        setattr(arvados.arvfile.ArvadosFile, 'writeto', orig_func)
+        writer_new = arv_put.ArvPutUploadJob([filename])
+        writer_new.start()
+        writer_new.destroy_cache()
+        self.assertEqual(os.path.getsize(filename),
+                         writer.bytes_written + writer_new.bytes_written)
+        # Read the uploaded file to compare its md5 hash
+        md5_uploaded = hashlib.md5()
+        c = arvados.collection.Collection(writer_new.manifest_text())
+        with c.open(os.path.basename(filename), 'r') as f:
+            new_data = f.read()
+            md5_uploaded.update(new_data)
+        self.assertEqual(md5_original.hexdigest(), md5_uploaded.hexdigest())
+        # Cleaning up
+        os.unlink(filename)
 
 
 class ArvadosExpectedBytesTest(ArvadosBaseTestCase):
