@@ -678,7 +678,10 @@ class KeepClient(object):
           put() are called.  Default 0.
         """
         self.lock = threading.Lock()
-        if proxy is None:
+        if config.get('ARVADOS_KEEP_SERVICES'):
+            # ARVADOS_KEEP_SERVICES overrides proxy settings
+            proxy = config.get('ARVADOS_KEEP_SERVICES')
+        elif proxy is None:
             proxy = config.get('ARVADOS_KEEP_PROXY')
         if api_token is None:
             if api_client is None:
@@ -710,15 +713,17 @@ class KeepClient(object):
             self.num_retries = num_retries
             self.max_replicas_per_service = None
             if proxy:
-                if not proxy.endswith('/'):
-                    proxy += '/'
+                proxy_uris = proxy.split(' ')
+                for i in range(len(proxy_uris)):
+                    if not proxy_uris[i].endswith('/'):
+                        proxy_uris[i] += '/'
                 self.api_token = api_token
                 self._gateway_services = {}
                 self._keep_services = [{
-                    'uuid': 'proxy',
+                    'uuid': "00000-bi6l4-%015d" % proxy_uris.index(uri),
                     'service_type': 'proxy',
-                    '_service_root': proxy,
-                    }]
+                    '_service_root': uri,
+                    } for uri in proxy_uris]
                 self._writable_services = self._keep_services
                 self.using_proxy = True
                 self._static_services_list = True

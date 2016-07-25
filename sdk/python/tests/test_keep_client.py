@@ -270,6 +270,14 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers):
                          'wrong content from Keep.get(md5("baz2"))')
         self.assertTrue(keep_client.using_proxy)
 
+    def test_KeepProxyTestMultipleURIs(self):
+        # Test using ARVADOS_KEEP_SERVICES env var overriding any
+        # existing proxy setting and setting multiple proxies
+        arvados.config.settings()['ARVADOS_KEEP_SERVICES'] = 'foo bar baz'
+        keep_client = arvados.KeepClient(api_client=self.api_client,
+                                         local_store='')
+        uris = [x['_service_root'] for x in keep_client._keep_services]
+        self.assertEqual(uris, ['foo/', 'bar/', 'baz/'])
 
 class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
     def get_service_roots(self, api_client):
