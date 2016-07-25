@@ -120,8 +120,16 @@ func MakeArvadosClient() (ac ArvadosClient, err error) {
 		External: external,
 		Retries:  2}
 
-	if s := os.Getenv("ARVADOS_KEEP_SERVICES"); s != "" {
-		ac.KeepServiceURIs = strings.Split(s, " ")
+	for _, s := range strings.Split(os.Getenv("ARVADOS_KEEP_SERVICES"), " ") {
+		if s == "" {
+			continue
+		}
+		if u, err := url.Parse(s); err != nil {
+			return ac, fmt.Errorf("ARVADOS_KEEP_SERVICES: %q: %s", s, err)
+		} else if !u.IsAbs() {
+			return ac, fmt.Errorf("ARVADOS_KEEP_SERVICES: %q: not an absolute URI", s)
+		}
+		ac.KeepServiceURIs = append(ac.KeepServiceURIs, s)
 	}
 
 	if ac.ApiServer == "" {
