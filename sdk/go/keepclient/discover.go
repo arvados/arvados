@@ -31,14 +31,13 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		return nil
 	}
 
+	// ArvadosClient did not provide a services list. Ask API
+	// server for a list of accessible services.
 	var list svcList
-
-	// Get keep services from api server
 	err := this.Arvados.Call("GET", "keep_services", "", "accessible", nil, &list)
 	if err != nil {
 		return err
 	}
-
 	return this.loadKeepServers(list)
 }
 

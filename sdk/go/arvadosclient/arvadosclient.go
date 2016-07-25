@@ -86,8 +86,10 @@ type ArvadosClient struct {
 	// the client is outside the cluster.
 	External bool
 
-	// Use provided list of keep services, instead of using the
-	// API to discover available services.
+	// Base URIs of Keep services, e.g., {"https://host1:8443",
+	// "https://host2:8443"}.  If this is nil, Keep clients will
+	// use the arvados.v1.keep_services.accessible API to discover
+	// available services.
 	KeepServiceURIs []string
 
 	// Discovery document
@@ -99,9 +101,10 @@ type ArvadosClient struct {
 	Retries int
 }
 
-// Create a new ArvadosClient, initialized with standard Arvados environment
-// variables ARVADOS_API_HOST, ARVADOS_API_TOKEN, and (optionally)
-// ARVADOS_API_HOST_INSECURE.
+// MakeArvadosClient creates a new ArvadosClient using the standard
+// environment variables ARVADOS_API_HOST, ARVADOS_API_TOKEN,
+// ARVADOS_API_HOST_INSECURE, ARVADOS_EXTERNAL_CLIENT, and
+// ARVADOS_KEEP_SERVICES.
 func MakeArvadosClient() (ac ArvadosClient, err error) {
 	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
 	insecure := matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
