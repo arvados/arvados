@@ -27,7 +27,6 @@ func (this *KeepClient) DiscoverKeepServers() error {
 		for i, uri := range this.Arvados.KeepServiceURIs {
 			roots[fmt.Sprintf("00000-bi6l4-%015d", i)] = uri
 		}
-		log.Printf("%+v", roots)
 		this.SetServiceRoots(roots, roots, roots)
 		return nil
 	}
