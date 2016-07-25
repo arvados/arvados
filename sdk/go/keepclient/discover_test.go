@@ -12,7 +12,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 )
 
-func ExampleRefreshServices() {
+func ExampleKeepClient_RefreshServices() {
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
 		panic(err)
