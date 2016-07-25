@@ -42,7 +42,7 @@ func (s *ServerRequiredSuite) TestOverrideDiscovery(c *check.C) {
 	c.Assert(err, check.IsNil)
 	arv1.ApiToken = arvadostest.ActiveToken
 
-	os.Setenv("ARVADOS_KEEP_SERVICES", ks[0].url+" "+ks[1].url)
+	os.Setenv("ARVADOS_KEEP_SERVICES", ks[0].url+"  "+ks[1].url+" ")
 	arv2, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.IsNil)
 	arv2.ApiToken = arvadostest.ActiveToken
