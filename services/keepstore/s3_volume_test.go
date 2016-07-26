@@ -223,6 +223,11 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			none, t0.Add(-90 * time.Minute), t0.Add(-89 * time.Minute),
 			true, false, true, true, true, false,
 		},
+		{
+			"Trashed copy exists with no recent/* marker (cause unknown); repair by untrashing",
+			none, none, t0.Add(-time.Minute),
+			false, false, false, true, true, true,
+		},
 	} {
 		c.Log("Scenario: ", scenario.label)
 
