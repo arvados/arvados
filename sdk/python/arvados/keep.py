@@ -635,8 +635,9 @@ class KeepClient(object):
         :proxy:
           If specified, this KeepClient will send requests to this Keep
           proxy.  Otherwise, KeepClient will fall back to the setting of the
-          ARVADOS_KEEP_PROXY configuration setting.  If you want to ensure
-          KeepClient does not use a proxy, pass in an empty string.
+          ARVADOS_KEEP_SERVICES or ARVADOS_KEEP_PROXY configuration settings.
+          If you want to KeepClient does not use a proxy, pass in an empty
+          string.
 
         :timeout:
           The initial timeout (in seconds) for HTTP requests to Keep
@@ -678,11 +679,11 @@ class KeepClient(object):
           put() are called.  Default 0.
         """
         self.lock = threading.Lock()
-        if config.get('ARVADOS_KEEP_SERVICES'):
-            # ARVADOS_KEEP_SERVICES overrides proxy settings
-            proxy = config.get('ARVADOS_KEEP_SERVICES')
-        elif proxy is None:
-            proxy = config.get('ARVADOS_KEEP_PROXY')
+        if proxy is None:
+            if config.get('ARVADOS_KEEP_SERVICES'):
+                proxy = config.get('ARVADOS_KEEP_SERVICES')
+            else:
+                proxy = config.get('ARVADOS_KEEP_PROXY')
         if api_token is None:
             if api_client is None:
                 api_token = config.get('ARVADOS_API_TOKEN')
