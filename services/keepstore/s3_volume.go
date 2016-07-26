@@ -589,7 +589,7 @@ func (v *S3Volume) EmptyTrash() {
 			continue
 		}
 		if trashT.Sub(recentT) < blobSignatureTTL {
-			if age := startT.Sub(recentT); age >= blobSignatureTTL - v.raceWindow {
+			if age := startT.Sub(recentT); age >= blobSignatureTTL-v.raceWindow {
 				// recent/loc is too old to protect
 				// loc from being Trashed again during
 				// the raceWindow that starts if we
