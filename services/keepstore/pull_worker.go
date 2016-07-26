@@ -2,7 +2,6 @@ package main
 
 import (
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io"
@@ -57,7 +56,7 @@ func PullItemAndProcess(pullRequest PullRequest, token string, keepClient *keepc
 		return
 	}
 	if reader == nil {
-		return errors.New(fmt.Sprintf("No reader found for : %s", signedLocator))
+		return fmt.Errorf("No reader found for : %s", signedLocator)
 	}
 	defer reader.Close()
 
@@ -67,7 +66,7 @@ func PullItemAndProcess(pullRequest PullRequest, token string, keepClient *keepc
 	}
 
 	if (readContent == nil) || (int64(len(readContent)) != contentLen) {
-		return errors.New(fmt.Sprintf("Content not found for: %s", signedLocator))
+		return fmt.Errorf("Content not found for: %s", signedLocator)
 	}
 
 	err = PutContent(readContent, pullRequest.Locator)
