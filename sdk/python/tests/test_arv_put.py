@@ -244,9 +244,29 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         run_test_server.authorize_with('active')
         self.exit_lock = threading.Lock()
         self.save_manifest_lock = threading.Lock()
+        # Temp files creation
+        self.tempdir = tempfile.mkdtemp()
+        subdir = os.path.join(self.tempdir, 'subdir')
+        os.mkdir(subdir)
+        data = "x" * 1024 # 1 KB
+        for i in range(1, 5):
+            with open(os.path.join(self.tempdir, str(i)), 'w') as f:
+                f.write(data * i)
+        with open(os.path.join(subdir, 'otherfile'), 'w') as f:
+            f.write(data * 5)
+        # For large file resuming test
+        _, self.large_file_name = tempfile.mkstemp()
+        fileobj = open(self.large_file_name, 'w')
+        # Make sure to write just a little more than one block
+        for _ in range((arvados.config.KEEP_BLOCK_SIZE/(1024*1024))+1):
+            data = random.choice(['x', 'y', 'z']) * 1024 * 1024 # 1 MB
+            fileobj.write(data)
+        fileobj.close()
 
     def tearDown(self):
         super(ArvPutUploadJobTest, self).tearDown()
+        shutil.rmtree(self.tempdir)
+        os.unlink(self.large_file_name)
 
     def test_writer_works_without_cache(self):
         cwriter = arv_put.ArvPutUploadJob(['/dev/null'], resume=False)
@@ -285,57 +305,43 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
                 self.assertIn((3, expect_count), progression)
 
     def test_writer_upload_directory(self):
-        tempdir = tempfile.mkdtemp()
-        subdir = os.path.join(tempdir, 'subdir')
-        os.mkdir(subdir)
-        data = "x" * 1024 # 1 KB
-        for i in range(1, 5):
-            with open(os.path.join(tempdir, str(i)), 'w') as f:
-                f.write(data * i)
-        with open(os.path.join(subdir, 'otherfile'), 'w') as f:
-            f.write(data * 5)
-        cwriter = arv_put.ArvPutUploadJob([tempdir])
+        cwriter = arv_put.ArvPutUploadJob([self.tempdir])
         cwriter.start()
         cwriter.destroy_cache()
-        shutil.rmtree(tempdir)
         self.assertEqual(1024*(1+2+3+4+5), cwriter.bytes_written)
 
     def test_resume_large_file_upload(self):
         # Proxying ArvadosFile.writeto() method to be able to synchronize it
         # with partial manifest saves
-        orig_func = getattr(arvados.arvfile.ArvadosFile, 'writeto')
-        def wrapped_func(*args, **kwargs):
+        orig_writeto_func = getattr(arvados.arvfile.ArvadosFile, 'writeto')
+        orig_update_func = getattr(arv_put.ArvPutUploadJob, '_update')
+        def wrapped_update(*args, **kwargs):
+            job_instance = args[0]
+            orig_update_func(*args, **kwargs)
+            with self.save_manifest_lock:
+                # Allow abnormal termination when first block written
+                if job_instance._collection_size(job_instance._my_collection()) == arvados.config.KEEP_BLOCK_SIZE:
+                    self.exit_lock.release()
+        def wrapped_writeto(*args, **kwargs):
             data = args[2]
             if len(data) < arvados.config.KEEP_BLOCK_SIZE:
                 # Lock on the last block write call, waiting for the
                 # manifest to be saved
-                self.exit_lock.acquire()
-                raise SystemExit('Test exception')
-            ret = orig_func(*args, **kwargs)
+                with self.exit_lock:
+                    raise SystemExit('Test exception')
+            ret = orig_writeto_func(*args, **kwargs)
             self.save_manifest_lock.release()
             return ret
-        setattr(arvados.arvfile.ArvadosFile, 'writeto', wrapped_func)
-        # Take advantage of the reporter feature to sync the partial
-        # manifest writing with the simulated upload error.
-        def fake_reporter(written, expected):
-            # Wait until there's something to save
-            self.save_manifest_lock.acquire()
-            # Once the partial manifest is saved, allow exiting
-            self.exit_lock.release()
-        # Create random data to be uploaded
+        setattr(arvados.arvfile.ArvadosFile, 'writeto', wrapped_writeto)
+        setattr(arv_put.ArvPutUploadJob, '_update', wrapped_update)
+        # MD5 hash of random data to be uploaded
         md5_original = hashlib.md5()
-        _, filename = tempfile.mkstemp()
-        fileobj = open(filename, 'w')
-        # Make sure to write just a little more than one block
-        for _ in range((arvados.config.KEEP_BLOCK_SIZE/(1024*1024))+1):
-            data = random.choice(['x', 'y', 'z']) * 1024 * 1024 # 1 MB
+        with open(self.large_file_name, 'r') as f:
+            data = f.read()
             md5_original.update(data)
-            fileobj.write(data)
-        fileobj.close()
         self.exit_lock.acquire()
         self.save_manifest_lock.acquire()
-        writer = arv_put.ArvPutUploadJob([filename],
-                                         reporter=fake_reporter,
+        writer = arv_put.ArvPutUploadJob([self.large_file_name],
                                          update_time=0.1)
         # First upload: partially completed with simulated error
         try:
@@ -343,24 +349,26 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         except SystemExit:
             # Avoid getting a ResumeCacheConflict on the 2nd run
             writer._cache_file.close()
-        self.assertLess(writer.bytes_written, os.path.getsize(filename))
+        self.assertGreater(writer.bytes_written, 0)
+        self.assertLess(writer.bytes_written,
+                        os.path.getsize(self.large_file_name))
 
         # Restore the ArvadosFile.writeto() method to before retrying
-        setattr(arvados.arvfile.ArvadosFile, 'writeto', orig_func)
-        writer_new = arv_put.ArvPutUploadJob([filename])
+        setattr(arvados.arvfile.ArvadosFile, 'writeto', orig_writeto_func)
+        # Restore the ArvPutUploadJob._update() method to before retrying
+        setattr(arv_put.ArvPutUploadJob, '_update', orig_update_func)
+        writer_new = arv_put.ArvPutUploadJob([self.large_file_name])
         writer_new.start()
         writer_new.destroy_cache()
-        self.assertEqual(os.path.getsize(filename),
+        self.assertEqual(os.path.getsize(self.large_file_name),
                          writer.bytes_written + writer_new.bytes_written)
         # Read the uploaded file to compare its md5 hash
         md5_uploaded = hashlib.md5()
         c = arvados.collection.Collection(writer_new.manifest_text())
-        with c.open(os.path.basename(filename), 'r') as f:
+        with c.open(os.path.basename(self.large_file_name), 'r') as f:
             new_data = f.read()
             md5_uploaded.update(new_data)
         self.assertEqual(md5_original.hexdigest(), md5_uploaded.hexdigest())
-        # Cleaning up
-        os.unlink(filename)
 
 
 class ArvadosExpectedBytesTest(ArvadosBaseTestCase):
