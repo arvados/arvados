@@ -18,8 +18,8 @@ import (
 )
 
 var (
-	// Returned by Trash if that operation is impossible with the
-	// current config.
+	// ErrS3TrashDisabled is returned by Trash if that operation
+	// is impossible with the current config.
 	ErrS3TrashDisabled = fmt.Errorf("trash function is disabled because -trash-lifetime=0 and -s3-unsafe-delete=false")
 
 	s3AccessKeyFile string

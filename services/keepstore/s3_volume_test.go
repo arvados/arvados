@@ -250,6 +250,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			return loc, blk
 		}
 
+		// Check canGet
 		loc, blk := setupScenario()
 		buf := make([]byte, len(blk))
 		_, err := v.Get(loc, buf)
@@ -258,6 +259,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			c.Check(os.IsNotExist(err), check.Equals, true)
 		}
 
+		// Call Trash, then check canTrash and canGetAfterTrash
 		loc, blk = setupScenario()
 		err = v.Trash(loc)
 		c.Check(err == nil, check.Equals, scenario.canTrash)
@@ -267,6 +269,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			c.Check(os.IsNotExist(err), check.Equals, true)
 		}
 
+		// Call Untrash, then check canUntrash
 		loc, blk = setupScenario()
 		err = v.Untrash(loc)
 		c.Check(err == nil, check.Equals, scenario.canUntrash)
@@ -279,6 +282,8 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			c.Check(err, check.IsNil)
 		}
 
+		// Call EmptyTrash, then check haveTrashAfterEmpty and
+		// freshAfterEmpty
 		loc, blk = setupScenario()
 		v.EmptyTrash()
 		_, err = v.Bucket.Head("trash/"+loc, nil)
@@ -291,6 +296,8 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			c.Check(t.After(t0.Add(-time.Second)), check.Equals, true)
 		}
 
+		// Check for current Mtime after Put (applies to all
+		// scenarios)
 		loc, blk = setupScenario()
 		err = v.Put(loc, blk)
 		c.Check(err, check.IsNil)
