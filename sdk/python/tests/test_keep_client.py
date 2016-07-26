@@ -240,8 +240,8 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers):
         super(KeepProxyTestCase, self).tearDown()
 
     def test_KeepProxyTest1(self):
-        # Will use ARVADOS_KEEP_PROXY environment variable that is set by
-        # setUpClass().
+        # Will use ARVADOS_KEEP_SERVICES environment variable that
+        # is set by setUpClass().
         keep_client = arvados.KeepClient(api_client=self.api_client,
                                          local_store='')
         baz_locator = keep_client.put('baz')
@@ -269,6 +269,22 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers):
                          'baz2',
                          'wrong content from Keep.get(md5("baz2"))')
         self.assertTrue(keep_client.using_proxy)
+
+    def test_KeepProxyTestMultipleURIs(self):
+        # Test using ARVADOS_KEEP_SERVICES env var overriding any
+        # existing proxy setting and setting multiple proxies
+        arvados.config.settings()['ARVADOS_KEEP_SERVICES'] = 'http://10.0.0.1 https://foo.example.org:1234/'
+        keep_client = arvados.KeepClient(api_client=self.api_client,
+                                         local_store='')
+        uris = [x['_service_root'] for x in keep_client._keep_services]
+        self.assertEqual(uris, ['http://10.0.0.1/',
+                                'https://foo.example.org:1234/'])
+
+    def test_KeepProxyTestInvalidURI(self):
+        arvados.config.settings()['ARVADOS_KEEP_SERVICES'] = 'bad.uri.org'
+        with self.assertRaises(arvados.errors.ArgumentError):
+            keep_client = arvados.KeepClient(api_client=self.api_client,
+                                             local_store='')
 
 
 class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
