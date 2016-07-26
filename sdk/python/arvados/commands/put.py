@@ -20,6 +20,7 @@ import socket
 import sys
 import tempfile
 import threading
+import copy
 from apiclient import errors as apiclient_errors
 
 import arvados.commands._util as arv_cmd
@@ -280,6 +281,10 @@ class ResumeCache(object):
 
 class ArvPutUploadJob(object):
     CACHE_DIR = '.cache/arvados/arv-put'
+    EMPTY_STATE = {
+        'manifest' : None, # Last saved manifest checkpoint
+        'files' : {} # Previous run file list: {path : {size, mtime}}
+    }
 
     def __init__(self, paths, resume=True, reporter=None, bytes_expected=None,
                  name=None, owner_uuid=None, ensure_unique_name=False,
@@ -511,27 +516,19 @@ class ArvPutUploadJob(object):
             with self._state_lock:
                 try:
                     self._state = json.load(self._cache_file)
-                    if not 'manifest' in self._state.keys():
-                        self._state['manifest'] = ""
-                    if not 'files' in self._state.keys():
-                        self._state['files'] = {}
+                    if not set(['manifest', 'files']).issubset(set(self._state.keys())):
+                        # Cache at least partially incomplete, set up new cache
+                        self._state = copy.deepcopy(self.EMPTY_STATE)
                 except ValueError:
-                    # File empty, set up new cache
-                    self._state = {
-                        'manifest' : None,
-                        # Previous run file list: {path : {size, mtime}}
-                        'files' : {}
-                    }
+                    # Cache file empty, set up new cache
+                    self._state = copy.deepcopy(self.EMPTY_STATE)
             # Load how many bytes were uploaded on previous run
             with self._collection_lock:
                 self.bytes_written = self._collection_size(self._my_collection())
         # No resume required
         else:
             with self._state_lock:
-                self._state = {
-                    'manifest' : None,
-                    'files' : {} # Previous run file list: {path : {size, mtime}}
-                }
+                self._state = copy.deepcopy(self.EMPTY_STATE)
 
     def _lock_file(self, fileobj):
         try:
