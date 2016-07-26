@@ -73,7 +73,7 @@ func BadRequestHandler(w http.ResponseWriter, r *http.Request) {
 func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	if enforcePermissions {
 		locator := req.URL.Path[1:] // strip leading slash
-		if err := VerifySignature(locator, GetApiToken(req)); err != nil {
+		if err := VerifySignature(locator, GetAPIToken(req)); err != nil {
 			http.Error(resp, err.Error(), err.(*KeepError).HTTPCode)
 			return
 		}
@@ -184,7 +184,7 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	// Success; add a size hint, sign the locator if possible, and
 	// return it to the client.
 	returnHash := fmt.Sprintf("%s+%d", hash, req.ContentLength)
-	apiToken := GetApiToken(req)
+	apiToken := GetAPIToken(req)
 	if PermissionSecret != nil && apiToken != "" {
 		expiry := time.Now().Add(blobSignatureTTL)
 		returnHash = SignLocator(returnHash, apiToken, expiry)
@@ -196,7 +196,7 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 // IndexHandler is a HandleFunc to address /index and /index/{prefix} requests.
 func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
-	if !IsDataManagerToken(GetApiToken(req)) {
+	if !IsDataManagerToken(GetAPIToken(req)) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
 		return
 	}
@@ -328,7 +328,7 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 	hash := mux.Vars(req)["hash"]
 
 	// Confirm that this user is an admin and has a token with unlimited scope.
-	var tok = GetApiToken(req)
+	var tok = GetAPIToken(req)
 	if tok == "" || !CanDelete(tok) {
 		http.Error(resp, PermissionError.Error(), PermissionError.HTTPCode)
 		return
@@ -419,7 +419,7 @@ type PullRequest struct {
 // PullHandler processes "PUT /pull" requests for the data manager.
 func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
-	if !IsDataManagerToken(GetApiToken(req)) {
+	if !IsDataManagerToken(GetAPIToken(req)) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
 		return
 	}
@@ -455,7 +455,7 @@ type TrashRequest struct {
 // TrashHandler processes /trash requests.
 func TrashHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
-	if !IsDataManagerToken(GetApiToken(req)) {
+	if !IsDataManagerToken(GetAPIToken(req)) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
 		return
 	}
@@ -485,7 +485,7 @@ func TrashHandler(resp http.ResponseWriter, req *http.Request) {
 // UntrashHandler processes "PUT /untrash/{hash:[0-9a-f]{32}}" requests for the data manager.
 func UntrashHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
-	if !IsDataManagerToken(GetApiToken(req)) {
+	if !IsDataManagerToken(GetAPIToken(req)) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
 		return
 	}
@@ -714,10 +714,10 @@ func IsValidLocator(loc string) bool {
 
 var authRe = regexp.MustCompile(`^OAuth2\s+(.*)`)
 
-// GetApiToken returns the OAuth2 token from the Authorization
+// GetAPIToken returns the OAuth2 token from the Authorization
 // header of a HTTP request, or an empty string if no matching
 // token is found.
-func GetApiToken(req *http.Request) string {
+func GetAPIToken(req *http.Request) string {
 	if auth, ok := req.Header["Authorization"]; ok {
 		if match := authRe.FindStringSubmatch(auth[0]); match != nil {
 			return match[1]
