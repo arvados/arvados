@@ -270,6 +270,14 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 		loc, blk = setupScenario()
 		err = v.Untrash(loc)
 		c.Check(err == nil, check.Equals, scenario.canUntrash)
+		if scenario.dataT != none || scenario.trashT != none {
+			// In all scenarios where the data exists, we
+			// should be able to Get after Untrash --
+			// regardless of timestamps, errors, race
+			// conditions, etc.
+			_, err = v.Get(loc, buf)
+			c.Check(err, check.IsNil)
+		}
 
 		loc, blk = setupScenario()
 		v.EmptyTrash()
@@ -282,6 +290,13 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			// allowance for 1s timestamp precision)
 			c.Check(t.After(t0.Add(-time.Second)), check.Equals, true)
 		}
+
+		loc, blk = setupScenario()
+		err = v.Put(loc, blk)
+		c.Check(err, check.IsNil)
+		t, err := v.Mtime(loc)
+		c.Check(err, check.IsNil)
+		c.Check(t.After(t0.Add(-time.Second)), check.Equals, true)
 	}
 }
 
