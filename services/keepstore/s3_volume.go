@@ -575,8 +575,15 @@ func (v *S3Volume) EmptyTrash() {
 			continue
 		}
 		recent, err := v.Bucket.Head("recent/"+loc, nil)
-		if err != nil {
-			log.Printf("warning: %s: EmptyTrash: cannot delete trash %q with no corresponding recent/* marker", v, trash.Key)
+		if err != nil && os.IsNotExist(v.translateError(err)) {
+			log.Printf("warning: %s: EmptyTrash: found trash marker %q but no %q (%s); calling Untrash", v, trash.Key, "recent/"+loc, err)
+			err = v.Untrash(loc)
+			if err != nil {
+				log.Printf("error: %s: EmptyTrash: Untrash(%q): %s", v, loc, err)
+			}
+			continue
+		} else if err != nil {
+			log.Printf("warning: %s: EmptyTrash: HEAD %q: %s", v, "recent/"+loc, err)
 			continue
 		}
 		recentT, err := v.lastModified(recent)
