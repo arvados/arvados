@@ -551,6 +551,8 @@ func (v *S3Volume) translateError(err error) error {
 // EmptyTrash looks for trashed blocks that exceeded trashLifetime
 // and deletes them from the volume.
 func (v *S3Volume) EmptyTrash() {
+	var bytesInTrash, blocksInTrash, bytesDeleted, blocksDeleted int64
+
 	// Use a merge sort to find matching sets of trash/X and recent/X.
 	trashL := s3Lister{
 		Bucket:   v.Bucket,
@@ -564,6 +566,9 @@ func (v *S3Volume) EmptyTrash() {
 		if !v.isKeepBlock(loc) {
 			continue
 		}
+		bytesInTrash += trash.Size
+		blocksInTrash++
+
 		trashT, err := time.Parse(time.RFC3339, trash.LastModified)
 		if err != nil {
 			log.Printf("warning: %s: EmptyTrash: %q: parse %q: %s", v, trash.Key, trash.LastModified, err)
@@ -610,6 +615,9 @@ func (v *S3Volume) EmptyTrash() {
 			log.Printf("warning: %s: EmptyTrash: deleting %q: %s", v, trash.Key, err)
 			continue
 		}
+		bytesDeleted += trash.Size
+		blocksDeleted++
+
 		_, err = v.Bucket.Head(loc, nil)
 		if os.IsNotExist(err) {
 			err = v.Bucket.Del("recent/" + loc)
@@ -623,6 +631,7 @@ func (v *S3Volume) EmptyTrash() {
 	if err := trashL.Error(); err != nil {
 		log.Printf("error: %s: EmptyTrash: lister: %s", v, err)
 	}
+	log.Printf("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
 }
 
 type s3Lister struct {
