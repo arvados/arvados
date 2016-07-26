@@ -720,7 +720,7 @@ class KeepClient(object):
                     if not proxy_uris[i].endswith('/'):
                         proxy_uris[i] += '/'
                     # URL validation
-                    url = urlparse(proxy_uris[i])
+                    url = urlparse.urlparse(proxy_uris[i])
                     if not (url.scheme and url.netloc):
                         raise arvados.errors.ArgumentError("Invalid proxy URI: {}".format(proxy_uris[i]))
                 self.api_token = api_token
