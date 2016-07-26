@@ -8,6 +8,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -143,7 +144,7 @@ func (s *TestSuite) integrationTest(c *C,
 	c.Check(len(containers.Items), Equals, 1)
 
 	echo := "echo"
-	crunchRunCommand = &echo
+	config.CrunchRunCommand = &echo
 
 	doneProcessing := make(chan struct{})
 	dispatcher := dispatch.Dispatcher{
@@ -205,7 +206,7 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	log.SetOutput(io.MultiWriter(buf, os.Stderr))
 	defer log.SetOutput(os.Stderr)
 
-	crunchRunCommand = &crunchCmd
+	config.CrunchRunCommand = &crunchCmd
 
 	doneProcessing := make(chan struct{})
 	dispatcher := dispatch.Dispatcher{
@@ -235,4 +236,63 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	c.Assert(err, IsNil)
 
 	c.Check(buf.String(), Matches, `(?ms).*`+expected+`.*`)
+}
+
+func (s *MockArvadosServerSuite) Test_EmptyConfigFile(c *C) {
+	var config Config
+
+	err := readConfig(&config.SbatchArguments, "")
+	c.Assert(err, IsNil)
+}
+
+func (s *MockArvadosServerSuite) Test_NoSuchConfigFile(c *C) {
+	var config Config
+
+	badpath, err := arvadostest.CreateBadPath()
+	if err != nil {
+		c.Fatalf(err.Error())
+	}
+	defer func() {
+		err = arvadostest.DestroyBadPath(badpath)
+		if err != nil {
+			c.Fatalf(err.Error())
+		}
+	}()
+
+	err = readConfig(&config.SbatchArguments, badpath)
+	c.Assert(err, NotNil)
+}
+
+func (s *MockArvadosServerSuite) Test_BadConfig(c *C) {
+	var config Config
+
+	tmpfile, err := ioutil.TempFile(os.TempDir(), "config")
+	c.Check(err, IsNil)
+	defer os.Remove(tmpfile.Name())
+
+	_, err = tmpfile.Write([]byte("fileContent"))
+	c.Check(err, IsNil)
+
+	err = readConfig(&config.SbatchArguments, tmpfile.Name())
+	c.Assert(err, NotNil)
+}
+
+func (s *MockArvadosServerSuite) Test_ReadConfig(c *C) {
+	var config Config
+
+	tmpfile, err := ioutil.TempFile(os.TempDir(), "config")
+	c.Check(err, IsNil)
+	defer os.Remove(tmpfile.Name())
+
+	args := []string{"--arg1=v1", "--arg2", "--arg3=v3"}
+	argsS := `["--arg1=v1",  "--arg2", "--arg3=v3"]`
+	_, err = tmpfile.Write([]byte(argsS))
+	c.Check(err, IsNil)
+
+	err = readConfig(&config.SbatchArguments, tmpfile.Name())
+	c.Assert(err, IsNil)
+	c.Check(3, Equals, len(config.SbatchArguments))
+	for i := range args {
+		c.Check(args[i], Equals, config.SbatchArguments[i])
+	}
 }
