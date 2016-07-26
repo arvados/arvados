@@ -12,6 +12,7 @@ import ssl
 import sys
 import threading
 import timer
+import urlparse
 
 import arvados
 import arvados.config as config
@@ -714,17 +715,21 @@ class KeepClient(object):
             self.num_retries = num_retries
             self.max_replicas_per_service = None
             if proxy:
-                proxy_uris = proxy.split(' ')
+                proxy_uris = proxy.split()
                 for i in range(len(proxy_uris)):
                     if not proxy_uris[i].endswith('/'):
                         proxy_uris[i] += '/'
+                    # URL validation
+                    url = urlparse(proxy_uris[i])
+                    if not (url.scheme and url.netloc):
+                        raise arvados.errors.ArgumentError("Invalid proxy URI: {}".format(proxy_uris[i]))
                 self.api_token = api_token
                 self._gateway_services = {}
                 self._keep_services = [{
-                    'uuid': "00000-bi6l4-%015d" % proxy_uris.index(uri),
+                    'uuid': "00000-bi6l4-%015d" % idx,
                     'service_type': 'proxy',
                     '_service_root': uri,
-                    } for uri in proxy_uris]
+                    } for idx, uri in enumerate(proxy_uris)]
                 self._writable_services = self._keep_services
                 self.using_proxy = True
                 self._static_services_list = True
