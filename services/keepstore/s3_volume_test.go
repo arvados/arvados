@@ -122,7 +122,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 	v := NewTestableS3Volume(c, 5*time.Minute, false, 2)
 	var none time.Time
 
-	stubKey := func(t time.Time, key string, data []byte) {
+	putS3Obj := func(t time.Time, key string, data []byte) {
 		if t == none {
 			return
 		}
@@ -134,9 +134,9 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 	nextKey := 0
 	for _, scenario := range []struct {
 		label               string
-		data                time.Time
-		recent              time.Time
-		trash               time.Time
+		dataT               time.Time
+		recentT             time.Time
+		trashT              time.Time
 		canGet              bool
 		canTrash            bool
 		canGetAfterTrash    bool
@@ -159,42 +159,42 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			true, true, true, false, false, false,
 		},
 		{
-			"Not trash; old enough to trash",
+			"Not trash, but old enough to be eligible for trash",
 			t0.Add(-24 * time.Hour), t0.Add(-2 * time.Hour), none,
 			true, true, false, false, false, false,
 		},
 		{
-			"Not trash; not old enough to trash",
+			"Not trash, and not old enough to be eligible for trash",
 			t0.Add(-24 * time.Hour), t0.Add(-30 * time.Minute), none,
 			true, true, true, false, false, false,
 		},
 		{
-			"Trash + not-trash: recent race between Trash and Put",
+			"Trashed + untrashed copies exist, due to recent race between Trash and Put",
 			t0.Add(-24 * time.Hour), t0.Add(-3 * time.Minute), t0.Add(-2 * time.Minute),
 			true, true, true, true, true, false,
 		},
 		{
-			"Trash + not-trash, nearly eligible for deletion, prone to Trash race",
+			"Trashed + untrashed copies exist, trash nearly eligible for deletion: prone to Trash race",
 			t0.Add(-24 * time.Hour), t0.Add(-12 * time.Hour), t0.Add(-59 * time.Minute),
 			true, false, true, true, true, false,
 		},
 		{
-			"Trash + not-trash, eligible for deletion, prone to Trash race",
+			"Trashed + untrashed copies exist, trash is eligible for deletion: prone to Trash race",
 			t0.Add(-24 * time.Hour), t0.Add(-12 * time.Hour), t0.Add(-61 * time.Minute),
 			true, false, true, true, false, false,
 		},
 		{
-			"Trash + not-trash, unsafe to empty; old race between Put and unfinished Trash",
+			"Trashed + untrashed copies exist, due to old race between Put and unfinished Trash: emptying trash is unsafe",
 			t0.Add(-24 * time.Hour), t0.Add(-12 * time.Hour), t0.Add(-12 * time.Hour),
 			true, false, true, true, true, true,
 		},
 		{
-			"Trash + not-trash, was unsafe to empty, but since made safe by fixRace+Touch",
+			"Trashed + untrashed copies exist, used to be unsafe to empty, but since made safe by fixRace+Touch",
 			t0.Add(-time.Second), t0.Add(-time.Second), t0.Add(-12 * time.Hour),
 			true, true, true, true, false, false,
 		},
 		{
-			"Trash operation was interrupted",
+			"Trashed + untrashed copies exist because Trash operation was interrupted (no race)",
 			t0.Add(-24 * time.Hour), t0.Add(-24 * time.Hour), t0.Add(-12 * time.Hour),
 			true, false, true, true, false, false,
 		},
@@ -233,19 +233,19 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 		// locator to prevent interference from previous
 		// tests.
 
-		setup := func() (string, []byte) {
+		setupScenario := func() (string, []byte) {
 			nextKey++
 			blk := []byte(fmt.Sprintf("%d", nextKey))
 			loc := fmt.Sprintf("%x", md5.Sum(blk))
 			c.Log("\t", loc)
-			stubKey(scenario.data, loc, blk)
-			stubKey(scenario.recent, "recent/"+loc, nil)
-			stubKey(scenario.trash, "trash/"+loc, blk)
+			putS3Obj(scenario.dataT, loc, blk)
+			putS3Obj(scenario.recentT, "recent/"+loc, nil)
+			putS3Obj(scenario.trashT, "trash/"+loc, blk)
 			v.serverClock.now = &t0
 			return loc, blk
 		}
 
-		loc, blk := setup()
+		loc, blk := setupScenario()
 		buf := make([]byte, len(blk))
 		_, err := v.Get(loc, buf)
 		c.Check(err == nil, check.Equals, scenario.canGet)
@@ -253,7 +253,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			c.Check(os.IsNotExist(err), check.Equals, true)
 		}
 
-		loc, blk = setup()
+		loc, blk = setupScenario()
 		err = v.Trash(loc)
 		c.Check(err == nil, check.Equals, scenario.canTrash)
 		_, err = v.Get(loc, buf)
@@ -262,11 +262,11 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			c.Check(os.IsNotExist(err), check.Equals, true)
 		}
 
-		loc, blk = setup()
+		loc, blk = setupScenario()
 		err = v.Untrash(loc)
 		c.Check(err == nil, check.Equals, scenario.canUntrash)
 
-		loc, blk = setup()
+		loc, blk = setupScenario()
 		v.EmptyTrash()
 		_, err = v.Bucket.Head("trash/"+loc, nil)
 		c.Check(err == nil, check.Equals, scenario.haveTrashAfterEmpty)

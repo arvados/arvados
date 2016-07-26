@@ -558,7 +558,7 @@ func (v *S3Volume) EmptyTrash() {
 		PageSize: v.indexPageSize,
 	}
 	// Define "ready to delete" as "...when EmptyTrash started".
-	now := time.Now()
+	startT := time.Now()
 	for trash := trashL.First(); trash != nil; trash = trashL.Next() {
 		loc := trash.Key[6:]
 		if !v.isKeepBlock(loc) {
@@ -580,7 +580,7 @@ func (v *S3Volume) EmptyTrash() {
 			continue
 		}
 		if trashT.Sub(recentT) < blobSignatureTTL {
-			if age := now.Sub(recentT); age >= blobSignatureTTL - v.raceWindow {
+			if age := startT.Sub(recentT); age >= blobSignatureTTL - v.raceWindow {
 				// recent/loc is too old to protect
 				// loc from being Trashed again during
 				// the raceWindow that starts if we
@@ -602,7 +602,7 @@ func (v *S3Volume) EmptyTrash() {
 				continue
 			}
 		}
-		if now.Sub(trashT) < trashLifetime {
+		if startT.Sub(trashT) < trashLifetime {
 			continue
 		}
 		err = v.Bucket.Del(trash.Key)
