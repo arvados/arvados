@@ -3,21 +3,26 @@ package arvadostest
 import (
 	"bufio"
 	"bytes"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"strconv"
 	"strings"
 )
 
 var authSettings = make(map[string]string)
 
+// ResetEnv resets test env
 func ResetEnv() {
 	for k, v := range authSettings {
 		os.Setenv(k, v)
 	}
 }
 
+// ParseAuthSettings parses auth settings from given input
 func ParseAuthSettings(authScript []byte) {
 	scanner := bufio.NewScanner(bytes.NewReader(authScript))
 	for scanner.Scan() {
@@ -36,7 +41,7 @@ func ParseAuthSettings(authScript []byte) {
 	log.Printf("authSettings: %v", authSettings)
 }
 
-var pythonTestDir string = ""
+var pythonTestDir string
 
 func chdirToPythonTests() {
 	if pythonTestDir != "" {
@@ -59,6 +64,7 @@ func chdirToPythonTests() {
 	}
 }
 
+// StartAPI starts test API server
 func StartAPI() {
 	cwd, _ := os.Getwd()
 	defer os.Chdir(cwd)
@@ -76,6 +82,7 @@ func StartAPI() {
 	ResetEnv()
 }
 
+// StopAPI stops test API server
 func StopAPI() {
 	cwd, _ := os.Getwd()
 	defer os.Chdir(cwd)
@@ -131,4 +138,25 @@ func bgRun(cmd *exec.Cmd) {
 	if _, err := cmd.Process.Wait(); err != nil {
 		log.Fatalf("%+v: %s", cmd.Args, err)
 	}
+}
+
+// CreateBadPath creates a tmp dir, appends given string and returns that path
+// This will guarantee that the path being returned does not exist
+func CreateBadPath() (badpath string, err error) {
+	tempdir, err := ioutil.TempDir("", "bad")
+	if err != nil {
+		return "", fmt.Errorf("Could not create temporary directory for bad path: %v", err)
+	}
+	badpath = path.Join(tempdir, "bad")
+	return badpath, nil
+}
+
+// DestroyBadPath deletes the tmp dir created by the previous CreateBadPath call
+func DestroyBadPath(badpath string) error {
+	tempdir := path.Join(badpath, "..")
+	err := os.Remove(tempdir)
+	if err != nil {
+		return fmt.Errorf("Could not remove bad path temporary directory %v: %v", tempdir, err)
+	}
+	return nil
 }

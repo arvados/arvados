@@ -3,6 +3,7 @@ package main
 // Dispatcher service for Crunch that submits containers to the slurm queue.
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -17,6 +18,13 @@ import (
 	"time"
 )
 
+// Config used by crunch-dispatch-slurm
+type Config struct {
+	SbatchArguments  []string
+	PollPeriod       *time.Duration
+	CrunchRunCommand *string
+}
+
 func main() {
 	err := doMain()
 	if err != nil {
@@ -25,25 +33,38 @@ func main() {
 }
 
 var (
-	crunchRunCommand *string
-	squeueUpdater    Squeue
+	config        Config
+	squeueUpdater Squeue
 )
+
+const defaultConfigPath = "/etc/arvados/crunch-dispatch-slurm/config.json"
 
 func doMain() error {
 	flags := flag.NewFlagSet("crunch-dispatch-slurm", flag.ExitOnError)
 
-	pollInterval := flags.Int(
-		"poll-interval",
-		10,
-		"Interval in seconds to poll for queued containers")
+	configPath := flags.String(
+		"config",
+		defaultConfigPath,
+		"`path` to json configuration file")
 
-	crunchRunCommand = flags.String(
+	config.PollPeriod = flags.Duration(
+		"poll-interval",
+		10*time.Second,
+		"Time duration to poll for queued containers")
+
+	config.CrunchRunCommand = flags.String(
 		"crunch-run-command",
 		"/usr/bin/crunch-run",
 		"Crunch command to run container")
 
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
+
+	err := readConfig(&config, *configPath)
+	if err != nil {
+		log.Printf("Error reading configuration: %v", err)
+		return err
+	}
 
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
@@ -52,13 +73,13 @@ func doMain() error {
 	}
 	arv.Retries = 25
 
-	squeueUpdater.StartMonitor(time.Duration(*pollInterval) * time.Second)
+	squeueUpdater.StartMonitor(*config.PollPeriod)
 	defer squeueUpdater.Done()
 
 	dispatcher := dispatch.Dispatcher{
 		Arv:            arv,
 		RunContainer:   run,
-		PollInterval:   time.Duration(*pollInterval) * time.Second,
+		PollInterval:   *config.PollPeriod,
 		DoneProcessing: make(chan struct{})}
 
 	err = dispatcher.RunDispatcher()
@@ -72,10 +93,15 @@ func doMain() error {
 // sbatchCmd
 func sbatchFunc(container arvados.Container) *exec.Cmd {
 	memPerCPU := math.Ceil(float64(container.RuntimeConstraints.RAM) / (float64(container.RuntimeConstraints.VCPUs) * 1048576))
-	return exec.Command("sbatch", "--share",
-		fmt.Sprintf("--job-name=%s", container.UUID),
-		fmt.Sprintf("--mem-per-cpu=%d", int(memPerCPU)),
-		fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs))
+
+	var sbatchArgs []string
+	sbatchArgs = append(sbatchArgs, "--share")
+	sbatchArgs = append(sbatchArgs, config.SbatchArguments...)
+	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--job-name=%s", container.UUID))
+	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--mem-per-cpu=%d", int(memPerCPU)))
+	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs))
+
+	return exec.Command("sbatch", sbatchArgs...)
 }
 
 // scancelCmd
@@ -189,7 +215,7 @@ func monitorSubmitOrCancel(dispatcher *dispatch.Dispatcher, container arvados.Co
 
 			log.Printf("About to submit queued container %v", container.UUID)
 
-			if err := submit(dispatcher, container, *crunchRunCommand); err != nil {
+			if err := submit(dispatcher, container, *config.CrunchRunCommand); err != nil {
 				log.Printf("Error submitting container %s to slurm: %v",
 					container.UUID, err)
 				// maybe sbatch is broken, put it back to queued
@@ -266,4 +292,19 @@ func run(dispatcher *dispatch.Dispatcher,
 		}
 	}
 	monitorDone = true
+}
+
+func readConfig(dst interface{}, path string) error {
+	if buf, err := ioutil.ReadFile(path); err != nil && os.IsNotExist(err) {
+		if path == defaultConfigPath {
+			log.Printf("Config not specified. Continue with default configuration.")
+		} else {
+			return fmt.Errorf("Config file not found %q: %v", path, err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("Error reading config %q: %v", path, err)
+	} else if err = json.Unmarshal(buf, dst); err != nil {
+		return fmt.Errorf("Error decoding config %q: %v", path, err)
+	}
+	return nil
 }

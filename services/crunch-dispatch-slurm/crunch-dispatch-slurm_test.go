@@ -8,6 +8,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -143,7 +144,7 @@ func (s *TestSuite) integrationTest(c *C,
 	c.Check(len(containers.Items), Equals, 1)
 
 	echo := "echo"
-	crunchRunCommand = &echo
+	config.CrunchRunCommand = &echo
 
 	doneProcessing := make(chan struct{})
 	dispatcher := dispatch.Dispatcher{
@@ -179,7 +180,7 @@ func (s *TestSuite) integrationTest(c *C,
 	return container
 }
 
-func (s *MockArvadosServerSuite) Test_APIErrorGettingContainers(c *C) {
+func (s *MockArvadosServerSuite) TestAPIErrorGettingContainers(c *C) {
 	apiStubResponses := make(map[string]arvadostest.StubResponse)
 	apiStubResponses["/arvados/v1/api_client_authorizations/current"] = arvadostest.StubResponse{200, `{"uuid":"` + arvadostest.Dispatch1AuthUUID + `"}`}
 	apiStubResponses["/arvados/v1/containers"] = arvadostest.StubResponse{500, string(`{}`)}
@@ -205,7 +206,7 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	log.SetOutput(io.MultiWriter(buf, os.Stderr))
 	defer log.SetOutput(os.Stderr)
 
-	crunchRunCommand = &crunchCmd
+	config.CrunchRunCommand = &crunchCmd
 
 	doneProcessing := make(chan struct{})
 	dispatcher := dispatch.Dispatcher{
@@ -235,4 +236,83 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	c.Assert(err, IsNil)
 
 	c.Check(buf.String(), Matches, `(?ms).*`+expected+`.*`)
+}
+
+func (s *MockArvadosServerSuite) TestNoSuchConfigFile(c *C) {
+	var config Config
+	err := readConfig(&config, "/nosuchdir89j7879/8hjwr7ojgyy7")
+	c.Assert(err, NotNil)
+}
+
+func (s *MockArvadosServerSuite) TestBadSbatchArgsConfig(c *C) {
+	var config Config
+
+	tmpfile, err := ioutil.TempFile(os.TempDir(), "config")
+	c.Check(err, IsNil)
+	defer os.Remove(tmpfile.Name())
+
+	_, err = tmpfile.Write([]byte(`{"SbatchArguments": "oops this is not a string array"}`))
+	c.Check(err, IsNil)
+
+	err = readConfig(&config, tmpfile.Name())
+	c.Assert(err, NotNil)
+}
+
+func (s *MockArvadosServerSuite) TestNoSuchArgInConfigIgnored(c *C) {
+	var config Config
+
+	tmpfile, err := ioutil.TempFile(os.TempDir(), "config")
+	c.Check(err, IsNil)
+	defer os.Remove(tmpfile.Name())
+
+	_, err = tmpfile.Write([]byte(`{"NoSuchArg": "Nobody loves me, not one tiny hunk."}`))
+	c.Check(err, IsNil)
+
+	err = readConfig(&config, tmpfile.Name())
+	c.Assert(err, IsNil)
+	c.Check(0, Equals, len(config.SbatchArguments))
+}
+
+func (s *MockArvadosServerSuite) TestReadConfig(c *C) {
+	var config Config
+
+	tmpfile, err := ioutil.TempFile(os.TempDir(), "config")
+	c.Check(err, IsNil)
+	defer os.Remove(tmpfile.Name())
+
+	args := []string{"--arg1=v1", "--arg2", "--arg3=v3"}
+	argsS := `{"SbatchArguments": ["--arg1=v1",  "--arg2", "--arg3=v3"]}`
+	_, err = tmpfile.Write([]byte(argsS))
+	c.Check(err, IsNil)
+
+	err = readConfig(&config, tmpfile.Name())
+	c.Assert(err, IsNil)
+	c.Check(3, Equals, len(config.SbatchArguments))
+	c.Check(args, DeepEquals, config.SbatchArguments)
+}
+
+func (s *MockArvadosServerSuite) TestSbatchFuncWithNoConfigArgs(c *C) {
+	testSbatchFuncWithArgs(c, nil)
+}
+
+func (s *MockArvadosServerSuite) TestSbatchFuncWithEmptyConfigArgs(c *C) {
+	testSbatchFuncWithArgs(c, []string{})
+}
+
+func (s *MockArvadosServerSuite) TestSbatchFuncWithConfigArgs(c *C) {
+	testSbatchFuncWithArgs(c, []string{"--arg1=v1", "--arg2"})
+}
+
+func testSbatchFuncWithArgs(c *C, args []string) {
+	config.SbatchArguments = append(config.SbatchArguments, args...)
+
+	container := arvados.Container{UUID: "123", RuntimeConstraints: arvados.RuntimeConstraints{RAM: 1000000, VCPUs: 2}}
+	sbatchCmd := sbatchFunc(container)
+
+	var expected []string
+	expected = append(expected, "sbatch", "--share")
+	expected = append(expected, config.SbatchArguments...)
+	expected = append(expected, "--job-name=123", "--mem-per-cpu=1", "--cpus-per-task=2")
+
+	c.Check(sbatchCmd.Args, DeepEquals, expected)
 }
