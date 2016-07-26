@@ -422,7 +422,6 @@ class ArvPutUploadJob(object):
 
     def _write_file(self, source, filename):
         resume_offset = 0
-        resume_upload = False
         if self.resume:
             # Check if file was already uploaded (at least partially)
             with self._collection_lock:
@@ -433,38 +432,38 @@ class ArvPutUploadJob(object):
                     file_in_collection = None
             # If no previous cached data on this file, store it for an eventual
             # repeated run.
-            if source not in self._state['files'].keys():
+            if source not in self._state['files']:
                 with self._state_lock:
                     self._state['files'][source] = {
-                        'mtime' : os.path.getmtime(source),
+                        'mtime': os.path.getmtime(source),
                         'size' : os.path.getsize(source)
                     }
             cached_file_data = self._state['files'][source]
             # See if this file was already uploaded at least partially
             if file_in_collection:
                 if cached_file_data['mtime'] == os.path.getmtime(source) and cached_file_data['size'] == os.path.getsize(source):
-                    if os.path.getsize(source) == file_in_collection.size():
+                    if cached_file_data['size'] == file_in_collection.size():
                         # File already there, skip it.
-                        self.bytes_skipped += os.path.getsize(source)
+                        self.bytes_skipped += cached_file_data['size']
                         return
-                    elif os.path.getsize(source) > file_in_collection.size():
+                    elif cached_file_data['size'] > file_in_collection.size():
                         # File partially uploaded, resume!
-                        resume_upload = True
                         resume_offset = file_in_collection.size()
                     else:
                         # Inconsistent cache, re-upload the file
-                        pass
+                        pass # TODO: log warning message
                 else:
                     # Local file differs from cached data, re-upload it
                     pass
         with open(source, 'r') as source_fd:
-            if self.resume and resume_upload:
+            if resume_offset > 0:
+                # Start upload where we left off
                 with self._collection_lock:
-                    # Open for appending
                     output = self._my_collection().open(filename, 'a')
                 source_fd.seek(resume_offset)
                 self.bytes_skipped += resume_offset
             else:
+                # Start from scratch
                 with self._collection_lock:
                     output = self._my_collection().open(filename, 'w')
             self._write(source_fd, output)
