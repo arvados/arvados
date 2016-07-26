@@ -86,6 +86,12 @@ type ArvadosClient struct {
 	// the client is outside the cluster.
 	External bool
 
+	// Base URIs of Keep services, e.g., {"https://host1:8443",
+	// "https://host2:8443"}.  If this is nil, Keep clients will
+	// use the arvados.v1.keep_services.accessible API to discover
+	// available services.
+	KeepServiceURIs []string
+
 	// Discovery document
 	DiscoveryDoc Dict
 
@@ -95,9 +101,10 @@ type ArvadosClient struct {
 	Retries int
 }
 
-// Create a new ArvadosClient, initialized with standard Arvados environment
-// variables ARVADOS_API_HOST, ARVADOS_API_TOKEN, and (optionally)
-// ARVADOS_API_HOST_INSECURE.
+// MakeArvadosClient creates a new ArvadosClient using the standard
+// environment variables ARVADOS_API_HOST, ARVADOS_API_TOKEN,
+// ARVADOS_API_HOST_INSECURE, ARVADOS_EXTERNAL_CLIENT, and
+// ARVADOS_KEEP_SERVICES.
 func MakeArvadosClient() (ac ArvadosClient, err error) {
 	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
 	insecure := matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
@@ -112,6 +119,18 @@ func MakeArvadosClient() (ac ArvadosClient, err error) {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
 		External: external,
 		Retries:  2}
+
+	for _, s := range strings.Split(os.Getenv("ARVADOS_KEEP_SERVICES"), " ") {
+		if s == "" {
+			continue
+		}
+		if u, err := url.Parse(s); err != nil {
+			return ac, fmt.Errorf("ARVADOS_KEEP_SERVICES: %q: %s", s, err)
+		} else if !u.IsAbs() {
+			return ac, fmt.Errorf("ARVADOS_KEEP_SERVICES: %q: not an absolute URI", s)
+		}
+		ac.KeepServiceURIs = append(ac.KeepServiceURIs, s)
+	}
 
 	if ac.ApiServer == "" {
 		return ac, MissingArvadosApiHost
