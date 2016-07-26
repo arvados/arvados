@@ -21,6 +21,7 @@ import sys
 import tempfile
 import threading
 import copy
+import logging
 from apiclient import errors as apiclient_errors
 
 import arvados.commands._util as arv_cmd
@@ -312,6 +313,7 @@ class ArvPutUploadJob(object):
         self._stop_checkpointer = threading.Event()
         self._checkpointer = threading.Thread(target=self._update_task)
         self._update_task_time = update_time  # How many seconds wait between update runs
+        self.logger = logging.getLogger('arvados.arv_put')
         # Load cached data if any and if needed
         self._setup_state()
 
@@ -451,7 +453,7 @@ class ArvPutUploadJob(object):
                         resume_offset = file_in_collection.size()
                     else:
                         # Inconsistent cache, re-upload the file
-                        pass # TODO: log warning message
+                        self.logger.warning("Uploaded version of file '{}' is bigger than local version, will re-upload it from scratch.".format(source))
                 else:
                     # Local file differs from cached data, re-upload it
                     pass
@@ -551,6 +553,7 @@ class ArvPutUploadJob(object):
             os.fsync(new_cache)
             os.rename(new_cache_name, self._cache_filename)
         except (IOError, OSError, ResumeCacheConflict) as error:
+            self.logger.error("There was a problem while saving the cache file: {}".format(error))
             try:
                 os.unlink(new_cache_name)
             except NameError:  # mkstemp failed.
