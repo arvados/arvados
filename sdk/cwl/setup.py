@@ -33,7 +33,7 @@ setup(name='arvados-cwl-runner',
       # when updating the cwltool version pin.
       install_requires=[
           'cwltool==1.0.20160714182449',
-          'arvados-python-client>=0.1.20160322001610'
+          'arvados-python-client>=0.1.20160714204738',
       ],
       data_files=[
           ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),
