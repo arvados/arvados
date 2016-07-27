@@ -352,7 +352,7 @@ func (kc *KeepClient) WritableLocalRoots() map[string]string {
 // caller can reuse/modify them after SetServiceRoots returns, but
 // they should not be modified by any other goroutine while
 // SetServiceRoots is running.
-func (kc *KeepClient) SetServiceRoots(newLocals, newWritableLocals map[string]string, newGateways map[string]string) {
+func (kc *KeepClient) SetServiceRoots(newLocals, newWritableLocals, newGateways map[string]string) {
 	locals := make(map[string]string)
 	for uuid, root := range newLocals {
 		locals[uuid] = root

@@ -371,5 +371,5 @@ func (s *runSuite) TestRunForever(c *check.C) {
 	}
 	stop <- true
 	c.Check(pullReqs.Count() >= 16, check.Equals, true)
-	c.Check(trashReqs.Count(), check.Equals, pullReqs.Count() + 4)
+	c.Check(trashReqs.Count(), check.Equals, pullReqs.Count()+4)
 }

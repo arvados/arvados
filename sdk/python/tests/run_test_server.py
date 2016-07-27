@@ -476,7 +476,7 @@ def run_keep_proxy():
         'service_type': 'proxy',
         'service_ssl_flag': False,
     }}).execute()
-    os.environ["ARVADOS_KEEP_PROXY"] = "http://localhost:{}".format(port)
+    os.environ["ARVADOS_KEEP_SERVICES"] = "http://localhost:{}".format(port)
     _setport('keepproxy', port)
     _wait_until_port_listens(port)
 
@@ -664,7 +664,7 @@ class TestCaseWithServers(unittest.TestCase):
         cls._orig_environ = os.environ.copy()
         cls._orig_config = arvados.config.settings().copy()
         cls._cleanup_funcs = []
-        os.environ.pop('ARVADOS_KEEP_PROXY', None)
+        os.environ.pop('ARVADOS_KEEP_SERVICES', None)
         os.environ.pop('ARVADOS_EXTERNAL_CLIENT', None)
         for server_kwargs, start_func, stop_func in (
                 (cls.MAIN_SERVER, run, reset),

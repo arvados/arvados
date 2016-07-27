@@ -127,6 +127,7 @@ class ArvCwlRunner(object):
         kwargs["use_container"] = True
         kwargs["tmpdir_prefix"] = "tmp"
         kwargs["on_error"] = "continue"
+        kwargs["compute_checksum"] = False
 
         if self.work_api == "containers":
             kwargs["outdir"] = "/var/spool/cwl"
