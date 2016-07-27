@@ -18,8 +18,8 @@ const (
 	Dispatch1AuthUUID = "zzzzz-gj3su-k9dvestay1plssr"
 )
 
-// A valid manifest designed to test various edge cases and parsing
-// requirements
+// PathologicalManifest : A valid manifest designed to test
+// various edge cases and parsing requirements
 const PathologicalManifest = ". acbd18db4cc2f85cedef654fccc4a4d8+3 37b51d194a7513e45b56f6524f2d51f2+3 73feffa4b7f6bb68e44cf984c85f6e88+3+Z+K@xyzzy acbd18db4cc2f85cedef654fccc4a4d8+3 0:0:zero@0 0:1:f 1:0:zero@1 1:4:ooba 4:0:zero@4 5:1:r 5:4:rbaz 9:0:zero@9\n" +
 	"./overlapReverse acbd18db4cc2f85cedef654fccc4a4d8+3 acbd18db4cc2f85cedef654fccc4a4d8+3 5:1:o 4:2:oo 2:4:ofoo\n" +
 	"./segmented acbd18db4cc2f85cedef654fccc4a4d8+3 37b51d194a7513e45b56f6524f2d51f2+3 0:1:frob 5:1:frob 1:1:frob 1:2:oof 0:1:oof 5:0:frob 3:1:frob\n" +
@@ -37,4 +37,5 @@ var (
 	MD5CollisionMD5 = "cee9a457e790cf20d4bdaa6d69f01e41"
 )
 
+// BlobSigningKey used by the test servers
 const BlobSigningKey = "zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc"
