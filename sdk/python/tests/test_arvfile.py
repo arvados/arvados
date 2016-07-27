@@ -40,7 +40,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             self._schema = ArvadosFileWriterTestCase.MockApi.MockSchema()
         class MockSchema(object):
             def __init__(self):
-                self.schemas = {'Collection': {'properties': {'replication_desired': 2}}}
+                self.schemas = {'Collection': {'properties': {'replication_desired': {'type':'integer'}}}}
         class MockCollections(object):
             def __init__(self, b, r):
                 self.body = b
