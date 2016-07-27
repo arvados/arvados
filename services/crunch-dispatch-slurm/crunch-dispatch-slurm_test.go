@@ -10,7 +10,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -292,12 +291,16 @@ func (s *MockArvadosServerSuite) TestReadConfig(c *C) {
 	c.Check(args, DeepEquals, config.SbatchArguments)
 }
 
-func (s *MockArvadosServerSuite) TestSbatchFuncWithConfigArgs(c *C) {
-	testSbatchFuncWithArgs(c, []string{"--arg1=v1", "--arg2"})
+func (s *MockArvadosServerSuite) TestSbatchFuncWithNoConfigArgs(c *C) {
+	testSbatchFuncWithArgs(c, nil)
 }
 
-func (s *MockArvadosServerSuite) TestSbatchFuncWithNoConfigArgs(c *C) {
+func (s *MockArvadosServerSuite) TestSbatchFuncWithEmptyConfigArgs(c *C) {
 	testSbatchFuncWithArgs(c, []string{})
+}
+
+func (s *MockArvadosServerSuite) TestSbatchFuncWithConfigArgs(c *C) {
+	testSbatchFuncWithArgs(c, []string{"--arg1=v1", "--arg2"})
 }
 
 func testSbatchFuncWithArgs(c *C, args []string) {
@@ -307,13 +310,9 @@ func testSbatchFuncWithArgs(c *C, args []string) {
 	sbatchCmd := sbatchFunc(container)
 
 	var expected []string
-	expected = append(expected, "sbatch")
-	expected = append(expected, "--share")
+	expected = append(expected, "sbatch", "--share")
 	expected = append(expected, config.SbatchArguments...)
-	expected = append(expected, fmt.Sprintf("--job-name=%s", container.UUID))
-	memPerCPU := math.Ceil(float64(container.RuntimeConstraints.RAM) / (float64(container.RuntimeConstraints.VCPUs) * 1048576))
-	expected = append(expected, fmt.Sprintf("--mem-per-cpu=%d", int(memPerCPU)))
-	expected = append(expected, fmt.Sprintf("--cpus-per-task=2"))
+	expected = append(expected, "--job-name=123", "--mem-per-cpu=1", "--cpus-per-task=2")
 
 	c.Check(sbatchCmd.Args, DeepEquals, expected)
 }
