@@ -180,7 +180,7 @@ func (s *TestSuite) integrationTest(c *C,
 	return container
 }
 
-func (s *MockArvadosServerSuite) Test_APIErrorGettingContainers(c *C) {
+func (s *MockArvadosServerSuite) TestAPIErrorGettingContainers(c *C) {
 	apiStubResponses := make(map[string]arvadostest.StubResponse)
 	apiStubResponses["/arvados/v1/api_client_authorizations/current"] = arvadostest.StubResponse{200, `{"uuid":"` + arvadostest.Dispatch1AuthUUID + `"}`}
 	apiStubResponses["/arvados/v1/containers"] = arvadostest.StubResponse{500, string(`{}`)}
@@ -238,46 +238,42 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	c.Check(buf.String(), Matches, `(?ms).*`+expected+`.*`)
 }
 
-func (s *MockArvadosServerSuite) Test_EmptyConfigFile(c *C) {
+func (s *MockArvadosServerSuite) TestNoSuchConfigFile(c *C) {
 	var config Config
-
-	err := readConfig(&config.SbatchArguments, "")
-	c.Assert(err, IsNil)
-}
-
-func (s *MockArvadosServerSuite) Test_NoSuchConfigFile(c *C) {
-	var config Config
-
-	badpath, err := arvadostest.CreateBadPath()
-	if err != nil {
-		c.Fatalf(err.Error())
-	}
-	defer func() {
-		err = arvadostest.DestroyBadPath(badpath)
-		if err != nil {
-			c.Fatalf(err.Error())
-		}
-	}()
-
-	err = readConfig(&config.SbatchArguments, badpath)
+	err := readConfig(&config, "/nosuchdir89j7879/8hjwr7ojgyy7")
 	c.Assert(err, NotNil)
 }
 
-func (s *MockArvadosServerSuite) Test_BadConfig(c *C) {
+func (s *MockArvadosServerSuite) TestBadSbatchArgsConfig(c *C) {
 	var config Config
 
 	tmpfile, err := ioutil.TempFile(os.TempDir(), "config")
 	c.Check(err, IsNil)
 	defer os.Remove(tmpfile.Name())
 
-	_, err = tmpfile.Write([]byte("fileContent"))
+	_, err = tmpfile.Write([]byte(`{"SbatchArguments": "oops this is not a string array"}`))
 	c.Check(err, IsNil)
 
-	err = readConfig(&config.SbatchArguments, tmpfile.Name())
+	err = readConfig(&config, tmpfile.Name())
 	c.Assert(err, NotNil)
 }
 
-func (s *MockArvadosServerSuite) Test_ReadConfig(c *C) {
+func (s *MockArvadosServerSuite) TestNoSuchArgInConfigIgnored(c *C) {
+	var config Config
+
+	tmpfile, err := ioutil.TempFile(os.TempDir(), "config")
+	c.Check(err, IsNil)
+	defer os.Remove(tmpfile.Name())
+
+	_, err = tmpfile.Write([]byte(`{"NoSuchArg": "Nobody loves me, not one tiny hunk."}`))
+	c.Check(err, IsNil)
+
+	err = readConfig(&config, tmpfile.Name())
+	c.Assert(err, IsNil)
+	c.Check(0, Equals, len(config.SbatchArguments))
+}
+
+func (s *MockArvadosServerSuite) TestReadConfig(c *C) {
 	var config Config
 
 	tmpfile, err := ioutil.TempFile(os.TempDir(), "config")
@@ -285,14 +281,12 @@ func (s *MockArvadosServerSuite) Test_ReadConfig(c *C) {
 	defer os.Remove(tmpfile.Name())
 
 	args := []string{"--arg1=v1", "--arg2", "--arg3=v3"}
-	argsS := `["--arg1=v1",  "--arg2", "--arg3=v3"]`
+	argsS := `{"SbatchArguments": ["--arg1=v1",  "--arg2", "--arg3=v3"]}`
 	_, err = tmpfile.Write([]byte(argsS))
 	c.Check(err, IsNil)
 
-	err = readConfig(&config.SbatchArguments, tmpfile.Name())
+	err = readConfig(&config, tmpfile.Name())
 	c.Assert(err, IsNil)
 	c.Check(3, Equals, len(config.SbatchArguments))
-	for i := range args {
-		c.Check(args[i], Equals, config.SbatchArguments[i])
-	}
+	c.Check(args, DeepEquals, config.SbatchArguments)
 }

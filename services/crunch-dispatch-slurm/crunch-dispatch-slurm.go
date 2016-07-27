@@ -60,7 +60,7 @@ func doMain() error {
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
 
-	err := readConfig(config.SbatchArguments, *configPath)
+	err := readConfig(&config, *configPath)
 	if err != nil {
 		log.Printf("Error reading configuration: %v", err)
 		return err
@@ -73,13 +73,13 @@ func doMain() error {
 	}
 	arv.Retries = 25
 
-	squeueUpdater.StartMonitor(*config.PollPeriod * time.Second)
+	squeueUpdater.StartMonitor(*config.PollPeriod)
 	defer squeueUpdater.Done()
 
 	dispatcher := dispatch.Dispatcher{
 		Arv:            arv,
 		RunContainer:   run,
-		PollInterval:   *config.PollPeriod * time.Second,
+		PollInterval:   *config.PollPeriod,
 		DoneProcessing: make(chan struct{})}
 
 	err = dispatcher.RunDispatcher()
@@ -96,9 +96,7 @@ func sbatchFunc(container arvados.Container) *exec.Cmd {
 
 	var sbatchArgs []string
 	sbatchArgs = append(sbatchArgs, "--share")
-	for i := range config.SbatchArguments {
-		sbatchArgs = append(sbatchArgs, config.SbatchArguments[i])
-	}
+	sbatchArgs = append(sbatchArgs, config.SbatchArguments...)
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--job-name=%s", container.UUID))
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--mem-per-cpu=%d", int(memPerCPU)))
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs))
@@ -297,8 +295,8 @@ func run(dispatcher *dispatch.Dispatcher,
 }
 
 func readConfig(dst interface{}, path string) error {
-	if buf, err := ioutil.ReadFile(path); err != nil && strings.Contains(err.Error(), "no such file") {
-		if path == defaultConfigPath || path == "" {
+	if buf, err := ioutil.ReadFile(path); err != nil && os.IsNotExist(err) {
+		if path == defaultConfigPath {
 			log.Printf("Config not specified. Continue with default configuration.")
 		} else {
 			return fmt.Errorf("Config file not found %q: %v", path, err)
