@@ -520,6 +520,8 @@ do_test_once() {
             # mode makes Go show the wrong line numbers when reporting
             # compilation errors.
             go get -t "git.curoverse.com/arvados.git/$1" || return 1
+            cd "$WORKSPACE/$1" || return 1
+            gofmt -e -d . | egrep . && result=1
             if [[ -n "${testargs[$1]}" ]]
             then
                 # "go test -check.vv giturl" doesn't work, but this
@@ -530,7 +532,7 @@ do_test_once() {
                 # empty, so use this form in such cases:
                 go test ${short:+-short} ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
             fi
-            result="$?"
+            result=${result:-$?}
             if [[ -f "$WORKSPACE/tmp/.$covername.tmp" ]]
             then
                 go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"

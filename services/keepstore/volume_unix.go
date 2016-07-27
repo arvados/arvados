@@ -306,7 +306,7 @@ var blockFileRe = regexp.MustCompile(`^[0-9a-f]{32}$`)
 //     e4de7a2810f5554cd39b36d8ddb132ff+67108864 1388701136
 //
 func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
-	var lastErr error = nil
+	var lastErr error
 	rootdir, err := os.Open(v.root)
 	if err != nil {
 		return err
@@ -397,10 +397,8 @@ func (v *UnixVolume) Trash(loc string) error {
 	// anyway (because the permission signatures have expired).
 	if fi, err := os.Stat(p); err != nil {
 		return err
-	} else {
-		if time.Since(fi.ModTime()) < blobSignatureTTL {
-			return nil
-		}
+	} else if time.Since(fi.ModTime()) < blobSignatureTTL {
+		return nil
 	}
 
 	if trashLifetime == 0 {
@@ -506,11 +504,14 @@ func (v *UnixVolume) String() string {
 	return fmt.Sprintf("[UnixVolume %s]", v.root)
 }
 
-// Writable returns false if all future Put, Mtime, and Delete calls are expected to fail.
+// Writable returns false if all future Put, Mtime, and Delete calls
+// are expected to fail.
 func (v *UnixVolume) Writable() bool {
 	return !v.readonly
 }
 
+// Replication returns the number of replicas promised by the
+// underlying device (currently assumed to be 1).
 func (v *UnixVolume) Replication() int {
 	return 1
 }
