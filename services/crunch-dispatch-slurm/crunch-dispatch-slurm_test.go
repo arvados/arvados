@@ -10,6 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -289,4 +290,30 @@ func (s *MockArvadosServerSuite) TestReadConfig(c *C) {
 	c.Assert(err, IsNil)
 	c.Check(3, Equals, len(config.SbatchArguments))
 	c.Check(args, DeepEquals, config.SbatchArguments)
+}
+
+func (s *MockArvadosServerSuite) TestSbatchFuncWithConfigArgs(c *C) {
+	testSbatchFuncWithArgs(c, []string{"--arg1=v1", "--arg2"})
+}
+
+func (s *MockArvadosServerSuite) TestSbatchFuncWithNoConfigArgs(c *C) {
+	testSbatchFuncWithArgs(c, []string{})
+}
+
+func testSbatchFuncWithArgs(c *C, args []string) {
+	config.SbatchArguments = append(config.SbatchArguments, args...)
+
+	container := arvados.Container{UUID: "123", RuntimeConstraints: arvados.RuntimeConstraints{RAM: 1000000, VCPUs: 2}}
+	sbatchCmd := sbatchFunc(container)
+
+	var expected []string
+	expected = append(expected, "sbatch")
+	expected = append(expected, "--share")
+	expected = append(expected, config.SbatchArguments...)
+	expected = append(expected, fmt.Sprintf("--job-name=%s", container.UUID))
+	memPerCPU := math.Ceil(float64(container.RuntimeConstraints.RAM) / (float64(container.RuntimeConstraints.VCPUs) * 1048576))
+	expected = append(expected, fmt.Sprintf("--mem-per-cpu=%d", int(memPerCPU)))
+	expected = append(expected, fmt.Sprintf("--cpus-per-task=2"))
+
+	c.Check(sbatchCmd.Args, DeepEquals, expected)
 }
