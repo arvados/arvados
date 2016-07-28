@@ -35,7 +35,7 @@ class ArvCwlRunner(object):
 
     """
 
-    def __init__(self, api_client, work_api=None):
+    def __init__(self, api_client, work_api=None, compute_checksum=False):
         self.api = api_client
         self.processes = {}
         self.lock = threading.Lock()
@@ -46,6 +46,7 @@ class ArvCwlRunner(object):
         self.num_retries = 4
         self.uuid = None
         self.work_api = work_api
+        self.compute_checksum = compute_checksum
 
         if self.work_api is None:
             # todo: autodetect API to use.
@@ -127,7 +128,7 @@ class ArvCwlRunner(object):
         kwargs["use_container"] = True
         kwargs["tmpdir_prefix"] = "tmp"
         kwargs["on_error"] = "continue"
-        kwargs["compute_checksum"] = False
+        kwargs["compute_checksum"] = self.compute_checksum
 
         if self.work_api == "containers":
             kwargs["outdir"] = "/var/spool/cwl"
@@ -291,6 +292,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         default=None, dest="work_api",
                         help="Select work submission API, one of 'jobs' or 'containers'.")
 
+    parser.add_argument("--compute-checksum", action="store_true", default=False,
+                        help="Compute checksum of contents while collecting outputs",
+                        dest="compute_checksum")
+
     parser.add_argument("workflow", type=str, nargs="?", default=None, help="The workflow to execute")
     parser.add_argument("job_order", nargs=argparse.REMAINDER, help="The input object to the workflow.")
 
@@ -308,7 +313,7 @@ def main(args, stdout, stderr, api_client=None):
     try:
         if api_client is None:
             api_client=arvados.api('v1', model=OrderedJsonModel())
-        runner = ArvCwlRunner(api_client, work_api=arvargs.work_api)
+        runner = ArvCwlRunner(api_client, work_api=arvargs.work_api, compute_checksum=arvargs.compute_checksum)
     except Exception as e:
         logger.error(e)
         return 1
