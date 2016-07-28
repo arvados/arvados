@@ -58,7 +58,7 @@ contributers to Arvados.
 
 ## Development
 
-[![Build Status](https://ci.curoverse.com/buildStatus/icon?job=arvados-api-server)](https://ci.curoverse.com/job/arvados-api-server/)
+[![Build Status](https://ci.curoverse.com/buildStatus/icon?job=run-tests)](https://ci.curoverse.com/job/run-tests/)
 
 The Arvados public bug tracker is located at https://dev.arvados.org/projects/arvados/issues
 
