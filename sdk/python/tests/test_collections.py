@@ -804,6 +804,24 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
 
 class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
+    def test_replication_desired_kept_on_load(self):
+        m = '. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n'
+        c1 = Collection(m, replication_desired=1)
+        c1.save_new()
+        loc = c1.manifest_locator()
+        c2 = Collection(loc)
+        self.assertEqual(c1.manifest_text, c2.manifest_text)
+        self.assertEqual(c1.replication_desired, c2.replication_desired)
+
+    def test_replication_desired_not_loaded_if_provided(self):
+        m = '. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n'
+        c1 = Collection(m, replication_desired=1)
+        c1.save_new()
+        loc = c1.manifest_locator()
+        c2 = Collection(loc, replication_desired=2)
+        self.assertEqual(c1.manifest_text, c2.manifest_text)
+        self.assertNotEqual(c1.replication_desired, c2.replication_desired)
+
     def test_init_manifest(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt

@@ -28,7 +28,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         def get_from_cache(self, locator):
             self.requests.append(locator)
             return self.blocks.get(locator)
-        def put(self, data, num_retries=None):
+        def put(self, data, num_retries=None, copies=None):
             pdh = tutil.str_keep_locator(data)
             self.blocks[pdh] = str(data)
             return pdh
@@ -38,6 +38,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             self.body = b
             self.response = r
             self._schema = ArvadosFileWriterTestCase.MockApi.MockSchema()
+            self._rootDesc = {}
         class MockSchema(object):
             def __init__(self):
                 self.schemas = {'Collection': {'properties': {'replication_desired': {'type':'integer'}}}}

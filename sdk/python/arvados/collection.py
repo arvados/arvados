@@ -1136,7 +1136,7 @@ class Collection(RichCollectionBase):
                  parent=None,
                  apiconfig=None,
                  block_manager=None,
-                 num_write_copies=None):
+                 replication_desired=None):
         """Collection constructor.
 
         :manifest_locator_or_text:
@@ -1144,24 +1144,35 @@ class Collection(RichCollectionBase):
           a manifest, raw manifest text, or None (to create an empty collection).
         :parent:
           the parent Collection, may be None.
+
         :apiconfig:
           A dict containing keys for ARVADOS_API_HOST and ARVADOS_API_TOKEN.
           Prefer this over supplying your own api_client and keep_client (except in testing).
           Will use default config settings if not specified.
+
         :api_client:
           The API client object to use for requests.  If not specified, create one using `apiconfig`.
+
         :keep_client:
           the Keep client to use for requests.  If not specified, create one using `apiconfig`.
+
         :num_retries:
           the number of retries for API and Keep requests.
+
         :block_manager:
           the block manager to use.  If not specified, create one.
+
+        :replication_desired:
+          How many copies should Arvados maintain. If None, API server default
+          configuration applies. If not None, this value will also be used
+          for determining the number of block copies being written.
 
         """
         super(Collection, self).__init__(parent)
         self._api_client = api_client
         self._keep_client = keep_client
         self._block_manager = block_manager
+        self.replication_desired = replication_desired
 
         if apiconfig:
             self._config = apiconfig
@@ -1169,7 +1180,6 @@ class Collection(RichCollectionBase):
             self._config = config.settings()
 
         self.num_retries = num_retries if num_retries is not None else 0
-        self.num_write_copies = num_write_copies
         self._manifest_locator = None
         self._manifest_text = None
         self._api_response = None
@@ -1234,7 +1244,8 @@ class Collection(RichCollectionBase):
     def _my_api(self):
         if self._api_client is None:
             self._api_client = ThreadSafeApiCache(self._config)
-            self._keep_client = self._api_client.keep
+            if self._keep_client is None:
+                self._keep_client = self._api_client.keep
         return self._api_client
 
     @synchronized
@@ -1249,7 +1260,10 @@ class Collection(RichCollectionBase):
     @synchronized
     def _my_block_manager(self):
         if self._block_manager is None:
-            self._block_manager = _BlockManager(self._my_keep(), copies=self.num_write_copies)
+            copies = (self.replication_desired or
+                      self._my_api()._rootDesc.get('defaultCollectionReplication',
+                                                   2))
+            self._block_manager = _BlockManager(self._my_keep(), copies=copies)
         return self._block_manager
 
     def _remember_api_response(self, response):
@@ -1269,6 +1283,10 @@ class Collection(RichCollectionBase):
                 uuid=self._manifest_locator).execute(
                     num_retries=self.num_retries))
             self._manifest_text = self._api_response['manifest_text']
+            # If not overriden via kwargs, we should try to load the
+            # replication_desired from the API server
+            if self.replication_desired is None:
+                self.replication_desired = self._api_response.get('replication_desired', None)
             return None
         except Exception as e:
             return e
@@ -1442,8 +1460,7 @@ class Collection(RichCollectionBase):
                  create_collection_record=True,
                  owner_uuid=None,
                  ensure_unique_name=False,
-                 num_retries=None,
-                 replication_desired=None):
+                 num_retries=None):
         """Save collection to a new collection record.
 
         Commit pending buffer blocks to Keep and, when create_collection_record
@@ -1470,27 +1487,18 @@ class Collection(RichCollectionBase):
         :num_retries:
           Retry count on API calls (if None,  use the collection default)
 
-        :replication_desired:
-          How many copies should Arvados maintain. If None, API server default
-          configuration applies.
-
         """
         self._my_block_manager().commit_all()
         text = self.manifest_text(strip=False)
 
         if create_collection_record:
-            replication_attr = 'replication_desired'
-            if self._my_api()._schema.schemas['Collection']['properties'].get(replication_attr, None) is None:
-                # API called it 'redundancy' before #3410.
-                replication_attr = 'redundancy'
-
             if name is None:
                 name = "New collection"
                 ensure_unique_name = True
 
             body = {"manifest_text": text,
                     "name": name,
-                    replication_attr: replication_desired}
+                    "replication_desired": self.replication_desired}
             if owner_uuid:
                 body["owner_uuid"] = owner_uuid
 
