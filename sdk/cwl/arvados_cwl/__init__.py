@@ -35,7 +35,7 @@ class ArvCwlRunner(object):
 
     """
 
-    def __init__(self, api_client, work_api=None, compute_checksum=False):
+    def __init__(self, api_client, work_api=None):
         self.api = api_client
         self.processes = {}
         self.lock = threading.Lock()
@@ -46,7 +46,6 @@ class ArvCwlRunner(object):
         self.num_retries = 4
         self.uuid = None
         self.work_api = work_api
-        self.compute_checksum = compute_checksum
 
         if self.work_api is None:
             # todo: autodetect API to use.
@@ -128,7 +127,7 @@ class ArvCwlRunner(object):
         kwargs["use_container"] = True
         kwargs["tmpdir_prefix"] = "tmp"
         kwargs["on_error"] = "continue"
-        kwargs["compute_checksum"] = self.compute_checksum
+        kwargs["compute_checksum"] = kwargs.get("compute_checksum")
 
         if self.work_api == "containers":
             kwargs["outdir"] = "/var/spool/cwl"
@@ -313,7 +312,7 @@ def main(args, stdout, stderr, api_client=None):
     try:
         if api_client is None:
             api_client=arvados.api('v1', model=OrderedJsonModel())
-        runner = ArvCwlRunner(api_client, work_api=arvargs.work_api, compute_checksum=arvargs.compute_checksum)
+        runner = ArvCwlRunner(api_client, work_api=arvargs.work_api)
     except Exception as e:
         logger.error(e)
         return 1
