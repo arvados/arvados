@@ -127,7 +127,7 @@ class ArvCwlRunner(object):
         kwargs["use_container"] = True
         kwargs["tmpdir_prefix"] = "tmp"
         kwargs["on_error"] = "continue"
-        kwargs["compute_checksum"] = False
+        kwargs["compute_checksum"] = kwargs.get("compute_checksum")
 
         if self.work_api == "containers":
             kwargs["outdir"] = "/var/spool/cwl"
@@ -290,6 +290,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--api", type=str,
                         default=None, dest="work_api",
                         help="Select work submission API, one of 'jobs' or 'containers'.")
+
+    parser.add_argument("--compute-checksum", action="store_true", default=False,
+                        help="Compute checksum of contents while collecting outputs",
+                        dest="compute_checksum")
 
     parser.add_argument("workflow", type=str, nargs="?", default=None, help="The workflow to execute")
     parser.add_argument("job_order", nargs=argparse.REMAINDER, help="The input object to the workflow.")
