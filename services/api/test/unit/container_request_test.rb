@@ -9,7 +9,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       environment: {},
       mounts: {"/out" => {"kind" => "tmp", "capacity" => 1000000}},
       output_path: "/out",
-      runtime_constraints: {},
+      runtime_constraints: {"vcpus" => 1, "ram" => 2},
       name: "foo",
       description: "bar",
     }
@@ -53,6 +53,23 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_nil cr.container_uuid
   end
 
+  test "Container request constraints must include valid vcpus and ram fields when committed" do
+    set_user_from_auth :active
+    cr = create_minimal_req!(state: "Committed", priority: 1)
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.runtime_constraints = {"vcpus" => 1}
+      cr.save!
+    end
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.runtime_constraints = {"vcpus" => 1, "ram" => nil}
+      cr.save!
+    end
+    assert_raises(ActiveRecord::RecordInvalid) do
+      cr.runtime_constraints = {"vcpus" => 0, "ram" => 123}
+      cr.save!
+    end
+  end
+
   test "Container request priority must be non-nil" do
     set_user_from_auth :active
     cr = create_minimal_req!(priority: nil)
@@ -64,7 +81,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "Container request commit" do
     set_user_from_auth :active
-    cr = create_minimal_req!(runtime_constraints: {"vcpus" => [2,3]})
+    cr = create_minimal_req!(runtime_constraints: {"vcpus" => 2, "ram" => 30})
 
     assert_nil cr.container_uuid
 
@@ -84,7 +101,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal({}, c.environment)
     assert_equal({"/out" => {"kind"=>"tmp", "capacity"=>1000000}}, c.mounts)
     assert_equal "/out", c.output_path
-    assert_equal({"vcpus" => 2}, c.runtime_constraints)
+    assert_equal({"vcpus" => 2, "ram" => 30}, c.runtime_constraints)
     assert_equal 1, c.priority
 
     assert_raises(ActiveRecord::RecordInvalid) do

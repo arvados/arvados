@@ -8,6 +8,7 @@ class ContainerTest < ActiveSupport::TestCase
     container_image: 'img',
     output_path: '/tmp',
     priority: 1,
+    runtime_constraints: {"vcpus" => 1, "ram" => 1},
   }
 
   def minimal_new attrs={}
@@ -66,7 +67,7 @@ class ContainerTest < ActiveSupport::TestCase
                       mounts: {"BAR" => "FOO"},
                       output_path: "/tmp",
                       priority: 1,
-                      runtime_constraints: {})
+                      runtime_constraints: {"vcpus" => 1, "ram" => 1})
 
       check_illegal_modify c
       check_bogus_states c

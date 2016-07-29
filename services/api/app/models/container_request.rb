@@ -17,6 +17,7 @@ class ContainerRequest < ArvadosModel
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validate :validate_state_change
   validate :validate_change
+  validate :validate_runtime_constraints
   after_save :update_priority
   before_create :set_requesting_container_uuid
 
@@ -167,6 +168,19 @@ class ContainerRequest < ArvadosModel
     end
     if state_changed? and state == Committed and container_uuid.nil?
       resolve
+    end
+  end
+
+  def validate_runtime_constraints
+    case self.state
+    when Committed
+      ['vcpus', 'ram'].each do |k|
+        if not (runtime_constraints.include? k and
+                runtime_constraints[k].is_a? Integer and
+                runtime_constraints[k] > 0)
+          errors.add :runtime_constraints, "#{k} must be a positive integer"
+        end
+      end
     end
   end
 
