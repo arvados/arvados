@@ -56,55 +56,34 @@ class ContainerRequestTest < ActiveSupport::TestCase
   test "Container request constraints must include valid vcpus and ram fields when committed" do
     set_user_from_auth :active
     # Validations on creation
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr = create_minimal_req!(state: "Committed", priority: 1,
-                               runtime_constraints: {"vcpus" => 1})
-      cr.save!
-    end
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr = create_minimal_req!(state: "Committed", priority: 1,
-                               runtime_constraints: {"vcpus" => 1,
-                                                     "ram" => nil})
-      cr.save!
-    end
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr = create_minimal_req!(state: "Committed", priority: 1,
-                               runtime_constraints: {"vcpus" => 0,
-                                                     "ram" => 123})
-      cr.save!
+    [{"vcpus" => 1},
+     {"vcpus" => 1, "ram" => nil},
+     {"vcpus" => 0, "ram" => 123}].each do |invalid_constraint|
+      assert_raises(ActiveRecord::RecordInvalid) do
+        cr = create_minimal_req!(state: "Committed", priority: 1,
+                                 runtime_constraints: invalid_constraint)
+        cr.save!
+      end
     end
     cr = create_minimal_req!(state: "Committed", priority: 1)
     cr.save!
-
     # Validations on update
     cr = create_minimal_req!(state: "Uncommitted", priority: 1)
     cr.save!
-    cr.state = "Committed"
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.runtime_constraints = {"vcpus" => 1}
-      cr.save!
-    end
 
-    cr = create_minimal_req!(state: "Uncommitted", priority: 1)
-    cr.save!
-    cr.state = "Committed"
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.runtime_constraints = {"vcpus" => 1, "ram" => nil}
-      cr.save!
+    [{"vcpus" => 1},
+     {"vcpus" => 1, "ram" => nil},
+     {"vcpus" => 0, "ram" => 123}].each do |invalid_constraint|
+      cr = ContainerRequest.find_by_uuid cr.uuid
+      assert_raises(ActiveRecord::RecordInvalid) do
+        cr.update_attributes!(state: "Committed",
+                              runtime_constraints: invalid_constraint)
+        cr.save!
+      end
     end
-
-    cr = create_minimal_req!(state: "Uncommitted", priority: 1)
-    cr.save!
-    cr.state = "Committed"
-    assert_raises(ActiveRecord::RecordInvalid) do
-      cr.runtime_constraints = {"vcpus" => 0, "ram" => 123}
-      cr.save!
-    end
-
-    cr = create_minimal_req!(state: "Uncommitted", priority: 1)
-    cr.save!
-    cr.state = "Committed"
-    cr.runtime_constraints = {"vcpus" => 1, "ram" => 23}
+    cr = ContainerRequest.find_by_uuid cr.uuid
+    cr.update_attributes!(state: "Committed",
+                          runtime_constraints: {"vcpus" => 1, "ram" => 23})
     cr.save!
   end
 
