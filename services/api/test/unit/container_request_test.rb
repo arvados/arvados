@@ -53,14 +53,14 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_nil cr.container_uuid
   end
 
-  test "Container request constraints must include valid vcpus and ram fields when committed" do
-    set_user_from_auth :active
-
-    # Validations on creation
-    [{"vcpus" => 1},
-     {"vcpus" => 1, "ram" => nil},
-     {"vcpus" => 0, "ram" => 123},
-     {"vcpus" => "1", "ram" => "123"}].each do |invalid_constraint|
+  [
+    {"vcpus" => 1},
+    {"vcpus" => 1, "ram" => nil},
+    {"vcpus" => 0, "ram" => 123},
+    {"vcpus" => "1", "ram" => "123"}
+  ].each do |invalid_constraint|
+    test "Create with #{invalid_constraint}" do
+      set_user_from_auth :active
       assert_raises(ActiveRecord::RecordInvalid) do
         cr = create_minimal_req!(state: "Committed",
                                  priority: 1,
@@ -69,25 +69,26 @@ class ContainerRequestTest < ActiveSupport::TestCase
       end
     end
 
-    # Validations on update
-    cr = create_minimal_req!(state: "Uncommitted", priority: 1)
-    cr.save!
-    [{"vcpus" => 1},
-     {"vcpus" => 1, "ram" => nil},
-     {"vcpus" => 0, "ram" => 123},
-     {"vcpus" => "1", "ram" => "123"}].each do |invalid_constraint|
-      cr = ContainerRequest.find_by_uuid cr.uuid
+    test "Update with #{invalid_constraint}" do
+      set_user_from_auth :active
+      cr = create_minimal_req!(state: "Uncommitted", priority: 1)
+      cr.save!
       assert_raises(ActiveRecord::RecordInvalid) do
+        cr = ContainerRequest.find_by_uuid cr.uuid
         cr.update_attributes!(state: "Committed",
                               runtime_constraints: invalid_constraint)
-        cr.save!
       end
     end
-    cr = ContainerRequest.find_by_uuid cr.uuid
-    cr.update_attributes!(state: "Committed",
-                          runtime_constraints: {"vcpus" => 1, "ram" => 23})
-    cr.save!
-    assert_not_nil cr.container_uuid
+  end
+
+  test "Update with valid constraint" do
+      set_user_from_auth :active
+      cr = create_minimal_req!(state: "Uncommitted", priority: 1)
+      cr.save!
+      cr = ContainerRequest.find_by_uuid cr.uuid
+      cr.update_attributes!(state: "Committed",
+                            runtime_constraints: {"vcpus" => 1, "ram" => 23})
+      assert_not_nil cr.container_uuid
   end
 
   test "Container request priority must be non-nil" do
