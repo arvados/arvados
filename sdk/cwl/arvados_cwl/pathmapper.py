@@ -1,6 +1,7 @@
 import re
 import logging
 import uuid
+import os
 
 import arvados.commands.run
 import arvados.collection
@@ -142,6 +143,26 @@ class ArvPathMapper(PathMapper):
             return super(ArvPathMapper, self).reversemap(target)
 
 class InitialWorkDirPathMapper(PathMapper):
+
+    def visit(self, obj, stagedir, basedir, copy=False):
+        # type: (Dict[unicode, Any], unicode, unicode, bool) -> None
+        if obj["class"] == "Directory":
+            self._pathmap[obj["location"]] = MapperEnt(obj["location"], stagedir, "Directory")
+            self.visitlisting(obj.get("listing", []), stagedir, basedir)
+        elif obj["class"] == "File":
+            loc = obj["location"]
+            if loc in self._pathmap:
+                return
+            tgt = os.path.join(stagedir, obj["basename"])
+            if "contents" in obj and obj["location"].startswith("_:"):
+                self._pathmap[loc] = MapperEnt(obj["contents"], tgt, "CreateFile")
+            else:
+                if copy:
+                    self._pathmap[loc] = MapperEnt(obj["path"], tgt, "WritableFile")
+                else:
+                    self._pathmap[loc] = MapperEnt(obj["path"], tgt, "File")
+                self.visitlisting(obj.get("secondaryFiles", []), stagedir, basedir)
+
     def setup(self, referenced_files, basedir):
         # type: (List[Any], unicode) -> None
 
