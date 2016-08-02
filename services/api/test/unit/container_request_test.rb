@@ -58,30 +58,30 @@ class ContainerRequestTest < ActiveSupport::TestCase
     {"vcpus" => 1, "ram" => nil},
     {"vcpus" => 0, "ram" => 123},
     {"vcpus" => "1", "ram" => "123"}
-  ].each do |invalid_constraint|
-    test "Create with #{invalid_constraint}" do
+  ].each do |invalid_constraints|
+    test "Create with #{invalid_constraints}" do
       set_user_from_auth :active
       assert_raises(ActiveRecord::RecordInvalid) do
         cr = create_minimal_req!(state: "Committed",
                                  priority: 1,
-                                 runtime_constraints: invalid_constraint)
+                                 runtime_constraints: invalid_constraints)
         cr.save!
       end
     end
 
-    test "Update with #{invalid_constraint}" do
+    test "Update with #{invalid_constraints}" do
       set_user_from_auth :active
       cr = create_minimal_req!(state: "Uncommitted", priority: 1)
       cr.save!
       assert_raises(ActiveRecord::RecordInvalid) do
         cr = ContainerRequest.find_by_uuid cr.uuid
         cr.update_attributes!(state: "Committed",
-                              runtime_constraints: invalid_constraint)
+                              runtime_constraints: invalid_constraints)
       end
     end
   end
 
-  test "Update with valid constraint" do
+  test "Update with valid runtime constraints" do
       set_user_from_auth :active
       cr = create_minimal_req!(state: "Uncommitted", priority: 1)
       cr.save!
