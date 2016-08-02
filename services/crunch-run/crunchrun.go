@@ -93,11 +93,12 @@ type ContainerRunner struct {
 	ArvMountExit   chan error
 	finalState     string
 
-	statLogger   io.WriteCloser
-	statReporter *crunchstat.Reporter
-	statInterval time.Duration
-	cgroupRoot   string
-	cgroupParent string
+	statLogger         io.WriteCloser
+	statReporter       *crunchstat.Reporter
+	statInterval       time.Duration
+	cgroupRoot         string
+	expectCgroupParent string
+	setCgroupParent    string
 }
 
 // SetupSignals sets up signal handling to gracefully terminate the underlying
@@ -393,7 +394,7 @@ func (runner *ContainerRunner) StartCrunchstat() {
 	runner.statReporter = &crunchstat.Reporter{
 		CID:          runner.ContainerID,
 		Logger:       log.New(runner.statLogger, "", 0),
-		CgroupParent: runner.cgroupParent,
+		CgroupParent: runner.expectCgroupParent,
 		CgroupRoot:   runner.cgroupRoot,
 		PollPeriod:   runner.statInterval,
 	}
@@ -480,8 +481,13 @@ func (runner *ContainerRunner) CreateContainer() error {
 		return fmt.Errorf("While creating container: %v", err)
 	}
 
-	runner.HostConfig = dockerclient.HostConfig{Binds: runner.Binds,
-		LogConfig: dockerclient.LogConfig{Type: "none"}}
+	runner.HostConfig = dockerclient.HostConfig{
+		Binds:        runner.Binds,
+		CgroupParent: runner.setCgroupParent,
+		LogConfig: dockerclient.LogConfig{
+			Type: "none",
+		},
+	}
 
 	return runner.AttachStreams()
 }
@@ -823,7 +829,8 @@ func NewContainerRunner(api IArvadosClient,
 func main() {
 	statInterval := flag.Duration("crunchstat-interval", 10*time.Second, "sampling period for periodic resource usage reporting")
 	cgroupRoot := flag.String("cgroup-root", "/sys/fs/cgroup", "path to sysfs cgroup tree")
-	cgroupParent := flag.String("cgroup-parent", "docker", "name of container's parent cgroup")
+	cgroupParent := flag.String("cgroup-parent", "docker", "name of container's parent cgroup (ignored if -cgroup-parent-subsystem is used)")
+	cgroupParentSubsystem := flag.String("cgroup-parent-subsystem", "", "use current cgroup for given subsystem as parent cgroup for container")
 	flag.Parse()
 
 	containerId := flag.Arg(0)
@@ -850,7 +857,12 @@ func main() {
 	cr := NewContainerRunner(api, kc, docker, containerId)
 	cr.statInterval = *statInterval
 	cr.cgroupRoot = *cgroupRoot
-	cr.cgroupParent = *cgroupParent
+	cr.expectCgroupParent = *cgroupParent
+	if *cgroupParentSubsystem != "" {
+		p := findCgroup(*cgroupParentSubsystem)
+		cr.setCgroupParent = p
+		cr.expectCgroupParent = p
+	}
 
 	err = cr.Run()
 	if err != nil {
