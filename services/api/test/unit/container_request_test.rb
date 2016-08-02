@@ -9,7 +9,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       environment: {},
       mounts: {"/out" => {"kind" => "tmp", "capacity" => 1000000}},
       output_path: "/out",
-      runtime_constraints: {},
+      runtime_constraints: {"vcpus" => 1, "ram" => 2},
       name: "foo",
       description: "bar",
     }
@@ -53,6 +53,44 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_nil cr.container_uuid
   end
 
+  [
+    {"vcpus" => 1},
+    {"vcpus" => 1, "ram" => nil},
+    {"vcpus" => 0, "ram" => 123},
+    {"vcpus" => "1", "ram" => "123"}
+  ].each do |invalid_constraints|
+    test "Create with #{invalid_constraints}" do
+      set_user_from_auth :active
+      assert_raises(ActiveRecord::RecordInvalid) do
+        cr = create_minimal_req!(state: "Committed",
+                                 priority: 1,
+                                 runtime_constraints: invalid_constraints)
+        cr.save!
+      end
+    end
+
+    test "Update with #{invalid_constraints}" do
+      set_user_from_auth :active
+      cr = create_minimal_req!(state: "Uncommitted", priority: 1)
+      cr.save!
+      assert_raises(ActiveRecord::RecordInvalid) do
+        cr = ContainerRequest.find_by_uuid cr.uuid
+        cr.update_attributes!(state: "Committed",
+                              runtime_constraints: invalid_constraints)
+      end
+    end
+  end
+
+  test "Update with valid runtime constraints" do
+      set_user_from_auth :active
+      cr = create_minimal_req!(state: "Uncommitted", priority: 1)
+      cr.save!
+      cr = ContainerRequest.find_by_uuid cr.uuid
+      cr.update_attributes!(state: "Committed",
+                            runtime_constraints: {"vcpus" => 1, "ram" => 23})
+      assert_not_nil cr.container_uuid
+  end
+
   test "Container request priority must be non-nil" do
     set_user_from_auth :active
     cr = create_minimal_req!(priority: nil)
@@ -64,7 +102,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "Container request commit" do
     set_user_from_auth :active
-    cr = create_minimal_req!(runtime_constraints: {"vcpus" => [2,3]})
+    cr = create_minimal_req!(runtime_constraints: {"vcpus" => 2, "ram" => 30})
 
     assert_nil cr.container_uuid
 
@@ -84,7 +122,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal({}, c.environment)
     assert_equal({"/out" => {"kind"=>"tmp", "capacity"=>1000000}}, c.mounts)
     assert_equal "/out", c.output_path
-    assert_equal({"vcpus" => 2}, c.runtime_constraints)
+    assert_equal({"vcpus" => 2, "ram" => 30}, c.runtime_constraints)
     assert_equal 1, c.priority
 
     assert_raises(ActiveRecord::RecordInvalid) do
