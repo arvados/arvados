@@ -55,25 +55,27 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "Container request constraints must include valid vcpus and ram fields when committed" do
     set_user_from_auth :active
+
     # Validations on creation
     [{"vcpus" => 1},
      {"vcpus" => 1, "ram" => nil},
-     {"vcpus" => 0, "ram" => 123}].each do |invalid_constraint|
+     {"vcpus" => 0, "ram" => 123},
+     {"vcpus" => "1", "ram" => "123"}].each do |invalid_constraint|
       assert_raises(ActiveRecord::RecordInvalid) do
-        cr = create_minimal_req!(state: "Committed", priority: 1,
+        cr = create_minimal_req!(state: "Committed",
+                                 priority: 1,
                                  runtime_constraints: invalid_constraint)
         cr.save!
       end
     end
-    cr = create_minimal_req!(state: "Committed", priority: 1)
-    cr.save!
+
     # Validations on update
     cr = create_minimal_req!(state: "Uncommitted", priority: 1)
     cr.save!
-
     [{"vcpus" => 1},
      {"vcpus" => 1, "ram" => nil},
-     {"vcpus" => 0, "ram" => 123}].each do |invalid_constraint|
+     {"vcpus" => 0, "ram" => 123},
+     {"vcpus" => "1", "ram" => "123"}].each do |invalid_constraint|
       cr = ContainerRequest.find_by_uuid cr.uuid
       assert_raises(ActiveRecord::RecordInvalid) do
         cr.update_attributes!(state: "Committed",
@@ -85,6 +87,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.update_attributes!(state: "Committed",
                           runtime_constraints: {"vcpus" => 1, "ram" => 23})
     cr.save!
+    assert_not_nil cr.container_uuid
   end
 
   test "Container request priority must be non-nil" do
