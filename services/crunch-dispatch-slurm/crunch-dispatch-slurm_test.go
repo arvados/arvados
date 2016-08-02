@@ -143,8 +143,7 @@ func (s *TestSuite) integrationTest(c *C,
 	c.Check(err, IsNil)
 	c.Check(len(containers.Items), Equals, 1)
 
-	echo := "echo"
-	config.CrunchRunCommand = &echo
+	config.CrunchRunCommand = []string{"echo"}
 
 	doneProcessing := make(chan struct{})
 	dispatcher := dispatch.Dispatcher{
@@ -206,7 +205,7 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	log.SetOutput(io.MultiWriter(buf, os.Stderr))
 	defer log.SetOutput(os.Stderr)
 
-	config.CrunchRunCommand = &crunchCmd
+	config.CrunchRunCommand = []string{crunchCmd}
 
 	doneProcessing := make(chan struct{})
 	dispatcher := dispatch.Dispatcher{
