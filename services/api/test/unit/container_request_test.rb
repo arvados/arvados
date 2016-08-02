@@ -81,6 +81,13 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
   end
 
+  test "Update from fixture" do
+    set_user_from_auth :active
+    cr = ContainerRequest.find_by_uuid(container_requests(:running).uuid)
+    cr.update_attributes!(description: "New description")
+    assert_equal "New description", cr.description
+  end
+
   test "Update with valid runtime constraints" do
       set_user_from_auth :active
       cr = create_minimal_req!(state: "Uncommitted", priority: 1)

@@ -13,6 +13,9 @@ queued:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-queuedcontainer
+  runtime_constraints:
+    vcpus: 1
+    ram: 123
 
 running:
   uuid: zzzzz-xvhdp-cr4runningcntnr
@@ -29,6 +32,9 @@ running:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-runningcontainr
+  runtime_constraints:
+    vcpus: 1
+    ram: 123
 
 running-older:
   uuid: zzzzz-xvhdp-cr4runningcntn2
@@ -45,6 +51,9 @@ running-older:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-runningcontain2
+  runtime_constraints:
+    vcpus: 1
+    ram: 123
 
 completed:
   uuid: zzzzz-xvhdp-cr4completedctr
@@ -61,6 +70,9 @@ completed:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-compltcontainer
+  runtime_constraints:
+    vcpus: 1
+    ram: 123
 
 completed-older:
   uuid: zzzzz-xvhdp-cr4completedcr2
@@ -77,6 +89,9 @@ completed-older:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-compltcontainr2
+  runtime_constraints:
+    vcpus: 1
+    ram: 123
 
 cr_for_requester:
   uuid: zzzzz-xvhdp-cr4requestercnt
@@ -94,6 +109,9 @@ cr_for_requester:
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-requestercntnr1
   requesting_container_uuid: zzzzz-dz642-requestingcntnr
+  runtime_constraints:
+    vcpus: 1
+    ram: 123
 
 cr_for_requester2:
   uuid: zzzzz-xvhdp-cr4requestercn2
@@ -110,6 +128,9 @@ cr_for_requester2:
   output_path: test
   command: ["echo", "hello"]
   requesting_container_uuid: zzzzz-dz642-requestercntnr1
+  runtime_constraints:
+    vcpus: 1
+    ram: 123
 
 running_anonymous_accessible:
   uuid: zzzzz-xvhdp-runninganonaccs
@@ -126,6 +147,9 @@ running_anonymous_accessible:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-runningcontain2
+  runtime_constraints:
+    vcpus: 1
+    ram: 123
 
 # Test Helper trims the rest of the file
 
