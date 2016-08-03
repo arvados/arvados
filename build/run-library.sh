@@ -100,7 +100,15 @@ package_go_binary() {
 
     cd $WORKSPACE/packages/$TARGET
     go get "git.curoverse.com/arvados.git/$src_path"
-    fpm_build "$GOPATH/bin/$basename=/usr/bin/$prog" "$prog" 'Curoverse, Inc.' dir "$version" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=$description" "$WORKSPACE/$license_file=/usr/share/doc/$prog/$license_file"
+
+    declare -a addfiles=()
+    systemd_unit="$WORKSPACE/${src_path}/${prog}.service"
+    if [[ -e "${systemd_unit}" ]]; then
+        addfiles+=("${systemd_unit}=/lib/systemd/system/${prog}.service")
+    fi
+    addfiles+=("$WORKSPACE/$license_file=/usr/share/doc/$prog/$license_file")
+
+    fpm_build "$GOPATH/bin/$basename=/usr/bin/$prog" "$prog" 'Curoverse, Inc.' dir "$version" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=$description" "${addfiles[@]}"
 }
 
 default_iteration() {
