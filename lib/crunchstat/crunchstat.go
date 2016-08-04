@@ -56,8 +56,8 @@ type Reporter struct {
 	lastDiskSample   map[string]ioSample
 	lastCPUSample    cpuSample
 
-	done    chan struct{}	// closed when we should stop reporting
-	flushed chan struct{}	// closed when we have made our last report
+	done    chan struct{} // closed when we should stop reporting
+	flushed chan struct{} // closed when we have made our last report
 }
 
 // Start starts monitoring in a new goroutine, and returns
