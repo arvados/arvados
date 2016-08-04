@@ -98,7 +98,19 @@ type ContainerRunner struct {
 	statReporter *crunchstat.Reporter
 	statInterval time.Duration
 	cgroupRoot   string
-	cgroupParent string
+	// What we expect the container's cgroup parent to be.
+	expectCgroupParent string
+	// What we tell docker to use as the container's cgroup
+	// parent. Note: Ideally we would use the same field for both
+	// expectCgroupParent and setCgroupParent, and just make it
+	// default to "docker". However, when using docker < 1.10 with
+	// systemd, specifying a non-empty cgroup parent (even the
+	// default value "docker") hits a docker bug
+	// (https://github.com/docker/docker/issues/17126). Using two
+	// separate fields makes it possible to use the "expect cgroup
+	// parent to be X" feature even on sites where the "specify
+	// cgroup parent" feature breaks.
+	setCgroupParent string
 }
 
 // SetupSignals sets up signal handling to gracefully terminate the underlying
@@ -417,7 +429,7 @@ func (runner *ContainerRunner) StartCrunchstat() {
 	runner.statReporter = &crunchstat.Reporter{
 		CID:          runner.ContainerID,
 		Logger:       log.New(runner.statLogger, "", 0),
-		CgroupParent: runner.cgroupParent,
+		CgroupParent: runner.expectCgroupParent,
 		CgroupRoot:   runner.cgroupRoot,
 		PollPeriod:   runner.statInterval,
 	}
@@ -504,8 +516,13 @@ func (runner *ContainerRunner) CreateContainer() error {
 		return fmt.Errorf("While creating container: %v", err)
 	}
 
-	runner.HostConfig = dockerclient.HostConfig{Binds: runner.Binds,
-		LogConfig: dockerclient.LogConfig{Type: "none"}}
+	runner.HostConfig = dockerclient.HostConfig{
+		Binds:        runner.Binds,
+		CgroupParent: runner.setCgroupParent,
+		LogConfig: dockerclient.LogConfig{
+			Type: "none",
+		},
+	}
 
 	return runner.AttachStreams()
 }
@@ -847,7 +864,8 @@ func NewContainerRunner(api IArvadosClient,
 func main() {
 	statInterval := flag.Duration("crunchstat-interval", 10*time.Second, "sampling period for periodic resource usage reporting")
 	cgroupRoot := flag.String("cgroup-root", "/sys/fs/cgroup", "path to sysfs cgroup tree")
-	cgroupParent := flag.String("cgroup-parent", "docker", "name of container's parent cgroup")
+	cgroupParent := flag.String("cgroup-parent", "docker", "name of container's parent cgroup (ignored if -cgroup-parent-subsystem is used)")
+	cgroupParentSubsystem := flag.String("cgroup-parent-subsystem", "", "use current cgroup for given subsystem as parent cgroup for container")
 	flag.Parse()
 
 	containerId := flag.Arg(0)
@@ -874,7 +892,12 @@ func main() {
 	cr := NewContainerRunner(api, kc, docker, containerId)
 	cr.statInterval = *statInterval
 	cr.cgroupRoot = *cgroupRoot
-	cr.cgroupParent = *cgroupParent
+	cr.expectCgroupParent = *cgroupParent
+	if *cgroupParentSubsystem != "" {
+		p := findCgroup(*cgroupParentSubsystem)
+		cr.setCgroupParent = p
+		cr.expectCgroupParent = p
+	}
 
 	err = cr.Run()
 	if err != nil {

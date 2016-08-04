@@ -9,6 +9,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
+	"io"
 	"io/ioutil"
 	"log"
 	"math"
@@ -20,9 +21,14 @@ import (
 
 // Config used by crunch-dispatch-slurm
 type Config struct {
-	SbatchArguments  []string
-	PollPeriod       *time.Duration
-	CrunchRunCommand *string
+	SbatchArguments []string
+	PollPeriod      *time.Duration
+
+	// crunch-run command to invoke. The container UUID will be
+	// appended. If nil, []string{"crunch-run"} will be used.
+	//
+	// Example: []string{"crunch-run", "--cgroup-parent-subsystem=memory"}
+	CrunchRunCommand []string
 }
 
 func main() {
@@ -52,11 +58,6 @@ func doMain() error {
 		10*time.Second,
 		"Time duration to poll for queued containers")
 
-	config.CrunchRunCommand = flags.String(
-		"crunch-run-command",
-		"/usr/bin/crunch-run",
-		"Crunch command to run container")
-
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
 
@@ -64,6 +65,10 @@ func doMain() error {
 	if err != nil {
 		log.Printf("Error reading configuration: %v", err)
 		return err
+	}
+
+	if config.CrunchRunCommand == nil {
+		config.CrunchRunCommand = []string{"crunch-run"}
 	}
 
 	arv, err := arvadosclient.MakeArvadosClient()
@@ -115,7 +120,7 @@ var scancelCmd = scancelFunc
 
 // Submit job to slurm using sbatch.
 func submit(dispatcher *dispatch.Dispatcher,
-	container arvados.Container, crunchRunCommand string) (submitErr error) {
+	container arvados.Container, crunchRunCommand []string) (submitErr error) {
 	defer func() {
 		// If we didn't get as far as submitting a slurm job,
 		// unlock the container and return it to the queue.
@@ -178,7 +183,7 @@ func submit(dispatcher *dispatch.Dispatcher,
 
 	// Send a tiny script on stdin to execute the crunch-run command
 	// slurm actually enforces that this must be a #! script
-	fmt.Fprintf(stdinWriter, "#!/bin/sh\nexec '%s' '%s'\n", crunchRunCommand, container.UUID)
+	io.WriteString(stdinWriter, execScript(append(crunchRunCommand, container.UUID)))
 	stdinWriter.Close()
 
 	err = cmd.Wait()
@@ -215,7 +220,7 @@ func monitorSubmitOrCancel(dispatcher *dispatch.Dispatcher, container arvados.Co
 
 			log.Printf("About to submit queued container %v", container.UUID)
 
-			if err := submit(dispatcher, container, *config.CrunchRunCommand); err != nil {
+			if err := submit(dispatcher, container, config.CrunchRunCommand); err != nil {
 				log.Printf("Error submitting container %s to slurm: %v",
 					container.UUID, err)
 				// maybe sbatch is broken, put it back to queued
