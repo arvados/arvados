@@ -56,7 +56,8 @@ type Reporter struct {
 	lastDiskSample   map[string]ioSample
 	lastCPUSample    cpuSample
 
-	done chan struct{}
+	done    chan struct{}	// closed when we should stop reporting
+	flushed chan struct{}	// closed when we have made our last report
 }
 
 // Start starts monitoring in a new goroutine, and returns
@@ -72,6 +73,7 @@ type Reporter struct {
 // Callers should not modify public data fields after calling Start.
 func (r *Reporter) Start() {
 	r.done = make(chan struct{})
+	r.flushed = make(chan struct{})
 	go r.run()
 }
 
@@ -81,6 +83,7 @@ func (r *Reporter) Start() {
 // Nothing will be logged after Stop returns.
 func (r *Reporter) Stop() {
 	close(r.done)
+	<-r.flushed
 }
 
 func (r *Reporter) readAllOrWarn(in io.Reader) ([]byte, error) {
@@ -366,6 +369,8 @@ func (r *Reporter) doCPUStats() {
 // Report stats periodically until we learn (via r.done) that someone
 // called Stop.
 func (r *Reporter) run() {
+	defer close(r.flushed)
+
 	r.reportedStatFile = make(map[string]string)
 
 	if !r.waitForCIDFile() || !r.waitForCgroup() {
