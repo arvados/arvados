@@ -67,3 +67,13 @@ Here we create a default project for the standard Arvados Docker images, and giv
 }
 EOF</span>
 </code></pre></notextile>
+
+h3. Download and tag the latest arvados/jobs docker image
+
+The @arvados-cwl-runner@ needs access to an arvados/jobs image that is tagged as 'latest'. The following command downloads the latest arvados/jobs image from Docker Hub, loads it into Keep, and tags it as 'latest'.
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv-keepdocker --pull arvados/jobs latest</span>
+</code></pre></notextile>
+
+If the image needs to be downloaded from Docker Hub, the command can take a few minutes to complete, depending on available network bandwidth.
