@@ -18,6 +18,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -255,7 +256,8 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			}
 		}
 
-		if mnt.Kind == "collection" {
+		switch {
+		case mnt.Kind == "collection":
 			var src string
 			if mnt.UUID != "" && mnt.PortableDataHash != "" {
 				return fmt.Errorf("Cannot specify both 'uuid' and 'portable_data_hash' for a collection mount")
@@ -286,25 +288,47 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s:ro", src, bind))
 			}
 			collectionPaths = append(collectionPaths, src)
-		} else if mnt.Kind == "tmp" {
-			if bind == runner.Container.OutputPath {
-				runner.HostOutputDir, err = runner.MkTempDir("", "")
-				if err != nil {
-					return fmt.Errorf("While creating mount temp dir: %v", err)
-				}
-				st, staterr := os.Stat(runner.HostOutputDir)
-				if staterr != nil {
-					return fmt.Errorf("While Stat on temp dir: %v", staterr)
-				}
-				err = os.Chmod(runner.HostOutputDir, st.Mode()|os.ModeSetgid|0777)
-				if staterr != nil {
-					return fmt.Errorf("While Chmod temp dir: %v", err)
-				}
-				runner.CleanupTempDir = append(runner.CleanupTempDir, runner.HostOutputDir)
-				runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", runner.HostOutputDir, bind))
-			} else {
-				runner.Binds = append(runner.Binds, bind)
+
+		case mnt.Kind == "tmp" && bind == runner.Container.OutputPath:
+			runner.HostOutputDir, err = runner.MkTempDir("", "")
+			if err != nil {
+				return fmt.Errorf("While creating mount temp dir: %v", err)
 			}
+			st, staterr := os.Stat(runner.HostOutputDir)
+			if staterr != nil {
+				return fmt.Errorf("While Stat on temp dir: %v", staterr)
+			}
+			err = os.Chmod(runner.HostOutputDir, st.Mode()|os.ModeSetgid|0777)
+			if staterr != nil {
+				return fmt.Errorf("While Chmod temp dir: %v", err)
+			}
+			runner.CleanupTempDir = append(runner.CleanupTempDir, runner.HostOutputDir)
+			runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", runner.HostOutputDir, bind))
+
+		case mnt.Kind == "tmp":
+			runner.Binds = append(runner.Binds, bind)
+
+		case mnt.Kind == "json":
+			jsondata, err := json.Marshal(mnt.Content)
+			if err != nil {
+				return fmt.Errorf("encoding json data: %v", err)
+			}
+			// Create a tempdir with a single file
+			// (instead of just a tempfile): this way we
+			// can ensure the file is world-readable
+			// inside the container, without having to
+			// make it world-readable on the docker host.
+			tmpdir, err := runner.MkTempDir("", "")
+			if err != nil {
+				return fmt.Errorf("creating temp dir: %v", err)
+			}
+			runner.CleanupTempDir = append(runner.CleanupTempDir, tmpdir)
+			tmpfn := filepath.Join(tmpdir, "mountdata.json")
+			err = ioutil.WriteFile(tmpfn, jsondata, 0644)
+			if err != nil {
+				return fmt.Errorf("writing temp file: %v", err)
+			}
+			runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s:ro", tmpfn, bind))
 		}
 	}
 
