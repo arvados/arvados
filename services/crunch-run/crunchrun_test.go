@@ -807,6 +807,28 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 			"/tmp/mktmpdir1/tmp0:/keepout"})
 		cr.CleanupDirs()
 	}
+
+	for _, test := range []struct {
+		in  interface{}
+		out string
+	}{
+		{in: "foo", out: `"foo"`},
+		{in: nil, out: `null`},
+		{in: map[string]int{"foo": 123}, out: `{"foo":123}`},
+	} {
+		i = 0
+		cr.Container.Mounts = map[string]arvados.Mount{
+			"/mnt/test.json": {Kind: "json", Content: test.in},
+		}
+		err := cr.SetupMounts()
+		c.Check(err, IsNil)
+		sort.StringSlice(cr.Binds).Sort()
+		c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir2/mountdata.json:/mnt/test.json:ro"})
+		content, err := ioutil.ReadFile("/tmp/mktmpdir2/mountdata.json")
+		c.Check(err, IsNil)
+		c.Check(content, DeepEquals, []byte(test.out))
+		cr.CleanupDirs()
+	}
 }
 
 func (s *TestSuite) TestStdout(c *C) {
