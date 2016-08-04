@@ -16,6 +16,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -753,59 +754,80 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
 
+	realTemp, err := ioutil.TempDir("", "crunchrun_test-")
+	c.Assert(err, IsNil)
+	defer os.RemoveAll(realTemp)
+
 	i := 0
-	cr.MkTempDir = func(string, string) (string, error) {
-		i += 1
-		d := fmt.Sprintf("/tmp/mktmpdir%d", i)
-		os.Mkdir(d, os.ModePerm)
-		return d, nil
+	cr.MkTempDir = func(_ string, prefix string) (string, error) {
+		i++
+		d := fmt.Sprintf("%s/%s%d", realTemp, prefix, i)
+		err := os.Mkdir(d, os.ModePerm)
+		if err != nil && strings.Contains(err.Error(), ": file exists") {
+			// Test case must have pre-populated the tempdir
+			err = nil
+		}
+		return d, err
+	}
+
+	checkEmpty := func() {
+		filepath.Walk(realTemp, func(path string, _ os.FileInfo, err error) error {
+			c.Check(path, Equals, realTemp)
+			c.Check(err, IsNil)
+			return nil
+		})
 	}
 
 	{
+		i = 0
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
 		cr.OutputPath = "/tmp"
 
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
-		c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir2:/tmp"})
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp"})
 		cr.CleanupDirs()
+		checkEmpty()
 	}
 
 	{
 		i = 0
-		cr.Container.Mounts = make(map[string]arvados.Mount)
-		cr.Container.Mounts["/keeptmp"] = arvados.Mount{Kind: "collection", Writable: true}
+		cr.Container.Mounts = map[string]arvados.Mount{
+			"/keeptmp": {Kind: "collection", Writable: true},
+		}
 		cr.OutputPath = "/keeptmp"
 
-		os.MkdirAll("/tmp/mktmpdir1/tmp0", os.ModePerm)
+		os.MkdirAll(realTemp+"/keep1/tmp0", os.ModePerm)
 
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
-		c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir1/tmp0:/keeptmp"})
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/tmp0:/keeptmp"})
 		cr.CleanupDirs()
+		checkEmpty()
 	}
 
 	{
 		i = 0
-		cr.Container.Mounts = make(map[string]arvados.Mount)
-		cr.Container.Mounts["/keepinp"] = arvados.Mount{Kind: "collection", PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53"}
-		cr.Container.Mounts["/keepout"] = arvados.Mount{Kind: "collection", Writable: true}
+		cr.Container.Mounts = map[string]arvados.Mount{
+			"/keepinp": {Kind: "collection", PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53"},
+			"/keepout": {Kind: "collection", Writable: true},
+		}
 		cr.OutputPath = "/keepout"
 
-		os.MkdirAll("/tmp/mktmpdir1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
-		os.MkdirAll("/tmp/mktmpdir1/tmp0", os.ModePerm)
+		os.MkdirAll(realTemp+"/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
+		os.MkdirAll(realTemp+"/keep1/tmp0", os.ModePerm)
 
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
-		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", "/tmp/mktmpdir1"})
-		var ss sort.StringSlice = cr.Binds
-		ss.Sort()
-		c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro",
-			"/tmp/mktmpdir1/tmp0:/keepout"})
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
+		sort.StringSlice(cr.Binds).Sort()
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro",
+			realTemp + "/keep1/tmp0:/keepout"})
 		cr.CleanupDirs()
+		checkEmpty()
 	}
 
 	for _, test := range []struct {
@@ -823,11 +845,12 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		sort.StringSlice(cr.Binds).Sort()
-		c.Check(cr.Binds, DeepEquals, []string{"/tmp/mktmpdir2/mountdata.json:/mnt/test.json:ro"})
-		content, err := ioutil.ReadFile("/tmp/mktmpdir2/mountdata.json")
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2/mountdata.json:/mnt/test.json:ro"})
+		content, err := ioutil.ReadFile(realTemp + "/2/mountdata.json")
 		c.Check(err, IsNil)
 		c.Check(content, DeepEquals, []byte(test.out))
 		cr.CleanupDirs()
+		checkEmpty()
 	}
 }
 
