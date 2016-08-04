@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -e
+
+script="${0##*/}"
+pkg="${script%.postinst}"
+
+case "${1}" in
+    configure)
+        if which systemctl >/dev/null && [[ -e "/lib/systemd/system/${pkg}.service" ]]; then
+            systemctl enable "${pkg}"
+            systemctl start "${pkg}"
+        fi
+        ;;
+esac
