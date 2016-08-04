@@ -93,12 +93,23 @@ type ContainerRunner struct {
 	ArvMountExit   chan error
 	finalState     string
 
-	statLogger         io.WriteCloser
-	statReporter       *crunchstat.Reporter
-	statInterval       time.Duration
-	cgroupRoot         string
+	statLogger   io.WriteCloser
+	statReporter *crunchstat.Reporter
+	statInterval time.Duration
+	cgroupRoot   string
+	// What we expect the container's cgroup parent to be.
 	expectCgroupParent string
-	setCgroupParent    string
+	// What we tell docker to use as the container's cgroup
+	// parent. Note: Ideally we would use the same field for both
+	// expectCgroupParent and setCgroupParent, and just make it
+	// default to "docker". However, when using docker < 1.10 with
+	// systemd, specifying a non-empty cgroup parent (even the
+	// default value "docker") hits a docker bug
+	// (https://github.com/docker/docker/issues/17126). Using two
+	// separate fields makes it possible to use the "expect cgroup
+	// parent to be X" feature even on sites where the "specify
+	// cgroup parent" feature breaks.
+	setCgroupParent string
 }
 
 // SetupSignals sets up signal handling to gracefully terminate the underlying
