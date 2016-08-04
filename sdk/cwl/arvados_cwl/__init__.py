@@ -105,8 +105,20 @@ class ArvCwlRunner(object):
     def add_uploaded(self, src, pair):
         self.uploaded[src] = pair
 
+    def check_writable(self, obj):
+        if isinstance(obj, dict):
+            if obj.get("writable"):
+                raise UnsupportedRequirement("InitialWorkDir feature 'writable: true' not supported")
+            for v in obj.itervalues():
+                self.check_writable(v)
+        if isinstance(obj, list):
+            for v in obj:
+                self.check_writable(v)
+
     def arvExecutor(self, tool, job_order, **kwargs):
         self.debug = kwargs.get("debug")
+
+        tool.visit(self.check_writable)
 
         if kwargs.get("quiet"):
             logger.setLevel(logging.WARN)
