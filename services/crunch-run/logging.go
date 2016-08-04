@@ -84,22 +84,20 @@ func (tl *ThrottledLogger) flusher() {
 	// actually initiated closer every 1s instead of every
 	// 1s + (time to it takes to write).
 	go goWriter(tl.writer, bufchan, bufterm)
-	for {
-		if !tl.stop {
-			time.Sleep(1 * time.Second)
-		}
+
+	// We use a separate "stopping" var here to ensure we flush
+	// tl.buf after tl.stop becomes true.
+	stopping := false
+	for !stopping {
+		time.Sleep(time.Second)
+		stopping = tl.stop
 		tl.Mutex.Lock()
 		if tl.buf != nil && tl.buf.Len() > 0 {
 			oldbuf := tl.buf
 			tl.buf = nil
-			tl.Mutex.Unlock()
 			bufchan <- oldbuf
-		} else if tl.stop {
-			tl.Mutex.Unlock()
-			break
-		} else {
-			tl.Mutex.Unlock()
 		}
+		tl.Mutex.Unlock()
 	}
 	close(bufchan)
 	<-bufterm
