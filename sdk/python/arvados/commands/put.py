@@ -334,12 +334,13 @@ class ArvPutUploadJob(object):
             # Stop the thread before doing anything else
             self._stop_checkpointer.set()
             self._checkpointer.join()
-        # Successful upload, one last _update()
-        self._update()
-        if self.resume:
-            self._cache_file.close()
-            # Correct the final written bytes count
-            self.bytes_written -= self.bytes_skipped
+            # Commit all & one last _update()
+            self.manifest_text()
+            self._update()
+            if self.resume:
+                self._cache_file.close()
+                # Correct the final written bytes count
+                self.bytes_written -= self.bytes_skipped
 
     def save_collection(self):
         with self._collection_lock:
@@ -387,7 +388,8 @@ class ArvPutUploadJob(object):
             # Update cache, if resume enabled
             if self.resume:
                 with self._state_lock:
-                    self._state['manifest'] = self._my_collection().manifest_text()
+                    # Get the manifest text without comitting pending blocks
+                    self._state['manifest'] = self._my_collection()._get_manifest_text(".", strip=False, normalize=False)
         if self.resume:
             self._save_state()
         # Call the reporter, if any
@@ -470,7 +472,7 @@ class ArvPutUploadJob(object):
                     output = self._my_collection().open(filename, 'w')
             self._write(source_fd, output)
             output.close()
-
+            
     def _write(self, source_fd, output):
         while True:
             data = source_fd.read(arvados.config.KEEP_BLOCK_SIZE)
