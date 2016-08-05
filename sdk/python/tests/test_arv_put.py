@@ -478,12 +478,13 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
         coll_save_mock = mock.Mock(name='arv.collection.Collection().save_new()')
         coll_save_mock.side_effect = arvados.errors.ApiError(
             fake_httplib2_response(403), '{}')
-        arvados.collection.Collection.save_new = coll_save_mock
-        with self.assertRaises(SystemExit) as exc_test:
-            self.call_main_with_args(['/dev/null'])
-        self.assertLess(0, exc_test.exception.args[0])
-        self.assertLess(0, coll_save_mock.call_count)
-        self.assertEqual("", self.main_stdout.getvalue())
+        with mock.patch('arvados.collection.Collection.save_new',
+                        new=coll_save_mock):
+            with self.assertRaises(SystemExit) as exc_test:
+                self.call_main_with_args(['/dev/null'])
+            self.assertLess(0, exc_test.exception.args[0])
+            self.assertLess(0, coll_save_mock.call_count)
+            self.assertEqual("", self.main_stdout.getvalue())
 
 
 class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
