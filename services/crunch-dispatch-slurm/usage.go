@@ -8,6 +8,11 @@ import (
 
 var exampleConfigFile = []byte(`
     {
+	"Client": {
+	    "APIHost": "zzzzz.arvadosapi.com",
+	    "AuthToken": "xyzzy",
+	    "Insecure": false
+	},
 	"CrunchRunCommand": ["crunch-run"],
 	"PollPeriod": "10s",
 	"SbatchArguments": ["--partition=foo", "--exclude=node13"]
