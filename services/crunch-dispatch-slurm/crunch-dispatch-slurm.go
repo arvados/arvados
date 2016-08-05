@@ -22,7 +22,7 @@ import (
 // Config used by crunch-dispatch-slurm
 type Config struct {
 	SbatchArguments []string
-	PollPeriod      *time.Duration
+	PollPeriod      arvados.Duration
 
 	// crunch-run command to invoke. The container UUID will be
 	// appended. If nil, []string{"crunch-run"} will be used.
@@ -47,16 +47,12 @@ const defaultConfigPath = "/etc/arvados/crunch-dispatch-slurm/config.json"
 
 func doMain() error {
 	flags := flag.NewFlagSet("crunch-dispatch-slurm", flag.ExitOnError)
+	flags.Usage = func() { usage(flags) }
 
 	configPath := flags.String(
 		"config",
 		defaultConfigPath,
 		"`path` to json configuration file")
-
-	config.PollPeriod = flags.Duration(
-		"poll-interval",
-		10*time.Second,
-		"Time duration to poll for queued containers")
 
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
@@ -71,6 +67,10 @@ func doMain() error {
 		config.CrunchRunCommand = []string{"crunch-run"}
 	}
 
+	if config.PollPeriod == 0 {
+		config.PollPeriod = arvados.Duration(10 * time.Second)
+	}
+
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
 		log.Printf("Error making Arvados client: %v", err)
@@ -78,13 +78,13 @@ func doMain() error {
 	}
 	arv.Retries = 25
 
-	squeueUpdater.StartMonitor(*config.PollPeriod)
+	squeueUpdater.StartMonitor(time.Duration(config.PollPeriod))
 	defer squeueUpdater.Done()
 
 	dispatcher := dispatch.Dispatcher{
 		Arv:            arv,
 		RunContainer:   run,
-		PollInterval:   *config.PollPeriod,
+		PollInterval:   time.Duration(config.PollPeriod),
 		DoneProcessing: make(chan struct{})}
 
 	err = dispatcher.RunDispatcher()
