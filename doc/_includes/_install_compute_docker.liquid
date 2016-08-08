@@ -4,7 +4,7 @@ Compute nodes must have Docker installed to run containers.  This requires a rel
 
 For Debian-based systems, the Arvados package repository includes a backported @docker.io@ package with a known-good version you can install.
 
-h2. Configure the Docker daemon
+h2(#configure_docker_daemon). Configure the Docker daemon
 
 Crunch runs Docker containers with relatively little configuration.  You may need to start the Docker daemon with specific options to make sure these jobs run smoothly in your environment.  This section highlights options that are useful to most installations.  Refer to the "Docker daemon reference":https://docs.docker.com/reference/commandline/daemon/ for complete information about all available options.
 
@@ -31,14 +31,14 @@ To enable cgroups accounting, you must boot Linux with the command line paramete
 On Debian-based systems, open the file @/etc/default/grub@ in an editor.  Find where the string @GRUB_CMDLINE_LINUX@ is set.  Add @cgroup_enable=memory swapaccount=1@ to that string.  Save the file and exit the editor.  Then run:
 
 <notextile>
-<pre><code>$ <span class="userinput">sudo update-grub</span>
+<pre><code>~$ <span class="userinput">sudo update-grub</span>
 </code></pre>
 </notextile>
 
 On Red Hat-based systems, run:
 
 <notextile>
-<pre><code>$ <span class="userinput">sudo grubby --update-kernel=ALL --args='cgroup_enable=memory swapaccount=1'</span>
+<pre><code>~$ <span class="userinput">sudo grubby --update-kernel=ALL --args='cgroup_enable=memory swapaccount=1'</span>
 </code></pre>
 </notextile>
 
