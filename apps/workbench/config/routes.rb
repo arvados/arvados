@@ -99,6 +99,8 @@ ArvadosWorkbench::Application.routes.draw do
     get 'choose', :on => :collection
   end
 
+  resources :workflows
+
   post 'actions' => 'actions#post'
   get 'actions' => 'actions#show'
   get 'websockets' => 'websocket#index'

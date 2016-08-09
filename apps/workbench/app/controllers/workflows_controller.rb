@@ -1,0 +1,2 @@
+class WorkflowsController < ApplicationController
+end
