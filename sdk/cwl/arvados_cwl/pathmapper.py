@@ -52,7 +52,6 @@ class ArvPathMapper(PathMapper):
         elif srcobj["class"] == "Directory":
             if isinstance(src, basestring) and ArvPathMapper.pdh_dirpath.match(src):
                 self._pathmap[src] = MapperEnt(src, self.collection_pattern % src[5:], "Directory")
-            else:
                 for l in srcobj["listing"]:
                     self.visit(l, uploadfiles)
 
