@@ -1,15 +1,29 @@
-#!/bin/bash
+#!/bin/sh
 
 set -e
 
-script="${0##*/}"
+# NOTE: This package name detection will only work on Debian.
+# If this postinst script ever starts doing work on Red Hat,
+# we'll need to adapt this code accordingly.
+script="$(basename "$0")"
 pkg="${script%.postinst}"
+systemd_unit="${pkg}.service"
 
 case "${1}" in
     configure)
-        if which systemctl >/dev/null && [[ -e "/lib/systemd/system/${pkg}.service" ]]; then
-            systemctl enable "${pkg}"
-            systemctl start "${pkg}"
+        if [ -e /run/systemd/system ]; then
+            eval "$(systemctl -p UnitFileState show "$systemd_unit")"
+            case "$UnitFileState" in
+                disabled)
+                    systemctl enable "$systemd_unit"
+                    # Failing to start the service is not a package error,
+                    # so don't let an error here propagate up.
+                    systemctl start "$systemd_unit" || true
+                    ;;
+                enabled)
+                    systemctl reload-or-try-restart "$systemd_unit" || true
+                    ;;
+            esac
         fi
         ;;
 esac
