@@ -1,14 +1,14 @@
 import fnmatch
 import os
 
-import cwltool.process
+import cwltool.stdfsaccess
 from cwltool.pathmapper import abspath
 
 import arvados.util
 import arvados.collection
 import arvados.arvfile
 
-class CollectionFsAccess(cwltool.process.StdFsAccess):
+class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
     """Implement the cwltool FsAccess interface for Arvados Collections."""
 
     def __init__(self, basedir, api_client=None):

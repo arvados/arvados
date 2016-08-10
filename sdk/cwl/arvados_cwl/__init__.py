@@ -9,6 +9,7 @@ import os
 import sys
 import threading
 import hashlib
+from functools import partial
 import pkg_resources  # part of setuptools
 
 from cwltool.errors import WorkflowException
@@ -113,7 +114,6 @@ class ArvCwlRunner(object):
         useruuid = self.api.users().current().execute()["uuid"]
         self.project_uuid = kwargs.get("project_uuid") if kwargs.get("project_uuid") else useruuid
         self.pipeline = None
-        self.fs_access = CollectionFsAccess(kwargs["basedir"], api_client=self.api)
 
         if kwargs.get("create_template"):
             tmpl = RunnerTemplate(self, tool, job_order, kwargs.get("enable_reuse"))
@@ -124,7 +124,7 @@ class ArvCwlRunner(object):
         self.debug = kwargs.get("debug")
         self.ignore_docker_for_reuse = kwargs.get("ignore_docker_for_reuse")
 
-        kwargs["fs_access"] = self.fs_access
+        self.fs_access = kwargs["make_fs_access"](kwargs["basedir"])
         kwargs["enable_reuse"] = kwargs.get("enable_reuse")
         kwargs["use_container"] = True
         kwargs["tmpdir_prefix"] = "tmp"
@@ -341,4 +341,5 @@ def main(args, stdout, stderr, api_client=None):
                              executor=runner.arvExecutor,
                              makeTool=runner.arvMakeTool,
                              versionfunc=versionstring,
-                             job_order_object=job_order_object)
+                             job_order_object=job_order_object,
+                             make_fs_access=partial(CollectionFsAccess, api_client=api_client))
