@@ -27,6 +27,7 @@ from .fsaccess import CollectionFsAccess
 
 from cwltool.process import shortname, UnsupportedRequirement
 from cwltool.pathmapper import adjustFileObjs
+from cwltool.draft2tool import compute_checksums
 from arvados.api import OrderedJsonModel
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -230,17 +231,7 @@ class ArvCwlRunner(object):
             raise WorkflowException("Workflow did not return a result.")
 
         if kwargs.get("compute_checksum"):
-            def compute_checksums(fileobj):
-                if "checksum" not in fileobj:
-                    checksum = hashlib.sha1()
-                    with self.fs_access.open(fileobj["location"], "rb") as f:
-                        contents = f.read(1024*1024)
-                        while contents != "":
-                            checksum.update(contents)
-                            contents = f.read(1024*1024)
-                    fileobj["checksum"] = "sha1$%s" % checksum.hexdigest()
-
-            adjustFileObjs(self.final_output, compute_checksums)
+            adjustFileObjs(self.final_output, partial(compute_checksums, self.fs_access))
 
         return self.final_output
 
