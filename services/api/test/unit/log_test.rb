@@ -54,12 +54,12 @@ class LogTest < ActiveSupport::TestCase
     yield props if block_given?
   end
 
-  def assert_auth_logged_with_clean_properties(auth, event_type)
-    assert_logged(auth, event_type) do |props|
+  def assert_logged_with_clean_properties(obj, event_type, excluded_attr)
+    assert_logged(obj, event_type) do |props|
       ['old_attributes', 'new_attributes'].map { |k| props[k] }.compact
         .each do |attributes|
-        refute_includes(attributes, 'api_token',
-                        "auth log properties include sensitive API token")
+        refute_includes(attributes, excluded_attr,
+                        "log properties includes #{excluded_attr}")
       end
       yield props if block_given?
     end
@@ -224,12 +224,12 @@ class LogTest < ActiveSupport::TestCase
     auth.user = users(:spectator)
     auth.api_client = api_clients(:untrusted)
     auth.save!
-    assert_auth_logged_with_clean_properties(auth, :create)
+    assert_logged_with_clean_properties(auth, :create, 'api_token')
     auth.expires_at = Time.now
     auth.save!
-    assert_auth_logged_with_clean_properties(auth, :update)
+    assert_logged_with_clean_properties(auth, :update, 'api_token')
     auth.destroy
-    assert_auth_logged_with_clean_properties(auth, :destroy)
+    assert_logged_with_clean_properties(auth, :destroy, 'api_token')
   end
 
   test "use ownership and permission links to determine which logs a user can see" do
@@ -267,6 +267,18 @@ class LogTest < ActiveSupport::TestCase
     end
     (known_logs - expected_logs).each do |notwant|
       refute_includes result_ids, logs(notwant).id
+    end
+  end
+
+  test "manifest_text not included in collection logs" do
+    act_as_system_user do
+      coll = Collection.create(manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n")
+      assert_logged_with_clean_properties(coll, :create, 'manifest_text')
+      coll.name = "testing"
+      coll.save!
+      assert_logged_with_clean_properties(coll, :update, 'manifest_text')
+      coll.destroy
+      assert_logged_with_clean_properties(coll, :destroy, 'manifest_text')
     end
   end
 end
