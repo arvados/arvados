@@ -104,3 +104,12 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
         if paths and paths[-1].startswith("keep:") and arvados.util.keep_locator_pattern.match(paths[-1][5:]):
             return paths[-1]
         return os.path.join(path, *paths)
+
+    def realpath(self, path):
+        if path.startswith("$(task.tmpdir)") or path.startswith("$(task.outdir)"):
+            return path
+        collection, rest = self.get_collection(path)
+        if collection:
+            return path
+        else:
+            return os.path.realpath(path)
