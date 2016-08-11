@@ -32,7 +32,7 @@ setup(name='arvados-cwl-runner',
       # Make sure to update arvados/build/run-build-packages.sh as well
       # when updating the cwltool version pin.
       install_requires=[
-          'cwltool==1.0.20160811170313',
+          'cwltool==1.0.20160811184335',
           'arvados-python-client>=0.1.20160714204738',
       ],
       data_files=[
