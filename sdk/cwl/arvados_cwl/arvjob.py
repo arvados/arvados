@@ -51,7 +51,7 @@ class ArvadosJob(object):
                 if p.type == "CreateFile":
                     script_parameters["task.vwd"][p.target] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), p.target)
 
-        script_parameters["task.env"] = {"TMPDIR": "$(task.tmpdir)"}
+        script_parameters["task.env"] = {"TMPDIR": self.tmpdir, "HOME": self.outdir}
         if self.environment:
             script_parameters["task.env"].update(self.environment)
 
