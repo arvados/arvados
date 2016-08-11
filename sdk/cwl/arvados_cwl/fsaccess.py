@@ -91,11 +91,11 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
 
     def listdir(self, fn):  # type: (unicode) -> List[unicode]
         collection, rest = self.get_collection(fn)
-        if rest:
-            dir = collection.find(rest)
-        else:
-            dir = collection
         if collection:
+            if rest:
+                dir = collection.find(rest)
+            else:
+                dir = collection
             return [abspath(l, fn) for l in dir.keys()]
         else:
             return super(CollectionFsAccess, self).listdir(fn)

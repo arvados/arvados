@@ -52,8 +52,8 @@ class ArvPathMapper(PathMapper):
         elif srcobj["class"] == "Directory":
             if isinstance(src, basestring) and ArvPathMapper.pdh_dirpath.match(src):
                 self._pathmap[src] = MapperEnt(src, self.collection_pattern % src[5:], "Directory")
-                for l in srcobj["listing"]:
-                    self.visit(l, uploadfiles)
+            for l in srcobj["listing"]:
+                self.visit(l, uploadfiles)
 
     def addentry(self, obj, c, path, subdirs):
         if obj["location"] in self._pathmap:
