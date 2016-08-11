@@ -3,6 +3,7 @@ import logging
 import mock
 import unittest
 import os
+import functools
 import cwltool.process
 
 if not os.getenv('ARVADOS_DEBUG'):
@@ -28,7 +29,8 @@ class TestJob(unittest.TestCase):
         }
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names, basedir="")
         arvtool.formatgraph = None
-        for j in arvtool.job({}, mock.MagicMock(), basedir=""):
+        for j in arvtool.job({}, mock.MagicMock(), basedir="",
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)):
             j.run()
             runner.api.jobs().create.assert_called_with(
                 body={

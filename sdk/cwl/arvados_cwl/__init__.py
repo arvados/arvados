@@ -9,6 +9,7 @@ import os
 import sys
 import threading
 import hashlib
+from functools import partial
 import pkg_resources  # part of setuptools
 
 from cwltool.errors import WorkflowException
@@ -26,6 +27,7 @@ from .fsaccess import CollectionFsAccess
 
 from cwltool.process import shortname, UnsupportedRequirement
 from cwltool.pathmapper import adjustFileObjs
+from cwltool.draft2tool import compute_checksums
 from arvados.api import OrderedJsonModel
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -113,7 +115,8 @@ class ArvCwlRunner(object):
         useruuid = self.api.users().current().execute()["uuid"]
         self.project_uuid = kwargs.get("project_uuid") if kwargs.get("project_uuid") else useruuid
         self.pipeline = None
-        self.fs_access = CollectionFsAccess(kwargs["basedir"], api_client=self.api)
+        make_fs_access = kwargs.get("make_fs_access") or partial(CollectionFsAccess, api_client=self.api)
+        self.fs_access = make_fs_access(kwargs["basedir"])
 
         if kwargs.get("create_template"):
             tmpl = RunnerTemplate(self, tool, job_order, kwargs.get("enable_reuse"))
@@ -124,7 +127,7 @@ class ArvCwlRunner(object):
         self.debug = kwargs.get("debug")
         self.ignore_docker_for_reuse = kwargs.get("ignore_docker_for_reuse")
 
-        kwargs["fs_access"] = self.fs_access
+        kwargs["make_fs_access"] = make_fs_access
         kwargs["enable_reuse"] = kwargs.get("enable_reuse")
         kwargs["use_container"] = True
         kwargs["tmpdir_prefix"] = "tmp"
@@ -228,17 +231,7 @@ class ArvCwlRunner(object):
             raise WorkflowException("Workflow did not return a result.")
 
         if kwargs.get("compute_checksum"):
-            def compute_checksums(fileobj):
-                if "checksum" not in fileobj:
-                    checksum = hashlib.sha1()
-                    with self.fs_access.open(fileobj["location"], "rb") as f:
-                        contents = f.read(1024*1024)
-                        while contents != "":
-                            checksum.update(contents)
-                            contents = f.read(1024*1024)
-                    fileobj["checksum"] = "sha1$%s" % checksum.hexdigest()
-
-            adjustFileObjs(self.final_output, compute_checksums)
+            adjustFileObjs(self.final_output, partial(compute_checksums, self.fs_access))
 
         return self.final_output
 
@@ -341,4 +334,5 @@ def main(args, stdout, stderr, api_client=None):
                              executor=runner.arvExecutor,
                              makeTool=runner.arvMakeTool,
                              versionfunc=versionstring,
-                             job_order_object=job_order_object)
+                             job_order_object=job_order_object,
+                             make_fs_access=partial(CollectionFsAccess, api_client=api_client))

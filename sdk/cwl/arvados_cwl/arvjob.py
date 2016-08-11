@@ -227,7 +227,7 @@ class RunnerJob(Runner):
         logger.info("Submitted job %s", response["uuid"])
 
         if kwargs.get("submit"):
-            self.pipeline = self.arvrunner.api.pipeline_instances().create(
+            self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().create(
                 body={
                     "owner_uuid": self.arvrunner.project_uuid,
                     "name": shortname(self.tool.tool["id"]),
