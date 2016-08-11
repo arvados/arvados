@@ -184,6 +184,10 @@ class WorkUnit
     # container_uuid of a container_request
   end
 
+  def log_object_uuids
+    # object uuids for live log
+  end
+
   def live_log_lines(limit)
     # fetch log entries from logs table for @proxied
   end
