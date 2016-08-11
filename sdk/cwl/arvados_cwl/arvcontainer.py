@@ -62,7 +62,7 @@ class ArvadosContainer(object):
         if self.generatefiles["listing"]:
             raise UnsupportedRequirement("Generate files not supported")
 
-        container_request["environment"] = {"TMPDIR": "/tmp"}
+        container_request["environment"] = {"TMPDIR": self.tmpdir, "HOME": self.outdir}
         if self.environment:
             container_request["environment"].update(self.environment)
 
