@@ -9,6 +9,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
+	"github.com/coreos/go-systemd/daemon"
 	"io"
 	"io/ioutil"
 	"log"
@@ -104,6 +105,10 @@ func doMain() error {
 		RunContainer:   run,
 		PollInterval:   time.Duration(config.PollPeriod),
 		DoneProcessing: make(chan struct{})}
+
+	if _, err := daemon.SdNotify("READY=1"); err != nil {
+		log.Printf("Error notifying init daemon: %v", err)
+	}
 
 	err = dispatcher.RunDispatcher()
 	if err != nil {
