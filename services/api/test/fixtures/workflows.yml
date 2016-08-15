@@ -3,14 +3,15 @@ workflow_with_workflow_yml:
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   name: Valid workflow
   description: this work has a valid workflow yaml
-  workflow: this of course is a valid yaml
+  workflow: "name: foo\ndesc: bar"
 
 workflow_with_no_workflow_yml:
   uuid: zzzzz-7fd4e-validbutnoyml00
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   name: Valid workflow with no workflow yaml
-  description: this work does not have a workflow yaml
+  description: this workflow does not have a workflow yaml
 
 workflow_with_no_name_and_desc:
   uuid: zzzzz-7fd4e-validnonamedesc
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  workflow: this is valid yaml
