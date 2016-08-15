@@ -1082,6 +1082,27 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(c1["count1.txt"].size(), 0)
 
 
+class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
+    def test_get_manifest_text_only_committed(self):
+        c = Collection()
+        with c.open("count.txt", "w") as f:
+            f.write("0123456789")
+            # Block not written to keep yet
+            self.assertNotEqual(
+                c._get_manifest_text(".",
+                                     strip=False,
+                                     normalize=False,
+                                     only_committed=True),
+                ". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
+        # And now with the file closed...
+        self.assertEqual(
+            c._get_manifest_text(".",
+                                 strip=False,
+                                 normalize=False,
+                                 only_committed=True),
+            ". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
+
+
 class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
     KEEP_SERVER = {}

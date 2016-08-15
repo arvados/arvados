@@ -389,7 +389,7 @@ class ArvPutUploadJob(object):
             if self.resume:
                 with self._state_lock:
                     # Get the manifest text without comitting pending blocks
-                    self._state['manifest'] = self._my_collection()._get_manifest_text(".", strip=False, normalize=False)
+                    self._state['manifest'] = self._my_collection()._get_manifest_text(".", strip=False, normalize=False, only_committed=True)
         if self.resume:
             self._save_state()
         # Call the reporter, if any
