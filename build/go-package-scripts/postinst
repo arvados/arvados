@@ -15,12 +15,14 @@ case "${1}" in
             eval "$(systemctl -p UnitFileState show "$systemd_unit")"
             case "$UnitFileState" in
                 disabled)
-                    systemctl enable "$systemd_unit"
-                    # Failing to start the service is not a package error,
-                    # so don't let an error here propagate up.
+                    # Failing to enable or start the service is not a
+                    # package error, so don't let errors here
+                    # propagate up.
+                    systemctl enable "$systemd_unit" || true
                     systemctl start "$systemd_unit" || true
                     ;;
                 enabled)
+                    systemctl daemon-reload || true
                     systemctl reload-or-try-restart "$systemd_unit" || true
                     ;;
             esac
