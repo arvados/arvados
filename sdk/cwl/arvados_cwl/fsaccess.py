@@ -1,5 +1,6 @@
 import fnmatch
 import os
+import errno
 
 import cwltool.stdfsaccess
 from cwltool.pathmapper import abspath
@@ -96,6 +97,10 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
                 dir = collection.find(rest)
             else:
                 dir = collection
+            if dir is None:
+                raise IOError(errno.ENOENT, "Directory '%s' in '%s' not found" % (rest, collection.portable_data_hash()))
+            if not isinstance(dir, arvados.collection.Collection):
+                raise IOError(errno.ENOENT, "Path '%s' in '%s' is not a Directory" % (rest, collection.portable_data_hash()))
             return [abspath(l, fn) for l in dir.keys()]
         else:
             return super(CollectionFsAccess, self).listdir(fn)
