@@ -22,7 +22,7 @@ import (
 
 // Config used by crunch-dispatch-slurm
 type Config struct {
-	arvados.Client
+	Client arvados.Client
 
 	SbatchArguments []string
 	PollPeriod      arvados.Duration
