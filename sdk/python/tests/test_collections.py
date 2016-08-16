@@ -1086,21 +1086,24 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
     def test_get_manifest_text_only_committed(self):
         c = Collection()
         with c.open("count.txt", "w") as f:
+            # One file committed
+            with c.open("foo.txt", "w") as foo:
+                foo.write("foo")
             f.write("0123456789")
-            # Block not written to keep yet
-            self.assertNotEqual(
+            # Other file not committed. Block not written to keep yet.
+            self.assertEqual(
                 c._get_manifest_text(".",
                                      strip=False,
                                      normalize=False,
                                      only_committed=True),
-                ". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
+                '. acbd18db4cc2f85cedef654fccc4a4d8+3 0:0:count.txt 0:3:foo.txt\n')
         # And now with the file closed...
         self.assertEqual(
             c._get_manifest_text(".",
                                  strip=False,
                                  normalize=False,
                                  only_committed=True),
-            ". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
+            ". 781e5e245d69b566979b86e28d23f2c7+10 acbd18db4cc2f85cedef654fccc4a4d8+3 0:10:count.txt 10:3:foo.txt\n")
 
 
 class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
