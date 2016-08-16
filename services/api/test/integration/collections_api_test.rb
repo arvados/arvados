@@ -82,7 +82,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
           :select => [['bogus']].to_json
         }, auth(:active)
     assert_response 422
-    assert_match /Attribute.*should be a string/, json_response['errors'].join(' ')
+    assert_match /Invalid attribute.*bogus/, json_response['errors'].join(' ')
   end
 
   test "controller 404 response is json" do

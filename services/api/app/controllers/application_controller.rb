@@ -277,21 +277,6 @@ class ApplicationController < ActionController::Base
         # Map attribute names in @select to real column names, resolve
         # those to fully-qualified SQL column names, and pass the
         # resulting string to the select method.
-        if @select.empty?
-          raise ArgumentError.new("Attribute selection list cannot be empty")
-        end
-        api_column_map = model_class.attributes_required_columns
-        invalid_attrs = []
-        @select.each do |s|
-          next if ["href", "kind", "etag"].include? s
-          if not s.is_a? String
-            raise ArgumentError.new("Attribute '#{s}' should be a string")
-          end
-          invalid_attrs.append(s) if not api_column_map.include? s
-        end
-        if not invalid_attrs.empty?
-          raise ArgumentError.new("Invalid attribute(s): '#{invalid_attrs.join(', ')}'")
-        end
         columns_list = model_class.columns_for_attributes(@select).
           map { |s| "#{ar_table_name}.#{ActiveRecord::Base.connection.quote_column_name s}" }
         @objects = @objects.select(columns_list.join(", "))

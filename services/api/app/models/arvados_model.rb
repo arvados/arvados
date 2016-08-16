@@ -105,9 +105,22 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def self.columns_for_attributes(select_attributes)
+    if select_attributes.empty?
+      raise ArgumentError.new("Attribute selection list cannot be empty")
+    end
+    api_column_map = attributes_required_columns
+    invalid_attrs = []
+    select_attributes.each do |s|
+      next if ["href", "kind", "etag"].include? s
+      if not s.is_a? String or not api_column_map.include? s
+        invalid_attrs << s
+      end
+    end
+    if not invalid_attrs.empty?
+      raise ArgumentError.new("Invalid attribute(s): '#{invalid_attrs.inspect}'")
+    end
     # Given an array of attribute names to select, return an array of column
     # names that must be fetched from the database to satisfy the request.
-    api_column_map = attributes_required_columns
     select_attributes.flat_map { |attr| api_column_map[attr] }.uniq
   end
 
