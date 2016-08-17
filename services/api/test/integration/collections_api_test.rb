@@ -57,6 +57,34 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     assert_equal "arvados#collectionList", json_response['kind']
   end
 
+  test "get index with select= (valid attribute)" do
+    get "/arvados/v1/collections", {
+          :format => :json,
+          :select => ['portable_data_hash'].to_json
+        }, auth(:active)
+    assert_response :success
+    assert json_response['items'][0].keys.include?('portable_data_hash')
+    assert not(json_response['items'][0].keys.include?('uuid'))
+  end
+
+  test "get index with select= (invalid attribute) responds 422" do
+    get "/arvados/v1/collections", {
+          :format => :json,
+          :select => ['bogus'].to_json
+        }, auth(:active)
+    assert_response 422
+    assert_match /Invalid attribute.*bogus/, json_response['errors'].join(' ')
+  end
+
+  test "get index with select= (invalid attribute type) responds 422" do
+    get "/arvados/v1/collections", {
+          :format => :json,
+          :select => [['bogus']].to_json
+        }, auth(:active)
+    assert_response 422
+    assert_match /Invalid attribute.*bogus/, json_response['errors'].join(' ')
+  end
+
   test "controller 404 response is json" do
     get "/arvados/v1/thingsthatdonotexist", {:format => :xml}, auth(:active)
     assert_response 404
