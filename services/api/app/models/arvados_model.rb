@@ -117,7 +117,7 @@ class ArvadosModel < ActiveRecord::Base
       end
     end
     if not invalid_attrs.empty?
-      raise ArgumentError.new("Invalid attribute(s): '#{invalid_attrs.inspect}'")
+      raise ArgumentError.new("Invalid attribute(s): #{invalid_attrs.inspect}")
     end
     # Given an array of attribute names to select, return an array of column
     # names that must be fetched from the database to satisfy the request.
