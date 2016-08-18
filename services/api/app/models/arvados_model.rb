@@ -104,6 +104,10 @@ class ArvadosModel < ActiveRecord::Base
     api_column_map
   end
 
+  def self.ignored_select_attributes
+    ["href", "kind", "etag"]
+  end
+
   def self.columns_for_attributes(select_attributes)
     if select_attributes.empty?
       raise ArgumentError.new("Attribute selection list cannot be empty")
@@ -111,7 +115,7 @@ class ArvadosModel < ActiveRecord::Base
     api_column_map = attributes_required_columns
     invalid_attrs = []
     select_attributes.each do |s|
-      next if ["href", "kind", "etag"].include? s
+      next if ignored_select_attributes.include? s
       if not s.is_a? String or not api_column_map.include? s
         invalid_attrs << s
       end

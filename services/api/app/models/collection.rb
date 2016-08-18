@@ -46,6 +46,10 @@ class Collection < ArvadosModel
                 )
   end
 
+  def self.ignored_select_attributes
+    super + ["updated_at", "file_names"]
+  end
+
   FILE_TOKEN = /^[[:digit:]]+:[[:digit:]]+:/
   def check_signatures
     return false if self.manifest_text.nil?
