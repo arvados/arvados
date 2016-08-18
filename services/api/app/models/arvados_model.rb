@@ -398,7 +398,7 @@ class ArvadosModel < ActiveRecord::Base
       end
       false
     else
-      (x.class == Symbol) or (x.class == String and x.start_with?(':'))
+      (x.class == Symbol) or (x.class == String and x.start_with?(':') and !x.start_with?('::'))
     end
   end
 
@@ -414,7 +414,7 @@ class ArvadosModel < ActiveRecord::Base
     elsif x.is_a? Symbol
       x.to_s
     else
-      if x.is_a? String and x.start_with?(':')
+      if x.is_a? String and x.start_with?(':') and !x.start_with?('::')
         x[1..-1]
       else
         x
