@@ -3,6 +3,7 @@ import logging
 import mock
 import unittest
 import os
+import functools
 import cwltool.process
 
 if not os.getenv('ARVADOS_DEBUG'):
@@ -26,9 +27,10 @@ class TestJob(unittest.TestCase):
             "baseCommand": "ls",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}]
         }
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names, basedir="")
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names, basedir="", make_fs_access=make_fs_access)
         arvtool.formatgraph = None
-        for j in arvtool.job({}, mock.MagicMock(), basedir=""):
+        for j in arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access):
             j.run()
             runner.api.jobs().create.assert_called_with(
                 body={
@@ -36,7 +38,7 @@ class TestJob(unittest.TestCase):
                     'runtime_constraints': {},
                     'script_parameters': {
                         'tasks': [{
-                            'task.env': {'TMPDIR': '$(task.tmpdir)'},
+                            'task.env': {'HOME': '$(task.outdir)', 'TMPDIR': '$(task.tmpdir)'},
                             'command': ['ls', '$(task.outdir)']
                         }],
                     },
@@ -77,9 +79,10 @@ class TestJob(unittest.TestCase):
             }],
             "baseCommand": "ls"
         }
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names)
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names, make_fs_access=make_fs_access)
         arvtool.formatgraph = None
-        for j in arvtool.job({}, mock.MagicMock(), basedir=""):
+        for j in arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access):
             j.run()
         runner.api.jobs().create.assert_called_with(
             body={
@@ -87,7 +90,7 @@ class TestJob(unittest.TestCase):
                 'runtime_constraints': {},
                 'script_parameters': {
                     'tasks': [{
-                        'task.env': {'TMPDIR': '$(task.tmpdir)'},
+                        'task.env': {'HOME': '$(task.outdir)', 'TMPDIR': '$(task.tmpdir)'},
                         'command': ['ls']
                     }]
             },

@@ -1,14 +1,14 @@
 import fnmatch
 import os
 
-import cwltool.process
+import cwltool.stdfsaccess
 from cwltool.pathmapper import abspath
 
 import arvados.util
 import arvados.collection
 import arvados.arvfile
 
-class CollectionFsAccess(cwltool.process.StdFsAccess):
+class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
     """Implement the cwltool FsAccess interface for Arvados Collections."""
 
     def __init__(self, basedir, api_client=None):
@@ -91,11 +91,11 @@ class CollectionFsAccess(cwltool.process.StdFsAccess):
 
     def listdir(self, fn):  # type: (unicode) -> List[unicode]
         collection, rest = self.get_collection(fn)
-        if rest:
-            dir = collection.find(rest)
-        else:
-            dir = collection
         if collection:
+            if rest:
+                dir = collection.find(rest)
+            else:
+                dir = collection
             return [abspath(l, fn) for l in dir.keys()]
         else:
             return super(CollectionFsAccess, self).listdir(fn)
@@ -104,3 +104,12 @@ class CollectionFsAccess(cwltool.process.StdFsAccess):
         if paths and paths[-1].startswith("keep:") and arvados.util.keep_locator_pattern.match(paths[-1][5:]):
             return paths[-1]
         return os.path.join(path, *paths)
+
+    def realpath(self, path):
+        if path.startswith("$(task.tmpdir)") or path.startswith("$(task.outdir)"):
+            return path
+        collection, rest = self.get_collection(path)
+        if collection:
+            return path
+        else:
+            return os.path.realpath(path)

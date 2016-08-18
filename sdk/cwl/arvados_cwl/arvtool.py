@@ -37,4 +37,6 @@ class ArvadosCommandTool(CommandLineTool):
         elif self.work_api == "jobs":
             kwargs["outdir"] = "$(task.outdir)"
             kwargs["docker_outdir"] = "$(task.outdir)"
+            kwargs["tmpdir"] = "$(task.tmpdir)"
+            kwargs["docker_tmpdir"] = "$(task.tmpdir)"
         return super(ArvadosCommandTool, self).job(joborder, output_callback, **kwargs)

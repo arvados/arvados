@@ -328,6 +328,10 @@ class ProxyWorkUnit < WorkUnit
     resp
   end
 
+  def log_object_uuids
+    [uuid]
+  end
+
   protected
 
   def get key, obj=@proxied

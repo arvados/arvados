@@ -21,6 +21,8 @@ import (
 
 // Config used by crunch-dispatch-slurm
 type Config struct {
+	arvados.Client
+
 	SbatchArguments []string
 	PollPeriod      arvados.Duration
 
@@ -69,6 +71,22 @@ func doMain() error {
 
 	if config.PollPeriod == 0 {
 		config.PollPeriod = arvados.Duration(10 * time.Second)
+	}
+
+	if config.Client.APIHost != "" || config.Client.AuthToken != "" {
+		// Copy real configs into env vars so [a]
+		// MakeArvadosClient() uses them, and [b] they get
+		// propagated to crunch-run via SLURM.
+		os.Setenv("ARVADOS_API_HOST", config.Client.APIHost)
+		os.Setenv("ARVADOS_API_TOKEN", config.Client.AuthToken)
+		os.Setenv("ARVADOS_API_INSECURE", "")
+		if config.Client.Insecure {
+			os.Setenv("ARVADOS_API_INSECURE", "1")
+		}
+		os.Setenv("ARVADOS_KEEP_SERVICES", "")
+		os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
+	} else {
+		log.Printf("warning: Client credentials missing from config, so falling back on environment variables (deprecated).")
 	}
 
 	arv, err := arvadosclient.MakeArvadosClient()

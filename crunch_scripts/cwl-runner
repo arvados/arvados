@@ -18,8 +18,9 @@ import logging
 import os
 import json
 import argparse
+import re
 from arvados.api import OrderedJsonModel
-from cwltool.process import adjustFileObjs
+from cwltool.process import adjustFileObjs, adjustDirObjs
 from cwltool.load_tool import load_tool
 
 # Print package versions
@@ -30,8 +31,10 @@ api = arvados.api("v1")
 try:
     job_order_object = arvados.current_job()['script_parameters']
 
+    pdh_path = re.compile(r'^[0-9a-f]{32}\+\d+(/.+)?$')
+
     def keeppath(v):
-        if arvados.util.keep_locator_pattern.match(v):
+        if pdh_path.match(v):
             return "keep:%s" % v
         else:
             return v
@@ -49,6 +52,7 @@ try:
             }
 
     adjustFileObjs(job_order_object, keeppathObj)
+    adjustDirObjs(job_order_object, keeppathObj)
 
     runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
 

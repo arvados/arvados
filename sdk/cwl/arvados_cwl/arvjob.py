@@ -51,7 +51,7 @@ class ArvadosJob(object):
                 if p.type == "CreateFile":
                     script_parameters["task.vwd"][p.target] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), p.target)
 
-        script_parameters["task.env"] = {"TMPDIR": "$(task.tmpdir)"}
+        script_parameters["task.env"] = {"TMPDIR": self.tmpdir, "HOME": self.outdir}
         if self.environment:
             script_parameters["task.env"].update(self.environment)
 
@@ -227,7 +227,7 @@ class RunnerJob(Runner):
         logger.info("Submitted job %s", response["uuid"])
 
         if kwargs.get("submit"):
-            self.pipeline = self.arvrunner.api.pipeline_instances().create(
+            self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().create(
                 body={
                     "owner_uuid": self.arvrunner.project_uuid,
                     "name": shortname(self.tool.tool["id"]),

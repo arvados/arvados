@@ -31,12 +31,13 @@ class WebsocketTest < ActionDispatch::IntegrationTest
    ["pipeline_instances", api_fixture("pipeline_instances")['pipeline_with_newer_template']['uuid']],
    ["jobs", api_fixture("jobs")['running']['uuid']],
    ["containers", api_fixture("containers")['running']['uuid']],
-   ["container_requests", api_fixture("container_requests")['running']['uuid']],
+   ["container_requests", api_fixture("container_requests")['running']['uuid'], api_fixture("containers")['running']['uuid']],
   ].each do |c|
     test "test live logging scrolling #{c[0]}" do
 
       controller = c[0]
       uuid = c[1]
+      log_uuid = c[2] || c[1]
 
       visit(page_with_token("admin", "/#{controller}/#{uuid}"))
       click_link("Log")
@@ -51,7 +52,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
       Thread.current[:arvados_api_token] = @@API_AUTHS["admin"]['api_token']
       api.api("logs", "", {log: {
-                  object_uuid: uuid,
+                  object_uuid: log_uuid,
                   event_type: "stderr",
                   properties: {"text" => text}}})
       assert_text '1000 hello'
@@ -61,7 +62,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       old_top = page.evaluate_script("$('#event_log_div').scrollTop()")
 
       api.api("logs", "", {log: {
-                  object_uuid: uuid,
+                  object_uuid: log_uuid,
                   event_type: "stderr",
                   properties: {"text" => "1001 hello\n"}}})
       assert_text '1001 hello'
@@ -75,7 +76,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       assert_equal 30, page.evaluate_script("$('#event_log_div').scrollTop()")
 
       api.api("logs", "", {log: {
-                  object_uuid: uuid,
+                  object_uuid: log_uuid,
                   event_type: "stderr",
                   properties: {"text" => "1002 hello\n"}}})
       assert_text '1002 hello'

@@ -62,7 +62,7 @@ class ArvadosContainer(object):
         if self.generatefiles["listing"]:
             raise UnsupportedRequirement("Generate files not supported")
 
-        container_request["environment"] = {"TMPDIR": "/tmp"}
+        container_request["environment"] = {"TMPDIR": self.tmpdir, "HOME": self.outdir}
         if self.environment:
             container_request["environment"].update(self.environment)
 
@@ -100,7 +100,7 @@ class ArvadosContainer(object):
 
             self.arvrunner.processes[response["container_uuid"]] = self
 
-            logger.info("Container %s (%s) request state is %s", self.name, response["container_uuid"], response["state"])
+            logger.info("Container %s (%s) request state is %s", self.name, response["uuid"], response["state"])
 
             if response["state"] == "Final":
                 self.done(response)

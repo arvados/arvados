@@ -3,6 +3,7 @@ import logging
 import mock
 import unittest
 import os
+import functools
 import cwltool.process
 
 if not os.getenv('ARVADOS_DEBUG'):
@@ -32,13 +33,17 @@ class TestContainer(unittest.TestCase):
             "baseCommand": "ls",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}]
         }
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names, basedir="")
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names,
+                                                 basedir="", make_fs_access=make_fs_access)
         arvtool.formatgraph = None
-        for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_run"):
+        for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_run",
+                             make_fs_access=make_fs_access, tmpdir="/tmp"):
             j.run()
             runner.api.container_requests().create.assert_called_with(
                 body={
                     'environment': {
+                        'HOME': '/var/spool/cwl',
                         'TMPDIR': '/tmp'
                     },
                     'name': 'test_run',
@@ -81,14 +86,18 @@ class TestContainer(unittest.TestCase):
             }],
             "baseCommand": "ls"
         }
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names)
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers",
+                                                 avsc_names=avsc_names, make_fs_access=make_fs_access)
         arvtool.formatgraph = None
-        for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_resource_requirements"):
+        for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_resource_requirements",
+                             make_fs_access=make_fs_access, tmpdir="/tmp"):
             j.run()
 
         runner.api.container_requests().create.assert_called_with(
             body={
                 'environment': {
+                    'HOME': '/var/spool/cwl',
                     'TMPDIR': '/tmp'
                 },
                 'name': 'test_resource_requirements',

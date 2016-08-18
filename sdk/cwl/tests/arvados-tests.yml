@@ -1,0 +1,10 @@
+- job: dir-job.yml
+  output:
+    "outlist": {
+        "size": 20,
+        "location": "output.txt",
+        "class": "File",
+        "checksum": "sha1$13cda8661796ae241da3a18668fb552161a72592"
+    }
+  tool: keep-dir-test-input.cwl
+  doc: Test directory in keep
