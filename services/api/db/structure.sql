@@ -1055,6 +1055,44 @@ ALTER SEQUENCE virtual_machines_id_seq OWNED BY virtual_machines.id;
 
 
 --
+-- Name: workflows; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE workflows (
+    id integer NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255),
+    created_at timestamp without time zone NOT NULL,
+    modified_at timestamp without time zone,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    name character varying(255),
+    description text,
+    workflow text,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: workflows_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE workflows_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: workflows_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE workflows_id_seq OWNED BY workflows.id;
+
+
+--
 -- Name: id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1220,6 +1258,13 @@ ALTER TABLE ONLY users ALTER COLUMN id SET DEFAULT nextval('users_id_seq'::regcl
 --
 
 ALTER TABLE ONLY virtual_machines ALTER COLUMN id SET DEFAULT nextval('virtual_machines_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY workflows ALTER COLUMN id SET DEFAULT nextval('workflows_id_seq'::regclass);
 
 
 --
@@ -1412,6 +1457,14 @@ ALTER TABLE ONLY users
 
 ALTER TABLE ONLY virtual_machines
     ADD CONSTRAINT virtual_machines_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: workflows_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+--
+
+ALTER TABLE ONLY workflows
+    ADD CONSTRAINT workflows_pkey PRIMARY KEY (id);
 
 
 --
@@ -2192,6 +2245,20 @@ CREATE UNIQUE INDEX index_virtual_machines_on_uuid ON virtual_machines USING btr
 
 
 --
+-- Name: index_workflows_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_workflows_on_owner_uuid ON workflows USING btree (owner_uuid);
+
+
+--
+-- Name: index_workflows_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX index_workflows_on_uuid ON workflows USING btree (uuid);
+
+
+--
 -- Name: job_tasks_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -2329,6 +2396,20 @@ CREATE INDEX users_search_index ON users USING btree (uuid, owner_uuid, modified
 --
 
 CREATE INDEX virtual_machines_search_index ON virtual_machines USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, hostname);
+
+
+--
+-- Name: workflows_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX workflows_full_text_search_idx ON workflows USING gin (to_tsvector('english'::regconfig, (((((((((((((' '::text || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(description, ''::text)) || ' '::text) || COALESCE(workflow, ''::text))));
+
+
+--
+-- Name: workflows_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX workflows_search_idx ON workflows USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name);
 
 
 --
@@ -2590,3 +2671,7 @@ INSERT INTO schema_migrations (version) VALUES ('20160324144017');
 INSERT INTO schema_migrations (version) VALUES ('20160506175108');
 
 INSERT INTO schema_migrations (version) VALUES ('20160509143250');
+
+INSERT INTO schema_migrations (version) VALUES ('20160808151459');
+
+INSERT INTO schema_migrations (version) VALUES ('20160808151559');

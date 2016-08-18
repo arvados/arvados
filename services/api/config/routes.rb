@@ -52,6 +52,7 @@ Server::Application.routes.draw do
       end
       resources :pipeline_instances
       resources :pipeline_templates
+      resources :workflows
       resources :repositories do
         get 'get_all_permissions', on: :collection
       end

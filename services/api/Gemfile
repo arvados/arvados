@@ -80,3 +80,4 @@ gem 'pg_power'
 
 gem 'puma'
 gem 'sshkey'
+gem 'safe_yaml'
