@@ -142,6 +142,11 @@ GEM
     logging (2.1.0)
       little-plugger (~> 1.1)
       multi_json (~> 1.10)
+    lograge (0.3.6)
+      actionpack (>= 3)
+      activesupport (>= 3)
+      railties (>= 3)
+    logstash-event (1.2.02)
     mail (2.6.3)
       mime-types (>= 1.16, < 3)
     memoist (0.14.0)
@@ -284,6 +289,8 @@ DEPENDENCIES
   jquery-rails
   less
   less-rails
+  lograge
+  logstash-event
   minitest (>= 5.0.0)
   mocha
   morrisjs-rails
@@ -309,3 +316,6 @@ DEPENDENCIES
   therubyracer
   uglifier (>= 1.0.3)
   wiselinks
+
+BUNDLED WITH
+   1.12.1
