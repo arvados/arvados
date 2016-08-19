@@ -15,6 +15,7 @@ ArvadosWorkbench::Application.routes.draw do
   get "star" => 'actions#star', :as => :star
   get "all_processes" => 'work_units#index', :as => :all_processes
   get "choose_work_unit_templates" => 'work_unit_templates#choose', :as => :choose_work_unit_templates
+  resources :work_units
   resources :nodes
   resources :humans
   resources :traits
