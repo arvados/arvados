@@ -408,15 +408,16 @@ class ArvadosModel < ActiveRecord::Base
       x.each do |k,v|
         return true if has_symbols?(k) or has_symbols?(v)
       end
-      false
     elsif x.is_a? Array
       x.each do |k|
         return true if has_symbols?(k)
       end
-      false
-    else
-      (x.class == Symbol)
+    elsif x.is_a? Symbol
+      return true
+    elsif x.is_a? String
+      return true if x.start_with?(':') && !x.start_with?('::')
     end
+    false
   end
 
   def self.recursive_stringify x
@@ -430,6 +431,8 @@ class ArvadosModel < ActiveRecord::Base
       end
     elsif x.is_a? Symbol
       x.to_s
+    elsif x.is_a? String and x.start_with?(':') and !x.start_with?('::')
+      x[1..-1]
     else
       x
     end
