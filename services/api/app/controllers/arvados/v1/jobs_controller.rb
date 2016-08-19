@@ -77,7 +77,7 @@ class Arvados::V1::JobsController < ApplicationController
       readable_by(current_user).
       where('state = ? or (owner_uuid = ? and state in (?))',
             Job::Complete, current_user.uuid, [Job::Queued, Job::Running]).
-      where('script_parameters = ?', resource_attrs[:script_parameters].to_yaml).
+      where('script_parameters_digest = ?', Job.sorted_hash_digest(resource_attrs[:script_parameters])).
       where('nondeterministic is distinct from ?', true).
       order('state desc, created_at') # prefer Running jobs over Queued
     apply_filters

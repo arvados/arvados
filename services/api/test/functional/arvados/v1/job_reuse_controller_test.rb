@@ -19,8 +19,8 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
       script_version: "4fe459abe02d9b365932b8f5dc419439ab4e2577",
       repository: "active/foo",
       script_parameters: {
-        input: 'fa7aeb5140e2848d39b416daeef4ffc5+45',
-        an_integer: '1'
+        an_integer: '1',
+        input: 'fa7aeb5140e2848d39b416daeef4ffc5+45'
       }
     }
     assert_response :success
