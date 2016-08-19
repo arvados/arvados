@@ -20,4 +20,26 @@ class ContainerRequestsController < ApplicationController
       redirect_to @object
     end
   end
+
+  def update
+    @updates ||= params[@object.class.to_s.underscore.singularize.to_sym]
+    input_obj = @updates[:mounts][:"/var/lib/cwl/cwl.input.json"][:content]
+    workflow = @object.mounts[:"/var/lib/cwl/workflow.json"][:content]
+    workflow[:inputs].each do |input_schema|
+      if input_obj.include? input_schema[:id]
+        required, primary_type, param_id = cwl_input_info(input_schema)
+        if primary_type == "boolean"
+          input_obj[param_id] = input_obj[param_id] == "true"
+        elsif ["int", "long"].include? primary_type
+          input_obj[param_id] = input_obj[param_id].to_i
+        elsif ["float", "double"].include? primary_type
+          input_obj[param_id] = input_obj[param_id].to_f
+        elsif ["File", "Directory"].include? primary_type
+          input_obj[param_id] = {"class" => "File", "location" => "keep:" + input_obj[param_id]}
+        end
+      end
+    end
+    super
+  end
+
 end

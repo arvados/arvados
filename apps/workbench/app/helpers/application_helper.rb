@@ -425,41 +425,34 @@ module ApplicationHelper
     elsif input_schema[:type].is_a? String
       primary_type = input_schema[:type]
     end
-    return required, primary_type
+    param_id = input_schema[:id]
+    return required, primary_type, param_id
   end
 
   def cwl_input_value(object, input_schema, set_attr_path)
-    param_id = input_schema[:id]
     dn = ""
     attrvalue = object
     set_attr_path.each do |a|
       dn += "[#{a}]"
-      attrvalue = attrvalue[a]
+      attrvalue = attrvalue[a.to_sym]
     end
-    dn += "[#{param_id}]"
-    attrvalue = attrvalue[param_id.to_sym]
-    return dn, attrvalue, param_id
+    return dn, attrvalue
   end
 
   def cwl_inputs_required(object, inputs_schema, set_attr_path)
     r = 0
     inputs_schema.each do |input|
-      required, primary_type = cwl_input_info(input)
-      dn, attrvalue = cwl_input_value(object, input, set_attr_path)
+      required, primary_type, param_id = cwl_input_info(input)
+      dn, attrvalue = cwl_input_value(object, input, set_attr_path + [param_id])
       r += 1 if required and attrvalue.nil?
     end
     r
   end
 
   def render_cwl_input(object, input_schema, set_attr_path, htmloptions={})
-    required, primary_type = cwl_input_info(input_schema)
-    if ["float", "double", "int", "long"].include? primary_type
-      datatype = "number"
-    else
-      datatype = "text"
-    end
+    required, primary_type, param_id = cwl_input_info(input_schema)
 
-    dn, attrvalue, param_id = cwl_input_value(object, input_schema, set_attr_path)
+    dn, attrvalue = cwl_input_value(object, input_schema, set_attr_path + [param_id])
     attrvalue ||= ""
 
     id = "#{object.uuid}-#{param_id}"
@@ -496,7 +489,31 @@ module ApplicationHelper
                   })
         end
       end
+    elsif "boolean" == primary_type
+      return link_to attrvalue, '#', {
+                     "data-emptytext" => "none",
+                     "data-placement" => "bottom",
+                     "data-type" => "select",
+                     "data-source" => "[{value: true, text: \"true\"}, {value: false, text: \"false\"}]",
+                     "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore, merge: true),
+                     "data-title" => "Set value for #{input_schema[:id]}",
+                     "data-name" => dn,
+                     "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
+                     "data-value" => attrvalue,
+                     # "clear" button interferes with form-control's up/down arrows
+                     "data-clear" => false,
+                     :class => "editable #{'required' if required} form-control",
+                     :id => id
+                   }.merge(htmloptions)
+    elsif "enum" == primary_type
+
     else
+      if ["float", "double", "int", "long"].include? primary_type
+        datatype = "number"
+      else
+        datatype = "text"
+      end
+
       return link_to attrvalue, '#', {
                      "data-emptytext" => "none",
                      "data-placement" => "bottom",
