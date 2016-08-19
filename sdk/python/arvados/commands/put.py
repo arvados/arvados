@@ -320,6 +320,7 @@ class ArvPutUploadJob(object):
         """
         Start supporting thread & file uploading
         """
+        self._checkpointer.daemon = True
         self._checkpointer.start()
         try:
             for path in self.paths:
@@ -472,7 +473,7 @@ class ArvPutUploadJob(object):
                     output = self._my_collection().open(filename, 'w')
             self._write(source_fd, output)
             output.close()
-            
+
     def _write(self, source_fd, output):
         while True:
             data = source_fd.read(arvados.config.KEEP_BLOCK_SIZE)
