@@ -11,6 +11,7 @@ class Job < ArvadosModel
   after_commit :trigger_crunch_dispatch_if_cancelled, :on => :update
   before_validation :set_priority
   before_validation :update_state_from_old_state_attrs
+  before_validation :update_script_parameters_digest
   validate :ensure_script_version_is_commit
   validate :find_docker_image_locator
   validate :find_arvados_sdk_version
@@ -105,7 +106,22 @@ class Job < ArvadosModel
     end
   end
 
+  def update_script_parameters_digest
+    self.script_parameters_digest = self.class.sorted_hash_digest(script_parameters)
+  end
+
   protected
+
+  def self.sorted_hash_digest h
+    Digest::MD5.hexdigest(Oj.dump(deep_sort_hash(h)))
+  end
+
+  def self.deep_sort_hash h
+    return h unless h.is_a? Hash
+    h.sort.collect do |k, v|
+      [k, deep_sort_hash(v)]
+    end.to_h
+  end
 
   def foreign_key_attributes
     super + %w(output log)
