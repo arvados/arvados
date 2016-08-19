@@ -28,83 +28,93 @@ class Arvados::V1::JobsController < ApplicationController
       params[:find_or_create] = !resource_attrs.delete(:no_reuse)
     end
 
-    if params[:find_or_create]
-      return if false.equal?(load_filters_param)
-      if @filters.empty?  # Translate older creation parameters into filters.
-        @filters =
-          [["repository", "=", resource_attrs[:repository]],
-           ["script", "=", resource_attrs[:script]],
-           ["script_version", "not in git", params[:exclude_script_versions]],
-          ].reject { |filter| filter.last.nil? or filter.last.empty? }
-        if !params[:minimum_script_version].blank?
-          @filters << ["script_version", "in git",
-                       params[:minimum_script_version]]
-        else
-          add_default_git_filter("script_version", resource_attrs[:repository],
-                                 resource_attrs[:script_version])
-        end
-        if image_search = resource_attrs[:runtime_constraints].andand["docker_image"]
-          if image_tag = resource_attrs[:runtime_constraints]["docker_image_tag"]
-            image_search += ":#{image_tag}"
-          end
-          image_locator = Collection.
-            for_latest_docker_image(image_search).andand.portable_data_hash
-        else
-          image_locator = nil
-        end
-        @filters << ["docker_image_locator", "=", image_locator]
-        if sdk_version = resource_attrs[:runtime_constraints].andand["arvados_sdk_version"]
-          add_default_git_filter("arvados_sdk_version", "arvados", sdk_version)
-        end
-        begin
-          load_job_specific_filters
-        rescue ArgumentError => error
-          return send_error(error.message)
-        end
-      end
+    return super if !params[:find_or_create]
+    return if !load_filters_param
 
-      # Check specified filters for some reasonableness.
-      filter_names = @filters.map { |f| f.first }.uniq
-      ["repository", "script"].each do |req_filter|
-        if not filter_names.include?(req_filter)
-          return send_error("#{req_filter} filter required")
-        end
+    if @filters.empty?  # Translate older creation parameters into filters.
+      @filters =
+        [["repository", "=", resource_attrs[:repository]],
+         ["script", "=", resource_attrs[:script]],
+         ["script_version", "not in git", params[:exclude_script_versions]],
+        ].reject { |filter| filter.last.nil? or filter.last.empty? }
+      if !params[:minimum_script_version].blank?
+        @filters << ["script_version", "in git",
+                     params[:minimum_script_version]]
+      else
+        add_default_git_filter("script_version", resource_attrs[:repository],
+                               resource_attrs[:script_version])
       end
-
-      # Search for a reusable Job, and return it if found.
-      @objects = Job.readable_by(current_user)
-      apply_filters
-      @object = nil
-      incomplete_job = nil
-      @objects.each do |j|
-        if j.nondeterministic != true and
-            ["Queued", "Running", "Complete"].include?(j.state) and
-            j.script_parameters == resource_attrs[:script_parameters]
-          if j.state != "Complete" && j.owner_uuid == current_user.uuid
-            # We'll use this if we don't find a job that has completed
-            incomplete_job ||= j
-          else
-            if Collection.readable_by(current_user).find_by_portable_data_hash(j.output)
-              # Record the first job in the list
-              if !@object
-                @object = j
-              end
-              # Ensure that all candidate jobs actually did produce the same output
-              if @object.output != j.output
-                @object = nil
-                break
-              end
-            end
-          end
+      if image_search = resource_attrs[:runtime_constraints].andand["docker_image"]
+        if image_tag = resource_attrs[:runtime_constraints]["docker_image_tag"]
+          image_search += ":#{image_tag}"
         end
-        @object ||= incomplete_job
-        if @object
-          return show
-        end
+        image_locator = Collection.
+          for_latest_docker_image(image_search).andand.portable_data_hash
+      else
+        image_locator = nil
+      end
+      @filters << ["docker_image_locator", "=", image_locator]
+      if sdk_version = resource_attrs[:runtime_constraints].andand["arvados_sdk_version"]
+        add_default_git_filter("arvados_sdk_version", "arvados", sdk_version)
+      end
+      begin
+        load_job_specific_filters
+      rescue ArgumentError => error
+        return send_error(error.message)
       end
     end
 
-    super
+    # Check specified filters for some reasonableness.
+    filter_names = @filters.map { |f| f.first }.uniq
+    ["repository", "script"].each do |req_filter|
+      if not filter_names.include?(req_filter)
+        return send_error("#{req_filter} filter required")
+      end
+    end
+
+    # Search for a reusable Job, and return it if found.
+    @objects = Job.
+      readable_by(current_user).
+      where('state = ? or (owner_uuid = ? and state in (?))',
+            Job::Complete, current_user.uuid, [Job::Queued, Job::Running]).
+      where('script_parameters = ?', resource_attrs[:script_parameters].to_yaml).
+      where('nondeterministic is distinct from ?', true).
+      order('state desc, created_at') # prefer Running jobs over Queued
+    apply_filters
+    @object = nil
+    incomplete_job = nil
+    @objects.each do |j|
+      if j.state != Job::Complete
+        # We'll use this if we don't find a job that has completed
+        incomplete_job ||= j
+        next
+      end
+
+      if @object
+        if @object.output != j.output
+          # If two matching jobs produced different outputs, just run
+          # a new job instead of choosing one arbitrarily.
+          @object = nil
+          return super
+        end
+        # ...and that's the only thing we need to do once we've chosen
+        # an @object to reuse.
+      elsif !Collection.readable_by(current_user).find_by_portable_data_hash(j.output)
+        # As soon as the output we will end up returning (if any) is
+        # decided, check whether it will be visible to the user; if
+        # not, any further investigation of reusable jobs is futile.
+        return super
+      else
+        @object = j
+      end
+    end
+
+    @object ||= incomplete_job
+    if @object
+      show
+    else
+      super
+    end
   end
 
   def cancel
@@ -171,7 +181,7 @@ class Arvados::V1::JobsController < ApplicationController
     load_limit_offset_order_params
     load_where_param
     @where.merge!({state: Job::Queued})
-    return if false.equal?(load_filters_param)
+    return if !load_filters_param
     find_objects_for_index
     index
   end
@@ -293,6 +303,8 @@ class Arvados::V1::JobsController < ApplicationController
     rescue ArgumentError => error
       send_error(error.message)
       false
+    else
+      true
     end
   end
 end
