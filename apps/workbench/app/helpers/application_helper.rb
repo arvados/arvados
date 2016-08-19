@@ -418,6 +418,102 @@ module ApplicationHelper
     lt
   end
 
+  def cwl_input_info(input_schema)
+    required = !(input_schema[:type].include? "null")
+    if input_schema[:type].is_a? Array
+      primary_type = input_schema[:type].select { |n| n != "null" }[0]
+    elsif input_schema[:type].is_a? String
+      primary_type = input_schema[:type]
+    end
+    return required, primary_type
+  end
+
+  def cwl_input_value(object, input_schema, set_attr_path)
+    param_id = input_schema[:id]
+    dn = ""
+    attrvalue = object
+    set_attr_path.each do |a|
+      dn += "[#{a}]"
+      attrvalue = attrvalue[a]
+    end
+    dn += "[#{param_id}]"
+    attrvalue = attrvalue[param_id.to_sym]
+    return dn, attrvalue, param_id
+  end
+
+  def cwl_inputs_required(object, inputs_schema, set_attr_path)
+    r = 0
+    inputs_schema.each do |input|
+      required, primary_type = cwl_input_info(input)
+      dn, attrvalue = cwl_input_value(object, input, set_attr_path)
+      r += 1 if required and attrvalue.nil?
+    end
+    r
+  end
+
+  def render_cwl_input(object, input_schema, set_attr_path, htmloptions={})
+    required, primary_type = cwl_input_info(input_schema)
+    if ["float", "double", "int", "long"].include? primary_type
+      datatype = "number"
+    else
+      datatype = "text"
+    end
+
+    dn, attrvalue, param_id = cwl_input_value(object, input_schema, set_attr_path)
+    attrvalue ||= ""
+
+    id = "#{object.uuid}-#{param_id}"
+
+    if ["Directory", "File"].include? primary_type
+      chooser_title = "Choose a #{primary_type == 'Directory' ? 'dataset' : 'file'}:"
+      selection_param = object.class.to_s.underscore + dn
+      display_value = attrvalue
+      modal_path = choose_collections_path \
+      ({ title: chooser_title,
+         filters: [['owner_uuid', '=', object.owner_uuid]].to_json,
+         action_name: 'OK',
+         action_href: container_request_path(id: object.uuid),
+         action_method: 'patch',
+         preconfigured_search_str: "",
+         action_data: {
+           merge: true,
+           use_preview_selection: primary_type == 'File' ? true : nil,
+           selection_param: selection_param,
+           success: 'page-refresh'
+         }.to_json,
+        })
+
+      return content_tag('div', :class => 'input-group') do
+        html = text_field_tag(dn, display_value,
+                              :class =>
+                              "form-control #{'required' if required}")
+        html + content_tag('span', :class => 'input-group-btn') do
+          link_to('Choose',
+                  modal_path,
+                  { :class => "btn btn-primary",
+                    :remote => true,
+                    :method => 'get',
+                  })
+        end
+      end
+    else
+      return link_to attrvalue, '#', {
+                     "data-emptytext" => "none",
+                     "data-placement" => "bottom",
+                     "data-type" => datatype,
+                     "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore, merge: true),
+                     "data-title" => "Set value for #{input_schema[:id]}",
+                     "data-name" => dn,
+                     "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
+                     "data-value" => attrvalue,
+                     # "clear" button interferes with form-control's up/down arrows
+                     "data-clear" => false,
+                     :class => "editable #{'required' if required} form-control",
+                     :id => id
+                   }.merge(htmloptions)
+    end
+  end
+
   def render_arvados_object_list_start(list, button_text, button_href,
                                        params={}, *rest, &block)
     show_max = params.delete(:show_max) || 3

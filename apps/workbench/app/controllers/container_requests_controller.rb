@@ -5,7 +5,11 @@ class ContainerRequestsController < ApplicationController
   }
 
   def show_pane_list
-    %w(Status Log Advanced)
+    panes = %w(Status Log Graph Advanced)
+    if @object and @object.state == 'Uncommitted'
+      panes = %w(Inputs) + panes - %w(Log)
+    end
+    panes
   end
 
   def cancel
