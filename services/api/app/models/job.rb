@@ -110,6 +110,10 @@ class Job < ArvadosModel
     self.script_parameters_digest = self.class.sorted_hash_digest(script_parameters)
   end
 
+  def self.searchable_columns operator
+    super - ["script_parameters_digest"]
+  end
+
   protected
 
   def self.sorted_hash_digest h
