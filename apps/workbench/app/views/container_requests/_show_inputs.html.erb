@@ -22,19 +22,19 @@
 <% end %>
 
 <% if n_inputs == 0 %>
-  <p>This workflow does not need any further inputs specified. You can start it by clicking the "Run" button whenever you're ready. (It's not too late to change the settings, though.)</p>
+  <p><i>This workflow does not need any further inputs specified.  Click the "Run" button at the bottom of the page to start the workflow.</i></p>
 <% else %>
-  <%= render_unreadable_inputs_present %>
-
   <p><i>Provide <%= n_inputs > 1 ? 'values' : 'a value' %> for the following <%= n_inputs > 1 ? 'parameters' : 'parameter' %>, then click the "Run" button to start the workflow.</i></p>
-  <% if @object.editable? %>
-    <%= content_for :pi_input_form %>
-      <%= link_to(url_for('container_request[state]' => 'Committed'),
-          class: 'btn btn-primary run-pipeline-button',
-          method: :patch
-          ) do %>
-        Run <i class="fa fa-fw fa-play"></i>
-    <% end %>
-  <% end %>
-
 <% end %>
+
+<% if @object.editable? %>
+  <%= content_for :pi_input_form %>
+  <%= link_to(url_for('container_request[state]' => 'Committed'),
+        class: 'btn btn-primary run-pipeline-button',
+        method: :patch
+        ) do %>
+    Run <i class="fa fa-fw fa-play"></i>
+  <% end %>
+<% end %>
+
+<%= render_unreadable_inputs_present %>

@@ -424,6 +424,8 @@ module ApplicationHelper
       primary_type = input_schema[:type].select { |n| n != "null" }[0]
     elsif input_schema[:type].is_a? String
       primary_type = input_schema[:type]
+    elsif input_schema[:type].is_a? Hash
+      primary_type = input_schema[:type]
     end
     param_id = input_schema[:id]
     return required, primary_type, param_id
@@ -453,14 +455,25 @@ module ApplicationHelper
     required, primary_type, param_id = cwl_input_info(input_schema)
 
     dn, attrvalue = cwl_input_value(object, input_schema, set_attr_path + [param_id])
-    attrvalue ||= ""
+    attrvalue = if attrvalue.nil? then "" else attrvalue end
 
     id = "#{object.uuid}-#{param_id}"
+
+    opt_empty_selection = if required then [] else [{value: "", text: ""}] end
 
     if ["Directory", "File"].include? primary_type
       chooser_title = "Choose a #{primary_type == 'Directory' ? 'dataset' : 'file'}:"
       selection_param = object.class.to_s.underscore + dn
-      display_value = attrvalue
+      if attrvalue.is_a? Hash
+        display_value = attrvalue[:"arv:collection"] || attrvalue[:location]
+        display_value.match /^([0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15})(\/.*)?$/ do |re|
+          if re[3]
+            display_value = "#{Collection.find(re[1]).name} / #{re[3][1..-1]}"
+          else
+            display_value = Collection.find(re[1]).name
+          end
+        end
+      end
       modal_path = choose_collections_path \
       ({ title: chooser_title,
          filters: [['owner_uuid', '=', object.owner_uuid]].to_json,
@@ -494,7 +507,7 @@ module ApplicationHelper
                      "data-emptytext" => "none",
                      "data-placement" => "bottom",
                      "data-type" => "select",
-                     "data-source" => "[{value: true, text: \"true\"}, {value: false, text: \"false\"}]",
+                     "data-source" => (opt_empty_selection + [{value: "true", text: "true"}, {value: "false", text: "false"}]).to_json,
                      "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore, merge: true),
                      "data-title" => "Set value for #{input_schema[:id]}",
                      "data-name" => dn,
@@ -505,9 +518,23 @@ module ApplicationHelper
                      :class => "editable #{'required' if required} form-control",
                      :id => id
                    }.merge(htmloptions)
-    elsif "enum" == primary_type
-
-    else
+    elsif primary_type.is_a? Hash and primary_type[:type] == "enum"
+      return link_to attrvalue, '#', {
+                     "data-emptytext" => "none",
+                     "data-placement" => "bottom",
+                     "data-type" => "select",
+                     "data-source" => (opt_empty_selection + primary_type[:symbols].map {|i| {:value => i, :text => i} }).to_json,
+                     "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore, merge: true),
+                     "data-title" => "Set value for #{input_schema[:id]}",
+                     "data-name" => dn,
+                     "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
+                     "data-value" => attrvalue,
+                     # "clear" button interferes with form-control's up/down arrows
+                     "data-clear" => false,
+                     :class => "editable #{'required' if required} form-control",
+                     :id => id
+                   }.merge(htmloptions)
+    elsif primary_type.is_a? String
       if ["float", "double", "int", "long"].include? primary_type
         datatype = "number"
       else
@@ -527,7 +554,9 @@ module ApplicationHelper
                      "data-clear" => false,
                      :class => "editable #{'required' if required} form-control",
                      :id => id
-                   }.merge(htmloptions)
+                     }.merge(htmloptions)
+    else
+      return "Unable to render editing control for parameter type #{primary_type}"
     end
   end
 
