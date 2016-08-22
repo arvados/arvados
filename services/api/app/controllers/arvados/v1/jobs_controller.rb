@@ -90,12 +90,15 @@ class Arvados::V1::JobsController < ApplicationController
         next
       end
 
-      if @object
+      if @object == false
+        # We have already decided not to reuse any completed job
+        next
+      elsif @object
         if @object.output != j.output
-          # If two matching jobs produced different outputs, just run
-          # a new job instead of choosing one arbitrarily.
-          @object = nil
-          return super
+          # If two matching jobs produced different outputs, run a new
+          # job (or use one that's already running/queued) instead of
+          # choosing one arbitrarily.
+          @object = false
         end
         # ...and that's the only thing we need to do once we've chosen
         # an @object to reuse.
