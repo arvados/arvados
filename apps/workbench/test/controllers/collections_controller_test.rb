@@ -112,13 +112,6 @@ class CollectionsControllerTest < ActionController::TestCase
                     "controller did not find logger job")
   end
 
-  test "viewing a collection fetches logs about it" do
-    show_collection(:foo_file, :active)
-    assert_includes(assigns(:logs).map(&:uuid),
-                    api_fixture('logs')['system_adds_foo_file']['uuid'],
-                    "controller did not find related log")
-  end
-
   test "sharing auths available to admin" do
     show_collection("collection_owned_by_active", "admin_trustedclient")
     assert_not_nil assigns(:search_sharing)
