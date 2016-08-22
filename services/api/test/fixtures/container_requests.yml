@@ -167,92 +167,288 @@ uncommitted:
   state: "Uncommitted"
   container_image: arvados/jobs
   mounts: {
-    "/var/lib/cwl/workflow.json": {
-      "kind": "json",
-      "content": {
-        "cwlVersion": "v1.0",
-        "class": "CommandLineTool",
-        "inputs": [
-        {
-          "doc": "a longer documentation string for this parameter (optional)",
-          "type": "boolean",
-          "id": "ex_boolean",
-          "label": "a short label for this parameter (optional)"
-        },
-        {
-          "doc": "directory selection should present the workbench collection picker",
-          "type": "Directory",
-          "id": "ex_dir"
-        },
-        {
-          "type": "double",
-          "id": "ex_double"
-        },
-        {
-          "doc": "file selection should present the workbench file picker",
-          "type": "File",
-          "id": "ex_file"
-        },
-        {
-          "doc": "any parameter can be turned into an array with {\"type\": \"array\", \"items\": \"the_type\"}\n",
-          "type": {
-            "items": "File",
-            "type": "array"
-          },
-          "id": "ex_file_array"
-        },
-        {
-          "type": "float",
-          "id": "ex_float"
-        },
-        {
-          "type": "int",
-          "id": "ex_int"
-        },
-        {
-          "type": "long",
-          "id": "ex_long"
-        },
-        {
-          "doc": "any parameter can be turned into an optional array with [\"null\", {\"type\": \"array\", \"items\": \"the_type\"}\n",
-          "type": [
-            "null",
-            {
-              "items": "File",
-              "type": "array"
+        "/var/lib/cwl/workflow.json": {
+            "kind": "json",
+            "content": {
+                "cwlVersion": "v1.0",
+                "class": "CommandLineTool",
+                "baseCommand": ["echo"],
+                "inputs": [
+                    {
+                        "doc": "a longer documentation string for this parameter (optional)",
+                        "type": "boolean",
+                        "id": "ex_boolean",
+                        "label": "a short label for this parameter (optional)",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": ["null", "boolean"],
+                        "id": "ex_boolean_opt",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "doc": "directory selection should present the workbench collection picker",
+                        "type": "Directory",
+                        "id": "ex_dir",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": "double",
+                        "id": "ex_double",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "doc": "file selection should present the workbench file picker",
+                        "type": "File",
+                        "id": "ex_file",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": "float",
+                        "id": "ex_float",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": "int",
+                        "id": "ex_int",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": ["null", "int"],
+                        "id": "ex_int_opt",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": "long",
+                        "id": "ex_long",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "doc": "any parameter can be turned into an optional array with [\"null\", {\"type\": \"array\", \"items\": \"the_type\"}\n",
+                        "type": [
+                            "null",
+                            {
+                                "items": "File",
+                                "type": "array"
+                            }
+                        ],
+                        "id": "ex_opt_file_array",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "doc": "any parameter can be made optional by providing a union of [\"null\", \"the_type\"]\n",
+                        "type": [
+                            "null",
+                            "string"
+                        ],
+                        "id": "ex_opt_string",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": "string",
+                        "id": "ex_string",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": ["null", "string"],
+                        "id": "ex_string_opt",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": {
+                            "type": "enum",
+                            "symbols": ["a", "b", "c"]
+                        },
+                        "id": "ex_enum",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": ["null", {
+                            "type": "enum",
+                            "symbols": ["a", "b", "c"]
+                        }],
+                        "id": "ex_enum_opt",
+                        "inputBinding": {"position": 1}
+                    }
+                ],
+                "outputs": []
             }
-          ],
-          "id": "ex_opt_file_array"
         },
-        {
-          "doc": "any parameter can be made optional by providing a union of [\"null\", \"the_type\"]\n",
-          "type": [
-            "null",
-            "string"
-          ],
-          "id": "ex_opt_string"
+        "/var/lib/cwl/cwl.input.json": {
+            "kind": "json",
+            "content": {}
         },
-        {
-          "type": "string",
-          "id": "ex_string"
+        "stdout": {
+            "kind": "file",
+            "path": "/var/spool/cwl/cwl.output.json"
+        },
+        "/var/spool/cwl": {
+            "kind": "collection",
+            "writable": true
         }
-        ],
-        "outputs": []
-      },
-    },
-    "/var/lib/cwl/cwl.input.json": {
-      "kind": "json",
-      "content": {}
-    },
-    "stdout": {
-      "kind": "file",
-      "path": "/var/spool/cwl/cwl.output.json"
-    },
-    "/var/spool/cwl": {
-      "kind": "collection",
-      "writable": True
     }
-  }
+  runtime_constraints:
+    vcpus: 1
+    ram: 256000000
+    API: true
+
+uncommitted_ready_to_run:
+  uuid: zzzzz-xvhdp-cr4uncommittedd
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: uncommitted_ready_to_run
+  created_at: 2016-01-11 11:11:11.111111111 Z
+  updated_at: 2016-01-11 11:11:11.111111111 Z
+  modified_at: 2016-01-11 11:11:11.111111111 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  command: ["arvados-cwl-runner", "--local", "--api=containers",
+            "/var/lib/cwl/workflow.json", "/var/lib/cwl/cwl.input.json"]
+  output_path: "/var/spool/cwl"
+  cwd: "/var/spool/cwl"
+  priority: 1
+  state: "Uncommitted"
+  container_image: arvados/jobs
+  mounts: {
+        "/var/lib/cwl/workflow.json": {
+            "kind": "json",
+            "content": {
+                "cwlVersion": "v1.0",
+                "class": "CommandLineTool",
+                "baseCommand": ["echo"],
+                "inputs": [
+                    {
+                        "doc": "a longer documentation string for this parameter (optional)",
+                        "type": "boolean",
+                        "id": "ex_boolean",
+                        "label": "a short label for this parameter (optional)",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": ["null", "boolean"],
+                        "id": "ex_boolean_opt",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "doc": "directory selection should present the workbench collection picker",
+                        "type": "Directory",
+                        "id": "ex_dir",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": "double",
+                        "id": "ex_double",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "doc": "file selection should present the workbench file picker",
+                        "type": "File",
+                        "id": "ex_file",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": "float",
+                        "id": "ex_float",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": "int",
+                        "id": "ex_int",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": ["null", "int"],
+                        "id": "ex_int_opt",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": "long",
+                        "id": "ex_long",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "doc": "any parameter can be turned into an optional array with [\"null\", {\"type\": \"array\", \"items\": \"the_type\"}\n",
+                        "type": [
+                            "null",
+                            {
+                                "items": "File",
+                                "type": "array"
+                            }
+                        ],
+                        "id": "ex_opt_file_array",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "doc": "any parameter can be made optional by providing a union of [\"null\", \"the_type\"]\n",
+                        "type": [
+                            "null",
+                            "string"
+                        ],
+                        "id": "ex_opt_string",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": "string",
+                        "id": "ex_string",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": ["null", "string"],
+                        "id": "ex_string_opt",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": {
+                            "type": "enum",
+                            "symbols": ["a", "b", "c"]
+                        },
+                        "id": "ex_enum",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": ["null", {
+                            "type": "enum",
+                            "symbols": ["a", "b", "c"]
+                        }],
+                        "id": "ex_enum_opt",
+                        "inputBinding": {"position": 1}
+                    }
+                ],
+                "outputs": []
+            }
+        },
+        "/var/lib/cwl/cwl.input.json": {
+            "kind": "json",
+            "content": {
+              "ex_string_opt": null,
+              "ex_int_opt": null,
+              "ex_boolean": false,
+              "ex_boolean_opt": true,
+              "ex_dir": {
+                "class": "Directory",
+                "location": "keep:1f4b0bc7583c2a7f9102c395f4ffc5e3+45",
+                "arv:collection": "zzzzz-4zz18-znfnqtbbv4spc3w"
+              },
+              "ex_double": 66.0,
+              "ex_file": {
+                "class": "File",
+                "location": "keep:1f4b0bc7583c2a7f9102c395f4ffc5e3+45/foo",
+                "arv:collection": "zzzzz-4zz18-znfnqtbbv4spc3w/foo"
+              },
+              "ex_float": 55.0,
+              "ex_int": 55,
+              "ex_long": 22,
+              "ex_string": "qq",
+              "ex_enum": "a"
+            }
+        },
+        "stdout": {
+            "kind": "file",
+            "path": "/var/spool/cwl/cwl.output.json"
+        },
+        "/var/spool/cwl": {
+            "kind": "collection",
+            "writable": true
+        }
+    }
   runtime_constraints:
     vcpus: 1
     ram: 256000000
