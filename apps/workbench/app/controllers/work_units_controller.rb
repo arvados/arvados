@@ -85,10 +85,7 @@ class WorkUnitsController < ApplicationController
       if wf_json
         mounts["/var/lib/cwl/workflow.json"] = {
           "kind" => "json",
-          "content" => {
-            "class" => "Workflow",
-            "workflow" => wf_json
-          }
+          "content" => wf_json
         }
       end
       attrs['mounts'] = mounts
