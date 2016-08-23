@@ -100,7 +100,18 @@ package_go_binary() {
 
     cd $WORKSPACE/packages/$TARGET
     go get "git.curoverse.com/arvados.git/$src_path"
-    fpm_build "$GOPATH/bin/$basename=/usr/bin/$prog" "$prog" 'Curoverse, Inc.' dir "$version" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=$description" "$WORKSPACE/$license_file=/usr/share/doc/$prog/$license_file"
+
+    declare -a switches=()
+    systemd_unit="$WORKSPACE/${src_path}/${prog}.service"
+    if [[ -e "${systemd_unit}" ]]; then
+        switches+=(
+            --after-install "${WORKSPACE}/build/go-package-scripts/postinst"
+            --before-remove "${WORKSPACE}/build/go-package-scripts/prerm"
+            "${systemd_unit}=/lib/systemd/system/${prog}.service")
+    fi
+    switches+=("$WORKSPACE/${license_file}=/usr/share/doc/$prog/${license_file}")
+
+    fpm_build "$GOPATH/bin/${basename}=/usr/bin/${prog}" "${prog}" 'Curoverse, Inc.' dir "${version}" "--url=https://arvados.org" "--license=GNU Affero General Public License, version 3.0" "--description=${description}" "${switches[@]}"
 }
 
 default_iteration() {

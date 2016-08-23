@@ -1,0 +1,19 @@
+#!/bin/sh
+
+set -e
+
+# NOTE: This package name detection will only work on Debian.
+# If this prerm script ever starts doing work on Red Hat,
+# we'll need to adapt this code accordingly.
+script="$(basename "${0}")"
+pkg="${script%.prerm}"
+systemd_unit="${pkg}.service"
+
+case "${1}" in
+    remove)
+        if [ -e /run/systemd/system ]; then
+            systemctl stop "${systemd_unit}" || true
+            systemctl disable "${systemd_unit}" || true
+        fi
+        ;;
+esac

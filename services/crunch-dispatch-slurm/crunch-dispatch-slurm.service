@@ -1,0 +1,12 @@
+[Unit]
+Description=Arvados Crunch Dispatcher for SLURM
+Documentation=https://doc.arvados.org/
+After=network.target
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/crunch-dispatch-slurm
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
