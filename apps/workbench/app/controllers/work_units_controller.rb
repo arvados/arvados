@@ -39,11 +39,11 @@ class WorkUnitsController < ApplicationController
     template_uuid = params['work_unit']['template_uuid']
 
     attrs = {}
-    res = resource_class_for_uuid(template_uuid)
-    if res == PipelineTemplate
+    rc = resource_class_for_uuid(template_uuid)
+    if rc == PipelineTemplate
       model_class = PipelineInstance
       attrs['pipeline_template_uuid'] = template_uuid
-    elsif res == Workflow
+    elsif rc == Workflow
       # workflow json
       workflow = Workflow.find? template_uuid
       if workflow.workflow
@@ -86,7 +86,8 @@ class WorkUnitsController < ApplicationController
         mounts["/var/lib/cwl/workflow.json"] = {
           "kind" => "json",
           "content" => {
-            "class" => wf_json
+            "class" => "Workflow",
+            "workflow" => wf_json
           }
         }
       end

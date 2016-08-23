@@ -2,7 +2,7 @@ class WorkUnitTemplatesController < ApplicationController
   def find_objects_for_index
     return if !params[:partial]
 
-    @limit = 20
+    @limit = 40
     @filters = @filters || []
 
     # get next page of pipeline_templates
@@ -14,7 +14,7 @@ class WorkUnitTemplatesController < ApplicationController
     workflows = Workflow.limit(@limit).order(["created_at desc"]).filter(filters)
 
     @objects = (pipelines.to_a + workflows.to_a).sort_by(&:created_at).reverse.first(@limit)
- 
+
     if @objects.any?
       @next_page_filters = next_page_filters('<=')
       @next_page_href = url_for(partial: :choose_rows,
