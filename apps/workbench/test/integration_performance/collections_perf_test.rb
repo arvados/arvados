@@ -42,7 +42,7 @@ class CollectionsPerfTest < ActionDispatch::IntegrationTest
       visit page_with_token('active', "/collections/#{new_collection.uuid}")
       Rails.logger.info "Done visiting collection at #{Time.now.to_f}"
 
-      assert_text new_collection.uuid
+      assert_selector "input[value=\"#{new_collection.uuid}\"]"
       assert(page.has_link?('collection_file_name_with_prefix_0'), "Collection page did not include file link")
     end
   end
@@ -62,7 +62,7 @@ class CollectionsPerfTest < ActionDispatch::IntegrationTest
       visit page_with_token('active', "/collections/#{new_collection.uuid}")
       Rails.logger.info "Done visiting collection at #{Time.now.to_f}"
 
-      assert_text new_collection.uuid
+      assert_selector "input[value=\"#{new_collection.uuid}\"]"
       assert(page.has_link?('collection_file_name_with_prefix_0'), "Collection page did not include file link")
 
       # edit description
