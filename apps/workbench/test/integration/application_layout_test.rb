@@ -338,7 +338,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
   [
     ['Two Part Pipeline Template', 'part-one', 'Provide a value for the following'],
-    ['Valid workflow with name and desc', 'name: foo', 'This container is uncommitted'],
+    ['Workflow with input specifications', 'class: CommandLineTool', 'This container is uncommitted'],
   ].each do |template_name, preview_txt, process_txt|
     test "run a process using template #{template_name} from dashboard" do
       visit page_with_token('admin')
