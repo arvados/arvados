@@ -96,3 +96,5 @@ gem 'raphael-rails'
 
 gem 'lograge'
 gem 'logstash-event'
+
+gem 'safe_yaml'
