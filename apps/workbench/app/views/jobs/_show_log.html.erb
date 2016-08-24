@@ -66,7 +66,7 @@ var makeFilter = function() {
     var log_size = <%= logcollection.files[0][2] %>
     var log_maxbytes = <%= Rails.configuration.log_viewer_max_bytes %>;
     var logcollection_url = '<%=j url_for logcollection %>/<%=j logcollection.files[0][1] %>';
-    $("#log-viewer-download-url").attr('href', logcollection_url);
+    $(".log-viewer-view-full").attr('href', logcollection_url);
     $("#log-viewer-download-pane").show();
     var headers = {};
     if (log_size > log_maxbytes) {
@@ -175,7 +175,7 @@ $("#set-show-failed-only").on("click", function() {
   </p>
 
   <p id="log-viewer-download-pane" style="display:none">
-    <a id="log-viewer-download-url" href="">Download the full log</a>
+    <a class="log-viewer-view-full" href="">View the full log</a>
   </p>
 
   <div class="h3">Log
