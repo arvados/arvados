@@ -253,13 +253,6 @@ class CollectionsController < ApplicationController
         @permissions = Link.limit(RELATION_LIMIT).order("modified_at DESC")
           .where(head_uuid: @object.uuid, link_class: 'permission',
                  name: 'can_read').results
-        @logs = Log.limit(RELATION_LIMIT).order("created_at DESC")
-          .select(%w(uuid event_type object_uuid event_at summary))
-          .where(object_uuid: @object.uuid).results
-        @is_persistent = Link.limit(1)
-          .where(head_uuid: @object.uuid, tail_uuid: current_user.uuid,
-                 link_class: 'resources', name: 'wants')
-          .results.any?
         @search_sharing = search_scopes
 
         if params["tab_pane"] == "Used_by"

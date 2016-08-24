@@ -125,7 +125,7 @@ timer_reset
 # clean up the docker build environment
 cd "$WORKSPACE"
 
-tools/arvbox/bin/arvbox build dev
+tools/arvbox/bin/arvbox rebuild localdemo
 ECODE=$?
 
 if [[ "$ECODE" != "0" ]]; then
@@ -133,7 +133,7 @@ if [[ "$ECODE" != "0" ]]; then
     EXITCODE=$(($EXITCODE + $ECODE))
 fi
 
-tools/arvbox/bin/arvbox build localdemo
+tools/arvbox/bin/arvbox build dev
 
 ECODE=$?
 
@@ -151,8 +151,8 @@ timer_reset
 if [[ "$ECODE" != "0" ]]; then
     title "upload arvados images SKIPPED because build failed"
 else
-    if [[ $upload == true ]]; then 
-        ## 20150526 nico -- *sometimes* dockerhub needs re-login 
+    if [[ $upload == true ]]; then
+        ## 20150526 nico -- *sometimes* dockerhub needs re-login
         ## even though credentials are already in .dockercfg
         docker login -u arvados
 

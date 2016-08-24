@@ -81,13 +81,13 @@ fi
 
 cat >/tmp/cwltest/arv-cwl-jobs <<EOF2
 #!/bin/sh
-exec arvados-cwl-runner --api=jobs \\\$@
+exec arvados-cwl-runner --api=jobs --compute-checksum \\\$@
 EOF2
 chmod +x /tmp/cwltest/arv-cwl-jobs
 
 cat >/tmp/cwltest/arv-cwl-containers <<EOF2
 #!/bin/sh
-exec arvados-cwl-runner --api=containers \\\$@
+exec arvados-cwl-runner --api=containers --compute-checksum \\\$@
 EOF2
 chmod +x /tmp/cwltest/arv-cwl-containers
 
