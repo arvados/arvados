@@ -57,6 +57,7 @@ class WorkUnitsController < ApplicationController
 
       model_class = ContainerRequest
 
+      attrs['name'] = "#{workflow['name']} container" if workflow['name'].present?
       attrs['properties'] = {'template_uuid' => template_uuid}
       attrs['priority'] = 1
       attrs['state'] = "Uncommitted"
