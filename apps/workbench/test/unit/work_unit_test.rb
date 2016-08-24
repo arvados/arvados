@@ -35,6 +35,13 @@ class WorkUnitTest < ActiveSupport::TestCase
     end
   end
 
+  test "state_label should be Failed if container exit_code not 0" do
+    use_token 'active'
+    obj = find_fixture(ContainerRequest, 'cr_for_failed')
+    wu = obj.work_unit
+    assert_equal "Failed", wu.state_label
+  end
+
   [
     [Job, 'running_job_with_components', 1, 1, nil],
     [Job, 'queued', nil, nil, 1],
