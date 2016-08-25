@@ -737,4 +737,27 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       assert_no_selector 'li', text: 'Unrestricted public data'
     end
   end
+
+  [
+    ['Two Part Pipeline Template', 'part-one', 'Provide a value for the following'],
+    ['Workflow with input specifications', 'this work has inputs specified', 'This container is uncommitted'],
+  ].each do |template_name, preview_txt, process_txt|
+    test "run a process using template #{template_name} in a project" do
+      project = api_fixture('groups')['aproject']
+      visit page_with_token 'active', '/projects/' + project['uuid']
+
+      find('.btn', text: 'Run a pipeline').click
+
+      # in the chooser, verify preview and click Next button
+      within('.modal-dialog') do
+        find('.selectable', text: template_name).click
+        assert_text preview_txt
+        find('.btn', text: 'Next: choose inputs').click
+      end
+
+      # in the process page now
+      assert_text process_txt
+      assert_text project['name']
+    end
+  end
 end
