@@ -360,12 +360,6 @@ class Collection < ArvadosModel
     super - ["manifest_text"]
   end
 
-  def logged_attributes
-    attrs = attributes.dup
-    attrs.delete('manifest_text')
-    attrs
-  end
-
   protected
   def portable_manifest_text
     self.class.munge_manifest_locators(manifest_text) do |match|

@@ -56,10 +56,11 @@ class LogTest < ActiveSupport::TestCase
 
   def assert_logged_with_clean_properties(obj, event_type, excluded_attr)
     assert_logged(obj, event_type) do |props|
-      ['old_attributes', 'new_attributes'].map { |k| props[k] }.compact
-        .each do |attributes|
+      ['old_attributes', 'new_attributes'].map do |logattr|
+        attributes = props[logattr]
+        next if attributes.nil?
         refute_includes(attributes, excluded_attr,
-                        "log properties includes #{excluded_attr}")
+                        "log #{logattr} includes #{excluded_attr}")
       end
       yield props if block_given?
     end
@@ -271,6 +272,7 @@ class LogTest < ActiveSupport::TestCase
   end
 
   test "manifest_text not included in collection logs" do
+    Rails.configuration.unlogged_attributes = ["manifest_text"]
     act_as_system_user do
       coll = Collection.create(manifest_text: ". acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo\n")
       assert_logged_with_clean_properties(coll, :create, 'manifest_text')
