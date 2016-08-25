@@ -503,7 +503,7 @@ module ApplicationHelper
         end
       end
     elsif "boolean" == primary_type
-      return link_to attrvalue, '#', {
+      return link_to attrvalue.to_s, '#', {
                      "data-emptytext" => "none",
                      "data-placement" => "bottom",
                      "data-type" => "select",
@@ -512,7 +512,7 @@ module ApplicationHelper
                      "data-title" => "Set value for #{input_schema[:id]}",
                      "data-name" => dn,
                      "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
-                     "data-value" => attrvalue,
+                     "data-value" => attrvalue.to_s,
                      # "clear" button interferes with form-control's up/down arrows
                      "data-clear" => false,
                      :class => "editable #{'required' if required} form-control",
