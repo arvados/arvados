@@ -466,9 +466,10 @@ module ApplicationHelper
       selection_param = object.class.to_s.underscore + dn
       if attrvalue.is_a? Hash
         display_value = attrvalue[:"arv:collection"] || attrvalue[:location]
-        display_value.match /^([0-9a-z]{5}-([0-9a-z]{5})-[0-9a-z]{15})(\/.*)?$/ do |re|
-          if re[3]
-            display_value = "#{Collection.find(re[1]).name} / #{re[3][1..-1]}"
+        re = CollectionsHelper.match_uuid_with_optional_filepath(display_value)
+        if re
+          if re[4]
+            display_value = "#{Collection.find(re[1]).name} / #{re[4][1..-1]}"
           else
             display_value = Collection.find(re[1]).name
           end
