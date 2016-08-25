@@ -1,17 +1,46 @@
 workflow_with_workflow_yml:
   uuid: zzzzz-7fd4e-validworkfloyml
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  name: Valid workflow
+  name: Valid workflow with name and desc
   description: this work has a valid workflow yaml
   workflow: "name: foo\ndesc: bar"
+  created_at: 2016-08-15 12:00:00
 
 workflow_with_no_workflow_yml:
   uuid: zzzzz-7fd4e-validbutnoyml00
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   name: Valid workflow with no workflow yaml
   description: this workflow does not have a workflow yaml
+  created_at: 2016-08-15 12:00:00
 
 workflow_with_no_name_and_desc:
   uuid: zzzzz-7fd4e-validnonamedesc
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   workflow: this is valid yaml
+  created_at: 2016-08-15 12:00:01
+
+workflow_with_input_specifications:
+  uuid: zzzzz-7fd4e-validwithinputs
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: Workflow with input specifications
+  description: this work has inputs specified
+  created_at: <%= 1.minute.ago.to_s(:db) %>
+  workflow:
+    cwlVersion: v1.0
+    class: CommandLineTool
+    baseCommand:
+    - echo
+    inputs:
+    - doc: a longer documentation string for this parameter (optional)
+      type: boolean
+      id: ex_boolean
+      label: a short label for this parameter (optional)
+      inputBinding:
+        position: 1
+    - type:
+      - 'null'
+      - boolean
+      id: ex_boolean_opt
+      inputBinding:
+        position: 1
+    outputs: []
