@@ -51,7 +51,12 @@ class ContainerRequestsController < ApplicationController
       end
     end
     params[:merge] = true
-    super
+    begin
+      super
+    rescue => e
+      flash[:error] = e.to_s
+      show
+    end
   end
 
 end
