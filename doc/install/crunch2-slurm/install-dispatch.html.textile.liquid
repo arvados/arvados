@@ -1,0 +1,114 @@
+---
+layout: default
+navsection: installguide
+title: Install the SLURM dispatcher
+
+...
+
+The SLURM dispatcher can run on any node that can submit requests to both the Arvados API server and the SLURM controller.  It is not resource-intensive, so you can run it on the API server node.
+
+h2. Install the dispatcher
+
+First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
+
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install crunch-dispatch-slurm</span>
+~$ <span class="userinput">sudo systemctl enable crunch-dispatch-slurm</span>
+</code></pre>
+</notextile>
+
+On Debian-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install crunch-dispatch-slurm</span>
+</code></pre>
+</notextile>
+
+h2. Create a dispatcher token
+
+Create a privileged Arvados API token for use by the dispatcher. If you have multiple dispatch processes, you should give each one a different token.  *On the API server*, run:
+
+<notextile>
+<pre><code>apiserver:~$ <span class="userinput">cd /var/www/arvados-api/current</span>
+apiserver:/var/www/arvados-api/current$ <span class="userinput">sudo -u <b>webserver-user</b> RAILS_ENV=production bundle exec script/create_superuser_token.rb</span>
+zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+</code></pre>
+</notextile>
+
+h2. Configure the dispatcher
+
+Set up crunch-dispatch-slurm's configuration directory:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo mkdir -p /etc/arvados</span>
+~$ <span class="userinput">sudo install -d -o -root -g <b>crunch</b> -m 0750 /etc/arvados/crunch-dispatch-slurm</span>
+</code></pre>
+</notextile>
+
+Edit @/etc/arvados/crunch-dispatch-slurm/config.json@ to authenticate to your Arvados API server, using the token you generated in the previous step.  Follow this JSON format:
+
+<notextile>
+<pre><code class="userinput">{
+  "Client": {
+    "APIHost": <b>"zzzzz.arvadosapi.com"</b>,
+    "AuthToken": <b>"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"</b>
+  }
+}
+</code></pre>
+</notextile>
+
+This is the only configuration required by crunch-dispatch-slurm.  The subsections below describe optional configuration flags you can set inside the main configuration object.
+
+h3. PollPeriod
+
+crunch-dispatch-slurm polls the API server periodically for new containers to run.  The @PollPeriod@ option controls how often this poll happens.  Set this to a string of numbers suffixed with one of the time units @ns@, @us@, @ms@, @s@, @m@, or @h@.  For example:
+
+<notextile>
+<pre><code class="userinput">"PollPeriod": "3m30s"
+</code></pre>
+</notextile>
+
+h3. SbatchArguments
+
+When crunch-dispatch-slurm invokes @sbatch@, you can add switches to the command by specifying @SbatchArguments@.  You can use this to send the jobs to specific cluster partitions or add resource requests.  Set @SbatchArguments@ to an array of strings.  For example:
+
+<notextile>
+<pre><code class="userinput">"SbatchArguments": ["--partition=PartitionName"]
+</code></pre>
+</notextile>
+
+h3. CrunchRunCommand: Dispatch to SLURM cgroups
+
+If your SLURM cluster uses the @task/cgroup@ TaskPlugin, you can configure Crunch's Docker containers to be dispatched inside SLURM's cgroups.  This provides consistent enforcement of resource constraints.  To do this, add the following to your crunch-dispatch-slurm configuration:
+
+<notextile>
+<pre><code class="userinput">"CrunchRunCommand": ["crunch-run", "-cgroup-parent-subsystem=<b>memory</b>"]
+</code></pre>
+</notextile>
+
+The choice of subsystem ("memory" in this example) must correspond to one of the resource types enabled in SLURM's @cgroup.conf@. Limits for other resource types will also be respected.  The specified subsystem is singled out only to let Crunch determine the name of the cgroup provided by SLURM.
+
+{% include 'notebox_begin' %}
+
+Some versions of Docker (at least 1.9), when run under systemd, require the cgroup parent to be specified as a systemd slice.  This causes an error when specifying a cgroup parent created outside systemd, such as those created by SLURM.
+
+You can work around this issue by disabling the Docker daemon's systemd integration.  This makes it more difficult to manage Docker services with systemd, but Crunch does not require that functionality, and it will be able to use SLURM's cgroups as container parents.  To do this, "configure the Docker daemon on all compute nodes":install-compute-node.html#configure_docker_daemon to run with the option @--exec-opt native.cgroupdriver=cgroupfs@.
+
+{% include 'notebox_end' %}
+
+h2. Restart the dispatcher
+
+{% include 'notebox_begin' %}
+
+The crunch-dispatch-slurm package includes configuration files for systemd.  If you're using a different init system, you'll need to configure a service to start and stop a @crunch-dispatch-slurm@ process as desired.  The process should run from a directory where the @crunch@ user has write permission on all compute nodes, such as its home directory or @/tmp@.  You do not need to specify any additional switches or environment variables.
+
+{% include 'notebox_end' %}
+
+Restart the dispatcher to run with your new configuration:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo systemctl restart crunch-dispatch-slurm</span>
+</code></pre>
+</notextile>

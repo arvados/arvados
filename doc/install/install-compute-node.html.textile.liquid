@@ -32,29 +32,7 @@ On Debian-based systems:
 </code></pre>
 </notextile>
 
-h2. Install Docker
-
-Compute nodes must have Docker installed to run jobs inside containers.  This requires a relatively recent version of Linux (at least upstream version 3.10, or a distribution version with the appropriate patches backported).  Follow the "Docker Engine installation documentation":https://docs.docker.com/ for your distribution.
-
-For Debian-based systems, the Arvados package repository includes a backported @docker.io@ package with a known-good version you can install.
-
-h2. Configure Docker
-
-Crunch runs jobs in Docker containers with relatively little configuration.  You may need to start the Docker daemon with specific options to make sure these jobs run smoothly in your environment.  This section highlights options that are useful to most installations.  Refer to the "Docker daemon reference":https://docs.docker.com/reference/commandline/daemon/ for complete information about all available options.
-
-The best way to configure these options varies by distribution.
-
-* If you're using our backported @docker.io@ package, you can list these options in the @DOCKER_OPTS@ setting in @/etc/default/docker.io@.
-* If you're using another Debian-based package, you can list these options in the @DOCKER_OPTS@ setting in @/etc/default/docker@.
-* On Red Hat-based distributions, you can list these options in the @other_args@ setting in @/etc/sysconfig/docker@.
-
-h3. Default ulimits
-
-Docker containers inherit ulimits from the Docker daemon.  However, the ulimits for a single Unix daemon may not accommodate a long-running Crunch job.  You may want to increase default limits for compute jobs by passing @--default-ulimit@ options to the Docker daemon.  For example, to allow jobs to open 10,000 files, set @--default-ulimit nofile=10000:10000@.
-
-h3. DNS
-
-Your containers must be able to resolve the hostname in the ARVADOS_API_HOST environment variable (provided by the Crunch dispatcher) and any hostnames returned in Keep service records.  If these names are not in public DNS records, you may need to set a DNS resolver for the containers by specifying the @--dns@ address with the IP address of an appropriate nameserver.  You may specify this option more than once to use multiple nameservers.
+{% include 'install_compute_docker' %}
 
 h2. Set up SLURM
 
@@ -64,63 +42,9 @@ h2. Copy configuration files from the dispatcher (API server)
 
 The @slurm.conf@ and @/etc/munge/munge.key@ files need to be identical across the dispatcher and all compute nodes. Copy the files you created in the "Install the Crunch dispatcher":install-crunch-dispatch.html step to this compute node.
 
-h2. Configure FUSE
+{% include 'install_compute_fuse' %}
 
-Install this file as @/etc/fuse.conf@:
-
-<notextile>
-<pre>
-# Set the maximum number of FUSE mounts allowed to non-root users.
-# The default is 1000.
-#
-#mount_max = 1000
-
-# Allow non-root users to specify the 'allow_other' or 'allow_root'
-# mount options.
-#
-user_allow_other
-</pre>
-</notextile>
-
-h2. Configure the Docker cleaner
-
-The arvados-docker-cleaner program removes least recently used docker images as needed to keep disk usage below a configured limit.
-
-{% include 'notebox_begin' %}
-This also removes all containers as soon as they exit, as if they were run with @docker run --rm@. If you need to debug or inspect containers after they stop, temporarily stop arvados-docker-cleaner or run it with @--remove-stopped-containers never@.
-{% include 'notebox_end' %}
-
-Install runit to supervise the Docker cleaner daemon.  {% include 'install_runit' %}
-
-Configure runit to run the image cleaner using a suitable quota for your compute nodes and workload:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo mkdir -p /etc/sv</span>
-~$ <span class="userinput">cd /etc/sv</span>
-/etc/sv$ <span class="userinput">sudo mkdir arvados-docker-cleaner; cd arvados-docker-cleaner</span>
-/etc/sv/arvados-docker-cleaner$ <span class="userinput">sudo mkdir log log/main</span>
-/etc/sv/arvados-docker-cleaner$ <span class="userinput">sudo sh -c 'cat &gt;log/run' &lt;&lt;'EOF'
-#!/bin/sh
-exec svlogd -tt main
-EOF</span>
-/etc/sv/arvados-docker-cleaner$ <span class="userinput">sudo sh -c 'cat &gt;run' &lt;&lt;'EOF'
-#!/bin/sh
-if [ -d /opt/rh/python33 ]; then
-  source scl_source enable python33
-fi
-exec python3 -m arvados_docker.cleaner --quota <b>50G</b>
-EOF</span>
-/etc/sv/arvados-docker-cleaner$ <span class="userinput">sudo chmod +x run log/run</span>
-/etc/sv/arvados-docker-cleaner$ <span class="userinput">sudo ln -s "$(pwd)" /etc/service/</span>
-</code></pre>
-</notextile>
-
-If you are using a different daemon supervisor, or if you want to test the daemon in a terminal window, an equivalent shell command to run arvados-docker-cleaner is:
-
-<notextile>
-<pre><code><span class="userinput">python3 -m arvados_docker.cleaner --quota <b>50G</b></span>
-</code></pre>
-</notextile>
+{% include 'install_docker_cleaner' %}
 
 h2. Add a Crunch user account
 
