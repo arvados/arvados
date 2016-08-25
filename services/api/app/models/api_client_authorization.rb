@@ -65,9 +65,7 @@ class ApiClientAuthorization < ArvadosModel
   end
 
   def logged_attributes
-    attrs = attributes.dup
-    attrs.delete('api_token')
-    attrs
+    super.except 'api_token'
   end
 
   def self.default_orders

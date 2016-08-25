@@ -243,7 +243,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def logged_attributes
-    attributes
+    attributes.except *Rails.configuration.unlogged_attributes
   end
 
   def self.full_text_searchable_columns
