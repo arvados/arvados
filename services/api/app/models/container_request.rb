@@ -136,7 +136,7 @@ class ContainerRequest < ArvadosModel
           select(:portable_data_hash).
           first
         if !c
-          raise ActiveRecord::RecordNotFound.new "cannot mount collection #{uuid.inspect}: not found"
+          raise ArvadosModel::UnresolvableContainerError.new "cannot mount collection #{uuid.inspect}: not found"
         end
         if mount['portable_data_hash'].nil?
           # PDH not supplied by client
@@ -154,7 +154,7 @@ class ContainerRequest < ArvadosModel
   def container_image_for_container
     coll = Collection.for_latest_docker_image(container_image)
     if !coll
-      raise ActiveRecord::RecordNotFound.new "docker image #{container_image.inspect} not found"
+      raise ArvadosModel::UnresolvableContainerError.new "docker image #{container_image.inspect} not found"
     end
     return coll.portable_data_hash
   end
