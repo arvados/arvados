@@ -804,6 +804,24 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
 
 class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
+    def test_replication_desired_kept_on_load(self):
+        m = '. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n'
+        c1 = Collection(m, replication_desired=1)
+        c1.save_new()
+        loc = c1.manifest_locator()
+        c2 = Collection(loc)
+        self.assertEqual(c1.manifest_text, c2.manifest_text)
+        self.assertEqual(c1.replication_desired, c2.replication_desired)
+
+    def test_replication_desired_not_loaded_if_provided(self):
+        m = '. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:10:count2.txt\n'
+        c1 = Collection(m, replication_desired=1)
+        c1.save_new()
+        loc = c1.manifest_locator()
+        c2 = Collection(loc, replication_desired=2)
+        self.assertEqual(c1.manifest_text, c2.manifest_text)
+        self.assertNotEqual(c1.replication_desired, c2.replication_desired)
+
     def test_init_manifest(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
@@ -1062,6 +1080,30 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(c1["count1.txt"].size(), 10)
         c1.open("count1.txt", "w").close()
         self.assertEqual(c1["count1.txt"].size(), 0)
+
+
+class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
+    def test_get_manifest_text_only_committed(self):
+        c = Collection()
+        with c.open("count.txt", "w") as f:
+            # One file committed
+            with c.open("foo.txt", "w") as foo:
+                foo.write("foo")
+            f.write("0123456789")
+            # Other file not committed. Block not written to keep yet.
+            self.assertEqual(
+                c._get_manifest_text(".",
+                                     strip=False,
+                                     normalize=False,
+                                     only_committed=True),
+                '. acbd18db4cc2f85cedef654fccc4a4d8+3 0:0:count.txt 0:3:foo.txt\n')
+        # And now with the file closed...
+        self.assertEqual(
+            c._get_manifest_text(".",
+                                 strip=False,
+                                 normalize=False,
+                                 only_committed=True),
+            ". 781e5e245d69b566979b86e28d23f2c7+10 acbd18db4cc2f85cedef654fccc4a4d8+3 0:10:count.txt 10:3:foo.txt\n")
 
 
 class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
