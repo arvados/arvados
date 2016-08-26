@@ -11,11 +11,9 @@ class ContainerRequestsTest < ActionDispatch::IntegrationTest
     ['ex_int', 12],
     ['ex_int_opt', 12],
     ['ex_long', 12],
-    ['ex_double', 12.34],
-    ['ex_double', 'abc', true, 0.0],
-    ['ex_float', 12.34],
-    ['ex_float', 'abc', true, 0.0],
-  ].each do |input_id, input_value, need_refresh, expected|
+    ['ex_double', '12.34', 12.34],
+    ['ex_float', '12.34', 12.34],
+  ].each do |input_id, input_value, expected_value|
     test "set input #{input_id} with #{input_value}" do
       request_uuid = api_fixture("container_requests", "uncommitted", "uuid")
       visit page_with_token("active", "/container_requests/#{request_uuid}")
@@ -24,11 +22,7 @@ class ContainerRequestsTest < ActionDispatch::IntegrationTest
       find(".editable-input input").set(input_value)
       find("#editable-submit").click
       assert_no_selector(".editable-popup")
-      assert_selector(selector, text: input_value)
-      if need_refresh
-        visit page_with_token("active", "/container_requests/#{request_uuid}")
-        assert_selector(selector, text: expected)
-      end
+      assert_selector(selector, text: expected_value || input_value)
     end
   end
 
@@ -62,7 +56,7 @@ class ContainerRequestsTest < ActionDispatch::IntegrationTest
     ['directory_type'],
     ['file_type'],
   ].each do |type|
-    test "select input for #{type}" do
+    test "select value for #{type} input" do
       request_uuid = api_fixture("container_requests", "uncommitted-with-directory-input", "uuid")
       visit page_with_token("active", "/container_requests/#{request_uuid}")
       assert_text 'Provide a value for the following parameter'
