@@ -2,7 +2,7 @@ workflow_with_workflow_yml:
   uuid: zzzzz-7fd4e-validworkfloyml
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   name: Valid workflow with name and desc
-  description: this work has a valid workflow yaml
+  description: this workflow has a valid workflow yaml
   workflow: "name: foo\ndesc: bar"
   created_at: 2016-08-15 12:00:00
 
@@ -23,7 +23,7 @@ workflow_with_input_specifications:
   uuid: zzzzz-7fd4e-validwithinputs
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   name: Workflow with input specifications
-  description: this work has inputs specified
+  description: this workflow has inputs specified
   created_at: <%= 1.minute.ago.to_s(:db) %>
   workflow:
     cwlVersion: v1.0

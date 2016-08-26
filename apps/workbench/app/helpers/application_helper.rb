@@ -536,7 +536,7 @@ module ApplicationHelper
                      :id => id
                    }.merge(htmloptions)
     elsif primary_type.is_a? String
-      if ["float", "double", "int", "long"].include? primary_type
+      if ["int", "long"].include? primary_type
         datatype = "number"
       else
         datatype = "text"

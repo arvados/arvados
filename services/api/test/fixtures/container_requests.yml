@@ -454,6 +454,160 @@ uncommitted_ready_to_run:
     ram: 256000000
     API: true
 
+uncommitted-with-directory-input:
+  uuid: zzzzz-xvhdp-cr4uncommitted2
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: uncommitted with directory input
+  created_at: 2016-01-11 11:11:11.111111111 Z
+  updated_at: 2016-01-11 11:11:11.111111111 Z
+  modified_at: 2016-01-11 11:11:11.111111111 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  command: ["arvados-cwl-runner", "--local", "--api=containers",
+            "/var/lib/cwl/workflow.json", "/var/lib/cwl/cwl.input.json"]
+  output_path: "/var/spool/cwl"
+  cwd: "/var/spool/cwl"
+  priority: 1
+  state: Uncommitted
+  container_image: fa3c1a9cb6783f85f2ecda037e07b8c3+167
+  mounts: {
+        "/var/lib/cwl/workflow.json": {
+            "kind": "json",
+            "content": {
+                "cwlVersion": "v1.0",
+                "class": "CommandLineTool",
+                "baseCommand": ["echo"],
+                "inputs": [
+                    {
+                        "type": "Directory",
+                        "id": "directory_type",
+                        "inputBinding": {"position": 1}
+                    }
+                ],
+                "outputs": []
+            }
+        },
+        "/var/lib/cwl/cwl.input.json": {
+            "kind": "json",
+            "content": {}
+        },
+        "stdout": {
+            "kind": "file",
+            "path": "/var/spool/cwl/cwl.output.json"
+        },
+        "/var/spool/cwl": {
+            "kind": "collection",
+            "writable": true
+        }
+    }
+  runtime_constraints:
+    vcpus: 1
+    ram: 256000000
+    API: true
+
+uncommitted-with-file-input:
+  uuid: zzzzz-xvhdp-cr4uncommittedf
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: uncommitted with directory input
+  created_at: 2016-01-11 11:11:11.111111111 Z
+  updated_at: 2016-01-11 11:11:11.111111111 Z
+  modified_at: 2016-01-11 11:11:11.111111111 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  command: ["arvados-cwl-runner", "--local", "--api=containers",
+            "/var/lib/cwl/workflow.json", "/var/lib/cwl/cwl.input.json"]
+  output_path: "/var/spool/cwl"
+  cwd: "/var/spool/cwl"
+  priority: 1
+  state: Uncommitted
+  container_image: fa3c1a9cb6783f85f2ecda037e07b8c3+167
+  mounts: {
+        "/var/lib/cwl/workflow.json": {
+            "kind": "json",
+            "content": {
+                "cwlVersion": "v1.0",
+                "class": "CommandLineTool",
+                "baseCommand": ["echo"],
+                "inputs": [
+                    {
+                        "type": "File",
+                        "id": "file_type",
+                        "inputBinding": {"position": 1}
+                    }
+                ],
+                "outputs": []
+            }
+        },
+        "/var/lib/cwl/cwl.input.json": {
+            "kind": "json",
+            "content": {}
+        },
+        "stdout": {
+            "kind": "file",
+            "path": "/var/spool/cwl/cwl.output.json"
+        },
+        "/var/spool/cwl": {
+            "kind": "collection",
+            "writable": true
+        }
+    }
+  runtime_constraints:
+    vcpus: 1
+    ram: 256000000
+    API: true
+
+uncommitted-with-required-and-optional-inputs:
+  uuid: zzzzz-xvhdp-cr4uncommitted3
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: uncommitted with required and optional inputs
+  created_at: 2016-01-11 11:11:11.111111111 Z
+  updated_at: 2016-01-11 11:11:11.111111111 Z
+  modified_at: 2016-01-11 11:11:11.111111111 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  command: ["arvados-cwl-runner", "--local", "--api=containers",
+            "/var/lib/cwl/workflow.json", "/var/lib/cwl/cwl.input.json"]
+  output_path: "/var/spool/cwl"
+  cwd: "/var/spool/cwl"
+  priority: 1
+  state: Uncommitted
+  container_image: fa3c1a9cb6783f85f2ecda037e07b8c3+167
+  mounts: {
+        "/var/lib/cwl/workflow.json": {
+            "kind": "json",
+            "content": {
+                "cwlVersion": "v1.0",
+                "class": "CommandLineTool",
+                "baseCommand": ["echo"],
+                "inputs": [
+                    {
+                        "type": "int",
+                        "id": "int_required",
+                        "inputBinding": {"position": 1}
+                    },
+                    {
+                        "type": ["null", "int"],
+                        "id": "int_optional",
+                        "inputBinding": {"position": 1}
+                    }
+                ],
+                "outputs": []
+            }
+        },
+        "/var/lib/cwl/cwl.input.json": {
+            "kind": "json",
+            "content": {}
+        },
+        "stdout": {
+            "kind": "file",
+            "path": "/var/spool/cwl/cwl.output.json"
+        },
+        "/var/spool/cwl": {
+            "kind": "collection",
+            "writable": true
+        }
+    }
+  runtime_constraints:
+    vcpus: 1
+    ram: 256000000
+    API: true
 
 # Test Helper trims the rest of the file
 
