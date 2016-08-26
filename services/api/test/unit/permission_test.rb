@@ -353,4 +353,27 @@ class PermissionTest < ActiveSupport::TestCase
       ob.update_attributes!(owner_uuid: groups(:aproject).uuid)
     end
   end
+
+  def container_logs container, user
+    Log.readable_by(users(user)).
+      where(object_uuid: containers(container).uuid, event_type: "test")
+  end
+
+  test "container logs created by dispatch are visible to container requestor" do
+    set_user_from_auth :dispatch1
+    Log.create!(object_uuid: containers(:running).uuid,
+                event_type: "test")
+
+    assert_not_empty container_logs(:running, :admin)
+    assert_not_empty container_logs(:running, :active)
+    assert_empty container_logs(:running, :spectator)
+  end
+
+  test "container logs created by dispatch are public if container request is public" do
+    set_user_from_auth :dispatch1
+    Log.create!(object_uuid: containers(:running_older).uuid,
+                event_type: "test")
+
+    assert_not_empty container_logs(:running_older, :anonymous)
+  end
 end

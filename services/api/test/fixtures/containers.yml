@@ -31,7 +31,7 @@ running:
     vcpus: 4
   auth_uuid: zzzzz-gj3su-077z32aux8dg2s1
 
-running-older:
+running_older:
   uuid: zzzzz-dz642-runningcontain2
   owner_uuid: zzzzz-tpzed-000000000000000
   state: Running
