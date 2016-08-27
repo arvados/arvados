@@ -1,8 +1,13 @@
 require 'test_helper'
 
 class PermissionsTest < ActionDispatch::IntegrationTest
+  include DbCurrentTime
   include CurrentApiClient  # for empty_collection
   fixtures :users, :groups, :api_client_authorizations, :collections
+
+  teardown do
+    User.invalidate_permissions_cache db_current_time.to_i
+  end
 
   test "adding and removing direct can_read links" do
     # try to read collection as spectator
