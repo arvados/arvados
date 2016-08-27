@@ -143,7 +143,7 @@ class EventBus
         #
         # Note: find_each implies order('id asc'), which is what we
         # want.
-        logs.select(:id).find_each do |l|
+        logs.select('logs.id').find_each do |l|
           if not ws.sent_ids.include?(l.id)
             # only send if not a duplicate
             ws.send(Log.find(l.id).as_api_response.to_json)

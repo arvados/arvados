@@ -228,15 +228,6 @@ class ArvadosModel < ActiveRecord::Base
       sql_params += [user_uuids, user_uuids]
     end
 
-    if sql_table == "logs" and users_list.any?
-      # Link head points to the object described by this row
-      sql_conds += ["#{sql_table}.object_uuid IN #{permitted_uuids}"]
-
-      # This object described by this row is owned by this user, or owned by a group readable by this user
-      sql_conds += ["#{sql_table}.object_owner_uuid in (?)"]
-      sql_params += [uuid_list]
-    end
-
     # Link head points to this row, or to the owner of this row (the
     # thing to be read)
     #

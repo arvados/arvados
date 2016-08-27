@@ -53,6 +53,18 @@ class Log < ArvadosModel
     self
   end
 
+  def self.readable_by *users_list
+    if users_list.select { |u| u.is_admin }.any?
+      return self
+    end
+    user_uuids = users_list.map { |u| u.uuid }
+    uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
+    permitted_uuids = "(SELECT head_uuid FROM links WHERE link_class='permission' AND tail_uuid IN (?))"
+    joins("LEFT JOIN container_requests ON container_requests.container_uuid=logs.object_uuid").
+      where("logs.object_uuid IN #{permitted_uuids} OR container_requests.uuid IN (?)  OR container_requests.owner_uuid IN (?) OR logs.object_uuid IN (?) OR logs.object_owner_uuid IN (?)",
+            uuid_list, uuid_list, uuid_list, uuid_list, uuid_list)
+  end
+
   protected
 
   def permission_to_create
