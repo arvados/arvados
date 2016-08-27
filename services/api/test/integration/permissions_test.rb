@@ -341,11 +341,6 @@ class PermissionsTest < ActionDispatch::IntegrationTest
     assert_response 404
   end
 
-  test "get_permissions returns 404 for unreadable uuid" do
-    get "/arvados/v1/permissions/#{groups(:public).uuid}", nil, auth(:active)
-    assert_response 404
-  end
-
   test "get_permissions returns 403 if user can read but not manage" do
     post "/arvados/v1/links", {
       :link => {
