@@ -224,27 +224,6 @@ uncommitted:
                         "inputBinding": {"position": 1}
                     },
                     {
-                        "doc": "any parameter can be turned into an optional array with [\"null\", {\"type\": \"array\", \"items\": \"the_type\"}\n",
-                        "type": [
-                            "null",
-                            {
-                                "items": "File",
-                                "type": "array"
-                            }
-                        ],
-                        "id": "ex_opt_file_array",
-                        "inputBinding": {"position": 1}
-                    },
-                    {
-                        "doc": "any parameter can be made optional by providing a union of [\"null\", \"the_type\"]\n",
-                        "type": [
-                            "null",
-                            "string"
-                        ],
-                        "id": "ex_opt_string",
-                        "inputBinding": {"position": 1}
-                    },
-                    {
                         "type": "string",
                         "id": "ex_string",
                         "inputBinding": {"position": 1}
@@ -362,27 +341,6 @@ uncommitted_ready_to_run:
                     {
                         "type": "long",
                         "id": "ex_long",
-                        "inputBinding": {"position": 1}
-                    },
-                    {
-                        "doc": "any parameter can be turned into an optional array with [\"null\", {\"type\": \"array\", \"items\": \"the_type\"}\n",
-                        "type": [
-                            "null",
-                            {
-                                "items": "File",
-                                "type": "array"
-                            }
-                        ],
-                        "id": "ex_opt_file_array",
-                        "inputBinding": {"position": 1}
-                    },
-                    {
-                        "doc": "any parameter can be made optional by providing a union of [\"null\", \"the_type\"]\n",
-                        "type": [
-                            "null",
-                            "string"
-                        ],
-                        "id": "ex_opt_string",
                         "inputBinding": {"position": 1}
                     },
                     {
