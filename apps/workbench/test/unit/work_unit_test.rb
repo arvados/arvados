@@ -35,11 +35,16 @@ class WorkUnitTest < ActiveSupport::TestCase
     end
   end
 
-  test "state_label should be Failed if container exit_code not 0" do
-    use_token 'active'
-    obj = find_fixture(ContainerRequest, 'cr_for_failed')
-    wu = obj.work_unit
-    assert_equal "Failed", wu.state_label
+  [
+    ['cr_for_failed', true],
+    ['completed', false],
+  ].each do |cr_fixture, should_be_Failed|
+    test "state_label of ContainerRequest #{cr_fixture}" do
+      use_token 'active'
+      obj = find_fixture(ContainerRequest, cr_fixture)
+      wu = obj.work_unit
+      assert_equal should_be_Failed, ("Failed" == wu.state_label)
+    end
   end
 
   [

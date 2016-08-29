@@ -75,14 +75,9 @@ class ContainerWorkUnit < ProxyWorkUnit
   end
 
   def state_label
-    if @proxied.is_a? ContainerRequest and
-       get(:state) == "Committed" and
-       get(:state, @container) == "Complete" and
-       get(:exit_code, @container) != 0
-      "Failed"
-    else
-      get_combined(:state)
-    end
+    exit_code = get_combined(:exit_code)
+    "Failed" if (exit_code && exit_code != 0)
+    get_combined(:state)
   end
 
   def docker_image
