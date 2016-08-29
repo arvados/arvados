@@ -418,6 +418,149 @@ module ApplicationHelper
     lt
   end
 
+  def cwl_input_info(input_schema)
+    required = !(input_schema[:type].include? "null")
+    if input_schema[:type].is_a? Array
+      primary_type = input_schema[:type].select { |n| n != "null" }[0]
+    elsif input_schema[:type].is_a? String
+      primary_type = input_schema[:type]
+    elsif input_schema[:type].is_a? Hash
+      primary_type = input_schema[:type]
+    end
+    param_id = input_schema[:id]
+    return required, primary_type, param_id
+  end
+
+  def cwl_input_value(object, input_schema, set_attr_path)
+    dn = ""
+    attrvalue = object
+    set_attr_path.each do |a|
+      dn += "[#{a}]"
+      attrvalue = attrvalue[a.to_sym]
+    end
+    return dn, attrvalue
+  end
+
+  def cwl_inputs_required(object, inputs_schema, set_attr_path)
+    r = 0
+    inputs_schema.each do |input|
+      required, primary_type, param_id = cwl_input_info(input)
+      dn, attrvalue = cwl_input_value(object, input, set_attr_path + [param_id])
+      r += 1 if required and attrvalue.nil?
+    end
+    r
+  end
+
+  def render_cwl_input(object, input_schema, set_attr_path, htmloptions={})
+    required, primary_type, param_id = cwl_input_info(input_schema)
+
+    dn, attrvalue = cwl_input_value(object, input_schema, set_attr_path + [param_id])
+    attrvalue = if attrvalue.nil? then "" else attrvalue end
+
+    id = "#{object.uuid}-#{param_id}"
+
+    opt_empty_selection = if required then [] else [{value: "", text: ""}] end
+
+    if ["Directory", "File"].include? primary_type
+      chooser_title = "Choose a #{primary_type == 'Directory' ? 'dataset' : 'file'}:"
+      selection_param = object.class.to_s.underscore + dn
+      if attrvalue.is_a? Hash
+        display_value = attrvalue[:"arv:collection"] || attrvalue[:location]
+        re = CollectionsHelper.match_uuid_with_optional_filepath(display_value)
+        if re
+          if re[4]
+            display_value = "#{Collection.find(re[1]).name} / #{re[4][1..-1]}"
+          else
+            display_value = Collection.find(re[1]).name
+          end
+        end
+      end
+      modal_path = choose_collections_path \
+      ({ title: chooser_title,
+         filters: [['owner_uuid', '=', object.owner_uuid]].to_json,
+         action_name: 'OK',
+         action_href: container_request_path(id: object.uuid),
+         action_method: 'patch',
+         preconfigured_search_str: "",
+         action_data: {
+           merge: true,
+           use_preview_selection: primary_type == 'File' ? true : nil,
+           selection_param: selection_param,
+           success: 'page-refresh'
+         }.to_json,
+        })
+
+      return content_tag('div', :class => 'input-group') do
+        html = text_field_tag(dn, display_value,
+                              :class =>
+                              "form-control #{'required' if required}")
+        html + content_tag('span', :class => 'input-group-btn') do
+          link_to('Choose',
+                  modal_path,
+                  { :class => "btn btn-primary",
+                    :remote => true,
+                    :method => 'get',
+                  })
+        end
+      end
+    elsif "boolean" == primary_type
+      return link_to attrvalue.to_s, '#', {
+                     "data-emptytext" => "none",
+                     "data-placement" => "bottom",
+                     "data-type" => "select",
+                     "data-source" => (opt_empty_selection + [{value: "true", text: "true"}, {value: "false", text: "false"}]).to_json,
+                     "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore, merge: true),
+                     "data-title" => "Set value for #{input_schema[:id]}",
+                     "data-name" => dn,
+                     "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
+                     "data-value" => attrvalue.to_s,
+                     # "clear" button interferes with form-control's up/down arrows
+                     "data-clear" => false,
+                     :class => "editable #{'required' if required} form-control",
+                     :id => id
+                   }.merge(htmloptions)
+    elsif primary_type.is_a? Hash and primary_type[:type] == "enum"
+      return link_to attrvalue, '#', {
+                     "data-emptytext" => "none",
+                     "data-placement" => "bottom",
+                     "data-type" => "select",
+                     "data-source" => (opt_empty_selection + primary_type[:symbols].map {|i| {:value => i, :text => i} }).to_json,
+                     "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore, merge: true),
+                     "data-title" => "Set value for #{input_schema[:id]}",
+                     "data-name" => dn,
+                     "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
+                     "data-value" => attrvalue,
+                     # "clear" button interferes with form-control's up/down arrows
+                     "data-clear" => false,
+                     :class => "editable #{'required' if required} form-control",
+                     :id => id
+                   }.merge(htmloptions)
+    elsif primary_type.is_a? String
+      if ["int", "long"].include? primary_type
+        datatype = "number"
+      else
+        datatype = "text"
+      end
+
+      return link_to attrvalue, '#', {
+                     "data-emptytext" => "none",
+                     "data-placement" => "bottom",
+                     "data-type" => datatype,
+                     "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore, merge: true),
+                     "data-title" => "Set value for #{input_schema[:id]}",
+                     "data-name" => dn,
+                     "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
+                     "data-value" => attrvalue,
+                     # "clear" button interferes with form-control's up/down arrows
+                     "data-clear" => false,
+                     :class => "editable #{'required' if required} form-control",
+                     :id => id
+                     }.merge(htmloptions)
+    else
+      return "Unable to render editing control for parameter type #{primary_type}"
+    end
+  end
+
   def render_arvados_object_list_start(list, button_text, button_href,
                                        params={}, *rest, &block)
     show_max = params.delete(:show_max) || 3
