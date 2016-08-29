@@ -84,6 +84,8 @@ class ContainerRequestsTest < ActionDispatch::IntegrationTest
     visit page_with_token("active", "/container_requests/#{request_uuid}")
     assert_text 'Provide a value for the following parameter'
 
+    page.assert_selector 'a.disabled,button.disabled', text: 'Run'
+
     selector = ".editable[data-name='[mounts][/var/lib/cwl/cwl.input.json][content][int_required]']"
     find(selector).click
     find(".editable-input input").set(2016)
