@@ -11,7 +11,6 @@ def make_workflow(arvRunner, tool, job_order, project_uuid, update_uuid):
     upload_docker(arvRunner, tool)
 
     document_loader, workflowobj, uri = (tool.doc_loader, tool.doc_loader.fetch(tool.tool["id"]), tool.tool["id"])
-    print workflowobj["steps"]
     for inp in workflowobj["inputs"]:
         sn = shortname(inp["id"])
         if sn in job_order:

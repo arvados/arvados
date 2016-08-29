@@ -63,7 +63,7 @@ class WorkUnitsController < ApplicationController
       attrs['state'] = "Uncommitted"
 
       # required
-      attrs['command'] = ["arvados-cwl-runner", "--local", "--api=containers", "/var/lib/cwl/workflow.json", "/var/lib/cwl/cwl.input.json"]
+      attrs['command'] = ["arvados-cwl-runner", "--local", "--api=containers", "/var/lib/cwl/workflow.json#main", "/var/lib/cwl/cwl.input.json"]
       attrs['container_image'] = "arvados/jobs"
       attrs['cwd'] = "/var/spool/cwl"
       attrs['output_path'] = "/var/spool/cwl"

@@ -418,6 +418,25 @@ module ApplicationHelper
     lt
   end
 
+  def get_cwl_inputs(workflow)
+    if workflow[:inputs]
+      return workflow[:inputs]
+    else
+      workflow[:"$graph"].each do |tool|
+        if tool[:id] == "#main"
+          return tool[:inputs]
+        end
+      end
+    end
+  end
+
+  def cwl_shortname(id)
+    if id[0] == "#"
+      id = id[1..-1]
+    end
+    return id.split("/")[-1]
+  end
+
   def cwl_input_info(input_schema)
     required = !(input_schema[:type].include? "null")
     if input_schema[:type].is_a? Array
@@ -427,7 +446,7 @@ module ApplicationHelper
     elsif input_schema[:type].is_a? Hash
       primary_type = input_schema[:type]
     end
-    param_id = input_schema[:id]
+    param_id = cwl_shortname(input_schema[:id])
     return required, primary_type, param_id
   end
 
@@ -510,7 +529,7 @@ module ApplicationHelper
                      "data-type" => "select",
                      "data-source" => (opt_empty_selection + [{value: "true", text: "true"}, {value: "false", text: "false"}]).to_json,
                      "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore, merge: true),
-                     "data-title" => "Set value for #{input_schema[:id]}",
+                     "data-title" => "Set value for #{cwl_shortname(input_schema[:id])}",
                      "data-name" => dn,
                      "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
                      "data-value" => attrvalue.to_s,
@@ -526,7 +545,7 @@ module ApplicationHelper
                      "data-type" => "select",
                      "data-source" => (opt_empty_selection + primary_type[:symbols].map {|i| {:value => i, :text => i} }).to_json,
                      "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore, merge: true),
-                     "data-title" => "Set value for #{input_schema[:id]}",
+                     "data-title" => "Set value for #{cwl_shortname(input_schema[:id])}",
                      "data-name" => dn,
                      "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
                      "data-value" => attrvalue,
@@ -547,7 +566,7 @@ module ApplicationHelper
                      "data-placement" => "bottom",
                      "data-type" => datatype,
                      "data-url" => url_for(action: "update", id: object.uuid, controller: object.class.to_s.pluralize.underscore, merge: true),
-                     "data-title" => "Set value for #{input_schema[:id]}",
+                     "data-title" => "Set value for #{cwl_shortname(input_schema[:id])}",
                      "data-name" => dn,
                      "data-pk" => "{id: \"#{object.uuid}\", key: \"#{object.class.to_s.underscore}\"}",
                      "data-value" => attrvalue,

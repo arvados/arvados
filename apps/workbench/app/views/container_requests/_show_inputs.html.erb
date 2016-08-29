@@ -1,12 +1,13 @@
-<% n_inputs = cwl_inputs_required(@object, @object.mounts[:"/var/lib/cwl/workflow.json"][:content][:inputs], [:mounts, :"/var/lib/cwl/cwl.input.json", :content]) %>
+<% n_inputs = cwl_inputs_required(@object, get_cwl_inputs(@object.mounts[:"/var/lib/cwl/workflow.json"][:content]), [:mounts, :"/var/lib/cwl/cwl.input.json", :content]) %>
 
 <% content_for :pi_input_form do %>
 <form role="form" style="width:60%">
   <div class="form-group">
     <% workflow = @object.mounts[:"/var/lib/cwl/workflow.json"][:content] %>
-    <% workflow[:inputs].each do |input| %>
-      <label for="#input-<%= input[:id] %>">
-        <%= input[:label] || input[:id] %>
+    <% inputs = get_cwl_inputs(workflow) %>
+    <% inputs.each do |input| %>
+      <label for="#input-<%= cwl_shortname(input[:id]) %>">
+        <%= input[:label] || cwl_shortname(input[:id]) %>
       </label>
       <div>
         <p class="form-control-static">
