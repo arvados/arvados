@@ -1,5 +1,6 @@
 import os
 import json
+import copy
 
 from cwltool.pack import pack
 from cwltool.load_tool import fetch_document
@@ -11,12 +12,14 @@ def make_workflow(arvRunner, tool, job_order, project_uuid, update_uuid):
     upload_docker(arvRunner, tool)
 
     document_loader, workflowobj, uri = (tool.doc_loader, tool.doc_loader.fetch(tool.tool["id"]), tool.tool["id"])
-    for inp in workflowobj["inputs"]:
+
+    packed = pack(document_loader, workflowobj, uri, tool.metadata)
+
+    main = [p for p in packed["$graph"] if p["id"] == "#main"][0]
+    for inp in main["inputs"]:
         sn = shortname(inp["id"])
         if sn in job_order:
             inp["default"] = job_order[sn]
-
-    packed = pack(document_loader, workflowobj, uri, tool.metadata)
 
     name = os.path.basename(tool.tool["id"])
     upload_dependencies(arvRunner, name, document_loader,

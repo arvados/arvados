@@ -51,6 +51,9 @@ def upload_dependencies(arvrunner, name, document_loader,
 
     normalizeFilesDirs(files)
 
+    if "id" in workflowobj:
+        files.append({"class": "File", "location": workflowobj["id"]})
+
     mapper = ArvPathMapper(arvrunner, files, "",
                            keepprefix+"%s",
                            keepprefix+"%s/%s",
