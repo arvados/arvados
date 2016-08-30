@@ -167,24 +167,40 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     assert_no_selector 'a', text: 'Re-run options'
   end
 
-  test "anonymous user accesses pipeline templates tab in shared project" do
-    visit PUBLIC_PROJECT
-    click_link 'Data collections'
-    assert_text 'GNU General Public License'
+  [
+    'pipelineTemplate',
+    'workflow'
+  ].each do |type|
+    test "anonymous user accesses pipeline templates tab in shared project and click on #{type}" do
+      visit PUBLIC_PROJECT
+      click_link 'Data collections'
+      assert_text 'GNU General Public License'
 
-    assert_selector 'a', text: 'Pipeline templates'
+      assert_selector 'a', text: 'Pipeline templates'
 
-    click_link 'Pipeline templates'
-    assert_text 'Pipeline template in publicly accessible project'
+      click_link 'Pipeline templates'
+      assert_text 'Pipeline template in publicly accessible project'
+      assert_text 'Workflow with input specifications'
 
-    within first('tr[data-kind="arvados#pipelineTemplate"]') do
-      click_link 'Show'
+      if type == 'pipelineTemplate'
+        within first('tr[data-kind="arvados#pipelineTemplate"]') do
+          click_link 'Show'
+        end
+
+        # in template page
+        assert_text 'Public Projects Unrestricted public data'
+        assert_text 'script version'
+        assert_no_selector 'a', text: 'Run this pipeline'
+      else
+        within first('tr[data-kind="arvados#workflow"]') do
+          click_link 'Show'
+        end
+
+        # in workflow page
+        assert_text 'Public Projects Unrestricted public data'
+        assert_text 'this workflow has inputs specified'
+      end
     end
-
-    # in template page
-    assert_text 'Public Projects Unrestricted public data'
-    assert_text 'script version'
-    assert_no_selector 'a', text: 'Run this pipeline'
   end
 
   test "anonymous user accesses subprojects tab in shared project" do

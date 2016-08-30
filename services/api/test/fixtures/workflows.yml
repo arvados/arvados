@@ -21,7 +21,7 @@ workflow_with_no_name_and_desc:
 
 workflow_with_input_specifications:
   uuid: zzzzz-7fd4e-validwithinputs
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
   name: Workflow with input specifications
   description: this workflow has inputs specified
   created_at: <%= 1.minute.ago.to_s(:db) %>
