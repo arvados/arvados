@@ -163,6 +163,7 @@ class TestSubmit(unittest.TestCase):
             mock.call(body={'manifest_text': '. d41d8cd98f00b204e9800998ecf8427e+0 '
                             '0:0:blub.txt 0:0:submit_tool.cwl\n',
                             'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
+                            'replication_desired': None,
                             'name': 'New collection'
             }, ensure_unique_name=True),
             mock.call().execute(num_retries=4),
@@ -223,6 +224,7 @@ class TestSubmit(unittest.TestCase):
                             '0:0:blub.txt 0:0:submit_tool.cwl\n',
                             'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
                             'name': 'New collection',
+                            'replication_desired': None,
             }, ensure_unique_name=True),
             mock.call().execute(num_retries=4),
             mock.call(body={
