@@ -151,7 +151,7 @@ class ContainerWorkUnit < ProxyWorkUnit
   def template_uuid
     properties = get(:properties)
     if properties
-      properties[:workflow_uuid]
+      properties[:template_uuid]
     end
   end
 

@@ -1,0 +1,5 @@
+<% if @object.respond_to? :name %>
+  <h2>
+    <%= render_editable_attribute @object, 'name', nil, { 'data-emptytext' => "New #{controller.model_class.to_s.underscore.gsub("_"," ")}" } %>
+  </h2>
+<% end %>
