@@ -148,6 +148,13 @@ class ContainerWorkUnit < ProxyWorkUnit
     end
   end
 
+  def template_uuid
+    properties = get(:properties)
+    if properties
+      properties[:workflow_uuid]
+    end
+  end
+
   # End combined propeties
 
   protected

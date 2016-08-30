@@ -50,6 +50,12 @@ class ArvadosModel < ActiveRecord::Base
     end
   end
 
+  class UnresolvableContainerError < StandardError
+    def http_status
+      422
+    end
+  end
+
   def self.kind_class(kind)
     kind.match(/^arvados\#(.+)$/)[1].classify.safe_constantize rescue nil
   end
@@ -243,7 +249,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def logged_attributes
-    attributes
+    attributes.except *Rails.configuration.unlogged_attributes
   end
 
   def self.full_text_searchable_columns

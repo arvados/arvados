@@ -336,7 +336,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
       },
     }
     cr = ContainerRequest.new(mounts: m)
-    assert_raises(ActiveRecord::RecordNotFound) do
+    assert_raises(ArvadosModel::UnresolvableContainerError) do
       cr.send :mounts_for_container
     end
   end
@@ -381,10 +381,10 @@ class ContainerRequestTest < ActiveSupport::TestCase
    'ENOEXIST',
    'arvados/apitestfixture:ENOEXIST',
   ].each do |img|
-    test "container_image_for_container(#{img.inspect}) => 404" do
+    test "container_image_for_container(#{img.inspect}) => 422" do
       set_user_from_auth :active
       cr = ContainerRequest.new(container_image: img)
-      assert_raises(ActiveRecord::RecordNotFound) do
+      assert_raises(ArvadosModel::UnresolvableContainerError) do
         cr.send :container_image_for_container
       end
     end

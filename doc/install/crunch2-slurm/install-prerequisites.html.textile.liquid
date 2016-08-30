@@ -1,0 +1,9 @@
+---
+layout: default
+navsection: installguide
+title: Crunch v2 SLURM prerequisites
+...
+
+Crunch v2 containers can be dispatched to a SLURM cluster.  The dispatcher sends work to the cluster using SLURM's @sbatch@ command, so it works in a variety of SLURM configurations.
+
+In order to run containers, you must run the dispatcher as a user that has permission to set up FUSE mounts and run Docker containers on each compute node.  This install guide refers to this user as the @crunch@ user.  We recommend you create this user on each compute node with the same UID and GID, and add it to the @fuse@ and @docker@ system groups to grant it the necessary permissions.  However, you can run the dispatcher under any account with sufficient permissions across the cluster.

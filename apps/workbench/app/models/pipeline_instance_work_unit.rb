@@ -51,4 +51,8 @@ class PipelineInstanceWorkUnit < ProxyWorkUnit
   def title
     "pipeline"
   end
+
+  def template_uuid
+    get(:pipeline_template_uuid)
+  end
 end

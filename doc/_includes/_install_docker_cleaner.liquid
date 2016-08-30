@@ -1,0 +1,41 @@
+h2. Configure the Docker cleaner
+
+The arvados-docker-cleaner program removes least recently used Docker images as needed to keep disk usage below a configured limit.
+
+{% include 'notebox_begin' %}
+This also removes all containers as soon as they exit, as if they were run with @docker run --rm@. If you need to debug or inspect containers after they stop, temporarily stop arvados-docker-cleaner or run it with @--remove-stopped-containers never@.
+{% include 'notebox_end' %}
+
+Create a file @/etc/systemd/system/arvados-docker-cleaner.service@ in an editor.  Include the text below as its contents.  Make sure to edit the @ExecStart@ line appropriately for your compute node.
+
+<notextile>
+<pre><code>[Service]
+# Most deployments will want a quota that's at least 10G.  From there,
+# a larger quota can help reduce compute overhead by preventing reloading
+# the same Docker image repeatedly, but will leave less space for other
+# files on the same storage (usually Docker volumes).  Make sure the quota
+# is less than the total space available for Docker images.
+# If your deployment uses a Python 3 Software Collection, uncomment the
+# ExecStart line below, and delete the following one:
+# ExecStart=scl enable python33 "python3 -m arvados_docker.cleaner --quota <span class="userinput">20G</span>"
+ExecStart=python3 -m arvados_docker.cleaner --quota <span class="userinput">20G</span>
+Restart=always
+RestartPreventExitStatus=2
+
+[Install]
+WantedBy=default.target
+
+[Unit]
+After=docker.service
+</code></pre>
+</notextile>
+
+Then enable and start the service:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo systemctl enable arvados-docker-cleaner.service</span>
+~$ <span class="userinput">sudo systemctl start arvados-docker-cleaner.service</span>
+</code></pre>
+</notextile>
+
+If you are using a different daemon supervisor, or if you want to test the daemon in a terminal window, use the command on the @ExecStart@ line above.

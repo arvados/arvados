@@ -243,6 +243,14 @@ common:
   # silenced by throttling are not counted against this total.
   crunch_limit_log_bytes_per_job: 67108864
 
+  # Attributes to suppress in events and audit logs.  Notably,
+  # specifying ["manifest_text"] here typically makes the database
+  # smaller and faster.
+  #
+  # Warning: Using any non-empty value here can have undesirable side
+  # effects for any client or component that relies on event logs.
+  # Use at your own risk.
+  unlogged_attributes: []
 
   ###
   ### Crunch, DNS & compute node management

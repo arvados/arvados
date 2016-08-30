@@ -335,4 +335,29 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       assert page.has_text? 'Textile description for object'
     end
   end
+
+  [
+    ['Two Part Pipeline Template', 'part-one', 'Provide a value for the following'],
+    ['Workflow with input specifications', 'this workflow has inputs specified', 'Provide a value for the following'],
+  ].each do |template_name, preview_txt, process_txt|
+    test "run a process using template #{template_name} from dashboard" do
+      visit page_with_token('admin')
+      assert_text 'Recent pipelines and processes' # seeing dashboard now
+
+      within('.recent-processes-actions') do
+        assert page.has_link?('All processes')
+        find('a', text: 'Run a pipeline').click
+      end
+
+      # in the chooser, verify preview and click Next button
+      within('.modal-dialog') do
+        find('.selectable', text: template_name).click
+        assert_text preview_txt
+        find('.btn', text: 'Next: choose inputs').click
+      end
+
+      # in the process page now
+      assert_text process_txt
+    end
+  end
 end

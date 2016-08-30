@@ -1,0 +1,39 @@
+---
+layout: default
+navsection: installguide
+title: Set up a compute node
+...
+
+h2. Install dependencies
+
+First, "add the appropriate package repository for your distribution":{{ site.baseurl }}/install/install-manual-prerequisites.html#repos.
+
+{% include 'note_python_sc' %}
+
+On CentOS 6 and RHEL 6:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install python27-python-arvados-fuse crunch-run arvados-docker-cleaner</span>
+</code></pre>
+</notextile>
+
+On other Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">echo 'exclude=python2-llfuse' | sudo tee -a /etc/yum.conf</span>
+~$ <span class="userinput">sudo yum install python-arvados-fuse crunch-run arvados-docker-cleaner</span>
+</code></pre>
+</notextile>
+
+On Debian-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install python-arvados-python-client crunch-run arvados-docker-cleaner</span>
+</code></pre>
+</notextile>
+
+{% include 'install_compute_docker' %}
+
+{% include 'install_compute_fuse' %}
+
+{% include 'install_docker_cleaner' %}

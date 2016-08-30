@@ -539,7 +539,8 @@ CREATE TABLE jobs (
     description character varying(524288),
     state character varying(255),
     arvados_sdk_version character varying(255),
-    components text
+    components text,
+    script_parameters_digest character varying(255)
 );
 
 
@@ -1853,6 +1854,13 @@ CREATE INDEX index_jobs_on_script ON jobs USING btree (script);
 
 
 --
+-- Name: index_jobs_on_script_parameters_digest; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_jobs_on_script_parameters_digest ON jobs USING btree (script_parameters_digest);
+
+
+--
 -- Name: index_jobs_on_started_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -2675,3 +2683,7 @@ INSERT INTO schema_migrations (version) VALUES ('20160509143250');
 INSERT INTO schema_migrations (version) VALUES ('20160808151459');
 
 INSERT INTO schema_migrations (version) VALUES ('20160808151559');
+
+INSERT INTO schema_migrations (version) VALUES ('20160819195557');
+
+INSERT INTO schema_migrations (version) VALUES ('20160819195725');

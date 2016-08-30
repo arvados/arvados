@@ -199,4 +199,8 @@ class WorkUnit
   def render_log
     # return partial and locals to be rendered
   end
+
+  def template_uuid
+    # return the uuid of this work unit's template, if one exists
+  end
 end

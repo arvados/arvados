@@ -1,0 +1,40 @@
+<% n_inputs = cwl_inputs_required(@object, @object.mounts[:"/var/lib/cwl/workflow.json"][:content][:inputs], [:mounts, :"/var/lib/cwl/cwl.input.json", :content]) %>
+
+<% content_for :pi_input_form do %>
+<form role="form" style="width:60%">
+  <div class="form-group">
+    <% workflow = @object.mounts[:"/var/lib/cwl/workflow.json"][:content] %>
+    <% workflow[:inputs].each do |input| %>
+      <label for="#input-<%= input[:id] %>">
+        <%= input[:label] || input[:id] %>
+      </label>
+      <div>
+        <p class="form-control-static">
+          <%= render_cwl_input @object, input, [:mounts, :"/var/lib/cwl/cwl.input.json", :content] %>
+        </p>
+      </div>
+      <p class="help-block">
+        <%= input[:doc] %>
+      </p>
+    <% end %>
+  </div>
+</form>
+<% end %>
+
+<% if n_inputs == 0 %>
+  <p><i>This workflow does not need any further inputs specified.  Click the "Run" button at the bottom of the page to start the workflow.</i></p>
+<% else %>
+  <p><i>Provide <%= n_inputs > 1 ? 'values' : 'a value' %> for the following <%= n_inputs > 1 ? 'parameters' : 'parameter' %>, then click the "Run" button to start the workflow.</i></p>
+<% end %>
+
+<% if @object.editable? %>
+  <%= content_for :pi_input_form %>
+  <%= link_to(url_for('container_request[state]' => 'Committed'),
+        class: 'btn btn-primary run-pipeline-button',
+        method: :patch
+        ) do %>
+    Run <i class="fa fa-fw fa-play"></i>
+  <% end %>
+<% end %>
+
+<%= render_unreadable_inputs_present %>

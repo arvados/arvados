@@ -1,0 +1,109 @@
+---
+layout: default
+navsection: installguide
+title: Test SLURM dispatch
+...
+
+h2. Test compute node setup
+
+You should now be able to submit SLURM jobs that run in Docker containers.  On the node where you're running the dispatcher, you can test this by running:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo -u <b>crunch</b> srun -N1 docker run busybox echo OK
+</code></pre>
+</notextile>
+
+If it works, this command should print @OK@ (it may also show some status messages from SLURM and/or Docker).  If it does not print @OK@, double-check your compute node setup, and that the @crunch@ user can submit SLURM jobs.
+
+h2. Test the dispatcher
+
+On the dispatch node, start monitoring the crunch-dispatch-slurm logs:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo journalctl -o cat -fu crunch-dispatch-slurm.service</span>
+</code></pre>
+</notextile>
+
+*On your shell server*, submit a simple container request:
+
+<notextile>
+<pre><code>shell:~$ <span class="userinput">arv container_request create --container-request '{
+  "name":            "test",
+  "state":           "Committed",
+  "priority":        1,
+  "container_image": "arvados/jobs:latest",
+  "command":         ["echo", "Hello, Crunch!"],
+  "output_path":     "/out",
+  "mounts": {
+    "/out": {
+      "kind":        "tmp",
+      "capacity":    1000
+    }
+  },
+  "runtime_constraints": {
+    "vcpus": 1,
+    "ram": 8388608
+  }
+}'</span>
+</code></pre>
+</notextile>
+
+This command should return a record with a @container_uuid@ field.  Once crunch-dispatch-slurm polls the API server for new containers to run, you should see it dispatch that same container.  It will log messages like:
+
+<notextile>
+<pre><code>2016/08/05 13:52:54 Monitoring container zzzzz-dz642-hdp2vpu9nq14tx0 started
+2016/08/05 13:53:04 About to submit queued container zzzzz-dz642-hdp2vpu9nq14tx0
+2016/08/05 13:53:04 sbatch succeeded: Submitted batch job 8102
+</code></pre>
+</notextile>
+
+If you do not see crunch-dispatch-slurm try to dispatch the container, double-check that it is running and that the API hostname and token in @/etc/arvados/crunch-dispatch-slurm/config.json@ are correct.
+
+Before the container finishes, SLURM's @squeue@ command will show the new job in the list of queued and running jobs.  For example, you might see:
+
+<notextile>
+<pre><code>~$ <span class="userinput">squeue --long</span>
+Fri Aug  5 13:57:50 2016
+  JOBID PARTITION     NAME     USER    STATE       TIME TIMELIMIT  NODES NODELIST(REASON)
+   8103   compute zzzzz-dz   crunch  RUNNING       1:56 UNLIMITED      1 compute0
+</code></pre>
+</notextile>
+
+The job's name corresponds to the container's UUID.  You can get more information about it by running, e.g., <notextile><code>scontrol show job Name=<b>UUID</b></code></notextile>.
+
+When the container finishes, the dispatcher will log that, with the final result:
+
+<notextile>
+<pre><code>2016/08/05 13:53:14 Container zzzzz-dz642-hdp2vpu9nq14tx0 now in state "Complete" with locked_by_uuid ""
+2016/08/05 13:53:14 Monitoring container zzzzz-dz642-hdp2vpu9nq14tx0 finished
+</code></pre>
+</notextile>
+
+After the container finishes, you can get the container record by UUID *from a shell server* to see its results:
+
+<notextile>
+<pre><code>shell:~$ <span class="userinput">arv get <b>zzzzz-dz642-hdp2vpu9nq14tx0</b></span>
+{
+ ...
+ "exit_code":0,
+ "log":"a01df2f7e5bc1c2ad59c60a837e90dc6+166",
+ "output":"d41d8cd98f00b204e9800998ecf8427e+0",
+ "state":"Complete",
+ ...
+}
+</code></pre>
+</notextile>
+
+You can use standard Keep tools to view the container's output and logs from their corresponding fields.  For example, to see the logs from the collection referenced in the @log@ field:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv keep ls <b>a01df2f7e5bc1c2ad59c60a837e90dc6+166</b></span>
+./crunch-run.txt
+./stderr.txt
+./stdout.txt
+~$ <span class="userinput">arv keep get <b>a01df2f7e5bc1c2ad59c60a837e90dc6+166</b>/stdout.txt</span>
+2016-08-05T13:53:06.201011Z Hello, Crunch!
+</code></pre>
+</notextile>
+
+If the container does not dispatch successfully, refer to the crunch-dispatch-slurm logs for information about why it failed.
