@@ -303,13 +303,11 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
       assert_text 'created_at'
       if cancelable
-        assert page.has_button?('Cancel'), 'No Cancel button'
+        assert_selector 'button', text: 'Cancel'
         click_button 'Cancel'
         wait_for_ajax
-        assert page.has_no_button?('Cancel'), 'Cancel button not expected after clicking'
-      else
-        assert page.has_no_button?('Cancel'), 'Cancel button not expected'
       end
+      assert_no_selector 'button', text: 'Cancel'
     end
   end
 

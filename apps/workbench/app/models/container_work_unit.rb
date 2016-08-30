@@ -46,11 +46,15 @@ class ContainerWorkUnit < ProxyWorkUnit
   end
 
   def can_cancel?
-    @proxied.is_a?(ContainerRequest) && state_label.in?(["Queued", "Locked", "Running"]) && priority > 0
+    @proxied.is_a?(ContainerRequest) && @proxied.state == "Committed" && @proxied.priority > 0 && @proxied.editable?
   end
 
   def container_uuid
     get(:container_uuid)
+  end
+
+  def priority
+    @proxied.priority
   end
 
   # For the following properties, use value from the @container if exists
@@ -90,10 +94,6 @@ class ContainerWorkUnit < ProxyWorkUnit
 
   def runtime_constraints
     get_combined(:runtime_constraints)
-  end
-
-  def priority
-    get_combined(:priority)
   end
 
   def log_collection
@@ -155,7 +155,7 @@ class ContainerWorkUnit < ProxyWorkUnit
     end
   end
 
-  # End combined propeties
+  # End combined properties
 
   protected
   def get_combined key
