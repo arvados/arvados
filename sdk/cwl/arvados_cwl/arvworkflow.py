@@ -27,7 +27,7 @@ def make_workflow(arvRunner, tool, job_order, project_uuid, update_uuid):
             "owner_uuid": project_uuid,
             "name": tool.tool.get("label", name),
             "description": tool.tool.get("doc", ""),
-            "workflow":json.dumps(packed, sort_keys=True, indent=4)
+            "workflow":json.dumps(packed, sort_keys=True, indent=4, separators=(',',': '))
         }}
 
     if update_uuid:

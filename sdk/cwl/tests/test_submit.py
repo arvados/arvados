@@ -9,6 +9,7 @@ import hashlib
 import mock
 import sys
 import unittest
+import json
 
 from .matcher import JsonDiffMatcher
 
@@ -128,6 +129,12 @@ def stubs(func):
                 'ram': 268435456
             }
         }
+
+        stubs.expect_workflow_uuid = "zzzzz-7fd4e-zzzzzzzzzzzzzzz"
+        stubs.api.workflows().create().execute.return_value = {
+            "uuid": stubs.expect_workflow_uuid,
+        }
+
         return func(self, stubs, *args, **kwargs)
     return wrapped
 
@@ -244,7 +251,7 @@ class TestCreateTemplate(unittest.TestCase):
         capture_stdout = cStringIO.StringIO()
 
         exited = arvados_cwl.main(
-            ["--create-template", "--no-wait", "--debug",
+            ["--create-template", "--debug",
              "--project-uuid", project_uuid,
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
@@ -272,6 +279,41 @@ class TestCreateTemplate(unittest.TestCase):
 
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_pipeline_template_uuid + '\n')
+
+
+class TestCreateWorkflow(unittest.TestCase):
+    @stubs
+    def test_create(self, stubs):
+        project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+
+        capture_stdout = cStringIO.StringIO()
+
+        exited = arvados_cwl.main(
+            ["--create-workflow", "--debug",
+             "--project-uuid", project_uuid,
+             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+            capture_stdout, sys.stderr, api_client=stubs.api)
+        self.assertEqual(exited, 0)
+
+        stubs.api.pipeline_templates().create.refute_called()
+        stubs.api.container_requests().create.refute_called()
+
+        with open("tests/wf/expect_packed.cwl") as f:
+            expect_workflow = f.read()
+
+        body = {
+            "workflow": {
+                "owner_uuid": project_uuid,
+                "name": "submit_wf.cwl",
+                "description": "",
+                "workflow": expect_workflow
+            }
+        }
+        stubs.api.workflows().create.assert_called_with(
+            body=JsonDiffMatcher(body))
+
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_workflow_uuid + '\n')
 
 
 class TestTemplateInputs(unittest.TestCase):
