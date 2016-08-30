@@ -1,5 +1,4 @@
 {
-  "name":"first pipeline",
   "components":{
     "do_hash":{
       "script":"hash.py",
