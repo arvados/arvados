@@ -65,6 +65,7 @@ class Log < ArvadosModel
             "container_requests.uuid IN (:uuids) OR "+
             "container_requests.owner_uuid IN (:uuids) OR "+
             "logs.object_uuid IN (:uuids) OR "+
+            "logs.owner_uuid IN (:uuids) OR "+
             "logs.object_owner_uuid IN (:uuids)",
             uuids: uuid_list)
   end
