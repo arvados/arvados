@@ -223,7 +223,7 @@ func main() {
 	flag.DurationVar(
 		&trashLifetime,
 		"trash-lifetime",
-		0*time.Second,
+		0,
 		"Time duration after a block is trashed during which it can be recovered using an /untrash request")
 	flag.DurationVar(
 		&trashCheckInterval,
