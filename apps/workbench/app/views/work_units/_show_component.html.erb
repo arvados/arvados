@@ -1,13 +1,13 @@
 <%# Work unit status %>
 
-<div class="container-fluid>
-  <div class="row-fluid">
+<div>
+  <div>
     <%# Need additional handling for main object display  %>
     <% if @object.uuid == wu.uuid %>
-    <div class="container-fluid">
+    <div>
       <div class="pull-right">
-        <div class="container-fluid">
-          <div class="row-fulid pipeline-instance-spacing">
+        <div>
+          <div class="pipeline-instance-spacing">
             <div class="col-md-7">
             <% if wu.is_running? and wu.child_summary_str %>
                 <%= wu.child_summary_str %>
@@ -18,10 +18,10 @@
             </div>
             <div class="col-md-1">
               <% if wu.can_cancel? and @object.editable? %>
-                  <%= form_tag "#{wu.uri}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
-                    <%= hidden_field_tag :return_to, url_for(@object) %>
-                    <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-obj-button"} %>
-                  <% end %>
+                <%= form_tag "#{wu.uri}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
+                  <%= hidden_field_tag :return_to, url_for(@object) %>
+                  <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-obj-button"} %>
+                <% end %>
               <% end %>
             </div>
           </div>
@@ -41,6 +41,7 @@
       <%= raw(wu.show_runtime) %>
     </div>
   </div>
+</div>
 
 <p>
   <%= render(partial: 'work_units/component_detail', locals: {current_obj: wu}) %>
