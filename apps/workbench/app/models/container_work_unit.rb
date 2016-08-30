@@ -134,13 +134,6 @@ class ContainerWorkUnit < ProxyWorkUnit
     [get_combined(:uuid), get(:uuid)].uniq
   end
 
-  def live_log_lines(limit=2000)
-    event_types = ["stdout", "stderr", "arv-mount", "crunch-run"]
-    log_lines = Log.where(event_type: event_types, object_uuid: log_object_uuids).order("id DESC").limit(limit)
-    log_lines.results.reverse.
-      flat_map { |log| log.properties[:text].split("\n") rescue [] }
-  end
-
   def render_log
     collection = Collection.find(log_collection) rescue nil
     if collection

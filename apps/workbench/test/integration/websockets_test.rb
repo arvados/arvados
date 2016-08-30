@@ -201,7 +201,6 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
   test "test running job with just a few previous log records" do
     job = api_fixture("jobs")['running']
-    visit page_with_token("active", "/jobs/#{job['uuid']}")
 
     # Create just one old log record
     dispatch_log(owner_uuid: job['owner_uuid'],
@@ -209,7 +208,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
                  event_type: "stderr",
                  properties: {"text" => "Historic log message"})
 
-    click_link("Log")
+    visit page_with_token("active", "/jobs/#{job['uuid']}\#Log")
 
     # Expect "all" historic log records because we have less than
     # default Rails.configuration.running_job_log_records_to_fetch count
@@ -224,25 +223,23 @@ class WebsocketTest < ActionDispatch::IntegrationTest
   end
 
   test "test running job with too many previous log records" do
-    Rails.configuration.running_job_log_records_to_fetch = 5
-
+    max = 5
+    Rails.configuration.running_job_log_records_to_fetch = max
     job = api_fixture("jobs")['running']
-    visit page_with_token("active", "/jobs/#{job['uuid']}")
 
-    # Create Rails.configuration.running_job_log_records_to_fetch + 1 log records
-    (0..Rails.configuration.running_job_log_records_to_fetch).each do |count|
+    # Create max+1 log records
+    (0..max).each do |count|
       dispatch_log(owner_uuid: job['owner_uuid'],
                    object_uuid: job['uuid'],
                    event_type: "stderr",
                    properties: {"text" => "Old log message #{count}"})
     end
 
-    # Go to log tab, which results in subscribing to websockets
-    click_link("Log")
+    visit page_with_token("active", "/jobs/#{job['uuid']}\#Log")
 
     # Expect all but the first historic log records,
     # because that was one too many than fetch count.
-    (1..Rails.configuration.running_job_log_records_to_fetch).each do |count|
+    (1..max).each do |count|
       assert_text "Old log message #{count}"
     end
     assert_no_text 'Old log message 0'
