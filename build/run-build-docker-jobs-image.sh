@@ -118,18 +118,8 @@ timer_reset
 
 # clean up the docker build environment
 cd "$WORKSPACE"
-cd docker
-rm -f jobs-image
-rm -f config.yml
-
-# Get test config.yml file
-cp $HOME/docker/config.yml .
-
-if [[ ! -z "$tags" ]]; then
-  COMMIT=${tags/,*/} ./build.sh jobs-image
-else
-  ./build.sh jobs-image
-fi
+cd docker/jobs
+docker build -t arvados/jobs .
 
 ECODE=$?
 
@@ -147,8 +137,8 @@ timer_reset
 if [[ "$ECODE" != "0" ]]; then
     title "upload arvados images SKIPPED because build failed"
 else
-    if [[ $upload == true ]]; then 
-        ## 20150526 nico -- *sometimes* dockerhub needs re-login 
+    if [[ $upload == true ]]; then
+        ## 20150526 nico -- *sometimes* dockerhub needs re-login
         ## even though credentials are already in .dockercfg
         docker login -u arvados
 

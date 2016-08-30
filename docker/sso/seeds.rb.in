@@ -1,9 +1,0 @@
-
-Client.delete_all
-
-c = Client.new()
-c.name = "@@SSO_CLIENT_NAME@@"
-c.app_id = "@@SSO_CLIENT_APP_ID@@"
-c.app_secret = "@@SSO_CLIENT_SECRET@@"
-c.save!
-
