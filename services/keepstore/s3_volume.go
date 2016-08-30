@@ -43,9 +43,6 @@ type s3VolumeAdder struct {
 }
 
 func (s *s3VolumeAdder) Set(bucketName string) error {
-	if trashLifetime != 0 {
-		return ErrNotImplemented
-	}
 	if bucketName == "" {
 		return fmt.Errorf("no container name given")
 	}
