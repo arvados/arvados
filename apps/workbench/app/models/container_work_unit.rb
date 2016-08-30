@@ -76,8 +76,12 @@ class ContainerWorkUnit < ProxyWorkUnit
 
   def state_label
     exit_code = get_combined(:exit_code)
-    "Failed" if (exit_code && exit_code != 0)
+    return "Failed" if (exit_code && exit_code != 0)
     get_combined(:state)
+  end
+
+  def exit_code
+    get_combined(:exit_code)
   end
 
   def docker_image

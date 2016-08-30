@@ -36,14 +36,15 @@ class WorkUnitTest < ActiveSupport::TestCase
   end
 
   [
-    ['cr_for_failed', true],
-    ['completed', false],
-  ].each do |cr_fixture, should_be_Failed|
-    test "state_label of ContainerRequest #{cr_fixture}" do
+    ['cr_for_failed', 'Failed', 33],
+    ['completed', 'Complete', 0],
+  ].each do |cr_fixture, state, exit_code|
+    test "Completed ContainerRequest state = #{state} with exit_code = #{exit_code}" do
       use_token 'active'
       obj = find_fixture(ContainerRequest, cr_fixture)
       wu = obj.work_unit
-      assert_equal should_be_Failed, ("Failed" == wu.state_label)
+      assert_equal state, wu.state_label
+      assert_equal exit_code, wu.exit_code
     end
   end
 
