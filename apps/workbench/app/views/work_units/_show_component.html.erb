@@ -1,46 +1,35 @@
 <%# Work unit status %>
 
-<div>
-  <div>
-    <%# Need additional handling for main object display  %>
-    <% if @object.uuid == wu.uuid %>
-    <div>
-      <div class="pull-right">
-        <div>
-          <div class="pipeline-instance-spacing">
-            <div class="col-md-7">
-            <% if wu.is_running? and wu.child_summary_str %>
-                <%= wu.child_summary_str %>
-            <% end %>
-            </div>
-            <div class="col-md-3">
-              <%= render partial: 'work_units/progress', locals: {wu: wu} %>
-            </div>
-            <div class="col-md-1">
-              <% if wu.can_cancel? and @object.editable? %>
-                <%= form_tag "#{wu.uri}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
-                  <%= hidden_field_tag :return_to, url_for(@object) %>
-                  <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-obj-button"} %>
-                <% end %>
-              <% end %>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+<div class="row">
+  <div class="col-md-4">
+    <% if wu.is_paused? %>
+      <p>
+        This <%= wu.title %> is paused. Children that are already running
+        will continue to run, but no new processes will be submitted.
+      </p>
     <% end %>
 
-    <div class="col-md-10" >
-      <% if wu.is_paused? %>
-        <p>
-          This <%= wu.title %> is paused. Children that are already running
-          will continue to run, but no new processes will be submitted.
-        </p>
-      <% end %>
-
-      <%= raw(wu.show_runtime) %>
-    </div>
+    <%= raw(wu.show_runtime) %>
   </div>
+  <%# Need additional handling for main object display  %>
+  <% if @object.uuid == wu.uuid %>
+    <div class="col-md-3">
+      <% if wu.is_running? and wu.child_summary_str %>
+        <%= wu.child_summary_str %>
+      <% end %>
+    </div>
+    <div class="col-md-3">
+      <%= render partial: 'work_units/progress', locals: {wu: wu} %>
+    </div>
+    <div class="col-md-2">
+      <% if wu.can_cancel? and @object.editable? %>
+        <%= form_tag "#{wu.uri}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
+          <%= hidden_field_tag :return_to, url_for(@object) %>
+          <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-obj-button"} %>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
 </div>
 
 <p>
