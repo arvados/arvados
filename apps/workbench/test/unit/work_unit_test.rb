@@ -36,6 +36,19 @@ class WorkUnitTest < ActiveSupport::TestCase
   end
 
   [
+    ['cr_for_failed', 'Failed', 33],
+    ['completed', 'Complete', 0],
+  ].each do |cr_fixture, state, exit_code|
+    test "Completed ContainerRequest state = #{state} with exit_code = #{exit_code}" do
+      use_token 'active'
+      obj = find_fixture(ContainerRequest, cr_fixture)
+      wu = obj.work_unit
+      assert_equal state, wu.state_label
+      assert_equal exit_code, wu.exit_code
+    end
+  end
+
+  [
     [Job, 'running_job_with_components', 1, 1, nil],
     [Job, 'queued', nil, nil, 1],
     [PipelineInstance, 'pipeline_in_running_state', 1, 1, nil],
