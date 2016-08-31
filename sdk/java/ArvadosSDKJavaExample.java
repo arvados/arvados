@@ -4,7 +4,7 @@
  *
  */
 
-import org.arvados.sdk.java.Arvados;
+import org.arvados.sdk.Arvados;
 
 import java.io.File;
 import java.util.HashMap;
