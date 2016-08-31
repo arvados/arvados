@@ -1155,7 +1155,7 @@ class TokenExpiryTest(MountTestBase):
             re.search(r'\+A[0-9a-f]+@([0-9a-f]+)', got_loc).group(1),
             16)
         self.assertGreaterEqual(
-            got_exp, want_exp-1,
+            got_exp, want_exp-2,
             msg='now+2w = {:x}, but fuse fetched locator {} (old_exp {:x})'.format(
                 want_exp, got_loc, old_exp))
         self.assertLessEqual(
