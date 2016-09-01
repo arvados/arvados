@@ -14,13 +14,11 @@ class ActsAsApi::ApiTemplate
 end
 
 require 'load_param'
-require 'record_filters'
 
 class ApplicationController < ActionController::Base
   include CurrentApiClient
   include ThemesForRails::ActionController
   include LoadParam
-  include RecordFilters
 
   respond_to :json
   protect_from_forgery
@@ -207,11 +205,7 @@ class ApplicationController < ActionController::Base
 
   def apply_filters model_class=nil
     model_class ||= self.model_class
-    ft = record_filters @filters, model_class
-    if ft[:cond_out].any?
-      @objects = @objects.where('(' + ft[:cond_out].join(') AND (') + ')',
-                                *ft[:param_out])
-    end
+    @objects = model_class.apply_filters(@objects, @filters)
   end
 
   def apply_where_limit_order_params model_class=nil

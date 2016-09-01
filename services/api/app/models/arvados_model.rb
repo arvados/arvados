@@ -1,10 +1,12 @@
 require 'has_uuid'
+require 'record_filters'
 
 class ArvadosModel < ActiveRecord::Base
   self.abstract_class = true
 
   include CurrentApiClient      # current_user, current_api_client, etc.
   include DbCurrentTime
+  extend RecordFilters
 
   attr_protected :created_at
   attr_protected :modified_by_user_uuid
@@ -268,6 +270,15 @@ class ArvadosModel < ActiveRecord::Base
     # the tsvector index, which causes full text queries to be just as
     # slow as if we had no index at all.
     "to_tsvector('english', ' ' || #{parts.join(" || ' ' || ")})"
+  end
+
+  def self.apply_filters query, filters
+    ft = record_filters filters, self
+    if not ft[:cond_out].any?
+      return query
+    end
+    query.where('(' + ft[:cond_out].join(') AND (') + ')',
+                          *ft[:param_out])
   end
 
   protected
