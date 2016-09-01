@@ -669,7 +669,7 @@ class Arvados::V1::JobReuseControllerTest < ActionController::TestCase
     errors = json_response.fetch("errors", [])
     assert(errors.any?, "no errors assigned from #{params}")
     refute(errors.any? { |msg| msg =~ /^#<[A-Za-z]+: / },
-           "errors include raw exception")
+           "errors include raw exception: #{errors.inspect}")
     errors
   end
 
