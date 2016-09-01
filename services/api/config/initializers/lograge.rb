@@ -5,8 +5,8 @@ Server::Application.configure do
     exceptions = %w(controller action format id)
     params = event.payload[:params].except(*exceptions)
     params_s = Oj.dump(params)
-    if params_s.length > 1000
-      { params_truncated: params_s[0..1000] + "[...]" }
+    if params_s.length > Rails.configuration.max_request_log_params_size
+      { params_truncated: params_s[0..Rails.configuration.max_request_log_params_size] + "[...]" }
     else
       { params: params }
     end
