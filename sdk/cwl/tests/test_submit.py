@@ -55,7 +55,7 @@ def stubs(func):
         {
             "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz5",
             "portable_data_hash": "99999999999999999999999999999995+99",
-            "manifest_text": ""
+            "manifest_text": ". 8bfd9d5a8dc1a71ab286283f9ff6fa20+153 0:153:cwl.input.json"
         }        )
         stubs.api.collections().get().execute.return_value = {
             "portable_data_hash": "99999999999999999999999999999993+99", "manifest_text": "./tool 00000000000000000000000000000000+0 0:0:submit_tool.cwl 0:0:blub.txt"}
