@@ -71,4 +71,54 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     assert_nil container.locked_by_uuid
     assert_nil container.auth_uuid
   end
+
+  def create_new_container attrs={}
+    attrs = {
+      command: ['echo', 'foo'],
+      container_image: 'img',
+      output_path: '/tmp',
+      priority: 1,
+      runtime_constraints: {"vcpus" => 1, "ram" => 1},
+    }
+    c = Container.new attrs.merge(attrs)
+    c.save!
+    cr = ContainerRequest.new attrs.merge(attrs)
+    cr.save!
+    assert cr.update_attributes(container_uuid: c.uuid,
+                                state: ContainerRequest::Committed,
+                               ), show_errors(cr)
+
+    return c
+  end
+
+  [
+    [['Queued', :success], ['Locked', :success]],
+    [['Queued', :success], ['Locked', :success], ['Locked', 422]],
+    [['Queued', :success], ['Locked', :success], ['Queued', :success]],
+    [['Queued', :success], ['Locked', :success], ['Running', :success], ['Queued', 422]],
+  ].each do |transitions|
+    test "lock and unlock state transitions #{transitions}" do
+      authorize_with :dispatch1
+
+      container = create_new_container()
+
+      transitions.each do |state, status|
+        @test_counter = 0  # Reset executed action counter
+        @controller = Arvados::V1::ContainersController.new
+        authorize_with :dispatch1
+
+        if state == 'Locked'
+          post :lock, {id: container.uuid}
+        elsif state == 'Queued'
+          post :unlock, {id: container.uuid}
+        else
+          container.update_attributes!(state: state)
+        end
+        assert_response status
+
+        container = Container.where(uuid: container['uuid']).first
+        assert_equal state, container.state if status == :success
+      end
+    end
+  end
 end

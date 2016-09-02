@@ -21,7 +21,7 @@ class Arvados::V1::ContainersController < ApplicationController
   end
 
   def lock
-    @object.lock
+    @object.lock or raise Exception.new("Error locking container")
     show
   end
 
