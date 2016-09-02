@@ -112,9 +112,12 @@ class ContainerTest < ActiveSupport::TestCase
     refute c.update_attributes(state: Container::Complete), "not locked"
     c.reload
 
-    assert c.update_attributes(state: Container::Locked), show_errors(c)
+    assert c.lock, show_errors(c)
     assert c.locked_by_uuid
     assert c.auth_uuid
+
+    refute c.lock, "already locked"
+    c.reload
 
     assert c.update_attributes(state: Container::Queued), show_errors(c)
     refute c.locked_by_uuid

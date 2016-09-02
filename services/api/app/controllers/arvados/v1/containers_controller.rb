@@ -19,4 +19,15 @@ class Arvados::V1::ContainersController < ApplicationController
       super
     end
   end
+
+  def lock
+    @object.lock
+    show
+  end
+
+  def unlock
+    reload_object_before_update
+    @object.update_attributes! state: Container::Queued
+    show
+  end
 end

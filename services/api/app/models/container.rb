@@ -76,6 +76,15 @@ class Container < ArvadosModel
     end
   end
 
+  def lock
+    with_lock do
+      if self.state == Queued
+        self.state = Locked
+        self.save!
+      end
+    end
+  end
+
   protected
 
   def fill_field_defaults
