@@ -17,7 +17,7 @@ def available_port for_what
       STDERR.puts "Using port #{port} for #{for_what}"
       return port
     end
-  rescue Errno::EADDRINUSE => e
+  rescue Errno::EADDRINUSE, Errno::EACCES
     retry
   end
 end
