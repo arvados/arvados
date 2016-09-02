@@ -151,10 +151,7 @@ func submit(dispatcher *dispatch.Dispatcher,
 			// OK, no cleanup needed
 			return
 		}
-		err := dispatcher.Arv.Update("containers", container.UUID,
-			arvadosclient.Dict{
-				"container": arvadosclient.Dict{"state": "Queued"}},
-			nil)
+		err := dispatcher.UpdateState(container.UUID, dispatch.Queued)
 		if err != nil {
 			log.Printf("Error unlocking container %s: %v", container.UUID, err)
 		}

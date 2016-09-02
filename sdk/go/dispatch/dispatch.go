@@ -193,6 +193,21 @@ func (dispatcher *Dispatcher) handleUpdate(container arvados.Container) {
 
 // UpdateState makes an API call to change the state of a container.
 func (dispatcher *Dispatcher) UpdateState(uuid string, newState arvados.ContainerState) error {
+	if newState == Locked {
+		err := dispatcher.Arv.Call("POST", "containers", uuid, "lock", nil, nil)
+		if err != nil {
+			log.Printf("Error locking container %s: %q", uuid, err)
+		}
+		return err
+	} else if newState == Queued {
+		err := dispatcher.Arv.Call("POST", "containers", uuid, "unlock", nil, nil)
+		if err != nil {
+			log.Printf("Error unlocking container %s: %q", uuid, err)
+		}
+		return err
+	}
+
+	// All other states
 	err := dispatcher.Arv.Update("containers", uuid,
 		arvadosclient.Dict{
 			"container": arvadosclient.Dict{"state": newState}},
