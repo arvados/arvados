@@ -11,7 +11,7 @@ FactoryGirl.define do
     end
 
     to_create do |instance|
-      act_as_user instance.user do
+      CurrentApiClientHelper.act_as_user instance.user do
         instance.save!
       end
     end

@@ -1,4 +1,6 @@
-include CurrentApiClient
+class CurrentApiClientHelper
+  extend CurrentApiClient
+end
 
 FactoryGirl.define do
   factory :user do
@@ -6,7 +8,7 @@ FactoryGirl.define do
       join_groups []
     end
     after :create do |user, evaluator|
-      act_as_system_user do
+      CurrentApiClientHelper.act_as_system_user do
         evaluator.join_groups.each do |g|
           Link.create!(tail_uuid: user.uuid,
                        head_uuid: g.uuid,
@@ -27,7 +29,7 @@ FactoryGirl.define do
     factory :active_user do
       is_active true
       after :create do |user|
-        act_as_system_user do
+        CurrentApiClientHelper.act_as_system_user do
           Link.create!(tail_uuid: user.uuid,
                        head_uuid: Group.where('uuid ~ ?', '-f+$').first.uuid,
                        link_class: 'permission',
@@ -36,7 +38,7 @@ FactoryGirl.define do
       end
     end
     to_create do |instance|
-      act_as_system_user do
+      CurrentApiClientHelper.act_as_system_user do
         instance.save!
       end
     end

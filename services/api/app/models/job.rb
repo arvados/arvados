@@ -2,6 +2,7 @@ class Job < ArvadosModel
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
+  extend CurrentApiClient
   serialize :components, Hash
   attr_protected :arvados_sdk_version, :docker_image_locator
   serialize :script_parameters, Hash
