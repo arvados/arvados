@@ -888,13 +888,13 @@ class RichCollectionBase(CollectionBase):
         """Get the manifest text for this collection, sub collections and files.
 
         This method does not flush outstanding blocks to Keep.  It will return
-        a normalized manifest with access tokens stripped.
+        a manifest with access tokens stripped.
 
         :stream_name:
           Name to use for this stream (directory)
 
         """
-        return self._get_manifest_text(stream_name, True, True)
+        return self._get_manifest_text(stream_name, True, False)
 
     @synchronized
     def manifest_text(self, stream_name=".", strip=False, normalize=False):

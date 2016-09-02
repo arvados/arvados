@@ -68,6 +68,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         foobarbaz = self.write_foo_bar_baz()
         cr = arvados.CollectionReader(
             foobarbaz + '+Xzizzle', self.api_client)
+        self.assertEqual(foobarbaz, cr.portable_data_hash())
         got = []
         for s in cr.all_streams():
             for f in s.all_files():
