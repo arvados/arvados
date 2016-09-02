@@ -5,10 +5,20 @@ require 'uri'
 require 'yaml'
 
 def available_port for_what
-  Addrinfo.tcp("0.0.0.0", 0).listen do |srv|
-    port = srv.connect_address.ip_port
-    STDERR.puts "Using port #{port} for #{for_what}"
-    return port
+  begin
+    Addrinfo.tcp("0.0.0.0", 0).listen do |srv|
+      port = srv.connect_address.ip_port
+      # Selenium needs an additional locking port, check if it's available
+      # and retry if necessary.
+      if for_what == 'selenium'
+        locking_port = port - 1
+        Addrinfo.tcp("0.0.0.0", locking_port).listen.close
+      end
+      STDERR.puts "Using port #{port} for #{for_what}"
+      return port
+    end
+  rescue Errno::EADDRINUSE => e
+    retry
   end
 end
 
