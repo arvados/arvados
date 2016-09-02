@@ -87,15 +87,14 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     assert cr.update_attributes(container_uuid: c.uuid,
                                 state: ContainerRequest::Committed,
                                ), show_errors(cr)
-
     return c
   end
 
   [
     [['Queued', :success], ['Locked', :success]],
-    [['Queued', :success], ['Locked', :success], ['Locked', 422]],
-    [['Queued', :success], ['Locked', :success], ['Queued', :success]],
-    [['Queued', :success], ['Locked', :success], ['Running', :success], ['Queued', 422]],
+    [['Locked', :success], ['Locked', 422]],
+    [['Locked', :success], ['Queued', :success]],
+    [['Locked', :success], ['Running', :success], ['Queued', 422]],
   ].each do |transitions|
     test "lock and unlock state transitions #{transitions}" do
       authorize_with :dispatch1
