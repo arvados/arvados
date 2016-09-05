@@ -18,6 +18,7 @@ class Container < ArvadosModel
   validate :validate_change
   validate :validate_lock
   after_validation :assign_auth
+  before_save :sort_serialized_attrs
   after_save :handle_completed
 
   has_many :container_requests, :foreign_key => :container_uuid, :class_name => 'ContainerRequest', :primary_key => :uuid
@@ -77,6 +78,18 @@ class Container < ArvadosModel
   end
 
   protected
+
+  def self.deep_sort_hash(x)
+    if x.is_a? Hash
+      x.sort.collect do |k, v|
+        [k, deep_sort_hash(v)]
+      end.to_h
+    elsif x.is_a? Array
+      x.collect { |v| deep_sort_hash(v) }
+    else
+      x
+    end
+  end
 
   def fill_field_defaults
     self.state ||= Queued
@@ -198,6 +211,12 @@ class Container < ArvadosModel
     self.auth = ApiClientAuthorization.
       create!(user_id: User.find_by_uuid(cr.modified_by_user_uuid).id,
               api_client_id: 0)
+  end
+
+  def sort_serialized_attrs
+    self.environment = self.class.deep_sort_hash(self.environment)
+    self.mounts = self.class.deep_sort_hash(self.mounts)
+    self.runtime_constraints = self.class.deep_sort_hash(self.runtime_constraints)
   end
 
   def handle_completed

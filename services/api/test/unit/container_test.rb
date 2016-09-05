@@ -78,6 +78,22 @@ class ContainerTest < ActiveSupport::TestCase
     end
   end
 
+  test "Container serialized hash attributes sorted" do
+    env = {"C" => 3, "B" => 2, "A" => 1}
+    m = {"F" => 3, "E" => 2, "D" => 1}
+    rc = {"vcpus" => 1, "ram" => 1}
+    c, _ = minimal_new(environment: env, mounts: m, runtime_constraints: rc)
+    assert_equal c.environment.to_json, Container.deep_sort_hash(env).to_json
+    assert_equal c.mounts.to_json, Container.deep_sort_hash(m).to_json
+    assert_equal c.runtime_constraints.to_json, Container.deep_sort_hash(rc).to_json
+  end
+
+  test 'deep_sort_hash on array of hashes' do
+    a = {'z' => [[{'a' => 'a', 'b' => 'b'}]]}
+    b = {'z' => [[{'b' => 'b', 'a' => 'a'}]]}
+    assert_equal Container.deep_sort_hash(a).to_json, Container.deep_sort_hash(b).to_json
+  end
+
   test "Container running" do
     c, _ = minimal_new priority: 1
 
