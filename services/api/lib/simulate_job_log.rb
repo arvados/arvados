@@ -1,4 +1,7 @@
+require 'current_api_client'
+
 module SimulateJobLog
+  include CurrentApiClient
   def replay(filename, multiplier = 1, simulated_job_uuid = nil)
     raise "Environment must be development or test" unless [ 'test', 'development' ].include? ENV['RAILS_ENV']
 
