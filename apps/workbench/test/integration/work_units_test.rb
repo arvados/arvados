@@ -55,4 +55,77 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
         assert_no_selector "a[href=\"#{link}\"]"
       end
   end
+
+  [
+    ['jobs', 'running_job_with_components', true],
+    ['pipeline_instances', 'components_is_jobspec', false],
+    ['containers', 'running', false],
+    ['container_requests', 'running', true],
+  ].each do |type, fixture, cancelable|
+    test "cancel button for #{type}/#{fixture}" do
+      if cancelable
+        need_selenium 'to cancel'
+      end
+
+      obj = api_fixture(type)[fixture]
+      visit page_with_token "active", "/#{type}/#{obj['uuid']}"
+
+      assert_text 'created_at'
+      if cancelable
+        assert_selector 'button', text: 'Cancel'
+        click_button 'Cancel'
+        wait_for_ajax
+      end
+      assert_no_selector 'button', text: 'Cancel'
+    end
+  end
+
+  [
+    ['jobs', 'running_job_with_components'],
+    ['pipeline_instances', 'has_component_with_completed_jobs'],
+    ['container_requests', 'running'],
+    ['container_requests', 'completed'],
+  ].each do |type, fixture|
+    test "edit description for #{type}/#{fixture}" do
+      obj = api_fixture(type)[fixture]
+      visit page_with_token "active", "/#{type}/#{obj['uuid']}"
+
+      within('.arv-description-as-subtitle') do
+        find('.fa-pencil').click
+        find('.editable-input textarea').set('*Textile description for object*')
+        find('.editable-submit').click
+      end
+      wait_for_ajax
+
+      # verify description
+      assert page.has_no_text? '*Textile description for object*'
+      assert page.has_text? 'Textile description for object'
+    end
+  end
+
+  [
+    ['Two Part Pipeline Template', 'part-one', 'Provide a value for the following'],
+    ['Workflow with input specifications', 'this workflow has inputs specified', 'Provide a value for the following'],
+  ].each do |template_name, preview_txt, process_txt|
+    test "run a process using template #{template_name} from dashboard" do
+      visit page_with_token('admin')
+      assert_text 'Recent pipelines and processes' # seeing dashboard now
+
+      within('.recent-processes-actions') do
+        assert page.has_link?('All processes')
+        find('a', text: 'Run a pipeline').click
+      end
+
+      # in the chooser, verify preview and click Next button
+      within('.modal-dialog') do
+        find('.selectable', text: template_name).click
+        assert_text preview_txt
+        find('.btn', text: 'Next: choose inputs').click
+      end
+
+      # in the process page now
+      assert_text process_txt
+      assert_selector 'a', text: template_name
+    end
+  end
 end

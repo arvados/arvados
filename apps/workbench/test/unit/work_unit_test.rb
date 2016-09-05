@@ -104,4 +104,18 @@ class WorkUnitTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test 'can_cancel?' do
+    use_token 'active' do
+      assert find_fixture(Job, 'running').work_unit.can_cancel?
+      refute find_fixture(Container, 'running').work_unit.can_cancel?
+      assert find_fixture(ContainerRequest, 'running').work_unit.can_cancel?
+    end
+    use_token 'spectator' do
+      refute find_fixture(ContainerRequest, 'running_anonymous_accessible').work_unit.can_cancel?
+    end
+    use_token 'admin' do
+      assert find_fixture(ContainerRequest, 'running_anonymous_accessible').work_unit.can_cancel?
+    end
+  end
 end
