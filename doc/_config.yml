@@ -44,8 +44,8 @@ navbar:
       - user/topics/keep.html.textile.liquid
       - user/topics/arv-copy.html.textile.liquid
     - Using Common Workflow Language:
-      - user/cwl/intro-cwl.html.textile.liquid
       - user/cwl/cwl-runner.html.textile.liquid
+      - user/cwl/cwl-style.html.textile.liquid
     - Working on the command line:
       - user/topics/running-pipeline-command-line.html.textile.liquid
       - user/topics/arv-run.html.textile.liquid
