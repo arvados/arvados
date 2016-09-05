@@ -59,6 +59,7 @@ class Log < ArvadosModel
     end
     user_uuids = users_list.map { |u| u.uuid }
     uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
+    uuid_list.uniq!
     permitted = "(SELECT head_uuid FROM links WHERE link_class='permission' AND tail_uuid IN (:uuids))"
     joins("LEFT JOIN container_requests ON container_requests.container_uuid=logs.object_uuid").
       where("logs.object_uuid IN #{permitted} OR "+

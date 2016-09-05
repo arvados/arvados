@@ -82,6 +82,7 @@ class Container < ArvadosModel
     end
     user_uuids = users_list.map { |u| u.uuid }
     uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
+    uuid_list.uniq!
     permitted = "(SELECT head_uuid FROM links WHERE link_class='permission' AND tail_uuid IN (:uuids))"
     joins(:container_requests).
       where("container_requests.uuid IN #{permitted} OR "+

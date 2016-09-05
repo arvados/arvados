@@ -199,6 +199,7 @@ class ArvadosModel < ActiveRecord::Base
     # authorized users themselves) is an object's owner_uuid, that
     # object is readable.
     owner_uuids = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
+    owner_uuids.uniq!
 
     sql_conds = []
     sql_table = kwargs.fetch(:table_name, table_name)
