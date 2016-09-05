@@ -354,7 +354,7 @@ class PermissionTest < ActiveSupport::TestCase
     end
   end
 
-  def container_logs container, user
+  def container_logs(container, user)
     Log.readable_by(users(user)).
       where(object_uuid: containers(container).uuid, event_type: "test")
   end

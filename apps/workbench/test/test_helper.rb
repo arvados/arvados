@@ -31,7 +31,7 @@ class ActiveSupport::TestCase
   # Note: You'll currently still have to declare fixtures explicitly
   # in integration tests -- they do not yet inherit this setting
   fixtures :all
-  def use_token token_name
+  def use_token(token_name)
     user_was = Thread.current[:user]
     token_was = Thread.current[:arvados_api_token]
     auth = api_fixture('api_client_authorizations')[token_name.to_s]

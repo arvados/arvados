@@ -6,7 +6,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     @dispatch_client = ArvadosApiClient.new
   end
 
-  def dispatch_log body
+  def dispatch_log(body)
     use_token :dispatch1 do
       @dispatch_client.api('logs', '', log: body)
     end

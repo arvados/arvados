@@ -76,7 +76,7 @@ class Container < ArvadosModel
     end
   end
 
-  def self.readable_by *users_list
+  def self.readable_by(*users_list)
     if users_list.select { |u| u.is_admin }.any?
       return self
     end
