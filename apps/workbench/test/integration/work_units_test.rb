@@ -125,6 +125,7 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
 
       # in the process page now
       assert_text process_txt
+      assert_selector 'a', text: template_name
     end
   end
 end

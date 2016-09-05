@@ -6,6 +6,8 @@ import os
 import functools
 import cwltool.process
 
+from schema_salad.ref_resolver import Loader
+
 if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
     logging.getLogger('arvados.arv-run').setLevel(logging.WARN)
@@ -28,7 +30,8 @@ class TestJob(unittest.TestCase):
             "arguments": [{"valueFrom": "$(runtime.outdir)"}]
         }
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names, basedir="", make_fs_access=make_fs_access)
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names,
+                                                 basedir="", make_fs_access=make_fs_access, loader=Loader({}))
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access):
             j.run()
@@ -80,7 +83,8 @@ class TestJob(unittest.TestCase):
             "baseCommand": "ls"
         }
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names, make_fs_access=make_fs_access)
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names,
+                                                 make_fs_access=make_fs_access, loader=Loader({}))
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access):
             j.run()

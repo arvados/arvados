@@ -6,6 +6,8 @@ import os
 import functools
 import cwltool.process
 
+from schema_salad.ref_resolver import Loader
+
 if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
     logging.getLogger('arvados.arv-run').setLevel(logging.WARN)
@@ -35,7 +37,7 @@ class TestContainer(unittest.TestCase):
         }
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names,
-                                                 basedir="", make_fs_access=make_fs_access)
+                                                 basedir="", make_fs_access=make_fs_access, loader=Loader({}))
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_run",
                              make_fs_access=make_fs_access, tmpdir="/tmp"):
@@ -88,7 +90,8 @@ class TestContainer(unittest.TestCase):
         }
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers",
-                                                 avsc_names=avsc_names, make_fs_access=make_fs_access)
+                                                 avsc_names=avsc_names, make_fs_access=make_fs_access,
+                                                 loader=Loader({}))
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_resource_requirements",
                              make_fs_access=make_fs_access, tmpdir="/tmp"):
