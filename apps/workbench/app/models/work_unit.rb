@@ -41,6 +41,10 @@ class WorkUnit
     # returns a string representing state of the work unit
   end
 
+  def exit_code
+    # returns the work unit's execution exit code
+  end
+
   def state_bootstrap_class
     # returns a class like "danger", "success", or "warning" that a view can use directly to make a display class
   end

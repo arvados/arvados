@@ -103,7 +103,8 @@ case "$TARGET" in
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             'pycurl<7.21.5' contextlib2 pyyaml 'rdflib>=4.2.0' \
-            shellescape mistune typing avro ruamel.ordereddict)
+            shellescape mistune typing avro ruamel.ordereddict
+            cachecontrol cwltest)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         ;;
     debian8)
@@ -113,7 +114,8 @@ case "$TARGET" in
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
-            shellescape mistune typing avro ruamel.ordereddict)
+            shellescape mistune typing avro ruamel.ordereddict
+            cachecontrol cwltest)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         ;;
     ubuntu1204)
@@ -123,7 +125,8 @@ case "$TARGET" in
             rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             contextlib2 'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
-            shellescape mistune typing avro isodate ruamel.ordereddict)
+            shellescape mistune typing avro isodate ruamel.ordereddict
+            cachecontrol cwltest)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         ;;
     ubuntu1404)
@@ -131,7 +134,8 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(pyasn1==0.1.7 pyasn1-modules==0.0.5 llfuse==0.41.1 ciso8601 \
             google-api-python-client==1.4.2 six uritemplate oauth2client==1.5.2 httplib2 \
             rsa 'pycurl<7.21.5' backports.ssl_match_hostname pyyaml 'rdflib>=4.2.0' \
-            shellescape mistune typing avro ruamel.ordereddict)
+            shellescape mistune typing avro ruamel.ordereddict
+            cachecontrol cwltest)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 requests websocket-client)
         ;;
     centos6)
@@ -151,7 +155,7 @@ case "$TARGET" in
             python-daemon lockfile llfuse==0.41.1 'pbr<1.0' pyyaml \
             'rdflib>=4.2.0' shellescape mistune typing avro requests \
             isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
-            ruamel.ordereddict)
+            ruamel.ordereddict cachecontrol cwltest)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         export PYCURL_SSL_LIBRARY=nss
         ;;
@@ -171,7 +175,7 @@ case "$TARGET" in
             python-daemon llfuse==0.41.1 'pbr<1.0' pyyaml \
             'rdflib>=4.2.0' shellescape mistune typing avro \
             isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
-            ruamel.ordereddict)
+            ruamel.ordereddict cachecontrol cwltest)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         export PYCURL_SSL_LIBRARY=nss
         ;;
@@ -463,11 +467,10 @@ fpm_build schema_salad "" "" python 1.17.20160820171034
 
 # And schema_salad now depends on ruamel-yaml, which apparently has a braindead setup.py that requires special arguments to build (otherwise, it aborts with 'error: you have to install with "pip install ."'). Sigh.
 # Ward, 2016-05-26
-# ...and schema_salad 1.12.20160610104117 doesn't work with ruamel-yaml > 0.11.11.
 fpm_build ruamel.yaml "" "" python 0.12.4 --python-setup-py-arguments "--single-version-externally-managed"
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
-fpm_build cwltool "" "" python 1.0.20160829211335
+fpm_build cwltool "" "" python 1.0.20160901133827
 
 # FPM eats the trailing .0 in the python-rdflib-jsonld package when built with 'rdflib-jsonld>=0.3.0'. Force the version. Ward, 2016-03-25
 fpm_build rdflib-jsonld "" "" python 0.3.0

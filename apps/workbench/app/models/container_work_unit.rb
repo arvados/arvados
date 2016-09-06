@@ -46,11 +46,15 @@ class ContainerWorkUnit < ProxyWorkUnit
   end
 
   def can_cancel?
-    @proxied.is_a?(ContainerRequest) && state_label.in?(["Queued", "Locked", "Running"]) && priority > 0
+    @proxied.is_a?(ContainerRequest) && @proxied.state == "Committed" && @proxied.priority > 0 && @proxied.editable?
   end
 
   def container_uuid
     get(:container_uuid)
+  end
+
+  def priority
+    @proxied.priority
   end
 
   # For the following properties, use value from the @container if exists
@@ -75,7 +79,13 @@ class ContainerWorkUnit < ProxyWorkUnit
   end
 
   def state_label
+    ec = exit_code
+    return "Failed" if (ec && ec != 0)
     get_combined(:state)
+  end
+
+  def exit_code
+    get_combined(:exit_code)
   end
 
   def docker_image
@@ -84,10 +94,6 @@ class ContainerWorkUnit < ProxyWorkUnit
 
   def runtime_constraints
     get_combined(:runtime_constraints)
-  end
-
-  def priority
-    get_combined(:priority)
   end
 
   def log_collection
@@ -128,13 +134,6 @@ class ContainerWorkUnit < ProxyWorkUnit
     [get_combined(:uuid), get(:uuid)].uniq
   end
 
-  def live_log_lines(limit=2000)
-    event_types = ["stdout", "stderr", "arv-mount", "crunch-run"]
-    log_lines = Log.where(event_type: event_types, object_uuid: log_object_uuids).order("id DESC").limit(limit)
-    log_lines.results.reverse.
-      flat_map { |log| log.properties[:text].split("\n") rescue [] }
-  end
-
   def render_log
     collection = Collection.find(log_collection) rescue nil
     if collection
@@ -145,11 +144,11 @@ class ContainerWorkUnit < ProxyWorkUnit
   def template_uuid
     properties = get(:properties)
     if properties
-      properties[:workflow_uuid]
+      properties[:template_uuid]
     end
   end
 
-  # End combined propeties
+  # End combined properties
 
   protected
   def get_combined key

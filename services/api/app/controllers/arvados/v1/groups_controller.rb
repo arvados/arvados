@@ -64,7 +64,7 @@ class Arvados::V1::GroupsController < ApplicationController
     request_filters = @filters
 
     klasses = [Group,
-     Job, PipelineInstance, PipelineTemplate, ContainerRequest,
+     Job, PipelineInstance, PipelineTemplate, ContainerRequest, Workflow,
      Collection,
      Human, Specimen, Trait]
 

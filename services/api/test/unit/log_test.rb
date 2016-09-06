@@ -253,7 +253,8 @@ class LogTest < ActiveSupport::TestCase
                                       :crunchstat_for_running_job] # log & job owned by active
 
     c = Log.readable_by(users(:spectator)).order("id asc").each.to_a
-    assert_log_result c, known_logs, [:admin_changes_specimen, # owned by spectator
+    assert_log_result c, known_logs, [:noop,                   # object_uuid is spectator
+                                      :admin_changes_specimen, # object_uuid is a specimen owned by spectator
                                       :system_adds_baz] # readable via 'all users' group
   end
 

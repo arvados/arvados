@@ -456,4 +456,10 @@ class JobTest < ActiveSupport::TestCase
                    "wrong script_parameters_digest for #{j.uuid}")
     end
   end
+
+  test 'deep_sort_hash on array of hashes' do
+    a = {'z' => [[{'a' => 'a', 'b' => 'b'}]]}
+    b = {'z' => [[{'b' => 'b', 'a' => 'a'}]]}
+    assert_equal Job.deep_sort_hash(a).to_json, Job.deep_sort_hash(b).to_json
+  end
 end

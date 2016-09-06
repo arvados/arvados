@@ -7,6 +7,8 @@ import functools
 import cwltool.process
 from schema_salad.ref_resolver import Loader
 
+from schema_salad.ref_resolver import Loader
+
 if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
     logging.getLogger('arvados.arv-run').setLevel(logging.WARN)

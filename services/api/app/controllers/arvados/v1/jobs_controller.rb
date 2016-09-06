@@ -31,88 +31,12 @@ class Arvados::V1::JobsController < ApplicationController
     return super if !params[:find_or_create]
     return if !load_filters_param
 
-    if @filters.empty?  # Translate older creation parameters into filters.
-      @filters =
-        [["repository", "=", resource_attrs[:repository]],
-         ["script", "=", resource_attrs[:script]],
-         ["script_version", "not in git", params[:exclude_script_versions]],
-        ].reject { |filter| filter.last.nil? or filter.last.empty? }
-      if !params[:minimum_script_version].blank?
-        @filters << ["script_version", "in git",
-                     params[:minimum_script_version]]
-      else
-        add_default_git_filter("script_version", resource_attrs[:repository],
-                               resource_attrs[:script_version])
-      end
-      if image_search = resource_attrs[:runtime_constraints].andand["docker_image"]
-        if image_tag = resource_attrs[:runtime_constraints]["docker_image_tag"]
-          image_search += ":#{image_tag}"
-        end
-        image_locator = Collection.
-          for_latest_docker_image(image_search).andand.portable_data_hash
-      else
-        image_locator = nil
-      end
-      @filters << ["docker_image_locator", "=", image_locator]
-      if sdk_version = resource_attrs[:runtime_constraints].andand["arvados_sdk_version"]
-        add_default_git_filter("arvados_sdk_version", "arvados", sdk_version)
-      end
-      begin
-        load_job_specific_filters
-      rescue ArgumentError => error
-        return send_error(error.message)
-      end
+    begin
+      @object = Job.find_reusable(resource_attrs, params, @filters, @read_users)
+    rescue ArgumentError => error
+      return send_error(error.message)
     end
 
-    # Check specified filters for some reasonableness.
-    filter_names = @filters.map { |f| f.first }.uniq
-    ["repository", "script"].each do |req_filter|
-      if not filter_names.include?(req_filter)
-        return send_error("#{req_filter} filter required")
-      end
-    end
-
-    # Search for a reusable Job, and return it if found.
-    @objects = Job.
-      readable_by(current_user).
-      where('state = ? or (owner_uuid = ? and state in (?))',
-            Job::Complete, current_user.uuid, [Job::Queued, Job::Running]).
-      where('script_parameters_digest = ?', Job.sorted_hash_digest(resource_attrs[:script_parameters])).
-      where('nondeterministic is distinct from ?', true).
-      order('state desc, created_at') # prefer Running jobs over Queued
-    apply_filters
-    @object = nil
-    incomplete_job = nil
-    @objects.each do |j|
-      if j.state != Job::Complete
-        # We'll use this if we don't find a job that has completed
-        incomplete_job ||= j
-        next
-      end
-
-      if @object == false
-        # We have already decided not to reuse any completed job
-        next
-      elsif @object
-        if @object.output != j.output
-          # If two matching jobs produced different outputs, run a new
-          # job (or use one that's already running/queued) instead of
-          # choosing one arbitrarily.
-          @object = false
-        end
-        # ...and that's the only thing we need to do once we've chosen
-        # an @object to reuse.
-      elsif !Collection.readable_by(current_user).find_by_portable_data_hash(j.output)
-        # As soon as the output we will end up returning (if any) is
-        # decided, check whether it will be visible to the user; if
-        # not, any further investigation of reusable jobs is futile.
-        return super
-      else
-        @object = j
-      end
-    end
-
-    @object ||= incomplete_job
     if @object
       show
     else
@@ -220,89 +144,11 @@ class Arvados::V1::JobsController < ApplicationController
 
   protected
 
-  def add_default_git_filter(attr_name, repo_name, refspec)
-    # Add a filter to @filters for `attr_name` = the latest commit available
-    # in `repo_name` at `refspec`.  No filter is added if refspec can't be
-    # resolved.
-    commits = Commit.find_commit_range(repo_name, nil, refspec, nil)
-    if commit_hash = commits.first
-      @filters << [attr_name, "=", commit_hash]
-    end
-  end
-
-  def load_job_specific_filters
-    # Convert Job-specific @filters entries into general SQL filters.
-    script_info = {"repository" => nil, "script" => nil}
-    git_filters = Hash.new do |hash, key|
-      hash[key] = {"max_version" => "HEAD", "exclude_versions" => []}
-    end
-    @filters.select! do |(attr, operator, operand)|
-      if (script_info.has_key? attr) and (operator == "=")
-        if script_info[attr].nil?
-          script_info[attr] = operand
-        elsif script_info[attr] != operand
-          raise ArgumentError.new("incompatible #{attr} filters")
-        end
-      end
-      case operator
-      when "in git"
-        git_filters[attr]["min_version"] = operand
-        false
-      when "not in git"
-        git_filters[attr]["exclude_versions"] += Array.wrap(operand)
-        false
-      when "in docker", "not in docker"
-        image_hashes = Array.wrap(operand).flat_map do |search_term|
-          image_search, image_tag = search_term.split(':', 2)
-          Collection.
-            find_all_for_docker_image(image_search, image_tag, @read_users).
-            map(&:portable_data_hash)
-        end
-        @filters << [attr, operator.sub(/ docker$/, ""), image_hashes]
-        false
-      else
-        true
-      end
-    end
-
-    # Build a real script_version filter from any "not? in git" filters.
-    git_filters.each_pair do |attr, filter|
-      case attr
-      when "script_version"
-        script_info.each_pair do |key, value|
-          if value.nil?
-            raise ArgumentError.new("script_version filter needs #{key} filter")
-          end
-        end
-        filter["repository"] = script_info["repository"]
-        begin
-          filter["max_version"] = resource_attrs[:script_version]
-        rescue
-          # Using HEAD, set earlier by the hash default, is fine.
-        end
-      when "arvados_sdk_version"
-        filter["repository"] = "arvados"
-      else
-        raise ArgumentError.new("unknown attribute for git filter: #{attr}")
-      end
-      revisions = Commit.find_commit_range(filter["repository"],
-                                           filter["min_version"],
-                                           filter["max_version"],
-                                           filter["exclude_versions"])
-      if revisions.empty?
-        raise ArgumentError.
-          new("error searching #{filter['repository']} from " +
-              "'#{filter['min_version']}' to '#{filter['max_version']}', " +
-              "excluding #{filter['exclude_versions']}")
-      end
-      @filters.append([attr, "in", revisions])
-    end
-  end
-
   def load_filters_param
     begin
       super
-      load_job_specific_filters
+      attrs = resource_attrs rescue {}
+      @filters = Job.load_job_specific_filters attrs, @filters, @read_users
     rescue ArgumentError => error
       send_error(error.message)
       false

@@ -1,4 +1,4 @@
-package org.arvados.sdk.java;
+package org.arvados.sdk;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -257,7 +257,6 @@ public class ArvadosTest {
     Map<String, Object> params = new HashMap<String, Object>();
     params.put("pipeline_template", new String(data));
     Map response = arv.call("pipeline_templates", "create", params);
-
     assertEquals("Expected kind to be user", "arvados#pipelineTemplate", response.get("kind"));
     String uuid = (String)response.get("uuid");
     assertNotNull("Expected uuid for pipeline template", uuid);

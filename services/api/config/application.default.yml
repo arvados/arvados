@@ -183,6 +183,12 @@ common:
   # Default lifetime for ephemeral collections: 2 weeks.
   default_trash_lifetime: 1209600
 
+  # Maximum characters of (JSON-encoded) query parameters to include
+  # in each request log entry. When params exceed this size, they will
+  # be JSON-encoded, truncated to this size, and logged as
+  # params_truncated.
+  max_request_log_params_size: 2000
+
   # Maximum size (in bytes) allowed for a single API request.  This
   # limit is published in the discovery document for use by clients.
   # Note: You must separately configure the upstream web server or
