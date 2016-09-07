@@ -1,6 +1,9 @@
+require 'helpers/fake_websocket_helper'
 require 'integration_helper'
 
 class WorkUnitsTest < ActionDispatch::IntegrationTest
+  include FakeWebsocketHelper
+
   setup do
     need_javascript
   end
@@ -126,6 +129,80 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
       # in the process page now
       assert_text process_txt
       assert_selector 'a', text: template_name
+    end
+  end
+
+  test 'display container state changes in Container Request live log' do
+    use_fake_websocket_driver
+    c = api_fixture('containers')['queued']
+    cr = api_fixture('container_requests')['queued']
+    visit page_with_token('active', '/container_requests/'+cr['uuid'])
+    click_link('Log')
+
+    # The attrs of the "terminal window" text div in the log tab
+    # indicates which objects' events are worth displaying. Events
+    # that arrive too early (before that div exists) are not
+    # shown. For the user's sake, these early logs should also be
+    # retrieved and shown one way or another -- but in this particular
+    # test, we are only interested in logs that arrive by
+    # websocket. Therefore, to avoid races, we wait for the log tab to
+    # display before sending any events.
+    assert_text 'Recent logs'
+
+    [[{
+        event_type: 'dispatch',
+        properties: {
+          text: "dispatch logged a fake message\n",
+        },
+      }, "dispatch logged"],
+     [{
+        event_type: 'update',
+        properties: {
+          old_attributes: {state: 'Locked'},
+          new_attributes: {state: 'Queued'},
+        },
+      }, "Container #{c['uuid']} was returned to the queue"],
+     [{
+        event_type: 'update',
+        properties: {
+          old_attributes: {state: 'Queued'},
+          new_attributes: {state: 'Locked'},
+        },
+      }, "Container #{c['uuid']} was taken from the queue by a dispatch process"],
+     [{
+        event_type: 'crunch-run',
+        properties: {
+          text: "according to fake crunch-run,\nsome setup stuff happened on the compute node\n",
+        },
+      }, "setup stuff happened"],
+     [{
+        event_type: 'update',
+        properties: {
+          old_attributes: {state: 'Locked'},
+          new_attributes: {state: 'Running'},
+        },
+      }, "Container #{c['uuid']} started"],
+     [{
+        event_type: 'update',
+        properties: {
+          old_attributes: {state: 'Running'},
+          new_attributes: {state: 'Complete', exit_code: 1},
+        },
+      }, "Container #{c['uuid']} finished with exit code 1 (failure)"],
+     # It's unrealistic for state to change again once it's Complete,
+     # but the logging code doesn't care, so we do it to keep the test
+     # simple.
+     [{
+        event_type: 'update',
+        properties: {
+          old_attributes: {state: 'Running'},
+          new_attributes: {state: 'Cancelled'},
+        },
+      }, "Container #{c['uuid']} was cancelled"],
+    ].each do |send_event, expect_log_text|
+      assert_no_text(expect_log_text)
+      fake_websocket_event(send_event.merge(object_uuid: c['uuid']))
+      assert_text(expect_log_text)
     end
   end
 end

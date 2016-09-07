@@ -83,7 +83,7 @@ module ApiFixtureLoader
         file = file[0, trim_index] if trim_index
         YAML.load(file)
       end
-      keys.inject(@@api_fixtures[name]) { |hash, key| hash[key] }
+      keys.inject(@@api_fixtures[name]) { |hash, key| hash[key].deep_dup }
     end
   end
   def api_fixture(name, *keys)

@@ -44,6 +44,11 @@ Capybara.register_driver :poltergeist_debug do |app|
   Capybara::Poltergeist::Driver.new app, poltergeist_opts.merge(inspector: true)
 end
 
+Capybara.register_driver :poltergeist_with_fake_websocket do |app|
+  js = File.expand_path '../support/fake_websocket.js', __FILE__
+  Capybara::Poltergeist::Driver.new app, poltergeist_opts.merge(extensions: [js])
+end
+
 Capybara.register_driver :poltergeist_without_file_api do |app|
   js = File.expand_path '../support/remove_file_api.js', __FILE__
   Capybara::Poltergeist::Driver.new app, poltergeist_opts.merge(extensions: [js])
