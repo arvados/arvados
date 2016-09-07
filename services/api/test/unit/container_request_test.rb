@@ -3,7 +3,6 @@ require 'test_helper'
 class ContainerRequestTest < ActiveSupport::TestCase
   def create_minimal_req! attrs={}
     defaults = {
-      command: ["echo", "foo"],
       container_image: links(:docker_image_collection_tag).name,
       cwd: "/tmp",
       environment: {},
@@ -123,7 +122,6 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_not_nil cr.container_uuid
     c = Container.find_by_uuid cr.container_uuid
     assert_not_nil c
-    assert_equal ["echo", "foo"], c.command
     assert_equal collections(:docker_image).portable_data_hash, c.container_image
     assert_equal "/tmp", c.cwd
     assert_equal({}, c.environment)
@@ -394,5 +392,15 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_not_empty Container.readable_by(users(:admin)).where(uuid: containers(:running).uuid)
     assert_not_empty Container.readable_by(users(:active)).where(uuid: containers(:running).uuid)
     assert_empty Container.readable_by(users(:spectator)).where(uuid: containers(:running).uuid)
+  end
+
+  test "default command via []" do
+    set_user_from_auth :active
+    create_minimal_req!(command: [], priority: 1, state: "Committed")
+  end
+
+  test "default command via nil" do
+    set_user_from_auth :active
+    create_minimal_req!(priority: 1, state: "Committed")
   end
 end

@@ -14,7 +14,7 @@ class ContainerRequest < ArvadosModel
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :set_container
-  validates :command, :container_image, :output_path, :cwd, :presence => true
+  validates :container_image, :output_path, :cwd, :presence => true
   validate :validate_state_change
   validate :validate_change
   validate :validate_runtime_constraints

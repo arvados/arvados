@@ -13,7 +13,7 @@ class Container < ArvadosModel
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :set_timestamps
-  validates :command, :container_image, :output_path, :cwd, :priority, :presence => true
+  validates :container_image, :output_path, :cwd, :priority, :presence => true
   validate :validate_state_change
   validate :validate_change
   validate :validate_lock
