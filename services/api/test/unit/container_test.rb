@@ -78,7 +78,7 @@ class ContainerTest < ActiveSupport::TestCase
     end
   end
 
-  test "Container serialized hash attributes sorted" do
+  test "Container serialized hash attributes sorted before save" do
     env = {"C" => 3, "B" => 2, "A" => 1}
     m = {"F" => 3, "E" => 2, "D" => 1}
     rc = {"vcpus" => 1, "ram" => 1}
@@ -94,17 +94,49 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal Container.deep_sort_hash(a).to_json, Container.deep_sort_hash(b).to_json
   end
 
-  test "Container find reusable method" do
+  [
+    ["completed", :completed_older],
+    ["running", :running_older],
+    ["locked", :locked_higher_priority],
+    ["queued", :queued_higher_priority],
+    ["completed_vs_running", :completed_vs_running_winner],
+    ["running_vs_locked", :running_vs_locked_winner],
+    ["locked_vs_queued", :locked_vs_queued_winner]
+  ].each do |state, c_to_be_selected|
+    test "find reusable method for #{state} container" do
+      set_user_from_auth :active
+      c = Container.find_reusable(container_image: "test",
+                                  cwd: "test",
+                                  command: ["echo", "hello"],
+                                  output_path: "test",
+                                  runtime_constraints: {"vcpus" => 4, "ram" => 12000000000},
+                                  mounts: {"test" => {"kind" => "json"}},
+                                  environment: {"var" => state})
+      assert_not_nil c
+      assert_equal c.uuid, containers(c_to_be_selected).uuid
+    end
+  end
+
+  test "Container find reusable method should not select failed" do
     set_user_from_auth :active
-    c = Container.find_reusable(container_image: "test",
-                                cwd: "test",
-                                command: ["echo", "hello"],
-                                output_path: "test",
-                                runtime_constraints: {"vcpus" => 4, "ram" => 12000000000},
-                                mounts: {"test" => {"kind" => "json"}},
-                                environment: {"var" => "test"})
-    assert_not_nil c
-    assert_equal c.uuid, containers(:completed).uuid
+    attrs = {container_image: "test",
+             cwd: "test",
+             command: ["echo", "hello"],
+             output_path: "test",
+             runtime_constraints: {"vcpus" => 4, "ram" => 12000000000},
+             mounts: {"test" => {"kind" => "json"}},
+             environment: {"var" => "failed"}}
+    cf = containers(:failed_container)
+    assert_equal cf.container_image, attrs[:container_image]
+    assert_equal cf.cwd, attrs[:cwd]
+    assert_equal cf.command, attrs[:command]
+    assert_equal cf.output_path, attrs[:output_path]
+    assert_equal cf.runtime_constraints, attrs[:runtime_constraints]
+    assert_equal cf.mounts, attrs[:mounts]
+    assert_equal cf.environment, attrs[:environment]
+    assert cf.exit_code != 0
+    c = Container.find_reusable(attrs)
+    assert_nil c
   end
 
   test "Container running" do

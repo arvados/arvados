@@ -86,9 +86,11 @@ class Container < ArvadosModel
       where('container_image = ?', attrs[:container_image]).
       where('mounts = ?', self.deep_sort_hash(attrs[:mounts]).to_yaml).
       where('runtime_constraints = ?', self.deep_sort_hash(attrs[:runtime_constraints]).to_yaml).
-      where('state in (?)', ['Queued', 'Locked', 'Running', 'Complete']).
-      reject {|c| c.state == 'Complete' and c.exit_code != 0}
-
+      where('state in (?)', [Container::Queued, Container::Locked,
+                             Container::Running, Container::Complete]).
+      reject {|c| c.state == Container::Complete and (c.exit_code != 0 or
+                                                      c.output.nil? or
+                                                      c.log.nil?)}
     if candidates.empty?
       nil
     elsif candidates.count == 1
@@ -96,20 +98,21 @@ class Container < ArvadosModel
     else
       # Multiple candidates found, search for the best one:
       # The most recent completed container
-      winner = candidates.select {|c| c.state == 'Complete'}.sort_by {|c| c.finished_at}.last
-      winner if not winner.nil?
+      winner = candidates.select {|c| c.state == Container::Complete}.
+        sort_by {|c| c.finished_at}.last
+      return winner if not winner.nil?
       # The running container that's most likely to finish sooner.
-      winner = candidates.select {|c| c.state == 'Running'}.
+      winner = candidates.select {|c| c.state == Container::Running}.
         sort {|a, b| [b.progress, a.started_at] <=> [a.progress, b.started_at]}.first
-      winner if not winner.nil?
+      return winner if not winner.nil?
       # The locked container that's most likely to start sooner.
-      winner = candidates.select {|c| c.state == 'Locked'}.
+      winner = candidates.select {|c| c.state == Container::Locked}.
         sort {|a, b| [b.priority, a.created_at] <=> [a.priority, b.created_at]}.first
-      winner if not winner.nil?
+      return winner if not winner.nil?
       # The queued container that's most likely to start sooner.
-      winner = candidates.select {|c| c.state == 'Queued'}.
+      winner = candidates.select {|c| c.state == Container::Queued}.
         sort {|a, b| [b.priority, a.created_at] <=> [a.priority, b.created_at]}.first
-      winner if not winner.nil?
+      return winner if not winner.nil?
     end
   end
 
