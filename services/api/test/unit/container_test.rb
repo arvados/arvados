@@ -94,6 +94,19 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal Container.deep_sort_hash(a).to_json, Container.deep_sort_hash(b).to_json
   end
 
+  test "Container find reusable method" do
+    set_user_from_auth :active
+    c = Container.find_reusable(container_image: "test",
+                                cwd: "test",
+                                command: ["echo", "hello"],
+                                output_path: "test",
+                                runtime_constraints: {"vcpus" => 4, "ram" => 12000000000},
+                                mounts: {"test" => {"kind" => "json"}},
+                                environment: {"var" => "test"})
+    assert_not_nil c
+    assert_equal c.uuid, containers(:completed).uuid
+  end
+
   test "Container running" do
     c, _ = minimal_new priority: 1
 

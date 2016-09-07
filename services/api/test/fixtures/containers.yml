@@ -81,6 +81,11 @@ completed:
   output: zzzzz-4zz18-znfnqtbbv4spc3w
   output_path: test
   command: ["echo", "hello"]
+  mounts:
+    test:
+      kind: json
+  environment:
+    var: test
   runtime_constraints:
     ram: 12000000000
     vcpus: 4

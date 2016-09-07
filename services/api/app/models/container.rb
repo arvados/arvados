@@ -77,6 +77,42 @@ class Container < ArvadosModel
     end
   end
 
+  def self.find_reusable(attrs)
+    candidates = Container.
+      where('command = ?', attrs[:command].to_yaml).
+      where('cwd = ?', attrs[:cwd]).
+      where('environment = ?', self.deep_sort_hash(attrs[:environment]).to_yaml).
+      where('output_path = ?', attrs[:output_path]).
+      where('container_image = ?', attrs[:container_image]).
+      where('mounts = ?', self.deep_sort_hash(attrs[:mounts]).to_yaml).
+      where('runtime_constraints = ?', self.deep_sort_hash(attrs[:runtime_constraints]).to_yaml).
+      where('state in (?)', ['Queued', 'Locked', 'Running', 'Complete']).
+      reject {|c| c.state == 'Complete' and c.exit_code != 0}
+
+    if candidates.empty?
+      nil
+    elsif candidates.count == 1
+      candidates.first
+    else
+      # Multiple candidates found, search for the best one:
+      # The most recent completed container
+      winner = candidates.select {|c| c.state == 'Complete'}.sort_by {|c| c.finished_at}.last
+      winner if not winner.nil?
+      # The running container that's most likely to finish sooner.
+      winner = candidates.select {|c| c.state == 'Running'}.
+        sort {|a, b| [b.progress, a.started_at] <=> [a.progress, b.started_at]}.first
+      winner if not winner.nil?
+      # The locked container that's most likely to start sooner.
+      winner = candidates.select {|c| c.state == 'Locked'}.
+        sort {|a, b| [b.priority, a.created_at] <=> [a.priority, b.created_at]}.first
+      winner if not winner.nil?
+      # The queued container that's most likely to start sooner.
+      winner = candidates.select {|c| c.state == 'Queued'}.
+        sort {|a, b| [b.priority, a.created_at] <=> [a.priority, b.created_at]}.first
+      winner if not winner.nil?
+    end
+  end
+
   protected
 
   def self.deep_sort_hash(x)
