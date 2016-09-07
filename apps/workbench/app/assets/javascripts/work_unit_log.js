@@ -10,8 +10,12 @@ $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(e
     }
 
     txt = '';
-    if ('text' in eventData.properties) {
+    if ('text' in eventData.properties &&
+       eventData.properties.text.length > 0) {
         txt += eventData.properties.text;
+        if (txt.slice(txt.length-1) != "\n") {
+            txt += "\n";
+        }
     }
     if (eventData.event_type == 'update' &&
         eventData.object_uuid.indexOf("-dz642-") == 5 &&
