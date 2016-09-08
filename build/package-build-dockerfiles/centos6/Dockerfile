@@ -26,8 +26,8 @@ RUN scl enable python33 "easy_install-3.3 pip" && scl enable python27 "easy_inst
 RUN ln -s /usr/lib64/liblzma.so.0 /usr/lib64/lzma.so.5
 
 RUN cd /tmp && \
-    (curl -OL 'http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm' || \
-     curl -OL 'http://repoforge.eecs.wsu.edu/redhat/el6/en/x86_64/rpmforge/RPMS/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm') && \
+    (curl -OLf 'http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm' || \
+     curl -OLf 'http://repoforge.eecs.wsu.edu/redhat/el6/en/x86_64/rpmforge/RPMS/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm') && \
     rpm -ivh rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm && \
     sed -i 's/enabled = 0/enabled = 1/' /etc/yum.repos.d/rpmforge.repo
 

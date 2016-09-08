@@ -14,8 +14,8 @@ RUN touch /var/lib/rpm/* && \
     /usr/local/rvm/bin/rvm-exec default gem install cure-fpm --version 1.6.0b
 
 RUN cd /tmp && \
-    (curl -OL 'http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm' || \
-     curl -OL 'http://repoforge.eecs.wsu.edu/redhat/el6/en/x86_64/rpmforge/RPMS/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm') && \
+    (curl -OLf 'http://pkgs.repoforge.org/rpmforge-release/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm' || \
+     curl -OLf 'http://repoforge.eecs.wsu.edu/redhat/el6/en/x86_64/rpmforge/RPMS/rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm') && \
     rpm -ivh rpmforge-release-0.5.3-1.el6.rf.x86_64.rpm && \
     sed -i 's/enabled = 0/enabled = 1/' /etc/yum.repos.d/rpmforge.repo
 
