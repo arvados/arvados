@@ -244,6 +244,12 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 				errs <- fmt.Errorf("%s: %v", srv, err)
 				return
 			}
+			if len(errs) > 0 {
+				// Some other goroutine encountered an
+				// error -- any futher effort here
+				// will be wasted.
+				return
+			}
 			bal.logf("%s: add %d replicas to map", srv, len(idx))
 			bal.BlockStateMap.AddReplicas(srv, idx)
 			bal.logf("%s: done", srv)
@@ -298,14 +304,11 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 		}
 	}()
 
-	go func() {
-		// Send a nil error when all goroutines finish. If
-		// this is the first error sent to errs, then
-		// everything worked.
-		wg.Wait()
-		errs <- nil
-	}()
-	return <-errs
+	wg.Wait()
+	if len(errs) > 0 {
+		return <-errs
+	}
+	return nil
 }
 
 func (bal *Balancer) addCollection(coll arvados.Collection) error {
