@@ -77,20 +77,20 @@ class Container < ArvadosModel
   end
 
   def lock
-    if self.state == Locked
-      raise AlreadyLockedError
-    end
     with_lock do
+      if self.state == Locked
+        raise AlreadyLockedError
+      end
       self.state = Locked
       self.save!
     end
   end
 
   def unlock
-    if self.state == Queued
-      raise InvalidStateTransitionError
-    end
     with_lock do
+      if self.state == Queued
+        raise InvalidStateTransitionError
+      end
       self.state = Queued
       self.save!
     end
