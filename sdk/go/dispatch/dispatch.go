@@ -193,13 +193,6 @@ func (dispatcher *Dispatcher) handleUpdate(container arvados.Container) {
 
 // UpdateState makes an API call to change the state of a container.
 func (dispatcher *Dispatcher) UpdateState(uuid string, newState arvados.ContainerState) error {
-	if newState == Locked {
-		return dispatcher.Lock(uuid)
-	} else if newState == Queued {
-		return dispatcher.Unlock(uuid)
-	}
-
-	// All other states
 	err := dispatcher.Arv.Update("containers", uuid,
 		arvadosclient.Dict{
 			"container": arvadosclient.Dict{"state": newState}},

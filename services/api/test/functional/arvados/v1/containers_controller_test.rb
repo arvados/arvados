@@ -72,24 +72,6 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     assert_nil container.auth_uuid
   end
 
-  def create_new_container attrs={}
-    attrs = {
-      command: ['echo', 'foo'],
-      container_image: 'img',
-      output_path: '/tmp',
-      priority: 1,
-      runtime_constraints: {"vcpus" => 1, "ram" => 1},
-    }
-    c = Container.new attrs.merge(attrs)
-    c.save!
-    cr = ContainerRequest.new attrs.merge(attrs)
-    cr.save!
-    assert cr.update_attributes(container_uuid: c.uuid,
-                                state: ContainerRequest::Committed,
-                               ), show_errors(cr)
-    return c
-  end
-
   [
     [:queued, :lock, :success, 'Locked'],
     [:queued, :unlock, 403, 'Queued'],
