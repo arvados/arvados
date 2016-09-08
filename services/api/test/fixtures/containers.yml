@@ -17,6 +17,7 @@ queued:
 running:
   uuid: zzzzz-dz642-runningcontainr
   owner_uuid: zzzzz-tpzed-000000000000000
+  state: Running
   priority: 1
   created_at: <%= 1.minute.ago.to_s(:db) %>
   updated_at: <%= 1.minute.ago.to_s(:db) %>

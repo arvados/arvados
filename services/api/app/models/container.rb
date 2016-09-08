@@ -76,6 +76,26 @@ class Container < ArvadosModel
     end
   end
 
+  def lock
+    with_lock do
+      if self.state == Locked
+        raise AlreadyLockedError
+      end
+      self.state = Locked
+      self.save!
+    end
+  end
+
+  def unlock
+    with_lock do
+      if self.state == Queued
+        raise InvalidStateTransitionError
+      end
+      self.state = Queued
+      self.save!
+    end
+  end
+
   def self.readable_by(*users_list)
     if users_list.select { |u| u.is_admin }.any?
       return self
