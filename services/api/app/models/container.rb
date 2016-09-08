@@ -86,11 +86,9 @@ class Container < ArvadosModel
       where('container_image = ?', attrs[:container_image]).
       where('mounts = ?', self.deep_sort_hash(attrs[:mounts]).to_yaml).
       where('runtime_constraints = ?', self.deep_sort_hash(attrs[:runtime_constraints]).to_yaml).
-      where('state in (?)', [Container::Queued, Container::Locked,
-                             Container::Running, Container::Complete]).
-      reject {|c| c.state == Container::Complete and (c.exit_code != 0 or
-                                                      c.output.nil? or
-                                                      c.log.nil?)}
+      where('state in (?)', [Queued, Locked, Running, Complete]).
+      reject {|c| c.state == Complete and
+              (c.exit_code != 0 or c.output.nil? or c.log.nil?)}
     if candidates.empty?
       nil
     elsif candidates.count == 1
@@ -98,19 +96,19 @@ class Container < ArvadosModel
     else
       # Multiple candidates found, search for the best one:
       # The most recent completed container
-      winner = candidates.select {|c| c.state == Container::Complete}.
+      winner = candidates.select {|c| c.state == Complete}.
         sort_by {|c| c.finished_at}.last
       return winner if not winner.nil?
       # The running container that's most likely to finish sooner.
-      winner = candidates.select {|c| c.state == Container::Running}.
+      winner = candidates.select {|c| c.state == Running}.
         sort {|a, b| [b.progress, a.started_at] <=> [a.progress, b.started_at]}.first
       return winner if not winner.nil?
       # The locked container that's most likely to start sooner.
-      winner = candidates.select {|c| c.state == Container::Locked}.
+      winner = candidates.select {|c| c.state == Locked}.
         sort {|a, b| [b.priority, a.created_at] <=> [a.priority, b.created_at]}.first
       return winner if not winner.nil?
       # The queued container that's most likely to start sooner.
-      winner = candidates.select {|c| c.state == Container::Queued}.
+      winner = candidates.select {|c| c.state == Queued}.
         sort {|a, b| [b.priority, a.created_at] <=> [a.priority, b.created_at]}.first
       return winner if not winner.nil?
     end
@@ -253,9 +251,15 @@ class Container < ArvadosModel
   end
 
   def sort_serialized_attrs
-    self.environment = self.class.deep_sort_hash(self.environment)
-    self.mounts = self.class.deep_sort_hash(self.mounts)
-    self.runtime_constraints = self.class.deep_sort_hash(self.runtime_constraints)
+    if self.environment_changed?
+      self.environment = self.class.deep_sort_hash(self.environment)
+    end
+    if self.mounts_changed?
+      self.mounts = self.class.deep_sort_hash(self.mounts)
+    end
+    if self.runtime_constraints_changed?
+      self.runtime_constraints = self.class.deep_sort_hash(self.runtime_constraints)
+    end
   end
 
   def handle_completed
