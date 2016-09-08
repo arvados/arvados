@@ -52,9 +52,10 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
 
   test "lock container" do
     authorize_with :dispatch1
-    post :lock, {id: containers(:queued).uuid}
+    uuid = containers(:queued).uuid
+    post :lock, {id: uuid}
     assert_response :success
-    container = Container.where(uuid: containers(:queued).uuid).first
+    container = Container.where(uuid: uuid).first
     assert_equal 'Locked', container.state
     assert_not_nil container.locked_by_uuid
     assert_not_nil container.auth_uuid
@@ -62,9 +63,10 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
 
   test "unlock container" do
     authorize_with :dispatch1
-    post :unlock, {id: containers(:locked).uuid}
+    uuid = containers(:locked).uuid
+    post :unlock, {id: uuid}
     assert_response :success
-    container = Container.where(uuid: container.uuid).first
+    container = Container.where(uuid: uuid).first
     assert_equal 'Queued', container.state
     assert_nil container.locked_by_uuid
     assert_nil container.auth_uuid
