@@ -119,7 +119,11 @@ timer_reset
 # clean up the docker build environment
 cd "$WORKSPACE"
 cd docker/jobs
-docker build --no-cache --force-rm -t arvados/jobs .
+if [[ ! -z "$tags" ]]; then
+    docker build --build-arg COMMIT=${tags/,*/} -t arvados/jobs .
+else
+    docker build -t arvados/jobs .
+fi
 
 ECODE=$?
 
