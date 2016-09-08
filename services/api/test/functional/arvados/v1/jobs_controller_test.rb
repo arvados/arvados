@@ -390,7 +390,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
   test "job lock conflict" do
     authorize_with :active
     post :lock, {id: jobs(:running).uuid}
-    assert_response 403 # forbidden
+    assert_response 422 # invalid state transition
   end
 
   test 'reject invalid commit in remote repository' do
