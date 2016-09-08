@@ -242,7 +242,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c = Container.find_by_uuid cr.container_uuid
     assert_equal 5, c.priority
 
-    cr2 = create_minimal_req!(priority: 10, state: "Committed", requesting_container_uuid: c.uuid)
+    cr2 = create_minimal_req!(priority: 10, state: "Committed", requesting_container_uuid: c.uuid, command: ["echo", "foo2"])
 
     c2 = Container.find_by_uuid cr2.container_uuid
     assert_equal 10, c2.priority
