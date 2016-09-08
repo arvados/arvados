@@ -219,6 +219,10 @@ common:
   # Ask Arvados API server to compress its response payloads.
   api_response_compression: true
 
+  # Timeouts for API requests.
+  api_client_connect_timeout: 120
+  api_client_receive_timeout: 300
+
   # ShellInABox service endpoint URL for a given VM.  If false, do not
   # offer web shell logins.
   #
