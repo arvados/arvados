@@ -76,7 +76,12 @@ class IntegrationTest(unittest.TestCase):
                         arvados_fuse.command.ArgumentParser().parse_args(
                             argv + ['--foreground',
                                     '--unmount-timeout=0.1',
-                                    self.mnt])):
+                                    self.mnt])) as m:
                     return func(self, *args, **kwargs)
+                if m.llfuse_thread.is_alive():
+                    self.logger.warning("IntegrationTest.mount:"
+                                        " llfuse thread still alive after umount"
+                                        " -- killing test suite to avoid deadlock")
+                    os.kill(os.getpid(), signal.SIGKILL)
             return wrapper
         return decorator
