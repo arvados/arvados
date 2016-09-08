@@ -42,13 +42,13 @@ class ArvadosModel < ActiveRecord::Base
 
   class AlreadyLockedError < StandardError
     def http_status
-      403
+      422
     end
   end
 
   class InvalidStateTransitionError < StandardError
     def http_status
-      403
+      422
     end
   end
 
