@@ -62,7 +62,8 @@ class ArvCwlRunner(object):
 
     def arvMakeTool(self, toolpath_object, **kwargs):
         if "class" in toolpath_object and toolpath_object["class"] == "CommandLineTool":
-            return ArvadosCommandTool(self, toolpath_object, work_api=self.work_api, **kwargs)
+            kwargs["work_api"] = self.work_api
+            return ArvadosCommandTool(self, toolpath_object, **kwargs)
         else:
             return cwltool.workflow.defaultMakeTool(toolpath_object, **kwargs)
 

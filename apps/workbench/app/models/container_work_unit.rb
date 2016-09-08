@@ -131,7 +131,7 @@ class ContainerWorkUnit < ProxyWorkUnit
   end
 
   def log_object_uuids
-    [get_combined(:uuid), get(:uuid)].uniq
+    [get(:uuid, @container), get(:uuid, @proxied)].compact
   end
 
   def render_log
