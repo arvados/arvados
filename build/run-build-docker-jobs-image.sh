@@ -119,7 +119,7 @@ timer_reset
 # clean up the docker build environment
 cd "$WORKSPACE"
 cd docker/jobs
-docker build -t arvados/jobs .
+docker build --no-cache --force-rm -t arvados/jobs .
 
 ECODE=$?
 
