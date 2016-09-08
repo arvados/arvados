@@ -21,13 +21,12 @@ class Arvados::V1::ContainersController < ApplicationController
   end
 
   def lock
-    @object.lock or raise Exception.new("Error locking container")
+    @object.lock
     show
   end
 
   def unlock
-    reload_object_before_update
-    @object.update_attributes! state: Container::Queued
+    @object.unlock
     show
   end
 end

@@ -24,7 +24,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   test 'cannot get auth with wrong token' do
     authorize_with :dispatch1
     c = containers(:queued)
-    assert c.update_attributes(state: Container::Locked), show_errors(c)
+    assert c.lock, show_errors(c)
 
     authorize_with :system_user
     get :auth, id: c.uuid
@@ -34,7 +34,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   test 'get auth' do
     authorize_with :dispatch1
     c = containers(:queued)
-    assert c.update_attributes(state: Container::Locked), show_errors(c)
+    assert c.lock, show_errors(c)
     get :auth, id: c.uuid
     assert_response :success
     assert_operator 32, :<, json_response['api_token'].length
@@ -44,7 +44,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   test 'no auth in container response' do
     authorize_with :dispatch1
     c = containers(:queued)
-    assert c.update_attributes(state: Container::Locked), show_errors(c)
+    assert c.lock, show_errors(c)
     get :show, id: c.uuid
     assert_response :success
     assert_nil json_response['auth']
@@ -91,33 +91,18 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
   end
 
   [
-    [['Queued', :success], ['Locked', :success]],
-    [['Locked', :success], ['Locked', 422]],
-    [['Locked', :success], ['Queued', :success]],
-    [['Locked', :success], ['Running', :success], ['Queued', 422]],
-  ].each do |transitions|
-    test "lock and unlock state transitions #{transitions}" do
+    [:queued, :lock, :success, 'Locked'],
+    [:queued, :unlock, 403, 'Queued'],
+    [:locked, :lock, 403, 'Locked'],
+    [:running, :lock, 422, 'Running'],
+    [:running, :unlock, 422, 'Running'],
+  ].each do |fixture, action, response, state|
+    test "state transitions from #{fixture } to #{action}" do
       authorize_with :dispatch1
-
-      container = create_new_container()
-
-      transitions.each do |state, status|
-        @test_counter = 0  # Reset executed action counter
-        @controller = Arvados::V1::ContainersController.new
-        authorize_with :dispatch1
-
-        if state == 'Locked'
-          post :lock, {id: container.uuid}
-        elsif state == 'Queued'
-          post :unlock, {id: container.uuid}
-        else
-          container.update_attributes!(state: state)
-        end
-        assert_response status
-
-        container = Container.where(uuid: container['uuid']).first
-        assert_equal state, container.state if status == :success
-      end
+      uuid = containers(fixture).uuid
+      post action, {id: uuid}
+      assert_response response
+      assert_equal state, Container.where(uuid: uuid).first.state
     end
   end
 end

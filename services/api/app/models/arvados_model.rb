@@ -46,6 +46,12 @@ class ArvadosModel < ActiveRecord::Base
     end
   end
 
+  class InvalidStateTransitionError < StandardError
+    def http_status
+      403
+    end
+  end
+
   class UnauthorizedError < StandardError
     def http_status
       401
