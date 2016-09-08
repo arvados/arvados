@@ -462,4 +462,26 @@ class JobTest < ActiveSupport::TestCase
     b = {'z' => [[{'b' => 'b', 'a' => 'a'}]]}
     assert_equal Job.deep_sort_hash(a).to_json, Job.deep_sort_hash(b).to_json
   end
+
+  test 'find_reusable' do
+    foobar = jobs(:foobar)
+    example_attrs = {
+      script_version: foobar.script_version,
+      script: foobar.script,
+      script_parameters: foobar.script_parameters,
+      repository: foobar.repository,
+    }
+
+    # Two matching jobs exist with identical outputs. The older one
+    # should be reused.
+    j = Job.find_reusable(example_attrs, {}, [], [users(:active)])
+    assert j
+    assert_equal foobar.uuid, j.uuid
+
+    # Two matching jobs exist with different outputs. Neither should
+    # be reused.
+    Job.where(uuid: jobs(:job_with_latest_version).uuid).
+      update_all(output: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+1')
+    assert_nil Job.find_reusable(example_attrs, {}, [], [users(:active)])
+  end
 end
