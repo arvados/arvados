@@ -332,6 +332,15 @@ class ProxyWorkUnit < WorkUnit
     [uuid]
   end
 
+  def live_log_lines(limit)
+    Log.where(object_uuid: log_object_uuids).
+      order("created_at DESC").
+      limit(limit).
+      select { |log| log.properties[:text].is_a? String }.
+      reverse.
+      flat_map { |log| log.properties[:text].split("\n") }
+  end
+
   protected
 
   def get key, obj=@proxied

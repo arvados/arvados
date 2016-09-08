@@ -47,6 +47,7 @@ class ActiveSupport::TestCase
   fixtures :all
 
   include ArvadosTestSupport
+  include CurrentApiClient
 
   setup do
     Rails.logger.warn "\n\n#{'=' * 70}\n#{self.class}\##{method_name}\n#{'-' * 70}\n\n"

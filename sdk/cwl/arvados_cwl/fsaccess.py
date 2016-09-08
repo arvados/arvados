@@ -84,7 +84,7 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
         collection, rest = self.get_collection(fn)
         if collection:
             if rest:
-                return isinstance(collection.find(rest), arvados.collection.Collection)
+                return isinstance(collection.find(rest), arvados.collection.RichCollectionBase)
             else:
                 return True
         else:
@@ -99,7 +99,7 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
                 dir = collection
             if dir is None:
                 raise IOError(errno.ENOENT, "Directory '%s' in '%s' not found" % (rest, collection.portable_data_hash()))
-            if not isinstance(dir, arvados.collection.Collection):
+            if not isinstance(dir, arvados.collection.RichCollectionBase):
                 raise IOError(errno.ENOENT, "Path '%s' in '%s' is not a Directory" % (rest, collection.portable_data_hash()))
             return [abspath(l, fn) for l in dir.keys()]
         else:

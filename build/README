@@ -1,0 +1,30 @@
+Scripts in this directory:
+
+run-tests.sh                             Run unit and integration test suite.
+
+run-build-test-packages-one-target.sh    Entry point, wraps
+                                         run-build-packages-one-target.sh to
+                                         perform package building and testing
+                                         inside Docker.
+
+run-build-packages-one-target.sh         Build packages for one target inside Docker.
+
+run-build-packages-all-targets.sh        Run run-build-packages-one-target.sh
+                                         for every target.
+
+run-build-packages.sh                    Actually build packages.  Intended to run
+                                         inside Docker container with proper
+                                         build environment.
+
+run-build-packages-sso.sh                Build single-sign-on server packages.
+
+run-build-packages-python-and-ruby.sh    Build Python and Ruby packages suitable
+                                         for upload to PyPi and Rubygems.
+
+run-build-docker-images.sh               Build arvbox Docker images.
+
+run-build-docker-jobs-image.sh           Build arvados/jobs Docker image.
+
+run-library.sh                           A library of functions shared by the
+                                         various scripts in this
+                                         directory.

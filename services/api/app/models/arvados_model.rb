@@ -1,10 +1,12 @@
 require 'has_uuid'
+require 'record_filters'
 
 class ArvadosModel < ActiveRecord::Base
   self.abstract_class = true
 
   include CurrentApiClient      # current_user, current_api_client, etc.
   include DbCurrentTime
+  extend RecordFilters
 
   attr_protected :created_at
   attr_protected :modified_by_user_uuid
@@ -191,61 +193,43 @@ class ArvadosModel < ActiveRecord::Base
       return self
     end
 
-    # Collect the uuids for each user and any groups readable by each user.
+    # Collect the UUIDs of the authorized users.
     user_uuids = users_list.map { |u| u.uuid }
-    uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
+
+    # Collect the UUIDs of all groups readable by any of the
+    # authorized users. If one of these (or the UUID of one of the
+    # authorized users themselves) is an object's owner_uuid, that
+    # object is readable.
+    owner_uuids = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
+    owner_uuids.uniq!
+
     sql_conds = []
-    sql_params = []
     sql_table = kwargs.fetch(:table_name, table_name)
-    or_object_uuid = ''
 
-    # This row is owned by a member of users_list, or owned by a group
-    # readable by a member of users_list
-    # or
-    # This row uuid is the uuid of a member of users_list
-    # or
-    # A permission link exists ('write' and 'manage' implicitly include
-    # 'read') from a member of users_list, or a group readable by users_list,
-    # to this row, or to the owner of this row (see join() below).
-    sql_conds += ["#{sql_table}.uuid in (?)"]
-    sql_params += [user_uuids]
+    # Match any object (evidently a group or user) whose UUID is
+    # listed explicitly in owner_uuids.
+    sql_conds += ["#{sql_table}.uuid in (:owner_uuids)"]
 
-    if uuid_list.any?
-      sql_conds += ["#{sql_table}.owner_uuid in (?)"]
-      sql_params += [uuid_list]
+    # Match any object whose owner is listed explicitly in
+    # owner_uuids.
+    sql_conds += ["#{sql_table}.owner_uuid IN (:owner_uuids)"]
 
-      sanitized_uuid_list = uuid_list.
-        collect { |uuid| sanitize(uuid) }.join(', ')
-      permitted_uuids = "(SELECT head_uuid FROM links WHERE link_class='permission' AND tail_uuid IN (#{sanitized_uuid_list}))"
-      sql_conds += ["#{sql_table}.uuid IN #{permitted_uuids}"]
+    # Match the head of any permission link whose tail is listed
+    # explicitly in owner_uuids.
+    sql_conds += ["#{sql_table}.uuid IN (SELECT head_uuid FROM links WHERE link_class='permission' AND tail_uuid IN (:owner_uuids))"]
+
+    if sql_table == "links"
+      # Match any permission link that gives one of the authorized
+      # users some permission _or_ gives anyone else permission to
+      # view one of the authorized users.
+      sql_conds += ["(#{sql_table}.link_class in (:permission_link_classes) AND "+
+                    "(#{sql_table}.head_uuid IN (:user_uuids) OR #{sql_table}.tail_uuid IN (:user_uuids)))"]
     end
 
-    if sql_table == "links" and users_list.any?
-      # This row is a 'permission' or 'resources' link class
-      # The uuid for a member of users_list is referenced in either the head
-      # or tail of the link
-      sql_conds += ["(#{sql_table}.link_class in (#{sanitize 'permission'}, #{sanitize 'resources'}) AND (#{sql_table}.head_uuid IN (?) OR #{sql_table}.tail_uuid IN (?)))"]
-      sql_params += [user_uuids, user_uuids]
-    end
-
-    if sql_table == "logs" and users_list.any?
-      # Link head points to the object described by this row
-      sql_conds += ["#{sql_table}.object_uuid IN #{permitted_uuids}"]
-
-      # This object described by this row is owned by this user, or owned by a group readable by this user
-      sql_conds += ["#{sql_table}.object_owner_uuid in (?)"]
-      sql_params += [uuid_list]
-    end
-
-    # Link head points to this row, or to the owner of this row (the
-    # thing to be read)
-    #
-    # Link tail originates from this user, or a group that is readable
-    # by this user (the identity with authorization to read)
-    #
-    # Link class is 'permission' ('write' and 'manage' implicitly
-    # include 'read')
-    where(sql_conds.join(' OR '), *sql_params)
+    where(sql_conds.join(' OR '),
+          owner_uuids: owner_uuids,
+          user_uuids: user_uuids,
+          permission_link_classes: ['permission', 'resources'])
   end
 
   def logged_attributes
@@ -268,6 +252,15 @@ class ArvadosModel < ActiveRecord::Base
     # the tsvector index, which causes full text queries to be just as
     # slow as if we had no index at all.
     "to_tsvector('english', ' ' || #{parts.join(" || ' ' || ")})"
+  end
+
+  def self.apply_filters query, filters
+    ft = record_filters filters, self
+    if not ft[:cond_out].any?
+      return query
+    end
+    query.where('(' + ft[:cond_out].join(') AND (') + ')',
+                          *ft[:param_out])
   end
 
   protected
