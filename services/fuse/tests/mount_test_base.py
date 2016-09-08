@@ -1,18 +1,19 @@
 import arvados
-import arvados.safeapi
 import arvados_fuse as fuse
+import arvados.safeapi
 import llfuse
+import logging
+import multiprocessing
 import os
+import run_test_server
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
 import threading
 import time
 import unittest
-import logging
-import multiprocessing
-import run_test_server
 
 logger = logging.getLogger('arvados.arv-mount')
 
@@ -64,23 +65,27 @@ class MountTestBase(unittest.TestCase):
         return self.operations.inodes[llfuse.ROOT_INODE]
 
     def tearDown(self):
-        self.pool.terminate()
-        self.pool.join()
-        del self.pool
-
         if self.llfuse_thread:
             subprocess.call(["fusermount", "-u", "-z", self.mounttmp])
             self.llfuse_thread.join(timeout=1)
             if self.llfuse_thread.is_alive():
                 logger.warning("MountTestBase.tearDown():"
                                " llfuse thread still alive 1s after umount"
-                               " -- abandoning and exiting anyway")
+                               " -- waiting another 10s")
+                self.llfuse_thread.join(timeout=10)
+            if self.llfuse_thread.is_alive():
+                logger.warning("MountTestBase.tearDown():"
+                               " llfuse thread still alive 10s after umount"
+                               " -- exiting with SIGKILL")
+                os.kill(os.getpid(), signal.SIGKILL)
 
         os.rmdir(self.mounttmp)
         if self.keeptmp:
             shutil.rmtree(self.keeptmp)
             os.environ.pop('KEEP_LOCAL_STORE')
         run_test_server.reset()
+        self.pool.close()
+        self.pool.join()
 
     def assertDirContents(self, subdir, expect_content):
         path = self.mounttmp
