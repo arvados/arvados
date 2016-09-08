@@ -260,14 +260,13 @@ func monitorSubmitOrCancel(dispatcher *dispatch.Dispatcher, container arvados.Co
 				log.Printf("Error getting final container state: %v", err)
 			}
 
-			var st arvados.ContainerState
 			switch con.State {
 			case dispatch.Locked:
 				log.Printf("Container %s in state %v but missing from slurm queue, changing to %v.",
 					container.UUID, con.State, dispatch.Queued)
 				dispatcher.Unlock(container.UUID)
 			case dispatch.Running:
-				st = dispatch.Cancelled
+				st := dispatch.Cancelled
 				log.Printf("Container %s in state %v but missing from slurm queue, changing to %v.",
 					container.UUID, con.State, st)
 				dispatcher.UpdateState(container.UUID, st)

@@ -50,8 +50,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     assert_nil json_response['auth']
   end
 
-  test "lock and unlock container" do
-    # lock container
+  test "lock container" do
     authorize_with :dispatch1
     post :lock, {id: containers(:queued).uuid}
     assert_response :success
@@ -59,12 +58,11 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     assert_equal 'Locked', container.state
     assert_not_nil container.locked_by_uuid
     assert_not_nil container.auth_uuid
+  end
 
-    # unlock container
-    @test_counter = 0  # Reset executed action counter
-    @controller = Arvados::V1::ContainersController.new
+  test "unlock container" do
     authorize_with :dispatch1
-    post :unlock, {id: container.uuid}
+    post :unlock, {id: containers(:locked).uuid}
     assert_response :success
     container = Container.where(uuid: container.uuid).first
     assert_equal 'Queued', container.state
