@@ -2,15 +2,15 @@ workflow_with_definition_yml:
   uuid: zzzzz-7fd4e-validworkfloyml
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   name: Valid workflow with name and desc
-  description: this workflow has a valid workflow yaml
+  description: this workflow has a valid definition yaml
   definition: "name: foo\ndesc: bar"
   created_at: 2016-08-15 12:00:00
 
 workflow_with_no_definition_yml:
   uuid: zzzzz-7fd4e-validbutnoyml00
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  name: Valid workflow with no workflow yaml
-  description: this workflow does not have a workflow yaml
+  name: Valid workflow with no definition yaml
+  description: this workflow does not have a definition yaml
   created_at: 2016-08-15 12:00:00
 
 workflow_with_no_name_and_desc:
