@@ -69,4 +69,6 @@ table(table table-bordered table-condensed).
 {background:#ccffcc}.|uuid|string|The UUID of the ContainerRequest in question.|path||
 |container_request|object||query||
 
-Note: To cancel a ContainerRequest, set it's priority to zero.
+{% include 'notebox_begin' %}
+Setting the priority of a committed container_request to 0 may cancel a running container assigned for it.
+{% include 'notebox_end' %}

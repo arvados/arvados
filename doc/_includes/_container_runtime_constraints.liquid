@@ -1,0 +1,9 @@
+Runtime constraints
+
+Runtime constraints restrict the container's access to compute resources and the outside world (in addition to its explicitly stated inputs and output).
+
+table(table table-bordered table-condensed).
+|_. Key|_. Type|_. Description|_. Notes|
+|ram|integer|Number of ram bytes to be used to run this process.|Required when in "Committed" state.|
+|vcpus|integer|Number of cores to be used to run this process.|Required when in "Committed" state.|
+|API|boolean|When set, use Crunch2 to run this process.|Optional.|

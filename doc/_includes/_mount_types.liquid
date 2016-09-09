@@ -1,0 +1,58 @@
+Mount types
+
+The "mounts" hash is the primary mechanism for adding data to the container at runtime (beyond what is already in the container image).
+
+Each value of the "mounts" hash is itself a hash, whose "kind" key determines the handler used to attach data to the container.
+
+table(table table-bordered table-condensed).
+|_. Mount type|_.Kind|_. Expected keys|_. Description|_. Examples|_. Discussion|
+|Arvados data collection|@collection@|@"portable_data_hash"@ _or_ @"uuid"@ _may_ be provided. If not provided, a new collection will be created. This is useful when @"writable":true@ and the container's @output_path@ is (or is a subdirectory of) this mount target.
+@"writable"@ may be provided with a @true@ or @false@ to indicate the path must (or must not) be writable. If not specified, the system can choose.
+@"path"@ may be provided, and defaults to @"/"@.|At container startup, the target path will have the same directory structure as the given path within the collection. Even if the files/directories are writable in the container, modifications will _not_ be saved back to the original collections when the container ends.|<pre><code>{
+ "kind":"collection",
+ "uuid":"...",
+ "path":"/foo.txt"
+}
+{
+ "kind":"collection",
+ "uuid":"..."
+}</code></pre>||
+|Git tree|@git_tree@|One of { @"git-url"@, @"repository_name"@, @"uuid"@ } must be provided.
+One of { @"commit"@, @"revisions"@ } must be provided.
+"path" may be provided. The default path is "/".|At container startup, the target path will have the source tree indicated by the given revision. The @.git@ metadata directory _will not_ be available: typically the system will use @git-archive@ rather than @git-checkout@ to prepare the target directory.
+- If a value is given for @"revisions"@, it will be resolved to a set of commits (as desribed in the "ranges" section of git-revisions(1)) and the container request will be satisfiable by any commit in that set.
+- If a value is given for @"commit"@, it will be resolved to a single commit, and the tree resulting from that commit will be used.
+- @"path"@ can be used to select a subdirectory or a single file from the tree indicated by the selected commit.
+- Multiple commits can resolve to the same tree: for example, the file/directory given in @"path"@ might not have changed between commits A and B.
+- The resolved mount (found in the Container record) will have only the "kind" key and a "blob" or "tree" key indicating the 40-character hash of the git tree/blob used.|<pre><code>{
+ "kind":"git_tree",
+ "uuid":"zzzzz-s0uqq-xxxxxxxxxxxxxxx",
+ "commit":"master"
+}
+{
+ "kind":"git_tree",
+ "uuid":"zzzzz-s0uqq-xxxxxxxxxxxxxxx",
+ "commit_range":"bugfix^..master",
+ "path":"/crunch_scripts/grep"
+}</code></pre>||
+|Temporary directory|@tmp@|@"capacity"@: capacity (in bytes) of the storage device.
+@"device_type"@ (optional, default "network"): one of @{"ram", "ssd", "disk", "network"}@ indicating the acceptable level of performance.|At container startup, the target path will be empty. When the container finishes, the content will be discarded. This will be backed by a storage mechanism no slower than the specified type.|<pre><code>{
+ "kind":"tmp",
+ "capacity":100000000000
+}
+{
+ "kind":"tmp",
+ "capacity":1000000000,
+ "device_type":"ram"
+}</code></pre>||
+|Keep|@keep@|Expose all readable collections via arv-mount.|Requires suitable runtime constraints.|<pre><code>{
+ "kind":"keep"
+}</code></pre>||
+|Mounted file or directory|@file@|@"path"@: absolute path (inside the container) of a file or directory that is (or is inside) another mount target.|Can be used for "stdin" and "stdout" targets.|<pre><code>{
+ "kind":"file",
+ "path":"/mounted_tmp/a.out"
+}</code></pre>||
+|JSON document|@json@|A JSON-encoded string, array, or object.||<pre>{
+ "kind":"json",
+ "content":{"foo":"bar"}
+}</pre>||
