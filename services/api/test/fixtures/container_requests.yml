@@ -16,6 +16,59 @@ queued:
   runtime_constraints:
     vcpus: 1
     ram: 123
+  mounts:
+    test:
+      kind: json
+  environment:
+    var: queued
+
+queued_higher_priority:
+  uuid: zzzzz-xvhdp-cr4queuedcontnrhigher
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: queued_hp
+  state: Committed
+  priority: 2
+  created_at: 2016-01-11 11:11:11.111111111 Z
+  updated_at: 2016-01-11 11:11:11.111111111 Z
+  modified_at: 2016-01-11 11:11:11.111111111 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: test
+  cwd: test
+  output_path: test
+  command: ["echo", "hello"]
+  container_uuid: zzzzz-dz642-queuedcontainerhigher
+  runtime_constraints:
+    vcpus: 1
+    ram: 123
+  mounts:
+    test:
+      kind: json
+  environment:
+    var: queued
+
+locked_vs_queued_loser:
+  uuid: zzzzz-xvhdp-cr4lockedvsqueuedloser
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: lockedvqueuedloser
+  state: Committed
+  priority: 2
+  created_at: 2016-01-11 11:11:11.111111111 Z
+  updated_at: 2016-01-11 11:11:11.111111111 Z
+  modified_at: 2016-01-11 11:11:11.111111111 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: test
+  cwd: test
+  output_path: test
+  command: ["echo", "hello"]
+  container_uuid: zzzzz-dz642-lvqloser
+  runtime_constraints:
+    vcpus: 1
+    ram: 123
+  mounts:
+    test:
+      kind: json
+  environment:
+    var: locked_vs_queued
 
 running:
   uuid: zzzzz-xvhdp-cr4runningcntnr
