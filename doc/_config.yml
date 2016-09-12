@@ -123,6 +123,7 @@ navbar:
       - api/methods/traits.html.textile.liquid
       - api/methods/users.html.textile.liquid
       - api/methods/virtual_machines.html.textile.liquid
+      - api/methods/workflows.html.textile.liquid
     - Schema:
       - api/schema/ApiClientAuthorization.html.textile.liquid
       - api/schema/ApiClient.html.textile.liquid
@@ -144,6 +145,7 @@ navbar:
       - api/schema/Trait.html.textile.liquid
       - api/schema/User.html.textile.liquid
       - api/schema/VirtualMachine.html.textile.liquid
+      - api/schema/Workflow.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid
