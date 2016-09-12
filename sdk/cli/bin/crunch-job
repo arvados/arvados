@@ -355,6 +355,7 @@ my @jobstep_done = ();
 my @jobstep_tomerge = ();
 my $jobstep_tomerge_level = 0;
 my $squeue_checked = 0;
+my $sinfo_checked = 0;
 my $latest_refresh = scalar time;
 
 
@@ -1401,6 +1402,29 @@ sub check_squeue
   }
 }
 
+sub check_sinfo
+{
+  my $last_sinfo_check = $sinfo_checked;
+
+  # Do not call `sinfo` more than once every 15 seconds.
+  return if $last_sinfo_check > time - 15;
+  $sinfo_checked = time;
+
+  my @sinfo = `sinfo --nodes=\Q$ENV{SLURM_NODELIST}\E --noheader -o "%t"`;
+  if ($? != 0)
+  {
+    Log(undef, "warning: sinfo exit status $? ($!)");
+    return;
+  }
+  chop @sinfo;
+
+  foreach (@sinfo)
+  {
+    if ($_ != "alloc" && $_ != "alloc*") {
+      $main::please_freeze = 1;
+    }
+  }
+}
 
 sub release_allocation
 {
@@ -1906,7 +1930,6 @@ sub freezeunquote
   return $s;
 }
 
-
 sub srun_sync
 {
   my $srunargs = shift;
@@ -1961,6 +1984,7 @@ sub srun_sync
     if (!$busy || ($latest_refresh + 2 < scalar time)) {
       check_refresh_wanted();
       check_squeue();
+      check_sinfo();
     }
     if (!$busy) {
       select(undef, undef, undef, 0.1);
