@@ -7,6 +7,7 @@ queued:
   updated_at: 2016-01-11 11:11:11.111111111 Z
   container_image: test
   cwd: test
+  output: test
   output_path: test
   command: ["echo", "hello"]
   runtime_constraints:
@@ -18,12 +19,12 @@ running:
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   state: Running
   priority: 1
-  progress: 10.0
   created_at: <%= 1.minute.ago.to_s(:db) %>
   updated_at: <%= 1.minute.ago.to_s(:db) %>
   started_at: <%= 1.minute.ago.to_s(:db) %>
   container_image: test
   cwd: test
+  output: test
   output_path: test
   command: ["echo", "hello"]
   runtime_constraints:
@@ -31,17 +32,17 @@ running:
     vcpus: 4
   auth_uuid: zzzzz-gj3su-077z32aux8dg2s1
 
-running_older:
+running-older:
   uuid: zzzzz-dz642-runningcontain2
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   state: Running
   priority: 1
-  progress: 15.0
   created_at: <%= 2.minute.ago.to_s(:db) %>
   updated_at: <%= 2.minute.ago.to_s(:db) %>
   started_at: <%= 2.minute.ago.to_s(:db) %>
   container_image: test
   cwd: test
+  output: test
   output_path: test
   command: ["echo", "hello"]
   runtime_constraints:
@@ -53,21 +54,6 @@ locked:
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
   state: Locked
   priority: 2
-  created_at: <%= 2.minute.ago.to_s(:db) %>
-  updated_at: <%= 2.minute.ago.to_s(:db) %>
-  container_image: test
-  cwd: test
-  output_path: test
-  command: ["echo", "hello"]
-  runtime_constraints:
-    ram: 12000000000
-    vcpus: 4
-
-locked_higher_priority:
-  uuid: zzzzz-dz642-lockedcontainerhigher
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
-  state: Locked
-  priority: 3
   created_at: <%= 2.minute.ago.to_s(:db) %>
   updated_at: <%= 2.minute.ago.to_s(:db) %>
   container_image: test
@@ -90,6 +76,7 @@ completed:
   finished_at: 2016-01-12 11:12:13.111111111 Z
   container_image: test
   cwd: test
+  output: test
   log: ea10d51bcf88862dbcc36eb292017dfd+45
   output: zzzzz-4zz18-znfnqtbbv4spc3w
   output_path: test
@@ -111,7 +98,6 @@ completed_older:
   container_image: test
   cwd: test
   output: test
-  log: test
   output_path: test
   command: ["echo", "hello"]
   runtime_constraints:
@@ -164,7 +150,6 @@ failed_container:
   container_image: test
   cwd: test
   output: test
-  log: test
   output_path: test
   command: ["echo", "hello"]
   runtime_constraints:
