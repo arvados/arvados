@@ -1404,12 +1404,20 @@ sub check_squeue
 
 sub check_sinfo
 {
-  my $last_sinfo_check = $sinfo_checked;
+  # If a node fails in a multi-node "srun" call during job setup, the call
+  # may hang instead of exiting with a nonzero code.  This function checks
+  # "sinfo" for the health of the nodes that were allocated and ensures that
+  # they are all still in the "alloc" state.  If a node that is allocated to
+  # this job is not in "alloc" state, then set please_freeze.
+  #
+  # This is only called from srun_sync() for node configuration.  If a
+  # node fails doing actual work, there are other recovery mechanisms.
 
   # Do not call `sinfo` more than once every 15 seconds.
-  return if $last_sinfo_check > time - 15;
+  return if $sinfo_checked > time - 15;
   $sinfo_checked = time;
 
+  # The output format "%t" means output node states.
   my @sinfo = `sinfo --nodes=\Q$ENV{SLURM_NODELIST}\E --noheader -o "%t"`;
   if ($? != 0)
   {
