@@ -556,7 +556,7 @@ class RichCollectionBase(CollectionBase):
                 if isinstance(item, RichCollectionBase):
                     return item.find_or_create(pathcomponents[1], create_type)
                 else:
-                    raise IOError(errno.ENOTDIR, "Not a directory: '%s'" % pathcomponents[0])
+                    raise IOError(errno.ENOTDIR, "Not a directory", pathcomponents[0])
         else:
             return self
 
@@ -582,7 +582,7 @@ class RichCollectionBase(CollectionBase):
                 else:
                     return item
             else:
-                raise IOError(errno.ENOTDIR, "Is not a directory: %s" % pathcomponents[0])
+                raise IOError(errno.ENOTDIR, "Not a directory", pathcomponents[0])
 
     @synchronized
     def mkdirs(self, path):
@@ -594,7 +594,7 @@ class RichCollectionBase(CollectionBase):
         """
 
         if self.find(path) != None:
-            raise IOError(errno.EEXIST, "Directory or file exists: '%s'" % path)
+            raise IOError(errno.EEXIST, "Directory or file exists", path)
 
         return self.find_or_create(path, COLLECTION)
 
@@ -630,9 +630,9 @@ class RichCollectionBase(CollectionBase):
             arvfile = self.find(path)
 
         if arvfile is None:
-            raise IOError(errno.ENOENT, "File not found")
+            raise IOError(errno.ENOENT, "File not found", path)
         if not isinstance(arvfile, ArvadosFile):
-            raise IOError(errno.EISDIR, "Is a directory: %s" % path)
+            raise IOError(errno.EISDIR, "Is a directory", path)
 
         if mode[0] == "w":
             arvfile.truncate(0)
@@ -732,10 +732,10 @@ class RichCollectionBase(CollectionBase):
         pathcomponents = path.split("/", 1)
         item = self._items.get(pathcomponents[0])
         if item is None:
-            raise IOError(errno.ENOENT, "File not found")
+            raise IOError(errno.ENOENT, "File not found", path)
         if len(pathcomponents) == 1:
             if isinstance(self._items[pathcomponents[0]], RichCollectionBase) and len(self._items[pathcomponents[0]]) > 0 and not recursive:
-                raise IOError(errno.ENOTEMPTY, "Subcollection not empty")
+                raise IOError(errno.ENOTEMPTY, "Subcollection not empty", path)
             deleteditem = self._items[pathcomponents[0]]
             del self._items[pathcomponents[0]]
             self._committed = False
@@ -773,7 +773,7 @@ class RichCollectionBase(CollectionBase):
         """
 
         if target_name in self and not overwrite:
-            raise IOError(errno.EEXIST, "File already exists")
+            raise IOError(errno.EEXIST, "File already exists", target_name)
 
         modified_from = None
         if target_name in self:
@@ -802,7 +802,7 @@ class RichCollectionBase(CollectionBase):
         if isinstance(source, basestring):
             source_obj = source_collection.find(source)
             if source_obj is None:
-                raise IOError(errno.ENOENT, "File not found")
+                raise IOError(errno.ENOENT, "File not found", source)
             sourcecomponents = source.split("/")
         else:
             source_obj = source
@@ -826,7 +826,7 @@ class RichCollectionBase(CollectionBase):
                 target_dir = self
 
         if target_dir is None:
-            raise IOError(errno.ENOENT, "Target directory not found.")
+            raise IOError(errno.ENOENT, "Target directory not found", target_name)
 
         if target_name in target_dir and isinstance(self[target_name], RichCollectionBase) and sourcecomponents:
             target_dir = target_dir[target_name]
@@ -881,7 +881,7 @@ class RichCollectionBase(CollectionBase):
 
         source_obj, target_dir, target_name = self._get_src_target(source, target_path, source_collection, False)
         if not source_obj.writable():
-            raise IOError(errno.EROFS, "Source collection is read only.")
+            raise IOError(errno.EROFS, "Source collection is read only", source)
         target_dir.add(source_obj, target_name, overwrite, True)
 
     def portable_manifest_text(self, stream_name="."):
