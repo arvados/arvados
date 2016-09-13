@@ -473,7 +473,7 @@ fpm_build ruamel.yaml "" "" python 0.12.4 --python-setup-py-arguments "--single-
 
 # Dependency of cwltool.  Fpm doesn't produce a package with the correct version
 # number unless we build it explicitly
-fpm_build cwltest "" "" python 1.0.20160907111242
+fpm_build cwltest "" "" python 1.0.20160913171024
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
 fpm_build cwltool "" "" python 1.0.20160912182208
