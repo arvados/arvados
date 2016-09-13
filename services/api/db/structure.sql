@@ -1069,7 +1069,7 @@ CREATE TABLE workflows (
     modified_by_user_uuid character varying(255),
     name character varying(255),
     description text,
-    workflow text,
+    definition text,
     updated_at timestamp without time zone NOT NULL
 );
 
@@ -2410,7 +2410,7 @@ CREATE INDEX virtual_machines_search_index ON virtual_machines USING btree (uuid
 -- Name: workflows_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX workflows_full_text_search_idx ON workflows USING gin (to_tsvector('english'::regconfig, (((((((((((((' '::text || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(description, ''::text)) || ' '::text) || COALESCE(workflow, ''::text))));
+CREATE INDEX workflows_full_text_search_idx ON workflows USING gin (to_tsvector('english'::regconfig, (((((((((((((' '::text || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(description, ''::text)) || ' '::text) || COALESCE(definition, ''::text))));
 
 
 --
@@ -2689,3 +2689,5 @@ INSERT INTO schema_migrations (version) VALUES ('20160819195557');
 INSERT INTO schema_migrations (version) VALUES ('20160819195725');
 
 INSERT INTO schema_migrations (version) VALUES ('20160901210110');
+
+INSERT INTO schema_migrations (version) VALUES ('20160909181442');
