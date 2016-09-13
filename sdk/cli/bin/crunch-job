@@ -355,6 +355,7 @@ my @jobstep_done = ();
 my @jobstep_tomerge = ();
 my $jobstep_tomerge_level = 0;
 my $squeue_checked = 0;
+my $sinfo_checked = 0;
 my $latest_refresh = scalar time;
 
 
@@ -1401,6 +1402,37 @@ sub check_squeue
   }
 }
 
+sub check_sinfo
+{
+  # If a node fails in a multi-node "srun" call during job setup, the call
+  # may hang instead of exiting with a nonzero code.  This function checks
+  # "sinfo" for the health of the nodes that were allocated and ensures that
+  # they are all still in the "alloc" state.  If a node that is allocated to
+  # this job is not in "alloc" state, then set please_freeze.
+  #
+  # This is only called from srun_sync() for node configuration.  If a
+  # node fails doing actual work, there are other recovery mechanisms.
+
+  # Do not call `sinfo` more than once every 15 seconds.
+  return if $sinfo_checked > time - 15;
+  $sinfo_checked = time;
+
+  # The output format "%t" means output node states.
+  my @sinfo = `sinfo --nodes=\Q$ENV{SLURM_NODELIST}\E --noheader -o "%t"`;
+  if ($? != 0)
+  {
+    Log(undef, "warning: sinfo exit status $? ($!)");
+    return;
+  }
+  chop @sinfo;
+
+  foreach (@sinfo)
+  {
+    if ($_ != "alloc" && $_ != "alloc*") {
+      $main::please_freeze = 1;
+    }
+  }
+}
 
 sub release_allocation
 {
@@ -1478,8 +1510,14 @@ sub preprocess_stderr
     substr $jobstep[$jobstepidx]->{stderr}, 0, 1+length($line), "";
     Log ($jobstepidx, "stderr $line");
     if ($line =~ /srun: error: (SLURM job $ENV{SLURM_JOB_ID} has expired|Unable to confirm allocation for job $ENV{SLURM_JOB_ID})/) {
-      # whoa.
+      # If the allocation is revoked, we can't possibly continue, so mark all
+      # nodes as failed.  This will cause the overall exit code to be
+      # EX_RETRY_UNLOCKED instead of failure so that crunch_dispatch can re-run
+      # this job.
       $main::please_freeze = 1;
+      foreach my $st (@slot) {
+        $st->{node}->{fail_count}++;
+      }
     }
     elsif ($line =~ /srun: error: (Node failure on|Aborting, .*\bio error\b)/) {
       $jobstep[$jobstepidx]->{tempfail} = 1;
@@ -1906,7 +1944,6 @@ sub freezeunquote
   return $s;
 }
 
-
 sub srun_sync
 {
   my $srunargs = shift;
@@ -1961,6 +1998,7 @@ sub srun_sync
     if (!$busy || ($latest_refresh + 2 < scalar time)) {
       check_refresh_wanted();
       check_squeue();
+      check_sinfo();
     }
     if (!$busy) {
       select(undef, undef, undef, 0.1);

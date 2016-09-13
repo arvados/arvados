@@ -31,6 +31,8 @@ Server::Application.routes.draw do
       resources :job_tasks
       resources :containers do
         get 'auth', on: :member
+        post 'lock', on: :member
+        post 'unlock', on: :member
       end
       resources :container_requests
       resources :jobs do

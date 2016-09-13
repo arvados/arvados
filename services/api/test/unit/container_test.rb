@@ -85,7 +85,7 @@ class ContainerTest < ActiveSupport::TestCase
     check_illegal_updates c, [{state: Container::Running},
                               {state: Container::Complete}]
 
-    c.update_attributes! state: Container::Locked
+    c.lock
     c.update_attributes! state: Container::Running
 
     check_illegal_modify c
@@ -103,7 +103,7 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :dispatch1
     assert_equal Container::Queued, c.state
 
-    refute c.update_attributes(state: Container::Locked), "no priority"
+    assert_raise(ActiveRecord::RecordInvalid) {c.lock} # "no priority"
     c.reload
     assert cr.update_attributes priority: 1
 
@@ -112,11 +112,14 @@ class ContainerTest < ActiveSupport::TestCase
     refute c.update_attributes(state: Container::Complete), "not locked"
     c.reload
 
-    assert c.update_attributes(state: Container::Locked), show_errors(c)
+    assert c.lock, show_errors(c)
     assert c.locked_by_uuid
     assert c.auth_uuid
 
-    assert c.update_attributes(state: Container::Queued), show_errors(c)
+    assert_raise(ArvadosModel::AlreadyLockedError) {c.lock}
+    c.reload
+
+    assert c.unlock, show_errors(c)
     refute c.locked_by_uuid
     refute c.auth_uuid
 
@@ -125,16 +128,16 @@ class ContainerTest < ActiveSupport::TestCase
     refute c.locked_by_uuid
     refute c.auth_uuid
 
-    assert c.update_attributes(state: Container::Locked), show_errors(c)
+    assert c.lock, show_errors(c)
     assert c.update_attributes(state: Container::Running), show_errors(c)
     assert c.locked_by_uuid
     assert c.auth_uuid
 
     auth_uuid_was = c.auth_uuid
 
-    refute c.update_attributes(state: Container::Locked), "already running"
+    assert_raise(ActiveRecord::RecordInvalid) {c.lock} # Running to Locked is not allowed
     c.reload
-    refute c.update_attributes(state: Container::Queued), "already running"
+    assert_raise(ActiveRecord::RecordInvalid) {c.unlock} # Running to Queued is not allowed
     c.reload
 
     assert c.update_attributes(state: Container::Complete), show_errors(c)
@@ -155,7 +158,7 @@ class ContainerTest < ActiveSupport::TestCase
   test "Container locked cancel" do
     c, _ = minimal_new
     set_user_from_auth :dispatch1
-    assert c.update_attributes(state: Container::Locked), show_errors(c)
+    assert c.lock, show_errors(c)
     assert c.update_attributes(state: Container::Cancelled), show_errors(c)
     check_no_change_from_cancelled c
   end
@@ -163,8 +166,7 @@ class ContainerTest < ActiveSupport::TestCase
   test "Container running cancel" do
     c, _ = minimal_new
     set_user_from_auth :dispatch1
-    c.update_attributes! state: Container::Queued
-    c.update_attributes! state: Container::Locked
+    c.lock
     c.update_attributes! state: Container::Running
     c.update_attributes! state: Container::Cancelled
     check_no_change_from_cancelled c
@@ -186,7 +188,7 @@ class ContainerTest < ActiveSupport::TestCase
   test "Container only set exit code on complete" do
     c, _ = minimal_new
     set_user_from_auth :dispatch1
-    c.update_attributes! state: Container::Locked
+    c.lock
     c.update_attributes! state: Container::Running
 
     check_illegal_updates c, [{exit_code: 1},

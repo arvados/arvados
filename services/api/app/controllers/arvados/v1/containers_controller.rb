@@ -19,4 +19,14 @@ class Arvados::V1::ContainersController < ApplicationController
       super
     end
   end
+
+  def lock
+    @object.lock
+    show
+  end
+
+  def unlock
+    @object.unlock
+    show
+  end
 end

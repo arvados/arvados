@@ -178,7 +178,7 @@ func (dispatcher *Dispatcher) handleUpdate(container arvados.Container) {
 
 	if container.State == Queued && container.Priority > 0 {
 		// Try to take the lock
-		if err := dispatcher.UpdateState(container.UUID, Locked); err != nil {
+		if err := dispatcher.Lock(container.UUID); err != nil {
 			return
 		}
 		container.State = Locked
@@ -199,6 +199,24 @@ func (dispatcher *Dispatcher) UpdateState(uuid string, newState arvados.Containe
 		nil)
 	if err != nil {
 		log.Printf("Error updating container %s to state %q: %q", uuid, newState, err)
+	}
+	return err
+}
+
+// Lock makes the lock API call which updates the state of a container to Locked.
+func (dispatcher *Dispatcher) Lock(uuid string) error {
+	err := dispatcher.Arv.Call("POST", "containers", uuid, "lock", nil, nil)
+	if err != nil {
+		log.Printf("Error locking container %s: %q", uuid, err)
+	}
+	return err
+}
+
+// Unlock makes the unlock API call which updates the state of a container to Queued.
+func (dispatcher *Dispatcher) Unlock(uuid string) error {
+	err := dispatcher.Arv.Call("POST", "containers", uuid, "unlock", nil, nil)
+	if err != nil {
+		log.Printf("Error unlocking container %s: %q", uuid, err)
 	}
 	return err
 }
