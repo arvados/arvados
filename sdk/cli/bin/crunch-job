@@ -1510,8 +1510,15 @@ sub preprocess_stderr
     substr $jobstep[$jobstepidx]->{stderr}, 0, 1+length($line), "";
     Log ($jobstepidx, "stderr $line");
     if ($line =~ /srun: error: (SLURM job $ENV{SLURM_JOB_ID} has expired|Unable to confirm allocation for job $ENV{SLURM_JOB_ID})/) {
-      # whoa.
+      # If the allocation is revoked, we can't possibly continue, so mark all
+      # slots as failed.  This will cause the overall exit code to be
+      # EX_RETRY_UNLOCKED instead of failure so that crunch_dispatch can re-run
+      # this job.  whoa.
       $main::please_freeze = 1;
+      $working_slot_count = 0;
+      foreach my $st (@slot) {
+        $st->{node}->{fail_count}++;
+      }
     }
     elsif ($line =~ /srun: error: (Node failure on|Aborting, .*\bio error\b)/) {
       $jobstep[$jobstepidx]->{tempfail} = 1;
