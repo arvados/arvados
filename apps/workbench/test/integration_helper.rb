@@ -5,10 +5,20 @@ require 'uri'
 require 'yaml'
 
 def available_port for_what
-  Addrinfo.tcp("0.0.0.0", 0).listen do |srv|
-    port = srv.connect_address.ip_port
-    STDERR.puts "Using port #{port} for #{for_what}"
-    return port
+  begin
+    Addrinfo.tcp("0.0.0.0", 0).listen do |srv|
+      port = srv.connect_address.ip_port
+      # Selenium needs an additional locking port, check if it's available
+      # and retry if necessary.
+      if for_what == 'selenium'
+        locking_port = port - 1
+        Addrinfo.tcp("0.0.0.0", locking_port).listen.close
+      end
+      STDERR.puts "Using port #{port} for #{for_what}"
+      return port
+    end
+  rescue Errno::EADDRINUSE, Errno::EACCES
+    retry
   end
 end
 
@@ -32,6 +42,11 @@ end
 
 Capybara.register_driver :poltergeist_debug do |app|
   Capybara::Poltergeist::Driver.new app, poltergeist_opts.merge(inspector: true)
+end
+
+Capybara.register_driver :poltergeist_with_fake_websocket do |app|
+  js = File.expand_path '../support/fake_websocket.js', __FILE__
+  Capybara::Poltergeist::Driver.new app, poltergeist_opts.merge(extensions: [js])
 end
 
 Capybara.register_driver :poltergeist_without_file_api do |app|

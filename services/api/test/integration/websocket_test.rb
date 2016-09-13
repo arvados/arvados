@@ -69,7 +69,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
   test "connect, subscribe and get response" do
     status = nil
 
-    ws_helper :admin do |ws|
+    ws_helper :active do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe'}.to_json)
       end
@@ -89,9 +89,9 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     spec = nil
     ev_uuid = nil
 
-    authorize_with :admin
+    authorize_with :active
 
-    ws_helper :admin do |ws|
+    ws_helper :active do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe'}.to_json)
       end
@@ -126,9 +126,9 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     spec_ev_uuid = nil
     human_ev_uuid = nil
 
-    authorize_with :admin
+    authorize_with :active
 
-    ws_helper :admin do |ws|
+    ws_helper :active do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe'}.to_json)
       end
@@ -166,9 +166,9 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     human = nil
     human_ev_uuid = nil
 
-    authorize_with :admin
+    authorize_with :active
 
-    ws_helper :admin do |ws|
+    ws_helper :active do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe', filters: [['object_uuid', 'is_a', 'arvados#human']]}.to_json)
       end
@@ -204,9 +204,9 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     spec_ev_uuid = nil
     human_ev_uuid = nil
 
-    authorize_with :admin
+    authorize_with :active
 
-    ws_helper :admin do |ws|
+    ws_helper :active do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe', filters: [['object_uuid', 'is_a', 'arvados#human']]}.to_json)
         ws.send ({method: 'subscribe', filters: [['object_uuid', 'is_a', 'arvados#specimen']]}.to_json)
@@ -249,9 +249,9 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     state = 1
     t1 = nil
 
-    authorize_with :admin
+    authorize_with :active
 
-    ws_helper :admin do |ws|
+    ws_helper :active do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe', filters: [['object_uuid', 'is_a', 'arvados#trait'], ['event_type', '=', 'update']]}.to_json)
       end
@@ -285,13 +285,13 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     human = nil
     human_ev_uuid = nil
 
-    authorize_with :admin
+    authorize_with :active
 
     lastid = logs(:admin_changes_specimen).id
     l1 = nil
     l2 = nil
 
-    ws_helper :admin do |ws|
+    ws_helper :active do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe', last_log_id: lastid}.to_json)
       end
@@ -329,9 +329,9 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     spec_ev_uuid = nil
     filter_id = nil
 
-    authorize_with :admin
+    authorize_with :active
 
-    ws_helper :admin, false do |ws|
+    ws_helper :active, false do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe'}.to_json)
         EM::Timer.new 3 do
@@ -378,9 +378,9 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     spec = nil
     spec_ev_uuid = nil
 
-    authorize_with :admin
+    authorize_with :active
 
-    ws_helper :admin, false do |ws|
+    ws_helper :active, false do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe', filters: [['object_uuid', 'is_a', 'arvados#human']]}.to_json)
         EM::Timer.new 6 do
@@ -430,9 +430,9 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     human = nil
     human_ev_uuid = nil
 
-    authorize_with :admin
+    authorize_with :active
 
-    ws_helper :admin do |ws|
+    ws_helper :active do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe'}.to_json)
       end
@@ -477,9 +477,9 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
   test "connected, not subscribed, no event" do
     slow_test
-    authorize_with :admin
+    authorize_with :active
 
-    ws_helper :admin, false do |ws|
+    ws_helper :active, false do |ws|
       ws.on :open do |event|
         EM::Timer.new 1 do
           Specimen.create
@@ -530,7 +530,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
   test "connect, try bogus method" do
     status = nil
 
-    ws_helper :admin do |ws|
+    ws_helper :active do |ws|
       ws.on :open do |event|
         ws.send ({method: 'frobnabble'}.to_json)
       end
@@ -548,7 +548,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
   test "connect, missing method" do
     status = nil
 
-    ws_helper :admin do |ws|
+    ws_helper :active do |ws|
       ws.on :open do |event|
         ws.send ({fizzbuzz: 'frobnabble'}.to_json)
       end
@@ -566,7 +566,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
   test "connect, send malformed request" do
     status = nil
 
-    ws_helper :admin do |ws|
+    ws_helper :active do |ws|
       ws.on :open do |event|
         ws.send '<XML4EVER></XML4EVER>'
       end
@@ -585,9 +585,9 @@ class WebsocketTest < ActionDispatch::IntegrationTest
   test "connect, try subscribe too many filters" do
     state = 1
 
-    authorize_with :admin
+    authorize_with :active
 
-    ws_helper :admin do |ws|
+    ws_helper :active do |ws|
       ws.on :open do |event|
         (1..17).each do |i|
           ws.send ({method: 'subscribe', filters: [['object_uuid', '=', i]]}.to_json)
@@ -618,9 +618,9 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     event_count = 0
     log_start = Log.order(:id).last.id
 
-    authorize_with :admin
+    authorize_with :active
 
-    ws_helper :admin, false do |ws|
+    ws_helper :active, false do |ws|
       EM::Timer.new 45 do
         # Needs a longer timeout than the default
         ws.close
@@ -661,9 +661,9 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     human = nil
     human_ev_uuid = nil
 
-    authorize_with :admin
+    authorize_with :active
 
-    ws_helper :admin do |ws|
+    ws_helper :active do |ws|
       ws.on :open do |event|
         # test that #6451 is fixed (invalid filter crashes websockets)
         ws.send ({method: 'subscribe', filters: [['object_blarg', 'is_a', 'arvados#human']]}.to_json)

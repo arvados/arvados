@@ -389,4 +389,10 @@ class ContainerRequestTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "requestor can retrieve container owned by dispatch" do
+    assert_not_empty Container.readable_by(users(:admin)).where(uuid: containers(:running).uuid)
+    assert_not_empty Container.readable_by(users(:active)).where(uuid: containers(:running).uuid)
+    assert_empty Container.readable_by(users(:spectator)).where(uuid: containers(:running).uuid)
+  end
 end

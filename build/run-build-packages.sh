@@ -100,33 +100,33 @@ case "$TARGET" in
         FORMAT=deb
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
-            rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
+            rsa uritemplate httplib2 ws4py pykka six  \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             'pycurl<7.21.5' contextlib2 pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
-            cachecontrol cwltest)
+            cachecontrol)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         ;;
     debian8)
         FORMAT=deb
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
-            rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
+            rsa uritemplate httplib2 ws4py pykka six  \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
-            cachecontrol cwltest)
+            cachecontrol)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         ;;
     ubuntu1204)
         FORMAT=deb
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
-            rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
+            rsa uritemplate httplib2 ws4py pykka six  \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             contextlib2 'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro isodate ruamel.ordereddict
-            cachecontrol cwltest)
+            cachecontrol)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         ;;
     ubuntu1404)
@@ -135,7 +135,7 @@ case "$TARGET" in
             google-api-python-client==1.4.2 six uritemplate oauth2client==1.5.2 httplib2 \
             rsa 'pycurl<7.21.5' backports.ssl_match_hostname pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
-            cachecontrol cwltest)
+            cachecontrol)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 requests websocket-client)
         ;;
     centos6)
@@ -150,12 +150,12 @@ case "$TARGET" in
         PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/site-packages
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
-            rsa uritemplate httplib2 ws4py pykka six pyexecjs jsonschema \
+            rsa uritemplate httplib2 ws4py pykka six  \
             ciso8601 pycrypto backports.ssl_match_hostname 'pycurl<7.21.5' \
-            python-daemon lockfile llfuse==0.41.1 'pbr<1.0' pyyaml \
+            python-daemon llfuse==0.41.1 'pbr<1.0' pyyaml \
             'rdflib>=4.2.0' shellescape mistune typing avro requests \
             isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
-            ruamel.ordereddict cachecontrol cwltest)
+            ruamel.ordereddict cachecontrol)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         export PYCURL_SSL_LIBRARY=nss
         ;;
@@ -170,12 +170,12 @@ case "$TARGET" in
         PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/site-packages
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
-            rsa uritemplate httplib2 ws4py pykka pyexecjs jsonschema \
+            rsa uritemplate httplib2 ws4py pykka  \
             ciso8601 pycrypto 'pycurl<7.21.5' \
             python-daemon llfuse==0.41.1 'pbr<1.0' pyyaml \
             'rdflib>=4.2.0' shellescape mistune typing avro \
             isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
-            ruamel.ordereddict cachecontrol cwltest)
+            ruamel.ordereddict cachecontrol)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         export PYCURL_SSL_LIBRARY=nss
         ;;
@@ -448,6 +448,8 @@ cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/sdk/cwl/build"
 fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/cwl/arvados_cwl_runner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados CWL runner" --iteration 3
 
+fpm_build lockfile "" "" python 0.12.2 --epoch 1
+
 # schema_salad. This is a python dependency of arvados-cwl-runner,
 # but we can't use the usual PYTHONPACKAGES way to build this package due to the
 # intricacies of how version numbers get generated in setup.py: we need version
@@ -463,14 +465,18 @@ fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curover
 # So we build this thing separately.
 #
 # Ward, 2016-03-17
-fpm_build schema_salad "" "" python 1.17.20160820171034
+fpm_build schema_salad "" "" python 1.18.20160907135919 --depends "${PYTHON2_PKG_PREFIX}-lockfile >= 1:0.12.2-2"
 
 # And schema_salad now depends on ruamel-yaml, which apparently has a braindead setup.py that requires special arguments to build (otherwise, it aborts with 'error: you have to install with "pip install ."'). Sigh.
 # Ward, 2016-05-26
 fpm_build ruamel.yaml "" "" python 0.12.4 --python-setup-py-arguments "--single-version-externally-managed"
 
+# Dependency of cwltool.  Fpm doesn't produce a package with the correct version
+# number unless we build it explicitly
+fpm_build cwltest "" "" python 1.0.20160907111242
+
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
-fpm_build cwltool "" "" python 1.0.20160901133827
+fpm_build cwltool "" "" python 1.0.20160913171024
 
 # FPM eats the trailing .0 in the python-rdflib-jsonld package when built with 'rdflib-jsonld>=0.3.0'. Force the version. Ward, 2016-03-25
 fpm_build rdflib-jsonld "" "" python 0.3.0

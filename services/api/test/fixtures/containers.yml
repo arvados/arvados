@@ -1,6 +1,6 @@
 queued:
   uuid: zzzzz-dz642-queuedcontainer
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  owner_uuid: zzzzz-tpzed-000000000000000
   state: Queued
   priority: 1
   created_at: 2016-01-11 11:11:11.111111111 Z
@@ -16,7 +16,7 @@ queued:
 
 running:
   uuid: zzzzz-dz642-runningcontainr
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  owner_uuid: zzzzz-tpzed-000000000000000
   state: Running
   priority: 1
   created_at: <%= 1.minute.ago.to_s(:db) %>
@@ -32,9 +32,9 @@ running:
     vcpus: 4
   auth_uuid: zzzzz-gj3su-077z32aux8dg2s1
 
-running-older:
+running_older:
   uuid: zzzzz-dz642-runningcontain2
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  owner_uuid: zzzzz-tpzed-000000000000000
   state: Running
   priority: 1
   created_at: <%= 2.minute.ago.to_s(:db) %>
@@ -51,7 +51,7 @@ running-older:
 
 locked:
   uuid: zzzzz-dz642-lockedcontainer
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  owner_uuid: zzzzz-tpzed-000000000000000
   state: Locked
   priority: 2
   created_at: <%= 2.minute.ago.to_s(:db) %>
@@ -66,7 +66,7 @@ locked:
 
 completed:
   uuid: zzzzz-dz642-compltcontainer
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  owner_uuid: zzzzz-tpzed-000000000000000
   state: Complete
   exit_code: 0
   priority: 1
@@ -87,7 +87,7 @@ completed:
 
 completed_older:
   uuid: zzzzz-dz642-compltcontainr2
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  owner_uuid: zzzzz-tpzed-000000000000000
   state: Complete
   exit_code: 0
   priority: 1
@@ -106,7 +106,7 @@ completed_older:
 
 requester:
   uuid: zzzzz-dz642-requestingcntnr
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  owner_uuid: zzzzz-tpzed-000000000000000
   state: Complete
   exit_code: 0
   priority: 1
@@ -123,7 +123,7 @@ requester:
 
 requester_container:
   uuid: zzzzz-dz642-requestercntnr1
-  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  owner_uuid: zzzzz-tpzed-000000000000000
   state: Complete
   exit_code: 0
   priority: 1

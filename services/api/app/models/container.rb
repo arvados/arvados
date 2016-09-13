@@ -114,6 +114,40 @@ class Container < ArvadosModel
     end
   end
 
+  def lock
+    with_lock do
+      if self.state == Locked
+        raise AlreadyLockedError
+      end
+      self.state = Locked
+      self.save!
+    end
+  end
+
+  def unlock
+    with_lock do
+      if self.state == Queued
+        raise InvalidStateTransitionError
+      end
+      self.state = Queued
+      self.save!
+    end
+  end
+
+  def self.readable_by(*users_list)
+    if users_list.select { |u| u.is_admin }.any?
+      return self
+    end
+    user_uuids = users_list.map { |u| u.uuid }
+    uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
+    uuid_list.uniq!
+    permitted = "(SELECT head_uuid FROM links WHERE link_class='permission' AND tail_uuid IN (:uuids))"
+    joins(:container_requests).
+      where("container_requests.uuid IN #{permitted} OR "+
+            "container_requests.owner_uuid IN (:uuids)",
+            uuids: uuid_list)
+  end
+
   protected
 
   def self.deep_sort_hash(x)
