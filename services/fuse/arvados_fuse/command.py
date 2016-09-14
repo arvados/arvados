@@ -117,6 +117,7 @@ class Mount(object):
         self.llfuse_thread.daemon = True
         self.llfuse_thread.start()
         self.operations.initlock.wait()
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         subprocess.call(["fusermount", "-u", "-z", self.args.mountpoint])

@@ -4,6 +4,7 @@ import arvados_fuse.command
 import atexit
 import functools
 import inspect
+import logging
 import multiprocessing
 import os
 import run_test_server
@@ -72,16 +73,19 @@ class IntegrationTest(unittest.TestCase):
         def decorator(func):
             @functools.wraps(func)
             def wrapper(self, *args, **kwargs):
-                with arvados_fuse.command.Mount(
-                        arvados_fuse.command.ArgumentParser().parse_args(
-                            argv + ['--foreground',
-                                    '--unmount-timeout=0.1',
-                                    self.mnt])) as m:
-                    return func(self, *args, **kwargs)
-                if m.llfuse_thread.is_alive():
-                    self.logger.warning("IntegrationTest.mount:"
-                                        " llfuse thread still alive after umount"
-                                        " -- killing test suite to avoid deadlock")
-                    os.kill(os.getpid(), signal.SIGKILL)
+                self.mount = None
+                try:
+                    with arvados_fuse.command.Mount(
+                            arvados_fuse.command.ArgumentParser().parse_args(
+                                argv + ['--foreground',
+                                        '--unmount-timeout=2',
+                                        self.mnt])) as self.mount:
+                        return func(self, *args, **kwargs)
+                finally:
+                    if self.mount and self.mount.llfuse_thread.is_alive():
+                        logging.warning("IntegrationTest.mount:"
+                                            " llfuse thread still alive after umount"
+                                            " -- killing test suite to avoid deadlock")
+                        os.kill(os.getpid(), signal.SIGKILL)
             return wrapper
         return decorator
