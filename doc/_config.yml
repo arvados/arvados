@@ -107,6 +107,8 @@ navbar:
       - api/methods/api_clients.html.textile.liquid
       - api/methods/authorized_keys.html.textile.liquid
       - api/methods/collections.html.textile.liquid
+      - api/methods/container_requests.html.textile.liquid
+      - api/methods/containers.html.textile.liquid
       - api/methods/groups.html.textile.liquid
       - api/methods/humans.html.textile.liquid
       - api/methods/jobs.html.textile.liquid
@@ -123,11 +125,14 @@ navbar:
       - api/methods/traits.html.textile.liquid
       - api/methods/users.html.textile.liquid
       - api/methods/virtual_machines.html.textile.liquid
+      - api/methods/workflows.html.textile.liquid
     - Schema:
       - api/schema/ApiClientAuthorization.html.textile.liquid
       - api/schema/ApiClient.html.textile.liquid
       - api/schema/AuthorizedKey.html.textile.liquid
       - api/schema/Collection.html.textile.liquid
+      - api/schema/Container.html.textile.liquid
+      - api/schema/ContainerRequest.html.textile.liquid
       - api/schema/Group.html.textile.liquid
       - api/schema/Human.html.textile.liquid
       - api/schema/Job.html.textile.liquid
@@ -144,6 +149,7 @@ navbar:
       - api/schema/Trait.html.textile.liquid
       - api/schema/User.html.textile.liquid
       - api/schema/VirtualMachine.html.textile.liquid
+      - api/schema/Workflow.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid

@@ -46,12 +46,12 @@ class WorkUnitsController < ApplicationController
     elsif rc == Workflow
       # workflow json
       workflow = Workflow.find? template_uuid
-      if workflow.workflow
+      if workflow.definition
         begin
-          wf_json = YAML::load(workflow.workflow)
+          wf_json = YAML::load(workflow.definition)
         rescue => e
-          logger.error "Error converting workflow yaml to json: #{e.message}"
-          raise ArgumentError, "Error converting workflow yaml to json: #{e.message}"
+          logger.error "Error converting definition yaml to json: #{e.message}"
+          raise ArgumentError, "Error converting definition yaml to json: #{e.message}"
         end
       end
 

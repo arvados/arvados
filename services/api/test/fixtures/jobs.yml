@@ -465,9 +465,9 @@ job_with_latest_version:
   supplied_script_version: master
   script_parameters:
     input: 1f4b0bc7583c2a7f9102c395f4ffc5e3+45
-  created_at: <%= 4.minute.ago.to_s(:db) %>
-  started_at: <%= 3.minute.ago.to_s(:db) %>
-  finished_at: <%= 2.minute.ago.to_s(:db) %>
+  created_at: <%= 3.minute.ago.to_s(:db) %>
+  started_at: <%= 2.minute.ago.to_s(:db) %>
+  finished_at: <%= 1.minute.ago.to_s(:db) %>
   running: false
   success: true
   output: fa7aeb5140e2848d39b416daeef4ffc5+45

@@ -1,0 +1,23 @@
+---
+layout: default
+navsection: api
+navmenu: Schema
+title: Workflow
+
+...
+
+A *Workflow* is a definition of work to be performed by a Crunch2 process. It defines the steps and inputs for the process.
+
+h2. Methods
+
+See "workflows":{{site.baseurl}}/api/methods/workflows.html
+
+h2. Resource
+
+Each Workflow offers the following optional attributes, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|name|string|If not specified, will be set to any "name" from the "definition" attribute.||
+|description|string|If not specified, will be set to any "description" from the "definition" attribute.||
+|definition|string|A "Common Workflow Language" document.|Visit "Common Workflow Language":http://www.commonwl.org/ for details.|

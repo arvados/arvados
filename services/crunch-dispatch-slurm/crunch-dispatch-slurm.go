@@ -151,10 +151,7 @@ func submit(dispatcher *dispatch.Dispatcher,
 			// OK, no cleanup needed
 			return
 		}
-		err := dispatcher.Arv.Update("containers", container.UUID,
-			arvadosclient.Dict{
-				"container": arvadosclient.Dict{"state": "Queued"}},
-			nil)
+		err := dispatcher.Unlock(container.UUID)
 		if err != nil {
 			log.Printf("Error unlocking container %s: %v", container.UUID, err)
 		}
@@ -247,7 +244,7 @@ func monitorSubmitOrCancel(dispatcher *dispatch.Dispatcher, container arvados.Co
 				log.Printf("Error submitting container %s to slurm: %v",
 					container.UUID, err)
 				// maybe sbatch is broken, put it back to queued
-				dispatcher.UpdateState(container.UUID, dispatch.Queued)
+				dispatcher.Unlock(container.UUID)
 			}
 			submitted = true
 		} else {
@@ -263,20 +260,20 @@ func monitorSubmitOrCancel(dispatcher *dispatch.Dispatcher, container arvados.Co
 				log.Printf("Error getting final container state: %v", err)
 			}
 
-			var st arvados.ContainerState
 			switch con.State {
 			case dispatch.Locked:
-				st = dispatch.Queued
+				log.Printf("Container %s in state %v but missing from slurm queue, changing to %v.",
+					container.UUID, con.State, dispatch.Queued)
+				dispatcher.Unlock(container.UUID)
 			case dispatch.Running:
-				st = dispatch.Cancelled
+				st := dispatch.Cancelled
+				log.Printf("Container %s in state %v but missing from slurm queue, changing to %v.",
+					container.UUID, con.State, st)
+				dispatcher.UpdateState(container.UUID, st)
 			default:
 				// Container state is Queued, Complete or Cancelled so stop monitoring it.
 				return
 			}
-
-			log.Printf("Container %s in state %v but missing from slurm queue, changing to %v.",
-				container.UUID, con.State, st)
-			dispatcher.UpdateState(container.UUID, st)
 		}
 	}
 }
