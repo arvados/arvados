@@ -1,0 +1,76 @@
+---
+layout: default
+navsection: api
+navmenu: API Methods
+title: "containers"
+
+...
+
+See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
+
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/containers@
+
+Required arguments are displayed in %{background:#ccffcc}green%.
+
+h2(#create). create
+
+Create a new Container.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|container|object|See "Container resource":{{site.baseurl}}/api/schema/Container.html|request body||
+
+h2. delete
+
+Delete an existing Container.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the Container in question.|path||
+
+h2. get
+
+Get a Container's metadata by UUID.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the Container in question.|path||
+
+h2. list
+
+List containers.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+|limit|integer (default 100)|Maximum number of containers to return.|query||
+|order|string|Order in which to return matching containers.|query||
+|filters|array|Conditions for filtering containers.|query||
+
+See the create method documentation for more information about Container-specific filters.
+
+h2. update
+
+Update attributes of an existing Container.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the Container in question.|path||
+|container|object||query||
+
+h2. auth
+
+Get the api_client_authorization record indicated by this container's auth_uuid, which belongs to the container's locked_by_uuid.
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string||path||

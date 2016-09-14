@@ -242,7 +242,9 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c = Container.find_by_uuid cr.container_uuid
     assert_equal 5, c.priority
 
-    cr2 = create_minimal_req!(priority: 10, state: "Committed", requesting_container_uuid: c.uuid, command: ["echo", "foo2"])
+    cr2 = create_minimal_req!
+    cr2.update_attributes!(priority: 10, state: "Committed", requesting_container_uuid: c.uuid, command: ["echo", "foo2"])
+    cr2.reload
 
     c2 = Container.find_by_uuid cr2.container_uuid
     assert_equal 10, c2.priority
@@ -421,6 +423,13 @@ class ContainerRequestTest < ActiveSupport::TestCase
       # when env1 and env2 are different, cr2 container should be different.
       cr2.update_attributes!({state: ContainerRequest::Committed})
       assert_equal (env1 == env2), (cr1.container_uuid == cr2.container_uuid)
+    end
+  end
+
+  test "requesting_container_uuid at create is not allowed" do
+    set_user_from_auth :active
+    assert_raises(ActiveRecord::RecordNotSaved) do
+      create_minimal_req!(state: "Uncommitted", priority: 1, requesting_container_uuid: 'youcantdothat')
     end
   end
 end

@@ -1,0 +1,74 @@
+---
+layout: default
+navsection: api
+navmenu: API Methods
+title: "container_requests"
+
+...
+
+See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
+
+API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/container_requests@
+
+Required arguments are displayed in %{background:#ccffcc}green%.
+
+h2(#create). create
+
+Create a new ContainerRequest.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|container_request|object|See "ContainerRequest resource":{{site.baseurl}}/api/schema/ContainerRequest.html|request body||
+
+The request body must include the required attributes command, container_image, cwd, and output_path. It can also inlcude other attributes such as environment, mounts, and runtime_constraints.
+
+h2. delete
+
+Delete an existing ContainerRequest.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the ContainerRequest in question.|path||
+
+h2. get
+
+Get a ContainerRequest's metadata by UUID.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the ContainerRequest in question.|path||
+
+h2. list
+
+List container_requests.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+|limit|integer (default 100)|Maximum number of container_requests to return.|query||
+|order|string|Order in which to return matching container_requests.|query||
+|filters|array|Conditions for filtering container_requests.|query||
+
+See the create method documentation for more information about ContainerRequest-specific filters.
+
+h2. update
+
+Update attributes of an existing ContainerRequest.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the ContainerRequest in question.|path||
+|container_request|object||query||
+
+{% include 'notebox_begin' %}
+Setting the priority of a committed container_request to 0 may cancel a running container assigned for it.
+{% include 'notebox_end' %}

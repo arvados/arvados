@@ -254,7 +254,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def set_requesting_container_uuid
-    return true if self.requesting_container_uuid   # already set
+    return !new_record? if self.requesting_container_uuid   # already set
 
     token_uuid = current_api_client_authorization.andand.uuid
     container = Container.where('auth_uuid=?', token_uuid).order('created_at desc').first
