@@ -1,14 +1,29 @@
 import arvados
 import arvados_fuse
 import arvados_fuse.command
+import atexit
 import functools
 import inspect
+import logging
 import multiprocessing
 import os
+import run_test_server
+import signal
 import sys
 import tempfile
 import unittest
-import run_test_server
+
+_pool = None
+
+
+@atexit.register
+def _pool_cleanup():
+    global _pool
+    if _pool is None:
+        return
+    _pool.close()
+    _pool.join()
+
 
 def wrap_static_test_method(modName, clsName, funcName, args, kwargs):
     class Test(unittest.TestCase):
@@ -24,17 +39,15 @@ class IntegrationTest(unittest.TestCase):
         If called by method 'foobar', the static method '_foobar' of
         the same class will be called in the other process.
         """
+        global _pool
+        if _pool is None:
+            _pool = multiprocessing.Pool(1, maxtasksperchild=1)
         modName = inspect.getmodule(self).__name__
         clsName = self.__class__.__name__
         funcName = inspect.currentframe().f_back.f_code.co_name
-        pool = multiprocessing.Pool(1)
-        try:
-            pool.apply(
-                wrap_static_test_method,
-                (modName, clsName, '_'+funcName, args, kwargs))
-        finally:
-            pool.terminate()
-            pool.join()
+        _pool.apply(
+            wrap_static_test_method,
+            (modName, clsName, '_'+funcName, args, kwargs))
 
     @classmethod
     def setUpClass(cls):
@@ -60,11 +73,19 @@ class IntegrationTest(unittest.TestCase):
         def decorator(func):
             @functools.wraps(func)
             def wrapper(self, *args, **kwargs):
-                with arvados_fuse.command.Mount(
-                        arvados_fuse.command.ArgumentParser().parse_args(
-                            argv + ['--foreground',
-                                    '--unmount-timeout=0.1',
-                                    self.mnt])):
-                    return func(self, *args, **kwargs)
+                self.mount = None
+                try:
+                    with arvados_fuse.command.Mount(
+                            arvados_fuse.command.ArgumentParser().parse_args(
+                                argv + ['--foreground',
+                                        '--unmount-timeout=2',
+                                        self.mnt])) as self.mount:
+                        return func(self, *args, **kwargs)
+                finally:
+                    if self.mount and self.mount.llfuse_thread.is_alive():
+                        logging.warning("IntegrationTest.mount:"
+                                            " llfuse thread still alive after umount"
+                                            " -- killing test suite to avoid deadlock")
+                        os.kill(os.getpid(), signal.SIGKILL)
             return wrapper
         return decorator
