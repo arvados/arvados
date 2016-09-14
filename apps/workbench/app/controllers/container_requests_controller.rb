@@ -26,8 +26,8 @@ class ContainerRequestsController < ApplicationController
     input_obj = @updates[:mounts].andand[:"/var/lib/cwl/cwl.input.json"].andand[:content]
     if input_obj
       workflow = @object.mounts[:"/var/lib/cwl/workflow.json"][:content]
-      workflow[:inputs].each do |input_schema|
-        if not input_obj.include? input_schema[:id]
+      get_cwl_inputs(workflow).each do |input_schema|
+        if not input_obj.include? cwl_shortname(input_schema[:id])
           next
         end
         required, primary_type, param_id = cwl_input_info(input_schema)

@@ -25,7 +25,7 @@ workflow_with_input_specifications:
   name: Workflow with input specifications
   description: this workflow has inputs specified
   created_at: <%= 1.minute.ago.to_s(:db) %>
-  definition:
+  definition: |
     cwlVersion: v1.0
     class: CommandLineTool
     baseCommand:

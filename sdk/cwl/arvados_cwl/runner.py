@@ -21,6 +21,62 @@ logger = logging.getLogger('arvados.cwl-runner')
 
 cwltool.draft2tool.ACCEPTLIST_RE = re.compile(r"^[a-zA-Z0-9._+-]+$")
 
+def upload_dependencies(arvrunner, name, document_loader,
+                        workflowobj, uri, keepprefix, loadref_run):
+    loaded = set()
+    def loadref(b, u):
+        joined = urlparse.urljoin(b, u)
+        if joined not in loaded:
+            loaded.add(joined)
+            return document_loader.fetch(urlparse.urljoin(b, u))
+        else:
+            return {}
+
+    if loadref_run:
+        loadref_fields = set(("$import", "run"))
+    else:
+        loadref_fields = set(("$import",))
+
+    sc = scandeps(uri, workflowobj,
+                  loadref_fields,
+                  set(("$include", "$schemas", "path", "location")),
+                  loadref)
+
+    files = []
+    def visitFiles(path):
+        files.append(path)
+
+    adjustFileObjs(sc, visitFiles)
+    adjustDirObjs(sc, visitFiles)
+
+    normalizeFilesDirs(files)
+
+    if "id" in workflowobj:
+        files.append({"class": "File", "location": workflowobj["id"]})
+
+    mapper = ArvPathMapper(arvrunner, files, "",
+                           keepprefix+"%s",
+                           keepprefix+"%s/%s",
+                           name=name)
+
+    def setloc(p):
+        p["location"] = mapper.mapper(p["location"]).target
+    adjustFileObjs(workflowobj, setloc)
+    adjustDirObjs(workflowobj, setloc)
+
+    return mapper
+
+
+def upload_docker(arvrunner, tool):
+    if isinstance(tool, CommandLineTool):
+        (docker_req, docker_is_req) = get_feature(tool, "DockerRequirement")
+        if docker_req:
+            arv_docker_get_image(arvrunner.api, docker_req, True, arvrunner.project_uuid)
+    elif isinstance(tool, cwltool.workflow.Workflow):
+        for s in tool.steps:
+            upload_docker(arvrunner, s.embedded_tool)
+
+
 class Runner(object):
     def __init__(self, runner, tool, job_order, enable_reuse):
         self.arvrunner = runner
@@ -33,67 +89,26 @@ class Runner(object):
     def update_pipeline_component(self, record):
         pass
 
-    def upload_docker(self, tool):
-        if isinstance(tool, CommandLineTool):
-            (docker_req, docker_is_req) = get_feature(tool, "DockerRequirement")
-            if docker_req:
-                arv_docker_get_image(self.arvrunner.api, docker_req, True, self.arvrunner.project_uuid)
-        elif isinstance(tool, cwltool.workflow.Workflow):
-            for s in tool.steps:
-                self.upload_docker(s.embedded_tool)
-
-
     def arvados_job_spec(self, *args, **kwargs):
-        self.upload_docker(self.tool)
-
-        workflowfiles = []
-        jobfiles = []
-        workflowfiles.append({"class":"File", "location": self.tool.tool["id"]})
+        upload_docker(self.arvrunner, self.tool)
 
         self.name = os.path.basename(self.tool.tool["id"])
 
-        def visitFiles(files, path):
-            files.append(path)
+        workflowmapper = upload_dependencies(self.arvrunner,
+                                             self.name,
+                                             self.tool.doc_loader,
+                                             self.tool.tool,
+                                             self.tool.tool["id"],
+                                             kwargs.get("keepprefix", ""),
+                                             True)
 
-        document_loader, workflowobj, uri = fetch_document(self.tool.tool["id"])
-        loaded = set()
-        def loadref(b, u):
-            joined = urlparse.urljoin(b, u)
-            if joined not in loaded:
-                loaded.add(joined)
-                return document_loader.fetch(urlparse.urljoin(b, u))
-            else:
-                return {}
-
-        sc = scandeps(uri, workflowobj,
-                      set(("$import", "run")),
-                      set(("$include", "$schemas", "path", "location")),
-                      loadref)
-        adjustFileObjs(sc, partial(visitFiles, workflowfiles))
-        adjustFileObjs(self.job_order, partial(visitFiles, jobfiles))
-        adjustDirObjs(sc, partial(visitFiles, workflowfiles))
-        adjustDirObjs(self.job_order, partial(visitFiles, jobfiles))
-
-        normalizeFilesDirs(jobfiles)
-        normalizeFilesDirs(workflowfiles)
-
-        keepprefix = kwargs.get("keepprefix", "")
-        workflowmapper = ArvPathMapper(self.arvrunner, workflowfiles, "",
-                                       keepprefix+"%s",
-                                       keepprefix+"%s/%s",
-                                       name=self.name,
-                                       **kwargs)
-
-        jobmapper = ArvPathMapper(self.arvrunner, jobfiles, "",
-                                  keepprefix+"%s",
-                                  keepprefix+"%s/%s",
-                                  name=os.path.basename(self.job_order.get("id", "#")),
-                                  **kwargs)
-
-        def setloc(p):
-            p["location"] = jobmapper.mapper(p["location"])[1]
-        adjustFileObjs(self.job_order, setloc)
-        adjustDirObjs(self.job_order, setloc)
+        jobmapper = upload_dependencies(self.arvrunner,
+                                        os.path.basename(self.job_order.get("id", "#")),
+                                        self.tool.doc_loader,
+                                        self.job_order,
+                                        self.job_order.get("id", "#"),
+                                        kwargs.get("keepprefix", ""),
+                                        False)
 
         if "id" in self.job_order:
             del self.job_order["id"]

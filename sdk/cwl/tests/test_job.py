@@ -5,6 +5,7 @@ import unittest
 import os
 import functools
 import cwltool.process
+from schema_salad.ref_resolver import Loader
 
 from schema_salad.ref_resolver import Loader
 
