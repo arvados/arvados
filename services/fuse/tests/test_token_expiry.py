@@ -1,9 +1,12 @@
-import arvados
 import apiclient
+import arvados
+import arvados_fuse
 import logging
 import mock
+import multiprocessing
 import os
 import re
+import sys
 import time
 import unittest
 
@@ -12,33 +15,46 @@ from .integration_test import IntegrationTest
 logger = logging.getLogger('arvados.arv-mount')
 
 class TokenExpiryTest(IntegrationTest):
+    def __init__(self, *args, **kwargs):
+        super(TokenExpiryTest, self).__init__(*args, **kwargs)
+        self.test_start_time = time.time()
+        self.time_now = int(time.time())+1
+
+    def fake_time(self):
+        self.time_now += 1
+        return self.time_now
+
+    orig_open = arvados_fuse.Operations.open
+    def fake_open(self, operations, *args, **kwargs):
+        self.time_now += 86400*13
+        logger.debug('opening file at time=%f', self.time_now)
+        return self.orig_open(operations, *args, **kwargs)
+
+    @mock.patch.object(arvados_fuse.Operations, 'open', autospec=True)
+    @mock.patch('time.time')
     @mock.patch('arvados.keep.KeepClient.get')
     @IntegrationTest.mount(argv=['--mount-by-id', 'zzz'])
-    def test_refresh_old_manifest(self, mocked_get):
+    def test_refresh_old_manifest(self, mocked_get, mocked_time, mocked_open):
         mocked_get.return_value = 'fake data'
+        mocked_time.side_effect = self.fake_time
+        mocked_open.side_effect = self.fake_open
 
-        self.api._rootDesc["blobSignatureTtl"] = 2
-        old_exp = int(time.time()) + 86400*14
-        self.pool_test(os.path.join(self.mnt, 'zzz'))
-        want_exp = int(time.time()) + 86400*14
+        with mock.patch.object(self.mount.api, 'collections', wraps=self.mount.api.collections) as mocked_collections:
+            mocked_collections.return_value = mocked_collections()
+            with mock.patch.object(self.mount.api.collections(), 'get', wraps=self.mount.api.collections().get) as mocked_get:
+                self.pool_test(os.path.join(self.mnt, 'zzz'))
 
-        got_loc = mocked_get.call_args[0][0]
-        got_exp = int(
-            re.search(r'\+A[0-9a-f]+@([0-9a-f]+)', got_loc).group(1),
-            16)
-        self.assertGreaterEqual(
-            got_exp, want_exp-2,
-            msg='now+2w = {:x}, but fuse fetched locator {} (old_exp {:x})'.format(
-                want_exp, got_loc, old_exp))
-        self.assertLessEqual(
-            got_exp, want_exp,
-            msg='server is not using the expected 2w TTL; test is ineffective')
+        self.assertEqual(3, mocked_open.call_count)
+        self.assertEqual(
+            4, mocked_get.call_count,
+            'Not enough calls to collections().get(): expected 4, got {!r}'.format(
+                mocked_get.mock_calls))
 
     @staticmethod
     def _test_refresh_old_manifest(self, zzz):
         uuid = 'zzzzz-4zz18-op4e2lbej01tcvu'
         fnm = 'zzzzz-8i9sb-0vsrcqi7whchuil.log.txt'
         os.listdir(os.path.join(zzz, uuid))
-        time.sleep(3)
-        with open(os.path.join(zzz, uuid, fnm)) as f:
-            f.read()
+        for _ in range(3):
+            with open(os.path.join(zzz, uuid, fnm)) as f:
+                f.read()
