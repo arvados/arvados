@@ -395,4 +395,31 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_not_empty Container.readable_by(users(:active)).where(uuid: containers(:running).uuid)
     assert_empty Container.readable_by(users(:spectator)).where(uuid: containers(:running).uuid)
   end
+
+  [
+    [{"var" => "value1"}, {"var" => "value1"}],
+    [{"var" => "value1"}, {"var" => "value2"}]
+  ].each do |env1, env2|
+    test "Container request #{(env1 == env2) ? 'does' : 'does not'} reuse container when committed" do
+      common_attrs = {cwd: "test",
+                      priority: 1,
+                      command: ["echo", "hello"],
+                      output_path: "test",
+                      runtime_constraints: {"vcpus" => 4,
+                                            "ram" => 12000000000},
+                      mounts: {"test" => {"kind" => "json"}}}
+      set_user_from_auth :active
+      cr1 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Committed,
+                                                    environment: env1}))
+      cr2 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Uncommitted,
+                                                    environment: env2}))
+      assert_nil cr2.container_uuid
+
+      # Update cr2 to commited state and check for container equality on both cases,
+      # when env1 and env2 are equal the same container should be assigned, and
+      # when env1 and env2 are different, cr2 container should be different.
+      cr2.update_attributes!({state: ContainerRequest::Committed})
+      assert_equal (env1 == env2), (cr1.container_uuid == cr2.container_uuid)
+    end
+  end
 end

@@ -142,7 +142,32 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal reused.uuid, c_recent.uuid
   end
 
-  test "find_reusable method should select running container most likely to finish sooner" do
+  test "find_reusable method should not select completed container when inconsistent outputs exist" do
+    set_user_from_auth :active
+    common_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "complete"}})
+    completed_attrs = {
+      state: Container::Complete,
+      exit_code: 0,
+      log: 'test',
+    }
+
+    c_older, _ = minimal_new(common_attrs)
+    c_recent, _ = minimal_new(common_attrs)
+
+    set_user_from_auth :dispatch1
+    c_older.update_attributes!({state: Container::Locked})
+    c_older.update_attributes!({state: Container::Running})
+    c_older.update_attributes!(completed_attrs.merge({output: 'output 1'}))
+
+    c_recent.update_attributes!({state: Container::Locked})
+    c_recent.update_attributes!({state: Container::Running})
+    c_recent.update_attributes!(completed_attrs.merge({output: 'output 2'}))
+
+    reused = Container.find_reusable(common_attrs)
+    assert_nil reused
+  end
+
+  test "find_reusable method should select running container by start date" do
     set_user_from_auth :active
     common_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "running"}})
     c_slower, _ = minimal_new(common_attrs)
@@ -160,7 +185,30 @@ class ContainerTest < ActiveSupport::TestCase
                                                 progress: 0.15})
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
+    # Winner is the one that started first
     assert_equal reused.uuid, c_faster_started_first.uuid
+  end
+
+  test "find_reusable method should select running container by progress" do
+    set_user_from_auth :active
+    common_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "running2"}})
+    c_slower, _ = minimal_new(common_attrs)
+    c_faster_started_first, _ = minimal_new(common_attrs)
+    c_faster_started_second, _ = minimal_new(common_attrs)
+    set_user_from_auth :dispatch1
+    c_slower.update_attributes!({state: Container::Locked})
+    c_slower.update_attributes!({state: Container::Running,
+                                 progress: 0.1})
+    c_faster_started_first.update_attributes!({state: Container::Locked})
+    c_faster_started_first.update_attributes!({state: Container::Running,
+                                               progress: 0.15})
+    c_faster_started_second.update_attributes!({state: Container::Locked})
+    c_faster_started_second.update_attributes!({state: Container::Running,
+                                                progress: 0.2})
+    reused = Container.find_reusable(common_attrs)
+    assert_not_nil reused
+    # Winner is the one with most progress done
+    assert_equal reused.uuid, c_faster_started_second.uuid
   end
 
   test "find_reusable method should select locked container most likely to start sooner" do
@@ -179,6 +227,26 @@ class ContainerTest < ActiveSupport::TestCase
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
     assert_equal reused.uuid, c_high_priority_older.uuid
+  end
+
+  test "find_reusable method should select running over failed container" do
+    set_user_from_auth :active
+    common_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "failed_vs_running"}})
+    c_failed, _ = minimal_new(common_attrs)
+    c_running, _ = minimal_new(common_attrs)
+    set_user_from_auth :dispatch1
+    c_failed.update_attributes!({state: Container::Locked})
+    c_failed.update_attributes!({state: Container::Running})
+    c_failed.update_attributes!({state: Container::Complete,
+                                 exit_code: 42,
+                                 log: "test",
+                                 output: "test"})
+    c_running.update_attributes!({state: Container::Locked})
+    c_running.update_attributes!({state: Container::Running,
+                                  progress: 0.15})
+    reused = Container.find_reusable(common_attrs)
+    assert_not_nil reused
+    assert_equal reused.uuid, c_running.uuid
   end
 
   test "find_reusable method should select complete over running container" do
