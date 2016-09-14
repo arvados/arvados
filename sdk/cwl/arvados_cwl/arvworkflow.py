@@ -6,6 +6,8 @@ from cwltool.pack import pack
 from cwltool.load_tool import fetch_document
 from cwltool.process import shortname
 
+import ruamel.yaml as yaml
+
 from .runner import upload_docker, upload_dependencies
 
 def make_workflow(arvRunner, tool, job_order, project_uuid, update_uuid):
@@ -30,7 +32,7 @@ def make_workflow(arvRunner, tool, job_order, project_uuid, update_uuid):
             "owner_uuid": project_uuid,
             "name": tool.tool.get("label", name),
             "description": tool.tool.get("doc", ""),
-            "workflow":json.dumps(packed, sort_keys=True, indent=4, separators=(',',': '))
+            "definition":yaml.safe_dump(packed)
         }}
 
     if update_uuid:

@@ -306,7 +306,7 @@ class TestCreateWorkflow(unittest.TestCase):
                 "owner_uuid": project_uuid,
                 "name": "submit_wf.cwl",
                 "description": "",
-                "workflow": expect_workflow
+                "definition": expect_workflow
                 }
         }
         stubs.api.workflows().create.assert_called_with(

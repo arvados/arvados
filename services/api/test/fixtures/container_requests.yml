@@ -209,6 +209,8 @@ uncommitted:
             "kind": "json",
             "content": {
                 "cwlVersion": "v1.0",
+                "$graph": [{
+                "id": "#main",
                 "class": "CommandLineTool",
                 "baseCommand": ["echo"],
                 "inputs": [
@@ -289,7 +291,8 @@ uncommitted:
                     }
                 ],
                 "outputs": []
-            }
+            }]
+          }
         },
         "/var/lib/cwl/cwl.input.json": {
             "kind": "json",
