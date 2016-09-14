@@ -151,13 +151,13 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :dispatch1
     c_slower.update_attributes!({state: Container::Locked})
     c_slower.update_attributes!({state: Container::Running,
-                                 progress: 10.0})
+                                 progress: 0.1})
     c_faster_started_first.update_attributes!({state: Container::Locked})
     c_faster_started_first.update_attributes!({state: Container::Running,
-                                               progress: 15.0})
+                                               progress: 0.15})
     c_faster_started_second.update_attributes!({state: Container::Locked})
     c_faster_started_second.update_attributes!({state: Container::Running,
-                                                progress: 15.0})
+                                                progress: 0.15})
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
     assert_equal reused.uuid, c_faster_started_first.uuid
@@ -195,7 +195,7 @@ class ContainerTest < ActiveSupport::TestCase
                                     output: "zzzzz-4zz18-znfnqtbbv4spc3w"})
     c_running.update_attributes!({state: Container::Locked})
     c_running.update_attributes!({state: Container::Running,
-                                  progress: 1.5})
+                                  progress: 0.15})
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
     assert_equal reused.uuid, c_completed.uuid
@@ -210,7 +210,7 @@ class ContainerTest < ActiveSupport::TestCase
     c_locked.update_attributes!({state: Container::Locked})
     c_running.update_attributes!({state: Container::Locked})
     c_running.update_attributes!({state: Container::Running,
-                                  progress: 1.5})
+                                  progress: 0.15})
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
     assert_equal reused.uuid, c_running.uuid
