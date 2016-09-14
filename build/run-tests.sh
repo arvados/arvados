@@ -540,10 +540,22 @@ do_test_once() {
             fi
         elif [[ "$2" == "pip" ]]
         then
-            # $3 can name a path directory for us to use, including trailing
-            # slash; e.g., the bin/ subdirectory of a virtualenv.
-            cd "$WORKSPACE/$1" \
-                && "${3}python" setup.py ${short:+--short-tests-only} test ${testargs[$1]}
+            tries=0
+            cd "$WORKSPACE/$1" && while :
+            do
+                tries=$((${tries}+1))
+                # $3 can name a path directory for us to use, including trailing
+                # slash; e.g., the bin/ subdirectory of a virtualenv.
+                "${3}python" setup.py ${short:+--short-tests-only} test ${testargs[$1]}
+                result=$?
+                if [[ ${tries} < 3 && ${result} == 137 ]]
+                then
+                    printf '\n*****\n%s tests killed -- retrying\n*****\n\n' "$1"
+                    continue
+                else
+                    break
+                fi
+            done
         elif [[ "$2" != "" ]]
         then
             "test_$2"
