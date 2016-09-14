@@ -242,7 +242,9 @@ class ContainerRequestTest < ActiveSupport::TestCase
     c = Container.find_by_uuid cr.container_uuid
     assert_equal 5, c.priority
 
-    cr2 = create_minimal_req!(priority: 10, state: "Committed", requesting_container_uuid: c.uuid)
+    cr2 = create_minimal_req!
+    cr2.update_attributes!(priority: 10, state: "Committed", requesting_container_uuid: c.uuid)
+    cr2.reload
 
     c2 = Container.find_by_uuid cr2.container_uuid
     assert_equal 10, c2.priority
@@ -394,5 +396,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_not_empty Container.readable_by(users(:admin)).where(uuid: containers(:running).uuid)
     assert_not_empty Container.readable_by(users(:active)).where(uuid: containers(:running).uuid)
     assert_empty Container.readable_by(users(:spectator)).where(uuid: containers(:running).uuid)
+  end
+
+  test "requesting_container_uuid at create is not allowed" do
+    set_user_from_auth :active
+    assert_raises(ActiveRecord::RecordNotSaved) do
+      create_minimal_req!(state: "Uncommitted", priority: 1, requesting_container_uuid: 'youcantdothat')
+    end
   end
 end
