@@ -87,13 +87,19 @@ class ContainerRequest < ArvadosModel
     c_runtime_constraints = runtime_constraints_for_container
     c_container_image = container_image_for_container
     c = act_as_system_user do
-      Container.create!(command: self.command,
-                        cwd: self.cwd,
-                        environment: self.environment,
-                        output_path: self.output_path,
-                        container_image: c_container_image,
-                        mounts: c_mounts,
-                        runtime_constraints: c_runtime_constraints)
+      c_attrs = {command: self.command,
+                 cwd: self.cwd,
+                 environment: self.environment,
+                 output_path: self.output_path,
+                 container_image: c_container_image,
+                 mounts: c_mounts,
+                 runtime_constraints: c_runtime_constraints}
+      reusable = Container.find_reusable(c_attrs)
+      if not reusable.nil?
+        reusable
+      else
+        Container.create!(c_attrs)
+      end
     end
     self.container_uuid = c.uuid
   end

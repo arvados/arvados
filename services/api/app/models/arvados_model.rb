@@ -271,6 +271,18 @@ class ArvadosModel < ActiveRecord::Base
 
   protected
 
+  def self.deep_sort_hash(x)
+    if x.is_a? Hash
+      x.sort.collect do |k, v|
+        [k, deep_sort_hash(v)]
+      end.to_h
+    elsif x.is_a? Array
+      x.collect { |v| deep_sort_hash(v) }
+    else
+      x
+    end
+  end
+
   def ensure_ownership_path_leads_to_user
     if new_record? or owner_uuid_changed?
       uuid_in_path = {owner_uuid => true, uuid => true}

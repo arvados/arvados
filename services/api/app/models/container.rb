@@ -18,6 +18,7 @@ class Container < ArvadosModel
   validate :validate_change
   validate :validate_lock
   after_validation :assign_auth
+  before_save :sort_serialized_attrs
   after_save :handle_completed
 
   has_many :container_requests, :foreign_key => :container_uuid, :class_name => 'ContainerRequest', :primary_key => :uuid
@@ -74,6 +75,36 @@ class Container < ArvadosModel
         maximum('priority')
       self.save!
     end
+  end
+
+  def self.find_reusable(attrs)
+    candidates = Container.
+      where('command = ?', attrs[:command].to_yaml).
+      where('cwd = ?', attrs[:cwd]).
+      where('environment = ?', self.deep_sort_hash(attrs[:environment]).to_yaml).
+      where('output_path = ?', attrs[:output_path]).
+      where('container_image = ?', attrs[:container_image]).
+      where('mounts = ?', self.deep_sort_hash(attrs[:mounts]).to_yaml).
+      where('runtime_constraints = ?', self.deep_sort_hash(attrs[:runtime_constraints]).to_yaml)
+
+    # Check for Completed candidates that only had consistent outputs.
+    completed = candidates.where(state: Complete).where(exit_code: 0)
+    if completed.select("output").group('output').limit(2).length == 1
+      return completed.order('finished_at asc').limit(1).first
+    end
+
+    # Check for Running candidates and return the most likely to finish sooner.
+    running = candidates.where(state: Running).
+      order('progress desc, started_at asc').limit(1).first
+    return running if not running.nil?
+
+    # Check for Locked or Queued ones and return the most likely to start first.
+    locked_or_queued = candidates.where("state IN (?)", [Locked, Queued]).
+      order('state asc, priority desc, created_at asc').limit(1).first
+    return locked_or_queued if not locked_or_queued.nil?
+
+    # No suitable candidate found.
+    nil
   end
 
   def lock
@@ -232,6 +263,18 @@ class Container < ArvadosModel
     self.auth = ApiClientAuthorization.
       create!(user_id: User.find_by_uuid(cr.modified_by_user_uuid).id,
               api_client_id: 0)
+  end
+
+  def sort_serialized_attrs
+    if self.environment_changed?
+      self.environment = self.class.deep_sort_hash(self.environment)
+    end
+    if self.mounts_changed?
+      self.mounts = self.class.deep_sort_hash(self.mounts)
+    end
+    if self.runtime_constraints_changed?
+      self.runtime_constraints = self.class.deep_sort_hash(self.runtime_constraints)
+    end
   end
 
   def handle_completed

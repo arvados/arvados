@@ -7,7 +7,6 @@ queued:
   updated_at: 2016-01-11 11:11:11.111111111 Z
   container_image: test
   cwd: test
-  output: test
   output_path: test
   command: ["echo", "hello"]
   runtime_constraints:
@@ -24,7 +23,6 @@ running:
   started_at: <%= 1.minute.ago.to_s(:db) %>
   container_image: test
   cwd: test
-  output: test
   output_path: test
   command: ["echo", "hello"]
   runtime_constraints:
@@ -42,7 +40,6 @@ running_older:
   started_at: <%= 2.minute.ago.to_s(:db) %>
   container_image: test
   cwd: test
-  output: test
   output_path: test
   command: ["echo", "hello"]
   runtime_constraints:
@@ -58,7 +55,6 @@ locked:
   updated_at: <%= 2.minute.ago.to_s(:db) %>
   container_image: test
   cwd: test
-  output: test
   output_path: test
   command: ["echo", "hello"]
   runtime_constraints:
