@@ -248,6 +248,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def set_requesting_container_uuid
+    return false if self.requesting_container_uuid && new_record?
     return true if self.requesting_container_uuid   # already set
 
     token_uuid = current_api_client_authorization.andand.uuid
