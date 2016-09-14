@@ -85,33 +85,27 @@ class Container < ArvadosModel
       where('output_path = ?', attrs[:output_path]).
       where('container_image = ?', attrs[:container_image]).
       where('mounts = ?', self.deep_sort_hash(attrs[:mounts]).to_yaml).
-      where('runtime_constraints = ?', self.deep_sort_hash(attrs[:runtime_constraints]).to_yaml).
-      where('state in (?)', [Queued, Locked, Running, Complete]).
-      reject {|c| c.state == Complete and
-              (c.exit_code != 0 or c.output.nil? or c.log.nil?)}
-    if candidates.empty?
-      nil
-    elsif candidates.count == 1
-      candidates.first
-    else
-      # Multiple candidates found, search for the best one:
-      # The most recent completed container
-      winner = candidates.select {|c| c.state == Complete}.
-        sort_by {|c| c.finished_at}.last
-      return winner if not winner.nil?
-      # The running container that's most likely to finish sooner.
-      winner = candidates.select {|c| c.state == Running}.
-        sort {|a, b| [b.progress, a.started_at] <=> [a.progress, b.started_at]}.first
-      return winner if not winner.nil?
-      # The locked container that's most likely to start sooner.
-      winner = candidates.select {|c| c.state == Locked}.
-        sort {|a, b| [b.priority, a.created_at] <=> [a.priority, b.created_at]}.first
-      return winner if not winner.nil?
-      # The queued container that's most likely to start sooner.
-      winner = candidates.select {|c| c.state == Queued}.
-        sort {|a, b| [b.priority, a.created_at] <=> [a.priority, b.created_at]}.first
-      return winner if not winner.nil?
+      where('runtime_constraints = ?', self.deep_sort_hash(attrs[:runtime_constraints]).to_yaml)
+
+    # Check for Completed candidates that only had consistent outputs.
+    completed = candidates.where(state: Complete).where(exit_code: 0)
+    if completed.select("output").group('output').limit(2).length == 1
+      return completed.order('finished_at desc').limit(1).first
     end
+
+    # First, check for Running candidates and return the most likely to finish sooner,
+    # then for Locked or Queued ones and return the most likely to start first.
+    [
+      [Running, 'progress desc, started_at asc'],
+      [Locked, 'priority desc, created_at asc'],
+      [Queued, 'priority desc, created_at asc']
+    ].each do |candidate_state, ordering_criteria|
+      selected = candidates.where(state: candidate_state).order(ordering_criteria).limit(1).first
+      return selected if not selected.nil?
+    end
+
+    # No suitable candidate found.
+    nil
   end
 
   def lock
