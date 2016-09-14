@@ -282,18 +282,6 @@ class Job < ArvadosModel
     Digest::MD5.hexdigest(Oj.dump(deep_sort_hash(h)))
   end
 
-  def self.deep_sort_hash x
-    if x.is_a? Hash
-      x.sort.collect do |k, v|
-        [k, deep_sort_hash(v)]
-      end.to_h
-    elsif x.is_a? Array
-      x.collect { |v| deep_sort_hash(v) }
-    else
-      x
-    end
-  end
-
   def foreign_key_attributes
     super + %w(output log)
   end

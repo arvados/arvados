@@ -150,18 +150,6 @@ class Container < ArvadosModel
 
   protected
 
-  def self.deep_sort_hash(x)
-    if x.is_a? Hash
-      x.sort.collect do |k, v|
-        [k, deep_sort_hash(v)]
-      end.to_h
-    elsif x.is_a? Array
-      x.collect { |v| deep_sort_hash(v) }
-    else
-      x
-    end
-  end
-
   def fill_field_defaults
     self.state ||= Queued
     self.environment ||= {}
