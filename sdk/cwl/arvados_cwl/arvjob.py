@@ -13,6 +13,7 @@ import arvados.collection
 from .arvdocker import arv_docker_get_image
 from .runner import Runner
 from .pathmapper import InitialWorkDirPathMapper
+from .perf import Perf
 from . import done
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -90,19 +91,20 @@ class ArvadosJob(object):
             filters.append(["docker_image_locator", "in docker", runtime_constraints["docker_image"]])
 
         try:
-            response = self.arvrunner.api.jobs().create(
-                body={
-                    "owner_uuid": self.arvrunner.project_uuid,
-                    "script": "crunchrunner",
-                    "repository": "arvados",
-                    "script_version": "master",
-                    "minimum_script_version": "9e5b98e8f5f4727856b53447191f9c06e3da2ba6",
-                    "script_parameters": {"tasks": [script_parameters]},
-                    "runtime_constraints": runtime_constraints
-                },
-                filters=filters,
-                find_or_create=kwargs.get("enable_reuse", True)
-            ).execute(num_retries=self.arvrunner.num_retries)
+            with Perf(logger, "create %s" % self.name):
+                response = self.arvrunner.api.jobs().create(
+                    body={
+                        "owner_uuid": self.arvrunner.project_uuid,
+                        "script": "crunchrunner",
+                        "repository": "arvados",
+                        "script_version": "master",
+                        "minimum_script_version": "9e5b98e8f5f4727856b53447191f9c06e3da2ba6",
+                        "script_parameters": {"tasks": [script_parameters]},
+                        "runtime_constraints": runtime_constraints
+                    },
+                    filters=filters,
+                    find_or_create=kwargs.get("enable_reuse", True)
+                ).execute(num_retries=self.arvrunner.num_retries)
 
             self.arvrunner.processes[response["uuid"]] = self
 
@@ -111,7 +113,8 @@ class ArvadosJob(object):
             logger.info("Job %s (%s) is %s", self.name, response["uuid"], response["state"])
 
             if response["state"] in ("Complete", "Failed", "Cancelled"):
-                self.done(response)
+                with Perf(logger, "done %s" % self.name):
+                    self.done(response)
         except Exception as e:
             logger.error("Got error %s" % str(e))
             self.output_callback({}, "permanentFail")
@@ -119,7 +122,8 @@ class ArvadosJob(object):
     def update_pipeline_component(self, record):
         if self.arvrunner.pipeline:
             self.arvrunner.pipeline["components"][self.name] = {"job": record}
-            self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().update(uuid=self.arvrunner.pipeline["uuid"],
+            with Perf(logger, "update_pipeline_component %s" % self.name):
+                self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().update(uuid=self.arvrunner.pipeline["uuid"],
                                                                                  body={
                                                                                     "components": self.arvrunner.pipeline["components"]
                                                                                  }).execute(num_retries=self.arvrunner.num_retries)
@@ -151,31 +155,33 @@ class ArvadosJob(object):
             outputs = {}
             try:
                 if record["output"]:
-                    logc = arvados.collection.Collection(record["log"])
-                    log = logc.open(logc.keys()[0])
-                    tmpdir = None
-                    outdir = None
-                    keepdir = None
-                    for l in log:
-                        # Determine the tmpdir, outdir and keepdir paths from
-                        # the job run.  Unfortunately, we can't take the first
-                        # values we find (which are expected to be near the
-                        # top) and stop scanning because if the node fails and
-                        # the job restarts on a different node these values
-                        # will different runs, and we need to know about the
-                        # final run that actually produced output.
+                    with Perf(logger, "inspect log %s" % self.name):
+                        logc = arvados.collection.Collection(record["log"])
+                        log = logc.open(logc.keys()[0])
+                        tmpdir = None
+                        outdir = None
+                        keepdir = None
+                        for l in log:
+                            # Determine the tmpdir, outdir and keepdir paths from
+                            # the job run.  Unfortunately, we can't take the first
+                            # values we find (which are expected to be near the
+                            # top) and stop scanning because if the node fails and
+                            # the job restarts on a different node these values
+                            # will different runs, and we need to know about the
+                            # final run that actually produced output.
 
-                        g = tmpdirre.match(l)
-                        if g:
-                            tmpdir = g.group(1)
-                        g = outdirre.match(l)
-                        if g:
-                            outdir = g.group(1)
-                        g = keepre.match(l)
-                        if g:
-                            keepdir = g.group(1)
+                            g = tmpdirre.match(l)
+                            if g:
+                                tmpdir = g.group(1)
+                            g = outdirre.match(l)
+                            if g:
+                                outdir = g.group(1)
+                            g = keepre.match(l)
+                            if g:
+                                keepdir = g.group(1)
 
-                    outputs = done.done(self, record, tmpdir, outdir, keepdir)
+                    with Perf(logger, "output collection %s" % self.name):
+                        outputs = done.done(self, record, tmpdir, outdir, keepdir)
             except WorkflowException as e:
                 logger.error("Error while collecting job outputs:\n%s", e, exc_info=(e if self.arvrunner.debug else False))
                 processStatus = "permanentFail"
