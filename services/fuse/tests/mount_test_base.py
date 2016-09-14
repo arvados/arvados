@@ -67,17 +67,16 @@ class MountTestBase(unittest.TestCase):
     def tearDown(self):
         if self.llfuse_thread:
             subprocess.call(["fusermount", "-u", "-z", self.mounttmp])
-            self.llfuse_thread.join(timeout=1)
-            if self.llfuse_thread.is_alive():
-                logger.warning("MountTestBase.tearDown():"
-                               " llfuse thread still alive 1s after umount"
-                               " -- waiting another 10s")
-                self.llfuse_thread.join(timeout=10)
+            t0 = time.time()
+            self.llfuse_thread.join(timeout=10)
             if self.llfuse_thread.is_alive():
                 logger.warning("MountTestBase.tearDown():"
                                " llfuse thread still alive 10s after umount"
                                " -- exiting with SIGKILL")
                 os.kill(os.getpid(), signal.SIGKILL)
+            waited = time.time() - t0
+            if waited > 0.1:
+                logger.warning("MountTestBase.tearDown(): waited %f s for llfuse thread to end", waited)
 
         os.rmdir(self.mounttmp)
         if self.keeptmp:
