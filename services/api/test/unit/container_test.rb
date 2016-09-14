@@ -139,7 +139,7 @@ class ContainerTest < ActiveSupport::TestCase
 
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
-    assert_equal reused.uuid, c_recent.uuid
+    assert_equal reused.uuid, c_older.uuid
   end
 
   test "find_reusable method should not select completed container when inconsistent outputs exist" do
@@ -151,17 +151,17 @@ class ContainerTest < ActiveSupport::TestCase
       log: 'test',
     }
 
-    c_older, _ = minimal_new(common_attrs)
-    c_recent, _ = minimal_new(common_attrs)
+    c_output1, _ = minimal_new(common_attrs)
+    c_output2, _ = minimal_new(common_attrs)
 
     set_user_from_auth :dispatch1
-    c_older.update_attributes!({state: Container::Locked})
-    c_older.update_attributes!({state: Container::Running})
-    c_older.update_attributes!(completed_attrs.merge({output: 'output 1'}))
+    c_output1.update_attributes!({state: Container::Locked})
+    c_output1.update_attributes!({state: Container::Running})
+    c_output1.update_attributes!(completed_attrs.merge({output: 'output 1'}))
 
-    c_recent.update_attributes!({state: Container::Locked})
-    c_recent.update_attributes!({state: Container::Running})
-    c_recent.update_attributes!(completed_attrs.merge({output: 'output 2'}))
+    c_output2.update_attributes!({state: Container::Locked})
+    c_output2.update_attributes!({state: Container::Running})
+    c_output2.update_attributes!(completed_attrs.merge({output: 'output 2'}))
 
     reused = Container.find_reusable(common_attrs)
     assert_nil reused
@@ -185,7 +185,7 @@ class ContainerTest < ActiveSupport::TestCase
                                                 progress: 0.15})
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
-    # Winner is the one that started first
+    # Selected container is the one that started first
     assert_equal reused.uuid, c_faster_started_first.uuid
   end
 
@@ -207,7 +207,7 @@ class ContainerTest < ActiveSupport::TestCase
                                                 progress: 0.2})
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
-    # Winner is the one with most progress done
+    # Selected container is the one with most progress done
     assert_equal reused.uuid, c_faster_started_second.uuid
   end
 

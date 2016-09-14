@@ -90,19 +90,18 @@ class Container < ArvadosModel
     # Check for Completed candidates that only had consistent outputs.
     completed = candidates.where(state: Complete).where(exit_code: 0)
     if completed.select("output").group('output').limit(2).length == 1
-      return completed.order('finished_at desc').limit(1).first
+      return completed.order('finished_at asc').limit(1).first
     end
 
-    # First, check for Running candidates and return the most likely to finish sooner,
-    # then for Locked or Queued ones and return the most likely to start first.
-    [
-      [Running, 'progress desc, started_at asc'],
-      [Locked, 'priority desc, created_at asc'],
-      [Queued, 'priority desc, created_at asc']
-    ].each do |candidate_state, ordering_criteria|
-      selected = candidates.where(state: candidate_state).order(ordering_criteria).limit(1).first
-      return selected if not selected.nil?
-    end
+    # Check for Running candidates and return the most likely to finish sooner.
+    running = candidates.where(state: Running).
+      order('progress desc, started_at asc').limit(1).first
+    return running if not running.nil?
+
+    # Check for Locked or Queued ones and return the most likely to start first.
+    locked_or_queued = candidates.where("state IN (?)", [Locked, Queued]).
+      order('state asc, priority desc, created_at asc').limit(1).first
+    return locked_or_queued if not locked_or_queued.nil?
 
     # No suitable candidate found.
     nil

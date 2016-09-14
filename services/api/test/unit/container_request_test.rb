@@ -413,6 +413,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
                                                     environment: env1}))
       cr2 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Uncommitted,
                                                     environment: env2}))
+      assert_not_nil cr1.container_uuid
       assert_nil cr2.container_uuid
 
       # Update cr2 to commited state and check for container equality on both cases,
