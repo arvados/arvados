@@ -1,6 +1,7 @@
 import logging
 import re
 import copy
+import json
 
 from cwltool.process import get_feature, shortname
 from cwltool.errors import WorkflowException
@@ -39,6 +40,7 @@ class ArvadosJob(object):
         if self.generatefiles["listing"]:
             vwd = arvados.collection.Collection()
             script_parameters["task.vwd"] = {}
+            logger.debug("generatefiles is %s", json.dumps(self.generatefiles, indent=4))
             generatemapper = InitialWorkDirPathMapper([self.generatefiles], "", "",
                                         separateDirs=False)
             for f, p in generatemapper.items():
