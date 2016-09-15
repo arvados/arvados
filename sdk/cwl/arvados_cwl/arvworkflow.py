@@ -59,7 +59,7 @@ class ArvadosWorkflow(Workflow):
         if req:
             document_loader, workflowobj, uri = (self.doc_loader, self.doc_loader.fetch(self.tool["id"]), self.tool["id"])
             workflowobj["requirements"] = self.requirements + workflowobj.get("requirements", [])
-            workflowobj["hints"] = self.requirements + workflowobj.get("hints", [])
+            workflowobj["hints"] = self.hints + workflowobj.get("hints", [])
             packed = pack(document_loader, workflowobj, uri, self.metadata)
             wf_runner = {
                 "class": "CommandLineTool",
@@ -67,19 +67,20 @@ class ArvadosWorkflow(Workflow):
                 "inputs": self.tool["inputs"],
                 "outputs": self.tool["outputs"],
                 "stdout": "cwl.output.json",
-                "requirements": [
+                "requirements": workflowobj["requirements"]+[
                     {"class": "InlineJavascriptRequirement"},
                     {
                     "class": "InitialWorkDirRequirement",
                     "listing": [{
                             "entryname": "workflow.json",
-                            "entry": json.dumps(packed, sort_keys=True, indent=4)
+                            "entry": json.dumps(packed, sort_keys=True, indent=4).replace('$(', '\$(').replace('${', '\${')
                         }, {
                             "entryname": "cwl.input.json",
                             "entry": "$(JSON.stringify(inputs))"
                         }]
                 }],
-                "arguments": ["--debug", "workflow.json", "cwl.input.json"]
+                "hints": workflowobj["hints"],
+                "arguments": ["workflow.json", "cwl.input.json"]
             }
             kwargs["loader"] = self.doc_loader
             kwargs["avsc_names"] = self.doc_schema
