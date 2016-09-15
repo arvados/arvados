@@ -207,7 +207,7 @@ class RunnerJob(Runner):
 
         workflowmapper = super(RunnerJob, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)
 
-        self.job_order["cwl:tool"] = workflowmapper.mapper(self.tool.tool["id"])[1]
+        self.job_order["cwl:tool"] = workflowmapper.mapper(self.tool.tool["id"]).target[5:]
         return {
             "script": "cwl-runner",
             "script_version": "master",
