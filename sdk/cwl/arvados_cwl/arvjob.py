@@ -250,6 +250,7 @@ class RunnerTemplate(object):
     type_to_dataclass = {
         'boolean': 'boolean',
         'File': 'File',
+        'Directory': 'Collection',
         'float': 'number',
         'int': 'number',
         'string': 'text',
@@ -316,8 +317,8 @@ class RunnerTemplate(object):
                 pass
             elif not isinstance(value, dict):
                 param['value'] = value
-            elif param.get('dataclass') == 'File' and value.get('location'):
-                param['value'] = value['location']
+            elif param.get('dataclass') in ('File', 'Collection') and value.get('location'):
+                param['value'] = value['location'][5:]
 
             spec['script_parameters'][param_id] = param
         spec['script_parameters']['cwl:tool'] = job_params['cwl:tool']
