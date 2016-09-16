@@ -15,6 +15,7 @@ import pkg_resources  # part of setuptools
 from cwltool.errors import WorkflowException
 import cwltool.main
 import cwltool.workflow
+import schema_salad
 
 import arvados
 import arvados.config
@@ -364,6 +365,15 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
     return parser
 
+def add_arv_hints():
+    cache = {}
+    res = pkg_resources.resource_stream(__name__, 'arv-cwl-schema.yml')
+    cache["https://w3id.org/cwl/arv-cwl-schema.yml"] = res.read()
+    res.close()
+    _, cwlnames, _, _ = cwltool.process.get_schema("v1.0")
+    _, extnames, _, _ = schema_salad.schema.load_schema("https://w3id.org/cwl/arv-cwl-schema.yml", cache=cache)
+    for n in extnames.names:
+        cwlnames.add_name("http://arvados.org/cwl#"+n, "", extnames.get_name(n, ""))
 
 def main(args, stdout, stderr, api_client=None):
     parser = arg_parser()
@@ -372,6 +382,8 @@ def main(args, stdout, stderr, api_client=None):
     arvargs = parser.parse_args(args)
     if (arvargs.create_template or arvargs.create_workflow or arvargs.update_workflow) and not arvargs.job_order:
         job_order_object = ({}, "")
+
+    add_arv_hints()
 
     try:
         if api_client is None:
