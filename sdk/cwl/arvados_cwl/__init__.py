@@ -56,6 +56,7 @@ class ArvCwlRunner(object):
         self.work_api = work_api
         self.stop_polling = threading.Event()
         self.poll_api = None
+        self.pipeline = None
 
         if self.work_api is None:
             # todo: autodetect API to use.
@@ -373,7 +374,8 @@ def add_arv_hints():
     _, cwlnames, _, _ = cwltool.process.get_schema("v1.0")
     _, extnames, _, _ = schema_salad.schema.load_schema("https://w3id.org/cwl/arv-cwl-schema.yml", cache=cache)
     for n in extnames.names:
-        cwlnames.add_name("http://arvados.org/cwl#"+n, "", extnames.get_name(n, ""))
+        if not cwlnames.has_name("http://arvados.org/cwl#"+n, ""):
+            cwlnames.add_name("http://arvados.org/cwl#"+n, "", extnames.get_name(n, ""))
 
 def main(args, stdout, stderr, api_client=None):
     parser = arg_parser()

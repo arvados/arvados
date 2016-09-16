@@ -200,6 +200,8 @@ class TestWorkflow(unittest.TestCase):
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     def test_run(self):
+        arvados_cwl.add_arv_hints()
+
         runner = arvados_cwl.ArvCwlRunner(mock.MagicMock())
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
@@ -213,8 +215,10 @@ class TestWorkflow(unittest.TestCase):
                                               basedir="", make_fs_access=make_fs_access, loader=document_loader,
                                               makeTool=runner.arv_make_tool, metadata=metadata)
         arvtool.formatgraph = None
-        for j in arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access):
-            j.run()
+        it = arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access)
+        it.next().run()
+        it.next().run()
+
         runner.api.jobs().create.assert_called_with(
             body={
                 'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
