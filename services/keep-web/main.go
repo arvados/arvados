@@ -4,7 +4,34 @@ import (
 	"flag"
 	"log"
 	"os"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/configfile"
+	"github.com/coreos/go-systemd/daemon"
 )
+
+var (
+	defaultConfigPath = "/etc/arvados/keep-web/config.json"
+)
+
+type Config struct {
+	Client arvados.Client
+
+	Listen string
+
+	AnonymousTokens    []string
+	AttachmentOnlyHost string
+	TrustAllContent    bool
+
+	deprecatedAllowAnonymous bool
+}
+
+// DefaultConfig returns the default configuration.
+func DefaultConfig() *Config {
+	return &Config{
+		Listen: ":80",
+	}
+}
 
 func init() {
 	// MakeArvadosClient returns an error if this env var isn't
@@ -18,13 +45,43 @@ func init() {
 }
 
 func main() {
+	cfg := DefaultConfig()
+
+	var configPath string
+	deprecated := " (DEPRECATED -- use config file instead)"
+	flag.StringVar(&configPath, "config", defaultConfigPath,
+		"`path` to json configuration file")
+	flag.StringVar(&cfg.Listen, "listen", "",
+		"address:port or :port to listen on"+deprecated)
+	flag.BoolVar(&cfg.deprecatedAllowAnonymous, "allow-anonymous", false,
+		"Load an anonymous token from the ARVADOS_API_TOKEN environment variable"+deprecated)
+	flag.StringVar(&cfg.AttachmentOnlyHost, "attachment-only-host", "",
+		"Only serve attachments at the given `host:port`"+deprecated)
+	flag.BoolVar(&cfg.TrustAllContent, "trust-all-content", false,
+		"Serve non-public content from a single origin. Dangerous: read docs before using!"+deprecated)
+	flag.Usage = usage
 	flag.Parse()
-	if os.Getenv("ARVADOS_API_HOST") == "" {
-		log.Fatal("ARVADOS_API_HOST environment variable must be set.")
+
+	if err := configfile.LoadFile(cfg, configPath); err != nil {
+		if h := os.Getenv("ARVADOS_API_HOST"); h != "" && configPath == defaultConfigPath {
+			log.Printf("DEPRECATED: Using ARVADOS_API_HOST environment variable. Use config file instead.")
+			cfg.Client.APIHost = h
+		} else {
+			log.Fatal(err)
+		}
 	}
-	srv := &server{}
+	if cfg.deprecatedAllowAnonymous {
+		log.Printf("DEPRECATED: Using -allow-anonymous command line flag with ARVADOS_API_TOKEN environment variable. Use config file instead.")
+		cfg.AnonymousTokens = []string{os.Getenv("ARVADOS_API_TOKEN")}
+	}
+
+	os.Setenv("ARVADOS_API_HOST", cfg.Client.APIHost)
+	srv := &server{Config: cfg}
 	if err := srv.Start(); err != nil {
 		log.Fatal(err)
+	}
+	if _, err := daemon.SdNotify("READY=1"); err != nil {
+		log.Printf("Error notifying init daemon: %v", err)
 	}
 	log.Println("Listening at", srv.Addr)
 	if err := srv.Wait(); err != nil {

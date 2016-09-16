@@ -38,7 +38,7 @@ func (s *IntegrationSuite) TestVhost404(c *check.C) {
 			URL:        u,
 			RequestURI: u.RequestURI(),
 		}
-		(&handler{}).ServeHTTP(resp, req)
+		s.testServer.Handler.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusNotFound)
 		c.Check(resp.Body.String(), check.Equals, "")
 	}
@@ -51,7 +51,7 @@ func (s *IntegrationSuite) TestVhost404(c *check.C) {
 type authorizer func(*http.Request, string) int
 
 func (s *IntegrationSuite) TestVhostViaAuthzHeader(c *check.C) {
-	doVhostRequests(c, authzViaAuthzHeader)
+	s.doVhostRequests(c, authzViaAuthzHeader)
 }
 func authzViaAuthzHeader(r *http.Request, tok string) int {
 	r.Header.Add("Authorization", "OAuth2 "+tok)
@@ -59,7 +59,7 @@ func authzViaAuthzHeader(r *http.Request, tok string) int {
 }
 
 func (s *IntegrationSuite) TestVhostViaCookieValue(c *check.C) {
-	doVhostRequests(c, authzViaCookieValue)
+	s.doVhostRequests(c, authzViaCookieValue)
 }
 func authzViaCookieValue(r *http.Request, tok string) int {
 	r.AddCookie(&http.Cookie{
@@ -70,7 +70,7 @@ func authzViaCookieValue(r *http.Request, tok string) int {
 }
 
 func (s *IntegrationSuite) TestVhostViaPath(c *check.C) {
-	doVhostRequests(c, authzViaPath)
+	s.doVhostRequests(c, authzViaPath)
 }
 func authzViaPath(r *http.Request, tok string) int {
 	r.URL.Path = "/t=" + tok + r.URL.Path
@@ -78,7 +78,7 @@ func authzViaPath(r *http.Request, tok string) int {
 }
 
 func (s *IntegrationSuite) TestVhostViaQueryString(c *check.C) {
-	doVhostRequests(c, authzViaQueryString)
+	s.doVhostRequests(c, authzViaQueryString)
 }
 func authzViaQueryString(r *http.Request, tok string) int {
 	r.URL.RawQuery = "api_token=" + tok
@@ -86,7 +86,7 @@ func authzViaQueryString(r *http.Request, tok string) int {
 }
 
 func (s *IntegrationSuite) TestVhostViaPOST(c *check.C) {
-	doVhostRequests(c, authzViaPOST)
+	s.doVhostRequests(c, authzViaPOST)
 }
 func authzViaPOST(r *http.Request, tok string) int {
 	r.Method = "POST"
@@ -97,7 +97,7 @@ func authzViaPOST(r *http.Request, tok string) int {
 }
 
 func (s *IntegrationSuite) TestVhostViaXHRPOST(c *check.C) {
-	doVhostRequests(c, authzViaPOST)
+	s.doVhostRequests(c, authzViaPOST)
 }
 func authzViaXHRPOST(r *http.Request, tok string) int {
 	r.Method = "POST"
@@ -113,7 +113,7 @@ func authzViaXHRPOST(r *http.Request, tok string) int {
 
 // Try some combinations of {url, token} using the given authorization
 // mechanism, and verify the result is correct.
-func doVhostRequests(c *check.C, authz authorizer) {
+func (s *IntegrationSuite) doVhostRequests(c *check.C, authz authorizer) {
 	for _, hostPath := range []string{
 		arvadostest.FooCollection + ".example.com/foo",
 		arvadostest.FooCollection + "--collections.example.com/foo",
@@ -123,11 +123,11 @@ func doVhostRequests(c *check.C, authz authorizer) {
 		arvadostest.FooBarDirCollection + ".example.com/dir1/foo",
 	} {
 		c.Log("doRequests: ", hostPath)
-		doVhostRequestsWithHostPath(c, authz, hostPath)
+		s.doVhostRequestsWithHostPath(c, authz, hostPath)
 	}
 }
 
-func doVhostRequestsWithHostPath(c *check.C, authz authorizer, hostPath string) {
+func (s *IntegrationSuite) doVhostRequestsWithHostPath(c *check.C, authz authorizer, hostPath string) {
 	for _, tok := range []string{
 		arvadostest.ActiveToken,
 		arvadostest.ActiveToken[:15],
@@ -144,7 +144,7 @@ func doVhostRequestsWithHostPath(c *check.C, authz authorizer, hostPath string) 
 			Header:     http.Header{},
 		}
 		failCode := authz(req, tok)
-		req, resp := doReq(req)
+		req, resp := s.doReq(req)
 		code, body := resp.Code, resp.Body.String()
 
 		// If the initial request had a (non-empty) token
@@ -173,9 +173,9 @@ func doVhostRequestsWithHostPath(c *check.C, authz authorizer, hostPath string) 
 	}
 }
 
-func doReq(req *http.Request) (*http.Request, *httptest.ResponseRecorder) {
+func (s *IntegrationSuite) doReq(req *http.Request) (*http.Request, *httptest.ResponseRecorder) {
 	resp := httptest.NewRecorder()
-	(&handler{}).ServeHTTP(resp, req)
+	s.testServer.Handler.ServeHTTP(resp, req)
 	if resp.Code != http.StatusSeeOther {
 		return req, resp
 	}
@@ -191,7 +191,7 @@ func doReq(req *http.Request) (*http.Request, *httptest.ResponseRecorder) {
 	for _, c := range cookies {
 		req.AddCookie(c)
 	}
-	return doReq(req)
+	return s.doReq(req)
 }
 
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenToCookie(c *check.C) {
@@ -270,10 +270,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenRequestAttachment(c *check
 }
 
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenTrustAllContent(c *check.C) {
-	defer func(orig bool) {
-		trustAllContent = orig
-	}(trustAllContent)
-	trustAllContent = true
+	s.testServer.Config.TrustAllContent = true
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.FooCollection+"/foo",
 		"?api_token="+arvadostest.ActiveToken,
@@ -285,10 +282,7 @@ func (s *IntegrationSuite) TestVhostRedirectQueryTokenTrustAllContent(c *check.C
 }
 
 func (s *IntegrationSuite) TestVhostRedirectQueryTokenAttachmentOnlyHost(c *check.C) {
-	defer func(orig string) {
-		attachmentOnlyHost = orig
-	}(attachmentOnlyHost)
-	attachmentOnlyHost = "example.com:1234"
+	s.testServer.Config.AttachmentOnlyHost = "example.com:1234"
 
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.FooCollection+"/foo",
@@ -333,7 +327,7 @@ func (s *IntegrationSuite) TestVhostRedirectPOSTFormTokenToCookie404(c *check.C)
 }
 
 func (s *IntegrationSuite) TestAnonymousTokenOK(c *check.C) {
-	anonymousTokens = []string{arvadostest.AnonymousToken}
+	s.testServer.Config.AnonymousTokens = []string{arvadostest.AnonymousToken}
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.HelloWorldCollection+"/Hello%20world.txt",
 		"",
@@ -345,7 +339,7 @@ func (s *IntegrationSuite) TestAnonymousTokenOK(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestAnonymousTokenError(c *check.C) {
-	anonymousTokens = []string{"anonymousTokenConfiguredButInvalid"}
+	s.testServer.Config.AnonymousTokens = []string{"anonymousTokenConfiguredButInvalid"}
 	s.testVhostRedirectTokenToCookie(c, "GET",
 		"example.com/c="+arvadostest.HelloWorldCollection+"/Hello%20world.txt",
 		"",
@@ -357,6 +351,7 @@ func (s *IntegrationSuite) TestAnonymousTokenError(c *check.C) {
 }
 
 func (s *IntegrationSuite) TestRange(c *check.C) {
+	s.testServer.Config.AnonymousTokens = []string{arvadostest.AnonymousToken}
 	u, _ := url.Parse("http://example.com/c=" + arvadostest.HelloWorldCollection + "/Hello%20world.txt")
 	req := &http.Request{
 		Method:     "GET",
@@ -366,7 +361,7 @@ func (s *IntegrationSuite) TestRange(c *check.C) {
 		Header:     http.Header{"Range": {"bytes=0-4"}},
 	}
 	resp := httptest.NewRecorder()
-	(&handler{}).ServeHTTP(resp, req)
+	s.testServer.Handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusPartialContent)
 	c.Check(resp.Body.String(), check.Equals, "Hello")
 	c.Check(resp.Header().Get("Content-Length"), check.Equals, "5")
@@ -374,7 +369,7 @@ func (s *IntegrationSuite) TestRange(c *check.C) {
 
 	req.Header.Set("Range", "bytes=0-")
 	resp = httptest.NewRecorder()
-	(&handler{}).ServeHTTP(resp, req)
+	s.testServer.Handler.ServeHTTP(resp, req)
 	// 200 and 206 are both correct:
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	c.Check(resp.Body.String(), check.Equals, "Hello world\n")
@@ -389,7 +384,7 @@ func (s *IntegrationSuite) TestRange(c *check.C) {
 	} {
 		req.Header.Set("Range", hdr)
 		resp = httptest.NewRecorder()
-		(&handler{}).ServeHTTP(resp, req)
+		s.testServer.Handler.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusOK)
 		c.Check(resp.Body.String(), check.Equals, "Hello world\n")
 		c.Check(resp.Header().Get("Content-Length"), check.Equals, "12")
@@ -420,7 +415,7 @@ func (s *IntegrationSuite) TestXHRNoRedirect(c *check.C) {
 		}.Encode())),
 	}
 	resp := httptest.NewRecorder()
-	(&handler{}).ServeHTTP(resp, req)
+	s.testServer.Handler.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	c.Check(resp.Body.String(), check.Equals, "foo")
 	c.Check(resp.Header().Get("Access-Control-Allow-Origin"), check.Equals, "*")
@@ -443,7 +438,7 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 		c.Check(resp.Body.String(), check.Equals, expectRespBody)
 	}()
 
-	(&handler{}).ServeHTTP(resp, req)
+	s.testServer.Handler.ServeHTTP(resp, req)
 	if resp.Code != http.StatusSeeOther {
 		return resp
 	}
@@ -463,7 +458,7 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 	}
 
 	resp = httptest.NewRecorder()
-	(&handler{}).ServeHTTP(resp, req)
+	s.testServer.Handler.ServeHTTP(resp, req)
 	c.Check(resp.Header().Get("Location"), check.Equals, "")
 	return resp
 }

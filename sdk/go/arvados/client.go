@@ -23,7 +23,7 @@ import (
 type Client struct {
 	// HTTP client used to make requests. If nil,
 	// DefaultSecureClient or InsecureHTTPClient will be used.
-	Client *http.Client
+	Client *http.Client `json:"-"`
 
 	// Hostname (or host:port) of Arvados API server.
 	APIHost string
@@ -40,7 +40,7 @@ type Client struct {
 	// discovering keep services so this is just a convenience for
 	// callers who use a Client to initialize an
 	// arvadosclient.ArvadosClient.)
-	KeepServiceURIs []string
+	KeepServiceURIs []string `json:",omitempty"`
 }
 
 // The default http.Client used by a Client with Insecure==true and

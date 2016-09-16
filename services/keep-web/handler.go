@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"html"
 	"io"
@@ -12,6 +11,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
@@ -19,19 +19,10 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
-type handler struct{}
-
-var (
-	clientPool         = arvadosclient.MakeClientPool()
-	trustAllContent    = false
-	attachmentOnlyHost = ""
-)
-
-func init() {
-	flag.StringVar(&attachmentOnlyHost, "attachment-only-host", "",
-		"Accept credentials, and add \"Content-Disposition: attachment\" response headers, for requests at this hostname:port. Prohibiting inline display makes it possible to serve untrusted and non-public content from a single origin, i.e., without wildcard DNS or SSL.")
-	flag.BoolVar(&trustAllContent, "trust-all-content", false,
-		"Serve non-public content from a single origin. Dangerous: read docs before using!")
+type handler struct {
+	Config     *Config
+	clientPool *arvadosclient.ClientPool
+	setupOnce  sync.Once
 }
 
 // return a UUID or PDH if s begins with a UUID or URL-encoded PDH;
@@ -70,7 +61,13 @@ func parseCollectionIDFromURL(s string) string {
 	return ""
 }
 
+func (h *handler) setup() {
+	h.clientPool = arvadosclient.MakeClientPool()
+}
+
 func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
+	h.setupOnce.Do(h.setup)
+
 	var statusCode = 0
 	var statusText string
 
@@ -109,12 +106,12 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 	}
 
-	arv := clientPool.Get()
+	arv := h.clientPool.Get()
 	if arv == nil {
-		statusCode, statusText = http.StatusInternalServerError, "Pool failed: "+clientPool.Err().Error()
+		statusCode, statusText = http.StatusInternalServerError, "Pool failed: "+h.clientPool.Err().Error()
 		return
 	}
-	defer clientPool.Put(arv)
+	defer h.clientPool.Put(arv)
 
 	pathParts := strings.Split(r.URL.Path[1:], "/")
 
@@ -124,9 +121,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	var reqTokens []string
 	var pathToken bool
 	var attachment bool
-	credentialsOK := trustAllContent
+	credentialsOK := h.Config.TrustAllContent
 
-	if r.Host != "" && r.Host == attachmentOnlyHost {
+	if r.Host != "" && r.Host == h.Config.AttachmentOnlyHost {
 		credentialsOK = true
 		attachment = true
 	} else if r.FormValue("disposition") == "attachment" {
@@ -151,7 +148,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		} else {
 			// /collections/ID/PATH...
 			targetID = pathParts[1]
-			tokens = anonymousTokens
+			tokens = h.Config.AnonymousTokens
 			targetPath = pathParts[2:]
 		}
 	} else {
@@ -186,7 +183,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			// It is not safe to copy the provided token
 			// into a cookie unless the current vhost
 			// (origin) serves only a single collection or
-			// we are in trustAllContent mode.
+			// we are in TrustAllContent mode.
 			statusCode = http.StatusBadRequest
 			return
 		}
@@ -246,7 +243,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		if credentialsOK {
 			reqTokens = auth.NewCredentialsFromHTTPRequest(r).Tokens
 		}
-		tokens = append(reqTokens, anonymousTokens...)
+		tokens = append(reqTokens, h.Config.AnonymousTokens...)
 	}
 
 	if len(targetPath) > 0 && targetPath[0] == "_" {
