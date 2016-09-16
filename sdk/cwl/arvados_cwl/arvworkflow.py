@@ -80,7 +80,7 @@ class ArvadosWorkflow(Workflow):
                         }]
                 }],
                 "hints": workflowobj["hints"],
-                "arguments": ["workflow.json", "cwl.input.json"]
+                "arguments": ["--no-container", "--move-outputs", "workflow.json", "cwl.input.json"]
             }
             kwargs["loader"] = self.doc_loader
             kwargs["avsc_names"] = self.doc_schema

@@ -40,7 +40,6 @@ class ArvadosJob(object):
         if self.generatefiles["listing"]:
             vwd = arvados.collection.Collection()
             script_parameters["task.vwd"] = {}
-            logger.debug("generatefiles is %s", json.dumps(self.generatefiles, indent=4))
             generatemapper = InitialWorkDirPathMapper([self.generatefiles], "", "",
                                         separateDirs=False)
             for f, p in generatemapper.items():
@@ -187,9 +186,11 @@ class ArvadosJob(object):
             except WorkflowException as e:
                 logger.error("Error while collecting job outputs:\n%s", e, exc_info=(e if self.arvrunner.debug else False))
                 processStatus = "permanentFail"
+                outputs = None
             except Exception as e:
                 logger.exception("Got unknown exception while collecting job outputs:")
                 processStatus = "permanentFail"
+                outputs = None
 
             self.output_callback(outputs, processStatus)
         finally:
