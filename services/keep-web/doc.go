@@ -6,17 +6,35 @@
 //
 // See http://doc.arvados.org/install/install-keep-web.html.
 //
-// Run "keep-web -help" to show all supported options.
+// Configuration
+//
+// The default configuration file location is
+// /etc/arvados/keep-web/config.json.
+//
+// Example configuration file
+//
+//   {
+//     "Client": {
+//       "APIHost": "zzzzz.arvadosapi.com:443",
+//       "AuthToken": "",
+//       "Insecure": false
+//     },
+//     "Listen":":1234",
+//     "AnonymousTokens":["xxxxxxxxxxxxxxxxxxxx"],
+//     "AttachmentOnlyHost":"",
+//     "TrustAllContent":false
+//   }
 //
 // Starting the server
 //
-// Serve HTTP requests at port 1234 on all interfaces:
+// Start a server using the default config file
+// /etc/arvados/keep-web/config.json:
 //
-//   keep-web -listen=:1234
+//   keep-web
 //
-// Serve HTTP requests at port 1234 on the interface with IP address 1.2.3.4:
+// Start a server using the config file /path/to/config.json:
 //
-//   keep-web -listen=1.2.3.4:1234
+//   keep-web -config /path/to/config.json
 //
 // Proxy configuration
 //
@@ -48,12 +66,11 @@
 //
 // Anonymous downloads
 //
-// Use the -allow-anonymous flag with an ARVADOS_API_TOKEN environment
-// variable to specify a token to use when clients try to retrieve
-// files without providing their own Arvados API token.
+// The "AnonymousTokens" configuration entry is an array of tokens to
+// use when clients try to retrieve files without providing their own
+// Arvados API token.
 //
-//   export ARVADOS_API_TOKEN=zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
-//   keep-web [...] -allow-anonymous
+//   "AnonymousTokens":["xxxxxxxxxxxxxxxxxxxxxxx"]
 //
 // See http://doc.arvados.org/install/install-keep-web.html for examples.
 //
@@ -211,30 +228,31 @@
 // only when the designated origin matches exactly the Host header
 // provided by the client or downstream proxy.
 //
-//   keep-web -listen :9999 -attachment-only-host domain.example:9999
+//   "AttachmentOnlyHost":"domain.example:9999"
 //
 // Trust All Content mode
 //
-// In "trust all content" mode, Keep-web will accept credentials (API
+// In TrustAllContent mode, Keep-web will accept credentials (API
 // tokens) and serve any collection X at
-// "https://collections.example.com/c=X/path/file.ext".
-// This is UNSAFE except in the special case where everyone who is
-// able write ANY data to Keep, and every JavaScript and HTML file
-// written to Keep, is also trusted to read ALL of the data in Keep.
+// "https://collections.example.com/c=X/path/file.ext".  This is
+// UNSAFE except in the special case where everyone who is able write
+// ANY data to Keep, and every JavaScript and HTML file written to
+// Keep, is also trusted to read ALL of the data in Keep.
 //
 // In such cases you can enable trust-all-content mode.
 //
-//   keep-web -listen :9999 -trust-all-content
+//   "TrustAllContent":true
 //
-// When using trust-all-content mode, the only effect of the
-// -attachment-only-host option is to add a "Content-Disposition:
+// When TrustAllContent is enabled, the only effect of the
+// AttachmentOnlyHost flag is to add a "Content-Disposition:
 // attachment" header.
 //
-//   keep-web -listen :9999 -attachment-only-host domain.example:9999 -trust-all-content
+//   "AttachmentOnlyHost":"domain.example:9999",
+//   "TrustAllContent":true
 //
 // Depending on your site configuration, you might also want to enable
-// "trust all content" setting on Workbench. Normally, Workbench
+// the "trust all content" setting in Workbench. Normally, Workbench
 // avoids redirecting requests to keep-web if they depend on
-// -trust-all-content being set.
+// TrustAllContent being enabled.
 //
 package main
