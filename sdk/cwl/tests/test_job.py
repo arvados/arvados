@@ -199,7 +199,8 @@ class TestJob(unittest.TestCase):
 class TestWorkflow(unittest.TestCase):
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
-    def test_run(self):
+    @mock.patch("arvados.collection.Collection")
+    def test_run(self, mockcollection):
         arvados_cwl.add_arv_hints()
 
         runner = arvados_cwl.ArvCwlRunner(mock.MagicMock())
@@ -209,6 +210,8 @@ class TestWorkflow(unittest.TestCase):
 
         tool, metadata = document_loader.resolve_ref("tests/wf/scatter2.cwl")
         metadata["cwlVersion"] = tool["cwlVersion"]
+
+        mockcollection().portable_data_hash.return_value = "f101400a398097d4398cdb3eb5d1a7ca+118"
 
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
         arvtool = arvados_cwl.ArvadosWorkflow(runner, tool, work_api="jobs", avsc_names=avsc_names,
