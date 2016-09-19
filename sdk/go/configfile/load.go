@@ -6,6 +6,10 @@ import (
 	"io/ioutil"
 )
 
+// LoadFile loads configuration from the file given by configPath and
+// decodes it into cfg.
+//
+// Currently, only JSON is supported. Support for YAML is anticipated.
 func LoadFile(cfg interface{}, configPath string) error {
 	buf, err := ioutil.ReadFile(configPath)
 	if err != nil {

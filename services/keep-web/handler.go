@@ -25,8 +25,8 @@ type handler struct {
 	setupOnce  sync.Once
 }
 
-// return a UUID or PDH if s begins with a UUID or URL-encoded PDH;
-// otherwise return "".
+// parseCollectionIDFromDNSName returns a UUID or PDH if s begins with
+// a UUID or URL-encoded PDH; otherwise "".
 func parseCollectionIDFromDNSName(s string) string {
 	// Strip domain.
 	if i := strings.IndexRune(s, '.'); i >= 0 {
@@ -49,8 +49,9 @@ func parseCollectionIDFromDNSName(s string) string {
 
 var urlPDHDecoder = strings.NewReplacer(" ", "+", "-", "+")
 
-// return a UUID or PDH if s is a UUID or a PDH (even if it is a PDH
-// with "+" replaced by " " or "-"); otherwise return "".
+// parseCollectionIDFromURL returns a UUID or PDH if s is a UUID or a
+// PDH (even if it is a PDH with "+" replaced by " " or "-");
+// otherwise "".
 func parseCollectionIDFromURL(s string) string {
 	if arvadosclient.UUIDMatch(s) {
 		return s
@@ -65,6 +66,7 @@ func (h *handler) setup() {
 	h.clientPool = arvadosclient.MakeClientPool()
 }
 
+// ServeHTTP implements http.Handler.
 func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	h.setupOnce.Do(h.setup)
 
