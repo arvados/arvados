@@ -1,4 +1,3 @@
-
 import logging
 import mock
 import unittest
@@ -221,6 +220,12 @@ class TestWorkflow(unittest.TestCase):
         it = arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access)
         it.next().run()
         it.next().run()
+
+        with open("tests/wf/scatter2_subwf.cwl") as f:
+            subwf = f.read()
+
+        mockcollection().open().__enter__().write.assert_has_calls([mock.call(subwf)])
+        mockcollection().open().__enter__().write.assert_has_calls([mock.call('{"sleeptime":5}')])
 
         runner.api.jobs().create.assert_called_with(
             body={

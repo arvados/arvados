@@ -7,6 +7,7 @@ from cwltool.pack import pack
 from cwltool.load_tool import fetch_document
 from cwltool.process import shortname
 from cwltool.workflow import Workflow
+from cwltool.pathmapper import adjustDirObjs
 
 import ruamel.yaml as yaml
 
@@ -61,6 +62,12 @@ class ArvadosWorkflow(Workflow):
             workflowobj["requirements"] = self.requirements + workflowobj.get("requirements", [])
             workflowobj["hints"] = self.hints + workflowobj.get("hints", [])
             packed = pack(document_loader, workflowobj, uri, self.metadata)
+
+            def prune_directories(obj):
+                if obj["location"].startswith("keep:"):
+                    del obj["listing"]
+            adjustDirObjs(joborder, prune_directories)
+
             wf_runner = {
                 "class": "CommandLineTool",
                 "baseCommand": "cwltool",
@@ -73,7 +80,7 @@ class ArvadosWorkflow(Workflow):
                     "class": "InitialWorkDirRequirement",
                     "listing": [{
                             "entryname": "workflow.json",
-                            "entry": json.dumps(packed, sort_keys=True, indent=4).replace('$(', '\$(').replace('${', '\${')
+                            "entry": yaml.safe_dump(packed).replace('$(', '\$(').replace('${', '\${')
                         }, {
                             "entryname": "cwl.input.json",
                             "entry": "$(JSON.stringify(inputs))"
