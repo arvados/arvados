@@ -67,8 +67,9 @@
 // Anonymous downloads
 //
 // The "AnonymousTokens" configuration entry is an array of tokens to
-// use when clients try to retrieve files without providing their own
-// Arvados API token.
+// use when processing anonymous requests, i.e., whenever a web client
+// does not supply its own Arvados API token via path, query string,
+// cookie, or request header.
 //
 //   "AnonymousTokens":["xxxxxxxxxxxxxxxxxxxxxxx"]
 //
