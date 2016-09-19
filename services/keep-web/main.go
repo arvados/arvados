@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/configfile"
+	"git.curoverse.com/arvados.git/sdk/go/config"
 	"github.com/coreos/go-systemd/daemon"
 )
 
@@ -65,7 +65,7 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
-	if err := configfile.LoadFile(cfg, configPath); err != nil {
+	if err := config.LoadFile(cfg, configPath); err != nil {
 		if h := os.Getenv("ARVADOS_API_HOST"); h != "" && configPath == defaultConfigPath {
 			log.Printf("DEPRECATED: Using ARVADOS_API_HOST environment variable. Use config file instead.")
 			cfg.Client.APIHost = h
