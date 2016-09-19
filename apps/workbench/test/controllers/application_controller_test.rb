@@ -334,6 +334,25 @@ class ApplicationControllerTest < ActionController::TestCase
     assert_response 404
   end
 
+  test "requesting to the API server includes client_session_id param" do
+    use_token :active do
+      fixture = api_fixture("collections")["foo_collection_in_aproject"]
+      c = Collection.find(fixture['uuid'])
+
+      got_query = nil
+      stub_api_calls
+      stub_api_client.expects(:post).with do |url, query, opts={}|
+        got_query = query
+        true
+      end.returns fake_api_response('{}', 200, {})
+      c.name = "name change for testing"
+      c.save
+
+      assert_includes got_query, 'client_session_id'
+      assert_match /\d{10}-\d{9}/, got_query['client_session_id']
+    end
+  end
+
   [".navbar .login-menu a",
    ".navbar .login-menu .dropdown-menu a"
   ].each do |css_selector|
