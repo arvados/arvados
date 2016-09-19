@@ -85,7 +85,7 @@ def stubs(func):
             'script_parameters': {
                 'x': {
                     'basename': 'blorp.txt',
-                    'location': '99999999999999999999999999999994+99/blorp.txt',
+                    'location': 'keep:99999999999999999999999999999994+99/blorp.txt',
                     'class': 'File'
                 },
                 'cwl:tool':

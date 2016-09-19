@@ -22,7 +22,7 @@ logger = logging.getLogger('arvados.cwl-runner')
 cwltool.draft2tool.ACCEPTLIST_RE = re.compile(r"^[a-zA-Z0-9._+-]+$")
 
 def upload_dependencies(arvrunner, name, document_loader,
-                        workflowobj, uri, keepprefix, loadref_run):
+                        workflowobj, uri, loadref_run):
     loaded = set()
     def loadref(b, u):
         joined = urlparse.urljoin(b, u)
@@ -55,8 +55,8 @@ def upload_dependencies(arvrunner, name, document_loader,
         files.append({"class": "File", "location": workflowobj["id"]})
 
     mapper = ArvPathMapper(arvrunner, files, "",
-                           keepprefix+"%s",
-                           keepprefix+"%s/%s",
+                           "keep:%s",
+                           "keep:%s/%s",
                            name=name)
 
     def setloc(p):
@@ -99,7 +99,6 @@ class Runner(object):
                                              self.tool.doc_loader,
                                              self.tool.tool,
                                              self.tool.tool["id"],
-                                             kwargs.get("keepprefix", ""),
                                              True)
 
         jobmapper = upload_dependencies(self.arvrunner,
@@ -107,7 +106,6 @@ class Runner(object):
                                         self.tool.doc_loader,
                                         self.job_order,
                                         self.job_order.get("id", "#"),
-                                        kwargs.get("keepprefix", ""),
                                         False)
 
         if "id" in self.job_order:
