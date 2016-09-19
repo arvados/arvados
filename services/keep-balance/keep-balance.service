@@ -1,0 +1,13 @@
+[Unit]
+Description=Arvados Keep Balance
+Documentation=https://doc.arvados.org/
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/keep-balance -config /etc/arvados/keep-balance/config.json -commit-pulls -commit-trash
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
