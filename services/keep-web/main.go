@@ -14,6 +14,7 @@ var (
 	defaultConfigPath = "/etc/arvados/keep-web/config.json"
 )
 
+// Config specifies server configuration.
 type Config struct {
 	Client arvados.Client
 
@@ -23,6 +24,8 @@ type Config struct {
 	AttachmentOnlyHost string
 	TrustAllContent    bool
 
+	// Hack to support old command line flag, which is a bool
+	// meaning "get actual token from environment".
 	deprecatedAllowAnonymous bool
 }
 
