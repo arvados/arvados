@@ -25,6 +25,18 @@ cwltool.draft2tool.ACCEPTLIST_RE = re.compile(r"^[a-zA-Z0-9._+-]+$")
 
 def upload_dependencies(arvrunner, name, document_loader,
                         workflowobj, uri, loadref_run):
+    """Upload the dependencies of the workflowobj document to Keep.
+
+    Returns a pathmapper object mapping local paths to keep references.  Also
+    does an in-place update of references in "workflowobj".
+
+    Use scandeps to find $import, $include, $schemas, run, File and Directory
+    fields that represent external references.
+
+    If workflowobj has an "id" field, this will reload the document to ensure
+    it is scanning the raw document prior to preprocessing.
+    """
+
     loaded = set()
     def loadref(b, u):
         joined = urlparse.urljoin(b, u)
@@ -54,7 +66,7 @@ def upload_dependencies(arvrunner, name, document_loader,
 
     sc = scandeps(uri, scanobj,
                   loadref_fields,
-                  set(("$include", "$schemas")),
+                  set(("$include", "$schemas", "location")),
                   loadref)
 
     files = []
