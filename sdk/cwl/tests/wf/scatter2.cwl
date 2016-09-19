@@ -5,8 +5,11 @@ $namespaces:
 inputs:
   sleeptime:
     type: int[]
-    default: [44, 29, 14]
-outputs: []
+    default: [5]
+outputs:
+  out:
+    type: string[]
+    outputSource: scatterstep/out
 requirements:
   SubworkflowFeatureRequirement: {}
   ScatterFeatureRequirement: {}
@@ -16,7 +19,7 @@ steps:
   scatterstep:
     in:
       sleeptime: sleeptime
-    out: []
+    out: [out]
     scatter: sleeptime
     hints:
       - class: arv:RunInSingleContainer
@@ -25,11 +28,19 @@ steps:
       id: mysub
       inputs:
         sleeptime: int
-      outputs: []
+      outputs:
+        out:
+          type: string
+          outputSource: sleep1/out
       steps:
         sleep1:
           in:
             sleeptime: sleeptime
+            blurb:
+              valueFrom: |
+                ${
+                  return String(inputs.sleeptime) + "b";
+                }
           out: [out]
           run:
             class: CommandLineTool
@@ -42,19 +53,4 @@ steps:
                 type: string
                 outputBinding:
                   outputEval: "out"
-            baseCommand: sleep
-        sleep2:
-          in:
-            sleeptime:
-              source: sleeptime
-              valueFrom: $(self+1)
-            dep: sleep1/out
-          out: []
-          run:
-            class: CommandLineTool
-            inputs:
-              sleeptime:
-                type: int
-                inputBinding: {position: 1}
-            outputs: []
             baseCommand: sleep

@@ -210,7 +210,7 @@ class TestWorkflow(unittest.TestCase):
         tool, metadata = document_loader.resolve_ref("tests/wf/scatter2.cwl")
         metadata["cwlVersion"] = tool["cwlVersion"]
 
-        mockcollection().portable_data_hash.return_value = "f101400a398097d4398cdb3eb5d1a7ca+118"
+        mockcollection().portable_data_hash.return_value = "99999999999999999999999999999999+118"
 
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
         arvtool = arvados_cwl.ArvadosWorkflow(runner, tool, work_api="jobs", avsc_names=avsc_names,
@@ -225,7 +225,7 @@ class TestWorkflow(unittest.TestCase):
             subwf = f.read()
 
         mockcollection().open().__enter__().write.assert_has_calls([mock.call(subwf)])
-        mockcollection().open().__enter__().write.assert_has_calls([mock.call('{"sleeptime":5}')])
+        mockcollection().open().__enter__().write.assert_has_calls([mock.call('{sleeptime: 5}')])
 
         runner.api.jobs().create.assert_called_with(
             body={
@@ -238,10 +238,10 @@ class TestWorkflow(unittest.TestCase):
                         'HOME': '$(task.outdir)',
                         'TMPDIR': '$(task.tmpdir)'},
                                'task.vwd': {
-                                   'workflow.json': '$(task.keep)/f101400a398097d4398cdb3eb5d1a7ca+118/workflow.json',
-                                   'cwl.input.json': '$(task.keep)/f101400a398097d4398cdb3eb5d1a7ca+118/cwl.input.json'
+                                   'workflow.cwl': '$(task.keep)/99999999999999999999999999999999+118/workflow.cwl',
+                                   'cwl.input.json': '$(task.keep)/99999999999999999999999999999999+118/cwl.input.json'
                                },
-                    'command': [u'cwltool', u'--no-container', u'--move-outputs', u'workflow.json', u'cwl.input.json'],
+                    'command': [u'cwltool', u'--no-container', u'--move-outputs', u'workflow.cwl', u'cwl.input.json'],
                     'task.stdout': 'cwl.output.json'}]},
                 'runtime_constraints': {
                     'min_scratch_mb_per_node': 2048,

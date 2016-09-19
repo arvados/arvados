@@ -64,7 +64,7 @@ class ArvadosWorkflow(Workflow):
             packed = pack(document_loader, workflowobj, uri, self.metadata)
 
             def prune_directories(obj):
-                if obj["location"].startswith("keep:"):
+                if obj["location"].startswith("keep:") and "listing" in obj:
                     del obj["listing"]
             adjustDirObjs(joborder, prune_directories)
 
@@ -79,15 +79,15 @@ class ArvadosWorkflow(Workflow):
                     {
                     "class": "InitialWorkDirRequirement",
                     "listing": [{
-                            "entryname": "workflow.json",
-                            "entry": yaml.safe_dump(packed).replace('$(', '\$(').replace('${', '\${')
+                            "entryname": "workflow.cwl",
+                            "entry": yaml.safe_dump(packed).replace("\\", "\\\\").replace('$(', '\$(').replace('${', '\${')
                         }, {
                             "entryname": "cwl.input.json",
-                            "entry": "$(JSON.stringify(inputs))"
+                            "entry": yaml.safe_dump(joborder).replace("\\", "\\\\").replace('$(', '\$(').replace('${', '\${')
                         }]
                 }],
                 "hints": workflowobj["hints"],
-                "arguments": ["--no-container", "--move-outputs", "workflow.json", "cwl.input.json"]
+                "arguments": ["--no-container", "--move-outputs", "workflow.cwl", "cwl.input.json"]
             }
             kwargs["loader"] = self.doc_loader
             kwargs["avsc_names"] = self.doc_schema
