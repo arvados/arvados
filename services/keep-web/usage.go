@@ -7,14 +7,6 @@ import (
 	"os"
 )
 
-var exampleConfigFile = []byte(`
-    {
-	"Client": {
-	    "APIHost": "zzzzz.arvadosapi.com:443",
-	    "Insecure": false
-	},
-    }`)
-
 func usage() {
 	c := DefaultConfig()
 	c.AnonymousTokens = []string{"xxxxxxxxxxxxxxxxxxxxxxx"}
