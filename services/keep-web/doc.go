@@ -19,7 +19,8 @@
 //       "AuthToken": "",
 //       "Insecure": false
 //     },
-//     "AllowAnonymous":false,
+//     "Listen":":1234",
+//     "AnonymousTokens":["xxxxxxxxxxxxxxxxxxxx"],
 //     "AttachmentOnlyHost":"",
 //     "TrustAllContent":false
 //   }
@@ -65,11 +66,11 @@
 //
 // Anonymous downloads
 //
-// If "AnonymousToken" is provided, that token will be used when
-// clients try to retrieve files without providing their own Arvados
-// API token.
+// The "AnonymousTokens" configuration entry is an array of tokens to
+// use when clients try to retrieve files without providing their own
+// Arvados API token.
 //
-//   "AnonymousToken":"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+//   "AnonymousTokens":["xxxxxxxxxxxxxxxxxxxxxxx"]
 //
 // See http://doc.arvados.org/install/install-keep-web.html for examples.
 //
