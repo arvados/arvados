@@ -36,7 +36,7 @@ Client.APIHost:
 
 Client.AuthToken:
 
-    Should be empty.
+    Unused. Normally empty, or omitted entirely.
 
 Client.Insecure:
 
