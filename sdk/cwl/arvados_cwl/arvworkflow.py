@@ -7,7 +7,7 @@ from cwltool.pack import pack
 from cwltool.load_tool import fetch_document
 from cwltool.process import shortname
 from cwltool.workflow import Workflow
-from cwltool.pathmapper import adjustDirObjs
+from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
 
 import ruamel.yaml as yaml
 
@@ -59,14 +59,38 @@ class ArvadosWorkflow(Workflow):
         req, _ = self.get_requirement("http://arvados.org/cwl#RunInSingleContainer")
         if req:
             document_loader, workflowobj, uri = (self.doc_loader, self.doc_loader.fetch(self.tool["id"]), self.tool["id"])
+
             workflowobj["requirements"] = self.requirements + workflowobj.get("requirements", [])
             workflowobj["hints"] = self.hints + workflowobj.get("hints", [])
             packed = pack(document_loader, workflowobj, uri, self.metadata)
 
-            def prune_directories(obj):
-                if obj["location"].startswith("keep:") and "listing" in obj:
+            upload_dependencies(self.arvrunner,
+                                kwargs.get("name", ""),
+                                document_loader,
+                                packed,
+                                uri,
+                                False)
+
+            upload_dependencies(self.arvrunner,
+                                os.path.basename(joborder.get("id", "#")),
+                                document_loader,
+                                joborder,
+                                joborder.get("id", "#"),
+                                False)
+
+            joborder_keepmount = copy.deepcopy(joborder)
+
+            def keepmount(obj):
+                if obj["location"].startswith("keep:"):
+                    obj["location"] = "/keep/" + obj["location"][5:]
+                else:
+                    raise Exception("Uh oh %s" % obj["location"])
+                if "listing" in obj:
                     del obj["listing"]
-            adjustDirObjs(joborder, prune_directories)
+            adjustFileObjs(joborder_keepmount, keepmount)
+            adjustDirObjs(joborder_keepmount, keepmount)
+            adjustFileObjs(packed, keepmount)
+            adjustDirObjs(packed, keepmount)
 
             wf_runner = {
                 "class": "CommandLineTool",
@@ -83,11 +107,11 @@ class ArvadosWorkflow(Workflow):
                             "entry": yaml.safe_dump(packed).replace("\\", "\\\\").replace('$(', '\$(').replace('${', '\${')
                         }, {
                             "entryname": "cwl.input.json",
-                            "entry": yaml.safe_dump(joborder).replace("\\", "\\\\").replace('$(', '\$(').replace('${', '\${')
+                            "entry": yaml.safe_dump(joborder_keepmount).replace("\\", "\\\\").replace('$(', '\$(').replace('${', '\${')
                         }]
                 }],
                 "hints": workflowobj["hints"],
-                "arguments": ["--no-container", "--move-outputs", "workflow.cwl", "cwl.input.json"]
+                "arguments": ["--no-container", "--move-outputs", "workflow.cwl#main", "cwl.input.json"]
             }
             kwargs["loader"] = self.doc_loader
             kwargs["avsc_names"] = self.doc_schema

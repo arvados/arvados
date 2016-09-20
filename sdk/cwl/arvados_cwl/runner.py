@@ -87,7 +87,8 @@ def upload_dependencies(arvrunner, name, document_loader,
                            name=name)
 
     def setloc(p):
-        p["location"] = mapper.mapper(p["location"]).target
+        if not p["location"].startswith("keep:"):
+            p["location"] = mapper.mapper(p["location"]).resolved
     adjustFileObjs(workflowobj, setloc)
     adjustDirObjs(workflowobj, setloc)
 

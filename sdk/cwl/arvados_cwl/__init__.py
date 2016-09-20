@@ -23,9 +23,8 @@ import arvados.config
 from .arvcontainer import ArvadosContainer, RunnerContainer
 from .arvjob import ArvadosJob, RunnerJob, RunnerTemplate
 from .arvtool import ArvadosCommandTool
-from .arvworkflow import ArvadosWorkflow
+from .arvworkflow import ArvadosWorkflow, upload_workflow
 from .fsaccess import CollectionFsAccess
-from .arvworkflow import upload_workflow
 from .perf import Perf
 from cwltool.pack import pack
 
