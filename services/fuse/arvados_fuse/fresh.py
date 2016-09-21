@@ -64,7 +64,6 @@ class FreshBase(object):
         self.use_count = 0
         self.ref_count = 0
         self.dead = False
-        self.cache_priority = None
         self.cache_size = 0
         self.cache_uuid = None
         self.allow_attr_cache = True

@@ -134,7 +134,6 @@ class InodeCache(object):
     def __init__(self, cap, min_entries=4):
         self._entries = collections.OrderedDict()
         self._by_uuid = {}
-        self._counter = itertools.count(0)
         self.cap = cap
         self._total = 0
         self.min_entries = min_entries
@@ -153,7 +152,7 @@ class InodeCache(object):
                 return False
             obj.clear()
         self._total -= obj.cache_size
-        del self._entries[obj.cache_priority]
+        del self._entries[obj.inode]
         if obj.cache_uuid:
             self._by_uuid[obj.cache_uuid].remove(obj)
             if not self._by_uuid[obj.cache_uuid]:
@@ -165,16 +164,15 @@ class InodeCache(object):
 
     def cap_cache(self):
         if self._total > self.cap:
-            for key in list(self._entries.keys()):
+            for ent in self._entries.values():
                 if self._total < self.cap or len(self._entries) < self.min_entries:
                     break
-                self._remove(self._entries[key], True)
+                self._remove(ent, True)
 
     def manage(self, obj):
         if obj.persisted():
-            obj.cache_priority = next(self._counter)
             obj.cache_size = obj.objsize()
-            self._entries[obj.cache_priority] = obj
+            self._entries[obj.inode] = obj
             obj.cache_uuid = obj.uuid()
             if obj.cache_uuid:
                 if obj.cache_uuid not in self._by_uuid:
@@ -185,17 +183,15 @@ class InodeCache(object):
             self._total += obj.objsize()
             _logger.debug("InodeCache touched inode %i (size %i) (uuid %s) total now %i", obj.inode, obj.objsize(), obj.cache_uuid, self._total)
             self.cap_cache()
-        else:
-            obj.cache_priority = None
 
     def touch(self, obj):
         if obj.persisted():
-            if obj.cache_priority in self._entries:
+            if obj.inode in self._entries:
                 self._remove(obj, False)
             self.manage(obj)
 
     def unmanage(self, obj):
-        if obj.persisted() and obj.cache_priority in self._entries:
+        if obj.persisted() and obj.inode in self._entries:
             self._remove(obj, True)
 
     def find_by_uuid(self, uuid):
