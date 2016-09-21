@@ -410,6 +410,23 @@ class ProjectsControllerTest < ActionController::TestCase
     end
   end
 
+  test "in dashboard the progress bar should only show on running containers" do
+    get :index, {}, session_for(:active)
+    assert_select 'div.panel-body.recent-processes' do
+      [
+        ['completed', false],
+        ['uncommitted', false],
+        ['queued', false],
+        ['running', true],
+      ].each do |cr_state, should_show|
+        uuid = api_fixture('container_requests')[cr_state]['uuid']
+        assert_select "div.dashboard-panel-info-row.row-#{uuid}" do
+          assert_select 'div.progress', should_show
+        end
+      end
+    end
+  end
+
   test "visit a public project and verify the public projects page link exists" do
     Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
     uuid = api_fixture('groups')['anonymously_accessible_project']['uuid']
