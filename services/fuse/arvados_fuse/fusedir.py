@@ -156,13 +156,21 @@ class Directory(FreshBase):
 
         self.fresh()
 
-    def can_clear(self):
-        if not super(Directory, self).can_clear():
-            return False
+    def in_use(self):
+        if super(Directory, self).in_use():
+            return True
         for v in self._entries.itervalues():
-            if not v.can_clear():
-                return False
-        return True
+            if v.in_use():
+                return True
+        return False
+
+    def has_ref(self, only_children=False):
+        if not only_children and super(Directory, self).has_ref():
+            return True
+        for v in self._entries.itervalues():
+            if v.has_ref():
+                return True
+        return False
 
     def clear(self):
         """Delete all entries"""
@@ -170,11 +178,20 @@ class Directory(FreshBase):
         self._entries = {}
         for n in oldentries:
             oldentries[n].clear()
-        for n in oldentries:
             self.inodes.invalidate_entry(self.inode, n.encode(self.inodes.encoding))
             self.inodes.del_entry(oldentries[n])
         self.inodes.invalidate_inode(self.inode)
         self.invalidate()
+
+    def invalidate(self):
+        try:
+            super(Directory, self).invalidate()
+            for n, e in self._entries.iteritems():
+                self.inodes.invalidate_entry(self.inode, n.encode(self.inodes.encoding))
+                e.invalidate()
+            self.inodes.invalidate_inode(self.inode)
+        except Exception:
+            _logger.exception()
 
     def mtime(self):
         return self._mtime
@@ -324,6 +341,7 @@ class CollectionDirectoryBase(Directory):
     def clear(self):
         r = super(CollectionDirectoryBase, self).clear()
         self.collection = None
+        self._manifest_size = 0
         return r
 
 
@@ -648,17 +666,7 @@ will appear if it exists.
         return not self.pdh_only
 
 
-class RecursiveInvalidateDirectory(Directory):
-    def invalidate(self):
-        try:
-            super(RecursiveInvalidateDirectory, self).invalidate()
-            for a in self._entries:
-                self._entries[a].invalidate()
-        except Exception:
-            _logger.exception()
-
-
-class TagsDirectory(RecursiveInvalidateDirectory):
+class TagsDirectory(Directory):
     """A special directory that contains as subdirectories all tags visible to the user."""
 
     def __init__(self, parent_inode, inodes, api, num_retries, poll_time=60):

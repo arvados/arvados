@@ -11,8 +11,11 @@ import unittest
 from .integration_test import IntegrationTest
 from .mount_test_base import MountTestBase
 
+_logger = logging.getLogger('arvados.arvados_fuse')
+_logger.setLevel(logging.DEBUG)
+
 class TmpCollectionTest(IntegrationTest):
-    mnt_args = ["--directory-cache=0"]
+    mnt_args = ["--by-id", "--directory-cache=0"]
 
     @IntegrationTest.mount(argv=mnt_args)
     def test_cache_spill(self):

@@ -112,8 +112,8 @@ class FreshBase(object):
         self.ref_count -= n
         return self.ref_count
 
-    def can_clear(self):
-        return not (self.use_count > 0 or self.ref_count > 0)
+    def has_ref(self, only_children=False):
+        return self.ref_count > 0
 
     def objsize(self):
         return 0
