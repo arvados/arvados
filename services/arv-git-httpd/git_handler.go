@@ -23,7 +23,7 @@ func newGitHandler() http.Handler {
 			Env: []string{
 				"GIT_PROJECT_ROOT=" + theConfig.Root,
 				"GIT_HTTP_EXPORT_ALL=",
-				"SERVER_ADDR=" + theConfig.Addr,
+				"SERVER_ADDR=" + theConfig.Listen,
 			},
 			InheritEnv: []string{
 				"PATH",

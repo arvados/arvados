@@ -12,8 +12,8 @@ type server struct {
 
 func (srv *server) Start() error {
 	mux := http.NewServeMux()
-	mux.Handle("/", &authHandler{newGitHandler()})
+	mux.Handle("/", &authHandler{handler: newGitHandler()})
 	srv.Handler = mux
-	srv.Addr = theConfig.Addr
+	srv.Addr = theConfig.Listen
 	return srv.Server.Start()
 }
