@@ -1,0 +1,12 @@
+[Unit]
+Description=Arvados git server
+Documentation=https://doc.arvados.org/
+After=network.target
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/arv-git-httpd
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
