@@ -70,9 +70,13 @@ class FreshBase(object):
         self.allow_attr_cache = True
         self.allow_dirent_cache = True
 
-    # Mark the value as stale
     def invalidate(self):
+        """Indicate that object contents should be refreshed from source."""
         self._stale = True
+
+    def kernel_invalidate(self):
+        """Indicate that an invalidation for this object should be sent to the kernel."""
+        pass
 
     # Test if the entries dict is stale.
     def stale(self):

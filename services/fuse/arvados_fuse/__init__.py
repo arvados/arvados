@@ -148,8 +148,8 @@ class InodeCache(object):
                 _logger.debug("InodeCache cannot clear inode %i, in use", obj.inode)
                 return False
             if obj.has_ref(only_children=True):
-                obj.invalidate()
-                _logger.debug("InodeCache invalidate inode %i", obj.inode)
+                obj.kernel_invalidate()
+                _logger.debug("InodeCache sent kernel invalidate inode %i", obj.inode)
                 return False
             obj.clear()
         self._total -= obj.cache_size

@@ -183,15 +183,11 @@ class Directory(FreshBase):
         self.inodes.invalidate_inode(self.inode)
         self.invalidate()
 
-    def invalidate(self):
-        try:
-            super(Directory, self).invalidate()
-            for n, e in self._entries.iteritems():
-                self.inodes.invalidate_entry(self.inode, n.encode(self.inodes.encoding))
-                e.invalidate()
-            self.inodes.invalidate_inode(self.inode)
-        except Exception:
-            _logger.exception()
+    def kernel_invalidate(self):
+        for n, e in self._entries.iteritems():
+            self.inodes.invalidate_entry(self.inode, n.encode(self.inodes.encoding))
+            e.kernel_invalidate()
+        self.inodes.invalidate_inode(self.inode)
 
     def mtime(self):
         return self._mtime
@@ -339,10 +335,8 @@ class CollectionDirectoryBase(Directory):
         src.flush()
 
     def clear(self):
-        r = super(CollectionDirectoryBase, self).clear()
+        super(CollectionDirectoryBase, self).clear()
         self.collection = None
-        self._manifest_size = 0
-        return r
 
 
 class CollectionDirectory(CollectionDirectoryBase):
@@ -511,6 +505,10 @@ class CollectionDirectory(CollectionDirectoryBase):
             if self.writable():
                 self.collection.save()
             self.collection.stop_threads()
+
+    def clear(self):
+        super(CollectionDirectory, self).clear()
+        self._manifest_size = 0
 
 
 class TmpCollectionDirectory(CollectionDirectoryBase):

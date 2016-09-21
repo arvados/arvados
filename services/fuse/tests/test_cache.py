@@ -11,9 +11,6 @@ import unittest
 from .integration_test import IntegrationTest
 from .mount_test_base import MountTestBase
 
-_logger = logging.getLogger('arvados.arvados_fuse')
-_logger.setLevel(logging.DEBUG)
-
 class TmpCollectionTest(IntegrationTest):
     mnt_args = ["--by-id", "--directory-cache=0"]
 
