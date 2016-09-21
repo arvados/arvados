@@ -25,7 +25,7 @@ def make_workflow(arvRunner, tool, job_order, project_uuid, update_uuid):
 
     name = os.path.basename(tool.tool["id"])
     upload_dependencies(arvRunner, name, document_loader,
-                        packed, uri, "keep:", False)
+                        packed, uri, False)
 
     body = {
         "workflow": {
