@@ -15,6 +15,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
 type StringMatcher func(string) bool
@@ -99,6 +101,24 @@ type ArvadosClient struct {
 
 	// Number of retries
 	Retries int
+}
+
+// New returns an ArvadosClient using the given arvados.Client
+// configuration. This is useful for callers who load arvados.Client
+// fields from configuration files but still need to use the
+// arvadosclient.ArvadosClient package.
+func New(c *arvados.Client) (*ArvadosClient, error) {
+	return &ArvadosClient{
+		Scheme: "https",
+		ApiServer: c.APIHost,
+		ApiToken: c.AuthToken,
+		ApiInsecure: c.Insecure,
+		Client: &http.Client{Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: c.Insecure}}},
+		External: false,
+		Retries: 2,
+		lastClosedIdlesAt: time.Now(),
+	}, nil
 }
 
 // MakeArvadosClient creates a new ArvadosClient using the standard
