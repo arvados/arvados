@@ -145,11 +145,11 @@ class InodeCache(object):
         if clear:
             if obj.in_use():
                 _logger.debug("InodeCache cannot clear inode %i, in use", obj.inode)
-                return False
+                return
             if obj.has_ref(only_children=True):
                 obj.kernel_invalidate()
                 _logger.debug("InodeCache sent kernel invalidate inode %i", obj.inode)
-                return False
+                return
             obj.clear()
         self._total -= obj.cache_size
         del self._entries[obj.inode]
@@ -160,14 +160,22 @@ class InodeCache(object):
             obj.cache_uuid = None
         if clear:
             _logger.debug("InodeCache cleared inode %i total now %i", obj.inode, self._total)
-        return True
 
     def cap_cache(self):
         if self._total > self.cap:
             for ent in self._entries.values():
                 if self._total < self.cap or len(self._entries) < self.min_entries:
                     break
-                self._remove(ent, True)
+                # The llfuse lock is released in del_entry(), which is called
+                # when clearing the contents of a directory.  While the llfuse
+                # lock is released, it can happen that cap_cache is called
+                # reentrantly.  It is possible for the reentrant call to remove
+                # entries this call hasn't gotten to yet.  Ensure that the
+                # entry is still valid before trying to remove it.
+                if ent.inode in self._entries:
+                    self._remove(ent, True)
+                else:
+                    break
 
     def manage(self, obj):
         if obj.persisted():
