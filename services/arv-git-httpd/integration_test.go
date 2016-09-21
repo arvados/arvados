@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
 )
@@ -23,7 +24,7 @@ type IntegrationSuite struct {
 	tmpRepoRoot string
 	tmpWorkdir  string
 	testServer  *server
-	Config      *config
+	Config      *Config
 }
 
 func (s *IntegrationSuite) SetUpSuite(c *check.C) {
@@ -67,8 +68,11 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 
 	if s.Config == nil {
-		s.Config = &config{
-			Addr:       ":0",
+		s.Config = &Config{
+			Client: arvados.Client{
+				APIHost: os.Getenv("ARVADOS_API_HOST"),
+			},
+			Listen:     ":0",
 			GitCommand: "/usr/bin/git",
 			Root:       s.tmpRepoRoot,
 		}

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -12,13 +13,20 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
 
-var clientPool = arvadosclient.MakeClientPool()
-
 type authHandler struct {
-	handler http.Handler
+	handler    http.Handler
+	clientPool *arvadosclient.ClientPool
+	setupOnce  sync.Once
+}
+
+func (h *authHandler) setup() {
+	os.Setenv("ARVADOS_API_HOST", theConfig.Client.APIHost)
+	h.clientPool = arvadosclient.MakeClientPool()
 }
 
 func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
+	h.setupOnce.Do(h.setup)
+
 	var statusCode int
 	var statusText string
 	var apiToken string
@@ -68,12 +76,12 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	repoName = pathParts[0]
 	repoName = strings.TrimRight(repoName, "/")
 
-	arv := clientPool.Get()
+	arv := h.clientPool.Get()
 	if arv == nil {
-		statusCode, statusText = http.StatusInternalServerError, "connection pool failed: "+clientPool.Err().Error()
+		statusCode, statusText = http.StatusInternalServerError, "connection pool failed: "+h.clientPool.Err().Error()
 		return
 	}
-	defer clientPool.Put(arv)
+	defer h.clientPool.Put(arv)
 
 	// Ask API server whether the repository is readable using
 	// this token (by trying to read it!)
