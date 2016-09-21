@@ -143,8 +143,8 @@ class InodeCache(object):
         return self._total
 
     def _remove(self, obj, clear):
-        if clear and not obj.clear():
-            _logger.debug("InodeCache could not clear %i in_use %s", obj.inode, obj.in_use())
+        if clear and not obj.can_clear():
+            _logger.debug("InodeCache cannot clear %i", obj.inode)
             return False
         self._total -= obj.cache_size
         del self._entries[obj.cache_priority]

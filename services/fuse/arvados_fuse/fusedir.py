@@ -156,24 +156,25 @@ class Directory(FreshBase):
 
         self.fresh()
 
-    def clear(self, force=False):
-        """Delete all entries"""
-
-        if not self.in_use() or force:
-            oldentries = self._entries
-            self._entries = {}
-            for n in oldentries:
-                if not oldentries[n].clear(force):
-                    self._entries = oldentries
-                    return False
-            for n in oldentries:
-                self.inodes.invalidate_entry(self.inode, n.encode(self.inodes.encoding))
-                self.inodes.del_entry(oldentries[n])
-            self.inodes.invalidate_inode(self.inode)
-            self.invalidate()
-            return True
-        else:
+    def can_clear(self):
+        if not super(Directory, self).can_clear():
             return False
+        for v in self._entries.itervalues():
+            if not v.can_clear():
+                return False
+        return True
+
+    def clear(self):
+        """Delete all entries"""
+        oldentries = self._entries
+        self._entries = {}
+        for n in oldentries:
+            oldentries[n].clear()
+        for n in oldentries:
+            self.inodes.invalidate_entry(self.inode, n.encode(self.inodes.encoding))
+            self.inodes.del_entry(oldentries[n])
+        self.inodes.invalidate_inode(self.inode)
+        self.invalidate()
 
     def mtime(self):
         return self._mtime
@@ -320,8 +321,8 @@ class CollectionDirectoryBase(Directory):
         self.flush()
         src.flush()
 
-    def clear(self, force=False):
-        r = super(CollectionDirectoryBase, self).clear(force)
+    def clear(self):
+        r = super(CollectionDirectoryBase, self).clear()
         self.collection = None
         return r
 
@@ -375,7 +376,7 @@ class CollectionDirectory(CollectionDirectoryBase):
 
     def new_collection(self, new_collection_record, coll_reader):
         if self.inode:
-            self.clear(force=True)
+            self.clear()
 
         self.collection_record = new_collection_record
 
@@ -407,7 +408,7 @@ class CollectionDirectory(CollectionDirectoryBase):
                     if not self.stale():
                         return
 
-                    _logger.debug("Updating %s", to_record_version)
+                    _logger.debug("Updating collection %s inode %s to record version %s", self.collection_locator, self.inode, to_record_version)
                     if self.collection is not None:
                         if self.collection.known_past_version(to_record_version):
                             _logger.debug("%s already processed %s", self.collection_locator, to_record_version)
@@ -640,7 +641,7 @@ will appear if it exists.
         else:
             raise KeyError("No collection with id " + item)
 
-    def clear(self, force=False):
+    def clear(self):
         pass
 
     def want_event_subscribe(self):

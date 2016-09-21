@@ -29,8 +29,8 @@ class File(FreshBase):
     def mtime(self):
         return self._mtime
 
-    def clear(self, force=False):
-        return True
+    def clear(self):
+        pass
 
     def writable(self):
         return False

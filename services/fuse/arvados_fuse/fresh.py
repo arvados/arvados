@@ -92,7 +92,7 @@ class FreshBase(object):
     def persisted(self):
         return False
 
-    def clear(self, force=False):
+    def clear(self):
         pass
 
     def in_use(self):
@@ -111,6 +111,9 @@ class FreshBase(object):
     def dec_ref(self, n):
         self.ref_count -= n
         return self.ref_count
+
+    def can_clear(self):
+        return not (self.use_count > 0 or self.ref_count > 0)
 
     def objsize(self):
         return 0
