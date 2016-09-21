@@ -74,7 +74,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 			},
 			Listen:     ":0",
 			GitCommand: "/usr/bin/git",
-			Root:       s.tmpRepoRoot,
+			RepoRoot:   s.tmpRepoRoot,
 		}
 	}
 	theConfig = s.Config
