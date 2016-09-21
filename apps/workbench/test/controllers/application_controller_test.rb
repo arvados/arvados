@@ -335,22 +335,27 @@ class ApplicationControllerTest < ActionController::TestCase
   end
 
   test "requesting to the API server includes client_session_id param" do
-    use_token :active do
-      fixture = api_fixture("collections")["foo_collection_in_aproject"]
-      c = Collection.find(fixture['uuid'])
+    got_query = nil
+    stub_api_calls
+    stub_api_client.stubs(:post).with do |url, query, opts={}|
+      got_query = query
+      true
+    end.returns fake_api_response('{}', 200, {})
 
-      got_query = nil
-      stub_api_calls
-      stub_api_client.expects(:post).with do |url, query, opts={}|
-        got_query = query
-        true
-      end.returns fake_api_response('{}', 200, {})
-      c.name = "name change for testing"
-      c.save
+    Rails.configuration.anonymous_user_token =
+      api_fixture("api_client_authorizations", "anonymous", "api_token")
+    @controller = ProjectsController.new
+    test_uuid = "zzzzz-j7d0g-zzzzzzzzzzzzzzz"
+    get(:show, {id: test_uuid})
 
-      assert_includes got_query, 'client_session_id'
-      assert_match /\d{10}-\d{9}/, got_query['client_session_id']
-    end
+    assert_includes got_query, 'current_request_id'
+    assert_match /\d{10}-\d{9}/, got_query['current_request_id']
+  end
+
+  test "current_request_id is nil after a request" do
+    @controller = NodesController.new
+    get(:index, {}, session_for(:active))
+    assert_nil Thread.current[:current_request_id]
   end
 
   [".navbar .login-menu a",

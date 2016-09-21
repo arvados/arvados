@@ -114,7 +114,7 @@ class ArvadosApiClient
                            Thread.current[:reader_tokens] ||
                            []) +
                           [Rails.configuration.anonymous_user_token]).to_json,
-      'client_session_id' => (Thread.current[:client_session_id] || ''),
+      'current_request_id' => (Thread.current[:current_request_id] || ''),
     }
     if !data.nil?
       data.each do |k,v|

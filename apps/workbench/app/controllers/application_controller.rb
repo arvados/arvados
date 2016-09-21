@@ -7,6 +7,7 @@ class ApplicationController < ActionController::Base
 
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
+  prepend_before_filter :set_current_request_id, except: ERROR_ACTIONS
   around_filter :thread_clear
   around_filter :set_thread_api_token
   # Methods that don't require login should
@@ -18,7 +19,6 @@ class ApplicationController < ActionController::Base
   before_filter :check_user_profile, except: ERROR_ACTIONS
   before_filter :load_filters_and_paging_params, except: ERROR_ACTIONS
   before_filter :find_object_by_uuid, except: [:create, :index, :choose] + ERROR_ACTIONS
-  before_filter :set_client_session_id, except: ERROR_ACTIONS
   theme :select_theme
 
   begin
@@ -30,12 +30,6 @@ class ApplicationController < ActionController::Base
     rescue_from(Exception,
                 ActionController::UrlGenerationError,
                 with: :render_exception)
-  end
-
-  def set_client_session_id
-    # Session ID format: '<timestamp>-<9_digits_random_number>'
-    client_session_id = "#{Time.new.to_i}-#{sprintf('%09d', rand(0..10**9-1))}"
-    Thread.current[:client_session_id] = client_session_id
   end
 
   def set_cache_buster
@@ -1218,5 +1212,11 @@ class ApplicationController < ActionController::Base
 
   def wiselinks_layout
     'body'
+  end
+
+  def set_current_request_id
+    # Request ID format: '<timestamp>-<9_digits_random_number>'
+    current_request_id = "#{Time.new.to_i}-#{sprintf('%09d', rand(0..10**9-1))}"
+    Thread.current[:current_request_id] = current_request_id
   end
 end
