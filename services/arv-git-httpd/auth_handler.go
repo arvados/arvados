@@ -21,6 +21,11 @@ type authHandler struct {
 
 func (h *authHandler) setup() {
 	os.Setenv("ARVADOS_API_HOST", theConfig.Client.APIHost)
+	if theConfig.Client.Insecure {
+		os.Setenv("ARVADOS_API_HOST_INSECURE", "1")
+	} else {
+		os.Setenv("ARVADOS_API_HOST_INSECURE", "")
+	}
 	h.clientPool = arvadosclient.MakeClientPool()
 }
 

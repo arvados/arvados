@@ -70,7 +70,8 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	if s.Config == nil {
 		s.Config = &Config{
 			Client: arvados.Client{
-				APIHost: os.Getenv("ARVADOS_API_HOST"),
+				APIHost:  os.Getenv("ARVADOS_API_HOST"),
+				Insecure: true,
 			},
 			Listen:     ":0",
 			GitCommand: "/usr/bin/git",
