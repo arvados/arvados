@@ -151,6 +151,14 @@ class InodeCache(object):
                 _logger.debug("InodeCache sent kernel invalidate inode %i", obj.inode)
                 return
             obj.clear()
+
+        # The llfuse lock is released in del_entry(), which is called by
+        # Directory.clear().  While the llfuse lock is released, it can happen
+        # that a reentrant call removes this entry before this call gets to it.
+        # Ensure that the entry is still valid before trying to remove it.
+        if obj.inode not in self._entries:
+            return
+
         self._total -= obj.cache_size
         del self._entries[obj.inode]
         if obj.cache_uuid:
@@ -166,16 +174,7 @@ class InodeCache(object):
             for ent in self._entries.values():
                 if self._total < self.cap or len(self._entries) < self.min_entries:
                     break
-                # The llfuse lock is released in del_entry(), which is called
-                # when clearing the contents of a directory.  While the llfuse
-                # lock is released, it can happen that cap_cache is called
-                # reentrantly.  It is possible for the reentrant call to remove
-                # entries this call hasn't gotten to yet.  Ensure that the
-                # entry is still valid before trying to remove it.
-                if ent.inode in self._entries:
-                    self._remove(ent, True)
-                else:
-                    break
+                self._remove(ent, True)
 
     def manage(self, obj):
         if obj.persisted():
