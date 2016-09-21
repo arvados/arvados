@@ -96,4 +96,36 @@ class ContainerRequestsTest < ActionDispatch::IntegrationTest
     wait_for_ajax
     assert_text 'This container is queued'
   end
+
+  def mock_container_log_data
+    content = "2014-01-01_12:00:01 container log message 1\n" +
+              "2014-01-01_12:00:02 container log message 2\n" +
+              "2014-01-01_12:00:03 container log message 3\n"
+    StringIO.new content, 'r'
+  end
+
+  [
+    false,
+    true,
+  ].each do |partial|
+    test "view container #{partial ? 'partial' : 'full'} log from log collection" do
+      Rails.configuration.log_viewer_max_bytes = 100 if partial
+
+      IO.expects(:popen).returns(mock_container_log_data)
+
+      cr = api_fixture('container_requests')['completed']
+      visit page_with_token("active", "/container_requests/#{cr['uuid']}")
+      find(:xpath, "//a[@href='#Log']").click
+      wait_for_ajax
+
+      if partial
+        assert page.has_text?('Showing only 100 bytes of this log') if partial
+        assert page.has_text? 'container log message 1'
+      else
+        assert page.has_text? 'container log message 1'
+        assert page.has_text? 'container log message 2'
+        assert page.has_text? 'container log message 3'
+      end
+    end
+  end
 end
