@@ -98,7 +98,7 @@ var makeFilter = function() {
             return load_log();
         }
         logViewer.filter();
-        addToLogViewer(logViewer, data.split("\n"), taskState);
+        addToJobLogViewer(logViewer, data.split("\n"), taskState);
         logViewer.filter(makeFilter());
         content_range_hdr = jqxhr.getResponseHeader('Content-Range');
         var v = content_range_hdr && content_range_hdr.match(/bytes \d+-(\d+)\/(.+)/);
