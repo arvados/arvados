@@ -9,6 +9,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
+	"github.com/coreos/go-systemd/daemon"
 )
 
 // Server configuration
@@ -76,6 +77,9 @@ func main() {
 	srv := &server{}
 	if err := srv.Start(); err != nil {
 		log.Fatal(err)
+	}
+	if _, err := daemon.SdNotify("READY=1"); err != nil {
+		log.Printf("Error notifying init daemon: %v", err)
 	}
 	log.Println("Listening at", srv.Addr)
 	log.Println("Repository root", theConfig.RepoRoot)
