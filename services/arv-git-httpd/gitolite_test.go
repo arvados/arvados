@@ -44,7 +44,8 @@ func (s *GitoliteSuite) SetUpTest(c *check.C) {
 	s.tmpRepoRoot = s.gitoliteHome + "/repositories"
 	s.Config = &Config{
 		Client: arvados.Client{
-			APIHost: os.Getenv("ARVADOS_API_HOST"),
+			APIHost:  os.Getenv("ARVADOS_API_HOST"),
+			Insecure: true,
 		},
 		Listen:     ":0",
 		GitCommand: "/usr/share/gitolite3/gitolite-shell",
