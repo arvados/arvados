@@ -137,7 +137,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		"/" + repoName + "/.git",
 	}
 	for _, dir := range tryDirs {
-		if fileInfo, err := os.Stat(theConfig.Root + dir); err != nil {
+		if fileInfo, err := os.Stat(theConfig.RepoRoot + dir); err != nil {
 			if !os.IsNotExist(err) {
 				statusCode, statusText = http.StatusInternalServerError, err.Error()
 				return
@@ -149,7 +149,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 	if rewrittenPath == "" {
 		log.Println("WARNING:", repoUUID,
-			"git directory not found in", theConfig.Root, tryDirs)
+			"git directory not found in", theConfig.RepoRoot, tryDirs)
 		// We say "content not found" to disambiguate from the
 		// earlier "API says that repo does not exist" error.
 		statusCode, statusText = http.StatusNotFound, "content not found"

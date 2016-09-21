@@ -48,7 +48,7 @@ func (s *GitoliteSuite) SetUpTest(c *check.C) {
 		},
 		Listen:     ":0",
 		GitCommand: "/usr/share/gitolite3/gitolite-shell",
-		Root:       s.tmpRepoRoot,
+		RepoRoot:   s.tmpRepoRoot,
 	}
 	s.IntegrationSuite.SetUpTest(c)
 

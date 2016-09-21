@@ -16,7 +16,7 @@ type Config struct {
 	Client     arvados.Client
 	Listen     string
 	GitCommand string
-	Root       string
+	RepoRoot   string
 }
 
 var theConfig = defaultConfig()
@@ -29,7 +29,7 @@ func defaultConfig() *Config {
 	return &Config{
 		Listen:     ":80",
 		GitCommand: "/usr/bin/git",
-		Root:       cwd,
+		RepoRoot:   cwd,
 	}
 }
 
@@ -40,7 +40,7 @@ func init() {
 		"Address to listen on, \"host:port\" or \":port\"."+deprecated)
 	flag.StringVar(&theConfig.GitCommand, "git-command", theConfig.GitCommand,
 		"Path to git or gitolite-shell executable. Each authenticated request will execute this program with a single argument, \"http-backend\"."+deprecated)
-	flag.StringVar(&theConfig.Root, "repo-root", theConfig.Root,
+	flag.StringVar(&theConfig.RepoRoot, "repo-root", theConfig.RepoRoot,
 		"Path to git repositories."+deprecated)
 
 	cfgPath := flag.String("config", defaultCfgPath, "Configuration file `path`.")
@@ -78,7 +78,7 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Println("Listening at", srv.Addr)
-	log.Println("Repository root", theConfig.Root)
+	log.Println("Repository root", theConfig.RepoRoot)
 	if err := srv.Wait(); err != nil {
 		log.Fatal(err)
 	}

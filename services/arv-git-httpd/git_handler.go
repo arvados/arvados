@@ -19,9 +19,9 @@ func newGitHandler() http.Handler {
 	return &gitHandler{
 		Handler: cgi.Handler{
 			Path: theConfig.GitCommand,
-			Dir:  theConfig.Root,
+			Dir:  theConfig.RepoRoot,
 			Env: []string{
-				"GIT_PROJECT_ROOT=" + theConfig.Root,
+				"GIT_PROJECT_ROOT=" + theConfig.RepoRoot,
 				"GIT_HTTP_EXPORT_ALL=",
 				"SERVER_ADDR=" + theConfig.Listen,
 			},

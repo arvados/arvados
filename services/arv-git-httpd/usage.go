@@ -54,7 +54,7 @@ GitCommand:
     request will execute this program with the single argument
     "http-backend".
 
-Root:
+RepoRoot:
 
     Path to git repositories. Defaults to current working directory.
 
