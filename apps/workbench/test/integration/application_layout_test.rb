@@ -256,8 +256,8 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
       end
 
       within('.recent-processes') do
-        assert_text 'running_with_job'
-        within('.row-zzzzz-d1hrv-runningpipeline') do
+        assert_text 'pipeline_with_job'
+        within('.row-zzzzz-d1hrv-1yfj6xkidf2muk3') do
           assert_text 'foo'
         end
 
