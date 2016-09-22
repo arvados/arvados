@@ -585,12 +585,16 @@ class CrunchDispatch
               break
             end
           end
+
+          unless line.index(job_uuid)
+            $stderr.print job_uuid, " ! "
+          end
+          $stderr.puts line
+
           # rate_limit returns true or false as to whether to actually log
           # the line or not.  It also modifies "line" in place to replace
           # it with an error if a logging limit is tripped.
           if rate_limit j, line
-            $stderr.print "#{job_uuid} ! " unless line.index(job_uuid)
-            $stderr.puts line
             pub_msg = "#{LogTime.now} #{line.strip}\n"
             j[:stderr_buf_to_flush] << pub_msg
           end
