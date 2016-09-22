@@ -410,7 +410,7 @@ class ProjectsControllerTest < ActionController::TestCase
     end
   end
 
-  test "dashboard should show the correct status for containers and processes" do
+  test "dashboard should show the correct status for processes" do
     get :index, {}, session_for(:active)
     assert_select 'div.panel-body.recent-processes' do
       [
