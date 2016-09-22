@@ -530,7 +530,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def self.uuid_like_pattern
-    "_____-#{uuid_prefix}-_______________"
+    "#{Rails.configuration.uuid_prefix}-#{uuid_prefix}-_______________"
   end
 
   def self.uuid_regex
