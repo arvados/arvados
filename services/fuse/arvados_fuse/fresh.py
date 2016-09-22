@@ -115,8 +115,17 @@ class FreshBase(object):
         self.ref_count -= n
         return self.ref_count
 
-    def has_ref(self, only_children=False):
-        return self.ref_count > 0
+    def has_ref(self, only_children):
+        """Determine if there are any kernel references to this
+        object or its children.
+
+        If only_children is True, ignore refcount of self and only consider
+        children.
+        """
+        if only_children:
+            return False
+        else:
+            return self.ref_count > 0
 
     def objsize(self):
         return 0

@@ -146,7 +146,7 @@ class InodeCache(object):
             if obj.in_use():
                 _logger.debug("InodeCache cannot clear inode %i, in use", obj.inode)
                 return
-            if obj.has_ref(only_children=True):
+            if obj.has_ref(True):
                 obj.kernel_invalidate()
                 _logger.debug("InodeCache sent kernel invalidate inode %i", obj.inode)
                 return

@@ -11,7 +11,7 @@ import unittest
 from .integration_test import IntegrationTest
 from .mount_test_base import MountTestBase
 
-class TmpCollectionTest(IntegrationTest):
+class CacheTest(IntegrationTest):
     mnt_args = ["--by-id", "--directory-cache=0"]
 
     @IntegrationTest.mount(argv=mnt_args)

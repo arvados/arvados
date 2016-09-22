@@ -108,6 +108,7 @@ class InodeTests(unittest.TestCase):
         cache.touch(ent3)
         self.assertFalse(ent1.clear.called)
         self.assertFalse(ent3.clear.called)
+        self.assertTrue(ent3.kernel_invalidate.called)
         self.assertEqual(1100, cache.total())
 
         # ent1 still in use, ent3 doesn't have ref,

@@ -164,11 +164,11 @@ class Directory(FreshBase):
                 return True
         return False
 
-    def has_ref(self, only_children=False):
-        if not only_children and super(Directory, self).has_ref():
+    def has_ref(self, only_children):
+        if super(Directory, self).has_ref(only_children):
             return True
         for v in self._entries.itervalues():
-            if v.has_ref():
+            if v.has_ref(False):
                 return True
         return False
 
