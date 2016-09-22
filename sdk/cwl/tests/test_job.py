@@ -80,6 +80,11 @@ class TestJob(unittest.TestCase):
                 "coresMin": 3,
                 "ramMin": 3000,
                 "tmpdirMin": 4000
+            }, {
+                "class": "http://arvados.org/cwl#RuntimeConstraints",
+                "keep_cache": 512
+            }, {
+                "class": "http://arvados.org/cwl#APIRequirement",
             }],
             "baseCommand": "ls"
         }
@@ -107,7 +112,8 @@ class TestJob(unittest.TestCase):
                     'docker_image': 'arvados/jobs',
                     'min_cores_per_node': 3,
                     'min_ram_mb_per_node': 3000,
-                    'min_scratch_mb_per_node': 5024 # tmpdirSize + outdirSize
+                    'min_scratch_mb_per_node': 5024, # tmpdirSize + outdirSize
+                    'keep_cache_mb_per_task': 512
                 }
             },
             find_or_create=True,

@@ -85,6 +85,10 @@ class ArvadosJob(object):
             runtime_constraints["min_ram_mb_per_node"] = resources.get("ram")
             runtime_constraints["min_scratch_mb_per_node"] = resources.get("tmpdirSize", 0) + resources.get("outdirSize", 0)
 
+        runtime_req, _ = get_feature(self, "http://arvados.org/cwl#RuntimeConstraints")
+        if runtime_req:
+            runtime_constraints["keep_cache_mb_per_task"] = runtime_req["keep_cache"]
+
         filters = [["repository", "=", "arvados"],
                    ["script", "=", "crunchrunner"],
                    ["script_version", "in git", "9e5b98e8f5f4727856b53447191f9c06e3da2ba6"]]

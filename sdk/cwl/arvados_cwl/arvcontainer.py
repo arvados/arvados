@@ -90,6 +90,14 @@ class ArvadosContainer(object):
             runtime_constraints["vcpus"] = resources.get("cores", 1)
             runtime_constraints["ram"] = resources.get("ram") * 2**20
 
+        api_req, _ = get_feature(self, "http://arvados.org/cwl#APIRequirement")
+        if api_req:
+            runtime_constraints["API"] = True
+
+        runtime_req, _ = get_feature(self, "http://arvados.org/cwl#RuntimeConstraints")
+        if runtime_req:
+            logger.warn("RuntimeConstraints not yet supported by container API")
+
         container_request["mounts"] = mounts
         container_request["runtime_constraints"] = runtime_constraints
 
