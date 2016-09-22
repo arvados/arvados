@@ -239,9 +239,9 @@ class TestWorkflow(unittest.TestCase):
                         'TMPDIR': '$(task.tmpdir)'},
                                'task.vwd': {
                                    'workflow.cwl': '$(task.keep)/99999999999999999999999999999999+118/workflow.cwl',
-                                   'cwl.input.json': '$(task.keep)/99999999999999999999999999999999+118/cwl.input.json'
+                                   'cwl.input.yml': '$(task.keep)/99999999999999999999999999999999+118/cwl.input.yml'
                                },
-                    'command': [u'cwltool', u'--no-container', u'--move-outputs', u'workflow.cwl', u'cwl.input.json'],
+                    'command': [u'cwltool', u'--no-container', u'--move-outputs', u'workflow.cwl#main', u'cwl.input.yml'],
                     'task.stdout': 'cwl.output.json'}]},
                 'runtime_constraints': {
                     'min_scratch_mb_per_node': 2048,

@@ -106,12 +106,12 @@ class ArvadosWorkflow(Workflow):
                             "entryname": "workflow.cwl",
                             "entry": yaml.safe_dump(packed).replace("\\", "\\\\").replace('$(', '\$(').replace('${', '\${')
                         }, {
-                            "entryname": "cwl.input.json",
+                            "entryname": "cwl.input.yml",
                             "entry": yaml.safe_dump(joborder_keepmount).replace("\\", "\\\\").replace('$(', '\$(').replace('${', '\${')
                         }]
                 }],
                 "hints": workflowobj["hints"],
-                "arguments": ["--no-container", "--move-outputs", "workflow.cwl#main", "cwl.input.json"]
+                "arguments": ["--no-container", "--move-outputs", "workflow.cwl#main", "cwl.input.yml"]
             }
             kwargs["loader"] = self.doc_loader
             kwargs["avsc_names"] = self.doc_schema
