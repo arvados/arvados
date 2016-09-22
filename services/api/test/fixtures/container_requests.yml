@@ -189,6 +189,63 @@ cr_for_failed:
     vcpus: 1
     ram: 123
 
+canceled_with_queued_container:
+  uuid: zzzzz-xvhdp-canceledqueuedc
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: canceled with queued container
+  state: Committed
+  priority: 0
+  created_at: 2016-01-11 11:11:11.111111111 Z
+  updated_at: 2016-01-11 11:11:11.111111111 Z
+  modified_at: 2016-01-11 11:11:11.111111111 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: test
+  cwd: test
+  output_path: test
+  command: ["echo", "hello"]
+  container_uuid: zzzzz-dz642-queuedcontainer
+  runtime_constraints:
+    vcpus: 1
+    ram: 123
+
+canceled_with_locked_container:
+  uuid: zzzzz-xvhdp-canceledlocekdc
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: canceled with locked container
+  state: Committed
+  priority: 0
+  created_at: 2016-01-11 11:11:11.111111111 Z
+  updated_at: 2016-01-11 11:11:11.111111111 Z
+  modified_at: 2016-01-11 11:11:11.111111111 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: test
+  cwd: test
+  output_path: test
+  command: ["echo", "hello"]
+  container_uuid: zzzzz-dz642-lockedcontainer
+  runtime_constraints:
+    vcpus: 1
+    ram: 123
+
+canceled_with_running_container:
+  uuid: zzzzz-xvhdp-canceledrunning
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: canceled with running container
+  state: Committed
+  priority: 0
+  created_at: 2016-01-11 11:11:11.111111111 Z
+  updated_at: 2016-01-11 11:11:11.111111111 Z
+  modified_at: 2016-01-11 11:11:11.111111111 Z
+  modified_by_user_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  container_image: test
+  cwd: test
+  output_path: test
+  command: ["echo", "hello"]
+  container_uuid: zzzzz-dz642-runningcontainr
+  runtime_constraints:
+    vcpus: 1
+    ram: 123
+
 uncommitted:
   uuid: zzzzz-xvhdp-cr4uncommittedc
   owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
