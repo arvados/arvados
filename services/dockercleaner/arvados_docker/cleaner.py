@@ -148,7 +148,9 @@ class DockerEventListener:
     def run(self):
         for event in self.events:
             event = json.loads(event.decode(self.ENCODING))
-            for method_name in self.event_handlers.for_event(event['status']):
+            if event.get('Type', 'container') != 'container':
+                continue
+            for method_name in self.event_handlers.for_event(event.get('status')):
                 getattr(self, method_name)(event)
 
 
