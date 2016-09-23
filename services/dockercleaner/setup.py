@@ -25,7 +25,7 @@ setup(name="arvados-docker-cleaner",
           'console_scripts': ['arvados-docker-cleaner=arvados_docker.cleaner:main'],
       },
       data_files=[
-          ('share/doc/arvados-docker-cleaner', ['agpl-3.0.txt']),
+          ('share/doc/arvados-docker-cleaner', ['agpl-3.0.txt', 'arvados-docker-cleaner.service']),
       ],
       install_requires=[
           'docker-py==1.7.2',

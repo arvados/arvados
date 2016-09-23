@@ -265,6 +265,14 @@ fpm_build () {
   # that will take precedence, as desired.
   COMMAND_ARR+=(--iteration "$default_iteration_value")
 
+  if [[ python = "$PACKAGE_TYPE" ]] && [[ -e "${PACKAGE}/${PACKAGE_NAME}.service" ]]
+  then
+      COMMAND_ARR+=(
+          --after-install "${WORKSPACE}/build/python-package-scripts/postinst"
+          --before-remove "${WORKSPACE}/build/python-package-scripts/prerm"
+      )
+  fi
+
   # Append --depends X and other arguments specified by fpm-info.sh in
   # the package source dir. These are added last so they can override
   # the arguments added by this script.
