@@ -4,6 +4,7 @@ import collections
 import itertools
 import json
 import random
+import tempfile
 import time
 import unittest
 
@@ -362,14 +363,14 @@ class HumanSizeTestCase(unittest.TestCase):
 
 class RunTestCase(unittest.TestCase):
     def setUp(self):
-        self.args = mock.MagicMock(name='args')
-        self.args.quota = 1000000
+        self.config = cleaner.default_config()
+        self.config['Quota'] = 1000000
         self.docker_client = mock.MagicMock(name='docker_client')
 
     def test_run(self):
         test_start_time = int(time.time())
         self.docker_client.events.return_value = []
-        cleaner.run(self.args, self.docker_client)
+        cleaner.run(self.config, self.docker_client)
         self.assertEqual(2, self.docker_client.events.call_count)
         event_kwargs = [args[1] for args in
                         self.docker_client.events.call_args_list]
@@ -384,7 +385,10 @@ class RunTestCase(unittest.TestCase):
 @mock.patch('arvados_docker.cleaner.run', name='cleaner_run')
 class MainTestCase(unittest.TestCase):
     def test_client_api_version(self, run_mock, docker_client):
-        cleaner.main(['--quota', '1000T'])
+        with tempfile.NamedTemporaryFile(mode='wt') as cf:
+            cf.write('{"Quota":"1000T"}')
+            cf.flush()
+            cleaner.main(['--config', cf.name])
         self.assertEqual(1, docker_client.call_count)
         # 1.14 is the first version that's well defined, going back to
         # Docker 1.2, and still supported up to at least Docker 1.9.
@@ -395,11 +399,36 @@ class MainTestCase(unittest.TestCase):
         self.assertIs(run_mock.call_args[0][1], docker_client())
 
 
+class ConfigTestCase(unittest.TestCase):
+    def test_load_config(self):
+        with tempfile.NamedTemporaryFile(mode='wt') as cf:
+            cf.write('{"Quota":"1000T", "RemoveStoppedContainers":"always", "Verbose":2}')
+            cf.flush()
+            config = cleaner.load_config(['--config', cf.name])
+        self.assertEqual(1000<<40, config['Quota'])
+        self.assertEqual("always", config['RemoveStoppedContainers'])
+        self.assertEqual(2, config['Verbose'])
+
+    def test_args_override_config(self):
+        with tempfile.NamedTemporaryFile(mode='wt') as cf:
+            cf.write('{"Quota":"1000T", "RemoveStoppedContainers":"always", "Verbose":2}')
+            cf.flush()
+            config = cleaner.load_config([
+                '--config', cf.name,
+                '--quota', '1G',
+                '--remove-stopped-containers', 'never',
+                '--verbose',
+            ])
+        self.assertEqual(1<<30, config['Quota'])
+        self.assertEqual('never', config['RemoveStoppedContainers'])
+        self.assertEqual(1, config['Verbose'])
+
+
 class ContainerRemovalTestCase(unittest.TestCase):
     LIFECYCLE = ['create', 'attach', 'start', 'resize', 'die', 'destroy']
 
     def setUp(self):
-        self.args = mock.MagicMock(name='args')
+        self.config = cleaner.default_config()
         self.docker_client = mock.MagicMock(name='docker_client')
         self.existingCID = MockDockerId()
         self.docker_client.containers.return_value = [{
@@ -417,28 +446,28 @@ class ContainerRemovalTestCase(unittest.TestCase):
             for e in self.LIFECYCLE]
 
     def test_remove_onexit(self):
-        self.args.remove_stopped_containers = 'onexit'
-        cleaner.run(self.args, self.docker_client)
+        self.config['RemoveStoppedContainers'] = 'onexit'
+        cleaner.run(self.config, self.docker_client)
         self.docker_client.remove_container.assert_called_once_with(self.newCID, v=True)
 
     def test_remove_always(self):
-        self.args.remove_stopped_containers = 'always'
-        cleaner.run(self.args, self.docker_client)
+        self.config['RemoveStoppedContainers'] = 'always'
+        cleaner.run(self.config, self.docker_client)
         self.docker_client.remove_container.assert_any_call(self.existingCID, v=True)
         self.docker_client.remove_container.assert_any_call(self.newCID, v=True)
         self.assertEqual(2, self.docker_client.remove_container.call_count)
 
     def test_remove_never(self):
-        self.args.remove_stopped_containers = 'never'
-        cleaner.run(self.args, self.docker_client)
+        self.config['RemoveStoppedContainers'] = 'never'
+        cleaner.run(self.config, self.docker_client)
         self.assertEqual(0, self.docker_client.remove_container.call_count)
 
     def test_container_exited_between_subscribe_events_and_check_existing(self):
-        self.args.remove_stopped_containers = 'always'
+        self.config['RemoveStoppedContainers'] = 'always'
         self.docker_client.events.return_value = [
             MockEvent(e, docker_id=self.existingCID).encoded()
             for e in ['die', 'destroy']]
-        cleaner.run(self.args, self.docker_client)
+        cleaner.run(self.config, self.docker_client)
         # Subscribed to events before getting the list of existing
         # exited containers?
         self.docker_client.assert_has_calls([

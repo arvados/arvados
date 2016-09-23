@@ -15,6 +15,7 @@ import sys
 import time
 
 import docker
+import json
 
 SUFFIX_SIZES = {suffix: 1024 ** exp for exp, suffix in enumerate('kmgt', 1)}
 
@@ -244,53 +245,92 @@ def human_size(size_str):
         size_str = size_str[:-1]
     return int(size_str) * multiplier
 
+def load_config(arguments):
+    args = parse_arguments(arguments)
+
+    config = default_config()
+    with open(args.config, 'r') as f:
+        config.update(json.load(f))
+
+    configargs = vars(args).copy()
+    configargs.pop('config')
+    config.update({k: v for k, v in configargs.items() if v})
+
+    if isinstance(config['Quota'], str):
+        config['Quota'] = human_size(config['Quota'])
+
+    return config
+
+def default_config():
+    return {
+        'Quota': '1G',
+        'RemoveStoppedContainers': 'always',
+        'Verbose': 0,
+    }
+
 def parse_arguments(arguments):
+    class Formatter(argparse.ArgumentDefaultsHelpFormatter,
+                    argparse.RawDescriptionHelpFormatter):
+        pass
     parser = argparse.ArgumentParser(
         prog="arvados_docker.cleaner",
-        description="clean old Docker images from Arvados compute nodes")
+        description="clean old Docker images from Arvados compute nodes",
+        epilog="Example config file:\n\n{}".format(
+            json.dumps(default_config(), indent=4)),
+        formatter_class=Formatter,
+    )
     parser.add_argument(
-        '--quota', action='store', type=human_size, required=True,
-        help="space allowance for Docker images, suffixed with K/M/G/T")
+        '--config', action='store', type=str, default='/etc/arvados/dockercleaner/config.json',
+        help="configuration file")
+
+    deprecated = " (DEPRECATED -- use config file instead)"
     parser.add_argument(
-        '--remove-stopped-containers', type=str, default='always',
+        '--quota', action='store', type=human_size, dest='Quota',
+        help="space allowance for Docker images, suffixed with K/M/G/T" + deprecated)
+    parser.add_argument(
+        '--remove-stopped-containers', type=str, default='always', dest='RemoveStoppedContainers',
         choices=['never', 'onexit', 'always'],
         help="""when to remove stopped containers (default: always, i.e., remove
         stopped containers found at startup, and remove containers as
-        soon as they exit)""")
+        soon as they exit)""" + deprecated)
     parser.add_argument(
-        '--verbose', '-v', action='count', default=0,
-        help="log more information")
+        '--verbose', '-v', action='count', default=0, dest='Verbose',
+        help="log more information" + deprecated)
+
     return parser.parse_args(arguments)
 
-def setup_logging(args):
+def setup_logging(config):
     log_handler = logging.StreamHandler()
     log_handler.setFormatter(logging.Formatter(
             '%(asctime)s %(name)s[%(process)d] %(levelname)s: %(message)s',
             '%Y-%m-%d %H:%M:%S'))
     logger.addHandler(log_handler)
-    logger.setLevel(logging.ERROR - (10 * args.verbose))
+    logger.setLevel(logging.ERROR - (10 * config['Verbose']))
 
-def run(args, docker_client):
+def run(config, docker_client):
     start_time = int(time.time())
     logger.debug("Loading Docker activity through present")
-    images = DockerImages.from_daemon(args.quota, docker_client)
+    images = DockerImages.from_daemon(config['Quota'], docker_client)
     use_recorder = DockerImageUseRecorder(
         images, docker_client, docker_client.events(since=1, until=start_time))
     use_recorder.run()
     cleaner = DockerImageCleaner(
         images, docker_client, docker_client.events(since=start_time),
-        remove_containers_onexit=args.remove_stopped_containers != 'never')
+        remove_containers_onexit=config['RemoveStoppedContainers'] != 'never')
     cleaner.check_stopped_containers(
-        remove=args.remove_stopped_containers == 'always')
+        remove=config['RemoveStoppedContainers'] == 'always')
     logger.info("Checking image quota at startup")
     cleaner.clean_images()
     logger.info("Listening for docker events")
     cleaner.run()
 
-def main(arguments):
-    args = parse_arguments(arguments)
-    setup_logging(args)
-    run(args, docker.Client(version='1.14'))
+def main(arguments=sys.argv[1:]):
+    config = load_config(arguments)
+    setup_logging(config)
+    try:
+        run(config, docker.Client(version='1.14'))
+    except KeyboardInterrupt:
+        sys.exit(1)
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    main()
