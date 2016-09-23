@@ -368,10 +368,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 def add_arv_hints():
     cache = {}
     res = pkg_resources.resource_stream(__name__, 'arv-cwl-schema.yml')
-    cache["https://w3id.org/cwl/arv-cwl-schema.yml"] = res.read()
+    cache["http://arvados.org/cwl"] = res.read()
     res.close()
     _, cwlnames, _, _ = cwltool.process.get_schema("v1.0")
-    _, extnames, _, _ = schema_salad.schema.load_schema("https://w3id.org/cwl/arv-cwl-schema.yml", cache=cache)
+    _, extnames, _, _ = schema_salad.schema.load_schema("http://arvados.org/cwl", cache=cache)
     for n in extnames.names:
         if not cwlnames.has_name("http://arvados.org/cwl#"+n, ""):
             cwlnames.add_name("http://arvados.org/cwl#"+n, "", extnames.get_name(n, ""))
