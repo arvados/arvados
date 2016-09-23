@@ -109,14 +109,14 @@ type ArvadosClient struct {
 // arvadosclient.ArvadosClient package.
 func New(c *arvados.Client) (*ArvadosClient, error) {
 	return &ArvadosClient{
-		Scheme: "https",
-		ApiServer: c.APIHost,
-		ApiToken: c.AuthToken,
+		Scheme:      "https",
+		ApiServer:   c.APIHost,
+		ApiToken:    c.AuthToken,
 		ApiInsecure: c.Insecure,
 		Client: &http.Client{Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: c.Insecure}}},
-		External: false,
-		Retries: 2,
+		External:          false,
+		Retries:           2,
 		lastClosedIdlesAt: time.Now(),
 	}, nil
 }
