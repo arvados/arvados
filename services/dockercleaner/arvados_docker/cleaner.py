@@ -21,6 +21,7 @@ SUFFIX_SIZES = {suffix: 1024 ** exp for exp, suffix in enumerate('kmgt', 1)}
 
 logger = logging.getLogger('arvados_docker.cleaner')
 
+
 def return_when_docker_not_found(result=None):
     # If the decorated function raises a 404 error from Docker, return
     # `result` instead.
@@ -36,7 +37,9 @@ def return_when_docker_not_found(result=None):
         return docker_not_found_wrapper
     return docker_not_found_decorator
 
+
 class DockerImage:
+
     def __init__(self, image_hash):
         self.docker_id = image_hash['Id']
         self.size = image_hash['VirtualSize']
@@ -47,6 +50,7 @@ class DockerImage:
 
 
 class DockerImages:
+
     def __init__(self, target_size):
         self.target_size = target_size
         self.images = {}
@@ -118,6 +122,7 @@ class DockerImages:
 class DockerEventHandlers:
     # This class maps Docker event types to the names of methods that should
     # receive those events.
+
     def __init__(self):
         self.handler_names = collections.defaultdict(list)
 
@@ -221,7 +226,8 @@ class DockerImageCleaner(DockerImageUseRecorder):
             try:
                 self.docker_client.remove_image(image_id)
             except docker.errors.APIError as error:
-                logger.warning("Failed to remove image %s: %s", image_id, error)
+                logger.warning(
+                    "Failed to remove image %s: %s", image_id, error)
             else:
                 logger.info("Removed image %s", image_id)
                 self.images.del_image(image_id)
@@ -231,8 +237,9 @@ class DockerImageCleaner(DockerImageUseRecorder):
         unknown_ids = {image['Id'] for image in self.docker_client.images()
                        if not self.images.has_image(image['Id'])}
         for image_id in (unknown_ids - self.logged_unknown):
-            logger.info("Image %s is loaded but unused, so it won't be cleaned",
-                        image_id)
+            logger.info(
+                "Image %s is loaded but unused, so it won't be cleaned",
+                image_id)
         self.logged_unknown = unknown_ids
 
 
@@ -244,6 +251,7 @@ def human_size(size_str):
     else:
         size_str = size_str[:-1]
     return int(size_str) * multiplier
+
 
 def load_config(arguments):
     args = parse_arguments(arguments)
@@ -261,12 +269,14 @@ def load_config(arguments):
 
     return config
 
+
 def default_config():
     return {
         'Quota': '1G',
         'RemoveStoppedContainers': 'always',
         'Verbose': 0,
     }
+
 
 def parse_arguments(arguments):
     class Formatter(argparse.ArgumentDefaultsHelpFormatter,
@@ -280,7 +290,7 @@ def parse_arguments(arguments):
         formatter_class=Formatter,
     )
     parser.add_argument(
-        '--config', action='store', type=str, default='/etc/arvados/dockercleaner/config.json',
+        '--config', action='store', type=str, default='/etc/arvados/docker-cleaner/config.json',
         help="configuration file")
 
     deprecated = " (DEPRECATED -- use config file instead)"
@@ -299,13 +309,15 @@ def parse_arguments(arguments):
 
     return parser.parse_args(arguments)
 
+
 def setup_logging(config):
     log_handler = logging.StreamHandler()
     log_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(name)s[%(process)d] %(levelname)s: %(message)s',
-            '%Y-%m-%d %H:%M:%S'))
+        '%(asctime)s %(name)s[%(process)d] %(levelname)s: %(message)s',
+        '%Y-%m-%d %H:%M:%S'))
     logger.addHandler(log_handler)
     logger.setLevel(logging.ERROR - (10 * config['Verbose']))
+
 
 def run(config, docker_client):
     start_time = int(time.time())
@@ -323,6 +335,7 @@ def run(config, docker_client):
     cleaner.clean_images()
     logger.info("Listening for docker events")
     cleaner.run()
+
 
 def main(arguments=sys.argv[1:]):
     config = load_config(arguments)

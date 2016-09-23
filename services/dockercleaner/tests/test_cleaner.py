@@ -15,12 +15,15 @@ from arvados_docker import cleaner
 
 MAX_DOCKER_ID = (16 ** 64) - 1
 
+
 def MockDockerId():
     return '{:064x}'.format(random.randint(0, MAX_DOCKER_ID))
+
 
 def MockContainer(image_hash):
     return {'Id': MockDockerId(),
             'Image': image_hash['Id']}
+
 
 def MockImage(*, size=0, vsize=None, tags=[]):
     if vsize is None:
@@ -30,6 +33,7 @@ def MockImage(*, size=0, vsize=None, tags=[]):
             'RepoTags': list(tags),
             'Size': size,
             'VirtualSize': vsize}
+
 
 class MockEvent(dict):
     ENCODING = 'utf-8'
@@ -48,6 +52,7 @@ class MockEvent(dict):
 
 
 class MockException(docker.errors.APIError):
+
     def __init__(self, status_code):
         response = mock.Mock(name='response')
         response.status_code = status_code
@@ -55,6 +60,7 @@ class MockException(docker.errors.APIError):
 
 
 class DockerImageTestCase(unittest.TestCase):
+
     def test_used_at_sets_last_used(self):
         image = cleaner.DockerImage(MockImage())
         image.used_at(5)
@@ -74,6 +80,7 @@ class DockerImageTestCase(unittest.TestCase):
 
 
 class DockerImagesTestCase(unittest.TestCase):
+
     def setUp(self):
         self.mock_images = []
 
@@ -336,6 +343,7 @@ class DockerContainerCleanerTestCase(DockerImageUseRecorderTestCase):
 
 
 class HumanSizeTestCase(unittest.TestCase):
+
     def check(self, human_str, count, exp):
         self.assertEqual(count * (1024 ** exp),
                          cleaner.human_size(human_str))
@@ -362,6 +370,7 @@ class HumanSizeTestCase(unittest.TestCase):
 
 
 class RunTestCase(unittest.TestCase):
+
     def setUp(self):
         self.config = cleaner.default_config()
         self.config['Quota'] = 1000000
@@ -384,6 +393,7 @@ class RunTestCase(unittest.TestCase):
 @mock.patch('docker.Client', name='docker_client')
 @mock.patch('arvados_docker.cleaner.run', name='cleaner_run')
 class MainTestCase(unittest.TestCase):
+
     def test_client_api_version(self, run_mock, docker_client):
         with tempfile.NamedTemporaryFile(mode='wt') as cf:
             cf.write('{"Quota":"1000T"}')
@@ -392,7 +402,8 @@ class MainTestCase(unittest.TestCase):
         self.assertEqual(1, docker_client.call_count)
         # 1.14 is the first version that's well defined, going back to
         # Docker 1.2, and still supported up to at least Docker 1.9.
-        # See <https://docs.docker.com/engine/reference/api/docker_remote_api/>.
+        # See
+        # <https://docs.docker.com/engine/reference/api/docker_remote_api/>.
         self.assertEqual('1.14',
                          docker_client.call_args[1].get('version'))
         self.assertEqual(1, run_mock.call_count)
@@ -400,18 +411,21 @@ class MainTestCase(unittest.TestCase):
 
 
 class ConfigTestCase(unittest.TestCase):
+
     def test_load_config(self):
         with tempfile.NamedTemporaryFile(mode='wt') as cf:
-            cf.write('{"Quota":"1000T", "RemoveStoppedContainers":"always", "Verbose":2}')
+            cf.write(
+                '{"Quota":"1000T", "RemoveStoppedContainers":"always", "Verbose":2}')
             cf.flush()
             config = cleaner.load_config(['--config', cf.name])
-        self.assertEqual(1000<<40, config['Quota'])
+        self.assertEqual(1000 << 40, config['Quota'])
         self.assertEqual("always", config['RemoveStoppedContainers'])
         self.assertEqual(2, config['Verbose'])
 
     def test_args_override_config(self):
         with tempfile.NamedTemporaryFile(mode='wt') as cf:
-            cf.write('{"Quota":"1000T", "RemoveStoppedContainers":"always", "Verbose":2}')
+            cf.write(
+                '{"Quota":"1000T", "RemoveStoppedContainers":"always", "Verbose":2}')
             cf.flush()
             config = cleaner.load_config([
                 '--config', cf.name,
@@ -419,7 +433,7 @@ class ConfigTestCase(unittest.TestCase):
                 '--remove-stopped-containers', 'never',
                 '--verbose',
             ])
-        self.assertEqual(1<<30, config['Quota'])
+        self.assertEqual(1 << 30, config['Quota'])
         self.assertEqual('never', config['RemoveStoppedContainers'])
         self.assertEqual(1, config['Verbose'])
 
@@ -448,13 +462,16 @@ class ContainerRemovalTestCase(unittest.TestCase):
     def test_remove_onexit(self):
         self.config['RemoveStoppedContainers'] = 'onexit'
         cleaner.run(self.config, self.docker_client)
-        self.docker_client.remove_container.assert_called_once_with(self.newCID, v=True)
+        self.docker_client.remove_container.assert_called_once_with(
+            self.newCID, v=True)
 
     def test_remove_always(self):
         self.config['RemoveStoppedContainers'] = 'always'
         cleaner.run(self.config, self.docker_client)
-        self.docker_client.remove_container.assert_any_call(self.existingCID, v=True)
-        self.docker_client.remove_container.assert_any_call(self.newCID, v=True)
+        self.docker_client.remove_container.assert_any_call(
+            self.existingCID, v=True)
+        self.docker_client.remove_container.assert_any_call(
+            self.newCID, v=True)
         self.assertEqual(2, self.docker_client.remove_container.call_count)
 
     def test_remove_never(self):
@@ -472,7 +489,8 @@ class ContainerRemovalTestCase(unittest.TestCase):
         # exited containers?
         self.docker_client.assert_has_calls([
             mock.call.events(since=mock.ANY),
-            mock.call.containers(filters={'status':'exited'})])
+            mock.call.containers(filters={'status': 'exited'})])
         # Asked to delete the container twice?
-        self.docker_client.remove_container.assert_has_calls([mock.call(self.existingCID, v=True)] * 2)
+        self.docker_client.remove_container.assert_has_calls(
+            [mock.call(self.existingCID, v=True)] * 2)
         self.assertEqual(2, self.docker_client.remove_container.call_count)
