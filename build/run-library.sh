@@ -213,6 +213,7 @@ fpm_build () {
               --python-package-name-prefix "$PYTHON2_PKG_PREFIX" \
               --prefix "$PYTHON2_PREFIX" \
               --python-install-lib "$PYTHON2_INSTALL_LIB" \
+              --python-install-data . \
               --exclude "${PYTHON2_INSTALL_LIB#/}/tests" \
               --depends "$PYTHON2_PACKAGE"
           # Fix --iteration for #9242.
@@ -229,6 +230,7 @@ fpm_build () {
               --python-package-name-prefix "$PYTHON3_PKG_PREFIX" \
               --prefix "$PYTHON3_PREFIX" \
               --python-install-lib "$PYTHON3_INSTALL_LIB" \
+              --python-install-data . \
               --exclude "${PYTHON3_INSTALL_LIB#/}/tests" \
               --depends "$PYTHON3_PACKAGE"
           # Fix --iteration for #9242.
