@@ -11,7 +11,8 @@ systemd_unit="${pkg}.service"
 
 case "${1}" in
     configure)
-        if [ -e /run/systemd/system ]; then
+        if [ -d /lib/systemd/system ]
+        then
             # Python packages put all data files in /usr, so we copy
             # them to /lib at install time.
             py_unit="/usr/share/doc/${pkg}/${pkg}.service"
@@ -19,7 +20,9 @@ case "${1}" in
             then
                 cp "${py_unit}" /lib/systemd/system/
             fi
+        fi
 
+        if [ -e /run/systemd/system ]; then
             eval "$(systemctl -p UnitFileState show "${systemd_unit}")"
             case "${UnitFileState}" in
                 disabled)

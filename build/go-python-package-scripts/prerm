@@ -14,14 +14,14 @@ case "${1}" in
         if [ -e /run/systemd/system ]; then
             systemctl stop "${systemd_unit}" || true
             systemctl disable "${systemd_unit}" || true
+        fi
 
-            # Unit files from Python packages get installed by
-            # postinst so we have to remove them explicitly here.
-            py_unit="/usr/share/doc/${pkg}/${pkg}.service"
-            if [ -e "${py_unit}" ]
-            then
-                rm "/lib/systemd/system/${pkg}.service" || true
-            fi
+        # Unit files from Python packages get installed by postinst so
+        # we have to remove them explicitly here.
+        py_unit="/usr/share/doc/${pkg}/${pkg}.service"
+        if [ -e "${py_unit}" ]
+        then
+            rm "/lib/systemd/system/${pkg}.service" || true
         fi
         ;;
 esac
