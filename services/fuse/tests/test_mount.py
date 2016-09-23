@@ -713,12 +713,15 @@ class FuseUpdateFromEventTest(MountTestBase):
             with collection2.open("file1.txt", "w") as f:
                 f.write("foo")
 
-        time.sleep(1)
+        # should show up in <10s via event bus notify
+        expect = ["file1.txt"]
+        for _ in range(100):
+            d1 = sorted(llfuse.listdir(os.path.join(self.mounttmp)))
+            if d1 == expect:
+                break
+            time.sleep(0.1)
 
-        # should show up via event bus notify
-
-        d1 = llfuse.listdir(os.path.join(self.mounttmp))
-        self.assertEqual(["file1.txt"], sorted(d1))
+        self.assertEqual(expect, d1)
 
 
 def fuseFileConflictTestHelper(mounttmp):

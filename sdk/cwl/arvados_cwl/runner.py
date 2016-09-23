@@ -69,26 +69,19 @@ def upload_dependencies(arvrunner, name, document_loader,
                   set(("$include", "$schemas", "location")),
                   loadref)
 
-    files = []
-    def visitFiles(path):
-        files.append(path)
-
-    adjustFileObjs(sc, visitFiles)
-    adjustDirObjs(sc, visitFiles)
-
-    normalizeFilesDirs(files)
+    normalizeFilesDirs(sc)
 
     if "id" in workflowobj:
-        files.append({"class": "File", "location": workflowobj["id"]})
+        sc.append({"class": "File", "location": workflowobj["id"]})
 
-    mapper = ArvPathMapper(arvrunner, files, "",
+    mapper = ArvPathMapper(arvrunner, sc, "",
                            "keep:%s",
                            "keep:%s/%s",
                            name=name)
 
     def setloc(p):
-        if not p["location"].startswith("keep:"):
-            p["location"] = mapper.mapper(p["location"]).resolved
+        if not p["location"].startswith("_:") and not p["location"].startswith("keep:"):
+            p["location"] = mapper.mapper(p["location"]).target
     adjustFileObjs(workflowobj, setloc)
     adjustDirObjs(workflowobj, setloc)
 

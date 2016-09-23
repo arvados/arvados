@@ -64,15 +64,18 @@ class FreshBase(object):
         self.use_count = 0
         self.ref_count = 0
         self.dead = False
-        self.cache_priority = None
         self.cache_size = 0
         self.cache_uuid = None
         self.allow_attr_cache = True
         self.allow_dirent_cache = True
 
-    # Mark the value as stale
     def invalidate(self):
+        """Indicate that object contents should be refreshed from source."""
         self._stale = True
+
+    def kernel_invalidate(self):
+        """Indicate that an invalidation for this object should be sent to the kernel."""
+        pass
 
     # Test if the entries dict is stale.
     def stale(self):
@@ -92,7 +95,7 @@ class FreshBase(object):
     def persisted(self):
         return False
 
-    def clear(self, force=False):
+    def clear(self):
         pass
 
     def in_use(self):
@@ -111,6 +114,18 @@ class FreshBase(object):
     def dec_ref(self, n):
         self.ref_count -= n
         return self.ref_count
+
+    def has_ref(self, only_children):
+        """Determine if there are any kernel references to this
+        object or its children.
+
+        If only_children is True, ignore refcount of self and only consider
+        children.
+        """
+        if only_children:
+            return False
+        else:
+            return self.ref_count > 0
 
     def objsize(self):
         return 0
