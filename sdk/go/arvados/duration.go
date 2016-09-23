@@ -13,9 +13,7 @@ type Duration time.Duration
 // UnmarshalJSON implements json.Unmarshaler
 func (d *Duration) UnmarshalJSON(data []byte) error {
 	if data[0] == '"' {
-		dur, err := time.ParseDuration(string(data[1 : len(data)-1]))
-		*d = Duration(dur)
-		return err
+		return d.Set(string(data[1 : len(data)-1]))
 	}
 	return fmt.Errorf("duration must be given as a string like \"600s\" or \"1h30m\"")
 }
@@ -28,4 +26,11 @@ func (d *Duration) MarshalJSON() ([]byte, error) {
 // String implements fmt.Stringer
 func (d Duration) String() string {
 	return time.Duration(d).String()
+}
+
+// Value implements flag.Value
+func (d *Duration) Set(s string) error {
+	dur, err := time.ParseDuration(s)
+	*d = Duration(dur)
+	return err
 }

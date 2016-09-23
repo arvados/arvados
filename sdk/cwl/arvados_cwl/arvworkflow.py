@@ -6,7 +6,7 @@ import logging
 from cwltool.pack import pack
 from cwltool.load_tool import fetch_document
 from cwltool.process import shortname
-from cwltool.workflow import Workflow
+from cwltool.workflow import Workflow, WorkflowException
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
 
 import ruamel.yaml as yaml
@@ -83,8 +83,10 @@ class ArvadosWorkflow(Workflow):
             def keepmount(obj):
                 if obj["location"].startswith("keep:"):
                     obj["location"] = "/keep/" + obj["location"][5:]
+                elif obj["location"].startswith("_:"):
+                    pass
                 else:
-                    raise Exception("Uh oh %s" % obj["location"])
+                    raise WorkflowException("Location is not a keep reference or a literal: '%s'" % obj["location"])
                 if "listing" in obj:
                     del obj["listing"]
             adjustFileObjs(joborder_keepmount, keepmount)

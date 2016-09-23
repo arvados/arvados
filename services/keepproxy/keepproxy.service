@@ -1,0 +1,12 @@
+[Unit]
+Description=Arvados Keep Proxy
+Documentation=https://doc.arvados.org/
+After=network.target
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/keepproxy
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
