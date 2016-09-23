@@ -58,6 +58,8 @@ class ArvPathMapper(PathMapper):
     def addentry(self, obj, c, path, subdirs):
         if obj["location"] in self._pathmap:
             src, srcpath = self.arvrunner.fs_access.get_collection(self._pathmap[obj["location"]].resolved)
+            if srcpath == "":
+                srcpath = "."
             c.copy(srcpath, path + "/" + obj["basename"], source_collection=src, overwrite=True)
             for l in obj.get("secondaryFiles", []):
                 self.addentry(l, c, path, subdirs)

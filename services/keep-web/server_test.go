@@ -6,15 +6,19 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	check "gopkg.in/check.v1"
 )
+
+var testAPIHost = os.Getenv("ARVADOS_API_HOST")
 
 var _ = check.Suite(&IntegrationSuite{})
 
@@ -137,7 +141,7 @@ type curlCase struct {
 }
 
 func (s *IntegrationSuite) Test200(c *check.C) {
-	anonymousTokens = []string{arvadostest.AnonymousToken}
+	s.testServer.Config.AnonymousTokens = []string{arvadostest.AnonymousToken}
 	for _, spec := range []curlCase{
 		// My collection
 		{
@@ -307,10 +311,14 @@ func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 
 func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	arvadostest.ResetEnv()
-	s.testServer = &server{}
-	var err error
-	address = "127.0.0.1:0"
-	err = s.testServer.Start()
+	s.testServer = &server{Config: &Config{
+		Client: arvados.Client{
+			APIHost:  testAPIHost,
+			Insecure: true,
+		},
+		Listen: "127.0.0.1:0",
+	}}
+	err := s.testServer.Start()
 	c.Assert(err, check.Equals, nil)
 }
 

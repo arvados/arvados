@@ -7,6 +7,7 @@ class ApplicationController < ActionController::Base
 
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
+  prepend_before_filter :set_current_request_id, except: ERROR_ACTIONS
   around_filter :thread_clear
   around_filter :set_thread_api_token
   # Methods that don't require login should
@@ -1211,5 +1212,11 @@ class ApplicationController < ActionController::Base
 
   def wiselinks_layout
     'body'
+  end
+
+  def set_current_request_id
+    # Request ID format: '<timestamp>-<9_digits_random_number>'
+    current_request_id = "#{Time.new.to_i}-#{sprintf('%09d', rand(0..10**9-1))}"
+    Thread.current[:current_request_id] = current_request_id
   end
 end
