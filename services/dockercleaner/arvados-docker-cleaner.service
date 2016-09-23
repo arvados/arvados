@@ -1,0 +1,13 @@
+[Unit]
+Description=Arvados Docker Image Cleaner
+Documentation=https://doc.arvados.org/
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/env arvados-docker-cleaner
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target
