@@ -105,8 +105,8 @@ package_go_binary() {
     systemd_unit="$WORKSPACE/${src_path}/${prog}.service"
     if [[ -e "${systemd_unit}" ]]; then
         switches+=(
-            --after-install "${WORKSPACE}/build/go-package-scripts/postinst"
-            --before-remove "${WORKSPACE}/build/go-package-scripts/prerm"
+            --after-install "${WORKSPACE}/build/go-python-package-scripts/postinst"
+            --before-remove "${WORKSPACE}/build/go-python-package-scripts/prerm"
             "${systemd_unit}=/lib/systemd/system/${prog}.service")
     fi
     switches+=("$WORKSPACE/${license_file}=/usr/share/doc/$prog/${license_file}")
@@ -268,8 +268,8 @@ fpm_build () {
   if [[ python = "$PACKAGE_TYPE" ]] && [[ -e "${PACKAGE}/${PACKAGE_NAME}.service" ]]
   then
       COMMAND_ARR+=(
-          --after-install "${WORKSPACE}/build/python-package-scripts/postinst"
-          --before-remove "${WORKSPACE}/build/python-package-scripts/prerm"
+          --after-install "${WORKSPACE}/build/go-python-package-scripts/postinst"
+          --before-remove "${WORKSPACE}/build/go-python-package-scripts/prerm"
       )
   fi
 
