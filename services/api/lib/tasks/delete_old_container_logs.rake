@@ -5,13 +5,10 @@
 
 namespace :db do
   desc "Remove old container log entries from the logs table"
+
   task delete_old_container_logs: :environment do
-    Log.select("logs.id").
-        joins("JOIN containers ON object_uuid = containers.uuid").
-        where("event_type in ('stdout', 'stderr', 'arv-mount', 'crunch-run', 'crunchstat') AND containers.log IS NOT NULL AND containers.finished_at < :age",
-              age: Rails.configuration.clean_container_log_rows_after.ago).
-        find_in_batches do |old_log_ids|
-      Log.where(id: old_log_ids.map(&:id)).delete_all
-    end
+    delete_sql = "DELETE FROM logs WHERE id in (SELECT logs.id FROM logs JOIN containers ON logs.object_uuid = containers.uuid WHERE event_type IN ('stdout', 'stderr', 'arv-mount', 'crunch-run', 'crunchstat') AND containers.log IS NOT NULL AND containers.finished_at < '#{Rails.configuration.clean_container_log_rows_after.ago}')"
+
+    ActiveRecord::Base.connection.execute(delete_sql)
   end
 end
