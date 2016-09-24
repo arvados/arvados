@@ -1,0 +1,17 @@
+{
+    "name":"wb2",
+    "dependencies":{
+        "mithril":"lhorie/mithril.js#rewrite"
+    },
+    "devDependencies":{
+	"check-dependencies":"",
+        "express":"",
+        "tape":"",
+        "webpack":""
+    },
+    "scripts":{
+        "start":"PATH=\"$PATH:`pwd`\"; mkdir -p dist && (./node_modules/.bin/check-dependencies || npm install) && webpack -d && (webpack --watch -d & pack=$!; node serve.js; kill $pack)",
+        "test":"PATH=\"$PATH:`pwd`\" tape"
+    },
+    "main":"serve.js"
+}
