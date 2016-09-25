@@ -66,26 +66,30 @@ var Show = {
 };
 
 var Layout = {
-    RouteResolver: function(component, withKey) {
-        return {
-            render: function(vnode) {
-                return m(Layout, m(component,
-                                   Object.assign({
-                                       key: vnode.attrs[withKey],
-                                   }, vnode.attrs)));
-            },
-        };
-    },
     view: function(vnode) {
         return m('.layout', vnode.children);
     },
 };
 
-var routes = {
-    '/': Show,
-    '/site/:siteID/discovery': Layout.RouteResolver(DiscoveryDoc, 'siteID'),
-};
-['collections', 'containers'].map(function(table) {
-    routes['/site/:siteID/'+table+'/:uuid'] = Layout.RouteResolver(Show, 'uuid');
-});
-m.route(document.body, '/', routes);
+function RouteResolver(layout, component, withKey) {
+    return {
+        render: function(vnode) {
+            return m(layout, m(component,
+                               Object.assign({
+                                   key: withKey + ':' + vnode.attrs[withKey],
+                               }, vnode.attrs)));
+        },
+    };
+}
+
+(function SetupRouting() {
+    var RR = RouteResolver;
+    var routes = {
+        '/': Show,
+        '/site/:siteID/discovery': RR(Layout, DiscoveryDoc, 'siteID'),
+    };
+    ['collections', 'containers'].map(function(table) {
+        routes['/site/:siteID/'+table+'/:uuid'] = RR(Layout, Show, 'uuid');
+    });
+    m.route(document.body, '/', routes);
+})();
