@@ -86,6 +86,11 @@ class TestContainer(unittest.TestCase):
                 "coresMin": 3,
                 "ramMin": 3000,
                 "tmpdirMin": 4000
+            }, {
+                "class": "http://arvados.org/cwl#RuntimeConstraints",
+                "keep_cache": 512
+            }, {
+                "class": "http://arvados.org/cwl#APIRequirement",
             }],
             "baseCommand": "ls"
         }
@@ -107,7 +112,8 @@ class TestContainer(unittest.TestCase):
                 'name': 'test_resource_requirements',
                 'runtime_constraints': {
                     'vcpus': 3,
-                    'ram': 3145728000
+                    'ram': 3145728000,
+                    'API': True
                 }, 'priority': 1,
                 'mounts': {
                     '/var/spool/cwl': {'kind': 'tmp'}
