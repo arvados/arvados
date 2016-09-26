@@ -184,7 +184,7 @@ cr_for_failed:
   cwd: test
   output_path: test
   command: ["echo", "hello"]
-  container_uuid: zzzzz-dz642-failedcntnr
+  container_uuid: zzzzz-dz642-failedcontainr1
   runtime_constraints:
     vcpus: 1
     ram: 123
