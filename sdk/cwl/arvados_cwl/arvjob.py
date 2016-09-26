@@ -1,6 +1,7 @@
 import logging
 import re
 import copy
+import json
 
 from cwltool.process import get_feature, shortname
 from cwltool.errors import WorkflowException
@@ -185,9 +186,11 @@ class ArvadosJob(object):
             except WorkflowException as e:
                 logger.error("Error while collecting job outputs:\n%s", e, exc_info=(e if self.arvrunner.debug else False))
                 processStatus = "permanentFail"
+                outputs = None
             except Exception as e:
                 logger.exception("Got unknown exception while collecting job outputs:")
                 processStatus = "permanentFail"
+                outputs = None
 
             self.output_callback(outputs, processStatus)
         finally:

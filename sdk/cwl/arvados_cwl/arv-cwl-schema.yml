@@ -1,0 +1,14 @@
+$base: "http://arvados.org/cwl#"
+$graph:
+- name: RunInSingleContainer
+  type: record
+  doc: |
+    Indicates that a subworkflow should run in a single container
+    and not be scheduled as separate steps.
+  fields:
+    - name: class
+      type: string
+      doc: "Always 'arv:RunInSingleContainer'"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"

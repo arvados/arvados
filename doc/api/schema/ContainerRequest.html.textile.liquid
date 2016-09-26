@@ -62,3 +62,9 @@ The system will use the following scheme to determine which Container to conside
 {% include 'notebox_begin' %}
 Currently, container reuse is the default behavior and a mechanism to skip reuse is not supported.
 {% include 'notebox_end' %}
+
+h2(#cancel_container). Canceling a ContainerRequest
+
+A ContainerRequest may be canceled by setting it's priority to 0, using an update call.
+
+When a ContainerRequest is canceled, it will still reflect the state of the Container it is associated with via the container_uuid attribute. If that Container is being reused by any other container_requests that are still active, i.e., not yet canceled, that Container may continue to run or be scheduled to run by the system in future. However, if no other container_requests are using that Contianer, then the Container will get canceled as well.

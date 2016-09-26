@@ -134,7 +134,6 @@ class InodeCache(object):
     def __init__(self, cap, min_entries=4):
         self._entries = collections.OrderedDict()
         self._by_uuid = {}
-        self._counter = itertools.count(0)
         self.cap = cap
         self._total = 0
         self.min_entries = min_entries
@@ -143,32 +142,44 @@ class InodeCache(object):
         return self._total
 
     def _remove(self, obj, clear):
-        if clear and not obj.clear():
-            _logger.debug("InodeCache could not clear %i in_use %s", obj.inode, obj.in_use())
-            return False
+        if clear:
+            if obj.in_use():
+                _logger.debug("InodeCache cannot clear inode %i, in use", obj.inode)
+                return
+            if obj.has_ref(True):
+                obj.kernel_invalidate()
+                _logger.debug("InodeCache sent kernel invalidate inode %i", obj.inode)
+                return
+            obj.clear()
+
+        # The llfuse lock is released in del_entry(), which is called by
+        # Directory.clear().  While the llfuse lock is released, it can happen
+        # that a reentrant call removes this entry before this call gets to it.
+        # Ensure that the entry is still valid before trying to remove it.
+        if obj.inode not in self._entries:
+            return
+
         self._total -= obj.cache_size
-        del self._entries[obj.cache_priority]
+        del self._entries[obj.inode]
         if obj.cache_uuid:
             self._by_uuid[obj.cache_uuid].remove(obj)
             if not self._by_uuid[obj.cache_uuid]:
                 del self._by_uuid[obj.cache_uuid]
             obj.cache_uuid = None
         if clear:
-            _logger.debug("InodeCache cleared %i total now %i", obj.inode, self._total)
-        return True
+            _logger.debug("InodeCache cleared inode %i total now %i", obj.inode, self._total)
 
     def cap_cache(self):
         if self._total > self.cap:
-            for key in list(self._entries.keys()):
+            for ent in self._entries.values():
                 if self._total < self.cap or len(self._entries) < self.min_entries:
                     break
-                self._remove(self._entries[key], True)
+                self._remove(ent, True)
 
     def manage(self, obj):
         if obj.persisted():
-            obj.cache_priority = next(self._counter)
             obj.cache_size = obj.objsize()
-            self._entries[obj.cache_priority] = obj
+            self._entries[obj.inode] = obj
             obj.cache_uuid = obj.uuid()
             if obj.cache_uuid:
                 if obj.cache_uuid not in self._by_uuid:
@@ -177,19 +188,17 @@ class InodeCache(object):
                     if obj not in self._by_uuid[obj.cache_uuid]:
                         self._by_uuid[obj.cache_uuid].append(obj)
             self._total += obj.objsize()
-            _logger.debug("InodeCache touched %i (size %i) (uuid %s) total now %i", obj.inode, obj.objsize(), obj.cache_uuid, self._total)
+            _logger.debug("InodeCache touched inode %i (size %i) (uuid %s) total now %i", obj.inode, obj.objsize(), obj.cache_uuid, self._total)
             self.cap_cache()
-        else:
-            obj.cache_priority = None
 
     def touch(self, obj):
         if obj.persisted():
-            if obj.cache_priority in self._entries:
+            if obj.inode in self._entries:
                 self._remove(obj, False)
             self.manage(obj)
 
     def unmanage(self, obj):
-        if obj.persisted() and obj.cache_priority in self._entries:
+        if obj.persisted() and obj.inode in self._entries:
             self._remove(obj, True)
 
     def find_by_uuid(self, uuid):
@@ -632,7 +641,7 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def create(self, inode_parent, name, mode, flags, ctx):
-        _logger.debug("arv-mount create: %i '%s' %o", inode_parent, name, mode)
+        _logger.debug("arv-mount create: parent_inode %i '%s' %o", inode_parent, name, mode)
 
         p = self._check_writable(inode_parent)
         p.create(name)
@@ -648,7 +657,7 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def mkdir(self, inode_parent, name, mode, ctx):
-        _logger.debug("arv-mount mkdir: %i '%s' %o", inode_parent, name, mode)
+        _logger.debug("arv-mount mkdir: parent_inode %i '%s' %o", inode_parent, name, mode)
 
         p = self._check_writable(inode_parent)
         p.mkdir(name)
@@ -661,19 +670,19 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def unlink(self, inode_parent, name):
-        _logger.debug("arv-mount unlink: %i '%s'", inode_parent, name)
+        _logger.debug("arv-mount unlink: parent_inode %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
         p.unlink(name)
 
     @catch_exceptions
     def rmdir(self, inode_parent, name):
-        _logger.debug("arv-mount rmdir: %i '%s'", inode_parent, name)
+        _logger.debug("arv-mount rmdir: parent_inode %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
         p.rmdir(name)
 
     @catch_exceptions
     def rename(self, inode_parent_old, name_old, inode_parent_new, name_new):
-        _logger.debug("arv-mount rename: %i '%s' %i '%s'", inode_parent_old, name_old, inode_parent_new, name_new)
+        _logger.debug("arv-mount rename: old_parent_inode %i '%s' new_parent_inode %i '%s'", inode_parent_old, name_old, inode_parent_new, name_new)
         src = self._check_writable(inode_parent_old)
         dest = self._check_writable(inode_parent_new)
         dest.rename(name_old, name_new, src)

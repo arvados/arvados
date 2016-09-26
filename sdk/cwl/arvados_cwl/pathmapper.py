@@ -6,7 +6,7 @@ import os
 import arvados.commands.run
 import arvados.collection
 
-from cwltool.pathmapper import PathMapper, MapperEnt, abspath
+from cwltool.pathmapper import PathMapper, MapperEnt, abspath, adjustFileObjs, adjustDirObjs
 from cwltool.workflow import WorkflowException
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -42,8 +42,11 @@ class ArvPathMapper(PathMapper):
                     uploadfiles.add((src, ab, st))
                 elif isinstance(st, arvados.commands.run.ArvFile):
                     self._pathmap[src] = MapperEnt(ab, st.fn, "File")
-                elif src.startswith("_:") and "contents" in srcobj:
-                    pass
+                elif src.startswith("_:"):
+                    if "contents" in srcobj:
+                        pass
+                    else:
+                        raise WorkflowException("File literal '%s' is missing contents" % src)
                 else:
                     raise WorkflowException("Input file path '%s' is invalid" % st)
             if "secondaryFiles" in srcobj:
@@ -52,7 +55,7 @@ class ArvPathMapper(PathMapper):
         elif srcobj["class"] == "Directory":
             if isinstance(src, basestring) and ArvPathMapper.pdh_dirpath.match(src):
                 self._pathmap[src] = MapperEnt(src, self.collection_pattern % src[5:], "Directory")
-            for l in srcobj["listing"]:
+            for l in srcobj.get("listing", []):
                 self.visit(l, uploadfiles)
 
     def addentry(self, obj, c, path, subdirs):

@@ -410,6 +410,60 @@ class ProjectsControllerTest < ActionController::TestCase
     end
   end
 
+  test "dashboard should show the correct status for processes" do
+    get :index, {}, session_for(:active)
+    assert_select 'div.panel-body.recent-processes' do
+      [
+        {
+          fixture: 'container_requests',
+          state: 'completed',
+          selectors: [['div.progress', false],
+                      ['span.label.label-success', true, 'Complete']]
+        },
+        {
+          fixture: 'container_requests',
+          state: 'uncommitted',
+          selectors: [['div.progress', false],
+                      ['span.label.label-default', true, 'Uncommitted']]
+        },
+        {
+          fixture: 'container_requests',
+          state: 'queued',
+          selectors: [['div.progress', false],
+                      ['span.label.label-default', true, 'Queued']]
+        },
+        {
+          fixture: 'container_requests',
+          state: 'running',
+          selectors: [['div.progress', true]]
+        },
+        {
+          fixture: 'pipeline_instances',
+          state: 'new_pipeline',
+          selectors: [['div.progress', false],
+                      ['span.label.label-default', true, 'Not started']]
+        },
+        {
+          fixture: 'pipeline_instances',
+          state: 'pipeline_in_running_state',
+          selectors: [['div.progress', true]]
+        },
+      ].each do |c|
+        uuid = api_fixture(c[:fixture])[c[:state]]['uuid']
+        assert_select "div.dashboard-panel-info-row.row-#{uuid}" do
+          if c.include? :selectors
+            c[:selectors].each do |selector, should_show, label|
+              assert_select selector, should_show, "UUID #{uuid} should #{should_show ? '' : 'not'} show '#{selector}'"
+              if should_show and not label.nil?
+                assert_select selector, label, "UUID #{uuid} state label should show #{label}"
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
   test "visit a public project and verify the public projects page link exists" do
     Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
     uuid = api_fixture('groups')['anonymously_accessible_project']['uuid']

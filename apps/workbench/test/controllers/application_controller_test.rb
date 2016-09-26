@@ -334,6 +334,30 @@ class ApplicationControllerTest < ActionController::TestCase
     assert_response 404
   end
 
+  test "requesting to the API server includes client_session_id param" do
+    got_query = nil
+    stub_api_calls
+    stub_api_client.stubs(:post).with do |url, query, opts={}|
+      got_query = query
+      true
+    end.returns fake_api_response('{}', 200, {})
+
+    Rails.configuration.anonymous_user_token =
+      api_fixture("api_client_authorizations", "anonymous", "api_token")
+    @controller = ProjectsController.new
+    test_uuid = "zzzzz-j7d0g-zzzzzzzzzzzzzzz"
+    get(:show, {id: test_uuid})
+
+    assert_includes got_query, 'current_request_id'
+    assert_match /\d{10}-\d{9}/, got_query['current_request_id']
+  end
+
+  test "current_request_id is nil after a request" do
+    @controller = NodesController.new
+    get(:index, {}, session_for(:active))
+    assert_nil Thread.current[:current_request_id]
+  end
+
   [".navbar .login-menu a",
    ".navbar .login-menu .dropdown-menu a"
   ].each do |css_selector|
