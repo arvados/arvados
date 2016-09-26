@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
 )
 
@@ -44,7 +45,7 @@ func (s *GitoliteSuite) SetUpTest(c *check.C) {
 	s.tmpRepoRoot = s.gitoliteHome + "/repositories"
 	s.Config = &Config{
 		Client: arvados.Client{
-			APIHost:  os.Getenv("ARVADOS_API_HOST"),
+			APIHost:  arvadostest.APIHost(),
 			Insecure: true,
 		},
 		Listen:     ":0",

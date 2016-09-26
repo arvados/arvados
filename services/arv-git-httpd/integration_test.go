@@ -70,7 +70,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	if s.Config == nil {
 		s.Config = &Config{
 			Client: arvados.Client{
-				APIHost:  os.Getenv("ARVADOS_API_HOST"),
+				APIHost:  arvadostest.APIHost(),
 				Insecure: true,
 			},
 			Listen:     ":0",
@@ -78,13 +78,17 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 			RepoRoot:   s.tmpRepoRoot,
 		}
 	}
+
+	// Clear ARVADOS_API_* env vars before starting up the server,
+	// to make sure arv-git-httpd doesn't use them or complain
+	// about them being missing.
+	os.Unsetenv("ARVADOS_API_HOST")
+	os.Unsetenv("ARVADOS_API_HOST_INSECURE")
+	os.Unsetenv("ARVADOS_API_TOKEN")
+
 	theConfig = s.Config
 	err = s.testServer.Start()
 	c.Assert(err, check.Equals, nil)
-
-	// Clear ARVADOS_API_TOKEN after starting up the server, to
-	// make sure arv-git-httpd doesn't use it.
-	os.Setenv("ARVADOS_API_TOKEN", "unused-token-placates-client-library")
 }
 
 func (s *IntegrationSuite) TearDownTest(c *check.C) {
