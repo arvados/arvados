@@ -25,6 +25,7 @@ setup(name='arvados-cwl-runner',
       download_url="https://github.com/curoverse/arvados.git",
       license='Apache 2.0',
       packages=find_packages(),
+      package_data={'arvados_cwl': ['arv-cwl-schema.yml']},
       scripts=[
           'bin/cwl-runner',
           'bin/arvados-cwl-runner'

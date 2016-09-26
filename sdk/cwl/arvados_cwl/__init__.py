@@ -15,6 +15,7 @@ import pkg_resources  # part of setuptools
 from cwltool.errors import WorkflowException
 import cwltool.main
 import cwltool.workflow
+import schema_salad
 
 import arvados
 import arvados.config
@@ -22,9 +23,10 @@ import arvados.config
 from .arvcontainer import ArvadosContainer, RunnerContainer
 from .arvjob import ArvadosJob, RunnerJob, RunnerTemplate
 from .arvtool import ArvadosCommandTool
+from .arvworkflow import ArvadosWorkflow, upload_workflow
 from .fsaccess import CollectionFsAccess
-from .arvworkflow import make_workflow
 from .perf import Perf
+from cwltool.pack import pack
 
 from cwltool.process import shortname, UnsupportedRequirement
 from cwltool.pathmapper import adjustFileObjs
@@ -53,6 +55,7 @@ class ArvCwlRunner(object):
         self.work_api = work_api
         self.stop_polling = threading.Event()
         self.poll_api = None
+        self.pipeline = None
 
         if self.work_api is None:
             # todo: autodetect API to use.
@@ -61,10 +64,12 @@ class ArvCwlRunner(object):
         if self.work_api not in ("containers", "jobs"):
             raise Exception("Unsupported API '%s'" % self.work_api)
 
-    def arvMakeTool(self, toolpath_object, **kwargs):
+    def arv_make_tool(self, toolpath_object, **kwargs):
+        kwargs["work_api"] = self.work_api
         if "class" in toolpath_object and toolpath_object["class"] == "CommandLineTool":
-            kwargs["work_api"] = self.work_api
             return ArvadosCommandTool(self, toolpath_object, **kwargs)
+        elif "class" in toolpath_object and toolpath_object["class"] == "Workflow":
+            return ArvadosWorkflow(self, toolpath_object, **kwargs)
         else:
             return cwltool.workflow.defaultMakeTool(toolpath_object, **kwargs)
 
@@ -155,17 +160,10 @@ class ArvCwlRunner(object):
             for v in obj:
                 self.check_writable(v)
 
-    def arvExecutor(self, tool, job_order, **kwargs):
+    def arv_executor(self, tool, job_order, **kwargs):
         self.debug = kwargs.get("debug")
 
         tool.visit(self.check_writable)
-
-        if kwargs.get("quiet"):
-            logger.setLevel(logging.WARN)
-            logging.getLogger('arvados.arv-run').setLevel(logging.WARN)
-
-        if self.debug:
-            logger.setLevel(logging.DEBUG)
 
         useruuid = self.api.users().current().execute()["uuid"]
         self.project_uuid = kwargs.get("project_uuid") if kwargs.get("project_uuid") else useruuid
@@ -180,7 +178,7 @@ class ArvCwlRunner(object):
             return tmpl.uuid
 
         if kwargs.get("create_workflow") or kwargs.get("update_workflow"):
-            return make_workflow(self, tool, job_order, self.project_uuid, kwargs.get("update_workflow"))
+            return upload_workflow(self, tool, job_order, self.project_uuid, kwargs.get("update_workflow"))
 
         self.ignore_docker_for_reuse = kwargs.get("ignore_docker_for_reuse")
 
@@ -367,6 +365,16 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
     return parser
 
+def add_arv_hints():
+    cache = {}
+    res = pkg_resources.resource_stream(__name__, 'arv-cwl-schema.yml')
+    cache["http://arvados.org/cwl"] = res.read()
+    res.close()
+    _, cwlnames, _, _ = cwltool.process.get_schema("v1.0")
+    _, extnames, _, _ = schema_salad.schema.load_schema("http://arvados.org/cwl", cache=cache)
+    for n in extnames.names:
+        if not cwlnames.has_name("http://arvados.org/cwl#"+n, ""):
+            cwlnames.add_name("http://arvados.org/cwl#"+n, "", extnames.get_name(n, ""))
 
 def main(args, stdout, stderr, api_client=None):
     parser = arg_parser()
@@ -376,6 +384,8 @@ def main(args, stdout, stderr, api_client=None):
     if (arvargs.create_template or arvargs.create_workflow or arvargs.update_workflow) and not arvargs.job_order:
         job_order_object = ({}, "")
 
+    add_arv_hints()
+
     try:
         if api_client is None:
             api_client=arvados.api('v1', model=OrderedJsonModel())
@@ -384,14 +394,21 @@ def main(args, stdout, stderr, api_client=None):
         logger.error(e)
         return 1
 
+    if arvargs.debug:
+        logger.setLevel(logging.DEBUG)
+
+    if arvargs.quiet:
+        logger.setLevel(logging.WARN)
+        logging.getLogger('arvados.arv-run').setLevel(logging.WARN)
+
     arvargs.conformance_test = None
     arvargs.use_container = True
 
     return cwltool.main.main(args=arvargs,
                              stdout=stdout,
                              stderr=stderr,
-                             executor=runner.arvExecutor,
-                             makeTool=runner.arvMakeTool,
+                             executor=runner.arv_executor,
+                             makeTool=runner.arv_make_tool,
                              versionfunc=versionstring,
                              job_order_object=job_order_object,
                              make_fs_access=partial(CollectionFsAccess, api_client=api_client))
