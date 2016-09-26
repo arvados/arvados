@@ -20,13 +20,12 @@ type authHandler struct {
 }
 
 func (h *authHandler) setup() {
-	os.Setenv("ARVADOS_API_HOST", theConfig.Client.APIHost)
-	if theConfig.Client.Insecure {
-		os.Setenv("ARVADOS_API_HOST_INSECURE", "1")
-	} else {
-		os.Setenv("ARVADOS_API_HOST_INSECURE", "")
+	ac, err := arvadosclient.New(&theConfig.Client)
+	if err != nil {
+		log.Fatal(err)
 	}
-	h.clientPool = arvadosclient.MakeClientPool()
+	h.clientPool = &arvadosclient.ClientPool{Prototype: ac}
+	log.Printf("%+v", h.clientPool.Prototype)
 }
 
 func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {

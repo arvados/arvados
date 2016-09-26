@@ -22,6 +22,15 @@ func ResetEnv() {
 	}
 }
 
+// APIHost returns the address:port of the current test server.
+func APIHost() string {
+	h := authSettings["ARVADOS_API_HOST"]
+	if h == "" {
+		log.Fatal("arvadostest.APIHost() was called but authSettings is not populated")
+	}
+	return h
+}
+
 // ParseAuthSettings parses auth settings from given input
 func ParseAuthSettings(authScript []byte) {
 	scanner := bufio.NewScanner(bytes.NewReader(authScript))
