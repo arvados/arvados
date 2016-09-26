@@ -28,7 +28,7 @@ $graph:
       type: int?
       doc: |
         Size of file data buffer for Keep mount in MiB. Default is 256
-        MiB. Increase this to reduce cache thrashing in situtations such as
+        MiB. Increase this to reduce cache thrashing in situations such as
         accessing multiple large (64+ MiB) files at the same time, or
         performing random access on a large file.
 
