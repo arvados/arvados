@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -12,13 +13,24 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 )
 
-var clientPool = arvadosclient.MakeClientPool()
-
 type authHandler struct {
-	handler http.Handler
+	handler    http.Handler
+	clientPool *arvadosclient.ClientPool
+	setupOnce  sync.Once
+}
+
+func (h *authHandler) setup() {
+	ac, err := arvadosclient.New(&theConfig.Client)
+	if err != nil {
+		log.Fatal(err)
+	}
+	h.clientPool = &arvadosclient.ClientPool{Prototype: ac}
+	log.Printf("%+v", h.clientPool.Prototype)
 }
 
 func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
+	h.setupOnce.Do(h.setup)
+
 	var statusCode int
 	var statusText string
 	var apiToken string
@@ -68,12 +80,12 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	repoName = pathParts[0]
 	repoName = strings.TrimRight(repoName, "/")
 
-	arv := clientPool.Get()
+	arv := h.clientPool.Get()
 	if arv == nil {
-		statusCode, statusText = http.StatusInternalServerError, "connection pool failed: "+clientPool.Err().Error()
+		statusCode, statusText = http.StatusInternalServerError, "connection pool failed: "+h.clientPool.Err().Error()
 		return
 	}
-	defer clientPool.Put(arv)
+	defer h.clientPool.Put(arv)
 
 	// Ask API server whether the repository is readable using
 	// this token (by trying to read it!)
@@ -129,7 +141,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		"/" + repoName + "/.git",
 	}
 	for _, dir := range tryDirs {
-		if fileInfo, err := os.Stat(theConfig.Root + dir); err != nil {
+		if fileInfo, err := os.Stat(theConfig.RepoRoot + dir); err != nil {
 			if !os.IsNotExist(err) {
 				statusCode, statusText = http.StatusInternalServerError, err.Error()
 				return
@@ -141,7 +153,7 @@ func (h *authHandler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 	if rewrittenPath == "" {
 		log.Println("WARNING:", repoUUID,
-			"git directory not found in", theConfig.Root, tryDirs)
+			"git directory not found in", theConfig.RepoRoot, tryDirs)
 		// We say "content not found" to disambiguate from the
 		// earlier "API says that repo does not exist" error.
 		statusCode, statusText = http.StatusNotFound, "content not found"

@@ -6,6 +6,8 @@ import (
 	"os/exec"
 	"strings"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
 )
 
@@ -41,10 +43,14 @@ func (s *GitoliteSuite) SetUpTest(c *check.C) {
 	runGitolite("gitolite", "setup", "--admin", "root")
 
 	s.tmpRepoRoot = s.gitoliteHome + "/repositories"
-	s.Config = &config{
-		Addr:       ":0",
+	s.Config = &Config{
+		Client: arvados.Client{
+			APIHost:  arvadostest.APIHost(),
+			Insecure: true,
+		},
+		Listen:     ":0",
 		GitCommand: "/usr/share/gitolite3/gitolite-shell",
-		Root:       s.tmpRepoRoot,
+		RepoRoot:   s.tmpRepoRoot,
 	}
 	s.IntegrationSuite.SetUpTest(c)
 
@@ -62,6 +68,10 @@ func (s *GitoliteSuite) TearDownTest(c *check.C) {
 	// upgrade to Go 1.4.
 	os.Setenv("GITOLITE_HTTP_HOME", "")
 	os.Setenv("GL_BYPASS_ACCESS_CHECKS", "")
+	if s.gitoliteHome != "" {
+		err := os.RemoveAll(s.gitoliteHome)
+		c.Check(err, check.Equals, nil)
+	}
 	s.IntegrationSuite.TearDownTest(c)
 }
 
