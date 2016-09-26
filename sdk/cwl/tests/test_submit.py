@@ -88,6 +88,11 @@ def stubs(func):
                     'location': 'keep:99999999999999999999999999999994+99/blorp.txt',
                     'class': 'File'
                 },
+                'y': {
+                    'basename': '99999999999999999999999999999998+99',
+                    'location': 'keep:99999999999999999999999999999998+99',
+                    'class': 'Directory'
+                },
                 'cwl:tool':
                 '99999999999999999999999999999991+99/wf/submit_wf.cwl'
             },
@@ -112,7 +117,7 @@ def stubs(func):
                     'kind': 'file'
                 },
                 '/var/lib/cwl/job/cwl.input.json': {
-                    'portable_data_hash': '765fda0d9897729ff467a4609879c00a+60/cwl.input.json',
+                    'portable_data_hash': '606be75b6e4f811a2f282d7fac867043+60/cwl.input.json',
                     'kind': 'collection'
                 }
             },
@@ -155,7 +160,7 @@ class TestSubmit(unittest.TestCase):
                 'manifest_text':
                 './tool d51232d96b6116d964a69bfb7e0c73bf+450 '
                 '0:16:blub.txt 16:434:submit_tool.cwl\n./wf '
-                '4d31c5fefd087faf67ca8db0111af36c+353 0:353:submit_wf.cwl\n',
+                '0f8864f292e901019c43fdabacd62c3e+383 0:383:submit_wf.cwl\n',
                 'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
                 'name': 'submit_wf.cwl',
             }, ensure_unique_name=True),
@@ -215,7 +220,7 @@ class TestSubmit(unittest.TestCase):
                 'manifest_text':
                 './tool d51232d96b6116d964a69bfb7e0c73bf+450 '
                 '0:16:blub.txt 16:434:submit_tool.cwl\n./wf '
-                '4d31c5fefd087faf67ca8db0111af36c+353 0:353:submit_wf.cwl\n',
+                '0f8864f292e901019c43fdabacd62c3e+383 0:383:submit_wf.cwl\n',
                 'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
                 'name': 'submit_wf.cwl',
             }, ensure_unique_name=True),
@@ -266,6 +271,12 @@ class TestCreateTemplate(unittest.TestCase):
             'required': True,
             'type': 'File',
             'value': '99999999999999999999999999999994+99/blorp.txt',
+        }
+        expect_component['script_parameters']['y'] = {
+            'dataclass': 'Collection',
+            'required': True,
+            'type': 'Directory',
+            'value': '99999999999999999999999999999998+99',
         }
         expect_template = {
             "components": {

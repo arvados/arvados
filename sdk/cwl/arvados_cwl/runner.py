@@ -23,6 +23,10 @@ logger = logging.getLogger('arvados.cwl-runner')
 
 cwltool.draft2tool.ACCEPTLIST_RE = re.compile(r"^[a-zA-Z0-9._+-]+$")
 
+def del_listing(obj):
+    if obj.get("location", "").startswith("keep:") and "listing" in obj:
+        del obj["listing"]
+
 def upload_dependencies(arvrunner, name, document_loader,
                         workflowobj, uri, loadref_run):
     """Upload the dependencies of the workflowobj document to Keep.
@@ -128,6 +132,8 @@ class Runner(object):
                                         self.job_order,
                                         self.job_order.get("id", "#"),
                                         False)
+
+        adjustDirObjs(self.job_order, del_listing)
 
         if "id" in self.job_order:
             del self.job_order["id"]
