@@ -71,6 +71,15 @@ var ErrorTODO = {
     },
 };
 
+var FormRow = {
+    view: function(vnode) {
+        return m('.form-group.row',
+                 m('label.col-sm-3.col-form-label', vnode.attrs.label),
+                 m('.col-sm-9',
+                   m('p.form-control-static', vnode.attrs.value)));
+    },
+};
+
 var DiscoveryDoc = {
     oninit: function(vnode) {
         vnode.state.dd = getDiscoveryDoc(vnode.attrs.siteID);
@@ -84,18 +93,19 @@ var DiscoveryDoc = {
         var dd = vnode.state.dd;
         if (dd.error()) return m(ErrorTODO, dd.error());
         else if (!dd()) return m(Loading);
-        return m('.dd', [
-            m('.row', ['site ID: ', vnode.attrs.siteID]),
-            m('.row', ['version: ', dd().source_version]),
-            m('.row', ['websocketUrl: ', dd().websocketUrl]),
-            m('.row', ['defaultCollectionReplication: ', dd().defaultCollectionReplication]),
-            vnode.state.current_user ? m('.row', [
-                'current user: ',
-                vnode.state.current_user().full_name,
-                ' (', vnode.state.current_user().username,
-                ', ', vnode.state.current_user().email,
-                ')',
-            ]) : [],
+        return m('form', [
+            m(FormRow, {type: 'static', label: 'site ID', value: vnode.attrs.siteID}),
+            m(FormRow, {type: 'static', label: 'version', value: dd().source_version}),
+            m(FormRow, {type: 'static', label: 'websocketUrl', value: dd().websocketUrl}),
+            m(FormRow, {type: 'static', label: 'defaultCollectionReplication', value: dd().defaultCollectionReplication}),
+            vnode.state.current_user() ? m(FormRow, {
+                type: 'static',
+                label: 'current user',
+                value: [vnode.state.current_user().full_name,
+                        ' (', vnode.state.current_user().username,
+                        ', ', vnode.state.current_user().email,
+                        ')'],
+            }) : [],
         ]);
     },
 };
@@ -111,17 +121,38 @@ var Show = {
 
 var TopNav = {
     view: function(vnode) {
-        return Object.keys(_sessions).map(function(siteID) {
-            return [m('a', {
-                href: getSession(siteID).client.LoginURL(location.href.replace(/([^\/]*\/+[^\/]+[#!?\/]*)/, '$1loginCallback/'+siteID+'/XYZZY/')),
-            }, 'Login:', siteID), m.trust(' &bull; ')];
-        });
+        return m('nav.navbar.navbar-light[style=background-color:#e3f2fd]',
+                 m('.pull-xs-right',
+                   Object.keys(_sessions).map(function(siteID) {
+                       return [m('a.btn.btn-secondary.btn-sm', {
+                           href: getSession(siteID).client.LoginURL(location.href.replace(/([^\/]*\/+[^\/]+[#!?\/]*)/, '$1loginCallback/'+siteID+'/XYZZY/')),
+                       }, 'Login:', siteID)];
+                   })));
+    },
+};
+
+var Head = {
+    view: function() {
+        return [
+            m('link[rel=stylesheet][href=https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.4/css/bootstrap.min.css][integrity=sha384-2hfp1SzUoho7/TsGGGDaFdsuuDL0LX2hnUp6VkX3CUQ2K4K+xjboZdsXyp4oUHZj][crossorigin=anonymous]'),
+            m('meta[charset=utf-8]'),
+            m('meta[name=viewport][content=width=device-width, initial-scale=1, shrink-to-fit=no]'),
+            m('meta[http-equiv=x-ua-compatible][content=ie=edge]'),
+        ];
     },
 };
 
 var Layout = {
+    oninit: function(vnode) {
+        // TODO: (here, or in a separate page wrapper?) build map of
+        // known/logged-in sites, start getting discovery docs if
+        // needed
+    },
     view: function(vnode) {
-        return m('.layout', m(TopNav), vnode.children);
+        return [
+            m(TopNav),
+            m('.container-fluid', vnode.children),
+        ];
     },
 };
 
@@ -161,4 +192,5 @@ function RouteResolver(layout, component, withKey) {
         routes['/site/:siteID/'+table+'/:uuid'] = RR(Layout, Show, 'uuid');
     });
     m.route(document.body, '/', routes);
+    m.mount(document.head, Head);
 })();
