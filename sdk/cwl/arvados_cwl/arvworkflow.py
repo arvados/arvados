@@ -85,12 +85,13 @@ class ArvadosWorkflow(Workflow):
             def keepmount(obj):
                 if obj["location"].startswith("keep:"):
                     obj["location"] = "/keep/" + obj["location"][5:]
+                    if "listing" in obj:
+                        del obj["listing"]
                 elif obj["location"].startswith("_:"):
-                    pass
+                    del obj["location"]
                 else:
                     raise WorkflowException("Location is not a keep reference or a literal: '%s'" % obj["location"])
-                if "listing" in obj:
-                    del obj["listing"]
+
             adjustFileObjs(joborder_keepmount, keepmount)
             adjustDirObjs(joborder_keepmount, keepmount)
             adjustFileObjs(packed, keepmount)

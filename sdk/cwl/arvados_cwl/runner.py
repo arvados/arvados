@@ -26,6 +26,8 @@ cwltool.draft2tool.ACCEPTLIST_RE = re.compile(r"^[a-zA-Z0-9._+-]+$")
 def del_listing(obj):
     if obj.get("location", "").startswith("keep:") and "listing" in obj:
         del obj["listing"]
+    if obj.get("location", "").startswith("_:"):
+        del obj["location"]
 
 def upload_dependencies(arvrunner, name, document_loader,
                         workflowobj, uri, loadref_run):
@@ -84,7 +86,7 @@ def upload_dependencies(arvrunner, name, document_loader,
                            name=name)
 
     def setloc(p):
-        if not p["location"].startswith("_:") and not p["location"].startswith("keep:"):
+        if "location" in p and (not p["location"].startswith("_:")) and (not p["location"].startswith("keep:")):
             p["location"] = mapper.mapper(p["location"]).resolved
     adjustFileObjs(workflowobj, setloc)
     adjustDirObjs(workflowobj, setloc)

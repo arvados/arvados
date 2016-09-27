@@ -10,6 +10,8 @@ inputs:
     type: File
   - id: y
     type: Directory
+  - id: z
+    type: Directory
 outputs: []
 steps:
   - id: step1

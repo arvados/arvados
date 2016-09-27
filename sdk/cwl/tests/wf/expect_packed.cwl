@@ -19,6 +19,13 @@ $graph:
   - default: {basename: 99999999999999999999999999999998+99, class: Directory, location: 'keep:99999999999999999999999999999998+99'}
     id: '#main/y'
     type: Directory
+  - default:
+      basename: anonymous
+      class: Directory
+      listing:
+      - {basename: renamed.txt, class: File, location: 'keep:99999999999999999999999999999998+99/file1.txt'}
+    id: '#main/z'
+    type: Directory
   outputs: []
   steps:
   - id: '#main/step1'
