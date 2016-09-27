@@ -152,7 +152,7 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	api := httptest.NewServer(&apiStub)
 	defer api.Close()
 
-	arv := arvadosclient.ArvadosClient{
+	arv := &arvadosclient.ArvadosClient{
 		Scheme:    "http",
 		ApiServer: api.URL[7:],
 		ApiToken:  "abc123",

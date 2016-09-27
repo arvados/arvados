@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-var arv arvadosclient.ArvadosClient
+var arv *arvadosclient.ArvadosClient
 var keepClient *keepclient.KeepClient
 var keepServers []string
 
@@ -40,7 +40,7 @@ func SetupDataManagerTest(t *testing.T) {
 
 	// keep client
 	keepClient = &keepclient.KeepClient{
-		Arvados:       &arv,
+		Arvados:       arv,
 		Want_replicas: 2,
 		Client:        &http.Client{},
 	}

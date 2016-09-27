@@ -6,7 +6,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 )
 
-func UserIsAdmin(arv arvadosclient.ArvadosClient) (is_admin bool, err error) {
+func UserIsAdmin(arv *arvadosclient.ArvadosClient) (is_admin bool, err error) {
 	type user struct {
 		IsAdmin bool `json:"is_admin"`
 	}
@@ -21,7 +21,7 @@ func UserIsAdmin(arv arvadosclient.ArvadosClient) (is_admin bool, err error) {
 // return
 //   count - the number of items of type resource the api server reports, if no error
 //   err - error accessing the resource, or nil if no error
-func NumberItemsAvailable(client arvadosclient.ArvadosClient, resource string) (count int, err error) {
+func NumberItemsAvailable(client *arvadosclient.ArvadosClient, resource string) (count int, err error) {
 	var response struct {
 		ItemsAvailable int `json:"items_available"`
 	}

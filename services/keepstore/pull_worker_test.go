@@ -39,7 +39,7 @@ func (s *PullWorkerTestSuite) SetUpTest(c *C) {
 func RunTestPullWorker(c *C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, Equals, nil)
-	keepClient, err := keepclient.MakeKeepClient(&arv)
+	keepClient, err := keepclient.MakeKeepClient(arv)
 	c.Assert(err, Equals, nil)
 
 	pullq = NewWorkQueue()

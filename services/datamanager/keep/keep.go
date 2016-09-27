@@ -66,7 +66,7 @@ type ReadServers struct {
 
 // GetKeepServersParams struct
 type GetKeepServersParams struct {
-	Client arvadosclient.ArvadosClient
+	Client *arvadosclient.ArvadosClient
 	Logger *logger.Logger
 	Limit  int
 }
@@ -215,7 +215,7 @@ func GetKeepServers(params GetKeepServersParams) (results ReadServers, err error
 // GetServerContents of the keep server
 func GetServerContents(arvLogger *logger.Logger,
 	keepServer ServerAddress,
-	arv arvadosclient.ArvadosClient) (response ServerResponse) {
+	arv *arvadosclient.ArvadosClient) (response ServerResponse) {
 
 	err := GetServerStatus(arvLogger, keepServer, arv)
 	if err != nil {
@@ -247,7 +247,7 @@ func GetServerContents(arvLogger *logger.Logger,
 // GetServerStatus get keep server status by invoking /status.json
 func GetServerStatus(arvLogger *logger.Logger,
 	keepServer ServerAddress,
-	arv arvadosclient.ArvadosClient) error {
+	arv *arvadosclient.ArvadosClient) error {
 	url := fmt.Sprintf("http://%s:%d/status.json",
 		keepServer.Host,
 		keepServer.Port)
@@ -298,7 +298,7 @@ func GetServerStatus(arvLogger *logger.Logger,
 // CreateIndexRequest to the keep server
 func CreateIndexRequest(arvLogger *logger.Logger,
 	keepServer ServerAddress,
-	arv arvadosclient.ArvadosClient) (req *http.Request, err error) {
+	arv *arvadosclient.ArvadosClient) (req *http.Request, err error) {
 	url := fmt.Sprintf("http://%s:%d/index", keepServer.Host, keepServer.Port)
 	log.Println("About to fetch keep server contents from " + url)
 

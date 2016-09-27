@@ -101,7 +101,7 @@ func runProxy(c *C, args []string, bogusClientToken bool) *keepclient.KeepClient
 	if bogusClientToken {
 		arv.ApiToken = "bogus-token"
 	}
-	kc := keepclient.New(&arv)
+	kc := keepclient.New(arv)
 	sr := map[string]string{
 		TestProxyUUID: "http://" + listener.Addr().String(),
 	}
@@ -504,7 +504,7 @@ func (s *ServerRequiredSuite) TestAskGetKeepProxyConnectionError(c *C) {
 	c.Assert(err, Equals, nil)
 
 	// keepclient with no such keep server
-	kc := keepclient.New(&arv)
+	kc := keepclient.New(arv)
 	locals := map[string]string{
 		TestProxyUUID: "http://localhost:12345",
 	}
