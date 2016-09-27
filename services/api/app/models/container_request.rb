@@ -176,6 +176,9 @@ class ContainerRequest < ArvadosModel
     if state_changed? and state == Committed and container_uuid.nil?
       resolve
     end
+    if self.container_uuid != self.container_uuid_was
+      self.container_count += 1
+    end
   end
 
   def validate_runtime_constraints
