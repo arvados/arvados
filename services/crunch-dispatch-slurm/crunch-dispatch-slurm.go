@@ -3,11 +3,11 @@ package main
 // Dispatcher service for Crunch that submits containers to the slurm queue.
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
 	"github.com/coreos/go-systemd/daemon"
 	"io"
@@ -37,16 +37,16 @@ type Config struct {
 func main() {
 	err := doMain()
 	if err != nil {
-		log.Fatalf("%q", err)
+		log.Fatal(err)
 	}
 }
 
 var (
-	config        Config
+	theConfig     Config
 	squeueUpdater Squeue
 )
 
-const defaultConfigPath = "/etc/arvados/crunch-dispatch-slurm/config.json"
+const defaultConfigPath = "/etc/arvados/crunch-dispatch-slurm/crunch-dispatch-slurm.yml"
 
 func doMain() error {
 	flags := flag.NewFlagSet("crunch-dispatch-slurm", flag.ExitOnError)
@@ -55,33 +55,32 @@ func doMain() error {
 	configPath := flags.String(
 		"config",
 		defaultConfigPath,
-		"`path` to json configuration file")
+		"`path` to JSON or YAML configuration file")
 
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
 
-	err := readConfig(&config, *configPath)
+	err := readConfig(&theConfig, *configPath)
 	if err != nil {
-		log.Printf("Error reading configuration: %v", err)
 		return err
 	}
 
-	if config.CrunchRunCommand == nil {
-		config.CrunchRunCommand = []string{"crunch-run"}
+	if theConfig.CrunchRunCommand == nil {
+		theConfig.CrunchRunCommand = []string{"crunch-run"}
 	}
 
-	if config.PollPeriod == 0 {
-		config.PollPeriod = arvados.Duration(10 * time.Second)
+	if theConfig.PollPeriod == 0 {
+		theConfig.PollPeriod = arvados.Duration(10 * time.Second)
 	}
 
-	if config.Client.APIHost != "" || config.Client.AuthToken != "" {
+	if theConfig.Client.APIHost != "" || theConfig.Client.AuthToken != "" {
 		// Copy real configs into env vars so [a]
 		// MakeArvadosClient() uses them, and [b] they get
 		// propagated to crunch-run via SLURM.
-		os.Setenv("ARVADOS_API_HOST", config.Client.APIHost)
-		os.Setenv("ARVADOS_API_TOKEN", config.Client.AuthToken)
+		os.Setenv("ARVADOS_API_HOST", theConfig.Client.APIHost)
+		os.Setenv("ARVADOS_API_TOKEN", theConfig.Client.AuthToken)
 		os.Setenv("ARVADOS_API_INSECURE", "")
-		if config.Client.Insecure {
+		if theConfig.Client.Insecure {
 			os.Setenv("ARVADOS_API_INSECURE", "1")
 		}
 		os.Setenv("ARVADOS_KEEP_SERVICES", "")
@@ -97,13 +96,13 @@ func doMain() error {
 	}
 	arv.Retries = 25
 
-	squeueUpdater.StartMonitor(time.Duration(config.PollPeriod))
+	squeueUpdater.StartMonitor(time.Duration(theConfig.PollPeriod))
 	defer squeueUpdater.Done()
 
 	dispatcher := dispatch.Dispatcher{
 		Arv:            arv,
 		RunContainer:   run,
-		PollInterval:   time.Duration(config.PollPeriod),
+		PollInterval:   time.Duration(theConfig.PollPeriod),
 		DoneProcessing: make(chan struct{})}
 
 	if _, err := daemon.SdNotify("READY=1"); err != nil {
@@ -124,7 +123,7 @@ func sbatchFunc(container arvados.Container) *exec.Cmd {
 
 	var sbatchArgs []string
 	sbatchArgs = append(sbatchArgs, "--share")
-	sbatchArgs = append(sbatchArgs, config.SbatchArguments...)
+	sbatchArgs = append(sbatchArgs, theConfig.SbatchArguments...)
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--job-name=%s", container.UUID))
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--mem-per-cpu=%d", int(memPerCPU)))
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs))
@@ -240,7 +239,7 @@ func monitorSubmitOrCancel(dispatcher *dispatch.Dispatcher, container arvados.Co
 
 			log.Printf("About to submit queued container %v", container.UUID)
 
-			if err := submit(dispatcher, container, config.CrunchRunCommand); err != nil {
+			if err := submit(dispatcher, container, theConfig.CrunchRunCommand); err != nil {
 				log.Printf("Error submitting container %s to slurm: %v",
 					container.UUID, err)
 				// maybe sbatch is broken, put it back to queued
@@ -320,16 +319,10 @@ func run(dispatcher *dispatch.Dispatcher,
 }
 
 func readConfig(dst interface{}, path string) error {
-	if buf, err := ioutil.ReadFile(path); err != nil && os.IsNotExist(err) {
-		if path == defaultConfigPath {
-			log.Printf("Config not specified. Continue with default configuration.")
-		} else {
-			return fmt.Errorf("Config file not found %q: %v", path, err)
-		}
-	} else if err != nil {
-		return fmt.Errorf("Error reading config %q: %v", path, err)
-	} else if err = json.Unmarshal(buf, dst); err != nil {
-		return fmt.Errorf("Error decoding config %q: %v", path, err)
+	err := config.LoadFile(dst, path)
+	if err != nil && os.IsNotExist(err) && path == defaultConfigPath {
+		log.Printf("Config not specified. Continue with default configuration.")
+		err = nil
 	}
-	return nil
+	return err
 }

@@ -7,19 +7,15 @@ import (
 )
 
 var exampleConfigFile = []byte(`
-    {
-	"Client": {
-	    "APIHost": "zzzzz.arvadosapi.com:443",
-	    "AuthToken": "xyzzy",
-	    "Insecure": false
-	},
-	"KeepServiceTypes": [
-	    "disk"
-	],
-	"RunPeriod": "600s",
-	"CollectionBatchSize": 100000,
-	"CollectionBuffers": 1000
-    }`)
+Client:
+    APIHost: zzzzz.arvadosapi.com:443
+    AuthToken: xyzzy
+    Insecure: false
+KeepServiceTypes:
+    - disk
+RunPeriod: 600s
+CollectionBatchSize: 100000
+CollectionBuffers: 1000`)
 
 func usage() {
 	fmt.Fprintf(os.Stderr, `
@@ -30,7 +26,7 @@ overreplicated and unreferenced blocks, and moves blocks to better
 positions (according to the rendezvous hash algorithm) so clients find
 them faster.
 
-Usage: keep-balance -config path/to/config.json [options]
+Usage: keep-balance -config path/to/keep-balance.yml [options]
 
 Options:
 `)

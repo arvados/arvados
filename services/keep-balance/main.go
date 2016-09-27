@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/config"
 )
 
 // Config specifies site configuration, like API credentials and the
@@ -66,9 +66,9 @@ func main() {
 	var runOptions RunOptions
 
 	configPath := flag.String("config", "",
-		"`path` of json configuration file")
+		"`path` of JSON or YAML configuration file")
 	serviceListPath := flag.String("config.KeepServiceList", "",
-		"`path` of json file with list of keep services to balance, as given by \"arv keep_service list\" "+
+		"`path` of JSON or YAML file with list of keep services to balance, as given by \"arv keep_service list\" "+
 			"(default: config[\"KeepServiceList\"], or if none given, get all available services and filter by config[\"KeepServiceTypes\"])")
 	flag.BoolVar(&runOptions.Once, "once", false,
 		"balance once and then exit")
@@ -84,9 +84,9 @@ func main() {
 	if *configPath == "" {
 		log.Fatal("You must specify a config file (see `keep-balance -help`)")
 	}
-	mustReadJSON(&config, *configPath)
+	mustReadConfig(&config, *configPath)
 	if *serviceListPath != "" {
-		mustReadJSON(&config.KeepServiceList, *serviceListPath)
+		mustReadConfig(&config.KeepServiceList, *serviceListPath)
 	}
 
 	if *debugFlag {
@@ -113,11 +113,9 @@ func main() {
 	}
 }
 
-func mustReadJSON(dst interface{}, path string) {
-	if buf, err := ioutil.ReadFile(path); err != nil {
-		log.Fatalf("Reading %q: %v", path, err)
-	} else if err = json.Unmarshal(buf, dst); err != nil {
-		log.Fatalf("Decoding %q: %v", path, err)
+func mustReadConfig(dst interface{}, path string) {
+	if err := config.LoadFile(dst, path); err != nil {
+		log.Fatal(err)
 	}
 }
 
