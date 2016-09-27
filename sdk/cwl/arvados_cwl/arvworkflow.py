@@ -11,7 +11,7 @@ from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
 
 import ruamel.yaml as yaml
 
-from .runner import upload_docker, upload_dependencies, del_listing
+from .runner import upload_docker, upload_dependencies, trim_listing
 from .arvtool import ArvadosCommandTool
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -23,7 +23,7 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid, update_uuid):
 
     packed = pack(document_loader, workflowobj, uri, tool.metadata)
 
-    adjustDirObjs(job_order, del_listing)
+    adjustDirObjs(job_order, trim_listing)
 
     main = [p for p in packed["$graph"] if p["id"] == "#main"][0]
     for inp in main["inputs"]:
