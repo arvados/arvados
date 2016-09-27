@@ -23,6 +23,7 @@ class ContainerRequest < ArvadosModel
 
   api_accessible :user, extend: :common do |t|
     t.add :command
+    t.add :container_count
     t.add :container_count_max
     t.add :container_image
     t.add :container_uuid
