@@ -379,7 +379,7 @@ func main() {
 	}
 
 	var kc IKeepClient
-	kc, err = keepclient.MakeKeepClient(&api)
+	kc, err = keepclient.MakeKeepClient(api)
 	if err != nil {
 		log.Fatal(err)
 	}

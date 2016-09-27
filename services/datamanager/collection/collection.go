@@ -42,7 +42,7 @@ type ReadCollections struct {
 
 // GetCollectionsParams params
 type GetCollectionsParams struct {
-	Client    arvadosclient.ArvadosClient
+	Client    *arvadosclient.ArvadosClient
 	Logger    *logger.Logger
 	BatchSize int
 }

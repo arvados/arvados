@@ -106,7 +106,7 @@ func (s *IntegrationSuite) test100BlockFile(c *check.C, blocksize int) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 	arv.ApiToken = arvadostest.ActiveToken
-	kc, err := keepclient.MakeKeepClient(&arv)
+	kc, err := keepclient.MakeKeepClient(arv)
 	c.Assert(err, check.Equals, nil)
 	loc, _, err := kc.PutB(testdata[:])
 	c.Assert(err, check.Equals, nil)
@@ -297,7 +297,7 @@ func (s *IntegrationSuite) SetUpSuite(c *check.C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 	arv.ApiToken = arvadostest.ActiveToken
-	kc, err := keepclient.MakeKeepClient(&arv)
+	kc, err := keepclient.MakeKeepClient(arv)
 	c.Assert(err, check.Equals, nil)
 	kc.PutB([]byte("Hello world\n"))
 	kc.PutB([]byte("foo"))

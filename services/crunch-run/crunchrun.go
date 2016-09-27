@@ -877,7 +877,7 @@ func main() {
 	api.Retries = 8
 
 	var kc *keepclient.KeepClient
-	kc, err = keepclient.MakeKeepClient(&api)
+	kc, err = keepclient.MakeKeepClient(api)
 	if err != nil {
 		log.Fatalf("%s: %v", containerId, err)
 	}

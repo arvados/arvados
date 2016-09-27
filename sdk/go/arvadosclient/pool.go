@@ -23,7 +23,7 @@ type ClientPool struct {
 func MakeClientPool() *ClientPool {
 	proto, err := MakeArvadosClient()
 	return &ClientPool{
-		Prototype: &proto,
+		Prototype: proto,
 		lastErr:   err,
 	}
 }

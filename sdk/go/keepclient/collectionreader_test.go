@@ -19,7 +19,7 @@ import (
 var _ = check.Suite(&CollectionReaderUnit{})
 
 type CollectionReaderUnit struct {
-	arv     arvadosclient.ArvadosClient
+	arv     *arvadosclient.ArvadosClient
 	kc      *KeepClient
 	handler SuccessHandler
 }
@@ -30,7 +30,7 @@ func (s *CollectionReaderUnit) SetUpTest(c *check.C) {
 	c.Assert(err, check.IsNil)
 	s.arv.ApiToken = arvadostest.ActiveToken
 
-	s.kc, err = MakeKeepClient(&s.arv)
+	s.kc, err = MakeKeepClient(s.arv)
 	c.Assert(err, check.IsNil)
 
 	s.handler = SuccessHandler{

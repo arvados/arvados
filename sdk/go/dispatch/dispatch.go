@@ -25,7 +25,7 @@ const (
 // Dispatcher holds the state of the dispatcher
 type Dispatcher struct {
 	// The Arvados client
-	Arv arvadosclient.ArvadosClient
+	Arv *arvadosclient.ArvadosClient
 
 	// When a new queued container appears and is either already owned by
 	// this dispatcher or is successfully locked, the dispatcher will call

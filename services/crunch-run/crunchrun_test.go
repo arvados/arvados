@@ -202,6 +202,12 @@ func (client *ArvTestClient) Update(resourceType string, uuid string, parameters
 	return nil
 }
 
+var discoveryMap = map[string]interface{}{"defaultTrashLifetime": float64(1209600)}
+
+func (client *ArvTestClient) Discovery(key string) (interface{}, error) {
+	return discoveryMap[key], nil
+}
+
 // CalledWith returns the parameters from the first API call whose
 // parameters match jpath/string. E.g., CalledWith(c, "foo.bar",
 // "baz") returns parameters with parameters["foo"]["bar"]=="baz". If
@@ -305,6 +311,10 @@ func (ArvErrorTestClient) Get(resourceType string, uuid string, parameters arvad
 
 func (ArvErrorTestClient) Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error) {
 	return nil
+}
+
+func (ArvErrorTestClient) Discovery(key string) (interface{}, error) {
+	return discoveryMap[key], nil
 }
 
 type KeepErrorTestClient struct{}
