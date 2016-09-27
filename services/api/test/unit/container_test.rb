@@ -122,7 +122,7 @@ class ContainerTest < ActiveSupport::TestCase
       state: Container::Complete,
       exit_code: 0,
       log: 'ea10d51bcf88862dbcc36eb292017dfd+45',
-      output: 'zzzzz-4zz18-znfnqtbbv4spc3w'
+      output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
     }
 
     c_older, _ = minimal_new(common_attrs)
@@ -148,7 +148,7 @@ class ContainerTest < ActiveSupport::TestCase
     completed_attrs = {
       state: Container::Complete,
       exit_code: 0,
-      log: 'test',
+      log: 'ea10d51bcf88862dbcc36eb292017dfd+45',
     }
 
     c_output1, _ = minimal_new(common_attrs)
@@ -157,11 +157,11 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :dispatch1
     c_output1.update_attributes!({state: Container::Locked})
     c_output1.update_attributes!({state: Container::Running})
-    c_output1.update_attributes!(completed_attrs.merge({output: 'output 1'}))
+    c_output1.update_attributes!(completed_attrs.merge({output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'}))
 
     c_output2.update_attributes!({state: Container::Locked})
     c_output2.update_attributes!({state: Container::Running})
-    c_output2.update_attributes!(completed_attrs.merge({output: 'output 2'}))
+    c_output2.update_attributes!(completed_attrs.merge({output: 'fa7aeb5140e2848d39b416daeef4ffc5+45'}))
 
     reused = Container.find_reusable(common_attrs)
     assert_nil reused
@@ -239,8 +239,8 @@ class ContainerTest < ActiveSupport::TestCase
     c_failed.update_attributes!({state: Container::Running})
     c_failed.update_attributes!({state: Container::Complete,
                                  exit_code: 42,
-                                 log: "test",
-                                 output: "test"})
+                                 log: 'ea10d51bcf88862dbcc36eb292017dfd+45',
+                                 output: 'ea10d51bcf88862dbcc36eb292017dfd+45'})
     c_running.update_attributes!({state: Container::Locked})
     c_running.update_attributes!({state: Container::Running,
                                   progress: 0.15})
@@ -259,14 +259,14 @@ class ContainerTest < ActiveSupport::TestCase
     c_completed.update_attributes!({state: Container::Running})
     c_completed.update_attributes!({state: Container::Complete,
                                     exit_code: 0,
-                                    log: "ea10d51bcf88862dbcc36eb292017dfd+45",
-                                    output: "zzzzz-4zz18-znfnqtbbv4spc3w"})
+                                    log: 'ea10d51bcf88862dbcc36eb292017dfd+45',
+                                    output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'})
     c_running.update_attributes!({state: Container::Locked})
     c_running.update_attributes!({state: Container::Running,
                                   progress: 0.15})
     reused = Container.find_reusable(common_attrs)
     assert_not_nil reused
-    assert_equal reused.uuid, c_completed.uuid
+    assert_equal c_completed.uuid, reused.uuid
   end
 
   test "find_reusable method should select running over locked container" do

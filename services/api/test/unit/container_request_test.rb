@@ -215,7 +215,10 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "Request is finalized when its container is completed" do
     set_user_from_auth :active
-    cr = create_minimal_req!(priority: 1, state: "Committed")
+    project = groups(:private)
+    cr = create_minimal_req!(owner_uuid: project.uuid,
+                             priority: 1,
+                             state: "Committed")
 
     c = act_as_system_user do
       c = Container.find_by_uuid(cr.container_uuid)
@@ -228,11 +231,19 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal "Committed", cr.state
 
     act_as_system_user do
-      c.update_attributes!(state: Container::Complete)
+      c.update_attributes!(state: Container::Complete,
+                           output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
+                           log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
     end
 
     cr.reload
     assert_equal "Final", cr.state
+    ['output', 'log'].each do |out_type|
+      pdh = Container.find_by_uuid(cr.container_uuid).send(out_type)
+      assert_equal(1, Collection.where(portable_data_hash: pdh,
+                                       owner_uuid: project.uuid).count,
+                   "Container #{out_type} should be copied to #{project.uuid}")
+    end
   end
 
   test "Container makes container request, then is cancelled" do
