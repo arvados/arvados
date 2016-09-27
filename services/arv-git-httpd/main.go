@@ -35,7 +35,7 @@ func defaultConfig() *Config {
 }
 
 func init() {
-	const defaultCfgPath = "/etc/arvados/arv-git-httpd/config.json"
+	const defaultCfgPath = "/etc/arvados/arv-git-httpd/arv-git-httpd.yml"
 	const deprecated = " (DEPRECATED -- use config file instead)"
 	flag.StringVar(&theConfig.Listen, "address", theConfig.Listen,
 		"Address to listen on, \"host:port\" or \":port\"."+deprecated)

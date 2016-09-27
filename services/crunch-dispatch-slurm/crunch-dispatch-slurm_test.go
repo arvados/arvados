@@ -143,7 +143,7 @@ func (s *TestSuite) integrationTest(c *C,
 	c.Check(err, IsNil)
 	c.Check(len(containers.Items), Equals, 1)
 
-	config.CrunchRunCommand = []string{"echo"}
+	theConfig.CrunchRunCommand = []string{"echo"}
 
 	doneProcessing := make(chan struct{})
 	dispatcher := dispatch.Dispatcher{
@@ -205,7 +205,7 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	log.SetOutput(io.MultiWriter(buf, os.Stderr))
 	defer log.SetOutput(os.Stderr)
 
-	config.CrunchRunCommand = []string{crunchCmd}
+	theConfig.CrunchRunCommand = []string{crunchCmd}
 
 	doneProcessing := make(chan struct{})
 	dispatcher := dispatch.Dispatcher{
@@ -303,14 +303,14 @@ func (s *MockArvadosServerSuite) TestSbatchFuncWithConfigArgs(c *C) {
 }
 
 func testSbatchFuncWithArgs(c *C, args []string) {
-	config.SbatchArguments = append(config.SbatchArguments, args...)
+	theConfig.SbatchArguments = append(theConfig.SbatchArguments, args...)
 
 	container := arvados.Container{UUID: "123", RuntimeConstraints: arvados.RuntimeConstraints{RAM: 1000000, VCPUs: 2}}
 	sbatchCmd := sbatchFunc(container)
 
 	var expected []string
 	expected = append(expected, "sbatch", "--share")
-	expected = append(expected, config.SbatchArguments...)
+	expected = append(expected, theConfig.SbatchArguments...)
 	expected = append(expected, "--job-name=123", "--mem-per-cpu=1", "--cpus-per-task=2")
 
 	c.Check(sbatchCmd.Args, DeepEquals, expected)

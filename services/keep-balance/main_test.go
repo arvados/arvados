@@ -1,9 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"time"
 
+	"github.com/ghodss/yaml"
 	check "gopkg.in/check.v1"
 )
 
@@ -13,7 +13,7 @@ type mainSuite struct{}
 
 func (s *mainSuite) TestExampleJSON(c *check.C) {
 	var config Config
-	c.Check(json.Unmarshal(exampleConfigFile, &config), check.IsNil)
+	c.Check(yaml.Unmarshal(exampleConfigFile, &config), check.IsNil)
 	c.Check(config.KeepServiceTypes, check.DeepEquals, []string{"disk"})
 	c.Check(config.Client.AuthToken, check.Equals, "xyzzy")
 	c.Check(time.Duration(config.RunPeriod), check.Equals, 600*time.Second)
@@ -21,8 +21,7 @@ func (s *mainSuite) TestExampleJSON(c *check.C) {
 
 func (s *mainSuite) TestConfigJSONWithKeepServiceList(c *check.C) {
 	var config Config
-	c.Check(json.Unmarshal([]byte(`
-		{
+	c.Check(yaml.Unmarshal([]byte(`{
 		    "Client": {
 			"APIHost": "zzzzz.arvadosapi.com:443",
 			"AuthToken": "xyzzy",

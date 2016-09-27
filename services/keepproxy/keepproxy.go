@@ -60,7 +60,7 @@ func main() {
 	timeoutSeconds := flagset.Int("timeout", int(time.Duration(cfg.Timeout)/time.Second), "Timeout (in seconds) on requests to internal Keep services."+deprecated)
 
 	var cfgPath string
-	const defaultCfgPath = "/etc/arvados/keepproxy/config.json"
+	const defaultCfgPath = "/etc/arvados/keepproxy/keepproxy.yml"
 	flagset.StringVar(&cfgPath, "config", defaultCfgPath, "Configuration file `path`")
 	flagset.Parse(os.Args[1:])
 

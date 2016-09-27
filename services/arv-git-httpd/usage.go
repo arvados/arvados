@@ -20,7 +20,7 @@ arv-git-httpd provides authenticated access to Arvados-hosted git repositories.
 
 See http://doc.arvados.org/install/install-arv-git-httpd.html.
 
-Usage: arv-git-httpd [-config path/to/config.json]
+Usage: arv-git-httpd [-config path/to/arv-git-httpd.yml]
 
 Options:
 `)
