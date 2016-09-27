@@ -29,8 +29,9 @@ import (
 type IArvadosClient interface {
 	Create(resourceType string, parameters arvadosclient.Dict, output interface{}) error
 	Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error
-	Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error)
-	Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) (err error)
+	Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error
+	Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error
+	Discovery(key string) (interface{}, error)
 }
 
 // ErrCancelled is the error returned when the container is cancelled.
@@ -93,6 +94,7 @@ type ContainerRunner struct {
 	SigChan        chan os.Signal
 	ArvMountExit   chan error
 	finalState     string
+	trashLifetime  time.Duration
 
 	statLogger   io.WriteCloser
 	statReporter *crunchstat.Reporter
@@ -601,16 +603,23 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{
 			"collection": arvadosclient.Dict{
+				"expires_at":    time.Now().Add(runner.trashLifetime).Format(time.RFC3339),
+				"name":          "output for " + runner.Container.UUID,
 				"manifest_text": manifestText}},
 		&response)
 	if err != nil {
 		return fmt.Errorf("While creating output collection: %v", err)
 	}
-
-	runner.OutputPDH = new(string)
-	*runner.OutputPDH = response.PortableDataHash
-
+	runner.OutputPDH = &response.PortableDataHash
 	return nil
+}
+
+func (runner *ContainerRunner) loadDiscoveryVars() {
+	tl, err := runner.ArvClient.Discovery("defaultTrashLifetime")
+	if err != nil {
+		log.Fatalf("getting defaultTrashLifetime from discovery document: %s", err)
+	}
+	runner.trashLifetime = time.Duration(tl.(float64)) * time.Second
 }
 
 func (runner *ContainerRunner) CleanupDirs() {
@@ -665,15 +674,14 @@ func (runner *ContainerRunner) CommitLogs() error {
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{
 			"collection": arvadosclient.Dict{
+				"expires_at":    time.Now().Add(runner.trashLifetime).Format(time.RFC3339),
 				"name":          "logs for " + runner.Container.UUID,
 				"manifest_text": mt}},
 		&response)
 	if err != nil {
 		return fmt.Errorf("While creating log collection: %v", err)
 	}
-
 	runner.LogsPDH = &response.PortableDataHash
-
 	return nil
 }
 
@@ -858,6 +866,7 @@ func NewContainerRunner(api IArvadosClient,
 	cr.Container.UUID = containerUUID
 	cr.CrunchLog = NewThrottledLogger(cr.NewLogWriter("crunch-run"))
 	cr.CrunchLog.Immediate = log.New(os.Stderr, containerUUID+" ", 0)
+	cr.loadDiscoveryVars()
 	return cr
 }
 
