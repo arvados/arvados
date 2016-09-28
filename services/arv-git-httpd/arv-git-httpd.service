@@ -5,7 +5,7 @@ After=network.target
 
 [Service]
 Type=notify
-ExecStart=/usr/bin/arv-git-httpd
+ExecStart=/usr/bin/arvados-git-httpd
 Restart=always
 
 [Install]
