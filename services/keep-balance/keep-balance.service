@@ -2,6 +2,7 @@
 Description=Arvados Keep Balance
 Documentation=https://doc.arvados.org/
 After=network.target
+AssertPathExists=/etc/arvados/keep-balance/keep-balance.yml
 
 [Service]
 Type=simple

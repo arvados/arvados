@@ -2,6 +2,7 @@
 Description=Arvados Crunch Dispatcher for SLURM
 Documentation=https://doc.arvados.org/
 After=network.target
+AssertPathExists=/etc/arvados/crunch-dispatch-slurm/crunch-dispatch-slurm.yml
 
 [Service]
 Type=notify

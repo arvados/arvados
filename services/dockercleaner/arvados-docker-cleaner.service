@@ -2,6 +2,7 @@
 Description=Arvados Docker Image Cleaner
 Documentation=https://doc.arvados.org/
 After=network.target
+AssertPathExists=/etc/arvados/docker-cleaner/docker-cleaner.json
 
 [Service]
 Type=simple
