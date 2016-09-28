@@ -6,7 +6,7 @@ RUN apt-get update && \
 
 RUN set -e && \
  PJS=phantomjs-1.9.7-linux-x86_64 && \
- curl -L -o/tmp/$PJS.tar.bz2 https://bitbucket.org/ariya/phantomjs/downloads/$PJS.tar.bz2 && \
+ curl -L -o/tmp/$PJS.tar.bz2 http://cache.arvados.org/$PJS.tar.bz2 && \
  tar -C /usr/local -xjf /tmp/$PJS.tar.bz2 && \
  ln -s ../$PJS/bin/phantomjs /usr/local/bin/
 
