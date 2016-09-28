@@ -257,8 +257,12 @@ def load_config(arguments):
     args = parse_arguments(arguments)
 
     config = default_config()
-    with open(args.config, 'r') as f:
-        config.update(json.load(f))
+    try:
+        with open(args.config, 'r') as f:
+            c = json.load(f)
+            config.update(c)
+    except (FileNotFoundError, IOError, ValueError) as error:
+        sys.exit('error reading config file {}: {}'.format(args.config, error))
 
     configargs = vars(args).copy()
     configargs.pop('config')
