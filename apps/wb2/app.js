@@ -1,6 +1,8 @@
 var m = require('mithril');
 var arvados = require('./arvados');
+var local = require('./local');
 
+var savedTokens = new local.Dict('tokens');
 var _sessions = {};
 
 // getSession returns a new or existing session for the API endpoint
@@ -9,6 +11,7 @@ function getSession(siteID) {
     var session = _sessions[siteID];
     if (!session) {
         var client = new arvados.Client(siteID);
+        var token = savedTokens.Get(siteID) || savedTokens.Put(siteID, '');
         session = _sessions[siteID] = {
             client: client,
             dd: m.request({
@@ -16,7 +19,7 @@ function getSession(siteID) {
                 url: client.DiscoveryURL(),
             }),
             websocket: m.prop(),
-            token: loadToken(siteID),
+            token: token,
         };
     }
     return session;
@@ -33,24 +36,6 @@ function ArvadosRequest(session, method, url) {
             },
         });
     });
-}
-
-function saveToken(siteID, token) {
-    var tokens = {};
-    try {
-        tokens = JSON.parse(window.localStorage.tokens);
-    } catch(e) {}
-    tokens[siteID] = token;
-    window.localStorage.tokens = JSON.stringify(tokens);
-    getSession(siteID).token = token;
-}
-
-function loadToken(siteID) {
-    try {
-        return JSON.parse(window.localStorage.tokens)[siteID];
-    } catch(e) {
-        return undefined;
-    }
 }
 
 // getDiscoveryDoc returns a stream resolving to the discovery
@@ -119,15 +104,39 @@ var Show = {
     },
 };
 
+var bsDropdown = {
+    toggleOpen: function() {
+        this.openClass = this.openClass ? '' : 'open';
+        return false;
+    },
+    oninit: function(vnode) {
+        this.openClass = '';
+    },
+    view: function(vnode) {
+        return m('.dropdown', {class: vnode.state.openClass}, [
+            m('a.btn.btn-secondary.dropdown-toggle[href=#]', {
+                onclick: m.withAttr('href', vnode.state.toggleOpen, vnode.state),
+            }, vnode.attrs.label),
+            m('.dropdown-menu',
+              vnode.attrs.menuAttrs || {},
+              vnode.children),
+        ]);
+    },
+};
+
 var TopNav = {
     view: function(vnode) {
         return m('nav.navbar.navbar-light[style=background-color:#e3f2fd]',
                  m('.pull-xs-right',
-                   Object.keys(_sessions).map(function(siteID) {
-                       return [m('a.btn.btn-secondary.btn-sm', {
+                   m(bsDropdown, {
+                       label: 'Log in...',
+                       menuAttrs: {class: 'dropdown-menu-right'},
+                   }, Object.keys(savedTokens.Load()).map(function(siteID) {
+                       return m('a.dropdown-item', {
+                           key: siteID,
                            href: getSession(siteID).client.LoginURL(location.href.replace(/([^\/]*\/+[^\/]+[#!?\/]*)/, '$1loginCallback/'+siteID+'/XYZZY/')),
-                       }, 'Login:', siteID)];
-                   })));
+                       }, [siteID]);
+                   }))));
     },
 };
 
@@ -162,7 +171,7 @@ var TryLogin = {
         if (token = location.href.match(/(\?api_token=([^\?&]+))/)) {
             location = location.href.replace(token[1], '').replace('XYZZY', token[2]);
         } else if (token = vnode.attrs.token) {
-            saveToken(vnode.attrs.siteID, token);
+            savedTokens.Put(vnode.attrs.siteID, token);
             m.route.set('/'+vnode.attrs.next);
         } else {
             m.route.set('/site/4xphq/discovery');
