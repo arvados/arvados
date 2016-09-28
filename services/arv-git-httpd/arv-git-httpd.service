@@ -2,6 +2,7 @@
 Description=Arvados git server
 Documentation=https://doc.arvados.org/
 After=network.target
+AssertPathExists=/etc/arvados/arvados-git-httpd/arvados-git-httpd.yml
 
 [Service]
 Type=notify

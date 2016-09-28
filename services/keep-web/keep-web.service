@@ -2,6 +2,7 @@
 Description=Arvados Keep web gateway
 Documentation=https://doc.arvados.org/
 After=network.target
+AssertPathExists=/etc/arvados/keep-web/keep-web.yml
 
 [Service]
 Type=notify

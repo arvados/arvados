@@ -2,6 +2,7 @@
 Description=Arvados Keep Proxy
 Documentation=https://doc.arvados.org/
 After=network.target
+AssertPathExists=/etc/arvados/keepproxy/keepproxy.yml
 
 [Service]
 Type=notify
