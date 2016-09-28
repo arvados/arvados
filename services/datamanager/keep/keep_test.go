@@ -45,8 +45,8 @@ func (s *KeepSuite) TestSendTrashLists(c *C) {
 	tl := map[string]TrashList{
 		server.URL: {TrashRequest{"000000000000000000000000deadbeef", 99}}}
 
-	arv := arvadosclient.ArvadosClient{ApiToken: "abc123"}
-	kc := keepclient.KeepClient{Arvados: &arv, Client: &http.Client{}}
+	arv := &arvadosclient.ArvadosClient{ApiToken: "abc123"}
+	kc := keepclient.KeepClient{Arvados: arv, Client: &http.Client{}}
 	kc.SetServiceRoots(map[string]string{"xxxx": server.URL},
 		map[string]string{"xxxx": server.URL},
 		map[string]string{})
@@ -72,8 +72,8 @@ func sendTrashListError(c *C, server *httptest.Server) {
 	tl := map[string]TrashList{
 		server.URL: {TrashRequest{"000000000000000000000000deadbeef", 99}}}
 
-	arv := arvadosclient.ArvadosClient{ApiToken: "abc123"}
-	kc := keepclient.KeepClient{Arvados: &arv, Client: &http.Client{}}
+	arv := &arvadosclient.ArvadosClient{ApiToken: "abc123"}
+	kc := keepclient.KeepClient{Arvados: arv, Client: &http.Client{}}
 	kc.SetServiceRoots(map[string]string{"xxxx": server.URL},
 		map[string]string{"xxxx": server.URL},
 		map[string]string{})
@@ -132,14 +132,14 @@ func testGetKeepServersFromAPI(c *C, testData APITestData, expectedError string)
 	api := httptest.NewServer(&apiStub)
 	defer api.Close()
 
-	arv := arvadosclient.ArvadosClient{
+	arv := &arvadosclient.ArvadosClient{
 		Scheme:    "http",
 		ApiServer: api.URL[7:],
 		ApiToken:  "abc123",
 		Client:    &http.Client{Transport: &http.Transport{}},
 	}
 
-	kc := keepclient.KeepClient{Arvados: &arv, Client: &http.Client{}}
+	kc := keepclient.KeepClient{Arvados: arv, Client: &http.Client{}}
 	kc.SetServiceRoots(map[string]string{"xxxx": "http://example.com:23456"},
 		map[string]string{"xxxx": "http://example.com:23456"},
 		map[string]string{})
@@ -233,14 +233,14 @@ func testGetKeepServersAndSummarize(c *C, testData KeepServerTestData) {
 	api := httptest.NewServer(&apiStub)
 	defer api.Close()
 
-	arv := arvadosclient.ArvadosClient{
+	arv := &arvadosclient.ArvadosClient{
 		Scheme:    "http",
 		ApiServer: api.URL[7:],
 		ApiToken:  "abc123",
 		Client:    &http.Client{Transport: &http.Transport{}},
 	}
 
-	kc := keepclient.KeepClient{Arvados: &arv, Client: &http.Client{}}
+	kc := keepclient.KeepClient{Arvados: arv, Client: &http.Client{}}
 	kc.SetServiceRoots(map[string]string{"xxxx": ks.URL},
 		map[string]string{"xxxx": ks.URL},
 		map[string]string{})

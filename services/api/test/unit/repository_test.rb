@@ -35,8 +35,8 @@ class RepositoryTest < ActiveSupport::TestCase
 
   {active: "active/", admin: "admin/", system_user: ""}.
       each_pair do |user_sym, name_prefix|
-    %w(a aa a0 aA Aa AA A0).each do |name|
-      test "'#{name_prefix}#{name}' is a valid name for #{user_sym} repo" do
+    test "valid names for #{user_sym} repo" do
+      %w(a aa a0 aA Aa AA A0).each do |name|
         repo = new_repo(user_sym, name: name_prefix + name)
         assert(repo.valid?)
       end
@@ -51,8 +51,8 @@ class RepositoryTest < ActiveSupport::TestCase
       refute(repo.valid?)
     end
 
-    "\\.-_/!@#$%^&*()[]{}".each_char do |bad_char|
-      test "name containing #{bad_char.inspect} is invalid for #{user_sym}" do
+    test "name containing bad char is invalid for #{user_sym}" do
+      "\\.-_/!@#$%^&*()[]{}".each_char do |bad_char|
         repo = new_repo(user_sym, name: "#{name_prefix}bad#{bad_char}reponame")
         refute(repo.valid?)
       end

@@ -37,9 +37,9 @@ const (
 )
 
 type LoggerParams struct {
-	Client          arvadosclient.ArvadosClient // The client we use to write log entries
-	EventTypePrefix string                      // The prefix we use for the event type in the log entry
-	WriteInterval   time.Duration               // Wait at least this long between log writes
+	Client          *arvadosclient.ArvadosClient // The client we use to write log entries
+	EventTypePrefix string                       // The prefix we use for the event type in the log entry
+	WriteInterval   time.Duration                // Wait at least this long between log writes
 }
 
 // A LogMutator is a function which modifies the log entry.

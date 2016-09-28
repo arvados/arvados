@@ -64,10 +64,24 @@ class ContainerRequest < ArvadosModel
     %w(modified_by_client_uuid container_uuid requesting_container_uuid)
   end
 
+  # Finalize the container request after the container has
+  # finished/cancelled.
   def container_completed!
-    # may implement retry logic here in the future.
-    self.state = ContainerRequest::Final
-    self.save!
+    update_attributes!(state: ContainerRequest::Final)
+    c = Container.find_by_uuid(container_uuid)
+    ['output', 'log'].each do |out_type|
+      pdh = c.send(out_type)
+      next if pdh.nil?
+      manifest = Collection.where(portable_data_hash: pdh).first.manifest_text
+      Collection.create!(owner_uuid: owner_uuid,
+                         manifest_text: manifest,
+                         portable_data_hash: pdh,
+                         name: "Container #{out_type} for request #{uuid}",
+                         properties: {
+                           'type' => out_type,
+                           'container_request' => uuid,
+                         })
+    end
   end
 
   protected

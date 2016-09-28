@@ -81,7 +81,7 @@ func main() {
 
 var arvLogger *logger.Logger
 
-func singlerun(arv arvadosclient.ArvadosClient) error {
+func singlerun(arv *arvadosclient.ArvadosClient) error {
 	var err error
 	if isAdmin, err := util.UserIsAdmin(arv); err != nil {
 		return errors.New("Error verifying admin token: " + err.Error())
@@ -142,7 +142,7 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 			rlbss.Count)
 	}
 
-	kc, err := keepclient.MakeKeepClient(&arv)
+	kc, err := keepclient.MakeKeepClient(arv)
 	if err != nil {
 		return fmt.Errorf("Error setting up keep client %v", err.Error())
 	}
@@ -185,7 +185,7 @@ func singlerun(arv arvadosclient.ArvadosClient) error {
 }
 
 // BuildDataFetcher returns a data fetcher that fetches data from remote servers.
-func BuildDataFetcher(arv arvadosclient.ArvadosClient) summary.DataFetcher {
+func BuildDataFetcher(arv *arvadosclient.ArvadosClient) summary.DataFetcher {
 	return func(
 		arvLogger *logger.Logger,
 		readCollections *collection.ReadCollections,

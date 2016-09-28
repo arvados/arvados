@@ -17,7 +17,7 @@ func ExampleKeepClient_RefreshServices() {
 	if err != nil {
 		panic(err)
 	}
-	kc, err := MakeKeepClient(&arv)
+	kc, err := MakeKeepClient(arv)
 	if err != nil {
 		panic(err)
 	}
@@ -53,9 +53,9 @@ func (s *ServerRequiredSuite) TestOverrideDiscovery(c *check.C) {
 	// arv2 should use our stub servers, but one created for arv1
 	// should not.
 
-	kc1, err := MakeKeepClient(&arv1)
+	kc1, err := MakeKeepClient(arv1)
 	c.Assert(err, check.IsNil)
-	kc2, err := MakeKeepClient(&arv2)
+	kc2, err := MakeKeepClient(arv2)
 	c.Assert(err, check.IsNil)
 
 	_, _, _, err = kc1.Get(hash)
