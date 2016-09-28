@@ -114,8 +114,8 @@ var bsDropdown = {
     },
     view: function(vnode) {
         return m('.dropdown', {class: vnode.state.openClass}, [
-            m('a.btn.btn-secondary.dropdown-toggle[href=#]', {
-                onclick: m.withAttr('href', vnode.state.toggleOpen, vnode.state),
+            m('a.btn.btn-secondary.dropdown-toggle', {
+                onclick: vnode.state.toggleOpen.bind(vnode.state),
             }, vnode.attrs.label),
             m('.dropdown-menu',
               vnode.attrs.menuAttrs || {},
