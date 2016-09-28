@@ -105,8 +105,8 @@ package_go_binary() {
     systemd_unit="$WORKSPACE/${src_path}/${prog}.service"
     if [[ -e "${systemd_unit}" ]]; then
         switches+=(
-            --after-install "${WORKSPACE}/build/go-package-scripts/postinst"
-            --before-remove "${WORKSPACE}/build/go-package-scripts/prerm"
+            --after-install "${WORKSPACE}/build/go-python-package-scripts/postinst"
+            --before-remove "${WORKSPACE}/build/go-python-package-scripts/prerm"
             "${systemd_unit}=/lib/systemd/system/${prog}.service")
     fi
     switches+=("$WORKSPACE/${license_file}=/usr/share/doc/$prog/${license_file}")
@@ -213,6 +213,7 @@ fpm_build () {
               --python-package-name-prefix "$PYTHON2_PKG_PREFIX" \
               --prefix "$PYTHON2_PREFIX" \
               --python-install-lib "$PYTHON2_INSTALL_LIB" \
+              --python-install-data . \
               --exclude "${PYTHON2_INSTALL_LIB#/}/tests" \
               --depends "$PYTHON2_PACKAGE"
           # Fix --iteration for #9242.
@@ -229,6 +230,7 @@ fpm_build () {
               --python-package-name-prefix "$PYTHON3_PKG_PREFIX" \
               --prefix "$PYTHON3_PREFIX" \
               --python-install-lib "$PYTHON3_INSTALL_LIB" \
+              --python-install-data . \
               --exclude "${PYTHON3_INSTALL_LIB#/}/tests" \
               --depends "$PYTHON3_PACKAGE"
           # Fix --iteration for #9242.
@@ -262,6 +264,14 @@ fpm_build () {
   # We can always add an --iteration here.  If another one is specified in $@,
   # that will take precedence, as desired.
   COMMAND_ARR+=(--iteration "$default_iteration_value")
+
+  if [[ python = "$PACKAGE_TYPE" ]] && [[ -e "${PACKAGE}/${PACKAGE_NAME}.service" ]]
+  then
+      COMMAND_ARR+=(
+          --after-install "${WORKSPACE}/build/go-python-package-scripts/postinst"
+          --before-remove "${WORKSPACE}/build/go-python-package-scripts/prerm"
+      )
+  fi
 
   # Append --depends X and other arguments specified by fpm-info.sh in
   # the package source dir. These are added last so they can override

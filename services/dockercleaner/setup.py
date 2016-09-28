@@ -21,17 +21,20 @@ setup(name="arvados-docker-cleaner",
       download_url="https://github.com/curoverse/arvados.git",
       license="GNU Affero General Public License version 3.0",
       packages=find_packages(),
+      entry_points={
+          'console_scripts': ['arvados-docker-cleaner=arvados_docker.cleaner:main'],
+      },
       data_files=[
-          ('share/doc/arvados-docker-cleaner', ['agpl-3.0.txt']),
+          ('share/doc/arvados-docker-cleaner', ['agpl-3.0.txt', 'arvados-docker-cleaner.service']),
       ],
       install_requires=[
-        'docker-py==1.7.2',
-        ],
+          'docker-py==1.7.2',
+      ],
       tests_require=[
-        'pbr<1.7.0',
-        'mock',
-        ],
+          'pbr<1.7.0',
+          'mock',
+      ],
       test_suite='tests',
       zip_safe=False,
       cmdclass={'egg_info': tagger},
-      )
+)
