@@ -294,7 +294,7 @@ def parse_arguments(arguments):
         formatter_class=Formatter,
     )
     parser.add_argument(
-        '--config', action='store', type=str, default='/etc/arvados/docker-cleaner/config.json',
+        '--config', action='store', type=str, default='/etc/arvados/docker-cleaner/docker-cleaner.json',
         help="configuration file")
 
     deprecated = " (DEPRECATED -- use config file instead)"
