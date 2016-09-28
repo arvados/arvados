@@ -12,15 +12,16 @@ import arvados
 import arvados_cwl
 import arvados.collection
 import arvados.util
-from cwltool.process import shortname
 import cwltool.main
 import logging
 import os
 import json
 import argparse
 import re
+import functools
+
 from arvados.api import OrderedJsonModel
-from cwltool.process import adjustFileObjs, adjustDirObjs
+from cwltool.process import shortname, adjustFileObjs, adjustDirObjs, getListing, normalizeFilesDirs
 from cwltool.load_tool import load_tool
 
 # Print package versions
@@ -53,6 +54,8 @@ try:
 
     adjustFileObjs(job_order_object, keeppathObj)
     adjustDirObjs(job_order_object, keeppathObj)
+    normalizeFilesDirs(job_order_object)
+    adjustDirObjs(job_order_object, functools.partial(getListing, arvados_cwl.fsaccess.CollectionFsAccess("", api_client=api)))
 
     runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
 
