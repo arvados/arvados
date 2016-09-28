@@ -23,6 +23,21 @@ logger = logging.getLogger('arvados.cwl-runner')
 
 cwltool.draft2tool.ACCEPTLIST_RE = re.compile(r"^[a-zA-Z0-9._+-]+$")
 
+def trim_listing(obj):
+    """Remove 'listing' field from Directory objects that are keep references.
+
+    When Directory objects represent Keep references, it redundant and
+    potentially very expensive to pass fully enumerated Directory objects
+    between instances of cwl-runner (e.g. a submitting a job, or using the
+    RunInSingleContainer feature), so delete the 'listing' field when it is
+    safe to do so.
+    """
+
+    if obj.get("location", "").startswith("keep:") and "listing" in obj:
+        del obj["listing"]
+    if obj.get("location", "").startswith("_:"):
+        del obj["location"]
+
 def upload_dependencies(arvrunner, name, document_loader,
                         workflowobj, uri, loadref_run):
     """Upload the dependencies of the workflowobj document to Keep.
@@ -80,8 +95,8 @@ def upload_dependencies(arvrunner, name, document_loader,
                            name=name)
 
     def setloc(p):
-        if not p["location"].startswith("_:") and not p["location"].startswith("keep:"):
-            p["location"] = mapper.mapper(p["location"]).target
+        if "location" in p and (not p["location"].startswith("_:")) and (not p["location"].startswith("keep:")):
+            p["location"] = mapper.mapper(p["location"]).resolved
     adjustFileObjs(workflowobj, setloc)
     adjustDirObjs(workflowobj, setloc)
 
@@ -128,6 +143,8 @@ class Runner(object):
                                         self.job_order,
                                         self.job_order.get("id", "#"),
                                         False)
+
+        adjustDirObjs(self.job_order, trim_listing)
 
         if "id" in self.job_order:
             del self.job_order["id"]

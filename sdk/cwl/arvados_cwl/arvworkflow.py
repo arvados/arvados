@@ -11,7 +11,7 @@ from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
 
 import ruamel.yaml as yaml
 
-from .runner import upload_docker, upload_dependencies
+from .runner import upload_docker, upload_dependencies, trim_listing
 from .arvtool import ArvadosCommandTool
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -22,6 +22,8 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid, update_uuid):
     document_loader, workflowobj, uri = (tool.doc_loader, tool.doc_loader.fetch(tool.tool["id"]), tool.tool["id"])
 
     packed = pack(document_loader, workflowobj, uri, tool.metadata)
+
+    adjustDirObjs(job_order, trim_listing)
 
     main = [p for p in packed["$graph"] if p["id"] == "#main"][0]
     for inp in main["inputs"]:
@@ -83,12 +85,13 @@ class ArvadosWorkflow(Workflow):
             def keepmount(obj):
                 if obj["location"].startswith("keep:"):
                     obj["location"] = "/keep/" + obj["location"][5:]
+                    if "listing" in obj:
+                        del obj["listing"]
                 elif obj["location"].startswith("_:"):
-                    pass
+                    del obj["location"]
                 else:
                     raise WorkflowException("Location is not a keep reference or a literal: '%s'" % obj["location"])
-                if "listing" in obj:
-                    del obj["listing"]
+
             adjustFileObjs(joborder_keepmount, keepmount)
             adjustDirObjs(joborder_keepmount, keepmount)
             adjustFileObjs(packed, keepmount)
