@@ -105,21 +105,23 @@ var Show = {
 };
 
 var bsDropdown = {
-    toggleOpen: function() {
-        this.openClass = this.openClass ? '' : 'open';
-        return false;
-    },
     oninit: function(vnode) {
-        this.openClass = '';
+        vnode.state.toggle = function(e) {
+            vnode.state.open = !vnode.state.open;
+            return false;
+        };
     },
     view: function(vnode) {
-        return m('.dropdown', {class: vnode.state.openClass}, [
+        return m('.dropdown', {className: vnode.state.open ? 'open' : ''}, [
             m('a.btn.btn-secondary.dropdown-toggle', {
-                onclick: vnode.state.toggleOpen.bind(vnode.state),
+                onclick: vnode.state.toggle,
             }, vnode.attrs.label),
             m('.dropdown-menu',
-              vnode.attrs.menuAttrs || {},
-              vnode.children),
+              {className: vnode.attrs.align == 'right' ? 'dropdown-menu-right' : ''},
+              vnode.attrs.items.map(function(item) {
+                  item.attrs.className = 'dropdown-item '+item.attrs.className;
+                  return item;
+              })),
         ]);
     },
 };
@@ -130,13 +132,14 @@ var TopNav = {
                  m('.pull-xs-right',
                    m(bsDropdown, {
                        label: 'Log in...',
-                       menuAttrs: {class: 'dropdown-menu-right'},
-                   }, Object.keys(savedTokens.Load()).map(function(siteID) {
-                       return m('a.dropdown-item', {
-                           key: siteID,
-                           href: getSession(siteID).client.LoginURL(location.href.replace(/([^\/]*\/+[^\/]+[#!?\/]*)/, '$1loginCallback/'+siteID+'/XYZZY/')),
-                       }, [siteID]);
-                   }))));
+                       align: 'right',
+                       items: Object.keys(savedTokens.Load()).map(function(siteID) {
+                           return m('a', {
+                               key: siteID,
+                               href: getSession(siteID).client.LoginURL(location.href.replace(/([^\/]*\/+[^\/]+[#!?\/]*)/, '$1loginCallback/'+siteID+'/XYZZY/')),
+                           }, siteID);
+                       }),
+                   })));
     },
 };
 
