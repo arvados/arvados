@@ -1,21 +1,22 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
+
+	"github.com/ghodss/yaml"
 )
 
 // LoadFile loads configuration from the file given by configPath and
 // decodes it into cfg.
 //
-// Currently, only JSON is supported. Support for YAML is anticipated.
+// YAML and JSON formats are supported.
 func LoadFile(cfg interface{}, configPath string) error {
 	buf, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(buf, cfg)
+	err = yaml.Unmarshal(buf, cfg)
 	if err != nil {
 		return fmt.Errorf("Error decoding config %q: %v", configPath, err)
 	}

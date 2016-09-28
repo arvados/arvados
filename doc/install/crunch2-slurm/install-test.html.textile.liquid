@@ -57,7 +57,7 @@ This command should return a record with a @container_uuid@ field.  Once crunch-
 </code></pre>
 </notextile>
 
-If you do not see crunch-dispatch-slurm try to dispatch the container, double-check that it is running and that the API hostname and token in @/etc/arvados/crunch-dispatch-slurm/config.json@ are correct.
+If you do not see crunch-dispatch-slurm try to dispatch the container, double-check that it is running and that the API hostname and token in @/etc/arvados/crunch-dispatch-slurm/crunch-dispatch-slurm.yml@ are correct.
 
 Before the container finishes, SLURM's @squeue@ command will show the new job in the list of queued and running jobs.  For example, you might see:
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	check "gopkg.in/check.v1"
 )
@@ -23,7 +24,7 @@ type IntegrationSuite struct {
 	tmpRepoRoot string
 	tmpWorkdir  string
 	testServer  *server
-	Config      *config
+	Config      *Config
 }
 
 func (s *IntegrationSuite) SetUpSuite(c *check.C) {
@@ -67,19 +68,27 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 
 	if s.Config == nil {
-		s.Config = &config{
-			Addr:       ":0",
+		s.Config = &Config{
+			Client: arvados.Client{
+				APIHost:  arvadostest.APIHost(),
+				Insecure: true,
+			},
+			Listen:     ":0",
 			GitCommand: "/usr/bin/git",
-			Root:       s.tmpRepoRoot,
+			RepoRoot:   s.tmpRepoRoot,
 		}
 	}
+
+	// Clear ARVADOS_API_* env vars before starting up the server,
+	// to make sure arv-git-httpd doesn't use them or complain
+	// about them being missing.
+	os.Unsetenv("ARVADOS_API_HOST")
+	os.Unsetenv("ARVADOS_API_HOST_INSECURE")
+	os.Unsetenv("ARVADOS_API_TOKEN")
+
 	theConfig = s.Config
 	err = s.testServer.Start()
 	c.Assert(err, check.Equals, nil)
-
-	// Clear ARVADOS_API_TOKEN after starting up the server, to
-	// make sure arv-git-httpd doesn't use it.
-	os.Setenv("ARVADOS_API_TOKEN", "unused-token-placates-client-library")
 }
 
 func (s *IntegrationSuite) TearDownTest(c *check.C) {

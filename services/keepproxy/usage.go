@@ -19,7 +19,7 @@ func usage() {
 Keepproxy forwards GET and PUT requests to keepstore servers.  See
 http://doc.arvados.org/install/install-keepproxy.html
 
-Usage: keepproxy [-config path/to/config.json]
+Usage: keepproxy [-config path/to/keepproxy.yml]
 
 Options:
 `)

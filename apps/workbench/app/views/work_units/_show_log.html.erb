@@ -9,12 +9,15 @@
   </div>
 <% end %>
 
-<%# Show log in terminal window %>
+<% live_log_lines = wu.live_log_lines(Rails.configuration.running_job_log_records_to_fetch).join("\n") %>
+<% if !render_log or (live_log_lines.size > 0) %>
+<%# Still running, or recently finished and logs are still available from logs table %>
+<%# Show recent logs in terminal window %>
 <h4>Recent logs</h4>
 <div id="event_log_div"
      class="arv-log-event-listener arv-log-event-handler-append-logs arv-job-log-window"
      data-object-uuids="<%= wu.log_object_uuids.join(' ') %>"
-  ><%= wu.live_log_lines(Rails.configuration.running_job_log_records_to_fetch).join("\n") %>
+  ><%= live_log_lines %>
 </div>
 
 <%# Applying a long throttle suppresses the auto-refresh of this
@@ -22,3 +25,4 @@
 <div class="arv-log-refresh-control"
      data-load-throttle="86486400000" <%# 1001 nights %>>
 </div>
+<% end %>

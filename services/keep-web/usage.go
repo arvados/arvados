@@ -21,7 +21,7 @@ Keep-web provides read-only HTTP access to files stored in Keep; see
 https://godoc.org/github.com/curoverse/arvados/services/keep-web and
 http://doc.arvados.org/install/install-keep-web.html
 
-Usage: keep-web -config path/to/config.json
+Usage: keep-web -config path/to/keep-web.yml
 
 Options:
 `)

@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	defaultConfigPath = "/etc/arvados/keep-web/config.json"
+	defaultConfigPath = "/etc/arvados/keep-web/keep-web.yml"
 )
 
 // Config specifies server configuration.
@@ -53,7 +53,7 @@ func main() {
 	var configPath string
 	deprecated := " (DEPRECATED -- use config file instead)"
 	flag.StringVar(&configPath, "config", defaultConfigPath,
-		"`path` to json configuration file")
+		"`path` to JSON or YAML configuration file")
 	flag.StringVar(&cfg.Listen, "listen", "",
 		"address:port or :port to listen on"+deprecated)
 	flag.BoolVar(&cfg.deprecatedAllowAnonymous, "allow-anonymous", false,

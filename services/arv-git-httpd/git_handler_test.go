@@ -37,7 +37,7 @@ func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
 	c.Check(body, check.Matches, `(?ms).*^GL_BYPASS_ACCESS_CHECKS=yesplease$.*`)
 	c.Check(body, check.Matches, `(?ms).*^REMOTE_HOST=::1$.*`)
 	c.Check(body, check.Matches, `(?ms).*^REMOTE_PORT=12345$.*`)
-	c.Check(body, check.Matches, `(?ms).*^SERVER_ADDR=`+regexp.QuoteMeta(theConfig.Addr)+`$.*`)
+	c.Check(body, check.Matches, `(?ms).*^SERVER_ADDR=`+regexp.QuoteMeta(theConfig.Listen)+`$.*`)
 }
 
 func (s *GitHandlerSuite) TestCGIErrorOnSplitHostPortError(c *check.C) {

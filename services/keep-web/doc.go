@@ -9,32 +9,30 @@
 // Configuration
 //
 // The default configuration file location is
-// /etc/arvados/keep-web/config.json.
+// /etc/arvados/keep-web/keep-web.yml.
 //
 // Example configuration file
 //
-//   {
-//     "Client": {
-//       "APIHost": "zzzzz.arvadosapi.com:443",
-//       "AuthToken": "",
-//       "Insecure": false
-//     },
-//     "Listen":":1234",
-//     "AnonymousTokens":["xxxxxxxxxxxxxxxxxxxx"],
-//     "AttachmentOnlyHost":"",
-//     "TrustAllContent":false
-//   }
+//     Client:
+//       APIHost: "zzzzz.arvadosapi.com:443"
+//       AuthToken: ""
+//       Insecure: false
+//     Listen: :1234
+//     AnonymousTokens:
+//       - xxxxxxxxxxxxxxxxxxxx
+//     AttachmentOnlyHost: ""
+//     TrustAllContent: false
 //
 // Starting the server
 //
 // Start a server using the default config file
-// /etc/arvados/keep-web/config.json:
+// /etc/arvados/keep-web/keep-web.yml:
 //
 //   keep-web
 //
-// Start a server using the config file /path/to/config.json:
+// Start a server using the config file /path/to/keep-web.yml:
 //
-//   keep-web -config /path/to/config.json
+//   keep-web -config /path/to/keep-web.yml
 //
 // Proxy configuration
 //

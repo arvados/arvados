@@ -220,6 +220,12 @@ common:
   # stderr logs from the logs table.
   clean_job_log_rows_after: <%= 30.days %>
 
+  # When you run the db:delete_old_container_logs task, it will find
+  # containers that have been finished for at least this many seconds,
+  # and delete their stdout, stderr, arv-mount, crunch-run, and
+  # crunchstat logs from the logs table.
+  clean_container_log_rows_after: <%= 30.days %>
+
   # The maximum number of compute nodes that can be in use simultaneously
   # If this limit is reduced, any existing nodes with slot number >= new limit
   # will not be counted against the new limit. In other words, the new limit

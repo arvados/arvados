@@ -56,7 +56,7 @@ try:
 
     runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
 
-    t = load_tool(job_order_object, runner.arvMakeTool)
+    t = load_tool(job_order_object, runner.arv_make_tool)
 
     args = argparse.Namespace()
     args.project_uuid = arvados.current_job()["owner_uuid"]
@@ -67,7 +67,7 @@ try:
     args.ignore_docker_for_reuse = False
     args.basedir = os.getcwd()
     args.cwl_runner_job={"uuid": arvados.current_job()["uuid"], "state": arvados.current_job()["state"]}
-    outputObj = runner.arvExecutor(t, job_order_object, **vars(args))
+    outputObj = runner.arv_executor(t, job_order_object, **vars(args))
 
     files = {}
     def capture(fileobj):

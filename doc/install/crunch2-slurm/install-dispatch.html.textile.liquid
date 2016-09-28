@@ -47,15 +47,12 @@ Set up crunch-dispatch-slurm's configuration directory:
 </code></pre>
 </notextile>
 
-Edit @/etc/arvados/crunch-dispatch-slurm/config.json@ to authenticate to your Arvados API server, using the token you generated in the previous step.  Follow this JSON format:
+Edit @/etc/arvados/crunch-dispatch-slurm/crunch-dispatch-slurm.yml@ to authenticate to your Arvados API server, using the token you generated in the previous step.  Follow this YAML format:
 
 <notextile>
-<pre><code class="userinput">{
-  "Client": {
-    "APIHost": <b>"zzzzz.arvadosapi.com"</b>,
-    "AuthToken": <b>"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"</b>
-  }
-}
+<pre><code class="userinput">Client:
+  APIHost: <b>zzzzz.arvadosapi.com</b>
+  AuthToken: <b>zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</b>
 </code></pre>
 </notextile>
 

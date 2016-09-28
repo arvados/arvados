@@ -1,6 +1,7 @@
 import logging
 import re
 import copy
+import json
 
 from cwltool.process import get_feature, shortname
 from cwltool.errors import WorkflowException
@@ -83,6 +84,10 @@ class ArvadosJob(object):
             runtime_constraints["min_cores_per_node"] = resources.get("cores", 1)
             runtime_constraints["min_ram_mb_per_node"] = resources.get("ram")
             runtime_constraints["min_scratch_mb_per_node"] = resources.get("tmpdirSize", 0) + resources.get("outdirSize", 0)
+
+        runtime_req, _ = get_feature(self, "http://arvados.org/cwl#RuntimeConstraints")
+        if runtime_req:
+            runtime_constraints["keep_cache_mb_per_task"] = runtime_req["keep_cache"]
 
         filters = [["repository", "=", "arvados"],
                    ["script", "=", "crunchrunner"],
@@ -185,9 +190,11 @@ class ArvadosJob(object):
             except WorkflowException as e:
                 logger.error("Error while collecting job outputs:\n%s", e, exc_info=(e if self.arvrunner.debug else False))
                 processStatus = "permanentFail"
+                outputs = None
             except Exception as e:
                 logger.exception("Got unknown exception while collecting job outputs:")
                 processStatus = "permanentFail"
+                outputs = None
 
             self.output_callback(outputs, processStatus)
         finally:
