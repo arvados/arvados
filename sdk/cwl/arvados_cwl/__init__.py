@@ -34,7 +34,9 @@ from cwltool.draft2tool import compute_checksums
 from arvados.api import OrderedJsonModel
 
 logger = logging.getLogger('arvados.cwl-runner')
+metrics = logging.getLogger('arvados.cwl-runner.metrics')
 logger.setLevel(logging.INFO)
+
 
 class ArvCwlRunner(object):
     """Execute a CWL tool or workflow, submit work (using either jobs or
@@ -103,7 +105,7 @@ class ArvCwlRunner(object):
                         self.cond.acquire()
                         j = self.processes[uuid]
                         logger.info("Job %s (%s) is %s", j.name, uuid, event["properties"]["new_attributes"]["state"])
-                        with Perf(logger, "done %s" % j.name):
+                        with Perf(metrics, "done %s" % j.name):
                             j.done(event["properties"]["new_attributes"])
                         self.cond.notify()
                     finally:
@@ -244,9 +246,12 @@ class ArvCwlRunner(object):
             # except when in cond.wait(), at which point on_message can update
             # job state and process output callbacks.
 
+            loopperf = Perf(metrics, "jobiter")
+            loopperf.__enter__()
             for runnable in jobiter:
+                loopperf.__exit__()
                 if runnable:
-                    with Perf(logger, "run"):
+                    with Perf(metrics, "run"):
                         runnable.run(**kwargs)
                 else:
                     if self.processes:
@@ -254,6 +259,8 @@ class ArvCwlRunner(object):
                     else:
                         logger.error("Workflow is deadlocked, no runnable jobs and not waiting on any pending jobs.")
                         break
+                loopperf.__enter__()
+            loopperf.__exit__()
 
             while self.processes:
                 self.cond.wait(1)
@@ -321,6 +328,8 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     exgroup.add_argument("--verbose", action="store_true", help="Default logging")
     exgroup.add_argument("--quiet", action="store_true", help="Only print warnings and errors.")
     exgroup.add_argument("--debug", action="store_true", help="Print even more logging")
+
+    parser.add_argument("--metrics", action="store_true", help="Print timing metrics")
 
     parser.add_argument("--tool-help", action="store_true", help="Print command line help for tool")
 
@@ -400,6 +409,10 @@ def main(args, stdout, stderr, api_client=None):
     if arvargs.quiet:
         logger.setLevel(logging.WARN)
         logging.getLogger('arvados.arv-run').setLevel(logging.WARN)
+
+    if arvargs.metrics:
+        metrics.setLevel(logging.DEBUG)
+        logging.getLogger("cwltool.metrics").setLevel(logging.DEBUG)
 
     arvargs.conformance_test = None
     arvargs.use_container = True

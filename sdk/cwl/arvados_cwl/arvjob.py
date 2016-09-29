@@ -18,6 +18,7 @@ from .perf import Perf
 from . import done
 
 logger = logging.getLogger('arvados.cwl-runner')
+metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
 tmpdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.tmpdir\)=(.*)")
 outdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.outdir\)=(.*)")
@@ -96,7 +97,7 @@ class ArvadosJob(object):
             filters.append(["docker_image_locator", "in docker", runtime_constraints["docker_image"]])
 
         try:
-            with Perf(logger, "create %s" % self.name):
+            with Perf(metrics, "create %s" % self.name):
                 response = self.arvrunner.api.jobs().create(
                     body={
                         "owner_uuid": self.arvrunner.project_uuid,
@@ -118,7 +119,7 @@ class ArvadosJob(object):
             logger.info("Job %s (%s) is %s", self.name, response["uuid"], response["state"])
 
             if response["state"] in ("Complete", "Failed", "Cancelled"):
-                with Perf(logger, "done %s" % self.name):
+                with Perf(metrics, "done %s" % self.name):
                     self.done(response)
         except Exception as e:
             logger.error("Got error %s" % str(e))
@@ -127,7 +128,7 @@ class ArvadosJob(object):
     def update_pipeline_component(self, record):
         if self.arvrunner.pipeline:
             self.arvrunner.pipeline["components"][self.name] = {"job": record}
-            with Perf(logger, "update_pipeline_component %s" % self.name):
+            with Perf(metrics, "update_pipeline_component %s" % self.name):
                 self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().update(uuid=self.arvrunner.pipeline["uuid"],
                                                                                  body={
                                                                                     "components": self.arvrunner.pipeline["components"]
@@ -160,7 +161,7 @@ class ArvadosJob(object):
             outputs = {}
             try:
                 if record["output"]:
-                    with Perf(logger, "inspect log %s" % self.name):
+                    with Perf(metrics, "inspect log %s" % self.name):
                         logc = arvados.collection.Collection(record["log"])
                         log = logc.open(logc.keys()[0])
                         tmpdir = None
@@ -185,7 +186,7 @@ class ArvadosJob(object):
                             if g:
                                 keepdir = g.group(1)
 
-                    with Perf(logger, "output collection %s" % self.name):
+                    with Perf(metrics, "output collection %s" % self.name):
                         outputs = done.done(self, record, tmpdir, outdir, keepdir)
             except WorkflowException as e:
                 logger.error("Error while collecting job outputs:\n%s", e, exc_info=(e if self.arvrunner.debug else False))
