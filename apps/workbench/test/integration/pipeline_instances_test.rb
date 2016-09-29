@@ -149,7 +149,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     page.assert_selector 'a,button', text: 'Re-run options'
 
     # Since it is test env, no jobs are created to run. So, graph not visible
-    assert_not page.has_text? 'Graph'
+    assert page.has_no_text? 'Graph'
   end
 
   # Create a pipeline instance from within a project and run
