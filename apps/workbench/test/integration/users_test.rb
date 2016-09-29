@@ -80,7 +80,8 @@ class UsersTest < ActionDispatch::IntegrationTest
 
     click_link 'Advanced'
     click_link 'Metadata'
-    assert !(page.has_text? 'VirtualMachine:')
+    assert page.has_text? 'can_login' # make sure page is rendered / ready
+    assert page.has_no_text? 'VirtualMachine:'
   end
 
   test "setup the active user" do
