@@ -71,6 +71,8 @@ Capybara.register_driver :selenium_with_download do |app|
 end
 
 module WaitForAjax
+  # FIXME: Huge side effect here
+  Capybara.default_max_wait_time = 10
   def wait_for_ajax
     timeout = 10
     count = 0
