@@ -71,16 +71,16 @@ Capybara.register_driver :selenium_with_download do |app|
 end
 
 module WaitForAjax
-  Capybara.default_max_wait_time = 10
   def wait_for_ajax
-    Timeout.timeout(Capybara.default_max_wait_time) do
-      loop until finished_all_ajax_requests?
+    timeout = 10
+    count = 0
+    while page.evaluate_script("jQuery.active").to_i > 0
+      count += 1
+      raise "AJAX request took more than #{timeout} seconds" if count > timeout * 10
+      sleep(0.1)
     end
   end
 
-  def finished_all_ajax_requests?
-    page.evaluate_script('jQuery.active').zero?
-  end
 end
 
 module AssertDomEvent
