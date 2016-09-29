@@ -268,7 +268,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
         assert_text 'completed container request'
         within('.row-zzzzz-xvhdp-cr4completedctr')do
-          assert page.has_link? 'foo_file'
+          assert page.has_link? '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
         end
       end
 
