@@ -57,7 +57,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     end
 
     # project chooser
-    within('.modal-dialog') do
+    within('.modal-dialog') do #FIXME: source of 1 test error
       find('.selectable', text: 'A Project').click
       find('button', text: 'Choose').click
     end
@@ -226,7 +226,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     template_uuid = api_fixture("pipeline_templates", template_name, "uuid")
     visit page_with_token("active", "/pipeline_templates/#{template_uuid}")
     click_on "Run this pipeline"
-    within(".modal-dialog") do
+    within(".modal-dialog") do # FIXME: source of 3 test errors
       # Set project for the new pipeline instance
       find(".selectable", text: project_name).click
       click_on "Choose"
@@ -453,7 +453,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     page.assert_selector 'a,button', text: 'Pause'
 
     # Since it is test env, no jobs are created to run. So, graph not visible
-    assert_not page.has_text? 'Graph'
+    assert page.has_no_text? 'Graph'
   end
 
   [
