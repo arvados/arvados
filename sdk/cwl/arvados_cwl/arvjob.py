@@ -18,6 +18,7 @@ from .perf import Perf
 from . import done
 
 logger = logging.getLogger('arvados.cwl-runner')
+metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
 tmpdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.tmpdir\)=(.*)")
 outdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.outdir\)=(.*)")
@@ -37,21 +38,27 @@ class ArvadosJob(object):
         }
         runtime_constraints = {}
 
-        if self.generatefiles["listing"]:
-            vwd = arvados.collection.Collection()
-            script_parameters["task.vwd"] = {}
-            generatemapper = InitialWorkDirPathMapper([self.generatefiles], "", "",
-                                        separateDirs=False)
-            for f, p in generatemapper.items():
-                if p.type == "CreateFile":
-                    with vwd.open(p.target, "w") as n:
-                        n.write(p.resolved.encode("utf-8"))
-            vwd.save_new()
-            for f, p in generatemapper.items():
-                if p.type == "File":
-                    script_parameters["task.vwd"][p.target] = p.resolved
-                if p.type == "CreateFile":
-                    script_parameters["task.vwd"][p.target] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), p.target)
+        with Perf(metrics, "generatefiles %s" % self.name):
+            if self.generatefiles["listing"]:
+                vwd = arvados.collection.Collection()
+                script_parameters["task.vwd"] = {}
+                generatemapper = InitialWorkDirPathMapper([self.generatefiles], "", "",
+                                                          separateDirs=False)
+
+                with Perf(metrics, "createfiles %s" % self.name):
+                    for f, p in generatemapper.items():
+                        if p.type == "CreateFile":
+                            with vwd.open(p.target, "w") as n:
+                                n.write(p.resolved.encode("utf-8"))
+
+                with Perf(metrics, "generatefiles.save_new %s" % self.name):
+                    vwd.save_new()
+
+                for f, p in generatemapper.items():
+                    if p.type == "File":
+                        script_parameters["task.vwd"][p.target] = p.resolved
+                    if p.type == "CreateFile":
+                        script_parameters["task.vwd"][p.target] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), p.target)
 
         script_parameters["task.env"] = {"TMPDIR": self.tmpdir, "HOME": self.outdir}
         if self.environment:
@@ -73,11 +80,12 @@ class ArvadosJob(object):
         if self.permanentFailCodes:
             script_parameters["task.permanentFailCodes"] = self.permanentFailCodes
 
-        (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
-        if docker_req and kwargs.get("use_container") is not False:
-            runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvrunner.project_uuid)
-        else:
-            runtime_constraints["docker_image"] = "arvados/jobs"
+        with Perf(metrics, "arv_docker_get_image %s" % self.name):
+            (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
+            if docker_req and kwargs.get("use_container") is not False:
+                runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvrunner.project_uuid)
+            else:
+                runtime_constraints["docker_image"] = "arvados/jobs"
 
         resources = self.builder.resources
         if resources is not None:
@@ -96,7 +104,7 @@ class ArvadosJob(object):
             filters.append(["docker_image_locator", "in docker", runtime_constraints["docker_image"]])
 
         try:
-            with Perf(logger, "create %s" % self.name):
+            with Perf(metrics, "create %s" % self.name):
                 response = self.arvrunner.api.jobs().create(
                     body={
                         "owner_uuid": self.arvrunner.project_uuid,
@@ -118,7 +126,7 @@ class ArvadosJob(object):
             logger.info("Job %s (%s) is %s", self.name, response["uuid"], response["state"])
 
             if response["state"] in ("Complete", "Failed", "Cancelled"):
-                with Perf(logger, "done %s" % self.name):
+                with Perf(metrics, "done %s" % self.name):
                     self.done(response)
         except Exception as e:
             logger.error("Got error %s" % str(e))
@@ -127,7 +135,7 @@ class ArvadosJob(object):
     def update_pipeline_component(self, record):
         if self.arvrunner.pipeline:
             self.arvrunner.pipeline["components"][self.name] = {"job": record}
-            with Perf(logger, "update_pipeline_component %s" % self.name):
+            with Perf(metrics, "update_pipeline_component %s" % self.name):
                 self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().update(uuid=self.arvrunner.pipeline["uuid"],
                                                                                  body={
                                                                                     "components": self.arvrunner.pipeline["components"]
@@ -160,7 +168,7 @@ class ArvadosJob(object):
             outputs = {}
             try:
                 if record["output"]:
-                    with Perf(logger, "inspect log %s" % self.name):
+                    with Perf(metrics, "inspect log %s" % self.name):
                         logc = arvados.collection.Collection(record["log"])
                         log = logc.open(logc.keys()[0])
                         tmpdir = None
@@ -185,7 +193,7 @@ class ArvadosJob(object):
                             if g:
                                 keepdir = g.group(1)
 
-                    with Perf(logger, "output collection %s" % self.name):
+                    with Perf(metrics, "output collection %s" % self.name):
                         outputs = done.done(self, record, tmpdir, outdir, keepdir)
             except WorkflowException as e:
                 logger.error("Error while collecting job outputs:\n%s", e, exc_info=(e if self.arvrunner.debug else False))
