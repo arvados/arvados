@@ -28,7 +28,7 @@ from .arvtool import ArvadosCommandTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow
 from .fsaccess import CollectionFsAccess
 from .perf import Perf
-from .pathmapper import InitialWorkDirPathMapper
+from .pathmapper import FinalOutputPathMapper
 
 from cwltool.pack import pack
 from cwltool.process import shortname, UnsupportedRequirement
@@ -176,8 +176,7 @@ class ArvCwlRunner(object):
         adjustDirObjs(outputObj, capture)
         adjustFileObjs(outputObj, capture)
 
-        generatemapper = InitialWorkDirPathMapper(files, "", "",
-                                                  separateDirs=False)
+        generatemapper = FinalOutputPathMapper(files, "", "", separateDirs=False)
 
         final = arvados.collection.Collection()
 
@@ -194,13 +193,19 @@ class ArvCwlRunner(object):
                 logger.warn("While preparing output collection: %s", e)
 
         def rewrite(fileobj):
-            fileobj["location"] = generatemapper.mapper(fileobj["location"])
+            fileobj["location"] = generatemapper.mapper(fileobj["location"]).target
+            if "basename" in fileobj:
+                del fileobj["basename"]
+            if "size" in fileobj:
+                del fileobj["size"]
+            if "listing" in fileobj:
+                del fileobj["listing"]
 
-        adjustDirObjs(outputObj, capture)
-        adjustFileObjs(outputObj, capture)
+        adjustDirObjs(outputObj, rewrite)
+        adjustFileObjs(outputObj, rewrite)
 
         with final.open("cwl.output.json", "w") as f:
-            json.dump(outputObj, f, indent=4)
+            json.dump(outputObj, f, sort_keys=True, indent=4)
 
         final.save_new(name=name, owner_uuid=self.project_uuid, ensure_unique_name=True)
 
@@ -338,14 +343,14 @@ class ArvCwlRunner(object):
         if self.final_output is None:
             raise WorkflowException("Workflow did not return a result.")
 
-        if kwargs.get("compute_checksum"):
-            adjustFileObjs(self.final_output, partial(compute_checksums, self.fs_access))
-
         if kwargs.get("submit"):
             logger.info("Final output collection %s", runnerjob.final_output)
         else:
             self.make_output_collection("Output of %s" % (shortname(tool.tool["id"])),
                                         self.final_output)
+
+        if kwargs.get("compute_checksum"):
+            adjustFileObjs(self.final_output, partial(compute_checksums, self.fs_access))
 
         return self.final_output
 

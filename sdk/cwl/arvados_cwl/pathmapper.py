@@ -150,11 +150,11 @@ class InitialWorkDirPathMapper(PathMapper):
 
     def visit(self, obj, stagedir, basedir, copy=False):
         # type: (Dict[unicode, Any], unicode, unicode, bool) -> None
+        loc = obj["location"]
         if obj["class"] == "Directory":
-            self._pathmap[obj["location"]] = MapperEnt(obj["location"], stagedir, "Directory")
+            self._pathmap[loc] = MapperEnt(obj["location"], stagedir, "Directory")
             self.visitlisting(obj.get("listing", []), stagedir, basedir)
         elif obj["class"] == "File":
-            loc = obj["location"]
             if loc in self._pathmap:
                 return
             tgt = os.path.join(stagedir, obj["basename"])
@@ -172,10 +172,26 @@ class InitialWorkDirPathMapper(PathMapper):
 
         # Go through each file and set the target to its own directory along
         # with any secondary files.
-        stagedir = self.stagedir
-        for fob in referenced_files:
-            self.visit(fob, stagedir, basedir)
+        self.visitlisting(referenced_files, self.stagedir, basedir)
 
         for path, (ab, tgt, type) in self._pathmap.items():
             if type in ("File", "Directory") and ab.startswith("keep:"):
                 self._pathmap[path] = MapperEnt("$(task.keep)/%s" % ab[5:], tgt, type)
+
+
+class FinalOutputPathMapper(PathMapper):
+    def visit(self, obj, stagedir, basedir, copy=False):
+        # type: (Dict[unicode, Any], unicode, unicode, bool) -> None
+        loc = obj["location"]
+        if obj["class"] == "Directory":
+            self._pathmap[loc] = MapperEnt(loc, stagedir, "Directory")
+        elif obj["class"] == "File":
+            if loc in self._pathmap:
+                return
+            tgt = os.path.join(stagedir, obj["basename"])
+            self._pathmap[loc] = MapperEnt(loc, tgt, "File")
+            self.visitlisting(obj.get("secondaryFiles", []), stagedir, basedir)
+
+    def setup(self, referenced_files, basedir):
+        # type: (List[Any], unicode) -> None
+        self.visitlisting(referenced_files, self.stagedir, basedir)
