@@ -106,7 +106,7 @@
     </div>
 
     <div class="col-md-6">
-      <% nodes = Node.filter([["last_ping_at", ">", Time.now - 3600]]) %>
+      <% nodes = Node.filter([["last_ping_at", ">", Time.now - 3600]]).results %>
       <div class="panel panel-default" style="min-height: 10.5em">
         <div class="panel-heading"><span class="panel-title">Compute node status</span>
           <span class="pull-right compute-node-actions">
