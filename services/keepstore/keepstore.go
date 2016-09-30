@@ -16,6 +16,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"github.com/coreos/go-systemd/daemon"
 	"github.com/ghodss/yaml"
 )
 
@@ -217,6 +218,9 @@ func main() {
 	signal.Notify(term, syscall.SIGTERM)
 	signal.Notify(term, syscall.SIGINT)
 
+	if _, err := daemon.SdNotify("READY=1"); err != nil {
+		log.Printf("Error notifying init daemon: %v", err)
+	}
 	log.Println("listening at", listener.Addr)
 	srv := &http.Server{}
 	srv.Serve(listener)
