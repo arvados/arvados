@@ -188,7 +188,8 @@ class ArvCwlRunner(object):
                 srccollections[srccollection] = arvados.collection.CollectionReader(srccollection)
             reader = srccollections[srccollection]
             try:
-                final.copy("/".join(sp[1:]), v.target, source_collection=reader, overwrite=False)
+                srcpath = "/".join(sp[1:]) if len(sp) > 1 else "."
+                final.copy(srcpath, v.target, source_collection=reader, overwrite=False)
             except IOError as e:
                 logger.warn("While preparing output collection: %s", e)
 
