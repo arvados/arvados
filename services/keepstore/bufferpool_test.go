@@ -12,12 +12,12 @@ type BufferPoolSuite struct{}
 // Initialize a default-sized buffer pool for the benefit of test
 // suites that don't run main().
 func init() {
-	bufs = newBufferPool(maxBuffers, BlockSize)
+	bufs = newBufferPool(theConfig.MaxBuffers, BlockSize)
 }
 
 // Restore sane default after bufferpool's own tests
 func (s *BufferPoolSuite) TearDownTest(c *C) {
-	bufs = newBufferPool(maxBuffers, BlockSize)
+	bufs = newBufferPool(theConfig.MaxBuffers, BlockSize)
 }
 
 func (s *BufferPoolSuite) TestBufferPoolBufSize(c *C) {

@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
 const (
@@ -17,7 +19,7 @@ const (
 		"gokee3eamvjy8qq1fvy238838enjmy5wzy2md7yvsitp5vztft6j4q866efym7e6" +
 		"vu5wm9fpnwjyxfldw3vbo01mgjs75rgo7qioh8z8ij7jpyp8508okhgbbex3ceei" +
 		"786u5rw2a9gx743dj3fgq2irk"
-	knownSignatureTTL  = 1209600 * time.Second
+	knownSignatureTTL  = arvados.Duration(24 * 14 * time.Hour)
 	knownSignature     = "89118b78732c33104a4d6231e8b5a5fa1e4301e3"
 	knownTimestamp     = "7fffffff"
 	knownSigHint       = "+A" + knownSignature + "@" + knownTimestamp
@@ -26,8 +28,8 @@ const (
 
 func TestSignLocator(t *testing.T) {
 	defer func(b []byte) {
-		PermissionSecret = b
-	}(PermissionSecret)
+		theConfig.blobSigningKey = b
+	}(theConfig.blobSigningKey)
 
 	tsInt, err := strconv.ParseInt(knownTimestamp, 16, 0)
 	if err != nil {
@@ -35,33 +37,33 @@ func TestSignLocator(t *testing.T) {
 	}
 	t0 := time.Unix(tsInt, 0)
 
-	blobSignatureTTL = knownSignatureTTL
+	theConfig.BlobSignatureTTL = knownSignatureTTL
 
-	PermissionSecret = []byte(knownKey)
+	theConfig.blobSigningKey = []byte(knownKey)
 	if x := SignLocator(knownLocator, knownToken, t0); x != knownSignedLocator {
 		t.Fatalf("Got %+q, expected %+q", x, knownSignedLocator)
 	}
 
-	PermissionSecret = []byte("arbitrarykey")
+	theConfig.blobSigningKey = []byte("arbitrarykey")
 	if x := SignLocator(knownLocator, knownToken, t0); x == knownSignedLocator {
-		t.Fatalf("Got same signature %+q, even though PermissionSecret changed", x)
+		t.Fatalf("Got same signature %+q, even though blobSigningKey changed", x)
 	}
 }
 
 func TestVerifyLocator(t *testing.T) {
 	defer func(b []byte) {
-		PermissionSecret = b
-	}(PermissionSecret)
+		theConfig.blobSigningKey = b
+	}(theConfig.blobSigningKey)
 
-	blobSignatureTTL = knownSignatureTTL
+	theConfig.BlobSignatureTTL = knownSignatureTTL
 
-	PermissionSecret = []byte(knownKey)
+	theConfig.blobSigningKey = []byte(knownKey)
 	if err := VerifySignature(knownSignedLocator, knownToken); err != nil {
 		t.Fatal(err)
 	}
 
-	PermissionSecret = []byte("arbitrarykey")
+	theConfig.blobSigningKey = []byte("arbitrarykey")
 	if err := VerifySignature(knownSignedLocator, knownToken); err == nil {
-		t.Fatal("Verified signature even with wrong PermissionSecret")
+		t.Fatal("Verified signature even with wrong blobSigningKey")
 	}
 }

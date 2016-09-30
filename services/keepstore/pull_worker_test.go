@@ -84,10 +84,10 @@ type PullWorkerTestData struct {
 func (s *PullWorkerTestSuite) TestPullWorkerPullList_with_two_locators(c *C) {
 	defer teardown()
 
-	dataManagerToken = "DATA MANAGER TOKEN"
+	theConfig.systemAuthToken = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
 		name:         "TestPullWorkerPullList_with_two_locators",
-		req:          RequestTester{"/pull", dataManagerToken, "PUT", firstPullList},
+		req:          RequestTester{"/pull", theConfig.systemAuthToken, "PUT", firstPullList},
 		responseCode: http.StatusOK,
 		responseBody: "Received 2 pull requests\n",
 		readContent:  "hello",
@@ -101,10 +101,10 @@ func (s *PullWorkerTestSuite) TestPullWorkerPullList_with_two_locators(c *C) {
 func (s *PullWorkerTestSuite) TestPullWorkerPullList_with_one_locator(c *C) {
 	defer teardown()
 
-	dataManagerToken = "DATA MANAGER TOKEN"
+	theConfig.systemAuthToken = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
 		name:         "TestPullWorkerPullList_with_one_locator",
-		req:          RequestTester{"/pull", dataManagerToken, "PUT", secondPullList},
+		req:          RequestTester{"/pull", theConfig.systemAuthToken, "PUT", secondPullList},
 		responseCode: http.StatusOK,
 		responseBody: "Received 1 pull requests\n",
 		readContent:  "hola",
@@ -118,10 +118,10 @@ func (s *PullWorkerTestSuite) TestPullWorkerPullList_with_one_locator(c *C) {
 func (s *PullWorkerTestSuite) TestPullWorker_error_on_get_one_locator(c *C) {
 	defer teardown()
 
-	dataManagerToken = "DATA MANAGER TOKEN"
+	theConfig.systemAuthToken = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
 		name:         "TestPullWorker_error_on_get_one_locator",
-		req:          RequestTester{"/pull", dataManagerToken, "PUT", secondPullList},
+		req:          RequestTester{"/pull", theConfig.systemAuthToken, "PUT", secondPullList},
 		responseCode: http.StatusOK,
 		responseBody: "Received 1 pull requests\n",
 		readContent:  "unused",
@@ -135,10 +135,10 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_get_one_locator(c *C) {
 func (s *PullWorkerTestSuite) TestPullWorker_error_on_get_two_locators(c *C) {
 	defer teardown()
 
-	dataManagerToken = "DATA MANAGER TOKEN"
+	theConfig.systemAuthToken = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
 		name:         "TestPullWorker_error_on_get_two_locators",
-		req:          RequestTester{"/pull", dataManagerToken, "PUT", firstPullList},
+		req:          RequestTester{"/pull", theConfig.systemAuthToken, "PUT", firstPullList},
 		responseCode: http.StatusOK,
 		responseBody: "Received 2 pull requests\n",
 		readContent:  "unused",
@@ -152,10 +152,10 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_get_two_locators(c *C) {
 func (s *PullWorkerTestSuite) TestPullWorker_error_on_put_one_locator(c *C) {
 	defer teardown()
 
-	dataManagerToken = "DATA MANAGER TOKEN"
+	theConfig.systemAuthToken = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
 		name:         "TestPullWorker_error_on_put_one_locator",
-		req:          RequestTester{"/pull", dataManagerToken, "PUT", secondPullList},
+		req:          RequestTester{"/pull", theConfig.systemAuthToken, "PUT", secondPullList},
 		responseCode: http.StatusOK,
 		responseBody: "Received 1 pull requests\n",
 		readContent:  "hello hello",
@@ -169,10 +169,10 @@ func (s *PullWorkerTestSuite) TestPullWorker_error_on_put_one_locator(c *C) {
 func (s *PullWorkerTestSuite) TestPullWorker_error_on_put_two_locators(c *C) {
 	defer teardown()
 
-	dataManagerToken = "DATA MANAGER TOKEN"
+	theConfig.systemAuthToken = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
 		name:         "TestPullWorker_error_on_put_two_locators",
-		req:          RequestTester{"/pull", dataManagerToken, "PUT", firstPullList},
+		req:          RequestTester{"/pull", theConfig.systemAuthToken, "PUT", firstPullList},
 		responseCode: http.StatusOK,
 		responseBody: "Received 2 pull requests\n",
 		readContent:  "hello again",
@@ -195,10 +195,10 @@ func (s *PullWorkerTestSuite) TestPullWorkerPullList_with_two_items_latest_repla
 	pullq.ReplaceQueue(makeTestWorkList(firstInput))
 	testPullLists["Added_before_actual_test_item"] = string(1)
 
-	dataManagerToken = "DATA MANAGER TOKEN"
+	theConfig.systemAuthToken = "DATA MANAGER TOKEN"
 	testData := PullWorkerTestData{
 		name:         "TestPullWorkerPullList_with_two_items_latest_replacing_old",
-		req:          RequestTester{"/pull", dataManagerToken, "PUT", secondPullList},
+		req:          RequestTester{"/pull", theConfig.systemAuthToken, "PUT", secondPullList},
 		responseCode: http.StatusOK,
 		responseBody: "Received 1 pull requests\n",
 		readContent:  "hola de nuevo",
@@ -210,14 +210,14 @@ func (s *PullWorkerTestSuite) TestPullWorkerPullList_with_two_items_latest_repla
 }
 
 // In this case, the item will not be placed on pullq
-func (s *PullWorkerTestSuite) TestPullWorker_invalid_dataManagerToken(c *C) {
+func (s *PullWorkerTestSuite) TestPullWorker_invalidToken(c *C) {
 	defer teardown()
 
-	dataManagerToken = "DATA MANAGER TOKEN"
+	theConfig.systemAuthToken = "DATA MANAGER TOKEN"
 
 	testData := PullWorkerTestData{
 		name:         "TestPullWorkerPullList_with_two_locators",
-		req:          RequestTester{"/pull", "invalid_dataManagerToken", "PUT", firstPullList},
+		req:          RequestTester{"/pull", "invalidToken", "PUT", firstPullList},
 		responseCode: http.StatusUnauthorized,
 		responseBody: "Unauthorized\n",
 		readContent:  "hello",

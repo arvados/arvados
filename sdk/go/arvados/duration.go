@@ -28,6 +28,11 @@ func (d Duration) String() string {
 	return time.Duration(d).String()
 }
 
+// Duration returns a time.Duration
+func (d Duration) Duration() time.Duration {
+	return time.Duration(d)
+}
+
 // Value implements flag.Value
 func (d *Duration) Set(s string) error {
 	dur, err := time.ParseDuration(s)
