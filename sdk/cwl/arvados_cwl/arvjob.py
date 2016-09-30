@@ -38,21 +38,27 @@ class ArvadosJob(object):
         }
         runtime_constraints = {}
 
-        if self.generatefiles["listing"]:
-            vwd = arvados.collection.Collection()
-            script_parameters["task.vwd"] = {}
-            generatemapper = InitialWorkDirPathMapper([self.generatefiles], "", "",
-                                        separateDirs=False)
-            for f, p in generatemapper.items():
-                if p.type == "CreateFile":
-                    with vwd.open(p.target, "w") as n:
-                        n.write(p.resolved.encode("utf-8"))
-            vwd.save_new()
-            for f, p in generatemapper.items():
-                if p.type == "File":
-                    script_parameters["task.vwd"][p.target] = p.resolved
-                if p.type == "CreateFile":
-                    script_parameters["task.vwd"][p.target] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), p.target)
+        with Perf(metrics, "generatefiles %s" % self.name):
+            if self.generatefiles["listing"]:
+                vwd = arvados.collection.Collection()
+                script_parameters["task.vwd"] = {}
+                generatemapper = InitialWorkDirPathMapper([self.generatefiles], "", "",
+                                                          separateDirs=False)
+
+                with Perf(metrics, "createfiles %s" % self.name):
+                    for f, p in generatemapper.items():
+                        if p.type == "CreateFile":
+                            with vwd.open(p.target, "w") as n:
+                                n.write(p.resolved.encode("utf-8"))
+
+                with Perf(metrics, "generatefiles.save_new %s" % self.name):
+                    vwd.save_new()
+
+                for f, p in generatemapper.items():
+                    if p.type == "File":
+                        script_parameters["task.vwd"][p.target] = p.resolved
+                    if p.type == "CreateFile":
+                        script_parameters["task.vwd"][p.target] = "$(task.keep)/%s/%s" % (vwd.portable_data_hash(), p.target)
 
         script_parameters["task.env"] = {"TMPDIR": self.tmpdir, "HOME": self.outdir}
         if self.environment:
@@ -74,11 +80,12 @@ class ArvadosJob(object):
         if self.permanentFailCodes:
             script_parameters["task.permanentFailCodes"] = self.permanentFailCodes
 
-        (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
-        if docker_req and kwargs.get("use_container") is not False:
-            runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvrunner.project_uuid)
-        else:
-            runtime_constraints["docker_image"] = "arvados/jobs"
+        with Perf(metrics, "arv_docker_get_image %s" % self.name):
+            (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
+            if docker_req and kwargs.get("use_container") is not False:
+                runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvrunner.project_uuid)
+            else:
+                runtime_constraints["docker_image"] = "arvados/jobs"
 
         resources = self.builder.resources
         if resources is not None:
