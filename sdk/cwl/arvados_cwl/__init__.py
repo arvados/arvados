@@ -9,6 +9,8 @@ import os
 import sys
 import threading
 import hashlib
+import copy
+import json
 from functools import partial
 import pkg_resources  # part of setuptools
 
@@ -26,10 +28,11 @@ from .arvtool import ArvadosCommandTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow
 from .fsaccess import CollectionFsAccess
 from .perf import Perf
-from cwltool.pack import pack
+from .pathmapper import InitialWorkDirPathMapper
 
+from cwltool.pack import pack
 from cwltool.process import shortname, UnsupportedRequirement
-from cwltool.pathmapper import adjustFileObjs
+from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
 from cwltool.draft2tool import compute_checksums
 from arvados.api import OrderedJsonModel
 
@@ -58,6 +61,7 @@ class ArvCwlRunner(object):
         self.stop_polling = threading.Event()
         self.poll_api = None
         self.pipeline = None
+        self.final_output_collection = None
 
         if self.work_api is None:
             # todo: autodetect API to use.
@@ -161,6 +165,48 @@ class ArvCwlRunner(object):
         if isinstance(obj, list):
             for v in obj:
                 self.check_writable(v)
+
+    def make_output_collection(self, name, outputObj):
+        outputObj = copy.deepcopy(outputObj)
+
+        files = []
+        def capture(fileobj):
+            files.append(fileobj)
+
+        adjustDirObjs(outputObj, capture)
+        adjustFileObjs(outputObj, capture)
+
+        generatemapper = InitialWorkDirPathMapper(files, "", "",
+                                                  separateDirs=False)
+
+        final = arvados.collection.Collection()
+
+        srccollections = {}
+        for k,v in generatemapper.items():
+            sp = k.split("/")
+            srccollection = sp[0][5:]
+            if srccollection not in srccollections:
+                srccollections[srccollection] = arvados.collection.CollectionReader(srccollection)
+            reader = srccollections[srccollection]
+            try:
+                final.copy("/".join(sp[1:]), v.target, source_collection=reader, overwrite=False)
+            except IOError as e:
+                logger.warn("While preparing output collection: %s", e)
+
+        def rewrite(fileobj):
+            fileobj["location"] = generatemapper.mapper(fileobj["location"])
+
+        adjustDirObjs(outputObj, capture)
+        adjustFileObjs(outputObj, capture)
+
+        with final.open("cwl.output.json", "w") as f:
+            json.dump(outputObj, f, indent=4)
+
+        final.save_new(name=name, owner_uuid=self.project_uuid, ensure_unique_name=True)
+
+        logger.info("Final output collection %s (%s)", final.portable_data_hash(), final.manifest_locator())
+
+        self.final_output_collection = final
 
     def arv_executor(self, tool, job_order, **kwargs):
         self.debug = kwargs.get("debug")
@@ -294,6 +340,12 @@ class ArvCwlRunner(object):
 
         if kwargs.get("compute_checksum"):
             adjustFileObjs(self.final_output, partial(compute_checksums, self.fs_access))
+
+        if kwargs.get("submit"):
+            logger.info("Final output collection %s", runnerjob.final_output)
+        else:
+            self.make_output_collection("Output of %s" % (shortname(tool.tool["id"])),
+                                        self.final_output)
 
         return self.final_output
 

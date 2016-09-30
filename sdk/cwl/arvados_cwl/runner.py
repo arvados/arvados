@@ -121,6 +121,7 @@ class Runner(object):
         self.running = False
         self.enable_reuse = enable_reuse
         self.uuid = None
+        self.final_output = None
 
     def update_pipeline_component(self, record):
         pass
@@ -169,7 +170,8 @@ class Runner(object):
         outputs = None
         try:
             try:
-                outc = arvados.collection.Collection(record["output"])
+                self.final_output = record["output"]
+                outc = arvados.collection.Collection(self.final_output)
                 with outc.open("cwl.output.json") as f:
                     outputs = json.load(f)
                 def keepify(fileobj):

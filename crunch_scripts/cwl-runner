@@ -72,36 +72,14 @@ try:
     args.cwl_runner_job={"uuid": arvados.current_job()["uuid"], "state": arvados.current_job()["state"]}
     outputObj = runner.arv_executor(t, job_order_object, **vars(args))
 
-    files = {}
-    def capture(fileobj):
-        path = fileobj["location"]
-        sp = path.split("/")
-        col = sp[0][5:]
-        if col not in files:
-            files[col] = set()
-        files[col].add("/".join(sp[1:]))
-        fileobj["location"] = path
-
-    adjustFileObjs(outputObj, capture)
-
-    final = arvados.collection.Collection()
-
-    for k,v in files.iteritems():
-        with arvados.collection.Collection(k) as c:
-            for f in c:
-                final.copy(f, f, c, True)
-
-    def makeRelative(fileobj):
-        fileobj["location"] = "/".join(fileobj["location"].split("/")[1:])
-
-    adjustFileObjs(outputObj, makeRelative)
-
-    with final.open("cwl.output.json", "w") as f:
-        json.dump(outputObj, f, indent=4)
+    if runner.final_output_collection:
+        outputCollection = runner.final_output_collection.portable_data_hash()
+    else:
+        outputCollection = None
 
     api.job_tasks().update(uuid=arvados.current_task()['uuid'],
                                          body={
-                                             'output': final.save_new(create_collection_record=False),
+                                             'output': outputCollection,
                                              'success': True,
                                              'progress':1.0
                                          }).execute()
