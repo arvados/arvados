@@ -194,12 +194,9 @@ class ArvCwlRunner(object):
 
         def rewrite(fileobj):
             fileobj["location"] = generatemapper.mapper(fileobj["location"]).target
-            if "basename" in fileobj:
-                del fileobj["basename"]
-            if "size" in fileobj:
-                del fileobj["size"]
-            if "listing" in fileobj:
-                del fileobj["listing"]
+            for k in ("basename", "size", "listing"):
+                if k in fileobj:
+                    del fileobj[k]
 
         adjustDirObjs(outputObj, rewrite)
         adjustFileObjs(outputObj, rewrite)
