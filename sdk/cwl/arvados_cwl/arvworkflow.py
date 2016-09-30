@@ -13,8 +13,10 @@ import ruamel.yaml as yaml
 
 from .runner import upload_docker, upload_dependencies, trim_listing
 from .arvtool import ArvadosCommandTool
+from .perf import Perf
 
 logger = logging.getLogger('arvados.cwl-runner')
+metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
 def upload_workflow(arvRunner, tool, job_order, project_uuid, update_uuid):
     upload_docker(arvRunner, tool)
@@ -62,40 +64,42 @@ class ArvadosWorkflow(Workflow):
         if req:
             document_loader, workflowobj, uri = (self.doc_loader, self.doc_loader.fetch(self.tool["id"]), self.tool["id"])
 
-            workflowobj["requirements"] = self.requirements + workflowobj.get("requirements", [])
-            workflowobj["hints"] = self.hints + workflowobj.get("hints", [])
-            packed = pack(document_loader, workflowobj, uri, self.metadata)
+            with Perf(metrics, "subworkflow upload_deps"):
+                workflowobj["requirements"] = self.requirements + workflowobj.get("requirements", [])
+                workflowobj["hints"] = self.hints + workflowobj.get("hints", [])
+                packed = pack(document_loader, workflowobj, uri, self.metadata)
 
-            upload_dependencies(self.arvrunner,
-                                kwargs.get("name", ""),
-                                document_loader,
-                                packed,
-                                uri,
-                                False)
+                upload_dependencies(self.arvrunner,
+                                    kwargs.get("name", ""),
+                                    document_loader,
+                                    packed,
+                                    uri,
+                                    False)
 
-            upload_dependencies(self.arvrunner,
-                                os.path.basename(joborder.get("id", "#")),
-                                document_loader,
-                                joborder,
-                                joborder.get("id", "#"),
-                                False)
+                upload_dependencies(self.arvrunner,
+                                    os.path.basename(joborder.get("id", "#")),
+                                    document_loader,
+                                    joborder,
+                                    joborder.get("id", "#"),
+                                    False)
 
-            joborder_keepmount = copy.deepcopy(joborder)
+            with Perf(metrics, "subworkflow adjust"):
+                joborder_keepmount = copy.deepcopy(joborder)
 
-            def keepmount(obj):
-                if obj["location"].startswith("keep:"):
-                    obj["location"] = "/keep/" + obj["location"][5:]
-                    if "listing" in obj:
-                        del obj["listing"]
-                elif obj["location"].startswith("_:"):
-                    del obj["location"]
-                else:
-                    raise WorkflowException("Location is not a keep reference or a literal: '%s'" % obj["location"])
+                def keepmount(obj):
+                    if obj["location"].startswith("keep:"):
+                        obj["location"] = "/keep/" + obj["location"][5:]
+                        if "listing" in obj:
+                            del obj["listing"]
+                    elif obj["location"].startswith("_:"):
+                        del obj["location"]
+                    else:
+                        raise WorkflowException("Location is not a keep reference or a literal: '%s'" % obj["location"])
 
-            adjustFileObjs(joborder_keepmount, keepmount)
-            adjustDirObjs(joborder_keepmount, keepmount)
-            adjustFileObjs(packed, keepmount)
-            adjustDirObjs(packed, keepmount)
+                adjustFileObjs(joborder_keepmount, keepmount)
+                adjustDirObjs(joborder_keepmount, keepmount)
+                adjustFileObjs(packed, keepmount)
+                adjustDirObjs(packed, keepmount)
 
             wf_runner = {
                 "class": "CommandLineTool",
@@ -104,7 +108,6 @@ class ArvadosWorkflow(Workflow):
                 "outputs": self.tool["outputs"],
                 "stdout": "cwl.output.json",
                 "requirements": workflowobj["requirements"]+[
-                    {"class": "InlineJavascriptRequirement"},
                     {
                     "class": "InitialWorkDirRequirement",
                     "listing": [{
@@ -116,7 +119,7 @@ class ArvadosWorkflow(Workflow):
                         }]
                 }],
                 "hints": workflowobj["hints"],
-                "arguments": ["--no-container", "--move-outputs", "workflow.cwl#main", "cwl.input.yml"]
+                "arguments": ["--no-container", "--move-outputs", "--preserve-entire-environment", "workflow.cwl#main", "cwl.input.yml"]
             }
             kwargs["loader"] = self.doc_loader
             kwargs["avsc_names"] = self.doc_schema
