@@ -867,7 +867,7 @@ class ApplicationController < ActionController::Base
 
   helper_method :recent_collections
   def recent_collections lim
-    c = Collection.limit(lim).order(["modified_at desc"]).filter([["owner_uuid", "is_a", "arvados#group"]])
+    c = Collection.limit(lim).order(["modified_at desc"]).results
     own = {}
     Group.filter([["uuid", "in", c.map(&:owner_uuid)]]).each do |g|
       own[g[:uuid]] = g
