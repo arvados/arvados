@@ -116,6 +116,20 @@ var Show = {
     },
 };
 
+var GenericCell = {
+    view: function(vnode) {
+        if (vnode.attrs.field == 'modified_by_user_uuid') {
+            var u = (vnode.attrs.session.client.Get('users/'+vnode.attrs.value)() || {})
+            return [u.full_name];
+        } else if (vnode.attrs.field == 'output') {
+            var c = (vnode.attrs.session.client.Get('collections/'+vnode.attrs.item[vnode.attrs.field])() || {})
+            return [c.name || c.portable_data_hash];
+        } else {
+            return [vnode.attrs.value];
+        }
+    },
+};
+
 // m(GenericResourceList, attrs, children...)
 //
 // resource: arvados resource path, e.g., 'collections'
@@ -129,17 +143,39 @@ var GenericResourceList = function(resource) { return {
                 filters: (vnode.attrs.filters instanceof Array) ? vnode.attrs.filters : vnode.attrs.filters(),
             }).
             catch(function() { return {items: []} });
+        vnode.state.coldefs = [];
+        vnode.state.session.dd.run(vnode.state.updateColdefs.bind(this, vnode));
+    },
+    updateColdefs: function(vnode, dd) {
+        var schema = dd.resources[vnode.state.resource].methods.get.response['$ref'];
+        var props = dd.schemas[schema].properties;
+        vnode.state.coldefs =
+            ['uuid', 'full_name', 'name', 'script', 'output', 'modified_by_user_uuid'].
+            reduce(function(cols, field) {
+                if (field in props)
+                    cols.push(field);
+                return cols;
+            }, []);
     },
     view: function(vnode) {
-        return !vnode.state.req() ? m(Loading) : m('table.table.table-hover.table-sm',
+        if (!vnode.state.req()) return m(Loading);
+        return m('table.table.table-hover.table-sm',
+                 m('thead',
+                   m('tr',
+                     vnode.state.coldefs.map(function(field) {
+                         return m('th', field);
+                     }))),
                  m('tbody',
                    vnode.state.req().items.map(function(item) {
-                       var user = vnode.state.session.client.Get('users/'+item.modified_by_user_uuid)() || {};
-                       return m('tr',
-                                m('td', item.full_name || item.name || item.hostname || item.script),
-                                m('td', item.email || item.script_version),
-                                m('td', user.full_name),
-                                m('td', item.uuid));
+                       return m('tr', {key: item.uuid},
+                                vnode.state.coldefs.map(function(field) {
+                                    return m('td', m(GenericCell, {
+                                        session: vnode.state.session,
+                                        item: item,
+                                        field: field,
+                                        value: item[field],
+                                    }));
+                                }));
                    })));
     },
 }};
