@@ -1,3 +1,29 @@
+<%
+  recent_procs = recent_processes(10)
+
+  wus = {}
+  outputs = []
+  recent_procs.each do |p|
+    wu = p.work_unit
+    wus[p] = wu
+    outputs << wu.outputs
+  end
+  outputs = outputs.flatten.uniq
+
+  collection_pdhs = outputs.select {|x| !(m = CollectionsHelper.match(x)).nil?}.uniq.compact
+  collection_uuids = outputs - collection_pdhs
+
+  if !Rails.configuration.suppress_collections_in_dashboard
+    recent_cs = recent_collections(8)
+    collection_uuids = collection_uuids + recent_cs[:collections].collect {|c| c.uuid}
+    collection_uuids.flatten.uniq
+  end
+
+  preload_collections_for_objects collection_uuids if collection_uuids.any?
+  preload_for_pdhs collection_pdhs if collection_pdhs.any?
+  preload_links_for_objects(collection_pdhs + collection_uuids)
+%>
+
   <div class="row">
     <div class="col-md-6">
       <div class="panel panel-default" style="min-height: 10.5em">
@@ -26,13 +52,11 @@
           <% end %>
         </div>
 
-        <% _recent_processes = recent_processes(12) %>
         <div class="panel-body recent-processes">
-          <% if _recent_processes.empty? %>
+          <% if recent_procs.empty? %>
             No recent pipelines or processes.
           <% else %>
-          <% _recent_processes.each do |p| %>
-            <% wu = p.work_unit %>
+          <% wus.each do |p, wu| %>
             <% if wu.is_finished? %>
             <div class="dashboard-panel-info-row row-<%=wu.uuid%>">
               <div class="row">
@@ -139,6 +163,7 @@
           </div>
         </div>
       </div>
+      <% if !Rails.configuration.suppress_collections_in_dashboard %>
       <div class="panel panel-default">
         <div class="panel-heading"><span class="panel-title">Recent collections</span>
           <span class="pull-right">
@@ -148,11 +173,10 @@
           </span>
         </div>
         <div class="panel-body">
-          <% r = recent_collections(8) %>
-          <% r[:collections].each do |p| %>
+          <% recent_cs[:collections].each do |p| %>
             <div class="dashboard-panel-info-row">
               <div>
-                <i class="fa fa-fw fa-folder-o"></i><%= link_to_if_arvados_object r[:owners][p[:owner_uuid]], friendly_name: true %>/
+                <i class="fa fa-fw fa-folder-o"></i><%= link_to_if_arvados_object recent_cs[:owners][p[:owner_uuid]], friendly_name: true %>/
                 <span class="pull-right"><%= render_localized_date(p[:modified_at], "noseconds") %></span>
               </div>
               <div class="text-overflow-ellipsis" style="margin-left: 1em; width: 100%"><%= link_to_if_arvados_object p, {friendly_name: true, no_tags: true} %>
@@ -161,5 +185,6 @@
           <% end %>
         </div>
       </div>
+      <% end %>
     </div>
   </div>
