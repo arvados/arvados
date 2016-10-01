@@ -10,14 +10,11 @@ var _sessions = {};
 function getSession(siteID) {
     var session = _sessions[siteID];
     if (!session) {
-        var client = new arvados.Client(siteID);
         var token = savedTokens.Get(siteID) || savedTokens.Put(siteID, '');
+        var client = new arvados.Client(siteID, token, requestFunc);
         session = _sessions[siteID] = {
             client: client,
-            dd: m.request({
-                method: 'GET',
-                url: client.DiscoveryURL(),
-            }),
+            dd: client.DiscoveryDoc(),
             websocket: m.prop(),
             token: token,
         };
@@ -25,6 +22,21 @@ function getSession(siteID) {
     return session;
 }
 
+function requestFunc(options) {
+    if ('headers' in options) {
+        var headers = options.headers;
+        options.config = function(xhr) {
+            headers.map(function(hdr) {
+                xhr.setRequestHeader(hdr[0], hdr[1]);
+            });
+            return xhr;
+        }
+        delete options.headers;
+    }
+    return m.request(options);
+}
+
+// remove me
 function ArvadosRequest(session, method, url) {
     return session.dd.run(function() {
         return m.request({
@@ -104,6 +116,34 @@ var Show = {
     },
 };
 
+// m(GenericResourceList, attrs, children...)
+//
+// resource: arvados resource path, e.g., 'collections'
+// attrs.filters: an array of arvados filters, or a stream that returns one
+var GenericResourceList = function(resource) { return {
+    oninit: function(vnode) {
+        vnode.state.resource = resource;
+        vnode.state.session = getSession(vnode.attrs.siteID);
+        vnode.state.req =
+            vnode.state.session.client.Get(vnode.state.resource, {
+                filters: (vnode.attrs.filters instanceof Array) ? vnode.attrs.filters : vnode.attrs.filters(),
+            }).
+            catch(function() { return {items: []} });
+    },
+    view: function(vnode) {
+        return !vnode.state.req() ? m(Loading) : m('table.table.table-hover.table-sm',
+                 m('tbody',
+                   vnode.state.req().items.map(function(item) {
+                       var user = vnode.state.session.client.Get('users/'+item.modified_by_user_uuid)() || {};
+                       return m('tr',
+                                m('td', item.full_name || item.name || item.hostname || item.script),
+                                m('td', item.email || item.script_version),
+                                m('td', user.full_name),
+                                m('td', item.uuid));
+                   })));
+    },
+}};
+
 var bsDropdown = {
     oninit: function(vnode) {
         vnode.state.toggle = function(e) {
@@ -163,7 +203,7 @@ var Layout = {
     view: function(vnode) {
         return [
             m(TopNav),
-            m('.container-fluid', vnode.children),
+            m('.container-fluid', vnode.attrs, vnode.children),
         ];
     },
 };
@@ -182,13 +222,13 @@ var TryLogin = {
     },
 };
 
-function RouteResolver(layout, component, withKey) {
+function RouteResolver(layout, component, attrs) {
     return {
         render: function(vnode) {
             return m(layout, m(component,
                                Object.assign({
-                                   key: withKey + ':' + vnode.attrs[withKey],
-                               }, vnode.attrs)));
+                                   key: m.route.get(),
+                               }, attrs || {}, vnode.attrs)));
         },
     };
 }
@@ -197,12 +237,30 @@ function RouteResolver(layout, component, withKey) {
     var RR = RouteResolver;
     var routes = {
         '/': TryLogin,
-        '/site/:siteID/discovery': RR(Layout, DiscoveryDoc, 'siteID'),
+        '/site/:siteID/discovery': RR(Layout, DiscoveryDoc),
         '/loginCallback/:siteID/:token/:next...': TryLogin,
     };
-    ['collections', 'containers'].map(function(table) {
-        routes['/site/:siteID/'+table+'/:uuid'] = RR(Layout, Show, 'uuid');
+    [
+        'api_clients',
+        'authorized_keys',
+        'collections',
+        'container_requests',
+        'containers',
+        'groups',
+        'humans',
+        'jobs',
+        'job_tasks',
+        'nodes',
+        'repositories',
+        'specimens',
+        'users',
+        'virtual_machines',
+    ].map(function(table) {
+        routes['/site/:siteID/'+table+'/:uuid'] = RR(Layout, Show);
+        routes['/site/:siteID/'+table] = RR(Layout, GenericResourceList(table), {filters: []});
     });
     m.route(document.body, '/', routes);
     m.mount(document.head, Head);
 })();
+
+window.m = m;
