@@ -225,13 +225,19 @@ var TopNav = {
                    Object.keys(savedTokens.Load()).map(function(siteID) {
                        return m('li.nav-item', m(bsDropdown, {
                            label: siteID,
-                           items: resources.map(function(resource) {
+                           items: [
+			       m('a', {
+				   oncreate: m.route.link,
+				   href: '/site/'+siteID+'/discovery',
+				   key: '_site',
+			       }, 'about '+siteID),
+			   ].concat(resources.map(function(resource) {
                                return m('a', {
                                    oncreate: m.route.link,
                                    href: '/site/'+siteID+'/'+resource,
                                    key: resource,
                                }, resource.replace(/_/g, ' '));
-                           }),
+                           })),
                        }));
                    }),
                    m('li.nav-item.pull-xs-right',
