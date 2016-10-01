@@ -4,6 +4,22 @@ var local = require('./local');
 
 var savedTokens = new local.Dict('tokens');
 var _sessions = {};
+var resources = [
+    'api_clients',
+    'authorized_keys',
+    'collections',
+    'container_requests',
+    'containers',
+    'groups',
+    'humans',
+    'jobs',
+    'job_tasks',
+    'nodes',
+    'repositories',
+    'specimens',
+    'users',
+    'virtual_machines',
+];
 
 // getSession returns a new or existing session for the API endpoint
 // specified by siteID.
@@ -205,17 +221,30 @@ var bsDropdown = {
 var TopNav = {
     view: function(vnode) {
         return m('nav.navbar.navbar-light[style=background-color:#e3f2fd]',
-                 m('.pull-xs-right',
-                   m(bsDropdown, {
-                       label: 'Log in...',
-                       align: 'right',
-                       items: Object.keys(savedTokens.Load()).map(function(siteID) {
-                           return m('a', {
-                               key: siteID,
-                               href: getSession(siteID).client.LoginURL(location.href.replace(/([^\/]*\/+[^\/]+[#!?\/]*)/, '$1loginCallback/'+siteID+'/XYZZY/')),
-                           }, siteID);
-                       }),
-                   })));
+                 m('ul.nav.navbar-nav',
+                   Object.keys(savedTokens.Load()).map(function(siteID) {
+                       return m('li.nav-item', m(bsDropdown, {
+                           label: siteID,
+                           items: resources.map(function(resource) {
+                               return m('a', {
+                                   oncreate: m.route.link,
+                                   href: '/site/'+siteID+'/'+resource,
+                                   key: resource,
+                               }, resource.replace(/_/g, ' '));
+                           }),
+                       }));
+                   }),
+                   m('li.nav-item.pull-xs-right',
+                     m(bsDropdown, {
+                         label: 'Log in...',
+                         align: 'right',
+                         items: Object.keys(savedTokens.Load()).map(function(siteID) {
+                             return m('a', {
+                                 key: siteID,
+                                 href: getSession(siteID).client.LoginURL(location.href.replace(/([^\/]*\/+[^\/]+[#!?\/]*)/, '$1loginCallback/'+siteID+'/XYZZY/')),
+                             }, siteID);
+                         }),
+                     }))));
     },
 };
 
@@ -276,22 +305,7 @@ function RouteResolver(layout, component, attrs) {
         '/site/:siteID/discovery': RR(Layout, DiscoveryDoc),
         '/loginCallback/:siteID/:token/:next...': TryLogin,
     };
-    [
-        'api_clients',
-        'authorized_keys',
-        'collections',
-        'container_requests',
-        'containers',
-        'groups',
-        'humans',
-        'jobs',
-        'job_tasks',
-        'nodes',
-        'repositories',
-        'specimens',
-        'users',
-        'virtual_machines',
-    ].map(function(table) {
+    resources.map(function(table) {
         routes['/site/:siteID/'+table+'/:uuid'] = RR(Layout, Show);
         routes['/site/:siteID/'+table] = RR(Layout, GenericResourceList(table), {filters: []});
     });
