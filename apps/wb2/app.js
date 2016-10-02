@@ -140,6 +140,8 @@ var GenericCell = {
         if (vnode.attrs.field == 'modified_by_user_uuid') {
             var u = (vnode.attrs.session.client.Get('users/'+vnode.attrs.value)() || {})
             return [u.full_name];
+        } else if (vnode.attrs.field == 'script_version') {
+            return [(vnode.attrs.value || '').slice(0,7)];
         } else if (vnode.attrs.field == 'output') {
             var c = (vnode.attrs.session.client.Get('collections/'+vnode.attrs.item[vnode.attrs.field])() || {})
             return [c.name || c.portable_data_hash];
@@ -169,8 +171,9 @@ var GenericResourceList = function(resource) { return {
         var schema = dd.resources[vnode.state.resource].methods.get.response['$ref'];
         var props = dd.schemas[schema].properties;
         vnode.state.coldefs =
-            ['uuid', 'full_name', 'name', 'script', 'output', 'modified_by_user_uuid'].
+            ['uuid', 'state', 'hostname', 'ip_address', 'last_ping_at', 'full_name', 'name', 'portable_data_hash', 'script', 'script_version', 'output', 'modified_by_user_uuid'].
             reduce(function(cols, field) {
+                console.log(cols);
                 if (field in props)
                     cols.push(field);
                 return cols;
@@ -178,7 +181,7 @@ var GenericResourceList = function(resource) { return {
     },
     view: function(vnode) {
         if (!vnode.state.req()) return m(Loading);
-        return m('table.table.table-hover.table-sm',
+        return m('table.table.table-hover.table-condensed',
                  m('thead',
                    m('tr',
                      vnode.state.coldefs.map(function(field) {
@@ -237,7 +240,7 @@ var Head = {
             m('meta[charset=utf-8]'),
             m('meta[name=viewport][content=width=device-width, initial-scale=1, shrink-to-fit=no]'),
             m('meta[http-equiv=x-ua-compatible][content=ie=edge]'),
-            m('style[type=text/css]', 'html, body, .content { height: 100%; margin: 0; }'),
+            m('style[type=text/css]', 'html, body { min-height: 100%; margin: 0; } .wrapper, .content-wrapper { min-height: 100%; }'),
         ];
     },
 };
@@ -272,19 +275,21 @@ var Layout = {
                             Object.keys(savedTokens.Load()).map(function(siteID) {
                                 if (savedTokens.Get(siteID))
                                     return m('li', {key: siteID}, m('a', {
-                                        href: '/site/'+siteID+'/discovery',
+                                        href: '/site/'+siteID+'/'+(vnode.attrs.resource || 'discovery'),
                                         oncreate: m.route.link,
                                     }, siteID));
                                 else
                                     return m('li', {key: siteID}, m('a', {
                                         href: getSession(siteID).client.LoginURL(location.href.replace(/([^\/]*\/+[^\/]+[#!?\/]*)/, '$1loginCallback/'+siteID+'/XYZZY/')),
-                                    }, siteID));
+                                    }, 'Log in to '+siteID));
                                 return m('a', {
 				    oncreate: m.route.link,
 				    href: '/site/'+siteID+'/discovery',
 				    key: '_site',
 			        }, 'about '+siteID);
-                            }))))))))),
+                            }))),
+                        m('li.header',
+                          m('i', 'For now, add new sites by editing the location bar.')))))))),
             m('aside.main-sidebar',
               m('section.sidebar',
                 m('ul.sidebar-menu',
@@ -296,7 +301,9 @@ var Layout = {
                           key: resource,
                       }, resource.replace(/_/g, ' ')));
                   })))),
-            m('.content-wrapper', m('section.content', vnode.attrs, vnode.children)),
+            m('.content-wrapper',
+              m('section.content-header'),
+              m('section.content', vnode.attrs, vnode.children)),
         ]);
     },
 };
