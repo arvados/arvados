@@ -213,7 +213,7 @@ var Head = {
             m('meta[charset=utf-8]'),
             m('meta[name=viewport][content=width=device-width, initial-scale=1, shrink-to-fit=no]'),
             m('meta[http-equiv=x-ua-compatible][content=ie=edge]'),
-            m('style[type=text/css]', 'html, body { min-height: 100%; margin: 0; } .wrapper, .content-wrapper { min-height: 100%; }'),
+            m('style[type=text/css]', '.content-wrapper .content { min-height: 800px; }'),
         ];
     },
 };
