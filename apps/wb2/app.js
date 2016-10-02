@@ -202,33 +202,6 @@ var GenericResourceList = function(resource) { return {
     },
 }};
 
-var bsDropdown = {
-    oninit: function(vnode) {
-        vnode.state.toggle = function(e) {
-            vnode.state.open = !vnode.state.open;
-            return false;
-        };
-    },
-    view: function(vnode) {
-        return m('.dropdown', {className: vnode.state.open ? 'open' : ''}, [
-            m('a.btn.btn-secondary.dropdown-toggle', {
-                onclick: vnode.state.toggle,
-            }, vnode.attrs.label),
-            m('.dropdown-menu',
-              {className: vnode.attrs.align == 'right' ? 'dropdown-menu-right' : ''},
-              vnode.attrs.items.map(function(item) {
-                  item.attrs.className = 'dropdown-item '+item.attrs.className;
-                  return item;
-              })),
-        ]);
-    },
-};
-
-var TopNav = {};
-TopNav.view = function(vnode) {
-    return ;
-};
-
 var Head = {
     view: function() {
         return [
