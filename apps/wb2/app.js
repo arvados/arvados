@@ -1,3 +1,6 @@
+var jQuery = window.$ = window.jQuery = require('jquery');
+var bootstrap = require('bootstrap');
+var lte = require('admin-lte');
 var m = require('mithril');
 var arvados = require('./arvados');
 var local = require('./local');
@@ -146,7 +149,7 @@ var GenericCell = {
     },
 };
 
-// m(GenericResourceList, attrs, children...)
+// m(GenericResourceList(resource), attrs)
 //
 // resource: arvados resource path, e.g., 'collections'
 // attrs.filters: an array of arvados filters, or a stream that returns one
@@ -218,49 +221,23 @@ var bsDropdown = {
     },
 };
 
-var TopNav = {
-    view: function(vnode) {
-        return m('nav.navbar.navbar-light[style=background-color:#e3f2fd]',
-                 m('ul.nav.navbar-nav',
-                   Object.keys(savedTokens.Load()).map(function(siteID) {
-                       return m('li.nav-item', m(bsDropdown, {
-                           label: siteID,
-                           items: [
-			       m('a', {
-				   oncreate: m.route.link,
-				   href: '/site/'+siteID+'/discovery',
-				   key: '_site',
-			       }, 'about '+siteID),
-			   ].concat(resources.map(function(resource) {
-                               return m('a', {
-                                   oncreate: m.route.link,
-                                   href: '/site/'+siteID+'/'+resource,
-                                   key: resource,
-                               }, resource.replace(/_/g, ' '));
-                           })),
-                       }));
-                   }),
-                   m('li.nav-item.pull-xs-right',
-                     m(bsDropdown, {
-                         label: 'Log in...',
-                         align: 'right',
-                         items: Object.keys(savedTokens.Load()).map(function(siteID) {
-                             return m('a', {
-                                 key: siteID,
-                                 href: getSession(siteID).client.LoginURL(location.href.replace(/([^\/]*\/+[^\/]+[#!?\/]*)/, '$1loginCallback/'+siteID+'/XYZZY/')),
-                             }, siteID);
-                         }),
-                     }))));
-    },
+var TopNav = {};
+TopNav.view = function(vnode) {
+    return ;
 };
 
 var Head = {
     view: function() {
         return [
-            m('link[rel=stylesheet][href=https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.4/css/bootstrap.min.css][integrity=sha384-2hfp1SzUoho7/TsGGGDaFdsuuDL0LX2hnUp6VkX3CUQ2K4K+xjboZdsXyp4oUHZj][crossorigin=anonymous]'),
+            m('link[rel=stylesheet][href=node_modules/bootstrap/dist/css/bootstrap.min.css]'),
+            m('link[rel=stylesheet][href=node_modules/font-awesome/css/font-awesome.min.css]'),
+            m('link[rel=stylesheet][href=node_modules/ionicons/dist/css/ionicons.min.css]'),
+            m('link[rel=stylesheet][href=node_modules/admin-lte/dist/css/AdminLTE.min.css]'),
+            m('link[rel=stylesheet][href=node_modules/admin-lte/dist/css/skins/skin-blue.min.css]'),
             m('meta[charset=utf-8]'),
             m('meta[name=viewport][content=width=device-width, initial-scale=1, shrink-to-fit=no]'),
             m('meta[http-equiv=x-ua-compatible][content=ie=edge]'),
+            m('style[type=text/css]', 'html, body, .content { height: 100%; margin: 0; }'),
         ];
     },
 };
@@ -272,10 +249,55 @@ var Layout = {
         // needed
     },
     view: function(vnode) {
-        return [
-            m(TopNav),
-            m('.container-fluid', vnode.attrs, vnode.children),
-        ];
+        return m('.wrapper', [
+            m('header.main-header',
+              m('a.logo[href=/]',
+                m('span.logo-mini', 'wb2'),
+                m('span.logo-lg', 'wb2')),
+              m('nav.navbar.navbar-static-top[role=navigation]',
+                m('a.sidebar-toggle[href=#][data-toggle=offcanvas][role=button]',
+                  m('span.sr-only', 'Toggle navigation')),
+                m('.navbar-custom-menu',
+                  m('ul.nav.navbar-nav',
+                    m('li.dropdown.notifications-menu',
+                      m('a.dropdown-toggle[href=#][data-toggle=dropdown][aria-expanded=false]',
+                        m('i.fa.fa-cloud'),
+                        m('span.label.label-success',
+                          {className: 'label-'+(savedTokens.Get(vnode.attrs.SiteID)?'success':'warning')},
+                          vnode.attrs.siteID)),
+                      m('ul.dropdown-menu',
+                        m('li.header', 'switch site...'),
+                        m('li',
+                          m('ul.menu',
+                            Object.keys(savedTokens.Load()).map(function(siteID) {
+                                if (savedTokens.Get(siteID))
+                                    return m('li', {key: siteID}, m('a', {
+                                        href: '/site/'+siteID+'/discovery',
+                                        oncreate: m.route.link,
+                                    }, siteID));
+                                else
+                                    return m('li', {key: siteID}, m('a', {
+                                        href: getSession(siteID).client.LoginURL(location.href.replace(/([^\/]*\/+[^\/]+[#!?\/]*)/, '$1loginCallback/'+siteID+'/XYZZY/')),
+                                    }, siteID));
+                                return m('a', {
+				    oncreate: m.route.link,
+				    href: '/site/'+siteID+'/discovery',
+				    key: '_site',
+			        }, 'about '+siteID);
+                            }))))))))),
+            m('aside.main-sidebar',
+              m('section.sidebar',
+                m('ul.sidebar-menu',
+                  m('li.header', 'resources @ '+vnode.attrs.siteID),
+                  resources.map(function(resource) {
+                      return m('li', m('a', {
+                          oncreate: m.route.link,
+                          href: '/site/'+vnode.attrs.siteID+'/'+resource,
+                          key: resource,
+                      }, resource.replace(/_/g, ' ')));
+                  })))),
+            m('.content-wrapper', m('section.content', vnode.attrs, vnode.children)),
+        ]);
     },
 };
 
@@ -293,13 +315,14 @@ var TryLogin = {
     },
 };
 
-function RouteResolver(layout, component, attrs) {
+function RouteResolver(layout, component, addAttrs) {
     return {
         render: function(vnode) {
-            return m(layout, m(component,
-                               Object.assign({
-                                   key: m.route.get(),
-                               }, attrs || {}, vnode.attrs)));
+            var attrs = Object.assign({
+                key: m.route.get(),
+            }, addAttrs || {}, vnode.attrs);
+            return m(layout, attrs,
+                     m(component, attrs));
         },
     };
 }
@@ -312,9 +335,10 @@ function RouteResolver(layout, component, attrs) {
         '/loginCallback/:siteID/:token/:next...': TryLogin,
     };
     resources.map(function(table) {
-        routes['/site/:siteID/'+table+'/:uuid'] = RR(Layout, Show);
-        routes['/site/:siteID/'+table] = RR(Layout, GenericResourceList(table), {filters: []});
+        routes['/site/:siteID/'+table+'/:uuid'] = RR(Layout, Show, {resource: table});
+        routes['/site/:siteID/'+table] = RR(Layout, GenericResourceList(table), {resource: table, filters: []});
     });
+    document.body.className = 'skin-blue sidebar-mini';
     m.route(document.body, '/', routes);
     m.mount(document.head, Head);
 })();

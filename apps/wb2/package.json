@@ -1,6 +1,11 @@
 {
     "name":"wb2",
     "dependencies":{
+        "admin-lte":"",
+        "bootstrap":"",
+        "font-awesome":"",
+        "ionicons":"",
+        "jquery":"",
         "mithril":"lhorie/mithril.js#rewrite"
     },
     "devDependencies":{
