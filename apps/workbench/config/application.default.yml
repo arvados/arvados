@@ -281,6 +281,7 @@ common:
   # and display in the Log tab, while subscribing to web sockets.
   running_job_log_records_to_fetch: 2000
 
-  # In systems with many shared projects, dashboard loading can be slow
-  # due to collections indexing; hide the recent collections panel
-  suppress_collections_in_dashboard: false
+  # In systems with many shared projects, dashboard loading can be
+  # slow due to collections indexing; the recent collections panel
+  # can be hidden by setting this configuration parameter to false
+  show_recent_collections_in_dashboard: true

@@ -1,5 +1,5 @@
 <%
-  recent_procs = recent_processes(10)
+  recent_procs = recent_processes(12)
 
   wus = {}
   outputs = []
@@ -13,7 +13,7 @@
   collection_pdhs = outputs.select {|x| !(m = CollectionsHelper.match(x)).nil?}.uniq.compact
   collection_uuids = outputs - collection_pdhs
 
-  if !Rails.configuration.suppress_collections_in_dashboard
+  if Rails.configuration.show_recent_collections_in_dashboard
     recent_cs = recent_collections(8)
     collection_uuids = collection_uuids + recent_cs[:collections].collect {|c| c.uuid}
     collection_uuids.flatten.uniq
@@ -163,7 +163,7 @@
           </div>
         </div>
       </div>
-      <% if !Rails.configuration.suppress_collections_in_dashboard %>
+      <% if Rails.configuration.show_recent_collections_in_dashboard %>
       <div class="panel panel-default">
         <div class="panel-heading"><span class="panel-title">Recent collections</span>
           <span class="pull-right">
