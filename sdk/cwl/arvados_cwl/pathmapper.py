@@ -101,6 +101,7 @@ class ArvPathMapper(PathMapper):
             if srcobj["class"] == "Directory":
                 if srcobj["location"] not in self._pathmap:
                     c = arvados.collection.Collection(api_client=self.arvrunner.api,
+                                                      keep_client=self.arvrunner.keep_client,
                                                       num_retries=self.arvrunner.num_retries)
                     subdirs = []
                     for l in srcobj["listing"]:
@@ -119,6 +120,7 @@ class ArvPathMapper(PathMapper):
                 (srcobj["location"].startswith("_:") and "contents" in srcobj)):
 
                 c = arvados.collection.Collection(api_client=self.arvrunner.api,
+                                                  keep_client=self.arvrunner.keep_client,
                                                   num_retries=self.arvrunner.num_retries                                                  )
                 subdirs = []
                 self.addentry(srcobj, c, ".", subdirs)

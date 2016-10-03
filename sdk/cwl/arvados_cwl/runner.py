@@ -171,7 +171,10 @@ class Runner(object):
         try:
             try:
                 self.final_output = record["output"]
-                outc = arvados.collection.Collection(self.final_output)
+                outc = arvados.collection.CollectionReader(self.final_output,
+                                                           api_client=self.arvrunner.api,
+                                                           keep_client=self.arvrunner.keep_client,
+                                                           num_retries=self.arvrunner.num_retries)
                 with outc.open("cwl.output.json") as f:
                     outputs = json.load(f)
                 def keepify(fileobj):

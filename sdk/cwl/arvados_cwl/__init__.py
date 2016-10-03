@@ -47,7 +47,7 @@ class ArvCwlRunner(object):
 
     """
 
-    def __init__(self, api_client, work_api=None):
+    def __init__(self, api_client, work_api=None, keep_client=None):
         self.api = api_client
         self.processes = {}
         self.lock = threading.Lock()
@@ -62,6 +62,10 @@ class ArvCwlRunner(object):
         self.poll_api = None
         self.pipeline = None
         self.final_output_collection = None
+        if keep_client is not None:
+            self.keep_client = keep_client
+        else:
+            self.keep_client = arvados.keep.KeepClient(api_client=self.api, num_retries=self.num_retries)
 
         if self.work_api is None:
             # todo: autodetect API to use.
@@ -178,14 +182,20 @@ class ArvCwlRunner(object):
 
         generatemapper = FinalOutputPathMapper(files, "", "", separateDirs=False)
 
-        final = arvados.collection.Collection()
+        final = arvados.collection.Collection(api_client=self.api,
+                                              keep_client=self.keep_client,
+                                              num_retries=self.num_retries)
 
         srccollections = {}
         for k,v in generatemapper.items():
             sp = k.split("/")
             srccollection = sp[0][5:]
             if srccollection not in srccollections:
-                srccollections[srccollection] = arvados.collection.CollectionReader(srccollection)
+                srccollections[srccollection] = arvados.collection.CollectionReader(
+                    srccollection,
+                    api_client=self.api,
+                    keep_client=self.keep_client,
+                    num_retries=self.num_retries)
             reader = srccollections[srccollection]
             try:
                 srcpath = "/".join(sp[1:]) if len(sp) > 1 else "."
@@ -219,7 +229,9 @@ class ArvCwlRunner(object):
         useruuid = self.api.users().current().execute()["uuid"]
         self.project_uuid = kwargs.get("project_uuid") if kwargs.get("project_uuid") else useruuid
         self.pipeline = None
-        make_fs_access = kwargs.get("make_fs_access") or partial(CollectionFsAccess, api_client=self.api)
+        make_fs_access = kwargs.get("make_fs_access") or partial(CollectionFsAccess,
+                                                                 api_client=self.api,
+                                                                 keep_client=self.keep_client)
         self.fs_access = make_fs_access(kwargs["basedir"])
 
         if kwargs.get("create_template"):
@@ -434,13 +446,14 @@ def add_arv_hints():
     res = pkg_resources.resource_stream(__name__, 'arv-cwl-schema.yml')
     cache["http://arvados.org/cwl"] = res.read()
     res.close()
-    _, cwlnames, _, _ = cwltool.process.get_schema("v1.0")
+    document_loader, cwlnames, _, _ = cwltool.process.get_schema("v1.0")
     _, extnames, _, _ = schema_salad.schema.load_schema("http://arvados.org/cwl", cache=cache)
     for n in extnames.names:
         if not cwlnames.has_name("http://arvados.org/cwl#"+n, ""):
             cwlnames.add_name("http://arvados.org/cwl#"+n, "", extnames.get_name(n, ""))
+        document_loader.idx["http://arvados.org/cwl#"+n] = {}
 
-def main(args, stdout, stderr, api_client=None):
+def main(args, stdout, stderr, api_client=None, keep_client=None):
     parser = arg_parser()
 
     job_order_object = None
@@ -453,7 +466,7 @@ def main(args, stdout, stderr, api_client=None):
     try:
         if api_client is None:
             api_client=arvados.api('v1', model=OrderedJsonModel())
-        runner = ArvCwlRunner(api_client, work_api=arvargs.work_api)
+        runner = ArvCwlRunner(api_client, work_api=arvargs.work_api, keep_client=keep_client)
     except Exception as e:
         logger.error(e)
         return 1
