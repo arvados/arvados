@@ -769,7 +769,7 @@ class ApplicationController < ActionController::Base
 
   helper_method :user_notifications
   def user_notifications
-    return [] if @errors or not current_user.andand.is_active
+    return [] if @errors or not current_user.andand.is_active or not Rails.configuration.show_user_notifications_in_dashboard
     @notifications ||= @@notification_tests.map do |t|
       t.call(self, current_user)
     end.compact
