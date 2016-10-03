@@ -176,7 +176,9 @@
           <% recent_cs[:collections].each do |p| %>
             <div class="dashboard-panel-info-row">
               <div>
+                <% if recent_cs[:owners][p[:owner_uuid]].is_a?(Group) %>
                 <i class="fa fa-fw fa-folder-o"></i><%= link_to_if_arvados_object recent_cs[:owners][p[:owner_uuid]], friendly_name: true %>/
+                <% end %>
                 <span class="pull-right"><%= render_localized_date(p[:modified_at], "noseconds") %></span>
               </div>
               <div class="text-overflow-ellipsis" style="margin-left: 1em; width: 100%"><%= link_to_if_arvados_object p, {friendly_name: true, no_tags: true} %>
