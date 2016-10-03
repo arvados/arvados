@@ -213,7 +213,7 @@ class ArvCwlRunner(object):
         adjustFileObjs(outputObj, rewrite)
 
         with final.open("cwl.output.json", "w") as f:
-            json.dump(outputObj, f, sort_keys=True, indent=4)
+            json.dump(outputObj, f, sort_keys=True, indent=4, separators=(',',': '))
 
         final.save_new(name=name, owner_uuid=self.project_uuid, ensure_unique_name=True)
 
