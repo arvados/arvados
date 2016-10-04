@@ -298,8 +298,11 @@ class Container < ArvadosModel
                                 mounts: self.mounts,
                                 runtime_constraints: self.runtime_constraints)
           retryable_requests.each do |cr|
-            cr.container_uuid = c.uuid
-            cr.save!
+            cr.with_lock do
+              # Use row locking because this increments container_count
+              cr.container_uuid = c.uuid
+              cr.save
+            end
           end
         end
 

@@ -79,6 +79,7 @@ class ContainerRequest < ArvadosModel
     self.runtime_constraints ||= {}
     self.mounts ||= {}
     self.cwd ||= "."
+    self.container_count_max ||= Rails.configuration.container_count_max
   end
 
   # Create a new container (or find an existing one) to satisfy this
@@ -177,7 +178,12 @@ class ContainerRequest < ArvadosModel
       resolve
     end
     if self.container_uuid != self.container_uuid_was
-      self.container_count += 1
+      if self.container_count_changed?
+        errors.add :container_count, "cannot be updated directly."
+        return false
+      else
+        self.container_count += 1
+      end
     end
   end
 
@@ -216,7 +222,7 @@ class ContainerRequest < ArvadosModel
       end
 
       # Can update priority, container count, name and description
-      permitted.push :priority, :container_count_max, :container_uuid, :name, :description
+      permitted.push :priority, :container_count, :container_count_max, :container_uuid, :name, :description
 
       if self.state_changed?
         # Allow create-and-commit in a single operation.
