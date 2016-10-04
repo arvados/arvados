@@ -2,9 +2,12 @@ package main
 
 import (
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -25,6 +28,7 @@ type TaskDef struct {
 	SuccessCodes       []int             `json:"task.successCodes"`
 	PermanentFailCodes []int             `json:"task.permanentFailCodes"`
 	TemporaryFailCodes []int             `json:"task.temporaryFailCodes"`
+	keepTmpOutput      bool              `json:"task.keepTmpOutput"`
 }
 
 type Tasks struct {
@@ -50,17 +54,21 @@ type IArvadosClient interface {
 	Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error)
 }
 
-func setupDirectories(crunchtmpdir, taskUuid string) (tmpdir, outdir string, err error) {
+func setupDirectories(crunchtmpdir, taskUuid string, keepTmp bool) (tmpdir, outdir string, err error) {
 	tmpdir = crunchtmpdir + "/tmpdir"
 	err = os.Mkdir(tmpdir, 0700)
 	if err != nil {
 		return "", "", err
 	}
 
-	outdir = crunchtmpdir + "/outdir"
-	err = os.Mkdir(outdir, 0700)
-	if err != nil {
-		return "", "", err
+	if keepTmp {
+		outdir = os.Getenv("TASK_KEEPMOUNT_TMP")
+	} else {
+		outdir = crunchtmpdir + "/outdir"
+		err = os.Mkdir(outdir, 0700)
+		if err != nil {
+			return "", "", err
+		}
 	}
 
 	return tmpdir, outdir, nil
@@ -81,6 +89,23 @@ func checkOutputFilename(outdir, fn string) error {
 	return nil
 }
 
+func copyFile(dst, src string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	return err
+}
+
 func setupCommand(cmd *exec.Cmd, taskp TaskDef, outdir string, replacements map[string]string) (stdin, stdout, stderr string, err error) {
 	if taskp.Vwd != nil {
 		for k, v := range taskp.Vwd {
@@ -89,7 +114,12 @@ func setupCommand(cmd *exec.Cmd, taskp TaskDef, outdir string, replacements map[
 			if err != nil {
 				return "", "", "", err
 			}
-			os.Symlink(v, outdir+"/"+k)
+			if taskp.keepTmpOutput {
+				// Is there an os.Copy?
+				copyFile(v, outdir+"/"+k)
+			} else {
+				os.Symlink(v, outdir+"/"+k)
+			}
 		}
 	}
 
@@ -180,6 +210,22 @@ func substitute(inp string, subst map[string]string) string {
 	return inp
 }
 
+func getKeepTmp(outdir string) (manifest string, err error) {
+	fn, err := os.Open(outdir + "/" + ".arvados#collection")
+	if err != nil {
+		return "", err
+	}
+	defer fn.Close()
+
+	buf, err := ioutil.ReadAll(fn)
+	if err != nil {
+		return "", err
+	}
+	collection := arvados.Collection{}
+	json.Unmarshal(buf, &collection)
+	return collection.ManifestText, nil
+}
+
 func runner(api IArvadosClient,
 	kc IKeepClient,
 	jobUuid, taskUuid, crunchtmpdir, keepmount string,
@@ -218,7 +264,7 @@ func runner(api IArvadosClient,
 	}
 
 	var tmpdir, outdir string
-	tmpdir, outdir, err = setupDirectories(crunchtmpdir, taskUuid)
+	tmpdir, outdir, err = setupDirectories(crunchtmpdir, taskUuid, taskp.keepTmpOutput)
 	if err != nil {
 		return TempFail{err}
 	}
@@ -313,9 +359,14 @@ func runner(api IArvadosClient,
 	}
 
 	// Upload output directory
-	manifest, err := WriteTree(kc, outdir)
-	if err != nil {
-		return TempFail{err}
+	var manifest string
+	if taskp.keepTmpOutput {
+		manifest, err = getKeepTmp(outdir)
+	} else {
+		manifest, err = WriteTree(kc, outdir)
+		if err != nil {
+			return TempFail{err}
+		}
 	}
 
 	// Set status
