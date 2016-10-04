@@ -179,8 +179,13 @@ class RunnerContainer(Runner):
                                                pull_image,
                                                self.arvrunner.project_uuid)
 
+        command = ["arvados-cwl-runner", "--local", "--api=containers"]
+        if self.output_name:
+            command.append("--output-name=" + self.output_name)
+        command.extend([workflowpath, jobpath])
+
         return {
-            "command": ["arvados-cwl-runner", "--local", "--api=containers", workflowpath, jobpath],
+            "command": command,
             "owner_uuid": self.arvrunner.project_uuid,
             "name": self.name,
             "output_path": "/var/spool/cwl",

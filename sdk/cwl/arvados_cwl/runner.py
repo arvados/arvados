@@ -114,7 +114,7 @@ def upload_docker(arvrunner, tool):
 
 
 class Runner(object):
-    def __init__(self, runner, tool, job_order, enable_reuse):
+    def __init__(self, runner, tool, job_order, enable_reuse, output_name):
         self.arvrunner = runner
         self.tool = tool
         self.job_order = job_order
@@ -122,6 +122,7 @@ class Runner(object):
         self.enable_reuse = enable_reuse
         self.uuid = None
         self.final_output = None
+        self.output_name = output_name
 
     def update_pipeline_component(self, record):
         pass

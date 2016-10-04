@@ -228,6 +228,8 @@ class RunnerJob(Runner):
         workflowmapper = super(RunnerJob, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)
 
         self.job_order["cwl:tool"] = workflowmapper.mapper(self.tool.tool["id"]).target[5:]
+        if self.output_name:
+            self.job_order["arv:output_name"] = self.output_name
         return {
             "script": "cwl-runner",
             "script_version": "master",
@@ -283,7 +285,8 @@ class RunnerTemplate(object):
             runner=runner,
             tool=tool,
             job_order=job_order,
-            enable_reuse=enable_reuse)
+            enable_reuse=enable_reuse,
+            output_name=None)
 
     def pipeline_component_spec(self):
         """Return a component that Workbench and a-r-p-i will understand.

@@ -24,6 +24,7 @@ import arvados.config
 
 from .arvcontainer import ArvadosContainer, RunnerContainer
 from .arvjob import ArvadosJob, RunnerJob, RunnerTemplate
+from. runner import Runner
 from .arvtool import ArvadosCommandTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow
 from .fsaccess import CollectionFsAccess
@@ -47,7 +48,7 @@ class ArvCwlRunner(object):
 
     """
 
-    def __init__(self, api_client, work_api=None, keep_client=None):
+    def __init__(self, api_client, work_api=None, keep_client=None, output_name=None):
         self.api = api_client
         self.processes = {}
         self.lock = threading.Lock()
@@ -62,6 +63,7 @@ class ArvCwlRunner(object):
         self.poll_api = None
         self.pipeline = None
         self.final_output_collection = None
+        self.output_name = output_name
         if keep_client is not None:
             self.keep_client = keep_client
         else:
@@ -217,7 +219,9 @@ class ArvCwlRunner(object):
 
         final.save_new(name=name, owner_uuid=self.project_uuid, ensure_unique_name=True)
 
-        logger.info("Final output collection %s (%s)", final.portable_data_hash(), final.manifest_locator())
+        logger.info("Final output collection %s \"%s\" (%s)", final.portable_data_hash(),
+                    final.api_response()["name"],
+                    final.manifest_locator())
 
         self.final_output_collection = final
 
@@ -270,9 +274,9 @@ class ArvCwlRunner(object):
                                          self.output_callback,
                                          **kwargs).next()
                 else:
-                    runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"))
+                    runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name)
             else:
-                runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"))
+                runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name)
 
         if not kwargs.get("submit") and "cwl_runner_job" not in kwargs and not self.work_api == "containers":
             # Create pipeline for local run
@@ -353,11 +357,12 @@ class ArvCwlRunner(object):
         if self.final_output is None:
             raise WorkflowException("Workflow did not return a result.")
 
-        if kwargs.get("submit"):
+        if kwargs.get("submit") and isinstance(runnerjob, Runner):
             logger.info("Final output collection %s", runnerjob.final_output)
         else:
-            self.make_output_collection("Output of %s" % (shortname(tool.tool["id"])),
-                                        self.final_output)
+            if self.output_name is None:
+                self.output_name = "Output of %s" % (shortname(tool.tool["id"]))
+            self.make_output_collection(self.output_name, self.final_output)
 
         if kwargs.get("compute_checksum"):
             adjustFileObjs(self.final_output, partial(compute_checksums, self.fs_access))
@@ -409,6 +414,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         help="")
 
     parser.add_argument("--project-uuid", type=str, metavar="UUID", help="Project that will own the workflow jobs, if not provided, will go to home project.")
+    parser.add_argument("--output-name", type=str, help="Name to use for collection that stores the final output.", default=None)
     parser.add_argument("--ignore-docker-for-reuse", action="store_true",
                         help="Ignore Docker image version when deciding whether to reuse past jobs.",
                         default=False)
@@ -466,7 +472,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
     try:
         if api_client is None:
             api_client=arvados.api('v1', model=OrderedJsonModel())
-        runner = ArvCwlRunner(api_client, work_api=arvargs.work_api, keep_client=keep_client)
+        runner = ArvCwlRunner(api_client, work_api=arvargs.work_api, keep_client=keep_client, output_name=arvargs.output_name)
     except Exception as e:
         logger.error(e)
         return 1
