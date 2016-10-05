@@ -22,7 +22,7 @@ class TestJob(unittest.TestCase):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("draft-3")
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
         tool = {
             "inputs": [],
@@ -70,7 +70,8 @@ class TestJob(unittest.TestCase):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("draft-3")
+        arvados_cwl.add_arv_hints()
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
         tool = {
             "inputs": [],
