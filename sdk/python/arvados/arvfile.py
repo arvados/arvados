@@ -549,6 +549,36 @@ class _BlockManager(object):
     def __exit__(self, exc_type, exc_value, traceback):
         self.stop_threads()
 
+    def repack_small_blocks(self, force=False):
+        """Packs small blocks together before uploading"""
+        # Candidate bblocks -- This could be sorted in some way to prioritize some
+        # kind of bblocks
+        small_blocks = [b for b in self._bufferblocks.values() if b.state() == _BufferBlock.WRITABLE and b.owner and b.owner.closed() and b.owner.size() <= (config.KEEP_BLOCK_SIZE / 2)]
+        if len(small_blocks) == 0:
+            return
+
+        # Check if there's enough small blocks for combining and uploading
+        pending_write_size = sum([b.size() for b in small_blocks])
+        if force or (pending_write_size > (config.KEEP_BLOCK_SIZE / 2)):
+            if len(small_blocks) == 1:
+                # No small blocks for repacking, leave this one alone
+                # so it's committed before exiting.
+                return
+            new_bb = _BufferBlock("bufferblock%i" % len(self._bufferblocks), 2**14, None)
+            self._bufferblocks[new_bb.blockid] = new_bb
+            size = 0
+            while len(small_blocks) > 0 and size <= (config.KEEP_BLOCK_SIZE / 2):
+                bb = small_blocks.pop(0)
+                size += bb.size()
+                new_segs = []
+                new_bb.append(bb.buffer_view[0:bb.write_pointer].tobytes())
+                # FIXME: We shoudn't be accessing _segments directly
+                bb.owner._segments = [Range(new_bb.blockid, 0, bb.size(), size-bb.size())]
+                bb.clear()
+                del self._bufferblocks[bb.blockid]
+            # new_bb's size greater half a keep block, let's commit it
+            self.commit_bufferblock(new_bb, sync=True)
+
     def commit_bufferblock(self, block, sync):
         """Initiate a background upload of a bufferblock.
 
@@ -562,7 +592,6 @@ class _BlockManager(object):
           which case it will wait on an upload queue slot.
 
         """
-
         try:
             # Mark the block as PENDING so to disallow any more appends.
             block.set_state(_BufferBlock.PENDING)
@@ -630,10 +659,11 @@ class _BlockManager(object):
 
         """
         with self.lock:
+            self.repack_small_blocks(force=True)
             items = self._bufferblocks.items()
 
         for k,v in items:
-            if v.state() != _BufferBlock.COMMITTED:
+            if v.state() != _BufferBlock.COMMITTED and v.owner:
                 v.owner.flush(sync=False)
 
         with self.lock:
@@ -700,6 +730,7 @@ class ArvadosFile(object):
         """
         self.parent = parent
         self.name = name
+        self._closed = False
         self._committed = False
         self._segments = []
         self.lock = parent.root_collection().lock
@@ -785,6 +816,17 @@ class ArvadosFile(object):
     def committed(self):
         """Get whether this is committed or not."""
         return self._committed
+
+    @synchronized
+    def set_closed(self):
+        """Set current block as pending and closed flag to False"""
+        self._closed = True
+        self.parent._my_block_manager().repack_small_blocks()
+
+    @synchronized
+    def closed(self):
+        """Get whether this is closed or not."""
+        return self._closed
 
     @must_be_writable
     @synchronized
@@ -1096,7 +1138,9 @@ class ArvadosFileWriter(ArvadosFileReader):
     def flush(self):
         self.arvadosfile.flush()
 
-    def close(self):
+    def close(self, flush=True):
         if not self.closed:
-            self.flush()
+            if flush:
+                self.flush()
+            self.arvadosfile.set_closed()
             super(ArvadosFileWriter, self).close()
