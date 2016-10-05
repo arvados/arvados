@@ -82,7 +82,8 @@ class TestJob(unittest.TestCase):
                 "tmpdirMin": 4000
             }, {
                 "class": "http://arvados.org/cwl#RuntimeConstraints",
-                "keep_cache": 512
+                "keep_cache": 512,
+                "outputDirType": "keep_output_dir"
             }, {
                 "class": "http://arvados.org/cwl#APIRequirement",
             }],
@@ -101,6 +102,7 @@ class TestJob(unittest.TestCase):
                 'script_parameters': {
                     'tasks': [{
                         'task.env': {'HOME': '$(task.outdir)', 'TMPDIR': '$(task.tmpdir)'},
+                        'task.keepTmpOutput': True,
                         'command': ['ls']
                     }]
             },

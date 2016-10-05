@@ -95,7 +95,13 @@ class ArvadosJob(object):
 
         runtime_req, _ = get_feature(self, "http://arvados.org/cwl#RuntimeConstraints")
         if runtime_req:
-            runtime_constraints["keep_cache_mb_per_task"] = runtime_req["keep_cache"]
+            if "keep_cache" in runtime_req:
+                runtime_constraints["keep_cache_mb_per_task"] = runtime_req["keep_cache"]
+            if "outputDirType" in runtime_req:
+                if runtime_req["outputDirType"] == "local_output_dir":
+                    script_parameters["task.keepTmpOutput"] = False
+                elif runtime_req["outputDirType"] == "keep_output_dir":
+                    script_parameters["task.keepTmpOutput"] = True
 
         filters = [["repository", "=", "arvados"],
                    ["script", "=", "crunchrunner"],

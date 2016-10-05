@@ -13,6 +13,29 @@ $graph:
         _id: "@type"
         _type: "@vocab"
 
+- name: OutputDirType
+  type: enum
+  symbols:
+    - local_output_dir
+    - keep_output_dir
+  doc:
+    - |
+      local_output_dir: Use regular file system local to the compute node.
+      There must be sufficient local scratch space to store entire output;
+      specify this this with `outdirMin` of `ResourceRequirement`.  Files are
+      batch uploaded to Keep when the process completes.  Most compatible, but
+      upload step can be time consuming for very large files.
+    - |
+      keep_output_dir: Use writable Keep mount.  Files are streamed to Keep as
+      they are written.  Does not consume local scratch space, but does consume
+      RAM for output buffers (up to 192 MiB per file simultaneously open for
+      writing.)  Best suited to processes which produce sequential output of
+      large files (non-sequential writes may produced fragmented file
+      manifests).  Supports regular files and directories, does not support
+      special files such as symlinks, hard links, named pipes, named sockets,
+      or device nodes.
+
+
 - name: RuntimeConstraints
   type: record
   doc: |
@@ -31,6 +54,11 @@ $graph:
         MiB. Increase this to reduce cache thrashing in situations such as
         accessing multiple large (64+ MiB) files at the same time, or
         performing random access on a large file.
+    - name: outputDirType
+      type: OutputDirType?
+      doc: |
+        Preferred backing store for output staging.  If not specified, the
+        system may choose which one to use.
 
 - name: APIRequirement
   type: record
