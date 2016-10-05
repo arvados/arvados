@@ -28,7 +28,7 @@ type TaskDef struct {
 	SuccessCodes       []int             `json:"task.successCodes"`
 	PermanentFailCodes []int             `json:"task.permanentFailCodes"`
 	TemporaryFailCodes []int             `json:"task.temporaryFailCodes"`
-	keepTmpOutput      bool              `json:"task.keepTmpOutput"`
+	KeepTmpOutput      bool              `json:"task.keepTmpOutput"`
 }
 
 type Tasks struct {
@@ -114,7 +114,7 @@ func setupCommand(cmd *exec.Cmd, taskp TaskDef, outdir string, replacements map[
 			if err != nil {
 				return "", "", "", err
 			}
-			if taskp.keepTmpOutput {
+			if taskp.KeepTmpOutput {
 				// Is there an os.Copy?
 				copyFile(v, outdir+"/"+k)
 			} else {
@@ -264,7 +264,7 @@ func runner(api IArvadosClient,
 	}
 
 	var tmpdir, outdir string
-	tmpdir, outdir, err = setupDirectories(crunchtmpdir, taskUuid, taskp.keepTmpOutput)
+	tmpdir, outdir, err = setupDirectories(crunchtmpdir, taskUuid, taskp.KeepTmpOutput)
 	if err != nil {
 		return TempFail{err}
 	}
@@ -360,7 +360,7 @@ func runner(api IArvadosClient,
 
 	// Upload output directory
 	var manifest string
-	if taskp.keepTmpOutput {
+	if taskp.KeepTmpOutput {
 		manifest, err = getKeepTmp(outdir)
 	} else {
 		manifest, err = WriteTree(kc, outdir)
