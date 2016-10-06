@@ -290,13 +290,16 @@ class Container < ArvadosModel
         end
 
         if retryable_requests.any?
-          c = Container.create!(command: self.command,
-                                cwd: self.cwd,
-                                environment: self.environment,
-                                output_path: self.output_path,
-                                container_image: self.container_image,
-                                mounts: self.mounts,
-                                runtime_constraints: self.runtime_constraints)
+          c_attrs = {
+            command: self.command,
+            cwd: self.cwd,
+            environment: self.environment,
+            output_path: self.output_path,
+            container_image: self.container_image,
+            mounts: self.mounts,
+            runtime_constraints: self.runtime_constraints
+          }
+          c = Container.create! c_attrs
           retryable_requests.each do |cr|
             cr.with_lock do
               # Use row locking because this increments container_count
