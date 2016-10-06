@@ -173,31 +173,6 @@ class ProxyWorkUnit < WorkUnit
     @unreadable_children
   end
 
-  def readable?
-    resource_class = ArvadosBase::resource_class_for_uuid(uuid)
-    resource_class.where(uuid: [uuid]).first rescue nil
-  end
-
-  def link_to_log
-    if state_label.in? ["Complete", "Failed", "Cancelled"]
-      lc = log_collection
-      if lc
-        logCollection = Collection.find? lc
-        if logCollection
-          ApplicationController.helpers.link_to("Log", "#{uri}#Log")
-        else
-          "Log unavailable"
-        end
-      end
-    elsif state_label == "Running"
-      if readable?
-        ApplicationController.helpers.link_to("Log", "#{uri}#Log")
-      else
-        "Log unavailable"
-      end
-    end
-  end
-
   def walltime
     if state_label != "Queued"
       if started_at

@@ -17,7 +17,7 @@
           <div class="col-md-8"></div>
         <% else %>
           <div class="col-md-1">
-            <%= current_obj.link_to_log %>
+            <%= render partial: 'work_units/show_log_link', locals: {wu: current_obj} %>
           </div>
 
           <% walltime = current_obj.walltime %>
