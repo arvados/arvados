@@ -527,7 +527,7 @@ class ApplicationController < ActionController::Base
       if not model_class
         @object = nil
       elsif not params[:uuid].is_a?(String)
-        @object = model_class.where(uuid: params[:uuid]).first
+        @object = object_for_dataclass(model_class, params[:uuid])
       elsif params[:uuid].empty?
         @object = nil
       elsif (model_class != Link and
@@ -535,7 +535,7 @@ class ApplicationController < ActionController::Base
         @name_link = Link.find(params[:uuid])
         @object = model_class.find(@name_link.head_uuid)
       else
-        @object = model_class.find(params[:uuid])
+        @object = object_for_dataclass(model_class, params[:uuid])
       end
     rescue ArvadosApiClient::NotFoundException, ArvadosApiClient::NotLoggedInException, RuntimeError => error
       if error.is_a?(RuntimeError) and (error.message !~ /^argument to find\(/)
@@ -1215,6 +1215,15 @@ class ApplicationController < ActionController::Base
       end
     end
     @objects_for
+  end
+
+  # helper method to load objects that are already preloaded
+  helper_method :load_preloaded_objects
+  def load_preloaded_objects objs
+    @objects_for ||= {}
+    objs.each do |obj|
+      @objects_for[obj.uuid] = obj
+    end
   end
 
   def wiselinks_layout
