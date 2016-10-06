@@ -40,7 +40,9 @@ class ArvadosJob(object):
 
         with Perf(metrics, "generatefiles %s" % self.name):
             if self.generatefiles["listing"]:
-                vwd = arvados.collection.Collection()
+                vwd = arvados.collection.Collection(api_client=self.arvrunner.api,
+                                                    keep_client=self.arvrunner.keep_client,
+                                                    num_retries=self.arvrunner.num_retries)
                 script_parameters["task.vwd"] = {}
                 generatemapper = InitialWorkDirPathMapper([self.generatefiles], "", "",
                                                           separateDirs=False)
@@ -175,7 +177,10 @@ class ArvadosJob(object):
             try:
                 if record["output"]:
                     with Perf(metrics, "inspect log %s" % self.name):
-                        logc = arvados.collection.Collection(record["log"])
+                        logc = arvados.collection.CollectionReader(record["log"],
+                                                                   api_client=self.arvrunner.api,
+                                                                   keep_client=self.arvrunner.keep_client,
+                                                                   num_retries=self.arvrunner.num_retries)
                         log = logc.open(logc.keys()[0])
                         tmpdir = None
                         outdir = None
@@ -229,6 +234,8 @@ class RunnerJob(Runner):
         workflowmapper = super(RunnerJob, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)
 
         self.job_order["cwl:tool"] = workflowmapper.mapper(self.tool.tool["id"]).target[5:]
+        if self.output_name:
+            self.job_order["arv:output_name"] = self.output_name
         return {
             "script": "cwl-runner",
             "script_version": "master",
@@ -284,7 +291,8 @@ class RunnerTemplate(object):
             runner=runner,
             tool=tool,
             job_order=job_order,
-            enable_reuse=enable_reuse)
+            enable_reuse=enable_reuse,
+            output_name=None)
 
     def pipeline_component_spec(self):
         """Return a component that Workbench and a-r-p-i will understand.

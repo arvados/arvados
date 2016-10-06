@@ -161,7 +161,9 @@ class RunnerContainer(Runner):
 
         workflowmapper = super(RunnerContainer, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)
 
-        with arvados.collection.Collection(api_client=self.arvrunner.api) as jobobj:
+        with arvados.collection.Collection(api_client=self.arvrunner.api,
+                                           keep_client=self.arvrunner.keep_client,
+                                           num_retries=self.arvrunner.num_retries) as jobobj:
             with jobobj.open("cwl.input.json", "w") as f:
                 json.dump(self.job_order, f, sort_keys=True, indent=4)
             jobobj.save_new(owner_uuid=self.arvrunner.project_uuid)
@@ -177,8 +179,13 @@ class RunnerContainer(Runner):
                                                pull_image,
                                                self.arvrunner.project_uuid)
 
+        command = ["arvados-cwl-runner", "--local", "--api=containers"]
+        if self.output_name:
+            command.append("--output-name=" + self.output_name)
+        command.extend([workflowpath, jobpath])
+
         return {
-            "command": ["arvados-cwl-runner", "--local", "--api=containers", workflowpath, jobpath],
+            "command": command,
             "owner_uuid": self.arvrunner.project_uuid,
             "name": self.name,
             "output_path": "/var/spool/cwl",
