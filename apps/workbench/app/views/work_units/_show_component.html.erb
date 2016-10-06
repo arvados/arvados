@@ -53,6 +53,9 @@
   collections_uuids = collections - collections_pdhs
   preload_collections_for_objects collections_uuids if collections_uuids.any?
   preload_for_pdhs collections_pdhs if collections_pdhs.any?
+
+  repos = wu.children.collect {|c| c.repository}.uniq.compact
+  preload_objects_for_dataclass(Repository, repos, :by_name) if repos.any?
 %>
 
 <% if wu.has_unreadable_children %>

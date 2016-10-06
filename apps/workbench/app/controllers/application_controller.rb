@@ -1180,15 +1180,15 @@ class ApplicationController < ActionController::Base
 
   # helper method to get object of a given dataclass and uuid
   helper_method :object_for_dataclass
-  def object_for_dataclass dataclass, uuid
+  def object_for_dataclass dataclass, uuid, by_name=nil
     raise ArgumentError, 'No input argument dataclass' unless (dataclass && uuid)
-    preload_objects_for_dataclass(dataclass, [uuid])
+    preload_objects_for_dataclass(dataclass, [uuid], by_name)
     @objects_for[uuid]
   end
 
   # helper method to preload objects for given dataclass and uuids
   helper_method :preload_objects_for_dataclass
-  def preload_objects_for_dataclass dataclass, uuids
+  def preload_objects_for_dataclass dataclass, uuids, by_name=nil
     @objects_for ||= {}
 
     raise ArgumentError, 'Argument is not a data class' unless dataclass.is_a? Class
@@ -1205,8 +1205,14 @@ class ApplicationController < ActionController::Base
     uuids.each do |x|
       @objects_for[x] = nil
     end
-    dataclass.where(uuid: uuids).each do |obj|
-      @objects_for[obj.uuid] = obj
+    if by_name
+      dataclass.where(name: uuids).each do |obj|
+        @objects_for[obj.name] = obj
+      end
+    else
+      dataclass.where(uuid: uuids).each do |obj|
+        @objects_for[obj.uuid] = obj
+      end
     end
     @objects_for
   end
