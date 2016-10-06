@@ -39,12 +39,11 @@
 <%# Work unit children %>
 
 <%
-  uuids = wu.children.collect {|c| c.uuid}.compact
-  if uuids.any?
-    resource_class = resource_class_for_uuid(uuids.first, friendly_name: true)
-    preload_objects_for_dataclass resource_class, uuids
-  end
+  load_preloaded_objects(wu.children.collect {|j| j})
 
+  collections = wu.outputs.flatten.uniq
+  collections << wu.log_collection if wu.log_collection
+  collections << wu.docker_image if wu.docker_image
   collections = wu.children.collect {|j| j.outputs}.compact
   collections = collections.flatten.uniq
   collections.concat wu.children.collect {|j| j.docker_image}.uniq.compact
