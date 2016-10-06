@@ -48,6 +48,7 @@
   collections = wu.children.collect {|j| j.outputs}.compact
   collections = collections.flatten.uniq
   collections.concat wu.children.collect {|j| j.docker_image}.uniq.compact
+  collections.concat wu.children.collect {|j| j.log_collection}.uniq.compact
   collections_pdhs = collections.select {|x| !(m = CollectionsHelper.match(x)).nil?}.uniq.compact
   collections_uuids = collections - collections_pdhs
   preload_collections_for_objects collections_uuids if collections_uuids.any?
