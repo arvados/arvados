@@ -98,6 +98,10 @@ class ArvadosContainer(object):
         if runtime_req:
             logger.warn("RuntimeConstraints not yet supported by container API")
 
+        partition_req, _ = get_feature(self, "http://arvados.org/cwl#PartitionRequirement")
+        if partition_req:
+            runtime_constraints["partition"] = partition_req["partition"]
+
         container_request["mounts"] = mounts
         container_request["runtime_constraints"] = runtime_constraints
 

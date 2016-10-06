@@ -60,6 +60,14 @@ $graph:
         Preferred backing store for output staging.  If not specified, the
         system may choose which one to use.
 
+- name: PartitionRequirement
+  type: record
+  doc: |
+    Select preferred compute partition on which to run jobs.
+  fields:
+    - name: partition
+      type: string
+
 - name: APIRequirement
   type: record
   doc: |

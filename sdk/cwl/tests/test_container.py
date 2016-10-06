@@ -91,6 +91,9 @@ class TestContainer(unittest.TestCase):
                 "keep_cache": 512
             }, {
                 "class": "http://arvados.org/cwl#APIRequirement",
+            }, {
+                "class": "http://arvados.org/cwl#PartitionRequirement",
+                "partition": "blurb"
             }],
             "baseCommand": "ls"
         }
@@ -113,7 +116,8 @@ class TestContainer(unittest.TestCase):
                 'runtime_constraints': {
                     'vcpus': 3,
                     'ram': 3145728000,
-                    'API': True
+                    'API': True,
+                    'partition': 'blurb'
                 }, 'priority': 1,
                 'mounts': {
                     '/var/spool/cwl': {'kind': 'tmp'}
