@@ -22,7 +22,7 @@ $graph:
     - |
       local_output_dir: Use regular file system local to the compute node.
       There must be sufficient local scratch space to store entire output;
-      specify this this with `outdirMin` of `ResourceRequirement`.  Files are
+      specify this with `outdirMin` of `ResourceRequirement`.  Files are
       batch uploaded to Keep when the process completes.  Most compatible, but
       upload step can be time consuming for very large files.
     - |

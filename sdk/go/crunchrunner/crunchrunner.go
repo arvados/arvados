@@ -115,10 +115,12 @@ func setupCommand(cmd *exec.Cmd, taskp TaskDef, outdir string, replacements map[
 				return "", "", "", err
 			}
 			if taskp.KeepTmpOutput {
-				// Is there an os.Copy?
-				copyFile(v, outdir+"/"+k)
+				err = copyFile(v, outdir+"/"+k)
 			} else {
-				os.Symlink(v, outdir+"/"+k)
+				err = os.Symlink(v, outdir+"/"+k)
+			}
+			if err != nil {
+				return "", "", "", err
 			}
 		}
 	}
@@ -222,8 +224,8 @@ func getKeepTmp(outdir string) (manifest string, err error) {
 		return "", err
 	}
 	collection := arvados.Collection{}
-	json.Unmarshal(buf, &collection)
-	return collection.ManifestText, nil
+	err = json.Unmarshal(buf, &collection)
+	return collection.ManifestText, err
 }
 
 func runner(api IArvadosClient,
@@ -364,9 +366,9 @@ func runner(api IArvadosClient,
 		manifest, err = getKeepTmp(outdir)
 	} else {
 		manifest, err = WriteTree(kc, outdir)
-		if err != nil {
-			return TempFail{err}
-		}
+	}
+	if err != nil {
+		return TempFail{err}
 	}
 
 	// Set status
