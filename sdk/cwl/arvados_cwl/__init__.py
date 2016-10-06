@@ -32,7 +32,7 @@ from .perf import Perf
 from .pathmapper import FinalOutputPathMapper
 
 from cwltool.pack import pack
-from cwltool.process import shortname, UnsupportedRequirement
+from cwltool.process import shortname, UnsupportedRequirement, getListing
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
 from cwltool.draft2tool import compute_checksums
 from arvados.api import OrderedJsonModel
@@ -365,6 +365,7 @@ class ArvCwlRunner(object):
             self.make_output_collection(self.output_name, self.final_output)
 
         if kwargs.get("compute_checksum"):
+            adjustDirObjs(self.final_output, partial(getListing, self.fs_access))
             adjustFileObjs(self.final_output, partial(compute_checksums, self.fs_access))
 
         return self.final_output
