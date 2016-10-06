@@ -72,6 +72,12 @@ end
 
 module WaitForAjax
   # FIXME: Huge side effect here
+  # The following line changes the global default Capybara wait time, affecting
+  # every test which follows this one. This should be removed and the failing tests
+  # should have their individual wait times increased, if appropriate, using
+  # the using_wait_time(N) construct to temporarily change the wait time.
+  # Note: the below is especially bad because there are places that increase wait
+  # times using a multiplier e.g. using_wait_time(3 * Capybara.default_max_wait_time)
   Capybara.default_max_wait_time = 10
   def wait_for_ajax
     timeout = 10
