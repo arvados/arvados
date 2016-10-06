@@ -41,13 +41,9 @@
           </div>
           <div class="col-md-6">
             <table>
-              <% # link to repo tree/file only if the repo is readable
-                 # and the commit is a sha1...
-                 repo =
-                 (/^[0-9a-f]{40}$/ =~ current_obj.script_version and
-                 Repository.where(name: current_obj.repository).first)
-
-                 # ...and the api server provides an http:// or https:// url
+              <% # link to repo tree/file only if the repo is readable and the commit is a sha1
+                 repo = (/^[0-9a-f]{40}$/ =~ current_obj.script_version and
+                         object_for_dataclass(Repository, current_obj.repository, :by_name))
                  repo = nil unless repo.andand.http_fetch_url
                  %>
               <% [:script, :repository, :script_version, :supplied_script_version, :nondeterministic,
