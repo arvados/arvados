@@ -30,9 +30,10 @@ type Mount struct {
 // RuntimeConstraints specify a container's compute resources (RAM,
 // CPU) and network connectivity.
 type RuntimeConstraints struct {
-	API   *bool
-	RAM   int `json:"ram"`
-	VCPUs int `json:"vcpus"`
+	API       *bool
+	RAM       int    `json:"ram"`
+	VCPUs     int    `json:"vcpus"`
+	Partition string `json:"partition"`
 }
 
 // ContainerList is an arvados#containerList resource.
