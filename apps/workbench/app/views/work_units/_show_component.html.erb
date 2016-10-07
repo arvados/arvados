@@ -50,8 +50,22 @@
   collections.concat wu.children.collect {|j| j.log_collection}.uniq.compact
   collections_pdhs = collections.select {|x| !(m = CollectionsHelper.match(x)).nil?}.uniq.compact
   collections_uuids = collections - collections_pdhs
-  preload_collections_for_objects collections_uuids if collections_uuids.any?
-  preload_for_pdhs collections_pdhs if collections_pdhs.any?
+
+  if collections_uuids.any?
+    start = 0; inc = 200
+    while start < collections_uuids.length
+      preload_collections_for_objects collections_uuids[start, inc]
+      start += inc
+    end
+  end
+
+  if collections_pdhs.any?
+    start = 0; inc = 200
+    while start < collections_pdhs.length
+      preload_for_pdhs collections_pdhs[start, inc]
+      start += inc
+    end
+  end
 
   repos = wu.children.collect {|c| c.repository}.uniq.compact
   preload_objects_for_dataclass(Repository, repos, :by_name) if repos.any?
