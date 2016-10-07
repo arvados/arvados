@@ -549,6 +549,7 @@ class _BlockManager(object):
     def __exit__(self, exc_type, exc_value, traceback):
         self.stop_threads()
 
+    @synchronized
     def repack_small_blocks(self, force=False, sync=False):
         """Packs small blocks together before uploading"""
         # Search blocks ready for getting packed together before being committed to Keep
@@ -652,8 +653,9 @@ class _BlockManager(object):
         are uploaded.  Raises KeepWriteError() if any blocks failed to upload.
 
         """
+        self.repack_small_blocks(force=True, sync=True)
+
         with self.lock:
-            self.repack_small_blocks(force=True, sync=True)
             items = self._bufferblocks.items()
 
         for k,v in items:
