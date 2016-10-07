@@ -855,7 +855,8 @@ class ApplicationController < ActionController::Base
   def recent_processes lim
     lim = 12 if lim.nil?
 
-    pipelines = PipelineInstance.limit(lim).order(["created_at desc"])
+    cols = %w(uuid owner_uuid created_at modified_at pipeline_template_uuid name state started_at finished_at)
+    pipelines = PipelineInstance.select(cols).limit(lim).order(["created_at desc"])
 
     crs = ContainerRequest.limit(lim).order(["created_at desc"]).filter([["requesting_container_uuid", "=", nil]])
     procs = {}
