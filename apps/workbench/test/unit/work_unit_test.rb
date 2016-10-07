@@ -15,7 +15,7 @@ class WorkUnitTest < ActiveSupport::TestCase
     [ContainerRequest, 'queued', 'cwu', 0, "Queued", nil, 0.0],   # priority 1
     [ContainerRequest, 'canceled_with_queued_container', 'cwu', 0, "Ready", nil, 0.0],
     [ContainerRequest, 'canceled_with_locked_container', 'cwu', 0, "Ready", nil, 0.0],
-    [ContainerRequest, 'canceled_with_running_container', 'cwu', 0, "Running", nil, 0.0],
+    [ContainerRequest, 'canceled_with_running_container', 'cwu', 1, "Running", nil, 0.0],
   ].each do |type, fixture, label, num_children, state, success, progress|
     test "children of #{fixture}" do
       use_token 'active'
