@@ -552,8 +552,8 @@ class _BlockManager(object):
     @synchronized
     def repack_small_blocks(self, force=False, sync=False):
         """Packs small blocks together before uploading"""
-        # Search blocks ready for getting packed together before being committed to Keep
-        small_blocks = [b for b in self._bufferblocks.values() if b.state() == _BufferBlock.WRITABLE and b.owner and b.owner.closed() and b.owner.size() <= (config.KEEP_BLOCK_SIZE / 2)]
+        # Search blocks ready for getting packed together before being committed to Keep.
+        small_blocks = [b for b in self._bufferblocks.values() if b.state() == _BufferBlock.WRITABLE and b.owner.closed()]
         if len(small_blocks) <= 1:
             # Not enough small blocks for repacking
             return
