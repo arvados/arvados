@@ -318,12 +318,12 @@ func testSbatchFuncWithArgs(c *C, args []string) {
 
 func (s *MockArvadosServerSuite) TestSbatchPartition(c *C) {
 	theConfig.SbatchArguments = nil
-	container := arvados.Container{UUID: "123", RuntimeConstraints: arvados.RuntimeConstraints{RAM: 250000000, VCPUs: 1, Partition: "blurb"}}
+	container := arvados.Container{UUID: "123", RuntimeConstraints: arvados.RuntimeConstraints{RAM: 250000000, VCPUs: 1, Partition: []string{"blurb", "b2"}}}
 	sbatchCmd := sbatchFunc(container)
 
 	var expected []string
 	expected = append(expected, "sbatch", "--share")
-	expected = append(expected, "--job-name=123", "--mem-per-cpu=239", "--cpus-per-task=1", "--partition=blurb")
+	expected = append(expected, "--job-name=123", "--mem-per-cpu=239", "--cpus-per-task=1", "--partition=blurb,b2")
 
 	c.Check(sbatchCmd.Args, DeepEquals, expected)
 }

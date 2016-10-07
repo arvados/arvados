@@ -117,7 +117,7 @@ class TestContainer(unittest.TestCase):
                     'vcpus': 3,
                     'ram': 3145728000,
                     'API': True,
-                    'partition': 'blurb'
+                    'partition': ['blurb']
                 }, 'priority': 1,
                 'mounts': {
                     '/var/spool/cwl': {'kind': 'tmp'}

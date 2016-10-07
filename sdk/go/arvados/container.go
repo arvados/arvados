@@ -31,9 +31,9 @@ type Mount struct {
 // CPU) and network connectivity.
 type RuntimeConstraints struct {
 	API       *bool
-	RAM       int    `json:"ram"`
-	VCPUs     int    `json:"vcpus"`
-	Partition string `json:"partition"`
+	RAM       int      `json:"ram"`
+	VCPUs     int      `json:"vcpus"`
+	Partition []string `json:"partition"`
 }
 
 // ContainerList is an arvados#containerList resource.

@@ -63,10 +63,12 @@ $graph:
 - name: PartitionRequirement
   type: record
   doc: |
-    Select preferred compute partition on which to run jobs.
+    Select preferred compute partitions on which to run jobs.
   fields:
     - name: partition
-      type: string
+      type:
+        - string
+        - string[]
 
 - name: APIRequirement
   type: record
