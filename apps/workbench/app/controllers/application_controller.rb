@@ -769,7 +769,7 @@ class ApplicationController < ActionController::Base
 
   helper_method :user_notifications
   def user_notifications
-    return [] if @errors or not current_user.andand.is_active
+    return [] if @errors or not current_user.andand.is_active or not Rails.configuration.show_user_notifications_in_dashboard
     @notifications ||= @@notification_tests.map do |t|
       t.call(self, current_user)
     end.compact
@@ -855,7 +855,8 @@ class ApplicationController < ActionController::Base
   def recent_processes lim
     lim = 12 if lim.nil?
 
-    pipelines = PipelineInstance.limit(lim).order(["created_at desc"])
+    cols = %w(uuid owner_uuid created_at modified_at pipeline_template_uuid name state started_at finished_at)
+    pipelines = PipelineInstance.select(cols).limit(lim).order(["created_at desc"])
 
     crs = ContainerRequest.limit(lim).order(["created_at desc"]).filter([["requesting_container_uuid", "=", nil]])
     procs = {}
@@ -867,7 +868,7 @@ class ApplicationController < ActionController::Base
 
   helper_method :recent_collections
   def recent_collections lim
-    c = Collection.limit(lim).order(["modified_at desc"]).filter([["owner_uuid", "is_a", "arvados#group"]])
+    c = Collection.limit(lim).order(["modified_at desc"]).results
     own = {}
     Group.filter([["uuid", "in", c.map(&:owner_uuid)]]).each do |g|
       own[g[:uuid]] = g

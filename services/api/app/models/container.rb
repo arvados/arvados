@@ -307,6 +307,33 @@ class Container < ArvadosModel
     # that are associated with this container.
     if self.state_changed? and [Complete, Cancelled].include? self.state
       act_as_system_user do
+
+        if self.state == Cancelled
+          retryable_requests = ContainerRequest.where("priority > 0 and state = 'Committed' and container_count < container_count_max")
+        else
+          retryable_requests = []
+        end
+
+        if retryable_requests.any?
+          c_attrs = {
+            command: self.command,
+            cwd: self.cwd,
+            environment: self.environment,
+            output_path: self.output_path,
+            container_image: self.container_image,
+            mounts: self.mounts,
+            runtime_constraints: self.runtime_constraints
+          }
+          c = Container.create! c_attrs
+          retryable_requests.each do |cr|
+            cr.with_lock do
+              # Use row locking because this increments container_count
+              cr.container_uuid = c.uuid
+              cr.save
+            end
+          end
+        end
+
         # Notify container requests associated with this container
         ContainerRequest.where(container_uuid: uuid,
                                state: ContainerRequest::Committed).each do |cr|

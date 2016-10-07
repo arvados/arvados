@@ -74,12 +74,14 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
       visit page_with_token "active", "/#{type}/#{obj['uuid']}"
 
       assert_text 'created_at'
+
       if cancelable
+        assert_text 'priority: 1' if type.include?('container')
         assert_selector 'button', text: 'Cancel'
-        click_button 'Cancel'
+        first('a,button', text: 'Cancel').click
         wait_for_ajax
       end
-      assert_no_selector 'button', text: 'Cancel'
+      assert_text 'priority: 0' if cancelable and type.include?('container')
     end
   end
 

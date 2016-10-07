@@ -280,3 +280,9 @@ common:
   # Maximum number of historic log records of a running job to fetch
   # and display in the Log tab, while subscribing to web sockets.
   running_job_log_records_to_fetch: 2000
+
+  # In systems with many shared projects, dashboard loading can be
+  # slow due to collections indexing; use the following parameters
+  # to suppress certain properties from dashboard
+  show_recent_collections_in_dashboard: true
+  show_user_notifications_in_dashboard: true
