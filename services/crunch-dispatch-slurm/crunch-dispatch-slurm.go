@@ -32,8 +32,6 @@ type Config struct {
 	//
 	// Example: []string{"crunch-run", "--cgroup-parent-subsystem=memory"}
 	CrunchRunCommand []string
-
-	ArvadosKeepServices []string
 }
 
 func main() {
@@ -85,7 +83,7 @@ func doMain() error {
 		if theConfig.Client.Insecure {
 			os.Setenv("ARVADOS_API_INSECURE", "1")
 		}
-		os.Setenv("ARVADOS_KEEP_SERVICES", strings.Join(theConfig.ArvadosKeepServices, " "))
+		os.Setenv("ARVADOS_KEEP_SERVICES", strings.Join(theConfig.Client.KeepServiceURIs, " "))
 		os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
 	} else {
 		log.Printf("warning: Client credentials missing from config, so falling back on environment variables (deprecated).")

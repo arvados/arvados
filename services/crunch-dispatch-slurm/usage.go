@@ -12,9 +12,9 @@ var exampleConfigFile = []byte(`
 	    "APIHost": "zzzzz.arvadosapi.com",
 	    "AuthToken": "xyzzy",
 	    "Insecure": false
+	    "KeepServiceURIs": [],
 	},
 	"CrunchRunCommand": ["crunch-run"],
-	"ArvadosKeepServices": [""],
 	"PollPeriod": "10s",
 	"SbatchArguments": ["--partition=foo", "--exclude=node13"]
     }`)
