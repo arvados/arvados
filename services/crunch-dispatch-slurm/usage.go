@@ -14,6 +14,7 @@ var exampleConfigFile = []byte(`
 	    "Insecure": false
 	},
 	"CrunchRunCommand": ["crunch-run"],
+	"ArvadosKeepServices": [""],
 	"PollPeriod": "10s",
 	"SbatchArguments": ["--partition=foo", "--exclude=node13"]
     }`)
