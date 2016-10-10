@@ -113,7 +113,11 @@ class ActiveSupport::TestCase
   end
 
   def slow_test
-    skip "RAILS_TEST_SHORT is set" unless (ENV['RAILS_TEST_SHORT'] || '').empty?
+    omit "RAILS_TEST_SHORT is set" if self.class.skip_slow_tests?
+  end
+
+  def self.skip_slow_tests?
+    !(ENV['RAILS_TEST_SHORT'] || '').empty?
   end
 end
 
