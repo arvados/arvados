@@ -223,7 +223,7 @@ class JobTest < ActiveSupport::TestCase
 
       parameters.each do |parameter|
         expectations = parameter[2]
-        if parameter[1] == 'use_current_user_uuid'
+        if 'use_current_user_uuid' == parameter[1]
           parameter[1] = Thread.current[:user].uuid
         end
 
