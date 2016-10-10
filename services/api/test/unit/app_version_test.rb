@@ -20,9 +20,12 @@ class AppVersionTest < ActiveSupport::TestCase
     end
   end
 
-  test 'override with configuration' do
+  test 'override with configuration "foobar"' do
     Rails.configuration.source_version = 'foobar'
     assert_equal 'foobar', AppVersion.hash
+  end
+
+  test 'override with configuration false' do
     Rails.configuration.source_version = false
     assert_not_equal 'foobar', AppVersion.hash
   end
