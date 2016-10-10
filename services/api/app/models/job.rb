@@ -67,8 +67,7 @@ class Job < ArvadosModel
             (Complete = 'Complete'),
            ]
 
-  def initialize(*args)
-    super
+  after_initialize do
     @need_crunch_dispatch_trigger = false
   end
 

@@ -239,7 +239,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def logged_attributes
-    attributes.except *Rails.configuration.unlogged_attributes
+    attributes.except(*Rails.configuration.unlogged_attributes)
   end
 
   def self.full_text_searchable_columns
@@ -490,7 +490,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def foreign_key_attributes
-    attributes.keys.select { |a| a.match /_uuid$/ }
+    attributes.keys.select { |a| a.match(/_uuid$/) }
   end
 
   def skip_uuid_read_permission_check
@@ -505,7 +505,7 @@ class ArvadosModel < ActiveRecord::Base
     foreign_key_attributes.each do |attr|
       attr_value = send attr
       if attr_value.is_a? String and
-          attr_value.match /^[0-9a-f]{32,}(\+[@\w]+)*$/
+          attr_value.match(/^[0-9a-f]{32,}(\+[@\w]+)*$/)
         begin
           send "#{attr}=", Collection.normalize_uuid(attr_value)
         rescue
@@ -584,13 +584,12 @@ class ArvadosModel < ActiveRecord::Base
     unless uuid.is_a? String
       return nil
     end
-    resource_class = nil
 
     uuid.match HasUuid::UUID_REGEX do |re|
       return uuid_prefixes[re[1]] if uuid_prefixes[re[1]]
     end
 
-    if uuid.match /.+@.+/
+    if uuid.match(/.+@.+/)
       return Email
     end
 

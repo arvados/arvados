@@ -86,7 +86,7 @@ class Repository < ArvadosModel
       prefix_match = Regexp.escape(owner.username + "/")
       errmsg_start = "must be the owner's username, then '/', then"
     end
-    if not /^#{prefix_match}[A-Za-z][A-Za-z0-9]*$/.match(name)
+    if not (/^#{prefix_match}[A-Za-z][A-Za-z0-9]*$/.match(name))
       errors.add(:name,
                  "#{errmsg_start} a letter followed by alphanumerics")
       false

@@ -64,7 +64,7 @@ class User < ArvadosModel
   def is_invited
     !!(self.is_active ||
        Rails.configuration.new_users_are_active ||
-       self.groups_i_can(:read).select { |x| x.match /-f+$/ }.first)
+       self.groups_i_can(:read).select { |x| x.match(/-f+$/) }.first)
   end
 
   def groups_i_can(verb)
@@ -242,7 +242,7 @@ class User < ArvadosModel
 
     # delete "All users" group read permissions for this user
     group = Group.where(name: 'All users').select do |g|
-      g[:uuid].match /-f+$/
+      g[:uuid].match(/-f+$/)
     end.first
     Link.destroy_all(tail_uuid: self.uuid,
                      head_uuid: group[:uuid],

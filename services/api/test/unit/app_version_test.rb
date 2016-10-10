@@ -29,7 +29,7 @@ class AppVersionTest < ActiveSupport::TestCase
 
   test 'override with file' do
     path = Rails.root.join 'git-commit.version'
-    assert(!File.exists?(path),
+    assert(!File.exist?(path),
            "Packaged version file found in source tree: #{path}")
     begin
       File.open(path, 'w') do |f|

@@ -32,6 +32,11 @@ class Collection < ArvadosModel
     t.add :expires_at
   end
 
+  after_initialize do
+    @signatures_checked = false
+    @computed_pdh_for_manifest_text = false
+  end
+
   def self.attributes_required_columns
     super.merge(
                 # If we don't list manifest_text explicitly, the
@@ -48,18 +53,6 @@ class Collection < ArvadosModel
 
   def self.ignored_select_attributes
     super + ["updated_at", "file_names"]
-  end
-
-  def initialize(*args)
-    super
-    @signatures_checked = false
-    @computed_pdh_for_manifest_text = false
-  end
-
-  def initialize_copy(*args)
-    super
-    @signatures_checked = false
-    @computed_pdh_for_manifest_text = false
   end
 
   FILE_TOKEN = /^[[:digit:]]+:[[:digit:]]+:/
@@ -297,10 +290,10 @@ class Collection < ArvadosModel
     hash_part = nil
     size_part = nil
     uuid.split('+').each do |token|
-      if token.match /^[0-9a-f]{32,}$/
+      if token.match(/^[0-9a-f]{32,}$/)
         raise "uuid #{uuid} has multiple hash parts" if hash_part
         hash_part = token
-      elsif token.match /^\d+$/
+      elsif token.match(/^\d+$/)
         raise "uuid #{uuid} has multiple size parts" if size_part
         size_part = token
       end

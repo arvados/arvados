@@ -97,7 +97,7 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
                  'server should correct bogus cancelled_at ' +
                  job['cancelled_at'])
     assert_equal(true,
-                 File.exists?(Rails.configuration.crunch_refresh_trigger),
+                 File.exist?(Rails.configuration.crunch_refresh_trigger),
                  'trigger file should be created when job is cancelled')
   end
 

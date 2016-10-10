@@ -27,7 +27,7 @@ class CrunchDispatch
     @cgroup_root = ENV['CRUNCH_CGROUP_ROOT']
 
     @arvados_internal = Rails.configuration.git_internal_dir
-    if not File.exists? @arvados_internal
+    if not File.exist? @arvados_internal
       $stderr.puts `mkdir -p #{@arvados_internal.shellescape} && git init --bare #{@arvados_internal.shellescape}`
       raise "No internal git repository available" unless ($? == 0)
     end
