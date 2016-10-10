@@ -58,6 +58,18 @@ class ApplicationController < ActionController::Base
                 :with => :render_not_found)
   end
 
+  def initialize *args
+    super
+    @object = nil
+    @objects = nil
+    @offset = nil
+    @limit = nil
+    @select = nil
+    @distinct = nil
+    @response_resource_name = nil
+    @attrs = nil
+  end
+
   def default_url_options
     if Rails.configuration.host
       {:host => Rails.configuration.host}

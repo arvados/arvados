@@ -67,6 +67,11 @@ class Job < ArvadosModel
             (Complete = 'Complete'),
            ]
 
+  def initialize(*args)
+    super
+    @need_crunch_dispatch_trigger = false
+  end
+
   def assert_finished
     update_attributes(finished_at: finished_at || db_current_time,
                       success: success.nil? ? false : success,

@@ -30,6 +30,11 @@ class Node < ArvadosModel
     t.add lambda { |x| Rails.configuration.compute_node_nameservers }, :as => :nameservers
   end
 
+  def initialize(*args)
+    super
+    @bypass_arvados_authorization = false
+  end
+
   def domain
     super || Rails.configuration.compute_node_domain
   end

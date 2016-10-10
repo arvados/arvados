@@ -64,9 +64,9 @@ class Blob
   #   Return value: true if the locator has a valid signature, false otherwise
   #   Arguments: signed_blob_locator, opts
   #
-  def self.verify_signature *args
+  def self.verify_signature(*args)
     begin
-      self.verify_signature! *args
+      self.verify_signature!(*args)
       true
     rescue Blob::InvalidSignatureError
       false

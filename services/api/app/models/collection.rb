@@ -50,6 +50,18 @@ class Collection < ArvadosModel
     super + ["updated_at", "file_names"]
   end
 
+  def initialize(*args)
+    super
+    @signatures_checked = false
+    @computed_pdh_for_manifest_text = false
+  end
+
+  def initialize_copy(*args)
+    super
+    @signatures_checked = false
+    @computed_pdh_for_manifest_text = false
+  end
+
   FILE_TOKEN = /^[[:digit:]]+:[[:digit:]]+:/
   def check_signatures
     return false if self.manifest_text.nil?
@@ -61,7 +73,9 @@ class Collection < ArvadosModel
     # subsequent passes without checking any signatures. This is
     # important because the signatures have probably been stripped off
     # by the time we get to a second validation pass!
-    return true if @signatures_checked and @signatures_checked == computed_pdh
+    if @signatures_checked && @signatures_checked == computed_pdh
+      return true
+    end
 
     if self.manifest_text_changed?
       # Check permissions on the collection manifest.

@@ -1,3 +1,11 @@
+$system_user = nil
+$system_group = nil
+$all_users_group = nil
+$anonymous_user = nil
+$anonymous_group = nil
+$anonymous_group_read_permission = nil
+$empty_collection = nil
+
 module CurrentApiClient
   def current_user
     Thread.current[:user]
