@@ -123,7 +123,7 @@ GEM
       signet (~> 0.7)
     headless (1.0.2)
     highline (1.6.21)
-    httpclient (2.6.0.1)
+    httpclient (2.8.2.4)
     i18n (0.7.0)
     jquery-rails (3.1.2)
       railties (>= 3.0, < 5.0)
@@ -320,4 +320,4 @@ DEPENDENCIES
   wiselinks
 
 BUNDLED WITH
-   1.12.1
+   1.13.2
