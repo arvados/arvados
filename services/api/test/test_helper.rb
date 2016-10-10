@@ -21,8 +21,9 @@ unless ENV["NO_COVERAGE_TEST"]
 end
 
 require File.expand_path('../../config/environment', __FILE__)
+require 'test/unit/active_support'
 require 'rails/test_help'
-require 'mocha/mini_test'
+require 'mocha/test_unit'
 
 module ArvadosTestSupport
   def json_response

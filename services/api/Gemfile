@@ -9,7 +9,8 @@ group :test, :development do
   gem 'factory_girl_rails'
   gem 'database_cleaner'
   gem 'ruby-prof'
-  gem 'test-unit', '~> 3.0'
+  gem 'test-unit', require: false
+  gem 'test-unit-activesupport', require: false
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.
