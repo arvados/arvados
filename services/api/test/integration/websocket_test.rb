@@ -1,5 +1,4 @@
 require 'test_helper'
-require 'websocket_runner'
 require 'oj'
 require 'database_cleaner'
 
@@ -16,16 +15,64 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     DatabaseCleaner.clean
   end
 
+  def self.startup
+    s = TCPServer.new('0.0.0.0', 0)
+    @@port = s.addr[1]
+    s.close
+    pidfile = "tmp/pids/passenger.#{@@port}.pid"
+    Dir.chdir(Rails.root) do |apidir|
+      # Only passenger seems to be able to run the websockets server
+      # successfully.
+      _system('passenger', 'start', '-d', "-p#{@@port}")
+      timeout = Time.now.tv_sec + 10
+      begin
+        sleep 0.2
+        begin
+          server_pid = IO.read(pidfile).to_i
+          good_pid = (server_pid > 0) and (Process.kill(0, pid) rescue false)
+        rescue Errno::ENOENT
+          good_pid = false
+        end
+      end while (not good_pid) and (Time.now.tv_sec < timeout)
+      if not good_pid
+        raise RuntimeError, "could not find API server Rails pid"
+      end
+      STDERR.puts "Started websocket server on @@port #{@@port} with pid #{server_pid}"
+    end
+  end
+
+  def self.shutdown
+    Dir.chdir(Rails.root) do
+      _system('passenger', 'stop', "-p#{@@port}")
+    end
+    # DatabaseCleaner leaves the database empty. Prefer to leave it full.
+    dc = DatabaseController.new
+    dc.define_singleton_method :render do |*args| end
+    dc.reset
+  end
+
+  def self._system(*cmd)
+    Bundler.with_clean_env do
+      env = {
+        'ARVADOS_WEBSOCKETS' => 'ws-only',
+        'RAILS_ENV' => 'test',
+      }
+      if not system(env, *cmd)
+        raise RuntimeError, "Command exited #{$?}: #{cmd.inspect}"
+      end
+    end
+  end
+
   def ws_helper (token = nil, timeout = true)
     opened = false
     close_status = nil
     too_long = false
 
-    EM.run {
+    EM.run do
       if token
-        ws = Faye::WebSocket::Client.new("ws://localhost:#{WEBSOCKET_PORT}/websocket?api_token=#{api_client_authorizations(token).api_token}")
+        ws = Faye::WebSocket::Client.new("ws://localhost:#{@@port}/websocket?api_token=#{api_client_authorizations(token).api_token}")
       else
-        ws = Faye::WebSocket::Client.new("ws://localhost:#{WEBSOCKET_PORT}/websocket")
+        ws = Faye::WebSocket::Client.new("ws://localhost:#{@@port}/websocket")
       end
 
       ws.on :open do |event|
@@ -44,7 +91,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       yield ws
-    }
+    end
 
     assert opened, "Should have opened web socket"
     assert (not too_long), "Test took too long"

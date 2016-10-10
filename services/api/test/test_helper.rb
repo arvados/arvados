@@ -135,6 +135,21 @@ class ActionController::TestCase
       super action, *args
     end
   end
+
+  def self.suite
+    s = super
+    def s.run(*args)
+      @test_case.startup()
+      begin
+        super
+      ensure
+        @test_case.shutdown()
+      end
+    end
+    s
+  end
+  def self.startup; end
+  def self.shutdown; end
 end
 
 class ActionDispatch::IntegrationTest
