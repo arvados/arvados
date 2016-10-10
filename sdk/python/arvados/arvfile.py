@@ -11,6 +11,7 @@ import errno
 import re
 import logging
 import collections
+import uuid
 
 from .errors import KeepWriteError, AssertionError, ArgumentError
 from .keep import KeepLocator
@@ -432,7 +433,7 @@ class _BlockManager(object):
 
         """
         if blockid is None:
-            blockid = "bufferblock%i" % len(self._bufferblocks)
+            blockid = "%s" % uuid.uuid4()
         bufferblock = _BufferBlock(blockid, starting_capacity=starting_capacity, owner=owner)
         self._bufferblocks[bufferblock.blockid] = bufferblock
         return bufferblock
@@ -562,7 +563,7 @@ class _BlockManager(object):
         # Check if there are enough small blocks for filling up one in full
         pending_write_size = sum([b.size() for b in small_blocks])
         if force or (pending_write_size >= config.KEEP_BLOCK_SIZE):
-            new_bb = _BufferBlock("bufferblock%i" % len(self._bufferblocks), 2**14, None)
+            new_bb = _BufferBlock("%s" % uuid.uuid4(), 2**14, None)
             self._bufferblocks[new_bb.blockid] = new_bb
             while len(small_blocks) > 0 and (new_bb.write_pointer + small_blocks[0].size()) <= config.KEEP_BLOCK_SIZE:
                 bb = small_blocks.pop(0)
