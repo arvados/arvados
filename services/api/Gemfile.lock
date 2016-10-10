@@ -70,7 +70,6 @@ GEM
       execjs
     coffee-script-source (1.7.0)
     curb (0.9.3)
-    daemon_controller (1.2.0)
     database_cleaner (1.2.0)
     erubis (2.7.0)
     eventmachine (1.2.0.1)
@@ -146,11 +145,10 @@ GEM
     omniauth-oauth2 (1.1.1)
       oauth2 (~> 0.8.0)
       omniauth (~> 1.0)
-    passenger (4.0.41)
-      daemon_controller (>= 1.2.0)
+    passenger (5.0.30)
       rack
       rake (>= 0.8.1)
-    pg (0.17.1)
+    pg (0.19.0)
     pg_power (1.6.4)
       pg
       rails (~> 3.1)
