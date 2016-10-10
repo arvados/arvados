@@ -564,13 +564,14 @@ class _BlockManager(object):
         if force or (pending_write_size >= config.KEEP_BLOCK_SIZE):
             new_bb = _BufferBlock("bufferblock%i" % len(self._bufferblocks), 2**14, None)
             self._bufferblocks[new_bb.blockid] = new_bb
-            size = 0
-            while len(small_blocks) > 0 and (size + small_blocks[0].size()) <= config.KEEP_BLOCK_SIZE:
+            while len(small_blocks) > 0 and (new_bb.write_pointer + small_blocks[0].size()) <= config.KEEP_BLOCK_SIZE:
                 bb = small_blocks.pop(0)
-                size += bb.size()
                 arvfile = bb.owner
                 new_bb.append(bb.buffer_view[0:bb.write_pointer].tobytes())
-                arvfile.set_segments([Range(new_bb.blockid, 0, bb.size(), size-bb.size())])
+                arvfile.set_segments([Range(new_bb.blockid,
+                                            0,
+                                            bb.size(),
+                                            new_bb.write_pointer - bb.size())])
                 bb.clear()
                 del self._bufferblocks[bb.blockid]
             self.commit_bufferblock(new_bb, sync=sync)
