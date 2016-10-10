@@ -1119,7 +1119,7 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
             big.write("x" * 1024 * 1024 * 33) # 33 MB > KEEP_BLOCK_SIZE/2
         self.assertEqual(
             c.manifest_text("."),
-            '. 2d303c138c118af809f39319e5d507e9+34603008 e62e558e58131771aae2fd0175cdbf2a+13 0:34603008:bigfile.txt 34603011:10:count.txt 34603008:3:foo.txt\n')
+            '. 2d303c138c118af809f39319e5d507e9+34603008 a8430a058b8fbf408e1931b794dbd6fb+13 0:34603008:bigfile.txt 34603008:10:count.txt 34603018:3:foo.txt\n')
 
 
 class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):

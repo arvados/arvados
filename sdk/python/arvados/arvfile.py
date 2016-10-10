@@ -10,6 +10,7 @@ import copy
 import errno
 import re
 import logging
+import collections
 
 from .errors import KeepWriteError, AssertionError, ArgumentError
 from .keep import KeepLocator
@@ -405,7 +406,7 @@ class _BlockManager(object):
     def __init__(self, keep, copies=None):
         """keep: KeepClient object to use"""
         self._keep = keep
-        self._bufferblocks = {}
+        self._bufferblocks = collections.OrderedDict()
         self._put_queue = None
         self._put_threads = None
         self._prefetch_queue = None
