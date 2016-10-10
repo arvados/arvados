@@ -555,6 +555,9 @@ class _BlockManager(object):
     def repack_small_blocks(self, force=False, sync=False):
         """Packs small blocks together before uploading"""
         # Search blocks ready for getting packed together before being committed to Keep.
+        # A WRITABLE block always has an owner.
+        # A WRITABLE block with its owner.closed() implies that it's
+        # size is <= KEEP_BLOCK_SIZE/2.
         small_blocks = [b for b in self._bufferblocks.values() if b.state() == _BufferBlock.WRITABLE and b.owner.closed()]
         if len(small_blocks) <= 1:
             # Not enough small blocks for repacking
