@@ -9,6 +9,7 @@ group :test, :development do
   gem 'factory_girl_rails'
   gem 'database_cleaner'
   gem 'ruby-prof'
+  gem 'test-unit', '~> 3.0'
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.
@@ -17,9 +18,7 @@ group :test, :development do
   gem 'mocha', require: false
 end
 
-# This might not be needed in :test and :development, but we load it
-# anyway to make sure it always gets in Gemfile.lock and to help
-# reveal install problems sooner rather than later.
+# pg is the only supported database driver.
 gem 'pg'
 
 # Start using multi_json once we are on Rails 3.2;
