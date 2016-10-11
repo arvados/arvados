@@ -1089,6 +1089,7 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
             # One file committed
             with c.open("foo.txt", "w") as foo:
                 foo.write("foo")
+                foo.flush() # Force block commit
             f.write("0123456789")
             # Other file not committed. Block not written to keep yet.
             self.assertEqual(
@@ -1097,13 +1098,28 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
                                      normalize=False,
                                      only_committed=True),
                 '. acbd18db4cc2f85cedef654fccc4a4d8+3 0:0:count.txt 0:3:foo.txt\n')
-        # And now with the file closed...
+            # And now with the file closed...
+            f.flush() # Force block commit
         self.assertEqual(
             c._get_manifest_text(".",
                                  strip=False,
                                  normalize=False,
                                  only_committed=True),
             ". 781e5e245d69b566979b86e28d23f2c7+10 acbd18db4cc2f85cedef654fccc4a4d8+3 0:10:count.txt 10:3:foo.txt\n")
+
+    def test_only_small_blocks_are_packed_together(self):
+        c = Collection()
+        # Write a couple of small files, 
+        with c.open("count.txt", "w") as f:
+            f.write("0123456789")
+        with c.open("foo.txt", "w") as foo:
+            foo.write("foo")
+        # Then, write a big file, it shouldn't be packed with the ones above
+        with c.open("bigfile.txt", "w") as big:
+            big.write("x" * 1024 * 1024 * 33) # 33 MB > KEEP_BLOCK_SIZE/2
+        self.assertEqual(
+            c.manifest_text("."),
+            '. 2d303c138c118af809f39319e5d507e9+34603008 a8430a058b8fbf408e1931b794dbd6fb+13 0:34603008:bigfile.txt 34603008:10:count.txt 34603018:3:foo.txt\n')
 
 
 class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):

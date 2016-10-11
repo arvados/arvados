@@ -180,7 +180,7 @@ class TestArvKeepGet < Minitest::Test
     end
     assert_equal "#{Digest::MD5.hexdigest('foo')}  ./foo\n", err
     assert_equal '', out
-    assert_equal false, File.exists?('tmp/foo')
+    assert_equal false, File.exist?('tmp/foo')
   end
 
   def test_sha1_nowrite
@@ -190,7 +190,7 @@ class TestArvKeepGet < Minitest::Test
     end
     assert_equal "#{Digest::SHA1.hexdigest('foo')}  ./foo\n", err
     assert_equal '', out
-    assert_equal false, File.exists?('tmp/foo')
+    assert_equal false, File.exist?('tmp/foo')
   end
 
   def test_block_to_file
