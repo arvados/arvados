@@ -5,6 +5,7 @@ import os
 from cwltool.errors import WorkflowException
 from cwltool.process import get_feature, UnsupportedRequirement, shortname
 from cwltool.pathmapper import adjustFiles
+from cwltool.utils import aslist
 
 import arvados.collection
 
@@ -97,6 +98,10 @@ class ArvadosContainer(object):
         runtime_req, _ = get_feature(self, "http://arvados.org/cwl#RuntimeConstraints")
         if runtime_req:
             logger.warn("RuntimeConstraints not yet supported by container API")
+
+        partition_req, _ = get_feature(self, "http://arvados.org/cwl#PartitionRequirement")
+        if partition_req:
+            runtime_constraints["partition"] = aslist(partition_req["partition"])
 
         container_request["mounts"] = mounts
         container_request["runtime_constraints"] = runtime_constraints
