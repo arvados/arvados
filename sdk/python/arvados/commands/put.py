@@ -475,10 +475,14 @@ class ArvPutUploadJob(object):
             output.close()
 
     def _write(self, source_fd, output):
+        first_read = True
         while True:
             data = source_fd.read(arvados.config.KEEP_BLOCK_SIZE)
-            if not data:
+            # Allow an empty file to be written
+            if not data and not first_read:
                 break
+            if first_read:
+                first_read = False
             output.write(data)
 
     def _my_collection(self):
@@ -591,11 +595,15 @@ class ArvPutUploadJob(object):
         through subcollections
         """
         if isinstance(item, arvados.arvfile.ArvadosFile):
-            locators = []
-            for segment in item.segments():
-                loc = segment.locator
-                locators.append(loc)
-            return locators
+            if item.size() == 0:
+                # Empty file locator
+                return ["d41d8cd98f00b204e9800998ecf8427e+0"]
+            else:
+                locators = []
+                for segment in item.segments():
+                    loc = segment.locator
+                    locators.append(loc)
+                return locators
         elif isinstance(item, arvados.collection.Collection):
             l = [self._datablocks_on_item(x) for x in item.values()]
             # Fast list flattener method taken from:
@@ -701,14 +709,15 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     bytes_expected = expected_bytes_for(args.paths)
     try:
         writer = ArvPutUploadJob(paths = args.paths,
-                                resume = args.resume,
-                                reporter = reporter,
-                                bytes_expected = bytes_expected,
-                                num_retries = args.retries,
-                                replication_desired = args.replication,
-                                name = collection_name,
-                                owner_uuid = project_uuid,
-                                ensure_unique_name = True)
+                                 resume = args.resume,
+                                 filename = args.filename,
+                                 reporter = reporter,
+                                 bytes_expected = bytes_expected,
+                                 num_retries = args.retries,
+                                 replication_desired = args.replication,
+                                 name = collection_name,
+                                 owner_uuid = project_uuid,
+                                 ensure_unique_name = True)
     except ResumeCacheConflict:
         print >>stderr, "\n".join([
             "arv-put: Another process is already uploading this data.",
