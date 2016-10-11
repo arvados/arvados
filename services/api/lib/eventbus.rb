@@ -246,7 +246,12 @@ class EventBus
     # current_user is included from CurrentApiClient
     if not current_user
       send_message(ws, {status: 401, message: "Valid API token required"})
-      ws.close
+      # Wait for the handshake to complete before closing the
+      # socket. Otherwise, nginx responds with HTTP 502 Bad gateway,
+      # and the client never sees our real error message.
+      ws.on :open do |event|
+        ws.close
+      end
       return
     end
 
