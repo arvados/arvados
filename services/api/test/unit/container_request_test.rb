@@ -202,7 +202,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "Request is finalized when its container is cancelled" do
     set_user_from_auth :active
-    cr = create_minimal_req!(priority: 1, state: "Committed")
+    cr = create_minimal_req!(priority: 1, state: "Committed", container_count_max: 1)
 
     act_as_system_user do
       Container.find_by_uuid(cr.container_uuid).
@@ -248,13 +248,13 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "Container makes container request, then is cancelled" do
     set_user_from_auth :active
-    cr = create_minimal_req!(priority: 5, state: "Committed")
+    cr = create_minimal_req!(priority: 5, state: "Committed", container_count_max: 1)
 
     c = Container.find_by_uuid cr.container_uuid
     assert_equal 5, c.priority
 
     cr2 = create_minimal_req!
-    cr2.update_attributes!(priority: 10, state: "Committed", requesting_container_uuid: c.uuid, command: ["echo", "foo2"])
+    cr2.update_attributes!(priority: 10, state: "Committed", requesting_container_uuid: c.uuid, command: ["echo", "foo2"], container_count_max: 1)
     cr2.reload
 
     c2 = Container.find_by_uuid cr2.container_uuid
@@ -443,4 +443,42 @@ class ContainerRequestTest < ActiveSupport::TestCase
       create_minimal_req!(state: "Uncommitted", priority: 1, requesting_container_uuid: 'youcantdothat')
     end
   end
+
+  test "Retry on container cancelled" do
+    set_user_from_auth :active
+    cr = create_minimal_req!(priority: 1, state: "Committed", container_count_max: 2)
+    prev_container_uuid = cr.container_uuid
+
+    c = act_as_system_user do
+      c = Container.find_by_uuid(cr.container_uuid)
+      c.update_attributes!(state: Container::Locked)
+      c.update_attributes!(state: Container::Running)
+      c
+    end
+
+    cr.reload
+    assert_equal "Committed", cr.state
+    assert_equal prev_container_uuid, cr.container_uuid
+    prev_container_uuid = cr.container_uuid
+
+    act_as_system_user do
+      c.update_attributes!(state: Container::Cancelled)
+    end
+
+    cr.reload
+    assert_equal "Committed", cr.state
+    assert_not_equal prev_container_uuid, cr.container_uuid
+    prev_container_uuid = cr.container_uuid
+
+    c = act_as_system_user do
+      c = Container.find_by_uuid(cr.container_uuid)
+      c.update_attributes!(state: Container::Cancelled)
+      c
+    end
+
+    cr.reload
+    assert_equal "Final", cr.state
+    assert_equal prev_container_uuid, cr.container_uuid
+  end
+
 end

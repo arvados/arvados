@@ -102,79 +102,82 @@ class Summarizer(object):
             if not m:
                 continue
 
-            if self.label is None:
-                self.label = m.group('job_uuid')
-                logger.debug('%s: using job uuid as label', self.label)
-            if m.group('category').endswith(':'):
-                # "stderr crunchstat: notice: ..."
-                continue
-            elif m.group('category') in ('error', 'caught'):
-                continue
-            elif m.group('category') == 'read':
-                # "stderr crunchstat: read /proc/1234/net/dev: ..."
-                # (crunchstat formatting fixed, but old logs still say this)
-                continue
-            task_id = self.seq_to_uuid[int(m.group('seq'))]
-            task = self.tasks[task_id]
-
-            # Use the first and last crunchstat timestamps as
-            # approximations of starttime and finishtime.
-            timestamp = datetime.datetime.strptime(
-                m.group('timestamp'), '%Y-%m-%d_%H:%M:%S')
-            if not task.starttime:
-                task.starttime = timestamp
-                logger.debug('%s: task %s starttime %s',
-                             self.label, task_id, timestamp)
-            task.finishtime = timestamp
-
-            if not self.starttime:
-                self.starttime = timestamp
-            self.finishtime = timestamp
-
-            this_interval_s = None
-            for group in ['current', 'interval']:
-                if not m.group(group):
+            try:
+                if self.label is None:
+                    self.label = m.group('job_uuid')
+                    logger.debug('%s: using job uuid as label', self.label)
+                if m.group('category').endswith(':'):
+                    # "stderr crunchstat: notice: ..."
                     continue
-                category = m.group('category')
-                words = m.group(group).split(' ')
-                stats = {}
-                for val, stat in zip(words[::2], words[1::2]):
-                    try:
-                        if '.' in val:
-                            stats[stat] = float(val)
+                elif m.group('category') in ('error', 'caught'):
+                    continue
+                elif m.group('category') == 'read':
+                    # "stderr crunchstat: read /proc/1234/net/dev: ..."
+                    # (crunchstat formatting fixed, but old logs still say this)
+                    continue
+                task_id = self.seq_to_uuid[int(m.group('seq'))]
+                task = self.tasks[task_id]
+
+                # Use the first and last crunchstat timestamps as
+                # approximations of starttime and finishtime.
+                timestamp = datetime.datetime.strptime(
+                    m.group('timestamp'), '%Y-%m-%d_%H:%M:%S')
+                if not task.starttime:
+                    task.starttime = timestamp
+                    logger.debug('%s: task %s starttime %s',
+                                 self.label, task_id, timestamp)
+                task.finishtime = timestamp
+
+                if not self.starttime:
+                    self.starttime = timestamp
+                self.finishtime = timestamp
+
+                this_interval_s = None
+                for group in ['current', 'interval']:
+                    if not m.group(group):
+                        continue
+                    category = m.group('category')
+                    words = m.group(group).split(' ')
+                    stats = {}
+                    for val, stat in zip(words[::2], words[1::2]):
+                        try:
+                            if '.' in val:
+                                stats[stat] = float(val)
+                            else:
+                                stats[stat] = int(val)
+                        except ValueError as e:
+                            raise ValueError(
+                                'Error parsing {} stat: {!r}'.format(
+                                    stat, e))
+                    if 'user' in stats or 'sys' in stats:
+                        stats['user+sys'] = stats.get('user', 0) + stats.get('sys', 0)
+                    if 'tx' in stats or 'rx' in stats:
+                        stats['tx+rx'] = stats.get('tx', 0) + stats.get('rx', 0)
+                    for stat, val in stats.iteritems():
+                        if group == 'interval':
+                            if stat == 'seconds':
+                                this_interval_s = val
+                                continue
+                            elif not (this_interval_s > 0):
+                                logger.error(
+                                    "BUG? interval stat given with duration {!r}".
+                                    format(this_interval_s))
+                                continue
+                            else:
+                                stat = stat + '__rate'
+                                val = val / this_interval_s
+                                if stat in ['user+sys__rate', 'tx+rx__rate']:
+                                    task.series[category, stat].append(
+                                        (timestamp - self.starttime, val))
                         else:
-                            stats[stat] = int(val)
-                    except ValueError as e:
-                        raise ValueError(
-                            'Error parsing {} stat in "{}": {!r}'.format(
-                                stat, line, e))
-                if 'user' in stats or 'sys' in stats:
-                    stats['user+sys'] = stats.get('user', 0) + stats.get('sys', 0)
-                if 'tx' in stats or 'rx' in stats:
-                    stats['tx+rx'] = stats.get('tx', 0) + stats.get('rx', 0)
-                for stat, val in stats.iteritems():
-                    if group == 'interval':
-                        if stat == 'seconds':
-                            this_interval_s = val
-                            continue
-                        elif not (this_interval_s > 0):
-                            logger.error(
-                                "BUG? interval stat given with duration {!r}".
-                                format(this_interval_s))
-                            continue
-                        else:
-                            stat = stat + '__rate'
-                            val = val / this_interval_s
-                            if stat in ['user+sys__rate', 'tx+rx__rate']:
+                            if stat in ['rss']:
                                 task.series[category, stat].append(
                                     (timestamp - self.starttime, val))
-                    else:
-                        if stat in ['rss']:
-                            task.series[category, stat].append(
-                                (timestamp - self.starttime, val))
-                        self.task_stats[task_id][category][stat] = val
-                    if val > self.stats_max[category][stat]:
-                        self.stats_max[category][stat] = val
+                            self.task_stats[task_id][category][stat] = val
+                        if val > self.stats_max[category][stat]:
+                            self.stats_max[category][stat] = val
+            except Exception as e:
+                logger.info('Skipping malformed line: {}Error was: {}\n'.format(line, e))
         logger.debug('%s: done parsing', self.label)
 
         self.job_tot = collections.defaultdict(

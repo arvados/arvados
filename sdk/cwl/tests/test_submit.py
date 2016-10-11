@@ -10,6 +10,7 @@ import mock
 import sys
 import unittest
 import json
+import logging
 
 from .matcher import JsonDiffMatcher
 
@@ -19,20 +20,22 @@ def stubs(func):
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     @mock.patch("arvados.collection.KeepClient")
     @mock.patch("arvados.events.subscribe")
-    def wrapped(self, events, KeepClient, keepdocker, *args, **kwargs):
+    def wrapped(self, events, keep_client, keepdocker, *args, **kwargs):
         class Stubs:
             pass
         stubs = Stubs()
         stubs.events = events
-        stubs.KeepClient = KeepClient
         stubs.keepdocker = keepdocker
+        stubs.keep_client = keep_client
 
         def putstub(p, **kwargs):
             return "%s+%i" % (hashlib.md5(p).hexdigest(), len(p))
-        stubs.KeepClient().put.side_effect = putstub
+        stubs.keep_client().put.side_effect = putstub
+        stubs.keep_client.put.side_effect = putstub
 
         stubs.keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         stubs.fake_user_uuid = "zzzzz-tpzed-zzzzzzzzzzzzzzz"
+
 
         stubs.api = mock.MagicMock()
         stubs.api.users().current().execute.return_value = {
@@ -217,11 +220,14 @@ class TestSubmit(unittest.TestCase):
     @stubs
     def test_submit_container(self, stubs):
         capture_stdout = cStringIO.StringIO()
-        exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=containers", "--debug",
-             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
-        self.assertEqual(exited, 0)
+        try:
+            exited = arvados_cwl.main(
+                ["--submit", "--no-wait", "--api=containers", "--debug",
+                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            self.assertEqual(exited, 0)
+        except:
+            logging.exception("")
 
         stubs.api.collections().create.assert_has_calls([
             mock.call(),

@@ -22,7 +22,8 @@ class TestJob(unittest.TestCase):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("draft-3")
+        runner.num_retries = 0
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
         tool = {
             "inputs": [],
@@ -70,7 +71,11 @@ class TestJob(unittest.TestCase):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("draft-3")
+        runner.num_retries = 0
+        arvados_cwl.add_arv_hints()
+
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+
 
         tool = {
             "inputs": [],
@@ -82,7 +87,8 @@ class TestJob(unittest.TestCase):
                 "tmpdirMin": 4000
             }, {
                 "class": "http://arvados.org/cwl#RuntimeConstraints",
-                "keep_cache": 512
+                "keep_cache": 512,
+                "outputDirType": "keep_output_dir"
             }, {
                 "class": "http://arvados.org/cwl#APIRequirement",
             }],
@@ -101,6 +107,7 @@ class TestJob(unittest.TestCase):
                 'script_parameters': {
                     'tasks': [{
                         'task.env': {'HOME': '$(task.outdir)', 'TMPDIR': '$(task.tmpdir)'},
+                        'task.keepTmpOutput': True,
                         'command': ['ls']
                     }]
             },
@@ -122,8 +129,8 @@ class TestJob(unittest.TestCase):
                      ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
                      ['docker_image_locator', 'in docker', 'arvados/jobs']])
 
-    @mock.patch("arvados.collection.Collection")
-    def test_done(self, col):
+    @mock.patch("arvados.collection.CollectionReader")
+    def test_done(self, reader):
         api = mock.MagicMock()
 
         runner = mock.MagicMock()
@@ -132,7 +139,7 @@ class TestJob(unittest.TestCase):
         runner.num_retries = 0
         runner.ignore_docker_for_reuse = False
 
-        col().open.return_value = []
+        reader().open.return_value = []
         api.collections().list().execute.side_effect = ({"items": []},
                                                         {"items": [{"manifest_text": "XYZ"}]})
 
@@ -166,8 +173,8 @@ class TestJob(unittest.TestCase):
                   'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                   'name': 'Output 9999999 of testjob'})
 
-    @mock.patch("arvados.collection.Collection")
-    def test_done_use_existing_collection(self, col):
+    @mock.patch("arvados.collection.CollectionReader")
+    def test_done_use_existing_collection(self, reader):
         api = mock.MagicMock()
 
         runner = mock.MagicMock()
@@ -175,7 +182,7 @@ class TestJob(unittest.TestCase):
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.num_retries = 0
 
-        col().open.return_value = []
+        reader().open.return_value = []
         api.collections().list().execute.side_effect = ({"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2"}]},)
 
         arvjob = arvados_cwl.ArvadosJob(runner)
@@ -206,58 +213,62 @@ class TestWorkflow(unittest.TestCase):
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.collection.Collection")
     def test_run(self, mockcollection):
-        arvados_cwl.add_arv_hints()
+        try:
+            arvados_cwl.add_arv_hints()
 
-        runner = arvados_cwl.ArvCwlRunner(mock.MagicMock())
-        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
-        runner.ignore_docker_for_reuse = False
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+            runner = arvados_cwl.ArvCwlRunner(mock.MagicMock())
+            runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+            runner.ignore_docker_for_reuse = False
+            runner.num_retries = 0
+            document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
-        tool, metadata = document_loader.resolve_ref("tests/wf/scatter2.cwl")
-        metadata["cwlVersion"] = tool["cwlVersion"]
+            tool, metadata = document_loader.resolve_ref("tests/wf/scatter2.cwl")
+            metadata["cwlVersion"] = tool["cwlVersion"]
 
-        mockcollection().portable_data_hash.return_value = "99999999999999999999999999999999+118"
+            mockcollection().portable_data_hash.return_value = "99999999999999999999999999999999+118"
 
-        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
-        arvtool = arvados_cwl.ArvadosWorkflow(runner, tool, work_api="jobs", avsc_names=avsc_names,
-                                              basedir="", make_fs_access=make_fs_access, loader=document_loader,
-                                              makeTool=runner.arv_make_tool, metadata=metadata)
-        arvtool.formatgraph = None
-        it = arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access)
-        it.next().run()
-        it.next().run()
+            make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+            arvtool = arvados_cwl.ArvadosWorkflow(runner, tool, work_api="jobs", avsc_names=avsc_names,
+                                                  basedir="", make_fs_access=make_fs_access, loader=document_loader,
+                                                  makeTool=runner.arv_make_tool, metadata=metadata)
+            arvtool.formatgraph = None
+            it = arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access)
+            it.next().run()
+            it.next().run()
 
-        with open("tests/wf/scatter2_subwf.cwl") as f:
-            subwf = f.read()
+            with open("tests/wf/scatter2_subwf.cwl") as f:
+                subwf = f.read()
 
-        mockcollection().open().__enter__().write.assert_has_calls([mock.call(subwf)])
-        mockcollection().open().__enter__().write.assert_has_calls([mock.call('{sleeptime: 5}')])
+            mockcollection().open().__enter__().write.assert_has_calls([mock.call(subwf)])
+            mockcollection().open().__enter__().write.assert_has_calls([mock.call('{sleeptime: 5}')])
 
-        runner.api.jobs().create.assert_called_with(
-            body={
-                'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
-                'repository': 'arvados',
-                'script_version': 'master',
-                'script': 'crunchrunner',
-                'script_parameters': {
-                    'tasks': [{'task.env': {
-                        'HOME': '$(task.outdir)',
-                        'TMPDIR': '$(task.tmpdir)'},
-                               'task.vwd': {
-                                   'workflow.cwl': '$(task.keep)/99999999999999999999999999999999+118/workflow.cwl',
-                                   'cwl.input.yml': '$(task.keep)/99999999999999999999999999999999+118/cwl.input.yml'
-                               },
-                    'command': [u'cwltool', u'--no-container', u'--move-outputs', u'--preserve-entire-environment', u'workflow.cwl#main', u'cwl.input.yml'],
-                    'task.stdout': 'cwl.output.json'}]},
-                'runtime_constraints': {
-                    'min_scratch_mb_per_node': 2048,
-                    'min_cores_per_node': 1,
-                    'docker_image': 'arvados/jobs',
-                    'min_ram_mb_per_node': 1024
-                },
-                'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'},
-            filters=[['repository', '=', 'arvados'],
-                     ['script', '=', 'crunchrunner'],
-                     ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
-                     ['docker_image_locator', 'in docker', 'arvados/jobs']],
-            find_or_create=True)
+            runner.api.jobs().create.assert_called_with(
+                body={
+                    'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
+                    'repository': 'arvados',
+                    'script_version': 'master',
+                    'script': 'crunchrunner',
+                    'script_parameters': {
+                        'tasks': [{'task.env': {
+                            'HOME': '$(task.outdir)',
+                            'TMPDIR': '$(task.tmpdir)'},
+                                   'task.vwd': {
+                                       'workflow.cwl': '$(task.keep)/99999999999999999999999999999999+118/workflow.cwl',
+                                       'cwl.input.yml': '$(task.keep)/99999999999999999999999999999999+118/cwl.input.yml'
+                                   },
+                        'command': [u'cwltool', u'--no-container', u'--move-outputs', u'--preserve-entire-environment', u'workflow.cwl#main', u'cwl.input.yml'],
+                        'task.stdout': 'cwl.output.json'}]},
+                    'runtime_constraints': {
+                        'min_scratch_mb_per_node': 2048,
+                        'min_cores_per_node': 1,
+                        'docker_image': 'arvados/jobs',
+                        'min_ram_mb_per_node': 1024
+                    },
+                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'},
+                filters=[['repository', '=', 'arvados'],
+                         ['script', '=', 'crunchrunner'],
+                         ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
+                         ['docker_image_locator', 'in docker', 'arvados/jobs']],
+                find_or_create=True)
+        except:
+            logging.exception("")
