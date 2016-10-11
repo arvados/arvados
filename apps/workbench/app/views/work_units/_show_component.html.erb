@@ -68,7 +68,7 @@
   end
 
   repos = wu.children.collect {|c| c.repository}.uniq.compact
-  preload_objects_for_dataclass(Repository, repos, :by_name) if repos.any?
+  preload_objects_for_dataclass(Repository, repos, :name) if repos.any?
 %>
 
 <% if wu.has_unreadable_children %>
