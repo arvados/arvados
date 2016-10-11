@@ -204,7 +204,7 @@ class Collection < ArvadosModel
         utf8 = manifest_text
         utf8.force_encoding Encoding::UTF_8
         if utf8.valid_encoding? and utf8 == manifest_text.encode(Encoding::UTF_8)
-          manifest_text = utf8
+          self.manifest_text = utf8
           return true
         end
       rescue

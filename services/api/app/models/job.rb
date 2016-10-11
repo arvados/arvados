@@ -340,7 +340,7 @@ class Job < ArvadosModel
         assign_uuid
         Commit.tag_in_internal_repository repository, script_version, uuid
       rescue
-        uuid = uuid_was
+        self.uuid = uuid_was
         raise
       end
     end
