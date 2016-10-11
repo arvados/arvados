@@ -526,16 +526,21 @@ class ApplicationController < ActionController::Base
     begin
       if not model_class
         @object = nil
+      elsif params[:uuid].nil? or params[:uuid].empty?
+        @object = nil
       elsif not params[:uuid].is_a?(String)
         @object = object_for_dataclass(model_class, params[:uuid])
-      elsif params[:uuid].empty?
-        @object = nil
       elsif (model_class != Link and
              resource_class_for_uuid(params[:uuid]) == Link)
         @name_link = Link.find(params[:uuid])
         @object = model_class.find(@name_link.head_uuid)
       else
-        @object = object_for_dataclass(model_class, params[:uuid])
+        if resource_class_for_uuid(params[:uuid]) == Collection
+          @object = model_class.find(params[:uuid])
+          load_preloaded_objects [@object]
+        else
+          @object = object_for_dataclass(model_class, params[:uuid])
+        end
       end
     rescue ArvadosApiClient::NotFoundException, ArvadosApiClient::NotLoggedInException, RuntimeError => error
       if error.is_a?(RuntimeError) and (error.message !~ /^argument to find\(/)
