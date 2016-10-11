@@ -281,8 +281,8 @@ common:
   # and display in the Log tab, while subscribing to web sockets.
   running_job_log_records_to_fetch: 2000
 
-  # In systems with many shared projects, dashboard loading can be
-  # slow due to collections indexing; use the following parameters
-  # to suppress certain properties from dashboard
+  # In systems with many shared projects, loading of dashboard and topnav
+  # cab be slow due to collections indexing; use the following parameters
+  # to suppress these properties
   show_recent_collections_on_dashboard: true
-  show_user_notifications_on_dashboard: true
+  show_user_notifications: true
