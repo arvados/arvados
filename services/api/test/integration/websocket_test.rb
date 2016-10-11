@@ -24,7 +24,9 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     Dir.chdir(Rails.root) do |apidir|
       # Only passenger seems to be able to run the websockets server
       # successfully.
-      _system('passenger', 'start', '-d', "-p#{@@port}")
+      _system('passenger', 'start', '-d',
+              "-p#{@@port}",
+              "--log-file", "/dev/stderr")
       timeout = Time.now.tv_sec + 10
       begin
         sleep 0.2
