@@ -28,7 +28,7 @@ class TestContainer(unittest.TestCase):
         runner.api.collections().get().execute.return_value = {
             "portable_data_hash": "99999999999999999999999999999993+99"}
 
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("draft-3")
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
         tool = {
             "inputs": [],
@@ -72,7 +72,7 @@ class TestContainer(unittest.TestCase):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("draft-3")
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -91,6 +91,9 @@ class TestContainer(unittest.TestCase):
                 "keep_cache": 512
             }, {
                 "class": "http://arvados.org/cwl#APIRequirement",
+            }, {
+                "class": "http://arvados.org/cwl#PartitionRequirement",
+                "partition": "blurb"
             }],
             "baseCommand": "ls"
         }
@@ -113,7 +116,8 @@ class TestContainer(unittest.TestCase):
                 'runtime_constraints': {
                     'vcpus': 3,
                     'ram': 3145728000,
-                    'API': True
+                    'API': True,
+                    'partition': ['blurb']
                 }, 'priority': 1,
                 'mounts': {
                     '/var/spool/cwl': {'kind': 'tmp'}

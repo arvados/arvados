@@ -12,9 +12,10 @@ import arvados.arvfile
 class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
     """Implement the cwltool FsAccess interface for Arvados Collections."""
 
-    def __init__(self, basedir, api_client=None):
+    def __init__(self, basedir, api_client=None, keep_client=None):
         super(CollectionFsAccess, self).__init__(basedir)
         self.api_client = api_client
+        self.keep_client = keep_client
         self.collections = {}
 
     def get_collection(self, path):
@@ -22,7 +23,8 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
         if p[0].startswith("keep:") and arvados.util.keep_locator_pattern.match(p[0][5:]):
             pdh = p[0][5:]
             if pdh not in self.collections:
-                self.collections[pdh] = arvados.collection.CollectionReader(pdh, api_client=self.api_client)
+                self.collections[pdh] = arvados.collection.CollectionReader(pdh, api_client=self.api_client,
+                                                                            keep_client=self.keep_client)
             return (self.collections[pdh], "/".join(p[1:]))
         else:
             return (None, path)

@@ -31,9 +31,10 @@ module ShareObjectHelper
       end
       click_on "Add"
     end
-    using_wait_time(Capybara.default_max_wait_time * 3) do
+    # Admin case takes many times longer than normal user, but not sure why
+    using_wait_time(30) do
       assert(page.has_link?(name),
-             "new share was not added to sharing table")
+             "new share #{name} was not added to sharing table")
       assert_equal(start_share_count + 1, share_rows.size,
                    "new share did not add row to sharing table")
     end
@@ -41,7 +42,8 @@ module ShareObjectHelper
 
   def modify_share_and_check(name)
     start_rows = share_rows
-    link_row = start_rows.select { |row| row.has_text?(name) }
+    # We assume rows have already been rendered and can be checked quickly
+    link_row = start_rows.select { |row| row.has_text?(name, wait:(0.1) ) }
     assert_equal(1, link_row.size, "row with new permission not found")
     within(link_row.first) do
       click_on("Read")
