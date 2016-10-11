@@ -19,6 +19,7 @@ class ContainerRequest < ArvadosModel
   validate :validate_change
   validate :validate_runtime_constraints
   after_save :update_priority
+  after_save :finalize_if_needed
   before_create :set_requesting_container_uuid
 
   api_accessible :user, extend: :common do |t|
@@ -65,10 +66,19 @@ class ContainerRequest < ArvadosModel
     %w(modified_by_client_uuid container_uuid requesting_container_uuid)
   end
 
+  def finalize_if_needed
+    if state == Committed && Container.find_by_uuid(container_uuid).final?
+      reload
+      act_as_system_user do
+        finalize!
+      end
+    end
+  end
+
   # Finalize the container request after the container has
   # finished/cancelled.
-  def container_completed!
-    update_attributes!(state: ContainerRequest::Final)
+  def finalize!
+    update_attributes!(state: Final)
     c = Container.find_by_uuid(container_uuid)
     ['output', 'log'].each do |out_type|
       pdh = c.send(out_type)
