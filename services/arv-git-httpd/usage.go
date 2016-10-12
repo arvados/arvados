@@ -56,7 +56,7 @@ GitCommand:
 
 RepoRoot:
 
-    Path to git repositories. Defaults to current working directory.
+    Path to git repositories.
 
 `, exampleConfigFile)
 }

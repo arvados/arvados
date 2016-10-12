@@ -23,14 +23,10 @@ type Config struct {
 var theConfig = defaultConfig()
 
 func defaultConfig() *Config {
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Fatalln("Getwd():", err)
-	}
 	return &Config{
 		Listen:     ":80",
 		GitCommand: "/usr/bin/git",
-		RepoRoot:   cwd,
+		RepoRoot:   "/var/lib/arvados/git/repositories",
 	}
 }
 
