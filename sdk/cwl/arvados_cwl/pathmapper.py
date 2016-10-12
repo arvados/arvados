@@ -41,7 +41,7 @@ class ArvPathMapper(PathMapper):
                 if isinstance(st, arvados.commands.run.UploadFile):
                     uploadfiles.add((src, ab, st))
                 elif isinstance(st, arvados.commands.run.ArvFile):
-                    self._pathmap[src] = MapperEnt("keep:"+ab, self.collection_pattern % ab, "File")
+                    self._pathmap[src] = MapperEnt("keep:"+st.keepref, st.fn, "File")
                 elif src.startswith("_:"):
                     if "contents" in srcobj:
                         pass
@@ -96,7 +96,7 @@ class ArvPathMapper(PathMapper):
                                              project=self.arvrunner.project_uuid)
 
         for src, ab, st in uploadfiles:
-            self._pathmap[src] = MapperEnt("keep:" + st.keepref, self.collection_pattern % st.keepref, "File")
+            self._pathmap[src] = MapperEnt("keep:" + st.keepref, st.fn, "File")
             self.arvrunner.add_uploaded(src, self._pathmap[src])
 
         for srcobj in referenced_files:
