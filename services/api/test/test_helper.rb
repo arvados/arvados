@@ -21,9 +21,11 @@ unless ENV["NO_COVERAGE_TEST"]
 end
 
 require File.expand_path('../../config/environment', __FILE__)
-require 'test/unit/active_support'
+gem 'minitest'
 require 'rails/test_help'
-require 'mocha/test_unit'
+require 'minitest-rails'
+require 'minitest/autorun'
+require 'mocha'
 
 module ArvadosTestSupport
   def json_response
@@ -113,13 +115,18 @@ class ActiveSupport::TestCase
                              "HTTP_AUTHORIZATION" => "OAuth2 #{t}")
   end
 
-  def slow_test
-    omit "RAILS_TEST_SHORT is set" if self.class.skip_slow_tests?
-  end
-
   def self.skip_slow_tests?
     !(ENV['RAILS_TEST_SHORT'] || '').empty?
   end
+
+  def self.skip(*args, &block)
+  end
+
+  def self.slow_test(name, &block)
+    define_method(name, block) unless skip_slow_tests?
+  end
+
+  alias_method :skip, :omit
 end
 
 class ActionController::TestCase

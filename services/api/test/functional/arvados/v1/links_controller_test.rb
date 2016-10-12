@@ -305,8 +305,8 @@ class Arvados::V1::LinksControllerTest < ActionController::TestCase
     assert_response 404
   end
 
-  test "retrieve all permissions using generic links index api" do
-    omit "(not implemented)"
+  # not implemented
+  skip "retrieve all permissions using generic links index api" do
     # Links.readable_by() does not return the full set of permission
     # links that are visible to a user (i.e., all permission links
     # whose head_uuid references an object for which the user has

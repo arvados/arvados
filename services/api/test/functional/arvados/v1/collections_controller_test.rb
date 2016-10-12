@@ -751,13 +751,11 @@ EOS
     [2**8, :success],
     [2**18, 422],
   ].each do |description_size, expected_response|
-    test "create collection with description size #{description_size}
+    # Descriptions are not part of search indexes. Skip until
+    # full-text search is implemented, at which point replace with a
+    # search in description.
+    skip "create collection with description size #{description_size}
           and expect response #{expected_response}" do
-
-      omit "(Descriptions are not part of search indexes. Skip until
-      full-text search is implemented, at which point replace with a
-      search in description.)"
-
       authorize_with :active
 
       description = 'here is a collection with a very large description'

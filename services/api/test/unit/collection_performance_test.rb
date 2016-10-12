@@ -17,8 +17,7 @@ class CollectionModelPerformanceTest < ActiveSupport::TestCase
   end
 
   # "crrud" == "create read render update delete", not a typo
-  test "crrud cycle for a collection with a big manifest)" do
-    slow_test
+  slow_test "crrud cycle for a collection with a big manifest)" do
     bigmanifest = time_block 'make example' do
       make_manifest(streams: 100,
                     files_per_stream: 100,

@@ -375,8 +375,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert_equal expect_next_logs[1].object_uuid, l2
   end
 
-  test "connect, subscribe, get event, unsubscribe" do
-    slow_test
+  slow_test "connect, subscribe, get event, unsubscribe" do
     state = 1
     spec = nil
     spec_ev_uuid = nil
@@ -425,8 +424,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert_equal spec.uuid, spec_ev_uuid
   end
 
-  test "connect, subscribe, get event, unsubscribe with filter" do
-    slow_test
+  slow_test "connect, subscribe, get event, unsubscribe with filter" do
     state = 1
     spec = nil
     spec_ev_uuid = nil
@@ -475,8 +473,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
   end
 
 
-  test "connect, subscribe, get event, try to unsubscribe with bogus filter" do
-    slow_test
+  slow_test "connect, subscribe, get event, try to unsubscribe with bogus filter" do
     state = 1
     spec = nil
     spec_ev_uuid = nil
@@ -526,10 +523,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert_equal human.uuid, human_ev_uuid
   end
 
-
-
-  test "connected, not subscribed, no event" do
-    slow_test
+  slow_test "connected, not subscribed, no event" do
     authorize_with :active
 
     ws_helper(token: :active, timeout: false) do |ws|
@@ -549,8 +543,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "connected, not authorized to see event" do
-    slow_test
+  slow_test "connected, not authorized to see event" do
     state = 1
 
     authorize_with :admin
@@ -665,8 +658,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
   end
 
-  test "connect, subscribe, lots of events" do
-    slow_test
+  slow_test "connect, subscribe, lots of events" do
     state = 1
     event_count = 0
     log_start = Log.order(:id).last.id

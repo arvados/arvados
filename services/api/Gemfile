@@ -9,11 +9,12 @@ group :test, :development do
   gem 'factory_girl_rails'
   gem 'database_cleaner'
   gem 'ruby-prof'
-  gem 'test-unit', require: false
-  gem 'test-unit-activesupport', require: false
   # Note: "require: false" here tells bunder not to automatically
   # 'require' the packages during application startup. Installation is
   # still mandatory.
+  gem 'test-unit', '~> 3.0', require: false
+  gem 'minitest-rails', require: false
+  gem 'minitest', '~> 4.0', require: false
   gem 'simplecov', '~> 0.7.1', require: false
   gem 'simplecov-rcov', require: false
   gem 'mocha', require: false

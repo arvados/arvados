@@ -132,6 +132,13 @@ GEM
     memoist (0.15.0)
     metaclass (0.0.4)
     mime-types (1.25.1)
+    minitest (4.7.5)
+    minitest-rails (1.0.1)
+      minitest (~> 4.7)
+      minitest-test (~> 1.0)
+      railties (>= 3.0, < 4.1)
+    minitest-test (1.1.0)
+      minitest (~> 4.0)
     mocha (1.2.0)
       metaclass (~> 0.0.1)
     multi_json (1.12.1)
@@ -223,9 +230,6 @@ GEM
     sshkey (1.8.0)
     test-unit (3.2.1)
       power_assert
-    test-unit-activesupport (1.0.6)
-      activesupport
-      test-unit
     test_after_commit (1.1.0)
       activerecord (>= 3.2)
     themes_for_rails (0.5.1)
@@ -262,6 +266,8 @@ DEPENDENCIES
   jquery-rails
   lograge
   logstash-event
+  minitest (~> 4.0)
+  minitest-rails
   mocha
   multi_json
   oj
@@ -279,8 +285,7 @@ DEPENDENCIES
   simplecov (~> 0.7.1)
   simplecov-rcov
   sshkey
-  test-unit
-  test-unit-activesupport
+  test-unit (~> 3.0)
   test_after_commit
   themes_for_rails
   therubyracer

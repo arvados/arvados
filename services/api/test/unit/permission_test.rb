@@ -142,8 +142,8 @@ class PermissionTest < ActiveSupport::TestCase
     assert test_perm.destroy, "could not delete new permission on target object"
   end
 
-  test "can_manage permission on a non-group object" do
-    omit "bug #3091"
+  # bug #3091
+  skip "can_manage permission on a non-group object" do
     set_user_from_auth :admin
 
     ob = Specimen.create!
