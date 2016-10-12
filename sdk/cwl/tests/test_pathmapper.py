@@ -18,9 +18,7 @@ from arvados_cwl.pathmapper import ArvPathMapper
 def upload_mock(files, api, dry_run=False, num_retries=0, project=None, fnPattern="$(file %s/%s)", name=None):
     pdh = "99999999999999999999999999999991+99"
     for c in files:
-        c.fn = os.path.basename(c.fn)
-        c.keepref = "%s/%s" % (pdh, c.fn)
-        c.fn = fnPattern % (pdh, c.fn)
+        c.fn = fnPattern % (pdh, os.path.basename(c.fn))
 
 class TestPathmap(unittest.TestCase):
     def test_keepref(self):
@@ -79,7 +77,6 @@ class TestPathmap(unittest.TestCase):
         # keep mount, so we can construct a direct reference directly without upload.
         def statfile_mock(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)"):
             st = arvados.commands.run.ArvFile("", fnPattern % ("99999999999999999999999999999991+99", "hw.py"))
-            st.keepref = "99999999999999999999999999999991+99/hw.py"
             return st
 
         upl.side_effect = upload_mock
