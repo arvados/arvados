@@ -24,7 +24,7 @@ import arvados.config
 
 from .arvcontainer import ArvadosContainer, RunnerContainer
 from .arvjob import ArvadosJob, RunnerJob, RunnerTemplate
-from. runner import Runner
+from. runner import Runner, upload_instance
 from .arvtool import ArvadosCommandTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow
 from .fsaccess import CollectionFsAccess
@@ -64,6 +64,8 @@ class ArvCwlRunner(object):
         self.pipeline = None
         self.final_output_collection = None
         self.output_name = output_name
+        self.project_uuid = None
+
         if keep_client is not None:
             self.keep_client = keep_client
         else:
@@ -265,6 +267,8 @@ class ArvCwlRunner(object):
             kwargs["outdir"] = "$(task.outdir)"
             kwargs["docker_outdir"] = "$(task.outdir)"
             kwargs["tmpdir"] = "$(task.tmpdir)"
+
+        upload_instance(self, shortname(tool.tool["id"]), tool, job_order)
 
         runnerjob = None
         if kwargs.get("submit"):
