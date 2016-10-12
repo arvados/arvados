@@ -239,10 +239,9 @@ Verify that @arvados-git-httpd@ and @git-http-backend@ can be run:
 
 <notextile>
 <pre><code>~$ <span class="userinput">arvados-git-httpd -h</span>
-Usage of arvados-git-httpd:
-  -address="0.0.0.0:80": Address to listen on, "host:port".
-  -git-command="/usr/bin/git": Path to git executable. Each authenticated request will execute this program with a single argument, "http-backend".
-  -repo-root="/path/to/cwd": Path to git repositories.
+[...]
+Usage: arvados-git-httpd [-config path/to/arvados/git-httpd.yml]
+[...]
 ~$ <span class="userinput">git http-backend</span>
 Status: 500 Internal Server Error
 Expires: Fri, 01 Jan 1980 00:00:00 GMT

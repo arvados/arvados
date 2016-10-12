@@ -16,11 +16,12 @@ func usage() {
 	}
 	fmt.Fprintf(os.Stderr, `
 
-arv-git-httpd provides authenticated access to Arvados-hosted git repositories.
+arvados-git-httpd provides authenticated access to Arvados-hosted git
+repositories.
 
 See http://doc.arvados.org/install/install-arv-git-httpd.html.
 
-Usage: arv-git-httpd [-config path/to/arv-git-httpd.yml]
+Usage: arvados-git-httpd [-config path/to/arvados/git-httpd.yml]
 
 Options:
 `)
