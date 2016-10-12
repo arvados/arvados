@@ -43,6 +43,7 @@
             <table>
               <% # link to repo tree/file only if the repo is readable and the commit is a sha1
                  repo = (/^[0-9a-f]{40}$/ =~ current_obj.script_version and
+                         current_obj.repository and
                          object_for_dataclass(Repository, current_obj.repository, :name))
                  repo = nil unless repo.andand.http_fetch_url
                  %>
