@@ -87,4 +87,24 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
       assert_equal state, Container.where(uuid: uuid).first.state
     end
   end
+
+  test 'get current container for token' do
+    authorize_with :running_container_auth
+    c = Container.where(auth_uuid: Thread.current[:api_client_authorization].uuid).first
+    get :current
+    assert_response :success
+    assert_equal containers(:running).uuid, json_response['uuid']
+  end
+
+  test 'no container associated with token' do
+    authorize_with :dispatch1
+    get :current
+    assert_response 404
+  end
+
+  test 'try get current container, no token' do
+    get :current
+    assert_response 401
+  end
+
 end
