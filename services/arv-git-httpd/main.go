@@ -14,10 +14,11 @@ import (
 
 // Server configuration
 type Config struct {
-	Client     arvados.Client
-	Listen     string
-	GitCommand string
-	RepoRoot   string
+	Client       arvados.Client
+	Listen       string
+	GitCommand   string
+	RepoRoot     string
+	GitoliteHome string
 }
 
 var theConfig = defaultConfig()
@@ -39,6 +40,8 @@ func main() {
 		"Path to git or gitolite-shell executable. Each authenticated request will execute this program with a single argument, \"http-backend\"."+deprecated)
 	flag.StringVar(&theConfig.RepoRoot, "repo-root", theConfig.RepoRoot,
 		"Path to git repositories."+deprecated)
+	flag.StringVar(&theConfig.GitoliteHome, "gitolite-home", theConfig.GitoliteHome,
+		"Value for GITOLITE_HTTP_HOME environment variable. If not empty, GL_BYPASS_ACCESS_CHECKS=1 will also be set."+deprecated)
 
 	cfgPath := flag.String("config", defaultCfgPath, "Configuration file `path`.")
 	flag.Usage = usage

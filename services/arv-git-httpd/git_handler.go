@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/cgi"
+	"os"
 )
 
 // gitHandler is an http.Handler that invokes git-http-backend (or
@@ -16,21 +17,24 @@ type gitHandler struct {
 }
 
 func newGitHandler() http.Handler {
+	var env []string
+	path := os.Getenv("PATH")
+	if theConfig.GitoliteHome != "" {
+		env = append(env,
+			"GITOLITE_HTTP_HOME="+theConfig.GitoliteHome,
+			"GL_BYPASS_ACCESS_CHECKS=1")
+		path = path + ":" + theConfig.GitoliteHome + "/bin"
+	}
+	env = append(env,
+		"GIT_PROJECT_ROOT="+theConfig.RepoRoot,
+		"GIT_HTTP_EXPORT_ALL=",
+		"SERVER_ADDR="+theConfig.Listen,
+		"PATH="+path)
 	return &gitHandler{
 		Handler: cgi.Handler{
 			Path: theConfig.GitCommand,
 			Dir:  theConfig.RepoRoot,
-			Env: []string{
-				"GIT_PROJECT_ROOT=" + theConfig.RepoRoot,
-				"GIT_HTTP_EXPORT_ALL=",
-				"SERVER_ADDR=" + theConfig.Listen,
-			},
-			InheritEnv: []string{
-				"PATH",
-				// Needed if GitCommand is gitolite-shell:
-				"GITOLITE_HTTP_HOME",
-				"GL_BYPASS_ACCESS_CHECKS",
-			},
+			Env:  env,
 			Args: []string{"http-backend"},
 		},
 	}

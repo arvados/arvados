@@ -20,12 +20,11 @@ fi
 
 export ARVADOS_API_HOST=$localip:${services[api]}
 export ARVADOS_API_HOST_INSECURE=1
-export GITOLITE_HTTP_HOME=/var/lib/arvados/git
-export GL_BYPASS_ACCESS_CHECKS=1
 export PATH="$PATH:/var/lib/arvados/git/bin"
 cd ~git
 
 exec /usr/local/bin/arv-git-httpd \
-     -address=:${services[arv-git-httpd]} \
-     -git-command=/usr/share/gitolite3/gitolite-shell \
-     -repo-root=/var/lib/arvados/git/repositories
+    -address=:${services[arv-git-httpd]} \
+    -git-command=/usr/share/gitolite3/gitolite-shell \
+    -gitolite-home=/var/lib/arvados/git \
+    -repo-root=/var/lib/arvados/git/repositories

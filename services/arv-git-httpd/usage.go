@@ -51,6 +51,14 @@ GitCommand:
     request will execute this program with the single argument
     "http-backend".
 
+GitoliteHome:
+
+    Path to Gitolite's home directory. If a non-empty path is given,
+    the CGI environment will be set up to support the use of
+    gitolite-shell as a GitCommand: for example, if GitoliteHome is
+    "/gh", then the CGI environment will have GITOLITE_HTTP_HOME=/gh,
+    PATH=$PATH:/gh/bin, and GL_BYPASS_ACCESS_CHECKS=1.
+
 Listen:
 
     Local port to listen on. Can be "address:port" or ":port", where

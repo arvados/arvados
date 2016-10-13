@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"regexp"
 
 	check "gopkg.in/check.v1"
@@ -17,6 +16,7 @@ type GitHandlerSuite struct{}
 func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
 	theConfig = defaultConfig()
 	theConfig.RepoRoot = "/"
+	theConfig.GitoliteHome = "/test/ghh"
 
 	u, err := url.Parse("git.zzzzz.arvadosapi.com/test")
 	c.Check(err, check.Equals, nil)
@@ -29,15 +29,14 @@ func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
 	h := newGitHandler()
 	h.(*gitHandler).Path = "/bin/sh"
 	h.(*gitHandler).Args = []string{"-c", "printf 'Content-Type: text/plain\r\n\r\n'; env"}
-	os.Setenv("GITOLITE_HTTP_HOME", "/test/ghh")
-	os.Setenv("GL_BYPASS_ACCESS_CHECKS", "yesplease")
 
 	h.ServeHTTP(resp, req)
 
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	body := resp.Body.String()
+	c.Check(body, check.Matches, `(?ms).*^PATH=.*:/test/ghh/bin$.*`)
 	c.Check(body, check.Matches, `(?ms).*^GITOLITE_HTTP_HOME=/test/ghh$.*`)
-	c.Check(body, check.Matches, `(?ms).*^GL_BYPASS_ACCESS_CHECKS=yesplease$.*`)
+	c.Check(body, check.Matches, `(?ms).*^GL_BYPASS_ACCESS_CHECKS=1$.*`)
 	c.Check(body, check.Matches, `(?ms).*^REMOTE_HOST=::1$.*`)
 	c.Check(body, check.Matches, `(?ms).*^REMOTE_PORT=12345$.*`)
 	c.Check(body, check.Matches, `(?ms).*^SERVER_ADDR=`+regexp.QuoteMeta(theConfig.Listen)+`$.*`)

@@ -112,6 +112,8 @@ func (s *IntegrationSuite) TearDownTest(c *check.C) {
 	s.tmpWorkdir = ""
 
 	s.Config = nil
+
+	theConfig = defaultConfig()
 }
 
 func (s *IntegrationSuite) RunGit(c *check.C, token, gitCmd, repo string, args ...string) error {
