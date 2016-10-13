@@ -30,7 +30,7 @@ func defaultConfig() *Config {
 	}
 }
 
-func init() {
+func main() {
 	const defaultCfgPath = "/etc/arvados/git-httpd/git-httpd.yml"
 	const deprecated = " (DEPRECATED -- use config file instead)"
 	flag.StringVar(&theConfig.Listen, "address", theConfig.Listen,
@@ -59,9 +59,7 @@ func init() {
 			log.Print("Current configuration:\n", string(j))
 		}
 	}
-}
 
-func main() {
 	srv := &server{}
 	if err := srv.Start(); err != nil {
 		log.Fatal(err)

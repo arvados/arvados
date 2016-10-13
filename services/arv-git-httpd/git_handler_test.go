@@ -15,6 +15,9 @@ var _ = check.Suite(&GitHandlerSuite{})
 type GitHandlerSuite struct{}
 
 func (s *GitHandlerSuite) TestEnvVars(c *check.C) {
+	theConfig = defaultConfig()
+	theConfig.RepoRoot = "/"
+
 	u, err := url.Parse("git.zzzzz.arvadosapi.com/test")
 	c.Check(err, check.Equals, nil)
 	resp := httptest.NewRecorder()
