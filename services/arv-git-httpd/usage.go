@@ -1,3 +1,7 @@
+// arvados-git-httpd provides authenticated access to Arvados-hosted
+// git repositories.
+//
+// See http://doc.arvados.org/install/install-arv-git-httpd.html.
 package main
 
 import (
