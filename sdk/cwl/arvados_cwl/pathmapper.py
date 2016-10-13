@@ -37,11 +37,11 @@ class ArvPathMapper(PathMapper):
                 # Local FS ref, may need to be uploaded or may be on keep
                 # mount.
                 ab = abspath(src, self.input_basedir)
-                st = arvados.commands.run.statfile("", ab, fnPattern=self.file_pattern)
+                st = arvados.commands.run.statfile("", ab, fnPattern="keep:%s/%s")
                 if isinstance(st, arvados.commands.run.UploadFile):
                     uploadfiles.add((src, ab, st))
                 elif isinstance(st, arvados.commands.run.ArvFile):
-                    self._pathmap[src] = MapperEnt(ab, st.fn, "File")
+                    self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % st.fn[5:], "File")
                 elif src.startswith("_:"):
                     if "contents" in srcobj:
                         pass
@@ -78,8 +78,10 @@ class ArvPathMapper(PathMapper):
 
     def setup(self, referenced_files, basedir):
         # type: (List[Any], unicode) -> None
-        self._pathmap = self.arvrunner.get_uploaded()
         uploadfiles = set()
+
+        for k,v in self.arvrunner.get_uploaded().iteritems():
+            self._pathmap[k] = MapperEnt(v.resolved, self.collection_pattern % v.resolved[5:], "File")
 
         for srcobj in referenced_files:
             self.visit(srcobj, uploadfiles)
@@ -89,12 +91,12 @@ class ArvPathMapper(PathMapper):
                                              self.arvrunner.api,
                                              dry_run=False,
                                              num_retries=self.arvrunner.num_retries,
-                                             fnPattern=self.file_pattern,
+                                             fnPattern="keep:%s/%s",
                                              name=self.name,
                                              project=self.arvrunner.project_uuid)
 
         for src, ab, st in uploadfiles:
-            self._pathmap[src] = MapperEnt("keep:" + st.keepref, st.fn, "File")
+            self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % st.fn[5:], "File")
             self.arvrunner.add_uploaded(src, self._pathmap[src])
 
         for srcobj in referenced_files:
