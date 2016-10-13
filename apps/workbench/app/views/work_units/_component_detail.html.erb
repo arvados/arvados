@@ -1,3 +1,15 @@
+<%
+  collections = current_obj.outputs.flatten.uniq
+  collections << current_obj.docker_image
+  collections = collections.compact.uniq
+  collections_pdhs = collections.select {|x| !(m = CollectionsHelper.match(x)).nil?}.uniq.compact
+  collections_uuids = collections - collections_pdhs
+  preload_collections_for_objects collections_uuids if collections_uuids.any?
+  preload_for_pdhs collections_pdhs if collections_pdhs.any?
+
+  preload_objects_for_dataclass(Repository, [current_obj.repository], :name) if current_obj.repository
+%>
+
       <div class="container">
         <div class="row">
           <div class="col-md-5">
@@ -6,7 +18,8 @@
             <% else %>
             <table>
               <% keys = [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :container_uuid, :priority] %>
-              <% keys << :outputs if @object.uuid == current_obj.uuid %>
+              <% keys << :log_collection if @object.uuid != current_obj.uuid %>
+              <% keys << :outputs %>
               <% keys.each do |k| %>
                 <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
                 <% has_val = val %>
@@ -29,6 +42,8 @@
                       <% else %>
                         <%= render partial: 'work_units/show_outputs', locals: {id: current_obj.uuid, outputs: val, align:""} %>
                       <% end %>
+                    <% elsif k == :log_collection %>
+                      <%= render partial: 'work_units/show_log_link', locals: {wu: current_obj} %>
                     <% else %>
                       <%= val %>
                     <% end %>

@@ -1,7 +1,7 @@
 <div class="panel panel-default">
   <div class="panel-heading">
       <div class="row">
-        <div class="col-md-2" style="word-break:break-all;">
+        <div class="col-md-3" style="word-break:break-all;">
           <h4 class="panel-title">
             <a data-toggle="collapse" href="#collapse<%= i %>">
               <%= current_obj.label %> <span class="caret"></span>
@@ -14,12 +14,8 @@
         </div>
 
         <% if not current_obj %>
-          <div class="col-md-8"></div>
+          <div class="col-md-7"></div>
         <% else %>
-          <div class="col-md-1">
-            <%= render partial: 'work_units/show_log_link', locals: {wu: current_obj} %>
-          </div>
-
           <% walltime = current_obj.walltime %>
           <% cputime = current_obj.cputime %>
           <div class="col-md-3">
@@ -39,19 +35,6 @@
               <span class="task-summary-status">
                 <%= current_obj.child_summary_str %>
               </span>
-            </div>
-          <% elsif current_obj.is_finished? %>
-            <div class="col-md-3 text-overflow-ellipsis">
-              <% outputs = current_obj.outputs %>
-              <% if outputs.any? %>
-                <% if outputs.size == 1 %>
-                  <%= link_to_arvados_object_if_readable(outputs[0], 'Output data not available', link_text: "Output of #{current_obj.label}") %>
-                <% else %>
-                  <%= render partial: 'work_units/show_outputs', locals: {id: current_obj.uuid, outputs: outputs, align:"pull-right"} %>
-                <% end %>
-              <% else %>
-                No output.
-              <% end %>
             </div>
           <% end %>
 

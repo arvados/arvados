@@ -37,49 +37,6 @@
 </p>
 
 <%# Work unit children %>
-
-<%
-  uuids = wu.children.collect {|c| c.uuid}.compact
-  if uuids.any?
-    resource_class = resource_class_for_uuid(uuids.first, friendly_name: true)
-
-    start = 0; inc = 200
-    while start < uuids.length
-      preload_objects_for_dataclass resource_class, uuids[start, inc]
-      start += inc
-    end
-  end
-
-  collections = wu.outputs.flatten.uniq
-  collections << wu.log_collection if wu.log_collection
-  collections << wu.docker_image if wu.docker_image
-  collections = wu.children.collect {|j| j.outputs}.compact
-  collections = collections.flatten.uniq
-  collections.concat wu.children.collect {|j| j.docker_image}.uniq.compact
-  collections.concat wu.children.collect {|j| j.log_collection}.uniq.compact
-  collections_pdhs = collections.select {|x| !(m = CollectionsHelper.match(x)).nil?}.uniq.compact
-  collections_uuids = collections - collections_pdhs
-
-  if collections_uuids.any?
-    start = 0; inc = 200
-    while start < collections_uuids.length
-      preload_collections_for_objects collections_uuids[start, inc]
-      start += inc
-    end
-  end
-
-  if collections_pdhs.any?
-    start = 0; inc = 200
-    while start < collections_pdhs.length
-      preload_for_pdhs collections_pdhs[start, inc]
-      start += inc
-    end
-  end
-
-  repos = wu.children.collect {|c| c.repository}.uniq.compact
-  preload_objects_for_dataclass(Repository, repos, :name) if repos.any?
-%>
-
 <% if wu.has_unreadable_children %>
   <%= render(partial: "pipeline_instances/show_components_json",
              locals: {error_name: "Unreadable components", backtrace: nil, wu: wu}) %>
