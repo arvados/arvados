@@ -48,9 +48,10 @@ func (s *GitoliteSuite) SetUpTest(c *check.C) {
 			APIHost:  arvadostest.APIHost(),
 			Insecure: true,
 		},
-		Listen:     ":0",
-		GitCommand: "/usr/share/gitolite3/gitolite-shell",
-		RepoRoot:   s.tmpRepoRoot,
+		Listen:       ":0",
+		GitCommand:   "/usr/share/gitolite3/gitolite-shell",
+		GitoliteHome: s.gitoliteHome,
+		RepoRoot:     s.tmpRepoRoot,
 	}
 	s.IntegrationSuite.SetUpTest(c)
 
@@ -58,9 +59,6 @@ func (s *GitoliteSuite) SetUpTest(c *check.C) {
 	// (*IntegrationTest)SetUpTest() -- see 2.2.4 at
 	// http://gitolite.com/gitolite/gitolite.html
 	runGitolite("gitolite", "setup")
-
-	os.Setenv("GITOLITE_HTTP_HOME", s.gitoliteHome)
-	os.Setenv("GL_BYPASS_ACCESS_CHECKS", "1")
 }
 
 func (s *GitoliteSuite) TearDownTest(c *check.C) {

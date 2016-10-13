@@ -232,6 +232,7 @@ On Red Hat-based systems:
 
 <notextile>
 <pre><code>~$ <span class="userinput">sudo yum install git arvados-git-httpd</span>
+~$ <span class="userinput">sudo systemctl enable arvados-git-httpd</span>
 </code></pre>
 </notextile>
 
@@ -239,10 +240,9 @@ Verify that @arvados-git-httpd@ and @git-http-backend@ can be run:
 
 <notextile>
 <pre><code>~$ <span class="userinput">arvados-git-httpd -h</span>
-Usage of arvados-git-httpd:
-  -address="0.0.0.0:80": Address to listen on, "host:port".
-  -git-command="/usr/bin/git": Path to git executable. Each authenticated request will execute this program with a single argument, "http-backend".
-  -repo-root="/path/to/cwd": Path to git repositories.
+[...]
+Usage: arvados-git-httpd [-config path/to/arvados/git-httpd.yml]
+[...]
 ~$ <span class="userinput">git http-backend</span>
 Status: 500 Internal Server Error
 Expires: Fri, 01 Jan 1980 00:00:00 GMT
@@ -255,43 +255,29 @@ fatal: No REQUEST_METHOD from server
 
 h3. Enable arvados-git-httpd
 
-Install runit to supervise the arvados-git-httpd daemon.  {% include 'install_runit' %}
+{% include 'notebox_begin' %}
 
-Configure runit to run arvados-git-httpd, making sure to update the API host to match your site:
+The arvados-git-httpd package includes configuration files for systemd.  If you're using a different init system, you'll need to configure a service to start and stop an @arvados-git-httpd@ process as desired.
+
+{% include 'notebox_end' %}
+
+Create the configuration file @/etc/arvados/git-httpd/git-httpd.yml@. Run @arvados-git-httpd -h@ to learn more about configuration entries.
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo mkdir -p /etc/sv</span>
-~$ <span class="userinput">cd /etc/sv</span>
-/etc/sv$ <span class="userinput">sudo mkdir arvados-git-httpd; cd arvados-git-httpd</span>
-/etc/sv/arvados-git-httpd$ <span class="userinput">sudo mkdir log</span>
-/etc/sv/arvados-git-httpd$ <span class="userinput">sudo sh -c 'cat &gt;log/run' &lt;&lt;'EOF'
-#!/bin/sh
-mkdir -p main
-chown git:git main
-exec chpst -u git:git svlogd -tt main
-EOF</span>
-/etc/sv/arvados-git-httpd$ <span class="userinput">sudo sh -c 'cat &gt;run' &lt;&lt;'EOF'
-#!/bin/sh
-export ARVADOS_API_HOST=<b>uuid_prefix.your.domain</b>
-export GITOLITE_HTTP_HOME=/var/lib/arvados/git
-export GL_BYPASS_ACCESS_CHECKS=1
-export PATH="$PATH:/var/lib/arvados/git/bin"
-exec chpst -u git:git arvados-git-httpd -address=:9001 -git-command=/var/lib/arvados/git/gitolite/src/gitolite-shell -repo-root=<b>/var/lib/arvados/git</b>/repositories 2&gt;&1
-EOF</span>
-/etc/sv/arvados-git-httpd$ <span class="userinput">sudo chmod +x run log/run</span>
-/etc/sv/arvados-git-httpd$ <span class="userinput">sudo ln -s "$(pwd)" /etc/service/</span>
+<pre><code>Client:
+  APIHost: <b>uuid_prefix.your.domain</b>
+  Insecure: false
+GitCommand: /var/lib/arvados/git/gitolite/src/gitolite-shell
+GitoliteHome: /var/lib/arvados/git
+Listen: :9001
+RepoRoot: /var/lib/arvados/git/repositories
 </code></pre>
 </notextile>
 
-If you are using a different daemon supervisor, or if you want to test the daemon in a terminal window, an equivalent shell command to run arvados-git-httpd is:
+Restart the systemd service to ensure the new configuration is used.
 
 <notextile>
-<pre><code>sudo -u git \
-  ARVADOS_API_HOST=<span class="userinput">uuid_prefix.your.domain</span> \
-  GITOLITE_HTTP_HOME=/var/lib/arvados/git \
-  GL_BYPASS_ACCESS_CHECKS=1 \
-  PATH="$PATH:/var/lib/arvados/git/bin" \
-  arvados-git-httpd -address=:9001 -git-command=/var/lib/arvados/git/gitolite/src/gitolite-shell -repo-root=/var/lib/arvados/git/repositories 2&gt;&1
+<pre><code>~$ <span class="userinput">sudo systemctl restart arvados-git-httpd</span>
 </code></pre>
 </notextile>
 
