@@ -135,7 +135,8 @@ def stubs(func):
             }
         }
         stubs.pipeline_create = copy.deepcopy(stubs.expect_pipeline_instance)
-        stubs.pipeline_create["uuid"] = "zzzzz-d1hrv-zzzzzzzzzzzzzzz"
+        stubs.expect_pipeline_uuid = "zzzzz-d1hrv-zzzzzzzzzzzzzzz"
+        stubs.pipeline_create["uuid"] = stubs.expect_pipeline_uuid
         stubs.pipeline_with_job = copy.deepcopy(stubs.pipeline_create)
         stubs.pipeline_with_job["components"]["cwl-runner"]["job"] = {
             "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
@@ -229,7 +230,7 @@ class TestSubmit(unittest.TestCase):
         stubs.api.pipeline_instances().create.assert_called_with(
             body=expect_pipeline)
         self.assertEqual(capture_stdout.getvalue(),
-                         stubs.expect_job_uuid + '\n')
+                         stubs.expect_pipeline_uuid + '\n')
 
     @mock.patch("time.sleep")
     @stubs

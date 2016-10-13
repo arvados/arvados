@@ -234,6 +234,12 @@ class RunnerJob(Runner):
 
         workflowmapper = super(RunnerJob, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)
 
+        # Need to filter this out, gets added by cwltool when providing
+        # parameters on the command line, and arv-run-pipeline-instance doesn't
+        # like it.
+        if "job_order" in self.job_order:
+            del self.job_order["job_order"]
+
         self.job_order["cwl:tool"] = workflowmapper.mapper(self.tool.tool["id"]).target[5:]
         if self.output_name:
             self.job_order["arv:output_name"] = self.output_name
@@ -258,6 +264,10 @@ class RunnerJob(Runner):
                 "state": "RunningOnServer"}).execute(num_retries=self.arvrunner.num_retries)
         logger.info("Created pipeline %s", self.arvrunner.pipeline["uuid"])
 
+        if kwargs.get("wait") is False:
+            self.uuid = self.arvrunner.pipeline["uuid"]
+            return
+
         job = None
         while not job:
             time.sleep(2)
@@ -270,7 +280,7 @@ class RunnerJob(Runner):
         self.arvrunner.processes[self.uuid] = self
 
         if job["state"] in ("Complete", "Failed", "Cancelled"):
-            self.done(response)
+            self.done(job)
 
 
 class RunnerTemplate(object):
