@@ -481,4 +481,31 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal prev_container_uuid, cr.container_uuid
   end
 
+  test "Finalize committed request when reusing a finished container" do
+    set_user_from_auth :active
+    cr = create_minimal_req!(priority: 1, state: ContainerRequest::Committed)
+    cr.reload
+    assert_equal ContainerRequest::Committed, cr.state
+    act_as_system_user do
+      c = Container.find_by_uuid(cr.container_uuid)
+      c.update_attributes!(state: Container::Locked)
+      c.update_attributes!(state: Container::Running)
+      c.update_attributes!(state: Container::Complete,
+                           exit_code: 0,
+                           output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
+                           log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
+    end
+    cr.reload
+    assert_equal ContainerRequest::Final, cr.state
+
+    cr2 = create_minimal_req!(priority: 1, state: ContainerRequest::Committed)
+    assert_equal cr.container_uuid, cr2.container_uuid
+    assert_equal ContainerRequest::Final, cr2.state
+
+    cr3 = create_minimal_req!(priority: 1, state: ContainerRequest::Uncommitted)
+    assert_equal ContainerRequest::Uncommitted, cr3.state
+    cr3.update_attributes!(state: ContainerRequest::Committed)
+    assert_equal cr.container_uuid, cr3.container_uuid
+    assert_equal ContainerRequest::Final, cr3.state
+  end
 end

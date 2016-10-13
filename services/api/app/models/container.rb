@@ -166,6 +166,10 @@ class Container < ArvadosModel
             uuids: uuid_list)
   end
 
+  def final?
+    [Complete, Cancelled].include?(self.state)
+  end
+
   protected
 
   def fill_field_defaults
@@ -305,7 +309,7 @@ class Container < ArvadosModel
   def handle_completed
     # This container is finished so finalize any associated container requests
     # that are associated with this container.
-    if self.state_changed? and [Complete, Cancelled].include? self.state
+    if self.state_changed? and self.final?
       act_as_system_user do
 
         if self.state == Cancelled
@@ -337,7 +341,7 @@ class Container < ArvadosModel
         # Notify container requests associated with this container
         ContainerRequest.where(container_uuid: uuid,
                                state: ContainerRequest::Committed).each do |cr|
-          cr.container_completed!
+          cr.finalize!
         end
 
         # Try to cancel any outstanding container requests made by this container.
