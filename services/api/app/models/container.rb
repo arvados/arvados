@@ -18,6 +18,7 @@ class Container < ArvadosModel
   validate :validate_state_change
   validate :validate_change
   validate :validate_lock
+  validate :validate_output
   after_validation :assign_auth
   before_save :sort_serialized_attrs
   after_save :handle_completed
@@ -213,7 +214,7 @@ class Container < ArvadosModel
       permitted.push :priority
 
     when Running
-      permitted.push :priority, :progress
+      permitted.push :priority, :progress, :output
       if self.state_changed?
         permitted.push :started_at
       end
@@ -244,8 +245,10 @@ class Container < ArvadosModel
     # current api_client_auth, disallow all changes -- except
     # priority, which needs to change to reflect max(priority) of
     # relevant ContainerRequests.
-    if locked_by_uuid_was
-      if locked_by_uuid_was != Thread.current[:api_client_authorization].uuid
+    if !locked_by_uuid_was.nil? and locked_by_uuid_was != Thread.current[:api_client_authorization].uuid
+      if auth_uuid_was == Thread.current[:api_client_authorization].uuid
+        check_update_whitelist [:priority, :output, :progress]
+      else
         check_update_whitelist [:priority]
       end
     end
@@ -267,6 +270,19 @@ class Container < ArvadosModel
       end
     end
     self.locked_by_uuid = need_lock
+  end
+
+  def validate_output
+    if output_changed?
+      apiauth = ApiClientAuthorization.find_by_uuid(uuid: auth_uuid)
+      c = Collection.
+          readable_by(User.find_by_id(apiauth.user_id)).
+          where(portable_data_hash: self.output).
+          first
+      if !c
+        raise #ArvadosModel::UnresolvableContainerError.new "cannot mount collection #{uuid.inspect}: not found"
+      end
+    end
   end
 
   def assign_auth
