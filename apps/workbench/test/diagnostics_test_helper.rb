@@ -24,9 +24,12 @@ class DiagnosticsTest < ActionDispatch::IntegrationTest
   # Looks for the text_to_look_for for up to the max_time provided
   def wait_until_page_has text_to_look_for, max_time=30
     max_time = 30 if (!max_time || (max_time.to_s != max_time.to_i.to_s))
+    text_found = false
     Timeout.timeout(max_time) do
-      loop until page.has_text?(text_to_look_for)
+      until text_found do
+        visit_page_with_token 'active', current_path
+        text_found = has_text?(text_to_look_for)
+      end
     end
   end
-
 end
