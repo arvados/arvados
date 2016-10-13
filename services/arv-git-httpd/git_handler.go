@@ -17,13 +17,18 @@ type gitHandler struct {
 }
 
 func newGitHandler() http.Handler {
+	const glBypass = "GL_BYPASS_ACCESS_CHECKS"
+	const glHome = "GITOLITE_HTTP_HOME"
 	var env []string
 	path := os.Getenv("PATH")
 	if theConfig.GitoliteHome != "" {
 		env = append(env,
-			"GITOLITE_HTTP_HOME="+theConfig.GitoliteHome,
-			"GL_BYPASS_ACCESS_CHECKS=1")
+			glHome+"="+theConfig.GitoliteHome,
+			glBypass+"=1")
 		path = path + ":" + theConfig.GitoliteHome + "/bin"
+	} else if home, bypass := os.Getenv(glHome), os.Getenv(glBypass); home != "" || bypass != "" {
+		env = append(env, glHome+"="+home, glBypass+"="+bypass)
+		log.Printf("DEPRECATED: Passing through %s and %s environment variables. Use GitoliteHome configuration instead.", glHome, glBypass)
 	}
 	env = append(env,
 		"GIT_PROJECT_ROOT="+theConfig.RepoRoot,
