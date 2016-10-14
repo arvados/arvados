@@ -46,7 +46,7 @@ class PipelineTest < DiagnosticsTest
       page.assert_selector 'a,button', text: 'Pause'
 
       # Wait for pipeline run to complete
-      wait_until_page_has 'Complete', pipeline_config['max_wait_seconds']
+      wait_until_page_has 'completed', pipeline_config['max_wait_seconds']
     end
   end
 
