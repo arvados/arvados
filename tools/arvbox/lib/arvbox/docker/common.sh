@@ -45,12 +45,7 @@ run_bundler() {
 
 pip_install() {
     pushd /var/lib/pip
-    for p in $(ls http*.tar.gz) ; do
-        if test -f $p ; then
-            ln -sf $p $(echo $p | sed 's/.*%2F\(.*\)/\1/')
-        fi
-    done
-    for p in $(ls http*.whl) ; do
+    for p in $(ls http*.tar.gz) $(ls http*.whl) $(ls http*.zip) ; do
         if test -f $p ; then
             ln -sf $p $(echo $p | sed 's/.*%2F\(.*\)/\1/')
         fi

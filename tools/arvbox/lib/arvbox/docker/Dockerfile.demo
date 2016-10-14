@@ -1,5 +1,4 @@
 FROM arvados/arvbox-base
-ARG arvados_version=master
 ARG sso_version=master
 
 RUN cd /usr/src && \
