@@ -126,12 +126,12 @@ def stubs(func):
                 "cwl-runner": {
                     'runtime_constraints': {'docker_image': 'arvados/jobs'},
                     'script_parameters': {
-                        'y': {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'},
-                        'x': {'basename': 'blorp.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999994+99/blorp.txt'},
-                        'z': {'basename': 'anonymous', 'class': 'Directory',
+                        'y': {"value": {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'}},
+                        'x': {"value": {'basename': 'blorp.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999994+99/blorp.txt'}},
+                        'z': {"value": {'basename': 'anonymous', 'class': 'Directory',
                               'listing': [
                                   {'basename': 'renamed.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999998+99/file1.txt'}
-                              ]},
+                              ]}},
                         'cwl:tool': '99999999999999999999999999999991+99/wf/submit_wf.cwl'
                     },
                     'repository': 'arvados',
