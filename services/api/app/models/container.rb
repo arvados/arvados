@@ -241,14 +241,12 @@ class Container < ArvadosModel
   end
 
   def validate_lock
-    # If the Container is already locked by someone other than the
-    # current api_client_auth, disallow all changes -- except
-    # priority, which needs to change to reflect max(priority) of
-    # relevant ContainerRequests.
-    if !locked_by_uuid_was.nil? and locked_by_uuid_was != Thread.current[:api_client_authorization].uuid
-      if auth_uuid_was == Thread.current[:api_client_authorization].uuid
-        check_update_whitelist [:priority, :output, :progress]
-      else
+    if locked_by_uuid_was
+      if not [locked_by_uuid_was, auth_uuid].include? Thread.current[:api_client_authorization].uuid
+        # The container is locked, but is being accessed by an API token that
+        # isn't associated with the container.  Only the priority field may be
+        # updated, needed when updating to max(priority) of relevant
+        # ContainerRequests.
         check_update_whitelist [:priority]
       end
     end
@@ -273,14 +271,16 @@ class Container < ArvadosModel
   end
 
   def validate_output
+    # Output must be exist and be readable by the current user.  This is so
+    # that a container cannot "claim" a collection that it doesn't otherwise
+    # have access to just by setting the output field to the collection PDH.
     if output_changed?
-      apiauth = ApiClientAuthorization.find_by_uuid(uuid: auth_uuid)
       c = Collection.
-          readable_by(User.find_by_id(apiauth.user_id)).
+          readable_by(current_user).
           where(portable_data_hash: self.output).
           first
       if !c
-        raise #ArvadosModel::UnresolvableContainerError.new "cannot mount collection #{uuid.inspect}: not found"
+        return errors.add :output, "collection must exist and be readable by current user."
       end
     end
   end
@@ -319,6 +319,17 @@ class Container < ArvadosModel
     end
     if self.runtime_constraints_changed?
       self.runtime_constraints = self.class.deep_sort_hash(self.runtime_constraints)
+    end
+  end
+
+  def ensure_owner_uuid_is_permitted
+    # Override base permission check to allow auth_uuid to set progress and
+    # output (only).  Whether it is legal to set progress and output in the current
+    # state has already been checked in validate_change.
+    if self.auth_uuid == Thread.current[:api_client_authorization].uuid
+      check_update_whitelist [:progress, :output]
+    else
+      super
     end
   end
 
