@@ -130,6 +130,9 @@ var (
 )
 
 func (vs *volumeSet) String() string {
+	if vs == nil {
+		return "[]"
+	}
 	return fmt.Sprintf("%+v", (*vs)[:])
 }
 
