@@ -365,3 +365,13 @@ func (s *StandaloneSuite) TestManyReaders(c *C) {
 	writer.Write([]byte("baz"))
 	writer.Close()
 }
+
+func (s *StandaloneSuite) TestMultipleClose(c *C) {
+	buffer := make([]byte, 100)
+	tr := AsyncStreamFromSlice(buffer)
+	sr := tr.MakeStreamReader()
+	sr.Close()
+	sr.Close()
+	tr.Close()
+	tr.Close()
+}
