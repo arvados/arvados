@@ -101,6 +101,19 @@ func TestUnixVolumeHandlersWithGenericVolumeTests(t *testing.T) {
 	})
 }
 
+func TestReplicationDefault1(t *testing.T) {
+	v := &UnixVolume{
+		Root:     "/",
+		ReadOnly: true,
+	}
+	if err := v.Start(); err != nil {
+		t.Error(err)
+	}
+	if got := v.Replication(); got != 1 {
+		t.Errorf("Replication() returned %d, expected 1 if no config given", got)
+	}
+}
+
 func TestGetNotFound(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
