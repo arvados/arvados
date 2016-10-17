@@ -97,7 +97,7 @@ begin
       f.write(@key)
       f.close()
     end
-    FileUtils.chown_R(l[:username], l[:username], userdotssh)
+    FileUtils.chown_R(l[:username], nil, userdotssh)
     File.chmod(0700, userdotssh)
     File.chmod(0750, @homedir)
     File.chmod(0600, userauthkeys)

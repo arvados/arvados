@@ -19,10 +19,12 @@ class ContainerRequest < ArvadosModel
   validate :validate_change
   validate :validate_runtime_constraints
   after_save :update_priority
+  after_save :finalize_if_needed
   before_create :set_requesting_container_uuid
 
   api_accessible :user, extend: :common do |t|
     t.add :command
+    t.add :container_count
     t.add :container_count_max
     t.add :container_image
     t.add :container_uuid
@@ -64,10 +66,19 @@ class ContainerRequest < ArvadosModel
     %w(modified_by_client_uuid container_uuid requesting_container_uuid)
   end
 
+  def finalize_if_needed
+    if state == Committed && Container.find_by_uuid(container_uuid).final?
+      reload
+      act_as_system_user do
+        finalize!
+      end
+    end
+  end
+
   # Finalize the container request after the container has
   # finished/cancelled.
-  def container_completed!
-    update_attributes!(state: ContainerRequest::Final)
+  def finalize!
+    update_attributes!(state: Final)
     c = Container.find_by_uuid(container_uuid)
     ['output', 'log'].each do |out_type|
       pdh = c.send(out_type)
@@ -92,6 +103,7 @@ class ContainerRequest < ArvadosModel
     self.runtime_constraints ||= {}
     self.mounts ||= {}
     self.cwd ||= "."
+    self.container_count_max ||= Rails.configuration.container_count_max
   end
 
   # Create a new container (or find an existing one) to satisfy this
@@ -189,6 +201,14 @@ class ContainerRequest < ArvadosModel
     if state_changed? and state == Committed and container_uuid.nil?
       resolve
     end
+    if self.container_uuid != self.container_uuid_was
+      if self.container_count_changed?
+        errors.add :container_count, "cannot be updated directly."
+        return false
+      else
+        self.container_count += 1
+      end
+    end
   end
 
   def validate_runtime_constraints
@@ -226,7 +246,7 @@ class ContainerRequest < ArvadosModel
       end
 
       # Can update priority, container count, name and description
-      permitted.push :priority, :container_count_max, :container_uuid, :name, :description
+      permitted.push :priority, :container_count, :container_count_max, :container_uuid, :name, :description
 
       if self.state_changed?
         # Allow create-and-commit in a single operation.

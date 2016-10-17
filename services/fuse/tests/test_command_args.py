@@ -172,6 +172,20 @@ class MountArgsTest(unittest.TestCase):
 
     @noexit
     @mock.patch('arvados.events.subscribe')
+    def test_disable_event_listening(self, mock_subscribe):
+        args = arvados_fuse.command.ArgumentParser().parse_args([
+            '--disable-event-listening',
+            '--by-id',
+            '--foreground', self.mntdir])
+        self.mnt = arvados_fuse.command.Mount(args)
+        self.assertEqual(True, self.mnt.listen_for_events)
+        self.assertEqual(True, self.mnt.args.disable_event_listening)
+        with self.mnt:
+            pass
+        self.assertEqual(0, mock_subscribe.call_count)
+
+    @noexit
+    @mock.patch('arvados.events.subscribe')
     def test_custom(self, mock_subscribe):
         args = arvados_fuse.command.ArgumentParser().parse_args([
             '--mount-tmp', 'foo',

@@ -126,7 +126,11 @@ module ApplicationHelper
           else
             begin
               if resource_class.name == 'Collection'
-                link_name = collections_for_object(link_uuid).andand.first.andand.friendly_link_name
+                if CollectionsHelper.match(link_uuid)
+                  link_name = collection_for_pdh(link_uuid).andand.first.andand.portable_data_hash
+                else
+                  link_name = collections_for_object(link_uuid).andand.first.andand.friendly_link_name
+                end
               else
                 link_name = object_for_dataclass(resource_class, link_uuid).andand.friendly_link_name
               end

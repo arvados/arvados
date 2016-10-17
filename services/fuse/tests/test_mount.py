@@ -1163,6 +1163,7 @@ class TokenExpiryTest(MountTestBase):
     def setUp(self):
         super(TokenExpiryTest, self).setUp(local_store=False)
 
+    @unittest.skip("bug #10008")
     @mock.patch('arvados.keep.KeepClient.get')
     def runTest(self, mocked_get):
         self.api._rootDesc = {"blobSignatureTtl": 2}

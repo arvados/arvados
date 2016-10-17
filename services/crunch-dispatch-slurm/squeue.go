@@ -19,7 +19,7 @@ type Squeue struct {
 
 // squeueFunc
 func squeueFunc() *exec.Cmd {
-	return exec.Command("squeue", "--format=%j")
+	return exec.Command("squeue", "--all", "--format=%j")
 }
 
 var squeueCmd = squeueFunc

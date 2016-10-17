@@ -71,16 +71,24 @@ Capybara.register_driver :selenium_with_download do |app|
 end
 
 module WaitForAjax
+  # FIXME: Huge side effect here
+  # The following line changes the global default Capybara wait time, affecting
+  # every test which follows this one. This should be removed and the failing tests
+  # should have their individual wait times increased, if appropriate, using
+  # the using_wait_time(N) construct to temporarily change the wait time.
+  # Note: the below is especially bad because there are places that increase wait
+  # times using a multiplier e.g. using_wait_time(3 * Capybara.default_max_wait_time)
   Capybara.default_max_wait_time = 10
   def wait_for_ajax
-    Timeout.timeout(Capybara.default_max_wait_time) do
-      loop until finished_all_ajax_requests?
+    timeout = 10
+    count = 0
+    while page.evaluate_script("jQuery.active").to_i > 0
+      count += 1
+      raise "AJAX request took more than #{timeout} seconds" if count > timeout * 10
+      sleep(0.1)
     end
   end
 
-  def finished_all_ajax_requests?
-    page.evaluate_script('jQuery.active').zero?
-  end
 end
 
 module AssertDomEvent

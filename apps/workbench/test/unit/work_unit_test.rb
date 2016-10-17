@@ -15,7 +15,7 @@ class WorkUnitTest < ActiveSupport::TestCase
     [ContainerRequest, 'queued', 'cwu', 0, "Queued", nil, 0.0],   # priority 1
     [ContainerRequest, 'canceled_with_queued_container', 'cwu', 0, "Ready", nil, 0.0],
     [ContainerRequest, 'canceled_with_locked_container', 'cwu', 0, "Ready", nil, 0.0],
-    [ContainerRequest, 'canceled_with_running_container', 'cwu', 0, "Running", nil, 0.0],
+    [ContainerRequest, 'canceled_with_running_container', 'cwu', 1, "Running", nil, 0.0],
   ].each do |type, fixture, label, num_children, state, success, progress|
     test "children of #{fixture}" do
       use_token 'active'
@@ -79,32 +79,6 @@ class WorkUnitTest < ActiveSupport::TestCase
         assert_equal true, (wu.queuedtime >= queuedtime)
       else
         assert_equal queuedtime, wu.queuedtime
-      end
-    end
-  end
-
-  [
-    [Job, 'active', 'running_job_with_components', true],
-    [Job, 'active', 'queued', false],
-    [Job, nil, 'completed_job_in_publicly_accessible_project', true],
-    [Job, 'active', 'completed_job_in_publicly_accessible_project', true],
-    [PipelineInstance, 'active', 'pipeline_in_running_state', true],  # no log, but while running the log link points to pi Log tab
-    [PipelineInstance, nil, 'pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false],
-    [PipelineInstance, 'active', 'pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false], #no log for completed pi
-    [Job, nil, 'job_in_publicly_accessible_project_but_other_objects_elsewhere', false, "Log unavailable"],
-  ].each do |type, token, fixture, has_log, log_link|
-    test "link_to_log for #{fixture} for #{token}" do
-      use_token token if token
-      obj = find_fixture(type, fixture)
-      wu = obj.work_unit
-
-      link = "#{wu.uri}#Log" if has_log
-      link_to_log = wu.link_to_log
-
-      if has_log
-        assert_includes link_to_log, link
-      else
-        assert_equal log_link, link_to_log
       end
     end
   end

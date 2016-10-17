@@ -5,6 +5,7 @@ import os
 from cwltool.errors import WorkflowException
 from cwltool.process import get_feature, UnsupportedRequirement, shortname
 from cwltool.pathmapper import adjustFiles
+from cwltool.utils import aslist
 
 import arvados.collection
 
@@ -98,6 +99,10 @@ class ArvadosContainer(object):
         if runtime_req:
             logger.warn("RuntimeConstraints not yet supported by container API")
 
+        partition_req, _ = get_feature(self, "http://arvados.org/cwl#PartitionRequirement")
+        if partition_req:
+            runtime_constraints["partition"] = aslist(partition_req["partition"])
+
         container_request["mounts"] = mounts
         container_request["runtime_constraints"] = runtime_constraints
 
@@ -161,7 +166,9 @@ class RunnerContainer(Runner):
 
         workflowmapper = super(RunnerContainer, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)
 
-        with arvados.collection.Collection(api_client=self.arvrunner.api) as jobobj:
+        with arvados.collection.Collection(api_client=self.arvrunner.api,
+                                           keep_client=self.arvrunner.keep_client,
+                                           num_retries=self.arvrunner.num_retries) as jobobj:
             with jobobj.open("cwl.input.json", "w") as f:
                 json.dump(self.job_order, f, sort_keys=True, indent=4)
             jobobj.save_new(owner_uuid=self.arvrunner.project_uuid)
@@ -177,8 +184,13 @@ class RunnerContainer(Runner):
                                                pull_image,
                                                self.arvrunner.project_uuid)
 
+        command = ["arvados-cwl-runner", "--local", "--api=containers"]
+        if self.output_name:
+            command.append("--output-name=" + self.output_name)
+        command.extend([workflowpath, jobpath])
+
         return {
-            "command": ["arvados-cwl-runner", "--local", "--api=containers", workflowpath, jobpath],
+            "command": command,
             "owner_uuid": self.arvrunner.project_uuid,
             "name": self.name,
             "output_path": "/var/spool/cwl",
