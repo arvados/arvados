@@ -266,10 +266,10 @@ build() {
     docker build --build-arg=arvados_version=$GITHEAD $NO_CACHE -t arvados/arvbox-base:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.base" "$ARVBOX_DOCKER"
     if test "$1" = localdemo -o "$1" = publicdemo ; then
         docker build $NO_CACHE -t arvados/arvbox-demo:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.demo" "$ARVBOX_DOCKER"
-        docker tag arvados/arvbox-demo:$GITHEAD arvados/arvbox-demo:latest
+        docker tag -f arvados/arvbox-demo:$GITHEAD arvados/arvbox-demo:latest
     else
         docker build $NO_CACHE -t arvados/arvbox-dev:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.dev" "$ARVBOX_DOCKER"
-        docker tag arvados/arvbox-dev:$GITHEAD arvados/arvbox-dev:latest
+        docker tag -f arvados/arvbox-dev:$GITHEAD arvados/arvbox-dev:latest
     fi
 }
 
