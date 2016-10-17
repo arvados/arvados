@@ -104,7 +104,6 @@ func main() {
 
 	deprecated.afterFlagParse(theConfig)
 
-	// TODO: Load config
 	err := config.LoadFile(theConfig, configPath)
 	if err != nil && (!os.IsNotExist(err) || configPath != defaultConfigPath) {
 		log.Fatal(err)
