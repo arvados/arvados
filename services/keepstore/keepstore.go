@@ -11,7 +11,6 @@ import (
 	"syscall"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
@@ -83,34 +82,13 @@ var KeepVM VolumeManager
 var pullq *WorkQueue
 var trashq *WorkQueue
 
-var (
-	flagSerializeIO bool
-	flagReadonly    bool
-)
-
 // TODO(twp): continue moving as much code as possible out of main
 // so it can be effectively tested. Esp. handling and postprocessing
 // of command line flags (identifying Keep volumes and initializing
 // permission arguments).
 
 func main() {
-	neverDelete := !theConfig.EnableDelete
-	signatureTTLSeconds := int(theConfig.BlobSignatureTTL.Duration() / time.Second)
-	flag.StringVar(&theConfig.Listen, "listen", theConfig.Listen, "see Listen configuration")
-	flag.IntVar(&theConfig.MaxBuffers, "max-buffers", theConfig.MaxBuffers, "see MaxBuffers configuration")
-	flag.IntVar(&theConfig.MaxRequests, "max-requests", theConfig.MaxRequests, "see MaxRequests configuration")
-	flag.BoolVar(&neverDelete, "never-delete", neverDelete, "see EnableDelete configuration")
-	flag.BoolVar(&theConfig.RequireSignatures, "enforce-permissions", theConfig.RequireSignatures, "see RequireSignatures configuration")
-	flag.StringVar(&theConfig.BlobSigningKeyFile, "permission-key-file", theConfig.BlobSigningKeyFile, "see BlobSigningKey`File` configuration")
-	flag.StringVar(&theConfig.BlobSigningKeyFile, "blob-signing-key-file", theConfig.BlobSigningKeyFile, "see BlobSigningKey`File` configuration")
-	flag.StringVar(&theConfig.SystemAuthTokenFile, "data-manager-token-file", theConfig.SystemAuthTokenFile, "see SystemAuthToken`File` configuration")
-	flag.IntVar(&signatureTTLSeconds, "permission-ttl", signatureTTLSeconds, "signature TTL in seconds; see BlobSignatureTTL configuration")
-	flag.IntVar(&signatureTTLSeconds, "blob-signature-ttl", signatureTTLSeconds, "signature TTL in seconds; see BlobSignatureTTL configuration")
-	flag.Var(&theConfig.TrashLifetime, "trash-lifetime", "see TrashLifetime configuration")
-	flag.BoolVar(&flagSerializeIO, "serialize", false, "serialize read and write operations on the following volumes.")
-	flag.BoolVar(&flagReadonly, "readonly", false, "do not write, delete, or touch anything on the following volumes.")
-	flag.StringVar(&theConfig.PIDFile, "pid", theConfig.PIDFile, "see `PIDFile` configuration")
-	flag.Var(&theConfig.TrashCheckInterval, "trash-check-interval", "see TrashCheckInterval configuration")
+	deprecated.beforeFlagParse(theConfig)
 
 	dumpConfig := flag.Bool("dump-config", false, "write current configuration to stdout and exit (useful for migrating from command line flags to config file)")
 
@@ -124,8 +102,7 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
-	theConfig.BlobSignatureTTL = arvados.Duration(signatureTTLSeconds) * arvados.Duration(time.Second)
-	theConfig.EnableDelete = !neverDelete
+	deprecated.afterFlagParse(theConfig)
 
 	// TODO: Load config
 	err := config.LoadFile(theConfig, configPath)

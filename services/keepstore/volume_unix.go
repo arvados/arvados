@@ -38,8 +38,8 @@ func (vs *unixVolumeAdder) Set(path string) error {
 	}
 	vs.Config.Volumes = append(vs.Config.Volumes, &UnixVolume{
 		Root:      path,
-		ReadOnly:  flagReadonly,
-		Serialize: flagSerializeIO,
+		ReadOnly:  deprecated.flagReadonly,
+		Serialize: deprecated.flagSerializeIO,
 	})
 	return nil
 }
@@ -79,10 +79,10 @@ func (vs *unixVolumeAdder) Discover() int {
 		}
 		// Set the -readonly flag (but only for this volume)
 		// if the filesystem is mounted readonly.
-		flagReadonlyWas := flagReadonly
+		flagReadonlyWas := deprecated.flagReadonly
 		for _, fsopt := range strings.Split(args[3], ",") {
 			if fsopt == "ro" {
-				flagReadonly = true
+				deprecated.flagReadonly = true
 				break
 			}
 			if fsopt == "rw" {
@@ -94,7 +94,7 @@ func (vs *unixVolumeAdder) Discover() int {
 		} else {
 			added++
 		}
-		flagReadonly = flagReadonlyWas
+		deprecated.flagReadonly = flagReadonlyWas
 	}
 	return added
 }

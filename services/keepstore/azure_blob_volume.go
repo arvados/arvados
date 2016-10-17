@@ -54,7 +54,7 @@ func (s *azureVolumeAdder) Set(containerName string) error {
 		StorageAccountName:    azureStorageAccountName,
 		StorageAccountKeyFile: azureStorageAccountKeyFile,
 		AzureReplication:      azureStorageReplication,
-		ReadOnly:              flagReadonly,
+		ReadOnly:              deprecated.flagReadonly,
 	})
 	return nil
 }

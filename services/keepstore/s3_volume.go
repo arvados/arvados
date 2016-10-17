@@ -56,7 +56,7 @@ func (s *s3VolumeAdder) Set(bucketName string) error {
 	if s3AccessKeyFile == "" || s3SecretKeyFile == "" {
 		return fmt.Errorf("-s3-access-key-file and -s3-secret-key-file arguments must given before -s3-bucket-volume")
 	}
-	if flagSerializeIO {
+	if deprecated.flagSerializeIO {
 		log.Print("Notice: -serialize is not supported by s3-bucket volumes.")
 	}
 	s.Config.Volumes = append(s.Config.Volumes, &S3Volume{
@@ -68,7 +68,7 @@ func (s *s3VolumeAdder) Set(bucketName string) error {
 		RaceWindow:    arvados.Duration(s3RaceWindow),
 		S3Replication: s3Replication,
 		UnsafeDelete:  s3UnsafeDelete,
-		ReadOnly:      flagReadonly,
+		ReadOnly:      deprecated.flagReadonly,
 		IndexPageSize: 1000,
 	})
 	return nil
