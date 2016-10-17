@@ -197,7 +197,7 @@ func main() {
 	if _, err := daemon.SdNotify("READY=1"); err != nil {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
-	log.Println("listening at", listener.Addr)
+	log.Println("listening at", listener.Addr())
 	srv := &http.Server{}
 	srv.Serve(listener)
 }
