@@ -2,6 +2,7 @@
 
 import os
 import sys
+import subprocess
 import setuptools.command.egg_info as egg_info_cmd
 
 from setuptools import setup, find_packages
@@ -21,7 +22,8 @@ try:
          '--format=format:%H']).strip()
     with open("arvados_cwl/_version.py", "w") as f:
         f.write("__version__ = '%s'\n" % gitinfo)
-except:
+except Exception as e:
+    print e
     pass
 
 setup(name='arvados-cwl-runner',

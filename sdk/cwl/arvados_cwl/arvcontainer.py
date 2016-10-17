@@ -11,7 +11,7 @@ import arvados.collection
 
 from .arvdocker import arv_docker_get_image
 from . import done
-from .runner import Runner
+from .runner import Runner, arvados_jobs_image
 
 logger = logging.getLogger('arvados.cwl-runner')
 
@@ -79,7 +79,7 @@ class ArvadosContainer(object):
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if not docker_req:
-            docker_req = {"dockerImageId": "arvados/jobs"}
+            docker_req = {"dockerImageId": arvados_jobs_image(self.arvrunner)}
 
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
                                                                      docker_req,
@@ -180,7 +180,7 @@ class RunnerContainer(Runner):
         jobpath = "/var/lib/cwl/job/cwl.input.json"
 
         container_image = arv_docker_get_image(self.arvrunner.api,
-                                               {"dockerImageId": "arvados/jobs"},
+                                               {"dockerImageId": arvados_jobs_image(self.arvrunner)},
                                                pull_image,
                                                self.arvrunner.project_uuid)
 

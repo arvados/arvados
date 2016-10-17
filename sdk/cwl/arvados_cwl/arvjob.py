@@ -13,7 +13,7 @@ from cwltool.builder import Builder
 import arvados.collection
 
 from .arvdocker import arv_docker_get_image
-from .runner import Runner
+from .runner import Runner, arvados_jobs_image
 from .pathmapper import InitialWorkDirPathMapper
 from .perf import Perf
 from . import done
@@ -88,7 +88,7 @@ class ArvadosJob(object):
             if docker_req and kwargs.get("use_container") is not False:
                 runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvrunner.project_uuid)
             else:
-                runtime_constraints["docker_image"] = "arvados/jobs"
+                runtime_constraints["docker_image"] = arvados_jobs_image(self.arvrunner)
 
         resources = self.builder.resources
         if resources is not None:
@@ -249,7 +249,7 @@ class RunnerJob(Runner):
             "repository": "arvados",
             "script_parameters": self.job_order,
             "runtime_constraints": {
-                "docker_image": "arvados/jobs"
+                "docker_image": arvados_jobs_image(self.arvrunner)
             }
         }
 
