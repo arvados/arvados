@@ -53,7 +53,7 @@ RUN set -e && \
  ln -s ../$PJS/bin/phantomjs /usr/local/bin/
 
 ARG arvados_version
-RUN echo arvados_version
+RUN echo arvados_version is git commit $arvados_version
 
 ADD fuse.conf /etc/
 

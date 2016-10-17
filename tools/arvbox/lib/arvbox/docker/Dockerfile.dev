@@ -1,4 +1,5 @@
 FROM arvados/arvbox-base
+ARG arvados_version
 
 ADD service/ /var/lib/arvbox/service
 RUN rmdir /etc/service && ln -sf /var/lib/arvbox/service /etc
