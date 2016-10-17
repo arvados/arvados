@@ -341,23 +341,23 @@ func TestDiscoverTmpfs(t *testing.T) {
 	f.Close()
 	ProcMounts = f.Name()
 
-	resultVols := volumeSet{}
-	added := (&unixVolumeAdder{&resultVols}).Discover()
+	cfg := &Config{}
+	added := (&unixVolumeAdder{cfg}).Discover()
 
-	if added != len(resultVols) {
+	if added != len(cfg.Volumes) {
 		t.Errorf("Discover returned %d, but added %d volumes",
-			added, len(resultVols))
+			added, len(cfg.Volumes))
 	}
 	if added != len(tempVols) {
 		t.Errorf("Discover returned %d but we set up %d volumes",
 			added, len(tempVols))
 	}
 	for i, tmpdir := range tempVols {
-		if tmpdir != resultVols[i].(*UnixVolume).root {
+		if tmpdir != cfg.Volumes[i].(*UnixVolume).Root {
 			t.Errorf("Discover returned %s, expected %s\n",
-				resultVols[i].(*UnixVolume).root, tmpdir)
+				cfg.Volumes[i].(*UnixVolume).Root, tmpdir)
 		}
-		if expectReadonly := i%2 == 1; expectReadonly != resultVols[i].(*UnixVolume).readonly {
+		if expectReadonly := i%2 == 1; expectReadonly != cfg.Volumes[i].(*UnixVolume).ReadOnly {
 			t.Errorf("Discover added %s with readonly=%v, should be %v",
 				tmpdir, !expectReadonly, expectReadonly)
 		}
@@ -381,10 +381,10 @@ func TestDiscoverNone(t *testing.T) {
 	f.Close()
 	ProcMounts = f.Name()
 
-	resultVols := volumeSet{}
-	added := (&unixVolumeAdder{&resultVols}).Discover()
-	if added != 0 || len(resultVols) != 0 {
-		t.Fatalf("got %d, %v; expected 0, []", added, resultVols)
+	cfg := &Config{}
+	added := (&unixVolumeAdder{cfg}).Discover()
+	if added != 0 || len(cfg.Volumes) != 0 {
+		t.Fatalf("got %d, %v; expected 0, []", added, cfg.Volumes)
 	}
 }
 
@@ -442,8 +442,8 @@ func MakeTestVolumeManager(numVolumes int) VolumeManager {
 
 // teardown cleans up after each test.
 func teardown() {
-	dataManagerToken = ""
-	enforcePermissions = false
-	PermissionSecret = nil
+	theConfig.systemAuthToken = ""
+	theConfig.RequireSignatures = false
+	theConfig.blobSigningKey = nil
 	KeepVM = nil
 }

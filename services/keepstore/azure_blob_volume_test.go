@@ -365,7 +365,13 @@ func NewTestableAzureBlobVolume(t TB, readonly bool, replication int) *TestableA
 		}
 	}
 
-	v := NewAzureBlobVolume(azClient, container, readonly, replication)
+	v := &AzureBlobVolume{
+		ContainerName:    container,
+		ReadOnly:         readonly,
+		AzureReplication: replication,
+		azClient:         azClient,
+		bsClient:         azClient.GetBlobService(),
+	}
 
 	return &TestableAzureBlobVolume{
 		AzureBlobVolume: v,
@@ -570,11 +576,11 @@ func TestAzureBlobVolumeCreateBlobRaceDeadline(t *testing.T) {
 }
 
 func (v *TestableAzureBlobVolume) PutRaw(locator string, data []byte) {
-	v.azHandler.PutRaw(v.containerName, locator, data)
+	v.azHandler.PutRaw(v.ContainerName, locator, data)
 }
 
 func (v *TestableAzureBlobVolume) TouchWithDate(locator string, lastPut time.Time) {
-	v.azHandler.TouchWithDate(v.containerName, locator, lastPut)
+	v.azHandler.TouchWithDate(v.ContainerName, locator, lastPut)
 }
 
 func (v *TestableAzureBlobVolume) Teardown() {

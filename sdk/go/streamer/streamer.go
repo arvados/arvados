@@ -36,8 +36,11 @@ Alternately, if you already have a filled buffer and just want to read out from 
 package streamer
 
 import (
+	"errors"
 	"io"
 )
+
+var ErrAlreadyClosed = errors.New("cannot close a stream twice")
 
 type AsyncStream struct {
 	buffer            []byte
@@ -115,6 +118,9 @@ func (this *StreamReader) WriteTo(dest io.Writer) (written int64, err error) {
 
 // Close the responses channel
 func (this *StreamReader) Close() error {
+	if this.stream == nil {
+		return ErrAlreadyClosed
+	}
 	this.stream.subtract_reader <- true
 	close(this.responses)
 	this.stream = nil

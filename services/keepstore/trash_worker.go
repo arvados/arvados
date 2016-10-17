@@ -4,6 +4,8 @@ import (
 	"errors"
 	"log"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
 // RunTrashWorker is used by Keepstore to initiate trash worker channel goroutine.
@@ -23,13 +25,13 @@ func RunTrashWorker(trashq *WorkQueue) {
 // TrashItem deletes the indicated block from every writable volume.
 func TrashItem(trashRequest TrashRequest) {
 	reqMtime := time.Unix(0, trashRequest.BlockMtime)
-	if time.Since(reqMtime) < blobSignatureTTL {
+	if time.Since(reqMtime) < theConfig.BlobSignatureTTL.Duration() {
 		log.Printf("WARNING: data manager asked to delete a %v old block %v (BlockMtime %d = %v), but my blobSignatureTTL is %v! Skipping.",
-			time.Since(reqMtime),
+			arvados.Duration(time.Since(reqMtime)),
 			trashRequest.Locator,
 			trashRequest.BlockMtime,
 			reqMtime,
-			blobSignatureTTL)
+			theConfig.BlobSignatureTTL)
 		return
 	}
 
@@ -44,8 +46,8 @@ func TrashItem(trashRequest TrashRequest) {
 			continue
 		}
 
-		if neverDelete {
-			err = errors.New("did not delete block because neverDelete is true")
+		if !theConfig.EnableDelete {
+			err = errors.New("did not delete block because EnableDelete is false")
 		} else {
 			err = volume.Trash(trashRequest.Locator)
 		}
