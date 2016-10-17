@@ -4,19 +4,25 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sort"
+	"strings"
 
 	"github.com/ghodss/yaml"
 )
 
 func usage() {
 	c := DefaultConfig()
+	knownTypes := []string{}
 	for _, vt := range VolumeTypes {
 		c.Volumes = append(c.Volumes, vt().Examples()...)
+		knownTypes = append(knownTypes, vt().Type())
 	}
 	exampleConfigFile, err := yaml.Marshal(c)
 	if err != nil {
 		panic(err)
 	}
+	sort.Strings(knownTypes)
+	knownTypeList := strings.Join(knownTypes, ", ")
 	fmt.Fprintf(os.Stderr, `
 
 keepstore provides a content-addressed data store backed by a local filesystem or networked storage.
@@ -110,5 +116,9 @@ Volumes:
     use all directories named "keep" that exist in the top level
     directory of a mount point at startup time.
 
-`, exampleConfigFile)
+    Volume types: %s
+
+    (See volume configuration examples above.)
+
+`, exampleConfigFile, knownTypeList)
 }
