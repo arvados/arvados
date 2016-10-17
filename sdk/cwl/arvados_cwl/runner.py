@@ -129,8 +129,6 @@ def upload_instance(arvrunner, name, tool, job_order):
                                         job_order.get("id", "#"),
                                         False)
 
-        adjustDirObjs(job_order, trim_listing)
-
         if "id" in job_order:
             del job_order["id"]
 
@@ -153,7 +151,9 @@ class Runner(object):
 
     def arvados_job_spec(self, *args, **kwargs):
         self.name = os.path.basename(self.tool.tool["id"])
-        return upload_instance(self.arvrunner, self.name, self.tool, self.job_order)
+        workflowmapper = upload_instance(self.arvrunner, self.name, self.tool, self.job_order)
+        adjustDirObjs(self.job_order, trim_listing)
+        return workflowmapper
 
     def done(self, record):
         if record["state"] == "Complete":
