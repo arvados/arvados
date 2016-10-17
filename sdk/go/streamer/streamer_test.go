@@ -366,12 +366,12 @@ func (s *StandaloneSuite) TestManyReaders(c *C) {
 	writer.Close()
 }
 
-func (s *StandaloneSuite) TestMultipleClose(c *C) {
+func (s *StandaloneSuite) TestMultipleCloseNoPanic(c *C) {
 	buffer := make([]byte, 100)
 	tr := AsyncStreamFromSlice(buffer)
 	sr := tr.MakeStreamReader()
-	sr.Close()
-	sr.Close()
-	tr.Close()
-	tr.Close()
+	c.Check(sr.Close(), IsNil)
+	c.Check(sr.Close(), Equals, ErrAlreadyClosed)
+	c.Check(tr.Close(), IsNil)
+	c.Check(tr.Close(), Equals, ErrAlreadyClosed)
 }
