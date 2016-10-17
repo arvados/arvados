@@ -38,9 +38,9 @@ Example config file:
 
 Listen:
 
-    Local port to listen on. Can be "address", "address:port", or
-    ":port", where "address" is a host IP address or name and "port"
-    is a port number or name.
+    Local port to listen on. Can be "address:port" or ":port", where
+    "address" is a host IP address or name and "port" is a port number
+    or name.
 
 PIDFile:
 
