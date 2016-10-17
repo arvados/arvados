@@ -101,9 +101,10 @@ func (vs *unixVolumeAdder) Discover() int {
 
 // A UnixVolume stores and retrieves blocks in a local directory.
 type UnixVolume struct {
-	Root      string // path to the volume's root directory
-	ReadOnly  bool
-	Serialize bool
+	Root                 string // path to the volume's root directory
+	ReadOnly             bool
+	Serialize            bool
+	DirectoryReplication int
 
 	// something to lock during IO, typically a sync.Mutex (or nil
 	// to skip locking)
@@ -114,12 +115,14 @@ type UnixVolume struct {
 func (*UnixVolume) Examples() []Volume {
 	return []Volume{
 		&UnixVolume{
-			Root:      "/mnt/local-disk",
-			Serialize: true,
+			Root:                 "/mnt/local-disk",
+			Serialize:            true,
+			DirectoryReplication: 1,
 		},
 		&UnixVolume{
-			Root:      "/mnt/network-disk",
-			Serialize: false,
+			Root:                 "/mnt/network-disk",
+			Serialize:            false,
+			DirectoryReplication: 2,
 		},
 	}
 }
@@ -136,6 +139,9 @@ func (v *UnixVolume) Start() error {
 	}
 	if !strings.HasPrefix(v.Root, "/") {
 		return fmt.Errorf("volume root does not start with '/': %q", v.Root)
+	}
+	if v.DirectoryReplication == 0 {
+		v.DirectoryReplication = 1
 	}
 	_, err := os.Stat(v.Root)
 	return err
@@ -535,7 +541,7 @@ func (v *UnixVolume) Writable() bool {
 // Replication returns the number of replicas promised by the
 // underlying device (currently assumed to be 1).
 func (v *UnixVolume) Replication() int {
-	return 1
+	return v.DirectoryReplication
 }
 
 // lockfile and unlockfile use flock(2) to manage kernel file locks.
