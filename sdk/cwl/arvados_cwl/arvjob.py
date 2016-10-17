@@ -257,7 +257,7 @@ class RunnerJob(Runner):
         job_spec = self.arvados_job_spec(*args, **kwargs)
 
         for k,v in job_spec["script_parameters"].items():
-            if isinstance(v, dict):
+            if v is False or v is None or isinstance(v, dict):
                 job_spec["script_parameters"][k] = {"value": v}
 
         self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().create(
