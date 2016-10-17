@@ -36,8 +36,8 @@ Alternately, if you already have a filled buffer and just want to read out from 
 package streamer
 
 import (
-	"io"
 	"errors"
+	"io"
 )
 
 var ErrAlreadyClosed = errors.New("cannot close a stream twice")
