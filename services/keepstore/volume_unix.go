@@ -539,7 +539,7 @@ func (v *UnixVolume) Writable() bool {
 }
 
 // Replication returns the number of replicas promised by the
-// underlying device (currently assumed to be 1).
+// underlying device (as specified in configuration).
 func (v *UnixVolume) Replication() int {
 	return v.DirectoryReplication
 }
