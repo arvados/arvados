@@ -104,6 +104,8 @@ run() {
     CONFIG=$1
     TAG=$2
 
+    shift
+
     if docker ps -a --filter "status=running" | grep -E "$ARVBOX_CONTAINER$" -q ; then
         echo "Container $ARVBOX_CONTAINER is already running"
         exit 0
@@ -116,8 +118,12 @@ run() {
 
     if test ! -z "$TAG"
     then
-        # XXX should push tag back onto argument list if it starts with '-'
-	TAG=":$TAG"
+        if test $(echo $TAG | cut -c1-1) != '-' ; then
+	    TAG=":$TAG"
+            shift
+        else
+            unset TAG
+        fi
     fi
 
     if echo "$CONFIG" | grep '^public' ; then
@@ -210,7 +216,6 @@ run() {
                    /usr/local/lib/arvbox/runsu.sh \
                    /var/lib/arvbox/service/api/run-service --only-setup
 
-            shift ; shift
             docker exec -ti \
                    $ARVBOX_CONTAINER \
                    /usr/local/lib/arvbox/runsu.sh \
