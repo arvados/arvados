@@ -15,6 +15,15 @@ try:
 except ImportError:
     tagger = egg_info_cmd.egg_info
 
+try:
+    gitinfo = subprocess.check_output(
+        ['git', 'log', '--first-parent', '--max-count=1',
+         '--format=format:%H']).strip()
+    with open("arvados_cwl/_version.py", "w") as f:
+        f.write("__version__ = '%s'\n" % gitinfo)
+except:
+    pass
+
 setup(name='arvados-cwl-runner',
       version='1.0',
       description='Arvados Common Workflow Language runner',
