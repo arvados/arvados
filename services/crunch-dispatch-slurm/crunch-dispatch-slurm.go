@@ -183,9 +183,10 @@ func submit(dispatcher *dispatch.Dispatcher,
 	squeueUpdater.SlurmLock.Lock()
 	defer squeueUpdater.SlurmLock.Unlock()
 
+	log.Printf("sbatch starting: %+q", cmd.Args)
 	err := cmd.Start()
 	if err != nil {
-		submitErr = fmt.Errorf("Error starting %v: %v", cmd.Args, err)
+		submitErr = fmt.Errorf("Error starting sbatch: %v", err)
 		return
 	}
 
