@@ -94,7 +94,9 @@ begin
     @homedir = Etc.getpwnam(l[:username]).dir
     userdotssh = File.join(@homedir, ".ssh")
     Dir.mkdir(userdotssh) if !File.exists?(userdotssh)
-    newkeys = keys[l[:username]].join("\n") + "\n"
+
+    newkeys = "###\n###\n" + keys[l[:username]].join("\n") + "\n###\n###\n"
+
     keysfile = File.join(userdotssh, "authorized_keys")
 
     if File.exists?(keysfile)
