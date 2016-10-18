@@ -33,11 +33,12 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
         except SystemExit:
             raise WorkflowException()
 
-    images = arvados.commands.keepdocker.list_images_in_arv(api_client, 3,
-                                                            image_name=image_name,
-                                                            image_tag=image_tag)
+        images = arvados.commands.keepdocker.list_images_in_arv(api_client, 3,
+                                                                image_name=image_name,
+                                                                image_tag=image_tag)
 
-    #return dockerRequirement["dockerImageId"]
+    if not images:
+        raise WorkflowException("Could not find Docker image %s:%s" % (image_name, image_tag))
 
     pdh = api_client.collections().get(uuid=images[0][0]).execute()["portable_data_hash"]
     return pdh

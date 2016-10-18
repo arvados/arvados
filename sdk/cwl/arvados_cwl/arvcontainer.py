@@ -179,11 +179,6 @@ class RunnerContainer(Runner):
         workflowcollection = workflowcollection[5:workflowcollection.index('/')]
         jobpath = "/var/lib/cwl/job/cwl.input.json"
 
-        container_image = arv_docker_get_image(self.arvrunner.api,
-                                               {"dockerImageId": arvados_jobs_image(self.arvrunner)},
-                                               pull_image,
-                                               self.arvrunner.project_uuid)
-
         command = ["arvados-cwl-runner", "--local", "--api=containers"]
         if self.output_name:
             command.append("--output-name=" + self.output_name)
@@ -197,7 +192,7 @@ class RunnerContainer(Runner):
             "cwd": "/var/spool/cwl",
             "priority": 1,
             "state": "Committed",
-            "container_image": container_image,
+            "container_image": arvados_jobs_image(self.arvrunner),
             "mounts": {
                 "/var/lib/cwl/workflow": {
                     "kind": "collection",

@@ -268,6 +268,7 @@ class RunnerJob(Runner):
             if isinstance(v, dict):
                 job_spec["script_parameters"][k] = {"value": v}
 
+        del job_spec["owner_uuid"]
         job_spec["job"] = job
         self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().create(
             body={

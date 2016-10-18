@@ -18,12 +18,16 @@ class TestJob(unittest.TestCase):
 
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
-    def test_run(self):
+    @mock.patch('arvados.commands.keepdocker.list_images_in_arv')
+    def test_run(self, list_images_in_arv):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         runner.num_retries = 0
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+
+        list_images_in_arv.return_value = [["zzzzz-4zz18-zzzzzzzzzzzzzzz"]]
+        runner.api.collections().get().execute.return_vaulue = {"portable_data_hash": "99999999999999999999999999999993+99"}
 
         tool = {
             "inputs": [],
@@ -52,7 +56,7 @@ class TestJob(unittest.TestCase):
                     'repository': 'arvados',
                     'script': 'crunchrunner',
                     'runtime_constraints': {
-                        'docker_image': 'arvados/jobs',
+                        'docker_image': 'arvados/jobs:'+arvados_cwl.__version__,
                         'min_cores_per_node': 1,
                         'min_ram_mb_per_node': 1024,
                         'min_scratch_mb_per_node': 2048 # tmpdirSize + outdirSize
@@ -62,17 +66,21 @@ class TestJob(unittest.TestCase):
                 filters=[['repository', '=', 'arvados'],
                          ['script', '=', 'crunchrunner'],
                          ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
-                         ['docker_image_locator', 'in docker', 'arvados/jobs']]
+                         ['docker_image_locator', 'in docker', 'arvados/jobs:'+arvados_cwl.__version__]]
             )
 
     # The test passes some fields in builder.resources
     # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
-    def test_resource_requirements(self):
+    @mock.patch('arvados.commands.keepdocker.list_images_in_arv')
+    def test_resource_requirements(self, list_images_in_arv):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         runner.num_retries = 0
         arvados_cwl.add_arv_hints()
+
+        list_images_in_arv.return_value = [["zzzzz-4zz18-zzzzzzzzzzzzzzz"]]
+        runner.api.collections().get().execute.return_vaulue = {"portable_data_hash": "99999999999999999999999999999993+99"}
 
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
@@ -116,7 +124,7 @@ class TestJob(unittest.TestCase):
                 'repository': 'arvados',
                 'script': 'crunchrunner',
                 'runtime_constraints': {
-                    'docker_image': 'arvados/jobs',
+                    'docker_image': 'arvados/jobs:'+arvados_cwl.__version__,
                     'min_cores_per_node': 3,
                     'min_ram_mb_per_node': 3000,
                     'min_scratch_mb_per_node': 5024, # tmpdirSize + outdirSize
@@ -127,7 +135,7 @@ class TestJob(unittest.TestCase):
             filters=[['repository', '=', 'arvados'],
                      ['script', '=', 'crunchrunner'],
                      ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
-                     ['docker_image_locator', 'in docker', 'arvados/jobs']])
+                     ['docker_image_locator', 'in docker', 'arvados/jobs:'+arvados_cwl.__version__]])
 
     @mock.patch("arvados.collection.CollectionReader")
     def test_done(self, reader):
@@ -212,7 +220,8 @@ class TestWorkflow(unittest.TestCase):
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.collection.Collection")
-    def test_run(self, mockcollection):
+    @mock.patch('arvados.commands.keepdocker.list_images_in_arv')
+    def test_run(self, list_images_in_arv, mockcollection):
         try:
             arvados_cwl.add_arv_hints()
 
@@ -221,6 +230,9 @@ class TestWorkflow(unittest.TestCase):
             runner.ignore_docker_for_reuse = False
             runner.num_retries = 0
             document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+
+            list_images_in_arv.return_value = [["zzzzz-4zz18-zzzzzzzzzzzzzzz"]]
+            runner.api.collections().get().execute.return_vaulue = {"portable_data_hash": "99999999999999999999999999999993+99"}
 
             tool, metadata = document_loader.resolve_ref("tests/wf/scatter2.cwl")
             metadata["cwlVersion"] = tool["cwlVersion"]
@@ -261,14 +273,14 @@ class TestWorkflow(unittest.TestCase):
                     'runtime_constraints': {
                         'min_scratch_mb_per_node': 2048,
                         'min_cores_per_node': 1,
-                        'docker_image': 'arvados/jobs',
+                        'docker_image': 'arvados/jobs:'+arvados_cwl.__version__,
                         'min_ram_mb_per_node': 1024
                     },
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'},
                 filters=[['repository', '=', 'arvados'],
                          ['script', '=', 'crunchrunner'],
                          ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
-                         ['docker_image_locator', 'in docker', 'arvados/jobs']],
+                         ['docker_image_locator', 'in docker', 'arvados/jobs:'+arvados_cwl.__version__]],
                 find_or_create=True)
         except:
             logging.exception("")
