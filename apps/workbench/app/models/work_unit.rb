@@ -5,6 +5,10 @@ class WorkUnit
     # returns the label that was assigned when creating the work unit
   end
 
+  def proxied
+    # returns the proxied object of this work unit
+  end
+
   def uuid
     # returns the arvados UUID of the underlying object
   end

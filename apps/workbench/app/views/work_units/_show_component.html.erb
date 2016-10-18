@@ -41,9 +41,7 @@
   <%= render(partial: "pipeline_instances/show_components_json",
              locals: {error_name: "Unreadable components", backtrace: nil, wu: wu}) %>
 <% else %>
-  <% @descendent_count = 0 if !@descendent_count %>
   <% wu.children.each do |c| %>
-    <% @descendent_count += 1 %>
-    <%= render(partial: 'work_units/show_child', locals: {current_obj: c, i: @descendent_count, expanded: false}) %>
+    <%= render(partial: 'work_units/show_child', locals: {current_obj: c, i: (c.uuid || rand(2**128).to_s(36)), expanded: false}) %>
   <% end %>
 <% end %>

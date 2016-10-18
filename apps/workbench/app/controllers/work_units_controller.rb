@@ -111,4 +111,29 @@ class WorkUnitsController < ApplicationController
       render_error status: 422
     end
   end
+
+  def show_child_component
+    data = JSON.load(params[:action_data])
+
+    current_obj = data['current_obj']
+    current_obj_type = data['current_obj_type']
+    if current_obj['uuid']
+      resource_class = resource_class_for_uuid current_obj['uuid']
+      obj = object_for_dataclass(resource_class, current_obj['uuid'])
+      current_obj = obj if obj
+    end
+    if current_obj_type == JobWorkUnit.to_s
+      wu = JobWorkUnit.new(current_obj, params['name'])
+    elsif current_obj_type == PipelineInstanceWorkUnit.to_s
+      wu = PipelineInstanceWorkUnit.new(current_obj, params['name'])
+    elsif current_obj_type == ContainerWorkUnit.to_s
+      wu = ContainerWorkUnit.new(current_obj, params['name'])
+    end
+
+    @object ||= arvados_api_client.unpack_api_response data['main_obj'], data['main_obj_kind']
+
+    respond_to do |f|
+      f.html { render(partial: "show_component", locals: {wu: wu}) }
+    end
+  end
 end
