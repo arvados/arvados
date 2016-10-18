@@ -23,7 +23,7 @@ try:
     with open("arvados_cwl/_version.py", "w") as f:
         f.write("__version__ = '%s'\n" % gitinfo)
 except Exception as e:
-    print e
+    print(e)
     pass
 
 setup(name='arvados-cwl-runner',
