@@ -1,4 +1,9 @@
 class WorkUnitsController < ApplicationController
+  skip_around_filter :require_thread_api_token, if: proc { |ctrl|
+    Rails.configuration.anonymous_user_token and
+    'show_child_component' == ctrl.action_name
+  }
+
   def find_objects_for_index
     # If it's not the index rows partial display, just return
     # The /index request will again be invoked to display the
