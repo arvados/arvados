@@ -41,6 +41,7 @@ class ContainerRequest < ArvadosModel
     t.add :requesting_container_uuid
     t.add :runtime_constraints
     t.add :state
+    t.add :use_existing
   end
 
   # Supported states for a container request
@@ -120,7 +121,8 @@ class ContainerRequest < ArvadosModel
                  container_image: c_container_image,
                  mounts: c_mounts,
                  runtime_constraints: c_runtime_constraints}
-      reusable = Container.find_reusable(c_attrs)
+
+      reusable = self.use_existing ? Container.find_reusable(c_attrs) : nil
       if not reusable.nil?
         reusable
       else
@@ -234,7 +236,7 @@ class ContainerRequest < ArvadosModel
                      :container_image, :cwd, :description, :environment,
                      :filters, :mounts, :name, :output_path, :priority,
                      :properties, :requesting_container_uuid, :runtime_constraints,
-                     :state, :container_uuid
+                     :state, :container_uuid, :use_existing
 
     when Committed
       if container_uuid.nil?

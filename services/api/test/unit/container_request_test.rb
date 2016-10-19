@@ -437,6 +437,26 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
   end
 
+  test "Container request doesn't reuse container when explicitly asked" do
+      common_attrs = {cwd: "test",
+                      priority: 1,
+                      command: ["echo", "hello"],
+                      output_path: "test",
+                      runtime_constraints: {"vcpus" => 4,
+                                            "ram" => 12000000000},
+                      mounts: {"test" => {"kind" => "json"}}}
+      set_user_from_auth :active
+      cr1 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Committed}))
+      cr2 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Uncommitted,
+                                                    use_existing: false}))
+      assert_not_nil cr1.container_uuid
+      assert_nil cr2.container_uuid
+
+      # Update cr2 to commited state and check for container equality.
+      cr2.update_attributes!({state: ContainerRequest::Committed})
+      assert_not_equal cr1.container_uuid, cr2.container_uuid
+  end
+
   test "requesting_container_uuid at create is not allowed" do
     set_user_from_auth :active
     assert_raises(ActiveRecord::RecordNotSaved) do
