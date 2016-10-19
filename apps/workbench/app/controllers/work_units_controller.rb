@@ -135,7 +135,10 @@ class WorkUnitsController < ApplicationController
       wu = ContainerWorkUnit.new(current_obj, params['name'])
     end
 
-    @object ||= arvados_api_client.unpack_api_response data['main_obj'], data['main_obj_kind']
+    if !@object
+      resource_class = resource_class_for_uuid data['main_obj']
+      @object = object_for_dataclass(resource_class, data['main_obj'])
+    end
 
     respond_to do |f|
       f.html { render(partial: "show_component", locals: {wu: wu}) }

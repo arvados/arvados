@@ -24,6 +24,7 @@
                 <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
                 <% has_val = val %>
                 <% has_val = val.andand.any? if k == :outputs %>
+                <% has_val = true if k == :log_collection and current_obj.state_label == "Running" %>
                 <% if has_val %>
                 <tr>
                   <td style="padding-right: 1em">
