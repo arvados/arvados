@@ -264,6 +264,12 @@ common:
   # Use at your own risk.
   unlogged_attributes: []
 
+  # API methods to disable. Disabled methods are not listed in the
+  # discovery document. Note: currently, disabled methods are still
+  # accessible to clients that don't pay attention to the discovery
+  # document. Example: ["jobs.create"]
+  disable_api_methods: []
+
   ###
   ### Crunch, DNS & compute node management
   ###
