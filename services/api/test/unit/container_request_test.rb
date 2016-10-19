@@ -384,10 +384,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "container_image_for_container(pdh)" do
     set_user_from_auth :active
-    pdh = collections(:docker_image).portable_data_hash
-    cr = ContainerRequest.new(container_image: pdh)
-    resolved = cr.send :container_image_for_container
-    assert_equal resolved, pdh
+    [:docker_image, :docker_image_1_12].each do |coll|
+      pdh = collections(coll).portable_data_hash
+      cr = ContainerRequest.new(container_image: pdh)
+      resolved = cr.send :container_image_for_container
+      assert_equal resolved, pdh
+    end
   end
 
   ['acbd18db4cc2f85cedef654fccc4a4d8+3',

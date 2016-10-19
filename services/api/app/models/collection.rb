@@ -314,7 +314,7 @@ class Collection < ArvadosModel
         # looks like a saved Docker image.
         manifest = Keep::Manifest.new(coll_match.manifest_text)
         if manifest.exact_file_count?(1) and
-            (manifest.files[0][1] =~ /^[0-9A-Fa-f]{64}\.tar$/)
+            (manifest.files[0][1] =~ /^(sha256:)?[0-9A-Fa-f]{64}\.tar$/)
           return [coll_match]
         end
       end
