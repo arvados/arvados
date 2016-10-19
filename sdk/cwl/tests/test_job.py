@@ -1,10 +1,11 @@
-import logging
-import mock
-import unittest
-import os
 import functools
 import json
+import logging
+import mock
+import os
+import unittest
 
+import arvados
 import arvados_cwl
 import cwltool.process
 from schema_salad.ref_resolver import Loader
@@ -215,7 +216,10 @@ class TestWorkflow(unittest.TestCase):
     def test_run(self, mockcollection):
         arvados_cwl.add_arv_hints()
 
-        runner = arvados_cwl.ArvCwlRunner(mock.MagicMock())
+        api = mock.MagicMock()
+        api._rootDesc = arvados.api('v1')._rootDesc
+        runner = arvados_cwl.ArvCwlRunner(api)
+        self.assertEqual(runner.work_api, 'jobs')
 
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
@@ -270,3 +274,12 @@ class TestWorkflow(unittest.TestCase):
                      ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
                      ['docker_image_locator', 'in docker', 'arvados/jobs']],
             find_or_create=True)
+
+    def test_default_work_api(self):
+        arvados_cwl.add_arv_hints()
+
+        api = mock.MagicMock()
+        api._rootDesc = arvados.api('v1')._rootDesc
+        del api._rootDesc.get('resources')['jobs']['methods']['create']
+        runner = arvados_cwl.ArvCwlRunner(api)
+        self.assertEqual(runner.work_api, 'containers')

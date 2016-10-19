@@ -21,10 +21,14 @@ def upload_mock(files, api, dry_run=False, num_retries=0, project=None, fnPatter
         c.fn = fnPattern % (pdh, os.path.basename(c.fn))
 
 class TestPathmap(unittest.TestCase):
+    def setUp(self):
+        self.api = mock.MagicMock()
+        self.api._rootDesc = arvados.api('v1')._rootDesc
+
     def test_keepref(self):
         """Test direct keep references."""
 
-        arvrunner = arvados_cwl.ArvCwlRunner(mock.MagicMock())
+        arvrunner = arvados_cwl.ArvCwlRunner(self.api)
 
         p = ArvPathMapper(arvrunner, [{
             "class": "File",
@@ -38,7 +42,7 @@ class TestPathmap(unittest.TestCase):
     def test_upload(self, upl):
         """Test pathmapper uploading files."""
 
-        arvrunner = arvados_cwl.ArvCwlRunner(mock.MagicMock())
+        arvrunner = arvados_cwl.ArvCwlRunner(self.api)
 
         upl.side_effect = upload_mock
 
@@ -54,7 +58,7 @@ class TestPathmap(unittest.TestCase):
     def test_prev_uploaded(self, upl):
         """Test pathmapper handling previously uploaded files."""
 
-        arvrunner = arvados_cwl.ArvCwlRunner(mock.MagicMock())
+        arvrunner = arvados_cwl.ArvCwlRunner(self.api)
         arvrunner.add_uploaded('tests/hw.py', MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='', type='File'))
 
         upl.side_effect = upload_mock
@@ -71,7 +75,7 @@ class TestPathmap(unittest.TestCase):
     @mock.patch("arvados.commands.run.statfile")
     def test_statfile(self, statfile, upl):
         """Test pathmapper handling ArvFile references."""
-        arvrunner = arvados_cwl.ArvCwlRunner(mock.MagicMock())
+        arvrunner = arvados_cwl.ArvCwlRunner(self.api)
 
         # An ArvFile object returned from arvados.commands.run.statfile means the file is located on a
         # keep mount, so we can construct a direct reference directly without upload.
