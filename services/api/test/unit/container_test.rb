@@ -5,13 +5,13 @@ class ContainerTest < ActiveSupport::TestCase
 
   DEFAULT_ATTRS = {
     command: ['echo', 'foo'],
-    container_image: 'img',
+    container_image: 'fa3c1a9cb6783f85f2ecda037e07b8c3+167',
     output_path: '/tmp',
     priority: 1,
     runtime_constraints: {"vcpus" => 1, "ram" => 1},
   }
 
-  REUSABLE_COMMON_ATTRS = {container_image: "test",
+  REUSABLE_COMMON_ATTRS = {container_image: "9ae44d5792468c58bcf85ce7353c7027+124",
                            cwd: "test",
                            command: ["echo", "hello"],
                            output_path: "test",
@@ -22,16 +22,12 @@ class ContainerTest < ActiveSupport::TestCase
 
   def minimal_new attrs={}
     cr = ContainerRequest.new DEFAULT_ATTRS.merge(attrs)
+    cr.state = ContainerRequest::Committed
     act_as_user users(:active) do
       cr.save!
     end
-    c = Container.new DEFAULT_ATTRS.merge(attrs)
-    act_as_system_user do
-      c.save!
-      assert cr.update_attributes(container_uuid: c.uuid,
-                                  state: ContainerRequest::Committed,
-                                  ), show_errors(cr)
-    end
+    c = Container.find_by_uuid cr.container_uuid
+    assert_not_nil c
     return c, cr
   end
 
@@ -45,7 +41,7 @@ class ContainerTest < ActiveSupport::TestCase
 
   def check_illegal_modify c
     check_illegal_updates c, [{command: ["echo", "bar"]},
-                              {container_image: "img2"},
+                              {container_image: "arvados/apitestfixture:june10"},
                               {cwd: "/tmp2"},
                               {environment: {"FOO" => "BAR"}},
                               {mounts: {"FOO" => "BAR"}},
@@ -89,7 +85,7 @@ class ContainerTest < ActiveSupport::TestCase
 
   test "Container serialized hash attributes sorted before save" do
     env = {"C" => 3, "B" => 2, "A" => 1}
-    m = {"F" => 3, "E" => 2, "D" => 1}
+    m = {"F" => {"kind" => 3}, "E" => {"kind" => 2}, "D" => {"kind" => 1}}
     rc = {"vcpus" => 1, "ram" => 1}
     c, _ = minimal_new(environment: env, mounts: m, runtime_constraints: rc)
     assert_equal c.environment.to_json, Container.deep_sort_hash(env).to_json
@@ -144,17 +140,28 @@ class ContainerTest < ActiveSupport::TestCase
 
   test "find_reusable method should not select completed container when inconsistent outputs exist" do
     set_user_from_auth :active
-    common_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "complete"}})
+    common_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "complete"}, priority: 1})
     completed_attrs = {
       state: Container::Complete,
       exit_code: 0,
       log: 'ea10d51bcf88862dbcc36eb292017dfd+45',
     }
 
-    c_output1, _ = minimal_new(common_attrs)
-    c_output2, _ = minimal_new(common_attrs)
-
     set_user_from_auth :dispatch1
+
+    c_output1 = Container.create common_attrs
+    c_output2 = Container.create common_attrs
+
+    cr = ContainerRequest.new common_attrs
+    cr.state = ContainerRequest::Committed
+    cr.container_uuid = c_output1.uuid
+    cr.save!
+
+    cr = ContainerRequest.new common_attrs
+    cr.state = ContainerRequest::Committed
+    cr.container_uuid = c_output2.uuid
+    cr.save!
+
     c_output1.update_attributes!({state: Container::Locked})
     c_output1.update_attributes!({state: Container::Running})
     c_output1.update_attributes!(completed_attrs.merge({output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'}))
@@ -427,4 +434,59 @@ class ContainerTest < ActiveSupport::TestCase
 
     assert c.update_attributes(exit_code: 1, state: Container::Complete)
   end
+
+  test "locked_by_uuid can set output on running container" do
+    c, _ = minimal_new
+    set_user_from_auth :dispatch1
+    c.lock
+    c.update_attributes! state: Container::Running
+
+    assert_equal c.locked_by_uuid, Thread.current[:api_client_authorization].uuid
+
+    assert c.update_attributes output: collections(:collection_owned_by_active).portable_data_hash
+    assert c.update_attributes! state: Container::Complete
+  end
+
+  test "auth_uuid can set output on running container, but not change container state" do
+    c, _ = minimal_new
+    set_user_from_auth :dispatch1
+    c.lock
+    c.update_attributes! state: Container::Running
+
+    Thread.current[:api_client_authorization] = ApiClientAuthorization.find_by_uuid(c.auth_uuid)
+    Thread.current[:user] = User.find_by_id(Thread.current[:api_client_authorization].user_id)
+    assert c.update_attributes output: collections(:collection_owned_by_active).portable_data_hash
+
+    assert_raises ArvadosModel::PermissionDeniedError do
+      # auth_uuid cannot set container state
+      c.update_attributes state: Container::Complete
+    end
+  end
+
+  test "output must be readable by auth_uuid" do
+    c, _ = minimal_new
+    set_user_from_auth :dispatch1
+    c.lock
+    c.update_attributes! state: Container::Running
+
+    Thread.current[:api_client_authorization] = ApiClientAuthorization.find_by_uuid(c.auth_uuid)
+    Thread.current[:user] = User.find_by_id(Thread.current[:api_client_authorization].user_id)
+
+    assert_raises ActiveRecord::RecordInvalid do
+      c.update_attributes! output: collections(:collection_not_readable_by_active).portable_data_hash
+    end
+  end
+
+  test "other token cannot set output on running container" do
+    c, _ = minimal_new
+    set_user_from_auth :dispatch1
+    c.lock
+    c.update_attributes! state: Container::Running
+
+    set_user_from_auth :not_running_container_auth
+    assert_raises ArvadosModel::PermissionDeniedError do
+      c.update_attributes! output: collections(:foo_file).portable_data_hash
+    end
+  end
+
 end

@@ -187,7 +187,23 @@ class Container < ArvadosModel
   end
 
   def permission_to_update
-    current_user.andand.is_admin
+    # Override base permission check to allow auth_uuid to set progress and
+    # output (only).  Whether it is legal to set progress and output in the current
+    # state has already been checked in validate_change.
+    current_user.andand.is_admin ||
+      (!Thread.current[:api_client_authorization].nil? and
+       [self.auth_uuid, self.locked_by_uuid].include? Thread.current[:api_client_authorization].uuid)
+  end
+
+  def ensure_owner_uuid_is_permitted
+    # Override base permission check to allow auth_uuid to set progress and
+    # output (only).  Whether it is legal to set progress and output in the current
+    # state has already been checked in validate_change.
+    if !Thread.current[:api_client_authorization].nil? and self.auth_uuid == Thread.current[:api_client_authorization].uuid
+      check_update_whitelist [:progress, :output]
+    else
+      super
+    end
   end
 
   def set_timestamps
@@ -241,20 +257,10 @@ class Container < ArvadosModel
   end
 
   def validate_lock
-    if locked_by_uuid_was
-      if not [locked_by_uuid_was, auth_uuid].include? Thread.current[:api_client_authorization].uuid
-        # The container is locked, but is being accessed by an API token that
-        # isn't associated with the container.  Only the priority field may be
-        # updated, needed when updating to max(priority) of relevant
-        # ContainerRequests.
-        check_update_whitelist [:priority]
-      end
-    end
-
     if [Locked, Running].include? self.state
       # If the Container was already locked, locked_by_uuid must not
       # changes. Otherwise, the current auth gets the lock.
-      need_lock = locked_by_uuid_was || Thread.current[:api_client_authorization].uuid
+      need_lock = locked_by_uuid_was || Thread.current[:api_client_authorization].andand.uuid
     else
       need_lock = nil
     end
@@ -280,7 +286,7 @@ class Container < ArvadosModel
           where(portable_data_hash: self.output).
           first
       if !c
-        return errors.add :output, "collection must exist and be readable by current user."
+        errors.add :output, "collection must exist and be readable by current user."
       end
     end
   end
@@ -319,17 +325,6 @@ class Container < ArvadosModel
     end
     if self.runtime_constraints_changed?
       self.runtime_constraints = self.class.deep_sort_hash(self.runtime_constraints)
-    end
-  end
-
-  def ensure_owner_uuid_is_permitted
-    # Override base permission check to allow auth_uuid to set progress and
-    # output (only).  Whether it is legal to set progress and output in the current
-    # state has already been checked in validate_change.
-    if self.auth_uuid == Thread.current[:api_client_authorization].uuid
-      check_update_whitelist [:progress, :output]
-    else
-      super
     end
   end
 
