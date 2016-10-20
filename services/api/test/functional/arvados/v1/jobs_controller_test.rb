@@ -510,7 +510,8 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
   end
 
   test 'jobs.create disabled in config' do
-    Rails.configuration.disable_api_methods = ["jobs.create"]
+    Rails.configuration.disable_api_methods = ["jobs.create",
+                                               "pipeline_instances.create"]
     authorize_with :active
     post :create, job: {
       script: "hash",
