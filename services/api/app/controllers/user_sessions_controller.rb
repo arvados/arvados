@@ -44,8 +44,10 @@ class UserSessionsController < ApplicationController
                       :last_name => omniauth['info']['last_name'],
                       :identity_url => omniauth['info']['identity_url'],
                       :is_active => Rails.configuration.new_users_are_active,
-                      :username => omniauth['info']['username'],
                       :owner_uuid => system_user_uuid)
+      if omniauth['info']['username']
+        user.set_initial_username(requested: omniauth['info']['username'])
+      end
       act_as_system_user do
         user.save or raise Exception.new(user.errors.messages)
       end
