@@ -1,12 +1,12 @@
 [Unit]
-Description=Arvados git server
+Description=Arvados Keep Storage Daemon
 Documentation=https://doc.arvados.org/
 After=network.target
-AssertPathExists=/etc/arvados/git-httpd/git-httpd.yml
+AssertPathExists=/etc/arvados/keepstore/keepstore.yml
 
 [Service]
 Type=notify
-ExecStart=/usr/bin/arvados-git-httpd
+ExecStart=/usr/bin/keepstore
 Restart=always
 
 [Install]

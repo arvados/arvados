@@ -1,16 +1,17 @@
-import arvados
-import arvados.keep
-import arvados.collection
-import arvados_cwl
 import copy
 import cStringIO
 import functools
 import hashlib
+import json
+import logging
 import mock
 import sys
 import unittest
-import json
-import logging
+
+import arvados
+import arvados.collection
+import arvados_cwl
+import arvados.keep
 
 from .matcher import JsonDiffMatcher
 
@@ -38,6 +39,7 @@ def stubs(func):
 
 
         stubs.api = mock.MagicMock()
+        stubs.api._rootDesc = arvados.api('v1')._rootDesc
         stubs.api.users().current().execute.return_value = {
             "uuid": stubs.fake_user_uuid,
         }
@@ -126,12 +128,12 @@ def stubs(func):
                 "cwl-runner": {
                     'runtime_constraints': {'docker_image': 'arvados/jobs'},
                     'script_parameters': {
-                        'y': {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'},
-                        'x': {'basename': 'blorp.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999994+99/blorp.txt'},
-                        'z': {'basename': 'anonymous', 'class': 'Directory',
+                        'y': {"value": {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'}},
+                        'x': {"value": {'basename': 'blorp.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999994+99/blorp.txt'}},
+                        'z': {"value": {'basename': 'anonymous', 'class': 'Directory',
                               'listing': [
                                   {'basename': 'renamed.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999998+99/file1.txt'}
-                              ]},
+                              ]}},
                         'cwl:tool': '99999999999999999999999999999991+99/wf/submit_wf.cwl'
                     },
                     'repository': 'arvados',

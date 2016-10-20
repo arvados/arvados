@@ -45,7 +45,11 @@ func (squeue *Squeue) RunSqueue() {
 		log.Printf("Error creating stdout pipe for squeue: %v", err)
 		return
 	}
-	cmd.Start()
+	err = cmd.Start()
+	if err != nil {
+		log.Printf("Error running squeue: %v", err)
+		return
+	}
 	scanner := bufio.NewScanner(sq)
 	for scanner.Scan() {
 		newSqueueContents = append(newSqueueContents, scanner.Text())

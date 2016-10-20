@@ -30,9 +30,9 @@ func NewTestableUnixVolume(t TB, serialize bool, readonly bool) *TestableUnixVol
 	}
 	return &TestableUnixVolume{
 		UnixVolume: UnixVolume{
-			root:     d,
+			Root:     d,
+			ReadOnly: readonly,
 			locker:   locker,
-			readonly: readonly,
 		},
 		t: t,
 	}
@@ -42,9 +42,9 @@ func NewTestableUnixVolume(t TB, serialize bool, readonly bool) *TestableUnixVol
 // the volume is readonly.
 func (v *TestableUnixVolume) PutRaw(locator string, data []byte) {
 	defer func(orig bool) {
-		v.readonly = orig
-	}(v.readonly)
-	v.readonly = false
+		v.ReadOnly = orig
+	}(v.ReadOnly)
+	v.ReadOnly = false
 	err := v.Put(locator, data)
 	if err != nil {
 		v.t.Fatal(err)
@@ -59,7 +59,7 @@ func (v *TestableUnixVolume) TouchWithDate(locator string, lastPut time.Time) {
 }
 
 func (v *TestableUnixVolume) Teardown() {
-	if err := os.RemoveAll(v.root); err != nil {
+	if err := os.RemoveAll(v.Root); err != nil {
 		v.t.Fatal(err)
 	}
 }
@@ -101,6 +101,19 @@ func TestUnixVolumeHandlersWithGenericVolumeTests(t *testing.T) {
 	})
 }
 
+func TestReplicationDefault1(t *testing.T) {
+	v := &UnixVolume{
+		Root:     "/",
+		ReadOnly: true,
+	}
+	if err := v.Start(); err != nil {
+		t.Error(err)
+	}
+	if got := v.Replication(); got != 1 {
+		t.Errorf("Replication() returned %d, expected 1 if no config given", got)
+	}
+}
+
 func TestGetNotFound(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
@@ -126,7 +139,7 @@ func TestPut(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	p := fmt.Sprintf("%s/%s/%s", v.root, TestHash[:3], TestHash)
+	p := fmt.Sprintf("%s/%s/%s", v.Root, TestHash[:3], TestHash)
 	if buf, err := ioutil.ReadFile(p); err != nil {
 		t.Error(err)
 	} else if bytes.Compare(buf, TestBlock) != 0 {
@@ -139,7 +152,7 @@ func TestPutBadVolume(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	os.Chmod(v.root, 000)
+	os.Chmod(v.Root, 000)
 	err := v.Put(TestHash, TestBlock)
 	if err == nil {
 		t.Error("Write should have failed")
@@ -178,7 +191,7 @@ func TestIsFull(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	fullPath := v.root + "/full"
+	fullPath := v.Root + "/full"
 	now := fmt.Sprintf("%d", time.Now().Unix())
 	os.Symlink(now, fullPath)
 	if !v.IsFull() {
@@ -200,8 +213,8 @@ func TestNodeStatus(t *testing.T) {
 
 	// Get node status and make a basic sanity check.
 	volinfo := v.Status()
-	if volinfo.MountPoint != v.root {
-		t.Errorf("GetNodeStatus mount_point %s, expected %s", volinfo.MountPoint, v.root)
+	if volinfo.MountPoint != v.Root {
+		t.Errorf("GetNodeStatus mount_point %s, expected %s", volinfo.MountPoint, v.Root)
 	}
 	if volinfo.DeviceNum == 0 {
 		t.Errorf("uninitialized device_num in %v", volinfo)
@@ -301,7 +314,7 @@ func TestUnixVolumeCompare(t *testing.T) {
 		t.Errorf("Got err %q, expected %q", err, DiskHashError)
 	}
 
-	p := fmt.Sprintf("%s/%s/%s", v.root, TestHash[:3], TestHash)
+	p := fmt.Sprintf("%s/%s/%s", v.Root, TestHash[:3], TestHash)
 	os.Chmod(p, 000)
 	err = v.Compare(TestHash, TestBlock)
 	if err == nil || strings.Index(err.Error(), "permission denied") < 0 {

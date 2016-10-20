@@ -1,15 +1,30 @@
 #!/usr/bin/env python
 
-# Crunch script integration for running arvados-cwl-runner (importing
-# arvados_cwl module) inside a crunch job.
-#
+# Crunch script integration for running arvados-cwl-runner inside a crunch job.
+
+import arvados_cwl
+import sys
+
+try:
+    # Use the crunch script defined in the arvados_cwl package.  This helps
+    # prevent the crunch script from going out of sync with the rest of the
+    # arvados_cwl package.
+    import arvados_cwl.crunch_script
+    arvados_cwl.crunch_script.run()
+    sys.exit()
+except ImportError:
+    pass
+
+# When running against an older arvados-cwl-runner package without
+# arvados_cwl.crunch_script, fall back to the old code.
+
+
 # This gets the job record, transforms the script parameters into a valid CWL
 # input object, then executes the CWL runner to run the underlying workflow or
 # tool.  When the workflow completes, record the output object in an output
 # collection for this runner job.
 
 import arvados
-import arvados_cwl
 import arvados.collection
 import arvados.util
 import cwltool.main

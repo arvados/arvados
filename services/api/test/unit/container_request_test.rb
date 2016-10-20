@@ -384,10 +384,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "container_image_for_container(pdh)" do
     set_user_from_auth :active
-    pdh = collections(:docker_image).portable_data_hash
-    cr = ContainerRequest.new(container_image: pdh)
-    resolved = cr.send :container_image_for_container
-    assert_equal resolved, pdh
+    [:docker_image, :docker_image_1_12].each do |coll|
+      pdh = collections(coll).portable_data_hash
+      cr = ContainerRequest.new(container_image: pdh)
+      resolved = cr.send :container_image_for_container
+      assert_equal resolved, pdh
+    end
   end
 
   ['acbd18db4cc2f85cedef654fccc4a4d8+3',
@@ -410,10 +412,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   [
-    [{"var" => "value1"}, {"var" => "value1"}],
-    [{"var" => "value1"}, {"var" => "value2"}]
-  ].each do |env1, env2|
-    test "Container request #{(env1 == env2) ? 'does' : 'does not'} reuse container when committed" do
+    [{"var" => "value1"}, {"var" => "value1"}, nil],
+    [{"var" => "value1"}, {"var" => "value1"}, true],
+    [{"var" => "value1"}, {"var" => "value1"}, false],
+    [{"var" => "value1"}, {"var" => "value2"}, nil],
+  ].each do |env1, env2, use_existing|
+    test "Container request #{((env1 == env2) and (use_existing.nil? or use_existing == true)) ? 'does' : 'does not'} reuse container when committed#{use_existing.nil? ? '' : use_existing ? ' and use_existing == true' : ' and use_existing == false'}" do
       common_attrs = {cwd: "test",
                       priority: 1,
                       command: ["echo", "hello"],
@@ -424,16 +428,27 @@ class ContainerRequestTest < ActiveSupport::TestCase
       set_user_from_auth :active
       cr1 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Committed,
                                                     environment: env1}))
-      cr2 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Uncommitted,
-                                                    environment: env2}))
+      if use_existing.nil?
+        # Testing with use_existing default value
+        cr2 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Uncommitted,
+                                                      environment: env2}))
+      else
+
+        cr2 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Uncommitted,
+                                                      environment: env2,
+                                                      use_existing: use_existing}))
+      end
       assert_not_nil cr1.container_uuid
       assert_nil cr2.container_uuid
 
-      # Update cr2 to commited state and check for container equality on both cases,
-      # when env1 and env2 are equal the same container should be assigned, and
-      # when env1 and env2 are different, cr2 container should be different.
+      # Update cr2 to commited state and check for container equality on different cases:
+      # * When env1 and env2 are equal and use_existing is true, the same container
+      #   should be assigned.
+      # * When use_existing is false, a different container should be assigned.
+      # * When env1 and env2 are different, a different container should be assigned.
       cr2.update_attributes!({state: ContainerRequest::Committed})
-      assert_equal (env1 == env2), (cr1.container_uuid == cr2.container_uuid)
+      assert_equal (cr2.use_existing == true and (env1 == env2)),
+                   (cr1.container_uuid == cr2.container_uuid)
     end
   end
 

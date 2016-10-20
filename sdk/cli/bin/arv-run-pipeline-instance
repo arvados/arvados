@@ -364,22 +364,25 @@ class WhRunPipelineInstance
     @components.each do |componentname, component|
       component[:script_parameters].each do |parametername, parameter|
         parameter = { :value => parameter } unless parameter.is_a? Hash
-        value =
-          (params["#{componentname}::#{parametername}"] ||
-           parameter[:value] ||
-           (parameter[:output_of].nil? &&
-            (params[parametername.to_s] ||
-             parameter[:default])) ||
-           nil)
-        if value.nil? and
-            ![false,'false',0,'0'].index parameter[:required]
-          if parameter[:output_of]
-            if not @components[parameter[:output_of].intern]
-              errors << [componentname, parametername, "output_of refers to nonexistent component '#{parameter[:output_of]}'"]
-            end
-            next
+        if params.has_key?("#{componentname}::#{parametername}")
+          value = params["#{componentname}::#{parametername}"]
+        elsif parameter.has_key?(:value)
+          value = parameter[:value]
+        elsif parameter.has_key?(:output_of)
+          if !@components[parameter[:output_of].intern]
+            errors << [componentname, parametername, "output_of refers to nonexistent component '#{parameter[:output_of]}'"]
+          else
+            # value will be filled in later when the upstream
+            # component's output becomes known
           end
+          next
+        elsif params.has_key?(parametername.to_s)
+          value = params[parametername.to_s]
+        elsif parameter.has_key?(:default)
+          value = parameter[:default]
+        else
           errors << [componentname, parametername, "required parameter is missing"]
+          next
         end
         debuglog "parameter #{componentname}::#{parametername} == #{value}"
 

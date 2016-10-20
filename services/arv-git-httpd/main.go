@@ -14,27 +14,24 @@ import (
 
 // Server configuration
 type Config struct {
-	Client     arvados.Client
-	Listen     string
-	GitCommand string
-	RepoRoot   string
+	Client       arvados.Client
+	Listen       string
+	GitCommand   string
+	RepoRoot     string
+	GitoliteHome string
 }
 
 var theConfig = defaultConfig()
 
 func defaultConfig() *Config {
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Fatalln("Getwd():", err)
-	}
 	return &Config{
 		Listen:     ":80",
 		GitCommand: "/usr/bin/git",
-		RepoRoot:   cwd,
+		RepoRoot:   "/var/lib/arvados/git/repositories",
 	}
 }
 
-func init() {
+func main() {
 	const defaultCfgPath = "/etc/arvados/git-httpd/git-httpd.yml"
 	const deprecated = " (DEPRECATED -- use config file instead)"
 	flag.StringVar(&theConfig.Listen, "address", theConfig.Listen,
@@ -43,6 +40,8 @@ func init() {
 		"Path to git or gitolite-shell executable. Each authenticated request will execute this program with a single argument, \"http-backend\"."+deprecated)
 	flag.StringVar(&theConfig.RepoRoot, "repo-root", theConfig.RepoRoot,
 		"Path to git repositories."+deprecated)
+	flag.StringVar(&theConfig.GitoliteHome, "gitolite-home", theConfig.GitoliteHome,
+		"Value for GITOLITE_HTTP_HOME environment variable. If not empty, GL_BYPASS_ACCESS_CHECKS=1 will also be set."+deprecated)
 
 	cfgPath := flag.String("config", defaultCfgPath, "Configuration file `path`.")
 	flag.Usage = usage
@@ -63,9 +62,7 @@ func init() {
 			log.Print("Current configuration:\n", string(j))
 		}
 	}
-}
 
-func main() {
 	srv := &server{}
 	if err := srv.Start(); err != nil {
 		log.Fatal(err)

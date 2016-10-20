@@ -365,3 +365,13 @@ func (s *StandaloneSuite) TestManyReaders(c *C) {
 	writer.Write([]byte("baz"))
 	writer.Close()
 }
+
+func (s *StandaloneSuite) TestMultipleCloseNoPanic(c *C) {
+	buffer := make([]byte, 100)
+	tr := AsyncStreamFromSlice(buffer)
+	sr := tr.MakeStreamReader()
+	c.Check(sr.Close(), IsNil)
+	c.Check(sr.Close(), Equals, ErrAlreadyClosed)
+	c.Check(tr.Close(), IsNil)
+	c.Check(tr.Close(), Equals, ErrAlreadyClosed)
+}

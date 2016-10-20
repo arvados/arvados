@@ -256,6 +256,10 @@ class RunnerJob(Runner):
     def run(self, *args, **kwargs):
         job_spec = self.arvados_job_spec(*args, **kwargs)
 
+        for k,v in job_spec["script_parameters"].items():
+            if v is False or v is None or isinstance(v, dict):
+                job_spec["script_parameters"][k] = {"value": v}
+
         self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().create(
             body={
                 "owner_uuid": self.arvrunner.project_uuid,
@@ -275,6 +279,8 @@ class RunnerJob(Runner):
                 uuid=self.arvrunner.pipeline["uuid"]).execute(
                     num_retries=self.arvrunner.num_retries)
             job = self.arvrunner.pipeline["components"]["cwl-runner"].get("job")
+            if not job and self.arvrunner.pipeline["state"] != "RunningOnServer":
+                raise WorkflowException("Submitted pipeline is %s" % (self.arvrunner.pipeline["state"]))
 
         self.uuid = job["uuid"]
         self.arvrunner.processes[self.uuid] = self

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 )
 
@@ -430,7 +431,7 @@ func testIndexTo(t TB, factory TestableVolumeFactory) {
 func testDeleteNewBlock(t TB, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
-	blobSignatureTTL = 300 * time.Second
+	theConfig.BlobSignatureTTL.Set("5m")
 
 	if v.Writable() == false {
 		return
@@ -451,19 +452,19 @@ func testDeleteNewBlock(t TB, factory TestableVolumeFactory) {
 }
 
 // Calling Delete() for a block with a timestamp older than
-// blobSignatureTTL seconds in the past should delete the data.
+// BlobSignatureTTL seconds in the past should delete the data.
 // Test is intended for only writable volumes
 func testDeleteOldBlock(t TB, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
-	blobSignatureTTL = 300 * time.Second
+	theConfig.BlobSignatureTTL.Set("5m")
 
 	if v.Writable() == false {
 		return
 	}
 
 	v.Put(TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
 
 	if err := v.Trash(TestHash); err != nil {
 		t.Error(err)
@@ -733,7 +734,7 @@ func testPutFullBlock(t TB, factory TestableVolumeFactory) {
 	}
 }
 
-// With trashLifetime != 0, perform:
+// With TrashLifetime != 0, perform:
 // Trash an old block - which either raises ErrNotImplemented or succeeds
 // Untrash -  which either raises ErrNotImplemented or succeeds
 // Get - which must succeed
@@ -741,14 +742,14 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
 	defer func() {
-		trashLifetime = 0
+		theConfig.TrashLifetime = 0
 	}()
 
-	trashLifetime = 3600 * time.Second
+	theConfig.TrashLifetime.Set("1h")
 
 	// put block and backdate it
 	v.PutRaw(TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
 
 	buf := make([]byte, BlockSize)
 	n, err := v.Get(TestHash, buf)
@@ -795,9 +796,9 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
-	defer func(orig time.Duration) {
-		trashLifetime = orig
-	}(trashLifetime)
+	defer func(orig arvados.Duration) {
+		theConfig.TrashLifetime = orig
+	}(theConfig.TrashLifetime)
 
 	checkGet := func() error {
 		buf := make([]byte, BlockSize)
@@ -830,10 +831,10 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 
 	// First set: EmptyTrash before reaching the trash deadline.
 
-	trashLifetime = time.Hour
+	theConfig.TrashLifetime.Set("1h")
 
 	v.PutRaw(TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
 
 	err := checkGet()
 	if err != nil {
@@ -844,7 +845,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	err = v.Trash(TestHash)
 	if err == MethodDisabledError || err == ErrNotImplemented {
 		// Skip the trash tests for read-only volumes, and
-		// volume types that don't support trashLifetime>0.
+		// volume types that don't support TrashLifetime>0.
 		return
 	}
 
@@ -878,7 +879,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	}
 
 	// Because we Touch'ed, need to backdate again for next set of tests
-	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
 
 	// If the only block in the trash has already been untrashed,
 	// most volumes will fail a subsequent Untrash with a 404, but
@@ -896,11 +897,11 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	}
 
 	// Untrash might have updated the timestamp, so backdate again
-	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
 
 	// Second set: EmptyTrash after the trash deadline has passed.
 
-	trashLifetime = time.Nanosecond
+	theConfig.TrashLifetime.Set("1ns")
 
 	err = v.Trash(TestHash)
 	if err != nil {
@@ -925,7 +926,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	// Trash it again, and this time call EmptyTrash so it really
 	// goes away.
 	// (In Azure volumes, un/trash changes Mtime, so first backdate again)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
 	err = v.Trash(TestHash)
 	err = checkGet()
 	if err == nil || !os.IsNotExist(err) {
@@ -950,9 +951,9 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	// un-trashed copy doesn't get deleted along with it.
 
 	v.PutRaw(TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
 
-	trashLifetime = time.Nanosecond
+	theConfig.TrashLifetime.Set("1ns")
 	err = v.Trash(TestHash)
 	if err != nil {
 		t.Fatal(err)
@@ -963,7 +964,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	}
 
 	v.PutRaw(TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
 
 	// EmptyTrash should not delete the untrashed copy.
 	v.EmptyTrash()
@@ -978,18 +979,18 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 	// untrash the block whose deadline is "C".
 
 	v.PutRaw(TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
 
-	trashLifetime = time.Nanosecond
+	theConfig.TrashLifetime.Set("1ns")
 	err = v.Trash(TestHash)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	v.PutRaw(TestHash, TestBlock)
-	v.TouchWithDate(TestHash, time.Now().Add(-2*blobSignatureTTL))
+	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
 
-	trashLifetime = time.Hour
+	theConfig.TrashLifetime.Set("1h")
 	err = v.Trash(TestHash)
 	if err != nil {
 		t.Fatal(err)

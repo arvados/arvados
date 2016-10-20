@@ -264,6 +264,11 @@ common:
   # Use at your own risk.
   unlogged_attributes: []
 
+  # API methods to disable. Disabled methods are not listed in the
+  # discovery document, and respond 404 to all requests.
+  # Example: ["jobs.create", "pipeline_instances.create"]
+  disable_api_methods: []
+
   ###
   ### Crunch, DNS & compute node management
   ###
