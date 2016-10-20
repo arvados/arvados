@@ -25,6 +25,7 @@ class ApplicationController < ActionController::Base
 
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
+  before_filter :disable_api_methods
   before_filter :set_cors_headers
   before_filter :respond_with_json_by_default
   before_filter :remote_ip
@@ -382,6 +383,13 @@ class ApplicationController < ActionController::Base
         send_error("Forbidden", status: 403)
       end
       false
+    end
+  end
+
+  def disable_api_methods
+    if Rails.configuration.disable_api_methods.
+        include?(controller_name + "." + action_name)
+      send_error("Disabled", status: 404)
     end
   end
 
