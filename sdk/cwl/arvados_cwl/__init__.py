@@ -227,6 +227,24 @@ class ArvCwlRunner(object):
 
         self.final_output_collection = final
 
+    def set_crunch_output(self):
+        if self.work_api == "containers":
+            try:
+                current = self.api.containers().current().execute(num_retries=self.num_retries)
+                self.api.containers().update(uuid=current['uuid'],
+                                             body={
+                                                 'output': self.final_output_collection.portable_data_hash(),
+                                             }).execute(num_retries=self.num_retries)
+            except Exception as e:
+                logger.info("Setting container output: %s", e)
+        elif self.work_api == "jobs" and "TASK_UUID" in os.environ:
+            self.api.job_tasks().update(uuid=os.environ["TASK_UUID"],
+                                   body={
+                                       'output': self.final_output_collection.portable_data_hash(),
+                                       'success': self.final_status == "success",
+                                       'progress':1.0
+                                   }).execute(num_retries=self.num_retries)
+
     def arv_executor(self, tool, job_order, **kwargs):
         self.debug = kwargs.get("debug")
 
@@ -355,9 +373,6 @@ class ArvCwlRunner(object):
         if self.final_status == "UnsupportedRequirement":
             raise UnsupportedRequirement("Check log for details.")
 
-        if self.final_status != "success":
-            raise WorkflowException("Workflow failed.")
-
         if self.final_output is None:
             raise WorkflowException("Workflow did not return a result.")
 
@@ -367,6 +382,10 @@ class ArvCwlRunner(object):
             if self.output_name is None:
                 self.output_name = "Output of %s" % (shortname(tool.tool["id"]))
             self.make_output_collection(self.output_name, self.final_output)
+            self.set_crunch_output()
+
+        if self.final_status != "success":
+            raise WorkflowException("Workflow failed.")
 
         if kwargs.get("compute_checksum"):
             adjustDirObjs(self.final_output, partial(getListing, self.fs_access))
