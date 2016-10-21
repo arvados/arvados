@@ -15,8 +15,8 @@ from .integration_test import IntegrationTest
 logger = logging.getLogger('arvados.arv-mount')
 
 class TokenExpiryTest(IntegrationTest):
-    def __init__(self, *args, **kwargs):
-        super(TokenExpiryTest, self).__init__(*args, **kwargs)
+    def setUp(self):
+        super(TokenExpiryTest, self).setUp()
         self.test_start_time = time.time()
         self.time_now = int(time.time())+1
 
