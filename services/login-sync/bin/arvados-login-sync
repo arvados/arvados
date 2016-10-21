@@ -21,6 +21,10 @@ exclusive_banner = "############################################################
 start_banner = "### BEGIN Arvados-managed keys -- changes between markers will be overwritten\n"
 end_banner = "### END Arvados-managed keys -- changes between markers will be overwritten\n"
 
+# some LDAP systems have already the user there
+# use this falg
+dont_create_user = ARGV.index("--dont-create-user")
+
 keys = ''
 
 seen = Hash.new
@@ -76,7 +80,7 @@ begin
     next if seen[l[:username]]
     seen[l[:username]] = true if not seen.has_key?(l[:username])
 
-    unless uids[l[:username]]
+    unless uids[l[:username]] and not dont_create_user
       STDERR.puts "Creating account #{l[:username]}"
       groups = l[:groups] || []
       # Adding users to the FUSE group has long been hardcoded behavior.
@@ -90,7 +94,18 @@ begin
                          l[:username],
                          out: devnull)
     end
-    # Create .ssh directory if necessary
+
+    # If after all this effort isn't listed using Etc.getpwnam()
+    # this means that wont be available in the system
+    # some LDAP configurations will need this
+    begin
+      # Create .ssh directory if necessary
+      Etc.getpwnam(l[:username])
+    rescue ArgumentError
+      STDERR.puts "Account #{l[:username]} not found. Skipping"
+      next
+    end
+      
     @homedir = Etc.getpwnam(l[:username]).dir
     userdotssh = File.join(@homedir, ".ssh")
     Dir.mkdir(userdotssh) if !File.exists?(userdotssh)
