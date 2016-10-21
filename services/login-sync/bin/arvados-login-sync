@@ -80,7 +80,7 @@ begin
     next if seen[l[:username]]
     seen[l[:username]] = true if not seen.has_key?(l[:username])
 
-    unless uids[l[:username]] and not dont_create_user
+    unless uids[l[:username]] or dont_create_user
       STDERR.puts "Creating account #{l[:username]}"
       groups = l[:groups] || []
       # Adding users to the FUSE group has long been hardcoded behavior.
