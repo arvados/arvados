@@ -126,7 +126,7 @@ case "$TARGET" in
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             contextlib2 'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro isodate ruamel.ordereddict
-            cachecontrol)
+            cachecontrol requests)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         ;;
     ubuntu1404)
