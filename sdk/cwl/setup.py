@@ -2,6 +2,7 @@
 
 import os
 import sys
+import subprocess
 import setuptools.command.egg_info as egg_info_cmd
 
 from setuptools import setup, find_packages
@@ -14,6 +15,20 @@ try:
     tagger = gittaggers.EggInfoFromGit
 except ImportError:
     tagger = egg_info_cmd.egg_info
+
+versionfile = os.path.join(SETUP_DIR, "arvados_cwl/_version.py")
+try:
+    gitinfo = subprocess.check_output(
+        ['git', 'log', '--first-parent', '--max-count=1',
+         '--format=format:%H', SETUP_DIR]).strip()
+    with open(versionfile, "w") as f:
+        f.write("__version__ = '%s'\n" % gitinfo)
+except Exception as e:
+    # When installing from package, it won't be part of a git repository, and
+    # check_output() will raise an exception.  But the package should include the
+    # version file, so we can proceed.
+    if not os.path.exists(versionfile):
+        raise
 
 setup(name='arvados-cwl-runner',
       version='1.0',
