@@ -14,6 +14,13 @@ req_envs.each do |k|
   end
 end
 
+exclusive_mode = ARGV.index("--exclusive")
+exclusive_banner = "#######################################################################################
+#  THIS FILE IS MANAGED BY #{$0} -- CHANGES WILL BE OVERWRITTEN  #
+#######################################################################################\n\n"
+start_banner = "### BEGIN Arvados-managed keys -- changes between markers will be overwritten\n"
+end_banner = "### END Arvados-managed keys -- changes between markers will be overwritten\n"
+
 keys = ''
 
 seen = Hash.new
@@ -87,20 +94,36 @@ begin
     @homedir = Etc.getpwnam(l[:username]).dir
     userdotssh = File.join(@homedir, ".ssh")
     Dir.mkdir(userdotssh) if !File.exists?(userdotssh)
-    @key = "#######################################################################################
-#  THIS FILE IS MANAGED BY #{$0} -- CHANGES WILL BE OVERWRITTEN  #
-#######################################################################################\n\n"
-    @key += keys[l[:username]].join("\n") + "\n"
-    userauthkeys = File.join(userdotssh, "authorized_keys")
-    if !File.exists?(userauthkeys) or IO::read(userauthkeys) != @key then
-      f = File.new(userauthkeys, 'w')
-      f.write(@key)
+
+    newkeys = "###\n###\n" + keys[l[:username]].join("\n") + "\n###\n###\n"
+
+    keysfile = File.join(userdotssh, "authorized_keys")
+
+    if File.exists?(keysfile)
+      oldkeys = IO::read(keysfile)
+    else
+      oldkeys = ""
+    end
+
+    if exclusive_mode
+      newkeys = exclusive_banner + newkeys
+    elsif oldkeys.start_with?(exclusive_banner)
+      newkeys = start_banner + newkeys + end_banner
+    elsif (m = /^(.*?\n|)#{start_banner}(.*?\n|)#{end_banner}(.*)/m.match(oldkeys))
+      newkeys = m[1] + start_banner + newkeys + end_banner + m[3]
+    else
+      newkeys = start_banner + newkeys + end_banner + oldkeys
+    end
+
+    if oldkeys != newkeys then
+      f = File.new(keysfile, 'w')
+      f.write(newkeys)
       f.close()
     end
     FileUtils.chown_R(l[:username], nil, userdotssh)
     File.chmod(0700, userdotssh)
     File.chmod(0750, @homedir)
-    File.chmod(0600, userauthkeys)
+    File.chmod(0600, keysfile)
   end
 
   devnull.close

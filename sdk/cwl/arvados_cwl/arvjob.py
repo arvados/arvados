@@ -265,7 +265,7 @@ class RunnerJob(Runner):
         ).execute(num_retries=self.arvrunner.num_retries)
 
         for k,v in job_spec["script_parameters"].items():
-            if isinstance(v, dict):
+            if v is False or v is None or isinstance(v, dict):
                 job_spec["script_parameters"][k] = {"value": v}
 
         del job_spec["owner_uuid"]

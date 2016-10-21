@@ -1,16 +1,17 @@
-import arvados
-import arvados.keep
-import arvados.collection
-import arvados_cwl
 import copy
 import cStringIO
 import functools
 import hashlib
+import json
+import logging
 import mock
 import sys
 import unittest
-import json
-import logging
+
+import arvados
+import arvados.collection
+import arvados_cwl
+import arvados.keep
 
 from .matcher import JsonDiffMatcher
 
@@ -38,6 +39,7 @@ def stubs(func):
 
 
         stubs.api = mock.MagicMock()
+        stubs.api._rootDesc = arvados.api('v1')._rootDesc
         stubs.api.users().current().execute.return_value = {
             "uuid": stubs.fake_user_uuid,
         }

@@ -125,7 +125,7 @@ timer_reset
 # clean up the docker build environment
 cd "$WORKSPACE"
 
-tools/arvbox/bin/arvbox rebuild localdemo
+tools/arvbox/bin/arvbox build localdemo
 ECODE=$?
 
 if [[ "$ECODE" != "0" ]]; then

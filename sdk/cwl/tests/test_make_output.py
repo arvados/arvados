@@ -1,20 +1,24 @@
-import logging
-import mock
-import unittest
-import os
 import functools
 import json
+import logging
+import mock
+import os
 import StringIO
+import unittest
 
+import arvados
 import arvados_cwl
 
 class TestMakeOutput(unittest.TestCase):
+    def setUp(self):
+        self.api = mock.MagicMock()
+        self.api._rootDesc = arvados.api('v1')._rootDesc
+
     @mock.patch("arvados.collection.Collection")
     @mock.patch("arvados.collection.CollectionReader")
     def test_make_output_collection(self, reader, col):
-        api = mock.MagicMock()
         keep_client = mock.MagicMock()
-        runner = arvados_cwl.ArvCwlRunner(api, keep_client=keep_client)
+        runner = arvados_cwl.ArvCwlRunner(self.api, keep_client=keep_client)
         runner.project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
         final = mock.MagicMock()

@@ -399,6 +399,10 @@ class Arvados::V1::SchemaController < ApplicationController
           end
         end
       end
+      Rails.configuration.disable_api_methods.each do |method|
+        ctrl, action = method.split('.', 2)
+        discovery[:resources][ctrl][:methods].delete(action.to_sym)
+      end
       discovery
     end
     send_json discovery

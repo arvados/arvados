@@ -79,9 +79,9 @@ func doMain() error {
 		// propagated to crunch-run via SLURM.
 		os.Setenv("ARVADOS_API_HOST", theConfig.Client.APIHost)
 		os.Setenv("ARVADOS_API_TOKEN", theConfig.Client.AuthToken)
-		os.Setenv("ARVADOS_API_INSECURE", "")
+		os.Setenv("ARVADOS_API_HOST_INSECURE", "")
 		if theConfig.Client.Insecure {
-			os.Setenv("ARVADOS_API_INSECURE", "1")
+			os.Setenv("ARVADOS_API_HOST_INSECURE", "1")
 		}
 		os.Setenv("ARVADOS_KEEP_SERVICES", strings.Join(theConfig.Client.KeepServiceURIs, " "))
 		os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
@@ -183,9 +183,10 @@ func submit(dispatcher *dispatch.Dispatcher,
 	squeueUpdater.SlurmLock.Lock()
 	defer squeueUpdater.SlurmLock.Unlock()
 
+	log.Printf("sbatch starting: %+q", cmd.Args)
 	err := cmd.Start()
 	if err != nil {
-		submitErr = fmt.Errorf("Error starting %v: %v", cmd.Args, err)
+		submitErr = fmt.Errorf("Error starting sbatch: %v", err)
 		return
 	}
 

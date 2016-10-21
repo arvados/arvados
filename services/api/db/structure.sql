@@ -290,7 +290,8 @@ CREATE TABLE container_requests (
     expires_at timestamp without time zone,
     filters text,
     updated_at timestamp without time zone NOT NULL,
-    container_count integer DEFAULT 0
+    container_count integer DEFAULT 0,
+    use_existing boolean DEFAULT true
 );
 
 
@@ -2692,3 +2693,5 @@ INSERT INTO schema_migrations (version) VALUES ('20160901210110');
 INSERT INTO schema_migrations (version) VALUES ('20160909181442');
 
 INSERT INTO schema_migrations (version) VALUES ('20160926194129');
+
+INSERT INTO schema_migrations (version) VALUES ('20161019171346');
