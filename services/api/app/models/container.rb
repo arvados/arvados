@@ -191,15 +191,15 @@ class Container < ArvadosModel
     # output (only).  Whether it is legal to set progress and output in the current
     # state has already been checked in validate_change.
     current_user.andand.is_admin ||
-      (!Thread.current[:api_client_authorization].nil? and
-       [self.auth_uuid, self.locked_by_uuid].include? Thread.current[:api_client_authorization].uuid)
+      (!current_api_client_authorization.nil? and
+       [self.auth_uuid, self.locked_by_uuid].include? current_api_client_authorization.uuid)
   end
 
   def ensure_owner_uuid_is_permitted
     # Override base permission check to allow auth_uuid to set progress and
     # output (only).  Whether it is legal to set progress and output in the current
     # state has already been checked in validate_change.
-    if !Thread.current[:api_client_authorization].nil? and self.auth_uuid == Thread.current[:api_client_authorization].uuid
+    if !current_api_client_authorization.nil? and self.auth_uuid == current_api_client_authorization.uuid
       check_update_whitelist [:progress, :output]
     else
       super
@@ -260,7 +260,7 @@ class Container < ArvadosModel
     if [Locked, Running].include? self.state
       # If the Container was already locked, locked_by_uuid must not
       # changes. Otherwise, the current auth gets the lock.
-      need_lock = locked_by_uuid_was || Thread.current[:api_client_authorization].andand.uuid
+      need_lock = locked_by_uuid_was || current_api_client_authorization.andand.uuid
     else
       need_lock = nil
     end
