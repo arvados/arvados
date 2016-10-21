@@ -40,41 +40,29 @@ func readKeyFromFile(file string) (string, error) {
 }
 
 type azureVolumeAdder struct {
-	*volumeSet
+	*Config
+}
+
+// String implements flag.Value
+func (s *azureVolumeAdder) String() string {
+	return "-"
 }
 
 func (s *azureVolumeAdder) Set(containerName string) error {
-	if trashLifetime != 0 {
-		return ErrNotImplemented
-	}
-
-	if containerName == "" {
-		return errors.New("no container name given")
-	}
-	if azureStorageAccountName == "" || azureStorageAccountKeyFile == "" {
-		return errors.New("-azure-storage-account-name and -azure-storage-account-key-file arguments must given before -azure-storage-container-volume")
-	}
-	accountKey, err := readKeyFromFile(azureStorageAccountKeyFile)
-	if err != nil {
-		return err
-	}
-	azClient, err := storage.NewBasicClient(azureStorageAccountName, accountKey)
-	if err != nil {
-		return errors.New("creating Azure storage client: " + err.Error())
-	}
-	if flagSerializeIO {
-		log.Print("Notice: -serialize is not supported by azure-blob-container volumes.")
-	}
-	v := NewAzureBlobVolume(azClient, containerName, flagReadonly, azureStorageReplication)
-	if err := v.Check(); err != nil {
-		return err
-	}
-	*s.volumeSet = append(*s.volumeSet, v)
+	s.Config.Volumes = append(s.Config.Volumes, &AzureBlobVolume{
+		ContainerName:         containerName,
+		StorageAccountName:    azureStorageAccountName,
+		StorageAccountKeyFile: azureStorageAccountKeyFile,
+		AzureReplication:      azureStorageReplication,
+		ReadOnly:              deprecated.flagReadonly,
+	})
 	return nil
 }
 
 func init() {
-	flag.Var(&azureVolumeAdder{&volumes},
+	VolumeTypes = append(VolumeTypes, func() VolumeWithExamples { return &AzureBlobVolume{} })
+
+	flag.Var(&azureVolumeAdder{theConfig},
 		"azure-storage-container-volume",
 		"Use the given container as a storage volume. Can be given multiple times.")
 	flag.StringVar(
@@ -86,7 +74,7 @@ func init() {
 		&azureStorageAccountKeyFile,
 		"azure-storage-account-key-file",
 		"",
-		"File containing the account key used for subsequent --azure-storage-container-volume arguments.")
+		"`File` containing the account key used for subsequent --azure-storage-container-volume arguments.")
 	flag.IntVar(
 		&azureStorageReplication,
 		"azure-storage-replication",
@@ -102,41 +90,64 @@ func init() {
 // An AzureBlobVolume stores and retrieves blocks in an Azure Blob
 // container.
 type AzureBlobVolume struct {
-	azClient      storage.Client
-	bsClient      storage.BlobStorageClient
-	containerName string
-	readonly      bool
-	replication   int
+	StorageAccountName    string
+	StorageAccountKeyFile string
+	ContainerName         string
+	AzureReplication      int
+	ReadOnly              bool
+
+	azClient storage.Client
+	bsClient storage.BlobStorageClient
 }
 
-// NewAzureBlobVolume returns a new AzureBlobVolume using the given
-// client and container name. The replication argument specifies the
-// replication level to report when writing data.
-func NewAzureBlobVolume(client storage.Client, containerName string, readonly bool, replication int) *AzureBlobVolume {
-	return &AzureBlobVolume{
-		azClient:      client,
-		bsClient:      client.GetBlobService(),
-		containerName: containerName,
-		readonly:      readonly,
-		replication:   replication,
+// Examples implements VolumeWithExamples.
+func (*AzureBlobVolume) Examples() []Volume {
+	return []Volume{
+		&AzureBlobVolume{
+			StorageAccountName:    "example-account-name",
+			StorageAccountKeyFile: "/etc/azure_storage_account_key.txt",
+			ContainerName:         "example-container-name",
+			AzureReplication:      3,
+		},
 	}
 }
 
-// Check returns nil if the volume is usable.
-func (v *AzureBlobVolume) Check() error {
-	ok, err := v.bsClient.ContainerExists(v.containerName)
+// Type implements Volume.
+func (v *AzureBlobVolume) Type() string {
+	return "Azure"
+}
+
+// Start implements Volume.
+func (v *AzureBlobVolume) Start() error {
+	if v.ContainerName == "" {
+		return errors.New("no container name given")
+	}
+	if v.StorageAccountName == "" || v.StorageAccountKeyFile == "" {
+		return errors.New("StorageAccountName and StorageAccountKeyFile must be given")
+	}
+	accountKey, err := readKeyFromFile(v.StorageAccountKeyFile)
+	if err != nil {
+		return err
+	}
+	v.azClient, err = storage.NewBasicClient(v.StorageAccountName, accountKey)
+	if err != nil {
+		return fmt.Errorf("creating Azure storage client: %s", err)
+	}
+	v.bsClient = v.azClient.GetBlobService()
+
+	ok, err := v.bsClient.ContainerExists(v.ContainerName)
 	if err != nil {
 		return err
 	}
 	if !ok {
-		return errors.New("container does not exist")
+		return fmt.Errorf("Azure container %q does not exist", v.ContainerName)
 	}
 	return nil
 }
 
 // Return true if expires_at metadata attribute is found on the block
 func (v *AzureBlobVolume) checkTrashed(loc string) (bool, map[string]string, error) {
-	metadata, err := v.bsClient.GetBlobMetadata(v.containerName, loc)
+	metadata, err := v.bsClient.GetBlobMetadata(v.ContainerName, loc)
 	if err != nil {
 		return false, metadata, v.translateError(err)
 	}
@@ -197,7 +208,7 @@ func (v *AzureBlobVolume) get(loc string, buf []byte) (int, error) {
 	if azureMaxGetBytes < BlockSize {
 		// Unfortunately the handler doesn't tell us how long the blob
 		// is expected to be, so we have to ask Azure.
-		props, err := v.bsClient.GetBlobProperties(v.containerName, loc)
+		props, err := v.bsClient.GetBlobProperties(v.ContainerName, loc)
 		if err != nil {
 			return 0, v.translateError(err)
 		}
@@ -228,9 +239,9 @@ func (v *AzureBlobVolume) get(loc string, buf []byte) (int, error) {
 			var rdr io.ReadCloser
 			var err error
 			if startPos == 0 && endPos == expectSize {
-				rdr, err = v.bsClient.GetBlob(v.containerName, loc)
+				rdr, err = v.bsClient.GetBlob(v.ContainerName, loc)
 			} else {
-				rdr, err = v.bsClient.GetBlobRange(v.containerName, loc, fmt.Sprintf("%d-%d", startPos, endPos-1), nil)
+				rdr, err = v.bsClient.GetBlobRange(v.ContainerName, loc, fmt.Sprintf("%d-%d", startPos, endPos-1), nil)
 			}
 			if err != nil {
 				errors[p] = err
@@ -268,7 +279,7 @@ func (v *AzureBlobVolume) Compare(loc string, expect []byte) error {
 	if trashed {
 		return os.ErrNotExist
 	}
-	rdr, err := v.bsClient.GetBlob(v.containerName, loc)
+	rdr, err := v.bsClient.GetBlob(v.ContainerName, loc)
 	if err != nil {
 		return v.translateError(err)
 	}
@@ -278,15 +289,15 @@ func (v *AzureBlobVolume) Compare(loc string, expect []byte) error {
 
 // Put stores a Keep block as a block blob in the container.
 func (v *AzureBlobVolume) Put(loc string, block []byte) error {
-	if v.readonly {
+	if v.ReadOnly {
 		return MethodDisabledError
 	}
-	return v.bsClient.CreateBlockBlobFromReader(v.containerName, loc, uint64(len(block)), bytes.NewReader(block), nil)
+	return v.bsClient.CreateBlockBlobFromReader(v.ContainerName, loc, uint64(len(block)), bytes.NewReader(block), nil)
 }
 
 // Touch updates the last-modified property of a block blob.
 func (v *AzureBlobVolume) Touch(loc string) error {
-	if v.readonly {
+	if v.ReadOnly {
 		return MethodDisabledError
 	}
 	trashed, metadata, err := v.checkTrashed(loc)
@@ -298,7 +309,7 @@ func (v *AzureBlobVolume) Touch(loc string) error {
 	}
 
 	metadata["touch"] = fmt.Sprintf("%d", time.Now())
-	return v.bsClient.SetBlobMetadata(v.containerName, loc, metadata, nil)
+	return v.bsClient.SetBlobMetadata(v.ContainerName, loc, metadata, nil)
 }
 
 // Mtime returns the last-modified property of a block blob.
@@ -311,7 +322,7 @@ func (v *AzureBlobVolume) Mtime(loc string) (time.Time, error) {
 		return time.Time{}, os.ErrNotExist
 	}
 
-	props, err := v.bsClient.GetBlobProperties(v.containerName, loc)
+	props, err := v.bsClient.GetBlobProperties(v.ContainerName, loc)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -326,7 +337,7 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 		Include: "metadata",
 	}
 	for {
-		resp, err := v.bsClient.ListBlobs(v.containerName, params)
+		resp, err := v.bsClient.ListBlobs(v.ContainerName, params)
 		if err != nil {
 			return err
 		}
@@ -361,7 +372,7 @@ func (v *AzureBlobVolume) IndexTo(prefix string, writer io.Writer) error {
 
 // Trash a Keep block.
 func (v *AzureBlobVolume) Trash(loc string) error {
-	if v.readonly {
+	if v.ReadOnly {
 		return MethodDisabledError
 	}
 
@@ -370,26 +381,26 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 	// we get the Etag before checking Mtime, and use If-Match to
 	// ensure we don't delete data if Put() or Touch() happens
 	// between our calls to Mtime() and DeleteBlob().
-	props, err := v.bsClient.GetBlobProperties(v.containerName, loc)
+	props, err := v.bsClient.GetBlobProperties(v.ContainerName, loc)
 	if err != nil {
 		return err
 	}
 	if t, err := v.Mtime(loc); err != nil {
 		return err
-	} else if time.Since(t) < blobSignatureTTL {
+	} else if time.Since(t) < theConfig.BlobSignatureTTL.Duration() {
 		return nil
 	}
 
-	// If trashLifetime == 0, just delete it
-	if trashLifetime == 0 {
-		return v.bsClient.DeleteBlob(v.containerName, loc, map[string]string{
+	// If TrashLifetime == 0, just delete it
+	if theConfig.TrashLifetime == 0 {
+		return v.bsClient.DeleteBlob(v.ContainerName, loc, map[string]string{
 			"If-Match": props.Etag,
 		})
 	}
 
 	// Otherwise, mark as trash
-	return v.bsClient.SetBlobMetadata(v.containerName, loc, map[string]string{
-		"expires_at": fmt.Sprintf("%d", time.Now().Add(trashLifetime).Unix()),
+	return v.bsClient.SetBlobMetadata(v.ContainerName, loc, map[string]string{
+		"expires_at": fmt.Sprintf("%d", time.Now().Add(theConfig.TrashLifetime.Duration()).Unix()),
 	}, map[string]string{
 		"If-Match": props.Etag,
 	})
@@ -399,7 +410,7 @@ func (v *AzureBlobVolume) Trash(loc string) error {
 // Delete the expires_at metadata attribute
 func (v *AzureBlobVolume) Untrash(loc string) error {
 	// if expires_at does not exist, return NotFoundError
-	metadata, err := v.bsClient.GetBlobMetadata(v.containerName, loc)
+	metadata, err := v.bsClient.GetBlobMetadata(v.ContainerName, loc)
 	if err != nil {
 		return v.translateError(err)
 	}
@@ -409,7 +420,7 @@ func (v *AzureBlobVolume) Untrash(loc string) error {
 
 	// reset expires_at metadata attribute
 	metadata["expires_at"] = ""
-	err = v.bsClient.SetBlobMetadata(v.containerName, loc, metadata, nil)
+	err = v.bsClient.SetBlobMetadata(v.ContainerName, loc, metadata, nil)
 	return v.translateError(err)
 }
 
@@ -424,19 +435,19 @@ func (v *AzureBlobVolume) Status() *VolumeStatus {
 
 // String returns a volume label, including the container name.
 func (v *AzureBlobVolume) String() string {
-	return fmt.Sprintf("azure-storage-container:%+q", v.containerName)
+	return fmt.Sprintf("azure-storage-container:%+q", v.ContainerName)
 }
 
 // Writable returns true, unless the -readonly flag was on when the
 // volume was added.
 func (v *AzureBlobVolume) Writable() bool {
-	return !v.readonly
+	return !v.ReadOnly
 }
 
 // Replication returns the replication level of the container, as
 // specified by the -azure-storage-replication argument.
 func (v *AzureBlobVolume) Replication() int {
-	return v.replication
+	return v.AzureReplication
 }
 
 // If possible, translate an Azure SDK error to a recognizable error
@@ -459,7 +470,7 @@ func (v *AzureBlobVolume) isKeepBlock(s string) bool {
 	return keepBlockRegexp.MatchString(s)
 }
 
-// EmptyTrash looks for trashed blocks that exceeded trashLifetime
+// EmptyTrash looks for trashed blocks that exceeded TrashLifetime
 // and deletes them from the volume.
 func (v *AzureBlobVolume) EmptyTrash() {
 	var bytesDeleted, bytesInTrash int64
@@ -467,7 +478,7 @@ func (v *AzureBlobVolume) EmptyTrash() {
 	params := storage.ListBlobsParameters{Include: "metadata"}
 
 	for {
-		resp, err := v.bsClient.ListBlobs(v.containerName, params)
+		resp, err := v.bsClient.ListBlobs(v.ContainerName, params)
 		if err != nil {
 			log.Printf("EmptyTrash: ListBlobs: %v", err)
 			break
@@ -491,7 +502,7 @@ func (v *AzureBlobVolume) EmptyTrash() {
 				continue
 			}
 
-			err = v.bsClient.DeleteBlob(v.containerName, b.Name, map[string]string{
+			err = v.bsClient.DeleteBlob(v.ContainerName, b.Name, map[string]string{
 				"If-Match": b.Properties.Etag,
 			})
 			if err != nil {

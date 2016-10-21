@@ -23,6 +23,33 @@ from mount_test_base import MountTestBase
 logger = logging.getLogger('arvados.arv-mount')
 
 
+class AssertWithTimeout(object):
+    """Allow some time for an assertion to pass."""
+
+    def __init__(self, timeout=0):
+        self.timeout = timeout
+
+    def __iter__(self):
+        self.deadline = time.time() + self.timeout
+        self.done = False
+        return self
+
+    def next(self):
+        if self.done:
+            raise StopIteration
+        return self.attempt
+
+    def attempt(self, fn, *args, **kwargs):
+        try:
+            fn(*args, **kwargs)
+        except AssertionError:
+            if time.time() > self.deadline:
+                raise
+            time.sleep(0.1)
+        else:
+            self.done = True
+
+
 class FuseMountTest(MountTestBase):
     def setUp(self):
         super(FuseMountTest, self).setUp()
@@ -182,18 +209,18 @@ class FuseTagsUpdateTest(MountTestBase):
 
         bar_uuid = run_test_server.fixture('collections')['bar_file']['uuid']
         self.tag_collection(bar_uuid, 'fuse_test_tag')
-        time.sleep(1)
-        self.assertIn('fuse_test_tag', llfuse.listdir(self.mounttmp))
+        for attempt in AssertWithTimeout(10):
+            attempt(self.assertIn, 'fuse_test_tag', llfuse.listdir(self.mounttmp))
         self.assertDirContents('fuse_test_tag', [bar_uuid])
 
         baz_uuid = run_test_server.fixture('collections')['baz_file']['uuid']
         l = self.tag_collection(baz_uuid, 'fuse_test_tag')
-        time.sleep(1)
-        self.assertDirContents('fuse_test_tag', [bar_uuid, baz_uuid])
+        for attempt in AssertWithTimeout(10):
+            attempt(self.assertDirContents, 'fuse_test_tag', [bar_uuid, baz_uuid])
 
         self.api.links().delete(uuid=l['uuid']).execute()
-        time.sleep(1)
-        self.assertDirContents('fuse_test_tag', [bar_uuid])
+        for attempt in AssertWithTimeout(10):
+            attempt(self.assertDirContents, 'fuse_test_tag', [bar_uuid])
 
 
 class FuseSharedTest(MountTestBase):
@@ -713,12 +740,8 @@ class FuseUpdateFromEventTest(MountTestBase):
             with collection2.open("file1.txt", "w") as f:
                 f.write("foo")
 
-        time.sleep(1)
-
-        # should show up via event bus notify
-
-        d1 = llfuse.listdir(os.path.join(self.mounttmp))
-        self.assertEqual(["file1.txt"], sorted(d1))
+        for attempt in AssertWithTimeout(10):
+            attempt(self.assertEqual, ["file1.txt"], llfuse.listdir(os.path.join(self.mounttmp)))
 
 
 def fuseFileConflictTestHelper(mounttmp):

@@ -10,22 +10,32 @@ import (
 // credentials. See arvados-git-httpd for an example, and sync.Pool
 // for more information about garbage collection.
 type ClientPool struct {
-	sync.Pool
-	lastErr error
+	// Initialize new clients by coping this one.
+	Prototype *ArvadosClient
+
+	pool      *sync.Pool
+	lastErr   error
+	setupOnce sync.Once
 }
 
-// MakeClientPool returns a new empty ClientPool.
+// MakeClientPool returns a new empty ClientPool, using environment
+// variables to initialize the prototype.
 func MakeClientPool() *ClientPool {
-	p := &ClientPool{}
-	p.Pool = sync.Pool{New: func() interface{} {
-		arv, err := MakeArvadosClient()
-		if err != nil {
-			p.lastErr = err
+	proto, err := MakeArvadosClient()
+	return &ClientPool{
+		Prototype: proto,
+		lastErr:   err,
+	}
+}
+
+func (p *ClientPool) setup() {
+	p.pool = &sync.Pool{New: func() interface{} {
+		if p.lastErr != nil {
 			return nil
 		}
-		return &arv
+		c := *p.Prototype
+		return &c
 	}}
-	return p
 }
 
 // Err returns the error that was encountered last time Get returned
@@ -39,7 +49,8 @@ func (p *ClientPool) Err() error {
 // (including its ApiToken) will be just as it was when it was Put
 // back in the pool.
 func (p *ClientPool) Get() *ArvadosClient {
-	c, ok := p.Pool.Get().(*ArvadosClient)
+	p.setupOnce.Do(p.setup)
+	c, ok := p.pool.Get().(*ArvadosClient)
 	if !ok {
 		return nil
 	}
@@ -48,5 +59,6 @@ func (p *ClientPool) Get() *ArvadosClient {
 
 // Put puts an ArvadosClient back in the pool.
 func (p *ClientPool) Put(c *ArvadosClient) {
-	p.Pool.Put(c)
+	p.setupOnce.Do(p.setup)
+	p.pool.Put(c)
 }

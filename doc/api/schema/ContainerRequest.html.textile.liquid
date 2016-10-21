@@ -28,7 +28,7 @@ table(table table-bordered table-condensed).
 |properties|hash|Client-defined structured data that does not affect how the container is run.||
 |state|string|The allowed states are "Uncommitted", "Committed", and "Final".|Once a request is Committed, the only attributes that can be modified are priority, container_uuid, and container_count_max. A request in the "Final" state cannot have any of its functional parts modified (i.e., only name, description, and properties fields can be modified).|
 |requesting_container_uuid|string|The uuid of the parent container that created this container_request, if any. Represents a process tree.|The priority of this container_request is inherited from the parent container, if the parent container is cancelled, this container_request will be cancelled as well.|
-|container_uuid|string|The container that satisfies this container_request.||
+|container_uuid|string|The uuid of the container that satisfies this container_request. The system will find and reuse any preexisting Container that matches this ContainerRequest's criteria. See "Container reuse":#container_reuse for more details.|Currently, container reuse is the default behavior and a mechanism to skip reuse is not supported.|
 |container_count_max|integer|Maximum number of containers to start, i.e., the maximum number of "attempts" to be made.||
 |mounts|hash|Objects to attach to the container's filesystem and stdin/stdout.|See "Mount types":#mount_types for more details.|
 |runtime_constraints|hash|Restrict the container's access to compute resources and the outside world.|Required when in "Committed" state. e.g.,<pre><code>{
@@ -48,3 +48,23 @@ table(table table-bordered table-condensed).
 h2(#mount_types). {% include 'mount_types' %}
 
 h2(#runtime_constraints). {% include 'container_runtime_constraints' %}
+
+h2(#container_reuse). Container reuse
+
+When a ContainerRequest is "Committed", the system will try to find and reuse any preexisting Container with the same exact command, cwd, environment, output_path, container_image, mounts, and runtime_constraints as this ContainerRequest. The serialized fields environment, mounts and runtime_constraints are sorted to facilitate comparison.
+
+The system will use the following scheme to determine which Container to consider for reuse: A Container with the same exact command, cwd, environment, output_path, container_image, mounts, and runtime_constraints as this ContainerRequest and,
+* The oldest successfully finished container, i.e., in state "Complete" with exit_code of 0. If matching containers with different outputs are found, the system will forgo reusing any of these finished containers and instead look for suitable containers in other states
+* The oldest "Running" container with the highest progress, i.e., the container that is most likely to finish first
+* The oldest "Locked" container with the highest priority, i.e., the container that is most likely to start first
+* The oldest "Queued" container with the highest priority, i.e, the container that is most likely to start first
+
+{% include 'notebox_begin' %}
+Currently, container reuse is the default behavior and a mechanism to skip reuse is not supported.
+{% include 'notebox_end' %}
+
+h2(#cancel_container). Canceling a ContainerRequest
+
+A ContainerRequest may be canceled by setting it's priority to 0, using an update call.
+
+When a ContainerRequest is canceled, it will still reflect the state of the Container it is associated with via the container_uuid attribute. If that Container is being reused by any other container_requests that are still active, i.e., not yet canceled, that Container may continue to run or be scheduled to run by the system in future. However, if no other container_requests are using that Contianer, then the Container will get canceled as well.

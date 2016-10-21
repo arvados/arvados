@@ -1,26 +1,42 @@
 #!/usr/bin/env python
 
-# Crunch script integration for running arvados-cwl-runner (importing
-# arvados_cwl module) inside a crunch job.
-#
+# Crunch script integration for running arvados-cwl-runner inside a crunch job.
+
+import arvados_cwl
+import sys
+
+try:
+    # Use the crunch script defined in the arvados_cwl package.  This helps
+    # prevent the crunch script from going out of sync with the rest of the
+    # arvados_cwl package.
+    import arvados_cwl.crunch_script
+    arvados_cwl.crunch_script.run()
+    sys.exit()
+except ImportError:
+    pass
+
+# When running against an older arvados-cwl-runner package without
+# arvados_cwl.crunch_script, fall back to the old code.
+
+
 # This gets the job record, transforms the script parameters into a valid CWL
 # input object, then executes the CWL runner to run the underlying workflow or
 # tool.  When the workflow completes, record the output object in an output
 # collection for this runner job.
 
 import arvados
-import arvados_cwl
 import arvados.collection
 import arvados.util
-from cwltool.process import shortname
 import cwltool.main
 import logging
 import os
 import json
 import argparse
 import re
+import functools
+
 from arvados.api import OrderedJsonModel
-from cwltool.process import adjustFileObjs, adjustDirObjs
+from cwltool.process import shortname, adjustFileObjs, adjustDirObjs, getListing, normalizeFilesDirs
 from cwltool.load_tool import load_tool
 
 # Print package versions
@@ -53,10 +69,18 @@ try:
 
     adjustFileObjs(job_order_object, keeppathObj)
     adjustDirObjs(job_order_object, keeppathObj)
+    normalizeFilesDirs(job_order_object)
+    adjustDirObjs(job_order_object, functools.partial(getListing, arvados_cwl.fsaccess.CollectionFsAccess("", api_client=api)))
 
-    runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()))
+    output_name = None
+    if "arv:output_name" in job_order_object:
+        output_name = job_order_object["arv:output_name"]
+        del job_order_object["arv:output_name"]
 
-    t = load_tool(job_order_object, runner.arvMakeTool)
+    runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()),
+                                      output_name=output_name)
+
+    t = load_tool(job_order_object, runner.arv_make_tool)
 
     args = argparse.Namespace()
     args.project_uuid = arvados.current_job()["owner_uuid"]
@@ -67,38 +91,16 @@ try:
     args.ignore_docker_for_reuse = False
     args.basedir = os.getcwd()
     args.cwl_runner_job={"uuid": arvados.current_job()["uuid"], "state": arvados.current_job()["state"]}
-    outputObj = runner.arvExecutor(t, job_order_object, **vars(args))
+    outputObj = runner.arv_executor(t, job_order_object, **vars(args))
 
-    files = {}
-    def capture(fileobj):
-        path = fileobj["location"]
-        sp = path.split("/")
-        col = sp[0][5:]
-        if col not in files:
-            files[col] = set()
-        files[col].add("/".join(sp[1:]))
-        fileobj["location"] = path
-
-    adjustFileObjs(outputObj, capture)
-
-    final = arvados.collection.Collection()
-
-    for k,v in files.iteritems():
-        with arvados.collection.Collection(k) as c:
-            for f in c:
-                final.copy(f, f, c, True)
-
-    def makeRelative(fileobj):
-        fileobj["location"] = "/".join(fileobj["location"].split("/")[1:])
-
-    adjustFileObjs(outputObj, makeRelative)
-
-    with final.open("cwl.output.json", "w") as f:
-        json.dump(outputObj, f, indent=4)
+    if runner.final_output_collection:
+        outputCollection = runner.final_output_collection.portable_data_hash()
+    else:
+        outputCollection = None
 
     api.job_tasks().update(uuid=arvados.current_task()['uuid'],
                                          body={
-                                             'output': final.save_new(create_collection_record=False),
+                                             'output': outputCollection,
                                              'success': True,
                                              'progress':1.0
                                          }).execute()

@@ -36,7 +36,7 @@ func (s *integrationSuite) SetUpSuite(c *check.C) {
 	arv.ApiToken = arvadostest.DataManagerToken
 	c.Assert(err, check.IsNil)
 	s.keepClient = &keepclient.KeepClient{
-		Arvados: &arv,
+		Arvados: arv,
 		Client:  &http.Client{},
 	}
 	c.Assert(s.keepClient.DiscoverKeepServers(), check.IsNil)

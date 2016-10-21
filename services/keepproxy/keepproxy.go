@@ -1,12 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"github.com/gorilla/mux"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,98 +16,125 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/config"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"github.com/coreos/go-systemd/daemon"
+	"github.com/gorilla/mux"
 )
 
-// Default TCP address on which to listen for requests.
-// Override with -listen.
-const DefaultAddr = ":25107"
+type Config struct {
+	Client          arvados.Client
+	Listen          string
+	DisableGet      bool
+	DisablePut      bool
+	DefaultReplicas int
+	Timeout         arvados.Duration
+	PIDFile         string
+	Debug           bool
+}
+
+func DefaultConfig() *Config {
+	return &Config{
+		Listen:  ":25107",
+		Timeout: arvados.Duration(15 * time.Second),
+	}
+}
 
 var listener net.Listener
 
 func main() {
-	var (
-		listen           string
-		no_get           bool
-		no_put           bool
-		default_replicas int
-		timeout          int64
-		pidfile          string
-	)
+	cfg := DefaultConfig()
 
 	flagset := flag.NewFlagSet("keepproxy", flag.ExitOnError)
+	flagset.Usage = usage
 
-	flagset.StringVar(
-		&listen,
-		"listen",
-		DefaultAddr,
-		"Interface on which to listen for requests, in the format "+
-			"ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port "+
-			"to listen on all network interfaces.")
+	const deprecated = " (DEPRECATED -- use config file instead)"
+	flagset.StringVar(&cfg.Listen, "listen", cfg.Listen, "Local port to listen on."+deprecated)
+	flagset.BoolVar(&cfg.DisableGet, "no-get", cfg.DisableGet, "Disable GET operations."+deprecated)
+	flagset.BoolVar(&cfg.DisablePut, "no-put", cfg.DisablePut, "Disable PUT operations."+deprecated)
+	flagset.IntVar(&cfg.DefaultReplicas, "default-replicas", cfg.DefaultReplicas, "Default number of replicas to write if not specified by the client. If 0, use site default."+deprecated)
+	flagset.StringVar(&cfg.PIDFile, "pid", cfg.PIDFile, "Path to write pid file."+deprecated)
+	timeoutSeconds := flagset.Int("timeout", int(time.Duration(cfg.Timeout)/time.Second), "Timeout (in seconds) on requests to internal Keep services."+deprecated)
 
-	flagset.BoolVar(
-		&no_get,
-		"no-get",
-		false,
-		"If set, disable GET operations")
-
-	flagset.BoolVar(
-		&no_put,
-		"no-put",
-		false,
-		"If set, disable PUT operations")
-
-	flagset.IntVar(
-		&default_replicas,
-		"default-replicas",
-		2,
-		"Default number of replicas to write if not specified by the client.")
-
-	flagset.Int64Var(
-		&timeout,
-		"timeout",
-		15,
-		"Timeout on requests to internal Keep services (default 15 seconds)")
-
-	flagset.StringVar(
-		&pidfile,
-		"pid",
-		"",
-		"Path to write pid file")
-
+	var cfgPath string
+	const defaultCfgPath = "/etc/arvados/keepproxy/keepproxy.yml"
+	flagset.StringVar(&cfgPath, "config", defaultCfgPath, "Configuration file `path`")
 	flagset.Parse(os.Args[1:])
 
-	arv, err := arvadosclient.MakeArvadosClient()
+	err := config.LoadFile(cfg, cfgPath)
+	if err != nil {
+		h := os.Getenv("ARVADOS_API_HOST")
+		t := os.Getenv("ARVADOS_API_TOKEN")
+		if h == "" || t == "" || !os.IsNotExist(err) || cfgPath != defaultCfgPath {
+			log.Fatal(err)
+		}
+		log.Print("DEPRECATED: No config file found, but ARVADOS_API_HOST and ARVADOS_API_TOKEN environment variables are set. Please use a config file instead.")
+		cfg.Client.APIHost = h
+		cfg.Client.AuthToken = t
+		if regexp.MustCompile("^(?i:1|yes|true)$").MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE")) {
+			cfg.Client.Insecure = true
+		}
+		if j, err := json.MarshalIndent(cfg, "", "    "); err == nil {
+			log.Print("Current configuration:\n", string(j))
+		}
+		cfg.Timeout = arvados.Duration(time.Duration(*timeoutSeconds) * time.Second)
+	}
+
+	arv, err := arvadosclient.New(&cfg.Client)
 	if err != nil {
 		log.Fatalf("Error setting up arvados client %s", err.Error())
 	}
 
-	if os.Getenv("ARVADOS_DEBUG") != "" {
+	if cfg.Debug {
 		keepclient.DebugPrintf = log.Printf
 	}
-	kc, err := keepclient.MakeKeepClient(&arv)
+	kc, err := keepclient.MakeKeepClient(arv)
 	if err != nil {
 		log.Fatalf("Error setting up keep client %s", err.Error())
 	}
 
-	if pidfile != "" {
-		f, err := os.Create(pidfile)
+	if cfg.PIDFile != "" {
+		f, err := os.Create(cfg.PIDFile)
 		if err != nil {
-			log.Fatalf("Error writing pid file (%s): %s", pidfile, err.Error())
+			log.Fatal(err)
 		}
-		fmt.Fprint(f, os.Getpid())
-		f.Close()
-		defer os.Remove(pidfile)
+		defer f.Close()
+		err = syscall.Flock(int(f.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
+		if err != nil {
+			log.Fatalf("flock(%s): %s", cfg.PIDFile, err)
+		}
+		defer os.Remove(cfg.PIDFile)
+		err = f.Truncate(0)
+		if err != nil {
+			log.Fatalf("truncate(%s): %s", cfg.PIDFile, err)
+		}
+		_, err = fmt.Fprint(f, os.Getpid())
+		if err != nil {
+			log.Fatalf("write(%s): %s", cfg.PIDFile, err)
+		}
+		err = f.Sync()
+		if err != nil {
+			log.Fatal("sync(%s): %s", cfg.PIDFile, err)
+		}
 	}
 
-	kc.Want_replicas = default_replicas
-	kc.Client.Timeout = time.Duration(timeout) * time.Second
+	if cfg.DefaultReplicas > 0 {
+		kc.Want_replicas = cfg.DefaultReplicas
+	}
+	kc.Client.Timeout = time.Duration(cfg.Timeout)
 	go kc.RefreshServices(5*time.Minute, 3*time.Second)
 
-	listener, err = net.Listen("tcp", listen)
+	listener, err = net.Listen("tcp", cfg.Listen)
 	if err != nil {
-		log.Fatalf("Could not listen on %v", listen)
+		log.Fatalf("listen(%s): %s", cfg.Listen, err)
 	}
-	log.Printf("Arvados Keep proxy started listening on %v", listener.Addr())
+	if _, err := daemon.SdNotify("READY=1"); err != nil {
+		log.Printf("Error notifying init daemon: %v", err)
+	}
+	log.Println("Listening at", listener.Addr())
 
 	// Shut down the server gracefully (by closing the listener)
 	// if SIGTERM is received.
@@ -123,7 +148,7 @@ func main() {
 	signal.Notify(term, syscall.SIGINT)
 
 	// Start serving requests.
-	http.Serve(listener, MakeRESTRouter(!no_get, !no_put, kc))
+	http.Serve(listener, MakeRESTRouter(!cfg.DisableGet, !cfg.DisablePut, kc))
 
 	log.Println("shutting down")
 }

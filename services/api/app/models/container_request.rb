@@ -19,10 +19,12 @@ class ContainerRequest < ArvadosModel
   validate :validate_change
   validate :validate_runtime_constraints
   after_save :update_priority
+  after_save :finalize_if_needed
   before_create :set_requesting_container_uuid
 
   api_accessible :user, extend: :common do |t|
     t.add :command
+    t.add :container_count
     t.add :container_count_max
     t.add :container_image
     t.add :container_uuid
@@ -39,6 +41,7 @@ class ContainerRequest < ArvadosModel
     t.add :requesting_container_uuid
     t.add :runtime_constraints
     t.add :state
+    t.add :use_existing
   end
 
   # Supported states for a container request
@@ -64,10 +67,33 @@ class ContainerRequest < ArvadosModel
     %w(modified_by_client_uuid container_uuid requesting_container_uuid)
   end
 
-  def container_completed!
-    # may implement retry logic here in the future.
-    self.state = ContainerRequest::Final
-    self.save!
+  def finalize_if_needed
+    if state == Committed && Container.find_by_uuid(container_uuid).final?
+      reload
+      act_as_system_user do
+        finalize!
+      end
+    end
+  end
+
+  # Finalize the container request after the container has
+  # finished/cancelled.
+  def finalize!
+    update_attributes!(state: Final)
+    c = Container.find_by_uuid(container_uuid)
+    ['output', 'log'].each do |out_type|
+      pdh = c.send(out_type)
+      next if pdh.nil?
+      manifest = Collection.where(portable_data_hash: pdh).first.manifest_text
+      Collection.create!(owner_uuid: owner_uuid,
+                         manifest_text: manifest,
+                         portable_data_hash: pdh,
+                         name: "Container #{out_type} for request #{uuid}",
+                         properties: {
+                           'type' => out_type,
+                           'container_request' => uuid,
+                         })
+    end
   end
 
   protected
@@ -78,6 +104,7 @@ class ContainerRequest < ArvadosModel
     self.runtime_constraints ||= {}
     self.mounts ||= {}
     self.cwd ||= "."
+    self.container_count_max ||= Rails.configuration.container_count_max
   end
 
   # Create a new container (or find an existing one) to satisfy this
@@ -94,7 +121,8 @@ class ContainerRequest < ArvadosModel
                  container_image: c_container_image,
                  mounts: c_mounts,
                  runtime_constraints: c_runtime_constraints}
-      reusable = Container.find_reusable(c_attrs)
+
+      reusable = self.use_existing ? Container.find_reusable(c_attrs) : nil
       if not reusable.nil?
         reusable
       else
@@ -175,6 +203,14 @@ class ContainerRequest < ArvadosModel
     if state_changed? and state == Committed and container_uuid.nil?
       resolve
     end
+    if self.container_uuid != self.container_uuid_was
+      if self.container_count_changed?
+        errors.add :container_count, "cannot be updated directly."
+        return false
+      else
+        self.container_count += 1
+      end
+    end
   end
 
   def validate_runtime_constraints
@@ -200,7 +236,7 @@ class ContainerRequest < ArvadosModel
                      :container_image, :cwd, :description, :environment,
                      :filters, :mounts, :name, :output_path, :priority,
                      :properties, :requesting_container_uuid, :runtime_constraints,
-                     :state, :container_uuid
+                     :state, :container_uuid, :use_existing
 
     when Committed
       if container_uuid.nil?
@@ -212,7 +248,7 @@ class ContainerRequest < ArvadosModel
       end
 
       # Can update priority, container count, name and description
-      permitted.push :priority, :container_count_max, :container_uuid, :name, :description
+      permitted.push :priority, :container_count, :container_count_max, :container_uuid, :name, :description
 
       if self.state_changed?
         # Allow create-and-commit in a single operation.

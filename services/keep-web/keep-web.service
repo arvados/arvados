@@ -1,0 +1,13 @@
+[Unit]
+Description=Arvados Keep web gateway
+Documentation=https://doc.arvados.org/
+After=network.target
+AssertPathExists=/etc/arvados/keep-web/keep-web.yml
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/keep-web
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

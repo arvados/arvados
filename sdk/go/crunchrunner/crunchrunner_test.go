@@ -443,3 +443,31 @@ func (s *TestSuite) TestQuoting(c *C) {
 		Task{Sequence: 0})
 	c.Check(err, IsNil)
 }
+
+func (s *TestSuite) TestKeepTmp(c *C) {
+	tmpdir, _ := ioutil.TempDir("", "")
+	defer func() {
+		os.RemoveAll(tmpdir)
+	}()
+
+	os.Setenv("TASK_KEEPMOUNT_TMP", tmpdir)
+	defer os.Setenv("TASK_KEEPMOUNT_TMP", "")
+
+	fn, err := os.Create(tmpdir + "/.arvados#collection")
+	fn.Write([]byte("{\"manifest_text\":\". unparsed 0:3:foo\\n\",\"uuid\":null}"))
+	defer fn.Close()
+
+	err = runner(ArvTestClient{c,
+		". unparsed 0:3:foo\n", true},
+		KeepTestClient{},
+		"zzzz-8i9sb-111111111111111",
+		"zzzz-ot0gb-111111111111111",
+		tmpdir,
+		"",
+		Job{Script_parameters: Tasks{[]TaskDef{{
+			Command:       []string{"echo", "foo"},
+			KeepTmpOutput: true}}}},
+		Task{Sequence: 0})
+	c.Check(err, IsNil)
+
+}

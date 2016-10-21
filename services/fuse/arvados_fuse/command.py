@@ -77,6 +77,8 @@ class ArgumentParser(argparse.ArgumentParser):
         self.add_argument('--file-cache', type=int, help="File data cache size, in bytes (default 256MiB)", default=256*1024*1024)
         self.add_argument('--directory-cache', type=int, help="Directory data cache size, in bytes (default 128MiB)", default=128*1024*1024)
 
+        self.add_argument('--disable-event-listening', action='store_true', help="Don't subscribe to events on the API server", dest="disable_event_listening", default=False)
+
         self.add_argument('--read-only', action='store_false', help="Mount will be read only (default)", dest="enable_write", default=False)
         self.add_argument('--read-write', action='store_true', help="Mount will be read-write", dest="enable_write", default=False)
 
@@ -111,7 +113,7 @@ class Mount(object):
 
     def __enter__(self):
         llfuse.init(self.operations, self.args.mountpoint, self._fuse_options())
-        if self.listen_for_events:
+        if self.listen_for_events and not self.args.disable_event_listening:
             self.operations.listen_for_events()
         self.llfuse_thread = threading.Thread(None, lambda: self._llfuse_main())
         self.llfuse_thread.daemon = True
@@ -330,7 +332,7 @@ From here, the following directories are available:
                 self.daemon_ctx.open()
 
             # Subscribe to change events from API server
-            if self.listen_for_events:
+            if self.listen_for_events and not self.args.disable_event_listening:
                 self.operations.listen_for_events()
 
             self._llfuse_main()

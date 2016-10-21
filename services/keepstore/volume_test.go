@@ -189,7 +189,7 @@ func (v *MockVolume) Trash(loc string) error {
 		return MethodDisabledError
 	}
 	if _, ok := v.Store[loc]; ok {
-		if time.Since(v.Timestamps[loc]) < blobSignatureTTL {
+		if time.Since(v.Timestamps[loc]) < time.Duration(theConfig.BlobSignatureTTL) {
 			return nil
 		}
 		delete(v.Store, loc)
@@ -198,7 +198,14 @@ func (v *MockVolume) Trash(loc string) error {
 	return os.ErrNotExist
 }
 
-// TBD
+func (v *MockVolume) Type() string {
+	return "Mock"
+}
+
+func (v *MockVolume) Start() error {
+	return nil
+}
+
 func (v *MockVolume) Untrash(loc string) error {
 	return nil
 }

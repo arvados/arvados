@@ -104,7 +104,7 @@ case "$TARGET" in
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             'pycurl<7.21.5' contextlib2 pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
-            cachecontrol)
+            cachecontrol requests)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         ;;
     debian8)
@@ -126,7 +126,7 @@ case "$TARGET" in
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             contextlib2 'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro isodate ruamel.ordereddict
-            cachecontrol)
+            cachecontrol requests)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         ;;
     ubuntu1404)
@@ -446,14 +446,14 @@ fpm_build $WORKSPACE/sdk/python "${PYTHON2_PKG_PREFIX}-arvados-python-client" 'C
 # cwl-runner
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/sdk/cwl/build"
-fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/cwl/arvados_cwl_runner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados CWL runner" --iteration 3
+fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/cwl/arvados_cwl_runner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados CWL runner" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --iteration 3
 
 fpm_build lockfile "" "" python 0.12.2 --epoch 1
 
 # schema_salad. This is a python dependency of arvados-cwl-runner,
 # but we can't use the usual PYTHONPACKAGES way to build this package due to the
-# intricacies of how version numbers get generated in setup.py: we need version
-# 1.7.20160316203940. If we don't explicitly list that version with the -v
+# intricacies of how version numbers get generated in setup.py: we need a specific version,
+# e.g. 1.7.20160316203940. If we don't explicitly list that version with the -v
 # argument to fpm, and instead specify it as schema_salad==1.7.20160316203940, we get
 # a package with version 1.7. That's because our gittagger hack is not being
 # picked up by self.distribution.get_version(), which is called from
@@ -465,7 +465,7 @@ fpm_build lockfile "" "" python 0.12.2 --epoch 1
 # So we build this thing separately.
 #
 # Ward, 2016-03-17
-fpm_build schema_salad "" "" python 1.18.20160907135919 --depends "${PYTHON2_PKG_PREFIX}-lockfile >= 1:0.12.2-2"
+fpm_build schema_salad "" "" python 1.18.20161005190847 --depends "${PYTHON2_PKG_PREFIX}-lockfile >= 1:0.12.2-2"
 
 # And schema_salad now depends on ruamel-yaml, which apparently has a braindead setup.py that requires special arguments to build (otherwise, it aborts with 'error: you have to install with "pip install ."'). Sigh.
 # Ward, 2016-05-26
@@ -476,7 +476,7 @@ fpm_build ruamel.yaml "" "" python 0.12.4 --python-setup-py-arguments "--single-
 fpm_build cwltest "" "" python 1.0.20160907111242
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
-fpm_build cwltool "" "" python 1.0.20160913171024
+fpm_build cwltool "" "" python 1.0.20161007181528
 
 # FPM eats the trailing .0 in the python-rdflib-jsonld package when built with 'rdflib-jsonld>=0.3.0'. Force the version. Ward, 2016-03-25
 fpm_build rdflib-jsonld "" "" python 0.3.0

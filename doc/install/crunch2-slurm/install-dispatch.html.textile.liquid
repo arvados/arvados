@@ -47,26 +47,39 @@ Set up crunch-dispatch-slurm's configuration directory:
 </code></pre>
 </notextile>
 
-Edit @/etc/arvados/crunch-dispatch-slurm/config.json@ to authenticate to your Arvados API server, using the token you generated in the previous step.  Follow this JSON format:
+Edit @/etc/arvados/crunch-dispatch-slurm/crunch-dispatch-slurm.yml@ to authenticate to your Arvados API server, using the token you generated in the previous step.  Follow this YAML format:
 
 <notextile>
-<pre><code class="userinput">{
-  "Client": {
-    "APIHost": <b>"zzzzz.arvadosapi.com"</b>,
-    "AuthToken": <b>"zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"</b>
-  }
-}
+<pre><code class="userinput">Client:
+  APIHost: <b>zzzzz.arvadosapi.com</b>
+  AuthToken: <b>zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</b>
 </code></pre>
 </notextile>
 
 This is the only configuration required by crunch-dispatch-slurm.  The subsections below describe optional configuration flags you can set inside the main configuration object.
+
+h3. Client::KeepServiceURIs
+
+Override Keep service discovery with a predefined list of Keep URIs. This can be useful if the compute nodes run a local keepstore that should handle all Keep traffic. Example:
+
+<notextile>
+<pre><code class="userinput">Client:
+  APIHost: <b>zzzzz.arvadosapi.com</b>
+  AuthToken: <b>zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</b>
+  KeepServiceURIs:
+  - <b>http://127.0.0.1:25107</b>
+</code></pre>
+</notextile>
 
 h3. PollPeriod
 
 crunch-dispatch-slurm polls the API server periodically for new containers to run.  The @PollPeriod@ option controls how often this poll happens.  Set this to a string of numbers suffixed with one of the time units @ns@, @us@, @ms@, @s@, @m@, or @h@.  For example:
 
 <notextile>
-<pre><code class="userinput">"PollPeriod": "3m30s"
+<pre><code class="userinput">Client:
+  APIHost: <b>zzzzz.arvadosapi.com</b>
+  AuthToken: <b>zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</b>
+PollPeriod: <b>3m30s</b>
 </code></pre>
 </notextile>
 
@@ -75,16 +88,25 @@ h3. SbatchArguments
 When crunch-dispatch-slurm invokes @sbatch@, you can add switches to the command by specifying @SbatchArguments@.  You can use this to send the jobs to specific cluster partitions or add resource requests.  Set @SbatchArguments@ to an array of strings.  For example:
 
 <notextile>
-<pre><code class="userinput">"SbatchArguments": ["--partition=PartitionName"]
+<pre><code class="userinput">Client:
+  APIHost: <b>zzzzz.arvadosapi.com</b>
+  AuthToken: <b>zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</b>
+SbatchArguments:
+- <b>"--partition=PartitionName"</b>
 </code></pre>
 </notextile>
 
 h3. CrunchRunCommand: Dispatch to SLURM cgroups
 
-If your SLURM cluster uses the @task/cgroup@ TaskPlugin, you can configure Crunch's Docker containers to be dispatched inside SLURM's cgroups.  This provides consistent enforcement of resource constraints.  To do this, add the following to your crunch-dispatch-slurm configuration:
+If your SLURM cluster uses the @task/cgroup@ TaskPlugin, you can configure Crunch's Docker containers to be dispatched inside SLURM's cgroups.  This provides consistent enforcement of resource constraints.  To do this, use a crunch-dispatch-slurm configuration like the following:
 
 <notextile>
-<pre><code class="userinput">"CrunchRunCommand": ["crunch-run", "-cgroup-parent-subsystem=<b>memory</b>"]
+<pre><code class="userinput">Client:
+  APIHost: <b>zzzzz.arvadosapi.com</b>
+  AuthToken: <b>zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</b>
+CrunchRunCommand:
+- <b>crunch-run</b>
+- <b>"-cgroup-parent-subsystem=memory"</b>
 </code></pre>
 </notextile>
 

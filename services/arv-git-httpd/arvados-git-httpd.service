@@ -1,0 +1,13 @@
+[Unit]
+Description=Arvados git server
+Documentation=https://doc.arvados.org/
+After=network.target
+AssertPathExists=/etc/arvados/git-httpd/git-httpd.yml
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/arvados-git-httpd
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

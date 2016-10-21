@@ -10,6 +10,15 @@ import (
 // for example, a single mounted disk, a RAID array, an Amazon S3 volume,
 // etc.
 type Volume interface {
+	// Volume type as specified in config file. Examples: "S3",
+	// "Directory".
+	Type() string
+
+	// Do whatever private setup tasks and configuration checks
+	// are needed. Return non-nil if the volume is unusable (e.g.,
+	// invalid config).
+	Start() error
+
 	// Get a block: copy the block data into buf, and return the
 	// number of bytes copied.
 	//
@@ -150,7 +159,7 @@ type Volume interface {
 	// loc is as described in Get.
 	//
 	// If the timestamp for the given locator is newer than
-	// blobSignatureTTL, Trash must not trash the data.
+	// BlobSignatureTTL, Trash must not trash the data.
 	//
 	// If a Trash operation overlaps with any Touch or Put
 	// operations on the same locator, the implementation must
@@ -171,7 +180,7 @@ type Volume interface {
 	// reliably or fail outright.
 	//
 	// Corollary: A successful Touch or Put guarantees a block
-	// will not be trashed for at least blobSignatureTTL
+	// will not be trashed for at least BlobSignatureTTL
 	// seconds.
 	Trash(loc string) error
 
@@ -204,9 +213,16 @@ type Volume interface {
 	// responses to PUT requests.
 	Replication() int
 
-	// EmptyTrash looks for trashed blocks that exceeded trashLifetime
+	// EmptyTrash looks for trashed blocks that exceeded TrashLifetime
 	// and deletes them from the volume.
 	EmptyTrash()
+}
+
+// A VolumeWithExamples provides example configs to display in the
+// -help message.
+type VolumeWithExamples interface {
+	Volume
+	Examples() []Volume
 }
 
 // A VolumeManager tells callers which volumes can read, which volumes

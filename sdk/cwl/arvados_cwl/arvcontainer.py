@@ -5,12 +5,13 @@ import os
 from cwltool.errors import WorkflowException
 from cwltool.process import get_feature, UnsupportedRequirement, shortname
 from cwltool.pathmapper import adjustFiles
+from cwltool.utils import aslist
 
 import arvados.collection
 
 from .arvdocker import arv_docker_get_image
 from . import done
-from .runner import Runner
+from .runner import Runner, arvados_jobs_image
 
 logger = logging.getLogger('arvados.cwl-runner')
 
@@ -78,7 +79,7 @@ class ArvadosContainer(object):
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if not docker_req:
-            docker_req = {"dockerImageId": "arvados/jobs"}
+            docker_req = {"dockerImageId": arvados_jobs_image(self.arvrunner)}
 
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
                                                                      docker_req,
@@ -89,6 +90,18 @@ class ArvadosContainer(object):
         if resources is not None:
             runtime_constraints["vcpus"] = resources.get("cores", 1)
             runtime_constraints["ram"] = resources.get("ram") * 2**20
+
+        api_req, _ = get_feature(self, "http://arvados.org/cwl#APIRequirement")
+        if api_req:
+            runtime_constraints["API"] = True
+
+        runtime_req, _ = get_feature(self, "http://arvados.org/cwl#RuntimeConstraints")
+        if runtime_req:
+            logger.warn("RuntimeConstraints not yet supported by container API")
+
+        partition_req, _ = get_feature(self, "http://arvados.org/cwl#PartitionRequirement")
+        if partition_req:
+            runtime_constraints["partition"] = aslist(partition_req["partition"])
 
         container_request["mounts"] = mounts
         container_request["runtime_constraints"] = runtime_constraints
@@ -153,7 +166,9 @@ class RunnerContainer(Runner):
 
         workflowmapper = super(RunnerContainer, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)
 
-        with arvados.collection.Collection(api_client=self.arvrunner.api) as jobobj:
+        with arvados.collection.Collection(api_client=self.arvrunner.api,
+                                           keep_client=self.arvrunner.keep_client,
+                                           num_retries=self.arvrunner.num_retries) as jobobj:
             with jobobj.open("cwl.input.json", "w") as f:
                 json.dump(self.job_order, f, sort_keys=True, indent=4)
             jobobj.save_new(owner_uuid=self.arvrunner.project_uuid)
@@ -164,20 +179,20 @@ class RunnerContainer(Runner):
         workflowcollection = workflowcollection[5:workflowcollection.index('/')]
         jobpath = "/var/lib/cwl/job/cwl.input.json"
 
-        container_image = arv_docker_get_image(self.arvrunner.api,
-                                               {"dockerImageId": "arvados/jobs"},
-                                               pull_image,
-                                               self.arvrunner.project_uuid)
+        command = ["arvados-cwl-runner", "--local", "--api=containers"]
+        if self.output_name:
+            command.append("--output-name=" + self.output_name)
+        command.extend([workflowpath, jobpath])
 
         return {
-            "command": ["arvados-cwl-runner", "--local", "--api=containers", workflowpath, jobpath],
+            "command": command,
             "owner_uuid": self.arvrunner.project_uuid,
             "name": self.name,
             "output_path": "/var/spool/cwl",
             "cwd": "/var/spool/cwl",
             "priority": 1,
             "state": "Committed",
-            "container_image": container_image,
+            "container_image": arvados_jobs_image(self.arvrunner),
             "mounts": {
                 "/var/lib/cwl/workflow": {
                     "kind": "collection",

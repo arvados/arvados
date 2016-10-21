@@ -71,7 +71,7 @@ func BadRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetBlockHandler is a HandleFunc to address Get block requests.
 func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
-	if enforcePermissions {
+	if theConfig.RequireSignatures {
 		locator := req.URL.Path[1:] // strip leading slash
 		if err := VerifySignature(locator, GetAPIToken(req)); err != nil {
 			http.Error(resp, err.Error(), err.(*KeepError).HTTPCode)
@@ -185,8 +185,8 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	// return it to the client.
 	returnHash := fmt.Sprintf("%s+%d", hash, req.ContentLength)
 	apiToken := GetAPIToken(req)
-	if PermissionSecret != nil && apiToken != "" {
-		expiry := time.Now().Add(blobSignatureTTL)
+	if theConfig.blobSigningKey != nil && apiToken != "" {
+		expiry := time.Now().Add(theConfig.BlobSignatureTTL.Duration())
 		returnHash = SignLocator(returnHash, apiToken, expiry)
 	}
 	resp.Header().Set("X-Keep-Replicas-Stored", strconv.Itoa(replication))
@@ -196,7 +196,7 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 // IndexHandler is a HandleFunc to address /index and /index/{prefix} requests.
 func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
-	if !IsDataManagerToken(GetAPIToken(req)) {
+	if !IsSystemAuth(GetAPIToken(req)) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
 		return
 	}
@@ -334,7 +334,7 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if neverDelete {
+	if !theConfig.EnableDelete {
 		http.Error(resp, MethodDisabledError.Error(), MethodDisabledError.HTTPCode)
 		return
 	}
@@ -419,7 +419,7 @@ type PullRequest struct {
 // PullHandler processes "PUT /pull" requests for the data manager.
 func PullHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
-	if !IsDataManagerToken(GetAPIToken(req)) {
+	if !IsSystemAuth(GetAPIToken(req)) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
 		return
 	}
@@ -455,7 +455,7 @@ type TrashRequest struct {
 // TrashHandler processes /trash requests.
 func TrashHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
-	if !IsDataManagerToken(GetAPIToken(req)) {
+	if !IsSystemAuth(GetAPIToken(req)) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
 		return
 	}
@@ -485,7 +485,7 @@ func TrashHandler(resp http.ResponseWriter, req *http.Request) {
 // UntrashHandler processes "PUT /untrash/{hash:[0-9a-f]{32}}" requests for the data manager.
 func UntrashHandler(resp http.ResponseWriter, req *http.Request) {
 	// Reject unauthorized requests.
-	if !IsDataManagerToken(GetAPIToken(req)) {
+	if !IsSystemAuth(GetAPIToken(req)) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
 		return
 	}
@@ -746,7 +746,7 @@ func CanDelete(apiToken string) bool {
 	}
 	// Blocks may be deleted only when Keep has been configured with a
 	// data manager.
-	if IsDataManagerToken(apiToken) {
+	if IsSystemAuth(apiToken) {
 		return true
 	}
 	// TODO(twp): look up apiToken with the API server
@@ -755,8 +755,8 @@ func CanDelete(apiToken string) bool {
 	return false
 }
 
-// IsDataManagerToken returns true if apiToken represents the data
-// manager's token.
-func IsDataManagerToken(apiToken string) bool {
-	return dataManagerToken != "" && apiToken == dataManagerToken
+// IsSystemAuth returns true if the given token is allowed to perform
+// system level actions like deleting data.
+func IsSystemAuth(token string) bool {
+	return token != "" && token == theConfig.systemAuthToken
 }

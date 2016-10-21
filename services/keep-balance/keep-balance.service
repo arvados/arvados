@@ -1,0 +1,14 @@
+[Unit]
+Description=Arvados Keep Balance
+Documentation=https://doc.arvados.org/
+After=network.target
+AssertPathExists=/etc/arvados/keep-balance/keep-balance.yml
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/keep-balance -config /etc/arvados/keep-balance/keep-balance.yml -commit-pulls -commit-trash
+Restart=always
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

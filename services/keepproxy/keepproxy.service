@@ -1,0 +1,13 @@
+[Unit]
+Description=Arvados Keep Proxy
+Documentation=https://doc.arvados.org/
+After=network.target
+AssertPathExists=/etc/arvados/keepproxy/keepproxy.yml
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/keepproxy
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

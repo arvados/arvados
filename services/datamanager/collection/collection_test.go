@@ -184,7 +184,7 @@ func testGetCollectionsAndSummarize(c *C, testData APITestData) {
 	api := httptest.NewServer(&apiStub)
 	defer api.Close()
 
-	arv := arvadosclient.ArvadosClient{
+	arv := &arvadosclient.ArvadosClient{
 		Scheme:    "http",
 		ApiServer: api.URL[7:],
 		ApiToken:  "abc123",

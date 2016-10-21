@@ -1,15 +1,17 @@
-import arvados
-import arvados.keep
-import arvados.collection
-import arvados_cwl
 import copy
 import cStringIO
 import functools
 import hashlib
+import json
+import logging
 import mock
 import sys
 import unittest
-import json
+
+import arvados
+import arvados.collection
+import arvados_cwl
+import arvados.keep
 
 from .matcher import JsonDiffMatcher
 
@@ -19,22 +21,25 @@ def stubs(func):
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     @mock.patch("arvados.collection.KeepClient")
     @mock.patch("arvados.events.subscribe")
-    def wrapped(self, events, KeepClient, keepdocker, *args, **kwargs):
+    def wrapped(self, events, keep_client, keepdocker, *args, **kwargs):
         class Stubs:
             pass
         stubs = Stubs()
         stubs.events = events
-        stubs.KeepClient = KeepClient
         stubs.keepdocker = keepdocker
+        stubs.keep_client = keep_client
 
         def putstub(p, **kwargs):
             return "%s+%i" % (hashlib.md5(p).hexdigest(), len(p))
-        stubs.KeepClient().put.side_effect = putstub
+        stubs.keep_client().put.side_effect = putstub
+        stubs.keep_client.put.side_effect = putstub
 
         stubs.keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         stubs.fake_user_uuid = "zzzzz-tpzed-zzzzzzzzzzzzzzz"
 
+
         stubs.api = mock.MagicMock()
+        stubs.api._rootDesc = arvados.api('v1')._rootDesc
         stubs.api.users().current().execute.return_value = {
             "uuid": stubs.fake_user_uuid,
         }
@@ -57,7 +62,13 @@ def stubs(func):
             "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz5",
             "portable_data_hash": "99999999999999999999999999999995+99",
             "manifest_text": ""
-        }        )
+        },
+        {
+            "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz6",
+            "portable_data_hash": "99999999999999999999999999999996+99",
+            "manifest_text": ""
+        }
+        )
         stubs.api.collections().get().execute.return_value = {
             "portable_data_hash": "99999999999999999999999999999993+99", "manifest_text": "./tool 00000000000000000000000000000000+0 0:0:submit_tool.cwl 0:0:blub.txt"}
 
@@ -80,21 +91,68 @@ def stubs(func):
         }
         stubs.expect_job_spec = {
             'runtime_constraints': {
-                'docker_image': 'arvados/jobs'
+                'docker_image': 'arvados/jobs:'+arvados_cwl.__version__
             },
             'script_parameters': {
                 'x': {
                     'basename': 'blorp.txt',
-                    'location': '99999999999999999999999999999994+99/blorp.txt',
+                    'location': 'keep:99999999999999999999999999999994+99/blorp.txt',
                     'class': 'File'
+                },
+                'y': {
+                    'basename': '99999999999999999999999999999998+99',
+                    'location': 'keep:99999999999999999999999999999998+99',
+                    'class': 'Directory'
+                },
+                'z': {
+                    'basename': 'anonymous',
+                    "listing": [{
+                        "basename": "renamed.txt",
+                        "class": "File",
+                        "location": "keep:99999999999999999999999999999998+99/file1.txt"
+                    }],
+                    'class': 'Directory'
                 },
                 'cwl:tool':
                 '99999999999999999999999999999991+99/wf/submit_wf.cwl'
             },
             'repository': 'arvados',
-            'script_version': 'master',
+            'script_version': arvados_cwl.__version__,
             'script': 'cwl-runner'
         }
+        stubs.pipeline_component = stubs.expect_job_spec.copy()
+        stubs.expect_pipeline_instance = {
+            'name': 'submit_wf.cwl',
+            'state': 'RunningOnServer',
+            "components": {
+                "cwl-runner": {
+                    'runtime_constraints': {'docker_image': 'arvados/jobs:'+arvados_cwl.__version__},
+                    'script_parameters': {
+                        'y': {"value": {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'}},
+                        'x': {"value": {'basename': 'blorp.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999994+99/blorp.txt'}},
+                        'z': {"value": {'basename': 'anonymous', 'class': 'Directory',
+                              'listing': [
+                                  {'basename': 'renamed.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999998+99/file1.txt'}
+                              ]}},
+                        'cwl:tool': '99999999999999999999999999999991+99/wf/submit_wf.cwl'
+                    },
+                    'repository': 'arvados',
+                    'script_version': arvados_cwl.__version__,
+                    'script': 'cwl-runner',
+                    'job': {'state': 'Queued', 'uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'}
+                }
+            }
+        }
+        stubs.pipeline_create = copy.deepcopy(stubs.expect_pipeline_instance)
+        stubs.expect_pipeline_uuid = "zzzzz-d1hrv-zzzzzzzzzzzzzzz"
+        stubs.pipeline_create["uuid"] = stubs.expect_pipeline_uuid
+        stubs.pipeline_with_job = copy.deepcopy(stubs.pipeline_create)
+        stubs.pipeline_with_job["components"]["cwl-runner"]["job"] = {
+            "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
+            "state": "Queued"
+        }
+        stubs.api.pipeline_instances().create().execute.return_value = stubs.pipeline_create
+        stubs.api.pipeline_instances().get().execute.return_value = stubs.pipeline_with_job
 
         stubs.expect_container_spec = {
             'priority': 1,
@@ -112,7 +170,7 @@ def stubs(func):
                     'kind': 'file'
                 },
                 '/var/lib/cwl/job/cwl.input.json': {
-                    'portable_data_hash': '765fda0d9897729ff467a4609879c00a+60/cwl.input.json',
+                    'portable_data_hash': 'd20d7cddd1984f105dd3702c7f125afb+60/cwl.input.json',
                     'kind': 'collection'
                 }
             },
@@ -120,7 +178,7 @@ def stubs(func):
             'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
             'command': ['arvados-cwl-runner', '--local', '--api=containers', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/job/cwl.input.json'],
             'name': 'submit_wf.cwl',
-            'container_image': '99999999999999999999999999999993+99',
+            'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
             'output_path': '/var/spool/cwl',
             'cwd': '/var/spool/cwl',
             'runtime_constraints': {
@@ -140,11 +198,12 @@ def stubs(func):
 
 
 class TestSubmit(unittest.TestCase):
+    @mock.patch("time.sleep")
     @stubs
-    def test_submit(self, stubs):
+    def test_submit(self, stubs, tm):
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait",
+            ["--submit", "--no-wait", "--debug",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
@@ -155,7 +214,7 @@ class TestSubmit(unittest.TestCase):
                 'manifest_text':
                 './tool d51232d96b6116d964a69bfb7e0c73bf+450 '
                 '0:16:blub.txt 16:434:submit_tool.cwl\n./wf '
-                '4d31c5fefd087faf67ca8db0111af36c+353 0:353:submit_wf.cwl\n',
+                'cc2ffb940e60adf1b2b282c67587e43d+413 0:413:submit_wf.cwl\n',
                 'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
                 'name': 'submit_wf.cwl',
             }, ensure_unique_name=True),
@@ -175,16 +234,16 @@ class TestSubmit(unittest.TestCase):
             }, ensure_unique_name=True),
             mock.call().execute()])
 
-        expect_job = copy.deepcopy(stubs.expect_job_spec)
-        expect_job["owner_uuid"] = stubs.fake_user_uuid
-        stubs.api.jobs().create.assert_called_with(
-            body=expect_job,
-            find_or_create=True)
+        expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
+        expect_pipeline["owner_uuid"] = stubs.fake_user_uuid
+        stubs.api.pipeline_instances().create.assert_called_with(
+            body=expect_pipeline)
         self.assertEqual(capture_stdout.getvalue(),
-                         stubs.expect_job_uuid + '\n')
+                         stubs.expect_pipeline_uuid + '\n')
 
+    @mock.patch("time.sleep")
     @stubs
-    def test_submit_with_project_uuid(self, stubs):
+    def test_submit_with_project_uuid(self, stubs, tm):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
         exited = arvados_cwl.main(
@@ -194,20 +253,22 @@ class TestSubmit(unittest.TestCase):
             sys.stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
-        expect_body = copy.deepcopy(stubs.expect_job_spec)
-        expect_body["owner_uuid"] = project_uuid
-        stubs.api.jobs().create.assert_called_with(
-            body=expect_body,
-            find_or_create=True)
+        expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
+        expect_pipeline["owner_uuid"] = project_uuid
+        stubs.api.pipeline_instances().create.assert_called_with(
+            body=expect_pipeline)
 
     @stubs
     def test_submit_container(self, stubs):
         capture_stdout = cStringIO.StringIO()
-        exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=containers", "--debug",
-             "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
-            capture_stdout, sys.stderr, api_client=stubs.api)
-        self.assertEqual(exited, 0)
+        try:
+            exited = arvados_cwl.main(
+                ["--submit", "--no-wait", "--api=containers", "--debug",
+                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            self.assertEqual(exited, 0)
+        except:
+            logging.exception("")
 
         stubs.api.collections().create.assert_has_calls([
             mock.call(),
@@ -215,7 +276,7 @@ class TestSubmit(unittest.TestCase):
                 'manifest_text':
                 './tool d51232d96b6116d964a69bfb7e0c73bf+450 '
                 '0:16:blub.txt 16:434:submit_tool.cwl\n./wf '
-                '4d31c5fefd087faf67ca8db0111af36c+353 0:353:submit_wf.cwl\n',
+                'cc2ffb940e60adf1b2b282c67587e43d+413 0:413:submit_wf.cwl\n',
                 'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
                 'name': 'submit_wf.cwl',
             }, ensure_unique_name=True),
@@ -266,6 +327,17 @@ class TestCreateTemplate(unittest.TestCase):
             'required': True,
             'type': 'File',
             'value': '99999999999999999999999999999994+99/blorp.txt',
+        }
+        expect_component['script_parameters']['y'] = {
+            'dataclass': 'Collection',
+            'required': True,
+            'type': 'Directory',
+            'value': '99999999999999999999999999999998+99',
+        }
+        expect_component['script_parameters']['z'] = {
+            'dataclass': 'Collection',
+            'required': True,
+            'type': 'Directory',
         }
         expect_template = {
             "components": {
@@ -321,7 +393,7 @@ class TestTemplateInputs(unittest.TestCase):
         "components": {
             "inputs_test.cwl": {
                 'runtime_constraints': {
-                    'docker_image': 'arvados/jobs',
+                    'docker_image': 'arvados/jobs:'+arvados_cwl.__version__,
                 },
                 'script_parameters': {
                     'cwl:tool':
@@ -356,7 +428,7 @@ class TestTemplateInputs(unittest.TestCase):
                     },
                 },
                 'repository': 'arvados',
-                'script_version': 'master',
+                'script_version': arvados_cwl.__version__,
                 'script': 'cwl-runner',
             },
         },

@@ -85,6 +85,9 @@ class ArvadosApiClient
     if not @api_client
       @client_mtx.synchronize do
         @api_client = HTTPClient.new
+        @api_client.ssl_config.timeout = Rails.configuration.api_client_connect_timeout
+        @api_client.connect_timeout = Rails.configuration.api_client_connect_timeout
+        @api_client.receive_timeout = Rails.configuration.api_client_receive_timeout
         if Rails.configuration.arvados_insecure_https
           @api_client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
         else
@@ -114,6 +117,7 @@ class ArvadosApiClient
                            Thread.current[:reader_tokens] ||
                            []) +
                           [Rails.configuration.anonymous_user_token]).to_json,
+      'current_request_id' => (Thread.current[:current_request_id] || ''),
     }
     if !data.nil?
       data.each do |k,v|

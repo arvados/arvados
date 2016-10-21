@@ -7,6 +7,7 @@ class ApplicationController < ActionController::Base
 
   ERROR_ACTIONS = [:render_error, :render_not_found]
 
+  prepend_before_filter :set_current_request_id, except: ERROR_ACTIONS
   around_filter :thread_clear
   around_filter :set_thread_api_token
   # Methods that don't require login should
@@ -525,16 +526,17 @@ class ApplicationController < ActionController::Base
     begin
       if not model_class
         @object = nil
+      elsif params[:uuid].nil? or params[:uuid].empty?
+        @object = nil
       elsif not params[:uuid].is_a?(String)
         @object = model_class.where(uuid: params[:uuid]).first
-      elsif params[:uuid].empty?
-        @object = nil
       elsif (model_class != Link and
              resource_class_for_uuid(params[:uuid]) == Link)
         @name_link = Link.find(params[:uuid])
         @object = model_class.find(@name_link.head_uuid)
       else
         @object = model_class.find(params[:uuid])
+        load_preloaded_objects [@object]
       end
     rescue ArvadosApiClient::NotFoundException, ArvadosApiClient::NotLoggedInException, RuntimeError => error
       if error.is_a?(RuntimeError) and (error.message !~ /^argument to find\(/)
@@ -768,7 +770,7 @@ class ApplicationController < ActionController::Base
 
   helper_method :user_notifications
   def user_notifications
-    return [] if @errors or not current_user.andand.is_active
+    return [] if @errors or not current_user.andand.is_active or not Rails.configuration.show_user_notifications
     @notifications ||= @@notification_tests.map do |t|
       t.call(self, current_user)
     end.compact
@@ -854,7 +856,8 @@ class ApplicationController < ActionController::Base
   def recent_processes lim
     lim = 12 if lim.nil?
 
-    pipelines = PipelineInstance.limit(lim).order(["created_at desc"])
+    cols = %w(uuid owner_uuid created_at modified_at pipeline_template_uuid name state started_at finished_at)
+    pipelines = PipelineInstance.select(cols).limit(lim).order(["created_at desc"])
 
     crs = ContainerRequest.limit(lim).order(["created_at desc"]).filter([["requesting_container_uuid", "=", nil]])
     procs = {}
@@ -866,7 +869,7 @@ class ApplicationController < ActionController::Base
 
   helper_method :recent_collections
   def recent_collections lim
-    c = Collection.limit(lim).order(["modified_at desc"]).filter([["owner_uuid", "is_a", "arvados#group"]])
+    c = Collection.limit(lim).order(["modified_at desc"]).results
     own = {}
     Group.filter([["uuid", "in", c.map(&:owner_uuid)]]).each do |g|
       own[g[:uuid]] = g
@@ -1178,15 +1181,15 @@ class ApplicationController < ActionController::Base
 
   # helper method to get object of a given dataclass and uuid
   helper_method :object_for_dataclass
-  def object_for_dataclass dataclass, uuid
+  def object_for_dataclass dataclass, uuid, by_attr=nil
     raise ArgumentError, 'No input argument dataclass' unless (dataclass && uuid)
-    preload_objects_for_dataclass(dataclass, [uuid])
+    preload_objects_for_dataclass(dataclass, [uuid], by_attr)
     @objects_for[uuid]
   end
 
   # helper method to preload objects for given dataclass and uuids
   helper_method :preload_objects_for_dataclass
-  def preload_objects_for_dataclass dataclass, uuids
+  def preload_objects_for_dataclass dataclass, uuids, by_attr=nil
     @objects_for ||= {}
 
     raise ArgumentError, 'Argument is not a data class' unless dataclass.is_a? Class
@@ -1203,13 +1206,36 @@ class ApplicationController < ActionController::Base
     uuids.each do |x|
       @objects_for[x] = nil
     end
-    dataclass.where(uuid: uuids).each do |obj|
-      @objects_for[obj.uuid] = obj
+    if by_attr and ![:uuid, :name].include?(by_attr)
+      raise ArgumentError, "Preloading only using lookups by uuid or name are supported: #{by_attr}"
+    elsif by_attr and by_attr == :name
+      dataclass.where(name: uuids).each do |obj|
+        @objects_for[obj.name] = obj
+      end
+    else
+      dataclass.where(uuid: uuids).each do |obj|
+        @objects_for[obj.uuid] = obj
+      end
     end
     @objects_for
   end
 
+  # helper method to load objects that are already preloaded
+  helper_method :load_preloaded_objects
+  def load_preloaded_objects objs
+    @objects_for ||= {}
+    objs.each do |obj|
+      @objects_for[obj.uuid] = obj
+    end
+  end
+
   def wiselinks_layout
     'body'
+  end
+
+  def set_current_request_id
+    # Request ID format: '<timestamp>-<9_digits_random_number>'
+    current_request_id = "#{Time.new.to_i}-#{sprintf('%09d', rand(0..10**9-1))}"
+    Thread.current[:current_request_id] = current_request_id
   end
 end

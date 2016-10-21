@@ -394,8 +394,7 @@ def run_keep(blob_signing_key=None, enforce_permissions=False, num_servers=2):
     with open(os.path.join(TEST_TMPDIR, "keep.blob_signing_key"), "w") as f:
         keep_args['-blob-signing-key-file'] = f.name
         f.write(blob_signing_key)
-    if enforce_permissions:
-        keep_args['-enforce-permissions'] = 'true'
+    keep_args['-enforce-permissions'] = str(enforce_permissions).lower()
     with open(os.path.join(TEST_TMPDIR, "keep.data-manager-token-file"), "w") as f:
         keep_args['-data-manager-token-file'] = f.name
         f.write(auth_token('data_manager'))

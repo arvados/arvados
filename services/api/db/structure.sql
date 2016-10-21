@@ -289,7 +289,9 @@ CREATE TABLE container_requests (
     priority integer,
     expires_at timestamp without time zone,
     filters text,
-    updated_at timestamp without time zone NOT NULL
+    updated_at timestamp without time zone NOT NULL,
+    container_count integer DEFAULT 0,
+    use_existing boolean DEFAULT true
 );
 
 
@@ -2680,8 +2682,6 @@ INSERT INTO schema_migrations (version) VALUES ('20160506175108');
 
 INSERT INTO schema_migrations (version) VALUES ('20160509143250');
 
-INSERT INTO schema_migrations (version) VALUES ('20160808151459');
-
 INSERT INTO schema_migrations (version) VALUES ('20160808151559');
 
 INSERT INTO schema_migrations (version) VALUES ('20160819195557');
@@ -2691,3 +2691,7 @@ INSERT INTO schema_migrations (version) VALUES ('20160819195725');
 INSERT INTO schema_migrations (version) VALUES ('20160901210110');
 
 INSERT INTO schema_migrations (version) VALUES ('20160909181442');
+
+INSERT INTO schema_migrations (version) VALUES ('20160926194129');
+
+INSERT INTO schema_migrations (version) VALUES ('20161019171346');

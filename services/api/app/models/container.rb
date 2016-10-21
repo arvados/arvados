@@ -5,6 +5,7 @@ class Container < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
   include WhitelistUpdate
+  extend CurrentApiClient
 
   serialize :environment, Hash
   serialize :mounts, Hash
@@ -87,10 +88,34 @@ class Container < ArvadosModel
       where('mounts = ?', self.deep_sort_hash(attrs[:mounts]).to_yaml).
       where('runtime_constraints = ?', self.deep_sort_hash(attrs[:runtime_constraints]).to_yaml)
 
-    # Check for Completed candidates that only had consistent outputs.
+    # Check for Completed candidates that had consistent outputs.
     completed = candidates.where(state: Complete).where(exit_code: 0)
-    if completed.select("output").group('output').limit(2).length == 1
-      return completed.order('finished_at asc').limit(1).first
+    outputs = completed.select('output').group('output').limit(2)
+    if outputs.count.count != 1
+      Rails.logger.debug("Found #{outputs.count.length} different outputs")
+    elsif Collection.
+        readable_by(current_user).
+        where(portable_data_hash: outputs.first.output).
+        count < 1
+      Rails.logger.info("Found reusable container(s) " +
+                        "but output #{outputs.first} is not readable " +
+                        "by user #{current_user.uuid}")
+    else
+      # Return the oldest eligible container whose log is still
+      # present and readable by current_user.
+      readable_pdh = Collection.
+        readable_by(current_user).
+        select('portable_data_hash')
+      completed = completed.
+        where("log in (#{readable_pdh.to_sql})").
+        order('finished_at asc').
+        limit(1)
+      if completed.first
+        return completed.first
+      else
+        Rails.logger.info("Found reusable container(s) but none with a log " +
+                          "readable by user #{current_user.uuid}")
+      end
     end
 
     # Check for Running candidates and return the most likely to finish sooner.
@@ -139,6 +164,10 @@ class Container < ArvadosModel
       where("container_requests.uuid IN #{permitted} OR "+
             "container_requests.owner_uuid IN (:uuids)",
             uuids: uuid_list)
+  end
+
+  def final?
+    [Complete, Cancelled].include?(self.state)
   end
 
   protected
@@ -280,17 +309,44 @@ class Container < ArvadosModel
   def handle_completed
     # This container is finished so finalize any associated container requests
     # that are associated with this container.
-    if self.state_changed? and [Complete, Cancelled].include? self.state
+    if self.state_changed? and self.final?
       act_as_system_user do
+
+        if self.state == Cancelled
+          retryable_requests = ContainerRequest.where("priority > 0 and state = 'Committed' and container_count < container_count_max")
+        else
+          retryable_requests = []
+        end
+
+        if retryable_requests.any?
+          c_attrs = {
+            command: self.command,
+            cwd: self.cwd,
+            environment: self.environment,
+            output_path: self.output_path,
+            container_image: self.container_image,
+            mounts: self.mounts,
+            runtime_constraints: self.runtime_constraints
+          }
+          c = Container.create! c_attrs
+          retryable_requests.each do |cr|
+            cr.with_lock do
+              # Use row locking because this increments container_count
+              cr.container_uuid = c.uuid
+              cr.save
+            end
+          end
+        end
+
         # Notify container requests associated with this container
         ContainerRequest.where(container_uuid: uuid,
-                               :state => ContainerRequest::Committed).each do |cr|
-          cr.container_completed!
+                               state: ContainerRequest::Committed).each do |cr|
+          cr.finalize!
         end
 
         # Try to cancel any outstanding container requests made by this container.
         ContainerRequest.where(requesting_container_uuid: uuid,
-                               :state => ContainerRequest::Committed).each do |cr|
+                               state: ContainerRequest::Committed).each do |cr|
           cr.priority = 0
           cr.save
         end

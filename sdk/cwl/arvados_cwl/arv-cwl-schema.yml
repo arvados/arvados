@@ -1,0 +1,85 @@
+$base: "http://arvados.org/cwl#"
+$graph:
+- name: RunInSingleContainer
+  type: record
+  doc: |
+    Indicates that a subworkflow should run in a single container
+    and not be scheduled as separate steps.
+  fields:
+    - name: class
+      type: string
+      doc: "Always 'arv:RunInSingleContainer'"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+
+- name: OutputDirType
+  type: enum
+  symbols:
+    - local_output_dir
+    - keep_output_dir
+  doc:
+    - |
+      local_output_dir: Use regular file system local to the compute node.
+      There must be sufficient local scratch space to store entire output;
+      specify this with `outdirMin` of `ResourceRequirement`.  Files are
+      batch uploaded to Keep when the process completes.  Most compatible, but
+      upload step can be time consuming for very large files.
+    - |
+      keep_output_dir: Use writable Keep mount.  Files are streamed to Keep as
+      they are written.  Does not consume local scratch space, but does consume
+      RAM for output buffers (up to 192 MiB per file simultaneously open for
+      writing.)  Best suited to processes which produce sequential output of
+      large files (non-sequential writes may produced fragmented file
+      manifests).  Supports regular files and directories, does not support
+      special files such as symlinks, hard links, named pipes, named sockets,
+      or device nodes.
+
+
+- name: RuntimeConstraints
+  type: record
+  doc: |
+    Set Arvados-specific runtime hints.
+  fields:
+    - name: class
+      type: string
+      doc: "Always 'arv:RuntimeConstraints'"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    - name: keep_cache
+      type: int?
+      doc: |
+        Size of file data buffer for Keep mount in MiB. Default is 256
+        MiB. Increase this to reduce cache thrashing in situations such as
+        accessing multiple large (64+ MiB) files at the same time, or
+        performing random access on a large file.
+    - name: outputDirType
+      type: OutputDirType?
+      doc: |
+        Preferred backing store for output staging.  If not specified, the
+        system may choose which one to use.
+
+- name: PartitionRequirement
+  type: record
+  doc: |
+    Select preferred compute partitions on which to run jobs.
+  fields:
+    - name: partition
+      type:
+        - string
+        - string[]
+
+- name: APIRequirement
+  type: record
+  doc: |
+    Indicates that process wants to access to the Arvados API.  Will be granted
+    limited network access and have ARVADOS_API_HOST and ARVADOS_API_TOKEN set
+    in the environment.
+  fields:
+    - name: class
+      type: string
+      doc: "Always 'arv:APIRequirement'"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"

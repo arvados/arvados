@@ -1,49 +1,77 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"log"
 	"os"
+	"regexp"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/config"
+	"github.com/coreos/go-systemd/daemon"
 )
 
-type config struct {
-	Addr       string
-	GitCommand string
-	Root       string
+// Server configuration
+type Config struct {
+	Client       arvados.Client
+	Listen       string
+	GitCommand   string
+	RepoRoot     string
+	GitoliteHome string
 }
 
-var theConfig *config
+var theConfig = defaultConfig()
 
-func init() {
-	theConfig = &config{}
-	flag.StringVar(&theConfig.Addr, "address", "0.0.0.0:80",
-		"Address to listen on, \"host:port\".")
-	flag.StringVar(&theConfig.GitCommand, "git-command", "/usr/bin/git",
-		"Path to git or gitolite-shell executable. Each authenticated request will execute this program with a single argument, \"http-backend\".")
-	cwd, err := os.Getwd()
-	if err != nil {
-		log.Fatalln("Getwd():", err)
+func defaultConfig() *Config {
+	return &Config{
+		Listen:     ":80",
+		GitCommand: "/usr/bin/git",
+		RepoRoot:   "/var/lib/arvados/git/repositories",
 	}
-	flag.StringVar(&theConfig.Root, "repo-root", cwd,
-		"Path to git repositories.")
-
-	// MakeArvadosClient returns an error if token is unset (even
-	// though we don't need to do anything requiring
-	// authentication yet). We can't do this in newArvadosClient()
-	// just before calling MakeArvadosClient(), though, because
-	// that interferes with the env var needed by "run test
-	// servers".
-	os.Setenv("ARVADOS_API_TOKEN", "xxx")
 }
 
 func main() {
+	const defaultCfgPath = "/etc/arvados/git-httpd/git-httpd.yml"
+	const deprecated = " (DEPRECATED -- use config file instead)"
+	flag.StringVar(&theConfig.Listen, "address", theConfig.Listen,
+		"Address to listen on, \"host:port\" or \":port\"."+deprecated)
+	flag.StringVar(&theConfig.GitCommand, "git-command", theConfig.GitCommand,
+		"Path to git or gitolite-shell executable. Each authenticated request will execute this program with a single argument, \"http-backend\"."+deprecated)
+	flag.StringVar(&theConfig.RepoRoot, "repo-root", theConfig.RepoRoot,
+		"Path to git repositories."+deprecated)
+	flag.StringVar(&theConfig.GitoliteHome, "gitolite-home", theConfig.GitoliteHome,
+		"Value for GITOLITE_HTTP_HOME environment variable. If not empty, GL_BYPASS_ACCESS_CHECKS=1 will also be set."+deprecated)
+
+	cfgPath := flag.String("config", defaultCfgPath, "Configuration file `path`.")
+	flag.Usage = usage
 	flag.Parse()
+
+	err := config.LoadFile(theConfig, *cfgPath)
+	if err != nil {
+		h := os.Getenv("ARVADOS_API_HOST")
+		if h == "" || !os.IsNotExist(err) || *cfgPath != defaultCfgPath {
+			log.Fatal(err)
+		}
+		log.Print("DEPRECATED: No config file found, but ARVADOS_API_HOST environment variable is set. Please use a config file instead.")
+		theConfig.Client.APIHost = h
+		if regexp.MustCompile("^(?i:1|yes|true)$").MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE")) {
+			theConfig.Client.Insecure = true
+		}
+		if j, err := json.MarshalIndent(theConfig, "", "    "); err == nil {
+			log.Print("Current configuration:\n", string(j))
+		}
+	}
+
 	srv := &server{}
 	if err := srv.Start(); err != nil {
 		log.Fatal(err)
 	}
+	if _, err := daemon.SdNotify("READY=1"); err != nil {
+		log.Printf("Error notifying init daemon: %v", err)
+	}
 	log.Println("Listening at", srv.Addr)
-	log.Println("Repository root", theConfig.Root)
+	log.Println("Repository root", theConfig.RepoRoot)
 	if err := srv.Wait(); err != nil {
 		log.Fatal(err)
 	}

@@ -37,6 +37,13 @@ setup(name='arvados-pam',
           ('share/pam-configs', ['pam-configs/arvados']),
           ('share/doc/arvados-pam', ['LICENSE-2.0.txt', 'README.rst']),
           ('share/doc/arvados-pam/examples', glob.glob('examples/*')),
+
+          # The arvados build scripts used to install data files to
+          # "/usr/data/*" but now install them to "/usr/*". Here, we
+          # install an extra copy in the old location so existing pam
+          # configs can still work. When old systems have had a chance
+          # to update to the new paths, this line can be removed.
+          ('data/lib/security', ['lib/libpam_arvados.py']),
       ],
       install_requires=[
           'arvados-python-client>=0.1.20150801000000',

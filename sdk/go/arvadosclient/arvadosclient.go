@@ -15,6 +15,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
 type StringMatcher func(string) bool
@@ -101,16 +103,34 @@ type ArvadosClient struct {
 	Retries int
 }
 
+// New returns an ArvadosClient using the given arvados.Client
+// configuration. This is useful for callers who load arvados.Client
+// fields from configuration files but still need to use the
+// arvadosclient.ArvadosClient package.
+func New(c *arvados.Client) (*ArvadosClient, error) {
+	return &ArvadosClient{
+		Scheme:      "https",
+		ApiServer:   c.APIHost,
+		ApiToken:    c.AuthToken,
+		ApiInsecure: c.Insecure,
+		Client: &http.Client{Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: c.Insecure}}},
+		External:          false,
+		Retries:           2,
+		lastClosedIdlesAt: time.Now(),
+	}, nil
+}
+
 // MakeArvadosClient creates a new ArvadosClient using the standard
 // environment variables ARVADOS_API_HOST, ARVADOS_API_TOKEN,
 // ARVADOS_API_HOST_INSECURE, ARVADOS_EXTERNAL_CLIENT, and
 // ARVADOS_KEEP_SERVICES.
-func MakeArvadosClient() (ac ArvadosClient, err error) {
+func MakeArvadosClient() (ac *ArvadosClient, err error) {
 	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
 	insecure := matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 	external := matchTrue.MatchString(os.Getenv("ARVADOS_EXTERNAL_CLIENT"))
 
-	ac = ArvadosClient{
+	ac = &ArvadosClient{
 		Scheme:      "https",
 		ApiServer:   os.Getenv("ARVADOS_API_HOST"),
 		ApiToken:    os.Getenv("ARVADOS_API_TOKEN"),
@@ -146,7 +166,7 @@ func MakeArvadosClient() (ac ArvadosClient, err error) {
 
 // CallRaw is the same as Call() but returns a Reader that reads the
 // response body, instead of taking an output object.
-func (c ArvadosClient) CallRaw(method string, resourceType string, uuid string, action string, parameters Dict) (reader io.ReadCloser, err error) {
+func (c *ArvadosClient) CallRaw(method string, resourceType string, uuid string, action string, parameters Dict) (reader io.ReadCloser, err error) {
 	scheme := c.Scheme
 	if scheme == "" {
 		scheme = "https"
@@ -292,7 +312,7 @@ func newAPIServerError(ServerAddress string, resp *http.Response) APIServerError
 // Returns a non-nil error if an error occurs making the API call, the
 // API responds with a non-successful HTTP status, or an error occurs
 // parsing the response body.
-func (c ArvadosClient) Call(method, resourceType, uuid, action string, parameters Dict, output interface{}) error {
+func (c *ArvadosClient) Call(method, resourceType, uuid, action string, parameters Dict, output interface{}) error {
 	reader, err := c.CallRaw(method, resourceType, uuid, action, parameters)
 	if reader != nil {
 		defer reader.Close()
@@ -311,22 +331,22 @@ func (c ArvadosClient) Call(method, resourceType, uuid, action string, parameter
 }
 
 // Create a new resource. See Call for argument descriptions.
-func (c ArvadosClient) Create(resourceType string, parameters Dict, output interface{}) error {
+func (c *ArvadosClient) Create(resourceType string, parameters Dict, output interface{}) error {
 	return c.Call("POST", resourceType, "", "", parameters, output)
 }
 
 // Delete a resource. See Call for argument descriptions.
-func (c ArvadosClient) Delete(resource string, uuid string, parameters Dict, output interface{}) (err error) {
+func (c *ArvadosClient) Delete(resource string, uuid string, parameters Dict, output interface{}) (err error) {
 	return c.Call("DELETE", resource, uuid, "", parameters, output)
 }
 
 // Modify attributes of a resource. See Call for argument descriptions.
-func (c ArvadosClient) Update(resourceType string, uuid string, parameters Dict, output interface{}) (err error) {
+func (c *ArvadosClient) Update(resourceType string, uuid string, parameters Dict, output interface{}) (err error) {
 	return c.Call("PUT", resourceType, uuid, "", parameters, output)
 }
 
 // Get a resource. See Call for argument descriptions.
-func (c ArvadosClient) Get(resourceType string, uuid string, parameters Dict, output interface{}) (err error) {
+func (c *ArvadosClient) Get(resourceType string, uuid string, parameters Dict, output interface{}) (err error) {
 	if !UUIDMatch(uuid) && !(resourceType == "collections" && PDHMatch(uuid)) {
 		// No object has uuid == "": there is no need to make
 		// an API call. Furthermore, the HTTP request for such
@@ -338,7 +358,7 @@ func (c ArvadosClient) Get(resourceType string, uuid string, parameters Dict, ou
 }
 
 // List resources of a given type. See Call for argument descriptions.
-func (c ArvadosClient) List(resource string, parameters Dict, output interface{}) (err error) {
+func (c *ArvadosClient) List(resource string, parameters Dict, output interface{}) (err error) {
 	return c.Call("GET", resource, "", "", parameters, output)
 }
 
