@@ -269,12 +269,17 @@ build() {
     fi
     GITHEAD=$(cd $ARVBOX_DOCKER && git log --format=%H -n1 HEAD)
     docker build --build-arg=arvados_version=$GITHEAD $NO_CACHE -t arvados/arvbox-base:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.base" "$ARVBOX_DOCKER"
+    if docker --version |grep " 1\.[0-9]\." ; then
+        # Docker version prior 1.10 require -f flag
+        # -f flag removed in Docker 1.12
+        FORCE=-f
+    fi
     if test "$1" = localdemo -o "$1" = publicdemo ; then
         docker build $NO_CACHE -t arvados/arvbox-demo:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.demo" "$ARVBOX_DOCKER"
-        docker tag -f arvados/arvbox-demo:$GITHEAD arvados/arvbox-demo:latest
+        docker tag $FORCE arvados/arvbox-demo:$GITHEAD arvados/arvbox-demo:latest
     else
         docker build $NO_CACHE -t arvados/arvbox-dev:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.dev" "$ARVBOX_DOCKER"
-        docker tag -f arvados/arvbox-dev:$GITHEAD arvados/arvbox-dev:latest
+        docker tag $FORCE arvados/arvbox-dev:$GITHEAD arvados/arvbox-dev:latest
     fi
 }
 
