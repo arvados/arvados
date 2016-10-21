@@ -117,27 +117,32 @@ class WorkUnitsController < ApplicationController
     end
   end
 
+  def find_object_by_uuid
+    if params['object_type']
+      @object = params['object_type'].constantize.find(params['uuid'])
+    else
+      super
+    end
+  end
+
   def show_child_component
     data = JSON.load(params[:action_data])
 
     current_obj = data['current_obj']
     current_obj_type = data['current_obj_type']
+    current_obj_name = data['current_obj_name']
     if current_obj['uuid']
       resource_class = resource_class_for_uuid current_obj['uuid']
       obj = object_for_dataclass(resource_class, current_obj['uuid'])
       current_obj = obj if obj
     end
-    if current_obj_type == JobWorkUnit.to_s
-      wu = JobWorkUnit.new(current_obj, params['name'])
-    elsif current_obj_type == PipelineInstanceWorkUnit.to_s
-      wu = PipelineInstanceWorkUnit.new(current_obj, params['name'])
-    elsif current_obj_type == ContainerWorkUnit.to_s
-      wu = ContainerWorkUnit.new(current_obj, params['name'])
-    end
 
-    if !@object
-      resource_class = resource_class_for_uuid data['main_obj']
-      @object = object_for_dataclass(resource_class, data['main_obj'])
+    if current_obj_type == JobWorkUnit.to_s
+      wu = JobWorkUnit.new(current_obj, current_obj_name)
+    elsif current_obj_type == PipelineInstanceWorkUnit.to_s
+      wu = PipelineInstanceWorkUnit.new(current_obj, current_obj_name)
+    elsif current_obj_type == ContainerWorkUnit.to_s
+      wu = ContainerWorkUnit.new(current_obj, current_obj_name)
     end
 
     respond_to do |f|

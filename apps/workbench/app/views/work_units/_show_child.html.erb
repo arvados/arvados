@@ -50,9 +50,8 @@
       </div>
   </div>
 
-  <% name = if current_obj.respond_to?('name') then current_obj.name else '' end %>
-  <% content_url = url_for(controller: :work_units, action: :show_child_component, name: name) %>
-  <div id="collapse<%=i%>" class="work-unit-component-detail panel-collapse collapse <%= if expanded then 'in' end %>" content-url="<%=content_url%>" action-data="<%={current_obj_type: current_obj.class.to_s, current_obj: current_obj.proxied, main_obj: @object.uuid}.to_json%>">
+  <% content_url = url_for(controller: :work_units, action: :show_child_component, id: @object.uuid, object_type: @object.class.to_s) %>
+  <div id="collapse<%=i%>" class="work-unit-component-detail panel-collapse collapse <%= if expanded then 'in' end %>" content-url="<%=content_url%>" action-data="<%={current_obj_type: current_obj.class.to_s, current_obj_name: current_obj.label, current_obj: current_obj.proxied}.to_json%>">
     <div class="panel-body work-unit-component-detail-body">
     </div>
   </div>
