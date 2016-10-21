@@ -44,10 +44,13 @@ class TokenExpiryTest(IntegrationTest):
             with mock.patch.object(self.mount.api.collections(), 'get', wraps=self.mount.api.collections().get) as mocked_get:
                 self.pool_test(os.path.join(self.mnt, 'zzz'))
 
-        self.assertEqual(3, mocked_open.call_count)
-        self.assertEqual(
-            4, mocked_get.call_count,
-            'Not enough calls to collections().get(): expected 4, got {!r}'.format(
+        # open() several times here to make sure we don't reach our
+        # quota of mocked_get.call_count dishonestly (e.g., the first
+        # open causes 5 mocked_get, and the rest cause none).
+        self.assertEqual(8, mocked_open.call_count)
+        self.assertGreaterEqual(
+            mocked_get.call_count, 8,
+            'Not enough calls to collections().get(): expected 8, got {!r}'.format(
                 mocked_get.mock_calls))
 
     @staticmethod
@@ -55,6 +58,6 @@ class TokenExpiryTest(IntegrationTest):
         uuid = 'zzzzz-4zz18-op4e2lbej01tcvu'
         fnm = 'zzzzz-8i9sb-0vsrcqi7whchuil.log.txt'
         os.listdir(os.path.join(zzz, uuid))
-        for _ in range(3):
+        for _ in range(8):
             with open(os.path.join(zzz, uuid, fnm)) as f:
                 f.read()

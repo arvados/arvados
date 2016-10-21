@@ -501,6 +501,12 @@ class Operations(llfuse.Operations):
         fh = next(self._filehandles_counter)
         self._filehandles[fh] = FileHandle(fh, p)
         self.inodes.touch(p)
+        while p.parent_inode in self.inodes:
+            if p == self.inodes[p.parent_inode]:
+                break
+            p = self.inodes[p.parent_inode]
+            self.inodes.touch(p)
+            p.checkupdate()
 
         _logger.debug("arv-mount open inode %i flags %x fh %i", inode, flags, fh)
 
