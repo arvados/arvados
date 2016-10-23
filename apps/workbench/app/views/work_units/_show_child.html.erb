@@ -51,7 +51,7 @@
   </div>
 
   <% content_url = url_for(controller: :work_units, action: :show_child_component, id: @object.uuid, object_type: @object.class.to_s) %>
-  <div id="collapse<%=i%>" class="work-unit-component-detail panel-collapse collapse <%= if expanded then 'in' end %>" content-url="<%=content_url%>" action-data="<%={current_obj_type: current_obj.class.to_s, current_obj_name: current_obj.label, current_obj: current_obj.proxied}.to_json%>">
+  <div id="collapse<%=i%>" class="work-unit-component-detail panel-collapse collapse <%= if expanded then 'in' end %>" content-url="<%=content_url%>" action-data="<%={current_obj_type: current_obj.class.to_s, current_obj_uuid: current_obj.uuid, current_obj_name: current_obj.label, current_obj_parent: current_obj.parent}.to_json%>">
     <div class="panel-body work-unit-component-detail-body">
     </div>
   </div>

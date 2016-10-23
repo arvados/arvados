@@ -6,21 +6,22 @@ class ProxyWorkUnit < WorkUnit
   attr_accessor :my_children
   attr_accessor :unreadable_children
 
-  def initialize proxied, label
+  def initialize proxied, label, parent
     @lbl = label
     @proxied = proxied
+    @parent = parent
   end
 
   def label
     @lbl
   end
 
-  def proxied
-    @proxied
-  end
-
   def uuid
     get(:uuid)
+  end
+
+  def parent
+    @parent
   end
 
   def modified_by_user_uuid
