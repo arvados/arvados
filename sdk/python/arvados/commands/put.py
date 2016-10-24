@@ -472,7 +472,7 @@ class ArvPutUploadJob(object):
                 with self._collection_lock:
                     output = self._my_collection().open(filename, 'w')
             self._write(source_fd, output)
-            output.close()
+            output.close(flush=False)
 
     def _write(self, source_fd, output):
         first_read = True
