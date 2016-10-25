@@ -357,6 +357,10 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	}
 	arvMountCmd = append(arvMountCmd, runner.ArvMountPoint)
 
+	if runner.Container.RuntimeConstraints.KeepCacheRAM > 0 {
+		arvMountCmd = append(arvMountCmd, "--file-cache", fmt.Sprintf("%d", runner.Container.RuntimeConstraints.KeepCacheRAM))
+	}
+
 	token, err := runner.ContainerToken()
 	if err != nil {
 		return fmt.Errorf("could not get container token: %s", err)
