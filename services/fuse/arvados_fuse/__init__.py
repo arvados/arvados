@@ -510,6 +510,14 @@ class Operations(llfuse.Operations):
         fh = next(self._filehandles_counter)
         self._filehandles[fh] = FileHandle(fh, p)
         self.inodes.touch(p)
+
+        # Normally, we will have received an "update" event if the
+        # parent collection is stale here. However, even if the parent
+        # collection hasn't changed, the manifest might have been
+        # fetched so long ago that the signatures on the data block
+        # locators have expired. Calling checkupdate() on all
+        # ancestors ensures the signatures will be refreshed if
+        # necessary.
         while p.parent_inode in self.inodes:
             if p == self.inodes[p.parent_inode]:
                 break
