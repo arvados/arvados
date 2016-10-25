@@ -90,7 +90,6 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
 
   test 'get current container for token' do
     authorize_with :running_container_auth
-    c = Container.where(auth_uuid: Thread.current[:api_client_authorization].uuid).first
     get :current
     assert_response :success
     assert_equal containers(:running).uuid, json_response['uuid']

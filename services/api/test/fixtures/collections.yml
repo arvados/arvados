@@ -576,7 +576,7 @@ collection_not_readable_by_active:
   modified_at: 2014-02-03T17:22:54Z
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
-  name: owned_by_active
+  name: collection_not_readable_by_active
 
 
 # Test Helper trims the rest of the file

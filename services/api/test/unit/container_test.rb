@@ -463,7 +463,7 @@ class ContainerTest < ActiveSupport::TestCase
     end
   end
 
-  test "output must be readable by auth_uuid" do
+  test "not allowed to set output that is not readable by current user" do
     c, _ = minimal_new
     set_user_from_auth :dispatch1
     c.lock

@@ -277,7 +277,7 @@ class Container < ArvadosModel
   end
 
   def validate_output
-    # Output must be exist and be readable by the current user.  This is so
+    # Output must exist and be readable by the current user.  This is so
     # that a container cannot "claim" a collection that it doesn't otherwise
     # have access to just by setting the output field to the collection PDH.
     if output_changed?

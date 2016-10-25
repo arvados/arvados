@@ -4,6 +4,7 @@ class Arvados::V1::ContainersController < ApplicationController
   accept_attribute_as_json :runtime_constraints, Hash
   accept_attribute_as_json :command, Array
 
+  skip_before_filter :find_object_by_uuid, only: [:current]
   skip_before_filter :render_404_if_no_object, only: [:current]
 
   def auth
