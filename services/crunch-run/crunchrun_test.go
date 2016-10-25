@@ -959,6 +959,7 @@ func (s *TestSuite) TestFullRunWithAPI(c *C) {
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "test.arvados.org\n"), Equals, true)
+	c.Check(api.CalledWith("container.output", "d41d8cd98f00b204e9800998ecf8427e+0"), NotNil)
 }
 
 func (s *TestSuite) TestFullRunSetOutput(c *C) {
