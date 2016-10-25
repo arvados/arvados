@@ -420,3 +420,16 @@ report_outcomes() {
         done
     fi
 }
+
+latest_commit_among_dirs() {
+    local maxts=0
+    local ver=""
+    for dir in $@ ; do
+        ts=$(cd $dir && timestamp_from_git)
+        if [[ $ts -gt $maxts ]]; then
+            maxts=$ts
+            ver=$(cd $dir && format_last_commit_here %H)
+        fi
+    done
+    echo $ver
+}

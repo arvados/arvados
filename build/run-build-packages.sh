@@ -312,6 +312,7 @@ handle_python_package
     # go into detached-head state
     git checkout $DASHQ_UNLESS_DEBUG "$COMMIT_HASH"
     echo "$COMMIT_HASH" >git-commit.version
+    latest_commit_among_dirs sdk/python sdk/cwl >jobs-commit.version
 
     cd "$SRC_BUILD_DIR"
     PKG_VERSION=$(version_from_git)
