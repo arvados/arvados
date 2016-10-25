@@ -1,8 +1,6 @@
 <%
-  collections = current_obj.outputs.flatten.uniq
-  collections << current_obj.docker_image
-  collections = collections.compact.uniq
-  collections_pdhs = collections.select {|x| !(m = CollectionsHelper.match(x)).nil?}.uniq.compact
+  collections = [current_obj.outputs, current_obj.docker_image].flatten.compact.uniq
+  collections_pdhs = collections.select {|x| !CollectionsHelper.match(x).nil?}.uniq.compact
   collections_uuids = collections - collections_pdhs
   preload_collections_for_objects collections_uuids if collections_uuids.any?
   preload_for_pdhs collections_pdhs if collections_pdhs.any?
@@ -21,10 +19,16 @@
               <% keys << :log_collection if @object.uuid != current_obj.uuid %>
               <% keys << :outputs %>
               <% keys.each do |k| %>
-                <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
-                <% has_val = val %>
-                <% has_val = val.andand.any? if k == :outputs %>
-                <% has_val = true if k == :log_collection and current_obj.state_label == "Running" %>
+                <%
+                  val = current_obj.send(k) if current_obj.respond_to?(k)
+                  if k == :outputs
+                    has_val = val.andand.any?
+                  elsif k == :log_collection and current_obj.state_label == "Running"
+                    has_val = true
+                  else
+                    has_val = val
+                  end
+                %>
                 <% if has_val %>
                 <tr>
                   <td style="padding-right: 1em">
