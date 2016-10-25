@@ -97,7 +97,7 @@ class ArvadosContainer(object):
 
         runtime_req, _ = get_feature(self, "http://arvados.org/cwl#RuntimeConstraints")
         if runtime_req:
-            logger.warn("RuntimeConstraints not yet supported by container API")
+            runtime_constraints["keep_cache_ram"] = runtime_req["keep_cache"]
 
         partition_req, _ = get_feature(self, "http://arvados.org/cwl#PartitionRequirement")
         if partition_req:
