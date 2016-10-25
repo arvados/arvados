@@ -35,13 +35,19 @@ format_last_commit_here() {
 version_from_git() {
   # Generates a version number from the git log for the current working
   # directory, and writes it to stdout.
-  local git_ts git_hash
+  local git_ts git_hash prefix
+  if [[ -n "$1" ]] ; then
+      prefix="$1"
+  else
+      prefix="0.1"
+  fi
+
   declare $(format_last_commit_here "git_ts=%ct git_hash=%h")
-  echo "0.1.$(date -ud "@$git_ts" +%Y%m%d%H%M%S).$git_hash"
+  echo "${prefix}.$(date -ud "@$git_ts" +%Y%m%d%H%M%S).$git_hash"
 }
 
 nohash_version_from_git() {
-    version_from_git | cut -d. -f1-3
+    version_from_git $1 | cut -d. -f1-3
 }
 
 timestamp_from_git() {

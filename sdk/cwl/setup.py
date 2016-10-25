@@ -20,7 +20,7 @@ versionfile = os.path.join(SETUP_DIR, "arvados_cwl/_version.py")
 try:
     gitinfo = subprocess.check_output(
         ['git', 'log', '--first-parent', '--max-count=1',
-         '--format=format:%H', SETUP_DIR]).strip()
+         '--format=format:%H', gittaggers.choose_version_from()]).strip()
     with open(versionfile, "w") as f:
         f.write("__version__ = '%s'\n" % gitinfo)
 except Exception as e:
