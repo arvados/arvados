@@ -21,6 +21,7 @@ import functools
 from arvados.api import OrderedJsonModel
 from cwltool.process import shortname, adjustFileObjs, adjustDirObjs, getListing, normalizeFilesDirs
 from cwltool.load_tool import load_tool
+from cwltool.errors import WorkflowException
 
 logger = logging.getLogger('arvados.cwl-runner')
 
@@ -32,6 +33,7 @@ def run():
 
     arvados_cwl.add_arv_hints()
 
+    runner = None
     try:
         job_order_object = arvados.current_job()['script_parameters']
 
@@ -80,23 +82,18 @@ def run():
         args.basedir = os.getcwd()
         args.cwl_runner_job={"uuid": arvados.current_job()["uuid"], "state": arvados.current_job()["state"]}
         outputObj = runner.arv_executor(t, job_order_object, **vars(args))
-
-        if runner.final_output_collection:
+    except Exception as e:
+        if isinstance(e, WorkflowException):
+            logging.info("Workflow error %s", e)
+        else:
+            logging.exception("Unhandled exception")
+        if runner and runner.final_output_collection:
             outputCollection = runner.final_output_collection.portable_data_hash()
         else:
             outputCollection = None
-
         api.job_tasks().update(uuid=arvados.current_task()['uuid'],
                                              body={
                                                  'output': outputCollection,
-                                                 'success': True,
-                                                 'progress':1.0
-                                             }).execute()
-    except Exception as e:
-        logging.exception("Unhandled exception")
-        api.job_tasks().update(uuid=arvados.current_task()['uuid'],
-                                             body={
-                                                 'output': None,
                                                  'success': False,
                                                  'progress':1.0
                                              }).execute()
