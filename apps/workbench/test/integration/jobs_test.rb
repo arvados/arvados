@@ -154,7 +154,7 @@ class JobsTest < ActionDispatch::IntegrationTest
 
       if readable
         click_link('component1')
-        within('#collapse1') do
+        within('.panel-collapse') do
           assert(has_text? component1['uuid'])
           assert(has_text? component1['script_version'])
           assert(has_text? 'script_parameters')
