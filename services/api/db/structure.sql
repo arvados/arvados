@@ -2318,6 +2318,27 @@ CREATE UNIQUE INDEX links_tail_name_unique_if_link_class_name ON links USING btr
 
 
 --
+-- Name: links_varchar_index_on_head_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX links_varchar_index_on_head_uuid ON links USING btree (head_uuid varchar_pattern_ops);
+
+
+--
+-- Name: links_varchar_index_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX links_varchar_index_on_owner_uuid ON links USING btree (owner_uuid varchar_pattern_ops);
+
+
+--
+-- Name: links_varchar_index_on_tail_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX links_varchar_index_on_tail_uuid ON links USING btree (tail_uuid varchar_pattern_ops);
+
+
+--
 -- Name: logs_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -2392,6 +2413,13 @@ CREATE INDEX traits_search_index ON traits USING btree (uuid, owner_uuid, modifi
 --
 
 CREATE UNIQUE INDEX unique_schema_migrations ON schema_migrations USING btree (version);
+
+
+--
+-- Name: user_uuid_pattern; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX user_uuid_pattern ON users USING btree (uuid varchar_pattern_ops);
 
 
 --
@@ -2695,3 +2723,5 @@ INSERT INTO schema_migrations (version) VALUES ('20160909181442');
 INSERT INTO schema_migrations (version) VALUES ('20160926194129');
 
 INSERT INTO schema_migrations (version) VALUES ('20161019171346');
+
+INSERT INTO schema_migrations (version) VALUES ('20161024233727');
