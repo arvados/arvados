@@ -418,6 +418,7 @@ class _BlockManager(object):
         self.num_get_threads = _BlockManager.DEFAULT_GET_THREADS
         self.copies = copies
         self._pending_write_size = 0
+        self.start_put_threads()
 
     @synchronized
     def alloc_bufferblock(self, blockid=None, starting_capacity=2**14, owner=None):
@@ -626,7 +627,6 @@ class _BlockManager(object):
                 block.set_state(_BufferBlock.ERROR, e)
                 raise
         else:
-            self.start_put_threads()
             self._put_queue.put(block)
 
     @synchronized
