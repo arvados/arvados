@@ -1151,37 +1151,3 @@ class FuseMagicTestPDHOnly(MountTestBase):
 
     def test_with_default_by_id(self):
         self.verify_pdh_only(skip_pdh_only=True)
-
-def _test_refresh_old_manifest(zzz):
-    fnm = 'zzzzz-8i9sb-0vsrcqi7whchuil.log.txt'
-    os.listdir(os.path.join(zzz))
-    time.sleep(3)
-    with open(os.path.join(zzz, fnm)) as f:
-        f.read()
-
-class TokenExpiryTest(MountTestBase):
-    def setUp(self):
-        super(TokenExpiryTest, self).setUp(local_store=False)
-
-    @unittest.skip("bug #10008")
-    @mock.patch('arvados.keep.KeepClient.get')
-    def runTest(self, mocked_get):
-        self.api._rootDesc = {"blobSignatureTtl": 2}
-        mnt = self.make_mount(fuse.CollectionDirectory, collection_record='zzzzz-4zz18-op4e2lbej01tcvu')
-        mocked_get.return_value = 'fake data'
-
-        old_exp = int(time.time()) + 86400*14
-        self.pool.apply(_test_refresh_old_manifest, (self.mounttmp,))
-        want_exp = int(time.time()) + 86400*14
-
-        got_loc = mocked_get.call_args[0][0]
-        got_exp = int(
-            re.search(r'\+A[0-9a-f]+@([0-9a-f]+)', got_loc).group(1),
-            16)
-        self.assertGreaterEqual(
-            got_exp, want_exp-2,
-            msg='now+2w = {:x}, but fuse fetched locator {} (old_exp {:x})'.format(
-                want_exp, got_loc, old_exp))
-        self.assertLessEqual(
-            got_exp, want_exp,
-            msg='server is not using the expected 2w TTL; test is ineffective')
