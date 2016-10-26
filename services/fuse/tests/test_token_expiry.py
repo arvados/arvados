@@ -35,6 +35,11 @@ class TokenExpiryTest(IntegrationTest):
     @mock.patch('arvados.keep.KeepClient.get')
     @IntegrationTest.mount(argv=['--mount-by-id', 'zzz'])
     def test_refresh_old_manifest(self, mocked_get, mocked_time, mocked_open):
+        # This test (and associated behavior) is still not strong
+        # enough. We should ensure old tokens are never used even if
+        # blobSignatureTtl seconds elapse between open() and
+        # read(). See https://dev.arvados.org/issues/10008
+
         mocked_get.return_value = 'fake data'
         mocked_time.side_effect = self.fake_time
         mocked_open.side_effect = self.fake_open
