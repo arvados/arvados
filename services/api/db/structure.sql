@@ -2346,6 +2346,20 @@ CREATE INDEX logs_search_index ON logs USING btree (uuid, owner_uuid, modified_b
 
 
 --
+-- Name: logs_varchar_index_on_object_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX logs_varchar_index_on_object_uuid ON logs USING btree (object_uuid varchar_pattern_ops);
+
+
+--
+-- Name: logs_varchar_index_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX logs_varchar_index_on_owner_uuid ON logs USING btree (owner_uuid varchar_pattern_ops);
+
+
+--
 -- Name: nodes_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -2725,3 +2739,5 @@ INSERT INTO schema_migrations (version) VALUES ('20160926194129');
 INSERT INTO schema_migrations (version) VALUES ('20161019171346');
 
 INSERT INTO schema_migrations (version) VALUES ('20161024233727');
+
+INSERT INTO schema_migrations (version) VALUES ('20161026141240');
