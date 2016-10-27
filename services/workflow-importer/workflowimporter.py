@@ -8,11 +8,19 @@ import shutil
 import argparse
 import StringIO
 import urlparse
+import logging
 
 import arvados
 import arvados.commands.keepdocker as keepdocker
 import arvados.commands.arv_copy as arv_copy
 import arvados_cwl
+
+_logger = logging.getLogger("workflowimporter")
+
+defaultStreamHandler = logging.StreamHandler()
+_logger.addHandler(defaultStreamHandler)
+_logger.setLevel(logging.INFO)
+
 
 def registerDocker((api, reporecord, prefix, branch), dirname, names):
     sp = urlparse.urlsplit(reporecord["name"])
@@ -61,7 +69,7 @@ def registerCWL((api, reporecord, prefix, branch), dirname, names):
         rval = arvados_cwl.main(["--update-workflow="+uuid, cwlfile], stdout, stderr)
         if rval != 0:
             raise Exception(stderr.getvalue())
-        print "Updated workflow", uuid
+        _logger.info("Updated workflow %s", uuid)
     else:
         rval = arvados_cwl.main(["--create-workflow", cwlfile], stdout, stderr)
         if rval != 0:
@@ -70,7 +78,7 @@ def registerCWL((api, reporecord, prefix, branch), dirname, names):
                                       "tail_uuid": reporecord["uuid"],
                                       "head_uuid": stdout.getvalue().strip(),
                                       "name": branch}).execute()
-        print "Created workflow", wf["uuid"]
+        -logger.info("Created workflow %s", stdout.getvalue().strip())
 
 def gitclone(api, repo, insecure_http):
     if not (repo.startswith("http://") or repo.startswith("https://") or repo.startswith("/")):
