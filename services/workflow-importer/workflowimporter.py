@@ -7,6 +7,7 @@ import tempfile
 import shutil
 import argparse
 import StringIO
+import urlparse
 
 import arvados
 import arvados.commands.keepdocker as keepdocker
@@ -14,7 +15,14 @@ import arvados.commands.arv_copy as arv_copy
 import arvados_cwl
 
 def registerDocker((api, reporecord, prefix, branch), dirname, names):
-    name = reporecord["name"]
+    sp = urlparse.urlsplit(reporecord["name"])
+    name = sp.path
+    if name.startswith("/"):
+        name = name[1:]
+    if name.endswith(".git"):
+        name = name[0:-4]
+    name = "/".join(name.split("/")[-2:])
+
     dockerfile = None
     if "Dockerfile" in names:
         dockerfile = "Dockerfile"
@@ -52,12 +60,12 @@ def registerCWL((api, reporecord, prefix, branch), dirname, names):
     if uuid:
         rval = arvados_cwl.main(["--update-workflow="+uuid, cwlfile], stdout, stderr)
         if rval != 0:
-            raise Exception()
+            raise Exception(stderr.getvalue())
         print "Updated workflow", uuid
     else:
         rval = arvados_cwl.main(["--create-workflow", cwlfile], stdout, stderr)
         if rval != 0:
-            raise Exception()
+            raise Exception(stderr.getvalue())
         wf = api.links().create(body={"link_class": "workflow-import",
                                       "tail_uuid": reporecord["uuid"],
                                       "head_uuid": stdout.getvalue().strip(),
@@ -65,7 +73,11 @@ def registerCWL((api, reporecord, prefix, branch), dirname, names):
         print "Created workflow", wf["uuid"]
 
 def gitclone(api, repo, insecure_http):
-    (src_git_url, src_git_config) = arv_copy.select_git_url(api, repo, 3, insecure_http, "--insecure-http")
+    if not (repo.startswith("http://") or repo.startswith("https://") or repo.startswith("/")):
+        (src_git_url, src_git_config) = arv_copy.select_git_url(api, repo, 3, insecure_http, "--insecure-http")
+    else:
+        src_git_config = []
+        src_git_url = repo
 
     tempdir = tempfile.mkdtemp()
     arvados.util.run_command(
@@ -87,13 +99,19 @@ def main(argv):
     parser = argparse.ArgumentParser()
     parser.add_argument('--insecure-http', default=False, action="store_true")
     parser.add_argument('repo', nargs="?", default=None)
-    parser.add_argument('branch', nargs="?", default=None)
+    parser.add_argument('branch', nargs="?", default="master")
     args = parser.parse_args(argv)
 
     if args.repo is None:
         items = api.repositories().list().execute()["items"]
     else:
-        items = api.repositories().list(filters=[["name", "=", args.repo]]).execute()["items"]
+        sp = urlparse.urlsplit(args.repo)
+        if sp.scheme:
+            items = [{"name": args.repo, "uuid": None}]
+        elif os.path.isdir(args.repo):
+            items = [{"name": os.path.abspath(args.repo), "uuid": None}]
+        else:
+            items = api.repositories().list(filters=[["name", "=", args.repo]]).execute()["items"]
 
     for i in items:
         name = i["name"]
