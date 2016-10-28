@@ -12,8 +12,29 @@ API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/logs@
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
+h2. Creation
 
-h2. create
+Any user may create Log entries for any event they find useful. User-generated Logs have no intrinsic meaning to other users or to the Arvados system itself; it is up to each user to choose appropriate log event types and summaries for their project.
+
+h3. System Logs
+
+Arvados uses Logs to record creation, deletion, and updates of other Arvados resources.
+
+h2. Resource
+
+Each Log has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|object_uuid|string|||
+|event_at|datetime|||
+|event_type|string|A user-defined category or type for this event.|@LOGIN@|
+|summary|text|||
+|properties|hash|||
+
+h2. Methods
+
+h3. create
 
 Create a new log entry.
 
@@ -23,7 +44,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |log|object||query||
 
-h2. delete
+h3. delete
 
 Delete an existing log entry. This method can only be used by privileged (system administrator) users.
 
@@ -33,7 +54,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the log entry in question.|path||
 
-h2. get
+h3. get
 
 Retrieve a log entry.
 
@@ -43,7 +64,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the log entry in question.|path||
 
-h2. list
+h3. list
 
 List log entries.
 
@@ -55,7 +76,7 @@ table(table table-bordered table-condensed).
 |order|string|Order in which to return matching log entries.|query||
 |filters|array|Conditions for filtering log entries.|query||
 
-h2. update
+h3. update
 
 Update attributes of an existing log entry. This method can only be used by privileged (system administrator) users.
 

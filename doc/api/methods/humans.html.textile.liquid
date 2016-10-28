@@ -12,8 +12,17 @@ API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/humans@
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
+h2. Resource
 
-h2. create
+Each Human has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|properties|hash|||
+
+h2. Methods
+
+h3. create
 
 Create a new Human.
 
@@ -23,7 +32,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |human|object||query||
 
-h2. delete
+h3. delete
 
 Delete an existing Human.
 
@@ -33,7 +42,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Human in question.|path||
 
-h2. get
+h3. get
 
 Gets a Human's metadata by UUID.
 
@@ -43,7 +52,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Human in question.|path||
 
-h2. list
+h3. list
 
 List humans.
 
@@ -55,7 +64,7 @@ table(table table-bordered table-condensed).
 |order|string|Order in which to return matching humans.|query||
 |filters|array|Conditions for filtering humans.|query||
 
-h2. update
+h3. update
 
 Update attributes of an existing Human.
 

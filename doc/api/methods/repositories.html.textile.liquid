@@ -12,8 +12,21 @@ API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/repositories@
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
+h2. Resource
 
-h2. create
+Each Repository has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|name|string|The name of the repository on disk.  Repository names must begin with a letter and contain only alphanumerics.  Unless the repository is owned by the system user, the name must begin with the owner's username, then be separated from the base repository name with @/@.  You may not create a repository that is owned by a user without a username.|@username/project1@|
+|clone_urls|array|URLs from which the repository can be cloned. Read-only.|@["git@git.zzzzz.arvadosapi.com:foo/bar.git",
+ "https://git.zzzzz.arvadosapi.com/foo/bar.git"]@|
+|fetch_url|string|URL suggested as a fetch-url in git config. Deprecated. Read-only.||
+|push_url|string|URL suggested as a push-url in git config. Deprecated. Read-only.||
+
+h2. Methods
+
+h3. create
 
 Create a new Repository.
 
@@ -23,7 +36,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |repository|object||query||
 
-h2. delete
+h3. delete
 
 Delete an existing Repository.
 
@@ -33,7 +46,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Repository in question.|path||
 
-h2. get
+h3. get
 
 Gets a Repository's metadata by UUID.
 
@@ -43,7 +56,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Repository in question.|path||
 
-h2. get_all_permissions
+h3. get_all_permissions
 
 get_all_permissions repositories
 
@@ -52,7 +65,7 @@ Arguments:
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 
-h2. list
+h3. list
 
 List repositories.
 
@@ -64,7 +77,7 @@ table(table table-bordered table-condensed).
 |order|string|Order in which to return matching repositories.|query||
 |filters|array|Conditions for filtering repositories.|query||
 
-h2. update
+h3. update
 
 Update attributes of an existing Repository.
 

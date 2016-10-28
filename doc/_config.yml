@@ -97,59 +97,41 @@ navbar:
   api:
     - Concepts:
       - api/index.html.textile.liquid
-      - api/authentication.html.textile.liquid
+      - api/requests.html.textile.liquid
       - api/methods.html.textile.liquid
       - api/resources.html.textile.liquid
-      - api/crunch-scripts.html.textile.liquid
       - api/permission-model.html.textile.liquid
-    - API Methods:
+      - api/examples.html.textile.liquid
+    - Permission and authentication:
+      - api/methods/users.html.textile.liquid
+      - api/methods/groups.html.textile.liquid
       - api/methods/api_client_authorizations.html.textile.liquid
       - api/methods/api_clients.html.textile.liquid
       - api/methods/authorized_keys.html.textile.liquid
-      - api/methods/collections.html.textile.liquid
-      - api/methods/container_requests.html.textile.liquid
-      - api/methods/containers.html.textile.liquid
-      - api/methods/groups.html.textile.liquid
-      - api/methods/humans.html.textile.liquid
-      - api/methods/jobs.html.textile.liquid
-      - api/methods/job_tasks.html.textile.liquid
-      - api/methods/keep_disks.html.textile.liquid
+    - System resources:
       - api/methods/keep_services.html.textile.liquid
       - api/methods/links.html.textile.liquid
       - api/methods/logs.html.textile.liquid
       - api/methods/nodes.html.textile.liquid
+      - api/methods/virtual_machines.html.textile.liquid
+      - api/methods/keep_disks.html.textile.liquid
+    - Data management:
+      - api/methods/collections.html.textile.liquid
+      - api/methods/repositories.html.textile.liquid
+    - Container engine:
+      - api/methods/container_requests.html.textile.liquid
+      - api/methods/containers.html.textile.liquid
+      - api/methods/workflows.html.textile.liquid
+    - Jobs engine (deprecated):
+      - api/crunch-scripts.html.textile.liquid
+      - api/methods/jobs.html.textile.liquid
+      - api/methods/job_tasks.html.textile.liquid
       - api/methods/pipeline_instances.html.textile.liquid
       - api/methods/pipeline_templates.html.textile.liquid
-      - api/methods/repositories.html.textile.liquid
+    - Metadata for bioinformatics:
+      - api/methods/humans.html.textile.liquid
       - api/methods/specimens.html.textile.liquid
       - api/methods/traits.html.textile.liquid
-      - api/methods/users.html.textile.liquid
-      - api/methods/virtual_machines.html.textile.liquid
-      - api/methods/workflows.html.textile.liquid
-    - Schema:
-      - api/schema/ApiClientAuthorization.html.textile.liquid
-      - api/schema/ApiClient.html.textile.liquid
-      - api/schema/AuthorizedKey.html.textile.liquid
-      - api/schema/Collection.html.textile.liquid
-      - api/schema/Container.html.textile.liquid
-      - api/schema/ContainerRequest.html.textile.liquid
-      - api/schema/Group.html.textile.liquid
-      - api/schema/Human.html.textile.liquid
-      - api/schema/Job.html.textile.liquid
-      - api/schema/JobTask.html.textile.liquid
-      - api/schema/KeepDisk.html.textile.liquid
-      - api/schema/KeepService.html.textile.liquid
-      - api/schema/Link.html.textile.liquid
-      - api/schema/Log.html.textile.liquid
-      - api/schema/Node.html.textile.liquid
-      - api/schema/PipelineInstance.html.textile.liquid
-      - api/schema/PipelineTemplate.html.textile.liquid
-      - api/schema/Repository.html.textile.liquid
-      - api/schema/Specimen.html.textile.liquid
-      - api/schema/Trait.html.textile.liquid
-      - api/schema/User.html.textile.liquid
-      - api/schema/VirtualMachine.html.textile.liquid
-      - api/schema/Workflow.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid

@@ -12,8 +12,22 @@ API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/pipeline_inst
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
+h2. Resource
 
-h2. create
+Each PipelineInstance has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|pipeline_template_uuid|string|||
+|name|string|||
+|components|hash|||
+|success|boolean|||
+|active|boolean|||
+|properties|Hash|||
+
+h2. Methods
+
+h3. create
 
 Create a new PipelineInstance.
 
@@ -23,7 +37,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |pipeline_instance|object||query||
 
-h2. delete
+h3. delete
 
 Delete an existing PipelineInstance.
 
@@ -33,7 +47,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the PipelineInstance in question.|path||
 
-h2. get
+h3. get
 
 Gets a PipelineInstance's metadata by UUID.
 
@@ -43,7 +57,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the PipelineInstance in question.|path||
 
-h2. list
+h3. list
 
 List pipeline_instances.
 
@@ -55,7 +69,7 @@ table(table table-bordered table-condensed).
 |order|string|Order in which to return matching pipeline_instances.|query||
 |filters|array|Conditions for filtering pipeline_instances.|query||
 
-h2. update
+h3. update
 
 Update attributes of an existing PipelineInstance.
 

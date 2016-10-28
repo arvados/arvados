@@ -5,6 +5,15 @@ navmenu: Schema
 title: PipelineTemplate
 ...
 
+h2. Resource
+
+Each PipelineTemplate has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|name|string|||
+|components|hash|||
+
 The pipeline template consists of "name" and "components".
 
 table(table table-bordered table-condensed).
@@ -150,12 +159,3 @@ This pipeline consists of three components.  The component "cleanup" depends on 
 h2. Methods
 
 See "pipeline_templates":{{site.baseurl}}/api/methods/pipeline_templates.html
-
-h2. Resource
-
-Each PipelineTemplate has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
-
-table(table table-bordered table-condensed).
-|_. Attribute|_. Type|_. Description|_. Example|
-|name|string|||
-|components|hash|||

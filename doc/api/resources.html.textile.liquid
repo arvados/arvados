@@ -2,7 +2,7 @@
 layout: default
 navsection: api
 navmenu: Concepts
-title: Resources
+title: Common resource fields
 
 ...
 
@@ -46,4 +46,3 @@ table(table table-bordered table-condensed).
 h2. ETags
 
 fn1. Each response includes an ETag, a string which changes when the resource changes.  Clients can use this to check whether a resource has changed since they last retrieved it.  If a previous ETag is provided along with a request, and the resource has not changed since, the server may return a "not modified" response.
-

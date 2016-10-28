@@ -12,8 +12,21 @@ API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/authorized_ke
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
+h2. Resource
 
-h2. create
+Each AuthorizedKey has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|name|string|||
+|key_type|string|||
+|authorized_user_uuid|string|||
+|public_key|text|||
+|expires_at|datetime|||
+
+h2. Methods
+
+h3. create
 
 Create a new AuthorizedKey.
 
@@ -23,7 +36,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |authorized_key|object||query||
 
-h2. delete
+h3. delete
 
 Delete an existing AuthorizedKey.
 
@@ -33,7 +46,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the AuthorizedKey in question.|path||
 
-h2. get
+h3. get
 
 Gets a AuthorizedKey's metadata by UUID.
 
@@ -43,7 +56,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the AuthorizedKey in question.|path||
 
-h2. list
+h3. list
 
 List authorized_keys.
 
@@ -55,7 +68,7 @@ table(table table-bordered table-condensed).
 |order|string|Order in which to return matching authorized_keys.|query||
 |filters|array|Conditions for filtering authorized_keys.|query||
 
-h2. update
+h3. update
 
 Update attributes of an existing AuthorizedKey.
 
