@@ -18,6 +18,7 @@ class Container < ArvadosModel
   validate :validate_state_change
   validate :validate_change
   validate :validate_lock
+  validate :validate_output
   after_validation :assign_auth
   before_save :sort_serialized_attrs
   after_save :handle_completed
@@ -186,7 +187,23 @@ class Container < ArvadosModel
   end
 
   def permission_to_update
-    current_user.andand.is_admin
+    # Override base permission check to allow auth_uuid to set progress and
+    # output (only).  Whether it is legal to set progress and output in the current
+    # state has already been checked in validate_change.
+    current_user.andand.is_admin ||
+      (!current_api_client_authorization.nil? and
+       [self.auth_uuid, self.locked_by_uuid].include? current_api_client_authorization.uuid)
+  end
+
+  def ensure_owner_uuid_is_permitted
+    # Override base permission check to allow auth_uuid to set progress and
+    # output (only).  Whether it is legal to set progress and output in the current
+    # state has already been checked in validate_change.
+    if !current_api_client_authorization.nil? and self.auth_uuid == current_api_client_authorization.uuid
+      check_update_whitelist [:progress, :output]
+    else
+      super
+    end
   end
 
   def set_timestamps
@@ -213,7 +230,7 @@ class Container < ArvadosModel
       permitted.push :priority
 
     when Running
-      permitted.push :priority, :progress
+      permitted.push :priority, :progress, :output
       if self.state_changed?
         permitted.push :started_at
       end
@@ -240,20 +257,10 @@ class Container < ArvadosModel
   end
 
   def validate_lock
-    # If the Container is already locked by someone other than the
-    # current api_client_auth, disallow all changes -- except
-    # priority, which needs to change to reflect max(priority) of
-    # relevant ContainerRequests.
-    if locked_by_uuid_was
-      if locked_by_uuid_was != Thread.current[:api_client_authorization].uuid
-        check_update_whitelist [:priority]
-      end
-    end
-
     if [Locked, Running].include? self.state
       # If the Container was already locked, locked_by_uuid must not
       # changes. Otherwise, the current auth gets the lock.
-      need_lock = locked_by_uuid_was || Thread.current[:api_client_authorization].uuid
+      need_lock = locked_by_uuid_was || current_api_client_authorization.andand.uuid
     else
       need_lock = nil
     end
@@ -267,6 +274,21 @@ class Container < ArvadosModel
       end
     end
     self.locked_by_uuid = need_lock
+  end
+
+  def validate_output
+    # Output must exist and be readable by the current user.  This is so
+    # that a container cannot "claim" a collection that it doesn't otherwise
+    # have access to just by setting the output field to the collection PDH.
+    if output_changed?
+      c = Collection.
+          readable_by(current_user).
+          where(portable_data_hash: self.output).
+          first
+      if !c
+        errors.add :output, "collection must exist and be readable by current user."
+      end
+    end
   end
 
   def assign_auth

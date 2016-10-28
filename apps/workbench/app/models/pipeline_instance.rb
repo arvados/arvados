@@ -133,7 +133,7 @@ class PipelineInstance < ArvadosBase
   end
 
   def work_unit(label=nil)
-    PipelineInstanceWorkUnit.new(self, label || self.name)
+    PipelineInstanceWorkUnit.new(self, label || self.name, self.uuid)
   end
 
   private

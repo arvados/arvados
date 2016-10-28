@@ -13,10 +13,11 @@ from cwltool.builder import Builder
 import arvados.collection
 
 from .arvdocker import arv_docker_get_image
-from .runner import Runner
+from .runner import Runner, arvados_jobs_image
 from .pathmapper import InitialWorkDirPathMapper
 from .perf import Perf
 from . import done
+from ._version import __version__
 
 logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
@@ -88,7 +89,7 @@ class ArvadosJob(object):
             if docker_req and kwargs.get("use_container") is not False:
                 runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvrunner.project_uuid)
             else:
-                runtime_constraints["docker_image"] = "arvados/jobs"
+                runtime_constraints["docker_image"] = arvados_jobs_image(self.arvrunner)
 
         resources = self.builder.resources
         if resources is not None:
@@ -245,21 +246,30 @@ class RunnerJob(Runner):
             self.job_order["arv:output_name"] = self.output_name
         return {
             "script": "cwl-runner",
-            "script_version": "master",
+            "script_version": __version__,
             "repository": "arvados",
             "script_parameters": self.job_order,
             "runtime_constraints": {
-                "docker_image": "arvados/jobs"
+                "docker_image": arvados_jobs_image(self.arvrunner)
             }
         }
 
     def run(self, *args, **kwargs):
         job_spec = self.arvados_job_spec(*args, **kwargs)
 
+        job_spec.setdefault("owner_uuid", self.arvrunner.project_uuid)
+
+        job = self.arvrunner.api.jobs().create(
+            body=job_spec,
+            find_or_create=self.enable_reuse
+        ).execute(num_retries=self.arvrunner.num_retries)
+
         for k,v in job_spec["script_parameters"].items():
             if v is False or v is None or isinstance(v, dict):
                 job_spec["script_parameters"][k] = {"value": v}
 
+        del job_spec["owner_uuid"]
+        job_spec["job"] = job
         self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().create(
             body={
                 "owner_uuid": self.arvrunner.project_uuid,
@@ -271,16 +281,6 @@ class RunnerJob(Runner):
         if kwargs.get("wait") is False:
             self.uuid = self.arvrunner.pipeline["uuid"]
             return
-
-        job = None
-        while not job:
-            time.sleep(2)
-            self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().get(
-                uuid=self.arvrunner.pipeline["uuid"]).execute(
-                    num_retries=self.arvrunner.num_retries)
-            job = self.arvrunner.pipeline["components"]["cwl-runner"].get("job")
-            if not job and self.arvrunner.pipeline["state"] != "RunningOnServer":
-                raise WorkflowException("Submitted pipeline is %s" % (self.arvrunner.pipeline["state"]))
 
         self.uuid = job["uuid"]
         self.arvrunner.processes[self.uuid] = self

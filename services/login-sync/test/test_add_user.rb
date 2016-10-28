@@ -27,7 +27,7 @@ class TestAddUser < Minitest::Test
       f.puts 'useradd -m -c adminroot -s /bin/bash -G docker,fuse adminroot'
       f.puts 'useradd -m -c adminroot -s /bin/bash -G docker,admin,fuse adminroot'
     end
-    $stderr.puts "*** Expect crash in dir_s_mkdir:"
+    $stderr.puts "*** Expect crash after getpwnam() fails:"
     invoke_sync binstubs: ['new_user']
     assert !$?.success?
     spied = File.read(@tmpdir+'/spy')

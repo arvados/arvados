@@ -104,6 +104,8 @@ run() {
     CONFIG=$1
     TAG=$2
 
+    shift
+
     if docker ps -a --filter "status=running" | grep -E "$ARVBOX_CONTAINER$" -q ; then
         echo "Container $ARVBOX_CONTAINER is already running"
         exit 0
@@ -113,10 +115,15 @@ run() {
         echo "Container $ARVBOX_CONTAINER already exists but is not running; use restart or rebuild"
         exit 1
     fi
-   
+
     if test ! -z "$TAG"
     then
-	TAG=":$TAG"
+        if test $(echo $TAG | cut -c1-1) != '-' ; then
+	    TAG=":$TAG"
+            shift
+        else
+            unset TAG
+        fi
     fi
 
     if echo "$CONFIG" | grep '^public' ; then
@@ -260,11 +267,19 @@ build() {
         echo "Could not find Dockerfile (expected it at $ARVBOX_DOCKER/Dockerfile.base)"
         exit 1
     fi
-    docker build $NO_CACHE -t arvados/arvbox-base -f "$ARVBOX_DOCKER/Dockerfile.base" "$ARVBOX_DOCKER"
+    GITHEAD=$(cd $ARVBOX_DOCKER && git log --format=%H -n1 HEAD)
+    docker build --build-arg=arvados_version=$GITHEAD $NO_CACHE -t arvados/arvbox-base:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.base" "$ARVBOX_DOCKER"
+    if docker --version |grep " 1\.[0-9]\." ; then
+        # Docker version prior 1.10 require -f flag
+        # -f flag removed in Docker 1.12
+        FORCE=-f
+    fi
     if test "$1" = localdemo -o "$1" = publicdemo ; then
-        docker build $NO_CACHE -t arvados/arvbox-demo -f "$ARVBOX_DOCKER/Dockerfile.demo" "$ARVBOX_DOCKER"
+        docker build $NO_CACHE -t arvados/arvbox-demo:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.demo" "$ARVBOX_DOCKER"
+        docker tag $FORCE arvados/arvbox-demo:$GITHEAD arvados/arvbox-demo:latest
     else
-        docker build $NO_CACHE -t arvados/arvbox-dev -f "$ARVBOX_DOCKER/Dockerfile.dev" "$ARVBOX_DOCKER"
+        docker build $NO_CACHE -t arvados/arvbox-dev:$GITHEAD -f "$ARVBOX_DOCKER/Dockerfile.dev" "$ARVBOX_DOCKER"
+        docker tag $FORCE arvados/arvbox-dev:$GITHEAD arvados/arvbox-dev:latest
     fi
 }
 
@@ -397,7 +412,7 @@ case "$subcmd" in
 
     cat)
         if test -n "$1" ; then
-            exec docker exec -ti $ARVBOX_CONTAINER cat "$@"
+            exec docker exec $ARVBOX_CONTAINER cat "$@"
         else
             echo "Usage: $0 $subcmd <files>"
         fi
