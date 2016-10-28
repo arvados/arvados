@@ -574,6 +574,13 @@ class _BlockManager(object):
                 # Not enough small blocks for repacking
                 return
 
+            # Update the pending write size count with its true value, just in case
+            # some small file was opened, written and closed several times.
+            if not force:
+                self._pending_write_size = sum([b.size() for b in small_blocks])
+                if self._pending_write_size < config.KEEP_BLOCK_SIZE:
+                    return
+
             new_bb = self._alloc_bufferblock()
             while len(small_blocks) > 0 and (new_bb.write_pointer + small_blocks[0].size()) <= config.KEEP_BLOCK_SIZE:
                 bb = small_blocks.pop(0)
