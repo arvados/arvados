@@ -6,35 +6,59 @@ title: Common resource methods
 
 ...
 
-(using Group as an example)
+The following methods are available for most resources.  Some resources may limit who can perform certain operations.  Consult documentation for individual resource types for details.
 
-h2(#index). Index, list, search
+h2. create
 
-<pre>
-GET https://{{ site.arvados_api_host }}/arvados/v1/groups?filters=[["owner_uuid","=","xyzzy-tpzed-a4lcehql0dv2u25"]]
+The @create@ method creates a new object of the specified type.  It corresponds to the HTTP request @POST /arvados/v1/resource_name@.  A successful create call returns a copy of the new object.
 
-POST https://{{ site.arvados_api_host }}/arvados/v1/groups
-_method=GET
-filters=[["owner_uuid","=","xyzzy-tpzed-a4lcehql0dv2u25"]]
-</pre>
-
-&rarr; Group resource list
+Arguments:
 
 table(table table-bordered table-condensed).
-|*Parameter name*|*Value*|*Description*|
-|limit   |integer|Maximum number of resources to return.|
-|offset  |integer|Skip the first 'offset' resources that match the given filter conditions.|
-|filters |array  |Conditions for selecting resources to return (see below).|
+|_. Argument |_. Type |_. Description |_. Location |
+|{resource_name}|object||query||
+
+h2. delete
+
+The @delete@ method deletes a object of the specified type.  It corresponds to the HTTP request @DELETE /arvados/v1/resource_name/uuid@.  A successful delete call returns a copy of the deleted object.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |
+{background:#ccffcc}.|uuid|string|The UUID of the object in question.|path|
+
+h2. get
+
+The @get@ method gets a single object with the specified @uuid@.  It corresponds to the HTTP request @GET /arvados/v1/resource_name/uuid@.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |
+{background:#ccffcc}.|uuid|string|The UUID of the object in question.|path|
+
+h2(#index). list
+
+The @list@ method requests an list of resources of that type.  It corresponds to the HTTP request @GET /arvados/v1/resource_name@.  All resources support listing with unless otherwise noted.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |
+|limit   |integer|Maximum number of resources to return.  May also be subject to server limit.|query|
+|offset  |integer|Skip the first 'offset' resources that match the given filter conditions.|query|
+|filters |array  |Conditions for selecting resources to return (see below).|query|
 |order   |array  |Attributes to use as sort keys to determine the order resources are returned, each optionally followed by @asc@ or @desc@ to indicate ascending or descending order.
 Example: @["head_uuid asc","modified_at desc"]@
-Default: @["created_at desc"]@|
+Default: @["created_at desc"]@|query|
 |select  |array  |Set of attributes to include in the response.
 Example: @["head_uuid","tail_uuid"]@
-Default: all available attributes, minus "manifest_text" in the case of collections.|
+Default: all available attributes.  As a special case, collections do not return "manifest_text" unless explicitly selected.|query|
 |distinct|boolean|@true@: (default) do not return duplicate objects
-@false@: permitted to return duplicates|
+@false@: permitted to return duplicates|query|
 
-h3. Filters
+h3. filters
 
 The value of the @filters@ parameter is an array of conditions. The @list@ method returns only the resources that satisfy all of the given conditions. In other words, the conjunction @AND@ is implicit.
 
@@ -56,45 +80,23 @@ table(table table-bordered table-condensed).
 |@in@, @not in@|array of strings|@["script_version","in",["master","d00220fb38d4b85ca8fc28a8151702a2b9d1dec5"]]@|
 |@is_a@|string|@["head_uuid","is_a","arvados#pipelineInstance"]@|
 
-h2. Create
+h3. result
 
-<pre>
-POST https://{{ site.arvados_api_host }}/arvados/v1/groups
-group={"name":"fresh new group"}
-</pre>
+A successful call to list will return the following object.
 
-&rarr; Group resource
+table(table table-bordered table-condensed).
+|_. Attribute |_. Type |_. Description |
+|kind|string|type of objects returned|
+|offset|integer|query offset in effect|
+|limit|integer|query limit in effect|
+|items|array|actual query payload, an array of resource objects|
+|items_available|integer|total items available matching query|
 
-h2. Delete
+h2. update
 
-<pre>
-DELETE https://{{ site.arvados_api_host }}/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
-</pre>
+The @update@ method updates fields on the object with the specified @uuid@.  It corresponds to the HTTP request @PUT /arvados/v1/resource_name/uuid@.  A successful update call returns the updated copy of the object.
 
-&rarr; Group resource
-
-h2. Update
-
-<pre>
-PUT https://{{ site.arvados_api_host }}/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
-group={"uuid":"xyzzy-ldvyl-vyydjeplwaa6emg", "name":"Important group"}
-</pre>
-
-&rarr; Group resource
-
-<pre>
-PUT https://{{ site.arvados_api_host }}/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
-group[uuid]=xyzzy-ldvyl-vyydjeplwaa6emg
-group[name]=Important group
-</pre>
-
-&rarr; Group resource
-
-More appropriate (but not yet implemented):
-
-<pre>
-PATCH https://{{ site.arvados_api_host }}/arvados/v1/groups/xyzzy-ldvyl-vyydjeplwaa6emg
-group={"uuid":"xyzzy-ldvyl-vyydjeplwaa6emg", "name":"Important group"}
-</pre>
-
-&rarr; Group resource
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |
+{background:#ccffcc}.|uuid|string|The UUID of the resource in question.|path||
+|{resource_name}|object||query||

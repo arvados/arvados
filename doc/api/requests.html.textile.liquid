@@ -39,9 +39,22 @@ Request parameters may be provided in one of two ways.  They may be provided in 
 
 To support structured and nested parameter values, after urldecode the value of each parameter is parsed as JSON.  Because of this, string values must be surrounded in double quotes.
 
+h3. Result
+
+Results are returned JSON-encoded in the response body.
+
+h3. Errors
+
+If a request cannot be fulfilled, the API will return 4xx or 5xx HTTP status code.  Be aware that the API server may return a 404 (Not Found) status for resources that exist but for which the client does not have read access.  The API will also return an error record:
+
+table(table table-bordered table-condensed).
+|*Parameter name*|*Value*|*Description*|
+|errors|array|An array of one or more error messages|
+|error_token|string|a unique identifier used to correlate the error in the API server logs|
+
 h2. Examples
 
-h3. Get a specific collection
+h3. Get a specific record
 
 <pre>
 $ curl -v -H "Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km | jq .
@@ -91,7 +104,7 @@ $ curl -v -H "Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9
 }
 </pre>
 
-h3. List collections and filter by uuid
+h3. List records and filter by uuid
 
 <pre>
 $ curl -v -G --data-urlencode 'filters=[["uuid", "=", "962eh-4zz18-xi32mpz2621o8km"]]' -H "Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections | jq .
@@ -260,6 +273,7 @@ $ curl -v -X POST --data-urlencode 'collection={"name":"empty collection"}' -H "
 
 h3. Delete a record
 
+<pre>
 $ curl -X DELETE -v -H "Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections/962eh-4zz18-m1ma0mxxfg3mbcc | jq .
 > DELETE /arvados/v1/collections/962eh-4zz18-m1ma0mxxfg3mbcc HTTP/1.1
 > User-Agent: curl/7.38.0
@@ -306,3 +320,4 @@ $ curl -X DELETE -v -H "Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu
   "replication_confirmed_at": null,
   "expires_at": null
 }
+</pre>
