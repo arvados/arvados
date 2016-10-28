@@ -266,8 +266,9 @@ def load_config(arguments):
     except (FileNotFoundError, IOError, ValueError) as error:
         if (isinstance(error, FileNotFoundError) and
             args.config == DEFAULT_CONFIG_FILE):
-            logger.warning("DEPRECATED: default config file not found; "
-                           "relying on command line configuration")
+            logger.warning("DEPRECATED: default config file %s not found; "
+                           "relying on command line configuration",
+                           repr(DEFAULT_CONFIG_FILE))
         else:
             sys.exit('error reading config file {}: {}'.format(
                 args.config, error))
