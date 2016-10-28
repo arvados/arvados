@@ -41,6 +41,9 @@ def registerDocker((api, reporecord, prefix, branch), dirname, names):
         tagname = name+"-"+tagname
     else:
         tagname = name
+
+    branch = branch.split("/")[-1]
+
     os.chdir(dirname)
     subprocess.check_call(["docker", "build", "--tag=%s:%s" % (tagname, branch), "."])
     try:
