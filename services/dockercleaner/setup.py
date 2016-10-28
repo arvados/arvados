@@ -29,6 +29,7 @@ setup(name="arvados-docker-cleaner",
       ],
       install_requires=[
           'docker-py==1.7.2',
+          'setuptools',
       ],
       tests_require=[
           'pbr<1.7.0',

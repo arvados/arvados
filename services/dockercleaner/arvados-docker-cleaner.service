@@ -6,9 +6,14 @@ AssertPathExists=/etc/arvados/docker-cleaner/docker-cleaner.json
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/env arvados-docker-cleaner
 Restart=always
 RestartSec=10s
+RestartPreventExitStatus=2
+#
+# If your deployment uses a Python 3 Software Collection, uncomment the
+# ExecStart line below, and delete the following one:
+#ExecStart=/usr/bin/env scl enable python33 arvados-docker-cleaner
+ExecStart=/usr/bin/env arvados-docker-cleaner
 
 [Install]
 WantedBy=multi-user.target
