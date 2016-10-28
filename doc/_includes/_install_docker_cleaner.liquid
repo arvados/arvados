@@ -18,37 +18,10 @@ Create a file @/etc/arvados/docker-cleaner/docker-cleaner.json@ in an editor, wi
 
 *Choosing a quota:* Most deployments will want a quota that's at least 10G.  From there, a larger quota can help reduce compute overhead by preventing reloading the same Docker image repeatedly, but will leave less space for other files on the same storage (usually Docker volumes).  Make sure the quota is less than the total space available for Docker images.
 
-*On Debian-based systems,* the @arvados-docker-cleaner@ service is enabled automatically when installed. Restart the service after updating the configuration file:
+Restart the service after updating the configuration file.
 
 <notextile>
 <pre><code>~$ <span class="userinput">sudo systemctl restart arvados-docker-cleaner</span>
-</code></pre>
-</notextile>
-
-*On Red Hat-based systems,* first install the systemd unit file included in the distribution.
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo cp /usr/share/doc/arvados-docker-cleaner/arvados-docker-cleaner.service /lib/systemd/system/</span>
-</code></pre>
-</notextile>
-
-{% include 'notebox_begin' %}
-
-If your deployment uses a Python 3 Software Collection, the package files will be installed to a different location, and you must modify the ExecStart line as described in the comments in the unit file.
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo cp /opt/rh/python33/root/usr/share/doc/arvados-docker-cleaner/arvados-docker-cleaner.service /lib/systemd/system/</span>
-~$ <span class="userinput">sudo nano /lib/systemd/system/arvados-docker-cleaner.service</span>
-</code></pre>
-</notextile>
-
-{% include 'notebox_end' %}
-
-Next, use @systemctl@ to enable and start the service.
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo systemctl enable arvados-docker-cleaner</span>
-~$ <span class="userinput">sudo systemctl start arvados-docker-cleaner</span>
 </code></pre>
 </notextile>
 
