@@ -1,4 +1,5 @@
 import arvados_cwl
+from arvados_cwl.arvdocker import arv_docker_clear_cache
 import logging
 import mock
 import unittest
@@ -21,6 +22,8 @@ class TestContainer(unittest.TestCase):
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_run(self, keepdocker):
         for enable_reuse in (True, False):
+            arv_docker_clear_cache()
+
             runner = mock.MagicMock()
             runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
             runner.ignore_docker_for_reuse = False
@@ -72,6 +75,7 @@ class TestContainer(unittest.TestCase):
     # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_resource_requirements(self, keepdocker):
+        arv_docker_clear_cache()
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False

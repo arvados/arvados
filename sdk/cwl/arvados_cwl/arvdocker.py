@@ -1,18 +1,27 @@
 import logging
 import sys
+import threading
 
 import cwltool.docker
 from cwltool.errors import WorkflowException
 import arvados.commands.keepdocker
 
-
 logger = logging.getLogger('arvados.cwl-runner')
+
+cached_lookups = {}
+cached_lookups_lock = threading.Lock()
 
 def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid):
     """Check if a Docker image is available in Keep, if not, upload it using arv-keepdocker."""
 
     if "dockerImageId" not in dockerRequirement and "dockerPull" in dockerRequirement:
         dockerRequirement["dockerImageId"] = dockerRequirement["dockerPull"]
+
+    global cached_lookups
+    global cached_lookups_lock
+    with cached_lookups_lock:
+        if dockerRequirement["dockerImageId"] in cached_lookups:
+            return cached_lookups[dockerRequirement["dockerImageId"]]
 
     sp = dockerRequirement["dockerImageId"].split(":")
     image_name = sp[0]
@@ -44,4 +53,14 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
         raise WorkflowException("Could not find Docker image %s:%s" % (image_name, image_tag))
 
     pdh = api_client.collections().get(uuid=images[0][0]).execute()["portable_data_hash"]
+
+    with cached_lookups_lock:
+        cached_lookups[dockerRequirement["dockerImageId"]] = pdh
+
     return pdh
+
+def arv_docker_clear_cache():
+    global cached_lookups
+    global cached_lookups_lock
+    with cached_lookups_lock:
+        cached_lookups = {}
