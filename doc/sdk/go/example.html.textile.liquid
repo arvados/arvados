@@ -1,0 +1,35 @@
+---
+layout: default
+navsection: sdk
+navmenu: Python
+title: Python SDK examples
+...
+
+h2. create
+
+<pre>
+  var collection arvados.Collection
+  err := api.Create("collection", Dict{"collection": Dict{"name": "create example"}}, &collection)
+</pre>
+
+h2. delete
+
+<pre>
+  var collection arvados.Collection
+  err := api.Delete("collection", "", Dict{"collection": Dict{"name": "create example"}}, &collection)
+</pre>
+
+h2. get
+
+<pre>
+</pre>
+
+h2. list
+
+<pre>
+</pre>
+
+h2. update
+
+<pre>
+</pre>

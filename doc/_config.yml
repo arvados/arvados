@@ -78,29 +78,33 @@ navbar:
       - sdk/index.html.textile.liquid
     - Python:
       - sdk/python/sdk-python.html.textile.liquid
+      - sdk/python/example.html.textile.liquid
       - sdk/python/python.html.textile.liquid
       - sdk/python/crunch-utility-libraries.html.textile.liquid
       - sdk/python/events.html.textile.liquid
+    - CLI:
+      - sdk/cli/index.html.textile.liquid
+      - sdk/cli/install.html.textile.liquid
+      - sdk/cli/reference.html.textile.liquid
+      - sdk/cli/subcommands.html.textile.liquid
+    - Go:
+      - sdk/go/index.html.textile.liquid
+      - sdk/go/example.html.textile.liquid
     - Perl:
       - sdk/perl/index.html.textile.liquid
     - Ruby:
       - sdk/ruby/index.html.textile.liquid
     - Java:
       - sdk/java/index.html.textile.liquid
-    - Go:
-      - sdk/go/index.html.textile.liquid
-    - CLI:
-      - sdk/cli/index.html.textile.liquid
-      - sdk/cli/install.html.textile.liquid
-      - sdk/cli/reference.html.textile.liquid
-      - sdk/cli/subcommands.html.textile.liquid
   api:
     - Concepts:
       - api/index.html.textile.liquid
+      - api/tokens.html.textile.liquid
       - api/requests.html.textile.liquid
       - api/methods.html.textile.liquid
       - api/resources.html.textile.liquid
       - api/permission-model.html.textile.liquid
+      - api/execution.html.textile.liquid
     - Permission and authentication:
       - api/methods/users.html.textile.liquid
       - api/methods/groups.html.textile.liquid

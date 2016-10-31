@@ -1,0 +1,36 @@
+---
+layout: default
+navsection: sdk
+navmenu: Python
+title: Python SDK examples
+...
+
+h2. create
+
+<pre>
+result = api.collection().create(body={"collection": {"name": "create example"}}).execute()
+</pre>
+
+h2. delete
+
+<pre>
+result = api.collection().delete(uuid="aaaaa-bbbbb-ccccccccccccccc").execute()
+</pre>
+
+h2. get
+
+<pre>
+result = api.collection().get(uuid="aaaaa-bbbbb-ccccccccccccccc").execute()
+</pre>
+
+h2. list
+
+<pre>
+result = api.collection().list(filters=[["uuid", "=", "aaaaa-bbbbb-ccccccccccccccc"]]).execute()
+</pre>
+
+h2. update
+
+<pre>
+result = api.collection().update(uuid="aaaaa-bbbbb-ccccccccccccccc", body={"collection": {"name": "update example"}}).execute()
+</pre>

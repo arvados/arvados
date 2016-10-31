@@ -20,17 +20,18 @@ An ApiClientAuthorization is *not* a generic Arvados resource.  The full list of
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
+|uuid|string|An identifier used to refer to the token without exposing the actual token.||
 |api_token|string|The actual token string that is expected in the Authorization header.||
 |api_client_id|integer|-||
 |user_id|integer|-||
 |created_by_ip_address|string|-||
 |last_used_by_ip_address|string|The network address of the most recent client using this token.||
 |last_used_at|datetime|Timestamp of the most recent request using this token.||
-|expires_at|datetime|Time at which the token is no longer valid.||
-|default_owner_uuid|string|||
+|expires_at|datetime|Time at which the token is no longer valid.  May be set to a time in the past in order to immediately expire a token.||
+|owner_uuid|string|The user associated with the token.  All operations using this token are checked against the permissions of this user.||
 |scopes|array|A list of resources this token is allowed to access.  A scope of ["all"] allows all resources.  See below.||
 
-h3. Scopes
+h3(#scope). Scopes
 
 Scopes can restrict a token so it may only access certain resources.  This is in addition to normal permission checks for the user associated with the token.
 
@@ -57,9 +58,11 @@ A narrow scope such as @GET /arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km@
 
 h2. Methods
 
-h3. create
+h3(#create). create
 
 Create a new ApiClientAuthorization.
+
+Regular users may only create self-owned API tokens, but may provide a restricted "scope"#scope .  Administrators may create API tokens corresponding to any user.
 
 Arguments:
 
