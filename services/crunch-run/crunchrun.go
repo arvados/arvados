@@ -250,6 +250,11 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	pdhOnly := true
 	tmpcount := 0
 	arvMountCmd := []string{"--foreground", "--allow-other", "--read-write"}
+
+	if runner.Container.RuntimeConstraints.KeepCacheRAM > 0 {
+		arvMountCmd = append(arvMountCmd, "--file-cache", fmt.Sprintf("%d", runner.Container.RuntimeConstraints.KeepCacheRAM))
+	}
+
 	collectionPaths := []string{}
 	runner.Binds = nil
 
@@ -356,10 +361,6 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 		arvMountCmd = append(arvMountCmd, "--mount-by-id", "by_id")
 	}
 	arvMountCmd = append(arvMountCmd, runner.ArvMountPoint)
-
-	if runner.Container.RuntimeConstraints.KeepCacheRAM > 0 {
-		arvMountCmd = append(arvMountCmd, "--file-cache", fmt.Sprintf("%d", runner.Container.RuntimeConstraints.KeepCacheRAM))
-	}
 
 	token, err := runner.ContainerToken()
 	if err != nil {
