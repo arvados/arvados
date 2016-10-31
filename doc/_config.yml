@@ -101,7 +101,6 @@ navbar:
       - api/methods.html.textile.liquid
       - api/resources.html.textile.liquid
       - api/permission-model.html.textile.liquid
-      - api/examples.html.textile.liquid
     - Permission and authentication:
       - api/methods/users.html.textile.liquid
       - api/methods/groups.html.textile.liquid

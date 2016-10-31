@@ -17,7 +17,7 @@ Use @PUT@ to update an existing resource.
 
 Use @DELETE@ to remove an existing resource.
 
-As a special case, a @POST@ with the query parameter @_method=GET@ will be treated as a GET request.  This makes it possible to have @GET@ requests where the query string exceeds the permitted request URI length, by putting the query string in the body of the request.
+As a special case, a @POST@ with the query parameter @_method=GET@ will be treated as a GET request.  This makes it possible to issue @GET@ requests where the query string exceeds the maximum request URI length, by putting the query string in the body of the request.
 
 h3. Request URI
 

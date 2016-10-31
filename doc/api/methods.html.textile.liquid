@@ -12,7 +12,7 @@ The methods are relative to the base URI, e.g. @/arvados/v1/resource_type@.  For
 
 h2. create
 
-The @create@ method creates a new object of the specified type.  It corresponds to the HTTP request @POST /arvados/v1/resource_type@.  A successful create call returns a copy of the new object.
+The @create@ method creates a new object of the specified type.  Note that only the listed attributes (and "standard metadata":resources.html) are set, unset attributes will get default values, and the attributes of a given resource type are fixed (you cannot introduce new toplevel attributes).  It corresponds to the HTTP request @POST /arvados/v1/resource_type@.  A successful create call returns a copy of the new object.
 
 Arguments:
 
@@ -96,7 +96,7 @@ table(table table-bordered table-condensed).
 
 h2. update
 
-The @update@ method updates fields on the object with the specified @uuid@.  It corresponds to the HTTP request @PUT /arvados/v1/resource_type/uuid@.  A successful update call returns the updated copy of the object.
+The @update@ method updates fields on the object with the specified @uuid@.  It corresponds to the HTTP request @PUT /arvados/v1/resource_type/uuid@.  Note that only the listed attributes (and "standard metadata":resources.html) are updated, unset attributes will retain their previous values, and the attributes of a given resource type are fixed (you cannot introduce new toplevel attributes).  Also note that updates replace the value of the attribute, so if an attribute has an object value, the entire object is replaced.  A successful update call returns the updated copy of the object.
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |
