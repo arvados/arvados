@@ -18,10 +18,10 @@ class PipelineInstanceWorkUnit < ProxyWorkUnit
           if job[:uuid] and jobs[job[:uuid]]
             items << jobs[job[:uuid]].work_unit(name)
           else
-            items << JobWorkUnit.new(job, name)
+            items << JobWorkUnit.new(job, name, uuid)
           end
         else
-          items << JobWorkUnit.new(c, name)
+          items << JobWorkUnit.new(c, name, uuid)
         end
       else
         @unreadable_children = true

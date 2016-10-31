@@ -1,4 +1,9 @@
 class WorkUnitsController < ApplicationController
+  skip_around_filter :require_thread_api_token, if: proc { |ctrl|
+    Rails.configuration.anonymous_user_token and
+    'show_child_component' == ctrl.action_name
+  }
+
   def find_objects_for_index
     # If it's not the index rows partial display, just return
     # The /index request will again be invoked to display the
@@ -109,6 +114,55 @@ class WorkUnitsController < ApplicationController
       redirect_to @object
     else
       render_error status: 422
+    end
+  end
+
+  def find_object_by_uuid
+    if params['object_type']
+      @object = params['object_type'].constantize.find(params['uuid'])
+    else
+      super
+    end
+  end
+
+  def show_child_component
+    data = JSON.load(params[:action_data])
+
+    current_obj = {}
+    current_obj_uuid = data['current_obj_uuid']
+    current_obj_name = data['current_obj_name']
+    current_obj_type = data['current_obj_type']
+    current_obj_parent = data['current_obj_parent']
+    if current_obj_uuid
+      resource_class = resource_class_for_uuid current_obj_uuid
+      obj = object_for_dataclass(resource_class, current_obj_uuid)
+      current_obj = obj if obj
+    end
+
+    if current_obj.is_a?(Hash) and !current_obj.any?
+      if current_obj_parent
+        resource_class = resource_class_for_uuid current_obj_parent
+        parent = object_for_dataclass(resource_class, current_obj_parent)
+        parent_wu = parent.work_unit
+        children = parent_wu.children
+        if current_obj_uuid
+          wu = children.select {|c| c.uuid == current_obj_uuid}.first
+        else current_obj_name
+          wu = children.select {|c| c.label.to_s == current_obj_name}.first
+        end
+      end
+    else
+      if current_obj_type == JobWorkUnit.to_s
+        wu = JobWorkUnit.new(current_obj, current_obj_name, current_obj_parent)
+      elsif current_obj_type == PipelineInstanceWorkUnit.to_s
+        wu = PipelineInstanceWorkUnit.new(current_obj, current_obj_name, current_obj_parent)
+      elsif current_obj_type == ContainerWorkUnit.to_s
+        wu = ContainerWorkUnit.new(current_obj, current_obj_name, current_obj_parent)
+      end
+    end
+
+    respond_to do |f|
+      f.html { render(partial: "show_component", locals: {wu: wu}) }
     end
   end
 end

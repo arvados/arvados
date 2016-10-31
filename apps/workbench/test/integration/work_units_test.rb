@@ -207,4 +207,29 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
       assert_text(expect_log_text)
     end
   end
+
+  [
+    ['jobs', 'active', 'running_job_with_components', 'component1', '/jobs/zzzzz-8i9sb-jyq01m7in1jlofj#Log'],
+    ['pipeline_instances', 'active', 'pipeline_in_running_state', 'foo', '/jobs/zzzzz-8i9sb-pshmckwoma9plh7#Log'],
+    ['pipeline_instances', nil, 'pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', 'foo', 'Log unavailable'],
+  ].each do |type, token, fixture, child, log_link|
+    test "link_to_log for #{fixture} for #{token}" do
+      obj = api_fixture(type)[fixture]
+      if token
+        visit page_with_token token, "/#{type}/#{obj['uuid']}"
+      else
+        Rails.configuration.anonymous_user_token =
+          api_fixture("api_client_authorizations", "anonymous", "api_token")
+        visit "/#{type}/#{obj['uuid']}"
+      end
+
+      click_link(child)
+
+      if token
+        assert_selector "a[href=\"#{log_link}\"]"
+      else
+        assert_text log_link
+      end
+    end
+  end
 end

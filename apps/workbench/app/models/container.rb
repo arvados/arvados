@@ -4,6 +4,6 @@ class Container < ArvadosBase
   end
 
   def work_unit(label=nil)
-    ContainerWorkUnit.new(self, label)
+    ContainerWorkUnit.new(self, label, self.uuid)
   end
 end

@@ -265,9 +265,8 @@ common:
   unlogged_attributes: []
 
   # API methods to disable. Disabled methods are not listed in the
-  # discovery document. Note: currently, disabled methods are still
-  # accessible to clients that don't pay attention to the discovery
-  # document. Example: ["jobs.create"]
+  # discovery document, and respond 404 to all requests.
+  # Example: ["jobs.create", "pipeline_instances.create"]
   disable_api_methods: []
 
   ###

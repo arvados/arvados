@@ -104,7 +104,7 @@ case "$TARGET" in
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             'pycurl<7.21.5' contextlib2 pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
-            cachecontrol)
+            cachecontrol requests)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         ;;
     debian8)
@@ -126,7 +126,7 @@ case "$TARGET" in
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             contextlib2 'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro isodate ruamel.ordereddict
-            cachecontrol)
+            cachecontrol requests)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
         ;;
     ubuntu1404)
@@ -172,7 +172,7 @@ case "$TARGET" in
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka  \
             ciso8601 pycrypto 'pycurl<7.21.5' \
-            python-daemon llfuse==0.41.1 'pbr<1.0' pyyaml \
+            python-daemon==2.1.1 llfuse==0.41.1 'pbr<1.0' pyyaml \
             'rdflib>=4.2.0' shellescape mistune typing avro \
             isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
             ruamel.ordereddict cachecontrol)
@@ -446,7 +446,7 @@ fpm_build $WORKSPACE/sdk/python "${PYTHON2_PKG_PREFIX}-arvados-python-client" 'C
 # cwl-runner
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/sdk/cwl/build"
-fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/cwl/arvados_cwl_runner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados CWL runner" --iteration 3
+fpm_build $WORKSPACE/sdk/cwl "${PYTHON2_PKG_PREFIX}-arvados-cwl-runner" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/cwl/arvados_cwl_runner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados CWL runner" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --iteration 3
 
 fpm_build lockfile "" "" python 0.12.2 --epoch 1
 

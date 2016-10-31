@@ -33,6 +33,7 @@ Server::Application.routes.draw do
         get 'auth', on: :member
         post 'lock', on: :member
         post 'unlock', on: :member
+        get 'current', on: :collection
       end
       resources :container_requests
       resources :jobs do

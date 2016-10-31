@@ -54,6 +54,6 @@ class Job < ArvadosBase
   end
 
   def work_unit(label=nil)
-    JobWorkUnit.new(self, label)
+    JobWorkUnit.new(self, label, self.uuid)
   end
 end

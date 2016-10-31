@@ -91,7 +91,7 @@ def stubs(func):
         }
         stubs.expect_job_spec = {
             'runtime_constraints': {
-                'docker_image': 'arvados/jobs'
+                'docker_image': 'arvados/jobs:'+arvados_cwl.__version__
             },
             'script_parameters': {
                 'x': {
@@ -117,7 +117,7 @@ def stubs(func):
                 '99999999999999999999999999999991+99/wf/submit_wf.cwl'
             },
             'repository': 'arvados',
-            'script_version': 'master',
+            'script_version': arvados_cwl.__version__,
             'script': 'cwl-runner'
         }
         stubs.pipeline_component = stubs.expect_job_spec.copy()
@@ -126,7 +126,7 @@ def stubs(func):
             'state': 'RunningOnServer',
             "components": {
                 "cwl-runner": {
-                    'runtime_constraints': {'docker_image': 'arvados/jobs'},
+                    'runtime_constraints': {'docker_image': 'arvados/jobs:'+arvados_cwl.__version__},
                     'script_parameters': {
                         'y': {"value": {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'}},
                         'x': {"value": {'basename': 'blorp.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999994+99/blorp.txt'}},
@@ -137,8 +137,9 @@ def stubs(func):
                         'cwl:tool': '99999999999999999999999999999991+99/wf/submit_wf.cwl'
                     },
                     'repository': 'arvados',
-                    'script_version': 'master',
-                    'script': 'cwl-runner'
+                    'script_version': arvados_cwl.__version__,
+                    'script': 'cwl-runner',
+                    'job': {'state': 'Queued', 'uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'}
                 }
             }
         }
@@ -177,7 +178,7 @@ def stubs(func):
             'owner_uuid': 'zzzzz-tpzed-zzzzzzzzzzzzzzz',
             'command': ['arvados-cwl-runner', '--local', '--api=containers', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/job/cwl.input.json'],
             'name': 'submit_wf.cwl',
-            'container_image': '99999999999999999999999999999993+99',
+            'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
             'output_path': '/var/spool/cwl',
             'cwd': '/var/spool/cwl',
             'runtime_constraints': {
@@ -392,7 +393,7 @@ class TestTemplateInputs(unittest.TestCase):
         "components": {
             "inputs_test.cwl": {
                 'runtime_constraints': {
-                    'docker_image': 'arvados/jobs',
+                    'docker_image': 'arvados/jobs:'+arvados_cwl.__version__,
                 },
                 'script_parameters': {
                     'cwl:tool':
@@ -427,7 +428,7 @@ class TestTemplateInputs(unittest.TestCase):
                     },
                 },
                 'repository': 'arvados',
-                'script_version': 'master',
+                'script_version': arvados_cwl.__version__,
                 'script': 'cwl-runner',
             },
         },

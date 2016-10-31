@@ -18,6 +18,7 @@ import ruamel.yaml as yaml
 
 from .arvdocker import arv_docker_get_image
 from .pathmapper import ArvPathMapper
+from ._version import __version__
 
 logger = logging.getLogger('arvados.cwl-runner')
 
@@ -134,6 +135,13 @@ def upload_instance(arvrunner, name, tool, job_order):
 
         return workflowmapper
 
+def arvados_jobs_image(arvrunner):
+    img = "arvados/jobs:"+__version__
+    try:
+        arv_docker_get_image(arvrunner.api, {"dockerPull": img}, True, arvrunner.project_uuid)
+    except Exception as e:
+        raise Exception("Docker image %s is not available\n%s" % (img, e) )
+    return img
 
 class Runner(object):
     def __init__(self, runner, tool, job_order, enable_reuse, output_name):

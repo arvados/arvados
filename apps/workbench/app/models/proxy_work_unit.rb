@@ -6,9 +6,10 @@ class ProxyWorkUnit < WorkUnit
   attr_accessor :my_children
   attr_accessor :unreadable_children
 
-  def initialize proxied, label
+  def initialize proxied, label, parent
     @lbl = label
     @proxied = proxied
+    @parent = parent
   end
 
   def label
@@ -17,6 +18,10 @@ class ProxyWorkUnit < WorkUnit
 
   def uuid
     get(:uuid)
+  end
+
+  def parent
+    @parent
   end
 
   def modified_by_user_uuid
@@ -322,7 +327,7 @@ class ProxyWorkUnit < WorkUnit
     if obj.respond_to? key
       obj.send(key)
     elsif obj.is_a?(Hash)
-      obj[key]
+      obj[key] || obj[key.to_s]
     end
   end
 end

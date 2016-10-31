@@ -261,6 +261,25 @@ class User < ArvadosModel
     self.save!
   end
 
+  def set_initial_username(requested: false)
+    if !requested.is_a?(String) || requested.empty?
+      email_parts = email.partition("@")
+      local_parts = email_parts.first.partition("+")
+      if email_parts.any?(&:empty?)
+        return
+      elsif not local_parts.first.empty?
+        requested = local_parts.first
+      else
+        requested = email_parts.first
+      end
+    end
+    requested.sub!(/^[^A-Za-z]+/, "")
+    requested.gsub!(/[^A-Za-z0-9]/, "")
+    unless requested.empty?
+      self.username = find_usable_username_from(requested)
+    end
+  end
+
   protected
 
   def ensure_ownership_path_leads_to_user
@@ -324,23 +343,6 @@ class User < ArvadosModel
       return next_username if (next_username.size <= pattern.size)
     end
     nil
-  end
-
-  def set_initial_username
-    email_parts = email.partition("@")
-    local_parts = email_parts.first.partition("+")
-    if email_parts.any?(&:empty?)
-      return
-    elsif not local_parts.first.empty?
-      base_username = local_parts.first
-    else
-      base_username = email_parts.first
-    end
-    base_username.sub!(/^[^A-Za-z]+/, "")
-    base_username.gsub!(/[^A-Za-z0-9]/, "")
-    unless base_username.empty?
-      self.username = find_usable_username_from(base_username)
-    end
   end
 
   def prevent_privilege_escalation

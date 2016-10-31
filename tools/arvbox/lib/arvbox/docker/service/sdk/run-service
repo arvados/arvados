@@ -19,10 +19,10 @@ cd /usr/src/arvados/sdk/python
 python setup.py sdist
 pip_install $(ls dist/arvados-python-client-*.tar.gz | tail -n1)
 
-cd /usr/src/arvados/sdk/cwl
-python setup.py sdist
-pip_install $(ls dist/arvados-cwl-runner-*.tar.gz | tail -n1)
-
 cd /usr/src/arvados/services/fuse
 python setup.py sdist
 pip_install $(ls dist/arvados_fuse-*.tar.gz | tail -n1)
+
+cd /usr/src/arvados/sdk/cwl
+python setup.py sdist
+pip_install $(ls dist/arvados-cwl-runner-*.tar.gz | tail -n1)

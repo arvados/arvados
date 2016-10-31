@@ -9,6 +9,10 @@ class WorkUnit
     # returns the arvados UUID of the underlying object
   end
 
+  def parent
+    # returns the parent uuid of this work unit
+  end
+
   def children
     # returns an array of child work units
   end

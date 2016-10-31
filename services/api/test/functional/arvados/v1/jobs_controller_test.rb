@@ -508,4 +508,17 @@ class Arvados::V1::JobsControllerTest < ActionController::TestCase
     assert_not_nil json_response["components"]
     assert_equal [], json_response["components"].keys
   end
+
+  test 'jobs.create disabled in config' do
+    Rails.configuration.disable_api_methods = ["jobs.create",
+                                               "pipeline_instances.create"]
+    authorize_with :active
+    post :create, job: {
+      script: "hash",
+      script_version: "master",
+      repository: "active/foo",
+      script_parameters: {}
+    }
+    assert_response 404
+  end
 end

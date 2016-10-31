@@ -2104,7 +2104,7 @@ sub find_docker_image {
       }
     }
   }
-  if (defined($filename) and ($filename =~ /^([0-9A-Fa-f]{64})\.tar$/)) {
+  if (defined($filename) and ($filename =~ /^((?:sha256:)?[0-9A-Fa-f]{64})\.tar$/)) {
     return ($streamname, $1);
   } else {
     return (undef, undef);

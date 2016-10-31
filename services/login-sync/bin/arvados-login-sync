@@ -21,13 +21,12 @@ exclusive_banner = "############################################################
 start_banner = "### BEGIN Arvados-managed keys -- changes between markers will be overwritten\n"
 end_banner = "### END Arvados-managed keys -- changes between markers will be overwritten\n"
 
+# Don't try to create any local accounts
+skip_missing_users = ARGV.index("--skip-missing-users")
+
 keys = ''
 
-seen = Hash.new
-
 begin
-  uids = Hash[Etc.to_enum(:passwd).map { |ent| [ent.name, ent.uid] }]
-  gids = Hash[Etc.to_enum(:group).map { |ent| [ent.name, ent.gid] }]
   arv = Arvados.new({ :suppress_ssl_warnings => false })
 
   vm_uuid = ENV['ARVADOS_VIRTUAL_MACHINE_UUID']
@@ -52,8 +51,24 @@ begin
       uid_min = new_uid_min if (new_uid_min > 0)
     end
   end
-  logins.reject! { |l| (uids[l[:username]] || 65535) < uid_min }
 
+  pwnam = Hash.new()
+  logins.reject! do |l|
+    return false if pwnam[l[:username]]
+    begin
+      pwnam[l[:username]] = Etc.getpwnam(l[:username])
+    rescue
+      if skip_missing_users
+        STDERR.puts "Account #{l[:username]} not found. Skipping"
+        true
+      end
+    else
+      if pwnam[l[:username]].uid < uid_min
+        STDERR.puts "Account #{l[:username]} uid #{pwnam[l[:username]].uid} < uid_min #{uid_min}. Skipping"
+        true
+      end
+    end
+  end
   keys = Hash.new()
 
   # Collect all keys
@@ -74,24 +89,33 @@ begin
 
   logins.each do |l|
     next if seen[l[:username]]
-    seen[l[:username]] = true if not seen.has_key?(l[:username])
+    seen[l[:username]] = true
 
-    unless uids[l[:username]]
+    unless pwnam[l[:username]]
       STDERR.puts "Creating account #{l[:username]}"
       groups = l[:groups] || []
       # Adding users to the FUSE group has long been hardcoded behavior.
       groups << "fuse"
-      groups.select! { |name| gids[name] }
+      groups.select! { |g| Etc.getgrnam(g) rescue false }
       # Create new user
-      next unless system("useradd", "-m",
-                         "-c", l[:username],
-                         "-s", "/bin/bash",
-                         "-G", groups.join(","),
-                         l[:username],
-                         out: devnull)
+      unless system("useradd", "-m",
+                "-c", l[:username],
+                "-s", "/bin/bash",
+                "-G", groups.join(","),
+                l[:username],
+                out: devnull)
+        STDERR.puts "Account creation failed for #{l[:username]}: $?"
+        next
+      end
+      begin
+        pwnam[l[:username]] = Etc.getpwnam(l[:username])
+      rescue => e
+        STDERR.puts "Created account but then getpwnam() failed for #{l[:username]}: #{e}"
+        raise
+      end
     end
-    # Create .ssh directory if necessary
-    @homedir = Etc.getpwnam(l[:username]).dir
+
+    @homedir = pwnam[l[:username]].dir
     userdotssh = File.join(@homedir, ".ssh")
     Dir.mkdir(userdotssh) if !File.exists?(userdotssh)
 

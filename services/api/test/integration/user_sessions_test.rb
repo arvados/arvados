@@ -5,7 +5,7 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
     'https://wb.example.com'
   end
 
-  def mock_auth_with_email email
+  def mock_auth_with(email: nil, username: nil)
     mock = {
       'provider' => 'josh_id',
       'uid' => 'https://edward.example.com',
@@ -14,17 +14,30 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
         'name' => 'Edward Example',
         'first_name' => 'Edward',
         'last_name' => 'Example',
-        'email' => email,
       },
     }
+    mock['info']['email'] = email unless email.nil?
+    mock['info']['username'] = username unless username.nil?
     post('/auth/josh_id/callback',
          {return_to: client_url},
          {'omniauth.auth' => mock})
     assert_response :redirect, 'Did not redirect to client with token'
   end
 
+  test 'assign username from sso' do
+    mock_auth_with(email: 'foo@example.com', username: 'bar')
+    u = assigns(:user)
+    assert_equal 'bar', u.username
+  end
+
+  test 'no assign username from sso' do
+    mock_auth_with(email: 'foo@example.com')
+    u = assigns(:user)
+    assert_equal 'foo', u.username
+  end
+
   test 'create new user during omniauth callback' do
-    mock_auth_with_email 'edward@example.com'
+    mock_auth_with(email: 'edward@example.com')
     assert_equal(0, @response.redirect_url.index(client_url),
                  'Redirected to wrong address after succesful login: was ' +
                  @response.redirect_url + ', expected ' + client_url + '[...]')
@@ -61,7 +74,7 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
       Rails.configuration.auto_setup_new_users_with_repository =
         testcase[:cfg][:repo]
 
-      mock_auth_with_email testcase[:email]
+      mock_auth_with(email: testcase[:email])
       u = assigns(:user)
       vm_links = Link.where('link_class=? and tail_uuid=? and head_uuid like ?',
                             'permission', u.uuid,

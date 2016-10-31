@@ -11,7 +11,7 @@ import arvados.collection
 
 from .arvdocker import arv_docker_get_image
 from . import done
-from .runner import Runner
+from .runner import Runner, arvados_jobs_image
 
 logger = logging.getLogger('arvados.cwl-runner')
 
@@ -79,7 +79,7 @@ class ArvadosContainer(object):
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if not docker_req:
-            docker_req = {"dockerImageId": "arvados/jobs"}
+            docker_req = {"dockerImageId": arvados_jobs_image(self.arvrunner)}
 
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
                                                                      docker_req,
@@ -113,10 +113,14 @@ class ArvadosContainer(object):
 
             self.arvrunner.processes[response["container_uuid"]] = self
 
-            logger.info("Container %s (%s) request state is %s", self.name, response["uuid"], response["state"])
+            container = self.arvrunner.api.containers().get(
+                uuid=response["container_uuid"]
+            ).execute(num_retries=self.arvrunner.num_retries)
 
-            if response["state"] == "Final":
-                self.done(response)
+            logger.info("Container request %s (%s) state is %s with container %s %s", self.name, response["uuid"], response["state"], container["uuid"], container["state"])
+
+            if container["state"] in ("Complete", "Cancelled"):
+                self.done(container)
         except Exception as e:
             logger.error("Got error %s" % str(e))
             self.output_callback({}, "permanentFail")
@@ -179,11 +183,6 @@ class RunnerContainer(Runner):
         workflowcollection = workflowcollection[5:workflowcollection.index('/')]
         jobpath = "/var/lib/cwl/job/cwl.input.json"
 
-        container_image = arv_docker_get_image(self.arvrunner.api,
-                                               {"dockerImageId": "arvados/jobs"},
-                                               pull_image,
-                                               self.arvrunner.project_uuid)
-
         command = ["arvados-cwl-runner", "--local", "--api=containers"]
         if self.output_name:
             command.append("--output-name=" + self.output_name)
@@ -197,7 +196,7 @@ class RunnerContainer(Runner):
             "cwd": "/var/spool/cwl",
             "priority": 1,
             "state": "Committed",
-            "container_image": container_image,
+            "container_image": arvados_jobs_image(self.arvrunner),
             "mounts": {
                 "/var/lib/cwl/workflow": {
                     "kind": "collection",

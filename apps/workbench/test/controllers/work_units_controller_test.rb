@@ -65,27 +65,4 @@ class WorkUnitsControllerTest < ActionController::TestCase
                           }]
     get :index, encoded_params, session_for(:active)
   end
-
-  [
-    [Job, 'active', 'running_job_with_components', '/jobs/zzzzz-8i9sb-jyq01m7in1jlofj#Log'],
-    [PipelineInstance, 'active', 'pipeline_in_running_state', '/jobs/zzzzz-8i9sb-pshmckwoma9plh7#Log'],
-    [PipelineInstance, nil, 'pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', 'Log unavailable'],
-  ].each do |type, token, fixture, log_link|
-    test "link_to_log for #{fixture} for #{token}" do
-      use_token 'admin'
-      obj = find_fixture(type, fixture)
-
-      @controller = if type == Job then JobsController.new else PipelineInstancesController.new end
-
-      if token
-        get :show, {id: obj['uuid']}, session_for(token)
-      else
-        Rails.configuration.anonymous_user_token =
-          api_fixture("api_client_authorizations", "anonymous", "api_token")
-        get :show, {id: obj['uuid']}
-      end
-
-      assert_includes @response.body, log_link
-    end
-  end
 end

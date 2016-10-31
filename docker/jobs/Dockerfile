@@ -8,10 +8,16 @@ ADD apt.arvados.org.list /etc/apt/sources.list.d/
 RUN apt-key adv --keyserver pool.sks-keyservers.net --recv 1078ECD7
 RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3
 
-ARG COMMIT=latest
-RUN echo $COMMIT && apt-get update -q
+ARG python_sdk_version
+ARG cwl_runner_version
+RUN echo cwl_runner_version $cwl_runner_version python_sdk_version $python_sdk_version
 
-RUN apt-get install -qy git python-pip python-virtualenv python-arvados-python-client python-dev libgnutls28-dev libcurl4-gnutls-dev nodejs python-arvados-cwl-runner
+RUN apt-get update -q
+RUN apt-get install -yq --no-install-recommends \
+    git python-pip python-virtualenv \
+    python-dev libgnutls28-dev libcurl4-gnutls-dev nodejs \
+    python-arvados-python-client=$python_sdk_version \
+    python-arvados-cwl-runner=$cwl_runner_version
 
 # Install dependencies and set up system.
 RUN /usr/sbin/adduser --disabled-password \
