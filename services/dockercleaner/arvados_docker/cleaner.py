@@ -17,6 +17,8 @@ import time
 import docker
 import json
 
+DEFAULT_CONFIG_FILE = '/etc/arvados/docker-cleaner/docker-cleaner.json'
+
 SUFFIX_SIZES = {suffix: 1024 ** exp for exp, suffix in enumerate('kmgt', 1)}
 
 logger = logging.getLogger('arvados_docker.cleaner')
@@ -262,7 +264,14 @@ def load_config(arguments):
             c = json.load(f)
             config.update(c)
     except (FileNotFoundError, IOError, ValueError) as error:
-        sys.exit('error reading config file {}: {}'.format(args.config, error))
+        if (isinstance(error, FileNotFoundError) and
+            args.config == DEFAULT_CONFIG_FILE):
+            logger.warning("DEPRECATED: default config file %s not found; "
+                           "relying on command line configuration",
+                           repr(DEFAULT_CONFIG_FILE))
+        else:
+            sys.exit('error reading config file {}: {}'.format(
+                args.config, error))
 
     configargs = vars(args).copy()
     configargs.pop('config')
@@ -294,7 +303,7 @@ def parse_arguments(arguments):
         formatter_class=Formatter,
     )
     parser.add_argument(
-        '--config', action='store', type=str, default='/etc/arvados/docker-cleaner/docker-cleaner.json',
+        '--config', action='store', type=str, default=DEFAULT_CONFIG_FILE,
         help="configuration file")
 
     deprecated = " (DEPRECATED -- use config file instead)"
@@ -314,12 +323,15 @@ def parse_arguments(arguments):
     return parser.parse_args(arguments)
 
 
-def setup_logging(config):
+def setup_logging():
     log_handler = logging.StreamHandler()
     log_handler.setFormatter(logging.Formatter(
         '%(asctime)s %(name)s[%(process)d] %(levelname)s: %(message)s',
         '%Y-%m-%d %H:%M:%S'))
     logger.addHandler(log_handler)
+
+
+def configure_logging(config):
     logger.setLevel(logging.ERROR - (10 * config['Verbose']))
 
 
@@ -342,8 +354,9 @@ def run(config, docker_client):
 
 
 def main(arguments=sys.argv[1:]):
+    setup_logging()
     config = load_config(arguments)
-    setup_logging(config)
+    configure_logging(config)
     try:
         run(config, docker.Client(version='1.14'))
     except KeyboardInterrupt:
