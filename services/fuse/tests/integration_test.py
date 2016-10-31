@@ -61,7 +61,6 @@ class IntegrationTest(unittest.TestCase):
     def setUp(self):
         self.mnt = tempfile.mkdtemp()
         run_test_server.authorize_with('active')
-        self.api = arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
 
     def tearDown(self):
         os.rmdir(self.mnt)

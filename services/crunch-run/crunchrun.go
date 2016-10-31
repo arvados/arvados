@@ -567,6 +567,21 @@ func (runner *ContainerRunner) CaptureOutput() error {
 		return nil
 	}
 
+	if wantAPI := runner.Container.RuntimeConstraints.API; wantAPI != nil && *wantAPI {
+		// Output may have been set directly by the container, so
+		// refresh the container record to check.
+		err := runner.ArvClient.Get("containers", runner.Container.UUID,
+			nil, &runner.Container)
+		if err != nil {
+			return err
+		}
+		if runner.Container.Output != "" {
+			// Container output is already set.
+			runner.OutputPDH = &runner.Container.Output
+			return nil
+		}
+	}
+
 	if runner.HostOutputDir == "" {
 		return nil
 	}

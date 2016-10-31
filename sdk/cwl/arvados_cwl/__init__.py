@@ -124,7 +124,8 @@ class ArvCwlRunner(object):
                     try:
                         self.cond.acquire()
                         j = self.processes[uuid]
-                        logger.info("Job %s (%s) is %s", j.name, uuid, event["properties"]["new_attributes"]["state"])
+                        txt = self.work_api[0].upper() + self.work_api[1:-1]
+                        logger.info("%s %s (%s) is %s", txt, j.name, uuid, event["properties"]["new_attributes"]["state"])
                         with Perf(metrics, "done %s" % j.name):
                             j.done(event["properties"]["new_attributes"])
                         self.cond.notify()
@@ -234,6 +235,24 @@ class ArvCwlRunner(object):
                     final.manifest_locator())
 
         self.final_output_collection = final
+
+    def set_crunch_output(self):
+        if self.work_api == "containers":
+            try:
+                current = self.api.containers().current().execute(num_retries=self.num_retries)
+                self.api.containers().update(uuid=current['uuid'],
+                                             body={
+                                                 'output': self.final_output_collection.portable_data_hash(),
+                                             }).execute(num_retries=self.num_retries)
+            except Exception as e:
+                logger.info("Setting container output: %s", e)
+        elif self.work_api == "jobs" and "TASK_UUID" in os.environ:
+            self.api.job_tasks().update(uuid=os.environ["TASK_UUID"],
+                                   body={
+                                       'output': self.final_output_collection.portable_data_hash(),
+                                       'success': self.final_status == "success",
+                                       'progress':1.0
+                                   }).execute(num_retries=self.num_retries)
 
     def arv_executor(self, tool, job_order, **kwargs):
         self.debug = kwargs.get("debug")
@@ -363,9 +382,6 @@ class ArvCwlRunner(object):
         if self.final_status == "UnsupportedRequirement":
             raise UnsupportedRequirement("Check log for details.")
 
-        if self.final_status != "success":
-            raise WorkflowException("Workflow failed.")
-
         if self.final_output is None:
             raise WorkflowException("Workflow did not return a result.")
 
@@ -375,6 +391,10 @@ class ArvCwlRunner(object):
             if self.output_name is None:
                 self.output_name = "Output of %s" % (shortname(tool.tool["id"]))
             self.make_output_collection(self.output_name, self.final_output)
+            self.set_crunch_output()
+
+        if self.final_status != "success":
+            raise WorkflowException("Workflow failed.")
 
         if kwargs.get("compute_checksum"):
             adjustDirObjs(self.final_output, partial(getListing, self.fs_access))
@@ -449,7 +469,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
     parser.add_argument("--api", type=str,
                         default=None, dest="work_api",
-                        help="Select work submission API, one of 'jobs' or 'containers'.")
+                        help="Select work submission API, one of 'jobs' or 'containers'. Default is 'jobs' if that API is available, otherwise 'containers'.")
 
     parser.add_argument("--compute-checksum", action="store_true", default=False,
                         help="Compute checksum of contents while collecting outputs",

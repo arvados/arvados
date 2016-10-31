@@ -1,7 +1,7 @@
 class ContainerWorkUnit < ProxyWorkUnit
   attr_accessor :container
 
-  def initialize proxied, label
+  def initialize proxied, label, parent
     super
     if @proxied.is_a?(ContainerRequest)
       container_uuid = get(:container_uuid)
@@ -12,7 +12,7 @@ class ContainerWorkUnit < ProxyWorkUnit
   end
 
   def children
-    return self.my_children if self.my_children
+    return @my_children if @my_children
 
     container_uuid = nil
     container_uuid = if @proxied.is_a?(Container) then uuid else get(:container_uuid) end
@@ -25,7 +25,7 @@ class ContainerWorkUnit < ProxyWorkUnit
       end
     end
 
-    self.my_children = items
+    @my_children = items
   end
 
   def title
