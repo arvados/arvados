@@ -636,7 +636,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def log_destroy
-    log_change('destroy') do |log|
+    log_change('delete') do |log|
       log.fill_properties('old', etag(@old_attributes), @old_logged_attributes)
       log.update_to nil
     end
