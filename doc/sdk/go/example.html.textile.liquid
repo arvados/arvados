@@ -2,34 +2,71 @@
 layout: default
 navsection: sdk
 navmenu: Python
-title: Python SDK examples
+title: Examples
 ...
+
+h2.  Initialize SDK
+
+<pre>
+import (
+  "git.curoverse.com/arvados.git/sdk/go/arvados"
+  "git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+}
+
+func main() {
+  arv, err := arvadosclient.MakeArvadosClient()
+  if err != nil {
+    log.Fatalf("Error setting up arvados client %s", err.Error())
+  }
+}
+</pre>
 
 h2. create
 
 <pre>
   var collection arvados.Collection
-  err := api.Create("collection", Dict{"collection": Dict{"name": "create example"}}, &collection)
+  err := api.Create("collections", Dict{"collection": Dict{"name": "create example"}}, &collection)
 </pre>
 
 h2. delete
 
 <pre>
   var collection arvados.Collection
-  err := api.Delete("collection", "", Dict{"collection": Dict{"name": "create example"}}, &collection)
+  err := api.Delete("collections", "aaaaa-bbbbb-ccccccccccccccc", Dict{}, &collection)
 </pre>
 
 h2. get
 
 <pre>
+  var collection arvados.Collection
+  err := api.Get("collections", "aaaaa-bbbbb-ccccccccccccccc", Dict{}, &collection)
 </pre>
 
 h2. list
 
 <pre>
+  var collection arvados.Collection
+  err := api.List("collections", Dict{}, &collection)
 </pre>
 
 h2. update
 
 <pre>
+  var collection arvados.Collection
+  err := api.Update("collections", "aaaaa-bbbbb-ccccccccccccccc", Dict{"collection": Dict{"name": "update example"}}, &collection)
 </pre>
+
+h2. Get current user
+
+<pre>
+  var user arvados.User
+  err := api.Get("users", "current", Dict{}, &user)
+</pre>
+
+h2. Example program
+
+You can save this source as a .go file and run it:
+
+<notextile>{% code 'example_sdk_go' as go %}</notextile>
+
+A few more usage examples can be found in the "services/keepproxy":https://dev.arvados.org/projects/arvados/repository/revisions/master/show/services/keepproxy and "sdk/go/keepclient":https://dev.arvados.org/projects/arvados/repository/revisions/master/show/sdk/go/keepclient directories in the arvados source tree.

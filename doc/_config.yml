@@ -83,8 +83,8 @@ navbar:
       - sdk/python/crunch-utility-libraries.html.textile.liquid
       - sdk/python/events.html.textile.liquid
     - CLI:
-      - sdk/cli/index.html.textile.liquid
       - sdk/cli/install.html.textile.liquid
+      - sdk/cli/index.html.textile.liquid
       - sdk/cli/reference.html.textile.liquid
       - sdk/cli/subcommands.html.textile.liquid
     - Go:
@@ -92,10 +92,13 @@ navbar:
       - sdk/go/example.html.textile.liquid
     - Perl:
       - sdk/perl/index.html.textile.liquid
+      - sdk/perl/example.html.textile.liquid
     - Ruby:
       - sdk/ruby/index.html.textile.liquid
+      - sdk/ruby/example.html.textile.liquid
     - Java:
       - sdk/java/index.html.textile.liquid
+      - sdk/java/example.html.textile.liquid
   api:
     - Concepts:
       - api/index.html.textile.liquid
@@ -153,12 +156,12 @@ navbar:
       - install/configure-azure-blob-storage.html.textile.liquid
       - install/install-keepproxy.html.textile.liquid
       - install/install-keep-web.html.textile.liquid
-    - Install Crunch v2 on SLURM:
+    - Containers API support on SLURM:
       - install/crunch2-slurm/install-prerequisites.html.textile.liquid
       - install/crunch2-slurm/install-compute-node.html.textile.liquid
       - install/crunch2-slurm/install-dispatch.html.textile.liquid
       - install/crunch2-slurm/install-test.html.textile.liquid
-    - Install Crunch v1:
+    - Jobs API support (deprecated):
       - install/install-crunch-dispatch.html.textile.liquid
       - install/install-compute-node.html.textile.liquid
     - Helpful hints:
