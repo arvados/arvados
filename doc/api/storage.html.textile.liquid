@@ -1,0 +1,44 @@
+---
+layout: default
+navsection: api
+title: Storage in Keep
+...
+
+h2. Storing data
+
+Storing data in Keep follows this process:
+
+# The client fetches a list of keep servers (or proxies) using the @accessible@ method on "keep_services":{{site.baseurl}}/api/methods/keep_services.html
+# Data is split into 64 MiB blocks and the MD5 hash is computed for each block.
+# The client uploads each block to one or more Keep servers, based on the number of desired replicas.  The priority order is determined using rendezvous hashing, described below.
+# The Keep server returns a block locator (the MD5 sum of the block) and a "signed token" which the client can use as proof of knowledge for the block.
+# The client constructs a @manifest@ which lists the blocks by MD5 hash and how to reassemble them into the original files.
+# The client creates a "collection":{{site.baseurl}}/api/methods/collections.html and provides the @manifest_text@
+# The API server accepts the collection after validating the signed tokens (proof of knowledge) for each block.
+
+h2. Fetching data
+
+# The client requests a @collection@ object including @manifest_text@
+# The server adds "token signatures" which provide proof of access for each block
+# The client fetches a list of keep servers (or proxies) using the @accessible@ method on "keep_services":{{site.baseurl}}/api/methods/keep_services.html
+# For each data block, the client chooses the highest priority server using rendezvous hashing, described below.
+# The client sends the data block request to the keep server, including the token signature (proof of access).
+# The server provides the block data after validating the token signature for the block.
+
+h2. Keep server API
+
+The Keep server is accessed via a simple HTTP REST API.
+
+*GET /blockidentifier+size+A@token*
+
+Fetch the data block, if the token is valid.
+
+*PUT /blockidentifier*
+
+Returns the md5 sum of the data along with the signed token.
+
+h2. Rendezvous hashing
+
+
+
+h2. Manifest format
