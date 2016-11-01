@@ -1,0 +1,25 @@
+---
+layout: default
+navsection: api
+title: Computing with Crunch
+...
+
+Crunch is the name for the Arvados system for managing computation.  It provides an abstract API to various clouds and HPC resource allocation and scheduling systems.
+
+h2. Container API
+
+Note: although the preferred API for Aravdos going forward, the Container API may not yet be available on all installations.
+
+# To submit work, create a "container request":{{site.baseurl}}/api/methods/container_requests.html in the @Committed@ state.
+# The system will fufill the container request by creating a "Container object":{{site.baseurl}}/api/methods/containers.html or, if the same request has been submitted in the past, reusing an existing container.  This will be assigned to the @container_uuid@ field.
+# The dispatcher process will notice a new container in @Queued@ state and submit a container executor to the underyling work queuing system (such as SLURM).
+# The container executes.  Upon termination the container goes into the  @Complete@ state.  If the container execution was interrupted or lost due to system failure, it will go into the @Cancelled@ state.
+# When the container associated with the container request is completed, the container request will go into the @Final@ state.
+# Retrieve the container object; the @output@ field contains the portable data hash of collection with the output files of the container.
+
+h2. Job API (deprecated)
+
+# To submit work, create a "job":{{site.baseurl}}/api/methods/job.html .  If the same job has been submitted in the past, it will return an existing job in @Completed@ state.
+# The dispatcher process will notice a new job in @Queued@ state and attempt to allocate nodes to run the job.
+# The job executes.
+# Retrieve the @output@ field with the portable data hash of the collection with the output files of the job.

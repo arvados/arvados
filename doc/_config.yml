@@ -109,11 +109,11 @@ navbar:
       - api/permission-model.html.textile.liquid
       - api/execution.html.textile.liquid
     - Permission and authentication:
-      - api/methods/users.html.textile.liquid
-      - api/methods/groups.html.textile.liquid
       - api/methods/api_client_authorizations.html.textile.liquid
       - api/methods/api_clients.html.textile.liquid
       - api/methods/authorized_keys.html.textile.liquid
+      - api/methods/groups.html.textile.liquid
+      - api/methods/users.html.textile.liquid
     - System resources:
       - api/methods/keep_services.html.textile.liquid
       - api/methods/links.html.textile.liquid

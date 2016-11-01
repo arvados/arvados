@@ -1,0 +1,21 @@
+---
+layout: default
+navsection: api
+title: API Authorization
+...
+
+All requests to the API server must have an API token.  API tokens can be issued by going though the login flow, or created via the API.  At this time, only browser based applications can perform login from email/password.  Command line applications and services must have an API token provided via the @ARVADOS_API_TOKEN@ environment variable or configuration file.
+
+h2. Browser login
+
+Browser based applications can perform log in via the following flow:
+
+# The web application presents a "login" link to @/login@ on the API server with a @return_to@ parameter provided in the query portion of the URL.  For example @https://{{ site.arvados_api_host }}/login?return_to=XXX@ , where  @return_to=XXX@ is the URL of the login page for the web application.
+# The "login" link takes the browser to the login page (this may involve several redirects)
+# The user logs in.  API server authenticates the user and issues a new API token.
+# The browser is redirected to the login page URL provided in @return_to=XXX@ with the addition of @?api_token=xxxxapitokenxxxx@.
+# The web application gets the login request with the included API token.
+
+h2. Creating tokens via the API
+
+Use the @create@ method of the "API client authorizations":{{site.baseurl}}/api/methods/api_client_authorizations.html resource.

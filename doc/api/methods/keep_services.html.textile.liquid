@@ -10,6 +10,8 @@ See "REST methods for working with Arvados resources":{{site.baseurl}}/api/metho
 
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/keep_services@
 
+UUID type: @bi6l4@
+
 Required arguments are displayed in %{background:#ccffcc}green%.
 
 h2. Resource
@@ -27,12 +29,10 @@ h2. Methods
 
 h3. accessible
 
-Get a list of keep services that are accessible to the requesting client.  This
-is context-sensitive, for example providing the list of actual Keep servers
-when inside the cluster, but providing a proxy service if client contacts
-Arvados from outside the cluster.
+Get a list of keep services that are accessible to the requesting client.  Unlike @list@, this is context-sensitive based on the requester, for example providing the list of actual Keep servers when inside the cluster, but providing a proxy service if client contacts Arvados from outside the cluster.
 
-Takes no arguments.
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
 
 h3. create
 
