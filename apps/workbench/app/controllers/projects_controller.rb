@@ -79,7 +79,7 @@ class ProjectsController < ApplicationController
       }
     pane_list <<
       {
-        :name => 'Pipeline_templates',
+        :name => 'Workflows',
         :filters => [%w(uuid is_a) + [workflows]]
       }
     pane_list <<

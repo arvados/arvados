@@ -69,7 +69,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     assert_selector 'a', text: 'Description'
     assert_selector 'a', text: 'Data collections'
     assert_selector 'a', text: 'Pipelines and processes'
-    assert_selector 'a', text: 'Pipeline templates'
+    assert_selector 'a', text: 'Workflows'
     assert_selector 'a', text: 'Subprojects'
     assert_selector 'a', text: 'Advanced'
     assert_no_selector 'a', text: 'Other objects'
@@ -171,14 +171,14 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     'pipelineTemplate',
     'workflow'
   ].each do |type|
-    test "anonymous user accesses pipeline templates tab in shared project and click on #{type}" do
+    test "anonymous user accesses workflows tab in shared project and click on #{type}" do
       visit PUBLIC_PROJECT
       click_link 'Data collections'
       assert_text 'GNU General Public License'
 
-      assert_selector 'a', text: 'Pipeline templates'
+      assert_selector 'a', text: 'Workflows'
 
-      click_link 'Pipeline templates'
+      click_link 'Workflows'
       assert_text 'Pipeline template in publicly accessible project'
       assert_text 'Workflow with input specifications'
 
