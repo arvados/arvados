@@ -215,13 +215,7 @@ class ApplicationController < ActionController::Base
   end
 
   def ensure_arvados_api_exists
-    if params['action'] == 'show'
-      method = :get
-    else
-      method = params['action'].to_sym
-    end
-
-    exists = arvados_api_exists params['controller'].to_sym, method
+    exists = arvados_api_exists params['controller'].to_sym, params['action'].to_sym
     if !exists
       @errors = ["#{params['action']} method is not supported for #{params['controller']}"]
       return render_error(status: 404)
@@ -884,6 +878,7 @@ class ApplicationController < ActionController::Base
   def recent_processes lim
     lim = 12 if lim.nil?
 
+    procs = {}
     if arvados_api_exists :pipeline_instances, :index
       cols = %w(uuid owner_uuid created_at modified_at pipeline_template_uuid name state started_at finished_at)
       pipelines = PipelineInstance.select(cols).limit(lim).order(["created_at desc"])
@@ -891,7 +886,6 @@ class ApplicationController < ActionController::Base
     end
 
     crs = ContainerRequest.limit(lim).order(["created_at desc"]).filter([["requesting_container_uuid", "=", nil]])
-    procs = {}
     crs.results.each { |c| procs[c] = c.created_at }
 
     Hash[procs.sort_by {|key, value| value}].keys.reverse.first(lim)
