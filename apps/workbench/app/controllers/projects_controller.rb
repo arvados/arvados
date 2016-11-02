@@ -53,6 +53,17 @@ class ProjectsController < ApplicationController
   # It also seems to me that something like these could be used to configure the contents of the panes.
   def show_pane_list
     pane_list = []
+
+    procs = ["arvados#containerRequest"]
+    if arvados_api_exists(:pipeline_instances, :index)
+      procs << "arvados#pipelineInstance"
+    end
+
+    workflows = ["arvados#workflow"]
+    if arvados_api_exists(:pipeline_templates, :index)
+      workflows << "arvados#pipelineTemplate"
+    end
+
     if @object.uuid != current_user.andand.uuid
       pane_list << 'Description'
     end
@@ -64,12 +75,12 @@ class ProjectsController < ApplicationController
     pane_list <<
       {
         :name => 'Pipelines_and_processes',
-        :filters => [%w(uuid is_a) + [%w(arvados#containerRequest arvados#pipelineInstance)]]
+        :filters => [%w(uuid is_a) + [procs]]
       }
     pane_list <<
       {
         :name => 'Pipeline_templates',
-        :filters => [%w(uuid is_a) + [%w(arvados#pipelineTemplate arvados#workflow)]]
+        :filters => [%w(uuid is_a) + [workflows]]
       }
     pane_list <<
       {
@@ -213,6 +224,8 @@ class ProjectsController < ApplicationController
       @name_link_for = {}
       kind_filters.each do |attr,op,val|
         (val.is_a?(Array) ? val : [val]).each do |type|
+          next if(!arvados_api_exists(type.split('#')[-1].underscore.pluralize.to_sym, :index))
+
           filters = @filters - kind_filters + [['uuid', 'is_a', type]]
           if type == 'arvados#containerRequest'
             filters = filters + [['container_requests.requesting_container_uuid', '=', nil]]
