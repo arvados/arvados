@@ -2,39 +2,61 @@
 
 set -e
 
-# NOTE: This package name detection will only work on Debian.
-# If this postinst script ever starts doing work on Red Hat,
-# we'll need to adapt this code accordingly.
-script="$(basename "${0}")"
-pkg="${script%.postinst}"
-systemd_unit="${pkg}.service"
+if [ "%{name}" != "%\{name\}" ]; then
+    # Red Hat ("%{...}" is interpolated at package build time)
+    pkg="%{name}"
+    pkgtype=rpm
+    prefix="${RPM_INSTALL_PREFIX}"
+else
+    # Debian
+    script="$(basename "${0}")"
+    pkg="${script%.postinst}"
+    pkgtype=deb
+    prefix=/usr
+fi
 
-case "${1}" in
-    configure)
-        if [ -d /lib/systemd/system ]
-        then
-            # Python packages put all data files in /usr, so we copy
-            # them to /lib at install time.
-            py_unit="/usr/share/doc/${pkg}/${pkg}.service"
-            if [ -e "${py_unit}" ]
-            then
-                cp "${py_unit}" /lib/systemd/system/
-            fi
+case "${pkgtype}-${1}" in
+    deb-configure | rpm-1)
+        dest_dir="/lib/systemd/system"
+        if ! [ -d "${dest_dir}" ]; then
+            exit 0
         fi
 
+        # Find the unit file we need to install.
+        unit_file="${pkg}.service"
+        for dir in \
+            "${prefix}/share/doc/${pkg}" \
+            "${dest_dir}"; do
+            if [ -e "${dir}/${unit_file}" ]; then
+                src_dir="${dir}"
+                break
+            fi
+        done
+        if [ -z "${src_dir}" ]; then
+            echo >&2 "WARNING: postinst script did not find ${unit_file} anywhere."
+            exit 0
+        fi
+
+        # Install/update the unit file if necessary.
+        if [ "${src_dir}" != "${dest_dir}" ]; then
+            cp "${src_dir}/${unit_file}" "${dest_dir}/" || exit 0
+        fi
+
+        # Enable service, and make sure systemd re-reads the unit
+        # file, in case we changed it.
         if [ -e /run/systemd/system ]; then
-            eval "$(systemctl -p UnitFileState show "${systemd_unit}")"
+            systemctl daemon-reload || true
+            eval "$(systemctl -p UnitFileState show "${pkg}")"
             case "${UnitFileState}" in
                 disabled)
                     # Failing to enable or start the service is not a
                     # package error, so don't let errors here
                     # propagate up.
-                    systemctl enable "${systemd_unit}" || true
-                    systemctl start "${systemd_unit}" || true
+                    systemctl enable "${pkg}" || true
+                    systemctl start "${pkg}" || true
                     ;;
                 enabled)
-                    systemctl daemon-reload || true
-                    systemctl reload-or-try-restart "${systemd_unit}" || true
+                    systemctl reload-or-try-restart "${pkg}" || true
                     ;;
             esac
         fi
