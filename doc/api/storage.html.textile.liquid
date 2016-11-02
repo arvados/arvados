@@ -23,7 +23,7 @@ h2. Fetching data
 # The client fetches a list of keep servers (or proxies) using the @accessible@ method on "keep_services":{{site.baseurl}}/api/methods/keep_services.html
 # For each data block, the client chooses the highest priority server using rendezvous hashing, described below.
 # The client sends the data block request to the keep server, including the token signature (proof of access).
-# The server provides the block data after validating the token signature for the block.
+# The server provides the block data after validating the token signature for the block (if the server does not have the block, it returns a 404 and the client tries the next highest priority server)
 
 h2. Keep server API
 
@@ -39,6 +39,79 @@ Returns the md5 sum of the data along with the signed token.
 
 h2. Rendezvous hashing
 
+Each @keep_service@ resource has an assigned uuid.  To determine priority assignments of blocks to servers, for each keep service compute the MD5 sum of the string concatenation of the block locator (hex-coded hash part only) and service uuid, then sort this list in descending order.  Blocks are preferentially placed on servers at the beginning of the list.
 
+h1. Keep locator format
 
-h2. Manifest format
+<pre>
+locator       ::= sized-digest hint*
+
+sized-digest  ::= digest size-hint
+
+digest        ::= <32 lowercase hexadecimal digits>
+
+size-hint     ::= "+" [0-9]+
+
+hint          ::= "+" hint-type hint-content
+
+hint-type     ::= [A-Z]+
+
+hint-content  ::= [A-Za-z0-9@_-]*
+
+sign-hint      ::= "+A" <40 lowercase hexadecimal digits> "@" sign-timestamp
+
+sign-timestamp ::= <8 lowercase hexadecimal digits>
+</pre>
+
+h2. Regular expressions to validat locator
+
+<pre>
+/^([0-9a-f]{32})\+([0-9]+)(\+[A-Z][-A-Za-z0-9@_]*)*$/
+</pre>
+
+h2. Valid examples
+
+|@d41d8cd98f00b204e9800998ecf8427e+0@|
+|@d41d8cd98f00b204e9800998ecf8427e+0+Z@|
+|@d41d8cd98f00b204e9800998ecf8427e+0+Z+Ada39a3ee5e6b4b0d3255bfef95601890afd80709@53bed294@|
+
+h2. Invalid examples
+
+||Why|
+|@d41d8cd98f00b204e9800998ecf8427e@|No size hint|
+|@d41d8cd98f00b204e9800998ecf8427e+Z+0@|Other hint before size hint|
+|@d41d8cd98f00b204e9800998ecf8427e+0+0@|Multiple size hints|
+|@d41d8cd98f00b204e9800998ecf8427e+0+z@|Hint does not start with uppercase letter|
+|@d41d8cd98f00b204e9800998ecf8427e+0+Zfoo*bar@|Hint contains invalid character @*@|
+
+h2. Manifest v1
+
+A manifest is utf-8 encoded text, consisting of zero or more newline-terminated streams.
+
+Each stream consists of three or more space-delimited tokens:
+* The first token is a stream name, consisting of one or more path components, delimited by @"/"@.
+** The first path component is always @"."@.
+** No path component is empty.
+** No path component is "." or "..".
+** The stream name never begins or ends with @"/"@.
+* The second token is a data blob locator (see [[Keep locator format]]).
+* ...possibly followed by more data blob locators...
+* The first token that is not a block locator, and all subsequent tokens, are file tokens.
+** A file token has three parts, delimited by @":"@: position, size, filename.
+** Position and size are given in decimal, and are counted from the beginning of the first data blob.
+** Filename may contain @"/"@ characters, but must not start or end with @"/"@, and must not contain @"//"@.
+** Filename components (delimited by @"/"@) must not be @"."@ or @".."@.
+
+A manifest contains no TAB characters, nor other ASCII whitespace characters other than the spaces or newline delimiters specified above.
+
+A manifest always ends with a newline -- except the empty (zero-length) string, which is a valid manifest.
+
+h2. Normalized manifest v1
+
+A normalized manifest has the following additional restrictions.
+
+* Streams are in alphanumeric order.
+* Each stream name is unique within the manifest.
+* Files within a stream are in alphanumeric order.
+* Blocks within a stream are ordered based on first appearence in the list of file segments, a given block is listed at most once in a stream.
+* Filename must not contain @"/"@.
