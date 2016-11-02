@@ -242,8 +242,12 @@ class RunnerJob(Runner):
             del self.job_order["job_order"]
 
         self.job_order["cwl:tool"] = workflowmapper.mapper(self.tool.tool["id"]).target[5:]
+
         if self.output_name:
             self.job_order["arv:output_name"] = self.output_name
+
+        self.job_order["arv:enable_reuse"] = self.enable_reuse
+
         return {
             "script": "cwl-runner",
             "script_version": __version__,

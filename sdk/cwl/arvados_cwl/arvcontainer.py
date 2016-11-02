@@ -106,6 +106,7 @@ class ArvadosContainer(object):
 
         container_request["mounts"] = mounts
         container_request["runtime_constraints"] = runtime_constraints
+        container_request["use_existing"] = kwargs.get("enable_reuse", True)
 
         try:
             response = self.arvrunner.api.container_requests().create(
@@ -187,6 +188,12 @@ class RunnerContainer(Runner):
         command = ["arvados-cwl-runner", "--local", "--api=containers"]
         if self.output_name:
             command.append("--output-name=" + self.output_name)
+
+        if self.enable_reuse:
+            command.append("--enable-reuse")
+        else:
+            command.append("--disable-reuse")
+
         command.extend([workflowpath, jobpath])
 
         return {
