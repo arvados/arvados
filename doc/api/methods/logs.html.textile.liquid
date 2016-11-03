@@ -14,14 +14,6 @@ UUID type: @57u5n@
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
-h2. Creation
-
-Any user may create Log entries for any event they find useful. User-generated Logs have no intrinsic meaning to other users or to the Arvados system itself; it is up to each user to choose appropriate log event types and summaries for their project.
-
-h3. System Logs
-
-Arvados uses Logs to record creation, deletion, and updates of other Arvados resources.
-
 h2. Resource
 
 Each Log has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
@@ -33,6 +25,14 @@ table(table table-bordered table-condensed).
 |event_type|string|A user-defined category or type for this event.|@LOGIN@|
 |summary|text|||
 |properties|hash|||
+
+h3. Creation
+
+Any user may create Log entries for any event they find useful. User-generated Logs have no intrinsic meaning to other users or to the Arvados system itself; it is up to each user to choose appropriate log event types and summaries for their project.
+
+h3. System Logs
+
+Arvados uses Logs to record creation, deletion, and updates of other Arvados resources.
 
 h2. Methods
 

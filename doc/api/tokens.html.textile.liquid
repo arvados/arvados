@@ -22,7 +22,7 @@ Use the @create@ method of the "API client authorizations":{{site.baseurl}}/api/
 
 h2. Trusted API clients
 
-The "api_clients" resource applies access restrictions to web applications that have gone through the browser login flow.
+The "api_clients" resource determines if web applications that have gone through the browser login flow may create or list or API tokens.
 
 After the user has authenticated, but before an authorization token is issued and browser redirect sent (sending the browser back to the @return_to@ login page bearing @api_token@), the server strips the path and query portion from @return_to@ to get @url_prefix@ finds or creates an ApiClient object.  The newly issued API client authorization (API token) is associated with this ApiClient object.
 
