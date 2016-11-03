@@ -107,6 +107,7 @@ navbar:
       - api/methods.html.textile.liquid
       - api/resources.html.textile.liquid
       - api/permission-model.html.textile.liquid
+      - api/storage.html.textile.liquid
       - api/execution.html.textile.liquid
     - Permission and authentication:
       - api/methods/api_client_authorizations.html.textile.liquid

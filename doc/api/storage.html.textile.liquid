@@ -29,11 +29,11 @@ h2. Keep server API
 
 The Keep server is accessed via a simple HTTP REST API.
 
-*GET /blockidentifier+size+A@token*
+*GET /blocklocator+size+A@token*
 
 Fetch the data block, if the token is valid.
 
-*PUT /blockidentifier*
+*PUT /blocklocator*
 
 Returns the md5 sum of the data along with the signed token.
 

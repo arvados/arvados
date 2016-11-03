@@ -7,6 +7,10 @@ title: API Reference
 
 This reference describes the semantics of Arvados resources and how to programatically access Arvados via its REST API.  Each resource listed in this section is exposed on the Arvados API server under the @/arvados/v1/@ path prefix, for example, @https://{{ site.arvados_api_host }}/arvados/v1/collections@.
 
+h2. Discovery document
+
 The API server publishes a machine-readable description of its endpoints and some additional site configuration values via a JSON-formatted discovery document.  This is available at @/discovery/v1/apis/arvados/v1/rest@, for example @https://{{ site.arvados_api_host }}/discovery/v1/apis/arvados/v1/rest@.  Some Arvados SDKs use the discovery document to generate language bindings.
+
+h2. Workbench examples
 
 Many Arvados Workbench pages, under the the *Advanced* tab, provide examples of API and SDK use for accessing the current resource .
