@@ -8,11 +8,12 @@ import unittest
 
 import arvados
 import arvados_cwl
+from .mock_discovery import get_rootDesc
 
 class TestMakeOutput(unittest.TestCase):
     def setUp(self):
         self.api = mock.MagicMock()
-        self.api._rootDesc = arvados.api('v1')._rootDesc
+        self.api._rootDesc = get_rootDesc()
 
     @mock.patch("arvados.collection.Collection")
     @mock.patch("arvados.collection.CollectionReader")
