@@ -20,50 +20,53 @@ class TestContainer(unittest.TestCase):
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
     def test_run(self, keepdocker):
-        runner = mock.MagicMock()
-        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
-        runner.ignore_docker_for_reuse = False
+        for enable_reuse in (True, False):
+            runner = mock.MagicMock()
+            runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+            runner.ignore_docker_for_reuse = False
 
-        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
-        runner.api.collections().get().execute.return_value = {
-            "portable_data_hash": "99999999999999999999999999999993+99"}
+            keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+            runner.api.collections().get().execute.return_value = {
+                "portable_data_hash": "99999999999999999999999999999993+99"}
 
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+            document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
-        tool = {
-            "inputs": [],
-            "outputs": [],
-            "baseCommand": "ls",
-            "arguments": [{"valueFrom": "$(runtime.outdir)"}]
-        }
-        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names,
-                                                 basedir="", make_fs_access=make_fs_access, loader=Loader({}))
-        arvtool.formatgraph = None
-        for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_run",
-                             make_fs_access=make_fs_access, tmpdir="/tmp"):
-            j.run()
-            runner.api.container_requests().create.assert_called_with(
-                body={
-                    'environment': {
-                        'HOME': '/var/spool/cwl',
-                        'TMPDIR': '/tmp'
-                    },
-                    'name': 'test_run',
-                    'runtime_constraints': {
-                        'vcpus': 1,
-                        'ram': 1073741824
-                    }, 'priority': 1,
-                    'mounts': {
-                        '/var/spool/cwl': {'kind': 'tmp'}
-                    },
-                    'state': 'Committed',
-                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-                    'output_path': '/var/spool/cwl',
-                    'container_image': '99999999999999999999999999999993+99',
-                    'command': ['ls', '/var/spool/cwl'],
-                    'cwd': '/var/spool/cwl'
-                })
+            tool = {
+                "inputs": [],
+                "outputs": [],
+                "baseCommand": "ls",
+                "arguments": [{"valueFrom": "$(runtime.outdir)"}]
+            }
+            make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+            arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names,
+                                                     basedir="", make_fs_access=make_fs_access, loader=Loader({}))
+            arvtool.formatgraph = None
+            for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_run_"+str(enable_reuse),
+                                 make_fs_access=make_fs_access, tmpdir="/tmp"):
+                j.run(enable_reuse=enable_reuse)
+                runner.api.container_requests().create.assert_called_with(
+                    body={
+                        'environment': {
+                            'HOME': '/var/spool/cwl',
+                            'TMPDIR': '/tmp'
+                        },
+                        'name': 'test_run_'+str(enable_reuse),
+                        'runtime_constraints': {
+                            'vcpus': 1,
+                            'ram': 1073741824
+                        },
+                        'use_existing': enable_reuse,
+                        'priority': 1,
+                        'mounts': {
+                            '/var/spool/cwl': {'kind': 'tmp'}
+                        },
+                        'state': 'Committed',
+                        'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                        'output_path': '/var/spool/cwl',
+                        'container_image': '99999999999999999999999999999993+99',
+                        'command': ['ls', '/var/spool/cwl'],
+                        'cwd': '/var/spool/cwl'
+                    })
 
     # The test passes some fields in builder.resources
     # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
@@ -119,7 +122,9 @@ class TestContainer(unittest.TestCase):
                     'keep_cache_ram': 512,
                     'API': True,
                     'partition': ['blurb']
-                }, 'priority': 1,
+                },
+                'use_existing': True,
+                'priority': 1,
                 'mounts': {
                     '/var/spool/cwl': {'kind': 'tmp'}
                 },

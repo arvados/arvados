@@ -321,6 +321,7 @@ class RunnerTemplate(object):
         Specifically, translate CWL input specs to Arvados pipeline
         format, like {"dataclass":"File","value":"xyz"}.
         """
+
         spec = self.job.arvados_job_spec()
 
         # Most of the component spec is exactly the same as the job

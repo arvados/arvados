@@ -4,16 +4,17 @@ import logging
 import mock
 import os
 import unittest
+import copy
 
 import arvados
 import arvados_cwl
 import cwltool.process
 from schema_salad.ref_resolver import Loader
+from .mock_discovery import get_rootDesc
 
 if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
     logging.getLogger('arvados.arv-run').setLevel(logging.WARN)
-
 
 class TestJob(unittest.TestCase):
 
@@ -21,54 +22,55 @@ class TestJob(unittest.TestCase):
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
     @mock.patch('arvados.commands.keepdocker.list_images_in_arv')
     def test_run(self, list_images_in_arv):
-        runner = mock.MagicMock()
-        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
-        runner.ignore_docker_for_reuse = False
-        runner.num_retries = 0
-        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+        for enable_reuse in (True, False):
+            runner = mock.MagicMock()
+            runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+            runner.ignore_docker_for_reuse = False
+            runner.num_retries = 0
+            document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
-        list_images_in_arv.return_value = [["zzzzz-4zz18-zzzzzzzzzzzzzzz"]]
-        runner.api.collections().get().execute.return_vaulue = {"portable_data_hash": "99999999999999999999999999999993+99"}
+            list_images_in_arv.return_value = [["zzzzz-4zz18-zzzzzzzzzzzzzzz"]]
+            runner.api.collections().get().execute.return_vaulue = {"portable_data_hash": "99999999999999999999999999999993+99"}
 
-        tool = {
-            "inputs": [],
-            "outputs": [],
-            "baseCommand": "ls",
-            "arguments": [{"valueFrom": "$(runtime.outdir)"}]
-        }
-        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
-        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names,
-                                                 basedir="", make_fs_access=make_fs_access, loader=Loader({}))
-        arvtool.formatgraph = None
-        for j in arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access):
-            j.run()
-            runner.api.jobs().create.assert_called_with(
-                body={
-                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-                    'runtime_constraints': {},
-                    'script_parameters': {
-                        'tasks': [{
-                            'task.env': {'HOME': '$(task.outdir)', 'TMPDIR': '$(task.tmpdir)'},
-                            'command': ['ls', '$(task.outdir)']
-                        }],
+            tool = {
+                "inputs": [],
+                "outputs": [],
+                "baseCommand": "ls",
+                "arguments": [{"valueFrom": "$(runtime.outdir)"}]
+            }
+            make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+            arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names,
+                                                     basedir="", make_fs_access=make_fs_access, loader=Loader({}))
+            arvtool.formatgraph = None
+            for j in arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access):
+                j.run(enable_reuse=enable_reuse)
+                runner.api.jobs().create.assert_called_with(
+                    body={
+                        'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                        'runtime_constraints': {},
+                        'script_parameters': {
+                            'tasks': [{
+                                'task.env': {'HOME': '$(task.outdir)', 'TMPDIR': '$(task.tmpdir)'},
+                                'command': ['ls', '$(task.outdir)']
+                            }],
+                        },
+                        'script_version': 'master',
+                        'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
+                        'repository': 'arvados',
+                        'script': 'crunchrunner',
+                        'runtime_constraints': {
+                            'docker_image': 'arvados/jobs:'+arvados_cwl.__version__,
+                            'min_cores_per_node': 1,
+                            'min_ram_mb_per_node': 1024,
+                            'min_scratch_mb_per_node': 2048 # tmpdirSize + outdirSize
+                        }
                     },
-                    'script_version': 'master',
-                    'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
-                    'repository': 'arvados',
-                    'script': 'crunchrunner',
-                    'runtime_constraints': {
-                        'docker_image': 'arvados/jobs:'+arvados_cwl.__version__,
-                        'min_cores_per_node': 1,
-                        'min_ram_mb_per_node': 1024,
-                        'min_scratch_mb_per_node': 2048 # tmpdirSize + outdirSize
-                    }
-                },
-                find_or_create=True,
-                filters=[['repository', '=', 'arvados'],
-                         ['script', '=', 'crunchrunner'],
-                         ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
-                         ['docker_image_locator', 'in docker', 'arvados/jobs:'+arvados_cwl.__version__]]
-            )
+                    find_or_create=enable_reuse,
+                    filters=[['repository', '=', 'arvados'],
+                             ['script', '=', 'crunchrunner'],
+                             ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
+                             ['docker_image_locator', 'in docker', 'arvados/jobs:'+arvados_cwl.__version__]]
+                )
 
     # The test passes some fields in builder.resources
     # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
@@ -226,7 +228,8 @@ class TestWorkflow(unittest.TestCase):
         arvados_cwl.add_arv_hints()
 
         api = mock.MagicMock()
-        api._rootDesc = arvados.api('v1')._rootDesc
+        api._rootDesc = get_rootDesc()
+
         runner = arvados_cwl.ArvCwlRunner(api)
         self.assertEqual(runner.work_api, 'jobs')
 
@@ -291,7 +294,7 @@ class TestWorkflow(unittest.TestCase):
         arvados_cwl.add_arv_hints()
 
         api = mock.MagicMock()
-        api._rootDesc = arvados.api('v1')._rootDesc
+        api._rootDesc = copy.deepcopy(get_rootDesc())
         del api._rootDesc.get('resources')['jobs']['methods']['create']
         runner = arvados_cwl.ArvCwlRunner(api)
         self.assertEqual(runner.work_api, 'containers')

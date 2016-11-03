@@ -122,7 +122,6 @@ def upload_instance(arvrunner, name, tool, job_order):
                                              tool.tool,
                                              tool.tool["id"],
                                              True)
-
         jobmapper = upload_dependencies(arvrunner,
                                         os.path.basename(job_order.get("id", "#")),
                                         tool.doc_loader,
