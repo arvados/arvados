@@ -33,8 +33,9 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
         logger.info("Uploading Docker image %s", ":".join(args[1:]))
         try:
             arvados.commands.keepdocker.main(args, stdout=sys.stderr)
-        except SystemExit:
-            raise WorkflowException()
+        except SystemExit as e:
+            if e.code:
+                raise WorkflowException("keepdocker exited with code %s" % e.code)
 
         images = arvados.commands.keepdocker.list_images_in_arv(api_client, 3,
                                                                 image_name=image_name,
