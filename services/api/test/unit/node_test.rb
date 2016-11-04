@@ -125,4 +125,31 @@ class NodeTest < ActiveSupport::TestCase
     refute_nil node2.slot_number
     assert_equal "custom1", node2.hostname
   end
+
+  test "update dns when nodemanager clears hostname and ip_address" do
+    act_as_system_user do
+      node = ping_node(:new_with_custom_hostname, {})
+      Node.expects(:dns_server_update).with(node.hostname, Node::UNUSED_NODE_IP)
+      node.update_attributes(hostname: nil, ip_address: nil)
+    end
+  end
+
+  test "update dns when hostname changes" do
+    act_as_system_user do
+      node = ping_node(:new_with_custom_hostname, {})
+
+      Node.expects(:dns_server_update).with(node.hostname, Node::UNUSED_NODE_IP)
+      Node.expects(:dns_server_update).with('foo0', node.ip_address)
+      node.update_attributes!(hostname: 'foo0')
+
+      Node.expects(:dns_server_update).with('foo0', Node::UNUSED_NODE_IP)
+      node.update_attributes!(hostname: nil, ip_address: nil)
+
+      Node.expects(:dns_server_update).with('foo0', '10.11.12.13')
+      node.update_attributes!(hostname: 'foo0', ip_address: '10.11.12.13')
+
+      Node.expects(:dns_server_update).with('foo0', '10.11.12.14')
+      node.update_attributes!(hostname: 'foo0', ip_address: '10.11.12.14')
+    end
+  end
 end
