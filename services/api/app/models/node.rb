@@ -138,16 +138,15 @@ class Node < ArvadosModel
     if hostname_changed? && hostname_was
       self.class.dns_server_update(hostname_was, UNUSED_NODE_IP)
     end
-    if self.hostname_changed? or self.ip_address_changed?
-      if not self.ip_address.nil?
-        stale_conflicting_nodes = Node.where('id != ? and ip_address = ? and last_ping_at < ?',self.id,self.ip_address,10.minutes.ago)
-        if not stale_conflicting_nodes.empty?
-          # One or more stale compute node records have the same IP address as the new node.
-          # Clear the ip_address field on the stale nodes.
-          stale_conflicting_nodes.each do |stale_node|
-            stale_node.ip_address = nil
-            stale_node.save!
-          end
+    if hostname_changed? or ip_address_changed?
+      if ip_address
+        Node.where('id != ? and ip_address = ? and last_ping_at < ?',
+                   id, ip_address, 10.minutes.ago).each do |stale_node|
+          # One or more stale compute node records have the same IP
+          # address as the new node.  Clear the ip_address field on
+          # the stale nodes.
+          stale_node.ip_address = nil
+          stale_node.save!
         end
       end
       if hostname
