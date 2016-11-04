@@ -108,7 +108,9 @@ class Job < ArvadosModel
   end
 
   def update_script_parameters_digest
-    self.script_parameters_digest = self.class.sorted_hash_digest(script_parameters)
+    Job.benchmark("Job.update_script_parameters_digest #{self.uuid}") do
+      self.script_parameters_digest = self.class.sorted_hash_digest(script_parameters)
+    end
   end
 
   def self.searchable_columns operator
@@ -302,42 +304,46 @@ class Job < ArvadosModel
   end
 
   def ensure_script_version_is_commit
-    if state == Running
-      # Apparently client has already decided to go for it. This is
-      # needed to run a local job using a local working directory
-      # instead of a commit-ish.
-      return true
-    end
-    if new_record? or repository_changed? or script_version_changed?
-      sha1 = Commit.find_commit_range(repository,
-                                      nil, script_version, nil).first
-      if not sha1
-        errors.add :script_version, "#{script_version} does not resolve to a commit"
-        return false
+    Job.benchmark("Job.ensure_script_version_is_commit #{self.uuid}") do
+      if state == Running
+        # Apparently client has already decided to go for it. This is
+        # needed to run a local job using a local working directory
+        # instead of a commit-ish.
+        return true
       end
-      if supplied_script_version.nil? or supplied_script_version.empty?
-        self.supplied_script_version = script_version
+      if new_record? or repository_changed? or script_version_changed?
+        sha1 = Commit.find_commit_range(repository,
+                                        nil, script_version, nil).first
+        if not sha1
+          errors.add :script_version, "#{script_version} does not resolve to a commit"
+          return false
+        end
+        if supplied_script_version.nil? or supplied_script_version.empty?
+          self.supplied_script_version = script_version
+        end
+        self.script_version = sha1
       end
-      self.script_version = sha1
     end
     true
   end
 
   def tag_version_in_internal_repository
-    if state == Running
-      # No point now. See ensure_script_version_is_commit.
-      true
-    elsif errors.any?
-      # Won't be saved, and script_version might not even be valid.
-      true
-    elsif new_record? or repository_changed? or script_version_changed?
-      uuid_was = uuid
-      begin
-        assign_uuid
-        Commit.tag_in_internal_repository repository, script_version, uuid
-      rescue
-        uuid = uuid_was
-        raise
+    Job.benchmark("Job.tag_version_in_internal_repository #{self.uuid}") do
+      if state == Running
+        # No point now. See ensure_script_version_is_commit.
+        true
+      elsif errors.any?
+        # Won't be saved, and script_version might not even be valid.
+        true
+      elsif new_record? or repository_changed? or script_version_changed?
+        uuid_was = uuid
+        begin
+          assign_uuid
+          Commit.tag_in_internal_repository repository, script_version, uuid
+        rescue
+          uuid = uuid_was
+          raise
+        end
       end
     end
   end
@@ -367,32 +373,36 @@ class Job < ArvadosModel
   end
 
   def find_arvados_sdk_version
-    resolve_runtime_constraint("arvados_sdk_version",
-                               :arvados_sdk_version) do |git_search|
-      commits = Commit.find_commit_range("arvados",
-                                         nil, git_search, nil)
-      if commits.empty?
-        [false, "#{git_search} does not resolve to a commit"]
-      elsif not runtime_constraints["docker_image"]
-        [false, "cannot be specified without a Docker image constraint"]
-      else
-        [true, commits.first]
+    Job.benchmark("Job.find_arvados_sdk_version #{self.uuid}") do
+      resolve_runtime_constraint("arvados_sdk_version",
+                                 :arvados_sdk_version) do |git_search|
+        commits = Commit.find_commit_range("arvados",
+                                           nil, git_search, nil)
+        if commits.empty?
+          [false, "#{git_search} does not resolve to a commit"]
+        elsif not runtime_constraints["docker_image"]
+          [false, "cannot be specified without a Docker image constraint"]
+        else
+          [true, commits.first]
+        end
       end
     end
   end
 
   def find_docker_image_locator
-    runtime_constraints['docker_image'] =
+    Job.benchmark("Job.find_docker_image_locator #{self.uuid}") do
+      runtime_constraints['docker_image'] =
         Rails.configuration.default_docker_image_for_jobs if ((runtime_constraints.is_a? Hash) and
                                                               (runtime_constraints['docker_image']).nil? and
                                                               Rails.configuration.default_docker_image_for_jobs)
-    resolve_runtime_constraint("docker_image",
-                               :docker_image_locator) do |image_search|
-      image_tag = runtime_constraints['docker_image_tag']
-      if coll = Collection.for_latest_docker_image(image_search, image_tag)
-        [true, coll.portable_data_hash]
-      else
-        [false, "not found for #{image_search}"]
+      resolve_runtime_constraint("docker_image",
+                                 :docker_image_locator) do |image_search|
+        image_tag = runtime_constraints['docker_image_tag']
+        if coll = Collection.for_latest_docker_image(image_search, image_tag)
+          [true, coll.portable_data_hash]
+        else
+          [false, "not found for #{image_search}"]
+        end
       end
     end
   end
@@ -583,12 +593,14 @@ class Job < ArvadosModel
       false
     end
 
-    # Fail validation if any script_parameters field includes a string containing a
-    # collection uuid pattern.
-    if self.script_parameters_changed?
-      if recursive_hash_search(self.script_parameters, Collection.uuid_regex)
-        self.errors.add :script_parameters, "must use portable_data_hash instead of collection uuid"
-        return false
+    Job.benchmark("Job.ensure_no_collection_uuids_in_script_params #{self.uuid}") do
+      # Fail validation if any script_parameters field includes a string containing a
+      # collection uuid pattern.
+      if self.script_parameters_changed?
+        if recursive_hash_search(self.script_parameters, Collection.uuid_regex)
+          self.errors.add :script_parameters, "must use portable_data_hash instead of collection uuid"
+          return false
+        end
       end
     end
     true
