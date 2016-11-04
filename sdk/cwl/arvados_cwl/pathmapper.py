@@ -187,14 +187,19 @@ class FinalOutputPathMapper(PathMapper):
     def visit(self, obj, stagedir, basedir, copy=False):
         # type: (Dict[unicode, Any], unicode, unicode, bool) -> None
         loc = obj["location"]
+        tgt = os.path.join(stagedir, obj["basename"])
         if obj["class"] == "Directory":
-            self._pathmap[loc] = MapperEnt(loc, stagedir, "Directory")
+            self._pathmap[loc] = MapperEnt(tgt, tgt, "Directory")
+            if loc.startswith("_:"):
+                self.visitlisting(obj.get("listing", []), tgt, basedir)
         elif obj["class"] == "File":
             if loc in self._pathmap:
                 return
-            tgt = os.path.join(stagedir, obj["basename"])
-            self._pathmap[loc] = MapperEnt(loc, tgt, "File")
-            self.visitlisting(obj.get("secondaryFiles", []), stagedir, basedir)
+            if "contents" in obj and obj["location"].startswith("_:"):
+                self._pathmap[loc] = MapperEnt(obj["contents"], tgt, "CreateFile")
+            else:
+                self._pathmap[loc] = MapperEnt(loc, tgt, "File")
+                self.visitlisting(obj.get("secondaryFiles", []), stagedir, basedir)
 
     def setup(self, referenced_files, basedir):
         # type: (List[Any], unicode) -> None
