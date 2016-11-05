@@ -220,15 +220,15 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 	// Put test content
 	vols := KeepVM.AllWritable()
 	if testData.CreateData {
-		vols[0].Put(testData.Locator1, testData.Block1)
-		vols[0].Put(testData.Locator1+".meta", []byte("metadata"))
+		vols[0].Put(context.TODO(), testData.Locator1, testData.Block1)
+		vols[0].Put(context.TODO(), testData.Locator1+".meta", []byte("metadata"))
 
 		if testData.CreateInVolume1 {
-			vols[0].Put(testData.Locator2, testData.Block2)
-			vols[0].Put(testData.Locator2+".meta", []byte("metadata"))
+			vols[0].Put(context.TODO(), testData.Locator2, testData.Block2)
+			vols[0].Put(context.TODO(), testData.Locator2+".meta", []byte("metadata"))
 		} else {
-			vols[1].Put(testData.Locator2, testData.Block2)
-			vols[1].Put(testData.Locator2+".meta", []byte("metadata"))
+			vols[1].Put(context.TODO(), testData.Locator2, testData.Block2)
+			vols[1].Put(context.TODO(), testData.Locator2+".meta", []byte("metadata"))
 		}
 	}
 

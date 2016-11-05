@@ -85,7 +85,7 @@ type Volume interface {
 	//
 	// Put should not verify that loc==hash(block): this is the
 	// caller's responsibility.
-	Put(loc string, block []byte) error
+	Put(ctx context.Context, loc string, block []byte) error
 
 	// Touch sets the timestamp for the given locator to the
 	// current time.

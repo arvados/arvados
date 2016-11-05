@@ -187,12 +187,12 @@ func testPutBlockWithSameContent(t TB, factory TestableVolumeFactory, testHash s
 		return
 	}
 
-	err := v.Put(testHash, testData)
+	err := v.Put(context.TODO(), testHash, testData)
 	if err != nil {
 		t.Errorf("Got err putting block %q: %q, expected nil", TestBlock, err)
 	}
 
-	err = v.Put(testHash, testData)
+	err = v.Put(context.TODO(), testHash, testData)
 	if err != nil {
 		t.Errorf("Got err putting block second time %q: %q, expected nil", TestBlock, err)
 	}
@@ -210,7 +210,7 @@ func testPutBlockWithDifferentContent(t TB, factory TestableVolumeFactory, testH
 
 	v.PutRaw(testHash, testDataA)
 
-	putErr := v.Put(testHash, testDataB)
+	putErr := v.Put(context.TODO(), testHash, testDataB)
 	buf := make([]byte, BlockSize)
 	n, getErr := v.Get(context.TODO(), testHash, buf)
 	if putErr == nil {
@@ -239,17 +239,17 @@ func testPutMultipleBlocks(t TB, factory TestableVolumeFactory) {
 		return
 	}
 
-	err := v.Put(TestHash, TestBlock)
+	err := v.Put(context.TODO(), TestHash, TestBlock)
 	if err != nil {
 		t.Errorf("Got err putting block %q: %q, expected nil", TestBlock, err)
 	}
 
-	err = v.Put(TestHash2, TestBlock2)
+	err = v.Put(context.TODO(), TestHash2, TestBlock2)
 	if err != nil {
 		t.Errorf("Got err putting block %q: %q, expected nil", TestBlock2, err)
 	}
 
-	err = v.Put(TestHash3, TestBlock3)
+	err = v.Put(context.TODO(), TestHash3, TestBlock3)
 	if err != nil {
 		t.Errorf("Got err putting block %q: %q, expected nil", TestBlock3, err)
 	}
@@ -295,7 +295,7 @@ func testPutAndTouch(t TB, factory TestableVolumeFactory) {
 		return
 	}
 
-	if err := v.Put(TestHash, TestBlock); err != nil {
+	if err := v.Put(context.TODO(), TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
@@ -315,7 +315,7 @@ func testPutAndTouch(t TB, factory TestableVolumeFactory) {
 	}
 
 	// Write the same block again.
-	if err := v.Put(TestHash, TestBlock); err != nil {
+	if err := v.Put(context.TODO(), TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
@@ -438,7 +438,7 @@ func testDeleteNewBlock(t TB, factory TestableVolumeFactory) {
 		return
 	}
 
-	v.Put(TestHash, TestBlock)
+	v.Put(context.TODO(), TestHash, TestBlock)
 
 	if err := v.Trash(TestHash); err != nil {
 		t.Error(err)
@@ -464,7 +464,7 @@ func testDeleteOldBlock(t TB, factory TestableVolumeFactory) {
 		return
 	}
 
-	v.Put(TestHash, TestBlock)
+	v.Put(context.TODO(), TestHash, TestBlock)
 	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
 
 	if err := v.Trash(TestHash); err != nil {
@@ -560,7 +560,7 @@ func testUpdateReadOnly(t TB, factory TestableVolumeFactory) {
 	}
 
 	// Put a new block to read-only volume should result in error
-	err = v.Put(TestHash2, TestBlock2)
+	err = v.Put(context.TODO(), TestHash2, TestBlock2)
 	if err == nil {
 		t.Errorf("Expected error when putting block in a read-only volume")
 	}
@@ -582,7 +582,7 @@ func testUpdateReadOnly(t TB, factory TestableVolumeFactory) {
 	}
 
 	// Overwriting an existing block in read-only volume should result in error
-	err = v.Put(TestHash, TestBlock)
+	err = v.Put(context.TODO(), TestHash, TestBlock)
 	if err == nil {
 		t.Errorf("Expected error when putting block in a read-only volume")
 	}
@@ -653,7 +653,7 @@ func testPutConcurrent(t TB, factory TestableVolumeFactory) {
 
 	sem := make(chan int)
 	go func(sem chan int) {
-		err := v.Put(TestHash, TestBlock)
+		err := v.Put(context.TODO(), TestHash, TestBlock)
 		if err != nil {
 			t.Errorf("err1: %v", err)
 		}
@@ -661,7 +661,7 @@ func testPutConcurrent(t TB, factory TestableVolumeFactory) {
 	}(sem)
 
 	go func(sem chan int) {
-		err := v.Put(TestHash2, TestBlock2)
+		err := v.Put(context.TODO(), TestHash2, TestBlock2)
 		if err != nil {
 			t.Errorf("err2: %v", err)
 		}
@@ -669,7 +669,7 @@ func testPutConcurrent(t TB, factory TestableVolumeFactory) {
 	}(sem)
 
 	go func(sem chan int) {
-		err := v.Put(TestHash3, TestBlock3)
+		err := v.Put(context.TODO(), TestHash3, TestBlock3)
 		if err != nil {
 			t.Errorf("err3: %v", err)
 		}
@@ -721,7 +721,7 @@ func testPutFullBlock(t TB, factory TestableVolumeFactory) {
 	wdata[0] = 'a'
 	wdata[BlockSize-1] = 'z'
 	hash := fmt.Sprintf("%x", md5.Sum(wdata))
-	err := v.Put(hash, wdata)
+	err := v.Put(context.TODO(), hash, wdata)
 	if err != nil {
 		t.Fatal(err)
 	}

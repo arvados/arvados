@@ -46,7 +46,7 @@ func (v *TestableUnixVolume) PutRaw(locator string, data []byte) {
 		v.ReadOnly = orig
 	}(v.ReadOnly)
 	v.ReadOnly = false
-	err := v.Put(locator, data)
+	err := v.Put(context.TODO(), locator, data)
 	if err != nil {
 		v.t.Fatal(err)
 	}
@@ -118,7 +118,7 @@ func TestReplicationDefault1(t *testing.T) {
 func TestGetNotFound(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
-	v.Put(TestHash, TestBlock)
+	v.Put(context.TODO(), TestHash, TestBlock)
 
 	buf := make([]byte, BlockSize)
 	n, err := v.Get(context.TODO(), TestHash2, buf)
@@ -136,7 +136,7 @@ func TestPut(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	err := v.Put(TestHash, TestBlock)
+	err := v.Put(context.TODO(), TestHash, TestBlock)
 	if err != nil {
 		t.Error(err)
 	}
@@ -154,7 +154,7 @@ func TestPutBadVolume(t *testing.T) {
 	defer v.Teardown()
 
 	os.Chmod(v.Root, 000)
-	err := v.Put(TestHash, TestBlock)
+	err := v.Put(context.TODO(), TestHash, TestBlock)
 	if err == nil {
 		t.Error("Write should have failed")
 	}
@@ -172,7 +172,7 @@ func TestUnixVolumeReadonly(t *testing.T) {
 		t.Errorf("got err %v, expected nil", err)
 	}
 
-	err = v.Put(TestHash, TestBlock)
+	err = v.Put(context.TODO(), TestHash, TestBlock)
 	if err != MethodDisabledError {
 		t.Errorf("got err %v, expected MethodDisabledError", err)
 	}
@@ -232,7 +232,7 @@ func TestUnixVolumeGetFuncWorkerError(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	v.Put(TestHash, TestBlock)
+	v.Put(context.TODO(), TestHash, TestBlock)
 	mockErr := errors.New("Mock error")
 	err := v.getFunc(v.blockPath(TestHash), func(rdr io.Reader) error {
 		return mockErr
@@ -263,7 +263,7 @@ func TestUnixVolumeGetFuncWorkerWaitsOnMutex(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	v.Put(TestHash, TestBlock)
+	v.Put(context.TODO(), TestHash, TestBlock)
 
 	mtx := NewMockMutex()
 	v.locker = mtx
@@ -298,7 +298,7 @@ func TestUnixVolumeCompare(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	v.Put(TestHash, TestBlock)
+	v.Put(context.TODO(), TestHash, TestBlock)
 	err := v.Compare(TestHash, TestBlock)
 	if err != nil {
 		t.Errorf("Got err %q, expected nil", err)
@@ -309,7 +309,7 @@ func TestUnixVolumeCompare(t *testing.T) {
 		t.Errorf("Got err %q, expected %q", err, CollisionError)
 	}
 
-	v.Put(TestHash, []byte("baddata"))
+	v.Put(context.TODO(), TestHash, []byte("baddata"))
 	err = v.Compare(TestHash, TestBlock)
 	if err != DiskHashError {
 		t.Errorf("Got err %q, expected %q", err, DiskHashError)
