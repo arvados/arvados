@@ -72,6 +72,8 @@ func BadRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetBlockHandler is a HandleFunc to address Get block requests.
 func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
+	ctx := contextForResponse(context.TODO(), resp)
+
 	if theConfig.RequireSignatures {
 		locator := req.URL.Path[1:] // strip leading slash
 		if err := VerifySignature(locator, GetAPIToken(req)); err != nil {
@@ -94,13 +96,6 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 	defer bufs.Put(buf)
 
-	ctx, cancel := context.WithCancel(context.TODO())
-	if resp, ok := resp.(http.CloseNotifier); ok {
-		go func() {
-			<-resp.CloseNotify()
-			cancel()
-		}()
-	}
 	size, err := GetBlock(ctx, mux.Vars(req)["hash"], buf, resp)
 	if err != nil {
 		code := http.StatusInternalServerError
@@ -114,6 +109,22 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	resp.Header().Set("Content-Length", strconv.Itoa(size))
 	resp.Header().Set("Content-Type", "application/octet-stream")
 	resp.Write(buf[:size])
+}
+
+// Return a new context that gets cancelled by resp's
+// CloseNotifier. If resp does not implement http.CloseNotifier,
+// return parent.
+func contextForResponse(parent context.Context, resp http.ResponseWriter) context.Context {
+	cn, ok := resp.(http.CloseNotifier)
+	if !ok {
+		return parent
+	}
+	ctx, cancel := context.WithCancel(parent)
+	go func() {
+		<-cn.CloseNotify()
+		cancel()
+	}()
+	return ctx
 }
 
 // Get a buffer from the pool -- but give up and return a non-nil
