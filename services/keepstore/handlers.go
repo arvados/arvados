@@ -562,6 +562,11 @@ func GetBlock(ctx context.Context, hash string, buf []byte, resp http.ResponseWr
 
 	for _, vol := range KeepVM.AllReadable() {
 		size, err := vol.Get(ctx, hash, buf)
+		select {
+		case <-ctx.Done():
+			return 0, ctx.Err()
+		default:
+		}
 		if err != nil {
 			// IsNotExist is an expected error and may be
 			// ignored. All other errors are logged. In
