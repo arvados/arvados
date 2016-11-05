@@ -272,7 +272,7 @@ func (v *S3Volume) Get(ctx context.Context, loc string, buf []byte) (int, error)
 	}()
 	select {
 	case <-ctx.Done():
-		// Client hung up before we could even send our S3 request
+		theConfig.debugLogf("s3: abandoning getReader() because %s", ctx.Err())
 		return 0, ctx.Err()
 	case <-ready:
 		if err != nil {
@@ -297,9 +297,11 @@ func (v *S3Volume) Get(ctx context.Context, loc string, buf []byte) (int, error)
 	}()
 	select {
 	case <-ctx.Done():
+		theConfig.debugLogf("s3: interrupting ReadFull() with Close() because %s", ctx.Err())
 		rdr.Close()
 		// Must wait for ReadFull to return, to ensure it
 		// doesn't write to buf after we return.
+		theConfig.debugLogf("s3: waiting for ReadFull() to fail")
 		<-ready
 		return 0, ctx.Err()
 	case <-ready:
