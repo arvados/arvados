@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -120,7 +121,7 @@ func TestGetNotFound(t *testing.T) {
 	v.Put(TestHash, TestBlock)
 
 	buf := make([]byte, BlockSize)
-	n, err := v.Get(TestHash2, buf)
+	n, err := v.Get(context.TODO(), TestHash2, buf)
 	switch {
 	case os.IsNotExist(err):
 		break
@@ -166,7 +167,7 @@ func TestUnixVolumeReadonly(t *testing.T) {
 	v.PutRaw(TestHash, TestBlock)
 
 	buf := make([]byte, BlockSize)
-	_, err := v.Get(TestHash, buf)
+	_, err := v.Get(context.TODO(), TestHash, buf)
 	if err != nil {
 		t.Errorf("got err %v, expected nil", err)
 	}

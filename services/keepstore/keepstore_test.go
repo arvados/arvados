@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -67,7 +68,7 @@ func TestGetBlock(t *testing.T) {
 
 	// Check that GetBlock returns success.
 	buf := make([]byte, BlockSize)
-	size, err := GetBlock(TestHash, buf, nil)
+	size, err := GetBlock(context.TODO(), TestHash, buf, nil)
 	if err != nil {
 		t.Errorf("GetBlock error: %s", err)
 	}
@@ -88,7 +89,7 @@ func TestGetBlockMissing(t *testing.T) {
 
 	// Check that GetBlock returns failure.
 	buf := make([]byte, BlockSize)
-	size, err := GetBlock(TestHash, buf, nil)
+	size, err := GetBlock(context.TODO(), TestHash, buf, nil)
 	if err != NotFoundError {
 		t.Errorf("Expected NotFoundError, got %v, err %v", buf[:size], err)
 	}
@@ -110,7 +111,7 @@ func TestGetBlockCorrupt(t *testing.T) {
 
 	// Check that GetBlock returns failure.
 	buf := make([]byte, BlockSize)
-	size, err := GetBlock(TestHash, buf, nil)
+	size, err := GetBlock(context.TODO(), TestHash, buf, nil)
 	if err != DiskHashError {
 		t.Errorf("Expected DiskHashError, got %v (buf: %v)", err, buf[:size])
 	}
@@ -137,7 +138,7 @@ func TestPutBlockOK(t *testing.T) {
 
 	vols := KeepVM.AllReadable()
 	buf := make([]byte, BlockSize)
-	n, err := vols[1].Get(TestHash, buf)
+	n, err := vols[1].Get(context.TODO(), TestHash, buf)
 	if err != nil {
 		t.Fatalf("Volume #0 Get returned error: %v", err)
 	}
@@ -167,7 +168,7 @@ func TestPutBlockOneVol(t *testing.T) {
 	}
 
 	buf := make([]byte, BlockSize)
-	size, err := GetBlock(TestHash, buf, nil)
+	size, err := GetBlock(context.TODO(), TestHash, buf, nil)
 	if err != nil {
 		t.Fatalf("GetBlock: %v", err)
 	}
@@ -195,7 +196,7 @@ func TestPutBlockMD5Fail(t *testing.T) {
 	}
 
 	// Confirm that GetBlock fails to return anything.
-	if result, err := GetBlock(TestHash, make([]byte, BlockSize), nil); err != NotFoundError {
+	if result, err := GetBlock(context.TODO(), TestHash, make([]byte, BlockSize), nil); err != NotFoundError {
 		t.Errorf("GetBlock succeeded after a corrupt block store (result = %s, err = %v)",
 			string(result), err)
 	}
@@ -221,7 +222,7 @@ func TestPutBlockCorrupt(t *testing.T) {
 
 	// The block on disk should now match TestBlock.
 	buf := make([]byte, BlockSize)
-	if size, err := GetBlock(TestHash, buf, nil); err != nil {
+	if size, err := GetBlock(context.TODO(), TestHash, buf, nil); err != nil {
 		t.Errorf("GetBlock: %v", err)
 	} else if bytes.Compare(buf[:size], TestBlock) != 0 {
 		t.Errorf("Got %+q, expected %+q", buf[:size], TestBlock)
@@ -296,7 +297,7 @@ func TestPutBlockTouchFails(t *testing.T) {
 			oldMtime, newMtime)
 	}
 	buf := make([]byte, BlockSize)
-	n, err := vols[1].Get(TestHash, buf)
+	n, err := vols[1].Get(context.TODO(), TestHash, buf)
 	if err != nil {
 		t.Fatalf("vols[1]: %v", err)
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"flag"
@@ -261,18 +262,48 @@ func (v *S3Volume) getReader(loc string) (rdr io.ReadCloser, err error) {
 
 // Get a block: copy the block data into buf, and return the number of
 // bytes copied.
-func (v *S3Volume) Get(loc string, buf []byte) (int, error) {
-	rdr, err := v.getReader(loc)
-	if err != nil {
-		return 0, err
+func (v *S3Volume) Get(ctx context.Context, loc string, buf []byte) (int, error) {
+	ready := make(chan bool)
+	var rdr io.ReadCloser
+	var err error
+	go func() {
+		rdr, err = v.getReader(loc)
+		close(ready)
+	}()
+	select {
+	case <-ctx.Done():
+		// Client hung up before we could even send our S3 request
+		return 0, ctx.Err()
+	case <-ready:
+		if err != nil {
+			return 0, err
+		}
 	}
-	defer rdr.Close()
-	n, err := io.ReadFull(rdr, buf)
-	switch err {
-	case nil, io.EOF, io.ErrUnexpectedEOF:
-		return n, nil
-	default:
-		return 0, v.translateError(err)
+
+	var n int
+	ready = make(chan bool)
+	go func() {
+		defer close(ready)
+
+		defer rdr.Close()
+		n, err = io.ReadFull(rdr, buf)
+
+		switch err {
+		case nil, io.EOF, io.ErrUnexpectedEOF:
+			err = nil
+		default:
+			err = v.translateError(err)
+		}
+	}()
+	select {
+	case <-ctx.Done():
+		rdr.Close()
+		// Must wait for ReadFull to return, to ensure it
+		// doesn't write to buf after we return.
+		<-ready
+		return 0, ctx.Err()
+	case <-ready:
+		return n, err
 	}
 }
 

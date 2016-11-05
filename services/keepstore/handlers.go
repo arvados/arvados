@@ -9,6 +9,7 @@ package main
 
 import (
 	"container/list"
+	"context"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
@@ -93,7 +94,14 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 	defer bufs.Put(buf)
 
-	size, err := GetBlock(mux.Vars(req)["hash"], buf, resp)
+	ctx, cancel := context.WithCancel(context.TODO())
+	if resp, ok := resp.(http.CloseNotifier); ok {
+		go func() {
+			<-resp.CloseNotify()
+			cancel()
+		}()
+	}
+	size, err := GetBlock(ctx, mux.Vars(req)["hash"], buf, resp)
 	if err != nil {
 		code := http.StatusInternalServerError
 		if err, ok := err.(*KeepError); ok {
@@ -548,12 +556,12 @@ func UntrashHandler(resp http.ResponseWriter, req *http.Request) {
 // If the block found does not have the correct MD5 hash, returns
 // DiskHashError.
 //
-func GetBlock(hash string, buf []byte, resp http.ResponseWriter) (int, error) {
+func GetBlock(ctx context.Context, hash string, buf []byte, resp http.ResponseWriter) (int, error) {
 	// Attempt to read the requested hash from a keep volume.
 	errorToCaller := NotFoundError
 
 	for _, vol := range KeepVM.AllReadable() {
-		size, err := vol.Get(hash, buf)
+		size, err := vol.Get(ctx, hash, buf)
 		if err != nil {
 			// IsNotExist is an expected error and may be
 			// ignored. All other errors are logged. In

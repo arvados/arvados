@@ -11,6 +11,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -564,7 +565,7 @@ func TestDeleteHandler(t *testing.T) {
 	}
 	// Confirm the block has been deleted
 	buf := make([]byte, BlockSize)
-	_, err := vols[0].Get(TestHash, buf)
+	_, err := vols[0].Get(context.TODO(), TestHash, buf)
 	var blockDeleted = os.IsNotExist(err)
 	if !blockDeleted {
 		t.Error("superuserExistingBlockReq: block not deleted")
@@ -588,7 +589,7 @@ func TestDeleteHandler(t *testing.T) {
 			expectedDc, responseDc)
 	}
 	// Confirm the block has NOT been deleted.
-	_, err = vols[0].Get(TestHash, buf)
+	_, err = vols[0].Get(context.TODO(), TestHash, buf)
 	if err != nil {
 		t.Errorf("testing delete on new block: %s\n", err)
 	}

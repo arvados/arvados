@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/xml"
@@ -459,7 +460,7 @@ func TestAzureBlobVolumeRangeFenceposts(t *testing.T) {
 			t.Error(err)
 		}
 		gotData := make([]byte, len(data))
-		gotLen, err := v.Get(hash, gotData)
+		gotLen, err := v.Get(context.TODO(), hash, gotData)
 		if err != nil {
 			t.Error(err)
 		}
@@ -510,7 +511,7 @@ func TestAzureBlobVolumeCreateBlobRace(t *testing.T) {
 	v.azHandler.race <- continuePut
 	go func() {
 		buf := make([]byte, len(TestBlock))
-		_, err := v.Get(TestHash, buf)
+		_, err := v.Get(context.TODO(), TestHash, buf)
 		if err != nil {
 			t.Error(err)
 		}
@@ -553,7 +554,7 @@ func TestAzureBlobVolumeCreateBlobRaceDeadline(t *testing.T) {
 	go func() {
 		defer close(allDone)
 		buf := make([]byte, BlockSize)
-		n, err := v.Get(TestHash, buf)
+		n, err := v.Get(context.TODO(), TestHash, buf)
 		if err != nil {
 			t.Error(err)
 			return

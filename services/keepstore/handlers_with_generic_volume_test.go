@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 )
 
 // A TestableVolumeManagerFactory creates a volume manager with at least two TestableVolume instances.
@@ -46,7 +47,7 @@ func testGetBlock(t TB, factory TestableVolumeManagerFactory, testHash string, t
 
 	// Get should pass
 	buf := make([]byte, len(testBlock))
-	n, err := GetBlock(testHash, buf, nil)
+	n, err := GetBlock(context.TODO(), testHash, buf, nil)
 	if err != nil {
 		t.Fatalf("Error while getting block %s", err)
 	}
@@ -66,7 +67,7 @@ func testPutRawBadDataGetBlock(t TB, factory TestableVolumeManagerFactory,
 
 	// Get should fail
 	buf := make([]byte, BlockSize)
-	size, err := GetBlock(testHash, buf, nil)
+	size, err := GetBlock(context.TODO(), testHash, buf, nil)
 	if err == nil {
 		t.Fatalf("Got %+q, expected error while getting corrupt block %v", buf[:size], testHash)
 	}
@@ -88,7 +89,7 @@ func testPutBlock(t TB, factory TestableVolumeManagerFactory, testHash string, t
 
 	// Check that PutBlock stored the data as expected
 	buf := make([]byte, BlockSize)
-	size, err := GetBlock(testHash, buf, nil)
+	size, err := GetBlock(context.TODO(), testHash, buf, nil)
 	if err != nil {
 		t.Fatalf("Error during GetBlock for %q: %s", testHash, err)
 	} else if bytes.Compare(buf[:size], testBlock) != 0 {
@@ -113,7 +114,7 @@ func testPutBlockCorrupt(t TB, factory TestableVolumeManagerFactory,
 	// Put succeeded and overwrote the badData in one volume,
 	// and Get should return the testBlock now, ignoring the bad data.
 	buf := make([]byte, BlockSize)
-	size, err := GetBlock(testHash, buf, nil)
+	size, err := GetBlock(context.TODO(), testHash, buf, nil)
 	if err != nil {
 		t.Fatalf("Error during GetBlock for %q: %s", testHash, err)
 	} else if bytes.Compare(buf[:size], testBlock) != 0 {

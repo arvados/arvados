@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io"
 	"sync/atomic"
 	"time"
@@ -47,7 +48,7 @@ type Volume interface {
 	// any of the data.
 	//
 	// len(buf) will not exceed BlockSize.
-	Get(loc string, buf []byte) (int, error)
+	Get(ctx context.Context, loc string, buf []byte) (int, error)
 
 	// Compare the given data with the stored data (i.e., what Get
 	// would return). If equal, return nil. If not, return

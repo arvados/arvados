@@ -2,6 +2,7 @@ package main
 
 import (
 	"container/list"
+	"context"
 	"testing"
 	"time"
 )
@@ -291,7 +292,7 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 
 	// Verify Locator1 to be un/deleted as expected
 	buf := make([]byte, BlockSize)
-	size, err := GetBlock(testData.Locator1, buf, nil)
+	size, err := GetBlock(context.TODO(), testData.Locator1, buf, nil)
 	if testData.ExpectLocator1 {
 		if size == 0 || err != nil {
 			t.Errorf("Expected Locator1 to be still present: %s", testData.Locator1)
@@ -304,7 +305,7 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 
 	// Verify Locator2 to be un/deleted as expected
 	if testData.Locator1 != testData.Locator2 {
-		size, err = GetBlock(testData.Locator2, buf, nil)
+		size, err = GetBlock(context.TODO(), testData.Locator2, buf, nil)
 		if testData.ExpectLocator2 {
 			if size == 0 || err != nil {
 				t.Errorf("Expected Locator2 to be still present: %s", testData.Locator2)
@@ -323,7 +324,7 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 		locatorFoundIn := 0
 		for _, volume := range KeepVM.AllReadable() {
 			buf := make([]byte, BlockSize)
-			if _, err := volume.Get(testData.Locator1, buf); err == nil {
+			if _, err := volume.Get(context.TODO(), testData.Locator1, buf); err == nil {
 				locatorFoundIn = locatorFoundIn + 1
 			}
 		}
