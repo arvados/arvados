@@ -120,10 +120,10 @@ func contextForResponse(parent context.Context, resp http.ResponseWriter) contex
 		return parent
 	}
 	ctx, cancel := context.WithCancel(parent)
-	go func() {
-		<-cn.CloseNotify()
+	go func(c <-chan bool) {
+		<-c
 		cancel()
-	}()
+	}(cn.CloseNotify())
 	return ctx
 }
 
