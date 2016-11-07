@@ -230,7 +230,7 @@ class ApplicationController < ActionController::Base
   helper_method :arvados_api_exists
   def arvados_api_exists ctrl, method
     if [:jobs, :job_tasks, :pipeline_instances, :pipeline_templates].include?(ctrl)
-      arvados_api_client.discovery[:resources][ctrl].andand[:methods].andand[method]
+      ctrl.to_s.classify.constantize.api_exists?(method)
     else
       true
     end
@@ -778,11 +778,11 @@ class ApplicationController < ActionController::Base
   }
 
   @@notification_tests.push lambda { |controller, current_user|
-    begin
+    if PipelineInstance.api_exists?(:index)
       PipelineInstance.limit(1).where(created_by: current_user.uuid).each do
         return nil
       end
-    rescue ArvadosApiClient::NotFoundException
+    else
       return nil
     end
     return lambda { |view|
