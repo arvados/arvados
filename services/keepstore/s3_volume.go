@@ -19,6 +19,11 @@ import (
 	"github.com/AdRoll/goamz/s3"
 )
 
+const (
+	s3DefaultReadTimeout    = arvados.Duration(10 * time.Minute)
+	s3DefaultConnectTimeout = arvados.Duration(time.Minute)
+)
+
 var (
 	// ErrS3TrashDisabled is returned by Trash if that operation
 	// is impossible with the current config.
@@ -213,10 +218,10 @@ func (v *S3Volume) Start() error {
 	// Zero timeouts mean "wait forever", which is a bad
 	// default. Default to long timeouts instead.
 	if v.ConnectTimeout == 0 {
-		v.ConnectTimeout = arvados.Duration(time.Minute)
+		v.ConnectTimeout = s3DefaultConnectTimeout
 	}
 	if v.ReadTimeout == 0 {
-		v.ReadTimeout = arvados.Duration(10 * time.Minute)
+		v.ReadTimeout = s3DefaultReadTimeout
 	}
 
 	client := s3.New(auth, region)
