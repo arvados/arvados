@@ -431,6 +431,8 @@ package_go_binary tools/keep-block-check keep-block-check \
     "Verify that all data from one set of Keep servers to another was copied"
 package_go_binary tools/keep-rsync keep-rsync \
     "Copy all data from one set of Keep servers to another"
+package_go_binary tools/keep-exercise keep-exercise \
+    "Performance testing tool for Arvados Keep"
 
 # The Python SDK
 # Please resist the temptation to add --no-python-fix-name to the fpm call here
