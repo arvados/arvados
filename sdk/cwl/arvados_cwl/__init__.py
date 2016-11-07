@@ -254,8 +254,7 @@ class ArvCwlRunner(object):
         adjustDirObjs(outputObj, finalcollection)
         adjustFileObjs(outputObj, finalcollection)
 
-        self.final_output_collection = final
-        return outputObj
+        return (outputObj, final)
 
     def set_crunch_output(self):
         if self.work_api == "containers":
@@ -411,7 +410,7 @@ class ArvCwlRunner(object):
         else:
             if self.output_name is None:
                 self.output_name = "Output of %s" % (shortname(tool.tool["id"]))
-            self.final_output = self.make_output_collection(self.output_name, self.final_output)
+            self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, self.final_output)
             self.set_crunch_output()
 
         if self.final_status != "success":

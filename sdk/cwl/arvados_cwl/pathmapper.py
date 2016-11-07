@@ -195,7 +195,7 @@ class FinalOutputPathMapper(PathMapper):
         elif obj["class"] == "File":
             if loc in self._pathmap:
                 return
-            if "contents" in obj and obj["location"].startswith("_:"):
+            if "contents" in obj and loc.startswith("_:"):
                 self._pathmap[loc] = MapperEnt(obj["contents"], tgt, "CreateFile")
             else:
                 self._pathmap[loc] = MapperEnt(loc, tgt, "File")
