@@ -350,20 +350,16 @@ func (v *S3Volume) Put(ctx context.Context, loc string, block []byte) error {
 	ready := make(chan bool)
 	go func() {
 		defer func() {
-			select {
-			case <-ctx.Done():
+			if ctx.Err() != nil {
 				theConfig.debugLogf("%s: abandoned PutReader goroutine finished with err: %s", v, err)
-			default:
 			}
 		}()
 		defer close(ready)
 		err = v.bucket.PutReader(loc, bufr, int64(size), "application/octet-stream", s3ACL, opts)
 		if err != nil {
-			err = v.translateError(err)
 			return
 		}
 		err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
-		err = v.translateError(err)
 	}()
 	select {
 	case <-ctx.Done():
@@ -378,7 +374,7 @@ func (v *S3Volume) Put(ctx context.Context, loc string, block []byte) error {
 		theConfig.debugLogf("%s: abandoning PutReader goroutine", v)
 		return ctx.Err()
 	case <-ready:
-		return err
+		return v.translateError(err)
 	}
 }
 
