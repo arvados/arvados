@@ -134,6 +134,8 @@ type S3Volume struct {
 	LocationConstraint bool
 	IndexPageSize      int
 	S3Replication      int
+	ConnectTimeout     arvados.Duration
+	ReadTimeout        arvados.Duration
 	RaceWindow         arvados.Duration
 	ReadOnly           bool
 	UnsafeDelete       bool
@@ -147,24 +149,28 @@ type S3Volume struct {
 func (*S3Volume) Examples() []Volume {
 	return []Volume{
 		&S3Volume{
-			AccessKeyFile: "/etc/aws_s3_access_key.txt",
-			SecretKeyFile: "/etc/aws_s3_secret_key.txt",
-			Endpoint:      "",
-			Region:        "us-east-1",
-			Bucket:        "example-bucket-name",
-			IndexPageSize: 1000,
-			S3Replication: 2,
-			RaceWindow:    arvados.Duration(24 * time.Hour),
+			AccessKeyFile:  "/etc/aws_s3_access_key.txt",
+			SecretKeyFile:  "/etc/aws_s3_secret_key.txt",
+			Endpoint:       "",
+			Region:         "us-east-1",
+			Bucket:         "example-bucket-name",
+			IndexPageSize:  1000,
+			S3Replication:  2,
+			RaceWindow:     arvados.Duration(24 * time.Hour),
+			ConnectTimeout: arvados.Duration(time.Minute),
+			ReadTimeout:    arvados.Duration(5 * time.Minute),
 		},
 		&S3Volume{
-			AccessKeyFile: "/etc/gce_s3_access_key.txt",
-			SecretKeyFile: "/etc/gce_s3_secret_key.txt",
-			Endpoint:      "https://storage.googleapis.com",
-			Region:        "",
-			Bucket:        "example-bucket-name",
-			IndexPageSize: 1000,
-			S3Replication: 2,
-			RaceWindow:    arvados.Duration(24 * time.Hour),
+			AccessKeyFile:  "/etc/gce_s3_access_key.txt",
+			SecretKeyFile:  "/etc/gce_s3_secret_key.txt",
+			Endpoint:       "https://storage.googleapis.com",
+			Region:         "",
+			Bucket:         "example-bucket-name",
+			IndexPageSize:  1000,
+			S3Replication:  2,
+			RaceWindow:     arvados.Duration(24 * time.Hour),
+			ConnectTimeout: arvados.Duration(time.Minute),
+			ReadTimeout:    arvados.Duration(5 * time.Minute),
 		},
 	}
 }
@@ -203,8 +209,11 @@ func (v *S3Volume) Start() error {
 	if err != nil {
 		return err
 	}
+	client := s3.New(auth, region)
+	client.ConnectTimeout = time.Duration(v.ConnectTimeout)
+	client.ReadTimeout = time.Duration(v.ReadTimeout)
 	v.bucket = &s3.Bucket{
-		S3:   s3.New(auth, region),
+		S3:   client,
 		Name: v.Bucket,
 	}
 	return nil
