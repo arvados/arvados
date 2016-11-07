@@ -56,11 +56,11 @@ func main() {
 
 	overrideServices(kc)
 
-	nextBuf := make(chan []byte, *WriteThreads)
 	nextLocator := make(chan string, *ReadThreads+*WriteThreads)
 
 	go countBeans(nextLocator)
 	for i := 0; i < *WriteThreads; i++ {
+		nextBuf := make(chan []byte, 1)
 		go makeBufs(nextBuf, i)
 		go doWrites(kc, nextBuf, nextLocator)
 	}
@@ -106,23 +106,28 @@ func countBeans(nextLocator chan string) {
 	}
 }
 
-func makeBufs(nextBuf chan []byte, threadID int) {
+func makeBufs(nextBuf chan<- []byte, threadID int) {
 	buf := make([]byte, *BlockSize)
 	if *VaryThread {
 		binary.PutVarint(buf, int64(threadID))
 	}
+	randSize := 524288
+	if randSize > *BlockSize {
+		randSize = *BlockSize
+	}
 	for {
 		if *VaryRequest {
-			buf = make([]byte, *BlockSize)
-			if _, err := io.ReadFull(rand.Reader, buf); err != nil {
+			rnd := make([]byte, randSize)
+			if _, err := io.ReadFull(rand.Reader, rnd); err != nil {
 				log.Fatal(err)
 			}
+			buf = append(rnd, buf[randSize:]...)
 		}
 		nextBuf <- buf
 	}
 }
 
-func doWrites(kc *keepclient.KeepClient, nextBuf chan []byte, nextLocator chan string) {
+func doWrites(kc *keepclient.KeepClient, nextBuf <-chan []byte, nextLocator chan<- string) {
 	for buf := range nextBuf {
 		locator, _, err := kc.PutB(buf)
 		if err != nil {
@@ -139,7 +144,7 @@ func doWrites(kc *keepclient.KeepClient, nextBuf chan []byte, nextLocator chan s
 	}
 }
 
-func doReads(kc *keepclient.KeepClient, nextLocator chan string) {
+func doReads(kc *keepclient.KeepClient, nextLocator <-chan string) {
 	for locator := range nextLocator {
 		rdr, size, url, err := kc.Get(locator)
 		if err != nil {
