@@ -192,8 +192,11 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	bufs.Put(buf)
 
 	if err != nil {
-		ke := err.(*KeepError)
-		http.Error(resp, ke.Error(), ke.HTTPCode)
+		code := http.StatusInternalServerError
+		if err, ok := err.(*KeepError); ok {
+			code = err.HTTPCode
+		}
+		http.Error(resp, err.Error(), code)
 		return
 	}
 
@@ -572,7 +575,7 @@ func GetBlock(ctx context.Context, hash string, buf []byte, resp http.ResponseWr
 		size, err := vol.Get(ctx, hash, buf)
 		select {
 		case <-ctx.Done():
-			return 0, ctx.Err()
+			return 0, ErrClientDisconnect
 		default:
 		}
 		if err != nil {
@@ -655,7 +658,7 @@ func PutBlock(ctx context.Context, block []byte, hash string) (int, error) {
 			return vol.Replication(), nil // success!
 		}
 		if ctx.Err() != nil {
-			return 0, ctx.Err()
+			return 0, ErrClientDisconnect
 		}
 	}
 
@@ -669,7 +672,7 @@ func PutBlock(ctx context.Context, block []byte, hash string) (int, error) {
 	for _, vol := range writables {
 		err := vol.Put(ctx, hash, block)
 		if ctx.Err() != nil {
-			return 0, ctx.Err()
+			return 0, ErrClientDisconnect
 		}
 		if err == nil {
 			return vol.Replication(), nil // success!
