@@ -654,6 +654,9 @@ func PutBlock(ctx context.Context, block []byte, hash string) (int, error) {
 		if err := vol.Put(ctx, hash, block); err == nil {
 			return vol.Replication(), nil // success!
 		}
+		if ctx.Err() != nil {
+			return 0, ctx.Err()
+		}
 	}
 
 	writables := KeepVM.AllWritable()
@@ -665,10 +668,8 @@ func PutBlock(ctx context.Context, block []byte, hash string) (int, error) {
 	allFull := true
 	for _, vol := range writables {
 		err := vol.Put(ctx, hash, block)
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			return 0, ctx.Err()
-		default:
 		}
 		if err == nil {
 			return vol.Replication(), nil // success!
