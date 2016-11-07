@@ -89,7 +89,7 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	// isn't here, we can return 404 now instead of waiting for a
 	// buffer.
 
-	buf, err := getBufferForResponseWriter(resp, bufs, BlockSize)
+	buf, err := getBufferWithContext(ctx, bufs, BlockSize)
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusServiceUnavailable)
 		return
@@ -128,23 +128,16 @@ func contextForResponse(parent context.Context, resp http.ResponseWriter) contex
 }
 
 // Get a buffer from the pool -- but give up and return a non-nil
-// error if resp implements http.CloseNotifier and tells us that the
-// client has disconnected before we get a buffer.
-func getBufferForResponseWriter(resp http.ResponseWriter, bufs *bufferPool, bufSize int) ([]byte, error) {
-	var closeNotifier <-chan bool
-	if resp, ok := resp.(http.CloseNotifier); ok {
-		closeNotifier = resp.CloseNotify()
-	}
-	var buf []byte
+// error if ctx ends before we get a buffer.
+func getBufferWithContext(ctx context.Context, bufs *bufferPool, bufSize int) ([]byte, error) {
 	bufReady := make(chan []byte)
 	go func() {
 		bufReady <- bufs.Get(bufSize)
-		close(bufReady)
 	}()
 	select {
-	case buf = <-bufReady:
+	case buf := <-bufReady:
 		return buf, nil
-	case <-closeNotifier:
+	case <-ctx.Done():
 		go func() {
 			// Even if closeNotifier happened first, we
 			// need to keep waiting for our buf so we can
@@ -180,7 +173,7 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	buf, err := getBufferForResponseWriter(resp, bufs, int(req.ContentLength))
+	buf, err := getBufferWithContext(ctx, bufs, int(req.ContentLength))
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusServiceUnavailable)
 		return
