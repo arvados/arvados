@@ -209,6 +209,16 @@ func (v *S3Volume) Start() error {
 	if err != nil {
 		return err
 	}
+
+	// Zero timeouts mean "wait forever", which is a bad
+	// default. Default to long timeouts instead.
+	if v.ConnectTimeout == 0 {
+		v.ConnectTimeout = arvados.Duration(time.Minute)
+	}
+	if v.ReadTimeout == 0 {
+		v.ReadTimeout = arvados.Duration(10 * time.Minute)
+	}
+
 	client := s3.New(auth, region)
 	client.ConnectTimeout = time.Duration(v.ConnectTimeout)
 	client.ReadTimeout = time.Duration(v.ReadTimeout)
