@@ -651,7 +651,7 @@ func PutBlock(ctx context.Context, block []byte, hash string) (int, error) {
 	// Choose a Keep volume to write to.
 	// If this volume fails, try all of the volumes in order.
 	if vol := KeepVM.NextWritable(); vol != nil {
-		if err := vol.Put(context.TODO(), hash, block); err == nil {
+		if err := vol.Put(ctx, hash, block); err == nil {
 			return vol.Replication(), nil // success!
 		}
 	}
