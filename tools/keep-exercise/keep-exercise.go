@@ -47,7 +47,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	kc, err := keepclient.MakeKeepClient(&arv)
+	kc, err := keepclient.MakeKeepClient(arv)
 	if err != nil {
 		log.Fatal(err)
 	}
