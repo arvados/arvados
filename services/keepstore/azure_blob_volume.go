@@ -285,7 +285,7 @@ func (v *AzureBlobVolume) get(loc string, buf []byte) (int, error) {
 }
 
 // Compare the given data with existing stored data.
-func (v *AzureBlobVolume) Compare(loc string, expect []byte) error {
+func (v *AzureBlobVolume) Compare(ctx context.Context, loc string, expect []byte) error {
 	trashed, _, err := v.checkTrashed(loc)
 	if err != nil {
 		return err
@@ -298,7 +298,7 @@ func (v *AzureBlobVolume) Compare(loc string, expect []byte) error {
 		return v.translateError(err)
 	}
 	defer rdr.Close()
-	return compareReaderWithBuf(rdr, expect, loc[:32])
+	return compareReaderWithBuf(ctx, rdr, expect, loc[:32])
 }
 
 // Put stores a Keep block as a block blob in the container.

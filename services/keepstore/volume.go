@@ -55,7 +55,7 @@ type Volume interface {
 	// CollisionError or DiskHashError (depending on whether the
 	// data on disk matches the expected hash), or whatever error
 	// was encountered opening/reading the stored data.
-	Compare(loc string, data []byte) error
+	Compare(ctx context.Context, loc string, data []byte) error
 
 	// Put writes a block to an underlying storage device.
 	//

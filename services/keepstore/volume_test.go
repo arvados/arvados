@@ -96,7 +96,7 @@ func (v *MockVolume) gotCall(method string) {
 	}
 }
 
-func (v *MockVolume) Compare(loc string, buf []byte) error {
+func (v *MockVolume) Compare(ctx context.Context, loc string, buf []byte) error {
 	v.gotCall("Compare")
 	<-v.Gate
 	if v.Bad {

@@ -122,7 +122,7 @@ func testCompareNonexistent(t TB, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
 
-	err := v.Compare(TestHash, TestBlock)
+	err := v.Compare(context.TODO(), TestHash, TestBlock)
 	if err != os.ErrNotExist {
 		t.Errorf("Got err %T %q, expected os.ErrNotExist", err, err)
 	}
@@ -137,7 +137,7 @@ func testCompareSameContent(t TB, factory TestableVolumeFactory, testHash string
 	v.PutRaw(testHash, testData)
 
 	// Compare the block locator with same content
-	err := v.Compare(testHash, testData)
+	err := v.Compare(context.TODO(), testHash, testData)
 	if err != nil {
 		t.Errorf("Got err %q, expected nil", err)
 	}
@@ -155,7 +155,7 @@ func testCompareWithCollision(t TB, factory TestableVolumeFactory, testHash stri
 	v.PutRaw(testHash, testDataA)
 
 	// Compare the block locator with different content; collision
-	err := v.Compare(TestHash, testDataB)
+	err := v.Compare(context.TODO(), TestHash, testDataB)
 	if err == nil {
 		t.Errorf("Got err nil, expected error due to collision")
 	}
@@ -171,7 +171,7 @@ func testCompareWithCorruptStoredData(t TB, factory TestableVolumeFactory, testH
 
 	v.PutRaw(TestHash, testDataB)
 
-	err := v.Compare(testHash, testDataA)
+	err := v.Compare(context.TODO(), testHash, testDataA)
 	if err == nil || err == CollisionError {
 		t.Errorf("Got err %+v, expected non-collision error", err)
 	}
@@ -480,7 +480,7 @@ func testDeleteOldBlock(t TB, factory TestableVolumeFactory) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
-	err = v.Compare(TestHash, TestBlock)
+	err = v.Compare(context.TODO(), TestHash, TestBlock)
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
@@ -816,7 +816,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 			return err
 		}
 
-		err = v.Compare(TestHash, TestBlock)
+		err = v.Compare(context.TODO(), TestHash, TestBlock)
 		if err != nil {
 			return err
 		}

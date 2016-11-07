@@ -234,7 +234,7 @@ func TestUnixVolumeGetFuncWorkerError(t *testing.T) {
 
 	v.Put(context.TODO(), TestHash, TestBlock)
 	mockErr := errors.New("Mock error")
-	err := v.getFunc(v.blockPath(TestHash), func(rdr io.Reader) error {
+	err := v.getFunc(context.TODO(), v.blockPath(TestHash), func(rdr io.Reader) error {
 		return mockErr
 	})
 	if err != mockErr {
@@ -247,7 +247,7 @@ func TestUnixVolumeGetFuncFileError(t *testing.T) {
 	defer v.Teardown()
 
 	funcCalled := false
-	err := v.getFunc(v.blockPath(TestHash), func(rdr io.Reader) error {
+	err := v.getFunc(context.TODO(), v.blockPath(TestHash), func(rdr io.Reader) error {
 		funcCalled = true
 		return nil
 	})
@@ -269,7 +269,7 @@ func TestUnixVolumeGetFuncWorkerWaitsOnMutex(t *testing.T) {
 	v.locker = mtx
 
 	funcCalled := make(chan struct{})
-	go v.getFunc(v.blockPath(TestHash), func(rdr io.Reader) error {
+	go v.getFunc(context.TODO(), v.blockPath(TestHash), func(rdr io.Reader) error {
 		funcCalled <- struct{}{}
 		return nil
 	})
@@ -299,25 +299,25 @@ func TestUnixVolumeCompare(t *testing.T) {
 	defer v.Teardown()
 
 	v.Put(context.TODO(), TestHash, TestBlock)
-	err := v.Compare(TestHash, TestBlock)
+	err := v.Compare(context.TODO(), TestHash, TestBlock)
 	if err != nil {
 		t.Errorf("Got err %q, expected nil", err)
 	}
 
-	err = v.Compare(TestHash, []byte("baddata"))
+	err = v.Compare(context.TODO(), TestHash, []byte("baddata"))
 	if err != CollisionError {
 		t.Errorf("Got err %q, expected %q", err, CollisionError)
 	}
 
 	v.Put(context.TODO(), TestHash, []byte("baddata"))
-	err = v.Compare(TestHash, TestBlock)
+	err = v.Compare(context.TODO(), TestHash, TestBlock)
 	if err != DiskHashError {
 		t.Errorf("Got err %q, expected %q", err, DiskHashError)
 	}
 
 	p := fmt.Sprintf("%s/%s/%s", v.Root, TestHash[:3], TestHash)
 	os.Chmod(p, 000)
-	err = v.Compare(TestHash, TestBlock)
+	err = v.Compare(context.TODO(), TestHash, TestBlock)
 	if err == nil || strings.Index(err.Error(), "permission denied") < 0 {
 		t.Errorf("Got err %q, expected %q", err, "permission denied")
 	}

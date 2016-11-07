@@ -647,8 +647,10 @@ func PutBlock(ctx context.Context, block []byte, hash string) (int, error) {
 	// If we already have this data, it's intact on disk, and we
 	// can update its timestamp, return success. If we have
 	// different data with the same hash, return failure.
-	if n, err := CompareAndTouch(hash, block); err == nil || err == CollisionError {
+	if n, err := CompareAndTouch(ctx, hash, block); err == nil || err == CollisionError {
 		return n, err
+	} else if ctx.Err() != nil {
+		return 0, ErrClientDisconnect
 	}
 
 	// Choose a Keep volume to write to.
@@ -699,10 +701,13 @@ func PutBlock(ctx context.Context, block []byte, hash string) (int, error) {
 // the relevant block's modification time in order to protect it from
 // premature garbage collection. Otherwise, it returns a non-nil
 // error.
-func CompareAndTouch(hash string, buf []byte) (int, error) {
+func CompareAndTouch(ctx context.Context, hash string, buf []byte) (int, error) {
 	var bestErr error = NotFoundError
 	for _, vol := range KeepVM.AllWritable() {
-		if err := vol.Compare(hash, buf); err == CollisionError {
+		err := vol.Compare(ctx, hash, buf)
+		if ctx.Err() != nil {
+			return 0, ctx.Err()
+		} else if err == CollisionError {
 			// Stop if we have a block with same hash but
 			// different content. (It will be impossible
 			// to tell which one is wanted if we have

@@ -232,6 +232,27 @@ func (v *S3Volume) Start() error {
 	return nil
 }
 
+func (v *S3Volume) getReaderWithContext(ctx context.Context, loc string) (rdr io.ReadCloser, err error) {
+	ready := make(chan bool)
+	go func() {
+		rdr, err = v.getReader(loc)
+		close(ready)
+	}()
+	select {
+	case <-ready:
+		return
+	case <-ctx.Done():
+		theConfig.debugLogf("s3: abandoning getReader(): %s", ctx.Err())
+		go func() {
+			<-ready
+			if err == nil {
+				rdr.Close()
+			}
+		}()
+		return nil, ctx.Err()
+	}
+}
+
 // getReader wraps (Bucket)GetReader.
 //
 // In situations where (Bucket)GetReader would fail because the block
@@ -265,25 +286,13 @@ func (v *S3Volume) getReader(loc string) (rdr io.ReadCloser, err error) {
 // Get a block: copy the block data into buf, and return the number of
 // bytes copied.
 func (v *S3Volume) Get(ctx context.Context, loc string, buf []byte) (int, error) {
-	ready := make(chan bool)
-	var rdr io.ReadCloser
-	var err error
-	go func() {
-		rdr, err = v.getReader(loc)
-		close(ready)
-	}()
-	select {
-	case <-ctx.Done():
-		theConfig.debugLogf("s3: abandoning getReader() because %s", ctx.Err())
-		return 0, ctx.Err()
-	case <-ready:
-		if err != nil {
-			return 0, err
-		}
+	rdr, err := v.getReaderWithContext(ctx, loc)
+	if err != nil {
+		return 0, err
 	}
 
 	var n int
-	ready = make(chan bool)
+	ready := make(chan bool)
 	go func() {
 		defer close(ready)
 
@@ -312,13 +321,13 @@ func (v *S3Volume) Get(ctx context.Context, loc string, buf []byte) (int, error)
 }
 
 // Compare the given data with the stored data.
-func (v *S3Volume) Compare(loc string, expect []byte) error {
-	rdr, err := v.getReader(loc)
+func (v *S3Volume) Compare(ctx context.Context, loc string, expect []byte) error {
+	rdr, err := v.getReaderWithContext(ctx, loc)
 	if err != nil {
 		return err
 	}
 	defer rdr.Close()
-	return v.translateError(compareReaderWithBuf(rdr, expect, loc[:32]))
+	return v.translateError(compareReaderWithBuf(ctx, rdr, expect, loc[:32]))
 }
 
 // Put writes a block.
