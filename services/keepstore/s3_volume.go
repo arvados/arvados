@@ -19,6 +19,11 @@ import (
 	"github.com/AdRoll/goamz/s3"
 )
 
+const (
+	s3DefaultReadTimeout    = arvados.Duration(10 * time.Minute)
+	s3DefaultConnectTimeout = arvados.Duration(time.Minute)
+)
+
 var (
 	// ErrS3TrashDisabled is returned by Trash if that operation
 	// is impossible with the current config.
@@ -134,6 +139,8 @@ type S3Volume struct {
 	LocationConstraint bool
 	IndexPageSize      int
 	S3Replication      int
+	ConnectTimeout     arvados.Duration
+	ReadTimeout        arvados.Duration
 	RaceWindow         arvados.Duration
 	ReadOnly           bool
 	UnsafeDelete       bool
@@ -147,24 +154,28 @@ type S3Volume struct {
 func (*S3Volume) Examples() []Volume {
 	return []Volume{
 		&S3Volume{
-			AccessKeyFile: "/etc/aws_s3_access_key.txt",
-			SecretKeyFile: "/etc/aws_s3_secret_key.txt",
-			Endpoint:      "",
-			Region:        "us-east-1",
-			Bucket:        "example-bucket-name",
-			IndexPageSize: 1000,
-			S3Replication: 2,
-			RaceWindow:    arvados.Duration(24 * time.Hour),
+			AccessKeyFile:  "/etc/aws_s3_access_key.txt",
+			SecretKeyFile:  "/etc/aws_s3_secret_key.txt",
+			Endpoint:       "",
+			Region:         "us-east-1",
+			Bucket:         "example-bucket-name",
+			IndexPageSize:  1000,
+			S3Replication:  2,
+			RaceWindow:     arvados.Duration(24 * time.Hour),
+			ConnectTimeout: arvados.Duration(time.Minute),
+			ReadTimeout:    arvados.Duration(5 * time.Minute),
 		},
 		&S3Volume{
-			AccessKeyFile: "/etc/gce_s3_access_key.txt",
-			SecretKeyFile: "/etc/gce_s3_secret_key.txt",
-			Endpoint:      "https://storage.googleapis.com",
-			Region:        "",
-			Bucket:        "example-bucket-name",
-			IndexPageSize: 1000,
-			S3Replication: 2,
-			RaceWindow:    arvados.Duration(24 * time.Hour),
+			AccessKeyFile:  "/etc/gce_s3_access_key.txt",
+			SecretKeyFile:  "/etc/gce_s3_secret_key.txt",
+			Endpoint:       "https://storage.googleapis.com",
+			Region:         "",
+			Bucket:         "example-bucket-name",
+			IndexPageSize:  1000,
+			S3Replication:  2,
+			RaceWindow:     arvados.Duration(24 * time.Hour),
+			ConnectTimeout: arvados.Duration(time.Minute),
+			ReadTimeout:    arvados.Duration(5 * time.Minute),
 		},
 	}
 }
@@ -203,8 +214,21 @@ func (v *S3Volume) Start() error {
 	if err != nil {
 		return err
 	}
+
+	// Zero timeouts mean "wait forever", which is a bad
+	// default. Default to long timeouts instead.
+	if v.ConnectTimeout == 0 {
+		v.ConnectTimeout = s3DefaultConnectTimeout
+	}
+	if v.ReadTimeout == 0 {
+		v.ReadTimeout = s3DefaultReadTimeout
+	}
+
+	client := s3.New(auth, region)
+	client.ConnectTimeout = time.Duration(v.ConnectTimeout)
+	client.ReadTimeout = time.Duration(v.ReadTimeout)
 	v.bucket = &s3.Bucket{
-		S3:   s3.New(auth, region),
+		S3:   client,
 		Name: v.Bucket,
 	}
 	return nil
