@@ -72,7 +72,8 @@ func BadRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetBlockHandler is a HandleFunc to address Get block requests.
 func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
-	ctx := contextForResponse(context.TODO(), resp)
+	ctx, cancel := contextForResponse(context.TODO(), resp)
+	defer cancel()
 
 	if theConfig.RequireSignatures {
 		locator := req.URL.Path[1:] // strip leading slash
@@ -111,20 +112,20 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	resp.Write(buf[:size])
 }
 
-// Return a new context that gets cancelled by resp's
-// CloseNotifier. If resp does not implement http.CloseNotifier,
-// return parent.
-func contextForResponse(parent context.Context, resp http.ResponseWriter) context.Context {
-	cn, ok := resp.(http.CloseNotifier)
-	if !ok {
-		return parent
-	}
+// Return a new context that gets cancelled by resp's CloseNotifier.
+func contextForResponse(parent context.Context, resp http.ResponseWriter) (context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(parent)
-	go func(c <-chan bool) {
-		<-c
-		cancel()
-	}(cn.CloseNotify())
-	return ctx
+	if cn, ok := resp.(http.CloseNotifier); ok {
+		go func(c <-chan bool) {
+			select {
+			case <-c:
+				theConfig.debugLogf("cancel context")
+				cancel()
+			case <-ctx.Done():
+			}
+		}(cn.CloseNotify())
+	}
+	return ctx, cancel
 }
 
 // Get a buffer from the pool -- but give up and return a non-nil
@@ -150,7 +151,8 @@ func getBufferWithContext(ctx context.Context, bufs *bufferPool, bufSize int) ([
 
 // PutBlockHandler is a HandleFunc to address Put block requests.
 func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
-	ctx := contextForResponse(context.TODO(), resp)
+	ctx, cancel := contextForResponse(context.TODO(), resp)
+	defer cancel()
 
 	hash := mux.Vars(req)["hash"]
 
