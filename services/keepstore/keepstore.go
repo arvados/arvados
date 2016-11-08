@@ -114,6 +114,9 @@ func main() {
 	}
 
 	err = theConfig.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if pidfile := theConfig.PIDFile; pidfile != "" {
 		f, err := os.OpenFile(pidfile, os.O_RDWR|os.O_CREATE, 0777)

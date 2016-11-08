@@ -249,9 +249,16 @@ type PoolStatus struct {
 	Len   int    `json:"BuffersInUse"`
 }
 
+type volumeStatusEnt struct {
+	Label         string
+	Status        *VolumeStatus `json:",omitempty"`
+	VolumeStats   *ioStats      `json:",omitempty"`
+	InternalStats interface{}   `json:",omitempty"`
+}
+
 // NodeStatus struct
 type NodeStatus struct {
-	Volumes    []*VolumeStatus `json:"volumes"`
+	Volumes    []*volumeStatusEnt
 	BufferPool PoolStatus
 	PullQueue  WorkQueueStatus
 	TrashQueue WorkQueueStatus
@@ -292,13 +299,20 @@ func StatusHandler(resp http.ResponseWriter, req *http.Request) {
 func readNodeStatus(st *NodeStatus) {
 	vols := KeepVM.AllReadable()
 	if cap(st.Volumes) < len(vols) {
-		st.Volumes = make([]*VolumeStatus, len(vols))
+		st.Volumes = make([]*volumeStatusEnt, len(vols))
 	}
 	st.Volumes = st.Volumes[:0]
 	for _, vol := range vols {
-		if s := vol.Status(); s != nil {
-			st.Volumes = append(st.Volumes, s)
+		var internalStats interface{}
+		if vol, ok := vol.(InternalStatser); ok {
+			internalStats = vol.InternalStats()
 		}
+		st.Volumes = append(st.Volumes, &volumeStatusEnt{
+			Label:         vol.String(),
+			Status:        vol.Status(),
+			InternalStats: internalStats,
+			//VolumeStats: KeepVM.VolumeStats(vol),
+		})
 	}
 	st.BufferPool.Alloc = bufs.Alloc()
 	st.BufferPool.Cap = bufs.Cap()

@@ -243,6 +243,10 @@ type VolumeManager interface {
 	// with more free space, etc.
 	NextWritable() Volume
 
+	// VolumeStats returns the ioStats used for tracking stats for
+	// the given Volume.
+	VolumeStats(Volume) *ioStats
+
 	// Close shuts down the volume manager cleanly.
 	Close()
 }
@@ -254,12 +258,16 @@ type RRVolumeManager struct {
 	readables []Volume
 	writables []Volume
 	counter   uint32
+	iostats   map[Volume]*ioStats
 }
 
 // MakeRRVolumeManager initializes RRVolumeManager
 func MakeRRVolumeManager(volumes []Volume) *RRVolumeManager {
-	vm := &RRVolumeManager{}
+	vm := &RRVolumeManager{
+		iostats: make(map[Volume]*ioStats),
+	}
 	for _, v := range volumes {
+		vm.iostats[v] = &ioStats{}
 		vm.readables = append(vm.readables, v)
 		if v.Writable() {
 			vm.writables = append(vm.writables, v)
@@ -287,18 +295,35 @@ func (vm *RRVolumeManager) NextWritable() Volume {
 	return vm.writables[i%uint32(len(vm.writables))]
 }
 
+// VolumeStats returns an ioStats for the given volume.
+func (vm *RRVolumeManager) VolumeStats(v Volume) *ioStats {
+	return vm.iostats[v]
+}
+
 // Close the RRVolumeManager
 func (vm *RRVolumeManager) Close() {
 }
 
-// VolumeStatus provides status information of the volume consisting of:
-//   * mount_point
-//   * device_num (an integer identifying the underlying storage system)
-//   * bytes_free
-//   * bytes_used
+// VolumeStatus describes the current condition of a volume
 type VolumeStatus struct {
-	MountPoint string `json:"mount_point"`
-	DeviceNum  uint64 `json:"device_num"`
-	BytesFree  uint64 `json:"bytes_free"`
-	BytesUsed  uint64 `json:"bytes_used"`
+	MountPoint string
+	DeviceNum  uint64
+	BytesFree  uint64
+	BytesUsed  uint64
+}
+
+// ioStats tracks I/O statistics for a volume or server
+type ioStats struct {
+	Errors     uint64
+	Ops        uint64
+	CompareOps uint64
+	GetOps     uint64
+	PutOps     uint64
+	TouchOps   uint64
+	InBytes    uint64
+	OutBytes   uint64
+}
+
+type InternalStatser interface {
+	InternalStats() interface{}
 }
