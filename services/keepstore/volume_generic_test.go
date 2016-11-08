@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"fmt"
 	"os"
@@ -92,7 +93,7 @@ func testGet(t TB, factory TestableVolumeFactory) {
 	v.PutRaw(TestHash, TestBlock)
 
 	buf := make([]byte, BlockSize)
-	n, err := v.Get(TestHash, buf)
+	n, err := v.Get(context.Background(), TestHash, buf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +110,7 @@ func testGetNoSuchBlock(t TB, factory TestableVolumeFactory) {
 	defer v.Teardown()
 
 	buf := make([]byte, BlockSize)
-	if _, err := v.Get(TestHash2, buf); err == nil {
+	if _, err := v.Get(context.Background(), TestHash2, buf); err == nil {
 		t.Errorf("Expected error while getting non-existing block %v", TestHash2)
 	}
 }
@@ -121,7 +122,7 @@ func testCompareNonexistent(t TB, factory TestableVolumeFactory) {
 	v := factory(t)
 	defer v.Teardown()
 
-	err := v.Compare(TestHash, TestBlock)
+	err := v.Compare(context.Background(), TestHash, TestBlock)
 	if err != os.ErrNotExist {
 		t.Errorf("Got err %T %q, expected os.ErrNotExist", err, err)
 	}
@@ -136,7 +137,7 @@ func testCompareSameContent(t TB, factory TestableVolumeFactory, testHash string
 	v.PutRaw(testHash, testData)
 
 	// Compare the block locator with same content
-	err := v.Compare(testHash, testData)
+	err := v.Compare(context.Background(), testHash, testData)
 	if err != nil {
 		t.Errorf("Got err %q, expected nil", err)
 	}
@@ -154,7 +155,7 @@ func testCompareWithCollision(t TB, factory TestableVolumeFactory, testHash stri
 	v.PutRaw(testHash, testDataA)
 
 	// Compare the block locator with different content; collision
-	err := v.Compare(TestHash, testDataB)
+	err := v.Compare(context.Background(), TestHash, testDataB)
 	if err == nil {
 		t.Errorf("Got err nil, expected error due to collision")
 	}
@@ -170,7 +171,7 @@ func testCompareWithCorruptStoredData(t TB, factory TestableVolumeFactory, testH
 
 	v.PutRaw(TestHash, testDataB)
 
-	err := v.Compare(testHash, testDataA)
+	err := v.Compare(context.Background(), testHash, testDataA)
 	if err == nil || err == CollisionError {
 		t.Errorf("Got err %+v, expected non-collision error", err)
 	}
@@ -186,12 +187,12 @@ func testPutBlockWithSameContent(t TB, factory TestableVolumeFactory, testHash s
 		return
 	}
 
-	err := v.Put(testHash, testData)
+	err := v.Put(context.Background(), testHash, testData)
 	if err != nil {
 		t.Errorf("Got err putting block %q: %q, expected nil", TestBlock, err)
 	}
 
-	err = v.Put(testHash, testData)
+	err = v.Put(context.Background(), testHash, testData)
 	if err != nil {
 		t.Errorf("Got err putting block second time %q: %q, expected nil", TestBlock, err)
 	}
@@ -209,9 +210,9 @@ func testPutBlockWithDifferentContent(t TB, factory TestableVolumeFactory, testH
 
 	v.PutRaw(testHash, testDataA)
 
-	putErr := v.Put(testHash, testDataB)
+	putErr := v.Put(context.Background(), testHash, testDataB)
 	buf := make([]byte, BlockSize)
-	n, getErr := v.Get(testHash, buf)
+	n, getErr := v.Get(context.Background(), testHash, buf)
 	if putErr == nil {
 		// Put must not return a nil error unless it has
 		// overwritten the existing data.
@@ -238,23 +239,23 @@ func testPutMultipleBlocks(t TB, factory TestableVolumeFactory) {
 		return
 	}
 
-	err := v.Put(TestHash, TestBlock)
+	err := v.Put(context.Background(), TestHash, TestBlock)
 	if err != nil {
 		t.Errorf("Got err putting block %q: %q, expected nil", TestBlock, err)
 	}
 
-	err = v.Put(TestHash2, TestBlock2)
+	err = v.Put(context.Background(), TestHash2, TestBlock2)
 	if err != nil {
 		t.Errorf("Got err putting block %q: %q, expected nil", TestBlock2, err)
 	}
 
-	err = v.Put(TestHash3, TestBlock3)
+	err = v.Put(context.Background(), TestHash3, TestBlock3)
 	if err != nil {
 		t.Errorf("Got err putting block %q: %q, expected nil", TestBlock3, err)
 	}
 
 	data := make([]byte, BlockSize)
-	n, err := v.Get(TestHash, data)
+	n, err := v.Get(context.Background(), TestHash, data)
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -263,7 +264,7 @@ func testPutMultipleBlocks(t TB, factory TestableVolumeFactory) {
 		}
 	}
 
-	n, err = v.Get(TestHash2, data)
+	n, err = v.Get(context.Background(), TestHash2, data)
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -272,7 +273,7 @@ func testPutMultipleBlocks(t TB, factory TestableVolumeFactory) {
 		}
 	}
 
-	n, err = v.Get(TestHash3, data)
+	n, err = v.Get(context.Background(), TestHash3, data)
 	if err != nil {
 		t.Error(err)
 	} else {
@@ -294,7 +295,7 @@ func testPutAndTouch(t TB, factory TestableVolumeFactory) {
 		return
 	}
 
-	if err := v.Put(TestHash, TestBlock); err != nil {
+	if err := v.Put(context.Background(), TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
@@ -314,7 +315,7 @@ func testPutAndTouch(t TB, factory TestableVolumeFactory) {
 	}
 
 	// Write the same block again.
-	if err := v.Put(TestHash, TestBlock); err != nil {
+	if err := v.Put(context.Background(), TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
@@ -437,13 +438,13 @@ func testDeleteNewBlock(t TB, factory TestableVolumeFactory) {
 		return
 	}
 
-	v.Put(TestHash, TestBlock)
+	v.Put(context.Background(), TestHash, TestBlock)
 
 	if err := v.Trash(TestHash); err != nil {
 		t.Error(err)
 	}
 	data := make([]byte, BlockSize)
-	n, err := v.Get(TestHash, data)
+	n, err := v.Get(context.Background(), TestHash, data)
 	if err != nil {
 		t.Error(err)
 	} else if bytes.Compare(data[:n], TestBlock) != 0 {
@@ -463,14 +464,14 @@ func testDeleteOldBlock(t TB, factory TestableVolumeFactory) {
 		return
 	}
 
-	v.Put(TestHash, TestBlock)
+	v.Put(context.Background(), TestHash, TestBlock)
 	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
 
 	if err := v.Trash(TestHash); err != nil {
 		t.Error(err)
 	}
 	data := make([]byte, BlockSize)
-	if _, err := v.Get(TestHash, data); err == nil || !os.IsNotExist(err) {
+	if _, err := v.Get(context.Background(), TestHash, data); err == nil || !os.IsNotExist(err) {
 		t.Errorf("os.IsNotExist(%v) should have been true", err)
 	}
 
@@ -479,7 +480,7 @@ func testDeleteOldBlock(t TB, factory TestableVolumeFactory) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
 
-	err = v.Compare(TestHash, TestBlock)
+	err = v.Compare(context.Background(), TestHash, TestBlock)
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("os.IsNotExist(%v) should have been true", err)
 	}
@@ -553,17 +554,17 @@ func testUpdateReadOnly(t TB, factory TestableVolumeFactory) {
 	buf := make([]byte, BlockSize)
 
 	// Get from read-only volume should succeed
-	_, err := v.Get(TestHash, buf)
+	_, err := v.Get(context.Background(), TestHash, buf)
 	if err != nil {
 		t.Errorf("got err %v, expected nil", err)
 	}
 
 	// Put a new block to read-only volume should result in error
-	err = v.Put(TestHash2, TestBlock2)
+	err = v.Put(context.Background(), TestHash2, TestBlock2)
 	if err == nil {
 		t.Errorf("Expected error when putting block in a read-only volume")
 	}
-	_, err = v.Get(TestHash2, buf)
+	_, err = v.Get(context.Background(), TestHash2, buf)
 	if err == nil {
 		t.Errorf("Expected error when getting block whose put in read-only volume failed")
 	}
@@ -581,7 +582,7 @@ func testUpdateReadOnly(t TB, factory TestableVolumeFactory) {
 	}
 
 	// Overwriting an existing block in read-only volume should result in error
-	err = v.Put(TestHash, TestBlock)
+	err = v.Put(context.Background(), TestHash, TestBlock)
 	if err == nil {
 		t.Errorf("Expected error when putting block in a read-only volume")
 	}
@@ -600,7 +601,7 @@ func testGetConcurrent(t TB, factory TestableVolumeFactory) {
 	sem := make(chan int)
 	go func() {
 		buf := make([]byte, BlockSize)
-		n, err := v.Get(TestHash, buf)
+		n, err := v.Get(context.Background(), TestHash, buf)
 		if err != nil {
 			t.Errorf("err1: %v", err)
 		}
@@ -612,7 +613,7 @@ func testGetConcurrent(t TB, factory TestableVolumeFactory) {
 
 	go func() {
 		buf := make([]byte, BlockSize)
-		n, err := v.Get(TestHash2, buf)
+		n, err := v.Get(context.Background(), TestHash2, buf)
 		if err != nil {
 			t.Errorf("err2: %v", err)
 		}
@@ -624,7 +625,7 @@ func testGetConcurrent(t TB, factory TestableVolumeFactory) {
 
 	go func() {
 		buf := make([]byte, BlockSize)
-		n, err := v.Get(TestHash3, buf)
+		n, err := v.Get(context.Background(), TestHash3, buf)
 		if err != nil {
 			t.Errorf("err3: %v", err)
 		}
@@ -652,7 +653,7 @@ func testPutConcurrent(t TB, factory TestableVolumeFactory) {
 
 	sem := make(chan int)
 	go func(sem chan int) {
-		err := v.Put(TestHash, TestBlock)
+		err := v.Put(context.Background(), TestHash, TestBlock)
 		if err != nil {
 			t.Errorf("err1: %v", err)
 		}
@@ -660,7 +661,7 @@ func testPutConcurrent(t TB, factory TestableVolumeFactory) {
 	}(sem)
 
 	go func(sem chan int) {
-		err := v.Put(TestHash2, TestBlock2)
+		err := v.Put(context.Background(), TestHash2, TestBlock2)
 		if err != nil {
 			t.Errorf("err2: %v", err)
 		}
@@ -668,7 +669,7 @@ func testPutConcurrent(t TB, factory TestableVolumeFactory) {
 	}(sem)
 
 	go func(sem chan int) {
-		err := v.Put(TestHash3, TestBlock3)
+		err := v.Put(context.Background(), TestHash3, TestBlock3)
 		if err != nil {
 			t.Errorf("err3: %v", err)
 		}
@@ -682,7 +683,7 @@ func testPutConcurrent(t TB, factory TestableVolumeFactory) {
 
 	// Double check that we actually wrote the blocks we expected to write.
 	buf := make([]byte, BlockSize)
-	n, err := v.Get(TestHash, buf)
+	n, err := v.Get(context.Background(), TestHash, buf)
 	if err != nil {
 		t.Errorf("Get #1: %v", err)
 	}
@@ -690,7 +691,7 @@ func testPutConcurrent(t TB, factory TestableVolumeFactory) {
 		t.Errorf("Get #1: expected %s, got %s", string(TestBlock), string(buf[:n]))
 	}
 
-	n, err = v.Get(TestHash2, buf)
+	n, err = v.Get(context.Background(), TestHash2, buf)
 	if err != nil {
 		t.Errorf("Get #2: %v", err)
 	}
@@ -698,7 +699,7 @@ func testPutConcurrent(t TB, factory TestableVolumeFactory) {
 		t.Errorf("Get #2: expected %s, got %s", string(TestBlock2), string(buf[:n]))
 	}
 
-	n, err = v.Get(TestHash3, buf)
+	n, err = v.Get(context.Background(), TestHash3, buf)
 	if err != nil {
 		t.Errorf("Get #3: %v", err)
 	}
@@ -720,12 +721,12 @@ func testPutFullBlock(t TB, factory TestableVolumeFactory) {
 	wdata[0] = 'a'
 	wdata[BlockSize-1] = 'z'
 	hash := fmt.Sprintf("%x", md5.Sum(wdata))
-	err := v.Put(hash, wdata)
+	err := v.Put(context.Background(), hash, wdata)
 	if err != nil {
 		t.Fatal(err)
 	}
 	buf := make([]byte, BlockSize)
-	n, err := v.Get(hash, buf)
+	n, err := v.Get(context.Background(), hash, buf)
 	if err != nil {
 		t.Error(err)
 	}
@@ -752,7 +753,7 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 	v.TouchWithDate(TestHash, time.Now().Add(-2*theConfig.BlobSignatureTTL.Duration()))
 
 	buf := make([]byte, BlockSize)
-	n, err := v.Get(TestHash, buf)
+	n, err := v.Get(context.Background(), TestHash, buf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -771,7 +772,7 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 			t.Fatal(err)
 		}
 	} else {
-		_, err = v.Get(TestHash, buf)
+		_, err = v.Get(context.Background(), TestHash, buf)
 		if err == nil || !os.IsNotExist(err) {
 			t.Errorf("os.IsNotExist(%v) should have been true", err)
 		}
@@ -784,7 +785,7 @@ func testTrashUntrash(t TB, factory TestableVolumeFactory) {
 	}
 
 	// Get the block - after trash and untrash sequence
-	n, err = v.Get(TestHash, buf)
+	n, err = v.Get(context.Background(), TestHash, buf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -802,7 +803,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 
 	checkGet := func() error {
 		buf := make([]byte, BlockSize)
-		n, err := v.Get(TestHash, buf)
+		n, err := v.Get(context.Background(), TestHash, buf)
 		if err != nil {
 			return err
 		}
@@ -815,7 +816,7 @@ func testTrashEmptyTrashUntrash(t TB, factory TestableVolumeFactory) {
 			return err
 		}
 
-		err = v.Compare(TestHash, TestBlock)
+		err = v.Compare(context.Background(), TestHash, TestBlock)
 		if err != nil {
 			return err
 		}

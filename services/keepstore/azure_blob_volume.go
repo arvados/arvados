@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -176,7 +177,7 @@ func (v *AzureBlobVolume) checkTrashed(loc string) (bool, map[string]string, err
 // If the block is younger than azureWriteRaceInterval and is
 // unexpectedly empty, assume a PutBlob operation is in progress, and
 // wait for it to finish writing.
-func (v *AzureBlobVolume) Get(loc string, buf []byte) (int, error) {
+func (v *AzureBlobVolume) Get(ctx context.Context, loc string, buf []byte) (int, error) {
 	trashed, _, err := v.checkTrashed(loc)
 	if err != nil {
 		return 0, err
@@ -284,7 +285,7 @@ func (v *AzureBlobVolume) get(loc string, buf []byte) (int, error) {
 }
 
 // Compare the given data with existing stored data.
-func (v *AzureBlobVolume) Compare(loc string, expect []byte) error {
+func (v *AzureBlobVolume) Compare(ctx context.Context, loc string, expect []byte) error {
 	trashed, _, err := v.checkTrashed(loc)
 	if err != nil {
 		return err
@@ -297,11 +298,11 @@ func (v *AzureBlobVolume) Compare(loc string, expect []byte) error {
 		return v.translateError(err)
 	}
 	defer rdr.Close()
-	return compareReaderWithBuf(rdr, expect, loc[:32])
+	return compareReaderWithBuf(ctx, rdr, expect, loc[:32])
 }
 
 // Put stores a Keep block as a block blob in the container.
-func (v *AzureBlobVolume) Put(loc string, block []byte) error {
+func (v *AzureBlobVolume) Put(ctx context.Context, loc string, block []byte) error {
 	if v.ReadOnly {
 		return MethodDisabledError
 	}
