@@ -9,9 +9,11 @@ from cStringIO import StringIO
 import cwltool.draft2tool
 from cwltool.draft2tool import CommandLineTool
 import cwltool.workflow
-from cwltool.process import get_feature, scandeps, UnsupportedRequirement, normalizeFilesDirs
+from cwltool.process import get_feature, scandeps, UnsupportedRequirement, normalizeFilesDirs, shortname
 from cwltool.load_tool import fetch_document
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
+from cwltool.utils import aslist
+from cwltool.builder import substitute
 
 import arvados.collection
 import ruamel.yaml as yaml
@@ -115,6 +117,17 @@ def upload_docker(arvrunner, tool):
 
 def upload_instance(arvrunner, name, tool, job_order):
         upload_docker(arvrunner, tool)
+
+        for t in tool.tool["inputs"]:
+            def setSecondary(fileobj):
+                if "__norecurse" in fileobj:
+                    del fileobj["__norecurse"]
+                    return
+                if "secondaryFiles" not in fileobj:
+                    fileobj["secondaryFiles"] = [{"location": substitute(fileobj["location"], sf), "class": "File", "__norecurse": True} for sf in t["secondaryFiles"]]
+
+            if shortname(t["id"]) in job_order and t.get("secondaryFiles"):
+                adjustFileObjs(job_order, setSecondary)
 
         workflowmapper = upload_dependencies(arvrunner,
                                              name,
