@@ -120,14 +120,16 @@ def upload_instance(arvrunner, name, tool, job_order):
 
         for t in tool.tool["inputs"]:
             def setSecondary(fileobj):
-                if "__norecurse" in fileobj:
-                    del fileobj["__norecurse"]
-                    return
-                if "secondaryFiles" not in fileobj:
-                    fileobj["secondaryFiles"] = [{"location": substitute(fileobj["location"], sf), "class": "File", "__norecurse": True} for sf in t["secondaryFiles"]]
+                if isinstance(fileobj, dict) and fileobj.get("class") == "File":
+                    if "secondaryFiles" not in fileobj:
+                        fileobj["secondaryFiles"] = [{"location": substitute(fileobj["location"], sf), "class": "File"} for sf in t["secondaryFiles"]]
+
+                if isinstance(fileobj, list):
+                    for e in fileobj:
+                        setSecondary(e)
 
             if shortname(t["id"]) in job_order and t.get("secondaryFiles"):
-                adjustFileObjs(job_order, setSecondary)
+                setSecondary(job_order[shortname(t["id"])])
 
         workflowmapper = upload_dependencies(arvrunner,
                                              name,
