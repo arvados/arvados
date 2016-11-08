@@ -87,6 +87,8 @@ class ArvadosWorkflow(Workflow):
                 joborder_keepmount = copy.deepcopy(joborder)
 
                 def keepmount(obj):
+                    if "location" not in obj:
+                        raise WorkflowException("%s object is missing required 'location' field: %s" % (obj["class"], obj))
                     if obj["location"].startswith("keep:"):
                         obj["location"] = "/keep/" + obj["location"][5:]
                         if "listing" in obj:
