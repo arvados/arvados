@@ -46,7 +46,7 @@ func (v *TestableUnixVolume) PutRaw(locator string, data []byte) {
 		v.ReadOnly = orig
 	}(v.ReadOnly)
 	v.ReadOnly = false
-	err := v.Put(context.TODO(), locator, data)
+	err := v.Put(context.Background(), locator, data)
 	if err != nil {
 		v.t.Fatal(err)
 	}
@@ -118,10 +118,10 @@ func TestReplicationDefault1(t *testing.T) {
 func TestGetNotFound(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
-	v.Put(context.TODO(), TestHash, TestBlock)
+	v.Put(context.Background(), TestHash, TestBlock)
 
 	buf := make([]byte, BlockSize)
-	n, err := v.Get(context.TODO(), TestHash2, buf)
+	n, err := v.Get(context.Background(), TestHash2, buf)
 	switch {
 	case os.IsNotExist(err):
 		break
@@ -136,7 +136,7 @@ func TestPut(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	err := v.Put(context.TODO(), TestHash, TestBlock)
+	err := v.Put(context.Background(), TestHash, TestBlock)
 	if err != nil {
 		t.Error(err)
 	}
@@ -154,7 +154,7 @@ func TestPutBadVolume(t *testing.T) {
 	defer v.Teardown()
 
 	os.Chmod(v.Root, 000)
-	err := v.Put(context.TODO(), TestHash, TestBlock)
+	err := v.Put(context.Background(), TestHash, TestBlock)
 	if err == nil {
 		t.Error("Write should have failed")
 	}
@@ -167,12 +167,12 @@ func TestUnixVolumeReadonly(t *testing.T) {
 	v.PutRaw(TestHash, TestBlock)
 
 	buf := make([]byte, BlockSize)
-	_, err := v.Get(context.TODO(), TestHash, buf)
+	_, err := v.Get(context.Background(), TestHash, buf)
 	if err != nil {
 		t.Errorf("got err %v, expected nil", err)
 	}
 
-	err = v.Put(context.TODO(), TestHash, TestBlock)
+	err = v.Put(context.Background(), TestHash, TestBlock)
 	if err != MethodDisabledError {
 		t.Errorf("got err %v, expected MethodDisabledError", err)
 	}
@@ -232,9 +232,9 @@ func TestUnixVolumeGetFuncWorkerError(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	v.Put(context.TODO(), TestHash, TestBlock)
+	v.Put(context.Background(), TestHash, TestBlock)
 	mockErr := errors.New("Mock error")
-	err := v.getFunc(context.TODO(), v.blockPath(TestHash), func(rdr io.Reader) error {
+	err := v.getFunc(context.Background(), v.blockPath(TestHash), func(rdr io.Reader) error {
 		return mockErr
 	})
 	if err != mockErr {
@@ -247,7 +247,7 @@ func TestUnixVolumeGetFuncFileError(t *testing.T) {
 	defer v.Teardown()
 
 	funcCalled := false
-	err := v.getFunc(context.TODO(), v.blockPath(TestHash), func(rdr io.Reader) error {
+	err := v.getFunc(context.Background(), v.blockPath(TestHash), func(rdr io.Reader) error {
 		funcCalled = true
 		return nil
 	})
@@ -263,13 +263,13 @@ func TestUnixVolumeGetFuncWorkerWaitsOnMutex(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	v.Put(context.TODO(), TestHash, TestBlock)
+	v.Put(context.Background(), TestHash, TestBlock)
 
 	mtx := NewMockMutex()
 	v.locker = mtx
 
 	funcCalled := make(chan struct{})
-	go v.getFunc(context.TODO(), v.blockPath(TestHash), func(rdr io.Reader) error {
+	go v.getFunc(context.Background(), v.blockPath(TestHash), func(rdr io.Reader) error {
 		funcCalled <- struct{}{}
 		return nil
 	})
@@ -298,26 +298,26 @@ func TestUnixVolumeCompare(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	v.Put(context.TODO(), TestHash, TestBlock)
-	err := v.Compare(context.TODO(), TestHash, TestBlock)
+	v.Put(context.Background(), TestHash, TestBlock)
+	err := v.Compare(context.Background(), TestHash, TestBlock)
 	if err != nil {
 		t.Errorf("Got err %q, expected nil", err)
 	}
 
-	err = v.Compare(context.TODO(), TestHash, []byte("baddata"))
+	err = v.Compare(context.Background(), TestHash, []byte("baddata"))
 	if err != CollisionError {
 		t.Errorf("Got err %q, expected %q", err, CollisionError)
 	}
 
-	v.Put(context.TODO(), TestHash, []byte("baddata"))
-	err = v.Compare(context.TODO(), TestHash, TestBlock)
+	v.Put(context.Background(), TestHash, []byte("baddata"))
+	err = v.Compare(context.Background(), TestHash, TestBlock)
 	if err != DiskHashError {
 		t.Errorf("Got err %q, expected %q", err, DiskHashError)
 	}
 
 	p := fmt.Sprintf("%s/%s/%s", v.Root, TestHash[:3], TestHash)
 	os.Chmod(p, 000)
-	err = v.Compare(context.TODO(), TestHash, TestBlock)
+	err = v.Compare(context.Background(), TestHash, TestBlock)
 	if err == nil || strings.Index(err.Error(), "permission denied") < 0 {
 		t.Errorf("Got err %q, expected %q", err, "permission denied")
 	}

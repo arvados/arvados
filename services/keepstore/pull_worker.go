@@ -95,6 +95,6 @@ func GenerateRandomAPIToken() string {
 
 // Put block
 var PutContent = func(content []byte, locator string) (err error) {
-	_, err = PutBlock(context.TODO(), content, locator)
+	_, err = PutBlock(context.Background(), content, locator)
 	return
 }

@@ -224,7 +224,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 		// Check canGet
 		loc, blk := setupScenario()
 		buf := make([]byte, len(blk))
-		_, err := v.Get(context.TODO(), loc, buf)
+		_, err := v.Get(context.Background(), loc, buf)
 		c.Check(err == nil, check.Equals, scenario.canGet)
 		if err != nil {
 			c.Check(os.IsNotExist(err), check.Equals, true)
@@ -234,7 +234,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 		loc, blk = setupScenario()
 		err = v.Trash(loc)
 		c.Check(err == nil, check.Equals, scenario.canTrash)
-		_, err = v.Get(context.TODO(), loc, buf)
+		_, err = v.Get(context.Background(), loc, buf)
 		c.Check(err == nil, check.Equals, scenario.canGetAfterTrash)
 		if err != nil {
 			c.Check(os.IsNotExist(err), check.Equals, true)
@@ -249,7 +249,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			// should be able to Get after Untrash --
 			// regardless of timestamps, errors, race
 			// conditions, etc.
-			_, err = v.Get(context.TODO(), loc, buf)
+			_, err = v.Get(context.Background(), loc, buf)
 			c.Check(err, check.IsNil)
 		}
 
@@ -270,7 +270,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 		// Check for current Mtime after Put (applies to all
 		// scenarios)
 		loc, blk = setupScenario()
-		err = v.Put(context.TODO(), loc, blk)
+		err = v.Put(context.Background(), loc, blk)
 		c.Check(err, check.IsNil)
 		t, err := v.Mtime(loc)
 		c.Check(err, check.IsNil)

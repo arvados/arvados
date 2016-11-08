@@ -49,7 +49,7 @@ func TestGetHandler(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllWritable()
-	if err := vols[0].Put(context.TODO(), TestHash, TestBlock); err != nil {
+	if err := vols[0].Put(context.Background(), TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
@@ -289,10 +289,10 @@ func TestIndexHandler(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllWritable()
-	vols[0].Put(context.TODO(), TestHash, TestBlock)
-	vols[1].Put(context.TODO(), TestHash2, TestBlock2)
-	vols[0].Put(context.TODO(), TestHash+".meta", []byte("metadata"))
-	vols[1].Put(context.TODO(), TestHash2+".meta", []byte("metadata"))
+	vols[0].Put(context.Background(), TestHash, TestBlock)
+	vols[1].Put(context.Background(), TestHash2, TestBlock2)
+	vols[0].Put(context.Background(), TestHash+".meta", []byte("metadata"))
+	vols[1].Put(context.Background(), TestHash2+".meta", []byte("metadata"))
 
 	theConfig.systemAuthToken = "DATA MANAGER TOKEN"
 
@@ -478,7 +478,7 @@ func TestDeleteHandler(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllWritable()
-	vols[0].Put(context.TODO(), TestHash, TestBlock)
+	vols[0].Put(context.Background(), TestHash, TestBlock)
 
 	// Explicitly set the BlobSignatureTTL to 0 for these
 	// tests, to ensure the MockVolume deletes the blocks
@@ -565,7 +565,7 @@ func TestDeleteHandler(t *testing.T) {
 	}
 	// Confirm the block has been deleted
 	buf := make([]byte, BlockSize)
-	_, err := vols[0].Get(context.TODO(), TestHash, buf)
+	_, err := vols[0].Get(context.Background(), TestHash, buf)
 	var blockDeleted = os.IsNotExist(err)
 	if !blockDeleted {
 		t.Error("superuserExistingBlockReq: block not deleted")
@@ -573,7 +573,7 @@ func TestDeleteHandler(t *testing.T) {
 
 	// A DELETE request on a block newer than BlobSignatureTTL
 	// should return success but leave the block on the volume.
-	vols[0].Put(context.TODO(), TestHash, TestBlock)
+	vols[0].Put(context.Background(), TestHash, TestBlock)
 	theConfig.BlobSignatureTTL = arvados.Duration(time.Hour)
 
 	response = IssueRequest(superuserExistingBlockReq)
@@ -589,7 +589,7 @@ func TestDeleteHandler(t *testing.T) {
 			expectedDc, responseDc)
 	}
 	// Confirm the block has NOT been deleted.
-	_, err = vols[0].Get(context.TODO(), TestHash, buf)
+	_, err = vols[0].Get(context.Background(), TestHash, buf)
 	if err != nil {
 		t.Errorf("testing delete on new block: %s\n", err)
 	}
@@ -941,7 +941,7 @@ func TestGetHandlerClientDisconnect(t *testing.T) {
 	KeepVM = MakeTestVolumeManager(2)
 	defer KeepVM.Close()
 
-	if err := KeepVM.AllWritable()[0].Put(context.TODO(), TestHash, TestBlock); err != nil {
+	if err := KeepVM.AllWritable()[0].Put(context.Background(), TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
@@ -986,7 +986,7 @@ func TestGetHandlerNoBufferLeak(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllWritable()
-	if err := vols[0].Put(context.TODO(), TestHash, TestBlock); err != nil {
+	if err := vols[0].Put(context.Background(), TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
@@ -1041,7 +1041,7 @@ func TestUntrashHandler(t *testing.T) {
 	KeepVM = MakeTestVolumeManager(2)
 	defer KeepVM.Close()
 	vols := KeepVM.AllWritable()
-	vols[0].Put(context.TODO(), TestHash, TestBlock)
+	vols[0].Put(context.Background(), TestHash, TestBlock)
 
 	theConfig.systemAuthToken = "DATA MANAGER TOKEN"
 
