@@ -5,7 +5,7 @@ class DisabledApiTest < ActiveSupport::TestCase
     use_token(:active) do
       assert(Job.creatable?)
     end
-    dd = ArvadosApiClient.new_or_current.discovery
+    dd = ArvadosApiClient.new_or_current.discovery.deep_dup
     dd[:resources][:jobs][:methods].delete(:create)
     ArvadosApiClient.any_instance.stubs(:discovery).returns(dd)
     use_token(:active) do
