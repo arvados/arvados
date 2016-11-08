@@ -46,6 +46,9 @@ func MakeRESTRouter() *mux.Router {
 	// Privileged client only.
 	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
 
+	// Internals/debugging info (runtime.MemStats)
+	rest.HandleFunc(`/debug.json`, DebugHandler).Methods("GET", "HEAD")
+
 	// List volumes: path, device number, bytes used/avail.
 	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
 
@@ -239,18 +242,6 @@ func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 	resp.Write([]byte{'\n'})
 }
 
-// StatusHandler
-//     Responds to /status.json requests with the current node status,
-//     described in a JSON structure.
-//
-//     The data given in a status.json response includes:
-//        volumes - a list of Keep volumes currently in use by this server
-//          each volume is an object with the following fields:
-//            * mount_point
-//            * device_num (an integer identifying the underlying filesystem)
-//            * bytes_free
-//            * bytes_used
-
 // PoolStatus struct
 type PoolStatus struct {
 	Alloc uint64 `json:"BytesAllocated"`
@@ -264,11 +255,23 @@ type NodeStatus struct {
 	BufferPool PoolStatus
 	PullQueue  WorkQueueStatus
 	TrashQueue WorkQueueStatus
-	Memory     runtime.MemStats
 }
 
 var st NodeStatus
 var stLock sync.Mutex
+
+// DebugHandler addresses /debug.json requests.
+func DebugHandler(resp http.ResponseWriter, req *http.Request) {
+	type debugStats struct {
+		MemStats runtime.MemStats
+	}
+	var ds debugStats
+	runtime.ReadMemStats(&ds.MemStats)
+	err := json.NewEncoder(resp).Encode(&ds)
+	if err != nil {
+		http.Error(resp, err.Error(), 500)
+	}
+}
 
 // StatusHandler addresses /status.json requests.
 func StatusHandler(resp http.ResponseWriter, req *http.Request) {
@@ -302,7 +305,6 @@ func readNodeStatus(st *NodeStatus) {
 	st.BufferPool.Len = bufs.Len()
 	st.PullQueue = getWorkQueueStatus(pullq)
 	st.TrashQueue = getWorkQueueStatus(trashq)
-	runtime.ReadMemStats(&st.Memory)
 }
 
 // return a WorkQueueStatus for the given queue. If q is nil (which
