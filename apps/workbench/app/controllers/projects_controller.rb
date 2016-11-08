@@ -60,8 +60,10 @@ class ProjectsController < ApplicationController
     end
 
     workflows = ["arvados#workflow"]
+    workflows_pane_name = 'Workflows'
     if arvados_api_exists(:pipeline_templates, :index)
       workflows << "arvados#pipelineTemplate"
+      workflows_pane_name = 'Pipeline_templates'
     end
 
     if @object.uuid != current_user.andand.uuid
@@ -79,7 +81,7 @@ class ProjectsController < ApplicationController
       }
     pane_list <<
       {
-        :name => 'Pipeline_templates',
+        :name => workflows_pane_name,
         :filters => [%w(uuid is_a) + [workflows]]
       }
     pane_list <<
