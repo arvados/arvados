@@ -68,6 +68,10 @@ def run():
             output_name = job_order_object["arv:output_name"]
             del job_order_object["arv:output_name"]
 
+        if "arv:output_tags" in job_order_object:
+            args.output_tags = job_order_object["arv:output_tags"]
+            del job_order_object["arv:output_tags"]
+
         if "arv:enable_reuse" in job_order_object:
             enable_reuse = job_order_object["arv:enable_reuse"]
             del job_order_object["arv:enable_reuse"]

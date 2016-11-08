@@ -183,7 +183,7 @@ class ArvCwlRunner(object):
             for v in obj:
                 self.check_writable(v)
 
-    def make_output_collection(self, name, outputObj):
+    def make_output_collection(self, name, outputObj, tagsString):
         outputObj = copy.deepcopy(outputObj)
 
         files = []
@@ -233,6 +233,11 @@ class ArvCwlRunner(object):
         logger.info("Final output collection %s \"%s\" (%s)", final.portable_data_hash(),
                     final.api_response()["name"],
                     final.manifest_locator())
+
+        final_uuid = final.manifest_locator()
+        tags = tagsString.split(',')
+        for tag in tags:
+             self.api.links().create(body={"head_uuid": final_uuid, "link_class": "tag", "name": tag}).execute()
 
         self.final_output_collection = final
 
@@ -390,7 +395,7 @@ class ArvCwlRunner(object):
         else:
             if self.output_name is None:
                 self.output_name = "Output of %s" % (shortname(tool.tool["id"]))
-            self.make_output_collection(self.output_name, self.final_output)
+            self.make_output_collection(self.output_name, self.final_output, kwargs.get("output_tags", ""))
             self.set_crunch_output()
 
         if self.final_status != "success":
@@ -448,6 +453,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
     parser.add_argument("--project-uuid", type=str, metavar="UUID", help="Project that will own the workflow jobs, if not provided, will go to home project.")
     parser.add_argument("--output-name", type=str, help="Name to use for collection that stores the final output.", default=None)
+    parser.add_argument("--output-tags", type=str, help="Tags for the final output collection separated by commas, e.g., '--output-tags tag0,tag1,tag2'.", default=None)
     parser.add_argument("--ignore-docker-for-reuse", action="store_true",
                         help="Ignore Docker image version when deciding whether to reuse past jobs.",
                         default=False)

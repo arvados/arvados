@@ -44,7 +44,7 @@ class TestMakeOutput(unittest.TestCase):
                 "location": "keep:99999999999999999999999999999992+99/bar.txt",
                 "basename": "baz.txt"
             }
-        })
+        }, "")
 
         final.copy.assert_has_calls([mock.call('bar.txt', 'baz.txt', overwrite=False, source_collection=readermock)])
         final.copy.assert_has_calls([mock.call('foo.txt', 'foo.txt', overwrite=False, source_collection=readermock)])

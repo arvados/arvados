@@ -189,6 +189,9 @@ class RunnerContainer(Runner):
         if self.output_name:
             command.append("--output-name=" + self.output_name)
 
+        if kwargs.get("output_tags"):
+            command.append("--output-tags=" + kwargs.get("output_tags"))
+
         if self.enable_reuse:
             command.append("--enable-reuse")
         else:

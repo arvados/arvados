@@ -239,6 +239,9 @@ class RunnerJob(Runner):
         if self.output_name:
             self.job_order["arv:output_name"] = self.output_name
 
+        if kwargs.get("output_tags"):
+            self.job_order["arv:output_tags"] = kwargs.get("output_tags")
+
         self.job_order["arv:enable_reuse"] = self.enable_reuse
 
         return {
