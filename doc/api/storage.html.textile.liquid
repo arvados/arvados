@@ -4,9 +4,9 @@ navsection: api
 title: Storage in Keep
 ...
 
-h2. Storing data
+Keep clients are applications such as @arv-get@, @arv-put@ and @arv-mount@ which store and retrieve data from Keep.  In doing so, these programs interact with both the API server (which stores file metadata in form of Collection objects) and individual Keep servers (which store the actual data blocks).
 
-Storing data in Keep follows this process:
+h2. Storing files in Keep
 
 # The client fetches a list of keep servers (or proxies) using the @accessible@ method on "keep_services":{{site.baseurl}}/api/methods/keep_services.html
 # Data is split into 64 MiB blocks and the MD5 hash is computed for each block.
@@ -16,10 +16,10 @@ Storing data in Keep follows this process:
 # The client creates a "collection":{{site.baseurl}}/api/methods/collections.html and provides the @manifest_text@
 # The API server accepts the collection after validating the signed tokens (proof of knowledge) for each block.
 
-h2. Fetching data
+h2. Fetching files from Keep
 
 # The client requests a @collection@ object including @manifest_text@
-# The server adds "token signatures" which provide proof of access for each block
+# The server adds "token signatures" to the @manifest_text@, these signatures are used to prove to Keep servers that the client is permitted to read a given block
 # The client fetches a list of keep servers (or proxies) using the @accessible@ method on "keep_services":{{site.baseurl}}/api/methods/keep_services.html
 # For each data block, the client chooses the highest priority server using rendezvous hashing, described below.
 # The client sends the data block request to the keep server, including the token signature (proof of access).
@@ -41,42 +41,38 @@ h2. Rendezvous hashing
 
 Each @keep_service@ resource has an assigned uuid.  To determine priority assignments of blocks to servers, for each keep service compute the MD5 sum of the string concatenation of the block locator (hex-coded hash part only) and service uuid, then sort this list in descending order.  Blocks are preferentially placed on servers at the beginning of the list.
 
-h1. Keep locator format
+h2. Keep locator format
+
+BNF notation for a valid Keep locator string (with hints).  For example @d41d8cd98f00b204e9800998ecf8427e+0+Z+Ada39a3ee5e6b4b0d3255bfef95601890afd80709@53bed294@
 
 <pre>
-locator       ::= sized-digest hint*
-
-sized-digest  ::= digest size-hint
-
-digest        ::= <32 lowercase hexadecimal digits>
-
-size-hint     ::= "+" [0-9]+
-
-hint          ::= "+" hint-type hint-content
-
-hint-type     ::= [A-Z]+
-
-hint-content  ::= [A-Za-z0-9@_-]*
-
+locator        ::= sized-digest hint*
+sized-digest   ::= digest size-hint
+digest         ::= <32 lowercase hexadecimal digits>
+size-hint      ::= "+" [0-9]+
+hint           ::= "+" hint-type hint-content
+hint-type      ::= [A-Z]+
+hint-content   ::= [A-Za-z0-9@_-]*
 sign-hint      ::= "+A" <40 lowercase hexadecimal digits> "@" sign-timestamp
-
 sign-timestamp ::= <8 lowercase hexadecimal digits>
 </pre>
 
-h2. Regular expressions to validat locator
+h3. Regular expression to validate locator
 
 <pre>
 /^([0-9a-f]{32})\+([0-9]+)(\+[A-Z][-A-Za-z0-9@_]*)*$/
 </pre>
 
-h2. Valid examples
+h3. Valid locators
 
+table(table table-bordered table-condensed).
 |@d41d8cd98f00b204e9800998ecf8427e+0@|
 |@d41d8cd98f00b204e9800998ecf8427e+0+Z@|
 |@d41d8cd98f00b204e9800998ecf8427e+0+Z+Ada39a3ee5e6b4b0d3255bfef95601890afd80709@53bed294@|
 
-h2. Invalid examples
+h3. Invalid locators
 
+table(table table-bordered table-condensed).
 ||Why|
 |@d41d8cd98f00b204e9800998ecf8427e@|No size hint|
 |@d41d8cd98f00b204e9800998ecf8427e+Z+0@|Other hint before size hint|
@@ -94,7 +90,7 @@ Each stream consists of three or more space-delimited tokens:
 ** No path component is empty.
 ** No path component is "." or "..".
 ** The stream name never begins or ends with @"/"@.
-* The second token is a data blob locator (see [[Keep locator format]]).
+* The second token is a keep locator, described above
 * ...possibly followed by more data blob locators...
 * The first token that is not a block locator, and all subsequent tokens, are file tokens.
 ** A file token has three parts, delimited by @":"@: position, size, filename.
@@ -105,6 +101,28 @@ Each stream consists of three or more space-delimited tokens:
 A manifest contains no TAB characters, nor other ASCII whitespace characters other than the spaces or newline delimiters specified above.
 
 A manifest always ends with a newline -- except the empty (zero-length) string, which is a valid manifest.
+
+h2. Example manifests
+
+A signed manifest with four files in two directories:
+
+<pre>
+. 930625b054ce894ac40596c3f5a0d947+33+A1f27a35dd9af37191d63ad8eb8985624451e7b79@5835c8bc 0:0:a 0:0:b 0:33:output.txt
+./c d41d8cd98f00b204e9800998ecf8427e+0+A27117dcd30c013a6e85d6d74c9a50179a1446efa@5835c8bc 0:0:d
+</pre>
+
+The same manifest without block signatures:
+
+<pre>
+. 930625b054ce894ac40596c3f5a0d947+33 0:0:a 0:0:b 0:33:output.txt
+./c d41d8cd98f00b204e9800998ecf8427e+0 0:0:d
+</pre>
+
+A manifest containing a large file consisting of multiple blocks:
+
+<pre>
+. c449ed86671e4a34a8b8b9430850beba+67108864 74376cb0283a3d9cc1b613f624600745+67108864 cef3ba09db65559a671deff0a9f4edd9+67108864+A6e4832dd8d6df80cef080225a8d74e7a1bab2726@5835c92c f660cf00b5f23544f330572224600a99+67108864+A9de655fb05f387821503be7e6f1562dc3185167d@5835c92c 36331288ca1387eb7aa5684505d59eae+67108864+A4bf1bbdbf66fa43005712cb5bdcd88a7963a1ed8@5835c92c 7ce9fd55a8b39036bd1fa7b4645ef582+67108864+A07fcb24b256a6f5e5234055f12ccdb4b5c241e0a@5835c92c b8c32af7dd2d00ae3958dacb1cabdaa8+67108864+A7493b72649b8de4f8c754cb38a4ec0b9617f6129@5835c92c 1ec3958e4e80f6cbdb69920c6921df90+67108864+Ac49d991d55041626ece414881ce5d967670dca8c@5835c92c 09fcfea01c3a141b89dd0dcfa1b7768e+22534144+Aaca28860ddc16d7ba144909f54168376c90b224a@5835c92c 0:559405056:393fb89a2ac7757aca9902dc1286049eecab7b9afd89a9bb6d5b9402e350b280.tar
+</pre>
 
 h2. Normalized manifest v1
 

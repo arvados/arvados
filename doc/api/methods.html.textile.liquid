@@ -8,11 +8,19 @@ title: Common resource methods
 
 The following methods are available for most resources.  Some resources may limit who can perform certain operations.  Consult documentation for individual resource types for details.
 
-The methods are relative to the base URI, e.g. @/arvados/v1/resource_type@.  For arguments specifying a *Location* of @path@, the value of the argument is incorporated into the path portion of the URI. Arguments specifying a *Location* of @query@ are incorporated into the query portion of the URI or request body.
+The methods are relative to the base URI, e.g. @/arvados/v1/resource_type@.  For arguments specifying a *Location* of @path@, the value of the argument is incorporated into the path portion of the URI.  For example, a @uuid@ of @aaaaa-bbbbb-ccccccccccccccc@ in a path position yields a URI of @/arvados/v1/resource_type/aaaaa-bbbbb-ccccccccccccccc@.
+
+Arguments specifying a *Location* of @query@ are incorporated into the query portion of the URI or request body.  For example, @/arvados/v1/resource_type?resource_type={}@.
 
 h2. create
 
-The @create@ method creates a new object of the specified type.  Note that only the listed attributes (and "standard metadata":resources.html) are set, unset attributes will get default values, and the attributes of a given resource type are fixed (you cannot introduce new toplevel attributes).  It corresponds to the HTTP request @POST /arvados/v1/resource_type@.  A successful create call returns a copy of the new object.
+The @create@ method creates a new object of the specified type.  Note that:
+
+* Only the listed attributes (and "standard metadata":resources.html) are set
+* Unset attributes will get default values
+* The attributes of a given resource type are fixed (you cannot introduce new toplevel attributes)
+
+This method corresponds to the HTTP request @POST /arvados/v1/resource_type@.  A successful create call returns a copy of the new object.
 
 Arguments:
 
@@ -22,7 +30,7 @@ table(table table-bordered table-condensed).
 
 h2. delete
 
-The @delete@ method deletes a object of the specified type.  It corresponds to the HTTP request @DELETE /arvados/v1/resource_type/uuid@.  A successful delete call returns a copy of the deleted object.
+The @delete@ method deletes an object of the specified type.  It corresponds to the HTTP request @DELETE /arvados/v1/resource_type/uuid@.  A successful delete call returns a copy of the deleted object.
 
 Arguments:
 
@@ -42,15 +50,15 @@ table(table table-bordered table-condensed).
 
 h2(#index). list
 
-The @list@ method requests an list of resources of that type.  It corresponds to the HTTP request @GET /arvados/v1/resource_type@.  All resources support listing with unless otherwise noted.
+The @list@ method requests an list of resources of that type.  It corresponds to the HTTP request @GET /arvados/v1/resource_type@.  All resources support "list" method unless otherwise noted.
 
 Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |
-|limit   |integer|Maximum number of resources to return.  May also be subject to server limit.|query|
-|offset  |integer|Skip the first 'offset' resources that match the given filter conditions.|query|
-|filters |array  |Conditions for selecting resources to return (see below).|query|
+|limit   |integer|Maximum number of resources to return.  If not provided, server will provide a default limit.  Server may also impose a maximum number of records that can be returned in a single request.|query|
+|offset  |integer|Skip the first 'offset' number of resources that would be returned under the given filter conditions.|query|
+|filters |array  |"Conditions for selecting resources to return.":#filters|query|
 |order   |array  |Attributes to use as sort keys to determine the order resources are returned, each optionally followed by @asc@ or @desc@ to indicate ascending or descending order.
 Example: @["head_uuid asc","modified_at desc"]@
 Default: @["created_at desc"]@|query|
@@ -60,7 +68,7 @@ Default: all available attributes.  As a special case, collections do not return
 |distinct|boolean|@true@: (default) do not return duplicate objects
 @false@: permitted to return duplicates|query|
 
-h3. filters
+h3.(#filters) Available list method filters
 
 The value of the @filters@ parameter is an array of conditions. The @list@ method returns only the resources that satisfy all of the given conditions. In other words, the conjunction @AND@ is implicit.
 
@@ -82,7 +90,7 @@ table(table table-bordered table-condensed).
 |@in@, @not in@|array of strings|@["script_version","in",["master","d00220fb38d4b85ca8fc28a8151702a2b9d1dec5"]]@|
 |@is_a@|string|@["head_uuid","is_a","arvados#pipelineInstance"]@|
 
-h3. result
+h3. Results of list method
 
 A successful call to list will return the following object.
 

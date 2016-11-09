@@ -7,7 +7,7 @@ title: "Permission model"
 
 * There are four levels of permission: *none*, *can_read*, *can_write*, and *can_manage*.
 ** *none* is the default state when there are no other permission grants.
-*** the object is not returned by any list query.
+*** the object is not included in any list query response.
 *** direct queries of the object by uuid return 404 Not Found.
 *** Link objects require valid identifiers in @head_uuid@ and @tail_uuid@, so an attempt to create a Link that references an unreadable object will return an error indicating the object is not found.
 ** *can_read* grants read-only access to the record.  Attempting to update or delete the record returns an error.  *can_read* does not allow a reader to see any permission grants on the object except the object's owner_uuid and the reader's own permissions.
@@ -65,4 +65,4 @@ A privileged user account exists for the use by internal Arvados components.  Th
 
 h2. Anoymous user and group
 
-An Arvado site may be configued to allow users to browse resources without requiring a log in.  In this case, permissions for non-logged-in users are associated with the "anonymous" user.  To make objects visible to the public, they can be shared with the "anonymous" group.  The anonymous user uuid is @{siteprefix}-tpzed-anonymouspublic@.
+An Arvado site may be configued to allow users to browse resources without requiring a log in.  In this case, permissions for non-logged-in users are associated with the "anonymous" user.  To make objects visible to the public, they can be shared with the "anonymous" group.  The anonymous user uuid is @{siteprefix}-tpzed-anonymouspublic@.  The anonymous group uuid is @{siteprefix}-j7d0g-anonymouspublic@.

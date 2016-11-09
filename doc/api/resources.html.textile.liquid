@@ -13,7 +13,7 @@ h2(#resource). Resource
 table(table table-bordered table-condensed).
 |_. Attribute |_. Type |_. Description |_. Example|
 |uuid|string|universally unique object identifier, set on @create@|@mk2qn-4zz18-w3anr2hk2wgfpuo@|
-|owner_uuid|string|UUID of owner (must be a User or Group), set on @create@, may be updated explicitly|@mk2qn-tpzed-a4lcehql0dv2u25@|
+|owner_uuid|string|UUID of owner (must be a User or Group), set on @create@, controls who may access the resource, ownership may be changed explicitly with @update@, see "permission model":{{site.baseurl}}/api/permission-model.html for details.|@mk2qn-tpzed-a4lcehql0dv2u25@|
 |created_at|datetime|When resource was created, set on @create@|@2013-01-21T22:17:39Z@|
 |modified_by_client_uuid|string|API client software which most recently modified the resource, set on @create@ and @update@|@mk2qn-ozdt8-vq8l5qkzj7pr7h7@|
 |modified_by_user_uuid|string|Authenticated user, on whose behalf the client was acting when modifying the resource, set on @create@ and @update@|@mk2qn-tpzed-a4lcehql0dv2u25@|
@@ -32,7 +32,7 @@ Each object is assigned a UUID.  This has the format @aaaaa-bbbbb-cccccccccccccc
 
 h2. Timestamps
 
-All Arvados timestamps follow ISO 8601 datetime format with fractional seconds (microsecond precision).  All timestamps are UTC.  Example date format: @YYYY-mm-ddTHH:MM:SS.SSSSZ@
+All Arvados timestamps follow ISO 8601 datetime format with fractional seconds (microsecond precision).  All timestamps are UTC.  Date format: @YYYY-mm-ddTHH:MM:SS.SSSSZ@ example date: @2016-11-08T21:38:24.124834000Z@.
 
 h2. ETags
 
