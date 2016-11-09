@@ -14,13 +14,13 @@ class WorkUnitsController < ApplicationController
     @filters = @filters || []
 
     # get next page of pipeline_instances
-    if arvados_api_exists :pipeline_instances, :index
+    if PipelineInstance.api_exists?(:index)
       filters = @filters + [["uuid", "is_a", ["arvados#pipelineInstance"]]]
       pipelines = PipelineInstance.limit(@limit).order(["created_at desc"]).filter(filters)
     end
 
     # get next page of jobs
-    if arvados_api_exists :jobs, :index
+    if Job.api_exists?(:index)
       filters = @filters + [["uuid", "is_a", ["arvados#job"]]]
       jobs = Job.limit(@limit).order(["created_at desc"]).filter(filters)
     end

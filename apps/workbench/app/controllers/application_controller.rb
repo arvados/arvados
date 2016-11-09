@@ -215,10 +215,12 @@ class ApplicationController < ActionController::Base
   end
 
   def ensure_arvados_api_exists
-    exists = arvados_api_exists params['controller'].to_sym, params['action'].to_sym
-    if !exists
-      @errors = ["#{params['action']} method is not supported for #{params['controller']}"]
-      return render_error(status: 404)
+    ctrl =  params['controller'].to_sym
+    if [:jobs, :job_tasks, :pipeline_instances, :pipeline_templates].include?(ctrl)
+      if !ctrl.to_s.classify.constantize.api_exists?(params['action'].to_sym)
+        @errors = ["#{params['action']} method is not supported for #{ctrl}"]
+        return render_error(status: 404)
+      end
     end
   end
 
@@ -879,7 +881,7 @@ class ApplicationController < ActionController::Base
     lim = 12 if lim.nil?
 
     procs = {}
-    if arvados_api_exists :pipeline_instances, :index
+    if PipelineInstance.api_exists?(:index)
       cols = %w(uuid owner_uuid created_at modified_at pipeline_template_uuid name state started_at finished_at)
       pipelines = PipelineInstance.select(cols).limit(lim).order(["created_at desc"])
       pipelines.results.each { |pi| procs[pi] = pi.created_at }

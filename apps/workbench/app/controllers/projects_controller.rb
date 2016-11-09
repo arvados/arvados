@@ -55,13 +55,13 @@ class ProjectsController < ApplicationController
     pane_list = []
 
     procs = ["arvados#containerRequest"]
-    if arvados_api_exists(:pipeline_instances, :index)
+    if PipelineInstance.api_exists?(:index)
       procs << "arvados#pipelineInstance"
     end
 
     workflows = ["arvados#workflow"]
     workflows_pane_name = 'Workflows'
-    if arvados_api_exists(:pipeline_templates, :index)
+    if PipelineTemplate.api_exists?(:index)
       workflows << "arvados#pipelineTemplate"
       workflows_pane_name = 'Pipeline_templates'
     end
@@ -226,7 +226,9 @@ class ProjectsController < ApplicationController
       @name_link_for = {}
       kind_filters.each do |attr,op,val|
         (val.is_a?(Array) ? val : [val]).each do |type|
-          next if(!arvados_api_exists(type.split('#')[-1].underscore.pluralize.to_sym, :index))
+          klass = type.split('#')[-1]
+          klass[0] = klass[0].capitalize
+          next if(!Object.const_get(klass).api_exists?(:index))
 
           filters = @filters - kind_filters + [['uuid', 'is_a', type]]
           if type == 'arvados#containerRequest'

@@ -6,7 +6,7 @@ class WorkUnitTemplatesController < ApplicationController
     @filters = @filters || []
 
     # get next page of pipeline_templates
-    if arvados_api_exists :pipeline_templates, :index
+    if PipelineTemplate.api_exists?(:index)
       filters = @filters + [["uuid", "is_a", ["arvados#pipelineTemplate"]]]
       pipelines = PipelineTemplate.limit(@limit).order(["created_at desc"]).filter(filters)
     end

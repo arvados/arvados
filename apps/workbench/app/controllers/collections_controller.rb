@@ -239,7 +239,7 @@ class CollectionsController < ApplicationController
         render 'hash_matches'
         return
       else
-        if arvados_api_exists :jobs, :index
+        if Job.api_exists?(:index)
           jobs_with = lambda do |conds|
             Job.limit(RELATION_LIMIT).where(conds)
               .results.sort_by { |j| j.finished_at || j.created_at }
