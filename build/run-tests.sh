@@ -93,6 +93,7 @@ sdk/go/streamer
 sdk/go/crunchrunner
 sdk/cwl
 tools/crunchstat-summary
+tools/keep-exercise
 tools/keep-rsync
 tools/keep-block-check
 
@@ -764,8 +765,9 @@ gostuff=(
     services/crunch-dispatch-local
     services/crunch-dispatch-slurm
     services/crunch-run
-    tools/keep-rsync
     tools/keep-block-check
+    tools/keep-exercise
+    tools/keep-rsync
     )
 for g in "${gostuff[@]}"
 do

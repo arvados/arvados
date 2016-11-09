@@ -393,6 +393,9 @@ common:
   # with the cancelled container.
   container_count_max: 3
 
+  # Default value for keep_cache_ram of a container's runtime_constraints.
+  container_default_keep_cache_ram: 268435456
+
 development:
   force_ssl: false
   cache_classes: false

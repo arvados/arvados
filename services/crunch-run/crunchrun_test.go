@@ -842,6 +842,28 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		checkEmpty()
 	}
 
+	{
+		i = 0
+		cr.Container.RuntimeConstraints.KeepCacheRAM = 512
+		cr.Container.Mounts = map[string]arvados.Mount{
+			"/keepinp": {Kind: "collection", PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53"},
+			"/keepout": {Kind: "collection", Writable: true},
+		}
+		cr.OutputPath = "/keepout"
+
+		os.MkdirAll(realTemp+"/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
+		os.MkdirAll(realTemp+"/keep1/tmp0", os.ModePerm)
+
+		err := cr.SetupMounts()
+		c.Check(err, IsNil)
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
+		sort.StringSlice(cr.Binds).Sort()
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro",
+			realTemp + "/keep1/tmp0:/keepout"})
+		cr.CleanupDirs()
+		checkEmpty()
+	}
+
 	for _, test := range []struct {
 		in  interface{}
 		out string

@@ -22,9 +22,7 @@ from ._version import __version__
 logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
-tmpdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.tmpdir\)=(.*)")
-outdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.outdir\)=(.*)")
-keepre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.keep\)=(.*)")
+crunchrunner_re = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.(tmpdir|outdir|keep)\)=(.*)")
 
 class ArvadosJob(object):
     """Submit and manage a Crunch job for executing a CWL CommandLineTool."""
@@ -184,6 +182,7 @@ class ArvadosJob(object):
                                                                    keep_client=self.arvrunner.keep_client,
                                                                    num_retries=self.arvrunner.num_retries)
                         log = logc.open(logc.keys()[0])
+                        dirs = {}
                         tmpdir = None
                         outdir = None
                         keepdir = None
@@ -195,19 +194,13 @@ class ArvadosJob(object):
                             # the job restarts on a different node these values
                             # will different runs, and we need to know about the
                             # final run that actually produced output.
-
-                            g = tmpdirre.match(l)
+                            g = crunchrunner_re.match(l)
                             if g:
-                                tmpdir = g.group(1)
-                            g = outdirre.match(l)
-                            if g:
-                                outdir = g.group(1)
-                            g = keepre.match(l)
-                            if g:
-                                keepdir = g.group(1)
+                                dirs[g.group(1)] = g.group(2)
 
                     with Perf(metrics, "output collection %s" % self.name):
-                        outputs = done.done(self, record, tmpdir, outdir, keepdir)
+                        outputs = done.done(self, record, dirs["tmpdir"],
+                                            dirs["outdir"], dirs["keep"])
             except WorkflowException as e:
                 logger.error("Error while collecting job outputs:\n%s", e, exc_info=(e if self.arvrunner.debug else False))
                 processStatus = "permanentFail"
@@ -242,8 +235,12 @@ class RunnerJob(Runner):
             del self.job_order["job_order"]
 
         self.job_order["cwl:tool"] = workflowmapper.mapper(self.tool.tool["id"]).target[5:]
+
         if self.output_name:
             self.job_order["arv:output_name"] = self.output_name
+
+        self.job_order["arv:enable_reuse"] = self.enable_reuse
+
         return {
             "script": "cwl-runner",
             "script_version": __version__,
@@ -317,6 +314,7 @@ class RunnerTemplate(object):
         Specifically, translate CWL input specs to Arvados pipeline
         format, like {"dataclass":"File","value":"xyz"}.
         """
+
         spec = self.job.arvados_job_spec()
 
         # Most of the component spec is exactly the same as the job

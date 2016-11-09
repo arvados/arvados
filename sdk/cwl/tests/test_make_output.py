@@ -8,11 +8,12 @@ import unittest
 
 import arvados
 import arvados_cwl
+from .mock_discovery import get_rootDesc
 
 class TestMakeOutput(unittest.TestCase):
     def setUp(self):
         self.api = mock.MagicMock()
-        self.api._rootDesc = arvados.api('v1')._rootDesc
+        self.api._rootDesc = get_rootDesc()
 
     @mock.patch("arvados.collection.Collection")
     @mock.patch("arvados.collection.CollectionReader")
@@ -31,7 +32,7 @@ class TestMakeOutput(unittest.TestCase):
         final.open.return_value = openmock
         openmock.__enter__.return_value = cwlout
 
-        runner.make_output_collection("Test output", {
+        _, runner.final_output_collection = runner.make_output_collection("Test output", {
             "foo": {
                 "class": "File",
                 "location": "keep:99999999999999999999999999999991+99/foo.txt",
@@ -41,7 +42,8 @@ class TestMakeOutput(unittest.TestCase):
             "bar": {
                 "class": "File",
                 "location": "keep:99999999999999999999999999999992+99/bar.txt",
-                "basename": "baz.txt"
+                "basename": "baz.txt",
+                "size": 4
             }
         })
 
@@ -51,11 +53,13 @@ class TestMakeOutput(unittest.TestCase):
         self.assertEqual("""{
     "bar": {
         "class": "File",
-        "location": "baz.txt"
+        "location": "baz.txt",
+        "size": 4
     },
     "foo": {
         "class": "File",
-        "location": "foo.txt"
+        "location": "foo.txt",
+        "size": 3
     }
 }""", cwlout.getvalue())
 

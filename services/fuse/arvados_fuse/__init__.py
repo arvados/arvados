@@ -367,9 +367,10 @@ class Operations(llfuse.Operations):
         return True
 
     def listen_for_events(self):
-        self.events = arvados.events.subscribe(self._api_client,
-                                 [["event_type", "in", ["create", "update", "delete"]]],
-                                 self.on_event)
+        self.events = arvados.events.subscribe(
+            self._api_client,
+            [["event_type", "in", ["create", "update", "delete"]]],
+            self.on_event)
 
     @catch_exceptions
     def on_event(self, ev):

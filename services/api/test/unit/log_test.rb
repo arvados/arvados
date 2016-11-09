@@ -6,7 +6,7 @@ class LogTest < ActiveSupport::TestCase
   EVENT_TEST_METHODS = {
     :create => [:created_at, :assert_nil, :assert_not_nil],
     :update => [:modified_at, :assert_not_nil, :assert_not_nil],
-    :destroy => [nil, :assert_not_nil, :assert_nil],
+    :delete => [nil, :assert_not_nil, :assert_nil],
   }
 
   setup do
@@ -116,7 +116,7 @@ class LogTest < ActiveSupport::TestCase
     orig_attrs = auth.attributes
     orig_attrs.delete 'api_token'
     auth.destroy
-    assert_logged(auth, :destroy) do |props|
+    assert_logged(auth, :delete) do |props|
       assert_equal(orig_etag, props['old_etag'], "destroyed auth etag mismatch")
       assert_equal(orig_attrs, props['old_attributes'],
                    "destroyed auth attributes mismatch")
@@ -230,7 +230,7 @@ class LogTest < ActiveSupport::TestCase
     auth.save!
     assert_logged_with_clean_properties(auth, :update, 'api_token')
     auth.destroy
-    assert_logged_with_clean_properties(auth, :destroy, 'api_token')
+    assert_logged_with_clean_properties(auth, :delete, 'api_token')
   end
 
   test "use ownership and permission links to determine which logs a user can see" do
@@ -283,7 +283,7 @@ class LogTest < ActiveSupport::TestCase
       coll.save!
       assert_logged_with_clean_properties(coll, :update, 'manifest_text')
       coll.destroy
-      assert_logged_with_clean_properties(coll, :destroy, 'manifest_text')
+      assert_logged_with_clean_properties(coll, :delete, 'manifest_text')
     end
   end
 
@@ -302,7 +302,7 @@ class LogTest < ActiveSupport::TestCase
         assert_equal(txt, props['new_attributes']['manifest_text'])
       end
       coll.destroy
-      assert_logged(coll, :destroy) do |props|
+      assert_logged(coll, :delete) do |props|
         assert_equal(txt, props['old_attributes']['manifest_text'])
       end
     end

@@ -13,11 +13,11 @@ class ContainerRequest < ArvadosModel
   serialize :command, Array
 
   before_validation :fill_field_defaults, :if => :new_record?
+  before_validation :validate_runtime_constraints
   before_validation :set_container
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validate :validate_state_change
   validate :validate_change
-  validate :validate_runtime_constraints
   after_save :update_priority
   after_save :finalize_if_needed
   before_create :set_requesting_container_uuid
@@ -222,6 +222,14 @@ class ContainerRequest < ArvadosModel
                 runtime_constraints[k] > 0)
           errors.add :runtime_constraints, "#{k} must be a positive integer"
         end
+      end
+
+      if runtime_constraints.include? 'keep_cache_ram' and
+         (!runtime_constraints['keep_cache_ram'].is_a?(Integer) or
+          runtime_constraints['keep_cache_ram'] <= 0)
+            errors.add :runtime_constraints, "keep_cache_ram must be a positive integer"
+      elsif !runtime_constraints.include? 'keep_cache_ram'
+        runtime_constraints['keep_cache_ram'] = Rails.configuration.container_default_keep_cache_ram
       end
     end
   end

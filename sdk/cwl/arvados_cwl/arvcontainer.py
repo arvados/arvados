@@ -97,7 +97,8 @@ class ArvadosContainer(object):
 
         runtime_req, _ = get_feature(self, "http://arvados.org/cwl#RuntimeConstraints")
         if runtime_req:
-            logger.warn("RuntimeConstraints not yet supported by container API")
+            if "keep_cache" in runtime_req:
+                runtime_constraints["keep_cache_ram"] = runtime_req["keep_cache"]
 
         partition_req, _ = get_feature(self, "http://arvados.org/cwl#PartitionRequirement")
         if partition_req:
@@ -105,6 +106,7 @@ class ArvadosContainer(object):
 
         container_request["mounts"] = mounts
         container_request["runtime_constraints"] = runtime_constraints
+        container_request["use_existing"] = kwargs.get("enable_reuse", True)
 
         try:
             response = self.arvrunner.api.container_requests().create(
@@ -186,6 +188,12 @@ class RunnerContainer(Runner):
         command = ["arvados-cwl-runner", "--local", "--api=containers"]
         if self.output_name:
             command.append("--output-name=" + self.output_name)
+
+        if self.enable_reuse:
+            command.append("--enable-reuse")
+        else:
+            command.append("--disable-reuse")
+
         command.extend([workflowpath, jobpath])
 
         return {

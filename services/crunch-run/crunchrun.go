@@ -250,6 +250,11 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	pdhOnly := true
 	tmpcount := 0
 	arvMountCmd := []string{"--foreground", "--allow-other", "--read-write"}
+
+	if runner.Container.RuntimeConstraints.KeepCacheRAM > 0 {
+		arvMountCmd = append(arvMountCmd, "--file-cache", fmt.Sprintf("%d", runner.Container.RuntimeConstraints.KeepCacheRAM))
+	}
+
 	collectionPaths := []string{}
 	runner.Binds = nil
 

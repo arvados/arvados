@@ -150,27 +150,31 @@ class ArvPathMapper(PathMapper):
         else:
             return super(ArvPathMapper, self).reversemap(target)
 
-class InitialWorkDirPathMapper(PathMapper):
+class StagingPathMapper(PathMapper):
+    _follow_dirs = True
 
     def visit(self, obj, stagedir, basedir, copy=False):
         # type: (Dict[unicode, Any], unicode, unicode, bool) -> None
         loc = obj["location"]
+        tgt = os.path.join(stagedir, obj["basename"])
         if obj["class"] == "Directory":
-            self._pathmap[loc] = MapperEnt(obj["location"], stagedir, "Directory")
-            self.visitlisting(obj.get("listing", []), stagedir, basedir)
+            self._pathmap[loc] = MapperEnt(loc, tgt, "Directory")
+            if loc.startswith("_:") or self._follow_dirs:
+                self.visitlisting(obj.get("listing", []), tgt, basedir)
         elif obj["class"] == "File":
             if loc in self._pathmap:
                 return
-            tgt = os.path.join(stagedir, obj["basename"])
-            if "contents" in obj and obj["location"].startswith("_:"):
+            if "contents" in obj and loc.startswith("_:"):
                 self._pathmap[loc] = MapperEnt(obj["contents"], tgt, "CreateFile")
             else:
                 if copy:
-                    self._pathmap[loc] = MapperEnt(obj["path"], tgt, "WritableFile")
+                    self._pathmap[loc] = MapperEnt(loc, tgt, "WritableFile")
                 else:
-                    self._pathmap[loc] = MapperEnt(obj["path"], tgt, "File")
+                    self._pathmap[loc] = MapperEnt(loc, tgt, "File")
                 self.visitlisting(obj.get("secondaryFiles", []), stagedir, basedir)
 
+
+class InitialWorkDirPathMapper(StagingPathMapper):
     def setup(self, referenced_files, basedir):
         # type: (List[Any], unicode) -> None
 
@@ -183,19 +187,8 @@ class InitialWorkDirPathMapper(PathMapper):
                 self._pathmap[path] = MapperEnt("$(task.keep)/%s" % ab[5:], tgt, type)
 
 
-class FinalOutputPathMapper(PathMapper):
-    def visit(self, obj, stagedir, basedir, copy=False):
-        # type: (Dict[unicode, Any], unicode, unicode, bool) -> None
-        loc = obj["location"]
-        if obj["class"] == "Directory":
-            self._pathmap[loc] = MapperEnt(loc, stagedir, "Directory")
-        elif obj["class"] == "File":
-            if loc in self._pathmap:
-                return
-            tgt = os.path.join(stagedir, obj["basename"])
-            self._pathmap[loc] = MapperEnt(loc, tgt, "File")
-            self.visitlisting(obj.get("secondaryFiles", []), stagedir, basedir)
-
+class FinalOutputPathMapper(StagingPathMapper):
+    _follow_dirs = False
     def setup(self, referenced_files, basedir):
         # type: (List[Any], unicode) -> None
         self.visitlisting(referenced_files, self.stagedir, basedir)

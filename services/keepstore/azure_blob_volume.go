@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"regexp"
 	"strconv"
@@ -15,8 +16,11 @@ import (
 	"sync"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/curoverse/azure-sdk-for-go/storage"
 )
+
+const azureDefaultRequestTimeout = arvados.Duration(10 * time.Minute)
 
 var (
 	azureMaxGetBytes           int
@@ -95,6 +99,7 @@ type AzureBlobVolume struct {
 	ContainerName         string
 	AzureReplication      int
 	ReadOnly              bool
+	RequestTimeout        arvados.Duration
 
 	azClient storage.Client
 	bsClient storage.BlobStorageClient
@@ -108,6 +113,7 @@ func (*AzureBlobVolume) Examples() []Volume {
 			StorageAccountKeyFile: "/etc/azure_storage_account_key.txt",
 			ContainerName:         "example-container-name",
 			AzureReplication:      3,
+			RequestTimeout:        azureDefaultRequestTimeout,
 		},
 	}
 }
@@ -132,6 +138,13 @@ func (v *AzureBlobVolume) Start() error {
 	v.azClient, err = storage.NewBasicClient(v.StorageAccountName, accountKey)
 	if err != nil {
 		return fmt.Errorf("creating Azure storage client: %s", err)
+	}
+
+	if v.RequestTimeout == 0 {
+		v.RequestTimeout = azureDefaultRequestTimeout
+	}
+	v.azClient.HTTPClient = &http.Client{
+		Timeout: time.Duration(v.RequestTimeout),
 	}
 	v.bsClient = v.azClient.GetBlobService()
 

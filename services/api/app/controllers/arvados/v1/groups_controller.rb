@@ -75,7 +75,20 @@ class Arvados::V1::GroupsController < ApplicationController
       end
     end
 
+    wanted_klasses = []
+    request_filters.each do |col,op,val|
+      if op == 'is_a'
+        (val.is_a?(Array) ? val : [val]).each do |type|
+          type = type.split('#')[-1]
+          type[0] = type[0].capitalize
+          wanted_klasses << type
+        end
+      end
+    end
+
     klasses.each do |klass|
+      next if wanted_klasses.any? and !wanted_klasses.include?(klass.to_s)
+
       # If the currently requested orders specifically match the
       # table_name for the current klass, apply that order.
       # Otherwise, order by recency.
