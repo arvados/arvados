@@ -217,7 +217,7 @@ class ApplicationController < ActionController::Base
   def ensure_arvados_api_exists
     ctrl =  params['controller'].to_sym
     if [:jobs, :job_tasks, :pipeline_instances, :pipeline_templates].include?(ctrl)
-      if !ctrl.to_s.classify.constantize.api_exists?(params['action'].to_sym)
+      if model_class < ArvadosBase && !model_class.api_exists?(params['action'].to_sym)
         @errors = ["#{params['action']} method is not supported for #{ctrl}"]
         return render_error(status: 404)
       end
@@ -227,15 +227,6 @@ class ApplicationController < ActionController::Base
   def index
     find_objects_for_index if !@objects
     render_index
-  end
-
-  helper_method :arvados_api_exists
-  def arvados_api_exists ctrl, method
-    if [:jobs, :job_tasks, :pipeline_instances, :pipeline_templates].include?(ctrl)
-      ctrl.to_s.classify.constantize.api_exists?(method)
-    else
-      true
-    end
   end
 
   helper_method :next_page_offset
