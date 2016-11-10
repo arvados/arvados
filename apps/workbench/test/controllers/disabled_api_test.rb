@@ -36,7 +36,7 @@ class DisabledApiTest < ActionController::TestCase
     :active,
     nil,
   ].each do |user|
-    test "project tabs as user #{user} in crunch2 environment" do
+    test "project tabs as user #{user} when pipeline related index APIs are disabled" do
       @controller = ProjectsController.new
 
       Rails.configuration.anonymous_user_token = api_fixture('api_client_authorizations')['anonymous']['api_token']
