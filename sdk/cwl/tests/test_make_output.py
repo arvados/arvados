@@ -27,12 +27,14 @@ class TestMakeOutput(unittest.TestCase):
         readermock = mock.MagicMock()
         reader.return_value = readermock
 
+        final_uuid = final.manifest_locater()
+
         cwlout = StringIO.StringIO()
         openmock = mock.MagicMock()
         final.open.return_value = openmock
         openmock.__enter__.return_value = cwlout
 
-        runner.make_output_collection("Test output", {
+        runner.make_output_collection("Test output", "tag0", {
             "foo": {
                 "class": "File",
                 "location": "keep:99999999999999999999999999999991+99/foo.txt",
@@ -44,7 +46,7 @@ class TestMakeOutput(unittest.TestCase):
                 "location": "keep:99999999999999999999999999999992+99/bar.txt",
                 "basename": "baz.txt"
             }
-        }, "")
+        })
 
         final.copy.assert_has_calls([mock.call('bar.txt', 'baz.txt', overwrite=False, source_collection=readermock)])
         final.copy.assert_has_calls([mock.call('foo.txt', 'foo.txt', overwrite=False, source_collection=readermock)])
@@ -61,3 +63,5 @@ class TestMakeOutput(unittest.TestCase):
 }""", cwlout.getvalue())
 
         self.assertIs(final, runner.final_output_collection)
+        self.assertIs(final_uuid, runner.final_output_collection.manifest_locater())
+        self.api.links().create.assert_has_calls([mock.call(body={"head_uuid": final_uuid, "link_class": "tag", "name": "tag0"}), mock.call().execute()])

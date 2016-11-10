@@ -63,13 +63,14 @@ def run():
         adjustDirObjs(job_order_object, functools.partial(getListing, arvados_cwl.fsaccess.CollectionFsAccess("", api_client=api)))
 
         output_name = None
+        output_tags = None
         enable_reuse = True
         if "arv:output_name" in job_order_object:
             output_name = job_order_object["arv:output_name"]
             del job_order_object["arv:output_name"]
 
         if "arv:output_tags" in job_order_object:
-            args.output_tags = job_order_object["arv:output_tags"]
+            output_tags = job_order_object["arv:output_tags"]
             del job_order_object["arv:output_tags"]
 
         if "arv:enable_reuse" in job_order_object:
@@ -77,7 +78,7 @@ def run():
             del job_order_object["arv:enable_reuse"]
 
         runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()),
-                                          output_name=output_name)
+                                          output_name=output_name, output_tags=output_tags)
 
         t = load_tool(job_order_object, runner.arv_make_tool)
 
