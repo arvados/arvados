@@ -85,6 +85,8 @@ class ArvadosJob(object):
         with Perf(metrics, "arv_docker_get_image %s" % self.name):
             (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
             if docker_req and kwargs.get("use_container") is not False:
+                if docker_req.get("dockerOutputDirectory"):
+                    raise UnsupportedRequirement("Option 'dockerOutputDirectory' of DockerRequirement not supported.")
                 runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvrunner.project_uuid)
             else:
                 runtime_constraints["docker_image"] = arvados_jobs_image(self.arvrunner)
