@@ -165,6 +165,10 @@ type bucketStats struct {
 	DelOps   uint64
 	InBytes  uint64
 	OutBytes uint64
+
+	ErrorCodes map[string]uint64 `json:",omitempty"`
+
+	lock sync.Mutex
 }
 
 // Examples implements VolumeWithExamples.
@@ -851,8 +855,18 @@ func (v *S3Volume) tick(counters ...*uint64) {
 }
 
 func (v *S3Volume) tickErr(err error) error {
-	if err != nil {
-		atomic.AddUint64(&v.bucketStats.Errors, 1)
+	if err == nil {
+		return nil
+	}
+	atomic.AddUint64(&v.bucketStats.Errors, 1)
+	if err, ok := err.(*s3.Error); ok {
+		errStr := fmt.Sprintf("%d %s", err.StatusCode, err.Code)
+		v.bucketStats.lock.Lock()
+		if v.bucketStats.ErrorCodes == nil {
+			v.bucketStats.ErrorCodes = make(map[string]uint64)
+		}
+		v.bucketStats.ErrorCodes[errStr]++
+		v.bucketStats.lock.Unlock()
 	}
 	return err
 }
