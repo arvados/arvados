@@ -859,15 +859,16 @@ func (v *S3Volume) tickErr(err error) error {
 		return nil
 	}
 	atomic.AddUint64(&v.bucketStats.Errors, 1)
+	errStr := fmt.Sprintf("%T", err)
 	if err, ok := err.(*s3.Error); ok {
-		errStr := fmt.Sprintf("%d %s", err.StatusCode, err.Code)
-		v.bucketStats.lock.Lock()
-		if v.bucketStats.ErrorCodes == nil {
-			v.bucketStats.ErrorCodes = make(map[string]uint64)
-		}
-		v.bucketStats.ErrorCodes[errStr]++
-		v.bucketStats.lock.Unlock()
+		errStr = errStr + fmt.Sprintf(" %d %s", err.StatusCode, err.Code)
 	}
+	v.bucketStats.lock.Lock()
+	if v.bucketStats.ErrorCodes == nil {
+		v.bucketStats.ErrorCodes = make(map[string]uint64)
+	}
+	v.bucketStats.ErrorCodes[errStr]++
+	v.bucketStats.lock.Unlock()
 	return err
 }
 
