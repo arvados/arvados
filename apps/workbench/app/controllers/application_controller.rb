@@ -215,12 +215,9 @@ class ApplicationController < ActionController::Base
   end
 
   def ensure_arvados_api_exists
-    ctrl =  params['controller'].to_sym
-    if [:jobs, :job_tasks, :pipeline_instances, :pipeline_templates].include?(ctrl)
-      if model_class < ArvadosBase && !model_class.api_exists?(params['action'].to_sym)
-        @errors = ["#{params['action']} method is not supported for #{ctrl}"]
-        return render_error(status: 404)
-      end
+    if model_class < ArvadosBase && !model_class.api_exists?(params['action'].to_sym)
+      @errors = ["#{params['action']} method is not supported for #{params['controller']}"]
+      return render_error(status: 404)
     end
   end
 
