@@ -6,11 +6,11 @@ title: "api_client_authorizations"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/api_client_authorizations@
 
-Required arguments are displayed in %{background:#ccffcc}green%.
+Object type: @gj3su@
+
+Example UUID: @zzzzz-gj3su-0123456789abcde@
 
 h2. Resource
 
@@ -29,40 +29,19 @@ table(table table-bordered table-condensed).
 |last_used_at|datetime|Timestamp of the most recent request using this token.||
 |expires_at|datetime|Time at which the token is no longer valid.  May be set to a time in the past in order to immediately expire a token.||
 |owner_uuid|string|The user associated with the token.  All operations using this token are checked against the permissions of this user.||
-|scopes|array|A list of resources this token is allowed to access.  A scope of ["all"] allows all resources.  See below.||
-
-h3(#scope). Scopes
-
-Scopes can restrict a token so it may only access certain resources.  This is in addition to normal permission checks for the user associated with the token.
-
-Each entry in scopes consists of a @request_method@ and @request_path@, where the @request_method@ is a HTTP method (one of @GET@, @POST@, @PUT@ or @DELETE@) and @request_path@ is the request URI.  A given request is permitted if it matches a scopes exactly, or the scope ends with @/@ and the request string is a prefix of the scope.
-
-As a special case, a scope of ["all"] allows all resources.
-
-h4. Examples
-
-A scope of @GET /arvados/v1/collections@ permits listing collections.
-
-* Requests with different methods, such as creating a new collection using @POST /arvados/v1/collections@, will be rejected.
-* Requests to access other resources, such as @GET /arvados/v1/groups@, will be rejected.
-* Be aware that requests for specific records, such as @GET /arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km@ will also be rejected.  This is because the scope @GET /arvados/v1/collections@ does not end in @/@
-
-A scope of @GET /arvados/v1/collections/@ (with @/@ suffix) will permit access to individual collections.
-
-* The request @GET /arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km@ will succeed
-* Be aware that requests for listing @GET /arvados/v1/collections@ (no @/@ suffix) will be rejected, because it is not an exact match with @GET /arvados/v1/collections/@
-
-To allow both listing objects and requesting individual objects, include both in the scope: @["GET /arvados/v1/collections", "GET /arvados/v1/collections/"]@
-
-A narrow scope such as @GET /arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km@ will disallow listing objects as well as disallow requesting any object other than those in the scope.
+|scopes|array|A list of resources this token is allowed to access.  A scope of ["all"] allows all resources.  See "API Authorization":{{site.baseurl}}/api/tokens.html#scopes for details.||
 
 h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html more information about @create@, @delete@, @get@, @list@, and @update@.
+
+Required arguments are displayed in %{background:#ccffcc}green%.
 
 h3(#create). create
 
 Create a new ApiClientAuthorization.
 
-Regular users may only create self-owned API tokens, but may provide a restricted "scope"#scope .  Administrators may create API tokens corresponding to any user.
+Regular users may only create self-owned API tokens, but may provide a restricted "scope":{{site.baseurl}}/api/tokens.html#scopes .  Administrators may create API tokens corresponding to any user.
 
 Arguments:
 
@@ -93,7 +72,7 @@ table(table table-bordered table-condensed).
 
 h3. get
 
-Gets a ApiClientAuthorization's metadata by UUID.
+Gets an ApiClientAuthorization's metadata by UUID.
 
 Arguments:
 
@@ -105,13 +84,7 @@ h3. list
 
 List api_client_authorizations.
 
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of api_client_authorizations to return.|query||
-|order|string|Order in which to return matching api_client_authorizations.|query||
-|filters|array|Conditions for filtering api_client_authorizations.|query||
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
 h3. update
 

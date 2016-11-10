@@ -6,13 +6,11 @@ title: "jobs"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/jobs@
 
-UUID type: @8i9sb@
+Object type: @8i9sb@
 
-Required arguments are displayed in %{background:#ccffcc}green%.
+Example UUID: @zzzzz-8i9sb-0123456789abcde@
 
 h2. Resource
 
@@ -20,7 +18,7 @@ Deprecated.
 
 A job describes a work order to be executed by the Arvados cluster.
 
-Each job has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
+Each job has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Notes|
@@ -72,6 +70,11 @@ table(table table-bordered table-condensed).
 |min_ram_per_task|integer|Minimum real memory (KiB) per task||
 
 h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html more information about @create@, @delete@, @get@, @list@, and @update@.
+
+Required arguments are displayed in %{background:#ccffcc}green%.
+
 h3. cancel
 
 Cancel a job that is queued or running.
@@ -82,7 +85,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string||path||
 
-h2(#create). create
+h3(#create). create
 
 Create a new Job.
 
@@ -90,7 +93,7 @@ Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|job|object|See "Job resource":{{site.baseurl}}/api/schema/Job.html|request body||
+{background:#ccffcc}.|job|object|Job resource|request body||
 |minimum_script_version |string     |Git branch, tag, or commit hash specifying the minimum acceptable script version (earliest ancestor) to consider when deciding whether to re-use a past job.[1]|query|@"c3e86c9"@|
 |exclude_script_versions|array of strings|Git commit branches, tags, or hashes to exclude when deciding whether to re-use a past job.|query|@["8f03c71","8f03c71"]@
 @["badtag1","badtag2"]@|
@@ -101,7 +104,7 @@ When a job is submitted to the queue using the **create** method, the @script_ve
 
 fn1. See the "note about specifying Git commits on the Job resource page":{{site.baseurl}}/api/schema/Job.html#script_version for more detail.
 
-h3. Specialized filters
+h4. Specialized filters
 
 Special filter operations are available for specific Job columns.
 
@@ -113,7 +116,7 @@ Special filter operations are available for specific Job columns.
 
 * @docker_image_locator@ @not in docker@ @SEARCH@<br>Negate the @in docker@ filter.
 
-h3. Reusing jobs
+h4. Reusing jobs
 
 Because Arvados records the exact version of the script, input parameters, and runtime environment that was used to run the job, if the script is deterministic (meaning that the same code version is guaranteed to produce the same outputs from the same inputs) then it is possible to re-use the results of past jobs, and avoid re-running the computation to save time.  Arvados uses the following algorithm to determine if a past job can be re-used:
 
@@ -128,7 +131,7 @@ notextile. <div class="spaced-out">
 
 </div>
 
-h3. Examples
+h4. Examples
 
 Run the script "crunch_scripts/hash.py" in the repository "you" using the "master" commit.  Arvados should re-use a previous job if the script_version of the previous job is the same as the current "master" commit. This works irrespective of whether the previous job was submitted using the name "master", a different branch name or tag indicating the same commit, a SHA-1 commit hash, etc.
 
@@ -240,13 +243,7 @@ h3. list
 
 List jobs.
 
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of jobs to return.|query||
-|order|string|Order in which to return matching jobs.|query||
-|filters|array|Conditions for filtering jobs.|query||
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
 See the create method documentation for more information about Job-specific filters.
 

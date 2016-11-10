@@ -6,19 +6,17 @@ title: "repositories"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/repositories@
 
-UUID type: @s0uqq@
+Object type: @s0uqq@
 
-Required arguments are displayed in %{background:#ccffcc}green%.
+Example UUID: @zzzzz-s0uqq-0123456789abcde@
 
 h2. Resource
 
 The repositories resource lists git repositories managed by Arvados.
 
-Each Repository has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
+Each Repository has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
@@ -29,6 +27,10 @@ table(table table-bordered table-condensed).
 |push_url|string|URL suggested as a push-url in git config. Deprecated. Read-only.||
 
 h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html more information about @create@, @delete@, @get@, @list@, and @update@.
+
+Required arguments are displayed in %{background:#ccffcc}green%.
 
 h3. create
 
@@ -73,13 +75,7 @@ h3. list
 
 List repositories.
 
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of repositories to return.|query||
-|order|string|Order in which to return matching repositories.|query||
-|filters|array|Conditions for filtering repositories.|query||
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
 h3. update
 

@@ -6,23 +6,21 @@ title: "pipeline_instances"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/pipeline_instances@
 
-UUID type: @d1hrv@
+Object type: @d1hrv@
 
-Required arguments are displayed in %{background:#ccffcc}green%.
+Example UUID: @zzzzz-d1hrv-0123456789abcde@
 
 h2. Resource
 
 Deprecated.  A pipeline instance is a collection of jobs managed by @aravdos-run-pipeline-instance@.
 
-Each PipelineInstance has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
+Each PipelineInstance has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
-|pipeline_template_uuid|string|||
+|pipeline_template_uuid|string|The "pipeline template":pipeline_template.html that this instance was created from.||
 |name|string|||
 |components|hash|||
 |success|boolean|||
@@ -30,6 +28,10 @@ table(table table-bordered table-condensed).
 |properties|Hash|||
 
 h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html more information about @create@, @delete@, @get@, @list@, and @update@.
+
+Required arguments are displayed in %{background:#ccffcc}green%.
 
 h3. create
 
@@ -65,13 +67,7 @@ h3. list
 
 List pipeline_instances.
 
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of pipeline_instances to return.|query||
-|order|string|Order in which to return matching pipeline_instances.|query||
-|filters|array|Conditions for filtering pipeline_instances.|query||
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
 h3. update
 

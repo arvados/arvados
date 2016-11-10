@@ -33,3 +33,29 @@ API clients may be marked as "trusted" by making an API call to create or update
 A authorization token which is not associated with a trusted client may only use the @current@ method to query its own api_client_authorization object.  The "untrusted" token is forbidden performing any other operations on API client authorizations, such as listing other authorizations or creating new authorizations.
 
 Authorization tokens which are not issued via the browser login flow (created directly via the API) will not have an associated api client.  This means authorization tokens created via the API are always "untrusted".
+
+h2(#scopes). Scopes
+
+Scopes can restrict a token so it may only access certain resources.  This is in addition to normal permission checks for the user associated with the token.
+
+Each entry in scopes consists of a @request_method@ and @request_path@, where the @request_method@ is a HTTP method (one of @GET@, @POST@, @PUT@ or @DELETE@) and @request_path@ is the request URI.  A given request is permitted if it matches a scopes exactly, or the scope ends with @/@ and the request string is a prefix of the scope.
+
+As a special case, a scope of ["all"] allows all resources.
+
+h3. Scope examples
+
+A scope of @GET /arvados/v1/collections@ permits listing collections.
+
+* Requests with different methods, such as creating a new collection using @POST /arvados/v1/collections@, will be rejected.
+* Requests to access other resources, such as @GET /arvados/v1/groups@, will be rejected.
+* Be aware that requests for specific records, such as @GET /arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km@ will also be rejected.  This is because the scope @GET /arvados/v1/collections@ does not end in @/@
+
+A scope of @GET /arvados/v1/collections/@ (with @/@ suffix) will permit access to individual collections.
+
+* The request @GET /arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km@ will succeed
+* Be aware that requests for listing @GET /arvados/v1/collections@ (no @/@ suffix) will be rejected, because it is not a match with the rule @GET /arvados/v1/collections/@
+* A listing request @GET /arvados/v1/collections/@ will have the trailing @/@ suffix trimmed before the scope check, as a result it will not match the rule @GET /arvados/v1/collections/@.
+
+To allow both listing objects and requesting individual objects, include both in the scope: @["GET /arvados/v1/collections", "GET /arvados/v1/collections/"]@
+
+A narrow scope such as @GET /arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km@ will disallow listing objects as well as disallow requesting any object other than those listed in the scope.

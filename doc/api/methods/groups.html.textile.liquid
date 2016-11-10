@@ -5,20 +5,17 @@ navmenu: API Methods
 title: "groups"
 ...
 
-
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/groups@
 
-UUID type: @j7d0g@
+Object type: @j7d0g@
 
-Required arguments are displayed in %{background:#ccffcc}green%.
+Example UUID: @zzzzz-j7d0g-0123456789abcde@
 
 h2. Resource
 
 Groups provides a way to apply the same permissions to a set of Arvados objects.  See "permission model":{{site.baseurl}}/api/permission-model.html for details.
 
-Each Group has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
+Each Group has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
@@ -29,6 +26,10 @@ null|
 |writable_by|array|List of UUID strings identifying Users and other Groups that have write permission for this Group.  Only users who are allowed to administer the Group will receive a full list.  Other users will receive a partial list that includes the Group's owner_uuid and (if applicable) their own user UUID.||
 
 h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html more information about @create@, @delete@, @get@, @list@, and @update@.
+
+Required arguments are displayed in %{background:#ccffcc}green%.
 
 h3. contents
 
@@ -81,13 +82,7 @@ h3. list
 
 List groups.
 
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of groups to return.|query||
-|order|string|Order in which to return matching groups.|query||
-|filters|array|Conditions for filtering groups.|query||
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
 h3. show
 

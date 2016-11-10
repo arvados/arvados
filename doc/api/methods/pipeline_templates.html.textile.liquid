@@ -6,19 +6,17 @@ title: "pipeline_templates"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/pipeline_templates@
 
-UUID type: @p5p6p@
+Object type: @p5p6p@
 
-Required arguments are displayed in %{background:#ccffcc}green%.
+Example UUID: @zzzzz-p5p6p-0123456789abcde@
 
 h2. Resource
 
 Deprecated.  A pipeline template is a collection of jobs that can be instantiated as a pipeline_instance.
 
-Each PipelineTemplate has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
+Each PipelineTemplate has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
@@ -169,6 +167,10 @@ This pipeline consists of three components.  The component "cleanup" depends on 
 
 h2. Methods
 
+See "Common resource methods":{{site.baseurl}}/api/methods.html more information about @create@, @delete@, @get@, @list@, and @update@.
+
+Required arguments are displayed in %{background:#ccffcc}green%.
+
 h3. create
 
 Create a new PipelineTemplate.
@@ -203,13 +205,7 @@ h3. list
 
 List pipeline_templates.
 
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of pipeline_templates to return.|query||
-|order|string|Order in which to return matching pipeline_templates.|query||
-|filters|array|Conditions for filtering pipeline_templates.|query||
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
 h3. update
 

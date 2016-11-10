@@ -6,19 +6,17 @@ title: "keep_disks (deprecated)"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/keep_disks@
 
-UUID type: @penuu@
+Object type: @penuu@
 
-Required arguments are displayed in %{background:#ccffcc}green%.
+Example UUID: @zzzzz-penuu-0123456789abcde@
 
 h2. Resource
 
 Obsoleted by "keep_services":{{site.baseurl}}/api/methods/keep_services.html
 
-Each KeepDisk has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
+Each KeepDisk has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
@@ -35,6 +33,10 @@ table(table table-bordered table-condensed).
 |keep_service_uuid|string|||
 
 h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html more information about @create@, @delete@, @get@, @list@, and @update@.
+
+Required arguments are displayed in %{background:#ccffcc}green%.
 
 h3. create
 
@@ -70,13 +72,7 @@ h3. list
 
 List keep_disks.
 
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of keep_disks to return.|query||
-|order|string|Order in which to return matching keep_disks.|query||
-|filters|array|Conditions for filtering keep_disks.|query||
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
 h3. ping
 

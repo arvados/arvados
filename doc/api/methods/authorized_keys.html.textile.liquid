@@ -6,29 +6,31 @@ title: "authorized_keys"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/authorized_keys@
 
-UUID type: @fngyi@
+Object type: @fngyi@
 
-Required arguments are displayed in %{background:#ccffcc}green%.
+Example UUID: @zzzzz-fngyi-0123456789abcde@
 
 h2. Resource
 
 The authorized_keys resource stores SSH public keys which grant access to virtual machines or git repositories on the Arvados cluster as the user in @authorized_user_uuid@.
 
-Each AuthorizedKey has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
+Each AuthorizedKey has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
-|name|string|||
-|key_type|string|||
-|authorized_user_uuid|string|||
-|public_key|text|||
-|expires_at|datetime|||
+|name|string|A name to help the user manage their keys.||
+|key_type|string|Public key type, currently only supports "SSH"||
+|authorized_user_uuid|string|The user to which this key belongs.  Authentication using this key authenticates as this user.||
+|public_key|text|The actual public key material, e.g. from @~/.ssh/id_rsa.pub@||
+|expires_at|datetime|Expiration date after which the key is no longer valid.||
 
 h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html more information about @create@, @delete@, @get@, @list@, and @update@.
+
+Required arguments are displayed in %{background:#ccffcc}green%.
 
 h3. create
 
@@ -64,13 +66,7 @@ h3. list
 
 List authorized_keys.
 
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of authorized_keys to return.|query||
-|order|string|Order in which to return matching authorized_keys.|query||
-|filters|array|Conditions for filtering authorized_keys.|query||
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
 h3. update
 

@@ -7,6 +7,8 @@ title: Examples
 
 See "Arvados GoDoc":https://godoc.org/git.curoverse.com/arvados.git/sdk/go for detailed documentation.
 
+In these examples, the site prefix is @aaaaa@.
+
 h2.  Initialize SDK
 
 <pre>
@@ -34,14 +36,14 @@ h2. delete
 
 <pre>
   var collection arvados.Collection
-  err := api.Delete("collections", "aaaaa-bbbbb-ccccccccccccccc", Dict{}, &collection)
+  err := api.Delete("collections", "aaaaa-4zz18-ccccccccccccccc", Dict{}, &collection)
 </pre>
 
 h2. get
 
 <pre>
   var collection arvados.Collection
-  err := api.Get("collections", "aaaaa-bbbbb-ccccccccccccccc", Dict{}, &collection)
+  err := api.Get("collections", "aaaaa-4zz18-ccccccccccccccc", Dict{}, &collection)
 </pre>
 
 h2. list
@@ -55,7 +57,7 @@ h2. update
 
 <pre>
   var collection arvados.Collection
-  err := api.Update("collections", "aaaaa-bbbbb-ccccccccccccccc", Dict{"collection": Dict{"name": "update example"}}, &collection)
+  err := api.Update("collections", "aaaaa-4zz18-ccccccccccccccc", Dict{"collection": Dict{"name": "update example"}}, &collection)
 </pre>
 
 h2. Get current user

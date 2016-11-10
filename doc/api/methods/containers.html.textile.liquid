@@ -6,19 +6,17 @@ title: "containers"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/containers@
 
-UUID type: @dz642@
+Object type: @dz642@
 
-Required arguments are displayed in %{background:#ccffcc}green%.
+Example UUID: @zzzzz-dz642-0123456789abcde@
 
 h2. Resource
 
 A container is work order to be dispatched to an Arvados cluster to perform some computational work.  A container is created in response to a container request.  See "computing with Crunch":{{site.baseurl}}/api/execution.html for details.
 
-Each Container offers the following attributes, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
+Each Container offers the following attributes, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Notes|
@@ -61,6 +59,11 @@ h2(#mount_types). {% include 'mount_types' %}
 h2(#runtime_constraints). {% include 'container_runtime_constraints' %}
 
 h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html more information about @create@, @delete@, @get@, @list@, and @update@.
+
+Required arguments are displayed in %{background:#ccffcc}green%.
+
 h2(#create). create
 
 Create a new Container.
@@ -69,7 +72,7 @@ Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|container|object|See "Container resource":{{site.baseurl}}/api/schema/Container.html|request body||
+{background:#ccffcc}.|container|object|Container resource|request body||
 
 h3. delete
 
@@ -95,13 +98,7 @@ h3. list
 
 List containers.
 
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of containers to return.|query||
-|order|string|Order in which to return matching containers.|query||
-|filters|array|Conditions for filtering containers.|query||
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
 See the create method documentation for more information about Container-specific filters.
 

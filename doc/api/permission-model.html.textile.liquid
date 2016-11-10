@@ -24,7 +24,7 @@ h2. Ownership
 ** A "role" is a subtype of Group that is treated in Workbench as a group of users who have permissions in common (typically an organizational group).
 * To change the @owner_uuid@ field, it is necessary to have @can_write@ permission on both the current owner and the new owner.
 
-h2. Permission links
+h2(#links). Permission links
 
 A link object with
 
@@ -59,7 +59,7 @@ h2. Special cases
 * *can_read* on a Collection grants permission to read the blocks that make up the collection (API server returns signed blocks)
 * If User or Group X *can_FOO* Group A, and Group A *can_manage* User B, then X *can_FOO* _everything that User B can_FOO_.
 
-h2. System user and group
+h2(#system). System user and group
 
 A privileged user account exists for the use by internal Arvados components.  This user manages system objects which should not be "owned" by any particular user.  The system user uuid is @{siteprefix}-tpzed-000000000000000@.
 

@@ -6,21 +6,19 @@ title: "job_tasks"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/job_tasks@
 
-UUID type: @ot0gb@
+Object type: @ot0gb@
 
-Required arguments are displayed in %{background:#ccffcc}green%.
+Example UUID: @zzzzz-ot0gb-0123456789abcde@
 
 h2. Resource
 
 Deprecated.
 
-A job task is a individually scheduled and task executed as part of an overall job.
+A job task is a individually scheduled unit of work executed as part of an overall job.
 
-Each JobTask has, in addition to the usual "attributes of Arvados resources":{{site.baseurl}}/api/resources.html:
+Each JobTask has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
 
 table(table table-bordered table-condensed).
 |_. Attribute|_. Type|_. Description|_. Example|
@@ -40,9 +38,11 @@ table(table table-bordered table-condensed).
 |job_uuid|string|||
 |created_by_job_task_uuid|string|||
 
-
-
 h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html more information about @create@, @delete@, @get@, @list@, and @update@.
+
+Required arguments are displayed in %{background:#ccffcc}green%.
 
 h3. create
 
@@ -78,13 +78,7 @@ h3. list
 
 List job_tasks.
 
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of job_tasks to return.|query||
-|order|string|Order in which to return matching job_tasks.|query||
-|filters|array|Conditions for filtering job_tasks.|query||
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
 h3. update
 
