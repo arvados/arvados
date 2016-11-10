@@ -42,6 +42,7 @@ class ContainerRequest < ArvadosModel
     t.add :runtime_constraints
     t.add :state
     t.add :use_existing
+    t.add :output_uuid
   end
 
   # Supported states for a container request
@@ -79,13 +80,13 @@ class ContainerRequest < ArvadosModel
   # Finalize the container request after the container has
   # finished/cancelled.
   def finalize!
-    update_attributes!(state: Final)
+    out_uuid = nil
     c = Container.find_by_uuid(container_uuid)
     ['output', 'log'].each do |out_type|
       pdh = c.send(out_type)
       next if pdh.nil?
       manifest = Collection.where(portable_data_hash: pdh).first.manifest_text
-      Collection.create!(owner_uuid: owner_uuid,
+      coll = Collection.create!(owner_uuid: owner_uuid,
                          manifest_text: manifest,
                          portable_data_hash: pdh,
                          name: "Container #{out_type} for request #{uuid}",
@@ -93,7 +94,9 @@ class ContainerRequest < ArvadosModel
                            'type' => out_type,
                            'container_request' => uuid,
                          })
+      out_uuid = coll.uuid if out_type == 'output'
     end
+    update_attributes!(state: Final, output_uuid: out_uuid)
   end
 
   protected
@@ -271,8 +274,8 @@ class ContainerRequest < ArvadosModel
         errors.add :state, "of container request can only be set to Final by system."
       end
 
-      if self.state_changed? || self.name_changed? || self.description_changed?
-          permitted.push :state, :name, :description
+      if self.state_changed? || self.name_changed? || self.description_changed? || self.output_uuid_changed?
+          permitted.push :state, :name, :description, :output_uuid
       else
         errors.add :state, "does not allow updates"
       end

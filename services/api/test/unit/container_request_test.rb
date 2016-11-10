@@ -230,9 +230,10 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.reload
     assert_equal "Committed", cr.state
 
+    output_pdh = '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
     act_as_system_user do
       c.update_attributes!(state: Container::Complete,
-                           output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
+                           output: output_pdh,
                            log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
     end
 
@@ -244,6 +245,9 @@ class ContainerRequestTest < ActiveSupport::TestCase
                                        owner_uuid: project.uuid).count,
                    "Container #{out_type} should be copied to #{project.uuid}")
     end
+    assert_not_nil cr.output_uuid
+    output = Collection.find_by_uuid cr.output_uuid
+    assert_equal output_pdh, output.portable_data_hash
   end
 
   test "Container makes container request, then is cancelled" do
