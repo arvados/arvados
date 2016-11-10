@@ -239,12 +239,15 @@ class CollectionsController < ApplicationController
         render 'hash_matches'
         return
       else
-        jobs_with = lambda do |conds|
-          Job.limit(RELATION_LIMIT).where(conds)
-            .results.sort_by { |j| j.finished_at || j.created_at }
+        if Job.api_exists?(:index)
+          jobs_with = lambda do |conds|
+            Job.limit(RELATION_LIMIT).where(conds)
+              .results.sort_by { |j| j.finished_at || j.created_at }
+          end
+          @output_of = jobs_with.call(output: @object.portable_data_hash)
+          @log_of = jobs_with.call(log: @object.portable_data_hash)
         end
-        @output_of = jobs_with.call(output: @object.portable_data_hash)
-        @log_of = jobs_with.call(log: @object.portable_data_hash)
+
         @project_links = Link.limit(RELATION_LIMIT).order("modified_at DESC")
           .where(head_uuid: @object.uuid, link_class: 'name').results
         project_hash = Group.where(uuid: @project_links.map(&:tail_uuid)).to_hash

@@ -13,6 +13,7 @@ class ApplicationController < ActionController::Base
   # Methods that don't require login should
   #   skip_around_filter :require_thread_api_token
   around_filter :require_thread_api_token, except: ERROR_ACTIONS
+  before_filter :ensure_arvados_api_exists, only: [:index, :show]
   before_filter :set_cache_buster
   before_filter :accept_uuid_as_id_param, except: ERROR_ACTIONS
   before_filter :check_user_agreements, except: ERROR_ACTIONS
@@ -210,6 +211,13 @@ class ApplicationController < ActionController::Base
       render_to_string render_opts
     else
       render render_opts
+    end
+  end
+
+  def ensure_arvados_api_exists
+    if model_class.is_a?(Class) && model_class < ArvadosBase && !model_class.api_exists?(params['action'].to_sym)
+      @errors = ["#{params['action']} method is not supported for #{params['controller']}"]
+      return render_error(status: 404)
     end
   end
 
@@ -760,7 +768,11 @@ class ApplicationController < ActionController::Base
   }
 
   @@notification_tests.push lambda { |controller, current_user|
-    PipelineInstance.limit(1).where(created_by: current_user.uuid).each do
+    if PipelineInstance.api_exists?(:index)
+      PipelineInstance.limit(1).where(created_by: current_user.uuid).each do
+        return nil
+      end
+    else
       return nil
     end
     return lambda { |view|
@@ -856,12 +868,14 @@ class ApplicationController < ActionController::Base
   def recent_processes lim
     lim = 12 if lim.nil?
 
-    cols = %w(uuid owner_uuid created_at modified_at pipeline_template_uuid name state started_at finished_at)
-    pipelines = PipelineInstance.select(cols).limit(lim).order(["created_at desc"])
+    procs = {}
+    if PipelineInstance.api_exists?(:index)
+      cols = %w(uuid owner_uuid created_at modified_at pipeline_template_uuid name state started_at finished_at)
+      pipelines = PipelineInstance.select(cols).limit(lim).order(["created_at desc"])
+      pipelines.results.each { |pi| procs[pi] = pi.created_at }
+    end
 
     crs = ContainerRequest.limit(lim).order(["created_at desc"]).filter([["requesting_container_uuid", "=", nil]])
-    procs = {}
-    pipelines.results.each { |pi| procs[pi] = pi.created_at }
     crs.results.each { |c| procs[c] = c.created_at }
 
     Hash[procs.sort_by {|key, value| value}].keys.reverse.first(lim)
