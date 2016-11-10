@@ -215,7 +215,7 @@ class ApplicationController < ActionController::Base
   end
 
   def ensure_arvados_api_exists
-    if model_class < ArvadosBase && !model_class.api_exists?(params['action'].to_sym)
+    if model_class.is_a?(Class) && model_class < ArvadosBase && !model_class.api_exists?(params['action'].to_sym)
       @errors = ["#{params['action']} method is not supported for #{params['controller']}"]
       return render_error(status: 404)
     end
