@@ -380,6 +380,8 @@ class WhRunPipelineInstance
           value = params[parametername.to_s]
         elsif parameter.has_key?(:default)
           value = parameter[:default]
+        elsif [false, 'false', 0, '0'].index(parameter[:required])
+          value = nil
         else
           errors << [componentname, parametername, "required parameter is missing"]
           next
