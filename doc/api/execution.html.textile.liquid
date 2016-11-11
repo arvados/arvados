@@ -19,7 +19,7 @@ Note: although the preferred API for Aravdos going forward, the Container API ma
 
 h2. Job API (deprecated)
 
-# To submit work, create a "job":{{site.baseurl}}/api/methods/job.html .  If the same job has been submitted in the past, it will return an existing job in @Completed@ state.
+# To submit work, create a "job":{{site.baseurl}}/api/methods/jobs.html .  If the same job has been submitted in the past, it will return an existing job in @Completed@ state.
 # The dispatcher process will notice a new job in @Queued@ state and attempt to allocate nodes to run the job.
 # The job executes.
 # Retrieve the @output@ field with the portable data hash of the collection with the output files of the job.
