@@ -482,10 +482,12 @@ class ApplicationController < ActionController::Base
       :limit => @limit,
       :items => @objects.as_api_response(nil, {select: @select})
     }
-    if @objects.respond_to? :except
-      list[:items_available] = @objects.
-        except(:limit).except(:offset).
-        count(:id, distinct: true)
+    if params[:no_count].nil? || !params[:no_count]
+      if @objects.respond_to? :except
+        list[:items_available] = @objects.
+          except(:limit).except(:offset).
+          count(:id, distinct: true)
+      end
     end
     list
   end
@@ -548,6 +550,7 @@ class ApplicationController < ActionController::Base
       distinct: { type: 'boolean', required: false },
       limit: { type: 'integer', required: false, default: DEFAULT_LIMIT },
       offset: { type: 'integer', required: false, default: 0 },
+      no_count: { type: 'boolean', required: false, default: false },
     }
   end
 
