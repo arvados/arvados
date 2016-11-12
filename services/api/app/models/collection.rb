@@ -26,6 +26,7 @@ class Collection < ArvadosModel
     t.add :properties
     t.add :portable_data_hash
     t.add :signed_manifest_text, as: :manifest_text
+    t.add :unsigned_manifest_text, as: :unsigned_manifest_text
     t.add :replication_desired
     t.add :replication_confirmed
     t.add :replication_confirmed_at
@@ -43,6 +44,7 @@ class Collection < ArvadosModel
                 # We need expires_at to determine the correct
                 # timestamp in signed_manifest_text.
                 'manifest_text' => ['manifest_text', 'expires_at'],
+                'unsigned_manifest_text' => ['manifest_text'],
                 )
   end
 
@@ -214,6 +216,12 @@ class Collection < ArvadosModel
     rescue ArgumentError => e
       errors.add :manifest_text, e.message
       false
+    end
+  end
+
+  def unsigned_manifest_text
+    if has_attribute? :manifest_text
+      @unsigned_manifest_text = manifest_text
     end
   end
 
