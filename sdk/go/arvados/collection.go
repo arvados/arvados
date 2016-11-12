@@ -14,6 +14,7 @@ type Collection struct {
 	UUID                   string     `json:"uuid,omitempty"`
 	ExpiresAt              *time.Time `json:"expires_at,omitempty"`
 	ManifestText           string     `json:"manifest_text,omitempty"`
+	UnsignedManifestText   string     `json:"unsigned_manifest_text,omitempty"`
 	CreatedAt              *time.Time `json:"created_at,omitempty"`
 	ModifiedAt             *time.Time `json:"modified_at,omitempty"`
 	PortableDataHash       string     `json:"portable_data_hash,omitempty"`
@@ -25,13 +26,17 @@ type Collection struct {
 // SizedDigests returns the hash+size part of each data block
 // referenced by the collection.
 func (c *Collection) SizedDigests() ([]SizedDigest, error) {
-	if c.ManifestText == "" && c.PortableDataHash != "d41d8cd98f00b204e9800998ecf8427e+0" {
+	manifestText := c.ManifestText
+	if manifestText == "" {
+		manifestText = c.UnsignedManifestText
+	}
+	if manifestText == "" && c.PortableDataHash != "d41d8cd98f00b204e9800998ecf8427e+0" {
 		// TODO: Check more subtle forms of corruption, too
 		return nil, fmt.Errorf("manifest is missing")
 	}
 	var sds []SizedDigest
-	scanner := bufio.NewScanner(strings.NewReader(c.ManifestText))
-	scanner.Buffer(make([]byte, 1048576), len(c.ManifestText))
+	scanner := bufio.NewScanner(strings.NewReader(manifestText))
+	scanner.Buffer(make([]byte, 1048576), len(manifestText))
 	for scanner.Scan() {
 		line := scanner.Text()
 		tokens := strings.Split(line, " ")
