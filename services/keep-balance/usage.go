@@ -26,7 +26,7 @@ overreplicated and unreferenced blocks, and moves blocks to better
 positions (according to the rendezvous hash algorithm) so clients find
 them faster.
 
-Usage: keep-balance -config path/to/keep-balance.yml [options]
+Usage: keep-balance [options]
 
 Options:
 `)
