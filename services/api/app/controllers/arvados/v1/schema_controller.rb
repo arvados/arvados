@@ -254,9 +254,10 @@ class Arvados::V1::SchemaController < ApplicationController
                   description: "Return each distinct object.",
                   location: "query"
                 },
-                no_count: {
+                count: {
                   type: "boolean",
-                  description: "Don't count items_available.",
+                  description: "Count items_available.",
+                  default: "true",
                   location: "query"
                 }
               },
