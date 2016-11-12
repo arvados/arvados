@@ -31,6 +31,8 @@ class Arvados::V1::CollectionsController < ApplicationController
 
   def show
     if @object.is_a? Collection
+      # Omit unsigned_manifest_text
+      @select ||= model_class.selectable_attributes - ["unsigned_manifest_text"]
       super
     else
       send_json @object
