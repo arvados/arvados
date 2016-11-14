@@ -1,7 +1,7 @@
 package main
 
 type session interface {
-	Receive(map[string]interface{})
+	Receive(map[string]interface{}, []byte)
 	EventMessage(*event) ([]byte, error)
 	Filter(*event) bool
 	debugLogf(string, ...interface{})

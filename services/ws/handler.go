@@ -64,7 +64,7 @@ func (h *handler) Handle(ws wsConn, events <-chan *event) {
 				stop <- err
 				return
 			}
-			sess.Receive(msg)
+			sess.Receive(msg, buf[:n])
 		}
 	}()
 
