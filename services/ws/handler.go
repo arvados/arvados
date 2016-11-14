@@ -72,7 +72,7 @@ func (h *handler) Handle(ws wsConn, events <-chan *event) {
 		for e := range queue {
 			if e == nil {
 				ws.SetWriteDeadline(time.Now().Add(h.PingTimeout))
-				_, err := ws.Write([]byte("{}\n"))
+				_, err := ws.Write([]byte("{}"))
 				if err != nil {
 					sess.debugLogf("handler: write {}: %s", err)
 					stop <- err

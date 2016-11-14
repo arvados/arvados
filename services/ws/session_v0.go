@@ -16,7 +16,7 @@ var (
 
 type sessionV0 struct {
 	ws          wsConn
-	proxyClient *proxyClient
+	permChecker permChecker
 	subscribed  map[string]bool
 	mtx         sync.Mutex
 	setupOnce   sync.Once
@@ -25,7 +25,7 @@ type sessionV0 struct {
 func NewSessionV0(ws wsConn, ac arvados.Client) (session, error) {
 	sess := &sessionV0{
 		ws:          ws,
-		proxyClient: NewProxyClient(ac),
+		permChecker: NewPermChecker(ac),
 		subscribed:  make(map[string]bool),
 	}
 
@@ -35,8 +35,8 @@ func NewSessionV0(ws wsConn, ac arvados.Client) (session, error) {
 		return nil, err
 	}
 	token := ws.Request().Form.Get("api_token")
-	sess.proxyClient.SetToken(token)
-	sess.debugLogf("handlerV0: token = %+q", token)
+	sess.permChecker.SetToken(token)
+	sess.debugLogf("token = %+q", token)
 
 	return sess, nil
 }
@@ -57,7 +57,8 @@ func (sess *sessionV0) EventMessage(e *event) ([]byte, error) {
 	if detail == nil {
 		return nil, nil
 	}
-	ok, err := sess.proxyClient.CheckReadPermission(detail.UUID)
+
+	ok, err := sess.permChecker.Check(detail.UUID)
 	if err != nil || !ok {
 		return nil, err
 	}
