@@ -27,7 +27,7 @@ func (c pgConfig) ConnectionString() string {
 }
 
 type pgEventSource struct {
-	PgConfig  pgConfig
+	DataSource string
 	QueueSize int
 
 	pqListener *pq.Listener
@@ -42,12 +42,15 @@ func (ps *pgEventSource) setup() {
 }
 
 func (ps *pgEventSource) run() {
-	db, err := sql.Open("postgres", ps.PgConfig.ConnectionString())
+	db, err := sql.Open("postgres", ps.DataSource)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("sql.Open: %s", err)
+	}
+	if err = db.Ping(); err != nil {
+		log.Fatalf("db.Ping: %s", err)
 	}
 
-	listener := pq.NewListener(ps.PgConfig.ConnectionString(), time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
+	listener := pq.NewListener(ps.DataSource, time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
 		if err != nil {
 			// Until we have a mechanism for catching up
 			// on missed events, we cannot recover from a

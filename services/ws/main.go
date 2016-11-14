@@ -36,8 +36,8 @@ func main() {
 	}
 
 	eventSource := &pgEventSource{
-		PgConfig:  cfg.Postgres,
-		QueueSize: cfg.ServerEventQueue,
+		DataSource: cfg.Postgres.ConnectionString(),
+		QueueSize:  cfg.ServerEventQueue,
 	}
 	srv := &http.Server{
 		Addr:           cfg.Listen,
