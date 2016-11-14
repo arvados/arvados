@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"github.com/ghodss/yaml"
 )
 
 type eventSink interface {
@@ -15,11 +16,11 @@ type eventSink interface {
 }
 
 type eventSource interface {
-	NewSink(chan *event) eventSink
+	NewSink() eventSink
 }
 
 type event struct {
-	LogUUID  string
+	LogID    uint64
 	Received time.Time
 	Serial   uint64
 
@@ -39,18 +40,24 @@ func (e *event) Detail() *arvados.Log {
 		return e.logRow
 	}
 	var logRow arvados.Log
-	var oldAttrs, newAttrs []byte
-	e.err = e.db.QueryRow(`SELECT id, uuid, object_uuid, object_owner_uuid, event_type, created_at, old_attributes, new_attributes FROM logs WHERE uuid = ?`, e.LogUUID).Scan(
+	var propYAML []byte
+	e.err = e.db.QueryRow(`SELECT id, uuid, object_uuid, object_owner_uuid, event_type, created_at, properties FROM logs WHERE id = $1`, e.LogID).Scan(
 		&logRow.ID,
 		&logRow.UUID,
 		&logRow.ObjectUUID,
 		&logRow.ObjectOwnerUUID,
 		&logRow.EventType,
 		&logRow.CreatedAt,
-		&oldAttrs,
-		&newAttrs)
+		&propYAML)
 	if e.err != nil {
-		log.Printf("retrieving log row %s: %s", e.LogUUID, e.err)
+		log.Printf("retrieving log row %d: %s", e.LogID, e.err)
+		return nil
 	}
+	e.err = yaml.Unmarshal(propYAML, &logRow.Properties)
+	if e.err != nil {
+		log.Printf("decoding yaml for log row %d: %s", e.LogID, e.err)
+		return nil
+	}
+	e.logRow = &logRow
 	return e.logRow
 }

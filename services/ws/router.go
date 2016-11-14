@@ -21,10 +21,12 @@ type router struct {
 func (rtr *router) setup() {
 	rtr.mux = http.NewServeMux()
 	rtr.mux.Handle("/websocket", rtr.makeServer(&handlerV0{
+		Client:      rtr.Config.Client,
 		PingTimeout: rtr.Config.PingTimeout.Duration(),
 		QueueSize:   rtr.Config.ClientEventQueue,
 	}))
 	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(&handlerV1{
+		Client:      rtr.Config.Client,
 		PingTimeout: rtr.Config.PingTimeout.Duration(),
 		QueueSize:   rtr.Config.ClientEventQueue,
 	}))
@@ -37,7 +39,7 @@ func (rtr *router) makeServer(handler handler) *websocket.Server {
 		},
 		Handler: websocket.Handler(func(ws *websocket.Conn) {
 			log.Printf("%v accepted", ws.Request().RemoteAddr)
-			sink := rtr.eventSource.NewSink(nil)
+			sink := rtr.eventSource.NewSink()
 			handler.Handle(ws, sink.Channel())
 			sink.Stop()
 			ws.Close()

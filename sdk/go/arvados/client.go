@@ -41,6 +41,8 @@ type Client struct {
 	// callers who use a Client to initialize an
 	// arvadosclient.ArvadosClient.)
 	KeepServiceURIs []string `json:",omitempty"`
+
+	dd *DiscoveryDocument
 }
 
 // The default http.Client used by a Client with Insecure==true and
@@ -198,14 +200,83 @@ func (c *Client) apiURL(path string) string {
 
 // DiscoveryDocument is the Arvados server's description of itself.
 type DiscoveryDocument struct {
-	DefaultCollectionReplication int   `json:"defaultCollectionReplication"`
-	BlobSignatureTTL             int64 `json:"blobSignatureTtl"`
+	BasePath                     string              `json:"basePath"`
+	DefaultCollectionReplication int                 `json:"defaultCollectionReplication"`
+	BlobSignatureTTL             int64               `json:"blobSignatureTtl"`
+	Schemas                      map[string]Schema   `json:"schemas"`
+	Resources                    map[string]Resource `json:"resources"`
+}
+
+type Resource struct {
+	Methods map[string]ResourceMethod `json:"methods"`
+}
+
+type ResourceMethod struct {
+	HTTPMethod string         `json:"httpMethod"`
+	Path       string         `json:"path"`
+	Response   MethodResponse `json:"response"`
+}
+
+type MethodResponse struct {
+	Ref string `json:"$ref"`
+}
+
+type Schema struct {
+	UUIDPrefix string `json:"uuidPrefix"`
 }
 
 // DiscoveryDocument returns a *DiscoveryDocument. The returned object
 // should not be modified: the same object may be returned by
 // subsequent calls.
 func (c *Client) DiscoveryDocument() (*DiscoveryDocument, error) {
+	if c.dd != nil {
+		return c.dd, nil
+	}
 	var dd DiscoveryDocument
-	return &dd, c.RequestAndDecode(&dd, "GET", "discovery/v1/apis/arvados/v1/rest", nil, nil)
+	err := c.RequestAndDecode(&dd, "GET", "discovery/v1/apis/arvados/v1/rest", nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	c.dd = &dd
+	return c.dd, nil
+}
+
+func (c *Client) PathForUUID(method, uuid string) (string, error) {
+	if len(uuid) != 27 {
+		return "", fmt.Errorf("invalid UUID: %q", uuid)
+	}
+	dd, err := c.DiscoveryDocument()
+	if err != nil {
+		return "", err
+	}
+	infix := uuid[6:11]
+	var model string
+	for m, s := range dd.Schemas {
+		if s.UUIDPrefix == infix {
+			model = m
+			break
+		}
+	}
+	if model == "" {
+		return "", fmt.Errorf("unrecognized UUID infix: %q", infix)
+	}
+	var resource string
+	for r, rsc := range dd.Resources {
+		if rsc.Methods["get"].Response.Ref == model {
+			resource = r
+			break
+		}
+	}
+	if resource == "" {
+		return "", fmt.Errorf("no resource for model: %q", model)
+	}
+	m, ok := dd.Resources[resource].Methods[method]
+	if !ok {
+		return "", fmt.Errorf("no method %q for resource %q", method, resource)
+	}
+	path := dd.BasePath + strings.Replace(m.Path, "{uuid}", uuid, -1)
+	if path[0] == '/' {
+		path = path[1:]
+	}
+	return path, nil
 }

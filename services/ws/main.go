@@ -35,18 +35,20 @@ func main() {
 		return
 	}
 
+	eventSource := &pgEventSource{
+		PgConfig:  cfg.Postgres,
+		QueueSize: cfg.ServerEventQueue,
+	}
 	srv := &http.Server{
 		Addr:           cfg.Listen,
 		ReadTimeout:    time.Minute,
 		WriteTimeout:   time.Minute,
 		MaxHeaderBytes: 1 << 20,
 		Handler: &router{
-			Config: &cfg,
-			eventSource: &pgEventSource{
-				PgConfig:  cfg.Postgres,
-				QueueSize: cfg.ServerEventQueue,
-			},
+			Config:      &cfg,
+			eventSource: eventSource,
 		},
 	}
+	eventSource.NewSink().Stop()
 	log.Fatal(srv.ListenAndServe())
 }

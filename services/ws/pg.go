@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"log"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -52,15 +53,17 @@ func (ps *pgEventSource) run() {
 			// on missed events, we cannot recover from a
 			// dropped connection without breaking our
 			// promises to clients.
-			log.Fatal(err)
+			log.Fatalf("pgEventSource listener problem: %s", err)
 		}
 	})
 	err = listener.Listen("logs")
 	if err != nil {
 		log.Fatal(err)
 	}
+	debugLogf("pgEventSource listening")
 	go func() {
 		for _ = range time.NewTicker(time.Minute).C {
+			debugLogf("pgEventSource listener ping")
 			listener.Ping()
 		}
 	}()
@@ -74,7 +77,7 @@ func (ps *pgEventSource) run() {
 			// concurrent queries would be bounded by
 			// client_count X client_queue_size.
 			e.Detail()
-			debugLogf("%+v", e)
+			debugLogf("event %d detail %+v", e.Serial, e.Detail())
 			ps.mtx.Lock()
 			for sink := range ps.sinks {
 				sink.channel <- e
@@ -88,33 +91,35 @@ func (ps *pgEventSource) run() {
 		if pqEvent.Channel != "logs" {
 			continue
 		}
+		logID, err := strconv.ParseUint(pqEvent.Extra, 10, 64)
+		if err != nil {
+			log.Printf("bad notify payload: %+v", pqEvent)
+			continue
+		}
 		serial++
 		e := &event{
-			LogUUID:  pqEvent.Extra,
+			LogID:    logID,
 			Received: time.Now(),
 			Serial:   serial,
 			db:       db,
 		}
-		debugLogf("%+v", e)
+		debugLogf("event %d %+v", e.Serial, e)
 		eventQueue <- e
 		go e.Detail()
 	}
 }
 
-// NewSink subscribes to the event source. If c is not nil, it will be
-// used as the event channel. Otherwise, a new channel will be
-// created. Either way, the sink channel will be returned by the
-// Channel() method of the returned eventSink. All subsequent events
-// will be sent to the sink channel. The caller must ensure events are
-// received from the sink channel as quickly as possible: when one
-// sink blocks, all other sinks also block.
-func (ps *pgEventSource) NewSink(c chan *event) eventSink {
+// NewSink subscribes to the event source. NewSink returns an
+// eventSink, whose Channel() method returns a channel: a pointer to
+// each subsequent event will be sent to that channel.
+//
+// The caller must ensure events are received from the sink channel as
+// quickly as possible because when one sink stops being ready, all
+// other sinks block.
+func (ps *pgEventSource) NewSink() eventSink {
 	ps.setupOnce.Do(ps.setup)
-	if c == nil {
-		c = make(chan *event, 1)
-	}
 	sink := &pgEventSink{
-		channel: c,
+		channel: make(chan *event, 1),
 		source:  ps,
 	}
 	ps.mtx.Lock()

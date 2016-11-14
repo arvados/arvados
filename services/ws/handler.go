@@ -14,6 +14,7 @@ type wsConn interface {
 	io.ReadWriter
 	Request() *http.Request
 	SetReadDeadline(time.Time) error
+	SetWriteDeadline(time.Time) error
 }
 
 type timeouter interface {
