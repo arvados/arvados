@@ -2,9 +2,13 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"sync"
+	"time"
 )
+
+var errQueueFull = errors.New("client queue full")
 
 type handlerV0 struct {
 	QueueSize int
@@ -16,32 +20,43 @@ func (h *handlerV0) debugLogf(ws wsConn, s string, args ...interface{}) {
 }
 
 func (h *handlerV0) Handle(ws wsConn, events <-chan *event) {
-	done := make(chan struct{}, 3)
 	queue := make(chan *event, h.QueueSize)
 	mtx := sync.Mutex{}
 	subscribed := make(map[string]bool)
+
+	stopped := make(chan struct{})
+	stop := make(chan error, 5)
+
 	go func() {
 		buf := make([]byte, 2<<20)
 		for {
 			n, err := ws.Read(buf)
 			h.debugLogf(ws, "received frame: %q", buf[:n])
 			if err != nil || n == len(buf) {
-				break
+				h.debugLogf(ws, "handlerV0: read: %s", err)
+				stop <- err
+				return
 			}
 			msg := make(map[string]interface{})
 			err = json.Unmarshal(buf[:n], &msg)
 			if err != nil {
-				break
+				h.debugLogf(ws, "handlerV0: unmarshal: %s", err)
+				stop <- err
+				return
 			}
 			h.debugLogf(ws, "received message: %+v", msg)
 			h.debugLogf(ws, "subscribing to *")
 			subscribed["*"] = true
 		}
-		done <- struct{}{}
 	}()
-	go func(queue <-chan *event) {
+
+	go func() {
 		for e := range queue {
-			detail := e.Detail(nil)
+			if e == nil {
+				ws.Write([]byte("{}\n"))
+				continue
+			}
+			detail := e.Detail()
 			if detail == nil {
 				continue
 			}
@@ -59,28 +74,48 @@ func (h *handlerV0) Handle(ws wsConn, events <-chan *event) {
 				continue
 			}
 			_, err = ws.Write(append(buf, byte('\n')))
-			if  err != nil {
+			if err != nil {
 				h.debugLogf(ws, "handlerV0: write: %s", err)
-				break
-			}
-		}
-		done <- struct{}{}
-	}(queue)
-	go func() {
-		send := func(e *event) {
-			if queue == nil {
+				stop <- err
 				return
 			}
+		}
+	}()
+
+	// Filter incoming events against the current subscription
+	// list, and forward matching events to the outgoing message
+	// queue. Close the queue and return when the "stopped"
+	// channel closes or the incoming event stream ends. Shut down
+	// the handler if the outgoing queue fills up.
+	go func() {
+		send := func(e *event) {
 			select {
 			case queue <- e:
 			default:
-				close(queue)
-				queue = nil
-				done <- struct{}{}
+				stop <- errQueueFull
 			}
 		}
-		for e := range events {
-			detail := e.Detail(nil)
+
+		// Once a minute, if the queue is empty, send an empty
+		// message. This can help detect a disconnected
+		// network socket.
+		ticker := time.NewTicker(time.Minute)
+		defer ticker.Stop()
+
+		for {
+			var e *event
+			select {
+			case <-stopped:
+				close(queue)
+				return
+			case <-ticker.C:
+				if len(queue) == 0 {
+					send(nil)
+				}
+				continue
+			case e = <-events:
+			}
+			detail := e.Detail()
 			mtx.Lock()
 			switch {
 			case subscribed["*"]:
@@ -93,7 +128,8 @@ func (h *handlerV0) Handle(ws wsConn, events <-chan *event) {
 			}
 			mtx.Unlock()
 		}
-		done <- struct{}{}
 	}()
-	<-done
+
+	<-stop
+	close(stopped)
 }

@@ -73,7 +73,7 @@ func (ps *pgEventSource) run() {
 			// to ps.QueueSize. Without this, max
 			// concurrent queries would be bounded by
 			// client_count X client_queue_size.
-			e.Detail(db)
+			e.Detail()
 			debugLogf("%+v", e)
 			ps.mtx.Lock()
 			for sink := range ps.sinks {
@@ -93,10 +93,11 @@ func (ps *pgEventSource) run() {
 			LogUUID:  pqEvent.Extra,
 			Received: time.Now(),
 			Serial:   serial,
+			db:       db,
 		}
 		debugLogf("%+v", e)
 		eventQueue <- e
-		go e.Detail(db)
+		go e.Detail()
 	}
 }
 
@@ -136,7 +137,8 @@ func (sink *pgEventSink) Stop() {
 		// Ensure this sink cannot fill up and block the
 		// server-side queue (which otherwise could in turn
 		// block our mtx.Lock() here)
-		for _ = range sink.channel {}
+		for _ = range sink.channel {
+		}
 	}()
 	sink.source.mtx.Lock()
 	delete(sink.source.sinks, sink)
