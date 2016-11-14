@@ -28,7 +28,7 @@ func (c pgConfig) ConnectionString() string {
 
 type pgEventSource struct {
 	DataSource string
-	QueueSize int
+	QueueSize  int
 
 	pqListener *pq.Listener
 	sinks      map[*pgEventSink]bool

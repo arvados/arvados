@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"sync"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"golang.org/x/net/websocket"
 )
 
@@ -20,19 +21,17 @@ type router struct {
 
 func (rtr *router) setup() {
 	rtr.mux = http.NewServeMux()
-	rtr.mux.Handle("/websocket", rtr.makeServer(&handlerV0{
-		Client:      rtr.Config.Client,
-		PingTimeout: rtr.Config.PingTimeout.Duration(),
-		QueueSize:   rtr.Config.ClientEventQueue,
-	}))
-	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(&handlerV1{
-		Client:      rtr.Config.Client,
-		PingTimeout: rtr.Config.PingTimeout.Duration(),
-		QueueSize:   rtr.Config.ClientEventQueue,
-	}))
+	rtr.mux.Handle("/websocket", rtr.makeServer(NewSessionV0))
+	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(NewSessionV1))
 }
 
-func (rtr *router) makeServer(handler handler) *websocket.Server {
+func (rtr *router) makeServer(newSession func(wsConn, arvados.Client) (session, error)) *websocket.Server {
+	handler := &handler{
+		Client:      rtr.Config.Client,
+		PingTimeout: rtr.Config.PingTimeout.Duration(),
+		QueueSize:   rtr.Config.ClientEventQueue,
+		NewSession:  newSession,
+	}
 	return &websocket.Server{
 		Handshake: func(c *websocket.Config, r *http.Request) error {
 			return nil
