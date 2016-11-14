@@ -58,7 +58,7 @@ func (sess *sessionV0) EventMessage(e *event) ([]byte, error) {
 		return nil, nil
 	}
 
-	ok, err := sess.permChecker.Check(detail.UUID)
+	ok, err := sess.permChecker.Check(detail.ObjectUUID)
 	if err != nil || !ok {
 		return nil, err
 	}
