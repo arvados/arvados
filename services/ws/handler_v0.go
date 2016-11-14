@@ -4,20 +4,18 @@ import (
 	"encoding/json"
 	"log"
 	"sync"
-
-	"golang.org/x/net/websocket"
 )
 
 type handlerV0 struct {
 	QueueSize int
 }
 
-func (h *handlerV0) debugLogf(ws *websocket.Conn, s string, args ...interface{}) {
+func (h *handlerV0) debugLogf(ws wsConn, s string, args ...interface{}) {
 	args = append([]interface{}{ws.Request().RemoteAddr}, args...)
 	debugLogf("%s "+s, args...)
 }
 
-func (h *handlerV0) Handle(ws *websocket.Conn, events <-chan *event) {
+func (h *handlerV0) Handle(ws wsConn, events <-chan *event) {
 	done := make(chan struct{}, 3)
 	queue := make(chan *event, h.QueueSize)
 	mtx := sync.Mutex{}
