@@ -28,6 +28,7 @@ class TestMakeOutput(unittest.TestCase):
         reader.return_value = readermock
 
         final_uuid = final.manifest_locator()
+        num_retries = runner.num_retries
 
         cwlout = StringIO.StringIO()
         openmock = mock.MagicMock()
@@ -64,6 +65,6 @@ class TestMakeOutput(unittest.TestCase):
 
         self.assertIs(final, runner.final_output_collection)
         self.assertIs(final_uuid, runner.final_output_collection.manifest_locator())
-        self.api.links().create.assert_has_calls([mock.call(body={"head_uuid": final_uuid, "link_class": "tag", "name": "tag0"}), mock.call().execute()])
-        self.api.links().create.assert_has_calls([mock.call(body={"head_uuid": final_uuid, "link_class": "tag", "name": "tag1"}), mock.call().execute()])
-        self.api.links().create.assert_has_calls([mock.call(body={"head_uuid": final_uuid, "link_class": "tag", "name": "tag2"}), mock.call().execute()])
+        self.api.links().create.assert_has_calls([mock.call(body={"head_uuid": final_uuid, "link_class": "tag", "name": "tag0"}), mock.call().execute(num_retries=num_retries)])
+        self.api.links().create.assert_has_calls([mock.call(body={"head_uuid": final_uuid, "link_class": "tag", "name": "tag1"}), mock.call().execute(num_retries=num_retries)])
+        self.api.links().create.assert_has_calls([mock.call(body={"head_uuid": final_uuid, "link_class": "tag", "name": "tag2"}), mock.call().execute(num_retries=num_retries)])

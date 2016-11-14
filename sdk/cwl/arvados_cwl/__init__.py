@@ -238,7 +238,9 @@ class ArvCwlRunner(object):
         final_uuid = final.manifest_locator()
         tags = tagsString.split(',')
         for tag in tags:
-             self.api.links().create(body={"head_uuid": final_uuid, "link_class": "tag", "name": tag}).execute()
+             self.api.links().create(body={
+                "head_uuid": final_uuid, "link_class": "tag", "name": tag
+                }).execute(num_retries=self.num_retries)
 
         self.final_output_collection = final
 
