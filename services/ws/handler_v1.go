@@ -1,10 +1,12 @@
 package main
 
 import (
+	"time"
 )
 
 type handlerV1 struct {
-	QueueSize int
+	PingTimeout time.Duration
+	QueueSize   int
 }
 
 func (h *handlerV1) Handle(ws wsConn, events <-chan *event) {

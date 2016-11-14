@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
@@ -10,6 +12,7 @@ type Config struct {
 	Listen   string
 	Debug    bool
 
+	PingTimeout      arvados.Duration
 	ClientEventQueue int
 	ServerEventQueue int
 }
@@ -27,6 +30,8 @@ func DefaultConfig() Config {
 			"connect_timeout": "30",
 			"sslmode":         "disable",
 		},
+		PingTimeout:      arvados.Duration(time.Minute),
 		ClientEventQueue: 64,
+		ServerEventQueue: 4,
 	}
 }

@@ -3,15 +3,20 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"sync"
 	"time"
 )
 
-var errQueueFull = errors.New("client queue full")
+var (
+	errQueueFull   = errors.New("client queue full")
+	errFrameTooBig = errors.New("frame too big")
+)
 
 type handlerV0 struct {
-	QueueSize int
+	PingTimeout time.Duration
+	QueueSize   int
 }
 
 func (h *handlerV0) debugLogf(ws wsConn, s string, args ...interface{}) {
@@ -30,10 +35,32 @@ func (h *handlerV0) Handle(ws wsConn, events <-chan *event) {
 	go func() {
 		buf := make([]byte, 2<<20)
 		for {
+			select {
+			case <-stopped:
+				return
+			default:
+			}
+			ws.SetReadDeadline(time.Now().Add(h.PingTimeout))
 			n, err := ws.Read(buf)
 			h.debugLogf(ws, "received frame: %q", buf[:n])
-			if err != nil || n == len(buf) {
-				h.debugLogf(ws, "handlerV0: read: %s", err)
+			if err == nil && n == len(buf) {
+				err = errFrameTooBig
+			}
+			if err, ok := err.(timeouter); ok && err.Timeout() {
+				// If the outgoing queue is empty,
+				// send an empty message. This can
+				// help detect a disconnected network
+				// socket, and prevent an idle socket
+				// from being closed.
+				if len(queue) == 0 {
+					queue <- nil
+				}
+				continue
+			}
+			if err != nil {
+				if err != io.EOF {
+					h.debugLogf(ws, "handlerV0: read: %s", err)
+				}
 				stop <- err
 				return
 			}
@@ -53,7 +80,12 @@ func (h *handlerV0) Handle(ws wsConn, events <-chan *event) {
 	go func() {
 		for e := range queue {
 			if e == nil {
-				ws.Write([]byte("{}\n"))
+				_, err := ws.Write([]byte("{}\n"))
+				if err != nil {
+					h.debugLogf(ws, "handlerV0: write: %s", err)
+					stop <- err
+					break
+				}
 				continue
 			}
 			detail := e.Detail()
@@ -77,9 +109,10 @@ func (h *handlerV0) Handle(ws wsConn, events <-chan *event) {
 			if err != nil {
 				h.debugLogf(ws, "handlerV0: write: %s", err)
 				stop <- err
-				return
+				break
 			}
 		}
+		for _ = range queue {}
 	}()
 
 	// Filter incoming events against the current subscription
@@ -96,24 +129,18 @@ func (h *handlerV0) Handle(ws wsConn, events <-chan *event) {
 			}
 		}
 
-		// Once a minute, if the queue is empty, send an empty
-		// message. This can help detect a disconnected
-		// network socket.
-		ticker := time.NewTicker(time.Minute)
-		defer ticker.Stop()
-
 		for {
 			var e *event
+			var ok bool
 			select {
 			case <-stopped:
 				close(queue)
 				return
-			case <-ticker.C:
-				if len(queue) == 0 {
-					send(nil)
+			case e, ok = <-events:
+				if !ok {
+					close(queue)
+					return
 				}
-				continue
-			case e = <-events:
 			}
 			detail := e.Detail()
 			mtx.Lock()
