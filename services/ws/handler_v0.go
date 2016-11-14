@@ -4,5 +4,9 @@ import (
 	"io"
 )
 
-func handlerV0(ws io.ReadWriter) {
+type handlerV0 struct {
+	QueueSize int
+}
+
+func (h *handlerV0) Handle(ws io.ReadWriter, events <-chan *event) {
 }

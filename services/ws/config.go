@@ -8,6 +8,7 @@ type Config struct {
 	Client   arvados.Client
 	Postgres pgConfig
 	Listen   string
+	Debug    bool
 
 	ClientEventQueue int
 	ServerEventQueue int

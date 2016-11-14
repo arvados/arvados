@@ -10,6 +10,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/config"
 )
 
+var debugLogf = func(string, ...interface{}) {}
+
 func main() {
 	configPath := flag.String("config", "/etc/arvados/ws/ws.yml", "`path` to config file")
 	dumpConfig := flag.Bool("dump-config", false, "show current configuration and exit")
@@ -19,6 +21,9 @@ func main() {
 	err := config.LoadFile(&cfg, *configPath)
 	if err != nil {
 		log.Fatal(err)
+	}
+	if cfg.Debug {
+		debugLogf = log.Printf
 	}
 
 	if *dumpConfig {
@@ -36,10 +41,11 @@ func main() {
 		WriteTimeout:   time.Minute,
 		MaxHeaderBytes: 1 << 20,
 		Handler: &router{
-			EventSource: (&pgEventSource{
+			Config: &cfg,
+			eventSource: &pgEventSource{
 				PgConfig:  cfg.Postgres,
 				QueueSize: cfg.ServerEventQueue,
-			}).EventSource(),
+			},
 		},
 	}
 	log.Fatal(srv.ListenAndServe())

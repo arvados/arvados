@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io"
 	"log"
 	"net/http"
 	"sync"
@@ -10,25 +9,33 @@ import (
 )
 
 type router struct {
-	EventSource <-chan event
+	Config *Config
+
+	eventSource eventSource
 	mux         *http.ServeMux
 	setupOnce   sync.Once
 }
 
 func (rtr *router) setup() {
 	rtr.mux = http.NewServeMux()
-	rtr.mux.Handle("/websocket", makeServer(handlerV0))
-	rtr.mux.Handle("/arvados/v1/events.ws", makeServer(handlerV1))
+	rtr.mux.Handle("/websocket", rtr.makeServer(&handlerV0{
+		QueueSize: rtr.Config.ClientEventQueue,
+	}))
+	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(&handlerV1{
+		QueueSize: rtr.Config.ClientEventQueue,
+	}))
 }
 
-func makeServer(handler func(io.ReadWriter)) websocket.Server {
-	return websocket.Server{
+func (rtr *router) makeServer(handler handler) *websocket.Server {
+	return &websocket.Server{
 		Handshake: func(c *websocket.Config, r *http.Request) error {
 			return nil
 		},
 		Handler: websocket.Handler(func(ws *websocket.Conn) {
 			log.Printf("socket request: %+v", ws.Request())
-			handler(ws)
+			sink := rtr.eventSource.NewSink(nil)
+			handler.Handle(ws, sink.Channel())
+			sink.Stop()
 			ws.Close()
 			log.Printf("socket disconnect: %+v", ws.Request().RemoteAddr)
 		}),
