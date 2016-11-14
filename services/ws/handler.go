@@ -16,7 +16,3 @@ type wsConn interface {
 	SetReadDeadline(time.Time) error
 	SetWriteDeadline(time.Time) error
 }
-
-type timeouter interface {
-	Timeout() bool
-}

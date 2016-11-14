@@ -61,9 +61,6 @@ func (h *handlerV0) Handle(ws wsConn, events <-chan *event) {
 			if err == nil && n == len(buf) {
 				err = errFrameTooBig
 			}
-			if err, ok := err.(timeouter); ok && err.Timeout() {
-				continue
-			}
 			if err != nil {
 				if err != io.EOF {
 					h.debugLogf(ws, "handlerV0: read: %s", err)
