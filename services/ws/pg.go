@@ -60,15 +60,11 @@ func (ps *pgEventSource) run() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	debugLogf("pgEventSource listening")
-	go func() {
-		for _ = range time.NewTicker(time.Minute).C {
-			debugLogf("pgEventSource listener ping")
-			listener.Ping()
-		}
-	}()
 
 	eventQueue := make(chan *event, ps.QueueSize)
+
 	go func() {
 		for e := range eventQueue {
 			// Wait for the "select ... from logs" call to
@@ -87,25 +83,38 @@ func (ps *pgEventSource) run() {
 	}()
 
 	var serial uint64
-	for pqEvent := range listener.Notify {
-		if pqEvent.Channel != "logs" {
-			continue
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			debugLogf("pgEventSource listener ping")
+			listener.Ping()
+
+		case pqEvent, ok := <-listener.Notify:
+			if !ok {
+				close(eventQueue)
+				return
+			}
+			if pqEvent.Channel != "logs" {
+				continue
+			}
+			logID, err := strconv.ParseUint(pqEvent.Extra, 10, 64)
+			if err != nil {
+				log.Printf("bad notify payload: %+v", pqEvent)
+				continue
+			}
+			serial++
+			e := &event{
+				LogID:    logID,
+				Received: time.Now(),
+				Serial:   serial,
+				db:       db,
+			}
+			debugLogf("event %d %+v", e.Serial, e)
+			eventQueue <- e
+			go e.Detail()
 		}
-		logID, err := strconv.ParseUint(pqEvent.Extra, 10, 64)
-		if err != nil {
-			log.Printf("bad notify payload: %+v", pqEvent)
-			continue
-		}
-		serial++
-		e := &event{
-			LogID:    logID,
-			Received: time.Now(),
-			Serial:   serial,
-			db:       db,
-		}
-		debugLogf("event %d %+v", e.Serial, e)
-		eventQueue <- e
-		go e.Detail()
 	}
 }
 
