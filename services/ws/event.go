@@ -34,12 +34,13 @@ type event struct {
 func (e *event) Detail(db *sql.DB) *arvados.Log {
 	e.mtx.Lock()
 	defer e.mtx.Unlock()
-	if e.logRow != nil || e.err != nil {
+	if e.logRow != nil || e.err != nil || db == nil {
 		return e.logRow
 	}
 	var logRow arvados.Log
 	var oldAttrs, newAttrs []byte
-	e.err = db.QueryRow(`SELECT uuid, object_uuid, object_owner_uuid, event_type, created_at, old_attributes, new_attributes FROM logs WHERE uuid = ?`, e.LogUUID).Scan(
+	e.err = db.QueryRow(`SELECT id, uuid, object_uuid, object_owner_uuid, event_type, created_at, old_attributes, new_attributes FROM logs WHERE uuid = ?`, e.LogUUID).Scan(
+		&logRow.ID,
 		&logRow.UUID,
 		&logRow.ObjectUUID,
 		&logRow.ObjectOwnerUUID,

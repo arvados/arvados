@@ -1,9 +1,9 @@
 package main
 
 import (
-	"io"
+	"golang.org/x/net/websocket"
 )
 
 type handler interface {
-	Handle(io.ReadWriter, <-chan *event)
+	Handle(*websocket.Conn, <-chan *event)
 }

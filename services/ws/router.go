@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -32,12 +34,12 @@ func (rtr *router) makeServer(handler handler) *websocket.Server {
 			return nil
 		},
 		Handler: websocket.Handler(func(ws *websocket.Conn) {
-			log.Printf("socket request: %+v", ws.Request())
+			log.Printf("%v accepted", ws.Request().RemoteAddr)
 			sink := rtr.eventSource.NewSink(nil)
 			handler.Handle(ws, sink.Channel())
 			sink.Stop()
 			ws.Close()
-			log.Printf("socket disconnect: %+v", ws.Request().RemoteAddr)
+			log.Printf("%v disconnected", ws.Request().RemoteAddr)
 		}),
 	}
 }
@@ -45,4 +47,11 @@ func (rtr *router) makeServer(handler handler) *websocket.Server {
 func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	rtr.setupOnce.Do(rtr.setup)
 	rtr.mux.ServeHTTP(resp, req)
+	j, err := json.Marshal(map[string]interface{}{
+		"req": fmt.Sprintf("%+v", req),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Print(string(j))
 }
