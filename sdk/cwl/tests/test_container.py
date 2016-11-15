@@ -116,7 +116,7 @@ class TestContainer(unittest.TestCase):
 
         call_args, call_kwargs = runner.api.container_requests().create.call_args
 
-        call_body = {
+        call_body_expected = {
                 'environment': {
                     'HOME': '/var/spool/cwl',
                     'TMPDIR': '/tmp'
@@ -140,11 +140,14 @@ class TestContainer(unittest.TestCase):
                 'command': ['ls'],
                 'cwd': '/var/spool/cwl',
                 'scheduling_parameters': {
-                    'partition': ['blurb']
+                    'partitions': ['blurb']
                 }
         }
-        for key in call_args:
-            self.assertEqual(call_args[key], call_kwargs[key])
+
+        call_body = call_kwargs.get('body', None)
+        self.assertNotEqual(None, call_body)
+        for key in call_body:
+            self.assertEqual(call_body_expected.get(key), call_body.get(key))
 
     @mock.patch("arvados.collection.Collection")
     def test_done(self, col):
