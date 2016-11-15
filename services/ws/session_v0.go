@@ -145,6 +145,8 @@ func (sess *sessionV0) Filter(e *event) bool {
 	sess.mtx.Lock()
 	defer sess.mtx.Unlock()
 	switch {
+	case sess.eventTypes != nil && detail == nil:
+		return false
 	case sess.eventTypes != nil && !sess.eventTypes[detail.EventType]:
 		return false
 	case sess.subscribed["*"]:
