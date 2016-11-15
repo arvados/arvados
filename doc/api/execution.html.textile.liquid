@@ -8,7 +8,7 @@ Crunch is the name for the Arvados system for managing computation.  It provides
 
 h2. Container API
 
-Note: although the preferred API for Aravdos going forward, the Container API may not yet be available on all installations.
+Note: although the preferred API for Arvados going forward, the Container API may not yet be available on all installations.
 
 # To submit work, create a "container request":{{site.baseurl}}/api/methods/container_requests.html in the @Committed@ state.
 # The system will fufill the container request by creating or reusing a "Container object":{{site.baseurl}}/api/methods/containers.html and assigning it to the @container_uuid@ field.  If the same request has been submitted in the past, it may reuse an existing container.  The reuse behavior can be suppressed with @use_existing: false@ in the container request.
