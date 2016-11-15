@@ -50,5 +50,7 @@ func main() {
 		},
 	}
 	eventSource.NewSink().Stop()
+
+	log.Printf("listening at %s", srv.Addr)
 	log.Fatal(srv.ListenAndServe())
 }
