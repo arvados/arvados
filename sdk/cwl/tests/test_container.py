@@ -68,7 +68,8 @@ class TestContainer(unittest.TestCase):
                         'output_path': '/var/spool/cwl',
                         'container_image': '99999999999999999999999999999993+99',
                         'command': ['ls', '/var/spool/cwl'],
-                        'cwd': '/var/spool/cwl'
+                        'cwd': '/var/spool/cwl',
+                        'scheduling_parameters': {}
                     })
 
     # The test passes some fields in builder.resources
@@ -113,8 +114,9 @@ class TestContainer(unittest.TestCase):
                              make_fs_access=make_fs_access, tmpdir="/tmp"):
             j.run()
 
-        runner.api.container_requests().create.assert_called_with(
-            body={
+        call_args, call_kwargs = runner.api.container_requests().create.call_args
+
+        call_body_expected = {
                 'environment': {
                     'HOME': '/var/spool/cwl',
                     'TMPDIR': '/tmp'
@@ -124,8 +126,7 @@ class TestContainer(unittest.TestCase):
                     'vcpus': 3,
                     'ram': 3145728000,
                     'keep_cache_ram': 512,
-                    'API': True,
-                    'partition': ['blurb']
+                    'API': True
                 },
                 'use_existing': True,
                 'priority': 1,
@@ -137,8 +138,16 @@ class TestContainer(unittest.TestCase):
                 'output_path': '/var/spool/cwl',
                 'container_image': '99999999999999999999999999999993+99',
                 'command': ['ls'],
-                'cwd': '/var/spool/cwl'
-            })
+                'cwd': '/var/spool/cwl',
+                'scheduling_parameters': {
+                    'partitions': ['blurb']
+                }
+        }
+
+        call_body = call_kwargs.get('body', None)
+        self.assertNotEqual(None, call_body)
+        for key in call_body:
+            self.assertEqual(call_body_expected.get(key), call_body.get(key))
 
     @mock.patch("arvados.collection.Collection")
     def test_done(self, col):

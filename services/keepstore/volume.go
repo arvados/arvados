@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"io"
 	"sync/atomic"
 	"time"
@@ -47,14 +48,14 @@ type Volume interface {
 	// any of the data.
 	//
 	// len(buf) will not exceed BlockSize.
-	Get(loc string, buf []byte) (int, error)
+	Get(ctx context.Context, loc string, buf []byte) (int, error)
 
 	// Compare the given data with the stored data (i.e., what Get
 	// would return). If equal, return nil. If not, return
 	// CollisionError or DiskHashError (depending on whether the
 	// data on disk matches the expected hash), or whatever error
 	// was encountered opening/reading the stored data.
-	Compare(loc string, data []byte) error
+	Compare(ctx context.Context, loc string, data []byte) error
 
 	// Put writes a block to an underlying storage device.
 	//
@@ -84,7 +85,7 @@ type Volume interface {
 	//
 	// Put should not verify that loc==hash(block): this is the
 	// caller's responsibility.
-	Put(loc string, block []byte) error
+	Put(ctx context.Context, loc string, block []byte) error
 
 	// Touch sets the timestamp for the given locator to the
 	// current time.

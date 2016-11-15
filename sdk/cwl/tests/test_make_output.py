@@ -35,7 +35,7 @@ class TestMakeOutput(unittest.TestCase):
         final.open.return_value = openmock
         openmock.__enter__.return_value = cwlout
 
-        runner.make_output_collection("Test output", "tag0,tag1,tag2", {
+        _, runner.final_output_collection = runner.make_output_collection("Test output", "tag0,tag1,tag2", {
             "foo": {
                 "class": "File",
                 "location": "keep:99999999999999999999999999999991+99/foo.txt",
@@ -45,7 +45,8 @@ class TestMakeOutput(unittest.TestCase):
             "bar": {
                 "class": "File",
                 "location": "keep:99999999999999999999999999999992+99/bar.txt",
-                "basename": "baz.txt"
+                "basename": "baz.txt",
+                "size": 4
             }
         })
 
@@ -55,11 +56,13 @@ class TestMakeOutput(unittest.TestCase):
         self.assertEqual("""{
     "bar": {
         "class": "File",
-        "location": "baz.txt"
+        "location": "baz.txt",
+        "size": 4
     },
     "foo": {
         "class": "File",
-        "location": "foo.txt"
+        "location": "foo.txt",
+        "size": 3
     }
 }""", cwlout.getvalue())
 
