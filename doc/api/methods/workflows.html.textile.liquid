@@ -3,17 +3,33 @@ layout: default
 navsection: api
 navmenu: API Methods
 title: "workflows"
-
 ...
-
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
 
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/workflows@
 
+Object type: @7fd4e@
+
+Example UUID: @zzzzz-7fd4e-0123456789abcde@
+
+h2. Resource
+
+Stores a "Common Workflow Language":http://commonwl.org (CWL) computational workflow that can be searched for, browsed and executed (submitted to Crunch) from the workbench.
+
+Each Workflow offers the following optional attributes, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|name|string|If not specified, will be set to any "name" from the "definition" attribute.||
+|description|string|If not specified, will be set to any "description" from the "definition" attribute.||
+|definition|string|A "Common Workflow Language" document.|Visit "Common Workflow Language":http://www.commonwl.org/ for details.|
+
+h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
+
 Required arguments are displayed in %{background:#ccffcc}green%.
 
-
-h2. create
+h3. create
 
 Create a new Workflow.
 
@@ -21,9 +37,9 @@ Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|workflow|object|See "Workflow resource":{{site.baseurl}}/api/schema/Workflow.html|request body||
+{background:#ccffcc}.|workflow|object|Workflow resource|request body||
 
-h2. delete
+h3. delete
 
 Delete an existing Workflow.
 
@@ -33,7 +49,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Workflow in question.|path||
 
-h2. get
+h3. get
 
 Get a Workflow's metadata by UUID.
 
@@ -43,19 +59,13 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Workflow in question.|path||
 
-h2. list
+h3. list
 
 List workflows.
 
-Arguments:
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of workflows to return.|query||
-|order|string|Order in which to return matching workflows.|query||
-|filters|array|Conditions for filtering workflows.|query||
-
-h2. update
+h3. update
 
 Update attributes of an existing Workflow.
 
