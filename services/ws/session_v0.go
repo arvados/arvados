@@ -12,6 +12,8 @@ import (
 var (
 	errQueueFull   = errors.New("client queue full")
 	errFrameTooBig = errors.New("frame too big")
+
+	sendObjectAttributes = []string{"state", "name"}
 )
 
 type sessionV0 struct {
@@ -136,6 +138,22 @@ func (sess *sessionV0) EventMessage(e *event) ([]byte, error) {
 	}
 	if detail.Properties != nil && detail.Properties["text"] != nil {
 		msg["properties"] = detail.Properties
+	} else {
+		msgProps := map[string]map[string]interface{}{}
+		for _, ak := range []string{"old_attributes", "new_attributes"} {
+			eventAttrs, ok := detail.Properties[ak].(map[string]interface{})
+			if !ok {
+				continue
+			}
+			msgAttrs := map[string]interface{}{}
+			for _, k := range sendObjectAttributes {
+				if v, ok := eventAttrs[k]; ok {
+					msgAttrs[k] = v
+				}
+			}
+			msgProps[ak] = msgAttrs
+		}
+		msg["properties"] = msgProps
 	}
 	return json.Marshal(msg)
 }
