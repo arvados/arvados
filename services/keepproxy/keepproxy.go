@@ -131,7 +131,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("listen(%s): %s", cfg.Listen, err)
 	}
-	if _, err := daemon.SdNotify("READY=1"); err != nil {
+	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
 	log.Println("Listening at", listener.Addr())
