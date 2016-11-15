@@ -292,6 +292,7 @@ CREATE TABLE container_requests (
     updated_at timestamp without time zone NOT NULL,
     container_count integer DEFAULT 0,
     use_existing boolean DEFAULT true,
+    scheduling_parameters text,
     output_uuid character varying(255)
 );
 
@@ -344,7 +345,8 @@ CREATE TABLE containers (
     updated_at timestamp without time zone NOT NULL,
     exit_code integer,
     auth_uuid character varying(255),
-    locked_by_uuid character varying(255)
+    locked_by_uuid character varying(255),
+    scheduling_parameters text
 );
 
 
@@ -2698,3 +2700,5 @@ INSERT INTO schema_migrations (version) VALUES ('20160926194129');
 INSERT INTO schema_migrations (version) VALUES ('20161019171346');
 
 INSERT INTO schema_migrations (version) VALUES ('20161110171221');
+
+INSERT INTO schema_migrations (version) VALUES ('20161111143147');

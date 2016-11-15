@@ -42,6 +42,7 @@ class ArvadosContainer(object):
                 "kind": "tmp"
             }
         }
+        scheduling_parameters = {}
 
         dirs = set()
         for f in self.pathmapper.files():
@@ -102,11 +103,12 @@ class ArvadosContainer(object):
 
         partition_req, _ = get_feature(self, "http://arvados.org/cwl#PartitionRequirement")
         if partition_req:
-            runtime_constraints["partition"] = aslist(partition_req["partition"])
+            scheduling_parameters["partitions"] = aslist(partition_req["partition"])
 
         container_request["mounts"] = mounts
         container_request["runtime_constraints"] = runtime_constraints
         container_request["use_existing"] = kwargs.get("enable_reuse", True)
+        container_request["scheduling_parameters"] = scheduling_parameters
 
         try:
             response = self.arvrunner.api.container_requests().create(
