@@ -11,6 +11,7 @@ class Container < ArvadosModel
   serialize :mounts, Hash
   serialize :runtime_constraints, Hash
   serialize :command, Array
+  serialize :scheduling_parameters, Hash
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :set_timestamps
@@ -44,6 +45,7 @@ class Container < ArvadosModel
     t.add :started_at
     t.add :state
     t.add :auth_uuid
+    t.add :scheduling_parameters
   end
 
   # Supported states for a container
@@ -180,6 +182,7 @@ class Container < ArvadosModel
     self.mounts ||= {}
     self.cwd ||= "."
     self.priority ||= 1
+    self.scheduling_parameters ||= {}
   end
 
   def permission_to_create
@@ -222,7 +225,7 @@ class Container < ArvadosModel
     if self.new_record?
       permitted.push(:owner_uuid, :command, :container_image, :cwd,
                      :environment, :mounts, :output_path, :priority,
-                     :runtime_constraints)
+                     :runtime_constraints, :scheduling_parameters)
     end
 
     case self.state
@@ -326,6 +329,9 @@ class Container < ArvadosModel
     if self.runtime_constraints_changed?
       self.runtime_constraints = self.class.deep_sort_hash(self.runtime_constraints)
     end
+    if self.scheduling_parameters_changed?
+      self.scheduling_parameters = self.class.deep_sort_hash(self.scheduling_parameters)
+    end
   end
 
   def handle_completed
@@ -348,7 +354,8 @@ class Container < ArvadosModel
             output_path: self.output_path,
             container_image: self.container_image,
             mounts: self.mounts,
-            runtime_constraints: self.runtime_constraints
+            runtime_constraints: self.runtime_constraints,
+            scheduling_parameters: self.scheduling_parameters
           }
           c = Container.create! c_attrs
           retryable_requests.each do |cr|

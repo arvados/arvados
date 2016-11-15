@@ -318,7 +318,7 @@ func testSbatchFuncWithArgs(c *C, args []string) {
 
 func (s *MockArvadosServerSuite) TestSbatchPartition(c *C) {
 	theConfig.SbatchArguments = nil
-	container := arvados.Container{UUID: "123", RuntimeConstraints: arvados.RuntimeConstraints{RAM: 250000000, VCPUs: 1, Partition: []string{"blurb", "b2"}}}
+	container := arvados.Container{UUID: "123", RuntimeConstraints: arvados.RuntimeConstraints{RAM: 250000000, VCPUs: 1}, SchedulingParameters: arvados.SchedulingParameters{Partitions: []string{"blurb", "b2"}}}
 	sbatchCmd := sbatchFunc(container)
 
 	var expected []string
