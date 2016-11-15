@@ -335,7 +335,10 @@ class PollClientTestCase(unittest.TestCase):
         self.build_client(poll_time=.01)
         with self.callback_cond:
             self.client.start()
+            # wait for the initial {'status': 200} callback
             self.callback_cond.wait()
+            # give the PollClient time to read and discard old events from MockLogs before adding test_log
+            time.sleep(.02)
             self.logs.add(test_log.copy())
             self.callback_cond.wait()
         self.client.close(timeout=None)
