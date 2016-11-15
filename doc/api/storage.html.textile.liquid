@@ -23,10 +23,10 @@ h2. Storing a file
 h2. Fetching a file
 
 # The client requests a @collection@ object including @manifest_text@ from the APIs server
-# The server adds "token signatures" to the @manifest_text@, these signatures are used to prove to Keep servers that the client is permitted to read a given block
+# The server adds "token signatures" to the @manifest_text@ and returns it to the client.
 # The client discovers keep servers (or proxies) using the @accessible@ method on "keep_services":{{site.baseurl}}/api/methods/keep_services.html
 # For each data block, the client chooses the highest priority server using rendezvous hashing, described below.
-# The client sends the data block request to the keep server, including the token signature (proof of access).
+# The client sends the data block request to the keep server, along with the token signature from the API which proves to Keep servers that the client is permitted to read a given block.
 # The server provides the block data after validating the token signature for the block (if the server does not have the block, it returns a 404 and the client tries the next highest priority server)
 
 !{{site.baseurl}}/images/Keep_rendezvous_hashing.svg!
