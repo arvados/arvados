@@ -275,7 +275,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
             # Simulate an unexpected disconnect, and wait for reconnect.
             close_thread = threading.Thread(target=client.on_closed)
             close_thread.start()
-            connection_cond.wait()
+            connection_cond.wait(10.0)
         close_thread.join()
         run_forever_alive = forever_thread.is_alive()
         client.close()
@@ -336,11 +336,11 @@ class PollClientTestCase(unittest.TestCase):
         with self.callback_cond:
             self.client.start()
             # wait for the initial {'status': 200} callback
-            self.callback_cond.wait()
+            self.callback_cond.wait(10.0)
             # give the PollClient time to read and discard old events from MockLogs before adding test_log
             time.sleep(.02)
             self.logs.add(test_log.copy())
-            self.callback_cond.wait()
+            self.callback_cond.wait(10.0)
         self.client.close(timeout=None)
         self.assertIn(test_log, self.recv_events)
 
@@ -350,7 +350,7 @@ class PollClientTestCase(unittest.TestCase):
         self.client.subscribe([client_filter[:]])
         with self.callback_cond:
             self.client.start()
-            self.callback_cond.wait()
+            self.callback_cond.wait(10.0)
         self.client.close(timeout=None)
         self.assertTrue(self.was_filter_used(client_filter))
 
@@ -369,7 +369,7 @@ class PollClientTestCase(unittest.TestCase):
             self.client.start()
             forever_thread = threading.Thread(target=self.client.run_forever)
             forever_thread.start()
-            self.callback_cond.wait()
+            self.callback_cond.wait(10.0)
         self.assertTrue(forever_thread.is_alive())
         self.client.close()
         forever_thread.join()
