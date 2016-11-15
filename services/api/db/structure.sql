@@ -293,7 +293,8 @@ CREATE TABLE container_requests (
     container_count integer DEFAULT 0,
     use_existing boolean DEFAULT true,
     scheduling_parameters text,
-    output_uuid character varying(255)
+    output_uuid character varying(255),
+    log_uuid character varying(255)
 );
 
 
@@ -2699,6 +2700,6 @@ INSERT INTO schema_migrations (version) VALUES ('20160926194129');
 
 INSERT INTO schema_migrations (version) VALUES ('20161019171346');
 
-INSERT INTO schema_migrations (version) VALUES ('20161110171221');
-
 INSERT INTO schema_migrations (version) VALUES ('20161111143147');
+
+INSERT INTO schema_migrations (version) VALUES ('20161115171221');

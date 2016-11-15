@@ -45,6 +45,7 @@ class ContainerRequest < ArvadosModel
     t.add :state
     t.add :use_existing
     t.add :output_uuid
+    t.add :log_uuid
     t.add :scheduling_parameters
   end
 
@@ -83,7 +84,8 @@ class ContainerRequest < ArvadosModel
   # Finalize the container request after the container has
   # finished/cancelled.
   def finalize!
-    out_uuid = nil
+    out_coll = nil
+    log_coll = nil
     c = Container.find_by_uuid(container_uuid)
     ['output', 'log'].each do |out_type|
       pdh = c.send(out_type)
@@ -97,9 +99,13 @@ class ContainerRequest < ArvadosModel
                            'type' => out_type,
                            'container_request' => uuid,
                          })
-      out_uuid = coll.uuid if out_type == 'output'
+      if out_type == 'output'
+        out_coll = coll.uuid
+      else
+        log_coll = coll.uuid
+      end
     end
-    update_attributes!(state: Final, output_uuid: out_uuid)
+    update_attributes!(state: Final, output_uuid: out_coll, log_uuid: log_coll)
   end
 
   protected
@@ -290,8 +296,8 @@ class ContainerRequest < ArvadosModel
         errors.add :state, "of container request can only be set to Final by system."
       end
 
-      if self.state_changed? || self.name_changed? || self.description_changed? || self.output_uuid_changed?
-          permitted.push :state, :name, :description, :output_uuid
+      if self.state_changed? || self.name_changed? || self.description_changed? || self.output_uuid_changed? || self.log_uuid_changed?
+          permitted.push :state, :name, :description, :output_uuid, :log_uuid
       else
         errors.add :state, "does not allow updates"
       end
