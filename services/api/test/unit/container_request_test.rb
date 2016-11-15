@@ -552,4 +552,36 @@ class ContainerRequestTest < ActiveSupport::TestCase
       end
     end
   end
+
+  [
+    [{"partitions" => ["fastcpu","vfastcpu", 100]}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
+    [{"partitions" => ["fastcpu","vfastcpu", 100]}, ContainerRequest::Uncommitted],
+    [{"partitions" => "fastcpu"}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
+    [{"partitions" => "fastcpu"}, ContainerRequest::Uncommitted],
+    [{"partitions" => ["fastcpu","vfastcpu"]}, ContainerRequest::Committed],
+  ].each do |sp, state, expected|
+    test "create container request with scheduling_parameters #{sp} in state #{state} and verify #{expected}" do
+      common_attrs = {cwd: "test",
+                      priority: 1,
+                      command: ["echo", "hello"],
+                      output_path: "test",
+                      scheduling_parameters: sp,
+                      mounts: {"test" => {"kind" => "json"}}}
+      set_user_from_auth :active
+
+      if expected == ActiveRecord::RecordInvalid
+        assert_raises(ActiveRecord::RecordInvalid) do
+          create_minimal_req!(common_attrs.merge({state: state}))
+        end
+      else
+        cr = create_minimal_req!(common_attrs.merge({state: state}))
+        assert_equal sp, cr.scheduling_parameters
+
+        if state == ContainerRequest::Committed
+          c = Container.find_by_uuid(cr.container_uuid)
+          assert_equal sp, c.scheduling_parameters
+        end
+      end
+    end
+  end
 end
