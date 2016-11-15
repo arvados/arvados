@@ -5,6 +5,7 @@ import bz2
 import config
 import hashlib
 import threading
+import traceback
 import Queue
 import copy
 import errno
@@ -516,7 +517,7 @@ class _BlockManager(object):
                     return
                 self._keep.get(b)
             except Exception:
-                pass
+                _logger.error(traceback.format_exc())
 
     @synchronized
     def start_get_threads(self):
