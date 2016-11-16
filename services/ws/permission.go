@@ -46,7 +46,7 @@ func (pc *cachingPermChecker) Check(uuid string) (bool, error) {
 	pc.tidy()
 	now := time.Now()
 	if perm, ok := pc.cache[uuid]; ok && now.Sub(perm.Time) < maxPermCacheAge {
-		debugLogf("perm (cached): %+q %+q => %s", pc.Client.AuthToken, uuid, perm.allowed)
+		debugLogf("perm (cached): %+q %+q => %v", pc.Client.AuthToken, uuid, perm.allowed)
 		return perm.allowed, nil
 	}
 	var buf map[string]interface{}
@@ -67,7 +67,7 @@ func (pc *cachingPermChecker) Check(uuid string) (bool, error) {
 		errorLogf("perm err: %+q %+q: %s", pc.Client.AuthToken, uuid, err)
 		return false, err
 	}
-	debugLogf("perm: %+q %+q => %s", pc.Client.AuthToken, uuid, allowed)
+	debugLogf("perm: %+q %+q => %v", pc.Client.AuthToken, uuid, allowed)
 	pc.cache[uuid] = cacheEnt{Time: now, allowed: allowed}
 	return allowed, nil
 }
