@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -80,6 +81,35 @@ func (s *StubbedS3Suite) TestIndex(c *check.C) {
 		c.Check(len(idx), check.Equals, spec.expectMatch+1)
 		c.Check(len(idx[len(idx)-1]), check.Equals, 0)
 	}
+}
+
+func (s *StubbedS3Suite) TestStats(c *check.C) {
+	v := s.newTestableVolume(c, 5*time.Minute, false, 2)
+	stats := func() string {
+		buf, err := json.Marshal(v.InternalStats())
+		c.Check(err, check.IsNil)
+		return string(buf)
+	}
+
+	c.Check(stats(), check.Matches, `.*"Ops":0,.*`)
+
+	loc := "acbd18db4cc2f85cedef654fccc4a4d8"
+	_, err := v.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.NotNil)
+	c.Check(stats(), check.Matches, `.*"Ops":[^0],.*`)
+	c.Check(stats(), check.Matches, `.*"\*s3.Error 404 [^"]*":[^0].*`)
+	c.Check(stats(), check.Matches, `.*"InBytes":0,.*`)
+
+	err = v.Put(context.Background(), loc, []byte("foo"))
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"OutBytes":3,.*`)
+	c.Check(stats(), check.Matches, `.*"PutOps":2,.*`)
+
+	_, err = v.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.IsNil)
+	_, err = v.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"InBytes":6,.*`)
 }
 
 func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
