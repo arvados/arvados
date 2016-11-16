@@ -10,8 +10,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/config"
 )
 
-var debugLogf = func(string, ...interface{}) {}
-
 func main() {
 	configPath := flag.String("config", "/etc/arvados/ws/ws.yml", "`path` to config file")
 	dumpConfig := flag.Bool("dump-config", false, "show current configuration and exit")
@@ -22,8 +20,8 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if cfg.Debug {
-		debugLogf = log.Printf
+	if !cfg.Debug {
+		debugLogf = func(string, ...interface{}) {}
 	}
 
 	if *dumpConfig {

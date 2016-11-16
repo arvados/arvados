@@ -24,7 +24,14 @@ type handler struct {
 	NewSession  func(wsConn, arvados.Client) (session, error)
 }
 
-func (h *handler) Handle(ws wsConn, events <-chan *event) {
+type handlerStats struct {
+	QueueDelay time.Duration
+	WriteDelay time.Duration
+	EventBytes uint64
+	EventCount uint64
+}
+
+func (h *handler) Handle(ws wsConn, events <-chan *event) (stats handlerStats) {
 	sess, err := h.NewSession(ws, h.Client)
 	if err != nil {
 		log.Printf("%s NewSession: %s", ws.Request().RemoteAddr, err)
@@ -93,6 +100,7 @@ func (h *handler) Handle(ws wsConn, events <-chan *event) {
 
 			sess.debugLogf("handler: send event %d: %q", e.Serial, buf)
 			ws.SetWriteDeadline(time.Now().Add(h.PingTimeout))
+			t0 := time.Now()
 			_, err = ws.Write(buf)
 			if err != nil {
 				sess.debugLogf("handler: write: %s", err)
@@ -100,6 +108,10 @@ func (h *handler) Handle(ws wsConn, events <-chan *event) {
 				break
 			}
 			sess.debugLogf("handler: sent event %d", e.Serial)
+			stats.WriteDelay += time.Since(t0)
+			stats.QueueDelay += t0.Sub(e.Received)
+			stats.EventBytes += uint64(len(buf))
+			stats.EventCount++
 		}
 		for _ = range queue {
 		}
@@ -153,4 +165,6 @@ func (h *handler) Handle(ws wsConn, events <-chan *event) {
 
 	<-stop
 	close(stopped)
+
+	return
 }

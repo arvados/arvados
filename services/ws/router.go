@@ -37,8 +37,18 @@ func (rtr *router) makeServer(newSession func(wsConn, arvados.Client) (session, 
 			return nil
 		},
 		Handler: websocket.Handler(func(ws *websocket.Conn) {
+			logj("Type", "connect",
+				"RemoteAddr", ws.Request().RemoteAddr)
+			t0 := time.Now()
+
 			sink := rtr.eventSource.NewSink()
-			handler.Handle(ws, sink.Channel())
+			stats := handler.Handle(ws, sink.Channel())
+
+			logj("Type", "disconnect",
+				"RemoteAddr", ws.Request().RemoteAddr,
+				"Elapsed", time.Now().Sub(t0).Seconds(),
+				"Stats", stats)
+
 			sink.Stop()
 			ws.Close()
 		}),
@@ -47,22 +57,10 @@ func (rtr *router) makeServer(newSession func(wsConn, arvados.Client) (session, 
 
 func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	rtr.setupOnce.Do(rtr.setup)
-	t0 := time.Now()
-	reqLog(map[string]interface{}{
-		"Connect":         req.RemoteAddr,
-		"RemoteAddr":      req.RemoteAddr,
-		"X-Forwarded-For": req.Header.Get("X-Forwarded-For"),
-		"Time":            t0.UTC(),
-	})
+	logj("Type", "request",
+		"RemoteAddr", req.RemoteAddr,
+		"X-Forwarded-For", req.Header.Get("X-Forwarded-For"))
 	rtr.mux.ServeHTTP(resp, req)
-	t1 := time.Now()
-	reqLog(map[string]interface{}{
-		"Disconnect":      req.RemoteAddr,
-		"RemoteAddr":      req.RemoteAddr,
-		"X-Forwarded-For": req.Header.Get("X-Forwarded-For"),
-		"Time":            t1.UTC(),
-		"Elapsed":         time.Now().Sub(t0).Seconds(),
-	})
 }
 
 func reqLog(m map[string]interface{}) {
