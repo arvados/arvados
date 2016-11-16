@@ -241,6 +241,9 @@ class RunnerJob(Runner):
         if self.output_name:
             self.job_order["arv:output_name"] = self.output_name
 
+        if self.output_tags:
+            self.job_order["arv:output_tags"] = self.output_tags
+
         self.job_order["arv:enable_reuse"] = self.enable_reuse
 
         return {
@@ -308,7 +311,8 @@ class RunnerTemplate(object):
             tool=tool,
             job_order=job_order,
             enable_reuse=enable_reuse,
-            output_name=None)
+            output_name=None,
+            output_tags=None)
 
     def pipeline_component_spec(self):
         """Return a component that Workbench and a-r-p-i will understand.
