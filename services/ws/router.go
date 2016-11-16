@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -25,12 +26,13 @@ func (rtr *router) setup() {
 	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(NewSessionV1))
 }
 
-func (rtr *router) makeServer(newSession func(wsConn, arvados.Client) (session, error)) *websocket.Server {
+func (rtr *router) makeServer(newSession func(wsConn, arvados.Client, *sql.DB) (session, error)) *websocket.Server {
 	handler := &handler{
-		Client:      rtr.Config.Client,
 		PingTimeout: rtr.Config.PingTimeout.Duration(),
 		QueueSize:   rtr.Config.ClientEventQueue,
-		NewSession:  newSession,
+		NewSession:  func(ws wsConn) (session, error) {
+			return newSession(ws, rtr.Config.Client, rtr.eventSource.DB())
+		},
 	}
 	return &websocket.Server{
 		Handshake: func(c *websocket.Config, r *http.Request) error {

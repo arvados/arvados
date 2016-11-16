@@ -21,7 +21,7 @@ type handler struct {
 	Client      arvados.Client
 	PingTimeout time.Duration
 	QueueSize   int
-	NewSession  func(wsConn, arvados.Client) (session, error)
+	NewSession  func(wsConn) (session, error)
 }
 
 type handlerStats struct {
@@ -32,7 +32,7 @@ type handlerStats struct {
 }
 
 func (h *handler) Handle(ws wsConn, events <-chan *event) (stats handlerStats) {
-	sess, err := h.NewSession(ws, h.Client)
+	sess, err := h.NewSession(ws)
 	if err != nil {
 		log.Printf("%s NewSession: %s", ws.Request().RemoteAddr, err)
 		return
@@ -72,6 +72,7 @@ func (h *handler) Handle(ws wsConn, events <-chan *event) (stats handlerStats) {
 				return
 			}
 			for _, buf := range sess.Receive(msg, buf[:n]) {
+				sess.debugLogf("handler: to queue: %s", string(buf))
 				queue <- buf
 			}
 		}
@@ -81,6 +82,7 @@ func (h *handler) Handle(ws wsConn, events <-chan *event) (stats handlerStats) {
 		for e := range queue {
 			if buf, ok := e.([]byte); ok {
 				ws.SetWriteDeadline(time.Now().Add(h.PingTimeout))
+				sess.debugLogf("handler: send msg: %s", string(buf))
 				_, err := ws.Write(buf)
 				if err != nil {
 					sess.debugLogf("handler: write {}: %s", err)

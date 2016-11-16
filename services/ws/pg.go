@@ -152,6 +152,11 @@ func (ps *pgEventSource) NewSink() eventSink {
 	return sink
 }
 
+func (ps *pgEventSource) DB() *sql.DB {
+	ps.setupOnce.Do(ps.setup)
+	return ps.db
+}
+
 type pgEventSink struct {
 	channel chan *event
 	source  *pgEventSource

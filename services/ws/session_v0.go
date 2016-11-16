@@ -1,11 +1,10 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
-	"net/url"
 	"sync"
 	"time"
 
@@ -24,15 +23,17 @@ var (
 
 type v0session struct {
 	ws            wsConn
+	db            *sql.DB
 	permChecker   permChecker
 	subscriptions []v0subscribe
 	mtx           sync.Mutex
 	setupOnce     sync.Once
 }
 
-func NewSessionV0(ws wsConn, ac arvados.Client) (session, error) {
+func NewSessionV0(ws wsConn, ac arvados.Client, db *sql.DB) (session, error) {
 	sess := &v0session{
 		ws:          ws,
+		db:          db,
 		permChecker: NewPermChecker(ac),
 	}
 
@@ -67,42 +68,7 @@ func (sess *v0session) Receive(msg map[string]interface{}, buf []byte) [][]byte 
 		sess.subscriptions = append(sess.subscriptions, sub)
 		sess.mtx.Unlock()
 
-		resp := [][]byte{v0subscribeOK}
-
-		if sub.LastLogID > 0 {
-			// Hack 1: use the permission checker's
-			// Arvados client to retrieve old log IDs. Use
-			// "created < 2 hours ago" to ensure the
-			// database query doesn't get too expensive
-			// when our client gives us last_log_id==1.
-			ac := sess.permChecker.(*cachingPermChecker).Client
-			var old arvados.LogList
-			ac.RequestAndDecode(&old, "GET", "arvados/v1/logs", nil, url.Values{
-				"limit": {"1000"},
-				"filters": {fmt.Sprintf(
-					`[["id",">",%d],["created_at",">","%s"]]`,
-					sub.LastLogID,
-					time.Now().UTC().Add(-2*time.Hour).Format(time.RFC3339Nano))},
-			})
-			for _, log := range old.Items {
-				// Hack 2: populate the event's logRow
-				// using the API response -- otherwise
-				// Detail() would crash because e.db
-				// is nil.
-				e := &event{
-					LogID:    log.ID,
-					Received: time.Now(),
-					logRow:   &log,
-				}
-				msg, err := sess.EventMessage(e)
-				if err != nil {
-					continue
-				}
-				resp = append(resp, msg)
-			}
-		}
-
-		return [][]byte{v0subscribeOK}
+		return append([][]byte{v0subscribeOK}, sub.getOldEvents(sess)...)
 	}
 	return [][]byte{v0subscribeFail}
 }
@@ -159,6 +125,58 @@ func (sess *v0session) Filter(e *event) bool {
 	return false
 }
 
+func (sub *v0subscribe) getOldEvents(sess *v0session) (msgs [][]byte) {
+	if sub.LastLogID == 0 {
+		return
+	}
+	debugLogf("getOldEvents(%d)", sub.LastLogID)
+	// Here we do a "select id" query and queue an event for every
+	// log since the given ID, then use (*event)Detail() to
+	// retrieve the whole row and decide whether to send it. This
+	// approach is very inefficient if the subscriber asks for
+	// last_log_id==1, even if the filters end up matching very
+	// few events.
+	//
+	// To mitigate this, filter on "created > 10 minutes ago" when
+	// retrieving the list of old event IDs to consider.
+	rows, err := sess.db.Query(
+		`SELECT id FROM logs WHERE id > $1 AND created_at > $2 ORDER BY id`,
+		sub.LastLogID,
+		time.Now().UTC().Add(-10*time.Minute).Format(time.RFC3339Nano))
+	if err != nil {
+		errorLogf("db.Query: %s", err)
+		return
+	}
+	for rows.Next() {
+		var id uint64
+		err := rows.Scan(&id)
+		if err != nil {
+			errorLogf("Scan: %s", err)
+			continue
+		}
+		e := &event{
+			LogID:    id,
+			Received: time.Now(),
+			db:       sess.db,
+		}
+		if !sub.match(e) {
+			debugLogf("skip old event %+v", e)
+			continue
+		}
+		msg, err := sess.EventMessage(e)
+		if err != nil {
+			debugLogf("event marshal: %s", err)
+			continue
+		}
+		debugLogf("old event: %s", string(msg))
+		msgs = append(msgs, msg)
+	}
+	if err := rows.Err(); err != nil {
+		errorLogf("db.Query: %s", err)
+	}
+	return
+}
+
 type v0subscribe struct {
 	Method    string
 	Filters   []v0filter
@@ -172,15 +190,16 @@ type v0filter [3]interface{}
 func (sub *v0subscribe) match(e *event) bool {
 	detail := e.Detail()
 	if detail == nil {
+		debugLogf("match(%d): failed on no detail", e.LogID)
 		return false
 	}
-	debugLogf("sub.match: len(funcs)==%d", len(sub.funcs))
 	for i, f := range sub.funcs {
 		if !f(e) {
-			debugLogf("sub.match: failed on func %d", i)
+			debugLogf("match(%d): failed on func %d", e.LogID, i)
 			return false
 		}
 	}
+	debugLogf("match(%d): passed %d funcs", e.LogID, len(sub.funcs))
 	return true
 }
 
