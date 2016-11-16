@@ -6,14 +6,29 @@ title: "humans"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/humans@
+
+Object type: @7a9it@
+
+Example UUID: @zzzzz-7a9it-0123456789abcde@
+
+h2. Resource
+
+A metadata record that may be used to represent a human subject.
+
+Each Human has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|properties|hash|||
+
+h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
-
-h2. create
+h3. create
 
 Create a new Human.
 
@@ -23,7 +38,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |human|object||query||
 
-h2. delete
+h3. delete
 
 Delete an existing Human.
 
@@ -33,7 +48,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Human in question.|path||
 
-h2. get
+h3. get
 
 Gets a Human's metadata by UUID.
 
@@ -43,19 +58,13 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Human in question.|path||
 
-h2. list
+h3. list
 
 List humans.
 
-Arguments:
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of humans to return.|query||
-|order|string|Order in which to return matching humans.|query||
-|filters|array|Conditions for filtering humans.|query||
-
-h2. update
+h3. update
 
 Update attributes of an existing Human.
 

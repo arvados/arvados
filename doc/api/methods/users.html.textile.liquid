@@ -3,17 +3,40 @@ layout: default
 navsection: api
 navmenu: API Methods
 title: "users"
-
 ...
-
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
 
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/users@
 
+Object type: @tpzed@
+
+Example UUID: @zzzzz-tpzed-0123456789abcde@
+
+h2. Resource
+
+Users represent individuals with access to the Arvados cluster.
+
+Each User has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|email|string|||
+|username|string|The username used for the user's git repositories and virtual machine logins.  Usernames must start with a letter, and contain only alphanumerics.  When a new user is created, a default username is set from their e-mail address.  Only administrators may change the username.||
+|first_name|string|||
+|last_name|string|||
+|identity_url|string|||
+|is_admin|boolean|||
+|prefs|hash|||
+|default_owner_uuid|string|||
+|is_active|boolean|||
+|writable_by|array|List of UUID strings identifying Groups and other Users that can modify this User object.  This will include the user's owner_uuid and, for administrators and users requesting their own User object, the requesting user's UUID.||
+
+h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
+
 Required arguments are displayed in %{background:#ccffcc}green%.
 
-
-h2. create
+h3. create
 
 Create a new User.
 
@@ -23,16 +46,16 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |user|object||query||
 
-h2. current
+h3. current
 
-current users
+Get the user associated with the provided API token.
 
 Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 
-h2. delete
+h3. delete
 
 Delete an existing User.
 
@@ -48,7 +71,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string||path||
 
-h2. get
+h3. get
 
 Gets a User's metadata by UUID.
 
@@ -58,38 +81,22 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the User in question.|path||
 
-h2. list
+h3. list
 
 List users.
 
-Arguments:
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of users to return.|query||
-|order|string|Order in which to return matching users.|query||
-|filters|array|Conditions for filtering users.|query||
+h3. system
 
-h2. show
-
-show users
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string||path||
-
-h2. system
-
-system users
+Get the user record for the "system user.":{{site.baseurl}}/api/permission-model.html#system
 
 Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 
-h2. update
+h3. update
 
 Update attributes of an existing User.
 

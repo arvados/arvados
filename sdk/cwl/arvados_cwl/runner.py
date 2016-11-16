@@ -161,7 +161,7 @@ def arvados_jobs_image(arvrunner):
     return img
 
 class Runner(object):
-    def __init__(self, runner, tool, job_order, enable_reuse, output_name):
+    def __init__(self, runner, tool, job_order, enable_reuse, output_name, output_tags):
         self.arvrunner = runner
         self.tool = tool
         self.job_order = job_order
@@ -170,6 +170,7 @@ class Runner(object):
         self.uuid = None
         self.final_output = None
         self.output_name = output_name
+        self.output_tags = output_tags
 
     def update_pipeline_component(self, record):
         pass

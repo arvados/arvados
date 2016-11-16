@@ -1,0 +1,75 @@
+---
+layout: default
+navsection: sdk
+navmenu: Python
+title: Examples
+...
+
+h2.  Initialize SDK
+
+Import the module and set up an API client user agent:
+
+<pre>
+require 'arvados'
+arv = Arvados.new(apiVersion: 'v1')
+</pre>
+
+The SDK retrieves the list of API methods from the server at run time. Therefore, the set of available methods is determined by the server version rather than the SDK version.
+
+h2. create
+
+Create an object:
+
+<pre>
+new_link = arv.link.create(link: {link_class: 'test', name: 'test'})
+</pre>
+
+h2. delete
+
+Delete an object:
+
+<pre>
+arv.link.delete(uuid: new_link[:uuid])
+</pre>
+
+h2. get
+
+Retrieve an object by ID:
+
+<pre>
+some_user = arv.user.get(uuid: current_user_uuid)
+</pre>
+
+h2. list
+
+Get a list of objects:
+
+<pre>
+repos = arv.repository.list
+first_repo = repos[:items][0]
+puts "UUID of first repo returned is #{first_repo[:uuid]}"</code>
+UUID of first repo returned is qr1hi-s0uqq-b1bnybpx3u5temz
+</pre>
+
+h2. update
+
+Update an object:
+
+<pre>
+updated_link = arv.link.update(uuid: new_link[:uuid],
+                               link: {properties: {foo: 'bar'}})
+</pre>
+
+h2. Get current user
+
+Get the User object for the current user:
+
+<pre>
+current_user = arv.user.current
+</pre>
+
+Get the UUID of an object that was retrieved using the SDK:
+
+<pre>
+current_user_uuid = current_user[:uuid]
+</pre>

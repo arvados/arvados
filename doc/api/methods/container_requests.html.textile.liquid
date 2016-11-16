@@ -6,70 +6,124 @@ title: "container_requests"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/container_requests@
+
+Object type: @xvhdp@
+
+Example UUID: @zzzzz-xvhdp-0123456789abcde@
+
+h2. Resource
+
+A container request is a request for the Arvados cluster to perform some computational work.  See "computing with Crunch":{{site.baseurl}}/api/execution.html for details.
+
+Each ContainerRequest offers the following attributes, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
+
+All attributes are optional, unless otherwise marked as required.
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Notes|
+|name|string|The name of the container_request.||
+|description|string|The description of the container_request.||
+|properties|hash|Client-defined structured data that does not affect how the container is run.||
+|state|string|The allowed states are "Uncommitted", "Committed", and "Final".|Once a request is Committed, the only attributes that can be modified are priority, container_uuid, and container_count_max. A request in the "Final" state cannot have any of its functional parts modified (i.e., only name, description, and properties fields can be modified).|
+|requesting_container_uuid|string|The uuid of the parent container that created this container_request, if any. Represents a process tree.|The priority of this container_request is inherited from the parent container, if the parent container is cancelled, this container_request will be cancelled as well.|
+|container_uuid|string|The uuid of the container that satisfies this container_request. The system may return a preexisting Container that matches the container request criteria. See "Container reuse":#container_reuse for more details.|Container reuse is the default behavior, but may be disabled with @use_existing: false@ to always create a new container.|
+|container_count_max|integer|Maximum number of containers to start, i.e., the maximum number of "attempts" to be made.||
+|mounts|hash|Objects to attach to the container's filesystem and stdin/stdout.|See "Mount types":#mount_types for more details.|
+|runtime_constraints|hash|Restrict the container's access to compute resources and the outside world.|Required when in "Committed" state. e.g.,<pre><code>{
+  "ram":12000000000,
+  "vcpus":2,
+  "API":true
+}</code></pre>See "Runtime constraints":#runtime_constraints for more details.|
+|container_image|string|Portable data hash of a collection containing the docker image to run the container.|Required.|
+|environment|hash|Environment variables and values that should be set in the container environment (@docker run --env@). This augments and (when conflicts exist) overrides environment variables given in the image's Dockerfile.||
+|cwd|string|Initial working directory, given as an absolute path (in the container) or a path relative to the WORKDIR given in the image's Dockerfile.|Required.|
+|command|array of strings|Command to execute in the container.|Required. e.g., @["echo","hello"]@|
+|output_path|string|Path to a directory or file inside the container that should be preserved as container's output when it finishes. This path must be, or be inside, one of the mount targets. For best performance, point output_path to a writable collection mount.|Required.|
+|priority|integer|Higher value means spend more resources on this container_request, i.e., go ahead of other queued containers, bring up more nodes etc.|Priority 0 means a container should not be run on behalf of this request. Clients are expected to submit container requests with zero priority in order to prevew the container that will be used to satisfy it. Priority can be null if and only if state!="Committed".|
+|expires_at|datetime|After this time, priority is considered to be zero.|Not yet implemented.|
+|use_existing|boolean|If possible, use an existing (non-failed) container to satisfy the request instead of creating a new one.|Default is true|
+|filters|string|Additional constraints for satisfying the container_request, given in the same form as the filters parameter accepted by the container_requests.list API.|
+
+h2(#mount_types). {% include 'mount_types' %}
+
+h2(#runtime_constraints). {% include 'container_runtime_constraints' %}
+
+h2(#container_reuse). Container reuse
+
+When a container request is "Committed", the system will try to find and reuse any preexisting Container with the same exact command, cwd, environment, output_path, container_image, mounts, and runtime_constraints as this container request. The serialized fields environment, mounts and runtime_constraints are sorted to facilitate comparison.
+
+The system will use the following scheme to determine which Container to consider for reuse: A Container with the same exact command, cwd, environment, output_path, container_image, mounts, and runtime_constraints as this container request and,
+* The oldest successfully finished container, i.e., in state "Complete" with exit_code of 0. If matching containers with different outputs are found, the system will forgo reusing any of these finished containers and instead look for suitable containers in other states
+* The oldest "Running" container with the highest progress, i.e., the container that is most likely to finish first
+* The oldest "Locked" container with the highest priority, i.e., the container that is most likely to start first
+* The oldest "Queued" container with the highest priority, i.e, the container that is most likely to start first
+
+h2(#cancel_container). Canceling a container request
+
+A container request may be canceled by setting it's priority to 0, using an update call.
+
+When a container request is canceled, it will still reflect the state of the Container it is associated with via the container_uuid attribute. If that Container is being reused by any other container_requests that are still active, i.e., not yet canceled, that Container may continue to run or be scheduled to run by the system in future. However, if no other container_requests are using that Contianer, then the Container will get canceled as well.
+
+h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
 h2(#create). create
 
-Create a new ContainerRequest.
+Create a new container request.
 
 Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|container_request|object|See "ContainerRequest resource":{{site.baseurl}}/api/schema/ContainerRequest.html|request body||
+{background:#ccffcc}.|container_request|object|Container request resource.|request body||
+
 
 The request body must include the required attributes command, container_image, cwd, and output_path. It can also inlcude other attributes such as environment, mounts, and runtime_constraints.
 
-h2. delete
+h3. delete
 
-Delete an existing ContainerRequest.
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string|The UUID of the ContainerRequest in question.|path||
-
-h2. get
-
-Get a ContainerRequest's metadata by UUID.
+Delete an existing container request.
 
 Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string|The UUID of the ContainerRequest in question.|path||
+{background:#ccffcc}.|uuid|string|The UUID of the container request in question.|path||
 
-h2. list
+h3. get
+
+Get a container request's metadata by UUID.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the container request in question.|path||
+
+h3. list
 
 List container_requests.
 
-Arguments:
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of container_requests to return.|query||
-|order|string|Order in which to return matching container_requests.|query||
-|filters|array|Conditions for filtering container_requests.|query||
+See the create method documentation for more information about container request-specific filters.
 
-See the create method documentation for more information about ContainerRequest-specific filters.
+h3. update
 
-h2. update
-
-Update attributes of an existing ContainerRequest.
+Update attributes of an existing container request.
 
 Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|uuid|string|The UUID of the ContainerRequest in question.|path||
+{background:#ccffcc}.|uuid|string|The UUID of the container request in question.|path||
 |container_request|object||query||
 
 {% include 'notebox_begin' %}
 Setting the priority of a committed container_request to 0 may cancel a running container assigned for it.
-See "Canceling a ContainerRequest":{{site.baseurl}}/api/schema/ContainerRequest.html#cancel_container for further details.
+See "Canceling a container request":{{site.baseurl}}/api/methods/container_requests.html#cancel_container for further details.
 {% include 'notebox_end' %}

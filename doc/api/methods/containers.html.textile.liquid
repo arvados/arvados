@@ -6,9 +6,61 @@ title: "containers"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/containers@
+
+Object type: @dz642@
+
+Example UUID: @zzzzz-dz642-0123456789abcde@
+
+h2. Resource
+
+A container is work order to be dispatched to an Arvados cluster to perform some computational work.  A container is created in response to a container request.  See "computing with Crunch":{{site.baseurl}}/api/execution.html for details.
+
+Each Container offers the following attributes, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Notes|
+|state|string|The allowed states are "Queued", "Locked", "Running", "Cancelled" and "Complete".|See "Container states":#container_states for more details.|
+|started_at|datetime|When this container started running.|Null if container has not yet started.|
+|finished_at|datetime|When this container finished.|Null if container has not yet finished.|
+|log|string|Portable data hash of the collection containing logs from a completed container run.|Null if the container is not yet finished.|
+|environment|hash|Environment variables and values that should be set in the container environment (@docker run --env@). This augments and (when conflicts exist) overrides environment variables given in the image's Dockerfile.|Must be equal to a ContainerRequest's environment in order to satisfy the ContainerRequest.|
+|cwd|string|Initial working directory.|Must be equal to a ContainerRequest's cwd in order to satisfy the ContainerRequest|
+|command|array of strings|Command to execute.| Must be equal to a ContainerRequest's command in order to satisfy the ContainerRequest.|
+|output_path|string|Path to a directory or file inside the container that should be preserved as this container's output when it finishes.|Must be equal to a ContainerRequest's output_path in order to satisfy the ContainerRequest.|
+|mounts|hash|Must contain the same keys as the ContainerRequest being satisfied. Each value must be within the range of values described in the ContainerRequest at the time the Container is assigned to the ContainerRequest.|See "Mount types":#mount_types for more details.|
+|runtime_constraints|hash|Compute resources, and access to the outside world, that are / were available to the container.
+Generally this will contain additional keys that are not present in any corresponding ContainerRequests: for example, even if no ContainerRequests specified constraints on the number of CPU cores, the number of cores actually used will be recorded here.|e.g.,
+<pre><code>{
+  "ram":12000000000,
+  "vcpus":2,
+  "API":true
+}</code></pre>See "Runtime constraints":#runtime_constraints for more details.|
+|output|string|Portable data hash of the output collection.|Null if the container is not yet finished.|
+|container_image|string|Portable data hash of a collection containing the docker image used to run the container.||
+|progress|number|A number between 0.0 and 1.0 describing the fraction of work done.||
+|priority|integer|Priority assigned by the system, taking into account the priorities of all associated ContainerRequests.||
+|exit_code|integer|Process exit code.|Null if state!="Complete"|
+|auth_uuid|string|UUID of a token to be passed into the container itself, used to access Keep-backed mounts, etc.|Null if state∉{"Locked","Running"}|
+|locked_by_uuid|string|UUID of a token, indicating which dispatch process changed state to Locked. If null, any token can be used to lock. If not null, only the indicated token can modify this container.|Null if state∉{"Locked","Running"}|
+
+h2(#container_states). Container states
+
+table(table table-bordered table-condensed).
+|_. State|_. Sgnificance|_. Allowed next|
+|Queued|Waiting for a dispatcher to lock it and try to run the container.|Locked, Cancelled|
+|Locked|A dispatcher has "taken" the container and is allocating resources for it. The container has not started yet.|Queued, Running, Cancelled|
+|Running|Resources have been allocated and the contained process has been started (or is about to start). Crunch-run _must_ set state to Running _before_ there is any possibility that user code will run in the container.|Complete, Cancelled|
+|Complete|Container was running, and the contained process/command has exited.|-|
+|Cancelled|The container did not run long enough to produce an exit code. This includes cases where the container didn't even start, cases where the container was interrupted/killed before it exited by itself (e.g., priority changed to 0), and cases where some problem prevented the system from capturing the contained process's exit status (exit code and output).|-|
+
+h2(#mount_types). {% include 'mount_types' %}
+
+h2(#runtime_constraints). {% include 'container_runtime_constraints' %}
+
+h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
@@ -20,9 +72,9 @@ Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|container|object|See "Container resource":{{site.baseurl}}/api/schema/Container.html|request body||
+{background:#ccffcc}.|container|object|Container resource|request body||
 
-h2. delete
+h3. delete
 
 Delete an existing Container.
 
@@ -32,7 +84,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Container in question.|path||
 
-h2. get
+h3. get
 
 Get a Container's metadata by UUID.
 
@@ -42,21 +94,15 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Container in question.|path||
 
-h2. list
+h3. list
 
 List containers.
 
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of containers to return.|query||
-|order|string|Order in which to return matching containers.|query||
-|filters|array|Conditions for filtering containers.|query||
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
 See the create method documentation for more information about Container-specific filters.
 
-h2. update
+h3. update
 
 Update attributes of an existing Container.
 
@@ -67,7 +113,7 @@ table(table table-bordered table-condensed).
 {background:#ccffcc}.|uuid|string|The UUID of the Container in question.|path||
 |container|object||query||
 
-h2. auth
+h3. auth
 
 Get the api_client_authorization record indicated by this container's auth_uuid, which belongs to the container's locked_by_uuid.
 

@@ -70,11 +70,11 @@ if ! [[ -z "$waiting" ]] ; then
                      /usr/src/arvados/apps/workbench/Gemfile.lock \
                      /usr/src/sso/Gemfile.lock ; do
             gc=$(cat $l \
-                        | grep -vE "(GEM|PLATFORMS|DEPENDENCIES|$^|remote:|specs:)" \
+                        | grep -vE "(GEM|PLATFORMS|DEPENDENCIES|BUNDLED|GIT|$^|remote:|specs:|revision:)" \
                         | sed 's/^ *//' | sed 's/(.*)//' | sed 's/ *$//' | sort | uniq | wc -l)
             gemlockcount=$(($gemlockcount + $gc))
         done
-        waiting="$waiting (installing ruby gems $gemcount/$gemlockcount)"
+        waiting="$waiting (installing ruby gems $gemcount of about $gemlockcount)"
     fi
 
     if ps x | grep -v grep | grep "c++.*/var/lib/passenger" > /dev/null ; then

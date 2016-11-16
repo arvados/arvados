@@ -6,16 +6,42 @@ title: "api_client_authorizations"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/api_client_authorizations@
+
+Object type: @gj3su@
+
+Example UUID: @zzzzz-gj3su-0123456789abcde@
+
+h2. Resource
+
+The @api_client_authorizations@ resource stores the API tokens that have been issued to permit access the API server.
+
+An ApiClientAuthorization is *not* a generic Arvados resource.  The full list of properties that belong to an ApiClientAuthorization is:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|uuid|string|An identifier used to refer to the token without exposing the actual token.||
+|api_token|string|The actual token string that is expected in the Authorization header.||
+|api_client_id|integer|-||
+|user_id|integer|-||
+|created_by_ip_address|string|-||
+|last_used_by_ip_address|string|The network address of the most recent client using this token.||
+|last_used_at|datetime|Timestamp of the most recent request using this token.||
+|expires_at|datetime|Time at which the token is no longer valid.  May be set to a time in the past in order to immediately expire a token.||
+|owner_uuid|string|The user associated with the token.  All operations using this token are checked against the permissions of this user.||
+|scopes|array|A list of resources this token is allowed to access.  A scope of ["all"] allows all resources.  See "API Authorization":{{site.baseurl}}/api/tokens.html#scopes for details.||
+
+h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
-
-h2. create
+h3(#create). create
 
 Create a new ApiClientAuthorization.
+
+Regular users may only create self-owned API tokens, but may provide a restricted "scope":{{site.baseurl}}/api/tokens.html#scopes .  Administrators may create API tokens corresponding to any user.
 
 Arguments:
 
@@ -23,7 +49,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |api_client_authorization|object||query||
 
-h2. create_system_auth
+h3. create_system_auth
 
 create_system_auth api_client_authorizations
 
@@ -34,7 +60,7 @@ table(table table-bordered table-condensed).
 |api_client_id|integer||query||
 |scopes|array||query||
 
-h2. delete
+h3. delete
 
 Delete an existing ApiClientAuthorization.
 
@@ -44,9 +70,9 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the ApiClientAuthorization in question.|path||
 
-h2. get
+h3. get
 
-Gets a ApiClientAuthorization's metadata by UUID.
+Gets an ApiClientAuthorization's metadata by UUID.
 
 Arguments:
 
@@ -54,19 +80,13 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the ApiClientAuthorization in question.|path||
 
-h2. list
+h3. list
 
 List api_client_authorizations.
 
-Arguments:
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of api_client_authorizations to return.|query||
-|order|string|Order in which to return matching api_client_authorizations.|query||
-|filters|array|Conditions for filtering api_client_authorizations.|query||
-
-h2. update
+h3. update
 
 Update attributes of an existing ApiClientAuthorization.
 
