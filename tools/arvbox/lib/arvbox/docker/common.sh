@@ -6,9 +6,6 @@ else
     localip=$(ip addr show $defaultdev | grep 'inet ' | sed 's/ *inet \(.*\)\/.*/\1/')
 fi
 
-export GEM_HOME=/var/lib/gems
-export GEM_PATH=/var/lib/gems
-
 declare -A services
 services=(
   [workbench]=80
@@ -37,6 +34,9 @@ run_bundler() {
         frozen=--frozen
     else
         frozen=""
+    fi
+    if ! test -x bundle ; then
+        gem install --no-document bundler
     fi
     if ! flock /var/lib/gems/gems.lock bundle install --path $GEM_HOME --local --no-deployment $frozen "$@" ; then
         flock /var/lib/gems/gems.lock bundle install --path $GEM_HOME --no-deployment $frozen "$@"
