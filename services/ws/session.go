@@ -2,9 +2,9 @@ package main
 
 type session interface {
 	// Receive processes a message received from the client. If
-	// the returned response is non-nil, it will be queued and
-	// sent the client.
-	Receive(map[string]interface{}, []byte) []byte
+	// the returned list of messages is non-nil, they will be
+	// queued for sending to the client.
+	Receive(map[string]interface{}, []byte) [][]byte
 
 	// Filter returns true if the event should be queued for
 	// sending to the client. It should return as fast as

@@ -15,6 +15,9 @@ var (
 	errFrameTooBig = errors.New("frame too big")
 
 	sendObjectAttributes = []string{"state", "name"}
+
+	v0subscribeOK   = []byte(`{"status":200}`)
+	v0subscribeFail = []byte(`{"status":400}`)
 )
 
 type v0session struct {
@@ -48,7 +51,7 @@ func (sess *v0session) debugLogf(s string, args ...interface{}) {
 	debugLogf("%s "+s, args...)
 }
 
-func (sess *v0session) Receive(msg map[string]interface{}, buf []byte) []byte {
+func (sess *v0session) Receive(msg map[string]interface{}, buf []byte) [][]byte {
 	sess.debugLogf("received message: %+v", msg)
 	var sub v0subscribe
 	if err := json.Unmarshal(buf, &sub); err != nil {
@@ -61,9 +64,9 @@ func (sess *v0session) Receive(msg map[string]interface{}, buf []byte) []byte {
 		sess.mtx.Lock()
 		sess.subscriptions = append(sess.subscriptions, sub)
 		sess.mtx.Unlock()
-		return []byte(`{"status":200}`)
+		return [][]byte{v0subscribeOK}
 	}
-	return []byte(`{"status":400}`)
+	return [][]byte{v0subscribeFail}
 }
 
 func (sess *v0session) EventMessage(e *event) ([]byte, error) {

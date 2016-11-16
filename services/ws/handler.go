@@ -71,9 +71,8 @@ func (h *handler) Handle(ws wsConn, events <-chan *event) (stats handlerStats) {
 				stop <- err
 				return
 			}
-			e := sess.Receive(msg, buf[:n])
-			if e != nil {
-				queue <- e
+			for _, buf := range sess.Receive(msg, buf[:n]) {
+				queue <- buf
 			}
 		}
 	}()
