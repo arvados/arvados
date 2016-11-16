@@ -375,7 +375,17 @@ class ArvPutUploadJob(object):
                 if path == '-':
                     self._write_stdin(self.filename or 'stdin')
                 elif os.path.isdir(path):
-                    self._write_directory_tree(path)
+                    if path == '.' or path == './' or os.path.dirname(path) == '':
+                        dirname = ''
+                    else:
+                        dirname = os.path.dirname(path) + '/'
+                    for root, dirs, files in os.walk(path):
+                        # Make os.walk()'s traversing order deterministic
+                        dirs.sort()
+                        files.sort()
+                        for file in files:
+                            self._write_file(os.path.join(root, file),
+                                             os.path.join(root[len(dirname):], file))
                 else:
                     self._write_file(path, self.filename or os.path.basename(path))
         finally:
@@ -452,27 +462,6 @@ class ArvPutUploadJob(object):
     def report_progress(self):
         if self.reporter is not None:
             self.reporter(self.bytes_written, self.bytes_expected)
-
-    def _write_directory_tree(self, path, stream_name="."):
-        # TODO: Check what happens when multiple directories are passed as
-        # arguments.
-        # If the code below is uncommented, integration test
-        # test_ArvPutSignedManifest (tests.test_arv_put.ArvPutIntegrationTest)
-        # fails, I suppose it is because the manifest_uuid changes because
-        # of the dir addition to stream_name.
-
-        # if stream_name == '.':
-        #     stream_name = os.path.join('.', os.path.basename(path))
-        for item in os.listdir(path):
-            item_col_path = os.path.join(stream_name, item)
-            if os.path.isdir(os.path.join(path, item)):
-                self._my_collection().find_or_create(item_col_path,
-                                arvados.collection.COLLECTION)
-                self._write_directory_tree(os.path.join(path, item),
-                                           item_col_path)
-            else:
-                self._write_file(os.path.join(path, item),
-                                 item_col_path)
 
     def _write_stdin(self, filename):
         with self._collection_lock:
