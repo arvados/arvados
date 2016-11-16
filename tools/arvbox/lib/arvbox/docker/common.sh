@@ -38,8 +38,8 @@ run_bundler() {
     if ! test -x bundle ; then
         gem install --no-document bundler
     fi
-    if ! flock /var/lib/gems/gems.lock bundle install --path $GEM_HOME --local --no-deployment $frozen "$@" ; then
-        flock /var/lib/gems/gems.lock bundle install --path $GEM_HOME --no-deployment $frozen "$@"
+    if ! flock /var/lib/gems/gems.lock bundle install --path $GEM_HOME --local --no-deployment --retry 3 $frozen "$@" ; then
+        flock /var/lib/gems/gems.lock bundle install --path $GEM_HOME --no-deployment --retry 3 $frozen "$@"
     fi
 }
 

@@ -1,0 +1,15 @@
+#!/bin/bash
+
+exit_code=$1
+if [[ ${exit_code} -gt 0 ]]; then
+    dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+    service="$(basename "${dir}")"
+    echo "${service} exited with exit code ${exit_code}!"
+    retry_file=/var/lib/arvados/service-${service}-retries
+    retries=$(flock ${retry_file}.lock -c "touch ${retry_file} && echo \$(( \$(cat ${retry_file}) + 1 )) > ${retry_file} && cat ${retry_file}")
+    if [[ ${retries} -gt 3 ]]; then
+        2>&1 echo "${service} retried ${retries} times, giving up!"
+        sv stop ${service}
+        echo "${service} stopped."
+    fi
+fi

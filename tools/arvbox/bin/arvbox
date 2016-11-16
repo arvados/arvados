@@ -182,6 +182,9 @@ run() {
             git clone https://github.com/curoverse/sso-devise-omniauth-provider.git "$SSO_ROOT"
         fi
 
+	(cd "$ARVADOS_ROOT" && git status || (echo "ERROR: $ARVADOS_ROOT is not a git repo" && exit 1))
+	(cd "$SSO_ROOT" && git status || (echo "ERROR: $SSO_ROOT is not a git repo" && exit 1))
+
         if test "$CONFIG" = test ; then
 
             mkdir -p $VAR_DATA/test

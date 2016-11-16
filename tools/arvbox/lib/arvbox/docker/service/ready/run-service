@@ -24,7 +24,18 @@ do
     if nc -z localhost ${services[$s]} ; then
       echo "$s is ready at $localip:${services[$s]}"
       touch /tmp/arvbox-ready/$s
+      rm -f /var/lib/arvados/service-${s}-retries
+      rm -f /var/lib/arvados/service-${s}-retries.lock
     else
+      status=$(sv -w 7 check ${s})
+      running=$(echo "${status}" | grep '^ok: run:' && echo "yes" || echo "no")
+      if [[ "${running}" = "no" ]] ; then
+	  echo "${s} status ${status}"
+	  echo
+	  echo "${s} failed repeatedly and is no longer running, check \"arvbox log ${s}\" for more information about the failure."
+	  echo "It is now safe to quit arvbox using ctrl-c"
+	  sleep 86400
+      fi
       waiting="$waiting $s"
     fi
   fi
@@ -93,5 +104,7 @@ echo "Your Arvados-in-a-box is ready!"
 echo "Workbench is running at http://$localip"
 
 rm -r /tmp/arvbox-ready
+rm -f /var/lib/arvados/service-*-retries
+rm -f /var/lib/arvados/service-*-retries.lock
 
 sv stop ready >/dev/null
