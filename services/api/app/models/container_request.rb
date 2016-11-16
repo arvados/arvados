@@ -279,7 +279,7 @@ class ContainerRequest < ArvadosModel
         permitted.push :command, :container_image, :cwd, :description, :environment,
                        :filters, :mounts, :name, :output_path, :properties,
                        :requesting_container_uuid, :runtime_constraints,
-                       :state, :container_uuid, :scheduling_parameters
+                       :state, :container_uuid, :use_existing, :scheduling_parameters
       end
 
     when Final
