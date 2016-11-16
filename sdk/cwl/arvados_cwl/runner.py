@@ -195,7 +195,7 @@ class Runner(object):
         else:
             processStatus = "permanentFail"
 
-        outputs = None
+        outputs = {}
         try:
             try:
                 self.final_output = record["output"]
@@ -212,7 +212,7 @@ class Runner(object):
                 adjustFileObjs(outputs, keepify)
                 adjustDirObjs(outputs, keepify)
             except Exception as e:
-                logger.error("While getting final output object: %s", e)
+                logger.exception("While getting final output object: %s", e)
             self.arvrunner.output_callback(outputs, processStatus)
         finally:
             del self.arvrunner.processes[record["uuid"]]
