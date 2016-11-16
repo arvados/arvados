@@ -3,7 +3,9 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
+	"net/url"
 	"sync"
 	"time"
 
@@ -64,6 +66,42 @@ func (sess *v0session) Receive(msg map[string]interface{}, buf []byte) [][]byte 
 		sess.mtx.Lock()
 		sess.subscriptions = append(sess.subscriptions, sub)
 		sess.mtx.Unlock()
+
+		resp := [][]byte{v0subscribeOK}
+
+		if sub.LastLogID > 0 {
+			// Hack 1: use the permission checker's
+			// Arvados client to retrieve old log IDs. Use
+			// "created < 2 hours ago" to ensure the
+			// database query doesn't get too expensive
+			// when our client gives us last_log_id==1.
+			ac := sess.permChecker.(*cachingPermChecker).Client
+			var old arvados.LogList
+			ac.RequestAndDecode(&old, "GET", "arvados/v1/logs", nil, url.Values{
+				"limit": {"1000"},
+				"filters": {fmt.Sprintf(
+					`[["id",">",%d],["created_at",">","%s"]]`,
+					sub.LastLogID,
+					time.Now().UTC().Add(-2*time.Hour).Format(time.RFC3339Nano))},
+			})
+			for _, log := range old.Items {
+				// Hack 2: populate the event's logRow
+				// using the API response -- otherwise
+				// Detail() would crash because e.db
+				// is nil.
+				e := &event{
+					LogID:    log.ID,
+					Received: time.Now(),
+					logRow:   &log,
+				}
+				msg, err := sess.EventMessage(e)
+				if err != nil {
+					continue
+				}
+				resp = append(resp, msg)
+			}
+		}
+
 		return [][]byte{v0subscribeOK}
 	}
 	return [][]byte{v0subscribeFail}
@@ -122,9 +160,11 @@ func (sess *v0session) Filter(e *event) bool {
 }
 
 type v0subscribe struct {
-	Method  string
-	Filters []v0filter
-	funcs   []func(*event) bool
+	Method    string
+	Filters   []v0filter
+	LastLogID int64 `json:"last_log_id"`
+
+	funcs []func(*event) bool
 }
 
 type v0filter [3]interface{}

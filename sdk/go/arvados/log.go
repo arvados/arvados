@@ -14,3 +14,11 @@ type Log struct {
 	Properties      map[string]interface{} `json:"properties"`
 	CreatedAt       *time.Time             `json:"created_at,omitempty"`
 }
+
+// LogList is an arvados#logList resource.
+type LogList struct {
+	Items          []Log `json:"items"`
+	ItemsAvailable int   `json:"items_available"`
+	Offset         int   `json:"offset"`
+	Limit          int   `json:"limit"`
+}
