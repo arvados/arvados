@@ -101,12 +101,12 @@ func (sess *sessionV0) checkFilters(filters []v0filter) {
 	}
 }
 
-func (sess *sessionV0) Receive(msg map[string]interface{}, buf []byte) {
+func (sess *sessionV0) Receive(msg map[string]interface{}, buf []byte) []byte {
 	sess.debugLogf("received message: %+v", msg)
 	var sub v0subscribe
 	if err := json.Unmarshal(buf, &sub); err != nil {
 		sess.debugLogf("ignored unrecognized request: %s", err)
-		return
+		return nil
 	}
 	if sub.Method == "subscribe" {
 		sess.debugLogf("subscribing to *")
@@ -114,7 +114,9 @@ func (sess *sessionV0) Receive(msg map[string]interface{}, buf []byte) {
 		sess.checkFilters(sub.Filters)
 		sess.subscribed["*"] = true
 		sess.mtx.Unlock()
+		return []byte(`{"status":200}`)
 	}
+	return []byte(`{"status":400}`)
 }
 
 func (sess *sessionV0) EventMessage(e *event) ([]byte, error) {

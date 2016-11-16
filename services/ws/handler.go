@@ -38,7 +38,7 @@ func (h *handler) Handle(ws wsConn, events <-chan *event) (stats handlerStats) {
 		return
 	}
 
-	queue := make(chan *event, h.QueueSize)
+	queue := make(chan interface{}, h.QueueSize)
 
 	stopped := make(chan struct{})
 	stop := make(chan error, 5)
@@ -71,15 +71,18 @@ func (h *handler) Handle(ws wsConn, events <-chan *event) (stats handlerStats) {
 				stop <- err
 				return
 			}
-			sess.Receive(msg, buf[:n])
+			e := sess.Receive(msg, buf[:n])
+			if e != nil {
+				queue <- e
+			}
 		}
 	}()
 
 	go func() {
 		for e := range queue {
-			if e == nil {
+			if buf, ok := e.([]byte); ok {
 				ws.SetWriteDeadline(time.Now().Add(h.PingTimeout))
-				_, err := ws.Write([]byte("{}"))
+				_, err := ws.Write(buf)
 				if err != nil {
 					sess.debugLogf("handler: write {}: %s", err)
 					stop <- err
@@ -87,6 +90,7 @@ func (h *handler) Handle(ws wsConn, events <-chan *event) (stats handlerStats) {
 				}
 				continue
 			}
+			e := e.(*event)
 
 			buf, err := sess.EventMessage(e)
 			if err != nil {
@@ -148,7 +152,7 @@ func (h *handler) Handle(ws wsConn, events <-chan *event) (stats handlerStats) {
 				// socket, and prevent an idle socket
 				// from being closed.
 				if len(queue) == 0 {
-					queue <- nil
+					queue <- []byte(`{}`)
 				}
 				continue
 			case e, ok = <-events:
