@@ -172,29 +172,14 @@ class TestContainer(unittest.TestCase):
         arvjob.outdir = "/var/spool/cwl"
 
         arvjob.done({
-            "state": "Complete",
-            "output": "99999999999999999999999999999993+99",
-            "log": "99999999999999999999999999999994+99",
-            "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
-            "exit_code": 0
+            "state": "Final",
+            "log_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz1",
+            "output_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2",
+            "uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
+            "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         })
 
-        api.collections().list.assert_has_calls([
-            mock.call(),
-            mock.call(filters=[['owner_uuid', '=', 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'],
-                          ['portable_data_hash', '=', '99999999999999999999999999999993+99'],
-                          ['name', '=', 'Output 9999999 of testjob']]),
-            mock.call().execute(num_retries=0),
-            mock.call(limit=1, filters=[['portable_data_hash', '=', '99999999999999999999999999999993+99']],
-                 select=['manifest_text']),
-            mock.call().execute(num_retries=0)])
-
-        api.collections().create.assert_called_with(
-            ensure_unique_name=True,
-            body={'portable_data_hash': '99999999999999999999999999999993+99',
-                  'manifest_text': 'XYZ',
-                  'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-                  'name': 'Output 9999999 of testjob'})
+        self.assertFalse(api.collections().create.called)
 
     @mock.patch("arvados.collection.Collection")
     def test_done_use_existing_collection(self, col):
@@ -217,18 +202,12 @@ class TestContainer(unittest.TestCase):
         arvjob.outdir = "/var/spool/cwl"
 
         arvjob.done({
-            "state": "Complete",
-            "output": "99999999999999999999999999999993+99",
-            "log": "99999999999999999999999999999994+99",
-            "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
-            "exit_code": 0
+            "state": "Final",
+            "log_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz1",
+            "output_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2",
+            "log_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2",
+            "uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
+            "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         })
-
-        api.collections().list.assert_has_calls([
-            mock.call(),
-            mock.call(filters=[['owner_uuid', '=', 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'],
-                               ['portable_data_hash', '=', '99999999999999999999999999999993+99'],
-                               ['name', '=', 'Output 9999999 of testjob']]),
-            mock.call().execute(num_retries=0)])
 
         self.assertFalse(api.collections().create.called)

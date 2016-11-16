@@ -119,7 +119,7 @@ class ArvCwlRunner(object):
                         logger.info("Job %s (%s) is Running", j.name, uuid)
                         j.running = True
                         j.update_pipeline_component(event["properties"]["new_attributes"])
-                elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled"):
+                elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled", "Final"):
                     uuid = event["object_uuid"]
                     try:
                         self.cond.acquire()
@@ -148,7 +148,7 @@ class ArvCwlRunner(object):
                 continue
 
             if self.work_api == "containers":
-                table = self.poll_api.containers()
+                table = self.poll_api.container_requests()
             elif self.work_api == "jobs":
                 table = self.poll_api.jobs()
 
