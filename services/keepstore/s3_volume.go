@@ -149,26 +149,10 @@ type S3Volume struct {
 	ReadOnly           bool
 	UnsafeDelete       bool
 
-	bucket      *s3.Bucket
-	bucketStats bucketStats
+	bucket      *s3bucket
 	volumeStats ioStats
 
 	startOnce sync.Once
-}
-
-type bucketStats struct {
-	Errors   uint64
-	Ops      uint64
-	GetOps   uint64
-	PutOps   uint64
-	HeadOps  uint64
-	DelOps   uint64
-	InBytes  uint64
-	OutBytes uint64
-
-	ErrorCodes map[string]uint64 `json:",omitempty"`
-
-	lock sync.Mutex
 }
 
 // Examples implements VolumeWithExamples.
@@ -248,9 +232,11 @@ func (v *S3Volume) Start() error {
 	client := s3.New(auth, region)
 	client.ConnectTimeout = time.Duration(v.ConnectTimeout)
 	client.ReadTimeout = time.Duration(v.ReadTimeout)
-	v.bucket = &s3.Bucket{
-		S3:   client,
-		Name: v.Bucket,
+	v.bucket = &s3bucket{
+		Bucket: &s3.Bucket{
+			S3:   client,
+			Name: v.Bucket,
+		},
 	}
 	return nil
 }
@@ -282,19 +268,14 @@ func (v *S3Volume) getReaderWithContext(ctx context.Context, loc string) (rdr io
 // disappeared in a Trash race, getReader calls fixRace to recover the
 // data, and tries again.
 func (v *S3Volume) getReader(loc string) (rdr io.ReadCloser, err error) {
-	v.tick(&v.bucketStats.Ops, &v.bucketStats.GetOps)
 	rdr, err = v.bucket.GetReader(loc)
 	err = v.translateError(err)
-	if err == nil {
-		rdr = NewCountingReader(rdr, v.tickInBytes)
-		return
-	} else if !os.IsNotExist(v.tickErr(err)) {
+	if err == nil || !os.IsNotExist(err) {
 		return
 	}
 
-	v.tick(&v.bucketStats.Ops, &v.bucketStats.HeadOps)
 	_, err = v.bucket.Head("recent/"+loc, nil)
-	err = v.translateError(v.tickErr(err))
+	err = v.translateError(err)
 	if err != nil {
 		// If we can't read recent/X, there's no point in
 		// trying fixRace. Give up.
@@ -305,13 +286,11 @@ func (v *S3Volume) getReader(loc string) (rdr io.ReadCloser, err error) {
 		return
 	}
 
-	v.tick(&v.bucketStats.Ops, &v.bucketStats.GetOps)
 	rdr, err = v.bucket.GetReader(loc)
 	if err != nil {
 		log.Printf("warning: reading %s after successful fixRace: %s", loc, err)
-		err = v.translateError(v.tickErr(err))
+		err = v.translateError(err)
 	}
-	rdr = NewCountingReader(rdr, v.tickInBytes)
 	return
 }
 
@@ -396,16 +375,11 @@ func (v *S3Volume) Put(ctx context.Context, loc string, block []byte) error {
 			}
 		}()
 		defer close(ready)
-		v.tick(&v.bucketStats.Ops, &v.bucketStats.PutOps)
-		rdr := NewCountingReader(bufr, v.tickOutBytes)
-		err = v.bucket.PutReader(loc, rdr, int64(size), "application/octet-stream", s3ACL, opts)
+		err = v.bucket.PutReader(loc, bufr, int64(size), "application/octet-stream", s3ACL, opts)
 		if err != nil {
-			v.tickErr(err)
 			return
 		}
-		v.tick(&v.bucketStats.Ops, &v.bucketStats.PutOps)
 		err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
-		v.tickErr(err)
 	}()
 	select {
 	case <-ctx.Done():
@@ -429,44 +403,38 @@ func (v *S3Volume) Touch(loc string) error {
 	if v.ReadOnly {
 		return MethodDisabledError
 	}
-	v.tick(&v.bucketStats.Ops, &v.bucketStats.HeadOps)
 	_, err := v.bucket.Head(loc, nil)
-	err = v.translateError(v.tickErr(err))
+	err = v.translateError(err)
 	if os.IsNotExist(err) && v.fixRace(loc) {
 		// The data object got trashed in a race, but fixRace
 		// rescued it.
 	} else if err != nil {
 		return err
 	}
-	v.tick(&v.bucketStats.Ops, &v.bucketStats.PutOps)
 	err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
-	return v.translateError(v.tickErr(err))
+	return v.translateError(err)
 }
 
 // Mtime returns the stored timestamp for the given locator.
 func (v *S3Volume) Mtime(loc string) (time.Time, error) {
-	v.tick(&v.bucketStats.Ops, &v.bucketStats.HeadOps)
 	_, err := v.bucket.Head(loc, nil)
 	if err != nil {
-		return zeroTime, v.translateError(v.tickErr(err))
+		return zeroTime, v.translateError(err)
 	}
-	v.tick(&v.bucketStats.Ops, &v.bucketStats.HeadOps)
 	resp, err := v.bucket.Head("recent/"+loc, nil)
-	err = v.translateError(v.tickErr(err))
+	err = v.translateError(err)
 	if os.IsNotExist(err) {
 		// The data object X exists, but recent/X is missing.
-		v.tick(&v.bucketStats.Ops, &v.bucketStats.PutOps)
 		err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
 		if err != nil {
 			log.Printf("error: creating %q: %s", "recent/"+loc, err)
-			return zeroTime, v.translateError(v.tickErr(err))
+			return zeroTime, v.translateError(err)
 		}
 		log.Printf("info: created %q to migrate existing block to new storage scheme", "recent/"+loc)
-		v.tick(&v.bucketStats.Ops, &v.bucketStats.HeadOps)
 		resp, err = v.bucket.Head("recent/"+loc, nil)
 		if err != nil {
 			log.Printf("error: created %q but HEAD failed: %s", "recent/"+loc, err)
-			return zeroTime, v.translateError(v.tickErr(err))
+			return zeroTime, v.translateError(err)
 		}
 	} else if err != nil {
 		// HEAD recent/X failed for some other reason.
@@ -480,16 +448,19 @@ func (v *S3Volume) Mtime(loc string) (time.Time, error) {
 func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 	// Use a merge sort to find matching sets of X and recent/X.
 	dataL := s3Lister{
-		Bucket:   v.bucket,
+		Bucket:   v.bucket.Bucket,
 		Prefix:   prefix,
 		PageSize: v.IndexPageSize,
 	}
 	recentL := s3Lister{
-		Bucket:   v.bucket,
+		Bucket:   v.bucket.Bucket,
 		Prefix:   "recent/" + prefix,
 		PageSize: v.IndexPageSize,
 	}
+	v.bucket.stats.tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
+	v.bucket.stats.tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 	for data, recent := dataL.First(), recentL.First(); data != nil; data = dataL.Next() {
+		v.bucket.stats.tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 		if data.Key >= "g" {
 			// Conveniently, "recent/*" and "trash/*" are
 			// lexically greater than all hex-encoded data
@@ -511,10 +482,12 @@ func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 		for recent != nil {
 			if cmp := strings.Compare(recent.Key[7:], data.Key); cmp < 0 {
 				recent = recentL.Next()
+				v.bucket.stats.tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 				continue
 			} else if cmp == 0 {
 				stamp = recent
 				recent = recentL.Next()
+				v.bucket.stats.tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 				break
 			} else {
 				// recent/X marker is missing: we'll
@@ -546,8 +519,7 @@ func (v *S3Volume) Trash(loc string) error {
 		if !s3UnsafeDelete {
 			return ErrS3TrashDisabled
 		}
-		v.tick(&v.bucketStats.Ops, &v.bucketStats.DelOps)
-		return v.translateError(v.tickErr(v.bucket.Del(loc)))
+		return v.translateError(v.bucket.Del(loc))
 	}
 	err := v.checkRaceWindow(loc)
 	if err != nil {
@@ -557,16 +529,14 @@ func (v *S3Volume) Trash(loc string) error {
 	if err != nil {
 		return err
 	}
-	v.tick(&v.bucketStats.Ops, &v.bucketStats.DelOps)
-	return v.translateError(v.tickErr(v.bucket.Del(loc)))
+	return v.translateError(v.bucket.Del(loc))
 }
 
 // checkRaceWindow returns a non-nil error if trash/loc is, or might
 // be, in the race window (i.e., it's not safe to trash loc).
 func (v *S3Volume) checkRaceWindow(loc string) error {
-	v.tick(&v.bucketStats.Ops, &v.bucketStats.HeadOps)
 	resp, err := v.bucket.Head("trash/"+loc, nil)
-	err = v.translateError(v.tickErr(err))
+	err = v.translateError(err)
 	if os.IsNotExist(err) {
 		// OK, trash/X doesn't exist so we're not in the race
 		// window
@@ -599,12 +569,11 @@ func (v *S3Volume) checkRaceWindow(loc string) error {
 // (PutCopy returns 200 OK if the request was received, even if the
 // copy failed).
 func (v *S3Volume) safeCopy(dst, src string) error {
-	v.tick(&v.bucketStats.Ops, &v.bucketStats.PutOps)
 	resp, err := v.bucket.PutCopy(dst, s3ACL, s3.CopyOptions{
 		ContentType:       "application/octet-stream",
 		MetadataDirective: "REPLACE",
 	}, v.bucket.Name+"/"+src)
-	err = v.translateError(v.tickErr(err))
+	err = v.translateError(err)
 	if err != nil {
 		return err
 	}
@@ -638,9 +607,8 @@ func (v *S3Volume) Untrash(loc string) error {
 	if err != nil {
 		return err
 	}
-	v.tick(&v.bucketStats.Ops, &v.bucketStats.PutOps)
 	err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
-	return v.translateError(v.tickErr(err))
+	return v.translateError(err)
 }
 
 // Status returns a *VolumeStatus representing the current in-use
@@ -654,9 +622,9 @@ func (v *S3Volume) Status() *VolumeStatus {
 	}
 }
 
-// IOStatus implements InternalStatser.
+// InternalStats returns bucket I/O and API call counters.
 func (v *S3Volume) InternalStats() interface{} {
-	return &v.bucketStats
+	return &v.bucket.stats
 }
 
 // String implements fmt.Stringer.
@@ -687,10 +655,9 @@ func (v *S3Volume) isKeepBlock(s string) bool {
 // there was a race between Put and Trash, fixRace recovers from the
 // race by Untrashing the block.
 func (v *S3Volume) fixRace(loc string) bool {
-	v.tick(&v.bucketStats.Ops, &v.bucketStats.HeadOps)
 	trash, err := v.bucket.Head("trash/"+loc, nil)
 	if err != nil {
-		if !os.IsNotExist(v.translateError(v.tickErr(err))) {
+		if !os.IsNotExist(v.translateError(err)) {
 			log.Printf("error: fixRace: HEAD %q: %s", "trash/"+loc, err)
 		}
 		return false
@@ -701,10 +668,8 @@ func (v *S3Volume) fixRace(loc string) bool {
 		return false
 	}
 
-	v.tick(&v.bucketStats.Ops, &v.bucketStats.HeadOps)
 	recent, err := v.bucket.Head("recent/"+loc, nil)
 	if err != nil {
-		v.tickErr(err)
 		log.Printf("error: fixRace: HEAD %q: %s", "recent/"+loc, err)
 		return false
 	}
@@ -753,7 +718,7 @@ func (v *S3Volume) EmptyTrash() {
 
 	// Use a merge sort to find matching sets of trash/X and recent/X.
 	trashL := s3Lister{
-		Bucket:   v.bucket,
+		Bucket:   v.bucket.Bucket,
 		Prefix:   "trash/",
 		PageSize: v.IndexPageSize,
 	}
@@ -772,9 +737,8 @@ func (v *S3Volume) EmptyTrash() {
 			log.Printf("warning: %s: EmptyTrash: %q: parse %q: %s", v, trash.Key, trash.LastModified, err)
 			continue
 		}
-		v.tick(&v.bucketStats.Ops, &v.bucketStats.HeadOps)
 		recent, err := v.bucket.Head("recent/"+loc, nil)
-		if err != nil && os.IsNotExist(v.translateError(v.tickErr(err))) {
+		if err != nil && os.IsNotExist(v.translateError(err)) {
 			log.Printf("warning: %s: EmptyTrash: found trash marker %q but no %q (%s); calling Untrash", v, trash.Key, "recent/"+loc, err)
 			err = v.Untrash(loc)
 			if err != nil {
@@ -805,9 +769,8 @@ func (v *S3Volume) EmptyTrash() {
 				v.Touch(loc)
 				continue
 			}
-			v.tick(&v.bucketStats.Ops, &v.bucketStats.HeadOps)
 			_, err := v.bucket.Head(loc, nil)
-			if os.IsNotExist(v.tickErr(err)) {
+			if os.IsNotExist(err) {
 				log.Printf("notice: %s: EmptyTrash: detected recent race for %q, calling fixRace", v, loc)
 				v.fixRace(loc)
 				continue
@@ -819,23 +782,18 @@ func (v *S3Volume) EmptyTrash() {
 		if startT.Sub(trashT) < theConfig.TrashLifetime.Duration() {
 			continue
 		}
-		v.tick(&v.bucketStats.Ops, &v.bucketStats.DelOps)
 		err = v.bucket.Del(trash.Key)
 		if err != nil {
-			v.tickErr(err)
 			log.Printf("warning: %s: EmptyTrash: deleting %q: %s", v, trash.Key, err)
 			continue
 		}
 		bytesDeleted += trash.Size
 		blocksDeleted++
 
-		v.tick(&v.bucketStats.Ops, &v.bucketStats.HeadOps)
 		_, err = v.bucket.Head(loc, nil)
-		if os.IsNotExist(v.tickErr(err)) {
-			v.tick(&v.bucketStats.Ops, &v.bucketStats.DelOps)
+		if os.IsNotExist(err) {
 			err = v.bucket.Del("recent/" + loc)
 			if err != nil {
-				v.tickErr(err)
 				log.Printf("warning: %s: EmptyTrash: deleting %q: %s", v, "recent/"+loc, err)
 			}
 		} else if err != nil {
@@ -846,38 +804,6 @@ func (v *S3Volume) EmptyTrash() {
 		log.Printf("error: %s: EmptyTrash: lister: %s", v, err)
 	}
 	log.Printf("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
-}
-
-func (v *S3Volume) tick(counters ...*uint64) {
-	for _, counter := range counters {
-		atomic.AddUint64(counter, 1)
-	}
-}
-
-func (v *S3Volume) tickErr(err error) error {
-	if err == nil {
-		return nil
-	}
-	atomic.AddUint64(&v.bucketStats.Errors, 1)
-	errStr := fmt.Sprintf("%T", err)
-	if err, ok := err.(*s3.Error); ok {
-		errStr = errStr + fmt.Sprintf(" %d %s", err.StatusCode, err.Code)
-	}
-	v.bucketStats.lock.Lock()
-	if v.bucketStats.ErrorCodes == nil {
-		v.bucketStats.ErrorCodes = make(map[string]uint64)
-	}
-	v.bucketStats.ErrorCodes[errStr]++
-	v.bucketStats.lock.Unlock()
-	return err
-}
-
-func (v *S3Volume) tickInBytes(n uint64) {
-	atomic.AddUint64(&v.bucketStats.InBytes, n)
-}
-
-func (v *S3Volume) tickOutBytes(n uint64) {
-	atomic.AddUint64(&v.bucketStats.OutBytes, n)
 }
 
 type s3Lister struct {
@@ -937,4 +863,92 @@ func (lister *s3Lister) pop() (k *s3.Key) {
 		lister.buf = lister.buf[1:]
 	}
 	return
+}
+
+// s3bucket wraps s3.bucket and counts I/O and API usage stats.
+type s3bucket struct {
+	*s3.Bucket
+	stats s3bucketStats
+}
+
+func (b *s3bucket) GetReader(path string) (io.ReadCloser, error) {
+	rdr, err := b.Bucket.GetReader(path)
+	b.stats.tick(&b.stats.Ops, &b.stats.GetOps)
+	b.stats.tickErr(err)
+	return NewCountingReader(rdr, b.stats.tickInBytes), err
+}
+
+func (b *s3bucket) Head(path string, headers map[string][]string) (*http.Response, error) {
+	resp, err := b.Bucket.Head(path, headers)
+	b.stats.tick(&b.stats.Ops, &b.stats.HeadOps)
+	b.stats.tickErr(err)
+	return resp, err
+}
+
+func (b *s3bucket) PutReader(path string, r io.Reader, length int64, contType string, perm s3.ACL, options s3.Options) error {
+	err := b.Bucket.PutReader(path, NewCountingReader(r, b.stats.tickOutBytes), length, contType, perm, options)
+	b.stats.tick(&b.stats.Ops, &b.stats.PutOps)
+	b.stats.tickErr(err)
+	return err
+}
+
+func (b *s3bucket) Put(path string, data []byte, contType string, perm s3.ACL, options s3.Options) error {
+	err := b.Bucket.PutReader(path, NewCountingReader(bytes.NewBuffer(data), b.stats.tickOutBytes), int64(len(data)), contType, perm, options)
+	b.stats.tick(&b.stats.Ops, &b.stats.PutOps)
+	b.stats.tickErr(err)
+	return err
+}
+
+func (b *s3bucket) Del(path string) error {
+	err := b.Bucket.Del(path)
+	b.stats.tick(&b.stats.Ops, &b.stats.DelOps)
+	b.stats.tickErr(err)
+	return err
+}
+
+type s3bucketStats struct {
+	Errors   uint64
+	Ops      uint64
+	GetOps   uint64
+	PutOps   uint64
+	HeadOps  uint64
+	DelOps   uint64
+	ListOps  uint64
+	InBytes  uint64
+	OutBytes uint64
+
+	ErrorCodes map[string]uint64 `json:",omitempty"`
+
+	lock sync.Mutex
+}
+
+func (s *s3bucketStats) tickInBytes(n uint64) {
+	atomic.AddUint64(&s.InBytes, n)
+}
+
+func (s *s3bucketStats) tickOutBytes(n uint64) {
+	atomic.AddUint64(&s.OutBytes, n)
+}
+
+func (s *s3bucketStats) tick(counters ...*uint64) {
+	for _, counter := range counters {
+		atomic.AddUint64(counter, 1)
+	}
+}
+
+func (s *s3bucketStats) tickErr(err error) {
+	if err == nil {
+		return
+	}
+	atomic.AddUint64(&s.Errors, 1)
+	errStr := fmt.Sprintf("%T", err)
+	if err, ok := err.(*s3.Error); ok {
+		errStr = errStr + fmt.Sprintf(" %d %s", err.StatusCode, err.Code)
+	}
+	s.lock.Lock()
+	if s.ErrorCodes == nil {
+		s.ErrorCodes = make(map[string]uint64)
+	}
+	s.ErrorCodes[errStr]++
+	s.lock.Unlock()
 }
