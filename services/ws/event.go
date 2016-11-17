@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"log"
 	"sync"
 	"time"
 
@@ -51,12 +50,12 @@ func (e *event) Detail() *arvados.Log {
 		&logRow.CreatedAt,
 		&propYAML)
 	if e.err != nil {
-		log.Printf("retrieving log row %d: %s", e.LogID, e.err)
+		logger(nil).WithField("LogID", e.LogID).WithError(e.err).Error("QueryRow failed")
 		return nil
 	}
 	e.err = yaml.Unmarshal(propYAML, &logRow.Properties)
 	if e.err != nil {
-		log.Printf("decoding yaml for log row %d: %s", e.LogID, e.err)
+		logger(nil).WithField("LogID", e.LogID).WithError(e.err).Error("yaml decode failed")
 		return nil
 	}
 	e.logRow = &logRow

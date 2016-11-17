@@ -379,6 +379,7 @@ Client:
   APIHost: {}
   Insecure: true
 Listen: :{}
+LogLevel: {}
 Postgres:
   host: {}
   dbname: {}
@@ -387,6 +388,7 @@ Postgres:
   sslmode: require
         """.format(os.environ['ARVADOS_API_HOST'],
                    port,
+                   ('info' if os.environ.get('ARVADOS_DEBUG', '') in ['','0'] else 'debug'),
                    _dbconfig('host'),
                    _dbconfig('database'),
                    _dbconfig('username'),

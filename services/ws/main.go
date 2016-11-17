@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/config"
+	log "github.com/Sirupsen/logrus"
 )
 
 func main() {
@@ -20,8 +20,24 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if !cfg.Debug {
-		debugLogf = func(string, ...interface{}) {}
+
+	lvl, err := log.ParseLevel(cfg.LogLevel)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.SetLevel(lvl)
+	switch cfg.LogFormat {
+	case "text":
+		log.SetFormatter(&log.TextFormatter{
+			FullTimestamp:   true,
+			TimestampFormat: time.RFC3339Nano,
+		})
+	case "json":
+		log.SetFormatter(&log.JSONFormatter{
+			TimestampFormat: time.RFC3339Nano,
+		})
+	default:
+		log.WithField("LogFormat", cfg.LogFormat).Fatal("unknown log format")
 	}
 
 	if *dumpConfig {
@@ -49,6 +65,6 @@ func main() {
 	}
 	eventSource.NewSink().Stop()
 
-	log.Printf("listening at %s", srv.Addr)
+	log.WithField("Listen", srv.Addr).Info("listening")
 	log.Fatal(srv.ListenAndServe())
 }

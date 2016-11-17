@@ -2,15 +2,23 @@ package main
 
 import (
 	"database/sql"
-	"encoding/json"
-	"log"
+	"io"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	log "github.com/Sirupsen/logrus"
 	"golang.org/x/net/websocket"
 )
+
+type wsConn interface {
+	io.ReadWriter
+	Request() *http.Request
+	SetReadDeadline(time.Time) error
+	SetWriteDeadline(time.Time) error
+}
 
 type router struct {
 	Config *Config
@@ -18,6 +26,9 @@ type router struct {
 	eventSource eventSource
 	mux         *http.ServeMux
 	setupOnce   sync.Once
+
+	lastReqID  int64
+	lastReqMtx sync.Mutex
 }
 
 func (rtr *router) setup() {
@@ -30,7 +41,7 @@ func (rtr *router) makeServer(newSession func(wsConn, arvados.Client, *sql.DB) (
 	handler := &handler{
 		PingTimeout: rtr.Config.PingTimeout.Duration(),
 		QueueSize:   rtr.Config.ClientEventQueue,
-		NewSession:  func(ws wsConn) (session, error) {
+		NewSession: func(ws wsConn) (session, error) {
 			return newSession(ws, rtr.Config.Client, rtr.eventSource.DB())
 		},
 	}
@@ -39,17 +50,16 @@ func (rtr *router) makeServer(newSession func(wsConn, arvados.Client, *sql.DB) (
 			return nil
 		},
 		Handler: websocket.Handler(func(ws *websocket.Conn) {
-			logj("Type", "connect",
-				"RemoteAddr", ws.Request().RemoteAddr)
 			t0 := time.Now()
-
 			sink := rtr.eventSource.NewSink()
+			logger(ws.Request().Context()).Info("connected")
+
 			stats := handler.Handle(ws, sink.Channel())
 
-			logj("Type", "disconnect",
-				"RemoteAddr", ws.Request().RemoteAddr,
-				"Elapsed", time.Now().Sub(t0).Seconds(),
-				"Stats", stats)
+			logger(ws.Request().Context()).WithFields(log.Fields{
+				"Elapsed": time.Now().Sub(t0).Seconds(),
+				"Stats":   stats,
+			}).Info("disconnect")
 
 			sink.Stop()
 			ws.Close()
@@ -57,18 +67,25 @@ func (rtr *router) makeServer(newSession func(wsConn, arvados.Client, *sql.DB) (
 	}
 }
 
-func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	rtr.setupOnce.Do(rtr.setup)
-	logj("Type", "request",
-		"RemoteAddr", req.RemoteAddr,
-		"X-Forwarded-For", req.Header.Get("X-Forwarded-For"))
-	rtr.mux.ServeHTTP(resp, req)
+func (rtr *router) newReqID() string {
+	rtr.lastReqMtx.Lock()
+	defer rtr.lastReqMtx.Unlock()
+	id := time.Now().UnixNano()
+	if id <= rtr.lastReqID {
+		id = rtr.lastReqID + 1
+	}
+	return strconv.FormatInt(id, 36)
 }
 
-func reqLog(m map[string]interface{}) {
-	j, err := json.Marshal(m)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Print(string(j))
+func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+	rtr.setupOnce.Do(rtr.setup)
+	logger := logger(req.Context()).
+		WithField("RequestID", rtr.newReqID())
+	ctx := contextWithLogger(req.Context(), logger)
+	req = req.WithContext(ctx)
+	logger.WithFields(log.Fields{
+		"RemoteAddr":      req.RemoteAddr,
+		"X-Forwarded-For": req.Header.Get("X-Forwarded-For"),
+	}).Info("accept request")
+	rtr.mux.ServeHTTP(resp, req)
 }

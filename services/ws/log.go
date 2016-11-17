@@ -1,41 +1,22 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"log"
-	"time"
+	"context"
+
+	log "github.com/Sirupsen/logrus"
 )
 
-func init() {
-	log.SetFlags(0)
+var loggerCtxKey = new(int)
+
+func contextWithLogger(ctx context.Context, logger *log.Entry) context.Context {
+	return context.WithValue(ctx, loggerCtxKey, logger)
 }
 
-func errorLogf(f string, args ...interface{}) {
-	log.Print(`{"error":`, string(mustMarshal(fmt.Sprintf(f, args...))), `}`)
-}
-
-var debugLogf = func(f string, args ...interface{}) {
-	log.Print(`{"debug":`, string(mustMarshal(fmt.Sprintf(f, args...))), `}`)
-}
-
-func mustMarshal(v interface{}) []byte {
-	buf, err := json.Marshal(v)
-	if err != nil {
-		panic(err)
+func logger(ctx context.Context) *log.Entry {
+	if ctx != nil {
+		if logger, ok := ctx.Value(loggerCtxKey).(*log.Entry); ok {
+			return logger
+		}
 	}
-	return buf
-}
-
-func logj(args ...interface{}) {
-	m := map[string]interface{}{"Time": time.Now().UTC()}
-	for i := 0; i < len(args)-1; i += 2 {
-		m[fmt.Sprintf("%s", args[i])] = args[i+1]
-	}
-	buf, err := json.Marshal(m)
-	if err != nil {
-		errorLogf("logj: %s", err)
-		return
-	}
-	log.Print(string(buf))
+	return log.WithFields(nil)
 }

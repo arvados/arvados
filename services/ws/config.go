@@ -7,10 +7,11 @@ import (
 )
 
 type Config struct {
-	Client   arvados.Client
-	Postgres pgConfig
-	Listen   string
-	Debug    bool
+	Client    arvados.Client
+	Postgres  pgConfig
+	Listen    string
+	LogLevel  string
+	LogFormat string
 
 	PingTimeout      arvados.Duration
 	ClientEventQueue int
@@ -30,6 +31,8 @@ func DefaultConfig() Config {
 			"connect_timeout": "30",
 			"sslmode":         "require",
 		},
+		LogLevel:         "info",
+		LogFormat:        "json",
 		PingTimeout:      arvados.Duration(time.Minute),
 		ClientEventQueue: 64,
 		ServerEventQueue: 4,

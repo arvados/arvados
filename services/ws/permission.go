@@ -43,10 +43,13 @@ func (pc *cachingPermChecker) SetToken(token string) {
 }
 
 func (pc *cachingPermChecker) Check(uuid string) (bool, error) {
+	logger := logger(nil).
+		WithField("token", pc.Client.AuthToken).
+		WithField("uuid", uuid)
 	pc.tidy()
 	now := time.Now()
 	if perm, ok := pc.cache[uuid]; ok && now.Sub(perm.Time) < maxPermCacheAge {
-		debugLogf("perm (cached): %+q %+q ...%v", pc.Client.AuthToken, uuid, perm.allowed)
+		logger.WithField("allowed", perm.allowed).Debug("cache hit")
 		return perm.allowed, nil
 	}
 	var buf map[string]interface{}
@@ -61,13 +64,13 @@ func (pc *cachingPermChecker) Check(uuid string) (bool, error) {
 	var allowed bool
 	if err == nil {
 		allowed = true
-	} else if txErr, ok := err.(arvados.TransactionError); ok && txErr.StatusCode == http.StatusNotFound {
+	} else if txErr, ok := err.(*arvados.TransactionError); ok && txErr.StatusCode == http.StatusNotFound {
 		allowed = false
 	} else {
-		errorLogf("perm err: %+q %+q: %T %s", pc.Client.AuthToken, uuid, err, err)
+		logger.WithError(err).Error("lookup error")
 		return false, err
 	}
-	debugLogf("perm: %+q %+q ...%v", pc.Client.AuthToken, uuid, allowed)
+	logger.WithField("allowed", allowed).Debug("cache miss")
 	pc.cache[uuid] = cacheEnt{Time: now, allowed: allowed}
 	return allowed, nil
 }

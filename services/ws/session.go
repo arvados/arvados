@@ -22,6 +22,4 @@ type session interface {
 	// incoming events will be queued. If the event queue fills
 	// up, the connection will be dropped.
 	EventMessage(*event) ([]byte, error)
-
-	debugLogf(string, ...interface{})
 }

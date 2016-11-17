@@ -4,11 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"log"
 	"sync"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	log "github.com/Sirupsen/logrus"
 )
 
 var (
@@ -26,6 +26,7 @@ type v0session struct {
 	db            *sql.DB
 	permChecker   permChecker
 	subscriptions []v0subscribe
+	log           *log.Entry
 	mtx           sync.Mutex
 	setupOnce     sync.Once
 }
@@ -35,35 +36,31 @@ func NewSessionV0(ws wsConn, ac arvados.Client, db *sql.DB) (session, error) {
 		ws:          ws,
 		db:          db,
 		permChecker: NewPermChecker(ac),
+		log:         logger(ws.Request().Context()),
 	}
 
 	err := ws.Request().ParseForm()
 	if err != nil {
-		log.Printf("%s ParseForm: %s", ws.Request().RemoteAddr, err)
+		sess.log.WithError(err).Error("ParseForm failed")
 		return nil, err
 	}
 	token := ws.Request().Form.Get("api_token")
 	sess.permChecker.SetToken(token)
-	sess.debugLogf("token = %+q", token)
+	sess.log.WithField("token", token).Debug("set token")
 
 	return sess, nil
 }
 
-func (sess *v0session) debugLogf(s string, args ...interface{}) {
-	args = append([]interface{}{sess.ws.Request().RemoteAddr}, args...)
-	debugLogf("%s "+s, args...)
-}
-
 func (sess *v0session) Receive(msg map[string]interface{}, buf []byte) [][]byte {
-	sess.debugLogf("received message: %+v", msg)
+	sess.log.WithField("data", msg).Debug("received message")
 	var sub v0subscribe
 	if err := json.Unmarshal(buf, &sub); err != nil {
-		sess.debugLogf("ignored unrecognized request: %s", err)
+		sess.log.WithError(err).Info("ignored invalid request")
 		return nil
 	}
 	if sub.Method == "subscribe" {
-		sub.prepare()
-		sess.debugLogf("subscription: %v", sub)
+		sub.prepare(sess)
+		sess.log.WithField("sub", sub).Debug("sub prepared")
 		sess.mtx.Lock()
 		sess.subscriptions = append(sess.subscriptions, sub)
 		sess.mtx.Unlock()
@@ -118,7 +115,7 @@ func (sess *v0session) Filter(e *event) bool {
 	sess.mtx.Lock()
 	defer sess.mtx.Unlock()
 	for _, sub := range sess.subscriptions {
-		if sub.match(e) {
+		if sub.match(sess, e) {
 			return true
 		}
 	}
@@ -129,7 +126,7 @@ func (sub *v0subscribe) getOldEvents(sess *v0session) (msgs [][]byte) {
 	if sub.LastLogID == 0 {
 		return
 	}
-	debugLogf("getOldEvents(%d)", sub.LastLogID)
+	sess.log.WithField("LastLogID", sub.LastLogID).Debug("getOldEvents")
 	// Here we do a "select id" query and queue an event for every
 	// log since the given ID, then use (*event)Detail() to
 	// retrieve the whole row and decide whether to send it. This
@@ -144,14 +141,14 @@ func (sub *v0subscribe) getOldEvents(sess *v0session) (msgs [][]byte) {
 		sub.LastLogID,
 		time.Now().UTC().Add(-10*time.Minute).Format(time.RFC3339Nano))
 	if err != nil {
-		errorLogf("db.Query: %s", err)
+		sess.log.WithError(err).Error("db.Query failed")
 		return
 	}
 	for rows.Next() {
 		var id uint64
 		err := rows.Scan(&id)
 		if err != nil {
-			errorLogf("Scan: %s", err)
+			sess.log.WithError(err).Error("row Scan failed")
 			continue
 		}
 		e := &event{
@@ -159,20 +156,20 @@ func (sub *v0subscribe) getOldEvents(sess *v0session) (msgs [][]byte) {
 			Received: time.Now(),
 			db:       sess.db,
 		}
-		if !sub.match(e) {
-			debugLogf("skip old event %+v", e)
+		if !sub.match(sess, e) {
+			sess.log.WithField("event", e).Debug("skip old event")
 			continue
 		}
 		msg, err := sess.EventMessage(e)
 		if err != nil {
-			debugLogf("event marshal: %s", err)
+			sess.log.WithError(err).Error("event marshal failed")
 			continue
 		}
-		debugLogf("old event: %s", string(msg))
+		sess.log.WithField("data", msg).Debug("will queue old event")
 		msgs = append(msgs, msg)
 	}
 	if err := rows.Err(); err != nil {
-		errorLogf("db.Query: %s", err)
+		sess.log.WithError(err).Error("db.Query failed")
 	}
 	return
 }
@@ -187,23 +184,25 @@ type v0subscribe struct {
 
 type v0filter [3]interface{}
 
-func (sub *v0subscribe) match(e *event) bool {
+func (sub *v0subscribe) match(sess *v0session, e *event) bool {
+	log := sess.log.WithField("LogID", e.LogID)
 	detail := e.Detail()
 	if detail == nil {
-		debugLogf("match(%d): failed on no detail", e.LogID)
+		log.Error("match failed, no detail")
 		return false
 	}
+	log = log.WithField("funcs", len(sub.funcs))
 	for i, f := range sub.funcs {
 		if !f(e) {
-			debugLogf("match(%d): failed on func %d", e.LogID, i)
+			log.WithField("func", i).Debug("match failed")
 			return false
 		}
 	}
-	debugLogf("match(%d): passed %d funcs", e.LogID, len(sub.funcs))
+	log.Debug("match passed")
 	return true
 }
 
-func (sub *v0subscribe) prepare() {
+func (sub *v0subscribe) prepare(sess *v0session) {
 	for _, f := range sub.Filters {
 		if len(f) != 3 {
 			continue
@@ -224,7 +223,6 @@ func (sub *v0subscribe) prepare() {
 				}
 			}
 			sub.funcs = append(sub.funcs, func(e *event) bool {
-				debugLogf("event_type func: %v in %v", e.Detail().EventType, strs)
 				for _, s := range strs {
 					if s == e.Detail().EventType {
 						return true
@@ -243,36 +241,36 @@ func (sub *v0subscribe) prepare() {
 			}
 			t, err := time.Parse(time.RFC3339Nano, tstr)
 			if err != nil {
-				debugLogf("time.Parse(%q): %s", tstr, err)
+				sess.log.WithField("data", tstr).WithError(err).Info("time.Parse failed")
 				continue
 			}
+			var fn func(*event) bool
 			switch op {
 			case ">=":
-				sub.funcs = append(sub.funcs, func(e *event) bool {
-					debugLogf("created_at func: %v >= %v", e.Detail().CreatedAt, t)
+				fn = func(e *event) bool {
 					return !e.Detail().CreatedAt.Before(t)
-				})
+				}
 			case "<=":
-				sub.funcs = append(sub.funcs, func(e *event) bool {
-					debugLogf("created_at func: %v <= %v", e.Detail().CreatedAt, t)
+				fn = func(e *event) bool {
 					return !e.Detail().CreatedAt.After(t)
-				})
+				}
 			case ">":
-				sub.funcs = append(sub.funcs, func(e *event) bool {
-					debugLogf("created_at func: %v > %v", e.Detail().CreatedAt, t)
+				fn = func(e *event) bool {
 					return e.Detail().CreatedAt.After(t)
-				})
+				}
 			case "<":
-				sub.funcs = append(sub.funcs, func(e *event) bool {
-					debugLogf("created_at func: %v < %v", e.Detail().CreatedAt, t)
+				fn = func(e *event) bool {
 					return e.Detail().CreatedAt.Before(t)
-				})
+				}
 			case "=":
-				sub.funcs = append(sub.funcs, func(e *event) bool {
-					debugLogf("created_at func: %v = %v", e.Detail().CreatedAt, t)
+				fn = func(e *event) bool {
 					return e.Detail().CreatedAt.Equal(t)
-				})
+				}
+			default:
+				sess.log.WithField("operator", op).Info("bogus operator")
+				continue
 			}
+			sub.funcs = append(sub.funcs, fn)
 		}
 	}
 }
