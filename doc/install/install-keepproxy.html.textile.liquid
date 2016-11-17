@@ -51,7 +51,7 @@ Usage of keepproxy:
 
 h3. Create an API token for the Keepproxy server
 
-{% assign railscmd = "bundle exec ./script/get_anonymous_user_token.rb" %}
+{% assign railscmd = "bundle exec ./script/get_anonymous_user_token.rb --get" %}
 {% assign railsout = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz" %}
 The Keepproxy server needs a token to talk to the API server.  On the <strong>API server</strong>, use the following command to create the token.  {% include 'install_rails_command' %}
 
