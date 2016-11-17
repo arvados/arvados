@@ -149,8 +149,7 @@ type S3Volume struct {
 	ReadOnly           bool
 	UnsafeDelete       bool
 
-	bucket      *s3bucket
-	volumeStats ioStats
+	bucket *s3bucket
 
 	startOnce sync.Once
 }
