@@ -44,7 +44,7 @@ func EachCollection(c *arvados.Client, pageSize int, f func(arvados.Collection) 
 	params := arvados.ResourceListParams{
 		Limit:  &limit,
 		Order:  "modified_at, uuid",
-		Count: false,
+		Count:  false,
 		Select: []string{"uuid", "manifest_text", "modified_at", "portable_data_hash", "replication_desired"},
 	}
 	var last arvados.Collection
