@@ -304,8 +304,7 @@ class ArvPutUploadJob(object):
     CACHE_DIR = '.cache/arvados/arv-put'
     EMPTY_STATE = {
         'manifest' : None, # Last saved manifest checkpoint
-        'files' : {}, # Previous run file list: {path : {size, mtime}}
-        'collection_uuid': None, # Saved collection's UUID
+        'files' : {} # Previous run file list: {path : {size, mtime}}
     }
 
     def __init__(self, paths, resume=True, reporter=None, bytes_expected=None,
@@ -331,7 +330,8 @@ class ArvPutUploadJob(object):
         self._cache_file = None
         self._collection = None
         self._collection_lock = threading.Lock()
-        self._local_collection = None # Previous collection manifest, used on update mode.
+        self._local_collection = None # Previous run collection manifest
+        self._file_paths = [] # Files to be updated in remote collection
         self._stop_checkpointer = threading.Event()
         self._checkpointer = threading.Thread(target=self._update_task)
         self._update_task_time = update_time  # How many seconds wait between update runs
@@ -346,22 +346,15 @@ class ArvPutUploadJob(object):
                 raise CollectionUpdateError("Cannot read collection {} ({})".format(update_collection, error))
             else:
                 self.update = True
-                self.resume = True
         elif update_collection:
             # Collection locator provided, but unknown format
             raise CollectionUpdateError("Collection locator unknown: '{}'".format(update_collection))
+        else:
+            # No collection asked for update, set up an empty one.
+            self._collection = arvados.collection.Collection(replication_desired=self.replication_desired)
+
         # Load cached data if any and if needed
         self._setup_state()
-        if self.update:
-            # Check if cache data belongs to the collection needed to be updated
-            if self._state['collection_uuid'] is None:
-                raise CollectionUpdateError("An initial upload is needed before being able to update the collection {}.".format(update_collection))
-            elif self._state['collection_uuid'] != update_collection:
-                raise CollectionUpdateError("Cached data doesn't belong to collection {}".format(update_collection))
-        elif self.resume:
-            # Check that cache data doesn't belong to an already created collection
-            if self._state['collection_uuid'] is not None:
-                raise ResumeCacheInvalid("Resume cache file '{}' belongs to existing collection {}".format(self._cache_filename, self._state['collection_uuid']))
 
     def start(self, save_collection):
         """
@@ -380,12 +373,12 @@ class ArvPutUploadJob(object):
                     else:
                         dirname = os.path.dirname(path) + '/'
                     for root, dirs, files in os.walk(path):
-                        # Make os.walk()'s traversing order deterministic
+                        # Make os.walk()'s dir traversing order deterministic
                         dirs.sort()
                         files.sort()
-                        for file in files:
-                            self._write_file(os.path.join(root, file),
-                                             os.path.join(root[len(dirname):], file))
+                        for f in files:
+                            self._write_file(os.path.join(root, f),
+                                             os.path.join(root[len(dirname):], f))
                 else:
                     self._write_file(path, self.filename or os.path.basename(path))
         finally:
@@ -396,18 +389,27 @@ class ArvPutUploadJob(object):
             self.manifest_text()
             if save_collection:
                 self.save_collection()
-                with self._state_lock:
-                    self._state['collection_uuid'] = self._my_collection().manifest_locator()
             self._update()
-            if self.resume:
-                self._cache_file.close()
-                # Correct the final written bytes count
-                self.bytes_written -= self.bytes_skipped
+            self._cache_file.close()
+            # Correct the final written bytes count
+            self.bytes_written -= self.bytes_skipped
 
     def save_collection(self):
         with self._collection_lock:
             if self.update:
-                self._my_collection().save(num_retries = self.num_retries)
+                # Check if files should be updated on the remote collection.
+                for fp in self._file_paths:
+                    remote_file = self._collection.find(fp)
+                    if not remote_file:
+                        # File don't exist on remote collection, copy it.
+                        self._collection.copy(fp, fp, self._local_collection)
+                    elif remote_file != self._local_collection.find(fp):
+                        # A different file exist on remote collection, overwrite it.
+                        self._collection.copy(fp, fp, self._local_collection, overwrite=True)
+                    else:
+                        # The file already exist on remote collection, skip it.
+                        pass
+                self._collection.save(num_retries=self.num_retries)
             else:
                 self._my_collection().save_new(
                     name=self.name, owner_uuid=self.owner_uuid,
@@ -449,13 +451,12 @@ class ArvPutUploadJob(object):
         Update cached manifest text and report progress.
         """
         with self._collection_lock:
-            self.bytes_written = self._collection_size(self._my_collection())
+            self.bytes_written = self._collection_size(self._local_collection)
             # Update cache, if resume enabled
-            if self.resume:
-                with self._state_lock:
-                    # Get the manifest text without comitting pending blocks
-                    self._state['manifest'] = self._my_collection()._get_manifest_text(".", strip=False, normalize=False, only_committed=True)
-                self._save_state()
+            with self._state_lock:
+                # Get the manifest text without comitting pending blocks
+                self._state['manifest'] = self._local_collection._get_manifest_text(".", strip=False, normalize=False, only_committed=True)
+            self._save_state()
         # Call the reporter, if any
         self.report_progress()
 
@@ -465,78 +466,76 @@ class ArvPutUploadJob(object):
 
     def _write_stdin(self, filename):
         with self._collection_lock:
-            output = self._my_collection().open(filename, 'w')
+            output = self._local_collection.open(filename, 'w')
         self._write(sys.stdin, output)
         output.close()
 
     def _write_file(self, source, filename):
         resume_offset = 0
-        should_upload = True
+        should_upload = False
+        new_file_in_cache = False
 
-        if self.resume:
-            with self._state_lock:
-                # If no previous cached data on this file, store it for an eventual
-                # repeated run.
-                if source not in self._state['files']:
-                    self._state['files'][source] = {
-                        'mtime': os.path.getmtime(source),
-                        'size' : os.path.getsize(source)
-                    }
-                cached_file_data = self._state['files'][source]
-            # Check if file was already uploaded (at least partially)
-            with self._collection_lock:
-                file_in_collection = self._my_collection().find(filename)
-                if self.update:
-                    file_in_local_collection = self._local_collection.find(filename)
-            # Decide what to do with this file.
-            should_upload = False
-            if not file_in_collection:
+        # Record file path for updating the remote collection before exiting
+        self._file_paths.append(filename)
+
+        with self._state_lock:
+            # If no previous cached data on this file, store it for an eventual
+            # repeated run.
+            if source not in self._state['files']:
+                self._state['files'][source] = {
+                    'mtime': os.path.getmtime(source),
+                    'size' : os.path.getsize(source)
+                }
+                new_file_in_cache = True
+            cached_file_data = self._state['files'][source]
+
+        # Check if file was already uploaded (at least partially)
+        with self._collection_lock:
+            file_in_local_collection = self._local_collection.find(filename)
+
+        # If not resuming, upload the full file.
+        if not self.resume:
+            should_upload = True
+        # New file detected from last run, upload it.
+        elif new_file_in_cache:
+            should_upload = True
+        # Local file didn't change from last run.
+        elif cached_file_data['mtime'] == os.path.getmtime(source) and cached_file_data['size'] == os.path.getsize(source):
+            if not file_in_local_collection:
+                # File not uploaded yet, upload it completely
                 should_upload = True
-            elif self.update and file_in_local_collection != file_in_collection:
-                # File remotely modified.
+            elif cached_file_data['size'] == file_in_local_collection.size():
+                # File already there, skip it.
+                self.bytes_skipped += cached_file_data['size']
+            elif cached_file_data['size'] > file_in_local_collection.size():
+                # File partially uploaded, resume!
+                resume_offset = file_in_local_collection.size()
                 should_upload = True
-            # From here, we are certain that the remote file is the same as last uploaded.
-            elif cached_file_data['mtime'] == os.path.getmtime(source) and cached_file_data['size'] == os.path.getsize(source):
-                # Local file didn't change from last run.
-                if cached_file_data['size'] == file_in_collection.size():
-                    # File already there, skip it.
-                    self.bytes_skipped += cached_file_data['size']
-                elif cached_file_data['size'] > file_in_collection.size():
-                    # File partially uploaded, resume!
-                    resume_offset = file_in_collection.size()
-                    should_upload = True
-                else:
-                    # Inconsistent cache, re-upload the file
-                    should_upload = True
-                    self.logger.warning("Uploaded version of file '{}' is bigger than local version, will re-upload it from scratch.".format(source))
-            elif cached_file_data['mtime'] < os.path.getmtime(source) and cached_file_data['size'] < os.path.getsize(source):
-                # File with appended data since last run
-                    resume_offset = file_in_collection.size()
-                    should_upload = True
             else:
-                # Local file differs from cached data, re-upload it
+                # Inconsistent cache, re-upload the file
                 should_upload = True
+                self.logger.warning("Uploaded version of file '{}' is bigger than local version, will re-upload it from scratch.".format(source))
+        # Local file differs from cached data, re-upload it.
+        else:
+            should_upload = True
 
-        if should_upload is False:
-            return
-
-        with open(source, 'r') as source_fd:
-            if self.resume:
+        if should_upload:
+            with open(source, 'r') as source_fd:
                 with self._state_lock:
                     self._state['files'][source]['mtime'] = os.path.getmtime(source)
                     self._state['files'][source]['size'] = os.path.getsize(source)
-            if resume_offset > 0:
-                # Start upload where we left off
-                with self._collection_lock:
-                    output = self._my_collection().open(filename, 'a')
-                source_fd.seek(resume_offset)
-                self.bytes_skipped += resume_offset
-            else:
-                # Start from scratch
-                with self._collection_lock:
-                    output = self._my_collection().open(filename, 'w')
-            self._write(source_fd, output)
-            output.close(flush=False)
+                if resume_offset > 0:
+                    # Start upload where we left off
+                    with self._collection_lock:
+                        output = self._local_collection.open(filename, 'a')
+                    source_fd.seek(resume_offset)
+                    self.bytes_skipped += resume_offset
+                else:
+                    # Start from scratch
+                    with self._collection_lock:
+                        output = self._local_collection.open(filename, 'w')
+                self._write(source_fd, output)
+                output.close(flush=False)
 
     def _write(self, source_fd, output):
         first_read = True
@@ -550,62 +549,40 @@ class ArvPutUploadJob(object):
             output.write(data)
 
     def _my_collection(self):
-        """
-        Create a new collection if none cached. Load it from cache otherwise.
-        """
-        if self._collection is None:
-            with self._state_lock:
-                manifest = self._state['manifest']
-            if self.resume and manifest is not None:
-                # Create collection from saved state
-                self._collection = arvados.collection.Collection(
-                    manifest,
-                    replication_desired=self.replication_desired)
-            else:
-                # Create new collection
-                self._collection = arvados.collection.Collection(
-                    replication_desired=self.replication_desired)
-        return self._collection
+        return self._local_collection
 
     def _setup_state(self):
         """
         Create a new cache file or load a previously existing one.
         """
-        if self.resume:
-            md5 = hashlib.md5()
-            md5.update(arvados.config.get('ARVADOS_API_HOST', '!nohost'))
-            realpaths = sorted(os.path.realpath(path) for path in self.paths)
-            md5.update('\0'.join(realpaths))
-            if self.filename:
-                md5.update(self.filename)
-            cache_filename = md5.hexdigest()
-            self._cache_file = open(os.path.join(
-                arv_cmd.make_home_conf_dir(self.CACHE_DIR, 0o700, 'raise'),
-                cache_filename), 'a+')
-            self._cache_filename = self._cache_file.name
-            self._lock_file(self._cache_file)
-            self._cache_file.seek(0)
-            with self._state_lock:
-                try:
-                    self._state = json.load(self._cache_file)
-                    if not set(['manifest', 'files', 'collection_uuid']).issubset(set(self._state.keys())):
-                        # Cache at least partially incomplete, set up new cache
-                        self._state = copy.deepcopy(self.EMPTY_STATE)
-                except ValueError:
-                    # Cache file empty, set up new cache
+        md5 = hashlib.md5()
+        md5.update(arvados.config.get('ARVADOS_API_HOST', '!nohost'))
+        realpaths = sorted(os.path.realpath(path) for path in self.paths)
+        md5.update('\0'.join(realpaths))
+        if self.filename:
+            md5.update(self.filename)
+        cache_filename = md5.hexdigest()
+        self._cache_file = open(os.path.join(
+            arv_cmd.make_home_conf_dir(self.CACHE_DIR, 0o700, 'raise'),
+            cache_filename), 'a+')
+        self._cache_filename = self._cache_file.name
+        self._lock_file(self._cache_file)
+        self._cache_file.seek(0)
+        with self._state_lock:
+            try:
+                self._state = json.load(self._cache_file)
+                if not set(['manifest', 'files']).issubset(set(self._state.keys())):
+                    # Cache at least partially incomplete, set up new cache
                     self._state = copy.deepcopy(self.EMPTY_STATE)
-
-                # In update mode, load the previous manifest so we can check if files
-                # were modified remotely.
-                if self.update:
-                    self._local_collection = arvados.collection.Collection(self._state['manifest'])
-            # Load how many bytes were uploaded on previous run
-            with self._collection_lock:
-                self.bytes_written = self._collection_size(self._my_collection())
-        # No resume required
-        else:
-            with self._state_lock:
+            except ValueError:
+                # Cache file empty, set up new cache
                 self._state = copy.deepcopy(self.EMPTY_STATE)
+
+            # Load the previous manifest so we can check if files were modified remotely.
+            self._local_collection = arvados.collection.Collection(self._state['manifest'], replication_desired=self.replication_desired)
+        # Load how many bytes were uploaded on previous run
+        with self._collection_lock:
+            self.bytes_written = self._collection_size(self._my_collection())
 
     def _lock_file(self, fileobj):
         try:
@@ -865,7 +842,6 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         sys.exit(status)
 
     # Success!
-    #writer.destroy_cache()
     return output
 
 
