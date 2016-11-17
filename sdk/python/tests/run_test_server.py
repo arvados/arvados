@@ -585,6 +585,7 @@ def stop_keep_web():
 def run_nginx():
     if 'ARVADOS_TEST_PROXY_SERVICES' in os.environ:
         return
+    stop_nginx()
     nginxconf = {}
     nginxconf['KEEPWEBPORT'] = _getport('keep-web')
     nginxconf['KEEPWEBDLSSLPORT'] = find_available_port()
