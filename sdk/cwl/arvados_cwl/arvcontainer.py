@@ -151,10 +151,17 @@ class ArvadosContainer(object):
                 if record["output"]:
                     outputs = done.done(self, record, "/tmp", self.outdir, "/keep")
             except WorkflowException as e:
-                logger.error("Error while collecting container outputs:\n%s", e, exc_info=(e if self.arvrunner.debug else False))
+                logger.error("Error while collecting output for container %s:\n%s", self.name, e, exc_info=(e if self.arvrunner.debug else False))
                 processStatus = "permanentFail"
             except Exception as e:
-                logger.exception("Got unknown exception while collecting job outputs:")
+                logger.exception("Got unknown exception while collecting output for container %s:", self.name)
+                processStatus = "permanentFail"
+
+            # Note: Currently, on error output_callback is expecting an empty dict,
+            # anything else will fail.
+            if not isinstance(outputs, dict):
+                logger.error("Unexpected output type %s '%s'", type(outputs), outputs)
+                outputs = {}
                 processStatus = "permanentFail"
 
             self.output_callback(outputs, processStatus)

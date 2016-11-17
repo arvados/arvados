@@ -139,7 +139,7 @@ class ArvadosJob(object):
                 with Perf(metrics, "done %s" % self.name):
                     self.done(response)
         except Exception as e:
-            logger.error("Got error %s" % str(e))
+            logger.exception("Job %s error" % (self.name))
             self.output_callback({}, "permanentFail")
 
     def update_pipeline_component(self, record):
@@ -204,13 +204,18 @@ class ArvadosJob(object):
                         outputs = done.done(self, record, dirs["tmpdir"],
                                             dirs["outdir"], dirs["keep"])
             except WorkflowException as e:
-                logger.error("Error while collecting job outputs:\n%s", e, exc_info=(e if self.arvrunner.debug else False))
+                logger.error("Error while collecting output for job %s:\n%s", self.name, e, exc_info=(e if self.arvrunner.debug else False))
                 processStatus = "permanentFail"
-                outputs = None
             except Exception as e:
-                logger.exception("Got unknown exception while collecting job outputs:")
+                logger.exception("Got unknown exception while collecting output for job %s:", self.name)
                 processStatus = "permanentFail"
-                outputs = None
+
+            # Note: Currently, on error output_callback is expecting an empty dict,
+            # anything else will fail.
+            if not isinstance(outputs, dict):
+                logger.error("Unexpected output type %s '%s'", type(outputs), outputs)
+                outputs = {}
+                processStatus = "permanentFail"
 
             self.output_callback(outputs, processStatus)
         finally:
