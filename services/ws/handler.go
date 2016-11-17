@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	log "github.com/Sirupsen/logrus"
 )
 
 type handler struct {
@@ -23,13 +22,9 @@ type handlerStats struct {
 }
 
 func (h *handler) Handle(ws wsConn, incoming <-chan *event) (stats handlerStats) {
-	ctx := contextWithLogger(ws.Request().Context(), log.WithFields(log.Fields{
-		"RemoteAddr": ws.Request().RemoteAddr,
-	}))
-
+	log := logger(ws.Request().Context())
 	queue := make(chan interface{}, h.QueueSize)
 	sess, err := h.NewSession(ws, queue)
-	log := logger(ctx)
 	if err != nil {
 		log.WithError(err).Error("NewSession failed")
 		return

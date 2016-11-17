@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 var (
@@ -29,7 +29,7 @@ type v0session struct {
 	permChecker   permChecker
 	subscriptions []v0subscribe
 	lastMsgID     uint64
-	log           *log.Entry
+	log           *logrus.Entry
 	mtx           sync.Mutex
 	setupOnce     sync.Once
 }

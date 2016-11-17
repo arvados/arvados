@@ -7,10 +7,12 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/config"
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 func main() {
+	log := logger(nil)
+
 	configPath := flag.String("config", "/etc/arvados/ws/ws.yml", "`path` to config file")
 	dumpConfig := flag.Bool("dump-config", false, "show current configuration and exit")
 	cfg := DefaultConfig()
@@ -21,21 +23,21 @@ func main() {
 		log.Fatal(err)
 	}
 
-	lvl, err := log.ParseLevel(cfg.LogLevel)
+	lvl, err := logrus.ParseLevel(cfg.LogLevel)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.SetLevel(lvl)
+	rootLogger.Level = lvl
 	switch cfg.LogFormat {
 	case "text":
-		log.SetFormatter(&log.TextFormatter{
+		rootLogger.Formatter = &logrus.TextFormatter{
 			FullTimestamp:   true,
 			TimestampFormat: time.RFC3339Nano,
-		})
+		}
 	case "json":
-		log.SetFormatter(&log.JSONFormatter{
+		rootLogger.Formatter = &logrus.JSONFormatter{
 			TimestampFormat: time.RFC3339Nano,
-		})
+		}
 	default:
 		log.WithField("LogFormat", cfg.LogFormat).Fatal("unknown log format")
 	}

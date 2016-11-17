@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/websocket"
 )
 
@@ -54,11 +54,12 @@ func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
 		Handler: websocket.Handler(func(ws *websocket.Conn) {
 			t0 := time.Now()
 			sink := rtr.eventSource.NewSink()
-			logger(ws.Request().Context()).Info("connected")
+			log := logger(ws.Request().Context())
+			log.Info("connected")
 
 			stats := handler.Handle(ws, sink.Channel())
 
-			logger(ws.Request().Context()).WithFields(log.Fields{
+			log.WithFields(logrus.Fields{
 				"Elapsed": time.Now().Sub(t0).Seconds(),
 				"Stats":   stats,
 			}).Info("disconnect")
@@ -85,7 +86,7 @@ func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		WithField("RequestID", rtr.newReqID())
 	ctx := contextWithLogger(req.Context(), logger)
 	req = req.WithContext(ctx)
-	logger.WithFields(log.Fields{
+	logger.WithFields(logrus.Fields{
 		"RemoteAddr":      req.RemoteAddr,
 		"X-Forwarded-For": req.Header.Get("X-Forwarded-For"),
 	}).Info("accept request")

@@ -3,20 +3,23 @@ package main
 import (
 	"context"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
-var loggerCtxKey = new(int)
+var (
+	loggerCtxKey = new(int)
+	rootLogger   = logrus.New()
+)
 
-func contextWithLogger(ctx context.Context, logger *log.Entry) context.Context {
+func contextWithLogger(ctx context.Context, logger *logrus.Entry) context.Context {
 	return context.WithValue(ctx, loggerCtxKey, logger)
 }
 
-func logger(ctx context.Context) *log.Entry {
+func logger(ctx context.Context) *logrus.Entry {
 	if ctx != nil {
-		if logger, ok := ctx.Value(loggerCtxKey).(*log.Entry); ok {
+		if logger, ok := ctx.Value(loggerCtxKey).(*logrus.Entry); ok {
 			return logger
 		}
 	}
-	return log.WithFields(nil)
+	return rootLogger.WithFields(nil)
 }
