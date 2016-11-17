@@ -395,26 +395,25 @@ class ArvPutUploadJob(object):
             self.bytes_written -= self.bytes_skipped
 
     def save_collection(self):
-        with self._collection_lock:
-            if self.update:
-                # Check if files should be updated on the remote collection.
-                for fp in self._file_paths:
-                    remote_file = self._collection.find(fp)
-                    if not remote_file:
-                        # File don't exist on remote collection, copy it.
-                        self._collection.copy(fp, fp, self._local_collection)
-                    elif remote_file != self._local_collection.find(fp):
-                        # A different file exist on remote collection, overwrite it.
-                        self._collection.copy(fp, fp, self._local_collection, overwrite=True)
-                    else:
-                        # The file already exist on remote collection, skip it.
-                        pass
-                self._collection.save(num_retries=self.num_retries)
-            else:
-                self._my_collection().save_new(
-                    name=self.name, owner_uuid=self.owner_uuid,
-                    ensure_unique_name=self.ensure_unique_name,
-                    num_retries=self.num_retries)
+        if self.update:
+            # Check if files should be updated on the remote collection.
+            for fp in self._file_paths:
+                remote_file = self._collection.find(fp)
+                if not remote_file:
+                    # File don't exist on remote collection, copy it.
+                    self._collection.copy(fp, fp, self._local_collection)
+                elif remote_file != self._local_collection.find(fp):
+                    # A different file exist on remote collection, overwrite it.
+                    self._collection.copy(fp, fp, self._local_collection, overwrite=True)
+                else:
+                    # The file already exist on remote collection, skip it.
+                    pass
+            self._collection.save(num_retries=self.num_retries)
+        else:
+            self._my_collection().save_new(
+                name=self.name, owner_uuid=self.owner_uuid,
+                ensure_unique_name=self.ensure_unique_name,
+                num_retries=self.num_retries)
 
     def destroy_cache(self):
         if self.resume:
@@ -465,8 +464,7 @@ class ArvPutUploadJob(object):
             self.reporter(self.bytes_written, self.bytes_expected)
 
     def _write_stdin(self, filename):
-        with self._collection_lock:
-            output = self._local_collection.open(filename, 'w')
+        output = self._local_collection.open(filename, 'w')
         self._write(sys.stdin, output)
         output.close()
 
@@ -490,8 +488,7 @@ class ArvPutUploadJob(object):
             cached_file_data = self._state['files'][source]
 
         # Check if file was already uploaded (at least partially)
-        with self._collection_lock:
-            file_in_local_collection = self._local_collection.find(filename)
+        file_in_local_collection = self._local_collection.find(filename)
 
         # If not resuming, upload the full file.
         if not self.resume:
@@ -526,14 +523,12 @@ class ArvPutUploadJob(object):
                     self._state['files'][source]['size'] = os.path.getsize(source)
                 if resume_offset > 0:
                     # Start upload where we left off
-                    with self._collection_lock:
-                        output = self._local_collection.open(filename, 'a')
+                    output = self._local_collection.open(filename, 'a')
                     source_fd.seek(resume_offset)
                     self.bytes_skipped += resume_offset
                 else:
                     # Start from scratch
-                    with self._collection_lock:
-                        output = self._local_collection.open(filename, 'w')
+                    output = self._local_collection.open(filename, 'w')
                 self._write(source_fd, output)
                 output.close(flush=False)
 
@@ -621,18 +616,15 @@ class ArvPutUploadJob(object):
         return name
 
     def manifest_locator(self):
-        with self._collection_lock:
-            locator = self._my_collection().manifest_locator()
+        locator = self._my_collection().manifest_locator()
         return locator
 
     def portable_data_hash(self):
-        with self._collection_lock:
-            datahash = self._my_collection().portable_data_hash()
+        datahash = self._my_collection().portable_data_hash()
         return datahash
 
     def manifest_text(self, stream_name=".", strip=False, normalize=False):
-        with self._collection_lock:
-            manifest = self._my_collection().manifest_text(stream_name, strip, normalize)
+        manifest = self._my_collection().manifest_text(stream_name, strip, normalize)
         return manifest
 
     def _datablocks_on_item(self, item):
