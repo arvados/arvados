@@ -210,10 +210,6 @@ class CollectionUpdateError(Exception):
     pass
 
 
-class ResumeCacheInvalid(Exception):
-    pass
-
-
 class ResumeCacheConflict(Exception):
     pass
 
@@ -755,12 +751,6 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         print >>stderr, "\n".join([
             "arv-put: Another process is already uploading this data.",
             "         Use --no-resume if this is really what you want."])
-        sys.exit(1)
-    except ResumeCacheInvalid as error:
-        print >>stderr, "\n".join([
-            "arv-put: %s" % str(error),
-            "         Use --no-resume or delete/move the cache file to upload to a new collection.",
-            "         Use --update-collection otherwise."])
         sys.exit(1)
     except CollectionUpdateError as error:
         print >>stderr, "\n".join([
