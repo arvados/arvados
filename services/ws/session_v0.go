@@ -55,14 +55,11 @@ func NewSessionV0(ws wsConn, sendq chan<- interface{}, ac arvados.Client, db *sq
 	return sess, nil
 }
 
-func (sess *v0session) Receive(msg map[string]interface{}, buf []byte) {
-	sess.log.WithField("data", msg).Debug("received message")
+func (sess *v0session) Receive(buf []byte) error {
 	var sub v0subscribe
 	if err := json.Unmarshal(buf, &sub); err != nil {
-		sess.log.WithError(err).Info("ignored invalid request")
-		return
-	}
-	if sub.Method == "subscribe" {
+		sess.log.WithError(err).Info("invalid message from client")
+	} else if sub.Method == "subscribe" {
 		sub.prepare(sess)
 		sess.log.WithField("sub", sub).Debug("sub prepared")
 		sess.sendq <- v0subscribeOK
@@ -70,9 +67,12 @@ func (sess *v0session) Receive(msg map[string]interface{}, buf []byte) {
 		sess.subscriptions = append(sess.subscriptions, sub)
 		sess.mtx.Unlock()
 		sub.sendOldEvents(sess)
-		return
+		return nil
+	} else {
+		sess.log.WithField("Method", sub.Method).Info("unknown method")
 	}
 	sess.sendq <- v0subscribeFail
+	return nil
 }
 
 func (sess *v0session) EventMessage(e *event) ([]byte, error) {

@@ -1,8 +1,10 @@
 package main
 
 type session interface {
-	// Receive processes a message received from the client.
-	Receive(map[string]interface{}, []byte)
+	// Receive processes a message received from the client. If a
+	// non-nil error is returned, the connection will be
+	// terminated.
+	Receive([]byte) error
 
 	// Filter returns true if the event should be queued for
 	// sending to the client. It should return as fast as

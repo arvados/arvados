@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"io"
 	"time"
 
@@ -61,14 +60,11 @@ func (h *handler) Handle(ws wsConn, incoming <-chan *event) (stats handlerStats)
 				stop <- err
 				return
 			}
-			msg := make(map[string]interface{})
-			err = json.Unmarshal(buf, &msg)
+			err = sess.Receive(buf)
 			if err != nil {
-				log.WithError(err).Info("invalid json from client")
 				stop <- err
 				return
 			}
-			sess.Receive(msg, buf)
 		}
 	}()
 
