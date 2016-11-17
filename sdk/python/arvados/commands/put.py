@@ -97,8 +97,8 @@ separated by commas, with a trailing newline. Do not store a
 manifest.
 """)
 
-_group.add_argument('--update-collection', type=str, default=None,
-                    dest='update_collection', metavar="UUID", help="""
+upload_opts.add_argument('--update-collection', type=str, default=None,
+                         dest='update_collection', metavar="UUID", help="""
 Update an existing collection identified by the given Arvados collection
 UUID. All new local files will be uploaded.
 """)
@@ -337,24 +337,8 @@ class ArvPutUploadJob(object):
         self._update_task_time = update_time  # How many seconds wait between update runs
         self.logger = logging.getLogger('arvados.arv_put')
 
-        # Load an already existing collection for update
-        if update_collection and re.match(arvados.util.collection_uuid_pattern,
-                                          update_collection):
-            try:
-                self._collection = arvados.collection.Collection(update_collection)
-            except arvados.errors.ApiError as error:
-                raise CollectionUpdateError("Cannot read collection {} ({})".format(update_collection, error))
-            else:
-                self.update = True
-        elif update_collection:
-            # Collection locator provided, but unknown format
-            raise CollectionUpdateError("Collection locator unknown: '{}'".format(update_collection))
-        else:
-            # No collection asked for update, set up an empty one.
-            self._collection = arvados.collection.Collection(replication_desired=self.replication_desired)
-
         # Load cached data if any and if needed
-        self._setup_state()
+        self._setup_state(update_collection)
 
     def start(self, save_collection):
         """
@@ -546,10 +530,24 @@ class ArvPutUploadJob(object):
     def _my_collection(self):
         return self._local_collection
 
-    def _setup_state(self):
+    def _setup_state(self, update_collection):
         """
         Create a new cache file or load a previously existing one.
         """
+        # Load an already existing collection for update
+        if update_collection and re.match(arvados.util.collection_uuid_pattern,
+                                          update_collection):
+            try:
+                self._collection = arvados.collection.Collection(update_collection)
+            except arvados.errors.ApiError as error:
+                raise CollectionUpdateError("Cannot read collection {} ({})".format(update_collection, error))
+            else:
+                self.update = True
+        elif update_collection:
+            # Collection locator provided, but unknown format
+            raise CollectionUpdateError("Collection locator unknown: '{}'".format(update_collection))
+
+        # Set up cache file name from input paths.
         md5 = hashlib.md5()
         md5.update(arvados.config.get('ARVADOS_API_HOST', '!nohost'))
         realpaths = sorted(os.path.realpath(path) for path in self.paths)
