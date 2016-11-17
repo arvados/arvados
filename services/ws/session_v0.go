@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -23,16 +24,19 @@ var (
 
 type v0session struct {
 	ws            wsConn
+	sendq         chan<- interface{}
 	db            *sql.DB
 	permChecker   permChecker
 	subscriptions []v0subscribe
+	lastMsgID     uint64
 	log           *log.Entry
 	mtx           sync.Mutex
 	setupOnce     sync.Once
 }
 
-func NewSessionV0(ws wsConn, ac arvados.Client, db *sql.DB) (session, error) {
+func NewSessionV0(ws wsConn, sendq chan<- interface{}, ac arvados.Client, db *sql.DB) (session, error) {
 	sess := &v0session{
+		sendq:       sendq,
 		ws:          ws,
 		db:          db,
 		permChecker: NewPermChecker(ac),
@@ -51,23 +55,24 @@ func NewSessionV0(ws wsConn, ac arvados.Client, db *sql.DB) (session, error) {
 	return sess, nil
 }
 
-func (sess *v0session) Receive(msg map[string]interface{}, buf []byte) [][]byte {
+func (sess *v0session) Receive(msg map[string]interface{}, buf []byte) {
 	sess.log.WithField("data", msg).Debug("received message")
 	var sub v0subscribe
 	if err := json.Unmarshal(buf, &sub); err != nil {
 		sess.log.WithError(err).Info("ignored invalid request")
-		return nil
+		return
 	}
 	if sub.Method == "subscribe" {
 		sub.prepare(sess)
 		sess.log.WithField("sub", sub).Debug("sub prepared")
+		sess.sendq <- v0subscribeOK
 		sess.mtx.Lock()
 		sess.subscriptions = append(sess.subscriptions, sub)
 		sess.mtx.Unlock()
-
-		return append([][]byte{v0subscribeOK}, sub.getOldEvents(sess)...)
+		sub.sendOldEvents(sess)
+		return
 	}
-	return [][]byte{v0subscribeFail}
+	sess.sendq <- v0subscribeFail
 }
 
 func (sess *v0session) EventMessage(e *event) ([]byte, error) {
@@ -82,7 +87,7 @@ func (sess *v0session) EventMessage(e *event) ([]byte, error) {
 	}
 
 	msg := map[string]interface{}{
-		"msgID":             e.Serial,
+		"msgID":             atomic.AddUint64(&sess.lastMsgID, 1),
 		"id":                detail.ID,
 		"uuid":              detail.UUID,
 		"object_uuid":       detail.ObjectUUID,
@@ -122,7 +127,7 @@ func (sess *v0session) Filter(e *event) bool {
 	return false
 }
 
-func (sub *v0subscribe) getOldEvents(sess *v0session) (msgs [][]byte) {
+func (sub *v0subscribe) sendOldEvents(sess *v0session) {
 	if sub.LastLogID == 0 {
 		return
 	}
@@ -151,27 +156,27 @@ func (sub *v0subscribe) getOldEvents(sess *v0session) (msgs [][]byte) {
 			sess.log.WithError(err).Error("row Scan failed")
 			continue
 		}
+		for len(sess.sendq)*2 > cap(sess.sendq) {
+			// Ugly... but if we fill up the whole client
+			// queue with a backlog of old events, a
+			// single new event will overflow it and
+			// terminate the connection, and then the
+			// client will probably reconnect and do the
+			// same thing all over again.
+			time.Sleep(100 * time.Millisecond)
+		}
 		e := &event{
 			LogID:    id,
 			Received: time.Now(),
 			db:       sess.db,
 		}
-		if !sub.match(sess, e) {
-			sess.log.WithField("event", e).Debug("skip old event")
-			continue
+		if sub.match(sess, e) {
+			sess.sendq <- e
 		}
-		msg, err := sess.EventMessage(e)
-		if err != nil {
-			sess.log.WithError(err).Error("event marshal failed")
-			continue
-		}
-		sess.log.WithField("data", msg).Debug("will queue old event")
-		msgs = append(msgs, msg)
 	}
 	if err := rows.Err(); err != nil {
 		sess.log.WithError(err).Error("db.Query failed")
 	}
-	return
 }
 
 type v0subscribe struct {

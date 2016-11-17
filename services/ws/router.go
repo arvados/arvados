@@ -31,18 +31,20 @@ type router struct {
 	lastReqMtx sync.Mutex
 }
 
+type sessionFactory func(wsConn, chan<- interface{}, arvados.Client, *sql.DB) (session, error)
+
 func (rtr *router) setup() {
 	rtr.mux = http.NewServeMux()
 	rtr.mux.Handle("/websocket", rtr.makeServer(NewSessionV0))
 	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(NewSessionV1))
 }
 
-func (rtr *router) makeServer(newSession func(wsConn, arvados.Client, *sql.DB) (session, error)) *websocket.Server {
+func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
 	handler := &handler{
 		PingTimeout: rtr.Config.PingTimeout.Duration(),
 		QueueSize:   rtr.Config.ClientEventQueue,
-		NewSession: func(ws wsConn) (session, error) {
-			return newSession(ws, rtr.Config.Client, rtr.eventSource.DB())
+		NewSession: func(ws wsConn, sendq chan<- interface{}) (session, error) {
+			return newSession(ws, sendq, rtr.Config.Client, rtr.eventSource.DB())
 		},
 	}
 	return &websocket.Server{

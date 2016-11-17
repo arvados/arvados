@@ -13,7 +13,7 @@ type handler struct {
 	Client      arvados.Client
 	PingTimeout time.Duration
 	QueueSize   int
-	NewSession  func(wsConn) (session, error)
+	NewSession  func(wsConn, chan<- interface{}) (session, error)
 }
 
 type handlerStats struct {
@@ -23,17 +23,18 @@ type handlerStats struct {
 	EventCount   uint64
 }
 
-func (h *handler) Handle(ws wsConn, events <-chan *event) (stats handlerStats) {
+func (h *handler) Handle(ws wsConn, incoming <-chan *event) (stats handlerStats) {
 	ctx := contextWithLogger(ws.Request().Context(), log.WithFields(log.Fields{
 		"RemoteAddr": ws.Request().RemoteAddr,
 	}))
-	sess, err := h.NewSession(ws)
-	if err != nil {
-		logger(ctx).WithError(err).Error("NewSession failed")
-		return
-	}
 
 	queue := make(chan interface{}, h.QueueSize)
+	sess, err := h.NewSession(ws, queue)
+	log := logger(ctx)
+	if err != nil {
+		log.WithError(err).Error("NewSession failed")
+		return
+	}
 
 	stopped := make(chan struct{})
 	stop := make(chan error, 5)
@@ -48,54 +49,53 @@ func (h *handler) Handle(ws wsConn, events <-chan *event) (stats handlerStats) {
 			}
 			ws.SetReadDeadline(time.Now().Add(24 * 365 * time.Hour))
 			n, err := ws.Read(buf)
-			logger(ctx).WithField("frame", string(buf[:n])).Debug("received frame")
-			if err == nil && n == len(buf) {
+			buf := buf[:n]
+			log.WithField("frame", string(buf[:n])).Debug("received frame")
+			if err == nil && n == cap(buf) {
 				err = errFrameTooBig
 			}
 			if err != nil {
 				if err != io.EOF {
-					logger(ctx).WithError(err).Info("read error")
+					log.WithError(err).Info("read error")
 				}
 				stop <- err
 				return
 			}
 			msg := make(map[string]interface{})
-			err = json.Unmarshal(buf[:n], &msg)
+			err = json.Unmarshal(buf, &msg)
 			if err != nil {
-				logger(ctx).WithError(err).Info("invalid json from client")
+				log.WithError(err).Info("invalid json from client")
 				stop <- err
 				return
 			}
-			for _, buf := range sess.Receive(msg, buf[:n]) {
-				logger(ctx).WithField("frame", string(buf)).Debug("queued message from sess.Receive")
-				queue <- buf
-			}
+			sess.Receive(msg, buf)
 		}
 	}()
 
 	go func() {
-		for e := range queue {
-			if buf, ok := e.([]byte); ok {
-				ws.SetWriteDeadline(time.Now().Add(h.PingTimeout))
-				logger(ctx).WithField("frame", string(buf)).Debug("send msg buf")
-				_, err := ws.Write(buf)
+		for data := range queue {
+			var e *event
+			var buf []byte
+			var err error
+			log := log
+
+			switch data := data.(type) {
+			case []byte:
+				buf = data
+			case *event:
+				e = data
+				log = log.WithField("serial", e.Serial)
+				buf, err = sess.EventMessage(e)
 				if err != nil {
-					logger(ctx).WithError(err).Error("write failed")
+					log.WithError(err).Error("EventMessage failed")
 					stop <- err
 					break
+				} else if len(buf) == 0 {
+					log.Debug("skip")
+					continue
 				}
-				continue
-			}
-			e := e.(*event)
-			log := logger(ctx).WithField("serial", e.Serial)
-
-			buf, err := sess.EventMessage(e)
-			if err != nil {
-				log.WithError(err).Error("EventMessage failed")
-				stop <- err
-				break
-			} else if len(buf) == 0 {
-				log.Debug("skip")
+			default:
+				log.WithField("data", data).Error("bad object in client queue")
 				continue
 			}
 
@@ -118,6 +118,8 @@ func (h *handler) Handle(ws wsConn, events <-chan *event) (stats handlerStats) {
 			stats.EventCount++
 		}
 		for _ = range queue {
+			// Ensure queue can't fill up and block other
+			// goroutines after we hit a write error.
 		}
 	}()
 
@@ -127,20 +129,10 @@ func (h *handler) Handle(ws wsConn, events <-chan *event) (stats handlerStats) {
 	// channel closes or the incoming event stream ends. Shut down
 	// the handler if the outgoing queue fills up.
 	go func() {
-		send := func(e *event) {
-			select {
-			case queue <- e:
-			default:
-				stop <- errQueueFull
-			}
-		}
-
 		ticker := time.NewTicker(h.PingTimeout)
 		defer ticker.Stop()
 
 		for {
-			var e *event
-			var ok bool
 			select {
 			case <-stopped:
 				close(queue)
@@ -155,14 +147,19 @@ func (h *handler) Handle(ws wsConn, events <-chan *event) (stats handlerStats) {
 					queue <- []byte(`{}`)
 				}
 				continue
-			case e, ok = <-events:
+			case e, ok := <-incoming:
 				if !ok {
 					close(queue)
 					return
 				}
-			}
-			if sess.Filter(e) {
-				send(e)
+				if !sess.Filter(e) {
+					continue
+				}
+				select {
+				case queue <- e:
+				default:
+					stop <- errQueueFull
+				}
 			}
 		}
 	}()
