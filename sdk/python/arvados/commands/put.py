@@ -328,9 +328,9 @@ class ArvPutUploadJob(object):
         self._state = None # Previous run state (file list & manifest)
         self._current_files = [] # Current run file list
         self._cache_file = None
-        self._collection = None
         self._collection_lock = threading.Lock()
-        self._local_collection = None # Previous run collection manifest
+        self._remote_collection = None # Collection being updated (if asked)
+        self._local_collection = None # Collection from previous run manifest
         self._file_paths = [] # Files to be updated in remote collection
         self._stop_checkpointer = threading.Event()
         self._checkpointer = threading.Thread(target=self._update_task)
@@ -382,19 +382,19 @@ class ArvPutUploadJob(object):
         if self.update:
             # Check if files should be updated on the remote collection.
             for fp in self._file_paths:
-                remote_file = self._collection.find(fp)
+                remote_file = self._remote_collection.find(fp)
                 if not remote_file:
                     # File don't exist on remote collection, copy it.
-                    self._collection.copy(fp, fp, self._local_collection)
+                    self._remote_collection.copy(fp, fp, self._local_collection)
                 elif remote_file != self._local_collection.find(fp):
                     # A different file exist on remote collection, overwrite it.
-                    self._collection.copy(fp, fp, self._local_collection, overwrite=True)
+                    self._remote_collection.copy(fp, fp, self._local_collection, overwrite=True)
                 else:
                     # The file already exist on remote collection, skip it.
                     pass
-            self._collection.save(num_retries=self.num_retries)
+            self._remote_collection.save(num_retries=self.num_retries)
         else:
-            self._my_collection().save_new(
+            self._local_collection.save_new(
                 name=self.name, owner_uuid=self.owner_uuid,
                 ensure_unique_name=self.ensure_unique_name,
                 num_retries=self.num_retries)
@@ -528,7 +528,7 @@ class ArvPutUploadJob(object):
             output.write(data)
 
     def _my_collection(self):
-        return self._local_collection
+        return self._remote_collection if self.update else self._local_collection
 
     def _setup_state(self, update_collection):
         """
@@ -538,7 +538,7 @@ class ArvPutUploadJob(object):
         if update_collection and re.match(arvados.util.collection_uuid_pattern,
                                           update_collection):
             try:
-                self._collection = arvados.collection.Collection(update_collection)
+                self._remote_collection = arvados.collection.Collection(update_collection)
             except arvados.errors.ApiError as error:
                 raise CollectionUpdateError("Cannot read collection {} ({})".format(update_collection, error))
             else:
@@ -575,7 +575,7 @@ class ArvPutUploadJob(object):
             self._local_collection = arvados.collection.Collection(self._state['manifest'], replication_desired=self.replication_desired)
         # Load how many bytes were uploaded on previous run
         with self._collection_lock:
-            self.bytes_written = self._collection_size(self._my_collection())
+            self.bytes_written = self._collection_size(self._local_collection)
 
     def _lock_file(self, fileobj):
         try:
@@ -609,21 +609,16 @@ class ArvPutUploadJob(object):
             self._cache_file = new_cache
 
     def collection_name(self):
-        with self._collection_lock:
-            name = self._my_collection().api_response()['name'] if self._my_collection().api_response() else None
-        return name
+        return self._my_collection().api_response()['name'] if self._my_collection().api_response() else None
 
     def manifest_locator(self):
-        locator = self._my_collection().manifest_locator()
-        return locator
+        return self._my_collection().manifest_locator()
 
     def portable_data_hash(self):
-        datahash = self._my_collection().portable_data_hash()
-        return datahash
+        return self._my_collection().portable_data_hash()
 
     def manifest_text(self, stream_name=".", strip=False, normalize=False):
-        manifest = self._my_collection().manifest_text(stream_name, strip, normalize)
-        return manifest
+        return self._my_collection().manifest_text(stream_name, strip, normalize)
 
     def _datablocks_on_item(self, item):
         """
