@@ -294,19 +294,19 @@ class ArvCwlRunner(object):
                                                                  keep_client=self.keep_client)
         self.fs_access = make_fs_access(kwargs["basedir"])
 
-        update_uuid = kwargs.get("update_workflow")
-        if update_uuid or kwargs.get("create_workflow"):
+        existing_uuid = kwargs.get("update_workflow")
+        if existing_uuid or kwargs.get("create_workflow"):
             if self.work_api == "jobs":
                 tmpl = RunnerTemplate(self, tool, job_order,
                                       kwargs.get("enable_reuse"),
-                                      uuid=update_uuid)
+                                      uuid=existing_uuid)
                 tmpl.save()
                 # cwltool.main will write our return value to stdout.
                 return tmpl.uuid
             else:
                 return upload_workflow(self, tool, job_order,
                                        self.project_uuid,
-                                       uuid=update_uuid)
+                                       uuid=existing_uuid)
 
         self.ignore_docker_for_reuse = kwargs.get("ignore_docker_for_reuse")
 
@@ -494,7 +494,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         default=True, dest="submit")
     exgroup.add_argument("--create-template", action="store_true", help="(Deprecated) synonym for --create-workflow.",
                          dest="create_workflow")
-    exgroup.add_argument("--create-workflow", action="store_true", help="Create an Arvados workflow or pipeline template (depending on selected API, see --api).")
+    exgroup.add_argument("--create-workflow", action="store_true", help="Create an Arvados workflow (if using the 'containers' API) or pipeline template (if using the 'jobs' API). See --api.")
     exgroup.add_argument("--update-workflow", type=str, metavar="UUID", help="Update an existing Arvados workflow or pipeline template with the given UUID.")
 
     exgroup = parser.add_mutually_exclusive_group()
