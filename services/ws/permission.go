@@ -66,6 +66,11 @@ func (pc *cachingPermChecker) Check(uuid string) (bool, error) {
 		allowed = true
 	} else if txErr, ok := err.(*arvados.TransactionError); ok && txErr.StatusCode == http.StatusNotFound {
 		allowed = false
+	} else if txErr.StatusCode == http.StatusForbidden {
+		// Some requests are expressly forbidden for reasons
+		// other than "you aren't allowed to know whether this
+		// UUID exists" (404).
+		allowed = false
 	} else {
 		logger.WithError(err).Error("lookup error")
 		return false, err
