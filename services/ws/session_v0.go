@@ -171,7 +171,11 @@ func (sub *v0subscribe) sendOldEvents(sess *v0session) {
 			db:       sess.db,
 		}
 		if sub.match(sess, e) {
-			sess.sendq <- e
+			select {
+			case sess.sendq <- e:
+			case <-sess.ws.Request().Context().Done():
+				return
+			}
 		}
 	}
 	if err := rows.Err(); err != nil {
