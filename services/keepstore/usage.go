@@ -48,6 +48,10 @@ Listen:
     "address" is a host IP address or name and "port" is a port number
     or name.
 
+LogFormat:
+
+    Format of request/response and error logs: "json" or "text".
+
 PIDFile:
 
    Path to write PID file during startup. This file is kept open and

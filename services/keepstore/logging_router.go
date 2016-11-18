@@ -4,10 +4,12 @@ package main
 // LoggingResponseWriter
 
 import (
-	"log"
 	"net/http"
 	"strings"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	log "github.com/Sirupsen/logrus"
 )
 
 // LoggingResponseWriter has anonymous fields ResponseWriter and ResponseBody
@@ -57,21 +59,36 @@ func (resp *LoggingResponseWriter) Write(data []byte) (int, error) {
 
 // LoggingRESTRouter is used to add logging capabilities to mux.Router
 type LoggingRESTRouter struct {
-	router http.Handler
+	router      http.Handler
+	idGenerator httpserver.IDGenerator
 }
 
 func (loggingRouter *LoggingRESTRouter) ServeHTTP(wrappedResp http.ResponseWriter, req *http.Request) {
-	t0 := time.Now()
+	tStart := time.Now()
+	lgr := log.WithFields(log.Fields{
+		"RequestID":       loggingRouter.idGenerator.Next(),
+		"RemoteAddr":      req.RemoteAddr,
+		"X-Forwarded-For": req.Header.Get("X-Forwarded-For"),
+		"ReqMethod":       req.Method,
+		"ReqPath":         req.URL.Path[1:],
+		"ReqBytes":        req.ContentLength,
+	})
+	lgr.Info("request")
+
 	resp := LoggingResponseWriter{http.StatusOK, 0, wrappedResp, "", zeroTime}
 	loggingRouter.router.ServeHTTP(&resp, req)
 	statusText := http.StatusText(resp.Status)
 	if resp.Status >= 400 {
 		statusText = strings.Replace(resp.ResponseBody, "\n", "", -1)
 	}
-	now := time.Now()
-	tTotal := now.Sub(t0)
-	tLatency := resp.sentHdr.Sub(t0)
-	tResponse := now.Sub(resp.sentHdr)
-	log.Printf("[%s] %s %s %d %.6fs %.6fs %.6fs %d %d \"%s\"", req.RemoteAddr, req.Method, req.URL.Path[1:], req.ContentLength, tTotal.Seconds(), tLatency.Seconds(), tResponse.Seconds(), resp.Status, resp.Length, statusText)
 
+	tDone := time.Now()
+	lgr.WithFields(log.Fields{
+		"TimeTotal":      tDone.Sub(tStart).Seconds(),
+		"TimeToStatus":   resp.sentHdr.Sub(tStart).Seconds(),
+		"TimeWriteBody":  tDone.Sub(resp.sentHdr).Seconds(),
+		"RespStatusCode": resp.Status,
+		"RespStatus":     statusText,
+		"RespBytes":      resp.Length,
+	}).Info("response")
 }
