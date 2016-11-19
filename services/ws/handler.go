@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"io"
+	"sync"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -12,7 +13,10 @@ type handler struct {
 	Client      arvados.Client
 	PingTimeout time.Duration
 	QueueSize   int
-	NewSession  func(wsConn, chan<- interface{}) (session, error)
+
+	mtx       sync.Mutex
+	queues    map[chan interface{}]struct{}
+	setupOnce sync.Once
 }
 
 type handlerStats struct {
@@ -22,13 +26,28 @@ type handlerStats struct {
 	EventCount   uint64
 }
 
-func (h *handler) Handle(ws wsConn, incoming <-chan *event) (stats handlerStats) {
+func (h *handler) Handle(ws wsConn, eventSource eventSource, newSession func(wsConn, chan<- interface{}) (session, error)) (stats handlerStats) {
+	h.setupOnce.Do(h.setup)
+
 	ctx, cancel := context.WithCancel(ws.Request().Context())
 	log := logger(ctx)
+
+	incoming := eventSource.NewSink()
+	defer incoming.Stop()
+
 	queue := make(chan interface{}, h.QueueSize)
-	sess, err := h.NewSession(ws, queue)
+	h.mtx.Lock()
+	h.queues[queue] = struct{}{}
+	h.mtx.Unlock()
+	defer func() {
+		h.mtx.Lock()
+		delete(h.queues, queue)
+		h.mtx.Unlock()
+	}()
+
+	sess, err := newSession(ws, queue)
 	if err != nil {
-		log.WithError(err).Error("NewSession failed")
+		log.WithError(err).Error("newSession failed")
 		return
 	}
 
@@ -146,7 +165,7 @@ func (h *handler) Handle(ws wsConn, incoming <-chan *event) (stats handlerStats)
 					}
 				}
 				continue
-			case e, ok := <-incoming:
+			case e, ok := <-incoming.Channel():
 				if !ok {
 					cancel()
 					return
@@ -167,4 +186,28 @@ func (h *handler) Handle(ws wsConn, incoming <-chan *event) (stats handlerStats)
 
 	<-ctx.Done()
 	return
+}
+
+func (h *handler) Status() interface{} {
+	h.mtx.Lock()
+	defer h.mtx.Unlock()
+
+	var s struct {
+		QueueCount int
+		QueueMax   int
+		QueueTotal uint64
+	}
+	for q := range h.queues {
+		n := len(q)
+		s.QueueTotal += uint64(n)
+		if s.QueueMax < n {
+			s.QueueMax = n
+		}
+	}
+	s.QueueCount = len(h.queues)
+	return &s
+}
+
+func (h *handler) setup() {
+	h.queues = make(map[chan interface{}]struct{})
 }

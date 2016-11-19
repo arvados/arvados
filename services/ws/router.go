@@ -26,6 +26,7 @@ type router struct {
 	eventSource    eventSource
 	newPermChecker func() permChecker
 
+	handler   *handler
 	mux       *http.ServeMux
 	setupOnce sync.Once
 
@@ -46,6 +47,10 @@ type Statuser interface {
 type sessionFactory func(wsConn, chan<- interface{}, *sql.DB, permChecker) (session, error)
 
 func (rtr *router) setup() {
+	rtr.handler = &handler{
+		PingTimeout: rtr.Config.PingTimeout.Duration(),
+		QueueSize:   rtr.Config.ClientEventQueue,
+	}
 	rtr.mux = http.NewServeMux()
 	rtr.mux.Handle("/websocket", rtr.makeServer(NewSessionV0))
 	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(NewSessionV1))
@@ -53,30 +58,24 @@ func (rtr *router) setup() {
 }
 
 func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
-	handler := &handler{
-		PingTimeout: rtr.Config.PingTimeout.Duration(),
-		QueueSize:   rtr.Config.ClientEventQueue,
-		NewSession: func(ws wsConn, sendq chan<- interface{}) (session, error) {
-			return newSession(ws, sendq, rtr.eventSource.DB(), rtr.newPermChecker())
-		},
-	}
 	return &websocket.Server{
 		Handshake: func(c *websocket.Config, r *http.Request) error {
 			return nil
 		},
 		Handler: websocket.Handler(func(ws *websocket.Conn) {
 			t0 := time.Now()
-			sink := rtr.eventSource.NewSink()
 			log := logger(ws.Request().Context())
 			log.Info("connected")
 
-			stats := handler.Handle(ws, sink.Channel())
+			stats := rtr.handler.Handle(ws, rtr.eventSource,
+				func(ws wsConn, sendq chan<- interface{}) (session, error) {
+					return newSession(ws, sendq, rtr.eventSource.DB(), rtr.newPermChecker())
+				})
 
 			log.WithFields(logrus.Fields{
 				"Elapsed": time.Now().Sub(t0).Seconds(),
 				"Stats":   stats,
 			}).Info("disconnect")
-			sink.Stop()
 			ws.Close()
 		}),
 	}
@@ -94,10 +93,11 @@ func (rtr *router) newReqID() string {
 
 func (rtr *router) Status() interface{} {
 	s := map[string]interface{}{
-		"Router": rtr.status,
+		"HTTP":     rtr.status,
+		"Outgoing": rtr.handler.Status(),
 	}
 	if es, ok := rtr.eventSource.(Statuser); ok {
-		s["EventSource"] = es.Status()
+		s["Incoming"] = es.Status()
 	}
 	return s
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,6 +37,8 @@ type pgEventSource struct {
 	setupOnce  sync.Once
 	mtx        sync.Mutex
 	shutdown   chan error
+
+	lastQDelay time.Duration
 }
 
 func (ps *pgEventSource) setup() {
@@ -86,6 +89,7 @@ func (ps *pgEventSource) run() {
 				WithField("serial", e.Serial).
 				WithField("detail", e.Detail()).
 				Debug("event ready")
+			ps.lastQDelay = time.Now().Sub(e.Received)
 
 			ps.mtx.Lock()
 			for sink := range ps.sinks {
@@ -171,7 +175,8 @@ func (ps *pgEventSource) Status() interface{} {
 	}
 	return map[string]interface{}{
 		"Queue":        len(ps.queue),
-		"QueueMax":     cap(ps.queue),
+		"QueueLimit":   cap(ps.queue),
+		"QueueDelay":   fmt.Sprintf("%.06f", ps.lastQDelay.Seconds()),
 		"Sinks":        len(ps.sinks),
 		"SinksBlocked": blocked,
 	}
