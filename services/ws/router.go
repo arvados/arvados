@@ -2,10 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"io"
 	"net/http"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Sirupsen/logrus"
@@ -29,6 +31,16 @@ type router struct {
 
 	lastReqID  int64
 	lastReqMtx sync.Mutex
+
+	status routerStatus
+}
+
+type routerStatus struct {
+	Connections int64
+}
+
+type Statuser interface {
+	Status() interface{}
 }
 
 type sessionFactory func(wsConn, chan<- interface{}, *sql.DB, permChecker) (session, error)
@@ -37,6 +49,7 @@ func (rtr *router) setup() {
 	rtr.mux = http.NewServeMux()
 	rtr.mux.Handle("/websocket", rtr.makeServer(NewSessionV0))
 	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(NewSessionV1))
+	rtr.mux.HandleFunc("/status.json", rtr.serveStatus)
 }
 
 func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
@@ -63,7 +76,6 @@ func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
 				"Elapsed": time.Now().Sub(t0).Seconds(),
 				"Stats":   stats,
 			}).Info("disconnect")
-
 			sink.Stop()
 			ws.Close()
 		}),
@@ -80,8 +92,32 @@ func (rtr *router) newReqID() string {
 	return strconv.FormatInt(id, 36)
 }
 
+func (rtr *router) Status() interface{} {
+	s := map[string]interface{}{
+		"Router": rtr.status,
+	}
+	if es, ok := rtr.eventSource.(Statuser); ok {
+		s["EventSource"] = es.Status()
+	}
+	return s
+}
+
+func (rtr *router) serveStatus(resp http.ResponseWriter, req *http.Request) {
+	rtr.setupOnce.Do(rtr.setup)
+	logger := logger(req.Context())
+	logger.Debug("status")
+	enc := json.NewEncoder(resp)
+	err := enc.Encode(rtr.Status())
+	if err != nil {
+		logger.WithError(err).Error("status encode failed")
+	}
+}
+
 func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	rtr.setupOnce.Do(rtr.setup)
+	atomic.AddInt64(&rtr.status.Connections, 1)
+	defer atomic.AddInt64(&rtr.status.Connections, -1)
+
 	logger := logger(req.Context()).
 		WithField("RequestID", rtr.newReqID())
 	ctx := contextWithLogger(req.Context(), logger)

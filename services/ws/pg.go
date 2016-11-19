@@ -31,6 +31,7 @@ type pgEventSource struct {
 
 	db         *sql.DB
 	pqListener *pq.Listener
+	queue      chan *event
 	sinks      map[*pgEventSink]bool
 	setupOnce  sync.Once
 	mtx        sync.Mutex
@@ -70,10 +71,10 @@ func (ps *pgEventSource) setup() {
 }
 
 func (ps *pgEventSource) run() {
-	eventQueue := make(chan *event, ps.QueueSize)
+	ps.queue = make(chan *event, ps.QueueSize)
 
 	go func() {
-		for e := range eventQueue {
+		for e := range ps.queue {
 			// Wait for the "select ... from logs" call to
 			// finish. This limits max concurrent queries
 			// to ps.QueueSize. Without this, max
@@ -103,7 +104,7 @@ func (ps *pgEventSource) run() {
 			if ok {
 				logger(nil).WithError(err).Info("shutdown")
 			}
-			close(eventQueue)
+			close(ps.queue)
 			return
 
 		case <-ticker.C:
@@ -112,7 +113,7 @@ func (ps *pgEventSource) run() {
 
 		case pqEvent, ok := <-ps.pqListener.Notify:
 			if !ok {
-				close(eventQueue)
+				close(ps.queue)
 				return
 			}
 			if pqEvent.Channel != "logs" {
@@ -131,7 +132,7 @@ func (ps *pgEventSource) run() {
 				db:       ps.db,
 			}
 			logger(nil).WithField("event", e).Debug("incoming")
-			eventQueue <- e
+			ps.queue <- e
 			go e.Detail()
 		}
 	}
@@ -159,6 +160,21 @@ func (ps *pgEventSource) NewSink() eventSink {
 func (ps *pgEventSource) DB() *sql.DB {
 	ps.setupOnce.Do(ps.setup)
 	return ps.db
+}
+
+func (ps *pgEventSource) Status() interface{} {
+	ps.mtx.Lock()
+	defer ps.mtx.Unlock()
+	blocked := 0
+	for sink := range ps.sinks {
+		blocked += len(sink.channel)
+	}
+	return map[string]interface{}{
+		"Queue":        len(ps.queue),
+		"QueueMax":     cap(ps.queue),
+		"Sinks":        len(ps.sinks),
+		"SinksBlocked": blocked,
+	}
 }
 
 type pgEventSink struct {
