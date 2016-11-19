@@ -61,8 +61,9 @@ func main() {
 		WriteTimeout:   time.Minute,
 		MaxHeaderBytes: 1 << 20,
 		Handler: &router{
-			Config:      &cfg,
-			eventSource: eventSource,
+			Config:         &cfg,
+			eventSource:    eventSource,
+			newPermChecker: func() permChecker { return NewPermChecker(cfg.Client) },
 		},
 	}
 	eventSource.NewSink().Stop()

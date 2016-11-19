@@ -8,7 +8,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/Sirupsen/logrus"
 )
 
@@ -34,12 +33,12 @@ type v0session struct {
 	setupOnce     sync.Once
 }
 
-func NewSessionV0(ws wsConn, sendq chan<- interface{}, ac arvados.Client, db *sql.DB) (session, error) {
+func NewSessionV0(ws wsConn, sendq chan<- interface{}, db *sql.DB, pc permChecker) (session, error) {
 	sess := &v0session{
 		sendq:       sendq,
 		ws:          ws,
 		db:          db,
-		permChecker: NewPermChecker(ac),
+		permChecker: pc,
 		log:         logger(ws.Request().Context()),
 	}
 

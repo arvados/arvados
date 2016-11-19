@@ -8,7 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/websocket"
 )
@@ -21,17 +20,18 @@ type wsConn interface {
 }
 
 type router struct {
-	Config *Config
+	Config         *Config
+	eventSource    eventSource
+	newPermChecker func() permChecker
 
-	eventSource eventSource
-	mux         *http.ServeMux
-	setupOnce   sync.Once
+	mux       *http.ServeMux
+	setupOnce sync.Once
 
 	lastReqID  int64
 	lastReqMtx sync.Mutex
 }
 
-type sessionFactory func(wsConn, chan<- interface{}, arvados.Client, *sql.DB) (session, error)
+type sessionFactory func(wsConn, chan<- interface{}, *sql.DB, permChecker) (session, error)
 
 func (rtr *router) setup() {
 	rtr.mux = http.NewServeMux()
@@ -44,7 +44,7 @@ func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
 		PingTimeout: rtr.Config.PingTimeout.Duration(),
 		QueueSize:   rtr.Config.ClientEventQueue,
 		NewSession: func(ws wsConn, sendq chan<- interface{}) (session, error) {
-			return newSession(ws, sendq, rtr.Config.Client, rtr.eventSource.DB())
+			return newSession(ws, sendq, rtr.eventSource.DB(), rtr.newPermChecker())
 		},
 	}
 	return &websocket.Server{
