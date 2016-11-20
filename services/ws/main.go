@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/config"
-	"github.com/Sirupsen/logrus"
 )
 
 func main() {
@@ -23,24 +22,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	lvl, err := logrus.ParseLevel(cfg.LogLevel)
-	if err != nil {
-		log.Fatal(err)
-	}
-	rootLogger.Level = lvl
-	switch cfg.LogFormat {
-	case "text":
-		rootLogger.Formatter = &logrus.TextFormatter{
-			FullTimestamp:   true,
-			TimestampFormat: time.RFC3339Nano,
-		}
-	case "json":
-		rootLogger.Formatter = &logrus.JSONFormatter{
-			TimestampFormat: time.RFC3339Nano,
-		}
-	default:
-		log.WithField("LogFormat", cfg.LogFormat).Fatal("unknown log format")
-	}
+	loggerConfig(cfg)
 
 	if *dumpConfig {
 		txt, err := config.Dump(&cfg)
