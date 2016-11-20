@@ -40,6 +40,8 @@ type Config struct {
 
 var theConfig = DefaultConfig()
 
+const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
+
 // DefaultConfig returns the default configuration.
 func DefaultConfig() *Config {
 	return &Config{
@@ -68,11 +70,11 @@ func (cfg *Config) Start() error {
 	switch strings.ToLower(cfg.LogFormat) {
 	case "text":
 		log.SetFormatter(&log.TextFormatter{
-			TimestampFormat: time.RFC3339Nano,
+			TimestampFormat: rfc3339NanoFixed,
 		})
 	case "json":
 		log.SetFormatter(&log.JSONFormatter{
-			TimestampFormat: time.RFC3339Nano,
+			TimestampFormat: rfc3339NanoFixed,
 		})
 	default:
 		return fmt.Errorf(`unsupported log format %q (try "text" or "json")`, cfg.LogFormat)
