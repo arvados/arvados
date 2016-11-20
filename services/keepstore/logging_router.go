@@ -4,6 +4,8 @@ package main
 // LoggingResponseWriter
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -65,30 +67,49 @@ type LoggingRESTRouter struct {
 
 func (loggingRouter *LoggingRESTRouter) ServeHTTP(wrappedResp http.ResponseWriter, req *http.Request) {
 	tStart := time.Now()
-	lgr := log.WithFields(log.Fields{
-		"RequestID":       loggingRouter.idGenerator.Next(),
-		"RemoteAddr":      req.RemoteAddr,
-		"X-Forwarded-For": req.Header.Get("X-Forwarded-For"),
-		"ReqMethod":       req.Method,
-		"ReqPath":         req.URL.Path[1:],
-		"ReqBytes":        req.ContentLength,
+
+	// Attach a requestID-aware logger to the request context.
+	lgr := log.WithField("RequestID", loggingRouter.idGenerator.Next())
+	ctx := context.WithValue(req.Context(), "logger", lgr)
+	req = req.WithContext(ctx)
+
+	lgr = lgr.WithFields(log.Fields{
+		"remoteAddr":      req.RemoteAddr,
+		"reqForwardedFor": req.Header.Get("X-Forwarded-For"),
+		"reqMethod":       req.Method,
+		"reqPath":         req.URL.Path[1:],
+		"reqBytes":        req.ContentLength,
 	})
-	lgr.Info("request")
+	lgr.Debug("request")
 
 	resp := LoggingResponseWriter{http.StatusOK, 0, wrappedResp, "", zeroTime}
 	loggingRouter.router.ServeHTTP(&resp, req)
+	tDone := time.Now()
+
 	statusText := http.StatusText(resp.Status)
 	if resp.Status >= 400 {
 		statusText = strings.Replace(resp.ResponseBody, "\n", "", -1)
 	}
+	if resp.sentHdr == zeroTime {
+		// Nobody changed status or wrote any data, i.e., we
+		// returned a 200 response with no body.
+		resp.sentHdr = tDone
+	}
 
-	tDone := time.Now()
 	lgr.WithFields(log.Fields{
-		"TimeTotal":      tDone.Sub(tStart).Seconds(),
-		"TimeToStatus":   resp.sentHdr.Sub(tStart).Seconds(),
-		"TimeWriteBody":  tDone.Sub(resp.sentHdr).Seconds(),
-		"RespStatusCode": resp.Status,
-		"RespStatus":     statusText,
-		"RespBytes":      resp.Length,
+		"timeTotal":      loggedDuration(tDone.Sub(tStart)),
+		"timeToStatus":   loggedDuration(resp.sentHdr.Sub(tStart)),
+		"timeWriteBody":  loggedDuration(tDone.Sub(resp.sentHdr)),
+		"respStatusCode": resp.Status,
+		"respStatus":     statusText,
+		"respBytes":      resp.Length,
 	}).Info("response")
+}
+
+type loggedDuration time.Duration
+
+// MarshalJSON formats a duration as a number of seconds, using
+// fixed-point notation with no more than 6 decimal places.
+func (d loggedDuration) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("%.6f", time.Duration(d).Seconds())), nil
 }
