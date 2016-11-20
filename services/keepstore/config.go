@@ -70,6 +70,7 @@ func (cfg *Config) Start() error {
 	switch strings.ToLower(cfg.LogFormat) {
 	case "text":
 		log.SetFormatter(&log.TextFormatter{
+			FullTimestamp:   true,
 			TimestampFormat: rfc3339NanoFixed,
 		})
 	case "json":

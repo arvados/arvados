@@ -111,5 +111,11 @@ type loggedDuration time.Duration
 // MarshalJSON formats a duration as a number of seconds, using
 // fixed-point notation with no more than 6 decimal places.
 func (d loggedDuration) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf("%.6f", time.Duration(d).Seconds())), nil
+	return []byte(d.String()), nil
+}
+
+// String formats a duration as a number of seconds, using
+// fixed-point notation with no more than 6 decimal places.
+func (d loggedDuration) String() string {
+	return fmt.Sprintf("%.6f", time.Duration(d).Seconds())
 }
