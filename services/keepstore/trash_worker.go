@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
-	"log"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	log "github.com/Sirupsen/logrus"
 )
 
 // RunTrashWorker is used by Keepstore to initiate trash worker channel goroutine.

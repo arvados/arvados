@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -15,6 +14,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	log "github.com/Sirupsen/logrus"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/ghodss/yaml"
 )
@@ -151,8 +151,7 @@ func main() {
 
 	// Middleware stack: logger, MaxRequests limiter, method handlers
 	http.Handle("/", &LoggingRESTRouter{
-		httpserver.NewRequestLimiter(theConfig.MaxRequests,
-			MakeRESTRouter()),
+		router: httpserver.NewRequestLimiter(theConfig.MaxRequests, MakeRESTRouter()),
 	})
 
 	// Set up a TCP listener.
