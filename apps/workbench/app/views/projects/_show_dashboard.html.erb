@@ -24,23 +24,32 @@
   preload_links_for_objects(collection_pdhs + collection_uuids)
 %>
 
+<%
+  no_jobs_api = !PipelineInstance.api_exists?(:index)
+  recent_procs_title = 'Recent pipelines and processes'
+  recent_procs_title = 'Recent processes' if no_jobs_api
+
+  run_proc_title = 'Choose a pipeline or workflow to run:'
+  run_proc_title = 'Choose a workflow to run:' if no_jobs_api
+%>
+
   <div class="row">
     <div class="col-md-6">
       <div class="panel panel-default" style="min-height: 10.5em">
         <div class="panel-heading">
-          <span class="panel-title">Recent pipelines and processes</span>
+          <span class="panel-title"><%=recent_procs_title%></span>
           <% if current_user.andand.is_active %>
             <span class="pull-right recent-processes-actions">
               <span>
                 <%= link_to(
                 choose_work_unit_templates_path(
-                  title: 'Choose a pipeline or workflow to run:',
+                  title: run_proc_title,
                   action_name: 'Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i>',
                   action_href: work_units_path,
                   action_method: 'post',
                   action_data: {'selection_param' => 'work_unit[template_uuid]', 'work_unit[owner_uuid]' => current_user.uuid, 'success' => 'redirect-to-created-object'}.to_json),
                 { class: "btn btn-primary btn-xs", remote: true }) do %>
-                  <i class="fa fa-fw fa-gear"></i> Run a pipeline...
+                  <i class="fa fa-fw fa-gear"></i> Run a process...
                 <% end %>
               </span>
               <span>
