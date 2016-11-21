@@ -13,6 +13,7 @@ import (
 )
 
 type Config struct {
+	Debug  bool
 	Listen string
 
 	PIDFile string
@@ -32,6 +33,7 @@ type Config struct {
 
 	blobSigningKey  []byte
 	systemAuthToken string
+	debugLogf       func(string, ...interface{})
 }
 
 var theConfig = DefaultConfig()
@@ -52,6 +54,13 @@ func DefaultConfig() *Config {
 // Start should be called exactly once: after setting all public
 // fields, and before using the config.
 func (cfg *Config) Start() error {
+	if cfg.Debug {
+		cfg.debugLogf = log.Printf
+		cfg.debugLogf("debugging enabled")
+	} else {
+		cfg.debugLogf = func(string, ...interface{}) {}
+	}
+
 	if cfg.MaxBuffers < 0 {
 		return fmt.Errorf("MaxBuffers must be greater than zero")
 	}

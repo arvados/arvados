@@ -11,13 +11,15 @@ class ContainerRequest < ArvadosModel
   serialize :mounts, Hash
   serialize :runtime_constraints, Hash
   serialize :command, Array
+  serialize :scheduling_parameters, Hash
 
   before_validation :fill_field_defaults, :if => :new_record?
+  before_validation :validate_runtime_constraints
+  before_validation :validate_scheduling_parameters
   before_validation :set_container
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validate :validate_state_change
   validate :validate_change
-  validate :validate_runtime_constraints
   after_save :update_priority
   after_save :finalize_if_needed
   before_create :set_requesting_container_uuid
@@ -42,6 +44,9 @@ class ContainerRequest < ArvadosModel
     t.add :runtime_constraints
     t.add :state
     t.add :use_existing
+    t.add :output_uuid
+    t.add :log_uuid
+    t.add :scheduling_parameters
   end
 
   # Supported states for a container request
@@ -79,13 +84,14 @@ class ContainerRequest < ArvadosModel
   # Finalize the container request after the container has
   # finished/cancelled.
   def finalize!
-    update_attributes!(state: Final)
+    out_coll = nil
+    log_coll = nil
     c = Container.find_by_uuid(container_uuid)
     ['output', 'log'].each do |out_type|
       pdh = c.send(out_type)
       next if pdh.nil?
       manifest = Collection.where(portable_data_hash: pdh).first.manifest_text
-      Collection.create!(owner_uuid: owner_uuid,
+      coll = Collection.create!(owner_uuid: owner_uuid,
                          manifest_text: manifest,
                          portable_data_hash: pdh,
                          name: "Container #{out_type} for request #{uuid}",
@@ -93,7 +99,13 @@ class ContainerRequest < ArvadosModel
                            'type' => out_type,
                            'container_request' => uuid,
                          })
+      if out_type == 'output'
+        out_coll = coll.uuid
+      else
+        log_coll = coll.uuid
+      end
     end
+    update_attributes!(state: Final, output_uuid: out_coll, log_uuid: log_coll)
   end
 
   protected
@@ -105,6 +117,7 @@ class ContainerRequest < ArvadosModel
     self.mounts ||= {}
     self.cwd ||= "."
     self.container_count_max ||= Rails.configuration.container_count_max
+    self.scheduling_parameters ||= {}
   end
 
   # Create a new container (or find an existing one) to satisfy this
@@ -126,6 +139,7 @@ class ContainerRequest < ArvadosModel
       if not reusable.nil?
         reusable
       else
+        c_attrs[:scheduling_parameters] = self.scheduling_parameters
         Container.create!(c_attrs)
       end
     end
@@ -223,6 +237,25 @@ class ContainerRequest < ArvadosModel
           errors.add :runtime_constraints, "#{k} must be a positive integer"
         end
       end
+
+      if runtime_constraints.include? 'keep_cache_ram' and
+         (!runtime_constraints['keep_cache_ram'].is_a?(Integer) or
+          runtime_constraints['keep_cache_ram'] <= 0)
+            errors.add :runtime_constraints, "keep_cache_ram must be a positive integer"
+      elsif !runtime_constraints.include? 'keep_cache_ram'
+        runtime_constraints['keep_cache_ram'] = Rails.configuration.container_default_keep_cache_ram
+      end
+    end
+  end
+
+  def validate_scheduling_parameters
+    if self.state == Committed
+      if scheduling_parameters.include? 'partitions' and
+         (!scheduling_parameters['partitions'].is_a?(Array) ||
+          scheduling_parameters['partitions'].reject{|x| !x.is_a?(String)}.size !=
+            scheduling_parameters['partitions'].size)
+            errors.add :scheduling_parameters, "partitions must be an array of strings"
+      end
     end
   end
 
@@ -236,7 +269,7 @@ class ContainerRequest < ArvadosModel
                      :container_image, :cwd, :description, :environment,
                      :filters, :mounts, :name, :output_path, :priority,
                      :properties, :requesting_container_uuid, :runtime_constraints,
-                     :state, :container_uuid, :use_existing
+                     :state, :container_uuid, :use_existing, :scheduling_parameters
 
     when Committed
       if container_uuid.nil?
@@ -255,7 +288,7 @@ class ContainerRequest < ArvadosModel
         permitted.push :command, :container_image, :cwd, :description, :environment,
                        :filters, :mounts, :name, :output_path, :properties,
                        :requesting_container_uuid, :runtime_constraints,
-                       :state, :container_uuid
+                       :state, :container_uuid, :use_existing, :scheduling_parameters
       end
 
     when Final
@@ -263,8 +296,8 @@ class ContainerRequest < ArvadosModel
         errors.add :state, "of container request can only be set to Final by system."
       end
 
-      if self.state_changed? || self.name_changed? || self.description_changed?
-          permitted.push :state, :name, :description
+      if self.state_changed? || self.name_changed? || self.description_changed? || self.output_uuid_changed? || self.log_uuid_changed?
+          permitted.push :state, :name, :description, :output_uuid, :log_uuid
       else
         errors.add :state, "does not allow updates"
       end

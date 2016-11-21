@@ -1,22 +1,31 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/AdRoll/goamz/aws"
 	"github.com/AdRoll/goamz/s3"
+)
+
+const (
+	s3DefaultReadTimeout    = arvados.Duration(10 * time.Minute)
+	s3DefaultConnectTimeout = arvados.Duration(time.Minute)
 )
 
 var (
@@ -134,11 +143,13 @@ type S3Volume struct {
 	LocationConstraint bool
 	IndexPageSize      int
 	S3Replication      int
+	ConnectTimeout     arvados.Duration
+	ReadTimeout        arvados.Duration
 	RaceWindow         arvados.Duration
 	ReadOnly           bool
 	UnsafeDelete       bool
 
-	bucket *s3.Bucket
+	bucket *s3bucket
 
 	startOnce sync.Once
 }
@@ -147,24 +158,28 @@ type S3Volume struct {
 func (*S3Volume) Examples() []Volume {
 	return []Volume{
 		&S3Volume{
-			AccessKeyFile: "/etc/aws_s3_access_key.txt",
-			SecretKeyFile: "/etc/aws_s3_secret_key.txt",
-			Endpoint:      "",
-			Region:        "us-east-1",
-			Bucket:        "example-bucket-name",
-			IndexPageSize: 1000,
-			S3Replication: 2,
-			RaceWindow:    arvados.Duration(24 * time.Hour),
+			AccessKeyFile:  "/etc/aws_s3_access_key.txt",
+			SecretKeyFile:  "/etc/aws_s3_secret_key.txt",
+			Endpoint:       "",
+			Region:         "us-east-1",
+			Bucket:         "example-bucket-name",
+			IndexPageSize:  1000,
+			S3Replication:  2,
+			RaceWindow:     arvados.Duration(24 * time.Hour),
+			ConnectTimeout: arvados.Duration(time.Minute),
+			ReadTimeout:    arvados.Duration(5 * time.Minute),
 		},
 		&S3Volume{
-			AccessKeyFile: "/etc/gce_s3_access_key.txt",
-			SecretKeyFile: "/etc/gce_s3_secret_key.txt",
-			Endpoint:      "https://storage.googleapis.com",
-			Region:        "",
-			Bucket:        "example-bucket-name",
-			IndexPageSize: 1000,
-			S3Replication: 2,
-			RaceWindow:    arvados.Duration(24 * time.Hour),
+			AccessKeyFile:  "/etc/gce_s3_access_key.txt",
+			SecretKeyFile:  "/etc/gce_s3_secret_key.txt",
+			Endpoint:       "https://storage.googleapis.com",
+			Region:         "",
+			Bucket:         "example-bucket-name",
+			IndexPageSize:  1000,
+			S3Replication:  2,
+			RaceWindow:     arvados.Duration(24 * time.Hour),
+			ConnectTimeout: arvados.Duration(time.Minute),
+			ReadTimeout:    arvados.Duration(5 * time.Minute),
 		},
 	}
 }
@@ -203,11 +218,47 @@ func (v *S3Volume) Start() error {
 	if err != nil {
 		return err
 	}
-	v.bucket = &s3.Bucket{
-		S3:   s3.New(auth, region),
-		Name: v.Bucket,
+
+	// Zero timeouts mean "wait forever", which is a bad
+	// default. Default to long timeouts instead.
+	if v.ConnectTimeout == 0 {
+		v.ConnectTimeout = s3DefaultConnectTimeout
+	}
+	if v.ReadTimeout == 0 {
+		v.ReadTimeout = s3DefaultReadTimeout
+	}
+
+	client := s3.New(auth, region)
+	client.ConnectTimeout = time.Duration(v.ConnectTimeout)
+	client.ReadTimeout = time.Duration(v.ReadTimeout)
+	v.bucket = &s3bucket{
+		Bucket: &s3.Bucket{
+			S3:   client,
+			Name: v.Bucket,
+		},
 	}
 	return nil
+}
+
+func (v *S3Volume) getReaderWithContext(ctx context.Context, loc string) (rdr io.ReadCloser, err error) {
+	ready := make(chan bool)
+	go func() {
+		rdr, err = v.getReader(loc)
+		close(ready)
+	}()
+	select {
+	case <-ready:
+		return
+	case <-ctx.Done():
+		theConfig.debugLogf("s3: abandoning getReader(): %s", ctx.Err())
+		go func() {
+			<-ready
+			if err == nil {
+				rdr.Close()
+			}
+		}()
+		return nil, ctx.Err()
+	}
 }
 
 // getReader wraps (Bucket)GetReader.
@@ -221,6 +272,7 @@ func (v *S3Volume) getReader(loc string) (rdr io.ReadCloser, err error) {
 	if err == nil || !os.IsNotExist(err) {
 		return
 	}
+
 	_, err = v.bucket.Head("recent/"+loc, nil)
 	err = v.translateError(err)
 	if err != nil {
@@ -232,6 +284,7 @@ func (v *S3Volume) getReader(loc string) (rdr io.ReadCloser, err error) {
 		err = os.ErrNotExist
 		return
 	}
+
 	rdr, err = v.bucket.GetReader(loc)
 	if err != nil {
 		log.Printf("warning: reading %s after successful fixRace: %s", loc, err)
@@ -242,50 +295,106 @@ func (v *S3Volume) getReader(loc string) (rdr io.ReadCloser, err error) {
 
 // Get a block: copy the block data into buf, and return the number of
 // bytes copied.
-func (v *S3Volume) Get(loc string, buf []byte) (int, error) {
-	rdr, err := v.getReader(loc)
+func (v *S3Volume) Get(ctx context.Context, loc string, buf []byte) (int, error) {
+	rdr, err := v.getReaderWithContext(ctx, loc)
 	if err != nil {
 		return 0, err
 	}
-	defer rdr.Close()
-	n, err := io.ReadFull(rdr, buf)
-	switch err {
-	case nil, io.EOF, io.ErrUnexpectedEOF:
-		return n, nil
-	default:
-		return 0, v.translateError(err)
+
+	var n int
+	ready := make(chan bool)
+	go func() {
+		defer close(ready)
+
+		defer rdr.Close()
+		n, err = io.ReadFull(rdr, buf)
+
+		switch err {
+		case nil, io.EOF, io.ErrUnexpectedEOF:
+			err = nil
+		default:
+			err = v.translateError(err)
+		}
+	}()
+	select {
+	case <-ctx.Done():
+		theConfig.debugLogf("s3: interrupting ReadFull() with Close() because %s", ctx.Err())
+		rdr.Close()
+		// Must wait for ReadFull to return, to ensure it
+		// doesn't write to buf after we return.
+		theConfig.debugLogf("s3: waiting for ReadFull() to fail")
+		<-ready
+		return 0, ctx.Err()
+	case <-ready:
+		return n, err
 	}
 }
 
 // Compare the given data with the stored data.
-func (v *S3Volume) Compare(loc string, expect []byte) error {
-	rdr, err := v.getReader(loc)
+func (v *S3Volume) Compare(ctx context.Context, loc string, expect []byte) error {
+	rdr, err := v.getReaderWithContext(ctx, loc)
 	if err != nil {
 		return err
 	}
 	defer rdr.Close()
-	return v.translateError(compareReaderWithBuf(rdr, expect, loc[:32]))
+	return v.translateError(compareReaderWithBuf(ctx, rdr, expect, loc[:32]))
 }
 
 // Put writes a block.
-func (v *S3Volume) Put(loc string, block []byte) error {
+func (v *S3Volume) Put(ctx context.Context, loc string, block []byte) error {
 	if v.ReadOnly {
 		return MethodDisabledError
 	}
 	var opts s3.Options
-	if len(block) > 0 {
+	size := len(block)
+	if size > 0 {
 		md5, err := hex.DecodeString(loc)
 		if err != nil {
 			return err
 		}
 		opts.ContentMD5 = base64.StdEncoding.EncodeToString(md5)
 	}
-	err := v.bucket.Put(loc, block, "application/octet-stream", s3ACL, opts)
-	if err != nil {
+
+	// Send the block data through a pipe, so that (if we need to)
+	// we can close the pipe early and abandon our PutReader()
+	// goroutine, without worrying about PutReader() accessing our
+	// block buffer after we release it.
+	bufr, bufw := io.Pipe()
+	go func() {
+		io.Copy(bufw, bytes.NewReader(block))
+		bufw.Close()
+	}()
+
+	var err error
+	ready := make(chan bool)
+	go func() {
+		defer func() {
+			if ctx.Err() != nil {
+				theConfig.debugLogf("%s: abandoned PutReader goroutine finished with err: %s", v, err)
+			}
+		}()
+		defer close(ready)
+		err = v.bucket.PutReader(loc, bufr, int64(size), "application/octet-stream", s3ACL, opts)
+		if err != nil {
+			return
+		}
+		err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
+	}()
+	select {
+	case <-ctx.Done():
+		theConfig.debugLogf("%s: taking PutReader's input away: %s", v, ctx.Err())
+		// Our pipe might be stuck in Write(), waiting for
+		// io.Copy() to read. If so, un-stick it. This means
+		// PutReader will get corrupt data, but that's OK: the
+		// size and MD5 won't match, so the write will fail.
+		go io.Copy(ioutil.Discard, bufr)
+		// CloseWithError() will return once pending I/O is done.
+		bufw.CloseWithError(ctx.Err())
+		theConfig.debugLogf("%s: abandoning PutReader goroutine", v)
+		return ctx.Err()
+	case <-ready:
 		return v.translateError(err)
 	}
-	err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
-	return v.translateError(err)
 }
 
 // Touch sets the timestamp for the given locator to the current time.
@@ -338,16 +447,19 @@ func (v *S3Volume) Mtime(loc string) (time.Time, error) {
 func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 	// Use a merge sort to find matching sets of X and recent/X.
 	dataL := s3Lister{
-		Bucket:   v.bucket,
+		Bucket:   v.bucket.Bucket,
 		Prefix:   prefix,
 		PageSize: v.IndexPageSize,
 	}
 	recentL := s3Lister{
-		Bucket:   v.bucket,
+		Bucket:   v.bucket.Bucket,
 		Prefix:   "recent/" + prefix,
 		PageSize: v.IndexPageSize,
 	}
+	v.bucket.stats.tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
+	v.bucket.stats.tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 	for data, recent := dataL.First(), recentL.First(); data != nil; data = dataL.Next() {
+		v.bucket.stats.tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 		if data.Key >= "g" {
 			// Conveniently, "recent/*" and "trash/*" are
 			// lexically greater than all hex-encoded data
@@ -369,10 +481,12 @@ func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 		for recent != nil {
 			if cmp := strings.Compare(recent.Key[7:], data.Key); cmp < 0 {
 				recent = recentL.Next()
+				v.bucket.stats.tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 				continue
 			} else if cmp == 0 {
 				stamp = recent
 				recent = recentL.Next()
+				v.bucket.stats.tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 				break
 			} else {
 				// recent/X marker is missing: we'll
@@ -404,7 +518,7 @@ func (v *S3Volume) Trash(loc string) error {
 		if !s3UnsafeDelete {
 			return ErrS3TrashDisabled
 		}
-		return v.bucket.Del(loc)
+		return v.translateError(v.bucket.Del(loc))
 	}
 	err := v.checkRaceWindow(loc)
 	if err != nil {
@@ -507,9 +621,14 @@ func (v *S3Volume) Status() *VolumeStatus {
 	}
 }
 
+// InternalStats returns bucket I/O and API call counters.
+func (v *S3Volume) InternalStats() interface{} {
+	return &v.bucket.stats
+}
+
 // String implements fmt.Stringer.
 func (v *S3Volume) String() string {
-	return fmt.Sprintf("s3-bucket:%+q", v.bucket.Name)
+	return fmt.Sprintf("s3-bucket:%+q", v.Bucket)
 }
 
 // Writable returns false if all future Put, Mtime, and Delete calls
@@ -598,7 +717,7 @@ func (v *S3Volume) EmptyTrash() {
 
 	// Use a merge sort to find matching sets of trash/X and recent/X.
 	trashL := s3Lister{
-		Bucket:   v.bucket,
+		Bucket:   v.bucket.Bucket,
 		Prefix:   "trash/",
 		PageSize: v.IndexPageSize,
 	}
@@ -648,7 +767,9 @@ func (v *S3Volume) EmptyTrash() {
 				v.fixRace(loc)
 				v.Touch(loc)
 				continue
-			} else if _, err := v.bucket.Head(loc, nil); os.IsNotExist(err) {
+			}
+			_, err := v.bucket.Head(loc, nil)
+			if os.IsNotExist(err) {
 				log.Printf("notice: %s: EmptyTrash: detected recent race for %q, calling fixRace", v, loc)
 				v.fixRace(loc)
 				continue
@@ -741,4 +862,92 @@ func (lister *s3Lister) pop() (k *s3.Key) {
 		lister.buf = lister.buf[1:]
 	}
 	return
+}
+
+// s3bucket wraps s3.bucket and counts I/O and API usage stats.
+type s3bucket struct {
+	*s3.Bucket
+	stats s3bucketStats
+}
+
+func (b *s3bucket) GetReader(path string) (io.ReadCloser, error) {
+	rdr, err := b.Bucket.GetReader(path)
+	b.stats.tick(&b.stats.Ops, &b.stats.GetOps)
+	b.stats.tickErr(err)
+	return NewCountingReader(rdr, b.stats.tickInBytes), err
+}
+
+func (b *s3bucket) Head(path string, headers map[string][]string) (*http.Response, error) {
+	resp, err := b.Bucket.Head(path, headers)
+	b.stats.tick(&b.stats.Ops, &b.stats.HeadOps)
+	b.stats.tickErr(err)
+	return resp, err
+}
+
+func (b *s3bucket) PutReader(path string, r io.Reader, length int64, contType string, perm s3.ACL, options s3.Options) error {
+	err := b.Bucket.PutReader(path, NewCountingReader(r, b.stats.tickOutBytes), length, contType, perm, options)
+	b.stats.tick(&b.stats.Ops, &b.stats.PutOps)
+	b.stats.tickErr(err)
+	return err
+}
+
+func (b *s3bucket) Put(path string, data []byte, contType string, perm s3.ACL, options s3.Options) error {
+	err := b.Bucket.PutReader(path, NewCountingReader(bytes.NewBuffer(data), b.stats.tickOutBytes), int64(len(data)), contType, perm, options)
+	b.stats.tick(&b.stats.Ops, &b.stats.PutOps)
+	b.stats.tickErr(err)
+	return err
+}
+
+func (b *s3bucket) Del(path string) error {
+	err := b.Bucket.Del(path)
+	b.stats.tick(&b.stats.Ops, &b.stats.DelOps)
+	b.stats.tickErr(err)
+	return err
+}
+
+type s3bucketStats struct {
+	Errors   uint64
+	Ops      uint64
+	GetOps   uint64
+	PutOps   uint64
+	HeadOps  uint64
+	DelOps   uint64
+	ListOps  uint64
+	InBytes  uint64
+	OutBytes uint64
+
+	ErrorCodes map[string]uint64 `json:",omitempty"`
+
+	lock sync.Mutex
+}
+
+func (s *s3bucketStats) tickInBytes(n uint64) {
+	atomic.AddUint64(&s.InBytes, n)
+}
+
+func (s *s3bucketStats) tickOutBytes(n uint64) {
+	atomic.AddUint64(&s.OutBytes, n)
+}
+
+func (s *s3bucketStats) tick(counters ...*uint64) {
+	for _, counter := range counters {
+		atomic.AddUint64(counter, 1)
+	}
+}
+
+func (s *s3bucketStats) tickErr(err error) {
+	if err == nil {
+		return
+	}
+	atomic.AddUint64(&s.Errors, 1)
+	errStr := fmt.Sprintf("%T", err)
+	if err, ok := err.(*s3.Error); ok {
+		errStr = errStr + fmt.Sprintf(" %d %s", err.StatusCode, err.Code)
+	}
+	s.lock.Lock()
+	if s.ErrorCodes == nil {
+		s.ErrorCodes = make(map[string]uint64)
+	}
+	s.ErrorCodes[errStr]++
+	s.lock.Unlock()
 }

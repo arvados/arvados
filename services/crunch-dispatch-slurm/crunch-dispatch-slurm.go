@@ -105,7 +105,7 @@ func doMain() error {
 		PollInterval:   time.Duration(theConfig.PollPeriod),
 		DoneProcessing: make(chan struct{})}
 
-	if _, err := daemon.SdNotify("READY=1"); err != nil {
+	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
 
@@ -127,8 +127,8 @@ func sbatchFunc(container arvados.Container) *exec.Cmd {
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--job-name=%s", container.UUID))
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--mem-per-cpu=%d", int(memPerCPU)))
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs))
-	if container.RuntimeConstraints.Partition != nil {
-		sbatchArgs = append(sbatchArgs, fmt.Sprintf("--partition=%s", strings.Join(container.RuntimeConstraints.Partition, ",")))
+	if container.SchedulingParameters.Partitions != nil {
+		sbatchArgs = append(sbatchArgs, fmt.Sprintf("--partition=%s", strings.Join(container.SchedulingParameters.Partitions, ",")))
 	}
 
 	return exec.Command("sbatch", sbatchArgs...)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -182,10 +183,13 @@ func (v *UnixVolume) Mtime(loc string) (time.Time, error) {
 
 // Lock the locker (if one is in use), open the file for reading, and
 // call the given function if and when the file is ready to read.
-func (v *UnixVolume) getFunc(path string, fn func(io.Reader) error) error {
+func (v *UnixVolume) getFunc(ctx context.Context, path string, fn func(io.Reader) error) error {
 	if v.locker != nil {
 		v.locker.Lock()
 		defer v.locker.Unlock()
+	}
+	if ctx.Err() != nil {
+		return ctx.Err()
 	}
 	f, err := os.Open(path)
 	if err != nil {
@@ -210,7 +214,7 @@ func (v *UnixVolume) stat(path string) (os.FileInfo, error) {
 
 // Get retrieves a block, copies it to the given slice, and returns
 // the number of bytes copied.
-func (v *UnixVolume) Get(loc string, buf []byte) (int, error) {
+func (v *UnixVolume) Get(ctx context.Context, loc string, buf []byte) (int, error) {
 	path := v.blockPath(loc)
 	stat, err := v.stat(path)
 	if err != nil {
@@ -221,7 +225,7 @@ func (v *UnixVolume) Get(loc string, buf []byte) (int, error) {
 	}
 	var read int
 	size := int(stat.Size())
-	err = v.getFunc(path, func(rdr io.Reader) error {
+	err = v.getFunc(ctx, path, func(rdr io.Reader) error {
 		read, err = io.ReadFull(rdr, buf[:size])
 		return err
 	})
@@ -231,13 +235,13 @@ func (v *UnixVolume) Get(loc string, buf []byte) (int, error) {
 // Compare returns nil if Get(loc) would return the same content as
 // expect. It is functionally equivalent to Get() followed by
 // bytes.Compare(), but uses less memory.
-func (v *UnixVolume) Compare(loc string, expect []byte) error {
+func (v *UnixVolume) Compare(ctx context.Context, loc string, expect []byte) error {
 	path := v.blockPath(loc)
 	if _, err := v.stat(path); err != nil {
 		return v.translateError(err)
 	}
-	return v.getFunc(path, func(rdr io.Reader) error {
-		return compareReaderWithBuf(rdr, expect, loc[:32])
+	return v.getFunc(ctx, path, func(rdr io.Reader) error {
+		return compareReaderWithBuf(ctx, rdr, expect, loc[:32])
 	})
 }
 
@@ -245,7 +249,7 @@ func (v *UnixVolume) Compare(loc string, expect []byte) error {
 // "loc".  It returns nil on success.  If the volume is full, it
 // returns a FullError.  If the write fails due to some other error,
 // that error is returned.
-func (v *UnixVolume) Put(loc string, block []byte) error {
+func (v *UnixVolume) Put(ctx context.Context, loc string, block []byte) error {
 	if v.ReadOnly {
 		return MethodDisabledError
 	}
@@ -269,6 +273,11 @@ func (v *UnixVolume) Put(loc string, block []byte) error {
 	if v.locker != nil {
 		v.locker.Lock()
 		defer v.locker.Unlock()
+	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
 	}
 	if _, err := tmpfile.Write(block); err != nil {
 		log.Printf("%s: writing to %s: %s\n", v, bpath, err)
@@ -313,7 +322,12 @@ func (v *UnixVolume) Status() *VolumeStatus {
 	// uses fs.Blocks - fs.Bfree.
 	free := fs.Bavail * uint64(fs.Bsize)
 	used := (fs.Blocks - fs.Bfree) * uint64(fs.Bsize)
-	return &VolumeStatus{v.Root, devnum, free, used}
+	return &VolumeStatus{
+		MountPoint: v.Root,
+		DeviceNum:  devnum,
+		BytesFree:  free,
+		BytesUsed:  used,
+	}
 }
 
 var blockDirRe = regexp.MustCompile(`^[0-9a-f]+$`)

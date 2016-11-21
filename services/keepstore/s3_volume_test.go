@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -79,6 +81,35 @@ func (s *StubbedS3Suite) TestIndex(c *check.C) {
 		c.Check(len(idx), check.Equals, spec.expectMatch+1)
 		c.Check(len(idx[len(idx)-1]), check.Equals, 0)
 	}
+}
+
+func (s *StubbedS3Suite) TestStats(c *check.C) {
+	v := s.newTestableVolume(c, 5*time.Minute, false, 2)
+	stats := func() string {
+		buf, err := json.Marshal(v.InternalStats())
+		c.Check(err, check.IsNil)
+		return string(buf)
+	}
+
+	c.Check(stats(), check.Matches, `.*"Ops":0,.*`)
+
+	loc := "acbd18db4cc2f85cedef654fccc4a4d8"
+	_, err := v.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.NotNil)
+	c.Check(stats(), check.Matches, `.*"Ops":[^0],.*`)
+	c.Check(stats(), check.Matches, `.*"\*s3.Error 404 [^"]*":[^0].*`)
+	c.Check(stats(), check.Matches, `.*"InBytes":0,.*`)
+
+	err = v.Put(context.Background(), loc, []byte("foo"))
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"OutBytes":3,.*`)
+	c.Check(stats(), check.Matches, `.*"PutOps":2,.*`)
+
+	_, err = v.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.IsNil)
+	_, err = v.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"InBytes":6,.*`)
 }
 
 func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
@@ -223,7 +254,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 		// Check canGet
 		loc, blk := setupScenario()
 		buf := make([]byte, len(blk))
-		_, err := v.Get(loc, buf)
+		_, err := v.Get(context.Background(), loc, buf)
 		c.Check(err == nil, check.Equals, scenario.canGet)
 		if err != nil {
 			c.Check(os.IsNotExist(err), check.Equals, true)
@@ -233,7 +264,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 		loc, blk = setupScenario()
 		err = v.Trash(loc)
 		c.Check(err == nil, check.Equals, scenario.canTrash)
-		_, err = v.Get(loc, buf)
+		_, err = v.Get(context.Background(), loc, buf)
 		c.Check(err == nil, check.Equals, scenario.canGetAfterTrash)
 		if err != nil {
 			c.Check(os.IsNotExist(err), check.Equals, true)
@@ -248,7 +279,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			// should be able to Get after Untrash --
 			// regardless of timestamps, errors, race
 			// conditions, etc.
-			_, err = v.Get(loc, buf)
+			_, err = v.Get(context.Background(), loc, buf)
 			c.Check(err, check.IsNil)
 		}
 
@@ -269,7 +300,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 		// Check for current Mtime after Put (applies to all
 		// scenarios)
 		loc, blk = setupScenario()
-		err = v.Put(loc, blk)
+		err = v.Put(context.Background(), loc, blk)
 		c.Check(err, check.IsNil)
 		t, err := v.Mtime(loc)
 		c.Check(err, check.IsNil)

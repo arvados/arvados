@@ -114,6 +114,9 @@ func main() {
 	}
 
 	err = theConfig.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	if pidfile := theConfig.PIDFile; pidfile != "" {
 		f, err := os.OpenFile(pidfile, os.O_RDWR|os.O_CREATE, 0777)
@@ -189,7 +192,7 @@ func main() {
 	signal.Notify(term, syscall.SIGTERM)
 	signal.Notify(term, syscall.SIGINT)
 
-	if _, err := daemon.SdNotify("READY=1"); err != nil {
+	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
 	log.Println("listening at", listener.Addr())

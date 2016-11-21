@@ -9,6 +9,7 @@ package main
 
 import (
 	"container/list"
+	"context"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
@@ -45,6 +46,9 @@ func MakeRESTRouter() *mux.Router {
 	// Privileged client only.
 	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
 
+	// Internals/debugging info (runtime.MemStats)
+	rest.HandleFunc(`/debug.json`, DebugHandler).Methods("GET", "HEAD")
+
 	// List volumes: path, device number, bytes used/avail.
 	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
 
@@ -71,6 +75,9 @@ func BadRequestHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetBlockHandler is a HandleFunc to address Get block requests.
 func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
+	ctx, cancel := contextForResponse(context.TODO(), resp)
+	defer cancel()
+
 	if theConfig.RequireSignatures {
 		locator := req.URL.Path[1:] // strip leading slash
 		if err := VerifySignature(locator, GetAPIToken(req)); err != nil {
@@ -86,14 +93,14 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	// isn't here, we can return 404 now instead of waiting for a
 	// buffer.
 
-	buf, err := getBufferForResponseWriter(resp, bufs, BlockSize)
+	buf, err := getBufferWithContext(ctx, bufs, BlockSize)
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
 	defer bufs.Put(buf)
 
-	size, err := GetBlock(mux.Vars(req)["hash"], buf, resp)
+	size, err := GetBlock(ctx, mux.Vars(req)["hash"], buf, resp)
 	if err != nil {
 		code := http.StatusInternalServerError
 		if err, ok := err.(*KeepError); ok {
@@ -108,24 +115,33 @@ func GetBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	resp.Write(buf[:size])
 }
 
-// Get a buffer from the pool -- but give up and return a non-nil
-// error if resp implements http.CloseNotifier and tells us that the
-// client has disconnected before we get a buffer.
-func getBufferForResponseWriter(resp http.ResponseWriter, bufs *bufferPool, bufSize int) ([]byte, error) {
-	var closeNotifier <-chan bool
-	if resp, ok := resp.(http.CloseNotifier); ok {
-		closeNotifier = resp.CloseNotify()
+// Return a new context that gets cancelled by resp's CloseNotifier.
+func contextForResponse(parent context.Context, resp http.ResponseWriter) (context.Context, context.CancelFunc) {
+	ctx, cancel := context.WithCancel(parent)
+	if cn, ok := resp.(http.CloseNotifier); ok {
+		go func(c <-chan bool) {
+			select {
+			case <-c:
+				theConfig.debugLogf("cancel context")
+				cancel()
+			case <-ctx.Done():
+			}
+		}(cn.CloseNotify())
 	}
-	var buf []byte
+	return ctx, cancel
+}
+
+// Get a buffer from the pool -- but give up and return a non-nil
+// error if ctx ends before we get a buffer.
+func getBufferWithContext(ctx context.Context, bufs *bufferPool, bufSize int) ([]byte, error) {
 	bufReady := make(chan []byte)
 	go func() {
 		bufReady <- bufs.Get(bufSize)
-		close(bufReady)
 	}()
 	select {
-	case buf = <-bufReady:
+	case buf := <-bufReady:
 		return buf, nil
-	case <-closeNotifier:
+	case <-ctx.Done():
 		go func() {
 			// Even if closeNotifier happened first, we
 			// need to keep waiting for our buf so we can
@@ -138,6 +154,9 @@ func getBufferForResponseWriter(resp http.ResponseWriter, bufs *bufferPool, bufS
 
 // PutBlockHandler is a HandleFunc to address Put block requests.
 func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
+	ctx, cancel := contextForResponse(context.TODO(), resp)
+	defer cancel()
+
 	hash := mux.Vars(req)["hash"]
 
 	// Detect as many error conditions as possible before reading
@@ -159,7 +178,7 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	buf, err := getBufferForResponseWriter(resp, bufs, int(req.ContentLength))
+	buf, err := getBufferWithContext(ctx, bufs, int(req.ContentLength))
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusServiceUnavailable)
 		return
@@ -172,12 +191,15 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	replication, err := PutBlock(buf, hash)
+	replication, err := PutBlock(ctx, buf, hash)
 	bufs.Put(buf)
 
 	if err != nil {
-		ke := err.(*KeepError)
-		http.Error(resp, ke.Error(), ke.HTTPCode)
+		code := http.StatusInternalServerError
+		if err, ok := err.(*KeepError); ok {
+			code = err.HTTPCode
+		}
+		http.Error(resp, err.Error(), code)
 		return
 	}
 
@@ -220,18 +242,6 @@ func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 	resp.Write([]byte{'\n'})
 }
 
-// StatusHandler
-//     Responds to /status.json requests with the current node status,
-//     described in a JSON structure.
-//
-//     The data given in a status.json response includes:
-//        volumes - a list of Keep volumes currently in use by this server
-//          each volume is an object with the following fields:
-//            * mount_point
-//            * device_num (an integer identifying the underlying filesystem)
-//            * bytes_free
-//            * bytes_used
-
 // PoolStatus struct
 type PoolStatus struct {
 	Alloc uint64 `json:"BytesAllocated"`
@@ -239,17 +249,36 @@ type PoolStatus struct {
 	Len   int    `json:"BuffersInUse"`
 }
 
+type volumeStatusEnt struct {
+	Label         string
+	Status        *VolumeStatus `json:",omitempty"`
+	VolumeStats   *ioStats      `json:",omitempty"`
+	InternalStats interface{}   `json:",omitempty"`
+}
+
 // NodeStatus struct
 type NodeStatus struct {
-	Volumes    []*VolumeStatus `json:"volumes"`
+	Volumes    []*volumeStatusEnt
 	BufferPool PoolStatus
 	PullQueue  WorkQueueStatus
 	TrashQueue WorkQueueStatus
-	Memory     runtime.MemStats
 }
 
 var st NodeStatus
 var stLock sync.Mutex
+
+// DebugHandler addresses /debug.json requests.
+func DebugHandler(resp http.ResponseWriter, req *http.Request) {
+	type debugStats struct {
+		MemStats runtime.MemStats
+	}
+	var ds debugStats
+	runtime.ReadMemStats(&ds.MemStats)
+	err := json.NewEncoder(resp).Encode(&ds)
+	if err != nil {
+		http.Error(resp, err.Error(), 500)
+	}
+}
 
 // StatusHandler addresses /status.json requests.
 func StatusHandler(resp http.ResponseWriter, req *http.Request) {
@@ -270,20 +299,26 @@ func StatusHandler(resp http.ResponseWriter, req *http.Request) {
 func readNodeStatus(st *NodeStatus) {
 	vols := KeepVM.AllReadable()
 	if cap(st.Volumes) < len(vols) {
-		st.Volumes = make([]*VolumeStatus, len(vols))
+		st.Volumes = make([]*volumeStatusEnt, len(vols))
 	}
 	st.Volumes = st.Volumes[:0]
 	for _, vol := range vols {
-		if s := vol.Status(); s != nil {
-			st.Volumes = append(st.Volumes, s)
+		var internalStats interface{}
+		if vol, ok := vol.(InternalStatser); ok {
+			internalStats = vol.InternalStats()
 		}
+		st.Volumes = append(st.Volumes, &volumeStatusEnt{
+			Label:         vol.String(),
+			Status:        vol.Status(),
+			InternalStats: internalStats,
+			//VolumeStats: KeepVM.VolumeStats(vol),
+		})
 	}
 	st.BufferPool.Alloc = bufs.Alloc()
 	st.BufferPool.Cap = bufs.Cap()
 	st.BufferPool.Len = bufs.Len()
 	st.PullQueue = getWorkQueueStatus(pullq)
 	st.TrashQueue = getWorkQueueStatus(trashq)
-	runtime.ReadMemStats(&st.Memory)
 }
 
 // return a WorkQueueStatus for the given queue. If q is nil (which
@@ -548,12 +583,17 @@ func UntrashHandler(resp http.ResponseWriter, req *http.Request) {
 // If the block found does not have the correct MD5 hash, returns
 // DiskHashError.
 //
-func GetBlock(hash string, buf []byte, resp http.ResponseWriter) (int, error) {
+func GetBlock(ctx context.Context, hash string, buf []byte, resp http.ResponseWriter) (int, error) {
 	// Attempt to read the requested hash from a keep volume.
 	errorToCaller := NotFoundError
 
 	for _, vol := range KeepVM.AllReadable() {
-		size, err := vol.Get(hash, buf)
+		size, err := vol.Get(ctx, hash, buf)
+		select {
+		case <-ctx.Done():
+			return 0, ErrClientDisconnect
+		default:
+		}
 		if err != nil {
 			// IsNotExist is an expected error and may be
 			// ignored. All other errors are logged. In
@@ -587,7 +627,7 @@ func GetBlock(hash string, buf []byte, resp http.ResponseWriter) (int, error) {
 
 // PutBlock Stores the BLOCK (identified by the content id HASH) in Keep.
 //
-// PutBlock(block, hash)
+// PutBlock(ctx, block, hash)
 //   Stores the BLOCK (identified by the content id HASH) in Keep.
 //
 //   The MD5 checksum of the block must be identical to the content id HASH.
@@ -612,7 +652,7 @@ func GetBlock(hash string, buf []byte, resp http.ResponseWriter) (int, error) {
 //          all writes failed). The text of the error message should
 //          provide as much detail as possible.
 //
-func PutBlock(block []byte, hash string) (int, error) {
+func PutBlock(ctx context.Context, block []byte, hash string) (int, error) {
 	// Check that BLOCK's checksum matches HASH.
 	blockhash := fmt.Sprintf("%x", md5.Sum(block))
 	if blockhash != hash {
@@ -623,15 +663,20 @@ func PutBlock(block []byte, hash string) (int, error) {
 	// If we already have this data, it's intact on disk, and we
 	// can update its timestamp, return success. If we have
 	// different data with the same hash, return failure.
-	if n, err := CompareAndTouch(hash, block); err == nil || err == CollisionError {
+	if n, err := CompareAndTouch(ctx, hash, block); err == nil || err == CollisionError {
 		return n, err
+	} else if ctx.Err() != nil {
+		return 0, ErrClientDisconnect
 	}
 
 	// Choose a Keep volume to write to.
 	// If this volume fails, try all of the volumes in order.
 	if vol := KeepVM.NextWritable(); vol != nil {
-		if err := vol.Put(hash, block); err == nil {
+		if err := vol.Put(ctx, hash, block); err == nil {
 			return vol.Replication(), nil // success!
+		}
+		if ctx.Err() != nil {
+			return 0, ErrClientDisconnect
 		}
 	}
 
@@ -643,7 +688,10 @@ func PutBlock(block []byte, hash string) (int, error) {
 
 	allFull := true
 	for _, vol := range writables {
-		err := vol.Put(hash, block)
+		err := vol.Put(ctx, hash, block)
+		if ctx.Err() != nil {
+			return 0, ErrClientDisconnect
+		}
 		if err == nil {
 			return vol.Replication(), nil // success!
 		}
@@ -669,10 +717,13 @@ func PutBlock(block []byte, hash string) (int, error) {
 // the relevant block's modification time in order to protect it from
 // premature garbage collection. Otherwise, it returns a non-nil
 // error.
-func CompareAndTouch(hash string, buf []byte) (int, error) {
+func CompareAndTouch(ctx context.Context, hash string, buf []byte) (int, error) {
 	var bestErr error = NotFoundError
 	for _, vol := range KeepVM.AllWritable() {
-		if err := vol.Compare(hash, buf); err == CollisionError {
+		err := vol.Compare(ctx, hash, buf)
+		if ctx.Err() != nil {
+			return 0, ctx.Err()
+		} else if err == CollisionError {
 			// Stop if we have a block with same hash but
 			// different content. (It will be impossible
 			// to tell which one is wanted if we have

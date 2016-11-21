@@ -334,7 +334,7 @@ class ArvadosBase < ActiveRecord::Base
   end
 
   def self.creatable?
-    current_user.andand.is_active
+    current_user.andand.is_active && api_exists?(:create)
   end
 
   def self.goes_in_projects?
@@ -359,6 +359,10 @@ class ArvadosBase < ActiveRecord::Base
 
   def deletable?
     editable?
+  end
+
+  def self.api_exists?(method)
+    arvados_api_client.discovery[:resources][self.to_s.underscore.pluralize.to_sym].andand[:methods].andand[method]
   end
 
   # Array of strings that are the names of attributes that can be edited

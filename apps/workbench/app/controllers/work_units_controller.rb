@@ -14,12 +14,16 @@ class WorkUnitsController < ApplicationController
     @filters = @filters || []
 
     # get next page of pipeline_instances
-    filters = @filters + [["uuid", "is_a", ["arvados#pipelineInstance"]]]
-    pipelines = PipelineInstance.limit(@limit).order(["created_at desc"]).filter(filters)
+    if PipelineInstance.api_exists?(:index)
+      filters = @filters + [["uuid", "is_a", ["arvados#pipelineInstance"]]]
+      pipelines = PipelineInstance.limit(@limit).order(["created_at desc"]).filter(filters)
+    end
 
     # get next page of jobs
-    filters = @filters + [["uuid", "is_a", ["arvados#job"]]]
-    jobs = Job.limit(@limit).order(["created_at desc"]).filter(filters)
+    if Job.api_exists?(:index)
+      filters = @filters + [["uuid", "is_a", ["arvados#job"]]]
+      jobs = Job.limit(@limit).order(["created_at desc"]).filter(filters)
+    end
 
     # get next page of container_requests
     filters = @filters + [["uuid", "is_a", ["arvados#containerRequest"]]]
