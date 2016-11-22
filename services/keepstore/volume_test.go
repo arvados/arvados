@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"errors"
 	"fmt"
@@ -95,7 +96,7 @@ func (v *MockVolume) gotCall(method string) {
 	}
 }
 
-func (v *MockVolume) Compare(loc string, buf []byte) error {
+func (v *MockVolume) Compare(ctx context.Context, loc string, buf []byte) error {
 	v.gotCall("Compare")
 	<-v.Gate
 	if v.Bad {
@@ -113,7 +114,7 @@ func (v *MockVolume) Compare(loc string, buf []byte) error {
 	}
 }
 
-func (v *MockVolume) Get(loc string, buf []byte) (int, error) {
+func (v *MockVolume) Get(ctx context.Context, loc string, buf []byte) (int, error) {
 	v.gotCall("Get")
 	<-v.Gate
 	if v.Bad {
@@ -125,7 +126,7 @@ func (v *MockVolume) Get(loc string, buf []byte) (int, error) {
 	return 0, os.ErrNotExist
 }
 
-func (v *MockVolume) Put(loc string, block []byte) error {
+func (v *MockVolume) Put(ctx context.Context, loc string, block []byte) error {
 	v.gotCall("Put")
 	<-v.Gate
 	if v.Bad {
@@ -189,7 +190,7 @@ func (v *MockVolume) Trash(loc string) error {
 		return MethodDisabledError
 	}
 	if _, ok := v.Store[loc]; ok {
-		if time.Since(v.Timestamps[loc]) < blobSignatureTTL {
+		if time.Since(v.Timestamps[loc]) < time.Duration(theConfig.BlobSignatureTTL) {
 			return nil
 		}
 		delete(v.Store, loc)
@@ -198,7 +199,14 @@ func (v *MockVolume) Trash(loc string) error {
 	return os.ErrNotExist
 }
 
-// TBD
+func (v *MockVolume) Type() string {
+	return "Mock"
+}
+
+func (v *MockVolume) Start() error {
+	return nil
+}
+
 func (v *MockVolume) Untrash(loc string) error {
 	return nil
 }

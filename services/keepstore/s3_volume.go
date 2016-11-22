@@ -1,20 +1,31 @@
 package main
 
 import (
+	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/AdRoll/goamz/aws"
 	"github.com/AdRoll/goamz/s3"
+)
+
+const (
+	s3DefaultReadTimeout    = arvados.Duration(10 * time.Minute)
+	s3DefaultConnectTimeout = arvados.Duration(time.Minute)
 )
 
 var (
@@ -39,7 +50,12 @@ const (
 )
 
 type s3VolumeAdder struct {
-	*volumeSet
+	*Config
+}
+
+// String implements flag.Value
+func (s *s3VolumeAdder) String() string {
+	return "-"
 }
 
 func (s *s3VolumeAdder) Set(bucketName string) error {
@@ -49,39 +65,21 @@ func (s *s3VolumeAdder) Set(bucketName string) error {
 	if s3AccessKeyFile == "" || s3SecretKeyFile == "" {
 		return fmt.Errorf("-s3-access-key-file and -s3-secret-key-file arguments must given before -s3-bucket-volume")
 	}
-	region, ok := aws.Regions[s3RegionName]
-	if s3Endpoint == "" {
-		if !ok {
-			return fmt.Errorf("unrecognized region %+q; try specifying -s3-endpoint instead", s3RegionName)
-		}
-	} else {
-		if ok {
-			return fmt.Errorf("refusing to use AWS region name %+q with endpoint %+q; "+
-				"specify empty endpoint (\"-s3-endpoint=\") or use a different region name", s3RegionName, s3Endpoint)
-		}
-		region = aws.Region{
-			Name:       s3RegionName,
-			S3Endpoint: s3Endpoint,
-		}
-	}
-	var err error
-	var auth aws.Auth
-	auth.AccessKey, err = readKeyFromFile(s3AccessKeyFile)
-	if err != nil {
-		return err
-	}
-	auth.SecretKey, err = readKeyFromFile(s3SecretKeyFile)
-	if err != nil {
-		return err
-	}
-	if flagSerializeIO {
+	if deprecated.flagSerializeIO {
 		log.Print("Notice: -serialize is not supported by s3-bucket volumes.")
 	}
-	v := NewS3Volume(auth, region, bucketName, s3RaceWindow, flagReadonly, s3Replication)
-	if err := v.Check(); err != nil {
-		return err
-	}
-	*s.volumeSet = append(*s.volumeSet, v)
+	s.Config.Volumes = append(s.Config.Volumes, &S3Volume{
+		Bucket:        bucketName,
+		AccessKeyFile: s3AccessKeyFile,
+		SecretKeyFile: s3SecretKeyFile,
+		Endpoint:      s3Endpoint,
+		Region:        s3RegionName,
+		RaceWindow:    arvados.Duration(s3RaceWindow),
+		S3Replication: s3Replication,
+		UnsafeDelete:  s3UnsafeDelete,
+		ReadOnly:      deprecated.flagReadonly,
+		IndexPageSize: 1000,
+	})
 	return nil
 }
 
@@ -93,7 +91,9 @@ func s3regions() (okList []string) {
 }
 
 func init() {
-	flag.Var(&s3VolumeAdder{&volumes},
+	VolumeTypes = append(VolumeTypes, func() VolumeWithExamples { return &S3Volume{} })
+
+	flag.Var(&s3VolumeAdder{theConfig},
 		"s3-bucket-volume",
 		"Use the given bucket as a storage volume. Can be given multiple times.")
 	flag.StringVar(
@@ -110,12 +110,12 @@ func init() {
 		&s3AccessKeyFile,
 		"s3-access-key-file",
 		"",
-		"File containing the access key used for subsequent -s3-bucket-volume arguments.")
+		"`File` containing the access key used for subsequent -s3-bucket-volume arguments.")
 	flag.StringVar(
 		&s3SecretKeyFile,
 		"s3-secret-key-file",
 		"",
-		"File containing the secret key used for subsequent -s3-bucket-volume arguments.")
+		"`File` containing the secret key used for subsequent -s3-bucket-volume arguments.")
 	flag.DurationVar(
 		&s3RaceWindow,
 		"s3-race-window",
@@ -135,33 +135,130 @@ func init() {
 
 // S3Volume implements Volume using an S3 bucket.
 type S3Volume struct {
-	*s3.Bucket
-	raceWindow    time.Duration
-	readonly      bool
-	replication   int
-	indexPageSize int
+	AccessKeyFile      string
+	SecretKeyFile      string
+	Endpoint           string
+	Region             string
+	Bucket             string
+	LocationConstraint bool
+	IndexPageSize      int
+	S3Replication      int
+	ConnectTimeout     arvados.Duration
+	ReadTimeout        arvados.Duration
+	RaceWindow         arvados.Duration
+	ReadOnly           bool
+	UnsafeDelete       bool
+
+	bucket *s3bucket
+
+	startOnce sync.Once
 }
 
-// NewS3Volume returns a new S3Volume using the given auth, region,
-// and bucket name. The replication argument specifies the replication
-// level to report when writing data.
-func NewS3Volume(auth aws.Auth, region aws.Region, bucket string, raceWindow time.Duration, readonly bool, replication int) *S3Volume {
-	return &S3Volume{
-		Bucket: &s3.Bucket{
-			S3:   s3.New(auth, region),
-			Name: bucket,
+// Examples implements VolumeWithExamples.
+func (*S3Volume) Examples() []Volume {
+	return []Volume{
+		&S3Volume{
+			AccessKeyFile:  "/etc/aws_s3_access_key.txt",
+			SecretKeyFile:  "/etc/aws_s3_secret_key.txt",
+			Endpoint:       "",
+			Region:         "us-east-1",
+			Bucket:         "example-bucket-name",
+			IndexPageSize:  1000,
+			S3Replication:  2,
+			RaceWindow:     arvados.Duration(24 * time.Hour),
+			ConnectTimeout: arvados.Duration(time.Minute),
+			ReadTimeout:    arvados.Duration(5 * time.Minute),
 		},
-		raceWindow:    raceWindow,
-		readonly:      readonly,
-		replication:   replication,
-		indexPageSize: 1000,
+		&S3Volume{
+			AccessKeyFile:  "/etc/gce_s3_access_key.txt",
+			SecretKeyFile:  "/etc/gce_s3_secret_key.txt",
+			Endpoint:       "https://storage.googleapis.com",
+			Region:         "",
+			Bucket:         "example-bucket-name",
+			IndexPageSize:  1000,
+			S3Replication:  2,
+			RaceWindow:     arvados.Duration(24 * time.Hour),
+			ConnectTimeout: arvados.Duration(time.Minute),
+			ReadTimeout:    arvados.Duration(5 * time.Minute),
+		},
 	}
 }
 
-// Check returns an error if the volume is inaccessible (e.g., config
-// error).
-func (v *S3Volume) Check() error {
+// Type implements Volume.
+func (*S3Volume) Type() string {
+	return "S3"
+}
+
+// Start populates private fields and verifies the configuration is
+// valid.
+func (v *S3Volume) Start() error {
+	region, ok := aws.Regions[v.Region]
+	if v.Endpoint == "" {
+		if !ok {
+			return fmt.Errorf("unrecognized region %+q; try specifying -s3-endpoint instead", v.Region)
+		}
+	} else if ok {
+		return fmt.Errorf("refusing to use AWS region name %+q with endpoint %+q; "+
+			"specify empty endpoint (\"-s3-endpoint=\") or use a different region name", v.Region, v.Endpoint)
+	} else {
+		region = aws.Region{
+			Name:                 v.Region,
+			S3Endpoint:           v.Endpoint,
+			S3LocationConstraint: v.LocationConstraint,
+		}
+	}
+
+	var err error
+	var auth aws.Auth
+	auth.AccessKey, err = readKeyFromFile(v.AccessKeyFile)
+	if err != nil {
+		return err
+	}
+	auth.SecretKey, err = readKeyFromFile(v.SecretKeyFile)
+	if err != nil {
+		return err
+	}
+
+	// Zero timeouts mean "wait forever", which is a bad
+	// default. Default to long timeouts instead.
+	if v.ConnectTimeout == 0 {
+		v.ConnectTimeout = s3DefaultConnectTimeout
+	}
+	if v.ReadTimeout == 0 {
+		v.ReadTimeout = s3DefaultReadTimeout
+	}
+
+	client := s3.New(auth, region)
+	client.ConnectTimeout = time.Duration(v.ConnectTimeout)
+	client.ReadTimeout = time.Duration(v.ReadTimeout)
+	v.bucket = &s3bucket{
+		Bucket: &s3.Bucket{
+			S3:   client,
+			Name: v.Bucket,
+		},
+	}
 	return nil
+}
+
+func (v *S3Volume) getReaderWithContext(ctx context.Context, loc string) (rdr io.ReadCloser, err error) {
+	ready := make(chan bool)
+	go func() {
+		rdr, err = v.getReader(loc)
+		close(ready)
+	}()
+	select {
+	case <-ready:
+		return
+	case <-ctx.Done():
+		theConfig.debugLogf("s3: abandoning getReader(): %s", ctx.Err())
+		go func() {
+			<-ready
+			if err == nil {
+				rdr.Close()
+			}
+		}()
+		return nil, ctx.Err()
+	}
 }
 
 // getReader wraps (Bucket)GetReader.
@@ -170,12 +267,13 @@ func (v *S3Volume) Check() error {
 // disappeared in a Trash race, getReader calls fixRace to recover the
 // data, and tries again.
 func (v *S3Volume) getReader(loc string) (rdr io.ReadCloser, err error) {
-	rdr, err = v.Bucket.GetReader(loc)
+	rdr, err = v.bucket.GetReader(loc)
 	err = v.translateError(err)
 	if err == nil || !os.IsNotExist(err) {
 		return
 	}
-	_, err = v.Bucket.Head("recent/"+loc, nil)
+
+	_, err = v.bucket.Head("recent/"+loc, nil)
 	err = v.translateError(err)
 	if err != nil {
 		// If we can't read recent/X, there's no point in
@@ -186,7 +284,8 @@ func (v *S3Volume) getReader(loc string) (rdr io.ReadCloser, err error) {
 		err = os.ErrNotExist
 		return
 	}
-	rdr, err = v.Bucket.GetReader(loc)
+
+	rdr, err = v.bucket.GetReader(loc)
 	if err != nil {
 		log.Printf("warning: reading %s after successful fixRace: %s", loc, err)
 		err = v.translateError(err)
@@ -196,58 +295,114 @@ func (v *S3Volume) getReader(loc string) (rdr io.ReadCloser, err error) {
 
 // Get a block: copy the block data into buf, and return the number of
 // bytes copied.
-func (v *S3Volume) Get(loc string, buf []byte) (int, error) {
-	rdr, err := v.getReader(loc)
+func (v *S3Volume) Get(ctx context.Context, loc string, buf []byte) (int, error) {
+	rdr, err := v.getReaderWithContext(ctx, loc)
 	if err != nil {
 		return 0, err
 	}
-	defer rdr.Close()
-	n, err := io.ReadFull(rdr, buf)
-	switch err {
-	case nil, io.EOF, io.ErrUnexpectedEOF:
-		return n, nil
-	default:
-		return 0, v.translateError(err)
+
+	var n int
+	ready := make(chan bool)
+	go func() {
+		defer close(ready)
+
+		defer rdr.Close()
+		n, err = io.ReadFull(rdr, buf)
+
+		switch err {
+		case nil, io.EOF, io.ErrUnexpectedEOF:
+			err = nil
+		default:
+			err = v.translateError(err)
+		}
+	}()
+	select {
+	case <-ctx.Done():
+		theConfig.debugLogf("s3: interrupting ReadFull() with Close() because %s", ctx.Err())
+		rdr.Close()
+		// Must wait for ReadFull to return, to ensure it
+		// doesn't write to buf after we return.
+		theConfig.debugLogf("s3: waiting for ReadFull() to fail")
+		<-ready
+		return 0, ctx.Err()
+	case <-ready:
+		return n, err
 	}
 }
 
 // Compare the given data with the stored data.
-func (v *S3Volume) Compare(loc string, expect []byte) error {
-	rdr, err := v.getReader(loc)
+func (v *S3Volume) Compare(ctx context.Context, loc string, expect []byte) error {
+	rdr, err := v.getReaderWithContext(ctx, loc)
 	if err != nil {
 		return err
 	}
 	defer rdr.Close()
-	return v.translateError(compareReaderWithBuf(rdr, expect, loc[:32]))
+	return v.translateError(compareReaderWithBuf(ctx, rdr, expect, loc[:32]))
 }
 
 // Put writes a block.
-func (v *S3Volume) Put(loc string, block []byte) error {
-	if v.readonly {
+func (v *S3Volume) Put(ctx context.Context, loc string, block []byte) error {
+	if v.ReadOnly {
 		return MethodDisabledError
 	}
 	var opts s3.Options
-	if len(block) > 0 {
+	size := len(block)
+	if size > 0 {
 		md5, err := hex.DecodeString(loc)
 		if err != nil {
 			return err
 		}
 		opts.ContentMD5 = base64.StdEncoding.EncodeToString(md5)
 	}
-	err := v.Bucket.Put(loc, block, "application/octet-stream", s3ACL, opts)
-	if err != nil {
+
+	// Send the block data through a pipe, so that (if we need to)
+	// we can close the pipe early and abandon our PutReader()
+	// goroutine, without worrying about PutReader() accessing our
+	// block buffer after we release it.
+	bufr, bufw := io.Pipe()
+	go func() {
+		io.Copy(bufw, bytes.NewReader(block))
+		bufw.Close()
+	}()
+
+	var err error
+	ready := make(chan bool)
+	go func() {
+		defer func() {
+			if ctx.Err() != nil {
+				theConfig.debugLogf("%s: abandoned PutReader goroutine finished with err: %s", v, err)
+			}
+		}()
+		defer close(ready)
+		err = v.bucket.PutReader(loc, bufr, int64(size), "application/octet-stream", s3ACL, opts)
+		if err != nil {
+			return
+		}
+		err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
+	}()
+	select {
+	case <-ctx.Done():
+		theConfig.debugLogf("%s: taking PutReader's input away: %s", v, ctx.Err())
+		// Our pipe might be stuck in Write(), waiting for
+		// io.Copy() to read. If so, un-stick it. This means
+		// PutReader will get corrupt data, but that's OK: the
+		// size and MD5 won't match, so the write will fail.
+		go io.Copy(ioutil.Discard, bufr)
+		// CloseWithError() will return once pending I/O is done.
+		bufw.CloseWithError(ctx.Err())
+		theConfig.debugLogf("%s: abandoning PutReader goroutine", v)
+		return ctx.Err()
+	case <-ready:
 		return v.translateError(err)
 	}
-	err = v.Bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
-	return v.translateError(err)
 }
 
 // Touch sets the timestamp for the given locator to the current time.
 func (v *S3Volume) Touch(loc string) error {
-	if v.readonly {
+	if v.ReadOnly {
 		return MethodDisabledError
 	}
-	_, err := v.Bucket.Head(loc, nil)
+	_, err := v.bucket.Head(loc, nil)
 	err = v.translateError(err)
 	if os.IsNotExist(err) && v.fixRace(loc) {
 		// The data object got trashed in a race, but fixRace
@@ -255,27 +410,27 @@ func (v *S3Volume) Touch(loc string) error {
 	} else if err != nil {
 		return err
 	}
-	err = v.Bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
+	err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
 	return v.translateError(err)
 }
 
 // Mtime returns the stored timestamp for the given locator.
 func (v *S3Volume) Mtime(loc string) (time.Time, error) {
-	_, err := v.Bucket.Head(loc, nil)
+	_, err := v.bucket.Head(loc, nil)
 	if err != nil {
 		return zeroTime, v.translateError(err)
 	}
-	resp, err := v.Bucket.Head("recent/"+loc, nil)
+	resp, err := v.bucket.Head("recent/"+loc, nil)
 	err = v.translateError(err)
 	if os.IsNotExist(err) {
 		// The data object X exists, but recent/X is missing.
-		err = v.Bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
+		err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
 		if err != nil {
 			log.Printf("error: creating %q: %s", "recent/"+loc, err)
 			return zeroTime, v.translateError(err)
 		}
 		log.Printf("info: created %q to migrate existing block to new storage scheme", "recent/"+loc)
-		resp, err = v.Bucket.Head("recent/"+loc, nil)
+		resp, err = v.bucket.Head("recent/"+loc, nil)
 		if err != nil {
 			log.Printf("error: created %q but HEAD failed: %s", "recent/"+loc, err)
 			return zeroTime, v.translateError(err)
@@ -292,16 +447,19 @@ func (v *S3Volume) Mtime(loc string) (time.Time, error) {
 func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 	// Use a merge sort to find matching sets of X and recent/X.
 	dataL := s3Lister{
-		Bucket:   v.Bucket,
+		Bucket:   v.bucket.Bucket,
 		Prefix:   prefix,
-		PageSize: v.indexPageSize,
+		PageSize: v.IndexPageSize,
 	}
 	recentL := s3Lister{
-		Bucket:   v.Bucket,
+		Bucket:   v.bucket.Bucket,
 		Prefix:   "recent/" + prefix,
-		PageSize: v.indexPageSize,
+		PageSize: v.IndexPageSize,
 	}
+	v.bucket.stats.tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
+	v.bucket.stats.tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 	for data, recent := dataL.First(), recentL.First(); data != nil; data = dataL.Next() {
+		v.bucket.stats.tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 		if data.Key >= "g" {
 			// Conveniently, "recent/*" and "trash/*" are
 			// lexically greater than all hex-encoded data
@@ -323,10 +481,12 @@ func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 		for recent != nil {
 			if cmp := strings.Compare(recent.Key[7:], data.Key); cmp < 0 {
 				recent = recentL.Next()
+				v.bucket.stats.tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 				continue
 			} else if cmp == 0 {
 				stamp = recent
 				recent = recentL.Next()
+				v.bucket.stats.tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 				break
 			} else {
 				// recent/X marker is missing: we'll
@@ -346,19 +506,19 @@ func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 
 // Trash a Keep block.
 func (v *S3Volume) Trash(loc string) error {
-	if v.readonly {
+	if v.ReadOnly {
 		return MethodDisabledError
 	}
 	if t, err := v.Mtime(loc); err != nil {
 		return err
-	} else if time.Since(t) < blobSignatureTTL {
+	} else if time.Since(t) < theConfig.BlobSignatureTTL.Duration() {
 		return nil
 	}
-	if trashLifetime == 0 {
+	if theConfig.TrashLifetime == 0 {
 		if !s3UnsafeDelete {
 			return ErrS3TrashDisabled
 		}
-		return v.Bucket.Del(loc)
+		return v.translateError(v.bucket.Del(loc))
 	}
 	err := v.checkRaceWindow(loc)
 	if err != nil {
@@ -368,13 +528,13 @@ func (v *S3Volume) Trash(loc string) error {
 	if err != nil {
 		return err
 	}
-	return v.translateError(v.Bucket.Del(loc))
+	return v.translateError(v.bucket.Del(loc))
 }
 
 // checkRaceWindow returns a non-nil error if trash/loc is, or might
 // be, in the race window (i.e., it's not safe to trash loc).
 func (v *S3Volume) checkRaceWindow(loc string) error {
-	resp, err := v.Bucket.Head("trash/"+loc, nil)
+	resp, err := v.bucket.Head("trash/"+loc, nil)
 	err = v.translateError(err)
 	if os.IsNotExist(err) {
 		// OK, trash/X doesn't exist so we're not in the race
@@ -390,7 +550,7 @@ func (v *S3Volume) checkRaceWindow(loc string) error {
 		// Can't parse timestamp
 		return err
 	}
-	safeWindow := t.Add(trashLifetime).Sub(time.Now().Add(v.raceWindow))
+	safeWindow := t.Add(theConfig.TrashLifetime.Duration()).Sub(time.Now().Add(time.Duration(v.RaceWindow)))
 	if safeWindow <= 0 {
 		// We can't count on "touch trash/X" to prolong
 		// trash/X's lifetime. The new timestamp might not
@@ -408,10 +568,10 @@ func (v *S3Volume) checkRaceWindow(loc string) error {
 // (PutCopy returns 200 OK if the request was received, even if the
 // copy failed).
 func (v *S3Volume) safeCopy(dst, src string) error {
-	resp, err := v.Bucket.PutCopy(dst, s3ACL, s3.CopyOptions{
+	resp, err := v.bucket.PutCopy(dst, s3ACL, s3.CopyOptions{
 		ContentType:       "application/octet-stream",
 		MetadataDirective: "REPLACE",
-	}, v.Bucket.Name+"/"+src)
+	}, v.bucket.Name+"/"+src)
 	err = v.translateError(err)
 	if err != nil {
 		return err
@@ -446,7 +606,7 @@ func (v *S3Volume) Untrash(loc string) error {
 	if err != nil {
 		return err
 	}
-	err = v.Bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
+	err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
 	return v.translateError(err)
 }
 
@@ -461,21 +621,26 @@ func (v *S3Volume) Status() *VolumeStatus {
 	}
 }
 
+// InternalStats returns bucket I/O and API call counters.
+func (v *S3Volume) InternalStats() interface{} {
+	return &v.bucket.stats
+}
+
 // String implements fmt.Stringer.
 func (v *S3Volume) String() string {
-	return fmt.Sprintf("s3-bucket:%+q", v.Bucket.Name)
+	return fmt.Sprintf("s3-bucket:%+q", v.Bucket)
 }
 
 // Writable returns false if all future Put, Mtime, and Delete calls
 // are expected to fail.
 func (v *S3Volume) Writable() bool {
-	return !v.readonly
+	return !v.ReadOnly
 }
 
 // Replication returns the storage redundancy of the underlying
 // device. Configured via command line flag.
 func (v *S3Volume) Replication() int {
-	return v.replication
+	return v.S3Replication
 }
 
 var s3KeepBlockRegexp = regexp.MustCompile(`^[0-9a-f]{32}$`)
@@ -489,7 +654,7 @@ func (v *S3Volume) isKeepBlock(s string) bool {
 // there was a race between Put and Trash, fixRace recovers from the
 // race by Untrashing the block.
 func (v *S3Volume) fixRace(loc string) bool {
-	trash, err := v.Bucket.Head("trash/"+loc, nil)
+	trash, err := v.bucket.Head("trash/"+loc, nil)
 	if err != nil {
 		if !os.IsNotExist(v.translateError(err)) {
 			log.Printf("error: fixRace: HEAD %q: %s", "trash/"+loc, err)
@@ -502,7 +667,7 @@ func (v *S3Volume) fixRace(loc string) bool {
 		return false
 	}
 
-	recent, err := v.Bucket.Head("recent/"+loc, nil)
+	recent, err := v.bucket.Head("recent/"+loc, nil)
 	if err != nil {
 		log.Printf("error: fixRace: HEAD %q: %s", "recent/"+loc, err)
 		return false
@@ -514,13 +679,13 @@ func (v *S3Volume) fixRace(loc string) bool {
 	}
 
 	ageWhenTrashed := trashTime.Sub(recentTime)
-	if ageWhenTrashed >= blobSignatureTTL {
+	if ageWhenTrashed >= theConfig.BlobSignatureTTL.Duration() {
 		// No evidence of a race: block hasn't been written
 		// since it became eligible for Trash. No fix needed.
 		return false
 	}
 
-	log.Printf("notice: fixRace: %q: trashed at %s but touched at %s (age when trashed = %s < %s)", loc, trashTime, recentTime, ageWhenTrashed, blobSignatureTTL)
+	log.Printf("notice: fixRace: %q: trashed at %s but touched at %s (age when trashed = %s < %s)", loc, trashTime, recentTime, ageWhenTrashed, theConfig.BlobSignatureTTL)
 	log.Printf("notice: fixRace: copying %q to %q to recover from race between Put/Touch and Trash", "recent/"+loc, loc)
 	err = v.safeCopy(loc, "trash/"+loc)
 	if err != nil {
@@ -545,16 +710,16 @@ func (v *S3Volume) translateError(err error) error {
 	return err
 }
 
-// EmptyTrash looks for trashed blocks that exceeded trashLifetime
+// EmptyTrash looks for trashed blocks that exceeded TrashLifetime
 // and deletes them from the volume.
 func (v *S3Volume) EmptyTrash() {
 	var bytesInTrash, blocksInTrash, bytesDeleted, blocksDeleted int64
 
 	// Use a merge sort to find matching sets of trash/X and recent/X.
 	trashL := s3Lister{
-		Bucket:   v.Bucket,
+		Bucket:   v.bucket.Bucket,
 		Prefix:   "trash/",
-		PageSize: v.indexPageSize,
+		PageSize: v.IndexPageSize,
 	}
 	// Define "ready to delete" as "...when EmptyTrash started".
 	startT := time.Now()
@@ -571,7 +736,7 @@ func (v *S3Volume) EmptyTrash() {
 			log.Printf("warning: %s: EmptyTrash: %q: parse %q: %s", v, trash.Key, trash.LastModified, err)
 			continue
 		}
-		recent, err := v.Bucket.Head("recent/"+loc, nil)
+		recent, err := v.bucket.Head("recent/"+loc, nil)
 		if err != nil && os.IsNotExist(v.translateError(err)) {
 			log.Printf("warning: %s: EmptyTrash: found trash marker %q but no %q (%s); calling Untrash", v, trash.Key, "recent/"+loc, err)
 			err = v.Untrash(loc)
@@ -588,21 +753,23 @@ func (v *S3Volume) EmptyTrash() {
 			log.Printf("warning: %s: EmptyTrash: %q: parse %q: %s", v, "recent/"+loc, recent.Header.Get("Last-Modified"), err)
 			continue
 		}
-		if trashT.Sub(recentT) < blobSignatureTTL {
-			if age := startT.Sub(recentT); age >= blobSignatureTTL-v.raceWindow {
+		if trashT.Sub(recentT) < theConfig.BlobSignatureTTL.Duration() {
+			if age := startT.Sub(recentT); age >= theConfig.BlobSignatureTTL.Duration()-time.Duration(v.RaceWindow) {
 				// recent/loc is too old to protect
 				// loc from being Trashed again during
 				// the raceWindow that starts if we
 				// delete trash/X now.
 				//
-				// Note this means (trashCheckInterval
-				// < blobSignatureTTL - raceWindow) is
+				// Note this means (TrashCheckInterval
+				// < BlobSignatureTTL - raceWindow) is
 				// necessary to avoid starvation.
 				log.Printf("notice: %s: EmptyTrash: detected old race for %q, calling fixRace + Touch", v, loc)
 				v.fixRace(loc)
 				v.Touch(loc)
 				continue
-			} else if _, err := v.Bucket.Head(loc, nil); os.IsNotExist(err) {
+			}
+			_, err := v.bucket.Head(loc, nil)
+			if os.IsNotExist(err) {
 				log.Printf("notice: %s: EmptyTrash: detected recent race for %q, calling fixRace", v, loc)
 				v.fixRace(loc)
 				continue
@@ -611,10 +778,10 @@ func (v *S3Volume) EmptyTrash() {
 				continue
 			}
 		}
-		if startT.Sub(trashT) < trashLifetime {
+		if startT.Sub(trashT) < theConfig.TrashLifetime.Duration() {
 			continue
 		}
-		err = v.Bucket.Del(trash.Key)
+		err = v.bucket.Del(trash.Key)
 		if err != nil {
 			log.Printf("warning: %s: EmptyTrash: deleting %q: %s", v, trash.Key, err)
 			continue
@@ -622,9 +789,9 @@ func (v *S3Volume) EmptyTrash() {
 		bytesDeleted += trash.Size
 		blocksDeleted++
 
-		_, err = v.Bucket.Head(loc, nil)
+		_, err = v.bucket.Head(loc, nil)
 		if os.IsNotExist(err) {
-			err = v.Bucket.Del("recent/" + loc)
+			err = v.bucket.Del("recent/" + loc)
 			if err != nil {
 				log.Printf("warning: %s: EmptyTrash: deleting %q: %s", v, "recent/"+loc, err)
 			}
@@ -695,4 +862,92 @@ func (lister *s3Lister) pop() (k *s3.Key) {
 		lister.buf = lister.buf[1:]
 	}
 	return
+}
+
+// s3bucket wraps s3.bucket and counts I/O and API usage stats.
+type s3bucket struct {
+	*s3.Bucket
+	stats s3bucketStats
+}
+
+func (b *s3bucket) GetReader(path string) (io.ReadCloser, error) {
+	rdr, err := b.Bucket.GetReader(path)
+	b.stats.tick(&b.stats.Ops, &b.stats.GetOps)
+	b.stats.tickErr(err)
+	return NewCountingReader(rdr, b.stats.tickInBytes), err
+}
+
+func (b *s3bucket) Head(path string, headers map[string][]string) (*http.Response, error) {
+	resp, err := b.Bucket.Head(path, headers)
+	b.stats.tick(&b.stats.Ops, &b.stats.HeadOps)
+	b.stats.tickErr(err)
+	return resp, err
+}
+
+func (b *s3bucket) PutReader(path string, r io.Reader, length int64, contType string, perm s3.ACL, options s3.Options) error {
+	err := b.Bucket.PutReader(path, NewCountingReader(r, b.stats.tickOutBytes), length, contType, perm, options)
+	b.stats.tick(&b.stats.Ops, &b.stats.PutOps)
+	b.stats.tickErr(err)
+	return err
+}
+
+func (b *s3bucket) Put(path string, data []byte, contType string, perm s3.ACL, options s3.Options) error {
+	err := b.Bucket.PutReader(path, NewCountingReader(bytes.NewBuffer(data), b.stats.tickOutBytes), int64(len(data)), contType, perm, options)
+	b.stats.tick(&b.stats.Ops, &b.stats.PutOps)
+	b.stats.tickErr(err)
+	return err
+}
+
+func (b *s3bucket) Del(path string) error {
+	err := b.Bucket.Del(path)
+	b.stats.tick(&b.stats.Ops, &b.stats.DelOps)
+	b.stats.tickErr(err)
+	return err
+}
+
+type s3bucketStats struct {
+	Errors   uint64
+	Ops      uint64
+	GetOps   uint64
+	PutOps   uint64
+	HeadOps  uint64
+	DelOps   uint64
+	ListOps  uint64
+	InBytes  uint64
+	OutBytes uint64
+
+	ErrorCodes map[string]uint64 `json:",omitempty"`
+
+	lock sync.Mutex
+}
+
+func (s *s3bucketStats) tickInBytes(n uint64) {
+	atomic.AddUint64(&s.InBytes, n)
+}
+
+func (s *s3bucketStats) tickOutBytes(n uint64) {
+	atomic.AddUint64(&s.OutBytes, n)
+}
+
+func (s *s3bucketStats) tick(counters ...*uint64) {
+	for _, counter := range counters {
+		atomic.AddUint64(counter, 1)
+	}
+}
+
+func (s *s3bucketStats) tickErr(err error) {
+	if err == nil {
+		return
+	}
+	atomic.AddUint64(&s.Errors, 1)
+	errStr := fmt.Sprintf("%T", err)
+	if err, ok := err.(*s3.Error); ok {
+		errStr = errStr + fmt.Sprintf(" %d %s", err.StatusCode, err.Code)
+	}
+	s.lock.Lock()
+	if s.ErrorCodes == nil {
+		s.ErrorCodes = make(map[string]uint64)
+	}
+	s.ErrorCodes[errStr]++
+	s.lock.Unlock()
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"container/list"
+	"context"
 	"testing"
 	"time"
 )
@@ -31,7 +32,7 @@ type TrashWorkerTestData struct {
    Expect no errors.
 */
 func TestTrashWorkerIntegration_GetNonExistingLocator(t *testing.T) {
-	neverDelete = false
+	theConfig.EnableDelete = true
 	testData := TrashWorkerTestData{
 		Locator1: "5d41402abc4b2a76b9719d911017c592",
 		Block1:   []byte("hello"),
@@ -53,7 +54,7 @@ func TestTrashWorkerIntegration_GetNonExistingLocator(t *testing.T) {
    Expect the second locator in volume 2 to be unaffected.
 */
 func TestTrashWorkerIntegration_LocatorInVolume1(t *testing.T) {
-	neverDelete = false
+	theConfig.EnableDelete = true
 	testData := TrashWorkerTestData{
 		Locator1: TestHash,
 		Block1:   TestBlock,
@@ -75,7 +76,7 @@ func TestTrashWorkerIntegration_LocatorInVolume1(t *testing.T) {
    Expect the first locator in volume 1 to be unaffected.
 */
 func TestTrashWorkerIntegration_LocatorInVolume2(t *testing.T) {
-	neverDelete = false
+	theConfig.EnableDelete = true
 	testData := TrashWorkerTestData{
 		Locator1: TestHash,
 		Block1:   TestBlock,
@@ -97,7 +98,7 @@ func TestTrashWorkerIntegration_LocatorInVolume2(t *testing.T) {
    Expect locator to be deleted from both volumes.
 */
 func TestTrashWorkerIntegration_LocatorInBothVolumes(t *testing.T) {
-	neverDelete = false
+	theConfig.EnableDelete = true
 	testData := TrashWorkerTestData{
 		Locator1: TestHash,
 		Block1:   TestBlock,
@@ -119,7 +120,7 @@ func TestTrashWorkerIntegration_LocatorInBothVolumes(t *testing.T) {
    Delete the second and expect the first to be still around.
 */
 func TestTrashWorkerIntegration_MtimeMatchesForLocator1ButNotForLocator2(t *testing.T) {
-	neverDelete = false
+	theConfig.EnableDelete = true
 	testData := TrashWorkerTestData{
 		Locator1: TestHash,
 		Block1:   TestBlock,
@@ -143,7 +144,7 @@ func TestTrashWorkerIntegration_MtimeMatchesForLocator1ButNotForLocator2(t *test
    Expect the other unaffected.
 */
 func TestTrashWorkerIntegration_TwoDifferentLocatorsInVolume1(t *testing.T) {
-	neverDelete = false
+	theConfig.EnableDelete = true
 	testData := TrashWorkerTestData{
 		Locator1: TestHash,
 		Block1:   TestBlock,
@@ -166,7 +167,7 @@ func TestTrashWorkerIntegration_TwoDifferentLocatorsInVolume1(t *testing.T) {
    will not be deleted because its Mtime is within the trash life time.
 */
 func TestTrashWorkerIntegration_SameLocatorInTwoVolumesWithDefaultTrashLifeTime(t *testing.T) {
-	neverDelete = false
+	theConfig.EnableDelete = true
 	testData := TrashWorkerTestData{
 		Locator1: TestHash,
 		Block1:   TestBlock,
@@ -188,11 +189,11 @@ func TestTrashWorkerIntegration_SameLocatorInTwoVolumesWithDefaultTrashLifeTime(
 	performTrashWorkerTest(testData, t)
 }
 
-/* Delete a block with matching mtime for locator in both volumes, but neverDelete is true,
+/* Delete a block with matching mtime for locator in both volumes, but EnableDelete is false,
    so block won't be deleted.
 */
-func TestTrashWorkerIntegration_NeverDelete(t *testing.T) {
-	neverDelete = true
+func TestTrashWorkerIntegration_DisabledDelete(t *testing.T) {
+	theConfig.EnableDelete = false
 	testData := TrashWorkerTestData{
 		Locator1: TestHash,
 		Block1:   TestBlock,
@@ -219,19 +220,19 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 	// Put test content
 	vols := KeepVM.AllWritable()
 	if testData.CreateData {
-		vols[0].Put(testData.Locator1, testData.Block1)
-		vols[0].Put(testData.Locator1+".meta", []byte("metadata"))
+		vols[0].Put(context.Background(), testData.Locator1, testData.Block1)
+		vols[0].Put(context.Background(), testData.Locator1+".meta", []byte("metadata"))
 
 		if testData.CreateInVolume1 {
-			vols[0].Put(testData.Locator2, testData.Block2)
-			vols[0].Put(testData.Locator2+".meta", []byte("metadata"))
+			vols[0].Put(context.Background(), testData.Locator2, testData.Block2)
+			vols[0].Put(context.Background(), testData.Locator2+".meta", []byte("metadata"))
 		} else {
-			vols[1].Put(testData.Locator2, testData.Block2)
-			vols[1].Put(testData.Locator2+".meta", []byte("metadata"))
+			vols[1].Put(context.Background(), testData.Locator2, testData.Block2)
+			vols[1].Put(context.Background(), testData.Locator2+".meta", []byte("metadata"))
 		}
 	}
 
-	oldBlockTime := time.Now().Add(-blobSignatureTTL - time.Minute)
+	oldBlockTime := time.Now().Add(-theConfig.BlobSignatureTTL.Duration() - time.Minute)
 
 	// Create TrashRequest for the test
 	trashRequest := TrashRequest{
@@ -291,7 +292,7 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 
 	// Verify Locator1 to be un/deleted as expected
 	buf := make([]byte, BlockSize)
-	size, err := GetBlock(testData.Locator1, buf, nil)
+	size, err := GetBlock(context.Background(), testData.Locator1, buf, nil)
 	if testData.ExpectLocator1 {
 		if size == 0 || err != nil {
 			t.Errorf("Expected Locator1 to be still present: %s", testData.Locator1)
@@ -304,7 +305,7 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 
 	// Verify Locator2 to be un/deleted as expected
 	if testData.Locator1 != testData.Locator2 {
-		size, err = GetBlock(testData.Locator2, buf, nil)
+		size, err = GetBlock(context.Background(), testData.Locator2, buf, nil)
 		if testData.ExpectLocator2 {
 			if size == 0 || err != nil {
 				t.Errorf("Expected Locator2 to be still present: %s", testData.Locator2)
@@ -323,7 +324,7 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 		locatorFoundIn := 0
 		for _, volume := range KeepVM.AllReadable() {
 			buf := make([]byte, BlockSize)
-			if _, err := volume.Get(testData.Locator1, buf); err == nil {
+			if _, err := volume.Get(context.Background(), testData.Locator1, buf); err == nil {
 				locatorFoundIn = locatorFoundIn + 1
 			}
 		}

@@ -14,13 +14,19 @@ req_envs.each do |k|
   end
 end
 
+exclusive_mode = ARGV.index("--exclusive")
+exclusive_banner = "#######################################################################################
+#  THIS FILE IS MANAGED BY #{$0} -- CHANGES WILL BE OVERWRITTEN  #
+#######################################################################################\n\n"
+start_banner = "### BEGIN Arvados-managed keys -- changes between markers will be overwritten\n"
+end_banner = "### END Arvados-managed keys -- changes between markers will be overwritten\n"
+
+# Don't try to create any local accounts
+skip_missing_users = ARGV.index("--skip-missing-users")
+
 keys = ''
 
-seen = Hash.new
-
 begin
-  uids = Hash[Etc.to_enum(:passwd).map { |ent| [ent.name, ent.uid] }]
-  gids = Hash[Etc.to_enum(:group).map { |ent| [ent.name, ent.gid] }]
   arv = Arvados.new({ :suppress_ssl_warnings => false })
 
   vm_uuid = ENV['ARVADOS_VIRTUAL_MACHINE_UUID']
@@ -45,8 +51,24 @@ begin
       uid_min = new_uid_min if (new_uid_min > 0)
     end
   end
-  logins.reject! { |l| (uids[l[:username]] || 65535) < uid_min }
 
+  pwnam = Hash.new()
+  logins.reject! do |l|
+    return false if pwnam[l[:username]]
+    begin
+      pwnam[l[:username]] = Etc.getpwnam(l[:username])
+    rescue
+      if skip_missing_users
+        STDERR.puts "Account #{l[:username]} not found. Skipping"
+        true
+      end
+    else
+      if pwnam[l[:username]].uid < uid_min
+        STDERR.puts "Account #{l[:username]} uid #{pwnam[l[:username]].uid} < uid_min #{uid_min}. Skipping"
+        true
+      end
+    end
+  end
   keys = Hash.new()
 
   # Collect all keys
@@ -67,40 +89,65 @@ begin
 
   logins.each do |l|
     next if seen[l[:username]]
-    seen[l[:username]] = true if not seen.has_key?(l[:username])
+    seen[l[:username]] = true
 
-    unless uids[l[:username]]
+    unless pwnam[l[:username]]
       STDERR.puts "Creating account #{l[:username]}"
       groups = l[:groups] || []
       # Adding users to the FUSE group has long been hardcoded behavior.
       groups << "fuse"
-      groups.select! { |name| gids[name] }
+      groups.select! { |g| Etc.getgrnam(g) rescue false }
       # Create new user
-      next unless system("useradd", "-m",
-                         "-c", l[:username],
-                         "-s", "/bin/bash",
-                         "-G", groups.join(","),
-                         l[:username],
-                         out: devnull)
+      unless system("useradd", "-m",
+                "-c", l[:username],
+                "-s", "/bin/bash",
+                "-G", groups.join(","),
+                l[:username],
+                out: devnull)
+        STDERR.puts "Account creation failed for #{l[:username]}: $?"
+        next
+      end
+      begin
+        pwnam[l[:username]] = Etc.getpwnam(l[:username])
+      rescue => e
+        STDERR.puts "Created account but then getpwnam() failed for #{l[:username]}: #{e}"
+        raise
+      end
     end
-    # Create .ssh directory if necessary
-    @homedir = Etc.getpwnam(l[:username]).dir
+
+    @homedir = pwnam[l[:username]].dir
     userdotssh = File.join(@homedir, ".ssh")
     Dir.mkdir(userdotssh) if !File.exists?(userdotssh)
-    @key = "#######################################################################################
-#  THIS FILE IS MANAGED BY #{$0} -- CHANGES WILL BE OVERWRITTEN  #
-#######################################################################################\n\n"
-    @key += keys[l[:username]].join("\n") + "\n"
-    userauthkeys = File.join(userdotssh, "authorized_keys")
-    if !File.exists?(userauthkeys) or IO::read(userauthkeys) != @key then
-      f = File.new(userauthkeys, 'w')
-      f.write(@key)
+
+    newkeys = "###\n###\n" + keys[l[:username]].join("\n") + "\n###\n###\n"
+
+    keysfile = File.join(userdotssh, "authorized_keys")
+
+    if File.exists?(keysfile)
+      oldkeys = IO::read(keysfile)
+    else
+      oldkeys = ""
+    end
+
+    if exclusive_mode
+      newkeys = exclusive_banner + newkeys
+    elsif oldkeys.start_with?(exclusive_banner)
+      newkeys = start_banner + newkeys + end_banner
+    elsif (m = /^(.*?\n|)#{start_banner}(.*?\n|)#{end_banner}(.*)/m.match(oldkeys))
+      newkeys = m[1] + start_banner + newkeys + end_banner + m[3]
+    else
+      newkeys = start_banner + newkeys + end_banner + oldkeys
+    end
+
+    if oldkeys != newkeys then
+      f = File.new(keysfile, 'w')
+      f.write(newkeys)
       f.close()
     end
-    FileUtils.chown_R(l[:username], l[:username], userdotssh)
+    FileUtils.chown_R(l[:username], nil, userdotssh)
     File.chmod(0700, userdotssh)
     File.chmod(0750, @homedir)
-    File.chmod(0600, userauthkeys)
+    File.chmod(0600, keysfile)
   end
 
   devnull.close

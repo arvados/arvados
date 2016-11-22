@@ -9,6 +9,10 @@ class WorkUnit
     # returns the arvados UUID of the underlying object
   end
 
+  def parent
+    # returns the parent uuid of this work unit
+  end
+
   def children
     # returns an array of child work units
   end
@@ -115,10 +119,6 @@ class WorkUnit
     # returns true if this work unit can be canceled
   end
 
-  def readable?
-    # is the proxied object readable by current user?
-  end
-
   def uri
     # returns the uri for this work unit
   end
@@ -132,10 +132,6 @@ class WorkUnit
   end
 
   # view helper methods
-  def link_to_log
-    # display a link to log if present
-  end
-
   def walltime
     # return walltime for a running or completed work unit
   end

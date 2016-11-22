@@ -5,8 +5,8 @@ function usage {
     echo >&2 "usage: $0 [options]"
     echo >&2
     echo >&2 "$0 options:"
-    echo >&2 "  -t, --tags [csv_tags]         comma separated tags"
     echo >&2 "  -u, --upload                  Upload the images (docker push)"
+    echo >&2 "  --no-cache                    Don't use build cache"
     echo >&2 "  -h, --help                    Display this help and exit"
     echo >&2
     echo >&2 "  If no options are given, just builds the images."
@@ -16,7 +16,7 @@ upload=false
 
 # NOTE: This requires GNU getopt (part of the util-linux package on Debian-based distros).
 TEMP=`getopt -o hut: \
-    --long help,upload,tags: \
+    --long help,upload,no-cache,tags: \
     -n "$0" -- "$@"`
 
 if [ $? != 0 ] ; then echo "Use -h for help"; exit 1 ; fi
@@ -30,6 +30,10 @@ do
             upload=true
             shift
             ;;
+        --no-cache)
+            NOCACHE=--no-cache
+            shift
+            ;;
         -t | --tags)
             case "$2" in
                 "")
@@ -38,7 +42,7 @@ do
                   exit 1
                   ;;
                 *)
-                  tags=$2;
+                  echo "WARNING: --tags is deprecated and doesn't do anything";
                   shift 2
                   ;;
             esac
@@ -66,14 +70,6 @@ COLUMNS=80
 . $WORKSPACE/build/run-library.sh
 
 docker_push () {
-    if [[ ! -z "$tags" ]]
-    then
-        for tag in $( echo $tags|tr "," " " )
-        do
-             $DOCKER tag $1 $1:$tag
-        done
-    fi
-
     # Sometimes docker push fails; retry it a few times if necessary.
     for i in `seq 1 5`; do
         $DOCKER push $*
@@ -118,12 +114,27 @@ timer_reset
 
 # clean up the docker build environment
 cd "$WORKSPACE"
-cd docker/jobs
-if [[ ! -z "$tags" ]]; then
-    docker build --build-arg COMMIT=${tags/,*/} -t arvados/jobs .
+
+python_sdk_ts=$(cd sdk/python && timestamp_from_git)
+cwl_runner_ts=$(cd sdk/cwl && timestamp_from_git)
+
+python_sdk_version=$(cd sdk/python && nohash_version_from_git 0.1)-2
+cwl_runner_version=$(cd sdk/cwl && nohash_version_from_git 1.0)-3
+
+if [[ $python_sdk_ts -gt $cwl_runner_ts ]]; then
+    cwl_runner_version=$(cd sdk/python && nohash_version_from_git 1.0)-3
+    gittag=$(git log --first-parent --max-count=1 --format=format:%H sdk/python)
 else
-    docker build -t arvados/jobs .
+    gittag=$(git log --first-parent --max-count=1 --format=format:%H sdk/cwl)
 fi
+
+echo cwl_runner_version $cwl_runner_version python_sdk_version $python_sdk_version
+
+cd docker/jobs
+docker build $NOCACHE \
+       --build-arg python_sdk_version=$python_sdk_version \
+       --build-arg cwl_runner_version=$cwl_runner_version \
+       -t arvados/jobs:$gittag .
 
 ECODE=$?
 
@@ -134,19 +145,43 @@ fi
 checkexit $ECODE "docker build"
 title "docker build complete (`timer`)"
 
+if [[ "$ECODE" != "0" ]]; then
+  exit_cleanly
+fi
+
+timer_reset
+
+if docker --version |grep " 1\.[0-9]\." ; then
+    # Docker version prior 1.10 require -f flag
+    # -f flag removed in Docker 1.12
+    FORCE=-f
+fi
+
+docker tag $FORCE arvados/jobs:$gittag arvados/jobs:latest
+
+ECODE=$?
+
+if [[ "$ECODE" != "0" ]]; then
+    EXITCODE=$(($EXITCODE + $ECODE))
+fi
+
+checkexit $ECODE "docker tag"
+title "docker tag complete (`timer`)"
+
 title "uploading images"
 
 timer_reset
 
 if [[ "$ECODE" != "0" ]]; then
-    title "upload arvados images SKIPPED because build failed"
+    title "upload arvados images SKIPPED because build or tag failed"
 else
     if [[ $upload == true ]]; then
         ## 20150526 nico -- *sometimes* dockerhub needs re-login
         ## even though credentials are already in .dockercfg
         docker login -u arvados
 
-        docker_push arvados/jobs
+        docker_push arvados/jobs:$gittag
+        docker_push arvados/jobs:latest
         title "upload arvados images finished (`timer`)"
     else
         title "upload arvados images SKIPPED because no --upload option set (`timer`)"

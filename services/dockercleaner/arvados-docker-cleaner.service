@@ -6,9 +6,14 @@ AssertPathExists=/etc/arvados/docker-cleaner/docker-cleaner.json
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/env arvados-docker-cleaner
 Restart=always
 RestartSec=10s
+RestartPreventExitStatus=2
+#
+# This unwieldy ExecStart command detects at runtime whether
+# arvados-docker-cleaner is installed with the Python 3.3 Software
+# Collection, and if so, invokes it with the "scl" wrapper.
+ExecStart=/bin/sh -c 'if [ -e /opt/rh/python33/root/bin/arvados-docker-cleaner ]; then exec scl enable python33 arvados-docker-cleaner; else exec arvados-docker-cleaner; fi'
 
 [Install]
 WantedBy=multi-user.target

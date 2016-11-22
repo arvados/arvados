@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -30,9 +31,9 @@ func NewTestableUnixVolume(t TB, serialize bool, readonly bool) *TestableUnixVol
 	}
 	return &TestableUnixVolume{
 		UnixVolume: UnixVolume{
-			root:     d,
+			Root:     d,
+			ReadOnly: readonly,
 			locker:   locker,
-			readonly: readonly,
 		},
 		t: t,
 	}
@@ -42,10 +43,10 @@ func NewTestableUnixVolume(t TB, serialize bool, readonly bool) *TestableUnixVol
 // the volume is readonly.
 func (v *TestableUnixVolume) PutRaw(locator string, data []byte) {
 	defer func(orig bool) {
-		v.readonly = orig
-	}(v.readonly)
-	v.readonly = false
-	err := v.Put(locator, data)
+		v.ReadOnly = orig
+	}(v.ReadOnly)
+	v.ReadOnly = false
+	err := v.Put(context.Background(), locator, data)
 	if err != nil {
 		v.t.Fatal(err)
 	}
@@ -59,7 +60,7 @@ func (v *TestableUnixVolume) TouchWithDate(locator string, lastPut time.Time) {
 }
 
 func (v *TestableUnixVolume) Teardown() {
-	if err := os.RemoveAll(v.root); err != nil {
+	if err := os.RemoveAll(v.Root); err != nil {
 		v.t.Fatal(err)
 	}
 }
@@ -101,13 +102,26 @@ func TestUnixVolumeHandlersWithGenericVolumeTests(t *testing.T) {
 	})
 }
 
+func TestReplicationDefault1(t *testing.T) {
+	v := &UnixVolume{
+		Root:     "/",
+		ReadOnly: true,
+	}
+	if err := v.Start(); err != nil {
+		t.Error(err)
+	}
+	if got := v.Replication(); got != 1 {
+		t.Errorf("Replication() returned %d, expected 1 if no config given", got)
+	}
+}
+
 func TestGetNotFound(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
-	v.Put(TestHash, TestBlock)
+	v.Put(context.Background(), TestHash, TestBlock)
 
 	buf := make([]byte, BlockSize)
-	n, err := v.Get(TestHash2, buf)
+	n, err := v.Get(context.Background(), TestHash2, buf)
 	switch {
 	case os.IsNotExist(err):
 		break
@@ -122,11 +136,11 @@ func TestPut(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	err := v.Put(TestHash, TestBlock)
+	err := v.Put(context.Background(), TestHash, TestBlock)
 	if err != nil {
 		t.Error(err)
 	}
-	p := fmt.Sprintf("%s/%s/%s", v.root, TestHash[:3], TestHash)
+	p := fmt.Sprintf("%s/%s/%s", v.Root, TestHash[:3], TestHash)
 	if buf, err := ioutil.ReadFile(p); err != nil {
 		t.Error(err)
 	} else if bytes.Compare(buf, TestBlock) != 0 {
@@ -139,8 +153,8 @@ func TestPutBadVolume(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	os.Chmod(v.root, 000)
-	err := v.Put(TestHash, TestBlock)
+	os.Chmod(v.Root, 000)
+	err := v.Put(context.Background(), TestHash, TestBlock)
 	if err == nil {
 		t.Error("Write should have failed")
 	}
@@ -153,12 +167,12 @@ func TestUnixVolumeReadonly(t *testing.T) {
 	v.PutRaw(TestHash, TestBlock)
 
 	buf := make([]byte, BlockSize)
-	_, err := v.Get(TestHash, buf)
+	_, err := v.Get(context.Background(), TestHash, buf)
 	if err != nil {
 		t.Errorf("got err %v, expected nil", err)
 	}
 
-	err = v.Put(TestHash, TestBlock)
+	err = v.Put(context.Background(), TestHash, TestBlock)
 	if err != MethodDisabledError {
 		t.Errorf("got err %v, expected MethodDisabledError", err)
 	}
@@ -178,7 +192,7 @@ func TestIsFull(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	fullPath := v.root + "/full"
+	fullPath := v.Root + "/full"
 	now := fmt.Sprintf("%d", time.Now().Unix())
 	os.Symlink(now, fullPath)
 	if !v.IsFull() {
@@ -200,8 +214,8 @@ func TestNodeStatus(t *testing.T) {
 
 	// Get node status and make a basic sanity check.
 	volinfo := v.Status()
-	if volinfo.MountPoint != v.root {
-		t.Errorf("GetNodeStatus mount_point %s, expected %s", volinfo.MountPoint, v.root)
+	if volinfo.MountPoint != v.Root {
+		t.Errorf("GetNodeStatus mount_point %s, expected %s", volinfo.MountPoint, v.Root)
 	}
 	if volinfo.DeviceNum == 0 {
 		t.Errorf("uninitialized device_num in %v", volinfo)
@@ -218,9 +232,9 @@ func TestUnixVolumeGetFuncWorkerError(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	v.Put(TestHash, TestBlock)
+	v.Put(context.Background(), TestHash, TestBlock)
 	mockErr := errors.New("Mock error")
-	err := v.getFunc(v.blockPath(TestHash), func(rdr io.Reader) error {
+	err := v.getFunc(context.Background(), v.blockPath(TestHash), func(rdr io.Reader) error {
 		return mockErr
 	})
 	if err != mockErr {
@@ -233,7 +247,7 @@ func TestUnixVolumeGetFuncFileError(t *testing.T) {
 	defer v.Teardown()
 
 	funcCalled := false
-	err := v.getFunc(v.blockPath(TestHash), func(rdr io.Reader) error {
+	err := v.getFunc(context.Background(), v.blockPath(TestHash), func(rdr io.Reader) error {
 		funcCalled = true
 		return nil
 	})
@@ -249,13 +263,13 @@ func TestUnixVolumeGetFuncWorkerWaitsOnMutex(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	v.Put(TestHash, TestBlock)
+	v.Put(context.Background(), TestHash, TestBlock)
 
 	mtx := NewMockMutex()
 	v.locker = mtx
 
 	funcCalled := make(chan struct{})
-	go v.getFunc(v.blockPath(TestHash), func(rdr io.Reader) error {
+	go v.getFunc(context.Background(), v.blockPath(TestHash), func(rdr io.Reader) error {
 		funcCalled <- struct{}{}
 		return nil
 	})
@@ -284,26 +298,26 @@ func TestUnixVolumeCompare(t *testing.T) {
 	v := NewTestableUnixVolume(t, false, false)
 	defer v.Teardown()
 
-	v.Put(TestHash, TestBlock)
-	err := v.Compare(TestHash, TestBlock)
+	v.Put(context.Background(), TestHash, TestBlock)
+	err := v.Compare(context.Background(), TestHash, TestBlock)
 	if err != nil {
 		t.Errorf("Got err %q, expected nil", err)
 	}
 
-	err = v.Compare(TestHash, []byte("baddata"))
+	err = v.Compare(context.Background(), TestHash, []byte("baddata"))
 	if err != CollisionError {
 		t.Errorf("Got err %q, expected %q", err, CollisionError)
 	}
 
-	v.Put(TestHash, []byte("baddata"))
-	err = v.Compare(TestHash, TestBlock)
+	v.Put(context.Background(), TestHash, []byte("baddata"))
+	err = v.Compare(context.Background(), TestHash, TestBlock)
 	if err != DiskHashError {
 		t.Errorf("Got err %q, expected %q", err, DiskHashError)
 	}
 
-	p := fmt.Sprintf("%s/%s/%s", v.root, TestHash[:3], TestHash)
+	p := fmt.Sprintf("%s/%s/%s", v.Root, TestHash[:3], TestHash)
 	os.Chmod(p, 000)
-	err = v.Compare(TestHash, TestBlock)
+	err = v.Compare(context.Background(), TestHash, TestBlock)
 	if err == nil || strings.Index(err.Error(), "permission denied") < 0 {
 		t.Errorf("Got err %q, expected %q", err, "permission denied")
 	}

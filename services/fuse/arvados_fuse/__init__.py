@@ -367,9 +367,10 @@ class Operations(llfuse.Operations):
         return True
 
     def listen_for_events(self):
-        self.events = arvados.events.subscribe(self._api_client,
-                                 [["event_type", "in", ["create", "update", "delete"]]],
-                                 self.on_event)
+        self.events = arvados.events.subscribe(
+            self._api_client,
+            [["event_type", "in", ["create", "update", "delete"]]],
+            self.on_event)
 
     @catch_exceptions
     def on_event(self, ev):
@@ -510,6 +511,20 @@ class Operations(llfuse.Operations):
         fh = next(self._filehandles_counter)
         self._filehandles[fh] = FileHandle(fh, p)
         self.inodes.touch(p)
+
+        # Normally, we will have received an "update" event if the
+        # parent collection is stale here. However, even if the parent
+        # collection hasn't changed, the manifest might have been
+        # fetched so long ago that the signatures on the data block
+        # locators have expired. Calling checkupdate() on all
+        # ancestors ensures the signatures will be refreshed if
+        # necessary.
+        while p.parent_inode in self.inodes:
+            if p == self.inodes[p.parent_inode]:
+                break
+            p = self.inodes[p.parent_inode]
+            self.inodes.touch(p)
+            p.checkupdate()
 
         _logger.debug("arv-mount open inode %i flags %x fh %i", inode, flags, fh)
 

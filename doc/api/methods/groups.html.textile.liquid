@@ -3,18 +3,35 @@ layout: default
 navsection: api
 navmenu: API Methods
 title: "groups"
-
 ...
-
-
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
 
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/groups@
 
+Object type: @j7d0g@
+
+Example UUID: @zzzzz-j7d0g-0123456789abcde@
+
+h2. Resource
+
+Groups provides a way to apply the same permissions to a set of Arvados objects.  See "permission model":{{site.baseurl}}/api/permission-model.html for details.
+
+Each Group has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|name|string|||
+|group_class|string|Type of group. This does not affect behavior, but determines how the group is presented in the user interface. For example, @project@ indicates that the group should be displayed by Workbench and arv-mount as a project for organizing and naming objects.|@"project"@
+null|
+|description|text|||
+|writable_by|array|List of UUID strings identifying Users and other Groups that have write permission for this Group.  Only users who are allowed to administer the Group will receive a full list.  Other users will receive a partial list that includes the Group's owner_uuid and (if applicable) their own user UUID.||
+
+h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
+
 Required arguments are displayed in %{background:#ccffcc}green%.
 
-
-h2. contents
+h3. contents
 
 Retrieve a list of items owned by the group.
 
@@ -31,7 +48,7 @@ Note: Because adding access tokens to manifests can be computationally expensive
 
 Note: Use filters with the attribute format @<item type>.<field name>@ to filter items of a specific type. For example: @["pipeline_instances.state", "=", "Complete"]@ to filter @pipeline_instances@ where @state@ is @Complete@. All other types of items owned by this group will be unimpacted by this filter and will still be included.
 
-h2. create
+h3. create
 
 Create a new Group.
 
@@ -41,7 +58,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |group|object||query||
 
-h2. delete
+h3. delete
 
 Delete an existing Group.
 
@@ -51,7 +68,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Group in question.|path||
 
-h2. get
+h3. get
 
 Gets a Group's metadata by UUID.
 
@@ -61,19 +78,13 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Group in question.|path||
 
-h2. list
+h3. list
 
 List groups.
 
-Arguments:
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of groups to return.|query||
-|order|string|Order in which to return matching groups.|query||
-|filters|array|Conditions for filtering groups.|query||
-
-h2. show
+h3. show
 
 show groups
 
@@ -83,7 +94,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string||path||
 
-h2. update
+h3. update
 
 Update attributes of an existing Group.
 

@@ -3,6 +3,7 @@
 import collections
 import itertools
 import json
+import os
 import random
 import tempfile
 import time
@@ -436,6 +437,11 @@ class ConfigTestCase(unittest.TestCase):
         self.assertEqual(1 << 30, config['Quota'])
         self.assertEqual('never', config['RemoveStoppedContainers'])
         self.assertEqual(1, config['Verbose'])
+
+    def test_args_no_config(self):
+        self.assertEqual(False, os.path.exists(cleaner.DEFAULT_CONFIG_FILE))
+        config = cleaner.load_config(['--quota', '1G'])
+        self.assertEqual(1 << 30, config['Quota'])
 
 
 class ContainerRemovalTestCase(unittest.TestCase):

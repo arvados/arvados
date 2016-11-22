@@ -79,9 +79,9 @@ func doMain() error {
 		// propagated to crunch-run via SLURM.
 		os.Setenv("ARVADOS_API_HOST", theConfig.Client.APIHost)
 		os.Setenv("ARVADOS_API_TOKEN", theConfig.Client.AuthToken)
-		os.Setenv("ARVADOS_API_INSECURE", "")
+		os.Setenv("ARVADOS_API_HOST_INSECURE", "")
 		if theConfig.Client.Insecure {
-			os.Setenv("ARVADOS_API_INSECURE", "1")
+			os.Setenv("ARVADOS_API_HOST_INSECURE", "1")
 		}
 		os.Setenv("ARVADOS_KEEP_SERVICES", strings.Join(theConfig.Client.KeepServiceURIs, " "))
 		os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
@@ -105,7 +105,7 @@ func doMain() error {
 		PollInterval:   time.Duration(theConfig.PollPeriod),
 		DoneProcessing: make(chan struct{})}
 
-	if _, err := daemon.SdNotify("READY=1"); err != nil {
+	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
 
@@ -127,8 +127,8 @@ func sbatchFunc(container arvados.Container) *exec.Cmd {
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--job-name=%s", container.UUID))
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--mem-per-cpu=%d", int(memPerCPU)))
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs))
-	if container.RuntimeConstraints.Partition != nil {
-		sbatchArgs = append(sbatchArgs, fmt.Sprintf("--partition=%s", strings.Join(container.RuntimeConstraints.Partition, ",")))
+	if container.SchedulingParameters.Partitions != nil {
+		sbatchArgs = append(sbatchArgs, fmt.Sprintf("--partition=%s", strings.Join(container.SchedulingParameters.Partitions, ",")))
 	}
 
 	return exec.Command("sbatch", sbatchArgs...)
@@ -183,9 +183,10 @@ func submit(dispatcher *dispatch.Dispatcher,
 	squeueUpdater.SlurmLock.Lock()
 	defer squeueUpdater.SlurmLock.Unlock()
 
+	log.Printf("sbatch starting: %+q", cmd.Args)
 	err := cmd.Start()
 	if err != nil {
-		submitErr = fmt.Errorf("Error starting %v: %v", cmd.Args, err)
+		submitErr = fmt.Errorf("Error starting sbatch: %v", err)
 		return
 	}
 

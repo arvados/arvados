@@ -69,6 +69,7 @@ type TestDockerClient struct {
 	stop        chan bool
 	cwd         string
 	env         []string
+	api         *ArvTestClient
 }
 
 func NewTestDockerClient() *TestDockerClient {
@@ -527,6 +528,7 @@ func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvT
 	docker.RemoveImage(hwImageId, true)
 
 	api = &ArvTestClient{Container: rec}
+	docker.api = api
 	cr = NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.statInterval = 100 * time.Millisecond
 	am := &ArvMountCmdLine{}
@@ -840,6 +842,28 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		checkEmpty()
 	}
 
+	{
+		i = 0
+		cr.Container.RuntimeConstraints.KeepCacheRAM = 512
+		cr.Container.Mounts = map[string]arvados.Mount{
+			"/keepinp": {Kind: "collection", PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53"},
+			"/keepout": {Kind: "collection", Writable: true},
+		}
+		cr.OutputPath = "/keepout"
+
+		os.MkdirAll(realTemp+"/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53", os.ModePerm)
+		os.MkdirAll(realTemp+"/keep1/tmp0", os.ModePerm)
+
+		err := cr.SetupMounts()
+		c.Check(err, IsNil)
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
+		sort.StringSlice(cr.Binds).Sort()
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro",
+			realTemp + "/keep1/tmp0:/keepout"})
+		cr.CleanupDirs()
+		checkEmpty()
+	}
+
 	for _, test := range []struct {
 		in  interface{}
 		out string
@@ -934,4 +958,51 @@ func (s *TestSuite) TestStdoutWithWrongKindCollection(c *C) {
 
 	c.Check(err, NotNil)
 	c.Check(strings.Contains(err.Error(), "Unsupported mount kind 'collection' for stdout"), Equals, true)
+}
+
+func (s *TestSuite) TestFullRunWithAPI(c *C) {
+	os.Setenv("ARVADOS_API_HOST", "test.arvados.org")
+	defer os.Unsetenv("ARVADOS_API_HOST")
+	api, _ := FullRunHelper(c, `{
+    "command": ["/bin/sh", "-c", "echo $ARVADOS_API_HOST"],
+    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "cwd": "/bin",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {"API": true}
+}`, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, t.env[1][17:]+"\n"))
+		t.logWriter.Close()
+		t.finish <- dockerclient.WaitResult{ExitCode: 0}
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "test.arvados.org\n"), Equals, true)
+	c.Check(api.CalledWith("container.output", "d41d8cd98f00b204e9800998ecf8427e+0"), NotNil)
+}
+
+func (s *TestSuite) TestFullRunSetOutput(c *C) {
+	os.Setenv("ARVADOS_API_HOST", "test.arvados.org")
+	defer os.Unsetenv("ARVADOS_API_HOST")
+	api, _ := FullRunHelper(c, `{
+    "command": ["/bin/sh", "-c", "echo $ARVADOS_API_HOST"],
+    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "cwd": "/bin",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"} },
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {"API": true}
+}`, func(t *TestDockerClient) {
+		t.api.Container.Output = "d4ab34d3d4f8a72f5c4973051ae69fab+122"
+		t.logWriter.Close()
+		t.finish <- dockerclient.WaitResult{ExitCode: 0}
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(api.CalledWith("container.output", "d4ab34d3d4f8a72f5c4973051ae69fab+122"), NotNil)
 }

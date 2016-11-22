@@ -1,19 +1,16 @@
 ---
 layout: default
 navsection: sdk
-title: "Arvados SDK Reference"
+title: "SDK Reference"
 ...
 
-This section documents how to access the Arvados API and Keep using various programming languages.
+This section documents language bindings for the "Arvados API":{{site.baseurl}}/api and Keep that are available for various programming languages.  Not all features are available in every SDK.  The most complete SDK is the Python SDK.  Note that this section only gives a high level overview of each SDK.  Consult the "Arvados API":{{site.baseurl}}/api section for detailed documentation about Arvados API calls available on each resource.
 
 * "Python SDK":{{site.baseurl}}/sdk/python/sdk-python.html
+* "Command line SDK":{{site.baseurl}}/sdk/cli/install.html ("arv")
+* "Go SDK":{{site.baseurl}}/sdk/go/index.html
 * "Perl SDK":{{site.baseurl}}/sdk/perl/index.html
 * "Ruby SDK":{{site.baseurl}}/sdk/ruby/index.html
 * "Java SDK":{{site.baseurl}}/sdk/java/index.html
-* "Go SDK":{{site.baseurl}}/sdk/go/index.html
-* "Command line SDK":{{site.baseurl}}/sdk/cli/index.html ("arv")
 
-SDKs not yet implemented:
-
-* Rails SDK: Workbench uses an ActiveRecord-like interface to Arvados. This hasn't yet been extracted from Workbench and packaged as a gem.
-* R: We plan to support this, but it has not been implemented yet.
+Many Arvados Workbench pages, under the the *Advanced* tab, provide examples of API and SDK use for accessing the current resource .

@@ -11,7 +11,7 @@ import arvados.collection
 
 from .arvdocker import arv_docker_get_image
 from . import done
-from .runner import Runner
+from .runner import Runner, arvados_jobs_image
 
 logger = logging.getLogger('arvados.cwl-runner')
 
@@ -42,6 +42,7 @@ class ArvadosContainer(object):
                 "kind": "tmp"
             }
         }
+        scheduling_parameters = {}
 
         dirs = set()
         for f in self.pathmapper.files():
@@ -79,7 +80,7 @@ class ArvadosContainer(object):
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if not docker_req:
-            docker_req = {"dockerImageId": "arvados/jobs"}
+            docker_req = {"dockerImageId": arvados_jobs_image(self.arvrunner)}
 
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
                                                                      docker_req,
@@ -97,14 +98,17 @@ class ArvadosContainer(object):
 
         runtime_req, _ = get_feature(self, "http://arvados.org/cwl#RuntimeConstraints")
         if runtime_req:
-            logger.warn("RuntimeConstraints not yet supported by container API")
+            if "keep_cache" in runtime_req:
+                runtime_constraints["keep_cache_ram"] = runtime_req["keep_cache"]
 
         partition_req, _ = get_feature(self, "http://arvados.org/cwl#PartitionRequirement")
         if partition_req:
-            runtime_constraints["partition"] = aslist(partition_req["partition"])
+            scheduling_parameters["partitions"] = aslist(partition_req["partition"])
 
         container_request["mounts"] = mounts
         container_request["runtime_constraints"] = runtime_constraints
+        container_request["use_existing"] = kwargs.get("enable_reuse", True)
+        container_request["scheduling_parameters"] = scheduling_parameters
 
         try:
             response = self.arvrunner.api.container_requests().create(
@@ -113,10 +117,14 @@ class ArvadosContainer(object):
 
             self.arvrunner.processes[response["container_uuid"]] = self
 
-            logger.info("Container %s (%s) request state is %s", self.name, response["uuid"], response["state"])
+            container = self.arvrunner.api.containers().get(
+                uuid=response["container_uuid"]
+            ).execute(num_retries=self.arvrunner.num_retries)
 
-            if response["state"] == "Final":
-                self.done(response)
+            logger.info("Container request %s (%s) state is %s with container %s %s", self.name, response["uuid"], response["state"], container["uuid"], container["state"])
+
+            if container["state"] in ("Complete", "Cancelled"):
+                self.done(container)
         except Exception as e:
             logger.error("Got error %s" % str(e))
             self.output_callback({}, "permanentFail")
@@ -143,10 +151,17 @@ class ArvadosContainer(object):
                 if record["output"]:
                     outputs = done.done(self, record, "/tmp", self.outdir, "/keep")
             except WorkflowException as e:
-                logger.error("Error while collecting container outputs:\n%s", e, exc_info=(e if self.arvrunner.debug else False))
+                logger.error("Error while collecting output for container %s:\n%s", self.name, e, exc_info=(e if self.arvrunner.debug else False))
                 processStatus = "permanentFail"
             except Exception as e:
-                logger.exception("Got unknown exception while collecting job outputs:")
+                logger.exception("Got unknown exception while collecting output for container %s:", self.name)
+                processStatus = "permanentFail"
+
+            # Note: Currently, on error output_callback is expecting an empty dict,
+            # anything else will fail.
+            if not isinstance(outputs, dict):
+                logger.error("Unexpected output type %s '%s'", type(outputs), outputs)
+                outputs = {}
                 processStatus = "permanentFail"
 
             self.output_callback(outputs, processStatus)
@@ -179,14 +194,18 @@ class RunnerContainer(Runner):
         workflowcollection = workflowcollection[5:workflowcollection.index('/')]
         jobpath = "/var/lib/cwl/job/cwl.input.json"
 
-        container_image = arv_docker_get_image(self.arvrunner.api,
-                                               {"dockerImageId": "arvados/jobs"},
-                                               pull_image,
-                                               self.arvrunner.project_uuid)
-
         command = ["arvados-cwl-runner", "--local", "--api=containers"]
         if self.output_name:
             command.append("--output-name=" + self.output_name)
+
+        if self.output_tags:
+            command.append("--output-tags=" + self.output_tags)
+
+        if self.enable_reuse:
+            command.append("--enable-reuse")
+        else:
+            command.append("--disable-reuse")
+
         command.extend([workflowpath, jobpath])
 
         return {
@@ -197,7 +216,7 @@ class RunnerContainer(Runner):
             "cwd": "/var/spool/cwl",
             "priority": 1,
             "state": "Committed",
-            "container_image": container_image,
+            "container_image": arvados_jobs_image(self.arvrunner),
             "mounts": {
                 "/var/lib/cwl/workflow": {
                     "kind": "collection",

@@ -6,14 +6,34 @@ title: "pipeline_instances"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/pipeline_instances@
+
+Object type: @d1hrv@
+
+Example UUID: @zzzzz-d1hrv-0123456789abcde@
+
+h2. Resource
+
+Deprecated.  A pipeline instance is a collection of jobs managed by @aravdos-run-pipeline-instance@.
+
+Each PipelineInstance has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|pipeline_template_uuid|string|The "pipeline template":pipeline_templates.html that this instance was created from.||
+|name|string|||
+|components|hash|||
+|success|boolean|||
+|active|boolean|||
+|properties|Hash|||
+
+h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
-
-h2. create
+h3. create
 
 Create a new PipelineInstance.
 
@@ -23,7 +43,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |pipeline_instance|object||query||
 
-h2. delete
+h3. delete
 
 Delete an existing PipelineInstance.
 
@@ -33,7 +53,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the PipelineInstance in question.|path||
 
-h2. get
+h3. get
 
 Gets a PipelineInstance's metadata by UUID.
 
@@ -43,19 +63,13 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the PipelineInstance in question.|path||
 
-h2. list
+h3. list
 
 List pipeline_instances.
 
-Arguments:
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of pipeline_instances to return.|query||
-|order|string|Order in which to return matching pipeline_instances.|query||
-|filters|array|Conditions for filtering pipeline_instances.|query||
-
-h2. update
+h3. update
 
 Update attributes of an existing PipelineInstance.
 

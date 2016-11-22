@@ -11,6 +11,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -20,6 +21,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
 // A RequestTester represents the parameters for an HTTP request to
@@ -46,19 +49,19 @@ func TestGetHandler(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllWritable()
-	if err := vols[0].Put(TestHash, TestBlock); err != nil {
+	if err := vols[0].Put(context.Background(), TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
 	// Create locators for testing.
 	// Turn on permission settings so we can generate signed locators.
-	enforcePermissions = true
-	PermissionSecret = []byte(knownKey)
-	blobSignatureTTL = 300 * time.Second
+	theConfig.RequireSignatures = true
+	theConfig.blobSigningKey = []byte(knownKey)
+	theConfig.BlobSignatureTTL.Set("5m")
 
 	var (
 		unsignedLocator  = "/" + TestHash
-		validTimestamp   = time.Now().Add(blobSignatureTTL)
+		validTimestamp   = time.Now().Add(theConfig.BlobSignatureTTL.Duration())
 		expiredTimestamp = time.Now().Add(-time.Hour)
 		signedLocator    = "/" + SignLocator(TestHash, knownToken, validTimestamp)
 		expiredLocator   = "/" + SignLocator(TestHash, knownToken, expiredTimestamp)
@@ -66,7 +69,7 @@ func TestGetHandler(t *testing.T) {
 
 	// -----------------
 	// Test unauthenticated request with permissions off.
-	enforcePermissions = false
+	theConfig.RequireSignatures = false
 
 	// Unauthenticated request, unsigned locator
 	// => OK
@@ -90,7 +93,7 @@ func TestGetHandler(t *testing.T) {
 
 	// ----------------
 	// Permissions: on.
-	enforcePermissions = true
+	theConfig.RequireSignatures = true
 
 	// Authenticated request, signed locator
 	// => OK
@@ -175,8 +178,8 @@ func TestPutHandler(t *testing.T) {
 	// ------------------
 	// With a server key.
 
-	PermissionSecret = []byte(knownKey)
-	blobSignatureTTL = 300 * time.Second
+	theConfig.blobSigningKey = []byte(knownKey)
+	theConfig.BlobSignatureTTL.Set("5m")
 
 	// When a permission key is available, the locator returned
 	// from an authenticated PUT request will be signed.
@@ -220,7 +223,7 @@ func TestPutHandler(t *testing.T) {
 
 func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 	defer teardown()
-	dataManagerToken = "fake-data-manager-token"
+	theConfig.systemAuthToken = "fake-data-manager-token"
 	vols := []*MockVolume{CreateMockVolume(), CreateMockVolume()}
 	vols[0].Readonly = true
 	KeepVM = MakeRRVolumeManager([]Volume{vols[0], vols[1]})
@@ -232,15 +235,15 @@ func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 			requestBody: TestBlock,
 		})
 	defer func(orig bool) {
-		neverDelete = orig
-	}(neverDelete)
-	neverDelete = false
+		theConfig.EnableDelete = orig
+	}(theConfig.EnableDelete)
+	theConfig.EnableDelete = true
 	IssueRequest(
 		&RequestTester{
 			method:      "DELETE",
 			uri:         "/" + TestHash,
 			requestBody: TestBlock,
-			apiToken:    dataManagerToken,
+			apiToken:    theConfig.systemAuthToken,
 		})
 	type expect struct {
 		volnum    int
@@ -274,7 +277,7 @@ func TestPutAndDeleteSkipReadonlyVolumes(t *testing.T) {
 //   - authenticated   /index/prefix request | superuser
 //
 // The only /index requests that should succeed are those issued by the
-// superuser. They should pass regardless of the value of enforcePermissions.
+// superuser. They should pass regardless of the value of RequireSignatures.
 //
 func TestIndexHandler(t *testing.T) {
 	defer teardown()
@@ -286,12 +289,12 @@ func TestIndexHandler(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllWritable()
-	vols[0].Put(TestHash, TestBlock)
-	vols[1].Put(TestHash2, TestBlock2)
-	vols[0].Put(TestHash+".meta", []byte("metadata"))
-	vols[1].Put(TestHash2+".meta", []byte("metadata"))
+	vols[0].Put(context.Background(), TestHash, TestBlock)
+	vols[1].Put(context.Background(), TestHash2, TestBlock2)
+	vols[0].Put(context.Background(), TestHash+".meta", []byte("metadata"))
+	vols[1].Put(context.Background(), TestHash2+".meta", []byte("metadata"))
 
-	dataManagerToken = "DATA MANAGER TOKEN"
+	theConfig.systemAuthToken = "DATA MANAGER TOKEN"
 
 	unauthenticatedReq := &RequestTester{
 		method: "GET",
@@ -305,7 +308,7 @@ func TestIndexHandler(t *testing.T) {
 	superuserReq := &RequestTester{
 		method:   "GET",
 		uri:      "/index",
-		apiToken: dataManagerToken,
+		apiToken: theConfig.systemAuthToken,
 	}
 	unauthPrefixReq := &RequestTester{
 		method: "GET",
@@ -319,32 +322,32 @@ func TestIndexHandler(t *testing.T) {
 	superuserPrefixReq := &RequestTester{
 		method:   "GET",
 		uri:      "/index/" + TestHash[0:3],
-		apiToken: dataManagerToken,
+		apiToken: theConfig.systemAuthToken,
 	}
 	superuserNoSuchPrefixReq := &RequestTester{
 		method:   "GET",
 		uri:      "/index/abcd",
-		apiToken: dataManagerToken,
+		apiToken: theConfig.systemAuthToken,
 	}
 	superuserInvalidPrefixReq := &RequestTester{
 		method:   "GET",
 		uri:      "/index/xyz",
-		apiToken: dataManagerToken,
+		apiToken: theConfig.systemAuthToken,
 	}
 
 	// -------------------------------------------------------------
 	// Only the superuser should be allowed to issue /index requests.
 
 	// ---------------------------
-	// enforcePermissions enabled
+	// RequireSignatures enabled
 	// This setting should not affect tests passing.
-	enforcePermissions = true
+	theConfig.RequireSignatures = true
 
 	// unauthenticated /index request
 	// => UnauthorizedError
 	response := IssueRequest(unauthenticatedReq)
 	ExpectStatusCode(t,
-		"enforcePermissions on, unauthenticated request",
+		"RequireSignatures on, unauthenticated request",
 		UnauthorizedError.HTTPCode,
 		response)
 
@@ -381,9 +384,9 @@ func TestIndexHandler(t *testing.T) {
 		response)
 
 	// ----------------------------
-	// enforcePermissions disabled
+	// RequireSignatures disabled
 	// Valid Request should still pass.
-	enforcePermissions = false
+	theConfig.RequireSignatures = false
 
 	// superuser /index request
 	// => OK
@@ -475,17 +478,17 @@ func TestDeleteHandler(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllWritable()
-	vols[0].Put(TestHash, TestBlock)
+	vols[0].Put(context.Background(), TestHash, TestBlock)
 
-	// Explicitly set the blobSignatureTTL to 0 for these
+	// Explicitly set the BlobSignatureTTL to 0 for these
 	// tests, to ensure the MockVolume deletes the blocks
 	// even though they have just been created.
-	blobSignatureTTL = time.Duration(0)
+	theConfig.BlobSignatureTTL = arvados.Duration(0)
 
 	var userToken = "NOT DATA MANAGER TOKEN"
-	dataManagerToken = "DATA MANAGER TOKEN"
+	theConfig.systemAuthToken = "DATA MANAGER TOKEN"
 
-	neverDelete = false
+	theConfig.EnableDelete = true
 
 	unauthReq := &RequestTester{
 		method: "DELETE",
@@ -501,13 +504,13 @@ func TestDeleteHandler(t *testing.T) {
 	superuserExistingBlockReq := &RequestTester{
 		method:   "DELETE",
 		uri:      "/" + TestHash,
-		apiToken: dataManagerToken,
+		apiToken: theConfig.systemAuthToken,
 	}
 
 	superuserNonexistentBlockReq := &RequestTester{
 		method:   "DELETE",
 		uri:      "/" + TestHash2,
-		apiToken: dataManagerToken,
+		apiToken: theConfig.systemAuthToken,
 	}
 
 	// Unauthenticated request returns PermissionError.
@@ -538,14 +541,14 @@ func TestDeleteHandler(t *testing.T) {
 		http.StatusNotFound,
 		response)
 
-	// Authenticated admin request for existing block while neverDelete is set.
-	neverDelete = true
+	// Authenticated admin request for existing block while EnableDelete is false.
+	theConfig.EnableDelete = false
 	response = IssueRequest(superuserExistingBlockReq)
 	ExpectStatusCode(t,
 		"authenticated request, existing block, method disabled",
 		MethodDisabledError.HTTPCode,
 		response)
-	neverDelete = false
+	theConfig.EnableDelete = true
 
 	// Authenticated admin request for existing block.
 	response = IssueRequest(superuserExistingBlockReq)
@@ -562,16 +565,16 @@ func TestDeleteHandler(t *testing.T) {
 	}
 	// Confirm the block has been deleted
 	buf := make([]byte, BlockSize)
-	_, err := vols[0].Get(TestHash, buf)
+	_, err := vols[0].Get(context.Background(), TestHash, buf)
 	var blockDeleted = os.IsNotExist(err)
 	if !blockDeleted {
 		t.Error("superuserExistingBlockReq: block not deleted")
 	}
 
-	// A DELETE request on a block newer than blobSignatureTTL
+	// A DELETE request on a block newer than BlobSignatureTTL
 	// should return success but leave the block on the volume.
-	vols[0].Put(TestHash, TestBlock)
-	blobSignatureTTL = time.Hour
+	vols[0].Put(context.Background(), TestHash, TestBlock)
+	theConfig.BlobSignatureTTL = arvados.Duration(time.Hour)
 
 	response = IssueRequest(superuserExistingBlockReq)
 	ExpectStatusCode(t,
@@ -586,7 +589,7 @@ func TestDeleteHandler(t *testing.T) {
 			expectedDc, responseDc)
 	}
 	// Confirm the block has NOT been deleted.
-	_, err = vols[0].Get(TestHash, buf)
+	_, err = vols[0].Get(context.Background(), TestHash, buf)
 	if err != nil {
 		t.Errorf("testing delete on new block: %s\n", err)
 	}
@@ -623,7 +626,7 @@ func TestPullHandler(t *testing.T) {
 	defer teardown()
 
 	var userToken = "USER TOKEN"
-	dataManagerToken = "DATA MANAGER TOKEN"
+	theConfig.systemAuthToken = "DATA MANAGER TOKEN"
 
 	pullq = NewWorkQueue()
 
@@ -668,13 +671,13 @@ func TestPullHandler(t *testing.T) {
 		},
 		{
 			"Valid pull request from the data manager",
-			RequestTester{"/pull", dataManagerToken, "PUT", goodJSON},
+			RequestTester{"/pull", theConfig.systemAuthToken, "PUT", goodJSON},
 			http.StatusOK,
 			"Received 3 pull requests\n",
 		},
 		{
 			"Invalid pull request from the data manager",
-			RequestTester{"/pull", dataManagerToken, "PUT", badJSON},
+			RequestTester{"/pull", theConfig.systemAuthToken, "PUT", badJSON},
 			http.StatusBadRequest,
 			"",
 		},
@@ -729,7 +732,7 @@ func TestTrashHandler(t *testing.T) {
 	defer teardown()
 
 	var userToken = "USER TOKEN"
-	dataManagerToken = "DATA MANAGER TOKEN"
+	theConfig.systemAuthToken = "DATA MANAGER TOKEN"
 
 	trashq = NewWorkQueue()
 
@@ -772,13 +775,13 @@ func TestTrashHandler(t *testing.T) {
 		},
 		{
 			"Valid trash list from the data manager",
-			RequestTester{"/trash", dataManagerToken, "PUT", goodJSON},
+			RequestTester{"/trash", theConfig.systemAuthToken, "PUT", goodJSON},
 			http.StatusOK,
 			"Received 3 trash requests\n",
 		},
 		{
 			"Invalid trash list from the data manager",
-			RequestTester{"/trash", dataManagerToken, "PUT", badJSON},
+			RequestTester{"/trash", theConfig.systemAuthToken, "PUT", badJSON},
 			http.StatusBadRequest,
 			"",
 		},
@@ -873,7 +876,7 @@ func TestPutNeedsOnlyOneBuffer(t *testing.T) {
 	select {
 	case <-ok:
 	case <-time.After(time.Second):
-		t.Fatal("PUT deadlocks with maxBuffers==1")
+		t.Fatal("PUT deadlocks with MaxBuffers==1")
 	}
 }
 
@@ -888,7 +891,7 @@ func TestPutHandlerNoBufferleak(t *testing.T) {
 
 	ok := make(chan bool)
 	go func() {
-		for i := 0; i < maxBuffers+1; i++ {
+		for i := 0; i < theConfig.MaxBuffers+1; i++ {
 			// Unauthenticated request, no server key
 			// => OK (unsigned response)
 			unsignedLocator := "/" + TestHash
@@ -925,9 +928,9 @@ func (r *notifyingResponseRecorder) CloseNotify() <-chan bool {
 
 func TestGetHandlerClientDisconnect(t *testing.T) {
 	defer func(was bool) {
-		enforcePermissions = was
-	}(enforcePermissions)
-	enforcePermissions = false
+		theConfig.RequireSignatures = was
+	}(theConfig.RequireSignatures)
+	theConfig.RequireSignatures = false
 
 	defer func(orig *bufferPool) {
 		bufs = orig
@@ -938,7 +941,7 @@ func TestGetHandlerClientDisconnect(t *testing.T) {
 	KeepVM = MakeTestVolumeManager(2)
 	defer KeepVM.Close()
 
-	if err := KeepVM.AllWritable()[0].Put(TestHash, TestBlock); err != nil {
+	if err := KeepVM.AllWritable()[0].Put(context.Background(), TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
@@ -975,7 +978,7 @@ func TestGetHandlerClientDisconnect(t *testing.T) {
 
 // Invoke the GetBlockHandler a bunch of times to test for bufferpool resource
 // leak.
-func TestGetHandlerNoBufferleak(t *testing.T) {
+func TestGetHandlerNoBufferLeak(t *testing.T) {
 	defer teardown()
 
 	// Prepare two test Keep volumes. Our block is stored on the second volume.
@@ -983,13 +986,13 @@ func TestGetHandlerNoBufferleak(t *testing.T) {
 	defer KeepVM.Close()
 
 	vols := KeepVM.AllWritable()
-	if err := vols[0].Put(TestHash, TestBlock); err != nil {
+	if err := vols[0].Put(context.Background(), TestHash, TestBlock); err != nil {
 		t.Error(err)
 	}
 
 	ok := make(chan bool)
 	go func() {
-		for i := 0; i < maxBuffers+1; i++ {
+		for i := 0; i < theConfig.MaxBuffers+1; i++ {
 			// Unauthenticated request, unsigned locator
 			// => OK
 			unsignedLocator := "/" + TestHash
@@ -1038,9 +1041,9 @@ func TestUntrashHandler(t *testing.T) {
 	KeepVM = MakeTestVolumeManager(2)
 	defer KeepVM.Close()
 	vols := KeepVM.AllWritable()
-	vols[0].Put(TestHash, TestBlock)
+	vols[0].Put(context.Background(), TestHash, TestBlock)
 
-	dataManagerToken = "DATA MANAGER TOKEN"
+	theConfig.systemAuthToken = "DATA MANAGER TOKEN"
 
 	// unauthenticatedReq => UnauthorizedError
 	unauthenticatedReq := &RequestTester{
@@ -1070,7 +1073,7 @@ func TestUntrashHandler(t *testing.T) {
 	datamanagerWithBadHashReq := &RequestTester{
 		method:   "PUT",
 		uri:      "/untrash/thisisnotalocator",
-		apiToken: dataManagerToken,
+		apiToken: theConfig.systemAuthToken,
 	}
 	response = IssueRequest(datamanagerWithBadHashReq)
 	ExpectStatusCode(t,
@@ -1082,7 +1085,7 @@ func TestUntrashHandler(t *testing.T) {
 	datamanagerWrongMethodReq := &RequestTester{
 		method:   "GET",
 		uri:      "/untrash/" + TestHash,
-		apiToken: dataManagerToken,
+		apiToken: theConfig.systemAuthToken,
 	}
 	response = IssueRequest(datamanagerWrongMethodReq)
 	ExpectStatusCode(t,
@@ -1094,7 +1097,7 @@ func TestUntrashHandler(t *testing.T) {
 	datamanagerReq := &RequestTester{
 		method:   "PUT",
 		uri:      "/untrash/" + TestHash,
-		apiToken: dataManagerToken,
+		apiToken: theConfig.systemAuthToken,
 	}
 	response = IssueRequest(datamanagerReq)
 	ExpectStatusCode(t,
@@ -1119,13 +1122,13 @@ func TestUntrashHandlerWithNoWritableVolumes(t *testing.T) {
 	KeepVM = MakeRRVolumeManager([]Volume{vols[0], vols[1]})
 	defer KeepVM.Close()
 
-	dataManagerToken = "DATA MANAGER TOKEN"
+	theConfig.systemAuthToken = "DATA MANAGER TOKEN"
 
 	// datamanagerReq => StatusOK
 	datamanagerReq := &RequestTester{
 		method:   "PUT",
 		uri:      "/untrash/" + TestHash,
-		apiToken: dataManagerToken,
+		apiToken: theConfig.systemAuthToken,
 	}
 	response := IssueRequest(datamanagerReq)
 	ExpectStatusCode(t,

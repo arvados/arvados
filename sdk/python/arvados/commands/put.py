@@ -290,7 +290,7 @@ class ArvPutUploadJob(object):
     def __init__(self, paths, resume=True, reporter=None, bytes_expected=None,
                  name=None, owner_uuid=None, ensure_unique_name=False,
                  num_retries=None, replication_desired=None,
-                 filename=None, update_time=60.0):
+                 filename=None, update_time=1.0):
         self.paths = paths
         self.resume = resume
         self.reporter = reporter
@@ -391,8 +391,7 @@ class ArvPutUploadJob(object):
                 with self._state_lock:
                     # Get the manifest text without comitting pending blocks
                     self._state['manifest'] = self._my_collection()._get_manifest_text(".", strip=False, normalize=False, only_committed=True)
-        if self.resume:
-            self._save_state()
+                self._save_state()
         # Call the reporter, if any
         self.report_progress()
 
@@ -472,7 +471,7 @@ class ArvPutUploadJob(object):
                 with self._collection_lock:
                     output = self._my_collection().open(filename, 'w')
             self._write(source_fd, output)
-            output.close()
+            output.close(flush=False)
 
     def _write(self, source_fd, output):
         first_read = True

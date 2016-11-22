@@ -11,6 +11,7 @@ class Container < ArvadosModel
   serialize :mounts, Hash
   serialize :runtime_constraints, Hash
   serialize :command, Array
+  serialize :scheduling_parameters, Hash
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :set_timestamps
@@ -18,6 +19,7 @@ class Container < ArvadosModel
   validate :validate_state_change
   validate :validate_change
   validate :validate_lock
+  validate :validate_output
   after_validation :assign_auth
   before_save :sort_serialized_attrs
   after_save :handle_completed
@@ -43,6 +45,7 @@ class Container < ArvadosModel
     t.add :started_at
     t.add :state
     t.add :auth_uuid
+    t.add :scheduling_parameters
   end
 
   # Supported states for a container
@@ -166,6 +169,10 @@ class Container < ArvadosModel
             uuids: uuid_list)
   end
 
+  def final?
+    [Complete, Cancelled].include?(self.state)
+  end
+
   protected
 
   def fill_field_defaults
@@ -175,6 +182,7 @@ class Container < ArvadosModel
     self.mounts ||= {}
     self.cwd ||= "."
     self.priority ||= 1
+    self.scheduling_parameters ||= {}
   end
 
   def permission_to_create
@@ -182,7 +190,23 @@ class Container < ArvadosModel
   end
 
   def permission_to_update
-    current_user.andand.is_admin
+    # Override base permission check to allow auth_uuid to set progress and
+    # output (only).  Whether it is legal to set progress and output in the current
+    # state has already been checked in validate_change.
+    current_user.andand.is_admin ||
+      (!current_api_client_authorization.nil? and
+       [self.auth_uuid, self.locked_by_uuid].include? current_api_client_authorization.uuid)
+  end
+
+  def ensure_owner_uuid_is_permitted
+    # Override base permission check to allow auth_uuid to set progress and
+    # output (only).  Whether it is legal to set progress and output in the current
+    # state has already been checked in validate_change.
+    if !current_api_client_authorization.nil? and self.auth_uuid == current_api_client_authorization.uuid
+      check_update_whitelist [:progress, :output]
+    else
+      super
+    end
   end
 
   def set_timestamps
@@ -201,7 +225,7 @@ class Container < ArvadosModel
     if self.new_record?
       permitted.push(:owner_uuid, :command, :container_image, :cwd,
                      :environment, :mounts, :output_path, :priority,
-                     :runtime_constraints)
+                     :runtime_constraints, :scheduling_parameters)
     end
 
     case self.state
@@ -209,7 +233,7 @@ class Container < ArvadosModel
       permitted.push :priority
 
     when Running
-      permitted.push :priority, :progress
+      permitted.push :priority, :progress, :output
       if self.state_changed?
         permitted.push :started_at
       end
@@ -236,20 +260,10 @@ class Container < ArvadosModel
   end
 
   def validate_lock
-    # If the Container is already locked by someone other than the
-    # current api_client_auth, disallow all changes -- except
-    # priority, which needs to change to reflect max(priority) of
-    # relevant ContainerRequests.
-    if locked_by_uuid_was
-      if locked_by_uuid_was != Thread.current[:api_client_authorization].uuid
-        check_update_whitelist [:priority]
-      end
-    end
-
     if [Locked, Running].include? self.state
       # If the Container was already locked, locked_by_uuid must not
       # changes. Otherwise, the current auth gets the lock.
-      need_lock = locked_by_uuid_was || Thread.current[:api_client_authorization].uuid
+      need_lock = locked_by_uuid_was || current_api_client_authorization.andand.uuid
     else
       need_lock = nil
     end
@@ -263,6 +277,21 @@ class Container < ArvadosModel
       end
     end
     self.locked_by_uuid = need_lock
+  end
+
+  def validate_output
+    # Output must exist and be readable by the current user.  This is so
+    # that a container cannot "claim" a collection that it doesn't otherwise
+    # have access to just by setting the output field to the collection PDH.
+    if output_changed?
+      c = Collection.
+          readable_by(current_user).
+          where(portable_data_hash: self.output).
+          first
+      if !c
+        errors.add :output, "collection must exist and be readable by current user."
+      end
+    end
   end
 
   def assign_auth
@@ -300,12 +329,15 @@ class Container < ArvadosModel
     if self.runtime_constraints_changed?
       self.runtime_constraints = self.class.deep_sort_hash(self.runtime_constraints)
     end
+    if self.scheduling_parameters_changed?
+      self.scheduling_parameters = self.class.deep_sort_hash(self.scheduling_parameters)
+    end
   end
 
   def handle_completed
     # This container is finished so finalize any associated container requests
     # that are associated with this container.
-    if self.state_changed? and [Complete, Cancelled].include? self.state
+    if self.state_changed? and self.final?
       act_as_system_user do
 
         if self.state == Cancelled
@@ -322,7 +354,8 @@ class Container < ArvadosModel
             output_path: self.output_path,
             container_image: self.container_image,
             mounts: self.mounts,
-            runtime_constraints: self.runtime_constraints
+            runtime_constraints: self.runtime_constraints,
+            scheduling_parameters: self.scheduling_parameters
           }
           c = Container.create! c_attrs
           retryable_requests.each do |cr|
@@ -337,7 +370,7 @@ class Container < ArvadosModel
         # Notify container requests associated with this container
         ContainerRequest.where(container_uuid: uuid,
                                state: ContainerRequest::Committed).each do |cr|
-          cr.container_completed!
+          cr.finalize!
         end
 
         # Try to cancel any outstanding container requests made by this container.

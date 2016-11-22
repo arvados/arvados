@@ -1,3 +1,13 @@
+<%
+  collections = [current_obj.outputs, current_obj.docker_image].flatten.compact.uniq
+  collections_pdhs = collections.select {|x| !CollectionsHelper.match(x).nil?}.uniq.compact
+  collections_uuids = collections - collections_pdhs
+  preload_collections_for_objects collections_uuids if collections_uuids.any?
+  preload_for_pdhs collections_pdhs if collections_pdhs.any?
+
+  preload_objects_for_dataclass(Repository, [current_obj.repository], :name) if current_obj.repository
+%>
+
       <div class="container">
         <div class="row">
           <div class="col-md-5">
@@ -6,11 +16,19 @@
             <% else %>
             <table>
               <% keys = [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :container_uuid, :priority] %>
-              <% keys << :outputs if @object.uuid == current_obj.uuid %>
+              <% keys << :log_collection if @object.uuid != current_obj.uuid %>
+              <% keys << :outputs %>
               <% keys.each do |k| %>
-                <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
-                <% has_val = val %>
-                <% has_val = val.andand.any? if k == :outputs %>
+                <%
+                  val = current_obj.send(k) if current_obj.respond_to?(k)
+                  if k == :outputs
+                    has_val = val.andand.any?
+                  elsif k == :log_collection and current_obj.state_label == "Running"
+                    has_val = true
+                  else
+                    has_val = val
+                  end
+                %>
                 <% if has_val %>
                 <tr>
                   <td style="padding-right: 1em">
@@ -29,6 +47,8 @@
                       <% else %>
                         <%= render partial: 'work_units/show_outputs', locals: {id: current_obj.uuid, outputs: val, align:""} %>
                       <% end %>
+                    <% elsif k == :log_collection %>
+                      <%= render partial: 'work_units/show_log_link', locals: {wu: current_obj} %>
                     <% else %>
                       <%= val %>
                     <% end %>
@@ -41,13 +61,10 @@
           </div>
           <div class="col-md-6">
             <table>
-              <% # link to repo tree/file only if the repo is readable
-                 # and the commit is a sha1...
-                 repo =
-                 (/^[0-9a-f]{40}$/ =~ current_obj.script_version and
-                 Repository.where(name: current_obj.repository).first)
-
-                 # ...and the api server provides an http:// or https:// url
+              <% # link to repo tree/file only if the repo is readable and the commit is a sha1
+                 repo = (/^[0-9a-f]{40}$/ =~ current_obj.script_version and
+                         current_obj.repository and
+                         object_for_dataclass(Repository, current_obj.repository, :name))
                  repo = nil unless repo.andand.http_fetch_url
                  %>
               <% [:script, :repository, :script_version, :supplied_script_version, :nondeterministic,

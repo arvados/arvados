@@ -6,9 +6,10 @@ class ProxyWorkUnit < WorkUnit
   attr_accessor :my_children
   attr_accessor :unreadable_children
 
-  def initialize proxied, label
+  def initialize proxied, label, parent
     @lbl = label
     @proxied = proxied
+    @parent = parent
   end
 
   def label
@@ -17,6 +18,10 @@ class ProxyWorkUnit < WorkUnit
 
   def uuid
     get(:uuid)
+  end
+
+  def parent
+    @parent
   end
 
   def modified_by_user_uuid
@@ -173,31 +178,6 @@ class ProxyWorkUnit < WorkUnit
     @unreadable_children
   end
 
-  def readable?
-    resource_class = ArvadosBase::resource_class_for_uuid(uuid)
-    resource_class.where(uuid: [uuid]).first rescue nil
-  end
-
-  def link_to_log
-    if state_label.in? ["Complete", "Failed", "Cancelled"]
-      lc = log_collection
-      if lc
-        logCollection = Collection.find? lc
-        if logCollection
-          ApplicationController.helpers.link_to("Log", "#{uri}#Log")
-        else
-          "Log unavailable"
-        end
-      end
-    elsif state_label == "Running"
-      if readable?
-        ApplicationController.helpers.link_to("Log", "#{uri}#Log")
-      else
-        "Log unavailable"
-      end
-    end
-  end
-
   def walltime
     if state_label != "Queued"
       if started_at
@@ -347,7 +327,7 @@ class ProxyWorkUnit < WorkUnit
     if obj.respond_to? key
       obj.send(key)
     elsif obj.is_a?(Hash)
-      obj[key]
+      obj[key] || obj[key.to_s]
     end
   end
 end

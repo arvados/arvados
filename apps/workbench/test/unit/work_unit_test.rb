@@ -83,32 +83,6 @@ class WorkUnitTest < ActiveSupport::TestCase
     end
   end
 
-  [
-    [Job, 'active', 'running_job_with_components', true],
-    [Job, 'active', 'queued', false],
-    [Job, nil, 'completed_job_in_publicly_accessible_project', true],
-    [Job, 'active', 'completed_job_in_publicly_accessible_project', true],
-    [PipelineInstance, 'active', 'pipeline_in_running_state', true],  # no log, but while running the log link points to pi Log tab
-    [PipelineInstance, nil, 'pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false],
-    [PipelineInstance, 'active', 'pipeline_in_publicly_accessible_project_but_other_objects_elsewhere', false], #no log for completed pi
-    [Job, nil, 'job_in_publicly_accessible_project_but_other_objects_elsewhere', false, "Log unavailable"],
-  ].each do |type, token, fixture, has_log, log_link|
-    test "link_to_log for #{fixture} for #{token}" do
-      use_token token if token
-      obj = find_fixture(type, fixture)
-      wu = obj.work_unit
-
-      link = "#{wu.uri}#Log" if has_log
-      link_to_log = wu.link_to_log
-
-      if has_log
-        assert_includes link_to_log, link
-      else
-        assert_equal log_link, link_to_log
-      end
-    end
-  end
-
   test 'can_cancel?' do
     use_token 'active' do
       assert find_fixture(Job, 'running').work_unit.can_cancel?

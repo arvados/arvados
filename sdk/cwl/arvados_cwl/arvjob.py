@@ -2,6 +2,7 @@ import logging
 import re
 import copy
 import json
+import time
 
 from cwltool.process import get_feature, shortname
 from cwltool.errors import WorkflowException
@@ -12,17 +13,16 @@ from cwltool.builder import Builder
 import arvados.collection
 
 from .arvdocker import arv_docker_get_image
-from .runner import Runner
+from .runner import Runner, arvados_jobs_image
 from .pathmapper import InitialWorkDirPathMapper
 from .perf import Perf
 from . import done
+from ._version import __version__
 
 logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
-tmpdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.tmpdir\)=(.*)")
-outdirre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.outdir\)=(.*)")
-keepre = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.keep\)=(.*)")
+crunchrunner_re = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.(tmpdir|outdir|keep)\)=(.*)")
 
 class ArvadosJob(object):
     """Submit and manage a Crunch job for executing a CWL CommandLineTool."""
@@ -85,9 +85,11 @@ class ArvadosJob(object):
         with Perf(metrics, "arv_docker_get_image %s" % self.name):
             (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
             if docker_req and kwargs.get("use_container") is not False:
+                if docker_req.get("dockerOutputDirectory"):
+                    raise UnsupportedRequirement("Option 'dockerOutputDirectory' of DockerRequirement not supported.")
                 runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvrunner.project_uuid)
             else:
-                runtime_constraints["docker_image"] = "arvados/jobs"
+                runtime_constraints["docker_image"] = arvados_jobs_image(self.arvrunner)
 
         resources = self.builder.resources
         if resources is not None:
@@ -137,7 +139,7 @@ class ArvadosJob(object):
                 with Perf(metrics, "done %s" % self.name):
                     self.done(response)
         except Exception as e:
-            logger.error("Got error %s" % str(e))
+            logger.exception("Job %s error" % (self.name))
             self.output_callback({}, "permanentFail")
 
     def update_pipeline_component(self, record):
@@ -182,6 +184,7 @@ class ArvadosJob(object):
                                                                    keep_client=self.arvrunner.keep_client,
                                                                    num_retries=self.arvrunner.num_retries)
                         log = logc.open(logc.keys()[0])
+                        dirs = {}
                         tmpdir = None
                         outdir = None
                         keepdir = None
@@ -193,27 +196,26 @@ class ArvadosJob(object):
                             # the job restarts on a different node these values
                             # will different runs, and we need to know about the
                             # final run that actually produced output.
-
-                            g = tmpdirre.match(l)
+                            g = crunchrunner_re.match(l)
                             if g:
-                                tmpdir = g.group(1)
-                            g = outdirre.match(l)
-                            if g:
-                                outdir = g.group(1)
-                            g = keepre.match(l)
-                            if g:
-                                keepdir = g.group(1)
+                                dirs[g.group(1)] = g.group(2)
 
                     with Perf(metrics, "output collection %s" % self.name):
-                        outputs = done.done(self, record, tmpdir, outdir, keepdir)
+                        outputs = done.done(self, record, dirs["tmpdir"],
+                                            dirs["outdir"], dirs["keep"])
             except WorkflowException as e:
-                logger.error("Error while collecting job outputs:\n%s", e, exc_info=(e if self.arvrunner.debug else False))
+                logger.error("Error while collecting output for job %s:\n%s", self.name, e, exc_info=(e if self.arvrunner.debug else False))
                 processStatus = "permanentFail"
-                outputs = None
             except Exception as e:
-                logger.exception("Got unknown exception while collecting job outputs:")
+                logger.exception("Got unknown exception while collecting output for job %s:", self.name)
                 processStatus = "permanentFail"
-                outputs = None
+
+            # Note: Currently, on error output_callback is expecting an empty dict,
+            # anything else will fail.
+            if not isinstance(outputs, dict):
+                logger.error("Unexpected output type %s '%s'", type(outputs), outputs)
+                outputs = {}
+                processStatus = "permanentFail"
 
             self.output_callback(outputs, processStatus)
         finally:
@@ -233,43 +235,65 @@ class RunnerJob(Runner):
 
         workflowmapper = super(RunnerJob, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)
 
+        # Need to filter this out, gets added by cwltool when providing
+        # parameters on the command line, and arv-run-pipeline-instance doesn't
+        # like it.
+        if "job_order" in self.job_order:
+            del self.job_order["job_order"]
+
         self.job_order["cwl:tool"] = workflowmapper.mapper(self.tool.tool["id"]).target[5:]
+
         if self.output_name:
             self.job_order["arv:output_name"] = self.output_name
+
+        if self.output_tags:
+            self.job_order["arv:output_tags"] = self.output_tags
+
+        self.job_order["arv:enable_reuse"] = self.enable_reuse
+
         return {
             "script": "cwl-runner",
-            "script_version": "master",
+            "script_version": __version__,
             "repository": "arvados",
             "script_parameters": self.job_order,
             "runtime_constraints": {
-                "docker_image": "arvados/jobs"
+                "docker_image": arvados_jobs_image(self.arvrunner)
             }
         }
 
     def run(self, *args, **kwargs):
         job_spec = self.arvados_job_spec(*args, **kwargs)
+
         job_spec.setdefault("owner_uuid", self.arvrunner.project_uuid)
 
-        response = self.arvrunner.api.jobs().create(
+        job = self.arvrunner.api.jobs().create(
             body=job_spec,
             find_or_create=self.enable_reuse
         ).execute(num_retries=self.arvrunner.num_retries)
 
-        self.uuid = response["uuid"]
+        for k,v in job_spec["script_parameters"].items():
+            if v is False or v is None or isinstance(v, dict):
+                job_spec["script_parameters"][k] = {"value": v}
+
+        del job_spec["owner_uuid"]
+        job_spec["job"] = job
+        self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().create(
+            body={
+                "owner_uuid": self.arvrunner.project_uuid,
+                "name": shortname(self.tool.tool["id"]),
+                "components": {"cwl-runner": job_spec },
+                "state": "RunningOnServer"}).execute(num_retries=self.arvrunner.num_retries)
+        logger.info("Created pipeline %s", self.arvrunner.pipeline["uuid"])
+
+        if kwargs.get("wait") is False:
+            self.uuid = self.arvrunner.pipeline["uuid"]
+            return
+
+        self.uuid = job["uuid"]
         self.arvrunner.processes[self.uuid] = self
 
-        logger.info("Submitted job %s", response["uuid"])
-
-        if kwargs.get("submit"):
-            self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().create(
-                body={
-                    "owner_uuid": self.arvrunner.project_uuid,
-                    "name": shortname(self.tool.tool["id"]),
-                    "components": {"cwl-runner": {"job": {"uuid": self.uuid, "state": response["state"]} } },
-                    "state": "RunningOnClient"}).execute(num_retries=self.arvrunner.num_retries)
-
-        if response["state"] in ("Complete", "Failed", "Cancelled"):
-            self.done(response)
+        if job["state"] in ("Complete", "Failed", "Cancelled"):
+            self.done(job)
 
 
 class RunnerTemplate(object):
@@ -284,7 +308,7 @@ class RunnerTemplate(object):
         'string': 'text',
     }
 
-    def __init__(self, runner, tool, job_order, enable_reuse):
+    def __init__(self, runner, tool, job_order, enable_reuse, uuid):
         self.runner = runner
         self.tool = tool
         self.job = RunnerJob(
@@ -292,7 +316,9 @@ class RunnerTemplate(object):
             tool=tool,
             job_order=job_order,
             enable_reuse=enable_reuse,
-            output_name=None)
+            output_name=None,
+            output_tags=None)
+        self.uuid = uuid
 
     def pipeline_component_spec(self):
         """Return a component that Workbench and a-r-p-i will understand.
@@ -300,6 +326,7 @@ class RunnerTemplate(object):
         Specifically, translate CWL input specs to Arvados pipeline
         format, like {"dataclass":"File","value":"xyz"}.
         """
+
         spec = self.job.arvados_job_spec()
 
         # Most of the component spec is exactly the same as the job
@@ -354,13 +381,21 @@ class RunnerTemplate(object):
         return spec
 
     def save(self):
-        job_spec = self.pipeline_component_spec()
-        response = self.runner.api.pipeline_templates().create(body={
+        body = {
             "components": {
-                self.job.name: job_spec,
+                self.job.name: self.pipeline_component_spec(),
             },
             "name": self.job.name,
-            "owner_uuid": self.runner.project_uuid,
-        }, ensure_unique_name=True).execute(num_retries=self.runner.num_retries)
-        self.uuid = response["uuid"]
-        logger.info("Created template %s", self.uuid)
+        }
+        if self.runner.project_uuid:
+            body["owner_uuid"] = self.runner.project_uuid
+        if self.uuid:
+            self.runner.api.pipeline_templates().update(
+                uuid=self.uuid, body=body).execute(
+                    num_retries=self.runner.num_retries)
+            logger.info("Updated template %s", self.uuid)
+        else:
+            self.uuid = self.runner.api.pipeline_templates().create(
+                body=body, ensure_unique_name=True).execute(
+                    num_retries=self.runner.num_retries)['uuid']
+            logger.info("Created template %s", self.uuid)

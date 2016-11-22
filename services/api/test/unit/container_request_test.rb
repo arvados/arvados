@@ -129,7 +129,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal({}, c.environment)
     assert_equal({"/out" => {"kind"=>"tmp", "capacity"=>1000000}}, c.mounts)
     assert_equal "/out", c.output_path
-    assert_equal({"vcpus" => 2, "ram" => 30}, c.runtime_constraints)
+    assert_equal({"keep_cache_ram"=>268435456, "vcpus" => 2, "ram" => 30}, c.runtime_constraints)
     assert_equal 1, c.priority
 
     assert_raises(ActiveRecord::RecordInvalid) do
@@ -230,10 +230,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.reload
     assert_equal "Committed", cr.state
 
+    output_pdh = '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
+    log_pdh = 'fa7aeb5140e2848d39b416daeef4ffc5+45'
     act_as_system_user do
       c.update_attributes!(state: Container::Complete,
-                           output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
-                           log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
+                           output: output_pdh,
+                           log: log_pdh)
     end
 
     cr.reload
@@ -244,6 +246,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
                                        owner_uuid: project.uuid).count,
                    "Container #{out_type} should be copied to #{project.uuid}")
     end
+    assert_not_nil cr.output_uuid
+    assert_not_nil cr.log_uuid
+    output = Collection.find_by_uuid cr.output_uuid
+    assert_equal output_pdh, output.portable_data_hash
+    log = Collection.find_by_uuid cr.log_uuid
+    assert_equal log_pdh, log.portable_data_hash
   end
 
   test "Container makes container request, then is cancelled" do
@@ -276,7 +284,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   [
-    ['active', 'zzzzz-dz642-runningcontainr'],
+    ['running_container_auth', 'zzzzz-dz642-runningcontainr'],
     ['active_no_prefs', nil],
   ].each do |token, expected|
     test "create as #{token} and expect requesting_container_uuid to be #{expected}" do
@@ -384,10 +392,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "container_image_for_container(pdh)" do
     set_user_from_auth :active
-    pdh = collections(:docker_image).portable_data_hash
-    cr = ContainerRequest.new(container_image: pdh)
-    resolved = cr.send :container_image_for_container
-    assert_equal resolved, pdh
+    [:docker_image, :docker_image_1_12].each do |coll|
+      pdh = collections(coll).portable_data_hash
+      cr = ContainerRequest.new(container_image: pdh)
+      resolved = cr.send :container_image_for_container
+      assert_equal resolved, pdh
+    end
   end
 
   ['acbd18db4cc2f85cedef654fccc4a4d8+3',
@@ -410,30 +420,44 @@ class ContainerRequestTest < ActiveSupport::TestCase
   end
 
   [
-    [{"var" => "value1"}, {"var" => "value1"}],
-    [{"var" => "value1"}, {"var" => "value2"}]
-  ].each do |env1, env2|
-    test "Container request #{(env1 == env2) ? 'does' : 'does not'} reuse container when committed" do
+    [{"var" => "value1"}, {"var" => "value1"}, nil],
+    [{"var" => "value1"}, {"var" => "value1"}, true],
+    [{"var" => "value1"}, {"var" => "value1"}, false],
+    [{"var" => "value1"}, {"var" => "value2"}, nil],
+  ].each do |env1, env2, use_existing|
+    test "Container request #{((env1 == env2) and (use_existing.nil? or use_existing == true)) ? 'does' : 'does not'} reuse container when committed#{use_existing.nil? ? '' : use_existing ? ' and use_existing == true' : ' and use_existing == false'}" do
       common_attrs = {cwd: "test",
                       priority: 1,
                       command: ["echo", "hello"],
                       output_path: "test",
                       runtime_constraints: {"vcpus" => 4,
-                                            "ram" => 12000000000},
+                                            "ram" => 12000000000,
+                                            "keep_cache_ram" => 268435456},
                       mounts: {"test" => {"kind" => "json"}}}
       set_user_from_auth :active
       cr1 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Committed,
                                                     environment: env1}))
-      cr2 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Uncommitted,
-                                                    environment: env2}))
+      if use_existing.nil?
+        # Testing with use_existing default value
+        cr2 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Uncommitted,
+                                                      environment: env2}))
+      else
+
+        cr2 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Uncommitted,
+                                                      environment: env2,
+                                                      use_existing: use_existing}))
+      end
       assert_not_nil cr1.container_uuid
       assert_nil cr2.container_uuid
 
-      # Update cr2 to commited state and check for container equality on both cases,
-      # when env1 and env2 are equal the same container should be assigned, and
-      # when env1 and env2 are different, cr2 container should be different.
+      # Update cr2 to commited state and check for container equality on different cases:
+      # * When env1 and env2 are equal and use_existing is true, the same container
+      #   should be assigned.
+      # * When use_existing is false, a different container should be assigned.
+      # * When env1 and env2 are different, a different container should be assigned.
       cr2.update_attributes!({state: ContainerRequest::Committed})
-      assert_equal (env1 == env2), (cr1.container_uuid == cr2.container_uuid)
+      assert_equal (cr2.use_existing == true and (env1 == env2)),
+                   (cr1.container_uuid == cr2.container_uuid)
     end
   end
 
@@ -481,4 +505,91 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal prev_container_uuid, cr.container_uuid
   end
 
+  test "Finalize committed request when reusing a finished container" do
+    set_user_from_auth :active
+    cr = create_minimal_req!(priority: 1, state: ContainerRequest::Committed)
+    cr.reload
+    assert_equal ContainerRequest::Committed, cr.state
+    act_as_system_user do
+      c = Container.find_by_uuid(cr.container_uuid)
+      c.update_attributes!(state: Container::Locked)
+      c.update_attributes!(state: Container::Running)
+      c.update_attributes!(state: Container::Complete,
+                           exit_code: 0,
+                           output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
+                           log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
+    end
+    cr.reload
+    assert_equal ContainerRequest::Final, cr.state
+
+    cr2 = create_minimal_req!(priority: 1, state: ContainerRequest::Committed)
+    assert_equal cr.container_uuid, cr2.container_uuid
+    assert_equal ContainerRequest::Final, cr2.state
+
+    cr3 = create_minimal_req!(priority: 1, state: ContainerRequest::Uncommitted)
+    assert_equal ContainerRequest::Uncommitted, cr3.state
+    cr3.update_attributes!(state: ContainerRequest::Committed)
+    assert_equal cr.container_uuid, cr3.container_uuid
+    assert_equal ContainerRequest::Final, cr3.state
+  end
+
+  [
+    [{"vcpus" => 1, "ram" => 123, "keep_cache_ram" => 100}, ContainerRequest::Committed, 100],
+    [{"vcpus" => 1, "ram" => 123}, ContainerRequest::Uncommitted],
+    [{"vcpus" => 1, "ram" => 123}, ContainerRequest::Committed],
+    [{"vcpus" => 1, "ram" => 123, "keep_cache_ram" => -1}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
+    [{"vcpus" => 1, "ram" => 123, "keep_cache_ram" => '123'}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
+  ].each do |rc, state, expected|
+    test "create container request with #{rc} in state #{state} and verify keep_cache_ram #{expected}" do
+      common_attrs = {cwd: "test",
+                      priority: 1,
+                      command: ["echo", "hello"],
+                      output_path: "test",
+                      runtime_constraints: rc,
+                      mounts: {"test" => {"kind" => "json"}}}
+      set_user_from_auth :active
+
+      if expected == ActiveRecord::RecordInvalid
+        assert_raises(ActiveRecord::RecordInvalid) do
+          create_minimal_req!(common_attrs.merge({state: state}))
+        end
+      else
+        cr = create_minimal_req!(common_attrs.merge({state: state}))
+        expected = Rails.configuration.container_default_keep_cache_ram if state == ContainerRequest::Committed and expected.nil?
+        assert_equal expected, cr.runtime_constraints['keep_cache_ram']
+      end
+    end
+  end
+
+  [
+    [{"partitions" => ["fastcpu","vfastcpu", 100]}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
+    [{"partitions" => ["fastcpu","vfastcpu", 100]}, ContainerRequest::Uncommitted],
+    [{"partitions" => "fastcpu"}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
+    [{"partitions" => "fastcpu"}, ContainerRequest::Uncommitted],
+    [{"partitions" => ["fastcpu","vfastcpu"]}, ContainerRequest::Committed],
+  ].each do |sp, state, expected|
+    test "create container request with scheduling_parameters #{sp} in state #{state} and verify #{expected}" do
+      common_attrs = {cwd: "test",
+                      priority: 1,
+                      command: ["echo", "hello"],
+                      output_path: "test",
+                      scheduling_parameters: sp,
+                      mounts: {"test" => {"kind" => "json"}}}
+      set_user_from_auth :active
+
+      if expected == ActiveRecord::RecordInvalid
+        assert_raises(ActiveRecord::RecordInvalid) do
+          create_minimal_req!(common_attrs.merge({state: state}))
+        end
+      else
+        cr = create_minimal_req!(common_attrs.merge({state: state}))
+        assert_equal sp, cr.scheduling_parameters
+
+        if state == ContainerRequest::Committed
+          c = Container.find_by_uuid(cr.container_uuid)
+          assert_equal sp, c.scheduling_parameters
+        end
+      end
+    end
+  end
 end

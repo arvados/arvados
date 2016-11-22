@@ -2,24 +2,20 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"time"
 
-	"github.com/AdRoll/goamz/aws"
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/AdRoll/goamz/s3"
 	"github.com/AdRoll/goamz/s3/s3test"
 	check "gopkg.in/check.v1"
 )
-
-type TestableS3Volume struct {
-	*S3Volume
-	server      *s3test.Server
-	c           *check.C
-	serverClock *fakeClock
-}
 
 const (
 	TestBucketName = "testbucket"
@@ -42,30 +38,6 @@ func init() {
 	s3UnsafeDelete = true
 }
 
-func NewTestableS3Volume(c *check.C, raceWindow time.Duration, readonly bool, replication int) *TestableS3Volume {
-	clock := &fakeClock{}
-	srv, err := s3test.NewServer(&s3test.Config{Clock: clock})
-	c.Assert(err, check.IsNil)
-	auth := aws.Auth{}
-	region := aws.Region{
-		Name:                 "test-region-1",
-		S3Endpoint:           srv.URL(),
-		S3LocationConstraint: true,
-	}
-	bucket := &s3.Bucket{
-		S3:   s3.New(auth, region),
-		Name: TestBucketName,
-	}
-	err = bucket.PutBucket(s3.ACL("private"))
-	c.Assert(err, check.IsNil)
-
-	return &TestableS3Volume{
-		S3Volume:    NewS3Volume(auth, region, TestBucketName, raceWindow, readonly, replication),
-		server:      srv,
-		serverClock: clock,
-	}
-}
-
 var _ = check.Suite(&StubbedS3Suite{})
 
 type StubbedS3Suite struct {
@@ -76,19 +48,19 @@ func (s *StubbedS3Suite) TestGeneric(c *check.C) {
 	DoGenericVolumeTests(c, func(t TB) TestableVolume {
 		// Use a negative raceWindow so s3test's 1-second
 		// timestamp precision doesn't confuse fixRace.
-		return NewTestableS3Volume(c, -2*time.Second, false, 2)
+		return s.newTestableVolume(c, -2*time.Second, false, 2)
 	})
 }
 
 func (s *StubbedS3Suite) TestGenericReadOnly(c *check.C) {
 	DoGenericVolumeTests(c, func(t TB) TestableVolume {
-		return NewTestableS3Volume(c, -2*time.Second, true, 2)
+		return s.newTestableVolume(c, -2*time.Second, true, 2)
 	})
 }
 
 func (s *StubbedS3Suite) TestIndex(c *check.C) {
-	v := NewTestableS3Volume(c, 0, false, 2)
-	v.indexPageSize = 3
+	v := s.newTestableVolume(c, 0, false, 2)
+	v.IndexPageSize = 3
 	for i := 0; i < 256; i++ {
 		v.PutRaw(fmt.Sprintf("%02x%030x", i, i), []byte{102, 111, 111})
 	}
@@ -111,15 +83,44 @@ func (s *StubbedS3Suite) TestIndex(c *check.C) {
 	}
 }
 
-func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
-	defer func(tl, bs time.Duration) {
-		trashLifetime = tl
-		blobSignatureTTL = bs
-	}(trashLifetime, blobSignatureTTL)
-	trashLifetime = time.Hour
-	blobSignatureTTL = time.Hour
+func (s *StubbedS3Suite) TestStats(c *check.C) {
+	v := s.newTestableVolume(c, 5*time.Minute, false, 2)
+	stats := func() string {
+		buf, err := json.Marshal(v.InternalStats())
+		c.Check(err, check.IsNil)
+		return string(buf)
+	}
 
-	v := NewTestableS3Volume(c, 5*time.Minute, false, 2)
+	c.Check(stats(), check.Matches, `.*"Ops":0,.*`)
+
+	loc := "acbd18db4cc2f85cedef654fccc4a4d8"
+	_, err := v.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.NotNil)
+	c.Check(stats(), check.Matches, `.*"Ops":[^0],.*`)
+	c.Check(stats(), check.Matches, `.*"\*s3.Error 404 [^"]*":[^0].*`)
+	c.Check(stats(), check.Matches, `.*"InBytes":0,.*`)
+
+	err = v.Put(context.Background(), loc, []byte("foo"))
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"OutBytes":3,.*`)
+	c.Check(stats(), check.Matches, `.*"PutOps":2,.*`)
+
+	_, err = v.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.IsNil)
+	_, err = v.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"InBytes":6,.*`)
+}
+
+func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
+	defer func(tl, bs arvados.Duration) {
+		theConfig.TrashLifetime = tl
+		theConfig.BlobSignatureTTL = bs
+	}(theConfig.TrashLifetime, theConfig.BlobSignatureTTL)
+	theConfig.TrashLifetime.Set("1h")
+	theConfig.BlobSignatureTTL.Set("1h")
+
+	v := s.newTestableVolume(c, 5*time.Minute, false, 2)
 	var none time.Time
 
 	putS3Obj := func(t time.Time, key string, data []byte) {
@@ -127,7 +128,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			return
 		}
 		v.serverClock.now = &t
-		v.Bucket.Put(key, data, "application/octet-stream", s3ACL, s3.Options{})
+		v.bucket.Put(key, data, "application/octet-stream", s3ACL, s3.Options{})
 	}
 
 	t0 := time.Now()
@@ -214,12 +215,12 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			false, false, false, true, false, false,
 		},
 		{
-			"Erroneously trashed during a race, detected before trashLifetime",
+			"Erroneously trashed during a race, detected before TrashLifetime",
 			none, t0.Add(-30 * time.Minute), t0.Add(-29 * time.Minute),
 			true, false, true, true, true, false,
 		},
 		{
-			"Erroneously trashed during a race, rescue during EmptyTrash despite reaching trashLifetime",
+			"Erroneously trashed during a race, rescue during EmptyTrash despite reaching TrashLifetime",
 			none, t0.Add(-90 * time.Minute), t0.Add(-89 * time.Minute),
 			true, false, true, true, true, false,
 		},
@@ -253,7 +254,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 		// Check canGet
 		loc, blk := setupScenario()
 		buf := make([]byte, len(blk))
-		_, err := v.Get(loc, buf)
+		_, err := v.Get(context.Background(), loc, buf)
 		c.Check(err == nil, check.Equals, scenario.canGet)
 		if err != nil {
 			c.Check(os.IsNotExist(err), check.Equals, true)
@@ -263,7 +264,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 		loc, blk = setupScenario()
 		err = v.Trash(loc)
 		c.Check(err == nil, check.Equals, scenario.canTrash)
-		_, err = v.Get(loc, buf)
+		_, err = v.Get(context.Background(), loc, buf)
 		c.Check(err == nil, check.Equals, scenario.canGetAfterTrash)
 		if err != nil {
 			c.Check(os.IsNotExist(err), check.Equals, true)
@@ -278,7 +279,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 			// should be able to Get after Untrash --
 			// regardless of timestamps, errors, race
 			// conditions, etc.
-			_, err = v.Get(loc, buf)
+			_, err = v.Get(context.Background(), loc, buf)
 			c.Check(err, check.IsNil)
 		}
 
@@ -286,7 +287,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 		// freshAfterEmpty
 		loc, blk = setupScenario()
 		v.EmptyTrash()
-		_, err = v.Bucket.Head("trash/"+loc, nil)
+		_, err = v.bucket.Head("trash/"+loc, nil)
 		c.Check(err == nil, check.Equals, scenario.haveTrashAfterEmpty)
 		if scenario.freshAfterEmpty {
 			t, err := v.Mtime(loc)
@@ -299,7 +300,7 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 		// Check for current Mtime after Put (applies to all
 		// scenarios)
 		loc, blk = setupScenario()
-		err = v.Put(loc, blk)
+		err = v.Put(context.Background(), loc, blk)
 		c.Check(err, check.IsNil)
 		t, err := v.Mtime(loc)
 		c.Check(err, check.IsNil)
@@ -307,9 +308,51 @@ func (s *StubbedS3Suite) TestBackendStates(c *check.C) {
 	}
 }
 
+type TestableS3Volume struct {
+	*S3Volume
+	server      *s3test.Server
+	c           *check.C
+	serverClock *fakeClock
+}
+
+func (s *StubbedS3Suite) newTestableVolume(c *check.C, raceWindow time.Duration, readonly bool, replication int) *TestableS3Volume {
+	clock := &fakeClock{}
+	srv, err := s3test.NewServer(&s3test.Config{Clock: clock})
+	c.Assert(err, check.IsNil)
+
+	tmp, err := ioutil.TempFile("", "keepstore")
+	c.Assert(err, check.IsNil)
+	defer os.Remove(tmp.Name())
+	_, err = tmp.Write([]byte("xxx\n"))
+	c.Assert(err, check.IsNil)
+	c.Assert(tmp.Close(), check.IsNil)
+
+	v := &TestableS3Volume{
+		S3Volume: &S3Volume{
+			Bucket:             TestBucketName,
+			AccessKeyFile:      tmp.Name(),
+			SecretKeyFile:      tmp.Name(),
+			Endpoint:           srv.URL(),
+			Region:             "test-region-1",
+			LocationConstraint: true,
+			RaceWindow:         arvados.Duration(raceWindow),
+			S3Replication:      replication,
+			UnsafeDelete:       s3UnsafeDelete,
+			ReadOnly:           readonly,
+			IndexPageSize:      1000,
+		},
+		server:      srv,
+		serverClock: clock,
+	}
+	c.Assert(v.Start(), check.IsNil)
+	err = v.bucket.PutBucket(s3.ACL("private"))
+	c.Assert(err, check.IsNil)
+	return v
+}
+
 // PutRaw skips the ContentMD5 test
 func (v *TestableS3Volume) PutRaw(loc string, block []byte) {
-	err := v.Bucket.Put(loc, block, "application/octet-stream", s3ACL, s3.Options{})
+	err := v.bucket.Put(loc, block, "application/octet-stream", s3ACL, s3.Options{})
 	if err != nil {
 		log.Printf("PutRaw: %+v", err)
 	}
@@ -320,7 +363,7 @@ func (v *TestableS3Volume) PutRaw(loc string, block []byte) {
 // while we do this.
 func (v *TestableS3Volume) TouchWithDate(locator string, lastPut time.Time) {
 	v.serverClock.now = &lastPut
-	err := v.Bucket.Put("recent/"+locator, nil, "application/octet-stream", s3ACL, s3.Options{})
+	err := v.bucket.Put("recent/"+locator, nil, "application/octet-stream", s3ACL, s3.Options{})
 	if err != nil {
 		panic(err)
 	}

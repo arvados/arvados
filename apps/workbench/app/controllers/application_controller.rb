@@ -13,6 +13,7 @@ class ApplicationController < ActionController::Base
   # Methods that don't require login should
   #   skip_around_filter :require_thread_api_token
   around_filter :require_thread_api_token, except: ERROR_ACTIONS
+  before_filter :ensure_arvados_api_exists, only: [:index, :show]
   before_filter :set_cache_buster
   before_filter :accept_uuid_as_id_param, except: ERROR_ACTIONS
   before_filter :check_user_agreements, except: ERROR_ACTIONS
@@ -210,6 +211,13 @@ class ApplicationController < ActionController::Base
       render_to_string render_opts
     else
       render render_opts
+    end
+  end
+
+  def ensure_arvados_api_exists
+    if model_class.is_a?(Class) && model_class < ArvadosBase && !model_class.api_exists?(params['action'].to_sym)
+      @errors = ["#{params['action']} method is not supported for #{params['controller']}"]
+      return render_error(status: 404)
     end
   end
 
@@ -526,16 +534,17 @@ class ApplicationController < ActionController::Base
     begin
       if not model_class
         @object = nil
+      elsif params[:uuid].nil? or params[:uuid].empty?
+        @object = nil
       elsif not params[:uuid].is_a?(String)
         @object = model_class.where(uuid: params[:uuid]).first
-      elsif params[:uuid].empty?
-        @object = nil
       elsif (model_class != Link and
              resource_class_for_uuid(params[:uuid]) == Link)
         @name_link = Link.find(params[:uuid])
         @object = model_class.find(@name_link.head_uuid)
       else
         @object = model_class.find(params[:uuid])
+        load_preloaded_objects [@object]
       end
     rescue ArvadosApiClient::NotFoundException, ArvadosApiClient::NotLoggedInException, RuntimeError => error
       if error.is_a?(RuntimeError) and (error.message !~ /^argument to find\(/)
@@ -759,7 +768,11 @@ class ApplicationController < ActionController::Base
   }
 
   @@notification_tests.push lambda { |controller, current_user|
-    PipelineInstance.limit(1).where(created_by: current_user.uuid).each do
+    if PipelineInstance.api_exists?(:index)
+      PipelineInstance.limit(1).where(created_by: current_user.uuid).each do
+        return nil
+      end
+    else
       return nil
     end
     return lambda { |view|
@@ -855,12 +868,14 @@ class ApplicationController < ActionController::Base
   def recent_processes lim
     lim = 12 if lim.nil?
 
-    cols = %w(uuid owner_uuid created_at modified_at pipeline_template_uuid name state started_at finished_at)
-    pipelines = PipelineInstance.select(cols).limit(lim).order(["created_at desc"])
+    procs = {}
+    if PipelineInstance.api_exists?(:index)
+      cols = %w(uuid owner_uuid created_at modified_at pipeline_template_uuid name state started_at finished_at)
+      pipelines = PipelineInstance.select(cols).limit(lim).order(["created_at desc"])
+      pipelines.results.each { |pi| procs[pi] = pi.created_at }
+    end
 
     crs = ContainerRequest.limit(lim).order(["created_at desc"]).filter([["requesting_container_uuid", "=", nil]])
-    procs = {}
-    pipelines.results.each { |pi| procs[pi] = pi.created_at }
     crs.results.each { |c| procs[c] = c.created_at }
 
     Hash[procs.sort_by {|key, value| value}].keys.reverse.first(lim)
@@ -1180,15 +1195,15 @@ class ApplicationController < ActionController::Base
 
   # helper method to get object of a given dataclass and uuid
   helper_method :object_for_dataclass
-  def object_for_dataclass dataclass, uuid
+  def object_for_dataclass dataclass, uuid, by_attr=nil
     raise ArgumentError, 'No input argument dataclass' unless (dataclass && uuid)
-    preload_objects_for_dataclass(dataclass, [uuid])
+    preload_objects_for_dataclass(dataclass, [uuid], by_attr)
     @objects_for[uuid]
   end
 
   # helper method to preload objects for given dataclass and uuids
   helper_method :preload_objects_for_dataclass
-  def preload_objects_for_dataclass dataclass, uuids
+  def preload_objects_for_dataclass dataclass, uuids, by_attr=nil
     @objects_for ||= {}
 
     raise ArgumentError, 'Argument is not a data class' unless dataclass.is_a? Class
@@ -1205,10 +1220,27 @@ class ApplicationController < ActionController::Base
     uuids.each do |x|
       @objects_for[x] = nil
     end
-    dataclass.where(uuid: uuids).each do |obj|
-      @objects_for[obj.uuid] = obj
+    if by_attr and ![:uuid, :name].include?(by_attr)
+      raise ArgumentError, "Preloading only using lookups by uuid or name are supported: #{by_attr}"
+    elsif by_attr and by_attr == :name
+      dataclass.where(name: uuids).each do |obj|
+        @objects_for[obj.name] = obj
+      end
+    else
+      dataclass.where(uuid: uuids).each do |obj|
+        @objects_for[obj.uuid] = obj
+      end
     end
     @objects_for
+  end
+
+  # helper method to load objects that are already preloaded
+  helper_method :load_preloaded_objects
+  def load_preloaded_objects objs
+    @objects_for ||= {}
+    objs.each do |obj|
+      @objects_for[obj.uuid] = obj
+    end
   end
 
   def wiselinks_layout

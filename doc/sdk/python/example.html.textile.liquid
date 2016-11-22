@@ -1,0 +1,51 @@
+---
+layout: default
+navsection: sdk
+navmenu: Python
+title: Examples
+...
+
+In these examples, the site prefix is @aaaaa@.
+
+h2.  Initialize SDK
+
+<pre>
+import arvados
+api = arvados.api("v1")
+</pre>
+
+h2. create
+
+<pre>
+result = api.collection().create(body={"collection": {"name": "create example"}}).execute()
+</pre>
+
+h2. delete
+
+<pre>
+result = api.collections().delete(uuid="aaaaa-4zz18-ccccccccccccccc").execute()
+</pre>
+
+h2. get
+
+<pre>
+result = api.collections().get(uuid="aaaaa-4zz18-ccccccccccccccc").execute()
+</pre>
+
+h2. list
+
+<pre>
+result = api.collections().list(filters=[["uuid", "=", "aaaaa-bbbbb-ccccccccccccccc"]]).execute()
+</pre>
+
+h2. update
+
+<pre>
+result = api.collections().update(uuid="aaaaa-4zz18-ccccccccccccccc", body={"collection": {"name": "update example"}}).execute()
+</pre>
+
+h2. Get current user
+
+<pre>
+result = api.users().current().execute()
+</pre>

@@ -46,7 +46,7 @@ class Log < ArvadosModel
       self.event_at = thing.created_at
     when "update"
       self.event_at = thing.modified_at
-    when "destroy"
+    when "delete"
       self.event_at = db_current_time
     end
     self

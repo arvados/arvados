@@ -6,14 +6,45 @@ title: "job_tasks"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/job_tasks@
+
+Object type: @ot0gb@
+
+Example UUID: @zzzzz-ot0gb-0123456789abcde@
+
+h2. Resource
+
+Deprecated.
+
+A job task is a individually scheduled unit of work executed as part of an overall job.
+
+Each JobTask has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|sequence|integer|Execution sequence.
+A step cannot be run until all steps with lower sequence numbers have completed.
+Job steps with the same sequence number can be run in any order.||
+|parameters|hash|||
+|output|text|||
+|progress|float|||
+|success|boolean|Is null if the task has neither completed successfully nor failed permanently.||
+
+The following attributes should not be updated by anyone other than the job manager:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Notes|
+|qsequence|integer|Order of arrival|0-based|
+|job_uuid|string|||
+|created_by_job_task_uuid|string|||
+
+h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
-
-h2. create
+h3. create
 
 Create a new JobTask.
 
@@ -23,7 +54,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |job_task|object||query||
 
-h2. delete
+h3. delete
 
 Delete an existing JobTask.
 
@@ -33,7 +64,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the JobTask in question.|path||
 
-h2. get
+h3. get
 
 Gets a JobTask's metadata by UUID.
 
@@ -43,19 +74,13 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the JobTask in question.|path||
 
-h2. list
+h3. list
 
 List job_tasks.
 
-Arguments:
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of job_tasks to return.|query||
-|order|string|Order in which to return matching job_tasks.|query||
-|filters|array|Conditions for filtering job_tasks.|query||
-
-h2. update
+h3. update
 
 Update attributes of an existing JobTask.
 

@@ -42,4 +42,23 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
     discovery_doc = JSON.parse(@response.body)
     assert_equal 'aaa888fff', discovery_doc['source_version']
   end
+
+  test "empty disable_api_methods" do
+    get :index
+    assert_response :success
+    discovery_doc = JSON.parse(@response.body)
+    assert_equal('POST',
+                 discovery_doc['resources']['jobs']['methods']['create']['httpMethod'])
+  end
+
+  test "non-empty disable_api_methods" do
+    Rails.configuration.disable_api_methods =
+      ['jobs.create', 'pipeline_instances.create', 'pipeline_templates.create']
+    get :index
+    assert_response :success
+    discovery_doc = JSON.parse(@response.body)
+    ['jobs', 'pipeline_instances', 'pipeline_templates'].each do |r|
+      refute_includes(discovery_doc['resources'][r]['methods'].keys(), 'create')
+    end
+  end
 end

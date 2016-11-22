@@ -6,13 +6,45 @@ title: "collections"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/collections@
+
+Object type: @4zz18@
+
+Example UUID: @zzzzz-4zz18-0123456789abcde@
+
+h2. Resource
+
+Collections describe sets of files in terms of data blocks stored in Keep.  See "storage in Keep":{{site.baseurl}}/api/storage.html for details.
+
+Each collection has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|name|string|||
+|description|text|||
+|portable_data_hash|string|The MD5 sum of the manifest text stripped of block hints other than the size hint.||
+|manifest_text|text|||
+|replication_desired|number|Minimum storage replication level desired for each data block referenced by this collection. A value of @null@ signifies that the site default replication level (typically 2) is desired.|@2@|
+|replication_confirmed|number|Replication level most recently confirmed by the storage system. This field is null when a collection is first created, and is reset to null when the manifest_text changes in a way that introduces a new data block. An integer value indicates the replication level of the _least replicated_ data block in the collection.|@2@, null|
+|replication_confirmed_at|datetime|When replication_confirmed was confirmed. If replication_confirmed is null, this field is also null.||
+
+h3. Conditions of creating a Collection
+
+The @portable_data_hash@ and @manifest_text@ attributes must be provided when creating a Collection. The cryptographic digest of the supplied @manifest_text@ must match the supplied @portable_data_hash@.
+
+h3. Side effects of creating a Collection
+
+Referenced blocks are protected from garbage collection in Keep.
+
+Data can be shared with other users via the Arvados permission model.
+
+h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
-h2. create
+h3. create
 
 Create a new Collection.
 
@@ -22,7 +54,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |collection|object||query||
 
-h2. delete
+h3. delete
 
 Delete an existing Collection.
 
@@ -32,7 +64,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Collection in question.|path||
 
-h2. get
+h3. get
 
 Gets a Collection's metadata by UUID.
 
@@ -42,22 +74,15 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Collection in question.|path||
 
-h2. list
+h3. list
 
 List collections.
 
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of collections to return.|query||
-|order|string|Order in which to return matching collections.|query||
-|filters|array|Conditions for filtering collections.|query||
-|select|array|Data fields to return in the result list.|query|@["uuid", "manifest_text"]@|
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
 Note: Because adding access tokens to manifests can be computationally expensive, the @manifest_text@ field is not included in results by default.  If you need it, pass a @select@ parameter that includes @manifest_text@.
 
-h2. update
+h3. update
 
 Update attributes of an existing Collection.
 

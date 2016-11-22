@@ -1,20 +1,25 @@
-import logging
-import mock
-import unittest
-import os
 import functools
 import json
+import logging
+import mock
+import os
 import StringIO
+import unittest
 
+import arvados
 import arvados_cwl
+from .mock_discovery import get_rootDesc
 
 class TestMakeOutput(unittest.TestCase):
+    def setUp(self):
+        self.api = mock.MagicMock()
+        self.api._rootDesc = get_rootDesc()
+
     @mock.patch("arvados.collection.Collection")
     @mock.patch("arvados.collection.CollectionReader")
     def test_make_output_collection(self, reader, col):
-        api = mock.MagicMock()
         keep_client = mock.MagicMock()
-        runner = arvados_cwl.ArvCwlRunner(api, keep_client=keep_client)
+        runner = arvados_cwl.ArvCwlRunner(self.api, keep_client=keep_client)
         runner.project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
         final = mock.MagicMock()
@@ -22,12 +27,15 @@ class TestMakeOutput(unittest.TestCase):
         readermock = mock.MagicMock()
         reader.return_value = readermock
 
+        final_uuid = final.manifest_locator()
+        num_retries = runner.num_retries
+
         cwlout = StringIO.StringIO()
         openmock = mock.MagicMock()
         final.open.return_value = openmock
         openmock.__enter__.return_value = cwlout
 
-        runner.make_output_collection("Test output", {
+        _, runner.final_output_collection = runner.make_output_collection("Test output", "tag0,tag1,tag2", {
             "foo": {
                 "class": "File",
                 "location": "keep:99999999999999999999999999999991+99/foo.txt",
@@ -37,7 +45,8 @@ class TestMakeOutput(unittest.TestCase):
             "bar": {
                 "class": "File",
                 "location": "keep:99999999999999999999999999999992+99/bar.txt",
-                "basename": "baz.txt"
+                "basename": "baz.txt",
+                "size": 4
             }
         })
 
@@ -47,12 +56,18 @@ class TestMakeOutput(unittest.TestCase):
         self.assertEqual("""{
     "bar": {
         "class": "File",
-        "location": "baz.txt"
+        "location": "baz.txt",
+        "size": 4
     },
     "foo": {
         "class": "File",
-        "location": "foo.txt"
+        "location": "foo.txt",
+        "size": 3
     }
 }""", cwlout.getvalue())
 
         self.assertIs(final, runner.final_output_collection)
+        self.assertIs(final_uuid, runner.final_output_collection.manifest_locator())
+        self.api.links().create.assert_has_calls([mock.call(body={"head_uuid": final_uuid, "link_class": "tag", "name": "tag0"}), mock.call().execute(num_retries=num_retries)])
+        self.api.links().create.assert_has_calls([mock.call(body={"head_uuid": final_uuid, "link_class": "tag", "name": "tag1"}), mock.call().execute(num_retries=num_retries)])
+        self.api.links().create.assert_has_calls([mock.call(body={"head_uuid": final_uuid, "link_class": "tag", "name": "tag2"}), mock.call().execute(num_retries=num_retries)])

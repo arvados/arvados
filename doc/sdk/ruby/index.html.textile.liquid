@@ -2,8 +2,7 @@
 layout: default
 navsection: sdk
 navmenu: Ruby
-title: "Ruby SDK"
-
+title: "Installation"
 ...
 
 The Ruby SDK provides a generic set of wrappers so you can make API calls easily.
@@ -52,74 +51,3 @@ EOF</code>
 arvados.v1.users.current.full_name = 'Your Name'
 </pre>
 </notextile>
-
-h3. Examples
-
-Import the module (we skipped this step above by using "ruby -r arvados"):
-
-<notextile>
-<pre><code class="userinput">require 'arvados'
-</code></pre>
-</notextile>
-
-Set up an API client user agent:
-
-<notextile>
-<pre><code class="userinput">arv = Arvados.new(apiVersion: 'v1')
-</code></pre>
-</notextile>
-
-Get the User object for the current user:
-
-<notextile>
-<pre><code class="userinput">current_user = arv.user.current
-</code></pre>
-</notextile>
-
-Get the UUID of an object that was retrieved using the SDK:
-
-<notextile>
-<pre><code class="userinput">current_user_uuid = current_user[:uuid]
-</code></pre>
-</notextile>
-
-Retrieve an object by ID:
-
-<notextile>
-<pre><code class="userinput">some_user = arv.user.get(uuid: current_user_uuid)
-</code></pre>
-</notextile>
-
-Create an object:
-
-<notextile>
-<pre><code class="userinput">new_link = arv.link.create(link: {link_class: 'test', name: 'test'})
-</code></pre>
-</notextile>
-
-Update an object:
-
-<notextile>
-<pre><code class="userinput">updated_link = arv.link.update(uuid: new_link[:uuid],
-                               link: {properties: {foo: 'bar'}})
-</code></pre>
-</notextile>
-
-Delete an object:
-
-<notextile>
-<pre><code class="userinput">arv.link.delete(uuid: new_link[:uuid])
-</code></pre>
-</notextile>
-
-Get a list of objects:
-
-<notextile>
-<pre><code class="userinput">repos = arv.repository.list
-first_repo = repos[:items][0]
-puts "UUID of first repo returned is #{first_repo[:uuid]}"</code>
-UUID of first repo returned is qr1hi-s0uqq-b1bnybpx3u5temz
-</pre>
-</notextile>
-
-The SDK retrieves the list of API methods from the server at run time. Therefore, the set of available methods is determined by the server version rather than the SDK version.

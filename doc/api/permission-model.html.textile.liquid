@@ -3,123 +3,70 @@ layout: default
 navsection: api
 navmenu: Concepts
 title: "Permission model"
-
 ...
 
+* There are four levels of permission: *none*, *can_read*, *can_write*, and *can_manage*.
+** *none* is the default state when there are no other permission grants.
+*** the object is not included in any list query response.
+*** direct queries of the object by uuid return 404 Not Found.
+*** Link objects require valid identifiers in @head_uuid@ and @tail_uuid@, so an attempt to create a Link that references an unreadable object will return an error indicating the object is not found.
+** *can_read* grants read-only access to the record.  Attempting to update or delete the record returns an error.  *can_read* does not allow a reader to see any permission grants on the object except the object's owner_uuid and the reader's own permissions.
+** *can_write* permits changes to the record (but not permission links).  *can_write* permits the user to delete the object.  *can_write* also implies *can_read*.
+** *can_manage* permits the user to read, create, update and delete permission links whose @head_uuid@ is this object's @uuid@.  *can_manage* also implies *can_write* and *can_read*.
 
+h2. Ownership
 
-Each API transaction (read, write, create, etc.) is done on behalf of a person.
+* All Arvados objects have an @owner_uuid@ field. Valid uuid types for @owner_uuid@ are "User" and "Group".
+* The User or Group specified by @owner_uuid@ has *can_manage* permission on the object.
+** This permission is one way: A User or Group's @owner_uuid@ being equal to @X@ does not imply any permission for that User/Group to read, write, or manage an object whose @uuid@ is equal to @X@.
+* Applications should represent each object as belonging to, or being "inside", the Group/User referenced by its @owner_uuid@.
+** A "project" is a subtype of Group that is treated as a "Project" in Workbench, and as a directory by @arv-mount@.
+** A "role" is a subtype of Group that is treated in Workbench as a group of users who have permissions in common (typically an organizational group).
+* To change the @owner_uuid@ field, it is necessary to have @can_write@ permission on both the current owner and the new owner.
 
-* An end user, via a web app
-* The owner of an installed app
+h2(#links). Permission links
 
-A user (person) is permitted to act on an object if there is a path (series of permission Links) from the acting user to the object in which
+A link object with
 
-* Every intervening object is a Group, and
-* Every intervening permission Link allows the current action
+* @owner_uuid@ of the system user.
+* @link_class@ "permission"
+* @name@ one of *can_read*, *can_write* or *can_manage*
+* @head_uuid@ of some Arvados object
+* @tail_uuid@ of a User or Group
 
-Special case: A permission path can also include intervening User objects if the links _to_ the Users are "can_manage" links.
+grants the @name@ permission for @tail_uuid@ accessing @head_uuid@
 
-Each object has exactly one _owner_, which can be either a User or a Group.
+* If a User has *can_manage* permission on some object, this grants permission to read, create, update and delete permission links where the @head_uuid@ is the object under management.
 
-* If the owner of X is A, then A is permitted to do any action on X.
+h3. Transitive permissions
 
-h3. Tokens
+Permissions can be obtained indirectly through Groups.
+* If a User X *can_read* Group A, and Group A *can_read* Object B, then User X *can_read* Object B.
+* Permissions are narrowed to the least powerful permission on the path.
+** If User X *can_write* Group A, and Group A *can_read* Object B, then User X *can_read* Object B.
+** If User X *can_read* Group A, and Group A *can_write* Object B, then User X *can_read* Object B.
 
-An authorization token is issued at a user's request, and supplied to an API client using some suitable mechanism (_e.g._, cookie or application config file for a web app; environment variable or .rc-file for a CLI app).
+h2. Group Membership
 
-A user can have multiple valid tokens at a given time.  At the user's option, a token can be restricted to a combination of
+Group membership is determined by whether the group has *can_read* permission on an object.  If a group G *can_read* an object A, then we say A is a member of G.
 
-* API client program
-* time interval
-* transaction type
+For some kinds of groups, like roles, it is natural for users who are members of a group to also have *can_manage* permission on the group, i.e., G *can_read* A  and A *can_manage* G ("A can do anything G can do"). However, this is not necessary: A can be a member of a group while being unable to even read it.
 
-h3. System pseudo-user
+h2. Special cases
 
-A privileged user account exists for the use of built-in Arvados system components.  This user manages system-wide shared objects which can't really be "owned" by any particular user, like
+* Log table objects are additionally readable based on whether the User has *can_read* permission on @object_uuid@ (User can access log history about objects it can read).  To retain the integrity of the log, the log table should deny all update or delete operations.
+* Permission links where @tail_uuid@ is a User permit @can_read@ on the link by that user.  (User can discover her own permission grants.)
+* *can_read* on a Collection grants permission to read the blocks that make up the collection (API server returns signed blocks)
+* If User or Group X *can_FOO* Group A, and Group A *can_manage* User B, then X *can_FOO* _everything that User B can_FOO_.
 
-* Jobs and job steps (because a given job can be "wanted" by multiple users)
-* Provenance metadata (because no user should be able to modify this directly)
-* Storage metadata like
-** redundancy verified as N&times; at time Y
-** contents of collections A and B are identical
+h2(#system). System user and group
 
-The system pseudo-user's uuid is @{siteprefix}-tpzed-000000000000000@.
+A privileged user account exists for the use by internal Arvados components.  This user manages system objects which should not be "owned" by any particular user.  The system user uuid is @{siteprefix}-tpzed-000000000000000@.
 
-h2. Example scenarios
+h2. Anoymous user and group
 
-h3. 1. Private objects
+An Arvado site may be configued to allow users to browse resources without requiring a log in.  In this case, permissions for non-logged-in users are associated with the "anonymous" user.  To make objects visible to the public, they can be shared with the "anonymous" group.  The anonymous user uuid is @{siteprefix}-tpzed-anonymouspublic@.  The anonymous group uuid is @{siteprefix}-j7d0g-anonymouspublic@.
 
-Alfred stores 3 data Collections in Keep and adds them to a new Group.
+h2. Example
 
-The Collections and the Group can only be seen by Alfred, administrators, and the system user.
-
-The data in the Collections can only be retrieved by Alfred, administrators, and the system user.
-
-h3. 2. Public objects
-
-George creates a "PGP public data" Group, and grants "read" permission to all users.
-
-* ...by adding a Link: "All users" Group _can_read_&rarr; "PGP public data" Group
-
-George stores 4 data Collections in Keep and adds them to the "PGP public data" Group
-
-* ...by adding a Link: Group _can_read_&rarr; Collection
-
-Anyone who can connect to Arvados can log in with a Google/OpenID account and read the data.
-
-h3. 3. Group-managed objects
-
-Three lab members are working together on a project. All Specimens, Links, Jobs, etc. can be modified by any of the three lab members. _Other_ lab members, who are not working on this project, can view but not modify these objects.
-
-h3. 4. Group-level administrator
-
-The Ashton Lab administrator, Alison, manages user accounts within her lab. She can enable and disable accounts, and exercise any permission that her lab members have.
-
-George has read-only access to the same set of accounts. This lets him see things like user activity and resource usage reports, without worrying about accidentally messing up anyone's data.
-
-table(table table-bordered table-condensed).
-|Tail                   |Permission     |Head                      |Effect|
-|Group: Ashton Lab Admin|can_manage     |User: Lab Member 1        |Lab member 1 is in this administrative group|
-|Group: Ashton Lab Admin|can_manage     |User: Lab Member 2        |Lab member 2 is in this administrative group|
-|Group: Ashton Lab Admin|can_manage     |User: Lab Member 3        |Lab member 3 is in this administrative group|
-|Group: Ashton Lab Admin|can_manage     |User: Alison              |Alison is in this administrative group|
-|Group: Ashton Lab Admin|can_manage     |User: George              |George is in this administrative group|
-|Alison                 |can_manage     |Group: Ashton Lab Admin   |Alison can do everything the above lab members can do|
-|George                 |can_read       |Group: Ashton Lab Admin   |George can read everything the above lab members can read|
-
-h3. 5. Segregated roles
-
-Granwyth, at the Hulatberi Lab, sets up a Factory Robot which uses a hosted Arvados site to do work for the Hulatberi Lab.
-
-Frank uploads a data Collection using Factory Robot's upload interface.  Factory Robot sets data owner to Hulatberi Lab.
-
-Factory Robot processes the data using a pipeline.
-
-Factory Robot grants permission for anyone in the Ingeborg Lab (a Hulateberi Lab customer) to read the output of the pipeline, as well as the pipeline invocation details.  (Say, Ingeborg and Jill.)
-
-During and after processing, all members of the Hulatberi Lab (_e.g._, Mike) can inspect pipeline progress, read source/intermediate/output data, and modify objects.
-
-Possible encoding:
-
-table(table table-bordered table-condensed).
-|Tail           |Permission     |Head                      |Effect|
-|Frank          |(none)         |                          |Factory Robot uses only its own credentials during upload|
-|Granwyth       |can_manage     |User:    Factory Robot    |can revoke tokens, view activity... (needed?)|
-|Granwyth       |can_manage     |Group: Hulatberi Lab    |can grant group-write permission to Factory Robot|
-|Factory Robot  |can_write      |Group: Hulatberi Lab    |can add data, pipelines, jobs, etc. to the Lab group|
-|Mike           |can_write      |Group: Hulatberi Lab    |can edit/annotate/delete objects that belong to the Lab|
-
-h3. Actions governed by permissions
-
-table(table table-bordered table-condensed).
-|_Action_|_Permissions needed_|
-|Retrieve data from Keep|can_read (system-wide?)|
-|Store data in Keep|can_write (system-wide?)|
-|Add a Collection to Arvados|can_write (system-wide?)|
-|Run a job|can_run (system-wide?)|
-|See progress/result of a job|can_read (on job)|
-|Give group permissions to a user/group|can_manage (on group)|
-|Revoke group permissions from a user/group|can_manage (on group)|
-|Change owner of an object|can_manage (on object)|
-|Add an object to a group|can_write (on group)|
+!{{site.baseurl}}/images/Arvados_Permissions.svg!

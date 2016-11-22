@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/xml"
@@ -365,7 +366,13 @@ func NewTestableAzureBlobVolume(t TB, readonly bool, replication int) *TestableA
 		}
 	}
 
-	v := NewAzureBlobVolume(azClient, container, readonly, replication)
+	v := &AzureBlobVolume{
+		ContainerName:    container,
+		ReadOnly:         readonly,
+		AzureReplication: replication,
+		azClient:         azClient,
+		bsClient:         azClient.GetBlobService(),
+	}
 
 	return &TestableAzureBlobVolume{
 		AzureBlobVolume: v,
@@ -448,12 +455,12 @@ func TestAzureBlobVolumeRangeFenceposts(t *testing.T) {
 			data[i] = byte((i + 7) & 0xff)
 		}
 		hash := fmt.Sprintf("%x", md5.Sum(data))
-		err := v.Put(hash, data)
+		err := v.Put(context.Background(), hash, data)
 		if err != nil {
 			t.Error(err)
 		}
 		gotData := make([]byte, len(data))
-		gotLen, err := v.Get(hash, gotData)
+		gotLen, err := v.Get(context.Background(), hash, gotData)
 		if err != nil {
 			t.Error(err)
 		}
@@ -494,7 +501,7 @@ func TestAzureBlobVolumeCreateBlobRace(t *testing.T) {
 	allDone := make(chan struct{})
 	v.azHandler.race = make(chan chan struct{})
 	go func() {
-		err := v.Put(TestHash, TestBlock)
+		err := v.Put(context.Background(), TestHash, TestBlock)
 		if err != nil {
 			t.Error(err)
 		}
@@ -504,7 +511,7 @@ func TestAzureBlobVolumeCreateBlobRace(t *testing.T) {
 	v.azHandler.race <- continuePut
 	go func() {
 		buf := make([]byte, len(TestBlock))
-		_, err := v.Get(TestHash, buf)
+		_, err := v.Get(context.Background(), TestHash, buf)
 		if err != nil {
 			t.Error(err)
 		}
@@ -547,7 +554,7 @@ func TestAzureBlobVolumeCreateBlobRaceDeadline(t *testing.T) {
 	go func() {
 		defer close(allDone)
 		buf := make([]byte, BlockSize)
-		n, err := v.Get(TestHash, buf)
+		n, err := v.Get(context.Background(), TestHash, buf)
 		if err != nil {
 			t.Error(err)
 			return
@@ -570,11 +577,11 @@ func TestAzureBlobVolumeCreateBlobRaceDeadline(t *testing.T) {
 }
 
 func (v *TestableAzureBlobVolume) PutRaw(locator string, data []byte) {
-	v.azHandler.PutRaw(v.containerName, locator, data)
+	v.azHandler.PutRaw(v.ContainerName, locator, data)
 }
 
 func (v *TestableAzureBlobVolume) TouchWithDate(locator string, lastPut time.Time) {
-	v.azHandler.TouchWithDate(v.containerName, locator, lastPut)
+	v.azHandler.TouchWithDate(v.ContainerName, locator, lastPut)
 }
 
 func (v *TestableAzureBlobVolume) Teardown() {

@@ -1110,13 +1110,16 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
     def test_only_small_blocks_are_packed_together(self):
         c = Collection()
         # Write a couple of small files, 
-        with c.open("count.txt", "w") as f:
-            f.write("0123456789")
-        with c.open("foo.txt", "w") as foo:
-            foo.write("foo")
+        f = c.open("count.txt", "w")
+        f.write("0123456789")
+        f.close(flush=False)
+        foo = c.open("foo.txt", "w")
+        foo.write("foo")
+        foo.close(flush=False)
         # Then, write a big file, it shouldn't be packed with the ones above
-        with c.open("bigfile.txt", "w") as big:
-            big.write("x" * 1024 * 1024 * 33) # 33 MB > KEEP_BLOCK_SIZE/2
+        big = c.open("bigfile.txt", "w")
+        big.write("x" * 1024 * 1024 * 33) # 33 MB > KEEP_BLOCK_SIZE/2
+        big.close(flush=False)
         self.assertEqual(
             c.manifest_text("."),
             '. 2d303c138c118af809f39319e5d507e9+34603008 a8430a058b8fbf408e1931b794dbd6fb+13 0:34603008:bigfile.txt 34603008:10:count.txt 34603018:3:foo.txt\n')
