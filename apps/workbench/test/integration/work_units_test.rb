@@ -118,7 +118,7 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
 
       within('.recent-processes-actions') do
         assert page.has_link?('All processes')
-        find('a', text: 'Run a pipeline').click
+        find('a', text: 'Run a process').click
       end
 
       # in the chooser, verify preview and click Next button

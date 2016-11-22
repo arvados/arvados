@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -16,6 +15,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 type unixVolumeAdder struct {
@@ -322,7 +323,12 @@ func (v *UnixVolume) Status() *VolumeStatus {
 	// uses fs.Blocks - fs.Bfree.
 	free := fs.Bavail * uint64(fs.Bsize)
 	used := (fs.Blocks - fs.Bfree) * uint64(fs.Bsize)
-	return &VolumeStatus{v.Root, devnum, free, used}
+	return &VolumeStatus{
+		MountPoint: v.Root,
+		DeviceNum:  devnum,
+		BytesFree:  free,
+		BytesUsed:  used,
+	}
 }
 
 var blockDirRe = regexp.MustCompile(`^[0-9a-f]+$`)

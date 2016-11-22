@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -24,6 +23,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 // MakeRESTRouter returns a new mux.Router that forwards all Keep
@@ -45,6 +46,9 @@ func MakeRESTRouter() *mux.Router {
 	// List blocks stored here whose hash has the given prefix.
 	// Privileged client only.
 	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
+
+	// Internals/debugging info (runtime.MemStats)
+	rest.HandleFunc(`/debug.json`, DebugHandler).Methods("GET", "HEAD")
 
 	// List volumes: path, device number, bytes used/avail.
 	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
@@ -239,18 +243,6 @@ func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 	resp.Write([]byte{'\n'})
 }
 
-// StatusHandler
-//     Responds to /status.json requests with the current node status,
-//     described in a JSON structure.
-//
-//     The data given in a status.json response includes:
-//        volumes - a list of Keep volumes currently in use by this server
-//          each volume is an object with the following fields:
-//            * mount_point
-//            * device_num (an integer identifying the underlying filesystem)
-//            * bytes_free
-//            * bytes_used
-
 // PoolStatus struct
 type PoolStatus struct {
 	Alloc uint64 `json:"BytesAllocated"`
@@ -258,17 +250,36 @@ type PoolStatus struct {
 	Len   int    `json:"BuffersInUse"`
 }
 
+type volumeStatusEnt struct {
+	Label         string
+	Status        *VolumeStatus `json:",omitempty"`
+	VolumeStats   *ioStats      `json:",omitempty"`
+	InternalStats interface{}   `json:",omitempty"`
+}
+
 // NodeStatus struct
 type NodeStatus struct {
-	Volumes    []*VolumeStatus `json:"volumes"`
+	Volumes    []*volumeStatusEnt
 	BufferPool PoolStatus
 	PullQueue  WorkQueueStatus
 	TrashQueue WorkQueueStatus
-	Memory     runtime.MemStats
 }
 
 var st NodeStatus
 var stLock sync.Mutex
+
+// DebugHandler addresses /debug.json requests.
+func DebugHandler(resp http.ResponseWriter, req *http.Request) {
+	type debugStats struct {
+		MemStats runtime.MemStats
+	}
+	var ds debugStats
+	runtime.ReadMemStats(&ds.MemStats)
+	err := json.NewEncoder(resp).Encode(&ds)
+	if err != nil {
+		http.Error(resp, err.Error(), 500)
+	}
+}
 
 // StatusHandler addresses /status.json requests.
 func StatusHandler(resp http.ResponseWriter, req *http.Request) {
@@ -289,20 +300,26 @@ func StatusHandler(resp http.ResponseWriter, req *http.Request) {
 func readNodeStatus(st *NodeStatus) {
 	vols := KeepVM.AllReadable()
 	if cap(st.Volumes) < len(vols) {
-		st.Volumes = make([]*VolumeStatus, len(vols))
+		st.Volumes = make([]*volumeStatusEnt, len(vols))
 	}
 	st.Volumes = st.Volumes[:0]
 	for _, vol := range vols {
-		if s := vol.Status(); s != nil {
-			st.Volumes = append(st.Volumes, s)
+		var internalStats interface{}
+		if vol, ok := vol.(InternalStatser); ok {
+			internalStats = vol.InternalStats()
 		}
+		st.Volumes = append(st.Volumes, &volumeStatusEnt{
+			Label:         vol.String(),
+			Status:        vol.Status(),
+			InternalStats: internalStats,
+			//VolumeStats: KeepVM.VolumeStats(vol),
+		})
 	}
 	st.BufferPool.Alloc = bufs.Alloc()
 	st.BufferPool.Cap = bufs.Cap()
 	st.BufferPool.Len = bufs.Len()
 	st.PullQueue = getWorkQueueStatus(pullq)
 	st.TrashQueue = getWorkQueueStatus(trashq)
-	runtime.ReadMemStats(&st.Memory)
 }
 
 // return a WorkQueueStatus for the given queue. If q is nil (which

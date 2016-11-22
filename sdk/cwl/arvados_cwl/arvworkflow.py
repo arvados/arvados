@@ -18,7 +18,7 @@ from .perf import Perf
 logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
-def upload_workflow(arvRunner, tool, job_order, project_uuid, update_uuid):
+def upload_workflow(arvRunner, tool, job_order, project_uuid, uuid=None):
     upload_docker(arvRunner, tool)
 
     document_loader, workflowobj, uri = (tool.doc_loader, tool.doc_loader.fetch(tool.tool["id"]), tool.tool["id"])
@@ -39,16 +39,18 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid, update_uuid):
 
     body = {
         "workflow": {
-            "owner_uuid": project_uuid,
             "name": tool.tool.get("label", name),
             "description": tool.tool.get("doc", ""),
             "definition":yaml.safe_dump(packed)
         }}
+    if project_uuid:
+        body["workflow"]["owner_uuid"] = project_uuid
 
-    if update_uuid:
-        return arvRunner.api.workflows().update(uuid=update_uuid, body=body).execute(num_retries=arvRunner.num_retries)["uuid"]
+    if uuid:
+        call = arvRunner.api.workflows().update(uuid=uuid, body=body)
     else:
-        return arvRunner.api.workflows().create(body=body).execute(num_retries=arvRunner.num_retries)["uuid"]
+        call = arvRunner.api.workflows().create(body=body)
+    return call.execute(num_retries=arvRunner.num_retries)["uuid"]
 
 class ArvadosWorkflow(Workflow):
     """Wrap cwltool Workflow to override selected methods."""
