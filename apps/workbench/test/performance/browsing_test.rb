@@ -19,7 +19,7 @@ class BrowsingTest < WorkbenchPerformanceTest
   test "home page" do
     visit_page_with_token
     assert_text 'Dashboard'
-    assert_selector 'a', text: 'Run a pipeline'
+    assert_selector 'a', text: 'Run a process'
   end
 
   test "search for hash" do
