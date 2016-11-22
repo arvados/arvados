@@ -186,7 +186,7 @@ class Arvados::V1::CollectionsController < ApplicationController
   def load_limit_offset_order_params *args
     if action_name == 'index'
       # Omit manifest_text and unsigned_manifest_text from index results unless expressly selected.
-      @select ||= model_class.selectable_attributes - ["manifest_text","unsigned_manifest_text"]
+      @select ||= model_class.selectable_attributes - ["manifest_text", "unsigned_manifest_text"]
     end
     super
   end
