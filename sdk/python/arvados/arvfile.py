@@ -5,7 +5,6 @@ import bz2
 import config
 import hashlib
 import threading
-import traceback
 import Queue
 import copy
 import errno
@@ -517,7 +516,7 @@ class _BlockManager(object):
                     return
                 self._keep.get(b)
             except Exception:
-                _logger.error(traceback.format_exc())
+                _logger.exception("Exception doing block prefetch")
 
     @synchronized
     def start_get_threads(self):
