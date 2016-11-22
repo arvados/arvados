@@ -12,6 +12,7 @@ import arvados.collection
 import arvados_cwl
 
 from cwltool.pathmapper import MapperEnt
+from .mock_discovery import get_rootDesc
 
 from arvados_cwl.pathmapper import ArvPathMapper
 
@@ -23,7 +24,7 @@ def upload_mock(files, api, dry_run=False, num_retries=0, project=None, fnPatter
 class TestPathmap(unittest.TestCase):
     def setUp(self):
         self.api = mock.MagicMock()
-        self.api._rootDesc = arvados.api('v1')._rootDesc
+        self.api._rootDesc = get_rootDesc()
 
     def test_keepref(self):
         """Test direct keep references."""

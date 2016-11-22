@@ -2,13 +2,13 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/base64"
 	"encoding/xml"
 	"flag"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net"
 	"net/http"
@@ -21,6 +21,7 @@ import (
 	"testing"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/curoverse/azure-sdk-for-go/storage"
 )
 
@@ -454,12 +455,12 @@ func TestAzureBlobVolumeRangeFenceposts(t *testing.T) {
 			data[i] = byte((i + 7) & 0xff)
 		}
 		hash := fmt.Sprintf("%x", md5.Sum(data))
-		err := v.Put(hash, data)
+		err := v.Put(context.Background(), hash, data)
 		if err != nil {
 			t.Error(err)
 		}
 		gotData := make([]byte, len(data))
-		gotLen, err := v.Get(hash, gotData)
+		gotLen, err := v.Get(context.Background(), hash, gotData)
 		if err != nil {
 			t.Error(err)
 		}
@@ -500,7 +501,7 @@ func TestAzureBlobVolumeCreateBlobRace(t *testing.T) {
 	allDone := make(chan struct{})
 	v.azHandler.race = make(chan chan struct{})
 	go func() {
-		err := v.Put(TestHash, TestBlock)
+		err := v.Put(context.Background(), TestHash, TestBlock)
 		if err != nil {
 			t.Error(err)
 		}
@@ -510,7 +511,7 @@ func TestAzureBlobVolumeCreateBlobRace(t *testing.T) {
 	v.azHandler.race <- continuePut
 	go func() {
 		buf := make([]byte, len(TestBlock))
-		_, err := v.Get(TestHash, buf)
+		_, err := v.Get(context.Background(), TestHash, buf)
 		if err != nil {
 			t.Error(err)
 		}
@@ -553,7 +554,7 @@ func TestAzureBlobVolumeCreateBlobRaceDeadline(t *testing.T) {
 	go func() {
 		defer close(allDone)
 		buf := make([]byte, BlockSize)
-		n, err := v.Get(TestHash, buf)
+		n, err := v.Get(context.Background(), TestHash, buf)
 		if err != nil {
 			t.Error(err)
 			return

@@ -1,0 +1,78 @@
+---
+layout: default
+navsection: sdk
+navmenu: Java
+title: "Examples"
+...
+
+h2. Initialize SDK
+
+<pre>
+import org.arvados.sdk.Arvados;
+</pre>
+
+<pre>
+    String apiName = "arvados";
+    String apiVersion = "v1";
+
+    Arvados arv = new Arvados(apiName, apiVersion);
+</pre>
+
+h2. create
+
+<pre>
+    Map<String, String> collection = new HashMap<String, String>();
+    collection.put("name", "create example");
+
+    Map<String, Object> params = new HashMap<String, Object>();
+    params.put("collection", collection);
+    Map response = arv.call("collections", "create", params);
+</pre>
+
+h2. delete
+
+<pre>
+    Map<String, Object> params = new HashMap<String, Object>();
+    params.put("uuid", uuid);
+    Map response = arv.call("collections", "delete", params);
+</pre>
+
+h2. get
+
+<pre>
+    params = new HashMap<String, Object>();
+    params.put("uuid", userUuid);
+    Map response = arv.call("users", "get", params);
+</pre>
+
+h2. list
+
+<pre>
+    Map<String, Object> params = new HashMap<String, Object>();
+    Map response = arv.call("users", "list", params);
+
+    // get uuid of the first user from the response
+    List items = (List)response.get("items");
+
+    Map firstUser = (Map)items.get(0);
+    String userUuid = (String)firstUser.get("uuid");
+</pre>
+
+h2. update
+
+<pre>
+    Map<String, String> collection = new HashMap<String, String>();
+    collection.put("name", "update example");
+
+    Map<String, Object> params = new HashMap<String, Object>();
+    params.put("uuid", uuid);
+    params.put("collection", collection);
+    Map response = arv.call("collections", "update", params);
+</pre>
+
+h2. Get current user
+
+<pre>
+    Map<String, Object> params = new HashMap<String, Object>();
+    Map response = arv.call("users", "current", params);
+</pre>

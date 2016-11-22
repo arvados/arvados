@@ -75,6 +75,49 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert_operator locs, :>, 0, "no locators found in any manifests"
   end
 
+  test 'index without select returns everything except manifest' do
+    authorize_with :active
+    get :index
+    assert_response :success
+    assert json_response['items'].any?
+    json_response['items'].each do |coll|
+      assert_includes(coll.keys, 'uuid')
+      assert_includes(coll.keys, 'name')
+      assert_includes(coll.keys, 'created_at')
+      refute_includes(coll.keys, 'manifest_text')
+    end
+  end
+
+  ['', nil, false, 'null'].each do |select|
+    test "index with select=#{select.inspect} returns everything except manifest" do
+      authorize_with :active
+      get :index, select: select
+      assert_response :success
+      assert json_response['items'].any?
+      json_response['items'].each do |coll|
+        assert_includes(coll.keys, 'uuid')
+        assert_includes(coll.keys, 'name')
+        assert_includes(coll.keys, 'created_at')
+        refute_includes(coll.keys, 'manifest_text')
+      end
+    end
+  end
+
+  [["uuid"],
+   ["uuid", "manifest_text"],
+   '["uuid"]',
+   '["uuid", "manifest_text"]'].each do |select|
+    test "index with select=#{select.inspect} returns no name" do
+      authorize_with :active
+      get :index, select: select
+      assert_response :success
+      assert json_response['items'].any?
+      json_response['items'].each do |coll|
+        refute_includes(coll.keys, 'name')
+      end
+    end
+  end
+
   [0,1,2].each do |limit|
     test "get index with limit=#{limit}" do
       authorize_with :active

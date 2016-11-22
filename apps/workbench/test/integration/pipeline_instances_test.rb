@@ -16,14 +16,21 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     # Note: Even with all this help, phantomjs seem to behave badly
     # when parsing timestamps on the other side of a DST transition.
     # See skipped tests below.
+
+    # In some locales (e.g., en_CA.UTF-8) Firefox can't parse what its
+    # own toLocaleString() puts out.
+    t.sub!(/(\d\d\d\d)-(\d\d)-(\d\d)/, '\2/\3/\1')
+
     if /(\d+:\d+ [AP]M) (\d+\/\d+\/\d+)/ =~ t
       # Currently dates.js renders timestamps as
       # '{t.toLocaleTimeString()} {t.toLocaleDateString()}' which even
-      # browsers can't make sense of. First we need to flip it around
-      # so it looks like what toLocaleString() would have made.
+      # en_US browsers can't make sense of. First we need to flip it
+      # around so it looks like what toLocaleString() would have made.
       t = $~[2] + ', ' + $~[1]
     end
-    DateTime.parse(page.evaluate_script "new Date('#{t}').toUTCString()").to_time
+
+    utc = page.evaluate_script("new Date('#{t}').toUTCString()")
+    DateTime.parse(utc).to_time
   end
 
   if false

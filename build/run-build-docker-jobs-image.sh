@@ -122,10 +122,10 @@ python_sdk_version=$(cd sdk/python && nohash_version_from_git 0.1)-2
 cwl_runner_version=$(cd sdk/cwl && nohash_version_from_git 1.0)-3
 
 if [[ $python_sdk_ts -gt $cwl_runner_ts ]]; then
-    cwl_runner_version=$python_sdk_version
-    gittag=$(cd sdk/python && git log --first-parent --max-count=1 --format=format:%H)
+    cwl_runner_version=$(cd sdk/python && nohash_version_from_git 1.0)-3
+    gittag=$(git log --first-parent --max-count=1 --format=format:%H sdk/python)
 else
-    gittag=$(cd sdk/cwl && git log --first-parent --max-count=1 --format=format:%H)
+    gittag=$(git log --first-parent --max-count=1 --format=format:%H sdk/cwl)
 fi
 
 echo cwl_runner_version $cwl_runner_version python_sdk_version $python_sdk_version

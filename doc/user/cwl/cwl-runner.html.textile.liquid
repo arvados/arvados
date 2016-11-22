@@ -15,6 +15,7 @@ The @arvados-cwl-runner@ client is installed by default on Arvados shell nodes. 
 <notextile>
 <pre><code>~$ <span class="userinput">virtualenv ~/venv</span>
 ~$ <span class="userinput">. ~/venv/bin/activate</span>
+~$ <span class="userinput">pip install -U setuptools</span>
 ~$ <span class="userinput">pip install arvados-cwl-runner</span>
 </code></pre>
 </notextile>
@@ -140,12 +141,12 @@ If you reference a file in "arv-mount":{{site.baseurl}}/user/tutorials/tutorial-
 
 If you reference a local file which is not in @arv-mount@, then @arvados-cwl-runner@ will upload the file to Keep and use the Keep URI reference from the upload.
 
-h2. Registering a workflow with Workbench
+h2. Registering a workflow to use in Workbench
 
-Use @--create-template@ to register a CWL workflow with Arvados Workbench.  This enables you to run workflows by clicking on the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a pipeline...</span> on the Workbench Dashboard.
+Use @--create-workflow@ to register a CWL workflow with Arvados.  This enables you to share workflows with other Arvados users, and run them by clicking the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a pipeline...</span> button on the Workbench Dashboard.
 
 <notextile>
-<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --create-template bwa-mem.cwl</span>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --create-workflow bwa-mem.cwl</span>
 arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
 2016-07-01 12:21:01 arvados.arv-run[15796] INFO: Upload local files: "bwa-mem.cwl"
 2016-07-01 12:21:01 arvados.arv-run[15796] INFO: Uploaded to qr1hi-4zz18-7e0hedrmkuyoei3
@@ -157,7 +158,7 @@ qr1hi-p5p6p-rjleou1dwr167v5
 You can provide a partial input file to set default values for the workflow input parameters:
 
 <notextile>
-<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --create-template bwa-mem.cwl bwa-mem-template.yml</span>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --create-workflow bwa-mem.cwl bwa-mem-template.yml</span>
 arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
 2016-07-01 14:09:50 arvados.arv-run[3730] INFO: Upload local files: "bwa-mem.cwl"
 2016-07-01 14:09:50 arvados.arv-run[3730] INFO: Uploaded to qr1hi-4zz18-0f91qkovk4ml18o

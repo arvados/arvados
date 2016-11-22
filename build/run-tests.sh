@@ -93,6 +93,7 @@ sdk/go/streamer
 sdk/go/crunchrunner
 sdk/cwl
 tools/crunchstat-summary
+tools/keep-exercise
 tools/keep-rsync
 tools/keep-block-check
 
@@ -158,8 +159,8 @@ sanity_checks() {
     echo -n 'go: '
     go version \
         || fatal "No go binary. See http://golang.org/doc/install"
-    [[ $(go version) =~ go1.([0-9]+) ]] && [[ ${BASH_REMATCH[1]} -ge 6 ]] \
-        || fatal "Go >= 1.6 required. See http://golang.org/doc/install"
+    [[ $(go version) =~ go1.([0-9]+) ]] && [[ ${BASH_REMATCH[1]} -ge 7 ]] \
+        || fatal "Go >= 1.7 required. See http://golang.org/doc/install"
     echo -n 'gcc: '
     gcc --version | egrep ^gcc \
         || fatal "No gcc. Try: apt-get install build-essential"
@@ -764,8 +765,9 @@ gostuff=(
     services/crunch-dispatch-local
     services/crunch-dispatch-slurm
     services/crunch-run
-    tools/keep-rsync
     tools/keep-block-check
+    tools/keep-exercise
+    tools/keep-rsync
     )
 for g in "${gostuff[@]}"
 do

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"fmt"
 	"io"
@@ -49,7 +50,7 @@ func collisionOrCorrupt(expectMD5 string, buf1, buf2 []byte, rdr io.Reader) erro
 	return <-outcome
 }
 
-func compareReaderWithBuf(rdr io.Reader, expect []byte, hash string) error {
+func compareReaderWithBuf(ctx context.Context, rdr io.Reader, expect []byte, hash string) error {
 	bufLen := 1 << 20
 	if bufLen > len(expect) && len(expect) > 0 {
 		// No need for bufLen to be longer than
@@ -67,7 +68,18 @@ func compareReaderWithBuf(rdr io.Reader, expect []byte, hash string) error {
 	// expected to equal the next N bytes read from
 	// rdr.
 	for {
-		n, err := rdr.Read(buf)
+		ready := make(chan bool)
+		var n int
+		var err error
+		go func() {
+			n, err = rdr.Read(buf)
+			close(ready)
+		}()
+		select {
+		case <-ready:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 		if n > len(cmp) || bytes.Compare(cmp[:n], buf[:n]) != 0 {
 			return collisionOrCorrupt(hash, expect[:len(expect)-len(cmp)], buf[:n], rdr)
 		}

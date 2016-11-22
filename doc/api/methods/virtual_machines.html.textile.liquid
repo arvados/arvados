@@ -3,17 +3,31 @@ layout: default
 navsection: api
 navmenu: API Methods
 title: "virtual_machines"
-
 ...
-
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
 
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/virtual_machines@
 
+Object type: @2x53u@
+
+Example UUID: @zzzzz-2x53u-0123456789abcde@
+
+h2. Resource
+
+The virtual_machines resource lists compute resources in the Arvados cluster to which a user may log in to get an interactive shell (via ssh or webshell).
+
+Each VirtualMachine has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|_. Example|
+|hostname|string|||
+
+h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
+
 Required arguments are displayed in %{background:#ccffcc}green%.
 
-
-h2. create
+h3. create
 
 Create a new VirtualMachine.
 
@@ -23,7 +37,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |virtual_machine|object||query||
 
-h2. delete
+h3. delete
 
 Delete an existing VirtualMachine.
 
@@ -33,7 +47,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the VirtualMachine in question.|path||
 
-h2. get
+h3. get
 
 Gets a VirtualMachine's metadata by UUID.
 
@@ -43,7 +57,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the VirtualMachine in question.|path||
 
-h2(#logins). logins
+h3(#logins). logins
 
 Get a list of SSH keys and account names that should be able to log in to a given virtual machine.
 
@@ -53,7 +67,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string||path||
 
-The response is a "resource list":{{site.baseurl}}/api/resources.html#resourceList with @kind@ set to @"arvados#HashList"@. Each item is a hash with the following keys:
+The response is an object with the field @items@ containing an array of objects in the following format:
 
 table(table table-bordered table-condensed).
 |_. Key|_. Value type|_. Description|_. Example|
@@ -61,30 +75,24 @@ table(table table-bordered table-condensed).
 |hostname|string|Hostname of the virtual machine|@"shell.xyzzy.arvadosapi.com"@|
 |public_key|string|SSH public key|@"ssh-rsa AAAAB3NzaC1yc2E..."@|
 |user_uuid|string|UUID of the user who should be able to log in|@"xyzzy-tpzed-mv4d7dy7n91te11"@|
-|virtual_machine_uuid|string|UUID of the "VirtualMachine resource":{{site.baseurl}}/api/schema/VirtualMachine.html|@"xyzzy-2x53u-kvszmclnbjuv8xc"@|
-|authorized_key_uuid|string|UUID of the "AuthorizedKey resource":{{site.baseurl}}/api/schema/AuthorizedKey.html|@"xyzzy-fngyi-v9p0cyfmjxbio64"@|
+|virtual_machine_uuid|string|UUID of the "virtual machine resource":{{site.baseurl}}/api/methods/virtual_machines.html|@"zzzzz-2x53u-kvszmclnbjuv8xc"@|
+|authorized_key_uuid|string|UUID of the "authorized key resource":{{site.baseurl}}/api/methods/authorized_keys.html|@"zzzzz-fngyi-v9p0cyfmjxbio64"@|
 
-h2. get_all_logins
+h3. get_all_logins
 
-Get a list, for every virtual machine in the system, of SSH keys and account names that should be able to log in.
+Get a list of SSH keys and account names that should be able to log in for every virtual machine in the system.
 
 Arguments: none.
 
 The response has the same format as the response to the "logins method":#logins above.
 
-h2. list
+h3. list
 
 List virtual_machines.
 
-Arguments:
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of virtual_machines to return.|query||
-|order|string|Order in which to return matching virtual_machines.|query||
-|filters|array|Conditions for filtering virtual_machines.|query||
-
-h2. update
+h3. update
 
 Update attributes of an existing VirtualMachine.
 

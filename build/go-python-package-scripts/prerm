@@ -2,26 +2,29 @@
 
 set -e
 
-# NOTE: This package name detection will only work on Debian.
-# If this prerm script ever starts doing work on Red Hat,
-# we'll need to adapt this code accordingly.
-script="$(basename "${0}")"
-pkg="${script%.prerm}"
-systemd_unit="${pkg}.service"
+if [ "%{name}" != "%\{name\}" ]; then
+    # Red Hat ("%{...}" is interpolated at package build time)
+    pkg="%{name}"
+    pkgtype=rpm
+    prefix="${RPM_INSTALL_PREFIX}"
+else
+    # Debian
+    script="$(basename "${0}")"
+    pkg="${script%.prerm}"
+    pkgtype=deb
+    prefix=/usr
+fi
 
-case "${1}" in
-    remove)
+case "${pkgtype}-${1}" in
+    deb-remove | rpm-0)
         if [ -e /run/systemd/system ]; then
-            systemctl stop "${systemd_unit}" || true
-            systemctl disable "${systemd_unit}" || true
+            systemctl stop "${pkg}" || true
+            systemctl disable "${pkg}" || true
         fi
-
-        # Unit files from Python packages get installed by postinst so
-        # we have to remove them explicitly here.
-        py_unit="/usr/share/doc/${pkg}/${pkg}.service"
-        if [ -e "${py_unit}" ]
-        then
-            rm "/lib/systemd/system/${pkg}.service" || true
+        if [ -e "${prefix}/share/doc/${pkg}/${pkg}.service" ]; then
+            # Unit files from Python packages get installed by
+            # postinst so we have to remove them explicitly here.
+            rm "/lib/systemd/system/${pkg}/${pkg}.service" || true
         fi
         ;;
 esac
