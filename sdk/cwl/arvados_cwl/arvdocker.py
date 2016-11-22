@@ -36,7 +36,10 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
         cwltool.docker.get_image(dockerRequirement, pull_image)
 
         # Upload image to Arvados
-        args = ["--project-uuid="+project_uuid, image_name]
+        args = []
+        if project_uuid:
+            args.append("--project-uuid="+project_uuid)
+        args.append(image_name)
         if image_tag:
             args.append(image_tag)
         logger.info("Uploading Docker image %s", ":".join(args[1:]))
