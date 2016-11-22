@@ -148,12 +148,12 @@ class ArvadosContainer(object):
             outputs = {}
 
             if container["output"]:
-                outputs = done.done_outputs(self, container, "/tmp", self.outdir, "/keep")
-            try:
-                self.output_callback(outputs, processStatus)
-            except Exception as e:
-                logger.error("Got error %s" % str(e))
-                self.output_callback({}, "permanentFail")
+                try:
+                    outputs = done.done_outputs(self, container, "/tmp", self.outdir, "/keep")
+                except Exception as e:
+                    logger.error("Got error %s" % str(e))
+                    self.output_callback({}, "permanentFail")
+            self.output_callback(outputs, processStatus)
         finally:
             del self.arvrunner.processes[record["uuid"]]
 
