@@ -10,13 +10,13 @@
 <% end %>
 
 <%
-  no_jobs_api = !PipelineInstance.api_exists?(:index)
-
-  run_proc_title = 'Choose a pipeline or workflow to run:'
-  run_proc_title = 'Choose a workflow to run:' if no_jobs_api
-
-  run_proc_hover = 'Run a pipeline or workflow in this project'
-  run_proc_hover = 'Run a workflow in this project' if no_jobs_api
+  if !PipelineInstance.api_exists?(:index)
+    run_proc_title = 'Choose a workflow to run:'
+    run_proc_hover = 'Run a workflow in this project'
+  else
+    run_proc_title = 'Choose a pipeline or workflow to run:'
+    run_proc_hover = 'Run a pipeline or workflow in this project'
+  end
 %>
 
 <% content_for :tab_line_buttons do %>

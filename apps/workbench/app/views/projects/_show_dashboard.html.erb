@@ -25,12 +25,13 @@
 %>
 
 <%
-  no_jobs_api = !PipelineInstance.api_exists?(:index)
-  recent_procs_title = 'Recent pipelines and processes'
-  recent_procs_title = 'Recent processes' if no_jobs_api
-
-  run_proc_title = 'Choose a pipeline or workflow to run:'
-  run_proc_title = 'Choose a workflow to run:' if no_jobs_api
+  if !PipelineInstance.api_exists?(:index)
+    recent_procs_title = 'Recent processes'
+    run_proc_title = 'Choose a workflow to run:'
+  else
+    recent_procs_title = 'Recent pipelines and processes'
+    run_proc_title = 'Choose a pipeline or workflow to run:'
+  end
 %>
 
   <div class="row">
