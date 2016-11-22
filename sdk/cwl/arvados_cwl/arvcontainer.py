@@ -115,9 +115,9 @@ class ArvadosContainer(object):
                 body=container_request
             ).execute(num_retries=self.arvrunner.num_retries)
 
-            self.arvrunner.processes[response["uuid"]] = response["uuid"]
+            self.arvrunner.processes[response["uuid"]] = self
 
-            logger.info("Container request %s (%s) state is %s with container %s %s", self.name, response["uuid"], response["state"])
+            logger.info("Container request %s (%s) state is %s", self.name, response["uuid"], response["state"])
 
             if response["state"] == "Final":
                 self.done(response)
@@ -146,9 +146,14 @@ class ArvadosContainer(object):
                 processStatus = "permanentFail"
 
             outputs = {}
+
             if container["output"]:
                 outputs = done.done_outputs(self, container, "/tmp", self.outdir, "/keep")
-            self.output_callback(outputs, processStatus)
+            try:
+                self.output_callback(outputs, processStatus)
+            except Exception as e:
+                logger.error("Got error %s" % str(e))
+                self.output_callback({}, "permanentFail")
         finally:
             del self.arvrunner.processes[record["uuid"]]
 
