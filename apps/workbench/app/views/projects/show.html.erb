@@ -9,6 +9,16 @@
   </h2>
 <% end %>
 
+<%
+  if !PipelineInstance.api_exists?(:index)
+    run_proc_title = 'Choose a workflow to run:'
+    run_proc_hover = 'Run a workflow in this project'
+  else
+    run_proc_title = 'Choose a pipeline or workflow to run:'
+    run_proc_hover = 'Run a pipeline or workflow in this project'
+  end
+%>
+
 <% content_for :tab_line_buttons do %>
   <% if @object.editable? %>
     <div class="btn-group btn-group-sm">
@@ -38,13 +48,13 @@
     </div>
     <%= link_to(
           choose_work_unit_templates_path(
-            title: 'Choose a pipeline or workflow to run:',
+            title: run_proc_title,
             action_name: 'Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i>',
             action_href: work_units_path,
             action_method: 'post',
             action_data: {'selection_param' => 'work_unit[template_uuid]', 'work_unit[owner_uuid]' => @object.uuid, 'success' => 'redirect-to-created-object'}.to_json),
-          { class: "btn btn-primary btn-sm", remote: true, title: "Run a pipeline or workflow in this project" }) do %>
-      <i class="fa fa-fw fa-gear"></i> Run a pipeline...
+          { class: "btn btn-primary btn-sm", remote: true, title: run_proc_hover }) do %>
+      <i class="fa fa-fw fa-gear"></i> Run a process...
     <% end %>
     <%= link_to projects_path({'project[owner_uuid]' => @object.uuid, 'options' => {'ensure_unique_name' => true}}), method: :post, title: "Add a subproject to this project", class: 'btn btn-sm btn-primary' do %>
       <i class="fa fa-fw fa-plus"></i>

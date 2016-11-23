@@ -391,7 +391,7 @@ class PipelineInstancesTest < ActionDispatch::IntegrationTest
     collection = api_fixture('collections', collection_fixture)
 
     # create a pipeline instance
-    find('.btn', text: 'Run a pipeline').click
+    find('.btn', text: 'Run a process').click
     within('.modal-dialog') do
       find('.selectable', text: template_name).click
       find('.btn', text: 'Next: choose inputs').click

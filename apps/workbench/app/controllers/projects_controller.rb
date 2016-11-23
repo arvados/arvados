@@ -55,8 +55,10 @@ class ProjectsController < ApplicationController
     pane_list = []
 
     procs = ["arvados#containerRequest"]
+    procs_pane_name = 'Processes'
     if PipelineInstance.api_exists?(:index)
       procs << "arvados#pipelineInstance"
+      procs_pane_name = 'Pipelines_and_processes'
     end
 
     workflows = ["arvados#workflow"]
@@ -76,7 +78,7 @@ class ProjectsController < ApplicationController
       }
     pane_list <<
       {
-        :name => 'Pipelines_and_processes',
+        :name => procs_pane_name,
         :filters => [%w(uuid is_a) + [procs]]
       }
     pane_list <<
