@@ -40,7 +40,7 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,test-packages,target:,command:,only-test: \
+    help,debug,test-packages,target:,command:,only-test:,only-build: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -62,7 +62,11 @@ while [ $# -gt 0 ]; do
             TARGET="$2"; shift
             ;;
         --only-test)
+            test_packages=1
             packages="$2"; shift
+            ;;
+        --only-build)
+            ONLY_BUILD="$2"; shift
             ;;
         --debug)
             DEBUG=" --debug"
@@ -191,6 +195,7 @@ else
     if docker run --rm \
         "${docker_volume_args[@]}" \
         --env ARVADOS_DEBUG=1 \
+        --env "ONLY_BUILD=$ONLY_BUILD" \
         "$IMAGE" $COMMAND
     then
         echo
