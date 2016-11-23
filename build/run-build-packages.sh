@@ -15,8 +15,10 @@ Options:
     Build api server and workbench packages with vendor/bundle included
 --debug
     Output debug information (default: false)
---target
+--target <target>
     Distribution to build packages for (default: debian7)
+--only-build <package>
+    Build only a specific package (or $ONLY_BUILD from environment)
 --command
     Build command to execute (defaults to the run command defined in the
     Docker image)
@@ -31,7 +33,7 @@ TARGET=debian7
 COMMAND=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,build-bundle-packages,debug,target: \
+    help,build-bundle-packages,debug,target:,only-build: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -47,6 +49,9 @@ while [ $# -gt 0 ]; do
             ;;
         --target)
             TARGET="$2"; shift
+            ;;
+        --only-build)
+            ONLY_BUILD="$2"; shift
             ;;
         --debug)
             DEBUG=1
@@ -248,6 +253,7 @@ fi
 # Perl packages
 debug_echo -e "\nPerl packages\n"
 
+if [[ -z "$ONLY_BUILD" ]] || [[ "libarvados-perl" = "$ONLY_BUILD" ]] ; then
 cd "$WORKSPACE/sdk/perl"
 
 if [[ -e Makefile ]]; then
@@ -263,6 +269,7 @@ perl Makefile.PL INSTALL_BASE=install >"$STDOUT_IF_DEBUG" && \
     "Curoverse, Inc." dir "$(version_from_git)" install/man/=/usr/share/man \
     "$WORKSPACE/LICENSE-2.0.txt=/usr/share/doc/libarvados-perl/LICENSE-2.0.txt" && \
     mv --no-clobber libarvados-perl*.$FORMAT "$WORKSPACE/packages/$TARGET/"
+fi
 
 # Ruby gems
 debug_echo -e "\nRuby gems\n"
@@ -539,6 +546,11 @@ esac
 
 for deppkg in "${PYTHON_BACKPORTS[@]}"; do
     outname=$(echo "$deppkg" | sed -e 's/^python-//' -e 's/[<=>].*//' -e 's/_/-/g' -e "s/^/${PYTHON2_PKG_PREFIX}-/")
+
+    if [[ -n "$ONLY_BUILD" ]] && [[ "$outname" != "$ONLY_BUILD" ]] ; then
+        continue
+    fi
+
     case "$deppkg" in
         httplib2|google-api-python-client)
             # Work around 0640 permissions on some package files.
@@ -588,6 +600,7 @@ handle_rails_package arvados-api-server "$WORKSPACE/services/api" \
     --license="GNU Affero General Public License, version 3.0"
 
 # Build the workbench server package
+if [[ -z "$ONLY_BUILD" ]] || [[ "arvados-workbench" = "$ONLY_BUILD" ]] ; then
 (
     set -e
     cd "$WORKSPACE/apps/workbench"
@@ -612,6 +625,7 @@ handle_rails_package arvados-api-server "$WORKSPACE/services/api" \
     # Remove generated configuration files so they don't go in the package.
     rm config/application.yml config/environments/production.rb
 )
+fi
 
 if [[ "$?" != "0" ]]; then
   echo "ERROR: Asset precompilation failed"
