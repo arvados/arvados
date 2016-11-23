@@ -36,6 +36,9 @@ Generally this will contain additional keys that are not present in any correspo
   "vcpus":2,
   "API":true
 }</code></pre>See "Runtime constraints":#runtime_constraints for more details.|
+|scheduling_parameters|hash|Parameters to be passed to the container scheduler when running this container.|e.g.,<pre><code>{
+"partitions":["fastcpu","vfastcpu"]
+}</code></pre>See "Scheduling parameters":#scheduling_parameters for more details.|
 |output|string|Portable data hash of the output collection.|Null if the container is not yet finished.|
 |container_image|string|Portable data hash of a collection containing the docker image used to run the container.||
 |progress|number|A number between 0.0 and 1.0 describing the fraction of work done.||
@@ -57,6 +60,8 @@ table(table table-bordered table-condensed).
 h2(#mount_types). {% include 'mount_types' %}
 
 h2(#runtime_constraints). {% include 'container_runtime_constraints' %}
+
+h2(#scheduling_parameters). {% include 'container_scheduling_parameters' %}
 
 h2. Methods
 
