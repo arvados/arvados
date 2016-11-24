@@ -22,6 +22,7 @@ type eventSource interface {
 type event struct {
 	LogID    uint64
 	Received time.Time
+	Ready    time.Time
 	Serial   uint64
 
 	db     *sql.DB

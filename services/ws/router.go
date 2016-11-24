@@ -37,7 +37,8 @@ type router struct {
 }
 
 type routerStatus struct {
-	Connections int64
+	ReqsReceived int64
+	ReqsActive   int64
 }
 
 type Statuser interface {
@@ -97,7 +98,7 @@ func (rtr *router) Status() interface{} {
 		"Outgoing": rtr.handler.Status(),
 	}
 	if es, ok := rtr.eventSource.(Statuser); ok {
-		s["Incoming"] = es.Status()
+		s["EventSource"] = es.Status()
 	}
 	return s
 }
@@ -115,8 +116,9 @@ func (rtr *router) serveStatus(resp http.ResponseWriter, req *http.Request) {
 
 func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	rtr.setupOnce.Do(rtr.setup)
-	atomic.AddInt64(&rtr.status.Connections, 1)
-	defer atomic.AddInt64(&rtr.status.Connections, -1)
+	atomic.AddInt64(&rtr.status.ReqsReceived, 1)
+	atomic.AddInt64(&rtr.status.ReqsActive, 1)
+	defer atomic.AddInt64(&rtr.status.ReqsActive, -1)
 
 	logger := logger(req.Context()).
 		WithField("RequestID", rtr.newReqID())

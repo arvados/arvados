@@ -164,9 +164,11 @@ func (sub *v0subscribe) sendOldEvents(sess *v0session) {
 			// same thing all over again.
 			time.Sleep(100 * time.Millisecond)
 		}
+		now := time.Now()
 		e := &event{
 			LogID:    id,
-			Received: time.Now(),
+			Received: now,
+			Ready:    now,
 			db:       sess.db,
 		}
 		if sub.match(sess, e) {

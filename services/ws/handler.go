@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -15,7 +16,7 @@ type handler struct {
 	QueueSize   int
 
 	mtx       sync.Mutex
-	queues    map[chan interface{}]struct{}
+	lastDelay map[chan interface{}]time.Duration
 	setupOnce sync.Once
 }
 
@@ -37,11 +38,11 @@ func (h *handler) Handle(ws wsConn, eventSource eventSource, newSession func(wsC
 
 	queue := make(chan interface{}, h.QueueSize)
 	h.mtx.Lock()
-	h.queues[queue] = struct{}{}
+	h.lastDelay[queue] = 0
 	h.mtx.Unlock()
 	defer func() {
 		h.mtx.Lock()
-		delete(h.queues, queue)
+		delete(h.lastDelay, queue)
 		h.mtx.Unlock()
 	}()
 
@@ -131,7 +132,10 @@ func (h *handler) Handle(ws wsConn, eventSource eventSource, newSession func(wsC
 			log.Debug("sent")
 
 			if e != nil {
-				stats.QueueDelayNs += t0.Sub(e.Received)
+				stats.QueueDelayNs += t0.Sub(e.Ready)
+				h.mtx.Lock()
+				h.lastDelay[queue] = time.Since(e.Ready)
+				h.mtx.Unlock()
 			}
 			stats.WriteDelayNs += time.Since(t0)
 			stats.EventBytes += uint64(len(buf))
@@ -193,21 +197,37 @@ func (h *handler) Status() interface{} {
 	defer h.mtx.Unlock()
 
 	var s struct {
-		QueueCount int
-		QueueMax   int
-		QueueTotal uint64
+		QueueCount    int
+		QueueMin      int
+		QueueMax      int
+		QueueTotal    uint64
+		queueDelayMin time.Duration
+		QueueDelayMin string
+		queueDelayMax time.Duration
+		QueueDelayMax string
 	}
-	for q := range h.queues {
+	for q, lastDelay := range h.lastDelay {
+		s.QueueCount++
 		n := len(q)
 		s.QueueTotal += uint64(n)
 		if s.QueueMax < n {
 			s.QueueMax = n
 		}
+		if s.QueueMin > n || s.QueueCount == 1 {
+			s.QueueMin = n
+		}
+		if (s.queueDelayMin > lastDelay || s.queueDelayMin == 0) && lastDelay > 0 {
+			s.queueDelayMin = lastDelay
+		}
+		if s.queueDelayMax < lastDelay {
+			s.queueDelayMax = lastDelay
+		}
 	}
-	s.QueueCount = len(h.queues)
+	s.QueueDelayMin = fmt.Sprintf("%.06f", s.queueDelayMin.Seconds())
+	s.QueueDelayMax = fmt.Sprintf("%.06f", s.queueDelayMax.Seconds())
 	return &s
 }
 
 func (h *handler) setup() {
-	h.queues = make(map[chan interface{}]struct{})
+	h.lastDelay = make(map[chan interface{}]time.Duration)
 }
