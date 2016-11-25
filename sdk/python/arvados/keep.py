@@ -576,6 +576,8 @@ class KeepClient(object):
     
     
     class KeepWriterThread(threading.Thread):
+        TaskFailed = RuntimeError()
+
         def __init__(self, queue, data, data_hash, timeout=None):
             super(KeepClient.KeepWriterThread, self).__init__()
             self.timeout = timeout
@@ -593,7 +595,8 @@ class KeepClient(object):
                 try:
                     locator, copies = self.do_task(service, service_root)
                 except Exception as e:
-                    _logger.exception("Exception in KeepWriterThread")
+                    if e != self.TaskFailed:
+                        _logger.exception("Exception in KeepWriterThread")
                     self.queue.write_fail(service)
                 else:
                     self.queue.write_success(locator, copies)
@@ -614,7 +617,7 @@ class KeepClient(object):
                                   self.data_hash,
                                   result['status_code'],
                                   result['body'])
-                raise RuntimeError()
+                raise self.TaskFailed
 
             _logger.debug("KeepWriterThread %s succeeded %s+%i %s",
                           str(threading.current_thread()),
