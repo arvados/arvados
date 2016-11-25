@@ -1081,58 +1081,74 @@ class KeepClientRetryPutTestCase(KeepClientRetryTestMixin, unittest.TestCase):
             self.check_exception(copies=2, num_retries=3)
 
 
-class KeepClientAvoidClientOverreplicationTestCase(unittest.TestCase, tutil.ApiClientMock):
-    
-    
+class AvoidOverreplication(unittest.TestCase, tutil.ApiClientMock):
+
     class FakeKeepService(object):
-        def __init__(self, delay, will_succeed, replicas=1):
+        def __init__(self, delay, will_succeed=False, will_raise=None, replicas=1):
             self.delay = delay
-            self.success = will_succeed
+            self.will_succeed = will_succeed
+            self.will_raise = will_raise
             self._result = {}
             self._result['headers'] = {}
             self._result['headers']['x-keep-replicas-stored'] = str(replicas)
             self._result['body'] = 'foobar'
-        
+
         def put(self, data_hash, data, timeout):
             time.sleep(self.delay)
-            return self.success
-        
+            if self.will_raise is not None:
+                raise self.will_raise
+            return self.will_succeed
+
         def last_result(self):
-            return self._result
-        
+            if self.will_succeed:
+                return self._result
+
         def finished(self):
             return False
     
-    
-    def test_only_write_enough_on_success(self):
-        copies = 3
-        pool = arvados.KeepClient.KeepWriterThreadPool(
+    def setUp(self):
+        self.copies = 3
+        self.pool = arvados.KeepClient.KeepWriterThreadPool(
             data = 'foo',
             data_hash = 'acbd18db4cc2f85cedef654fccc4a4d8+3',
-            max_service_replicas = copies,
-            copies = copies
+            max_service_replicas = self.copies,
+            copies = self.copies
         )
+
+    def test_only_write_enough_on_success(self):
         for i in range(10):
             ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
-            pool.add_task(ks, None)
-        pool.join()
-        self.assertEqual(pool.done(), copies)
+            self.pool.add_task(ks, None)
+        self.pool.join()
+        self.assertEqual(self.pool.done(), self.copies)
 
     def test_only_write_enough_on_partial_success(self):
-        copies = 3
-        pool = arvados.KeepClient.KeepWriterThreadPool(
-            data = 'foo',
-            data_hash = 'acbd18db4cc2f85cedef654fccc4a4d8+3',
-            max_service_replicas = copies,
-            copies = copies
-        )
         for i in range(5):
             ks = self.FakeKeepService(delay=i/10.0, will_succeed=False)
-            pool.add_task(ks, None)
+            self.pool.add_task(ks, None)
             ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
-            pool.add_task(ks, None)
-        pool.join()
-        self.assertEqual(pool.done(), copies)
+            self.pool.add_task(ks, None)
+        self.pool.join()
+        self.assertEqual(self.pool.done(), self.copies)
+
+    def test_only_write_enough_when_some_crash(self):
+        for i in range(5):
+            ks = self.FakeKeepService(delay=i/10.0, will_raise=Exception())
+            self.pool.add_task(ks, None)
+            ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
+            self.pool.add_task(ks, None)
+        self.pool.join()
+        self.assertEqual(self.pool.done(), self.copies)
+
+    def test_fail_when_too_many_crash(self):
+        for i in range(self.copies+1):
+            ks = self.FakeKeepService(delay=i/10.0, will_raise=Exception())
+            self.pool.add_task(ks, None)
+        for i in range(self.copies-1):
+            ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
+            self.pool.add_task(ks, None)
+        self.pool.join()
+        self.assertEqual(self.pool.done(), self.copies-1)
     
 
 @tutil.skip_sleep
