@@ -129,10 +129,35 @@ func (h *blockingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "nothing here", http.StatusNotFound)
 }
 
-func (s *StubbedS3Suite) TestClientDisconnect(c *check.C) {
+func (s *StubbedS3Suite) TestGetContextCancel(c *check.C) {
 	loc := "acbd18db4cc2f85cedef654fccc4a4d8"
 	buf := make([]byte, 3)
 
+	s.testContextCancel(c, func(ctx context.Context, v *TestableS3Volume) error {
+		_, err := v.Get(ctx, loc, buf)
+		return err
+	})
+}
+
+func (s *StubbedS3Suite) TestCompareContextCancel(c *check.C) {
+	loc := "acbd18db4cc2f85cedef654fccc4a4d8"
+	buf := []byte("bar")
+
+	s.testContextCancel(c, func(ctx context.Context, v *TestableS3Volume) error {
+		return v.Compare(ctx, loc, buf)
+	})
+}
+
+func (s *StubbedS3Suite) TestPutContextCancel(c *check.C) {
+	loc := "acbd18db4cc2f85cedef654fccc4a4d8"
+	buf := []byte("foo")
+
+	s.testContextCancel(c, func(ctx context.Context, v *TestableS3Volume) error {
+		return v.Put(ctx, loc, buf)
+	})
+}
+
+func (s *StubbedS3Suite) testContextCancel(c *check.C, testFunc func(context.Context, *TestableS3Volume) error) {
 	handler := &blockingHandler{}
 	srv := httptest.NewServer(handler)
 	defer srv.Close()
@@ -149,11 +174,10 @@ func (s *StubbedS3Suite) TestClientDisconnect(c *check.C) {
 	handler.unblock = make(chan struct{})
 	defer close(handler.unblock)
 
-	var n int
-	var err error
 	doneGet := make(chan struct{})
 	go func() {
-		n, err = v.Get(ctx, loc, buf)
+		err := testFunc(ctx, v)
+		c.Check(err, check.Equals, context.Canceled)
 		close(doneGet)
 	}()
 
@@ -175,9 +199,6 @@ func (s *StubbedS3Suite) TestClientDisconnect(c *check.C) {
 	case <-timeout:
 		c.Fatal("timed out")
 	case <-doneGet:
-		c.Check(n, check.Equals, 0)
-		c.Check(err, check.NotNil)
-		c.Check(err, check.Equals, context.Canceled)
 	}
 }
 
