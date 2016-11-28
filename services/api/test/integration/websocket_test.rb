@@ -337,8 +337,6 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
   test "connect, subscribe, ask events starting at seq num" do
     state = 1
-    human = nil
-    human_ev_uuid = nil
 
     authorize_with :active
 
@@ -381,7 +379,6 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     state = 1
     spec = nil
     spec_ev_uuid = nil
-    filter_id = nil
 
     authorize_with :active
 
@@ -684,7 +681,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
           assert_equal 200, d["status"]
           ActiveRecord::Base.transaction do
             (1..202).each do
-              spec = Specimen.create
+              Specimen.create
             end
           end
           state = 2
@@ -705,8 +702,6 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
   test "connect, subscribe with invalid filter" do
     state = 1
-    human = nil
-    human_ev_uuid = nil
 
     authorize_with :active
 
@@ -722,7 +717,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
         when 1
           assert_equal 200, d["status"]
           Specimen.create
-          human = Human.create
+          Human.create
           state = 2
         when 2
           assert_equal 500, d["status"]

@@ -11,7 +11,7 @@ class DatabaseController < ApplicationController
     # we can tell they're not valuable.
     user_uuids = User.
       where('email is null or email not like ?', '%@example.com').
-      collect &:uuid
+      collect(&:uuid)
     fixture_uuids =
       YAML::load_file(File.expand_path('../../../test/fixtures/users.yml',
                                        __FILE__)).

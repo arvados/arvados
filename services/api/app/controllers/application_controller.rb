@@ -46,7 +46,7 @@ class ApplicationController < ActionController::Base
 
   theme :select_theme
 
-  attr_accessor :resource_attrs
+  attr_writer :resource_attrs
 
   begin
     rescue_from(Exception,
@@ -432,7 +432,7 @@ class ApplicationController < ActionController::Base
   end
 
   def find_object_by_uuid
-    if params[:id] and params[:id].match /\D/
+    if params[:id] and params[:id].match(/\D/)
       params[:uuid] = params.delete :id
     end
     @where = { uuid: params[:uuid] }
@@ -579,7 +579,7 @@ class ApplicationController < ActionController::Base
         }
       end
     end
-    super *opts
+    super(*opts)
   end
 
   def select_theme

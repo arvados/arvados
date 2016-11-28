@@ -84,7 +84,7 @@ class ActiveSupport::TestCase
   def restore_configuration
     # Restore configuration settings changed during tests
     $application_config.each do |k,v|
-      if k.match /^[^.]*$/
+      if k.match(/^[^.]*$/)
         Rails.configuration.send (k + '='), v
       end
     end

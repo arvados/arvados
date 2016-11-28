@@ -7,6 +7,6 @@ require_relative 'load_config.rb'
 
 if Rails.env == 'development'
   Dir.foreach("#{Rails.root}/app/models") do |model_file|
-    require_dependency model_file if model_file.match /\.rb$/
+    require_dependency model_file if model_file.match(/\.rb$/)
   end
 end
