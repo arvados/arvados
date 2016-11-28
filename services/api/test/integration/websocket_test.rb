@@ -19,19 +19,20 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     s = TCPServer.new('0.0.0.0', 0)
     @@port = s.addr[1]
     s.close
-    pidfile = "tmp/pids/passenger.#{@@port}.pid"
+    @@pidfile = "tmp/pids/passenger.#{@@port}.pid"
     DatabaseCleaner.start
     Dir.chdir(Rails.root) do |apidir|
       # Only passenger seems to be able to run the websockets server
       # successfully.
       _system('passenger', 'start', '-d',
               "-p#{@@port}",
-              "--log-file", "/dev/stderr")
+              "--log-file", "/dev/stderr",
+              "--pid-file", @@pidfile)
       timeout = Time.now.tv_sec + 10
       begin
         sleep 0.2
         begin
-          server_pid = IO.read(pidfile).to_i
+          server_pid = IO.read(@@pidfile).to_i
           good_pid = (server_pid > 0) and (Process.kill(0, pid) rescue false)
         rescue Errno::ENOENT
           good_pid = false
@@ -46,7 +47,8 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
   def self.shutdown
     Dir.chdir(Rails.root) do
-      _system('passenger', 'stop', "-p#{@@port}")
+      _system('passenger', 'stop', "-p#{@@port}",
+              "--pid-file", @@pidfile)
     end
     # DatabaseCleaner leaves the database empty. Prefer to leave it full.
     dc = DatabaseController.new
