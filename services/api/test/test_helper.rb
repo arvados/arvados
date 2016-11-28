@@ -21,10 +21,7 @@ unless ENV["NO_COVERAGE_TEST"]
 end
 
 require File.expand_path('../../config/environment', __FILE__)
-gem 'minitest'
 require 'rails/test_help'
-require 'minitest-rails'
-require 'minitest/autorun'
 require 'mocha'
 
 module ArvadosTestSupport

@@ -132,13 +132,6 @@ GEM
     memoist (0.15.0)
     metaclass (0.0.4)
     mime-types (1.25.1)
-    minitest (4.7.5)
-    minitest-rails (1.0.1)
-      minitest (~> 4.7)
-      minitest-test (~> 1.0)
-      railties (>= 3.0, < 4.1)
-    minitest-test (1.1.0)
-      minitest (~> 4.0)
     mocha (1.2.0)
       metaclass (~> 0.0.1)
     multi_json (1.12.1)
@@ -259,15 +252,13 @@ DEPENDENCIES
   andand
   arvados (>= 0.1.20150615153458)
   arvados-cli (>= 0.1.20161017193526)
-  coffee-rails (~> 3.2.0)
+  coffee-rails (~> 3.2)
   database_cleaner
   factory_girl_rails
   faye-websocket
   jquery-rails
   lograge
   logstash-event
-  minitest (~> 4.0)
-  minitest-rails
   mocha
   multi_json
   oj
@@ -293,4 +284,4 @@ DEPENDENCIES
   uglifier (~> 2.0)
 
 BUNDLED WITH
-   1.13.2
+   1.13.6
