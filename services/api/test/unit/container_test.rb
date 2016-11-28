@@ -269,8 +269,8 @@ class ContainerTest < ActiveSupport::TestCase
   test "find_reusable method should select complete over running container" do
     set_user_from_auth :active
     common_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "completed_vs_running"}})
-    c_completed, cr1 = minimal_new(common_attrs.merge({use_existing: false}))
-    c_running, cr2 = minimal_new(common_attrs.merge({use_existing: false}))
+    c_completed, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    c_running, _ = minimal_new(common_attrs.merge({use_existing: false}))
     assert_not_equal c_completed.uuid, c_running.uuid
     set_user_from_auth :dispatch1
     c_completed.update_attributes!({state: Container::Locked})
