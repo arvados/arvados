@@ -174,11 +174,11 @@ func (s *StubbedS3Suite) testContextCancel(c *check.C, testFunc func(context.Con
 	handler.unblock = make(chan struct{})
 	defer close(handler.unblock)
 
-	doneGet := make(chan struct{})
+	doneFunc := make(chan struct{})
 	go func() {
 		err := testFunc(ctx, v)
 		c.Check(err, check.Equals, context.Canceled)
-		close(doneGet)
+		close(doneFunc)
 	}()
 
 	timeout := time.After(10 * time.Second)
@@ -187,9 +187,9 @@ func (s *StubbedS3Suite) testContextCancel(c *check.C, testFunc func(context.Con
 	// Get() is waiting for an s3 operation.
 	select {
 	case <-timeout:
-		c.Fatal("timed out waiting for Get to call our handler")
-	case <-doneGet:
-		c.Fatal("Get finished without calling our handler!")
+		c.Fatal("timed out waiting for test func to call our handler")
+	case <-doneFunc:
+		c.Fatal("test func finished without even calling our handler!")
 	case <-handler.requested:
 	}
 
@@ -198,7 +198,7 @@ func (s *StubbedS3Suite) testContextCancel(c *check.C, testFunc func(context.Con
 	select {
 	case <-timeout:
 		c.Fatal("timed out")
-	case <-doneGet:
+	case <-doneFunc:
 	}
 }
 
