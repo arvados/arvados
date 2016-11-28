@@ -74,7 +74,7 @@ module UsersTestHelper
     end
 
     group = Group.where(name: 'All users').select do |g|
-      g[:uuid].match /-f+$/
+      g[:uuid].match(/-f+$/)
     end.first
     group_read_perms = Link.where(tail_uuid: uuid,
                                   head_uuid: group[:uuid],

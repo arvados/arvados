@@ -603,7 +603,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     active_user = User.find_by_uuid(users(:active).uuid)
     readable_groups = active_user.groups_i_can(:read)
-    all_users_group = Group.all.collect(&:uuid).select { |g| g.match /-f+$/ }
+    all_users_group = Group.all.collect(&:uuid).select { |g| g.match(/-f+$/) }
     refute_includes(readable_groups, all_users_group,
                     "active user can read All Users group after being deactivated")
     assert_equal(false, active_user.is_invited,
@@ -842,14 +842,12 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   end
 
   def verify_num_links (original_links, expected_additional_links)
-    links_now = Link.all
     assert_equal expected_additional_links, Link.all.size-original_links.size,
         "Expected #{expected_additional_links.inspect} more links"
   end
 
   def find_obj_in_resp (response_items, object_type, head_kind=nil)
     return_obj = nil
-    response_items
     response_items.each { |x|
       if !x
         next

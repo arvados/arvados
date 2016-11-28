@@ -125,10 +125,10 @@ class PermissionTest < ActiveSupport::TestCase
     sp_grp = Group.create!
     sp = Specimen.create!(owner_uuid: sp_grp.uuid)
 
-    manage_perm = Link.create!(link_class: 'permission',
-                               name: 'can_manage',
-                               tail_uuid: owner_grp.uuid,
-                               head_uuid: sp_grp.uuid)
+    Link.create!(link_class: 'permission',
+                 name: 'can_manage',
+                 tail_uuid: owner_grp.uuid,
+                 head_uuid: sp_grp.uuid)
 
     # active user owns owner_grp, which has can_manage permission on sp_grp
     # user should be able to add permissions on sp.
@@ -137,7 +137,6 @@ class PermissionTest < ActiveSupport::TestCase
                             head_uuid: sp.uuid,
                             link_class: 'permission',
                             name: 'can_write')
-    test_uuid = test_perm.uuid
     assert test_perm.save, "could not save new permission on target object"
     assert test_perm.destroy, "could not delete new permission on target object"
   end

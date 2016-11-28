@@ -43,7 +43,7 @@ class CollectionModelPerformanceTest < ActiveSupport::TestCase
         c.signed_manifest_text
       end
       time_block 'sign + render' do
-        resp = c.as_api_response(nil)
+        c.as_api_response(nil)
       end
       loc = Blob.sign_locator(Digest::MD5.hexdigest('foo') + '+3',
                               api_token: api_token(:active))

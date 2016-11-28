@@ -73,7 +73,7 @@ class CrunchDispatch
       # into multiple rows with one hostname each.
       `#{cmd} --noheader -o '%N:#{outfmt}'`.each_line do |line|
         tokens = line.chomp.split(":", max_fields)
-        if (re = tokens[0].match /^(.*?)\[([-,\d]+)\]$/)
+        if (re = tokens[0].match(/^(.*?)\[([-,\d]+)\]$/))
           tokens.shift
           re[2].split(",").each do |range|
             range = range.split("-").collect(&:to_i)
@@ -105,7 +105,7 @@ class CrunchDispatch
   end
 
   def update_node_status
-    return unless Server::Application.config.crunch_job_wrapper.to_s.match /^slurm/
+    return unless Server::Application.config.crunch_job_wrapper.to_s.match(/^slurm/)
     slurm_status.each_pair do |hostname, slurmdata|
       next if @node_state[hostname] == slurmdata
       begin
@@ -169,7 +169,7 @@ class CrunchDispatch
       end
       usable_nodes << node
       if usable_nodes.count >= min_node_count
-        return usable_nodes.map { |node| node.hostname }
+        return usable_nodes.map { |n| n.hostname }
       end
     end
     nil
@@ -512,8 +512,6 @@ class CrunchDispatch
 
   def read_pipes
     @running.each do |job_uuid, j|
-      job = j[:job]
-
       now = Time.now
       if now > j[:log_throttle_reset_time]
         # It has been more than throttle_period seconds since the last
