@@ -532,8 +532,12 @@ class KeepClient(object):
                             self.get_nowait()
                             self.task_done()
                     elif self.pending_tries > 0:
+                        service, service_root = self.get_nowait()
+                        if service.finished():
+                            self.task_done()
+                            continue
                         self.pending_tries -= 1
-                        return self.get_nowait()
+                        return service, service_root
                     elif self.empty():
                         self.pending_tries_notification.notify_all()
                         raise Queue.Empty
@@ -604,8 +608,6 @@ class KeepClient(object):
                     self.queue.task_done()
 
         def do_task(self, service, service_root):
-            if service.finished():
-                return
             success = bool(service.put(self.data_hash,
                                         self.data,
                                         timeout=self.timeout))
