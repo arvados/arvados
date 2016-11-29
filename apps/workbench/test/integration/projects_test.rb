@@ -746,7 +746,7 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       project = api_fixture('groups')['aproject']
       visit page_with_token 'active', '/projects/' + project['uuid']
 
-      find('.btn', text: 'Run a pipeline').click
+      find('.btn', text: 'Run a process').click
 
       # in the chooser, verify preview and click Next button
       within('.modal-dialog') do

@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -24,13 +23,21 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	log "github.com/Sirupsen/logrus"
 )
 
-// MakeRESTRouter returns a new mux.Router that forwards all Keep
-// requests to the appropriate handlers.
-//
-func MakeRESTRouter() *mux.Router {
+type router struct {
+	*mux.Router
+	limiter httpserver.RequestCounter
+}
+
+// MakeRESTRouter returns a new router that forwards all Keep requests
+// to the appropriate handlers.
+func MakeRESTRouter() *router {
 	rest := mux.NewRouter()
+	rtr := &router{Router: rest}
 
 	rest.HandleFunc(
 		`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET", "HEAD")
@@ -47,10 +54,10 @@ func MakeRESTRouter() *mux.Router {
 	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
 
 	// Internals/debugging info (runtime.MemStats)
-	rest.HandleFunc(`/debug.json`, DebugHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/debug.json`, rtr.DebugHandler).Methods("GET", "HEAD")
 
 	// List volumes: path, device number, bytes used/avail.
-	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/status.json`, rtr.StatusHandler).Methods("GET", "HEAD")
 
 	// Replace the current pull queue.
 	rest.HandleFunc(`/pull`, PullHandler).Methods("PUT")
@@ -65,7 +72,7 @@ func MakeRESTRouter() *mux.Router {
 	// 400 Bad Request.
 	rest.NotFoundHandler = http.HandlerFunc(BadRequestHandler)
 
-	return rest
+	return rtr
 }
 
 // BadRequestHandler is a HandleFunc to address bad requests.
@@ -258,17 +265,19 @@ type volumeStatusEnt struct {
 
 // NodeStatus struct
 type NodeStatus struct {
-	Volumes    []*volumeStatusEnt
-	BufferPool PoolStatus
-	PullQueue  WorkQueueStatus
-	TrashQueue WorkQueueStatus
+	Volumes         []*volumeStatusEnt
+	BufferPool      PoolStatus
+	PullQueue       WorkQueueStatus
+	TrashQueue      WorkQueueStatus
+	RequestsCurrent int
+	RequestsMax     int
 }
 
 var st NodeStatus
 var stLock sync.Mutex
 
 // DebugHandler addresses /debug.json requests.
-func DebugHandler(resp http.ResponseWriter, req *http.Request) {
+func (rtr *router) DebugHandler(resp http.ResponseWriter, req *http.Request) {
 	type debugStats struct {
 		MemStats runtime.MemStats
 	}
@@ -281,9 +290,9 @@ func DebugHandler(resp http.ResponseWriter, req *http.Request) {
 }
 
 // StatusHandler addresses /status.json requests.
-func StatusHandler(resp http.ResponseWriter, req *http.Request) {
+func (rtr *router) StatusHandler(resp http.ResponseWriter, req *http.Request) {
 	stLock.Lock()
-	readNodeStatus(&st)
+	rtr.readNodeStatus(&st)
 	jstat, err := json.Marshal(&st)
 	stLock.Unlock()
 	if err == nil {
@@ -296,7 +305,7 @@ func StatusHandler(resp http.ResponseWriter, req *http.Request) {
 }
 
 // populate the given NodeStatus struct with current values.
-func readNodeStatus(st *NodeStatus) {
+func (rtr *router) readNodeStatus(st *NodeStatus) {
 	vols := KeepVM.AllReadable()
 	if cap(st.Volumes) < len(vols) {
 		st.Volumes = make([]*volumeStatusEnt, len(vols))
@@ -319,6 +328,10 @@ func readNodeStatus(st *NodeStatus) {
 	st.BufferPool.Len = bufs.Len()
 	st.PullQueue = getWorkQueueStatus(pullq)
 	st.TrashQueue = getWorkQueueStatus(trashq)
+	if rtr.limiter != nil {
+		st.RequestsCurrent = rtr.limiter.Current()
+		st.RequestsMax = rtr.limiter.Max()
+	}
 }
 
 // return a WorkQueueStatus for the given queue. If q is nil (which
