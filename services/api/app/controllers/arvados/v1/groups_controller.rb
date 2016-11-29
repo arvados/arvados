@@ -68,9 +68,14 @@ class Arvados::V1::GroupsController < ApplicationController
      Collection,
      Human, Specimen, Trait]
 
-    table_names = klasses.map(&:table_name)
+    table_names = Hash[klasses.collect { |k| [k, k.table_name] }]
+
+    disabled_methods = Rails.configuration.disable_api_methods
+    avail_klasses = table_names.select{|k, t| !disabled_methods.include?(t+'.index')}
+    klasses = avail_klasses.keys
+
     request_filters.each do |col, op, val|
-      if col.index('.') && !table_names.include?(col.split('.', 2)[0])
+      if col.index('.') && !table_names.values.include?(col.split('.', 2)[0])
         raise ArgumentError.new("Invalid attribute '#{col}' in filter")
       end
     end
