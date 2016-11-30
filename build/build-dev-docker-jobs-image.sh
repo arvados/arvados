@@ -31,21 +31,33 @@ if [[ -z "$ARVADOS_API_HOST" || -z "$ARVADOS_API_TOKEN" ]] ; then
     exit 1
 fi
 
-(cd "$WORKSPACE/sdk/python" && python setup.py sdist)
-sdk=$(cd "$WORKSPACE/sdk/python/dist" && ls -t arvados-python-client-*.tar.gz | head -n1)
+cd "$WORKSPACE"
 
-(cd "$WORKSPACE/sdk/cwl" && python setup.py sdist)
-runner=$(cd "$WORKSPACE/sdk/cwl/dist" && ls -t arvados-cwl-runner-*.tar.gz | head -n1)
+(cd sdk/python && python setup.py sdist)
+sdk=$(cd sdk/python/dist && ls -t arvados-python-client-*.tar.gz | head -n1)
 
-rm -rf "$WORKSPACE/sdk/cwl/cwltool_dist"
-mkdir -p "$WORKSPACE/sdk/cwl/cwltool_dist"
+(cd sdk/cwl && python setup.py sdist)
+runner=$(cd sdk/cwl/dist && ls -t arvados-cwl-runner-*.tar.gz | head -n1)
+
+rm -rf sdk/cwl/cwltool_dist
+mkdir -p sdk/cwl/cwltool_dist
 if [[ -n "$CWLTOOL" ]] ; then
     (cd "$CWLTOOL" && python setup.py sdist)
     cwltool=$(cd "$CWLTOOL/dist" && ls -t cwltool-*.tar.gz | head -n1)
     cp "$CWLTOOL/dist/$cwltool" $WORKSPACE/sdk/cwl/cwltool_dist
 fi
 
-gittag=$(cd "$WORKSPACE/sdk/cwl" && git log --first-parent --max-count=1 --format=format:%H)
+. build/run-library.sh
+
+python_sdk_ts=$(cd sdk/python && timestamp_from_git)
+cwl_runner_ts=$(cd sdk/cwl && timestamp_from_git)
+
+if [[ $python_sdk_ts -gt $cwl_runner_ts ]]; then
+    gittag=$(git log --first-parent --max-count=1 --format=format:%H sdk/python)
+else
+    gittag=$(git log --first-parent --max-count=1 --format=format:%H sdk/cwl)
+fi
+
 docker build --build-arg sdk=$sdk --build-arg runner=$runner --build-arg cwltool=$cwltool -f "$WORKSPACE/sdk/dev-jobs.dockerfile" -t arvados/jobs:$gittag "$WORKSPACE/sdk"
 echo arv-keepdocker arvados/jobs $gittag
 arv-keepdocker arvados/jobs $gittag
