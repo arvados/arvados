@@ -28,7 +28,7 @@ navbar:
     - Welcome:
       - user/index.html.textile.liquid
       - user/getting_started/community.html.textile.liquid
-    - Run a pipeline using Workbench:
+    - Run a workflow using Workbench:
       - user/getting_started/workbench.html.textile.liquid
       - user/tutorials/tutorial-pipeline-workbench.html.textile.liquid
     - Access an Arvados virtual machine:
@@ -52,7 +52,7 @@ navbar:
     - Working with git repositories:
       - user/tutorials/add-new-repository.html.textile.liquid
       - user/tutorials/git-arvados-guide.html.textile.liquid
-    - Develop an Arvados pipeline:
+    - Develop an Arvados workflow:
       - user/tutorials/intro-crunch.html.textile.liquid
       - user/tutorials/running-external-program.html.textile.liquid
       - user/topics/crunch-tools-overview.html.textile.liquid
