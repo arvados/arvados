@@ -21,6 +21,7 @@ import schema_salad
 
 import arvados
 import arvados.config
+from arvados.errors import ApiError
 
 from .arvcontainer import ArvadosContainer, RunnerContainer
 from .arvjob import ArvadosJob, RunnerJob, RunnerTemplate
@@ -150,7 +151,7 @@ class ArvCwlRunner(object):
                     continue
 
                 if self.work_api == "containers":
-                    table = self.poll_api.containers()
+                    table = self.poll_api.container_requests()
                 elif self.work_api == "jobs":
                     table = self.poll_api.jobs()
 
@@ -277,6 +278,12 @@ class ArvCwlRunner(object):
         if self.work_api == "containers":
             try:
                 current = self.api.containers().current().execute(num_retries=self.num_retries)
+            except ApiError as e:
+                # Status code 404 just means we're not running in a container.
+                if e.resp.status != 404:
+                    logger.info("Getting current container: %s", e)
+                return
+            try:
                 self.api.containers().update(uuid=current['uuid'],
                                              body={
                                                  'output': self.final_output_collection.portable_data_hash(),

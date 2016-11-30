@@ -241,7 +241,7 @@ class RunnerContainer(Runner):
         ).execute(num_retries=self.arvrunner.num_retries)
 
         self.uuid = response["uuid"]
-        self.arvrunner.processes[response["uuid"]] = response["uuid"]
+        self.arvrunner.processes[response["uuid"]] = self
 
         logger.info("Submitted container %s", response["uuid"])
 
