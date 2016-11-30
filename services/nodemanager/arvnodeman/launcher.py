@@ -17,6 +17,7 @@ from .daemon import NodeManagerDaemonActor
 from .jobqueue import JobQueueMonitorActor, ServerCalculator
 from .nodelist import ArvadosNodeListMonitorActor, CloudNodeListMonitorActor
 from .timedcallback import TimedCallBackActor
+from ._version import __version__
 
 node_daemon = None
 
@@ -28,6 +29,10 @@ def parse_cli(args):
     parser = argparse.ArgumentParser(
         prog='arvados-node-manager',
         description="Dynamically allocate Arvados cloud compute nodes")
+    parser.add_argument(
+        '--version', action='version',
+        version="%s %s" % (sys.argv[0], __version__),
+        help='Print version and exit.')
     parser.add_argument(
         '--foreground', action='store_true', default=False,
         help="Run in the foreground.  Don't daemonize.")
