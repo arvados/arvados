@@ -215,4 +215,5 @@ class Runner(object):
                 logger.exception("While getting final output object: %s", e)
             self.arvrunner.output_callback(outputs, processStatus)
         finally:
-            del self.arvrunner.processes[record["uuid"]]
+            if record["uuid"] in self.arvrunner.processes:
+                del self.arvrunner.processes[record["uuid"]]

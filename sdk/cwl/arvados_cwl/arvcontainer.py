@@ -247,3 +247,17 @@ class RunnerContainer(Runner):
 
         if response["state"] == "Final":
             self.done(response)
+
+    def done(self, record):
+        try:
+            container = self.arvrunner.api.containers().get(
+                uuid=record["container_uuid"]
+            ).execute(num_retries=self.arvrunner.num_retries)
+        except Exception as e:
+            logger.exception("While getting runner container: %s", e)
+            self.arvrunner.output_callback({}, "permanentFail")
+            del self.arvrunner.processes[record["uuid"]]
+        else:
+            super(RunnerContainer, self).done(container)
+        finally:
+            del self.arvrunner.processes[record["uuid"]]
