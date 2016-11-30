@@ -567,6 +567,10 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
             return 1
         arvargs.work_api = want_api
 
+    if arvargs.work_api not in ("jobs", "containers"):
+        logger.error("Unknown --api '%s' expected one of 'jobs' or 'containers'", arvargs.work_api)
+        return 1
+
     if (arvargs.create_workflow or arvargs.update_workflow) and not arvargs.job_order:
         job_order_object = ({}, "")
 

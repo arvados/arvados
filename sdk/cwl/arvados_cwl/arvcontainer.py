@@ -62,7 +62,7 @@ class ArvadosContainer(object):
                 }
 
         if self.generatefiles["listing"]:
-            raise UnsupportedRequirement("Generate files not supported")
+            raise UnsupportedRequirement("InitialWorkDirRequirement not supported with --api=containers")
 
         container_request["environment"] = {"TMPDIR": self.tmpdir, "HOME": self.outdir}
         if self.environment:
