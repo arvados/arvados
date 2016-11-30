@@ -15,7 +15,6 @@ import (
 	"fmt"
 	"github.com/gorilla/mux"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -24,13 +23,21 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	log "github.com/Sirupsen/logrus"
 )
 
-// MakeRESTRouter returns a new mux.Router that forwards all Keep
-// requests to the appropriate handlers.
-//
-func MakeRESTRouter() *mux.Router {
+type router struct {
+	*mux.Router
+	limiter httpserver.RequestCounter
+}
+
+// MakeRESTRouter returns a new router that forwards all Keep requests
+// to the appropriate handlers.
+func MakeRESTRouter() *router {
 	rest := mux.NewRouter()
+	rtr := &router{Router: rest}
 
 	rest.HandleFunc(
 		`/{hash:[0-9a-f]{32}}`, GetBlockHandler).Methods("GET", "HEAD")
@@ -46,8 +53,11 @@ func MakeRESTRouter() *mux.Router {
 	// Privileged client only.
 	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
 
+	// Internals/debugging info (runtime.MemStats)
+	rest.HandleFunc(`/debug.json`, rtr.DebugHandler).Methods("GET", "HEAD")
+
 	// List volumes: path, device number, bytes used/avail.
-	rest.HandleFunc(`/status.json`, StatusHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/status.json`, rtr.StatusHandler).Methods("GET", "HEAD")
 
 	// Replace the current pull queue.
 	rest.HandleFunc(`/pull`, PullHandler).Methods("PUT")
@@ -62,7 +72,7 @@ func MakeRESTRouter() *mux.Router {
 	// 400 Bad Request.
 	rest.NotFoundHandler = http.HandlerFunc(BadRequestHandler)
 
-	return rest
+	return rtr
 }
 
 // BadRequestHandler is a HandleFunc to address bad requests.
@@ -239,18 +249,6 @@ func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 	resp.Write([]byte{'\n'})
 }
 
-// StatusHandler
-//     Responds to /status.json requests with the current node status,
-//     described in a JSON structure.
-//
-//     The data given in a status.json response includes:
-//        volumes - a list of Keep volumes currently in use by this server
-//          each volume is an object with the following fields:
-//            * mount_point
-//            * device_num (an integer identifying the underlying filesystem)
-//            * bytes_free
-//            * bytes_used
-
 // PoolStatus struct
 type PoolStatus struct {
 	Alloc uint64 `json:"BytesAllocated"`
@@ -258,22 +256,43 @@ type PoolStatus struct {
 	Len   int    `json:"BuffersInUse"`
 }
 
+type volumeStatusEnt struct {
+	Label         string
+	Status        *VolumeStatus `json:",omitempty"`
+	VolumeStats   *ioStats      `json:",omitempty"`
+	InternalStats interface{}   `json:",omitempty"`
+}
+
 // NodeStatus struct
 type NodeStatus struct {
-	Volumes    []*VolumeStatus `json:"volumes"`
-	BufferPool PoolStatus
-	PullQueue  WorkQueueStatus
-	TrashQueue WorkQueueStatus
-	Memory     runtime.MemStats
+	Volumes         []*volumeStatusEnt
+	BufferPool      PoolStatus
+	PullQueue       WorkQueueStatus
+	TrashQueue      WorkQueueStatus
+	RequestsCurrent int
+	RequestsMax     int
 }
 
 var st NodeStatus
 var stLock sync.Mutex
 
+// DebugHandler addresses /debug.json requests.
+func (rtr *router) DebugHandler(resp http.ResponseWriter, req *http.Request) {
+	type debugStats struct {
+		MemStats runtime.MemStats
+	}
+	var ds debugStats
+	runtime.ReadMemStats(&ds.MemStats)
+	err := json.NewEncoder(resp).Encode(&ds)
+	if err != nil {
+		http.Error(resp, err.Error(), 500)
+	}
+}
+
 // StatusHandler addresses /status.json requests.
-func StatusHandler(resp http.ResponseWriter, req *http.Request) {
+func (rtr *router) StatusHandler(resp http.ResponseWriter, req *http.Request) {
 	stLock.Lock()
-	readNodeStatus(&st)
+	rtr.readNodeStatus(&st)
 	jstat, err := json.Marshal(&st)
 	stLock.Unlock()
 	if err == nil {
@@ -286,23 +305,33 @@ func StatusHandler(resp http.ResponseWriter, req *http.Request) {
 }
 
 // populate the given NodeStatus struct with current values.
-func readNodeStatus(st *NodeStatus) {
+func (rtr *router) readNodeStatus(st *NodeStatus) {
 	vols := KeepVM.AllReadable()
 	if cap(st.Volumes) < len(vols) {
-		st.Volumes = make([]*VolumeStatus, len(vols))
+		st.Volumes = make([]*volumeStatusEnt, len(vols))
 	}
 	st.Volumes = st.Volumes[:0]
 	for _, vol := range vols {
-		if s := vol.Status(); s != nil {
-			st.Volumes = append(st.Volumes, s)
+		var internalStats interface{}
+		if vol, ok := vol.(InternalStatser); ok {
+			internalStats = vol.InternalStats()
 		}
+		st.Volumes = append(st.Volumes, &volumeStatusEnt{
+			Label:         vol.String(),
+			Status:        vol.Status(),
+			InternalStats: internalStats,
+			//VolumeStats: KeepVM.VolumeStats(vol),
+		})
 	}
 	st.BufferPool.Alloc = bufs.Alloc()
 	st.BufferPool.Cap = bufs.Cap()
 	st.BufferPool.Len = bufs.Len()
 	st.PullQueue = getWorkQueueStatus(pullq)
 	st.TrashQueue = getWorkQueueStatus(trashq)
-	runtime.ReadMemStats(&st.Memory)
+	if rtr.limiter != nil {
+		st.RequestsCurrent = rtr.limiter.Current()
+		st.RequestsMax = rtr.limiter.Max()
+	}
 }
 
 // return a WorkQueueStatus for the given queue. If q is nil (which

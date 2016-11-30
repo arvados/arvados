@@ -1,4 +1,8 @@
 
+export PATH=${PATH}:/usr/local/go/bin:/var/lib/gems/bin
+export GEM_HOME=/var/lib/gems
+export GEM_PATH=/var/lib/gems
+
 if test -s /var/run/localip_override ; then
     localip=$(cat /var/run/localip_override)
 else

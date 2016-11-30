@@ -44,6 +44,8 @@ class ContainerRequest < ArvadosModel
     t.add :runtime_constraints
     t.add :state
     t.add :use_existing
+    t.add :output_uuid
+    t.add :log_uuid
     t.add :scheduling_parameters
   end
 
@@ -82,13 +84,14 @@ class ContainerRequest < ArvadosModel
   # Finalize the container request after the container has
   # finished/cancelled.
   def finalize!
-    update_attributes!(state: Final)
+    out_coll = nil
+    log_coll = nil
     c = Container.find_by_uuid(container_uuid)
     ['output', 'log'].each do |out_type|
       pdh = c.send(out_type)
       next if pdh.nil?
       manifest = Collection.where(portable_data_hash: pdh).first.manifest_text
-      Collection.create!(owner_uuid: owner_uuid,
+      coll = Collection.create!(owner_uuid: owner_uuid,
                          manifest_text: manifest,
                          portable_data_hash: pdh,
                          name: "Container #{out_type} for request #{uuid}",
@@ -96,7 +99,13 @@ class ContainerRequest < ArvadosModel
                            'type' => out_type,
                            'container_request' => uuid,
                          })
+      if out_type == 'output'
+        out_coll = coll.uuid
+      else
+        log_coll = coll.uuid
+      end
     end
+    update_attributes!(state: Final, output_uuid: out_coll, log_uuid: log_coll)
   end
 
   protected
@@ -279,7 +288,7 @@ class ContainerRequest < ArvadosModel
         permitted.push :command, :container_image, :cwd, :description, :environment,
                        :filters, :mounts, :name, :output_path, :properties,
                        :requesting_container_uuid, :runtime_constraints,
-                       :state, :container_uuid, :scheduling_parameters
+                       :state, :container_uuid, :use_existing, :scheduling_parameters
       end
 
     when Final
@@ -287,8 +296,8 @@ class ContainerRequest < ArvadosModel
         errors.add :state, "of container request can only be set to Final by system."
       end
 
-      if self.state_changed? || self.name_changed? || self.description_changed?
-          permitted.push :state, :name, :description
+      if self.state_changed? || self.name_changed? || self.description_changed? || self.output_uuid_changed? || self.log_uuid_changed?
+          permitted.push :state, :name, :description, :output_uuid, :log_uuid
       else
         errors.add :state, "does not allow updates"
       end

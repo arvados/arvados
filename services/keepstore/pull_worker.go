@@ -7,8 +7,9 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io"
 	"io/ioutil"
-	"log"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 // RunPullWorker is used by Keepstore to initiate pull worker channel goroutine.

@@ -12,6 +12,7 @@ class DisabledApiTest < ActionController::TestCase
     get :index, {}, session_for(:active)
     assert_includes @response.body, "zzzzz-xvhdp-cr4runningcntnr" # expect crs
     assert_not_includes @response.body, "zzzzz-d1hrv-"   # expect no pipelines
+    assert_includes @response.body, "Run a process"
   end
 
   [
@@ -33,6 +34,7 @@ class DisabledApiTest < ActionController::TestCase
   end
 
   [
+    :admin,
     :active,
     nil,
   ].each do |user|
@@ -58,6 +60,7 @@ class DisabledApiTest < ActionController::TestCase
       assert_includes resp, "href=\"#Pipelines_and_processes\""
       assert_includes resp, "href=\"#Workflows\""
       assert_not_includes resp, "href=\"#Pipeline_templates\""
+      assert_includes @response.body, "Run a process" if user == :admin
     end
   end
 end

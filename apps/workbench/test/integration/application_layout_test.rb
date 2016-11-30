@@ -251,7 +251,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
       assert_text 'Recent pipelines and processes' # seeing dashboard now
       within('.recent-processes-actions') do
-        assert page.has_link?('Run a pipeline')
+        assert page.has_link?('Run a process')
         assert page.has_link?('All processes')
       end
 

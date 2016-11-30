@@ -139,7 +139,7 @@ class ArvadosJob(object):
                 with Perf(metrics, "done %s" % self.name):
                     self.done(response)
         except Exception as e:
-            logger.error("Got error %s" % str(e))
+            logger.exception("Job %s error" % (self.name))
             self.output_callback({}, "permanentFail")
 
     def update_pipeline_component(self, record):
@@ -204,13 +204,18 @@ class ArvadosJob(object):
                         outputs = done.done(self, record, dirs["tmpdir"],
                                             dirs["outdir"], dirs["keep"])
             except WorkflowException as e:
-                logger.error("Error while collecting job outputs:\n%s", e, exc_info=(e if self.arvrunner.debug else False))
+                logger.error("Error while collecting output for job %s:\n%s", self.name, e, exc_info=(e if self.arvrunner.debug else False))
                 processStatus = "permanentFail"
-                outputs = None
             except Exception as e:
-                logger.exception("Got unknown exception while collecting job outputs:")
+                logger.exception("Got unknown exception while collecting output for job %s:", self.name)
                 processStatus = "permanentFail"
-                outputs = None
+
+            # Note: Currently, on error output_callback is expecting an empty dict,
+            # anything else will fail.
+            if not isinstance(outputs, dict):
+                logger.error("Unexpected output type %s '%s'", type(outputs), outputs)
+                outputs = {}
+                processStatus = "permanentFail"
 
             self.output_callback(outputs, processStatus)
         finally:
@@ -303,7 +308,7 @@ class RunnerTemplate(object):
         'string': 'text',
     }
 
-    def __init__(self, runner, tool, job_order, enable_reuse):
+    def __init__(self, runner, tool, job_order, enable_reuse, uuid):
         self.runner = runner
         self.tool = tool
         self.job = RunnerJob(
@@ -313,6 +318,7 @@ class RunnerTemplate(object):
             enable_reuse=enable_reuse,
             output_name=None,
             output_tags=None)
+        self.uuid = uuid
 
     def pipeline_component_spec(self):
         """Return a component that Workbench and a-r-p-i will understand.
@@ -375,13 +381,21 @@ class RunnerTemplate(object):
         return spec
 
     def save(self):
-        job_spec = self.pipeline_component_spec()
-        response = self.runner.api.pipeline_templates().create(body={
+        body = {
             "components": {
-                self.job.name: job_spec,
+                self.job.name: self.pipeline_component_spec(),
             },
             "name": self.job.name,
-            "owner_uuid": self.runner.project_uuid,
-        }, ensure_unique_name=True).execute(num_retries=self.runner.num_retries)
-        self.uuid = response["uuid"]
-        logger.info("Created template %s", self.uuid)
+        }
+        if self.runner.project_uuid:
+            body["owner_uuid"] = self.runner.project_uuid
+        if self.uuid:
+            self.runner.api.pipeline_templates().update(
+                uuid=self.uuid, body=body).execute(
+                    num_retries=self.runner.num_retries)
+            logger.info("Updated template %s", self.uuid)
+        else:
+            self.uuid = self.runner.api.pipeline_templates().create(
+                body=body, ensure_unique_name=True).execute(
+                    num_retries=self.runner.num_retries)['uuid']
+            logger.info("Created template %s", self.uuid)

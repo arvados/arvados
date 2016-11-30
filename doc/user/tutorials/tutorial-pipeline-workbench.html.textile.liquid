@@ -4,6 +4,10 @@ navsection: userguide
 title: "Running a pipeline using Workbench"
 ...
 
+{% include 'crunch1only_begin' %}
+On those sites, the details will be slightly different and the example pipeline might not be available.
+{% include 'crunch1only_end' %}
+
 A "pipeline" (sometimes called a "workflow" in other systems) is a sequence of steps that apply various programs or tools to transform input data to output data.  Pipelines are the principal means of performing computation with Arvados.  This tutorial demonstrates how to run a single-stage pipeline to take a small data set of paired-end reads from a sample "exome":https://en.wikipedia.org/wiki/Exome in "FASTQ":https://en.wikipedia.org/wiki/FASTQ_format format and align them to "Chromosome 19":https://en.wikipedia.org/wiki/Chromosome_19_%28human%29 using the "bwa mem":http://bio-bwa.sourceforge.net/ tool, producing a "Sequence Alignment/Map (SAM)":https://samtools.github.io/ file.  This tutorial will introduce the following Arvados features:
 
 <div>
@@ -17,7 +21,7 @@ notextile. <div class="spaced-out">
 h3. Steps
 
 # Start from the *Workbench Dashboard*.  You can access the Dashboard by clicking on *<i class="fa fa-lg fa-fw fa-dashboard"></i> Dashboard* in the upper left corner of any Workbench page.
-# Click on the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a pipeline...</span> button.  This will open a dialog box titled *Choose a pipeline to run*.
+# Click on the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a process...</span> button.  This will open a dialog box titled *Choose a pipeline to run*.
 # In the search box, type in *Tutorial align using bwa mem*.
 # Select *<i class="fa fa-fw fa-gear"></i> Tutorial align using bwa mem* and click the <span class="btn btn-sm btn-primary" >Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i></span> button.  This will create a new pipeline in your *Home* project and will open it. You can now supply the inputs for the pipeline.
 # The first input parameter to the pipeline is *"reference_collection" parameter for run-command script in bwa-mem component*.  Click the <span class="btn btn-sm btn-primary">Choose</span> button beneath that header.  This will open a dialog box titled *Choose a dataset for "reference_collection" parameter for run-command script in bwa-mem component*.
