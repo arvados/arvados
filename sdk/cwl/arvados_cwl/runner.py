@@ -203,9 +203,10 @@ class Runner(object):
                                                            api_client=self.arvrunner.api,
                                                            keep_client=self.arvrunner.keep_client,
                                                            num_retries=self.arvrunner.num_retries)
-                with outc.open("cwl.output.json") as f:
-                    if f.size() > 0:
-                        outputs = json.load(f)
+                if "cwl.output.json" in outc:
+                    with outc.open("cwl.output.json") as f:
+                        if f.size() > 0:
+                            outputs = json.load(f)
                 def keepify(fileobj):
                     path = fileobj["location"]
                     if not path.startswith("keep:"):
