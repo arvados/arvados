@@ -18,7 +18,7 @@ from .perf import Perf
 logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
-def upload_workflow(arvRunner, tool, job_order, project_uuid, uuid=None):
+def upload_workflow(arvRunner, tool, job_order, project_uuid, uuid=None, submit_runner_ram=0):
     upload_docker(arvRunner, tool)
 
     document_loader, workflowobj, uri = (tool.doc_loader, tool.doc_loader.fetch(tool.tool["id"]), tool.tool["id"])
@@ -36,6 +36,8 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid, uuid=None):
     name = os.path.basename(tool.tool["id"])
     upload_dependencies(arvRunner, name, document_loader,
                         packed, uri, False)
+
+    # TODO nowhere for submit_runner_ram to go.
 
     body = {
         "workflow": {

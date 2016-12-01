@@ -98,7 +98,8 @@ def stubs(func):
         }
         stubs.expect_job_spec = {
             'runtime_constraints': {
-                'docker_image': 'arvados/jobs:'+arvados_cwl.__version__
+                'docker_image': 'arvados/jobs:'+arvados_cwl.__version__,
+                'min_ram_mb_per_node': 1024
             },
             'script_parameters': {
                 'x': {
@@ -134,7 +135,7 @@ def stubs(func):
             'owner_uuid': None,
             "components": {
                 "cwl-runner": {
-                    'runtime_constraints': {'docker_image': 'arvados/jobs:'+arvados_cwl.__version__},
+                    'runtime_constraints': {'docker_image': 'arvados/jobs:'+arvados_cwl.__version__, 'min_ram_mb_per_node': 1024},
                     'script_parameters': {
                         'y': {"value": {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'}},
                         'x': {"value": {'basename': 'blorp.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999994+99/blorp.txt'}},
@@ -193,7 +194,7 @@ def stubs(func):
             'runtime_constraints': {
                 'API': True,
                 'vcpus': 1,
-                'ram': 268435456
+                'ram': 1024*1024*1024
             }
         }
 
@@ -613,6 +614,7 @@ class TestTemplateInputs(unittest.TestCase):
             "inputs_test.cwl": {
                 'runtime_constraints': {
                     'docker_image': 'arvados/jobs:'+arvados_cwl.__version__,
+                    'min_ram_mb_per_node': 1024
                 },
                 'script_parameters': {
                     'cwl:tool':
