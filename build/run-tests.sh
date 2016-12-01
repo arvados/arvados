@@ -91,6 +91,7 @@ sdk/go/httpserver
 sdk/go/manifest
 sdk/go/blockdigest
 sdk/go/streamer
+sdk/go/stats
 sdk/go/crunchrunner
 sdk/cwl
 tools/crunchstat-summary
@@ -757,6 +758,7 @@ gostuff=(
     sdk/go/manifest
     sdk/go/streamer
     sdk/go/crunchrunner
+    sdk/go/stats
     lib/crunchstat
     services/arv-git-httpd
     services/crunchstat
