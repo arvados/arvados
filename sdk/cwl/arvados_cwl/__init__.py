@@ -529,8 +529,8 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         dest="compute_checksum")
 
     parser.add_argument("--submit-runner-ram", type=int,
-                       help="RAM (in MiB) required for the workflow runner job.",
-                       default=0)
+                        help="RAM (in MiB) required for the workflow runner job (default 1024)",
+                        default=1024)
 
     parser.add_argument("workflow", type=str, nargs="?", default=None, help="The workflow to execute")
     parser.add_argument("job_order", nargs=argparse.REMAINDER, help="The input object to the workflow.")

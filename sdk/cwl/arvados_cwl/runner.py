@@ -177,6 +177,9 @@ class Runner(object):
         else:
             self.submit_runner_ram = 1024
 
+        if self.submit_runner_ram <= 0:
+            raise Exception("Value of --submit-runner-ram must be greater than zero")
+
     def update_pipeline_component(self, record):
         pass
 
