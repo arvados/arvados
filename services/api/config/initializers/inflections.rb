@@ -10,8 +10,8 @@
 # end
 
 ActiveSupport::Inflector.inflections do |inflect|
-  inflect.plural /^([Ss]pecimen)$/i, '\1s'
-  inflect.singular /^([Ss]pecimen)s?/i, '\1'
-  inflect.plural /^([Hh]uman)$/i, '\1s'
-  inflect.singular /^([Hh]uman)s?/i, '\1'
+  inflect.plural(/^([Ss]pecimen)$/i, '\1s')
+  inflect.singular(/^([Ss]pecimen)s?/i, '\1')
+  inflect.plural(/^([Hh]uman)$/i, '\1s')
+  inflect.singular(/^([Hh]uman)s?/i, '\1')
 end

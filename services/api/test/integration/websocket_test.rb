@@ -1,5 +1,4 @@
 require 'test_helper'
-require 'websocket_runner'
 require 'oj'
 require 'database_cleaner'
 
@@ -16,26 +15,83 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     DatabaseCleaner.clean
   end
 
-  def ws_helper (token = nil, timeout = true)
+  def self.startup
+    s = TCPServer.new('0.0.0.0', 0)
+    @@port = s.addr[1]
+    s.close
+    @@pidfile = "tmp/pids/passenger.#{@@port}.pid"
+    DatabaseCleaner.start
+    Dir.chdir(Rails.root) do |apidir|
+      # Only passenger seems to be able to run the websockets server
+      # successfully.
+      _system('passenger', 'start', '-d',
+              "-p#{@@port}",
+              "--log-file", "/dev/stderr",
+              "--pid-file", @@pidfile)
+      timeout = Time.now.tv_sec + 10
+      begin
+        sleep 0.2
+        begin
+          server_pid = IO.read(@@pidfile).to_i
+          good_pid = (server_pid > 0) and (Process.kill(0, pid) rescue false)
+        rescue Errno::ENOENT
+          good_pid = false
+        end
+      end while (not good_pid) and (Time.now.tv_sec < timeout)
+      if not good_pid
+        raise RuntimeError, "could not find API server Rails pid"
+      end
+      STDERR.puts "Started websocket server on port #{@@port} with pid #{server_pid}"
+    end
+  end
+
+  def self.shutdown
+    Dir.chdir(Rails.root) do
+      _system('passenger', 'stop', "-p#{@@port}",
+              "--pid-file", @@pidfile)
+    end
+    # DatabaseCleaner leaves the database empty. Prefer to leave it full.
+    dc = DatabaseController.new
+    dc.define_singleton_method :render do |*args| end
+    dc.reset
+  end
+
+  def self._system(*cmd)
+    Bundler.with_clean_env do
+      env = {
+        'ARVADOS_WEBSOCKETS' => 'ws-only',
+        'RAILS_ENV' => 'test',
+      }
+      if not system(env, *cmd)
+        raise RuntimeError, "Command exited #{$?}: #{cmd.inspect}"
+      end
+    end
+  end
+
+  def ws_helper(token: nil, timeout: 8)
     opened = false
     close_status = nil
     too_long = false
 
-    EM.run {
+    EM.run do
       if token
-        ws = Faye::WebSocket::Client.new("ws://localhost:#{WEBSOCKET_PORT}/websocket?api_token=#{api_client_authorizations(token).api_token}")
+        ws = Faye::WebSocket::Client.new("ws://localhost:#{@@port}/websocket?api_token=#{api_client_authorizations(token).api_token}")
       else
-        ws = Faye::WebSocket::Client.new("ws://localhost:#{WEBSOCKET_PORT}/websocket")
+        ws = Faye::WebSocket::Client.new("ws://localhost:#{@@port}/websocket")
       end
 
       ws.on :open do |event|
         opened = true
         if timeout
-          EM::Timer.new 8 do
+          EM::Timer.new(timeout) do
             too_long = true if close_status.nil?
             EM.stop_event_loop
           end
         end
+      end
+
+      ws.on :error do |event|
+        STDERR.puts "websocket client error: #{event.inspect}"
       end
 
       ws.on :close do |event|
@@ -44,7 +100,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       yield ws
-    }
+    end
 
     assert opened, "Should have opened web socket"
     assert (not too_long), "Test took too long"
@@ -65,11 +121,10 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert_equal 401, status
   end
 
-
   test "connect, subscribe and get response" do
     status = nil
 
-    ws_helper :active do |ws|
+    ws_helper(token: :active) do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe'}.to_json)
       end
@@ -91,7 +146,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     authorize_with :active
 
-    ws_helper :active do |ws|
+    ws_helper(token: :active) do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe'}.to_json)
       end
@@ -128,7 +183,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     authorize_with :active
 
-    ws_helper :active do |ws|
+    ws_helper(token: :active) do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe'}.to_json)
       end
@@ -168,7 +223,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     authorize_with :active
 
-    ws_helper :active do |ws|
+    ws_helper(token: :active) do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe', filters: [['object_uuid', 'is_a', 'arvados#human']]}.to_json)
       end
@@ -206,7 +261,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     authorize_with :active
 
-    ws_helper :active do |ws|
+    ws_helper(token: :active) do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe', filters: [['object_uuid', 'is_a', 'arvados#human']]}.to_json)
         ws.send ({method: 'subscribe', filters: [['object_uuid', 'is_a', 'arvados#specimen']]}.to_json)
@@ -251,7 +306,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     authorize_with :active
 
-    ws_helper :active do |ws|
+    ws_helper(token: :active) do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe', filters: [['object_uuid', 'is_a', 'arvados#trait'], ['event_type', '=', 'update']]}.to_json)
       end
@@ -282,8 +337,6 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
   test "connect, subscribe, ask events starting at seq num" do
     state = 1
-    human = nil
-    human_ev_uuid = nil
 
     authorize_with :active
 
@@ -291,7 +344,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     l1 = nil
     l2 = nil
 
-    ws_helper :active do |ws|
+    ws_helper(token: :active) do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe', last_log_id: lastid}.to_json)
       end
@@ -322,16 +375,14 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert_equal expect_next_logs[1].object_uuid, l2
   end
 
-  test "connect, subscribe, get event, unsubscribe" do
-    slow_test
+  slow_test "connect, subscribe, get event, unsubscribe" do
     state = 1
     spec = nil
     spec_ev_uuid = nil
-    filter_id = nil
 
     authorize_with :active
 
-    ws_helper :active, false do |ws|
+    ws_helper(token: :active, timeout: false) do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe'}.to_json)
         EM::Timer.new 3 do
@@ -372,15 +423,14 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert_equal spec.uuid, spec_ev_uuid
   end
 
-  test "connect, subscribe, get event, unsubscribe with filter" do
-    slow_test
+  slow_test "connect, subscribe, get event, unsubscribe with filter" do
     state = 1
     spec = nil
     spec_ev_uuid = nil
 
     authorize_with :active
 
-    ws_helper :active, false do |ws|
+    ws_helper(token: :active, timeout: false) do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe', filters: [['object_uuid', 'is_a', 'arvados#human']]}.to_json)
         EM::Timer.new 6 do
@@ -422,8 +472,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
   end
 
 
-  test "connect, subscribe, get event, try to unsubscribe with bogus filter" do
-    slow_test
+  slow_test "connect, subscribe, get event, try to unsubscribe with bogus filter" do
     state = 1
     spec = nil
     spec_ev_uuid = nil
@@ -432,7 +481,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     authorize_with :active
 
-    ws_helper :active do |ws|
+    ws_helper(token: :active) do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe'}.to_json)
       end
@@ -473,13 +522,10 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     assert_equal human.uuid, human_ev_uuid
   end
 
-
-
-  test "connected, not subscribed, no event" do
-    slow_test
+  slow_test "connected, not subscribed, no event" do
     authorize_with :active
 
-    ws_helper :active, false do |ws|
+    ws_helper(token: :active, timeout: false) do |ws|
       ws.on :open do |event|
         EM::Timer.new 1 do
           Specimen.create
@@ -496,13 +542,12 @@ class WebsocketTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "connected, not authorized to see event" do
-    slow_test
+  slow_test "connected, not authorized to see event" do
     state = 1
 
     authorize_with :admin
 
-    ws_helper :active, false do |ws|
+    ws_helper(token: :active, timeout: false) do |ws|
       ws.on :open do |event|
         ws.send ({method: 'subscribe'}.to_json)
 
@@ -530,7 +575,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
   test "connect, try bogus method" do
     status = nil
 
-    ws_helper :active do |ws|
+    ws_helper(token: :active) do |ws|
       ws.on :open do |event|
         ws.send ({method: 'frobnabble'}.to_json)
       end
@@ -548,7 +593,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
   test "connect, missing method" do
     status = nil
 
-    ws_helper :active do |ws|
+    ws_helper(token: :active) do |ws|
       ws.on :open do |event|
         ws.send ({fizzbuzz: 'frobnabble'}.to_json)
       end
@@ -566,7 +611,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
   test "connect, send malformed request" do
     status = nil
 
-    ws_helper :active do |ws|
+    ws_helper(token: :active) do |ws|
       ws.on :open do |event|
         ws.send '<XML4EVER></XML4EVER>'
       end
@@ -587,7 +632,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     authorize_with :active
 
-    ws_helper :active do |ws|
+    ws_helper(token: :active) do |ws|
       ws.on :open do |event|
         (1..17).each do |i|
           ws.send ({method: 'subscribe', filters: [['object_uuid', '=', i]]}.to_json)
@@ -612,15 +657,14 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
   end
 
-  test "connect, subscribe, lots of events" do
-    slow_test
+  slow_test "connect, subscribe, lots of events" do
     state = 1
     event_count = 0
     log_start = Log.order(:id).last.id
 
     authorize_with :active
 
-    ws_helper :active, false do |ws|
+    ws_helper(token: :active, timeout: false) do |ws|
       EM::Timer.new 45 do
         # Needs a longer timeout than the default
         ws.close
@@ -637,7 +681,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
           assert_equal 200, d["status"]
           ActiveRecord::Base.transaction do
             (1..202).each do
-              spec = Specimen.create
+              Specimen.create
             end
           end
           state = 2
@@ -658,12 +702,10 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
   test "connect, subscribe with invalid filter" do
     state = 1
-    human = nil
-    human_ev_uuid = nil
 
     authorize_with :active
 
-    ws_helper :active do |ws|
+    ws_helper(token: :active) do |ws|
       ws.on :open do |event|
         # test that #6451 is fixed (invalid filter crashes websockets)
         ws.send ({method: 'subscribe', filters: [['object_blarg', 'is_a', 'arvados#human']]}.to_json)
@@ -675,7 +717,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
         when 1
           assert_equal 200, d["status"]
           Specimen.create
-          human = Human.create
+          Human.create
           state = 2
         when 2
           assert_equal 500, d["status"]

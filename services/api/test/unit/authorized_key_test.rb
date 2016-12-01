@@ -25,7 +25,7 @@ class AuthorizedKeyTest < ActiveSupport::TestCase
       ak2 = AuthorizedKey.new(name: "bar", public_key: TEST_KEY, authorized_user_uuid: u2.uuid)
       refute ak2.valid?
       refute ak2.save
-      assert_match /already exists/, ak2.errors.full_messages.to_s
+      assert_match(/already exists/, ak2.errors.full_messages.to_s)
     end
   end
 

@@ -23,7 +23,7 @@ class Arvados::V1::VirtualMachinesController < ApplicationController
     @users = {}
     User.eager_load(:authorized_keys).
       where('users.uuid in (?)',
-            @vms.map { |vm| vm.login_permissions.map &:tail_uuid }.flatten.uniq).
+            @vms.map { |vm| vm.login_permissions.map(&:tail_uuid) }.flatten.uniq).
       each do |u|
       @users[u.uuid] = u
     end

@@ -4,7 +4,6 @@ class Log < ArvadosModel
   include CommonApiTemplate
   serialize :properties, Hash
   before_validation :set_default_event_at
-  attr_accessor :object, :object_kind
   after_save :send_notify
 
   api_accessible :user, extend: :common do |t|

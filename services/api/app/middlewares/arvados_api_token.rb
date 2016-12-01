@@ -7,7 +7,7 @@ class ArvadosApiToken
   # Create a new ArvadosApiToken handler
   # +app+  The next layer of the Rack stack.
   def initialize(app = nil, options = nil)
-    @app = app if app.respond_to?(:call)
+    @app = app.respond_to?(:call) ? app : nil
   end
 
   def call env

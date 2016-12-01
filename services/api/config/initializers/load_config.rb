@@ -6,7 +6,7 @@ rescue LoadError
   # configured by application.yml (i.e., here!) instead.
 end
 
-if (File.exists?(File.expand_path '../omniauth.rb', __FILE__) and
+if (File.exist?(File.expand_path '../omniauth.rb', __FILE__) and
     not defined? WARNED_OMNIAUTH_CONFIG)
   Rails.logger.warn <<-EOS
 DEPRECATED CONFIGURATION:
@@ -26,7 +26,7 @@ $application_config = {}
 
 %w(application.default application).each do |cfgfile|
   path = "#{::Rails.root.to_s}/config/#{cfgfile}.yml"
-  if File.exists? path
+  if File.exist? path
     yaml = ERB.new(IO.read path).result(binding)
     confs = YAML.load(yaml, deserialize_symbols: true)
     # Ignore empty YAML file:

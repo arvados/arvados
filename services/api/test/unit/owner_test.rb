@@ -27,7 +27,7 @@ class OwnerTest < ActiveSupport::TestCase
     test "create object with non-existent #{o_class} owner" do
       assert_raises(ActiveRecord::RecordInvalid,
                     "create should fail with random owner_uuid") do
-        i = Specimen.create!(owner_uuid: o_class.generate_uuid)
+        Specimen.create!(owner_uuid: o_class.generate_uuid)
       end
 
       i = Specimen.create(owner_uuid: o_class.generate_uuid)
@@ -89,7 +89,6 @@ class OwnerTest < ActiveSupport::TestCase
       o = eval ofixt
       assert_equal(true, Specimen.where(owner_uuid: o.uuid).any?,
                    "need something to be owned by #{o.uuid} for this test")
-      old_uuid = o.uuid
       new_uuid = o.uuid.sub(/..........$/, rand(2**256).to_s(36)[0..9])
       assert(!o.update_attributes(uuid: new_uuid),
              "should not change uuid of #{ofixt} that owns objects")

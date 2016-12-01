@@ -3,8 +3,7 @@ require 'test_helper'
 class DatabaseResetTest < ActionDispatch::IntegrationTest
   self.use_transactional_fixtures = false
 
-  test "reset fails when Rails.env != 'test'" do
-    slow_test
+  slow_test "reset fails when Rails.env != 'test'" do
     rails_env_was = Rails.env
     begin
       Rails.env = 'production'
@@ -22,8 +21,7 @@ class DatabaseResetTest < ActionDispatch::IntegrationTest
     assert_response 403
   end
 
-  test "database reset doesn't break basic CRUD operations" do
-    slow_test
+  slow_test "database reset doesn't break basic CRUD operations" do
     active_auth = auth(:active)
     admin_auth = auth(:admin)
 
@@ -49,8 +47,7 @@ class DatabaseResetTest < ActionDispatch::IntegrationTest
     assert_response 404
   end
 
-  test "roll back database change" do
-    slow_test
+  slow_test "roll back database change" do
     active_auth = auth(:active)
     admin_auth = auth(:admin)
 

@@ -28,7 +28,7 @@ class CollectionTest < ActiveSupport::TestCase
       c = create_collection "f\xc8o", Encoding::UTF_8
       assert !c.valid?
       assert_equal [:manifest_text], c.errors.messages.keys
-      assert_match /UTF-8/, c.errors.messages[:manifest_text].first
+      assert_match(/UTF-8/, c.errors.messages[:manifest_text].first)
     end
   end
 
@@ -37,7 +37,7 @@ class CollectionTest < ActiveSupport::TestCase
       c = create_collection "f\xc8o", Encoding::ASCII_8BIT
       assert !c.valid?
       assert_equal [:manifest_text], c.errors.messages.keys
-      assert_match /UTF-8/, c.errors.messages[:manifest_text].first
+      assert_match(/UTF-8/, c.errors.messages[:manifest_text].first)
     end
   end
 
@@ -107,11 +107,11 @@ class CollectionTest < ActiveSupport::TestCase
       assert c.valid?
       created_file_names = c.file_names
       assert created_file_names
-      assert_match /foo.txt/, c.file_names
+      assert_match(/foo.txt/, c.file_names)
 
       c.update_attribute 'manifest_text', ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo2.txt\n"
       assert_not_equal created_file_names, c.file_names
-      assert_match /foo2.txt/, c.file_names
+      assert_match(/foo2.txt/, c.file_names)
     end
   end
 
@@ -134,11 +134,11 @@ class CollectionTest < ActiveSupport::TestCase
 
         assert c.valid?
         assert c.file_names
-        assert_match /veryverylongfilename0000000000001.txt/, c.file_names
-        assert_match /veryverylongfilename0000000000002.txt/, c.file_names
+        assert_match(/veryverylongfilename0000000000001.txt/, c.file_names)
+        assert_match(/veryverylongfilename0000000000002.txt/, c.file_names)
         if not allow_truncate
-          assert_match /veryverylastfilename/, c.file_names
-          assert_match /laststreamname/, c.file_names
+          assert_match(/veryverylastfilename/, c.file_names)
+          assert_match(/laststreamname/, c.file_names)
         end
       end
     end

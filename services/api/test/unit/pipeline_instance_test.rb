@@ -91,7 +91,6 @@ class PipelineInstanceTest < ActiveSupport::TestCase
     component2 = {'script_parameters' => {"something_else" => "xxxad4b39ca5a924e481008009d94e32+210", "input_missing" => {"required" => true}}}
     pi.components['first'] = component1
     pi.components['second'] = component2
-    components = pi.components
 
     Thread.current[:user] = users(:admin)
     pi.update_attribute 'components', pi.components

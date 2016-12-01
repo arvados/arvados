@@ -1,3 +1,11 @@
+$system_user = nil
+$system_group = nil
+$all_users_group = nil
+$anonymous_user = nil
+$anonymous_group = nil
+$anonymous_group_read_permission = nil
+$empty_collection = nil
+
 module CurrentApiClient
   def current_user
     Thread.current[:user]
@@ -83,9 +91,7 @@ module CurrentApiClient
             User.all.collect(&:uuid).each do |user_uuid|
               Link.create!(link_class: 'permission',
                            name: 'can_manage',
-                           tail_kind: 'arvados#group',
                            tail_uuid: system_group_uuid,
-                           head_kind: 'arvados#user',
                            head_uuid: user_uuid)
             end
           end

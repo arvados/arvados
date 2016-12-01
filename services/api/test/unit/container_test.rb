@@ -102,8 +102,9 @@ class ContainerTest < ActiveSupport::TestCase
   test "find_reusable method should select higher priority queued container" do
     set_user_from_auth :active
     common_attrs = REUSABLE_COMMON_ATTRS.merge({environment:{"var" => "queued"}})
-    c_low_priority, _ = minimal_new(common_attrs.merge({priority:1}))
-    c_high_priority, _ = minimal_new(common_attrs.merge({priority:2}))
+    c_low_priority, _ = minimal_new(common_attrs.merge({use_existing:false, priority:1}))
+    c_high_priority, _ = minimal_new(common_attrs.merge({use_existing:false, priority:2}))
+    assert_not_equal c_low_priority.uuid, c_high_priority.uuid
     assert_equal Container::Queued, c_low_priority.state
     assert_equal Container::Queued, c_high_priority.state
     reused = Container.find_reusable(common_attrs)
@@ -121,8 +122,9 @@ class ContainerTest < ActiveSupport::TestCase
       output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
     }
 
-    c_older, _ = minimal_new(common_attrs)
-    c_recent, _ = minimal_new(common_attrs)
+    c_older, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    c_recent, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    assert_not_equal c_older.uuid, c_recent.uuid
 
     set_user_from_auth :dispatch1
     c_older.update_attributes!({state: Container::Locked})
@@ -151,6 +153,7 @@ class ContainerTest < ActiveSupport::TestCase
 
     c_output1 = Container.create common_attrs
     c_output2 = Container.create common_attrs
+    assert_not_equal c_output1.uuid, c_output2.uuid
 
     cr = ContainerRequest.new common_attrs
     cr.state = ContainerRequest::Committed
@@ -177,9 +180,11 @@ class ContainerTest < ActiveSupport::TestCase
   test "find_reusable method should select running container by start date" do
     set_user_from_auth :active
     common_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "running"}})
-    c_slower, _ = minimal_new(common_attrs)
-    c_faster_started_first, _ = minimal_new(common_attrs)
-    c_faster_started_second, _ = minimal_new(common_attrs)
+    c_slower, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    c_faster_started_first, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    c_faster_started_second, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    # Confirm the 3 container UUIDs are different.
+    assert_equal 3, [c_slower.uuid, c_faster_started_first.uuid, c_faster_started_second.uuid].uniq.length
     set_user_from_auth :dispatch1
     c_slower.update_attributes!({state: Container::Locked})
     c_slower.update_attributes!({state: Container::Running,
@@ -199,9 +204,11 @@ class ContainerTest < ActiveSupport::TestCase
   test "find_reusable method should select running container by progress" do
     set_user_from_auth :active
     common_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "running2"}})
-    c_slower, _ = minimal_new(common_attrs)
-    c_faster_started_first, _ = minimal_new(common_attrs)
-    c_faster_started_second, _ = minimal_new(common_attrs)
+    c_slower, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    c_faster_started_first, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    c_faster_started_second, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    # Confirm the 3 container UUIDs are different.
+    assert_equal 3, [c_slower.uuid, c_faster_started_first.uuid, c_faster_started_second.uuid].uniq.length
     set_user_from_auth :dispatch1
     c_slower.update_attributes!({state: Container::Locked})
     c_slower.update_attributes!({state: Container::Running,
@@ -221,9 +228,11 @@ class ContainerTest < ActiveSupport::TestCase
   test "find_reusable method should select locked container most likely to start sooner" do
     set_user_from_auth :active
     common_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "locked"}})
-    c_low_priority, _ = minimal_new(common_attrs)
-    c_high_priority_older, _ = minimal_new(common_attrs)
-    c_high_priority_newer, _ = minimal_new(common_attrs)
+    c_low_priority, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    c_high_priority_older, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    c_high_priority_newer, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    # Confirm the 3 container UUIDs are different.
+    assert_equal 3, [c_low_priority.uuid, c_high_priority_older.uuid, c_high_priority_newer.uuid].uniq.length
     set_user_from_auth :dispatch1
     c_low_priority.update_attributes!({state: Container::Locked,
                                        priority: 1})
@@ -239,8 +248,9 @@ class ContainerTest < ActiveSupport::TestCase
   test "find_reusable method should select running over failed container" do
     set_user_from_auth :active
     common_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "failed_vs_running"}})
-    c_failed, _ = minimal_new(common_attrs)
-    c_running, _ = minimal_new(common_attrs)
+    c_failed, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    c_running, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    assert_not_equal c_failed.uuid, c_running.uuid
     set_user_from_auth :dispatch1
     c_failed.update_attributes!({state: Container::Locked})
     c_failed.update_attributes!({state: Container::Running})
@@ -259,8 +269,9 @@ class ContainerTest < ActiveSupport::TestCase
   test "find_reusable method should select complete over running container" do
     set_user_from_auth :active
     common_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "completed_vs_running"}})
-    c_completed, _ = minimal_new(common_attrs)
-    c_running, _ = minimal_new(common_attrs)
+    c_completed, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    c_running, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    assert_not_equal c_completed.uuid, c_running.uuid
     set_user_from_auth :dispatch1
     c_completed.update_attributes!({state: Container::Locked})
     c_completed.update_attributes!({state: Container::Running})
@@ -279,8 +290,9 @@ class ContainerTest < ActiveSupport::TestCase
   test "find_reusable method should select running over locked container" do
     set_user_from_auth :active
     common_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "running_vs_locked"}})
-    c_locked, _ = minimal_new(common_attrs)
-    c_running, _ = minimal_new(common_attrs)
+    c_locked, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    c_running, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    assert_not_equal c_running.uuid, c_locked.uuid
     set_user_from_auth :dispatch1
     c_locked.update_attributes!({state: Container::Locked})
     c_running.update_attributes!({state: Container::Locked})
@@ -294,8 +306,9 @@ class ContainerTest < ActiveSupport::TestCase
   test "find_reusable method should select locked over queued container" do
     set_user_from_auth :active
     common_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "running_vs_locked"}})
-    c_locked, _ = minimal_new(common_attrs)
-    c_queued, _ = minimal_new(common_attrs)
+    c_locked, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    c_queued, _ = minimal_new(common_attrs.merge({use_existing: false}))
+    assert_not_equal c_queued.uuid, c_locked.uuid
     set_user_from_auth :dispatch1
     c_locked.update_attributes!({state: Container::Locked})
     reused = Container.find_reusable(common_attrs)
