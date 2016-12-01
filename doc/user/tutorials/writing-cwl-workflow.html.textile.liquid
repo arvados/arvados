@@ -1,0 +1,28 @@
+---
+layout: default
+navsection: userguide
+title: "Writing a CWL workflow"
+...
+
+{% include 'what_is_cwl' %}
+
+{% include 'tutorial_expectations' %}
+
+h2. Registering a CWL workflow
+
+Use @--create-workflow@ to register a CWL workflow with Arvados.
+
+The following examples assume that you have prepared to run arvados-cwl-runner tool as explained in the "Using Common Workflow Language":{{site.baseurl}}/user/topics/running-workflow-command-line.html.textile.liquid page.
+
+{% include 'register_cwl_workflow' %}
+
+h2. Running a CWL workflow
+
+h3. Running the workflow at command prompt
+
+TBD
+
+h3. Running the workflow using Workbench
+
+The workflow can also be executed using Workbench. Go to the Workbench Dashboard and click the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a process...</span> button and select the desired workflow.
+

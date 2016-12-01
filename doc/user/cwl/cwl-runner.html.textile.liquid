@@ -4,13 +4,17 @@ navsection: userguide
 title: Using Common Workflow Language
 ...
 
-The "Common Workflow Language (CWL)":http://commonwl.org is a multi-vendor open standard for describing analysis tools and workflows that are portable across a variety of platforms.  CWL is the recommended way to develop and run workflows for Arvados.  Arvados supports the "CWL v1.0":http://commonwl.org/v1.0 specification.
+{% include 'what_is_cwl' %}
 
 {% include 'tutorial_expectations' %}
 
-h2. Setting up
+h2. Preparing to work with Arvados cwl runner
 
-The @arvados-cwl-runner@ client is installed by default on Arvados shell nodes.  However, if you do not have @arvados-cwl-runner@, you may install it using @pip@:
+h3. arvados-cwl-runner
+
+The @arvados-cwl-runner@ client is installed by default on Arvados shell nodes.
+
+However, if you do not have @arvados-cwl-runner@, you may install it using @pip@:
 
 <notextile>
 <pre><code>~$ <span class="userinput">virtualenv ~/venv</span>
@@ -20,9 +24,11 @@ The @arvados-cwl-runner@ client is installed by default on Arvados shell nodes. 
 </code></pre>
 </notextile>
 
-h3. Docker
+h3. Check Docker access
 
-Certain features of @arvados-cwl-runner@ require access to Docker.  You can determine if you have access to Docker by running @docker version@:
+Certain features of @arvados-cwl-runner@ require access to Docker.
+
+You can determine if you have access to Docker by running @docker version@:
 
 <notextile>
 <pre><code>~$ <span class="userinput">docker version</span>
@@ -44,9 +50,9 @@ Server:
 </code></pre>
 </notextile>
 
-If this returns an error, contact the sysadmin of your cluster for assistance.  Alternatively, if you have Docker installed on your local workstation, you may follow the instructions above to install @arvados-cwl-runner@.
+If this returns an error, contact the sysadmin of your cluster for assistance.
 
-h3. Getting the example files
+h3. Get the example files
 
 The tutorial files are located in the documentation section of the Arvados source repository:
 
@@ -72,60 +78,7 @@ If you do not wish to create an account on "https://cloud.curoverse.com":https:/
 
 h2. Submitting a workflow to an Arvados cluster
 
-Use @arvados-cwl-runner@ to submit CWL workflows to Arvados.  After submitting the job, it will wait for the workflow to complete and print out the final result to standard output.  Note that once submitted, the workflow runs entirely on Arvados, so even if you interrupt @arvados-cwl-runner@ or log out, the workflow will continue to run.
-
-<notextile>
-<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner bwa-mem.cwl bwa-mem-input.yml</span>
-arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
-2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Upload local files: "bwa-mem.cwl"
-2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Uploaded to qr1hi-4zz18-h7ljh5u76760ww2
-2016-06-30 14:56:40 arvados.cwl-runner[27002] INFO: Submitted job qr1hi-8i9sb-fm2n3b1w0l6bskg
-2016-06-30 14:56:41 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Running
-2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Complete
-2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Overall process status is success
-{
-    "aligned_sam": {
-        "path": "keep:54325254b226664960de07b3b9482349+154/HWI-ST1027_129_D0THKACXX.1_1.sam",
-        "checksum": "sha1$0dc46a3126d0b5d4ce213b5f0e86e2d05a54755a",
-        "class": "File",
-        "size": 30738986
-    }
-}
-</code></pre>
-</notextile>
-
-To submit a workflow and exit immediately, use the @--no-wait@ option.  This will print out the uuid of the job that was submitted to standard output.
-
-<notextile>
-<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --no-wait bwa-mem.cwl bwa-mem-input.yml</span>
-arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
-2016-06-30 15:07:52 arvados.arv-run[12480] INFO: Upload local files: "bwa-mem.cwl"
-2016-06-30 15:07:52 arvados.arv-run[12480] INFO: Uploaded to qr1hi-4zz18-eqnfwrow8aysa9q
-2016-06-30 15:07:52 arvados.cwl-runner[12480] INFO: Submitted job qr1hi-8i9sb-fm2n3b1w0l6bskg
-qr1hi-8i9sb-fm2n3b1w0l6bskg
-</code></pre>
-</notextile>
-
-To run a workflow with local control, use @--local@.  This means that the host where you run @arvados-cwl-runner@ will be responsible for submitting jobs. With @--local@, if you interrupt @arvados-cwl-runner@ or log out, the workflow will be terminated.
-
-<notextile>
-<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --local bwa-mem.cwl bwa-mem-input.yml</span>
-arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
-2016-07-01 10:05:19 arvados.cwl-runner[16290] INFO: Pipeline instance qr1hi-d1hrv-92wcu6ldtio74r4
-2016-07-01 10:05:28 arvados.cwl-runner[16290] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-2nzzfbuf9zjrj4g) is Queued
-2016-07-01 10:05:29 arvados.cwl-runner[16290] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-2nzzfbuf9zjrj4g) is Running
-2016-07-01 10:05:45 arvados.cwl-runner[16290] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-2nzzfbuf9zjrj4g) is Complete
-2016-07-01 10:05:46 arvados.cwl-runner[16290] INFO: Overall process status is success
-{
-    "aligned_sam": {
-        "size": 30738986,
-        "path": "keep:15f56bad0aaa7364819bf14ca2a27c63+88/HWI-ST1027_129_D0THKACXX.1_1.sam",
-        "checksum": "sha1$0dc46a3126d0b5d4ce213b5f0e86e2d05a54755a",
-        "class": "File"
-    }
-}
-</code></pre>
-</notextile>
+{% include 'arvados_cwl_runner' %}
 
 h2. Work reuse
 
@@ -145,27 +98,7 @@ h2. Registering a workflow to use in Workbench
 
 Use @--create-workflow@ to register a CWL workflow with Arvados.  This enables you to share workflows with other Arvados users, and run them by clicking the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a process...</span> button on the Workbench Dashboard.
 
-<notextile>
-<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --create-workflow bwa-mem.cwl</span>
-arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
-2016-07-01 12:21:01 arvados.arv-run[15796] INFO: Upload local files: "bwa-mem.cwl"
-2016-07-01 12:21:01 arvados.arv-run[15796] INFO: Uploaded to qr1hi-4zz18-7e0hedrmkuyoei3
-2016-07-01 12:21:01 arvados.cwl-runner[15796] INFO: Created template qr1hi-p5p6p-rjleou1dwr167v5
-qr1hi-p5p6p-rjleou1dwr167v5
-</code></pre>
-</notextile>
-
-You can provide a partial input file to set default values for the workflow input parameters:
-
-<notextile>
-<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --create-workflow bwa-mem.cwl bwa-mem-template.yml</span>
-arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
-2016-07-01 14:09:50 arvados.arv-run[3730] INFO: Upload local files: "bwa-mem.cwl"
-2016-07-01 14:09:50 arvados.arv-run[3730] INFO: Uploaded to qr1hi-4zz18-0f91qkovk4ml18o
-2016-07-01 14:09:50 arvados.cwl-runner[3730] INFO: Created template qr1hi-p5p6p-0deqe6nuuyqns2i
-qr1hi-p5p6p-0deqe6nuuyqns2i
-</code></pre>
-</notextile>
+{% include 'register_cwl_workflow' %}
 
 h2. Making workflows directly executable
 
@@ -226,7 +159,7 @@ arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107,
 
 h2. Developing workflows
 
-For an introduction and and detailed documentation about writing CWL, see the "User Guide":http://commonwl.org/v1.0/UserGuide.html and the "Specification":http://commonwl.org/v1.0 .
+For an introduction and and detailed documentation about writing CWL, see the "CWL User Guide":http://commonwl.org/v1.0/UserGuide.html and the "CWL Specification":http://commonwl.org/v1.0 .
 
 To run on Arvados, a workflow should provide a @DockerRequirement@ in the @hints@ section.
 
