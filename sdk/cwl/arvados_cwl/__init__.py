@@ -318,14 +318,16 @@ class ArvCwlRunner(object):
             if self.work_api == "jobs":
                 tmpl = RunnerTemplate(self, tool, job_order,
                                       kwargs.get("enable_reuse"),
-                                      uuid=existing_uuid)
+                                      uuid=existing_uuid,
+                                      submit_runner_ram=kwargs.get("submit_runner_ram"))
                 tmpl.save()
                 # cwltool.main will write our return value to stdout.
                 return tmpl.uuid
             else:
                 return upload_workflow(self, tool, job_order,
                                        self.project_uuid,
-                                       uuid=existing_uuid)
+                                       uuid=existing_uuid,
+                                       submit_runner_ram=kwargs.get("submit_runner_ram"))
 
         self.ignore_docker_for_reuse = kwargs.get("ignore_docker_for_reuse")
 
@@ -356,9 +358,11 @@ class ArvCwlRunner(object):
                                          self.output_callback,
                                          **kwargs).next()
                 else:
-                    runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name, self.output_tags)
+                    runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name,
+                                                self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"))
             else:
-                runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name, self.output_tags)
+                runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name,
+                                      self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"))
 
         if not kwargs.get("submit") and "cwl_runner_job" not in kwargs and not self.work_api == "containers":
             # Create pipeline for local run
@@ -533,6 +537,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--compute-checksum", action="store_true", default=False,
                         help="Compute checksum of contents while collecting outputs",
                         dest="compute_checksum")
+
+    parser.add_argument("--submit-runner-ram", type=int,
+                        help="RAM (in MiB) required for the workflow runner job (default 1024)",
+                        default=1024)
 
     parser.add_argument("workflow", type=str, nargs="?", default=None, help="The workflow to execute")
     parser.add_argument("job_order", nargs=argparse.REMAINDER, help="The input object to the workflow.")

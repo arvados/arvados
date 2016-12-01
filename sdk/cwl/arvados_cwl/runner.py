@@ -161,7 +161,8 @@ def arvados_jobs_image(arvrunner):
     return img
 
 class Runner(object):
-    def __init__(self, runner, tool, job_order, enable_reuse, output_name, output_tags):
+    def __init__(self, runner, tool, job_order, enable_reuse,
+                 output_name, output_tags, submit_runner_ram=0):
         self.arvrunner = runner
         self.tool = tool
         self.job_order = job_order
@@ -171,6 +172,13 @@ class Runner(object):
         self.final_output = None
         self.output_name = output_name
         self.output_tags = output_tags
+        if submit_runner_ram:
+            self.submit_runner_ram = submit_runner_ram
+        else:
+            self.submit_runner_ram = 1024
+
+        if self.submit_runner_ram <= 0:
+            raise Exception("Value of --submit-runner-ram must be greater than zero")
 
     def update_pipeline_component(self, record):
         pass

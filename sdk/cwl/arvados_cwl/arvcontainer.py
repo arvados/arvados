@@ -226,7 +226,7 @@ class RunnerContainer(Runner):
             },
             "runtime_constraints": {
                 "vcpus": 1,
-                "ram": 1024*1024*256,
+                "ram": 1024*1024 * self.submit_runner_ram,
                 "API": True
             }
         }
