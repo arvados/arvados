@@ -2,13 +2,13 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/stats"
 	"github.com/lib/pq"
 )
 
@@ -184,7 +184,7 @@ func (ps *pgEventSource) Status() interface{} {
 		"EventsOut":    atomic.LoadUint64(&ps.eventsOut),
 		"Queue":        len(ps.queue),
 		"QueueLimit":   cap(ps.queue),
-		"QueueDelay":   fmt.Sprintf("%.06f", ps.lastQDelay.Seconds()),
+		"QueueDelay":   stats.Duration(ps.lastQDelay),
 		"Sinks":        len(ps.sinks),
 		"SinksBlocked": blocked,
 	}

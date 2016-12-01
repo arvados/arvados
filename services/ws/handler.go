@@ -2,12 +2,12 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"sync"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/stats"
 )
 
 type handler struct {
@@ -16,7 +16,7 @@ type handler struct {
 	QueueSize   int
 
 	mtx       sync.Mutex
-	lastDelay map[chan interface{}]time.Duration
+	lastDelay map[chan interface{}]stats.Duration
 	setupOnce sync.Once
 }
 
@@ -27,7 +27,7 @@ type handlerStats struct {
 	EventCount   uint64
 }
 
-func (h *handler) Handle(ws wsConn, eventSource eventSource, newSession func(wsConn, chan<- interface{}) (session, error)) (stats handlerStats) {
+func (h *handler) Handle(ws wsConn, eventSource eventSource, newSession func(wsConn, chan<- interface{}) (session, error)) (hStats handlerStats) {
 	h.setupOnce.Do(h.setup)
 
 	ctx, cancel := context.WithCancel(ws.Request().Context())
@@ -132,14 +132,14 @@ func (h *handler) Handle(ws wsConn, eventSource eventSource, newSession func(wsC
 			log.Debug("sent")
 
 			if e != nil {
-				stats.QueueDelayNs += t0.Sub(e.Ready)
+				hStats.QueueDelayNs += t0.Sub(e.Ready)
 				h.mtx.Lock()
-				h.lastDelay[queue] = time.Since(e.Ready)
+				h.lastDelay[queue] = stats.Duration(time.Since(e.Ready))
 				h.mtx.Unlock()
 			}
-			stats.WriteDelayNs += time.Since(t0)
-			stats.EventBytes += uint64(len(buf))
-			stats.EventCount++
+			hStats.WriteDelayNs += time.Since(t0)
+			hStats.EventBytes += uint64(len(buf))
+			hStats.EventCount++
 		}
 	}()
 
@@ -201,10 +201,8 @@ func (h *handler) Status() interface{} {
 		QueueMin      int
 		QueueMax      int
 		QueueTotal    uint64
-		queueDelayMin time.Duration
-		QueueDelayMin string
-		queueDelayMax time.Duration
-		QueueDelayMax string
+		QueueDelayMin stats.Duration
+		QueueDelayMax stats.Duration
 	}
 	for q, lastDelay := range h.lastDelay {
 		s.QueueCount++
@@ -216,18 +214,16 @@ func (h *handler) Status() interface{} {
 		if s.QueueMin > n || s.QueueCount == 1 {
 			s.QueueMin = n
 		}
-		if (s.queueDelayMin > lastDelay || s.queueDelayMin == 0) && lastDelay > 0 {
-			s.queueDelayMin = lastDelay
+		if (s.QueueDelayMin > lastDelay || s.QueueDelayMin == 0) && lastDelay > 0 {
+			s.QueueDelayMin = lastDelay
 		}
-		if s.queueDelayMax < lastDelay {
-			s.queueDelayMax = lastDelay
+		if s.QueueDelayMax < lastDelay {
+			s.QueueDelayMax = lastDelay
 		}
 	}
-	s.QueueDelayMin = fmt.Sprintf("%.06f", s.queueDelayMin.Seconds())
-	s.QueueDelayMax = fmt.Sprintf("%.06f", s.queueDelayMax.Seconds())
 	return &s
 }
 
 func (h *handler) setup() {
-	h.lastDelay = make(map[chan interface{}]time.Duration)
+	h.lastDelay = make(map[chan interface{}]stats.Duration)
 }

@@ -1,4 +1,6 @@
-// Arvados-ws is an Arvados event feed for Websocket clients.
+// Arvados-ws exposes Arvados APIs (currently just one, the
+// cache-invalidation event feed at "ws://.../websocket") to
+// websocket clients.
 //
 // See https://doc.arvados.org/install/install-arvados-ws.html.
 //
@@ -33,6 +35,10 @@
 // Logs are printed to stderr, formatted as JSON.
 //
 // A log is printed each time a client connects or disconnects.
+//
+// Enable additional logs by configuring:
+//
+//     LogLevel: debug
 //
 // Runtime status
 //
