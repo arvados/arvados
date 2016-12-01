@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/config"
+	"github.com/coreos/go-systemd/daemon"
 )
 
 func main() {
@@ -48,7 +49,13 @@ func main() {
 			newPermChecker: func() permChecker { return NewPermChecker(cfg.Client) },
 		},
 	}
+	// Bootstrap the eventSource by attaching a dummy subscriber
+	// and hanging up.
 	eventSource.NewSink().Stop()
+
+	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
+		log.WithError(err).Warn("error notifying init daemon")
+	}
 
 	log.WithField("Listen", srv.Addr).Info("listening")
 	log.Fatal(srv.ListenAndServe())
