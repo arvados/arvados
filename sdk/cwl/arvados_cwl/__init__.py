@@ -73,7 +73,9 @@ class ArvCwlRunner(object):
         else:
             self.keep_client = arvados.keep.KeepClient(api_client=self.api, num_retries=self.num_retries)
 
-        for api in ["jobs", "containers"]:
+        self.work_api = None
+        expected_api = ["jobs", "containers"]
+        for api in expected_api:
             try:
                 methods = self.api._rootDesc.get('resources')[api]['methods']
                 if ('httpMethod' in methods['create'] and
@@ -82,11 +84,12 @@ class ArvCwlRunner(object):
                     break
             except KeyError:
                 pass
+
         if not self.work_api:
             if work_api is None:
                 raise Exception("No supported APIs")
             else:
-                raise Exception("Unsupported API '%s'" % work_api)
+                raise Exception("Unsupported API '%s', expected one of %s" % (work_api, expected_api))
 
     def arv_make_tool(self, toolpath_object, **kwargs):
         kwargs["work_api"] = self.work_api
@@ -566,10 +569,6 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
                 arvargs.update_workflow, want_api, arvargs.work_api))
             return 1
         arvargs.work_api = want_api
-
-    if arvargs.work_api not in ("jobs", "containers"):
-        logger.error("Unknown --api '%s' expected one of 'jobs' or 'containers'", arvargs.work_api)
-        return 1
 
     if (arvargs.create_workflow or arvargs.update_workflow) and not arvargs.job_order:
         job_order_object = ({}, "")
