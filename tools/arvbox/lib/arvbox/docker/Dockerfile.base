@@ -27,11 +27,11 @@ RUN cd /usr/local && \
 
 ENV PATH ${PATH}:/usr/local/go/bin
 
-ENV RUBYVERSION 2.1.8
+ENV RUBYVERSION 2.3.1
 
 # Install Ruby from source
 RUN cd /usr/local/lib && \
- curl -O http://cache.ruby-lang.org/pub/ruby/2.1/ruby-${RUBYVERSION}.tar.gz && \
+ curl -O http://cache.ruby-lang.org/pub/ruby/2.3/ruby-${RUBYVERSION}.tar.gz && \
  tar xzf ruby-${RUBYVERSION}.tar.gz && \
  cd ruby-${RUBYVERSION} && \
  ./configure --disable-install-doc && \
