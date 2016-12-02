@@ -21,6 +21,7 @@ import schema_salad
 
 import arvados
 import arvados.config
+from arvados.keep import KeepClient
 from arvados.errors import ApiError
 
 from .arvcontainer import ArvadosContainer, RunnerContainer
@@ -28,7 +29,7 @@ from .arvjob import ArvadosJob, RunnerJob, RunnerTemplate
 from. runner import Runner, upload_instance
 from .arvtool import ArvadosCommandTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow
-from .fsaccess import CollectionFsAccess
+from .fsaccess import CollectionFsAccess, CollectionFetcher
 from .perf import Perf
 from .pathmapper import FinalOutputPathMapper
 from ._version import __version__
@@ -50,7 +51,7 @@ class ArvCwlRunner(object):
 
     """
 
-    def __init__(self, api_client, work_api=None, keep_client=None, output_name=None, output_tags=None):
+    def __init__(self, api_client, work_api=None, keep_client=None, output_name=None, output_tags=None, num_retries=4):
         self.api = api_client
         self.processes = {}
         self.lock = threading.Lock()
@@ -58,7 +59,7 @@ class ArvCwlRunner(object):
         self.final_output = None
         self.final_status = None
         self.uploaded = {}
-        self.num_retries = 4
+        self.num_retries = num_retries
         self.uuid = None
         self.stop_polling = threading.Event()
         self.poll_api = None
@@ -586,7 +587,11 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
     try:
         if api_client is None:
             api_client=arvados.api('v1', model=OrderedJsonModel())
-        runner = ArvCwlRunner(api_client, work_api=arvargs.work_api, keep_client=keep_client, output_name=arvargs.output_name, output_tags=arvargs.output_tags)
+        if keep_client is None:
+            keep_client = arvados.keep.KeepClient(api_client=api_client, num_retries=4)
+        runner = ArvCwlRunner(api_client, work_api=arvargs.work_api, keep_client=keep_client,
+                              num_retries=4, output_name=arvargs.output_name,
+                              output_tags=arvargs.output_tags)
     except Exception as e:
         logger.error(e)
         return 1
@@ -613,4 +618,9 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
                              makeTool=runner.arv_make_tool,
                              versionfunc=versionstring,
                              job_order_object=job_order_object,
-                             make_fs_access=partial(CollectionFsAccess, api_client=api_client))
+                             make_fs_access=partial(CollectionFsAccess,
+                                                    api_client=api_client,
+                                                    keep_client=keep_client),
+                             fetcher_constructor=partial(CollectionFetcher,
+                                                         api_client=api_client,
+                                                         keep_client=keep_client))

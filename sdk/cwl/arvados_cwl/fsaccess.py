@@ -1,6 +1,7 @@
 import fnmatch
 import os
 import errno
+import urlparse
 
 import cwltool.stdfsaccess
 from cwltool.pathmapper import abspath
@@ -8,6 +9,8 @@ from cwltool.pathmapper import abspath
 import arvados.util
 import arvados.collection
 import arvados.arvfile
+
+from schema_salad.ref_resolver import DefaultFetcher
 
 class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
     """Implement the cwltool FsAccess interface for Arvados Collections."""
@@ -120,3 +123,51 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
             return path
         else:
             return os.path.realpath(path)
+
+class CollectionFetcher(DefaultFetcher):
+    def __init__(self, cache, session, api_client=None, keep_client=None):
+        super(CollectionFetcher, self).__init__(cache, session)
+        self.fsaccess = CollectionFsAccess("", api_client=api_client, keep_client=keep_client)
+
+    def fetch_text(self, url):
+        if url.startswith("keep:"):
+            with self.fsaccess.open(url) as f:
+                return f.read()
+        return super(CollectionFetcher, self).fetch_text(url)
+
+    def check_exists(self, url):
+        if url.startswith("keep:"):
+            return self.fsaccess.exists(url)
+        return super(CollectionFetcher, self).check_exists(url)
+
+    def urljoin(self, base_url, url):
+        if not url:
+            return base_url
+
+        urlsp = urlparse.urlsplit(url)
+        if urlsp.scheme:
+            return url
+
+        basesp = urlparse.urlsplit(base_url)
+        if basesp.scheme == "keep":
+            if not basesp.path:
+                raise IOError(errno.EINVAL, "Invalid Keep locator", base_url)
+
+            baseparts = basesp.path.split("/")
+            urlparts = urlsp.path.split("/")
+
+            pdh = baseparts.pop(0)
+
+            if not arvados.util.keep_locator_pattern.match(pdh):
+                raise IOError(errno.EINVAL, "Invalid Keep locator", base_url)
+
+            if urlsp.path.startswith("/"):
+                baseparts = []
+
+            if baseparts and urlparts:
+                baseparts.pop()
+
+            path = "/".join([pdh] + baseparts + urlparts)
+            return urlparse.urlunsplit(("keep", "", path, "", urlsp.fragment))
+
+        return super(CollectionFetcher, self).urljoin(base_url, url)
