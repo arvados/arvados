@@ -513,7 +513,7 @@ fpm_build $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.'
 # The Docker image cleaner
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/dockercleaner/build"
-fpm_build $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner" --depends "${PYTHON3_PKG_PREFIX}-websocket-client = 0.37.0"
+fpm_build $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner" --depends "${PYTHON3_PKG_PREFIX}-websocket-client = 0.37.0" --iteration 3
 
 # The Arvados crunchstat-summary tool
 cd $WORKSPACE/packages/$TARGET
