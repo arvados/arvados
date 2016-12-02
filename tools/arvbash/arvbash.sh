@@ -40,7 +40,7 @@ if [[ "$1" = "--install" ]] ; then
     else
         echo "Already installed in ~/.bashrc"
     fi
-elif [[ $0 != "bash" ]] ; then
+elif ! [[ $0 =~ bash$ ]] ; then
     echo "$helpmessage"
 fi
 
