@@ -800,6 +800,7 @@ func (runner *ContainerRunner) Run() (err error) {
 		checkErr(err)
 
 		if runner.finalState == "Queued" {
+			runner.CrunchLog.Close()
 			runner.UpdateContainerFinal()
 			return
 		}
