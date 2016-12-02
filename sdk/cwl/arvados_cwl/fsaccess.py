@@ -145,7 +145,7 @@ class CollectionFetcher(DefaultFetcher):
             return base_url
 
         urlsp = urlparse.urlsplit(url)
-        if urlsp.scheme:
+        if urlsp.scheme or not base_url:
             return url
 
         basesp = urlparse.urlsplit(base_url)
@@ -154,7 +154,7 @@ class CollectionFetcher(DefaultFetcher):
                 raise IOError(errno.EINVAL, "Invalid Keep locator", base_url)
 
             baseparts = basesp.path.split("/")
-            urlparts = urlsp.path.split("/")
+            urlparts = urlsp.path.split("/") if urlsp.path else []
 
             pdh = baseparts.pop(0)
 
@@ -163,8 +163,9 @@ class CollectionFetcher(DefaultFetcher):
 
             if urlsp.path.startswith("/"):
                 baseparts = []
+                urlparts.pop(0)
 
-            if baseparts and urlparts:
+            if baseparts and urlsp.path:
                 baseparts.pop()
 
             path = "/".join([pdh] + baseparts + urlparts)
