@@ -44,6 +44,8 @@ type pgEventSource struct {
 	eventsOut  uint64
 }
 
+var _ DebugStatuser = (*pgEventSource)(nil)
+
 func (ps *pgEventSource) setup() {
 	ps.shutdown = make(chan error, 1)
 	ps.sinks = make(map[*pgEventSink]bool)
@@ -172,7 +174,7 @@ func (ps *pgEventSource) DB() *sql.DB {
 	return ps.db
 }
 
-func (ps *pgEventSource) Status() interface{} {
+func (ps *pgEventSource) DebugStatus() interface{} {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
 	blocked := 0

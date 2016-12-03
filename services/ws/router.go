@@ -33,16 +33,16 @@ type router struct {
 	lastReqID  int64
 	lastReqMtx sync.Mutex
 
-	status routerStatus
+	status routerDebugStatus
 }
 
-type routerStatus struct {
+type routerDebugStatus struct {
 	ReqsReceived int64
 	ReqsActive   int64
 }
 
-type Statuser interface {
-	Status() interface{}
+type DebugStatuser interface {
+	DebugStatus() interface{}
 }
 
 type sessionFactory func(wsConn, chan<- interface{}, *sql.DB, permChecker) (session, error)
@@ -55,7 +55,7 @@ func (rtr *router) setup() {
 	rtr.mux = http.NewServeMux()
 	rtr.mux.Handle("/websocket", rtr.makeServer(NewSessionV0))
 	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(NewSessionV1))
-	rtr.mux.HandleFunc("/status.json", rtr.serveStatus)
+	rtr.mux.HandleFunc("/debug.json", rtr.serveDebugStatus)
 }
 
 func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
@@ -92,23 +92,23 @@ func (rtr *router) newReqID() string {
 	return strconv.FormatInt(id, 36)
 }
 
-func (rtr *router) Status() interface{} {
+func (rtr *router) DebugStatus() interface{} {
 	s := map[string]interface{}{
 		"HTTP":     rtr.status,
-		"Outgoing": rtr.handler.Status(),
+		"Outgoing": rtr.handler.DebugStatus(),
 	}
-	if es, ok := rtr.eventSource.(Statuser); ok {
-		s["EventSource"] = es.Status()
+	if es, ok := rtr.eventSource.(DebugStatuser); ok {
+		s["EventSource"] = es.DebugStatus()
 	}
 	return s
 }
 
-func (rtr *router) serveStatus(resp http.ResponseWriter, req *http.Request) {
+func (rtr *router) serveDebugStatus(resp http.ResponseWriter, req *http.Request) {
 	rtr.setupOnce.Do(rtr.setup)
 	logger := logger(req.Context())
 	logger.Debug("status")
 	enc := json.NewEncoder(resp)
-	err := enc.Encode(rtr.Status())
+	err := enc.Encode(rtr.DebugStatus())
 	if err != nil {
 		logger.WithError(err).Error("status encode failed")
 	}

@@ -192,7 +192,7 @@ func (h *handler) Handle(ws wsConn, eventSource eventSource, newSession func(wsC
 	return
 }
 
-func (h *handler) Status() interface{} {
+func (h *handler) DebugStatus() interface{} {
 	h.mtx.Lock()
 	defer h.mtx.Unlock()
 
