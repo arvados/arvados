@@ -71,3 +71,40 @@ class TestMakeOutput(unittest.TestCase):
         self.api.links().create.assert_has_calls([mock.call(body={"head_uuid": final_uuid, "link_class": "tag", "name": "tag0"}), mock.call().execute(num_retries=num_retries)])
         self.api.links().create.assert_has_calls([mock.call(body={"head_uuid": final_uuid, "link_class": "tag", "name": "tag1"}), mock.call().execute(num_retries=num_retries)])
         self.api.links().create.assert_has_calls([mock.call(body={"head_uuid": final_uuid, "link_class": "tag", "name": "tag2"}), mock.call().execute(num_retries=num_retries)])
+
+    @mock.patch("arvados.collection.Collection")
+    @mock.patch("arvados.collection.CollectionReader")
+    def test_make_output_collection_no_tags(self, reader, col):
+        keep_client = mock.MagicMock()
+        runner = arvados_cwl.ArvCwlRunner(self.api, keep_client=keep_client)
+        runner.project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+
+        final = mock.MagicMock()
+        col.return_value = final
+        readermock = mock.MagicMock()
+        reader.return_value = readermock
+
+        final_uuid = final.manifest_locator()
+        num_retries = runner.num_retries
+
+        cwlout = StringIO.StringIO()
+        openmock = mock.MagicMock()
+        final.open.return_value = openmock
+        openmock.__enter__.return_value = cwlout
+
+        _, runner.final_output_collection = runner.make_output_collection("Test output", None, {
+            "foo": {
+                "class": "File",
+                "location": "keep:99999999999999999999999999999991+99/foo.txt",
+                "size": 3,
+                "basename": "foo.txt"
+            },
+            "bar": {
+                "class": "File",
+                "location": "keep:99999999999999999999999999999992+99/bar.txt",
+                "basename": "baz.txt",
+                "size": 4
+            }
+        })
+
+        self.api.links().create(body={"head_uuid": final_uuid, "link_class": "tag", "name": ""}).execute(num_retries=num_retries).assert_not_called()

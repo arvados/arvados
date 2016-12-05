@@ -262,12 +262,13 @@ class ArvCwlRunner(object):
                     final.api_response()["name"],
                     final.manifest_locator())
 
-        final_uuid = final.manifest_locator()
-        tags = tagsString.split(',')
-        for tag in tags:
-             self.api.links().create(body={
-                "head_uuid": final_uuid, "link_class": "tag", "name": tag
-                }).execute(num_retries=self.num_retries)
+        if tagsString is not None:
+            final_uuid = final.manifest_locator()
+            tags = tagsString.split(',')
+            for tag in tags:
+                 self.api.links().create(body={
+                    "head_uuid": final_uuid, "link_class": "tag", "name": tag
+                    }).execute(num_retries=self.num_retries)
 
         def finalcollection(fileobj):
             fileobj["location"] = "keep:%s/%s" % (final.portable_data_hash(), fileobj["location"])
@@ -449,8 +450,6 @@ class ArvCwlRunner(object):
         else:
             if self.output_name is None:
                 self.output_name = "Output of %s" % (shortname(tool.tool["id"]))
-            if self.output_tags is None:
-                self.output_tags = ""
             self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, self.output_tags, self.final_output)
             self.set_crunch_output()
 
