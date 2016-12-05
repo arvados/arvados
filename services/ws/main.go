@@ -34,6 +34,7 @@ func main() {
 		return
 	}
 
+	log.Info("started")
 	eventSource := &pgEventSource{
 		DataSource: cfg.Postgres.ConnectionString(),
 		QueueSize:  cfg.ServerEventQueue,
