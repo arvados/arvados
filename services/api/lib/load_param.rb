@@ -92,11 +92,11 @@ module LoadParam
         # has used set_table_name to use an alternate table name from the Rails standard.
         # I could not find a perfect way to handle this well, but ActiveRecord::Base.send(:descendants)
         # would be a place to start if this ever becomes necessary.
-        if attr.match /^[a-z][_a-z0-9]+$/ and
+        if attr.match(/^[a-z][_a-z0-9]+$/) and
             model_class.columns.collect(&:name).index(attr) and
             ['asc','desc'].index direction.downcase
           @orders << "#{table_name}.#{attr} #{direction.downcase}"
-        elsif attr.match /^([a-z][_a-z0-9]+)\.([a-z][_a-z0-9]+)$/ and
+        elsif attr.match(/^([a-z][_a-z0-9]+)\.([a-z][_a-z0-9]+)$/) and
             ['asc','desc'].index(direction.downcase) and
             ActiveRecord::Base.connection.tables.include?($1) and
             $1.classify.constantize.columns.collect(&:name).index($2)

@@ -32,6 +32,11 @@ class Collection < ArvadosModel
     t.add :expires_at
   end
 
+  after_initialize do
+    @signatures_checked = false
+    @computed_pdh_for_manifest_text = false
+  end
+
   def self.attributes_required_columns
     super.merge(
                 # If we don't list manifest_text explicitly, the
@@ -61,7 +66,9 @@ class Collection < ArvadosModel
     # subsequent passes without checking any signatures. This is
     # important because the signatures have probably been stripped off
     # by the time we get to a second validation pass!
-    return true if @signatures_checked and @signatures_checked == computed_pdh
+    if @signatures_checked && @signatures_checked == computed_pdh
+      return true
+    end
 
     if self.manifest_text_changed?
       # Check permissions on the collection manifest.
@@ -197,7 +204,7 @@ class Collection < ArvadosModel
         utf8 = manifest_text
         utf8.force_encoding Encoding::UTF_8
         if utf8.valid_encoding? and utf8 == manifest_text.encode(Encoding::UTF_8)
-          manifest_text = utf8
+          self.manifest_text = utf8
           return true
         end
       rescue
@@ -283,10 +290,10 @@ class Collection < ArvadosModel
     hash_part = nil
     size_part = nil
     uuid.split('+').each do |token|
-      if token.match /^[0-9a-f]{32,}$/
+      if token.match(/^[0-9a-f]{32,}$/)
         raise "uuid #{uuid} has multiple hash parts" if hash_part
         hash_part = token
-      elsif token.match /^\d+$/
+      elsif token.match(/^\d+$/)
         raise "uuid #{uuid} has multiple size parts" if size_part
         size_part = token
       end

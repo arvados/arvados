@@ -16,13 +16,13 @@ class CommitAncestor < ActiveRecord::Base
     @gitdirbase = Rails.configuration.git_repositories_dir
     self.is = nil
     Dir.foreach @gitdirbase do |repo|
-      next if repo.match /^\./
+      next if repo.match(/^\./)
       git_dir = repo.match(/\.git$/) ? repo : File.join(repo, '.git')
       repo_name = repo.sub(/\.git$/, '')
       ENV['GIT_DIR'] = File.join(@gitdirbase, git_dir)
-      IO.foreach("|git rev-list --format=oneline '#{self.descendant.gsub /[^0-9a-f]/,""}'") do |line|
+      IO.foreach("|git rev-list --format=oneline '#{self.descendant.gsub(/[^0-9a-f]/,"")}'") do |line|
         self.is = false
-        sha1, message = line.strip.split(" ", 2)
+        sha1, _ = line.strip.split(" ", 2)
         if sha1 == self.ancestor
           self.is = true
           break

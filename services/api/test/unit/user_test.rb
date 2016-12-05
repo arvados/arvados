@@ -136,7 +136,6 @@ class UserTest < ActiveSupport::TestCase
   test "admin can't clear username when user owns repositories" do
     set_user_from_auth :admin
     user = users(:active)
-    start_username = user.username
     user.username = nil
     assert_not_allowed { user.save }
     refute_empty(user.errors[:username])

@@ -17,7 +17,6 @@ class Arvados::V1::UserAgreementsController < ApplicationController
       # use this installation.
       @objects = []
     else
-      current_user_uuid = current_user.uuid
       act_as_system_user do
         uuids = Link.where("owner_uuid = ? and link_class = ? and name = ? and tail_uuid = ? and head_uuid like ?",
                            system_user_uuid,
@@ -25,7 +24,7 @@ class Arvados::V1::UserAgreementsController < ApplicationController
                            'require',
                            system_user_uuid,
                            Collection.uuid_like_pattern).
-          collect &:head_uuid
+          collect(&:head_uuid)
         @objects = Collection.where('uuid in (?)', uuids)
       end
     end

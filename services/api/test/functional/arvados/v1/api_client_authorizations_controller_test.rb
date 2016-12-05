@@ -46,7 +46,7 @@ class Arvados::V1::ApiClientAuthorizationsControllerTest < ActionController::Tes
     get :index, search_params
     assert_response :success
     got_tokens = JSON.parse(@response.body)['items']
-      .map { |auth| auth['api_token'] }
+      .map { |a| a['api_token'] }
     assert_equal(expected_tokens.sort, got_tokens.sort,
                  "wrong results for #{search_params.inspect}")
   end

@@ -67,6 +67,10 @@ class Job < ArvadosModel
             (Complete = 'Complete'),
            ]
 
+  after_initialize do
+    @need_crunch_dispatch_trigger = false
+  end
+
   def assert_finished
     update_attributes(finished_at: finished_at || db_current_time,
                       success: success.nil? ? false : success,
@@ -336,7 +340,7 @@ class Job < ArvadosModel
         assign_uuid
         Commit.tag_in_internal_repository repository, script_version, uuid
       rescue
-        uuid = uuid_was
+        self.uuid = uuid_was
         raise
       end
     end
@@ -565,24 +569,6 @@ class Job < ArvadosModel
   end
 
   def ensure_no_collection_uuids_in_script_params
-    # recursive_hash_search searches recursively through hashes and
-    # arrays in 'thing' for string fields matching regular expression
-    # 'pattern'.  Returns true if pattern is found, false otherwise.
-    def recursive_hash_search thing, pattern
-      if thing.is_a? Hash
-        thing.each do |k, v|
-          return true if recursive_hash_search v, pattern
-        end
-      elsif thing.is_a? Array
-        thing.each do |k|
-          return true if recursive_hash_search k, pattern
-        end
-      elsif thing.is_a? String
-        return true if thing.match pattern
-      end
-      false
-    end
-
     # Fail validation if any script_parameters field includes a string containing a
     # collection uuid pattern.
     if self.script_parameters_changed?
@@ -592,5 +578,23 @@ class Job < ArvadosModel
       end
     end
     true
+  end
+
+  # recursive_hash_search searches recursively through hashes and
+  # arrays in 'thing' for string fields matching regular expression
+  # 'pattern'.  Returns true if pattern is found, false otherwise.
+  def recursive_hash_search thing, pattern
+    if thing.is_a? Hash
+      thing.each do |k, v|
+        return true if recursive_hash_search v, pattern
+      end
+    elsif thing.is_a? Array
+      thing.each do |k|
+        return true if recursive_hash_search k, pattern
+      end
+    elsif thing.is_a? String
+      return true if thing.match pattern
+    end
+    false
   end
 end

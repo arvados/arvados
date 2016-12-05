@@ -35,6 +35,9 @@ def done(self, record, tmpdir, outdir, keepdir):
         }, ensure_unique_name=True).execute(
             num_retries=self.arvrunner.num_retries)
 
+    return done_outputs(self, record, tmpdir, outdir, keepdir)
+
+def done_outputs(self, record, tmpdir, outdir, keepdir):
     self.builder.outdir = outdir
     self.builder.pathmapper.keepdir = keepdir
     return self.collect_outputs("keep:" + record["output"])
