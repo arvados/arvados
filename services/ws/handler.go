@@ -31,6 +31,7 @@ func (h *handler) Handle(ws wsConn, eventSource eventSource, newSession func(wsC
 	h.setupOnce.Do(h.setup)
 
 	ctx, cancel := context.WithCancel(ws.Request().Context())
+	defer cancel()
 	log := logger(ctx)
 
 	incoming := eventSource.NewSink()
