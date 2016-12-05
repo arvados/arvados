@@ -47,6 +47,8 @@ class ArvPathMapper(PathMapper):
                         pass
                     else:
                         raise WorkflowException("File literal '%s' is missing contents" % src)
+                elif src.startswith("arvwf:"):
+                    self._pathmap[src] = MapperEnt(src, src, "File")
                 else:
                     raise WorkflowException("Input file path '%s' is invalid" % st)
             if "secondaryFiles" in srcobj:

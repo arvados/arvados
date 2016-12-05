@@ -94,6 +94,9 @@ class ArvCwlRunner(object):
 
     def arv_make_tool(self, toolpath_object, **kwargs):
         kwargs["work_api"] = self.work_api
+        kwargs["fetcher_constructor"] = partial(CollectionFetcher,
+                                                api_client=self.api,
+                                                keep_client=self.keep_client)
         if "class" in toolpath_object and toolpath_object["class"] == "CommandLineTool":
             return ArvadosCommandTool(self, toolpath_object, **kwargs)
         elif "class" in toolpath_object and toolpath_object["class"] == "Workflow":

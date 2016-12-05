@@ -57,7 +57,7 @@ def upload_dependencies(arvrunner, name, document_loader,
 
     loaded = set()
     def loadref(b, u):
-        joined = urlparse.urljoin(b, u)
+        joined = document_loader.fetcher.urljoin(b, u)
         defrg, _ = urlparse.urldefrag(joined)
         if defrg not in loaded:
             loaded.add(defrg)
@@ -85,7 +85,7 @@ def upload_dependencies(arvrunner, name, document_loader,
     sc = scandeps(uri, scanobj,
                   loadref_fields,
                   set(("$include", "$schemas", "location")),
-                  loadref)
+                  loadref, urljoin=document_loader.fetcher.urljoin)
 
     normalizeFilesDirs(sc)
 

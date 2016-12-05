@@ -4,6 +4,8 @@ import errno
 import urlparse
 import re
 
+import ruamel.yaml as yaml
+
 import cwltool.stdfsaccess
 from cwltool.pathmapper import abspath
 import cwltool.resolver
@@ -134,16 +136,16 @@ class CollectionFetcher(DefaultFetcher):
 
     def fetch_text(self, url):
         if url.startswith("keep:"):
-            with self.fsaccess.open(url) as f:
+            with self.fsaccess.open(url, "r") as f:
                 return f.read()
-        if url.startswith("arv:"):
-            return self.api_client.workflows().get(uuid=url[4:]).execute()["definition"]
+        if url.startswith("arvwf:"):
+            return self.api_client.workflows().get(uuid=url[6:]).execute()["definition"]
         return super(CollectionFetcher, self).fetch_text(url)
 
     def check_exists(self, url):
         if url.startswith("keep:"):
             return self.fsaccess.exists(url)
-        if url.startswith("arv:"):
+        if url.startswith("arvwf:"):
             if self.fetch_text(url):
                 return True
         return super(CollectionFetcher, self).check_exists(url)
@@ -157,7 +159,7 @@ class CollectionFetcher(DefaultFetcher):
             return url
 
         basesp = urlparse.urlsplit(base_url)
-        if basesp.scheme == "keep":
+        if basesp.scheme in ("keep", "arvwf"):
             if not basesp.path:
                 raise IOError(errno.EINVAL, "Invalid Keep locator", base_url)
 
@@ -166,7 +168,7 @@ class CollectionFetcher(DefaultFetcher):
 
             pdh = baseparts.pop(0)
 
-            if not arvados.util.keep_locator_pattern.match(pdh):
+            if basesp.scheme == "keep" and not arvados.util.keep_locator_pattern.match(pdh):
                 raise IOError(errno.EINVAL, "Invalid Keep locator", base_url)
 
             if urlsp.path.startswith("/"):
@@ -177,7 +179,7 @@ class CollectionFetcher(DefaultFetcher):
                 baseparts.pop()
 
             path = "/".join([pdh] + baseparts + urlparts)
-            return urlparse.urlunsplit(("keep", "", path, "", urlsp.fragment))
+            return urlparse.urlunsplit((basesp.scheme, "", path, "", urlsp.fragment))
 
         return super(CollectionFetcher, self).urljoin(base_url, url)
 
@@ -185,11 +187,11 @@ workflow_uuid_pattern = re.compile(r'[a-z0-9]{5}-7fd4e-[a-z0-9]{15}')
 
 def collectionResolver(api_client, document_loader, uri):
     if workflow_uuid_pattern.match(uri):
-        return "arv:%s" % uri
+        return "arvwf:%s#main" % (uri)
 
     p = uri.split("/")
     if arvados.util.keep_locator_pattern.match(p[0]):
-        return "keep:" + uri
+        return "keep:%s" % (uri)
 
     if arvados.util.collection_uuid_pattern.match(p[0]):
         return "keep:%s%s" % (self.api_client.collections().
