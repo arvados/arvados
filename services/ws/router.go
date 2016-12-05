@@ -55,7 +55,8 @@ func (rtr *router) setup() {
 	rtr.mux = http.NewServeMux()
 	rtr.mux.Handle("/websocket", rtr.makeServer(NewSessionV0))
 	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(NewSessionV1))
-	rtr.mux.HandleFunc("/debug.json", rtr.serveDebugStatus)
+	rtr.mux.HandleFunc("/debug.json", jsonHandler(rtr.DebugStatus))
+	rtr.mux.HandleFunc("/status.json", jsonHandler(rtr.Status))
 }
 
 func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
@@ -103,14 +104,9 @@ func (rtr *router) DebugStatus() interface{} {
 	return s
 }
 
-func (rtr *router) serveDebugStatus(resp http.ResponseWriter, req *http.Request) {
-	rtr.setupOnce.Do(rtr.setup)
-	logger := logger(req.Context())
-	logger.Debug("status")
-	enc := json.NewEncoder(resp)
-	err := enc.Encode(rtr.DebugStatus())
-	if err != nil {
-		logger.WithError(err).Error("status encode failed")
+func (rtr *router) Status() interface{} {
+	return map[string]interface{}{
+		"Clients": atomic.LoadInt64(&rtr.status.ReqsActive),
 	}
 }
 
@@ -129,4 +125,17 @@ func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		"X-Forwarded-For": req.Header.Get("X-Forwarded-For"),
 	}).Info("accept request")
 	rtr.mux.ServeHTTP(resp, req)
+}
+
+func jsonHandler(fn func() interface{}) http.HandlerFunc {
+	return func(resp http.ResponseWriter, req *http.Request) {
+		logger := logger(req.Context())
+		enc := json.NewEncoder(resp)
+		err := enc.Encode(fn())
+		if err != nil {
+			msg := "encode failed"
+			logger.WithError(err).Error(msg)
+			http.Error(resp, msg, http.StatusInternalServerError)
+		}
+	}
 }
