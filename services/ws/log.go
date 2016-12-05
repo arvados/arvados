@@ -32,7 +32,7 @@ func logger(ctx context.Context) *logrus.Entry {
 }
 
 // loggerConfig sets up logging to behave as configured.
-func loggerConfig(cfg Config) {
+func loggerConfig(cfg wsConfig) {
 	lvl, err := logrus.ParseLevel(cfg.LogLevel)
 	if err != nil {
 		logrus.Fatal(err)

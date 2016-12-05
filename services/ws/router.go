@@ -22,7 +22,7 @@ type wsConn interface {
 }
 
 type router struct {
-	Config         *Config
+	Config         *wsConfig
 	eventSource    eventSource
 	newPermChecker func() permChecker
 
@@ -41,7 +41,7 @@ type routerDebugStatus struct {
 	ReqsActive   int64
 }
 
-type DebugStatuser interface {
+type debugStatuser interface {
 	DebugStatus() interface{}
 }
 
@@ -53,8 +53,8 @@ func (rtr *router) setup() {
 		QueueSize:   rtr.Config.ClientEventQueue,
 	}
 	rtr.mux = http.NewServeMux()
-	rtr.mux.Handle("/websocket", rtr.makeServer(NewSessionV0))
-	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(NewSessionV1))
+	rtr.mux.Handle("/websocket", rtr.makeServer(newSessionV0))
+	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(newSessionV1))
 	rtr.mux.HandleFunc("/debug.json", jsonHandler(rtr.DebugStatus))
 	rtr.mux.HandleFunc("/status.json", jsonHandler(rtr.Status))
 }
@@ -98,7 +98,7 @@ func (rtr *router) DebugStatus() interface{} {
 		"HTTP":     rtr.status,
 		"Outgoing": rtr.handler.DebugStatus(),
 	}
-	if es, ok := rtr.eventSource.(DebugStatuser); ok {
+	if es, ok := rtr.eventSource.(debugStatuser); ok {
 		s["EventSource"] = es.DebugStatus()
 	}
 	return s

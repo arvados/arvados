@@ -33,7 +33,7 @@ type v0session struct {
 	setupOnce     sync.Once
 }
 
-func NewSessionV0(ws wsConn, sendq chan<- interface{}, db *sql.DB, pc permChecker) (session, error) {
+func newSessionV0(ws wsConn, sendq chan<- interface{}, db *sql.DB, pc permChecker) (session, error) {
 	sess := &v0session{
 		sendq:       sendq,
 		ws:          ws,

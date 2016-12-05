@@ -44,7 +44,7 @@ type pgEventSource struct {
 	eventsOut  uint64
 }
 
-var _ DebugStatuser = (*pgEventSource)(nil)
+var _ debugStatuser = (*pgEventSource)(nil)
 
 func (ps *pgEventSource) setup() {
 	ps.shutdown = make(chan error, 1)

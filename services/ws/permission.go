@@ -18,7 +18,7 @@ type permChecker interface {
 	Check(uuid string) (bool, error)
 }
 
-func NewPermChecker(ac arvados.Client) permChecker {
+func newPermChecker(ac arvados.Client) permChecker {
 	ac.AuthToken = ""
 	return &cachingPermChecker{
 		Client:     &ac,

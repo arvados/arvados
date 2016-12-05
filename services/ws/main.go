@@ -15,7 +15,7 @@ func main() {
 
 	configPath := flag.String("config", "/etc/arvados/ws/ws.yml", "`path` to config file")
 	dumpConfig := flag.Bool("dump-config", false, "show current configuration and exit")
-	cfg := DefaultConfig()
+	cfg := defaultConfig()
 	flag.Parse()
 
 	err := config.LoadFile(&cfg, *configPath)
@@ -47,7 +47,7 @@ func main() {
 		Handler: &router{
 			Config:         &cfg,
 			eventSource:    eventSource,
-			newPermChecker: func() permChecker { return NewPermChecker(cfg.Client) },
+			newPermChecker: func() permChecker { return newPermChecker(cfg.Client) },
 		},
 	}
 	// Bootstrap the eventSource by attaching a dummy subscriber

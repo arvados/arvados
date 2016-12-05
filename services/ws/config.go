@@ -6,7 +6,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 )
 
-type Config struct {
+type wsConfig struct {
 	Client    arvados.Client
 	Postgres  pgConfig
 	Listen    string
@@ -18,8 +18,8 @@ type Config struct {
 	ServerEventQueue int
 }
 
-func DefaultConfig() Config {
-	return Config{
+func defaultConfig() wsConfig {
+	return wsConfig{
 		Client: arvados.Client{
 			APIHost: "localhost:443",
 		},
