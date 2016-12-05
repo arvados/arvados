@@ -51,3 +51,6 @@ class TestUrljoin(unittest.TestCase):
 
         self.assertEquals("keep:99999999999999999999999999999991+99/dir/wh.py",
                           cf.urljoin("keep:99999999999999999999999999999991+99/dir/", "wh.py"))
+
+    def test_resolver(self):
+        pass

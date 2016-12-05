@@ -2,9 +2,11 @@ import fnmatch
 import os
 import errno
 import urlparse
+import re
 
 import cwltool.stdfsaccess
 from cwltool.pathmapper import abspath
+import cwltool.resolver
 
 import arvados.util
 import arvados.collection
@@ -127,17 +129,23 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
 class CollectionFetcher(DefaultFetcher):
     def __init__(self, cache, session, api_client=None, keep_client=None):
         super(CollectionFetcher, self).__init__(cache, session)
+        self.api_client = api_client
         self.fsaccess = CollectionFsAccess("", api_client=api_client, keep_client=keep_client)
 
     def fetch_text(self, url):
         if url.startswith("keep:"):
             with self.fsaccess.open(url) as f:
                 return f.read()
+        if url.startswith("arv:"):
+            return self.api_client.workflows().get(uuid=url[4:]).execute()["definition"]
         return super(CollectionFetcher, self).fetch_text(url)
 
     def check_exists(self, url):
         if url.startswith("keep:"):
             return self.fsaccess.exists(url)
+        if url.startswith("arv:"):
+            if self.fetch_text(url):
+                return True
         return super(CollectionFetcher, self).check_exists(url)
 
     def urljoin(self, base_url, url):
@@ -172,3 +180,20 @@ class CollectionFetcher(DefaultFetcher):
             return urlparse.urlunsplit(("keep", "", path, "", urlsp.fragment))
 
         return super(CollectionFetcher, self).urljoin(base_url, url)
+
+workflow_uuid_pattern = re.compile(r'[a-z0-9]{5}-7fd4e-[a-z0-9]{15}')
+
+def collectionResolver(api_client, document_loader, uri):
+    if workflow_uuid_pattern.match(uri):
+        return "arv:%s" % uri
+
+    p = uri.split("/")
+    if arvados.util.keep_locator_pattern.match(p[0]):
+        return "keep:" + uri
+
+    if arvados.util.collection_uuid_pattern.match(p[0]):
+        return "keep:%s%s" % (self.api_client.collections().
+                              get(uuid=uri).execute()["portable_data_hash"],
+                              uri[len(p[0]):])
+
+    return cwltool.resolver.tool_resolver(document_loader, uri)

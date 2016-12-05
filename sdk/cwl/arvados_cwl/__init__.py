@@ -29,7 +29,7 @@ from .arvjob import ArvadosJob, RunnerJob, RunnerTemplate
 from. runner import Runner, upload_instance
 from .arvtool import ArvadosCommandTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow
-from .fsaccess import CollectionFsAccess, CollectionFetcher
+from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver
 from .perf import Perf
 from .pathmapper import FinalOutputPathMapper
 from ._version import __version__
@@ -623,4 +623,5 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
                                                     keep_client=keep_client),
                              fetcher_constructor=partial(CollectionFetcher,
                                                          api_client=api_client,
-                                                         keep_client=keep_client))
+                                                         keep_client=keep_client),
+                             resolver=partial(collectionResolver, api_client))

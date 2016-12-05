@@ -9,7 +9,7 @@ $graph:
     type: File
   outputs: []
   requirements:
-  - {class: DockerRequirement, dockerImageId: 'debian:8', dockerPull: 'debian:8'}
+  - {class: DockerRequirement, dockerPull: 'debian:8'}
 - class: Workflow
   id: '#main'
   inputs:

@@ -489,6 +489,18 @@ class TestSubmit(unittest.TestCase):
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
+    @mock.patch("arvados.collection.CollectionReader")
+    @mock.patch("time.sleep")
+    @stubs
+    def test_submit_keepref(self, stubs, tm, collectionReader):
+        capture_stdout = cStringIO.StringIO()
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug",
+             "tests/wf/submit_keepref_wf.cwl"],
+            capture_stdout, sys.stderr, api_client=stubs.api)
+        self.assertEqual(exited, 0)
+
+
     @mock.patch("arvados.commands.keepdocker.find_one_image_hash")
     @mock.patch("cwltool.docker.get_image")
     @mock.patch("arvados.api")
