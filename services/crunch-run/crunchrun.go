@@ -800,6 +800,7 @@ func (runner *ContainerRunner) Run() (err error) {
 		checkErr(err)
 
 		if runner.finalState == "Queued" {
+			runner.CrunchLog.Close()
 			runner.UpdateContainerFinal()
 			return
 		}
@@ -832,6 +833,7 @@ func (runner *ContainerRunner) Run() (err error) {
 	// check for and/or load image
 	err = runner.LoadImage()
 	if err != nil {
+		runner.finalState = "Cancelled"
 		err = fmt.Errorf("While loading container image: %v", err)
 		return
 	}
@@ -839,6 +841,7 @@ func (runner *ContainerRunner) Run() (err error) {
 	// set up FUSE mount and binds
 	err = runner.SetupMounts()
 	if err != nil {
+		runner.finalState = "Cancelled"
 		err = fmt.Errorf("While setting up mounts: %v", err)
 		return
 	}

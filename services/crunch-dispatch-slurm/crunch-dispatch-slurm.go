@@ -195,6 +195,7 @@ func submit(dispatcher *dispatch.Dispatcher,
 		b, _ := ioutil.ReadAll(stdoutReader)
 		stdoutReader.Close()
 		stdoutChan <- b
+		close(stdoutChan)
 	}()
 
 	stderrChan := make(chan []byte)
@@ -202,6 +203,7 @@ func submit(dispatcher *dispatch.Dispatcher,
 		b, _ := ioutil.ReadAll(stderrReader)
 		stderrReader.Close()
 		stderrChan <- b
+		close(stderrChan)
 	}()
 
 	// Send a tiny script on stdin to execute the crunch-run command
@@ -209,13 +211,10 @@ func submit(dispatcher *dispatch.Dispatcher,
 	io.WriteString(stdinWriter, execScript(append(crunchRunCommand, container.UUID)))
 	stdinWriter.Close()
 
-	err = cmd.Wait()
-
 	stdoutMsg := <-stdoutChan
 	stderrmsg := <-stderrChan
 
-	close(stdoutChan)
-	close(stderrChan)
+	err = cmd.Wait()
 
 	if err != nil {
 		submitErr = fmt.Errorf("Container submission failed: %v: %v (stderr: %q)", cmd.Args, err, stderrmsg)
@@ -302,12 +301,13 @@ func run(dispatcher *dispatch.Dispatcher,
 
 				// Mutex between squeue sync and running sbatch or scancel.
 				squeueUpdater.SlurmLock.Lock()
-				err := scancelCmd(container).Run()
+				cmd := scancelCmd(container)
+				msg, err := cmd.CombinedOutput()
 				squeueUpdater.SlurmLock.Unlock()
 
 				if err != nil {
-					log.Printf("Error stopping container %s with scancel: %v",
-						container.UUID, err)
+					log.Printf("Error stopping container %s with %v %v: %v %v",
+						container.UUID, cmd.Path, cmd.Args, err, string(msg))
 					if squeueUpdater.CheckSqueue(container.UUID) {
 						log.Printf("Container %s is still in squeue after scancel.",
 							container.UUID)

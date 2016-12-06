@@ -96,4 +96,17 @@ class ContainerRequestsTest < ActionDispatch::IntegrationTest
     wait_for_ajax
     assert_text 'This container is queued'
   end
+
+  test "Run button enabled when workflow is empty and no inputs are needed" do
+    visit page_with_token("active")
+
+    find('.btn', text: 'Run a process').click
+    within('.modal-dialog') do
+      find('.selectable', text: 'Valid workflow with no definition yaml').click
+      find('.btn', text: 'Next: choose inputs').click
+    end
+
+    assert_text 'This workflow does not need any further inputs'
+    page.assert_selector 'a', text: 'Run'
+  end
 end

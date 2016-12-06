@@ -1,22 +1,30 @@
-<% n_inputs = cwl_inputs_required(@object, get_cwl_inputs(@object.mounts[:"/var/lib/cwl/workflow.json"][:content]), [:mounts, :"/var/lib/cwl/cwl.input.json", :content]) %>
+<%
+n_inputs = if @object.mounts[:"/var/lib/cwl/workflow.json"] && @object.mounts[:"/var/lib/cwl/cwl.input.json"]
+             cwl_inputs_required(@object, get_cwl_inputs(@object.mounts[:"/var/lib/cwl/workflow.json"][:content]), [:mounts, :"/var/lib/cwl/cwl.input.json", :content])
+           else
+             0
+           end
+%>
 
 <% content_for :pi_input_form do %>
 <form role="form" style="width:60%">
   <div class="form-group">
-    <% workflow = @object.mounts[:"/var/lib/cwl/workflow.json"][:content] %>
-    <% inputs = get_cwl_inputs(workflow) %>
-    <% inputs.each do |input| %>
-      <label for="#input-<%= cwl_shortname(input[:id]) %>">
-        <%= input[:label] || cwl_shortname(input[:id]) %>
-      </label>
-      <div>
-        <p class="form-control-static">
-          <%= render_cwl_input @object, input, [:mounts, :"/var/lib/cwl/cwl.input.json", :content] %>
+    <% workflow = @object.mounts[:"/var/lib/cwl/workflow.json"].andand[:content] %>
+    <% if workflow %>
+      <% inputs = get_cwl_inputs(workflow) %>
+      <% inputs.each do |input| %>
+        <label for="#input-<%= cwl_shortname(input[:id]) %>">
+          <%= input[:label] || cwl_shortname(input[:id]) %>
+        </label>
+        <div>
+          <p class="form-control-static">
+            <%= render_cwl_input @object, input, [:mounts, :"/var/lib/cwl/cwl.input.json", :content] %>
+          </p>
+        </div>
+        <p class="help-block">
+          <%= input[:doc] %>
         </p>
-      </div>
-      <p class="help-block">
-        <%= input[:doc] %>
-      </p>
+      <% end %>
     <% end %>
   </div>
 </form>

@@ -81,7 +81,8 @@ func (s *TestSuite) TestIntegrationCancel(c *C) {
 		return exec.Command("echo")
 	}
 
-	container := s.integrationTest(c, func() *exec.Cmd { return exec.Command("echo", "zzzzz-dz642-queuedcontainer") },
+	container := s.integrationTest(c,
+		func() *exec.Cmd { return exec.Command("echo", "zzzzz-dz642-queuedcontainer") },
 		[]string(nil),
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
@@ -134,7 +135,7 @@ func (s *TestSuite) integrationTest(c *C,
 	}(squeueCmd)
 	squeueCmd = newSqueueCmd
 
-	// There should be no queued containers now
+	// There should be one queued container
 	params := arvadosclient.Dict{
 		"filters": [][]string{{"state", "=", "Queued"}},
 	}
