@@ -1,0 +1,205 @@
+---
+layout: default
+navsection: installguide
+title: Install the websocket server
+...
+
+{% include 'notebox_begin_warning' %}
+
+This websocket server is an alternative to the puma server that comes with the API server. It is available as an *experimental pre-release* and is not recommended for production sites.
+
+{% include 'notebox_end' %}
+
+The arvados-ws server provides event notifications to websocket clients. It can be installed anywhere with access to Postgres database and the Arvados API server, typically behind a web proxy that provides SSL support. See the "godoc page":http://godoc.org/github.com/curoverse/arvados/services/keep-web for additional information.
+
+By convention, we use the following hostname for the websocket service.
+
+<notextile>
+<pre><code>ws.<span class="userinput">uuid_prefix.your.domain</span></code></pre>
+</notextile>
+
+The above hostname should resolve from anywhere on the internet.
+
+h2. Install arvados-ws
+
+Typically arvados-ws runs on the same host as the API server.
+
+On Debian-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install arvados-ws</span>
+</code></pre>
+</notextile>
+
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install arvados-ws</span>
+</code></pre>
+</notextile>
+
+Verify that @arvados-ws@ is functional:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arvados-ws -h</span>
+Usage of arvados-ws:
+  -config path
+        path to config file (default "/etc/arvados/ws/ws.yml")
+  -dump-config
+        show current configuration and exit
+</code></pre>
+</notextile>
+
+h3. Create a configuration file
+
+Create @/etc/arvados/ws/ws.yml@ using the following template. Replace @xxxxxxxx@ with the "password you generated during database setup":install-postgresql.html#api.
+
+<notextile>
+<pre><code>~$ <span class="userinput">arvados-ws -h</span>
+Client:
+  APIHost: <span class="userinput">uuid_prefix.your.domain</span>:443
+Listen: ":<span class="userinput">9003</span>"
+Postgres:
+  dbname: arvados_production
+  host: localhost
+  password: <span class="userinput">xxxxxxxx</span>
+  user: arvados
+</code></pre>
+</notextile>
+
+h3. Start the service (option 1: systemd)
+
+If your system does not use systemd, skip this section and follow the "runit instructions":#runit instead.
+
+If your system uses systemd, the arvados-ws service should already be set up. Start it and check its status:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo systemctl restart arvados-ws</span>
+~$ <span class="userinput">sudo systemctl status arvados-ws</span>
+● arvados-ws.service - Arvados websocket server
+   Loaded: loaded (/lib/systemd/system/arvados-ws.service; enabled)
+   Active: active (running) since Tue 2016-12-06 11:20:48 EST; 10s ago
+     Docs: https://doc.arvados.org/
+ Main PID: 9421 (arvados-ws)
+   CGroup: /system.slice/arvados-ws.service
+           └─9421 /usr/bin/arvados-ws
+
+Dec 06 11:20:48 zzzzz arvados-ws[9421]: {"level":"info","msg":"started","time":"2016-12-06T11:20:48.207617188-05:00"}
+Dec 06 11:20:48 zzzzz arvados-ws[9421]: {"Listen":":9003","level":"info","msg":"listening","time":"2016-12-06T11:20:48.244956506-05:00"}
+Dec 06 11:20:48 zzzzz systemd[1]: Started Arvados websocket server.
+</code></pre>
+</notextile>
+
+If it is not running, use @journalctl@ to check logs for errors:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo journalctl -n10 -u arvados-ws</span>
+...
+Dec 06 11:12:48 zzzzz systemd[1]: Starting Arvados websocket server...
+Dec 06 11:12:48 zzzzz arvados-ws[8918]: {"level":"info","msg":"started","time":"2016-12-06T11:12:48.030496636-05:00"}
+Dec 06 11:12:48 zzzzz arvados-ws[8918]: {"error":"pq: password authentication failed for user \"arvados\"","level":"fatal","msg":"db.Ping failed","time":"2016-12-06T11:12:48.058206400-05:00"}
+</code></pre>
+</notextile>
+
+Skip ahead to "confirm the service is working":#confirm.
+
+h3(#runit). Start the service (option 2: runit)
+
+Install runit to supervise the arvados-ws daemon.  {% include 'install_runit' %}
+
+Create a supervised service.
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo mkdir /etc/service/arvados-ws</span>
+~$ <span class="userinput">cd /etc/service/arvados-ws</span>
+~$ <span class="userinput">sudo mkdir log log/main</span>
+~$ <span class="userinput">printf '#!/bin/sh\nexec arvados-ws 2>&1\n' | sudo tee run</span>
+~$ <span class="userinput">printf '#!/bin/sh\nexec svlogd main\n' | sudo tee log/run</span>
+~$ <span class="userinput">sudo chmod +x run log/run</span>
+~$ <span class="userinput">sudo sv exit .</span>
+~$ <span class="userinput">cd -</span>
+</code></pre>
+</notextile>
+
+Use @sv stat@ and check the log file to verify the service is running.
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo sv stat /etc/service/arvados-ws</span>
+run: /etc/service/arvados-ws: (pid 12520) 2s; run: log: (pid 12519) 2s
+~$ <span class="userinput">tail /etc/service/arvados-ws/log/main/current</span>
+{"level":"info","msg":"started","time":"2016-12-06T11:56:20.669171449-05:00"}
+{"Listen":":9003","level":"info","msg":"listening","time":"2016-12-06T11:56:20.708847627-05:00"}
+</code></pre>
+</notextile>
+
+h3(#confirm). Confirm the service is working
+
+Confirm the service is listening on its assigned port and responding to requests.
+
+<notextile>
+<pre><code>~$ <span class="userinput">curl http://0.0.0.0:<b>9003</b>/status.json</span>
+{"Clients":1}
+</code></pre>
+</notextile>
+
+h3. Set up a reverse proxy with SSL support
+
+The arvados-ws service will be accessible from anywhere on the internet, so we recommend using SSL for transport encryption.
+
+This is best achieved by putting a reverse proxy with SSL support in front of arvados-ws, running on port 443 and passing requests to arvados-ws on port 9003 (or whatever port you chose in your configuration file).
+
+For example, using Nginx:
+
+<notextile><pre>
+upstream arvados-ws {
+  server                127.0.0.1:<span class="userinput">9003</span>;
+}
+
+server {
+  listen                <span class="userinput">[your public IP address]</span>:443 ssl;
+  server_name           ws.<span class="userinput">uuid_prefix.your.domain</span>;
+
+  proxy_connect_timeout 90s;
+  proxy_read_timeout    300s;
+
+  ssl                   on;
+  ssl_certificate       <span class="userinput"/>YOUR/PATH/TO/cert.pem</span>;
+  ssl_certificate_key   <span class="userinput"/>YOUR/PATH/TO/cert.key</span>;
+
+  location / {
+    proxy_pass          http://arvados-ws;
+    proxy_set_header    Upgrade         $http_upgrade;
+    proxy_set_header    Connection      "upgrade";
+    proxy_set_header    Host            $host;
+    proxy_set_header    X-Forwarded-For $proxy_add_x_forwarded_for;
+  }
+}
+</pre></notextile>
+
+If Nginx is already configured to proxy @ws@ requests to puma, move that configuration out of the way or change its @server_name@ so it doesn't conflict.
+
+h3. Update API server configuration
+
+Ensure the websocket server address is correct in the API server configuration file @/etc/arvados/api/application.yml@.
+
+<notextile>
+<pre><code>websocket_address: wss://ws.<span class="userinput">uuid_prefix.your.domain</span>/websocket
+</code></pre>
+</notextile>
+
+Restart the Nginx to reload the API server configuration.
+
+<notextile>
+<pre><code>$ sudo nginx -s reload</span>
+</code></pre>
+</notextile>
+
+h3. Verify DNS and proxy setup
+
+Use a host elsewhere on the Internet to confirm that your DNS, proxy, and SSL are configured correctly.
+
+<notextile>
+<pre><code>$ <span class="userinput">curl https://ws.<b>uuid_prefix.your.domain</b>/status.json</span>
+{"Clients":1}
+</code></pre>
+</notextile>

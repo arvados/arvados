@@ -2,7 +2,7 @@
 // cache-invalidation event feed at "ws://.../websocket") to
 // websocket clients.
 //
-// See https://doc.arvados.org/install/install-arvados-ws.html.
+// See https://doc.arvados.org/install/install-ws.html.
 //
 // Usage
 //
