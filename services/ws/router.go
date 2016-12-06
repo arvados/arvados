@@ -130,6 +130,7 @@ func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 func jsonHandler(fn func() interface{}) http.HandlerFunc {
 	return func(resp http.ResponseWriter, req *http.Request) {
 		logger := logger(req.Context())
+		resp.Header().Set("Content-Type", "application/json")
 		enc := json.NewEncoder(resp)
 		err := enc.Encode(fn())
 		if err != nil {
