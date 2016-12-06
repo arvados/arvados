@@ -30,7 +30,7 @@ navbar:
       - user/getting_started/community.html.textile.liquid
     - Run a workflow using Workbench:
       - user/getting_started/workbench.html.textile.liquid
-      - user/tutorials/tutorial-pipeline-workbench.html.textile.liquid
+      - user/tutorials/tutorial-workflow-workbench.html.textile.liquid
     - Access an Arvados virtual machine:
       - user/getting_started/vm-login-with-webshell.html.textile.liquid
       - user/getting_started/ssh-access-unix.html.textile.liquid
