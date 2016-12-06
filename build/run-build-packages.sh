@@ -490,7 +490,7 @@ cwltoolversion=$(cat "$WORKSPACE/sdk/cwl/setup.py" | grep cwltool== | sed "s/.*=
 fpm_build cwltool "" "" python $cwltoolversion
 
 # FPM eats the trailing .0 in the python-rdflib-jsonld package when built with 'rdflib-jsonld>=0.3.0'. Force the version. Ward, 2016-03-25
-fpm_build rdflib-jsonld "" "" python 0.3.0
+fpm_build rdflib-jsonld "" "" python 0.4.0
 
 # The PAM module
 if [[ $TARGET =~ debian|ubuntu ]]; then
