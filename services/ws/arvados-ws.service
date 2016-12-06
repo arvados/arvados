@@ -6,7 +6,7 @@ AssertPathExists=/etc/arvados/ws/ws.yml
 
 [Service]
 Type=notify
-ExecStart=/usr/bin/ws
+ExecStart=/usr/bin/arvados-ws
 Restart=always
 
 [Install]
