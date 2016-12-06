@@ -26,6 +26,11 @@ diagnostics:
     pipeline_2:
       template_uuid: zzzzz-p5p6p-1xbobfobk94ppbv
       input_paths: [zzzzz-4zz18-nz98douzhaa3jh2, zzzzz-4zz18-gpw9o5wpcti3nib]
+  container_requests_to_test:
+    container_request_1:
+      workflow_uuid: zzzzz-7fd4e-60e96shgwspt4mw
+      input_paths: []
+      max_wait_seconds: 10
 
 # Below is a sample setting for performance testing.
 # Configure workbench URL as "arvados_workbench_url"
