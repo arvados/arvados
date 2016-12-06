@@ -1,0 +1,44 @@
+require 'diagnostics_test_helper'
+
+class ContainerRequestTest < DiagnosticsTest
+  crs_to_test = Rails.configuration.container_requests_to_test.andand.keys
+
+  setup do
+    need_selenium 'to make websockets work'
+  end
+
+  crs_to_test.andand.each do |cr_to_test|
+    test "run container_request: #{cr_to_test}" do
+      cr_config = Rails.configuration.container_requests_to_test[cr_to_test]
+
+      visit_page_with_token 'active'
+
+      find('.btn', text: 'Run a process').click
+
+      within('.modal-dialog') do
+        page.find_field('Search').set cr_config['workflow_uuid']
+        wait_for_ajax
+        find('.selectable', text: 'bwa-mem.cwl').click
+        find('.btn', text: 'Next: choose inputs').click
+      end
+
+      page.assert_selector('a.disabled,button.disabled', text: 'Run') if cr_config['input_paths'].any?
+
+      # Choose input for the workflow
+      cr_config['input_paths'].each do |look_for|
+        select_input look_for
+      end
+      wait_for_ajax
+
+      # All needed input are already filled in. Run this workflow now
+      page.assert_no_selector('a.disabled,button.disabled', text: 'Run')
+      find('a,button', text: 'Run').click
+
+      # container_request is running. We have a "Pause" button instead now.
+      page.assert_selector 'a,button', text: 'Pause'
+
+      # Wait for container_request run to complete
+      wait_until_page_has 'completed', cr_config['max_wait_seconds']
+    end
+  end
+end
