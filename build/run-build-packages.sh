@@ -110,7 +110,7 @@ case "$TARGET" in
             'pycurl<7.21.5' contextlib2 pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
             cachecontrol requests)
-        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
+        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         ;;
     debian8)
         FORMAT=deb
@@ -121,7 +121,7 @@ case "$TARGET" in
             'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
             cachecontrol)
-        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
+        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         ;;
     ubuntu1204)
         FORMAT=deb
@@ -132,7 +132,7 @@ case "$TARGET" in
             contextlib2 'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro isodate ruamel.ordereddict
             cachecontrol requests)
-        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
+        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         ;;
     ubuntu1404)
         FORMAT=deb
@@ -141,7 +141,7 @@ case "$TARGET" in
             rsa 'pycurl<7.21.5' backports.ssl_match_hostname pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
             cachecontrol)
-        PYTHON3_BACKPORTS=(docker-py==1.7.2 requests websocket-client)
+        PYTHON3_BACKPORTS=(docker-py==1.7.2 requests websocket-client==0.37.0)
         ;;
     centos6)
         FORMAT=rpm
@@ -161,7 +161,7 @@ case "$TARGET" in
             'rdflib>=4.2.0' shellescape mistune typing avro requests \
             isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
             ruamel.ordereddict cachecontrol)
-        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
+        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         export PYCURL_SSL_LIBRARY=nss
         ;;
     centos7)
@@ -181,7 +181,7 @@ case "$TARGET" in
             'rdflib>=4.2.0' shellescape mistune typing avro \
             isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
             ruamel.ordereddict cachecontrol)
-        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
+        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         export PYCURL_SSL_LIBRARY=nss
         ;;
     *)
@@ -485,7 +485,8 @@ fpm_build ruamel.yaml "" "" python 0.12.4 --python-setup-py-arguments "--single-
 fpm_build cwltest "" "" python 1.0.20160907111242
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
-fpm_build cwltool "" "" python 1.0.20161128202906
+cwltoolversion=$(cat "$WORKSPACE/sdk/cwl/setup.py" | grep cwltool== | sed "s/.*==\(1\.0\..*\)'.*/\1/")
+fpm_build cwltool "" "" python $cwltoolversion
 
 # FPM eats the trailing .0 in the python-rdflib-jsonld package when built with 'rdflib-jsonld>=0.3.0'. Force the version. Ward, 2016-03-25
 fpm_build rdflib-jsonld "" "" python 0.3.0
@@ -512,7 +513,7 @@ fpm_build $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.'
 # The Docker image cleaner
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/dockercleaner/build"
-fpm_build $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner"
+fpm_build $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner" --depends "${PYTHON3_PKG_PREFIX}-websocket-client = 0.37.0" --iteration 3
 
 # The Arvados crunchstat-summary tool
 cd $WORKSPACE/packages/$TARGET

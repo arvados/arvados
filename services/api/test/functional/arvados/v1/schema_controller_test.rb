@@ -32,7 +32,7 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
     get :index
     assert_response :success
     discovery_doc = JSON.parse(@response.body)
-    assert_match /^[0-9a-f]+(-modified)?$/, discovery_doc['source_version']
+    assert_match(/^[0-9a-f]+(-modified)?$/, discovery_doc['source_version'])
   end
 
   test "discovery document overrides source_version with config" do

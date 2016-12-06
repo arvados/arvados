@@ -22,7 +22,7 @@ end
 
 require File.expand_path('../../config/environment', __FILE__)
 require 'rails/test_help'
-require 'mocha/mini_test'
+require 'mocha'
 
 module ArvadosTestSupport
   def json_response
@@ -84,7 +84,7 @@ class ActiveSupport::TestCase
   def restore_configuration
     # Restore configuration settings changed during tests
     $application_config.each do |k,v|
-      if k.match /^[^.]*$/
+      if k.match(/^[^.]*$/)
         Rails.configuration.send (k + '='), v
       end
     end
@@ -112,9 +112,18 @@ class ActiveSupport::TestCase
                              "HTTP_AUTHORIZATION" => "OAuth2 #{t}")
   end
 
-  def slow_test
-    skip "RAILS_TEST_SHORT is set" unless (ENV['RAILS_TEST_SHORT'] || '').empty?
+  def self.skip_slow_tests?
+    !(ENV['RAILS_TEST_SHORT'] || '').empty?
   end
+
+  def self.skip(*args, &block)
+  end
+
+  def self.slow_test(name, &block)
+    define_method(name, block) unless skip_slow_tests?
+  end
+
+  alias_method :skip, :omit
 end
 
 class ActionController::TestCase
@@ -135,6 +144,21 @@ class ActionController::TestCase
       super action, *args
     end
   end
+
+  def self.suite
+    s = super
+    def s.run(*args)
+      @test_case.startup()
+      begin
+        super
+      ensure
+        @test_case.shutdown()
+      end
+    end
+    s
+  end
+  def self.startup; end
+  def self.shutdown; end
 end
 
 class ActionDispatch::IntegrationTest

@@ -43,9 +43,8 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
   end
 
   test "get_all_permissions takes into account is_active flag" do
-    r = nil
     act_as_user users(:active) do
-      r = Repository.create! name: 'active/testrepo'
+      Repository.create! name: 'active/testrepo'
     end
     act_as_system_user do
       u = users(:active)
@@ -170,19 +169,19 @@ class Arvados::V1::RepositoriesControllerTest < ActionController::TestCase
         u = User.find_by_uuid(user_uuid)
         if perms['can_read']
           assert u.can? read: repo['uuid']
-          assert_match /R/, perms['gitolite_permissions']
+          assert_match(/R/, perms['gitolite_permissions'])
         else
-          refute_match /R/, perms['gitolite_permissions']
+          refute_match(/R/, perms['gitolite_permissions'])
         end
         if perms['can_write']
           assert u.can? write: repo['uuid']
-          assert_match /RW\+/, perms['gitolite_permissions']
+          assert_match(/RW\+/, perms['gitolite_permissions'])
         else
-          refute_match /W/, perms['gitolite_permissions']
+          refute_match(/W/, perms['gitolite_permissions'])
         end
         if perms['can_manage']
           assert u.can? manage: repo['uuid']
-          assert_match /RW\+/, perms['gitolite_permissions']
+          assert_match(/RW\+/, perms['gitolite_permissions'])
         end
       end
     end

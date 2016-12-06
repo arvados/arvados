@@ -125,9 +125,9 @@ class Arvados::V1::CollectionsController < ApplicationController
           visited[uuid] = job.as_api_response
           if direction == :search_up
             # Follow upstream collections referenced in the script parameters
-            find_collections(visited, job) do |hash, uuid|
+            find_collections(visited, job) do |hash, col_uuid|
               search_edges(visited, hash, :search_up) if hash
-              search_edges(visited, uuid, :search_up) if uuid
+              search_edges(visited, col_uuid, :search_up) if col_uuid
             end
           elsif direction == :search_down
             # Follow downstream job output

@@ -62,7 +62,7 @@ class ArvadosContainer(object):
                 }
 
         if self.generatefiles["listing"]:
-            raise UnsupportedRequirement("Generate files not supported")
+            raise UnsupportedRequirement("InitialWorkDirRequirement not supported with --api=containers")
 
         container_request["environment"] = {"TMPDIR": self.tmpdir, "HOME": self.outdir}
         if self.environment:
@@ -115,24 +115,23 @@ class ArvadosContainer(object):
                 body=container_request
             ).execute(num_retries=self.arvrunner.num_retries)
 
-            self.arvrunner.processes[response["container_uuid"]] = self
+            self.arvrunner.processes[response["uuid"]] = self
 
-            container = self.arvrunner.api.containers().get(
-                uuid=response["container_uuid"]
-            ).execute(num_retries=self.arvrunner.num_retries)
+            logger.info("Container request %s (%s) state is %s", self.name, response["uuid"], response["state"])
 
-            logger.info("Container request %s (%s) state is %s with container %s %s", self.name, response["uuid"], response["state"], container["uuid"], container["state"])
-
-            if container["state"] in ("Complete", "Cancelled"):
-                self.done(container)
+            if response["state"] == "Final":
+                self.done(response)
         except Exception as e:
             logger.error("Got error %s" % str(e))
             self.output_callback({}, "permanentFail")
 
     def done(self, record):
         try:
-            if record["state"] == "Complete":
-                rcode = record["exit_code"]
+            container = self.arvrunner.api.containers().get(
+                uuid=record["container_uuid"]
+            ).execute(num_retries=self.arvrunner.num_retries)
+            if container["state"] == "Complete":
+                rcode = container["exit_code"]
                 if self.successCodes and rcode in self.successCodes:
                     processStatus = "success"
                 elif self.temporaryFailCodes and rcode in self.temporaryFailCodes:
@@ -146,24 +145,14 @@ class ArvadosContainer(object):
             else:
                 processStatus = "permanentFail"
 
-            try:
-                outputs = {}
-                if record["output"]:
-                    outputs = done.done(self, record, "/tmp", self.outdir, "/keep")
-            except WorkflowException as e:
-                logger.error("Error while collecting output for container %s:\n%s", self.name, e, exc_info=(e if self.arvrunner.debug else False))
-                processStatus = "permanentFail"
-            except Exception as e:
-                logger.exception("Got unknown exception while collecting output for container %s:", self.name)
-                processStatus = "permanentFail"
+            outputs = {}
 
-            # Note: Currently, on error output_callback is expecting an empty dict,
-            # anything else will fail.
-            if not isinstance(outputs, dict):
-                logger.error("Unexpected output type %s '%s'", type(outputs), outputs)
-                outputs = {}
-                processStatus = "permanentFail"
-
+            if container["output"]:
+                try:
+                    outputs = done.done_outputs(self, container, "/tmp", self.outdir, "/keep")
+                except Exception as e:
+                    logger.error("Got error %s" % str(e))
+                    self.output_callback({}, "permanentFail")
             self.output_callback(outputs, processStatus)
         finally:
             del self.arvrunner.processes[record["uuid"]]
@@ -237,7 +226,7 @@ class RunnerContainer(Runner):
             },
             "runtime_constraints": {
                 "vcpus": 1,
-                "ram": 1024*1024*256,
+                "ram": 1024*1024 * self.submit_runner_ram,
                 "API": True
             }
         }
@@ -252,9 +241,23 @@ class RunnerContainer(Runner):
         ).execute(num_retries=self.arvrunner.num_retries)
 
         self.uuid = response["uuid"]
-        self.arvrunner.processes[response["container_uuid"]] = self
+        self.arvrunner.processes[response["uuid"]] = self
 
         logger.info("Submitted container %s", response["uuid"])
 
-        if response["state"] in ("Complete", "Failed", "Cancelled"):
+        if response["state"] == "Final":
             self.done(response)
+
+    def done(self, record):
+        try:
+            container = self.arvrunner.api.containers().get(
+                uuid=record["container_uuid"]
+            ).execute(num_retries=self.arvrunner.num_retries)
+        except Exception as e:
+            logger.exception("While getting runner container: %s", e)
+            self.arvrunner.output_callback({}, "permanentFail")
+            del self.arvrunner.processes[record["uuid"]]
+        else:
+            super(RunnerContainer, self).done(container)
+        finally:
+            del self.arvrunner.processes[record["uuid"]]
