@@ -20,6 +20,14 @@ class TestArvKeepGet < Minitest::Test
     assert_match /^usage:/, err
   end
 
+  def test_get_version
+    out, err = capture_subprocess_io do
+      assert_arv_get '--version'
+    end
+    assert_empty(out, "STDOUT not expected: '#{out}'")
+    assert_match(/[0-9]+\.[0-9]+\.[0-9]+/, err, "Version information incorrect: '#{err}'")
+  end
+
   def test_help
     out, err = capture_subprocess_io do
       assert_arv_get '-h'

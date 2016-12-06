@@ -6,21 +6,20 @@ import sys
 import tempfile
 import unittest
 
-import arvados.errors as arv_error
-import arvados.commands.ws as arv_ws
+import arvnodeman.launcher as nodeman
 
-class ArvWsTestCase(unittest.TestCase):
-    def run_ws(self, args):
-        return arv_ws.main(args)
+class ArvNodemArgumentsTestCase(unittest.TestCase):
+    def run_nodeman(self, args):
+        return nodeman.main(args)
 
-    def run_ws_process(self, args=[], api_client=None):
+    def run_nodeman_process(self, args=[]):
         _, stdout_path = tempfile.mkstemp()
         _, stderr_path = tempfile.mkstemp()
         def wrap():
             def wrapper(*args, **kwargs):
                 sys.stdout = open(stdout_path, 'w')
                 sys.stderr = open(stderr_path, 'w')
-                arv_ws.main(*args, **kwargs)
+                nodeman.main(*args, **kwargs)
             return wrapper
         p = multiprocessing.Process(target=wrap(), args=(args,))
         p.start()
@@ -33,10 +32,10 @@ class ArvWsTestCase(unittest.TestCase):
 
     def test_unsupported_arg(self):
         with self.assertRaises(SystemExit):
-            self.run_ws(['-x=unknown'])
+            self.run_nodeman(['-x=unknown'])
 
     def test_version_argument(self):
-        exitcode, out, err = self.run_ws_process(['--version'])
+        exitcode, out, err = self.run_nodeman_process(['--version'])
         self.assertEqual(0, exitcode)
         self.assertEqual('', out)
         self.assertNotEqual('', err)
