@@ -246,7 +246,7 @@ func (bal *Balancer) GetCurrentState(c *arvados.Client, pageSize, bufs int) erro
 			}
 			if len(errs) > 0 {
 				// Some other goroutine encountered an
-				// error -- any futher effort here
+				// error -- any further effort here
 				// will be wasted.
 				return
 			}
