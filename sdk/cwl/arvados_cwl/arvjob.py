@@ -281,7 +281,7 @@ class RunnerJob(Runner):
         self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().create(
             body={
                 "owner_uuid": self.arvrunner.project_uuid,
-                "name": shortname(self.tool.tool["id"]),
+                "name": self.name,
                 "components": {"cwl-runner": job_spec },
                 "state": "RunningOnServer"}).execute(num_retries=self.arvrunner.num_retries)
         logger.info("Created pipeline %s", self.arvrunner.pipeline["uuid"])

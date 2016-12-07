@@ -359,17 +359,19 @@ class ArvCwlRunner(object):
                                          **kwargs).next()
                 else:
                     runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name,
-                                                self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"))
+                                                self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"),
+                                                name=kwargs.get("name"))
             else:
                 runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name,
-                                      self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"))
+                                      self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"),
+                                      name=kwargs.get("name"))
 
         if not kwargs.get("submit") and "cwl_runner_job" not in kwargs and not self.work_api == "containers":
             # Create pipeline for local run
             self.pipeline = self.api.pipeline_instances().create(
                 body={
                     "owner_uuid": self.project_uuid,
-                    "name": shortname(tool.tool["id"]),
+                    "name": kwargs["name"] if kwargs.get("name") else shortname(tool.tool["id"]),
                     "components": {},
                     "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
             logger.info("Pipeline instance %s", self.pipeline["uuid"])
@@ -541,6 +543,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--submit-runner-ram", type=int,
                         help="RAM (in MiB) required for the workflow runner job (default 1024)",
                         default=1024)
+
+    parser.add_argument("--name", type=str,
+                        help="Name to use for workflow execution instance.",
+                        default=None)
 
     parser.add_argument("workflow", type=str, nargs="?", default=None, help="The workflow to execute")
     parser.add_argument("job_order", nargs=argparse.REMAINDER, help="The input object to the workflow.")
