@@ -173,15 +173,6 @@ class RunnerContainer(Runner):
 
         workflowmapper = super(RunnerContainer, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)
 
-        with arvados.collection.Collection(api_client=self.arvrunner.api,
-                                           keep_client=self.arvrunner.keep_client,
-                                           num_retries=self.arvrunner.num_retries) as jobobj:
-            with jobobj.open("cwl.input.json", "w") as f:
-                json.dump(self.job_order, f, sort_keys=True, indent=4)
-            jobobj.save_new(owner_uuid=self.arvrunner.project_uuid)
-
-        jobpath = "/var/lib/cwl/job/cwl.input.json"
-
         container_req = {
             "owner_uuid": self.arvrunner.project_uuid,
             "name": self.name,
@@ -191,9 +182,9 @@ class RunnerContainer(Runner):
             "state": "Committed",
             "container_image": arvados_jobs_image(self.arvrunner),
             "mounts": {
-                jobpath: {
-                    "kind": "collection",
-                    "portable_data_hash": "%s/cwl.input.json" % jobobj.portable_data_hash()
+                "/var/lib/cwl/cwl.input.json": {
+                    "kind": "json",
+                    "content": self.job_order
                 },
                 "stdout": {
                     "kind": "file",
@@ -243,7 +234,7 @@ class RunnerContainer(Runner):
         else:
             command.append("--disable-reuse")
 
-        command.extend([workflowpath, jobpath])
+        command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 
         container_req["command"] = command
 
