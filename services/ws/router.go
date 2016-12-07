@@ -75,8 +75,8 @@ func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
 				})
 
 			log.WithFields(logrus.Fields{
-				"Elapsed": time.Now().Sub(t0).Seconds(),
-				"Stats":   stats,
+				"elapsed": time.Now().Sub(t0).Seconds(),
+				"stats":   stats,
 			}).Info("disconnect")
 			ws.Close()
 		}),
@@ -121,8 +121,8 @@ func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	ctx := contextWithLogger(req.Context(), logger)
 	req = req.WithContext(ctx)
 	logger.WithFields(logrus.Fields{
-		"RemoteAddr":      req.RemoteAddr,
-		"X-Forwarded-For": req.Header.Get("X-Forwarded-For"),
+		"remoteAddr":      req.RemoteAddr,
+		"reqForwardedFor": req.Header.Get("X-Forwarded-For"),
 	}).Info("accept request")
 	rtr.mux.ServeHTTP(resp, req)
 }
