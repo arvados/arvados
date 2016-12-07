@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import apiclient
+import io
 import mock
 import os
 import pwd
@@ -16,7 +17,6 @@ import yaml
 import threading
 import hashlib
 import random
-import multiprocessing
 
 from cStringIO import StringIO
 
@@ -397,24 +397,6 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
                                         '098f6bcd4621d373cade4e832627b4f6')),
             "did not find file stream in Keep store")
 
-    def run_main_process(self, args):
-        _, stdout_path = tempfile.mkstemp()
-        _, stderr_path = tempfile.mkstemp()
-        def wrap():
-            def wrapper(*args, **kwargs):
-                sys.stdout = open(stdout_path, 'w')
-                sys.stderr = open(stderr_path, 'w')
-                arv_put.main(*args, **kwargs)
-            return wrapper
-        p = multiprocessing.Process(target=wrap(), args=(args, sys.stdout, sys.stderr))
-        p.start()
-        p.join()
-        out = open(stdout_path, 'r').read()
-        err = open(stderr_path, 'r').read()
-        os.unlink(stdout_path)
-        os.unlink(stderr_path)
-        return p.exitcode, out, err
-
     def setUp(self):
         super(ArvadosPutTest, self).setUp()
         run_test_server.authorize_with('active')
@@ -428,11 +410,13 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
         super(ArvadosPutTest, self).tearDown()
 
     def test_version_argument(self):
-        exitcode, out, err = self.run_main_process(['--version'])
-        self.assertEqual(0, exitcode)
-        self.assertEqual('', out)
-        self.assertNotEqual('', err)
-        self.assertRegexpMatches(err, "[0-9]+\.[0-9]+\.[0-9]+")
+        err = io.BytesIO()
+        out = io.BytesIO()
+        with tutil.redirected_streams(stdout=out, stderr=err):
+            with self.assertRaises(SystemExit):
+                self.call_main_with_args(['--version'])
+        self.assertEqual(out.getvalue(), '')
+        self.assertRegexpMatches(err.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
 
     def test_simple_file_put(self):
         self.call_main_on_test_file()

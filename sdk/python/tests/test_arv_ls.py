@@ -7,13 +7,12 @@ import random
 import sys
 import mock
 import tempfile
-import multiprocessing
 
 import arvados.errors as arv_error
 import arvados.commands.ls as arv_ls
 import run_test_server
 
-from arvados_testutil import str_keep_locator
+from arvados_testutil import str_keep_locator, redirected_streams
 
 class ArvLsTestCase(run_test_server.TestCaseWithServers):
     FAKE_UUID = 'zzzzz-4zz18-12345abcde12345'
@@ -40,25 +39,6 @@ class ArvLsTestCase(run_test_server.TestCaseWithServers):
         self.stdout = io.BytesIO()
         self.stderr = io.BytesIO()
         return arv_ls.main(args, self.stdout, self.stderr, api_client)
-
-    def run_ls_process(self, args=[], api_client=None):
-        _, stdout_path = tempfile.mkstemp()
-        _, stderr_path = tempfile.mkstemp()
-        def wrap():
-            def wrapper(*args, **kwargs):
-                sys.stdout = open(stdout_path, 'w')
-                sys.stderr = open(stderr_path, 'w')
-                arv_ls.main(*args, **kwargs)
-            return wrapper
-        p = multiprocessing.Process(target=wrap(),
-                                    args=(args, sys.stdout, sys.stderr, api_client))
-        p.start()
-        p.join()
-        out = open(stdout_path, 'r').read()
-        err = open(stderr_path, 'r').read()
-        os.unlink(stdout_path)
-        os.unlink(stderr_path)
-        return p.exitcode, out, err
 
     def test_plain_listing(self):
         collection, api_client = self.mock_api_for_manifest(
@@ -102,9 +82,10 @@ class ArvLsTestCase(run_test_server.TestCaseWithServers):
         self.assertNotEqual('', self.stderr.getvalue())
 
     def test_version_argument(self):
-        _, api_client = self.mock_api_for_manifest([''])
-        exitcode, out, err = self.run_ls_process(['--version'])
-        self.assertEqual(0, exitcode)
-        self.assertEqual('', out)
-        self.assertNotEqual('', err)
-        self.assertRegexpMatches(err, "[0-9]+\.[0-9]+\.[0-9]+")
+        err = io.BytesIO()
+        out = io.BytesIO()
+        with redirected_streams(stdout=out, stderr=err):
+            with self.assertRaises(SystemExit):
+                self.run_ls(['--version'], None)
+        self.assertEqual(out.getvalue(), '')
+        self.assertRegexpMatches(err.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
