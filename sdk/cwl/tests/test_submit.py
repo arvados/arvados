@@ -179,14 +179,21 @@ def stubs(func):
                     'path': '/var/spool/cwl/cwl.output.json',
                     'kind': 'file'
                 },
-                '/var/lib/cwl/job/cwl.input.json': {
-                    'portable_data_hash': 'd20d7cddd1984f105dd3702c7f125afb+60/cwl.input.json',
-                    'kind': 'collection'
+                '/var/lib/cwl/cwl.input.json': {
+                    'kind': 'json',
+                    'content': {
+                        'y': {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'},
+                        'x': {'basename': u'blorp.txt', 'class': 'File', 'location': u'keep:99999999999999999999999999999994+99/blorp.txt'},
+                        'z': {'basename': 'anonymous', 'class': 'Directory', 'listing': [
+                            {'basename': 'renamed.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999998+99/file1.txt'}
+                        ]}
+                    },
+                    'kind': 'json'
                 }
             },
             'state': 'Committed',
             'owner_uuid': None,
-            'command': ['arvados-cwl-runner', '--local', '--api=containers', '--enable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/job/cwl.input.json'],
+            'command': ['arvados-cwl-runner', '--local', '--api=containers', '--enable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/cwl.input.json'],
             'name': 'submit_wf.cwl',
             'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
             'output_path': '/var/spool/cwl',
@@ -417,7 +424,7 @@ class TestSubmit(unittest.TestCase):
         except:
             logging.exception("")
 
-        stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--disable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/job/cwl.input.json']
+        stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--disable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/cwl.input.json']
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
@@ -439,7 +446,7 @@ class TestSubmit(unittest.TestCase):
         except:
             logging.exception("")
 
-        stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', "--output-name="+output_name, '--enable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/job/cwl.input.json']
+        stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', "--output-name="+output_name, '--enable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/cwl.input.json']
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
@@ -461,7 +468,7 @@ class TestSubmit(unittest.TestCase):
         except:
             logging.exception("")
 
-        stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', "--output-tags="+output_tags, '--enable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/job/cwl.input.json']
+        stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', "--output-tags="+output_tags, '--enable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/cwl.input.json']
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
@@ -531,15 +538,18 @@ class TestSubmit(unittest.TestCase):
                     'portable_data_hash': '99999999999999999999999999999994+99',
                     'kind': 'collection'
                 },
-                '/var/lib/cwl/job/cwl.input.json': {
-                    'portable_data_hash': 'e5454f8ca7d5b181e21ecd45841e3373+58/cwl.input.json',
-                    'kind': 'collection'}
+                '/var/lib/cwl/cwl.input.json': {
+                    'content': {
+                        'x': 'XxX'
+                    },
+                    'kind': 'json'
+                }
             }, 'state': 'Committed',
             'owner_uuid': None,
             'output_path': '/var/spool/cwl',
             'name': 'expect_arvworkflow.cwl#main',
             'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
-            'command': ['arvados-cwl-runner', '--local', '--api=containers', '--enable-reuse', '/var/lib/cwl/workflow/expect_arvworkflow.cwl#main', '/var/lib/cwl/job/cwl.input.json'],
+            'command': ['arvados-cwl-runner', '--local', '--api=containers', '--enable-reuse', '/var/lib/cwl/workflow/expect_arvworkflow.cwl#main', '/var/lib/cwl/cwl.input.json'],
             'cwd': '/var/spool/cwl',
             'runtime_constraints': {
                 'API': True,
@@ -615,15 +625,18 @@ class TestSubmit(unittest.TestCase):
                         ]
                     }
                 },
-                '/var/lib/cwl/job/cwl.input.json': {
-                    'portable_data_hash': 'e5454f8ca7d5b181e21ecd45841e3373+58/cwl.input.json',
-                    'kind': 'collection'}
+                '/var/lib/cwl/cwl.input.json': {
+                    'content': {
+                        'x': 'XxX'
+                    },
+                    'kind': 'json'
+                }
             }, 'state': 'Committed',
             'owner_uuid': None,
             'output_path': '/var/spool/cwl',
             'name': 'arvwf:962eh-7fd4e-gkbzl62qqtfig37#main',
             'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
-            'command': ['arvados-cwl-runner', '--local', '--api=containers', '--enable-reuse', '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/job/cwl.input.json'],
+            'command': ['arvados-cwl-runner', '--local', '--api=containers', '--enable-reuse', '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json'],
             'cwd': '/var/spool/cwl',
             'runtime_constraints': {
                 'API': True,

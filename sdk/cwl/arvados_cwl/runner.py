@@ -185,6 +185,12 @@ class Runner(object):
 
     def arvados_job_spec(self, *args, **kwargs):
         self.name = os.path.basename(self.tool.tool["id"])
+
+        # Need to filter this out, gets added by cwltool when providing
+        # parameters on the command line.
+        if "job_order" in self.job_order:
+            del self.job_order["job_order"]
+
         workflowmapper = upload_instance(self.arvrunner, self.name, self.tool, self.job_order)
         adjustDirObjs(self.job_order, trim_listing)
         return workflowmapper

@@ -235,12 +235,6 @@ class RunnerJob(Runner):
 
         workflowmapper = super(RunnerJob, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)
 
-        # Need to filter this out, gets added by cwltool when providing
-        # parameters on the command line, and arv-run-pipeline-instance doesn't
-        # like it.
-        if "job_order" in self.job_order:
-            del self.job_order["job_order"]
-
         self.job_order["cwl:tool"] = workflowmapper.mapper(self.tool.tool["id"]).target[5:]
 
         if self.output_name:
