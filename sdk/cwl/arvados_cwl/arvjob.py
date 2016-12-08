@@ -309,7 +309,8 @@ class RunnerTemplate(object):
         'string': 'text',
     }
 
-    def __init__(self, runner, tool, job_order, enable_reuse, uuid, submit_runner_ram=0):
+    def __init__(self, runner, tool, job_order, enable_reuse, uuid,
+                 submit_runner_ram=0, name=None):
         self.runner = runner
         self.tool = tool
         self.job = RunnerJob(
@@ -319,7 +320,8 @@ class RunnerTemplate(object):
             enable_reuse=enable_reuse,
             output_name=None,
             output_tags=None,
-            submit_runner_ram=submit_runner_ram)
+            submit_runner_ram=submit_runner_ram,
+            name=name)
         self.uuid = uuid
 
     def pipeline_component_spec(self):
