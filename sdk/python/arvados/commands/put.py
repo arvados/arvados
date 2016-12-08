@@ -315,7 +315,7 @@ class ArvPutUploadJob(object):
     def __init__(self, paths, resume=True, use_cache=True, reporter=None,
                  bytes_expected=None, name=None, owner_uuid=None,
                  ensure_unique_name=False, num_retries=None, replication_desired=None,
-                 filename=None, update_time=1.0, update_collection=None):
+                 filename=None, update_time=20.0, update_collection=None):
         self.paths = paths
         self.resume = resume
         self.use_cache = use_cache
