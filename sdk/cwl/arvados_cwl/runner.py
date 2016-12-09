@@ -162,7 +162,8 @@ def arvados_jobs_image(arvrunner):
 
 class Runner(object):
     def __init__(self, runner, tool, job_order, enable_reuse,
-                 output_name, output_tags, submit_runner_ram=0):
+                 output_name, output_tags, submit_runner_ram=0,
+                 name=None):
         self.arvrunner = runner
         self.tool = tool
         self.job_order = job_order
@@ -172,6 +173,8 @@ class Runner(object):
         self.final_output = None
         self.output_name = output_name
         self.output_tags = output_tags
+        self.name = name
+
         if submit_runner_ram:
             self.submit_runner_ram = submit_runner_ram
         else:
@@ -184,7 +187,8 @@ class Runner(object):
         pass
 
     def arvados_job_spec(self, *args, **kwargs):
-        self.name = self.tool.tool.get("label") or os.path.basename(self.tool.tool["id"])
+        if self.name is None:
+            self.name = self.tool.tool.get("label") or os.path.basename(self.tool.tool["id"])
 
         # Need to filter this out, gets added by cwltool when providing
         # parameters on the command line.
