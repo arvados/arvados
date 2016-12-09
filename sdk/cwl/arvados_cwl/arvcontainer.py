@@ -118,7 +118,8 @@ class ArvadosContainer(object):
                 body=container_request
             ).execute(num_retries=self.arvrunner.num_retries)
 
-            self.arvrunner.processes[response["uuid"]] = self
+            self.uuid = response["uuid"]
+            self.arvrunner.processes[self.uuid] = self
 
             logger.info("Container request %s (%s) state is %s", self.name, response["uuid"], response["state"])
 
@@ -254,7 +255,7 @@ class RunnerContainer(Runner):
         ).execute(num_retries=self.arvrunner.num_retries)
 
         self.uuid = response["uuid"]
-        self.arvrunner.processes[response["uuid"]] = self
+        self.arvrunner.processes[self.uuid] = self
 
         logger.info("Submitted container %s", response["uuid"])
 
