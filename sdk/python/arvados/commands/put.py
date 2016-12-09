@@ -222,6 +222,8 @@ class CollectionUpdateError(Exception):
 class ResumeCacheConflict(Exception):
     pass
 
+class ArvPutArgumentConflict(Exception):
+    pass
 
 class ResumeCache(object):
     CACHE_DIR = '.cache/arvados/arv-put'
@@ -345,7 +347,7 @@ class ArvPutUploadJob(object):
         self.logger = logging.getLogger('arvados.arv_put')
 
         if not self.use_cache and self.resume:
-            raise ArgumentError('resume cannot be True when use_cache is False')
+            raise ArvPutArgumentConflict('resume cannot be True when use_cache is False')
 
         # Load cached data if any and if needed
         self._setup_state(update_collection)
