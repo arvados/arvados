@@ -37,7 +37,8 @@ class ArvadosContainer(object):
             "output_path": self.outdir,
             "cwd": self.outdir,
             "priority": 1,
-            "state": "Committed"
+            "state": "Committed",
+            "properties": {}
         }
         runtime_constraints = {}
         mounts = {
@@ -112,6 +113,13 @@ class ArvadosContainer(object):
         container_request["runtime_constraints"] = runtime_constraints
         container_request["use_existing"] = kwargs.get("enable_reuse", True)
         container_request["scheduling_parameters"] = scheduling_parameters
+
+        if kwargs.get("runnerjob", "").startswith("arvwf:"):
+            wfuuid = kwargs["runnerjob"][6:kwargs["runnerjob"].index("#")]
+            wfrecord = self.arvrunner.api.workflows().get(uuid=wfuuid).execute()
+            if container_request["name"] == "main":
+                container_request["name"] = wfrecord["name"]
+            container_request["properties"]["template_uuid"] = wfuuid
 
         try:
             response = self.arvrunner.api.container_requests().create(

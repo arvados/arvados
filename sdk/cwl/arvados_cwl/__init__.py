@@ -344,6 +344,9 @@ class ArvCwlRunner(object):
         kwargs["on_error"] = "continue"
         kwargs["compute_checksum"] = kwargs.get("compute_checksum")
 
+        if not kwargs["name"]:
+            del kwargs["name"]
+
         if self.work_api == "containers":
             kwargs["outdir"] = "/var/spool/cwl"
             kwargs["docker_outdir"] = "/var/spool/cwl"
@@ -360,6 +363,7 @@ class ArvCwlRunner(object):
         if kwargs.get("submit"):
             if self.work_api == "containers":
                 if tool.tool["class"] == "CommandLineTool":
+                    kwargs["runnerjob"] = tool.tool["id"]
                     runnerjob = tool.job(job_order,
                                          self.output_callback,
                                          **kwargs).next()
