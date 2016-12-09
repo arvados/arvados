@@ -424,8 +424,6 @@ package_go_binary services/crunch-run crunch-run \
     "Supervise a single Crunch container"
 package_go_binary services/crunchstat crunchstat \
     "Gather cpu/memory/network statistics of running Crunch jobs"
-package_go_binary services/datamanager arvados-data-manager \
-    "Ensure block replication levels, report disk usage, and determine which blocks should be deleted when space is needed"
 package_go_binary services/keep-balance keep-balance \
     "Rebalance and garbage-collect data blocks stored in Arvados Keep"
 package_go_binary services/keepproxy keepproxy \

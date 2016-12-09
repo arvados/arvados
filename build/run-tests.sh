@@ -764,10 +764,6 @@ gostuff=(
     sdk/go/keepclient
     services/keep-balance
     services/keepproxy
-    services/datamanager/summary
-    services/datamanager/collection
-    services/datamanager/keep
-    services/datamanager
     services/crunch-dispatch-local
     services/crunch-dispatch-slurm
     services/crunch-run
