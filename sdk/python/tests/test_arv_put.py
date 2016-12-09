@@ -278,12 +278,12 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
             f.flush()
             cwriter = arv_put.ArvPutUploadJob([f.name])
             cwriter.start(save_collection=False)
-            self.assertEqual(3, cwriter.bytes_written)
+            self.assertEqual(3, cwriter.bytes_written - cwriter.bytes_skipped)
             # Don't destroy the cache, and start another upload
             cwriter_new = arv_put.ArvPutUploadJob([f.name])
             cwriter_new.start(save_collection=False)
             cwriter_new.destroy_cache()
-            self.assertEqual(0, cwriter_new.bytes_written)
+            self.assertEqual(0, cwriter_new.bytes_written - cwriter_new.bytes_skipped)
 
     def make_progress_tester(self):
         progression = []
@@ -324,13 +324,14 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
                                              replication_desired=1)
             with self.assertRaises(SystemExit):
                 writer.start(save_collection=False)
-                self.assertLess(writer.bytes_written,
-                                os.path.getsize(self.large_file_name))
+            self.assertGreater(writer.bytes_written, 0)
+            self.assertLess(writer.bytes_written,
+                            os.path.getsize(self.large_file_name))
         # Retry the upload
         writer2 = arv_put.ArvPutUploadJob([self.large_file_name],
                                           replication_desired=1)
         writer2.start(save_collection=False)
-        self.assertEqual(writer.bytes_written + writer2.bytes_written,
+        self.assertEqual(writer.bytes_written + writer2.bytes_written - writer2.bytes_skipped,
                          os.path.getsize(self.large_file_name))
         writer2.destroy_cache()
 
