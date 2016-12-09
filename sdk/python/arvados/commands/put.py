@@ -422,7 +422,7 @@ class ArvPutUploadJob(object):
                 num_retries=self.num_retries)
 
     def destroy_cache(self):
-        if self.resume:
+        if self.use_cache:
             try:
                 os.unlink(self._cache_filename)
             except OSError as error:
@@ -590,9 +590,14 @@ class ArvPutUploadJob(object):
             if self.filename:
                 md5.update(self.filename)
             cache_filename = md5.hexdigest()
-            self._cache_file = open(os.path.join(
+            cache_filepath = os.path.join(
                 arv_cmd.make_home_conf_dir(self.CACHE_DIR, 0o700, 'raise'),
-                cache_filename), 'a+')
+                cache_filename)
+            if self.resume:
+                self._cache_file = open(cache_filepath, 'a+')
+            else:
+                # --no-resume means start with a empty cache file.
+                self._cache_file = open(cache_filepath, 'w+')
             self._cache_filename = self._cache_file.name
             self._lock_file(self._cache_file)
             self._cache_file.seek(0)
