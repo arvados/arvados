@@ -68,6 +68,8 @@ RUN set -e && \
  tar -C /usr/local -xjf /tmp/$PJS.tar.bz2 && \
  ln -s ../$PJS/bin/phantomjs /usr/local/bin/
 
+RUN pip install -U setuptools
+
 ARG arvados_version
 RUN echo arvados_version is git commit $arvados_version
 

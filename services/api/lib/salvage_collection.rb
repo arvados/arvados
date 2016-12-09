@@ -29,7 +29,7 @@ module SalvageCollection
   def salvage_collection_locator_data manifest
     locators = []
     size = 0
-    manifest.scan /(^|[^[:xdigit:]])([[:xdigit:]]{32})((\+\d+)(\+|\b))?/ do |_, hash, _, sizehint, _|
+    manifest.scan(/(^|[^[:xdigit:]])([[:xdigit:]]{32})((\+\d+)(\+|\b))?/) do |_, hash, _, sizehint, _|
       if sizehint
         locators << hash.downcase + sizehint
         size += sizehint.to_i

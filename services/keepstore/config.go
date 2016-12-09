@@ -5,16 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"strings"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	log "github.com/Sirupsen/logrus"
 )
 
 type Config struct {
 	Debug  bool
 	Listen string
+
+	LogFormat string
 
 	PIDFile string
 
@@ -38,10 +40,13 @@ type Config struct {
 
 var theConfig = DefaultConfig()
 
+const rfc3339NanoFixed = "2006-01-02T15:04:05.000000000Z07:00"
+
 // DefaultConfig returns the default configuration.
 func DefaultConfig() *Config {
 	return &Config{
 		Listen:             ":25107",
+		LogFormat:          "json",
 		MaxBuffers:         128,
 		RequireSignatures:  true,
 		BlobSignatureTTL:   arvados.Duration(14 * 24 * time.Hour),
@@ -55,10 +60,25 @@ func DefaultConfig() *Config {
 // fields, and before using the config.
 func (cfg *Config) Start() error {
 	if cfg.Debug {
+		log.SetLevel(log.DebugLevel)
 		cfg.debugLogf = log.Printf
 		cfg.debugLogf("debugging enabled")
 	} else {
 		cfg.debugLogf = func(string, ...interface{}) {}
+	}
+
+	switch strings.ToLower(cfg.LogFormat) {
+	case "text":
+		log.SetFormatter(&log.TextFormatter{
+			FullTimestamp:   true,
+			TimestampFormat: rfc3339NanoFixed,
+		})
+	case "json":
+		log.SetFormatter(&log.JSONFormatter{
+			TimestampFormat: rfc3339NanoFixed,
+		})
+	default:
+		return fmt.Errorf(`unsupported log format %q (try "text" or "json")`, cfg.LogFormat)
 	}
 
 	if cfg.MaxBuffers < 0 {

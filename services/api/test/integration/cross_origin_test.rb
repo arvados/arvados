@@ -70,7 +70,7 @@ class CrossOriginTest < ActionDispatch::IntegrationTest
 
   def assert_no_cors_headers
     response.headers.keys.each do |h|
-      assert_no_match /^Access-Control-/i, h
+      assert_no_match(/^Access-Control-/i, h)
     end
   end
 end

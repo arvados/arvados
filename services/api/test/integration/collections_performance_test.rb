@@ -5,8 +5,7 @@ require 'helpers/time_block'
 class CollectionsApiPerformanceTest < ActionDispatch::IntegrationTest
   include ManifestExamples
 
-  test "crud cycle for a collection with a big manifest" do
-    slow_test
+  slow_test "crud cycle for a collection with a big manifest" do
     bigmanifest = time_block 'make example' do
       make_manifest(streams: 100,
                     files_per_stream: 100,
@@ -39,8 +38,7 @@ class CollectionsApiPerformanceTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "memory usage" do
-    slow_test
+  slow_test "memory usage" do
     hugemanifest = make_manifest(streams: 1,
                                  files_per_stream: 2000,
                                  blocks_per_file: 200,

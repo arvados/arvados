@@ -251,12 +251,12 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
       assert_text 'Recent pipelines and processes' # seeing dashboard now
       within('.recent-processes-actions') do
-        assert page.has_link?('Run a pipeline')
+        assert page.has_link?('Run a process')
         assert page.has_link?('All processes')
       end
 
       within('.recent-processes') do
-        assert_text 'pipeline_with_job'
+        assert_text 'running'
 
         within('.row-zzzzz-xvhdp-cr4runningcntnr') do
           assert_text 'requester_for_running_cr'
@@ -269,7 +269,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
         assert_text 'completed container request'
         within('.row-zzzzz-xvhdp-cr4completedctr')do
-          assert page.has_link? '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
+          assert page.has_link? 'foo_file'
         end
       end
 

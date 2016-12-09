@@ -156,6 +156,12 @@ sanity_checks() {
     echo -n 'virtualenv: '
     virtualenv --version \
         || fatal "No virtualenv. Try: apt-get install virtualenv (on ubuntu: python-virtualenv)"
+    echo -n 'ruby: '
+    ruby -v \
+        || fatal "No ruby. Install >=2.1.9 (using rbenv, rvm, or source)"
+    echo -n 'bundler: '
+    bundle version \
+        || fatal "No bundler. Try: gem install bundler"
     echo -n 'go: '
     go version \
         || fatal "No go binary. See http://golang.org/doc/install"
@@ -758,10 +764,6 @@ gostuff=(
     sdk/go/keepclient
     services/keep-balance
     services/keepproxy
-    services/datamanager/summary
-    services/datamanager/collection
-    services/datamanager/keep
-    services/datamanager
     services/crunch-dispatch-local
     services/crunch-dispatch-slurm
     services/crunch-run

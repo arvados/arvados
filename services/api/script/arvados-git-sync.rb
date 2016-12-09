@@ -22,7 +22,7 @@ DEBUG = 1
 # load and merge in the environment-specific application config info
 # if present, overriding base config parameters as specified
 path = File.absolute_path('../../config/arvados-clients.yml', __FILE__)
-if File.exists?(path) then
+if File.exist?(path) then
   cp_config = YAML.load_file(path)[ENV['RAILS_ENV']]
 else
   puts "Please create a\n #{path}\n file"
@@ -214,7 +214,7 @@ end
 
 begin
   # Get our local gitolite-admin repo up to snuff
-  if not File.exists?(gitolite_admin) then
+  if not File.exist?(gitolite_admin) then
     ensure_directory(gitolite_tmpdir, 0700)
     Dir.chdir(gitolite_tmpdir)
     `git clone #{gitolite_url}`

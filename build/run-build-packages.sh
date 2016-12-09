@@ -15,8 +15,10 @@ Options:
     Build api server and workbench packages with vendor/bundle included
 --debug
     Output debug information (default: false)
---target
+--target <target>
     Distribution to build packages for (default: debian7)
+--only-build <package>
+    Build only a specific package (or $ONLY_BUILD from environment)
 --command
     Build command to execute (defaults to the run command defined in the
     Docker image)
@@ -31,7 +33,7 @@ TARGET=debian7
 COMMAND=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,build-bundle-packages,debug,target: \
+    help,build-bundle-packages,debug,target:,only-build: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -47,6 +49,9 @@ while [ $# -gt 0 ]; do
             ;;
         --target)
             TARGET="$2"; shift
+            ;;
+        --only-build)
+            ONLY_BUILD="$2"; shift
             ;;
         --debug)
             DEBUG=1
@@ -105,7 +110,7 @@ case "$TARGET" in
             'pycurl<7.21.5' contextlib2 pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
             cachecontrol requests)
-        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
+        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         ;;
     debian8)
         FORMAT=deb
@@ -116,7 +121,7 @@ case "$TARGET" in
             'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
             cachecontrol)
-        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
+        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         ;;
     ubuntu1204)
         FORMAT=deb
@@ -127,7 +132,7 @@ case "$TARGET" in
             contextlib2 'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro isodate ruamel.ordereddict
             cachecontrol requests)
-        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
+        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         ;;
     ubuntu1404)
         FORMAT=deb
@@ -136,7 +141,7 @@ case "$TARGET" in
             rsa 'pycurl<7.21.5' backports.ssl_match_hostname pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
             cachecontrol)
-        PYTHON3_BACKPORTS=(docker-py==1.7.2 requests websocket-client)
+        PYTHON3_BACKPORTS=(docker-py==1.7.2 requests websocket-client==0.37.0)
         ;;
     centos6)
         FORMAT=rpm
@@ -156,7 +161,7 @@ case "$TARGET" in
             'rdflib>=4.2.0' shellescape mistune typing avro requests \
             isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
             ruamel.ordereddict cachecontrol)
-        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
+        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         export PYCURL_SSL_LIBRARY=nss
         ;;
     centos7)
@@ -176,7 +181,7 @@ case "$TARGET" in
             'rdflib>=4.2.0' shellescape mistune typing avro \
             isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
             ruamel.ordereddict cachecontrol)
-        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client)
+        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         export PYCURL_SSL_LIBRARY=nss
         ;;
     *)
@@ -248,6 +253,7 @@ fi
 # Perl packages
 debug_echo -e "\nPerl packages\n"
 
+if [[ -z "$ONLY_BUILD" ]] || [[ "libarvados-perl" = "$ONLY_BUILD" ]] ; then
 cd "$WORKSPACE/sdk/perl"
 
 if [[ -e Makefile ]]; then
@@ -263,6 +269,7 @@ perl Makefile.PL INSTALL_BASE=install >"$STDOUT_IF_DEBUG" && \
     "Curoverse, Inc." dir "$(version_from_git)" install/man/=/usr/share/man \
     "$WORKSPACE/LICENSE-2.0.txt=/usr/share/doc/libarvados-perl/LICENSE-2.0.txt" && \
     mv --no-clobber libarvados-perl*.$FORMAT "$WORKSPACE/packages/$TARGET/"
+fi
 
 # Ruby gems
 debug_echo -e "\nRuby gems\n"
@@ -417,8 +424,6 @@ package_go_binary services/crunch-run crunch-run \
     "Supervise a single Crunch container"
 package_go_binary services/crunchstat crunchstat \
     "Gather cpu/memory/network statistics of running Crunch jobs"
-package_go_binary services/datamanager arvados-data-manager \
-    "Ensure block replication levels, report disk usage, and determine which blocks should be deleted when space is needed"
 package_go_binary services/keep-balance keep-balance \
     "Rebalance and garbage-collect data blocks stored in Arvados Keep"
 package_go_binary services/keepproxy keepproxy \
@@ -443,7 +448,7 @@ package_go_binary tools/keep-exercise keep-exercise \
 # 2014-05-15
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/sdk/python/build"
-fpm_build $WORKSPACE/sdk/python "${PYTHON2_PKG_PREFIX}-arvados-python-client" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK" --deb-recommends=git
+fpm_build $WORKSPACE/sdk/python "${PYTHON2_PKG_PREFIX}-arvados-python-client" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/sdk/python/arvados_python_client.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Python SDK" --depends "${PYTHON2_PKG_PREFIX}-setuptools" --deb-recommends=git
 
 # cwl-runner
 cd $WORKSPACE/packages/$TARGET
@@ -467,7 +472,7 @@ fpm_build lockfile "" "" python 0.12.2 --epoch 1
 # So we build this thing separately.
 #
 # Ward, 2016-03-17
-fpm_build schema_salad "" "" python 1.18.20161005190847 --depends "${PYTHON2_PKG_PREFIX}-lockfile >= 1:0.12.2-2"
+fpm_build schema_salad "" "" python 1.20.20161122192122 --depends "${PYTHON2_PKG_PREFIX}-lockfile >= 1:0.12.2-2"
 
 # And schema_salad now depends on ruamel-yaml, which apparently has a braindead setup.py that requires special arguments to build (otherwise, it aborts with 'error: you have to install with "pip install ."'). Sigh.
 # Ward, 2016-05-26
@@ -478,7 +483,8 @@ fpm_build ruamel.yaml "" "" python 0.12.4 --python-setup-py-arguments "--single-
 fpm_build cwltest "" "" python 1.0.20160907111242
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
-fpm_build cwltool "" "" python 1.0.20161107145355
+cwltoolversion=$(cat "$WORKSPACE/sdk/cwl/setup.py" | grep cwltool== | sed "s/.*==\(1\.0\..*\)'.*/\1/")
+fpm_build cwltool "" "" python $cwltoolversion
 
 # FPM eats the trailing .0 in the python-rdflib-jsonld package when built with 'rdflib-jsonld>=0.3.0'. Force the version. Ward, 2016-03-25
 fpm_build rdflib-jsonld "" "" python 0.3.0
@@ -495,17 +501,17 @@ fi
 # not omit the python- prefix first.
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/fuse/build"
-fpm_build $WORKSPACE/services/fuse "${PYTHON2_PKG_PREFIX}-arvados-fuse" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver"
+fpm_build $WORKSPACE/services/fuse "${PYTHON2_PKG_PREFIX}-arvados-fuse" 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/fuse/arvados_fuse.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Keep FUSE driver" --depends "${PYTHON2_PKG_PREFIX}-setuptools"
 
 # The node manager
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/nodemanager/build"
-fpm_build $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager"
+fpm_build $WORKSPACE/services/nodemanager arvados-node-manager 'Curoverse, Inc.' 'python' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/nodemanager/arvados_node_manager.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados node manager" --depends "${PYTHON2_PKG_PREFIX}-setuptools"
 
 # The Docker image cleaner
 cd $WORKSPACE/packages/$TARGET
 rm -rf "$WORKSPACE/services/dockercleaner/build"
-fpm_build $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner"
+fpm_build $WORKSPACE/services/dockercleaner arvados-docker-cleaner 'Curoverse, Inc.' 'python3' "$(awk '($1 == "Version:"){print $2}' $WORKSPACE/services/dockercleaner/arvados_docker_cleaner.egg-info/PKG-INFO)" "--url=https://arvados.org" "--description=The Arvados Docker image cleaner" --depends "${PYTHON3_PKG_PREFIX}-websocket-client = 0.37.0" --iteration 3
 
 # The Arvados crunchstat-summary tool
 cd $WORKSPACE/packages/$TARGET
@@ -539,6 +545,11 @@ esac
 
 for deppkg in "${PYTHON_BACKPORTS[@]}"; do
     outname=$(echo "$deppkg" | sed -e 's/^python-//' -e 's/[<=>].*//' -e 's/_/-/g' -e "s/^/${PYTHON2_PKG_PREFIX}-/")
+
+    if [[ -n "$ONLY_BUILD" ]] && [[ "$outname" != "$ONLY_BUILD" ]] ; then
+        continue
+    fi
+
     case "$deppkg" in
         httplib2|google-api-python-client)
             # Work around 0640 permissions on some package files.
@@ -588,6 +599,7 @@ handle_rails_package arvados-api-server "$WORKSPACE/services/api" \
     --license="GNU Affero General Public License, version 3.0"
 
 # Build the workbench server package
+if [[ -z "$ONLY_BUILD" ]] || [[ "arvados-workbench" = "$ONLY_BUILD" ]] ; then
 (
     set -e
     cd "$WORKSPACE/apps/workbench"
@@ -612,6 +624,7 @@ handle_rails_package arvados-api-server "$WORKSPACE/services/api" \
     # Remove generated configuration files so they don't go in the package.
     rm config/application.yml config/environments/production.rb
 )
+fi
 
 if [[ "$?" != "0" ]]; then
   echo "ERROR: Asset precompilation failed"

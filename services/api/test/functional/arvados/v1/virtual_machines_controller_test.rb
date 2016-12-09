@@ -33,7 +33,6 @@ class Arvados::V1::VirtualMachinesControllerTest < ActionController::TestCase
   test "groups is an empty list by default" do
     get_logins_for(:testvm2)
     active_login = find_login(:active)
-    perm = links(:active_can_login_to_testvm2)
     assert_equal([], active_login["groups"])
   end
 

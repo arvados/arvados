@@ -24,6 +24,7 @@ import tempfile
 import threading
 import time
 from apiclient import errors as apiclient_errors
+from arvados._version import __version__
 
 import arvados.commands._util as arv_cmd
 
@@ -32,6 +33,9 @@ api_client = None
 
 upload_opts = argparse.ArgumentParser(add_help=False)
 
+upload_opts.add_argument('--version', action='version',
+                         version="%s %s" % (sys.argv[0], __version__),
+                         help='Print version and exit.')
 upload_opts.add_argument('paths', metavar='path', type=str, nargs='*',
                          help="""
 Local file or directory. Default: read from standard input.

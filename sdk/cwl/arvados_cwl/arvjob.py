@@ -257,7 +257,8 @@ class RunnerJob(Runner):
             "repository": "arvados",
             "script_parameters": self.job_order,
             "runtime_constraints": {
-                "docker_image": arvados_jobs_image(self.arvrunner)
+                "docker_image": arvados_jobs_image(self.arvrunner),
+                "min_ram_mb_per_node": self.submit_runner_ram
             }
         }
 
@@ -280,7 +281,7 @@ class RunnerJob(Runner):
         self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().create(
             body={
                 "owner_uuid": self.arvrunner.project_uuid,
-                "name": shortname(self.tool.tool["id"]),
+                "name": self.name,
                 "components": {"cwl-runner": job_spec },
                 "state": "RunningOnServer"}).execute(num_retries=self.arvrunner.num_retries)
         logger.info("Created pipeline %s", self.arvrunner.pipeline["uuid"])
@@ -308,7 +309,8 @@ class RunnerTemplate(object):
         'string': 'text',
     }
 
-    def __init__(self, runner, tool, job_order, enable_reuse, uuid):
+    def __init__(self, runner, tool, job_order, enable_reuse, uuid,
+                 submit_runner_ram=0, name=None):
         self.runner = runner
         self.tool = tool
         self.job = RunnerJob(
@@ -317,7 +319,9 @@ class RunnerTemplate(object):
             job_order=job_order,
             enable_reuse=enable_reuse,
             output_name=None,
-            output_tags=None)
+            output_tags=None,
+            submit_runner_ram=submit_runner_ram,
+            name=name)
         self.uuid = uuid
 
     def pipeline_component_spec(self):

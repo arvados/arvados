@@ -109,8 +109,8 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['Two Part Pipeline Template', 'part-one', 'Provide a value for the following'],
-    ['Workflow with input specifications', 'this workflow has inputs specified', 'Provide a value for the following'],
+    ['Pipeline with default input specifications', 'part-one', 'Provide values for the following'],
+    ['Workflow with default input specifications', 'this workflow has inputs specified', 'Provide a value for the following'],
   ].each do |template_name, preview_txt, process_txt|
     test "run a process using template #{template_name} from dashboard" do
       visit page_with_token('admin')
@@ -118,7 +118,7 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
 
       within('.recent-processes-actions') do
         assert page.has_link?('All processes')
-        find('a', text: 'Run a pipeline').click
+        find('a', text: 'Run a process').click
       end
 
       # in the chooser, verify preview and click Next button
@@ -131,6 +131,10 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
       # in the process page now
       assert_text process_txt
       assert_selector 'a', text: template_name
+
+      assert_equal "Set value for ex_string_def", find('div.form-group > div > p.form-control-static > a', text: "hello-testing-123")[:"data-title"]
+
+      page.assert_selector 'a.disabled,button.disabled', text: 'Run'
     end
   end
 

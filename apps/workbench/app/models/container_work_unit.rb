@@ -99,12 +99,21 @@ class ContainerWorkUnit < ProxyWorkUnit
   end
 
   def log_collection
-    get_combined(:log)
+    if @proxied.is_a?(ContainerRequest)
+      get(:log_uuid)
+    else
+      get(:log)
+    end
   end
 
   def outputs
     items = []
-    items << get_combined(:output) if get_combined(:output)
+    if @proxied.is_a?(ContainerRequest)
+      out = get(:output_uuid)
+    else
+      out = get(:output)
+    end
+    items << out if out
     items
   end
 

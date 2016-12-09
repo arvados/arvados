@@ -90,6 +90,8 @@ completed:
   output_path: test
   command: ["echo", "hello"]
   container_uuid: zzzzz-dz642-compltcontainer
+  log_uuid: zzzzz-4zz18-y9vne9npefyxh8g
+  output_uuid: zzzzz-4zz18-znfnqtbbv4spc3w
   runtime_constraints:
     vcpus: 1
     ram: 123

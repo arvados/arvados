@@ -1,0 +1,27 @@
+---
+layout: default
+navsection: userguide
+title: "Running a workflow using Workbench"
+...
+
+A "workflow" (sometimes called a "pipeline" in other systems) is a sequence of steps that apply various programs or tools to transform input data to output data.  Workflows are the principal means of performing computation with Arvados.  This tutorial demonstrates how to run a single-stage workflow to take a small data set of paired-end reads from a sample "exome":https://en.wikipedia.org/wiki/Exome in "FASTQ":https://en.wikipedia.org/wiki/FASTQ_format format and align them to "Chromosome 19":https://en.wikipedia.org/wiki/Chromosome_19_%28human%29 using the "bwa mem":http://bio-bwa.sourceforge.net/ tool, producing a "Sequence Alignment/Map (SAM)":https://samtools.github.io/ file.  This tutorial will introduce the following Arvados features:
+
+<div>
+* How to create a new process from an existing workflow.
+* How to browse and select input data for the workflow and submit the process to run on the Arvados cluster.
+* How to access your process results.
+</div>
+
+h3. Steps
+
+# Start from the *Workbench Dashboard*.  You can access the Dashboard by clicking on *<i class="fa fa-lg fa-fw fa-dashboard"></i> Dashboard* in the upper left corner of any Workbench page.
+# Click on the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a process...</span> button.  This will open a dialog box titled *Choose a pipeline or workflow to run*.
+# In the search box, type in *Tutorial bwa mem cwl*.
+# Select *<i class="fa fa-fw fa-gear"></i> Tutorial bwa mem cwl* and click the <span class="btn btn-sm btn-primary" >Next: choose inputs <i class="fa fa-fw fa-arrow-circle-right"></i></span> button.  This will create a new process in your *Home* project and will open it. You can now supply the inputs for the process. Please note that all required inputs are populated with default values and you can change them if you prefer.
+# For example, let's see how to change *"reference" parameter* for this workflow. Click the <span class="btn btn-sm btn-primary">Choose</span> button beneath the *"reference" parameter* header.  This will open a dialog box titled *Choose a dataset for "reference" parameter for cwl-runner in bwa-mem.cwl component*.
+# Open the *Home <span class="caret"></span>* menu and select *All Projects*. Search for and select *<i class="fa fa-fw fa-archive"></i> Tutorial chromosome 19 reference*. You will then see a list of files. Select *<i class="fa fa-fw fa-file"></i> 19-fasta.bwt* and click the <span class="btn btn-sm btn-primary" >OK</span> button.
+# Repeat the previous two steps to set the *"read_p1" parameter for cwl-runner script in bwa-mem.cwl component* and *"read_p2" parameter for cwl-runner script in bwa-mem.cwl component* parameters.
+# Click on the <span class="btn btn-sm btn-primary" >Run <i class="fa fa-fw fa-play"></i></span> button.  The page updates to show you that the process has been submitted to run on the Arvados cluster.
+# After the process starts running, you can track the progress by watching log messages from the component(s).  This page refreshes automatically.  You will see a <span class="label label-success">complete</span> label when the process completes successfully.
+# Click on the *Output* link to see the results of the process.  This will load a new page listing the output files from this process.  You'll see the output SAM file from the alignment tool under the *Files* tab.
+# Click on the <span class="btn btn-sm btn-info"><i class="fa fa-download"></i></span> download button to the right of the SAM file to download your results.
