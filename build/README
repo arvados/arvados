@@ -23,7 +23,11 @@ run-build-packages-python-and-ruby.sh    Build Python and Ruby packages suitable
 
 run-build-docker-images.sh               Build arvbox Docker images.
 
-run-build-docker-jobs-image.sh           Build arvados/jobs Docker image.
+run-build-docker-jobs-image.sh           Build arvados/jobs Docker image
+                                         (uses published debian packages)
+
+build-dev-docker-jobs-image.sh           Build developer arvados/jobs Docker image
+                                         (uses local git tree)
 
 run-library.sh                           A library of functions shared by the
                                          various scripts in this

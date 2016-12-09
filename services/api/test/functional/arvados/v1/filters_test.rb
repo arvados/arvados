@@ -32,7 +32,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
       filters: [['uuid', '@@', 'abcdef']],
     }
     assert_response 422
-    assert_match /not supported/, json_response['errors'].join(' ')
+    assert_match(/not supported/, json_response['errors'].join(' '))
   end
 
   test 'difficult characters in full text search' do
@@ -52,7 +52,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
       filters: [['any', '@@', ['abc', 'def']]],
     }
     assert_response 422
-    assert_match /not supported/, json_response['errors'].join(' ')
+    assert_match(/not supported/, json_response['errors'].join(' '))
   end
 
   test 'api responses provide timestamps with nanoseconds' do
@@ -65,7 +65,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
       %w(created_at modified_at).each do |attr|
         # Pass fixtures with null timestamps.
         next if item[attr].nil?
-        assert_match /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d.\d{9}Z$/, item[attr]
+        assert_match(/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d.\d{9}Z$/, item[attr])
       end
     end
   end

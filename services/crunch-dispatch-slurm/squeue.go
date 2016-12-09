@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"io"
+	"io/ioutil"
 	"log"
 	"os/exec"
 	"sync"
@@ -45,31 +47,49 @@ func (squeue *Squeue) RunSqueue() {
 		log.Printf("Error creating stdout pipe for squeue: %v", err)
 		return
 	}
+
+	stderrReader, err := cmd.StderrPipe()
+	if err != nil {
+		log.Printf("Error creating stderr pipe for squeue: %v", err)
+		return
+	}
+
 	err = cmd.Start()
 	if err != nil {
 		log.Printf("Error running squeue: %v", err)
 		return
 	}
+
+	stderrChan := make(chan []byte)
+	go func() {
+		b, _ := ioutil.ReadAll(stderrReader)
+		stderrChan <- b
+		close(stderrChan)
+	}()
+
 	scanner := bufio.NewScanner(sq)
 	for scanner.Scan() {
 		newSqueueContents = append(newSqueueContents, scanner.Text())
 	}
-	if err := scanner.Err(); err != nil {
-		cmd.Wait()
-		log.Printf("Error reading from squeue pipe: %v", err)
-		return
-	}
+	io.Copy(ioutil.Discard, sq)
+
+	stderrmsg := <-stderrChan
 
 	err = cmd.Wait()
+
+	if scanner.Err() != nil {
+		log.Printf("Error reading from squeue pipe: %v", err)
+	}
 	if err != nil {
-		log.Printf("Error running squeue: %v", err)
-		return
+		log.Printf("Error running %v %v: %v %q", cmd.Path, cmd.Args, err, string(stderrmsg))
 	}
 
-	squeue.squeueCond.L.Lock()
-	squeue.squeueContents = newSqueueContents
-	squeue.squeueCond.Broadcast()
-	squeue.squeueCond.L.Unlock()
+	if scanner.Err() == nil && err == nil {
+		squeue.squeueCond.L.Lock()
+		squeue.squeueContents = newSqueueContents
+		squeue.squeueCond.Broadcast()
+		squeue.squeueCond.L.Unlock()
+	}
 }
 
 // CheckSqueue checks if a given container UUID is in the slurm queue.  This

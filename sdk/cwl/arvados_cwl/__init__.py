@@ -21,6 +21,7 @@ import schema_salad
 
 import arvados
 import arvados.config
+from arvados.errors import ApiError
 
 from .arvcontainer import ArvadosContainer, RunnerContainer
 from .arvjob import ArvadosJob, RunnerJob, RunnerTemplate
@@ -72,7 +73,9 @@ class ArvCwlRunner(object):
         else:
             self.keep_client = arvados.keep.KeepClient(api_client=self.api, num_retries=self.num_retries)
 
-        for api in ["jobs", "containers"]:
+        self.work_api = None
+        expected_api = ["jobs", "containers"]
+        for api in expected_api:
             try:
                 methods = self.api._rootDesc.get('resources')[api]['methods']
                 if ('httpMethod' in methods['create'] and
@@ -81,11 +84,12 @@ class ArvCwlRunner(object):
                     break
             except KeyError:
                 pass
+
         if not self.work_api:
             if work_api is None:
                 raise Exception("No supported APIs")
             else:
-                raise Exception("Unsupported API '%s'" % work_api)
+                raise Exception("Unsupported API '%s', expected one of %s" % (work_api, expected_api))
 
     def arv_make_tool(self, toolpath_object, **kwargs):
         kwargs["work_api"] = self.work_api
@@ -120,7 +124,7 @@ class ArvCwlRunner(object):
                         logger.info("Job %s (%s) is Running", j.name, uuid)
                         j.running = True
                         j.update_pipeline_component(event["properties"]["new_attributes"])
-                elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled"):
+                elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled", "Final"):
                     uuid = event["object_uuid"]
                     try:
                         self.cond.acquire()
@@ -150,7 +154,7 @@ class ArvCwlRunner(object):
                     continue
 
                 if self.work_api == "containers":
-                    table = self.poll_api.containers()
+                    table = self.poll_api.container_requests()
                 elif self.work_api == "jobs":
                     table = self.poll_api.jobs()
 
@@ -277,6 +281,12 @@ class ArvCwlRunner(object):
         if self.work_api == "containers":
             try:
                 current = self.api.containers().current().execute(num_retries=self.num_retries)
+            except ApiError as e:
+                # Status code 404 just means we're not running in a container.
+                if e.resp.status != 404:
+                    logger.info("Getting current container: %s", e)
+                return
+            try:
                 self.api.containers().update(uuid=current['uuid'],
                                              body={
                                                  'output': self.final_output_collection.portable_data_hash(),
@@ -308,14 +318,18 @@ class ArvCwlRunner(object):
             if self.work_api == "jobs":
                 tmpl = RunnerTemplate(self, tool, job_order,
                                       kwargs.get("enable_reuse"),
-                                      uuid=existing_uuid)
+                                      uuid=existing_uuid,
+                                      submit_runner_ram=kwargs.get("submit_runner_ram"),
+                                      name=kwargs.get("name"))
                 tmpl.save()
                 # cwltool.main will write our return value to stdout.
                 return tmpl.uuid
             else:
                 return upload_workflow(self, tool, job_order,
                                        self.project_uuid,
-                                       uuid=existing_uuid)
+                                       uuid=existing_uuid,
+                                       submit_runner_ram=kwargs.get("submit_runner_ram"),
+                                       name=kwargs.get("name"))
 
         self.ignore_docker_for_reuse = kwargs.get("ignore_docker_for_reuse")
 
@@ -346,16 +360,20 @@ class ArvCwlRunner(object):
                                          self.output_callback,
                                          **kwargs).next()
                 else:
-                    runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name, self.output_tags)
+                    runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name,
+                                                self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"),
+                                                name=kwargs.get("name"))
             else:
-                runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name, self.output_tags)
+                runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name,
+                                      self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"),
+                                      name=kwargs.get("name"))
 
         if not kwargs.get("submit") and "cwl_runner_job" not in kwargs and not self.work_api == "containers":
             # Create pipeline for local run
             self.pipeline = self.api.pipeline_instances().create(
                 body={
                     "owner_uuid": self.project_uuid,
-                    "name": shortname(tool.tool["id"]),
+                    "name": kwargs["name"] if kwargs.get("name") else shortname(tool.tool["id"]),
                     "components": {},
                     "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
             logger.info("Pipeline instance %s", self.pipeline["uuid"])
@@ -524,6 +542,14 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         help="Compute checksum of contents while collecting outputs",
                         dest="compute_checksum")
 
+    parser.add_argument("--submit-runner-ram", type=int,
+                        help="RAM (in MiB) required for the workflow runner job (default 1024)",
+                        default=1024)
+
+    parser.add_argument("--name", type=str,
+                        help="Name to use for workflow execution instance.",
+                        default=None)
+
     parser.add_argument("workflow", type=str, nargs="?", default=None, help="The workflow to execute")
     parser.add_argument("job_order", nargs=argparse.REMAINDER, help="The input object to the workflow.")
 
@@ -546,6 +572,10 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
 
     job_order_object = None
     arvargs = parser.parse_args(args)
+
+    if arvargs.version:
+        print versionstring()
+        return
 
     if arvargs.update_workflow:
         if arvargs.update_workflow.find('-7fd4e-') == 5:

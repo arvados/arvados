@@ -185,7 +185,7 @@ class JobTest < ActiveSupport::TestCase
       # Ensure valid_attrs doesn't produce errors -- otherwise we will
       # not know whether errors reported below are actually caused by
       # invalid_attrs.
-      dummy = Job.create! job_attrs
+      Job.create! job_attrs
 
       job = Job.create job_attrs(invalid_attrs)
       assert_raises(ActiveRecord::RecordInvalid, ArgumentError,
@@ -223,7 +223,7 @@ class JobTest < ActiveSupport::TestCase
 
       parameters.each do |parameter|
         expectations = parameter[2]
-        if parameter[1] == 'use_current_user_uuid'
+        if 'use_current_user_uuid' == parameter[1]
           parameter[1] = Thread.current[:user].uuid
         end
 
@@ -411,7 +411,7 @@ class JobTest < ActiveSupport::TestCase
     }
     assert_raises(ActiveRecord::RecordInvalid,
                   "created job with a collection uuid in script_parameters") do
-      job = Job.create!(job_attrs(bad_params))
+      Job.create!(job_attrs(bad_params))
     end
   end
 
