@@ -202,7 +202,8 @@ def stubs(func):
                 'API': True,
                 'vcpus': 1,
                 'ram': 1024*1024*1024
-            }
+            },
+            "properties": {}
         }
 
         stubs.expect_workflow_uuid = "zzzzz-7fd4e-zzzzzzzzzzzzzzz"
@@ -278,7 +279,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         stubs.api.pipeline_instances().create.assert_called_with(
-            body=expect_pipeline)
+            body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
@@ -297,7 +298,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         stubs.api.pipeline_instances().create.assert_called_with(
-            body=expect_pipeline)
+            body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
@@ -328,7 +329,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         stubs.api.pipeline_instances().create.assert_called_with(
-            body=expect_pipeline)
+            body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
@@ -348,7 +349,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         stubs.api.pipeline_instances().create.assert_called_with(
-            body=expect_pipeline)
+            body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
@@ -367,7 +368,7 @@ class TestSubmit(unittest.TestCase):
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         expect_pipeline["owner_uuid"] = project_uuid
         stubs.api.pipeline_instances().create.assert_called_with(
-            body=expect_pipeline)
+            body=JsonDiffMatcher(expect_pipeline))
 
     @stubs
     def test_submit_container(self, stubs):
@@ -408,7 +409,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
-            body=expect_container)
+            body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
@@ -428,7 +429,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
-            body=expect_container)
+            body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
@@ -450,7 +451,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
-            body=expect_container)
+            body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
@@ -472,7 +473,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
-            body=expect_container)
+            body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
@@ -492,7 +493,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
-            body=expect_container)
+            body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
@@ -555,11 +556,12 @@ class TestSubmit(unittest.TestCase):
                 'API': True,
                 'vcpus': 1,
                 'ram': 1073741824
-            }
+            },
+            "properties": {}
         }
 
         stubs.api.container_requests().create.assert_called_with(
-            body=expect_container)
+            body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
@@ -570,7 +572,7 @@ class TestSubmit(unittest.TestCase):
         capture_stdout = cStringIO.StringIO()
 
         with open("tests/wf/expect_arvworkflow.cwl") as f:
-            stubs.api.workflows().get().execute.return_value = {"definition": f.read()}
+            stubs.api.workflows().get().execute.return_value = {"definition": f.read(), "name": "a test workflow"}
 
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=containers", "--debug",
@@ -634,7 +636,7 @@ class TestSubmit(unittest.TestCase):
             }, 'state': 'Committed',
             'owner_uuid': None,
             'output_path': '/var/spool/cwl',
-            'name': 'arvwf:962eh-7fd4e-gkbzl62qqtfig37#main',
+            'name': 'a test workflow',
             'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
             'command': ['arvados-cwl-runner', '--local', '--api=containers', '--enable-reuse', '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json'],
             'cwd': '/var/spool/cwl',
@@ -642,11 +644,14 @@ class TestSubmit(unittest.TestCase):
                 'API': True,
                 'vcpus': 1,
                 'ram': 1073741824
+            },
+            "properties": {
+                "template_uuid": "962eh-7fd4e-gkbzl62qqtfig37"
             }
         }
 
         stubs.api.container_requests().create.assert_called_with(
-            body=expect_container)
+            body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 

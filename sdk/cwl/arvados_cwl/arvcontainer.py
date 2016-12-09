@@ -199,7 +199,8 @@ class RunnerContainer(Runner):
                 "vcpus": 1,
                 "ram": 1024*1024 * self.submit_runner_ram,
                 "API": True
-            }
+            },
+            "properties": {}
         }
 
         workflowcollection = workflowmapper.mapper(self.tool.tool["id"])[1]
@@ -213,14 +214,16 @@ class RunnerContainer(Runner):
                 }
         elif workflowcollection.startswith("arvwf:"):
             workflowpath = "/var/lib/cwl/workflow.json#main"
-            fetcher = CollectionFetcher({}, None,
-                                        api_client=self.arvrunner.api,
-                                        keep_client=self.arvrunner.keep_client)
-            wfobj = yaml.safe_load(fetcher.fetch_text(workflowcollection))
+            wfuuid = workflowcollection[6:workflowcollection.index("#")]
+            wfrecord = self.arvrunner.api.workflows().get(uuid=wfuuid).execute()
+            wfobj = yaml.safe_load(wfrecord["definition"])
+            if container_req["name"].startswith("arvwf:"):
+                container_req["name"] = wfrecord["name"]
             container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
                 "kind": "json",
                 "json": wfobj
             }
+            container_req["properties"]["template_uuid"] = wfuuid
 
         command = ["arvados-cwl-runner", "--local", "--api=containers"]
         if self.output_name:

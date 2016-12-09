@@ -184,7 +184,7 @@ class Runner(object):
         pass
 
     def arvados_job_spec(self, *args, **kwargs):
-        self.name = os.path.basename(self.tool.tool["id"])
+        self.name = self.tool.tool.get("label") or os.path.basename(self.tool.tool["id"])
 
         # Need to filter this out, gets added by cwltool when providing
         # parameters on the command line.
