@@ -241,13 +241,9 @@ func (c *Client) DiscoveryDocument() (*DiscoveryDocument, error) {
 	return c.dd, nil
 }
 
-func (c *Client) PathForUUID(method, uuid string) (string, error) {
+func (c *Client) modelForUUID(dd *DiscoveryDocument, uuid string) (string, error) {
 	if len(uuid) != 27 {
 		return "", fmt.Errorf("invalid UUID: %q", uuid)
-	}
-	dd, err := c.DiscoveryDocument()
-	if err != nil {
-		return "", err
 	}
 	infix := uuid[6:11]
 	var model string
@@ -259,6 +255,30 @@ func (c *Client) PathForUUID(method, uuid string) (string, error) {
 	}
 	if model == "" {
 		return "", fmt.Errorf("unrecognized UUID infix: %q", infix)
+	}
+	return model, nil
+}
+
+func (c *Client) KindForUUID(uuid string) (string, error) {
+	dd, err := c.DiscoveryDocument()
+	if err != nil {
+		return "", err
+	}
+	model, err := c.modelForUUID(dd, uuid)
+	if err != nil {
+		return "", err
+	}
+	return "arvados#" + strings.ToLower(model[:1]) + model[1:], nil
+}
+
+func (c *Client) PathForUUID(method, uuid string) (string, error) {
+	dd, err := c.DiscoveryDocument()
+	if err != nil {
+		return "", err
+	}
+	model, err := c.modelForUUID(dd, uuid)
+	if err != nil {
+		return "", err
 	}
 	var resource string
 	for r, rsc := range dd.Resources {

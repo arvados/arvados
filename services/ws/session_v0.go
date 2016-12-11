@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/Sirupsen/logrus"
 )
 
@@ -22,6 +23,7 @@ var (
 )
 
 type v0session struct {
+	ac            *arvados.Client
 	ws            wsConn
 	sendq         chan<- interface{}
 	db            *sql.DB
@@ -33,11 +35,12 @@ type v0session struct {
 	setupOnce     sync.Once
 }
 
-func newSessionV0(ws wsConn, sendq chan<- interface{}, db *sql.DB, pc permChecker) (session, error) {
+func newSessionV0(ws wsConn, sendq chan<- interface{}, db *sql.DB, pc permChecker, ac *arvados.Client) (session, error) {
 	sess := &v0session{
 		sendq:       sendq,
 		ws:          ws,
 		db:          db,
+		ac:          ac,
 		permChecker: pc,
 		log:         logger(ws.Request().Context()),
 	}
@@ -85,12 +88,14 @@ func (sess *v0session) EventMessage(e *event) ([]byte, error) {
 		return nil, err
 	}
 
+	kind, _ := sess.ac.KindForUUID(detail.ObjectUUID)
 	msg := map[string]interface{}{
 		"msgID":             atomic.AddUint64(&sess.lastMsgID, 1),
 		"id":                detail.ID,
 		"uuid":              detail.UUID,
 		"object_uuid":       detail.ObjectUUID,
 		"object_owner_uuid": detail.ObjectOwnerUUID,
+		"object_kind":       kind,
 		"event_type":        detail.EventType,
 	}
 	if detail.Properties != nil && detail.Properties["text"] != nil {

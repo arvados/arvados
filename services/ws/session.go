@@ -1,5 +1,11 @@
 package main
 
+import (
+	"database/sql"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+)
+
 type session interface {
 	// Receive processes a message received from the client. If a
 	// non-nil error is returned, the connection will be
@@ -23,3 +29,5 @@ type session interface {
 	// up, the connection will be dropped.
 	EventMessage(*event) ([]byte, error)
 }
+
+type sessionFactory func(wsConn, chan<- interface{}, *sql.DB, permChecker, *arvados.Client) (session, error)

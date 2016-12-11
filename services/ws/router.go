@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -45,8 +44,6 @@ type debugStatuser interface {
 	DebugStatus() interface{}
 }
 
-type sessionFactory func(wsConn, chan<- interface{}, *sql.DB, permChecker) (session, error)
-
 func (rtr *router) setup() {
 	rtr.handler = &handler{
 		PingTimeout: rtr.Config.PingTimeout.Duration(),
@@ -71,7 +68,7 @@ func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
 
 			stats := rtr.handler.Handle(ws, rtr.eventSource,
 				func(ws wsConn, sendq chan<- interface{}) (session, error) {
-					return newSession(ws, sendq, rtr.eventSource.DB(), rtr.newPermChecker())
+					return newSession(ws, sendq, rtr.eventSource.DB(), rtr.newPermChecker(), &rtr.Config.Client)
 				})
 
 			log.WithFields(logrus.Fields{
