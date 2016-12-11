@@ -55,8 +55,7 @@ h3. Create a configuration file
 Create @/etc/arvados/ws/ws.yml@ using the following template. Replace @xxxxxxxx@ with the "password you generated during database setup":install-postgresql.html#api.
 
 <notextile>
-<pre><code>~$ <span class="userinput">arvados-ws -h</span>
-Client:
+<pre><code>Client:
   APIHost: <span class="userinput">uuid_prefix.your.domain</span>:443
 Listen: ":<span class="userinput">9003</span>"
 Postgres:
@@ -76,7 +75,7 @@ If your system uses systemd, the arvados-ws service should already be set up. St
 <notextile>
 <pre><code>~$ <span class="userinput">sudo systemctl restart arvados-ws</span>
 ~$ <span class="userinput">sudo systemctl status arvados-ws</span>
-● arvados-ws.service - Arvados websocket server
+&#x25cf; arvados-ws.service - Arvados websocket server
    Loaded: loaded (/lib/systemd/system/arvados-ws.service; enabled)
    Active: active (running) since Tue 2016-12-06 11:20:48 EST; 10s ago
      Docs: https://doc.arvados.org/
@@ -187,7 +186,7 @@ Ensure the websocket server address is correct in the API server configuration f
 </code></pre>
 </notextile>
 
-Restart the Nginx to reload the API server configuration.
+Restart Nginx to reload the API server configuration.
 
 <notextile>
 <pre><code>$ sudo nginx -s reload</span>
