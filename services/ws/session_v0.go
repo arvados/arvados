@@ -16,7 +16,7 @@ var (
 	errQueueFull   = errors.New("client queue full")
 	errFrameTooBig = errors.New("frame too big")
 
-	sendObjectAttributes = []string{"state", "name"}
+	sendObjectAttributes = []string{"state", "name", "owner_uuid", "portable_data_hash"}
 
 	v0subscribeOK   = []byte(`{"status":200}`)
 	v0subscribeFail = []byte(`{"status":400}`)
@@ -97,6 +97,7 @@ func (sess *v0session) EventMessage(e *event) ([]byte, error) {
 		"object_owner_uuid": detail.ObjectOwnerUUID,
 		"object_kind":       kind,
 		"event_type":        detail.EventType,
+		"event_at":          detail.EventAt,
 	}
 	if detail.Properties != nil && detail.Properties["text"] != nil {
 		msg["properties"] = detail.Properties

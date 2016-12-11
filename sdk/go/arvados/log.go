@@ -11,6 +11,7 @@ type Log struct {
 	ObjectUUID      string                 `json:"object_uuid"`
 	ObjectOwnerUUID string                 `json:"object_owner_uuid"`
 	EventType       string                 `json:"event_type"`
+	EventAt         *time.Time             `json:"event,omitempty"`
 	Properties      map[string]interface{} `json:"properties"`
 	CreatedAt       *time.Time             `json:"created_at,omitempty"`
 }

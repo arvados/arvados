@@ -42,12 +42,13 @@ func (e *event) Detail() *arvados.Log {
 	}
 	var logRow arvados.Log
 	var propYAML []byte
-	e.err = e.db.QueryRow(`SELECT id, uuid, object_uuid, COALESCE(object_owner_uuid,''), COALESCE(event_type,''), created_at, properties FROM logs WHERE id = $1`, e.LogID).Scan(
+	e.err = e.db.QueryRow(`SELECT id, uuid, object_uuid, COALESCE(object_owner_uuid,''), COALESCE(event_type,''), event_at, created_at, properties FROM logs WHERE id = $1`, e.LogID).Scan(
 		&logRow.ID,
 		&logRow.UUID,
 		&logRow.ObjectUUID,
 		&logRow.ObjectOwnerUUID,
 		&logRow.EventType,
+		&logRow.EventAt,
 		&logRow.CreatedAt,
 		&propYAML)
 	if e.err != nil {

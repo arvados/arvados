@@ -377,29 +377,22 @@ class Operations(llfuse.Operations):
         if 'event_type' not in ev:
             return
         with llfuse.lock:
+            new_attrs = ev.get("properties", {}).get("new_attributes", {})
+            pdh = new_attrs.get("portable_data_hash")
+            # new_attributes.modified_at currently lacks
+            # subsecond precision (see #6347) so use event_at
+            # which should always be the same.
+            stamp = ev.get("event_at")
+
             for item in self.inodes.inode_cache.find_by_uuid(ev["object_uuid"]):
                 item.invalidate()
-                if ev["object_kind"] == "arvados#collection":
-                    new_attr = (ev.get("properties") and
-                                ev["properties"].get("new_attributes") and
-                                ev["properties"]["new_attributes"])
-
-                    # new_attributes.modified_at currently lacks
-                    # subsecond precision (see #6347) so use event_at
-                    # which should always be the same.
-                    record_version = (
-                        (ev["event_at"], new_attr["portable_data_hash"])
-                        if new_attr else None)
-
-                    item.update(to_record_version=record_version)
+                if stamp and pdh and ev.get("object_kind") == "arvados#collection":
+                    item.update(to_record_version=(stamp, pdh))
                 else:
                     item.update()
 
-            oldowner = (
-                ev.get("properties") and
-                ev["properties"].get("old_attributes") and
-                ev["properties"]["old_attributes"].get("owner_uuid"))
-            newowner = ev["object_owner_uuid"]
+            oldowner = ev.get("properties", {}).get("old_attributes", {}).get("owner_uuid")
+            newowner = ev.get("object_owner_uuid")
             for parent in (
                     self.inodes.inode_cache.find_by_uuid(oldowner) +
                     self.inodes.inode_cache.find_by_uuid(newowner)):
