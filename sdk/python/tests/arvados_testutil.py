@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import arvados
+import contextlib
 import errno
 import hashlib
 import httplib
@@ -11,6 +12,7 @@ import os
 import pycurl
 import Queue
 import shutil
+import sys
 import tempfile
 import unittest
 
@@ -49,6 +51,17 @@ def mock_api_responses(api_client, body, codes, headers={}):
 
 def str_keep_locator(s):
     return '{}+{}'.format(hashlib.md5(s).hexdigest(), len(s))
+
+@contextlib.contextmanager
+def redirected_streams(stdout=None, stderr=None):
+    orig_stdout, sys.stdout = sys.stdout, stdout or sys.stdout
+    orig_stderr, sys.stderr = sys.stderr, stderr or sys.stderr
+    try:
+        yield
+    finally:
+        sys.stdout = orig_stdout
+        sys.stderr = orig_stderr
+
 
 class FakeCurl:
     @classmethod

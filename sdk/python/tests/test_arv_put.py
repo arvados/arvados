@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import apiclient
+import io
 import mock
 import os
 import pwd
@@ -407,6 +408,15 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
                 getattr(self, outbuf).close()
                 delattr(self, outbuf)
         super(ArvadosPutTest, self).tearDown()
+
+    def test_version_argument(self):
+        err = io.BytesIO()
+        out = io.BytesIO()
+        with tutil.redirected_streams(stdout=out, stderr=err):
+            with self.assertRaises(SystemExit):
+                self.call_main_with_args(['--version'])
+        self.assertEqual(out.getvalue(), '')
+        self.assertRegexpMatches(err.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
 
     def test_simple_file_put(self):
         self.call_main_on_test_file()
