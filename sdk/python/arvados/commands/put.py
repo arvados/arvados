@@ -321,7 +321,8 @@ class ArvPutUploadJob(object):
     def __init__(self, paths, resume=True, use_cache=True, reporter=None,
                  bytes_expected=None, name=None, owner_uuid=None,
                  ensure_unique_name=False, num_retries=None, replication_desired=None,
-                 filename=None, update_time=20.0, update_collection=None):
+                 filename=None, update_time=20.0, update_collection=None,
+                 logger=logging.getLogger('arvados.arv_put')):
         self.paths = paths
         self.resume = resume
         self.use_cache = use_cache
@@ -348,7 +349,7 @@ class ArvPutUploadJob(object):
         self._checkpointer = threading.Thread(target=self._update_task)
         self._update_task_time = update_time  # How many seconds wait between update runs
         self._files_to_upload = []
-        self.logger = logging.getLogger('arvados.arv_put')
+        self.logger = logger
 
         if not self.use_cache and self.resume:
             raise ArvPutArgumentConflict('resume cannot be True when use_cache is False')
@@ -742,6 +743,7 @@ def desired_project_uuid(api_client, project_uuid, num_retries):
 def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     global api_client
 
+    logger = logging.getLogger('arvados.arv_put')
     args = parse_arguments(arguments)
     status = 0
     if api_client is None:
@@ -750,7 +752,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     # Determine the name to use
     if args.name:
         if args.stream or args.raw:
-            print >>stderr, "Cannot use --name with --stream or --raw"
+            logger.error("Cannot use --name with --stream or --raw")
             sys.exit(1)
         collection_name = args.name
     else:
@@ -760,7 +762,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
             socket.gethostname())
 
     if args.project_uuid and (args.stream or args.raw):
-        print >>stderr, "Cannot use --project-uuid with --stream or --raw"
+        logger.error("Cannot use --project-uuid with --stream or --raw")
         sys.exit(1)
 
     # Determine the parent project
@@ -768,7 +770,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         project_uuid = desired_project_uuid(api_client, args.project_uuid,
                                             args.retries)
     except (apiclient_errors.Error, ValueError) as error:
-        print >>stderr, error
+        logger.error(error)
         sys.exit(1)
 
     if args.progress:
@@ -792,15 +794,16 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                                  name = collection_name,
                                  owner_uuid = project_uuid,
                                  ensure_unique_name = True,
-                                 update_collection = args.update_collection)
+                                 update_collection = args.update_collection,
+                                 logger=logger)
     except ResumeCacheConflict:
-        print >>stderr, "\n".join([
+        logger.error("\n".join([
             "arv-put: Another process is already uploading this data.",
-            "         Use --no-cache if this is really what you want."])
+            "         Use --no-cache if this is really what you want."]))
         sys.exit(1)
     except CollectionUpdateError as error:
-        print >>stderr, "\n".join([
-            "arv-put: %s" % str(error)])
+        logger.error("\n".join([
+            "arv-put: %s" % str(error)]))
         sys.exit(1)
 
     # Install our signal handler for each code in CAUGHT_SIGNALS, and save
@@ -809,21 +812,21 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                             for sigcode in CAUGHT_SIGNALS}
 
     if not args.update_collection and args.resume and writer.bytes_written > 0:
-        print >>stderr, "\n".join([
-                "arv-put: Resuming previous upload from last checkpoint.",
-                "         Use the --no-resume option to start over."])
+        logger.warning("\n".join([
+            "arv-put: Resuming previous upload from last checkpoint.",
+            "         Use the --no-resume option to start over."]))
 
     writer.report_progress()
     output = None
     try:
         writer.start(save_collection=not(args.stream or args.raw))
     except arvados.errors.ApiError as error:
-        print >>stderr, "\n".join([
-            "arv-put: %s" % str(error)])
+        logger.error("\n".join([
+            "arv-put: %s" % str(error)]))
         sys.exit(1)
 
     if args.progress:  # Print newline to split stderr from stdout for humans.
-        print >>stderr
+        logger.error("\n")
 
     if args.stream:
         if args.normalize:
@@ -835,15 +838,15 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     else:
         try:
             if args.update_collection:
-                print >>stderr, "Collection updated: '{}'".format(writer.collection_name())
+                logger.info("Collection updated: '{}'".format(writer.collection_name()))
             else:
-                print >>stderr, "Collection saved as '{}'".format(writer.collection_name())
+                logger.info("Collection saved as '{}'".format(writer.collection_name()))
             if args.portable_data_hash:
                 output = writer.portable_data_hash()
             else:
                 output = writer.manifest_locator()
         except apiclient_errors.Error as error:
-            print >>stderr, (
+            logger.error(
                 "arv-put: Error creating Collection on project: {}.".format(
                     error))
             status = 1
