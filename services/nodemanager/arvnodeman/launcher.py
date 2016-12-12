@@ -10,6 +10,7 @@ import time
 
 import daemon
 import pykka
+import libcloud
 
 from . import config as nmconfig
 from .baseactor import WatchdogActor
@@ -112,7 +113,7 @@ def main(args=None):
 
     try:
         root_logger = setup_logging(config.get('Logging', 'file'), **config.log_levels())
-        root_logger.info("%s %s" % (sys.argv[0], __version__))
+        root_logger.info("%s %s, libcloud %s", sys.argv[0], __version__, libcloud.__version__)
         node_setup, node_shutdown, node_update, node_monitor = \
             config.dispatch_classes()
         server_calculator = build_server_calculator(config)
