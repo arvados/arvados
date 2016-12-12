@@ -397,6 +397,56 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         writer2.destroy_cache()
 
 
+    def test_dry_run_feature(self):
+        def wrapped_write(*args, **kwargs):
+            data = args[1]
+            # Exit only on last block
+            if len(data) < arvados.config.KEEP_BLOCK_SIZE:
+                raise SystemExit("Simulated error")
+            return self.arvfile_write(*args, **kwargs)
+
+        with mock.patch('arvados.arvfile.ArvadosFileWriter.write',
+                        autospec=True) as mocked_write:
+            mocked_write.side_effect = wrapped_write
+            writer = arv_put.ArvPutUploadJob([self.large_file_name],
+                                             replication_desired=1)
+            with self.assertRaises(SystemExit):
+                writer.start(save_collection=False)
+            # Confirm that the file was partially uploaded
+            self.assertGreater(writer.bytes_written, 0)
+            self.assertLess(writer.bytes_written,
+                            os.path.getsize(self.large_file_name))
+        # Retry the upload using dry_run to check if there is a pending upload
+        writer2 = arv_put.ArvPutUploadJob([self.large_file_name],
+                                          replication_desired=1,
+                                          dry_run=True)
+        with self.assertRaises(arv_put.ArvPutUploadIsPending):
+            writer2.start(save_collection=False)
+        # Complete the pending upload
+        writer3 = arv_put.ArvPutUploadJob([self.large_file_name],
+                                          replication_desired=1)
+        writer3.start(save_collection=False)
+        # Confirm there's no pending upload with dry_run=True
+        writer4 = arv_put.ArvPutUploadJob([self.large_file_name],
+                                          replication_desired=1,
+                                          dry_run=True)
+        with self.assertRaises(arv_put.ArvPutUploadNotPending):
+            writer4.start(save_collection=False)
+        writer4.destroy_cache()
+        # Test obvious cases
+        with self.assertRaises(arv_put.ArvPutUploadIsPending):
+            arv_put.ArvPutUploadJob([self.large_file_name],
+                                    replication_desired=1,
+                                    dry_run=True,
+                                    resume=False,
+                                    use_cache=False)
+        with self.assertRaises(arv_put.ArvPutUploadIsPending):
+            arv_put.ArvPutUploadJob([self.large_file_name],
+                                    replication_desired=1,
+                                    dry_run=True,
+                                    resume=False)
+
+
 class ArvadosExpectedBytesTest(ArvadosBaseTestCase):
     TEST_SIZE = os.path.getsize(__file__)
 

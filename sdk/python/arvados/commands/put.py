@@ -52,6 +52,12 @@ Normalize the manifest by re-ordering files and streams after writing
 data.
 """)
 
+_group.add_argument('--dry-run', action='store_true', default=False,
+                    help="""
+Don't actually upload files, but only check if any file should be
+uploaded. Exit with code=2 when files are pending for upload.
+""")
+
 _group = upload_opts.add_mutually_exclusive_group()
 
 _group.add_argument('--as-stream', action='store_true', dest='stream',
@@ -226,8 +232,29 @@ class CollectionUpdateError(Exception):
 class ResumeCacheConflict(Exception):
     pass
 
+
 class ArvPutArgumentConflict(Exception):
     pass
+
+
+class ArvPutUploadIsPending(Exception):
+    pass
+
+
+class ArvPutUploadNotPending(Exception):
+    pass
+
+
+class FileUploadList(list):
+    def __init__(self, dry_run=False):
+        list.__init__(self)
+        self.dry_run = dry_run
+
+    def append(self, other):
+        if self.dry_run:
+            raise ArvPutUploadIsPending()
+        super(FileUploadList, self).append(other)
+
 
 class ResumeCache(object):
     CACHE_DIR = '.cache/arvados/arv-put'
@@ -322,7 +349,7 @@ class ArvPutUploadJob(object):
                  bytes_expected=None, name=None, owner_uuid=None,
                  ensure_unique_name=False, num_retries=None, replication_desired=None,
                  filename=None, update_time=20.0, update_collection=None,
-                 logger=logging.getLogger('arvados.arv_put')):
+                 logger=logging.getLogger('arvados.arv_put'), dry_run=False):
         self.paths = paths
         self.resume = resume
         self.use_cache = use_cache
@@ -348,11 +375,16 @@ class ArvPutUploadJob(object):
         self._stop_checkpointer = threading.Event()
         self._checkpointer = threading.Thread(target=self._update_task)
         self._update_task_time = update_time  # How many seconds wait between update runs
-        self._files_to_upload = []
+        self._files_to_upload = FileUploadList(dry_run=dry_run)
         self.logger = logger
+        self.dry_run = dry_run
 
         if not self.use_cache and self.resume:
             raise ArvPutArgumentConflict('resume cannot be True when use_cache is False')
+
+        # Check for obvious dry-run responses
+        if self.dry_run and (not self.use_cache or not self.resume):
+            raise ArvPutUploadIsPending()
 
         # Load cached data if any and if needed
         self._setup_state(update_collection)
@@ -367,6 +399,8 @@ class ArvPutUploadJob(object):
             for path in self.paths:
                 # Test for stdin first, in case some file named '-' exist
                 if path == '-':
+                    if self.dry_run:
+                        raise ArvPutUploadIsPending()
                     self._write_stdin(self.filename or 'stdin')
                 elif os.path.isdir(path):
                     # Use absolute paths on cache index so CWD doesn't interfere
@@ -384,6 +418,10 @@ class ArvPutUploadJob(object):
                 else:
                     self._check_file(os.path.abspath(path),
                                      self.filename or os.path.basename(path))
+            # If dry-mode is on, and got up to this point, then we should notify that
+            # there aren't any file to upload.
+            if self.dry_run:
+                raise ArvPutUploadNotPending()
             # Update bytes_written from current local collection and
             # report initial progress.
             self._update()
@@ -805,6 +843,12 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         logger.error("\n".join([
             "arv-put: %s" % str(error)]))
         sys.exit(1)
+    except ArvPutUploadIsPending:
+        # Dry run check successful, return proper exit code.
+        sys.exit(2)
+    except ArvPutUploadNotPending:
+        # No files pending for upload
+        sys.exit(0)
 
     # Install our signal handler for each code in CAUGHT_SIGNALS, and save
     # the originals.
