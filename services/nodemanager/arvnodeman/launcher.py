@@ -62,6 +62,7 @@ def setup_logging(path, level, **sublevels):
     for logger_name, sublevel in sublevels.iteritems():
         sublogger = logging.getLogger(logger_name)
         sublogger.setLevel(sublevel)
+    return root_logger
 
 def build_server_calculator(config):
     cloud_size_list = config.node_sizes(config.new_cloud_client().list_sizes())
@@ -110,7 +111,8 @@ def main(args=None):
         signal.signal(sigcode, shutdown_signal)
 
     try:
-        setup_logging(config.get('Logging', 'file'), **config.log_levels())
+        root_logger = setup_logging(config.get('Logging', 'file'), **config.log_levels())
+        root_logger.info("%s %s" % (sys.argv[0], __version__))
         node_setup, node_shutdown, node_update, node_monitor = \
             config.dispatch_classes()
         server_calculator = build_server_calculator(config)
