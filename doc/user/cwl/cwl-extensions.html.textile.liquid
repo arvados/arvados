@@ -4,14 +4,16 @@ navsection: userguide
 title: Arvados CWL Extensions
 ...
 
-To use Arvados CWL extensions, add the following section at the top of your CWL file:
+Arvados provides several extensions to CWL for workflow optimization, site-specific configuration, and to enable access the Arvados API.
+
+To use Arvados CWL extensions, add the following @$namespaces@ section at the top of your CWL file:
 
 <pre>
 $namespaces:
   arv: "http://arvados.org/cwl#"
 </pre>
 
-Arvados extensions should go into the @hints@ section, for example:
+Arvados extensions must go into the @hints@ section, for example:
 
 <pre>
 hints:
@@ -37,7 +39,7 @@ table(table table-bordered table-condensed).
 |keep_cache|int|Size of file data buffer for Keep mount in MiB. Default is 256 MiB. Increase this to reduce cache thrashing in situations such as accessing multiple large (64+ MiB) files at the same time, or performing random access on a large file.|
 |outputDirType|enum|Preferred backing store for output staging.  If not specified, the system may choose which one to use.  One of *local_output_dir* or *keep_output_dir*|
 
-*local_output_dir*: Use regular file system local to the compute node. There must be sufficient local scratch space to store entire output; specify this with `outdirMin` of `ResourceRequirement`.  Files are batch uploaded to Keep when the process completes.  Most compatible, but upload step can be time consuming for very large files.
+*local_output_dir*: Use regular file system local to the compute node. There must be sufficient local scratch space to store entire output; specify this with @outdirMin@ of @ResourceRequirement@.  Files are batch uploaded to Keep when the process completes.  Most compatible, but upload step can be time consuming for very large files.
 
 *keep_output_dir*: Use writable Keep mount.  Files are streamed to Keep as they are written.  Does not consume local scratch space, but does consume RAM for output buffers (up to 192 MiB per file simultaneously open for writing.)  Best suited to processes which produce sequential output of large files (non-sequential writes may produced fragmented file manifests).  Supports regular files and directories, does not support special files such as symlinks, hard links, named pipes, named sockets, or device nodes.|
 
@@ -47,7 +49,7 @@ Select preferred compute partitions on which to run jobs.
 
 table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
-|partition|string or array of string||
+|partition|string or array of strings||
 
 h2. arv:APIRequirement
 

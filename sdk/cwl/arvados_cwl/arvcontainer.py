@@ -116,7 +116,7 @@ class ArvadosContainer(object):
 
         if kwargs.get("runnerjob", "").startswith("arvwf:"):
             wfuuid = kwargs["runnerjob"][6:kwargs["runnerjob"].index("#")]
-            wfrecord = self.arvrunner.api.workflows().get(uuid=wfuuid).execute()
+            wfrecord = self.arvrunner.api.workflows().get(uuid=wfuuid).execute(num_retries=self.arvrunner.num_retries)
             if container_request["name"] == "main":
                 container_request["name"] = wfrecord["name"]
             container_request["properties"]["template_uuid"] = wfuuid
@@ -224,7 +224,7 @@ class RunnerContainer(Runner):
         elif workflowcollection.startswith("arvwf:"):
             workflowpath = "/var/lib/cwl/workflow.json#main"
             wfuuid = workflowcollection[6:workflowcollection.index("#")]
-            wfrecord = self.arvrunner.api.workflows().get(uuid=wfuuid).execute()
+            wfrecord = self.arvrunner.api.workflows().get(uuid=wfuuid).execute(num_retries=self.arvrunner.num_retries)
             wfobj = yaml.safe_load(wfrecord["definition"])
             if container_req["name"].startswith("arvwf:"):
                 container_req["name"] = wfrecord["name"]
