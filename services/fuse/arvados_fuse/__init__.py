@@ -399,7 +399,6 @@ class Operations(llfuse.Operations):
                 parent.invalidate()
                 parent.update()
 
-
     @catch_exceptions
     def getattr(self, inode):
         if inode not in self.inodes:
