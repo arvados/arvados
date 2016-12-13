@@ -8,29 +8,29 @@ The following command line options are available for @arvados-cwl-runner@:
 
 table(table table-bordered table-condensed).
 |_. Option |_. Description |
-|  --basedir BASEDIR|     Base directory used to resolve relative references in the input, default to directory of input object file or current directory (if inputs piped/provided on command line).|
-|  --version|             Print version and exit|
-|  --verbose|             Default logging|
-|  --quiet|               Only print warnings and errors.|
-|  --debug|               Print even more logging|
-|  --tool-help|           Print command line help for tool|
-|  --enable-reuse|Enable job reuse (default)|
-|  --disable-reuse|Disable job reuse (always run new jobs).|
-|  --project-uuid UUID|   Project that will own the workflow jobs, if not provided, will go to home project.|
-|  --output-name OUTPUT_NAME|Name to use for collection that stores the final output.|
-|  --output-tags OUTPUT_TAGS|Tags for the final output collection separated by commas, e.g., '--output-tags tag0,tag1,tag2'.|
-|  --ignore-docker-for-reuse|Ignore Docker image version when deciding whether to reuse past jobs.|
-|  --submit|              Submit workflow to run on Arvados.|
-|  --local|               Control workflow from local host (submits jobs to Arvados).|
-|  --create-template|     (Deprecated) synonym for --create-workflow.|
-|  --create-workflow|     Create an Arvados workflow (if using the 'containers' API) or pipeline template (if using the 'jobs' API). See --api.|
-|  --update-workflow UUID|Update an existing Arvados workflow or pipeline template with the given UUID.|
-|  --wait|                After submitting workflow runner job, wait for completion.|
-|  --no-wait|             Submit workflow runner job and exit.|
-|  --api WORK_API|        Select work submission API, one of 'jobs' or 'containers'. Default is 'jobs' if that API is available, otherwise 'containers'.|
-|  --compute-checksum|    Compute checksum of contents while collecting outputs|
-|  --submit-runner-ram SUBMIT_RUNNER_RAM|RAM (in MiB) required for the workflow runner job (default 1024)|
-|  --name NAME|           Name to use for workflow execution instance.|
+|==--basedir== BASEDIR|     Base directory used to resolve relative references in the input, default to directory of input object file or current directory (if inputs piped/provided on command line).|
+|==--version==|             Print version and exit|
+|==--verbose==|             Default logging|
+|==--quiet==|               Only print warnings and errors.|
+|==--debug==|               Print even more logging|
+|==--tool-help==|           Print command line help for tool|
+|==--enable-reuse==|Enable job reuse (default)|
+|==--disable-reuse==|Disable job reuse (always run new jobs).|
+|==--project-uuid UUID==|   Project that will own the workflow jobs, if not provided, will go to home project.|
+|==--output-name OUTPUT_NAME==|Name to use for collection that stores the final output.|
+|==--output-tags OUTPUT_TAGS==|Tags for the final output collection separated by commas, e.g., =='--output-tags tag0,tag1,tag2'==.|
+|==--ignore-docker-for-reuse==|Ignore Docker image version when deciding whether to reuse past jobs.|
+|==--submit==|              Submit workflow to run on Arvados.|
+|==--local==|               Control workflow from local host (submits jobs to Arvados).|
+|==--create-template==|     (Deprecated) synonym for ==--create-workflow.==|
+|==--create-workflow==|     Create an Arvados workflow (if using the 'containers' API) or pipeline template (if using the 'jobs' API). See ==--api==.|
+|==--update-workflow== UUID|Update an existing Arvados workflow or pipeline template with the given UUID.|
+|==--wait==|                After submitting workflow runner job, wait for completion.|
+|==--no-wait==|             Submit workflow runner job and exit.|
+|==--api== WORK_API|        Select work submission API, one of 'jobs' or 'containers'. Default is 'jobs' if that API is available, otherwise 'containers'.|
+|==--compute-checksum==|    Compute checksum of contents while collecting outputs|
+|==--submit-runner-ram== SUBMIT_RUNNER_RAM|RAM (in MiB) required for the workflow runner job (default 1024)|
+|==--name== NAME|           Name to use for workflow execution instance.|
 
 h3. Specify workflow and output names
 
