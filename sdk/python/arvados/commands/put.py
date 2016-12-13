@@ -870,7 +870,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         sys.exit(1)
 
     if args.progress:  # Print newline to split stderr from stdout for humans.
-        logger.error("\n")
+        logger.info("\n")
 
     if args.stream:
         if args.normalize:
