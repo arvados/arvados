@@ -174,7 +174,7 @@ case "$TARGET" in
         PYTHON3_PREFIX=/opt/rh/python33/root/usr
         PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/site-packages
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
-            oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
+            oauth2client==1.5.2 \
             rsa uritemplate httplib2 ws4py pykka  \
             ciso8601 pycrypto 'pycurl<7.21.5' \
             python-daemon==2.1.1 llfuse==0.41.1 'pbr<1.0' pyyaml \
