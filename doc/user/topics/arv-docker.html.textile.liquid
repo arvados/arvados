@@ -184,13 +184,13 @@ arvados/jobs-with-r             latest      33ea6b877923  qr1hi-4zz18-3fk2px2ji2
 </code></pre>
 </notextile>
 
-You are now able to specify the runtime environment for your program using the @docker_image@ field of the @runtime_constaints@ section of your pipeline components:
+You are now able to specify the runtime environment for your program using @DockerRequirement@ in your workflow:
 
-<notextile>
-{% code 'example_docker' as javascript %}
-</notextile>
-
-* The @docker_image@ field can be one of: the Docker repository name (as shown above), the Docker image hash, or the Arvados collection portable data hash.
+<pre>
+hints:
+  DockerRequirement:
+    dockerPull: arvados/jobs-with-r
+</pre>
 
 h2. Share Docker images
 

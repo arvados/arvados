@@ -56,12 +56,12 @@ navbar:
       - user/tutorials/writing-cwl-workflow.html.textile.liquid
       - user/cwl/cwl-style.html.textile.liquid
       - user/cwl/cwl-extensions.html.textile.liquid
+      - user/topics/arv-docker.html.textile.liquid
       - user/tutorials/running-external-program.html.textile.liquid
       - user/topics/crunch-tools-overview.html.textile.liquid
       - user/tutorials/tutorial-firstscript.html.textile.liquid
       - user/tutorials/tutorial-submit-job.html.textile.liquid
       - user/topics/tutorial-parallel.html.textile.liquid
-      - user/topics/arv-docker.html.textile.liquid
     - Develop a web service:
       - user/topics/arv-web.html.textile.liquid
     - Reference:
