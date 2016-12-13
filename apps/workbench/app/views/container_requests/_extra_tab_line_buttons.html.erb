@@ -1,0 +1,10 @@
+<% if @object.state == 'Final' %>
+  <%= link_to(copy_container_request_path('id' => @object.uuid),
+      class: 'btn btn-primary',
+      title: 'Re-run',
+      data: {toggle: :tooltip, placement: :top}, title: 'This will make a copy and take you there. You can then make any needed changes and run it',
+      method: :post,
+      ) do %>
+    <i class="fa fa-fw fa-play"></i> Re-run
+  <% end %>
+<% end %>
