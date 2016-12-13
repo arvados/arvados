@@ -57,7 +57,7 @@ class WorkUnitsController < ApplicationController
       workflow = Workflow.find? template_uuid
       if workflow.definition
         begin
-          wf_json = YAML::load(workflow.definition)
+          wf_json = ActiveSupport::HashWithIndifferentAccess.new YAML::load(workflow.definition)
         rescue => e
           logger.error "Error converting definition yaml to json: #{e.message}"
           raise ArgumentError, "Error converting definition yaml to json: #{e.message}"
@@ -77,11 +77,21 @@ class WorkUnitsController < ApplicationController
       attrs['cwd'] = "/var/spool/cwl"
       attrs['output_path'] = "/var/spool/cwl"
 
+      input_defaults = {}
+      if wf_json
+        inputs = get_cwl_inputs(wf_json)
+        inputs.each do |input|
+          if input[:default]
+            input_defaults[cwl_shortname(input[:id])] = input[:default]
+          end
+        end
+      end
+
       # mounts
       mounts = {
         "/var/lib/cwl/cwl.input.json" => {
           "kind" => "json",
-          "content" => {}
+          "content" => input_defaults
         },
         "stdout" => {
           "kind" => "file",

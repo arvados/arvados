@@ -11,6 +11,8 @@ import logging
 import arvados
 import arvados.commands._util as arv_cmd
 
+from arvados._version import __version__
+
 logger = logging.getLogger('arvados.arv-get')
 
 def abort(msg, code=1):
@@ -20,6 +22,9 @@ def abort(msg, code=1):
 parser = argparse.ArgumentParser(
     description='Copy data from Keep to a local file or pipe.',
     parents=[arv_cmd.retry_opt])
+parser.add_argument('--version', action='version',
+                    version="%s %s" % (sys.argv[0], __version__),
+                    help='Print version and exit.')
 parser.add_argument('locator', type=str,
                     help="""
 Collection locator, optionally with a file path or prefix.

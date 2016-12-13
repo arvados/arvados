@@ -2,15 +2,17 @@
 # -*- coding: utf-8 -*-
 
 import io
+import os
 import random
-
+import sys
 import mock
+import tempfile
 
 import arvados.errors as arv_error
 import arvados.commands.ls as arv_ls
 import run_test_server
 
-from arvados_testutil import str_keep_locator
+from arvados_testutil import str_keep_locator, redirected_streams
 
 class ArvLsTestCase(run_test_server.TestCaseWithServers):
     FAKE_UUID = 'zzzzz-4zz18-12345abcde12345'
@@ -78,3 +80,12 @@ class ArvLsTestCase(run_test_server.TestCaseWithServers):
             arv_error.NotFoundError)
         self.assertNotEqual(0, self.run_ls([self.FAKE_UUID], api_client))
         self.assertNotEqual('', self.stderr.getvalue())
+
+    def test_version_argument(self):
+        err = io.BytesIO()
+        out = io.BytesIO()
+        with redirected_streams(stdout=out, stderr=err):
+            with self.assertRaises(SystemExit):
+                self.run_ls(['--version'], None)
+        self.assertEqual(out.getvalue(), '')
+        self.assertRegexpMatches(err.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")

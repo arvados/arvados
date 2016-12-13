@@ -13,6 +13,7 @@ import time
 import arvados.commands._util as arv_cmd
 from arvados_fuse import crunchstat
 from arvados_fuse import *
+from arvados_fuse._version import __version__
 
 class ArgumentParser(argparse.ArgumentParser):
     def __init__(self):
@@ -24,6 +25,9 @@ class ArgumentParser(argparse.ArgumentParser):
     mountpoint before --exec, or mark the end of your --exec arguments
     with "--".
             """)
+        self.add_argument('--version', action='version',
+                          version="%s %s" % (sys.argv[0], __version__),
+                          help='Print version and exit.')
         self.add_argument('mountpoint', type=str, help="""Mount point.""")
         self.add_argument('--allow-other', action='store_true',
                             help="""Let other users read the mount""")

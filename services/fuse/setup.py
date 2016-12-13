@@ -40,7 +40,8 @@ setup(name='arvados_fuse',
         'arvados-python-client >= 0.1.20151118035730',
         'llfuse==0.41.1',
         'python-daemon',
-        'ciso8601'
+        'ciso8601',
+        'setuptools'
         ],
       test_suite='tests',
       tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML'],

@@ -21,6 +21,8 @@ import arvados.commands._util as arv_cmd
 import arvados.commands.put as arv_put
 import ciso8601
 
+from arvados._version import __version__
+
 EARLIEST_DATETIME = datetime.datetime(datetime.MINYEAR, 1, 1, 0, 0, 0)
 STAT_CACHE_ERRORS = (IOError, OSError, ValueError)
 
@@ -28,6 +30,9 @@ DockerImage = collections.namedtuple(
     'DockerImage', ['repo', 'tag', 'hash', 'created', 'vsize'])
 
 keepdocker_parser = argparse.ArgumentParser(add_help=False)
+keepdocker_parser.add_argument(
+    '--version', action='version', version="%s %s" % (sys.argv[0], __version__),
+    help='Print version and exit.')
 keepdocker_parser.add_argument(
     '-f', '--force', action='store_true', default=False,
     help="Re-upload the image even if it already exists on the server")

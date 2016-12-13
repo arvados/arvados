@@ -10,6 +10,7 @@ import time
 
 import daemon
 import pykka
+import libcloud
 
 from . import config as nmconfig
 from .baseactor import WatchdogActor
@@ -17,6 +18,7 @@ from .daemon import NodeManagerDaemonActor
 from .jobqueue import JobQueueMonitorActor, ServerCalculator
 from .nodelist import ArvadosNodeListMonitorActor, CloudNodeListMonitorActor
 from .timedcallback import TimedCallBackActor
+from ._version import __version__
 
 node_daemon = None
 
@@ -28,6 +30,10 @@ def parse_cli(args):
     parser = argparse.ArgumentParser(
         prog='arvados-node-manager',
         description="Dynamically allocate Arvados cloud compute nodes")
+    parser.add_argument(
+        '--version', action='version',
+        version="%s %s" % (sys.argv[0], __version__),
+        help='Print version and exit.')
     parser.add_argument(
         '--foreground', action='store_true', default=False,
         help="Run in the foreground.  Don't daemonize.")
@@ -57,6 +63,7 @@ def setup_logging(path, level, **sublevels):
     for logger_name, sublevel in sublevels.iteritems():
         sublogger = logging.getLogger(logger_name)
         sublogger.setLevel(sublevel)
+    return root_logger
 
 def build_server_calculator(config):
     cloud_size_list = config.node_sizes(config.new_cloud_client().list_sizes())
@@ -105,7 +112,8 @@ def main(args=None):
         signal.signal(sigcode, shutdown_signal)
 
     try:
-        setup_logging(config.get('Logging', 'file'), **config.log_levels())
+        root_logger = setup_logging(config.get('Logging', 'file'), **config.log_levels())
+        root_logger.info("%s %s, libcloud %s", sys.argv[0], __version__, libcloud.__version__)
         node_setup, node_shutdown, node_update, node_monitor = \
             config.dispatch_classes()
         server_calculator = build_server_calculator(config)

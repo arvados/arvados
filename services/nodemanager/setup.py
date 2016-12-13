@@ -33,6 +33,7 @@ setup(name='arvados-node-manager',
         'arvados-python-client>=0.1.20150206225333',
         'pykka',
         'python-daemon',
+        'setuptools'
         ],
       dependency_links = [
           "https://github.com/curoverse/libcloud/archive/apache-libcloud-0.18.1.dev4.zip"

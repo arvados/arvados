@@ -44,3 +44,22 @@ workflow_with_input_specifications:
       inputBinding:
         position: 1
     outputs: []
+
+workflow_with_input_defaults:
+  uuid: zzzzz-7fd4e-validwithinput2
+  owner_uuid: zzzzz-j7d0g-zhxawtyetzwc5f0
+  name: Workflow with default input specifications
+  description: this workflow has inputs specified
+  created_at: <%= 1.minute.ago.to_s(:db) %>
+  definition: |
+    cwlVersion: v1.0
+    class: CommandLineTool
+    baseCommand:
+    - echo
+    inputs:
+    - type: string
+      id: ex_string
+    - type: string
+      id: ex_string_def
+      default: hello-testing-123
+    outputs: []

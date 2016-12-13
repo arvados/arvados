@@ -3,6 +3,7 @@ import arvados_fuse
 import arvados_fuse.command
 import contextlib
 import functools
+import io
 import json
 import llfuse
 import logging
@@ -47,6 +48,14 @@ class MountArgsTest(unittest.TestCase):
         for p in path:
             ent = ent[p]
         return ent
+
+    @contextlib.contextmanager
+    def stderrMatches(self, stderr):
+        orig, sys.stderr = sys.stderr, stderr
+        try:
+            yield
+        finally:
+            sys.stderr = orig
 
     def check_ent_type(self, cls, *path):
         ent = self.lookup(self.mnt, *path)
@@ -169,6 +178,13 @@ class MountArgsTest(unittest.TestCase):
         self.assertEqual(e.current_user['uuid'],
                          run_test_server.fixture('users')['active']['uuid'])
         self.assertEqual(True, self.mnt.listen_for_events)
+
+    def test_version_argument(self):
+        orig, sys.stderr = sys.stderr, io.BytesIO()
+        with self.assertRaises(SystemExit):
+            args = arvados_fuse.command.ArgumentParser().parse_args(['--version'])
+        self.assertRegexpMatches(sys.stderr.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
+        sys.stderr = orig
 
     @noexit
     @mock.patch('arvados.events.subscribe')

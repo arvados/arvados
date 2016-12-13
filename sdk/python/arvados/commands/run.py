@@ -11,22 +11,38 @@ import put
 import time
 import subprocess
 import logging
+import sys
 import arvados.commands._util as arv_cmd
+
+from arvados._version import __version__
 
 logger = logging.getLogger('arvados.arv-run')
 logger.setLevel(logging.INFO)
 
 arvrun_parser = argparse.ArgumentParser(parents=[arv_cmd.retry_opt])
-arvrun_parser.add_argument('--dry-run', action="store_true", help="Print out the pipeline that would be submitted and exit")
-arvrun_parser.add_argument('--local', action="store_true", help="Run locally using arv-run-pipeline-instance")
-arvrun_parser.add_argument('--docker-image', type=str, help="Docker image to use, otherwise use instance default.")
-arvrun_parser.add_argument('--ignore-rcode', action="store_true", help="Commands that return non-zero return codes should not be considered failed.")
-arvrun_parser.add_argument('--no-reuse', action="store_true", help="Do not reuse past jobs.")
-arvrun_parser.add_argument('--no-wait', action="store_true", help="Do not wait and display logs after submitting command, just exit.")
-arvrun_parser.add_argument('--project-uuid', type=str, help="Parent project of the pipeline")
-arvrun_parser.add_argument('--git-dir', type=str, default="", help="Git repository passed to arv-crunch-job when using --local")
-arvrun_parser.add_argument('--repository', type=str, default="arvados", help="repository field of component, default 'arvados'")
-arvrun_parser.add_argument('--script-version', type=str, default="master", help="script_version field of component, default 'master'")
+arvrun_parser.add_argument('--dry-run', action="store_true",
+                           help="Print out the pipeline that would be submitted and exit")
+arvrun_parser.add_argument('--local', action="store_true",
+                           help="Run locally using arv-run-pipeline-instance")
+arvrun_parser.add_argument('--docker-image', type=str,
+                           help="Docker image to use, otherwise use instance default.")
+arvrun_parser.add_argument('--ignore-rcode', action="store_true",
+                           help="Commands that return non-zero return codes should not be considered failed.")
+arvrun_parser.add_argument('--no-reuse', action="store_true",
+                           help="Do not reuse past jobs.")
+arvrun_parser.add_argument('--no-wait', action="store_true",
+                           help="Do not wait and display logs after submitting command, just exit.")
+arvrun_parser.add_argument('--project-uuid', type=str,
+                           help="Parent project of the pipeline")
+arvrun_parser.add_argument('--git-dir', type=str, default="",
+                           help="Git repository passed to arv-crunch-job when using --local")
+arvrun_parser.add_argument('--repository', type=str, default="arvados",
+                           help="repository field of component, default 'arvados'")
+arvrun_parser.add_argument('--script-version', type=str, default="master",
+                           help="script_version field of component, default 'master'")
+arvrun_parser.add_argument('--version', action='version',
+                           version="%s %s" % (sys.argv[0], __version__),
+                           help='Print version and exit.')
 arvrun_parser.add_argument('args', nargs=argparse.REMAINDER)
 
 class ArvFile(object):

@@ -189,7 +189,7 @@ class ProxyWorkUnit < WorkUnit
   def cputime
     if state_label != "Queued"
       if started_at
-        (runtime_constraints.andand[:min_nodes] || 1) * ((finished_at || Time.now()) - started_at)
+        (runtime_constraints.andand[:min_nodes] || 1).to_i * ((finished_at || Time.now()) - started_at)
       end
     end
   end
@@ -276,14 +276,14 @@ class ProxyWorkUnit < WorkUnit
       if children.any?
         cpu_time = children.map { |c|
           if c.started_at
-             (c.runtime_constraints.andand[:min_nodes] || 1) * ((c.finished_at || Time.now()) - c.started_at)
+             (c.runtime_constraints.andand[:min_nodes] || 1).to_i * ((c.finished_at || Time.now()) - c.started_at)
           else
             0
           end
         }.reduce(:+) || 0
       else
         if started_at
-          cpu_time = (runtime_constraints.andand[:min_nodes] || 1) * ((finished_at || Time.now()) - started_at)
+          cpu_time = (runtime_constraints.andand[:min_nodes] || 1).to_i * ((finished_at || Time.now()) - started_at)
         end
       end
 

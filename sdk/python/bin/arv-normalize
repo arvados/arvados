@@ -7,15 +7,21 @@ import re
 import string
 import sys
 
+import arvados
+from arvados._version import __version__
+
 parser = argparse.ArgumentParser(
     description='Read manifest on standard input and put normalized manifest on standard output.')
 
-parser.add_argument('--extract', type=str, help="The file to extract from the input manifest")
-parser.add_argument('--strip', action='store_true', help="Strip authorization tokens")
+parser.add_argument('--extract', type=str,
+                    help="The file to extract from the input manifest")
+parser.add_argument('--strip', action='store_true',
+                    help="Strip authorization tokens")
+parser.add_argument('--version', action='version',
+                    version="%s %s" % (sys.argv[0], __version__),
+                    help='Print version and exit.')
 
 args = parser.parse_args()
-
-import arvados
 
 r = sys.stdin.read()
 

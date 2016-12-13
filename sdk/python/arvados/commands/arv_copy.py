@@ -35,6 +35,7 @@ import arvados.commands._util as arv_cmd
 import arvados.commands.keepdocker
 
 from arvados.api import OrderedJsonModel
+from arvados._version import __version__
 
 COMMIT_HASH_RE = re.compile(r'^[0-9a-f]{1,40}$')
 
@@ -61,6 +62,9 @@ src_owner_uuid = None
 def main():
     copy_opts = argparse.ArgumentParser(add_help=False)
 
+    copy_opts.add_argument(
+        '--version', action='version', version="%s %s" % (sys.argv[0], __version__),
+        help='Print version and exit.')
     copy_opts.add_argument(
         '-v', '--verbose', dest='verbose', action='store_true',
         help='Verbose output.')

@@ -6,23 +6,22 @@ import sys
 import tempfile
 import unittest
 
-import arvados.errors as arv_error
-import arvados.commands.ws as arv_ws
-import arvados_testutil as tutil
+import arvnodeman.launcher as nodeman
+from . import testutil
 
-class ArvWsTestCase(unittest.TestCase):
-    def run_ws(self, args):
-        return arv_ws.main(args)
+class ArvNodemArgumentsTestCase(unittest.TestCase):
+    def run_nodeman(self, args):
+        return nodeman.main(args)
 
     def test_unsupported_arg(self):
         with self.assertRaises(SystemExit):
-            self.run_ws(['-x=unknown'])
+            self.run_nodeman(['-x=unknown'])
 
     def test_version_argument(self):
         err = io.BytesIO()
         out = io.BytesIO()
-        with tutil.redirected_streams(stdout=out, stderr=err):
+        with testutil.redirected_streams(stdout=out, stderr=err):
             with self.assertRaises(SystemExit):
-                self.run_ws(['--version'])
+                self.run_nodeman(['--version'])
         self.assertEqual(out.getvalue(), '')
         self.assertRegexpMatches(err.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
