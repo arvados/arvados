@@ -44,7 +44,7 @@ navbar:
       - user/topics/keep.html.textile.liquid
       - user/topics/arv-copy.html.textile.liquid
     - Running workflows at the command line:
-      - user/topics/running-workflow-command-line.html.textile.liquid
+      - user/cwl/cwl-runner.html.textile.liquid
       - user/topics/running-pipeline-command-line.html.textile.liquid
       - user/topics/arv-run.html.textile.liquid
     - Working with git repositories:
@@ -54,6 +54,7 @@ navbar:
       - user/tutorials/intro-crunch.html.textile.liquid
       - user/tutorials/writing-cwl-workflow.html.textile.liquid
       - user/cwl/cwl-style.html.textile.liquid
+      - user/cwl/cwl-extensions.html.textile.liquid
       - user/tutorials/running-external-program.html.textile.liquid
       - user/topics/crunch-tools-overview.html.textile.liquid
       - user/tutorials/tutorial-firstscript.html.textile.liquid

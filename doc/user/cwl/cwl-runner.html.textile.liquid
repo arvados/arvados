@@ -1,9 +1,161 @@
 ---
 layout: default
 navsection: userguide
-title: Running Common Workflow Language
+title: "Running an Arvados workflow"
 ...
 
 {% include 'what_is_cwl' %}
 
 {% include 'tutorial_expectations' %}
+
+{% include 'notebox_begin' %}
+
+By default, the @arvados-cwl-runner@ is installed on Arvados shell nodes.  If you want to submit jobs from somewhere else, such as your workstation, you may install "arvados-cwl-runner.":#setup
+
+{% include 'notebox_end' %}
+
+This tutorial will demonstrate how to submit a workflow at the command line using @arvados-cwl-runner@.
+
+h3. Get the example files
+
+The tutorial files are located in the "documentation section of the Arvados source repository:":https://github.com/curoverse/arvados/tree/master/doc/user/cwl/bwa-mem
+
+<notextile>
+<pre><code>~$ <span class="userinput">git clone https://github.com/curoverse/arvados</span>
+~$ <span class="userinput">cd arvados/doc/user/cwl/bwa-mem</span>
+</code></pre>
+</notextile>
+
+The tutorial data is hosted on "https://cloud.curoverse.com":https://cloud.curoverse.com (also referred to by the identifier *qr1hi*).  If you are using a different Arvados instance, you may need to copy the data to your own instance.  The easiest way to do this is with "arv-copy":{{site.baseurl}}/user/topics/arv-copy.html (this requires signing up for a free cloud.curoverse.com account).
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv-copy --src qr1hi --dst settings 2463fa9efeb75e099685528b3b9071e0+438</span>
+~$ <span class="userinput">arv-copy --src qr1hi --dst settings ae480c5099b81e17267b7445e35b4bc7+180</span>
+~$ <span class="userinput">arv-copy --src qr1hi --dst settings 655c6cd07550151b210961ed1d3852cf+57</span>
+</code></pre>
+</notextile>
+
+If you do not wish to create an account on "https://cloud.curoverse.com":https://cloud.curoverse.com, you may download the files anonymously and upload them to your local Arvados instance:
+
+"https://cloud.curoverse.com/collections/2463fa9efeb75e099685528b3b9071e0+438":https://cloud.curoverse.com/collections/2463fa9efeb75e099685528b3b9071e0+438
+
+"https://cloud.curoverse.com/collections/ae480c5099b81e17267b7445e35b4bc7+180":https://cloud.curoverse.com/collections/ae480c5099b81e17267b7445e35b4bc7+180
+
+"https://cloud.curoverse.com/collections/655c6cd07550151b210961ed1d3852cf+57":https://cloud.curoverse.com/collections/655c6cd07550151b210961ed1d3852cf+57
+
+h2. Submitting a workflow to an Arvados cluster
+
+h3. Submit a workflow and wait for results
+
+Use @arvados-cwl-runner@ to submit CWL workflows to Arvados.  After submitting the job, it will wait for the workflow to complete and print out the final result to standard output.
+
+*Note:* Once submitted, the workflow runs entirely on Arvados, so even if you log out, the workflow will continue to run.  However, if you interrupt @arvados-cwl-runner@ with control-C it will cancel the workflow.
+
+<notextile>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner bwa-mem.cwl bwa-mem-input.yml</span>
+arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
+2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Upload local files: "bwa-mem.cwl"
+2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Uploaded to qr1hi-4zz18-h7ljh5u76760ww2
+2016-06-30 14:56:40 arvados.cwl-runner[27002] INFO: Submitted job qr1hi-8i9sb-fm2n3b1w0l6bskg
+2016-06-30 14:56:41 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Running
+2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Complete
+2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Overall process status is success
+{
+    "aligned_sam": {
+        "path": "keep:54325254b226664960de07b3b9482349+154/HWI-ST1027_129_D0THKACXX.1_1.sam",
+        "checksum": "sha1$0dc46a3126d0b5d4ce213b5f0e86e2d05a54755a",
+        "class": "File",
+        "size": 30738986
+    }
+}
+</code></pre>
+</notextile>
+
+h3. Submit a workflow with no waiting
+
+To submit a workflow and exit immediately, use the @--no-wait@ option.  This will submit the workflow to Arvados, print out the UUID of the job that was submitted to standard output, and exit.
+
+<notextile>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --no-wait bwa-mem.cwl bwa-mem-input.yml</span>
+arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
+2016-06-30 15:07:52 arvados.arv-run[12480] INFO: Upload local files: "bwa-mem.cwl"
+2016-06-30 15:07:52 arvados.arv-run[12480] INFO: Uploaded to qr1hi-4zz18-eqnfwrow8aysa9q
+2016-06-30 15:07:52 arvados.cwl-runner[12480] INFO: Submitted job qr1hi-8i9sb-fm2n3b1w0l6bskg
+qr1hi-8i9sb-fm2n3b1w0l6bskg
+</code></pre>
+</notextile>
+
+h2. Work reuse
+
+Workflows submitted with @arvados-cwl-runner@ will take advantage of Arvados job reuse.  If you submit a workflow which is identical to one that has run before, it will short cut the execution and return the result of the previous run.  This also applies to individual workflow steps.  For example, a two step workflow where the first step has run before will reuse results for first step and only execute the new second step.  You can disable this behavior with @--disable-reuse@.
+
+h2. Referencing files
+
+When running a workflow on an Arvados cluster, the input files must be stored in Keep.  There are several ways this can happen.
+
+A URI reference to Keep uses the @keep:@ scheme followed by the portable data hash, collection size, and path to the file inside the collection.  For example, @keep:2463fa9efeb75e099685528b3b9071e0+438/19.fasta.bwt@.
+
+If you reference a file in "arv-mount":{{site.baseurl}}/user/tutorials/tutorial-keep-mount.html, such as @/home/example/keep/by_id/2463fa9efeb75e099685528b3b9071e0+438/19.fasta.bwt@, then @arvados-cwl-runner@ will automatically determine the appropriate Keep URI reference.
+
+If you reference a local file which is not in @arv-mount@, then @arvados-cwl-runner@ will upload the file to Keep and use the Keep URI reference from the upload.
+
+You can also execute CWL files directly from Keep:
+
+<notextile>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner keep:655c6cd07550151b210961ed1d3852cf+57/bwa-mem.cwl bwa-mem-input.yml</span>
+arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
+2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Uploaded to qr1hi-4zz18-h7ljh5u76760ww2
+2016-06-30 14:56:40 arvados.cwl-runner[27002] INFO: Submitted job qr1hi-8i9sb-fm2n3b1w0l6bskg
+2016-06-30 14:56:41 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Running
+2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Complete
+2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Overall process status is success
+{
+    "aligned_sam": {
+        "path": "keep:54325254b226664960de07b3b9482349+154/HWI-ST1027_129_D0THKACXX.1_1.sam",
+        "checksum": "sha1$0dc46a3126d0b5d4ce213b5f0e86e2d05a54755a",
+        "class": "File",
+        "size": 30738986
+    }
+}
+</code></pre>
+</notextile>
+
+h2(#setup). Setting up arvados-cwl-runner
+
+By default, the @arvados-cwl-runner@ is installed on Arvados shell nodes.  If you want to submit jobs from somewhere else, such as your workstation, you may install @arvados-cwl-runner@ using @pip@:
+
+<notextile>
+<pre><code>~$ <span class="userinput">virtualenv ~/venv</span>
+~$ <span class="userinput">. ~/venv/bin/activate</span>
+~$ <span class="userinput">pip install -U setuptools</span>
+~$ <span class="userinput">pip install arvados-cwl-runner</span>
+</code></pre>
+</notextile>
+
+h3. Check Docker access
+
+In order to pull and upload Docker images, @arvados-cwl-runner@ requires access to Docker.  You do not need Docker if the Docker images you intend to use are already available in Aravdos.
+
+You can determine if you have access to Docker by running @docker version@:
+
+<notextile>
+<pre><code>~$ <span class="userinput">docker version</span>
+Client:
+ Version:      1.9.1
+ API version:  1.21
+ Go version:   go1.4.2
+ Git commit:   a34a1d5
+ Built:        Fri Nov 20 12:59:02 UTC 2015
+ OS/Arch:      linux/amd64
+
+Server:
+ Version:      1.9.1
+ API version:  1.21
+ Go version:   go1.4.2
+ Git commit:   a34a1d5
+ Built:        Fri Nov 20 12:59:02 UTC 2015
+ OS/Arch:      linux/amd64
+</code></pre>
+</notextile>
+
+If this returns an error, contact the sysadmin of your cluster for assistance.
