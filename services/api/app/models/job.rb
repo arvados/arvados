@@ -119,6 +119,10 @@ class Job < ArvadosModel
     super - ["script_parameters_digest"]
   end
 
+  def self.full_text_searchable_columns
+    super - ["script_parameters_digest"]
+  end
+
   def self.load_job_specific_filters attrs, orig_filters, read_users
     # Convert Job-specific @filters entries into general SQL filters.
     script_info = {"repository" => nil, "script" => nil}

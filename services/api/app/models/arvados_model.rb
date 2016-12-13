@@ -252,12 +252,7 @@ class ArvadosModel < ActiveRecord::Base
     parts = full_text_searchable_columns.collect do |column|
       "coalesce(#{column},'')"
     end
-    # We prepend a space to the tsvector() argument here. Otherwise,
-    # it might start with a column that has its own (non-full-text)
-    # index, which causes Postgres to use the column index instead of
-    # the tsvector index, which causes full text queries to be just as
-    # slow as if we had no index at all.
-    "to_tsvector('english', ' ' || #{parts.join(" || ' ' || ")})"
+    "to_tsvector('english', #{parts.join(" || ' ' || ")})"
   end
 
   def self.apply_filters query, filters
