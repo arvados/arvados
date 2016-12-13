@@ -79,7 +79,7 @@ class ContainerRequestsController < ApplicationController
     @object.state = 'Uncommitted'
     @object.use_existing = false
 
-    # set owner_uuid to that of source, provided it is a project and wriable by current user
+    # set owner_uuid to that of source, provided it is a project and writable by current user
     current_project = Group.find(src.owner_uuid) rescue nil
     if (current_project && current_project.writable_by.andand.include?(current_user.uuid))
       @object.owner_uuid = src.owner_uuid
