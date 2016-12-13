@@ -1,5 +1,10 @@
 require 'diagnostics_test_helper'
 
+# This test assumes that the configured workflow_uuid corresponds to a cwl workflow.
+# Ex: configure a workflow using the steps below and use the resulting workflow uuid:
+#   > cd arvados/doc/user/cwl/bwa-mem
+#   > arvados-cwl-runner --create-workflow bwa-mem.cwl bwa-mem-input.yml
+
 class ContainerRequestTest < DiagnosticsTest
   crs_to_test = Rails.configuration.container_requests_to_test.andand.keys
 
