@@ -39,8 +39,8 @@ class ContainerRequestTest < DiagnosticsTest
       page.assert_no_selector('a.disabled,button.disabled', text: 'Run')
       find('a,button', text: 'Run').click
 
-      # container_request is running. We have a "Pause" button instead now.
-      page.assert_selector 'a,button', text: 'Pause'
+      # container_request is running. Run button is no longer available.
+      page.assert_no_selector('a', text: 'Run')
 
       # Wait for container_request run to complete
       wait_until_page_has 'completed', cr_config['max_wait_seconds']
