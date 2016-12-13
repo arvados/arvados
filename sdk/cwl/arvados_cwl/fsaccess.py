@@ -184,18 +184,23 @@ class CollectionFetcher(DefaultFetcher):
         return super(CollectionFetcher, self).urljoin(base_url, url)
 
 workflow_uuid_pattern = re.compile(r'[a-z0-9]{5}-7fd4e-[a-z0-9]{15}')
+pipeline_template_uuid_pattern = re.compile(r'[a-z0-9]{5}-p5p6p-[a-z0-9]{15}')
 
 def collectionResolver(api_client, document_loader, uri):
     if workflow_uuid_pattern.match(uri):
         return "arvwf:%s#main" % (uri)
+
+    if pipeline_template_uuid_pattern.match(uri):
+        pt = api_client.pipeline_templates().get(uuid=uri).execute()
+        return "keep:" + pt["components"].values()[0]["script_parameters"]["cwl:tool"]
 
     p = uri.split("/")
     if arvados.util.keep_locator_pattern.match(p[0]):
         return "keep:%s" % (uri)
 
     if arvados.util.collection_uuid_pattern.match(p[0]):
-        return "keep:%s%s" % (self.api_client.collections().
-                              get(uuid=uri).execute()["portable_data_hash"],
+        return "keep:%s%s" % (api_client.collections().
+                              get(uuid=p[0]).execute()["portable_data_hash"],
                               uri[len(p[0]):])
 
     return cwltool.resolver.tool_resolver(document_loader, uri)
