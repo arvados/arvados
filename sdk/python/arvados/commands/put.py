@@ -374,6 +374,7 @@ class ArvPutUploadJob(object):
         self._file_paths = [] # Files to be updated in remote collection
         self._stop_checkpointer = threading.Event()
         self._checkpointer = threading.Thread(target=self._update_task)
+        self._checkpointer.daemon = True
         self._update_task_time = update_time  # How many seconds wait between update runs
         self._files_to_upload = FileUploadList(dry_run=dry_run)
         self.logger = logger
@@ -393,8 +394,8 @@ class ArvPutUploadJob(object):
         """
         Start supporting thread & file uploading
         """
-        self._checkpointer.daemon = True
-        self._checkpointer.start()
+        if not self.dry_run:
+            self._checkpointer.start()
         try:
             for path in self.paths:
                 # Test for stdin first, in case some file named '-' exist
@@ -428,16 +429,17 @@ class ArvPutUploadJob(object):
             # Actual file upload
             self._upload_files()
         finally:
-            # Stop the thread before doing anything else
-            self._stop_checkpointer.set()
-            self._checkpointer.join()
-            # Commit all pending blocks & one last _update()
-            self._local_collection.manifest_text()
-            self._update(final=True)
+            if not self.dry_run:
+                # Stop the thread before doing anything else
+                self._stop_checkpointer.set()
+                self._checkpointer.join()
+                # Commit all pending blocks & one last _update()
+                self._local_collection.manifest_text()
+                self._update(final=True)
+                if save_collection:
+                    self.save_collection()
             if self.use_cache:
                 self._cache_file.close()
-            if save_collection:
-                self.save_collection()
 
     def save_collection(self):
         if self.update:
@@ -833,7 +835,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                                  owner_uuid = project_uuid,
                                  ensure_unique_name = True,
                                  update_collection = args.update_collection,
-                                 logger=logger)
+                                 logger=logger,
+                                 dry_run=args.dry_run)
     except ResumeCacheConflict:
         logger.error("\n".join([
             "arv-put: Another process is already uploading this data.",
@@ -855,12 +858,13 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     orig_signal_handlers = {sigcode: signal.signal(sigcode, exit_signal_handler)
                             for sigcode in CAUGHT_SIGNALS}
 
-    if not args.update_collection and args.resume and writer.bytes_written > 0:
+    if not args.dry_run and not args.update_collection and args.resume and writer.bytes_written > 0:
         logger.warning("\n".join([
             "arv-put: Resuming previous upload from last checkpoint.",
             "         Use the --no-resume option to start over."]))
 
-    writer.report_progress()
+    if not args.dry_run:
+        writer.report_progress()
     output = None
     try:
         writer.start(save_collection=not(args.stream or args.raw))
@@ -868,6 +872,12 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         logger.error("\n".join([
             "arv-put: %s" % str(error)]))
         sys.exit(1)
+    except ArvPutUploadIsPending:
+        # Dry run check successful, return proper exit code.
+        sys.exit(2)
+    except ArvPutUploadNotPending:
+        # No files pending for upload
+        sys.exit(0)
 
     if args.progress:  # Print newline to split stderr from stdout for humans.
         logger.info("\n")
