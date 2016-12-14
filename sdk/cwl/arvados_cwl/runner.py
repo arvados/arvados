@@ -57,7 +57,7 @@ def upload_dependencies(arvrunner, name, document_loader,
 
     loaded = set()
     def loadref(b, u):
-        joined = urlparse.urljoin(b, u)
+        joined = document_loader.fetcher.urljoin(b, u)
         defrg, _ = urlparse.urldefrag(joined)
         if defrg not in loaded:
             loaded.add(defrg)
@@ -85,7 +85,7 @@ def upload_dependencies(arvrunner, name, document_loader,
     sc = scandeps(uri, scanobj,
                   loadref_fields,
                   set(("$include", "$schemas", "location")),
-                  loadref)
+                  loadref, urljoin=document_loader.fetcher.urljoin)
 
     normalizeFilesDirs(sc)
 
@@ -188,7 +188,13 @@ class Runner(object):
 
     def arvados_job_spec(self, *args, **kwargs):
         if self.name is None:
-            self.name = os.path.basename(self.tool.tool["id"])
+            self.name = self.tool.tool.get("label") or os.path.basename(self.tool.tool["id"])
+
+        # Need to filter this out, gets added by cwltool when providing
+        # parameters on the command line.
+        if "job_order" in self.job_order:
+            del self.job_order["job_order"]
+
         workflowmapper = upload_instance(self.arvrunner, self.name, self.tool, self.job_order)
         adjustDirObjs(self.job_order, trim_listing)
         return workflowmapper

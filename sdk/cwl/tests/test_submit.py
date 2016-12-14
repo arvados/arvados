@@ -179,14 +179,21 @@ def stubs(func):
                     'path': '/var/spool/cwl/cwl.output.json',
                     'kind': 'file'
                 },
-                '/var/lib/cwl/job/cwl.input.json': {
-                    'portable_data_hash': 'd20d7cddd1984f105dd3702c7f125afb+60/cwl.input.json',
-                    'kind': 'collection'
+                '/var/lib/cwl/cwl.input.json': {
+                    'kind': 'json',
+                    'content': {
+                        'y': {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'},
+                        'x': {'basename': u'blorp.txt', 'class': 'File', 'location': u'keep:99999999999999999999999999999994+99/blorp.txt'},
+                        'z': {'basename': 'anonymous', 'class': 'Directory', 'listing': [
+                            {'basename': 'renamed.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999998+99/file1.txt'}
+                        ]}
+                    },
+                    'kind': 'json'
                 }
             },
             'state': 'Committed',
             'owner_uuid': None,
-            'command': ['arvados-cwl-runner', '--local', '--api=containers', '--enable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/job/cwl.input.json'],
+            'command': ['arvados-cwl-runner', '--local', '--api=containers', '--enable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/cwl.input.json'],
             'name': 'submit_wf.cwl',
             'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
             'output_path': '/var/spool/cwl',
@@ -195,7 +202,8 @@ def stubs(func):
                 'API': True,
                 'vcpus': 1,
                 'ram': 1024*1024*1024
-            }
+            },
+            "properties": {}
         }
 
         stubs.expect_workflow_uuid = "zzzzz-7fd4e-zzzzzzzzzzzzzzz"
@@ -271,7 +279,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         stubs.api.pipeline_instances().create.assert_called_with(
-            body=expect_pipeline)
+            body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
@@ -290,7 +298,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         stubs.api.pipeline_instances().create.assert_called_with(
-            body=expect_pipeline)
+            body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
@@ -321,7 +329,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         stubs.api.pipeline_instances().create.assert_called_with(
-            body=expect_pipeline)
+            body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
@@ -360,7 +368,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         stubs.api.pipeline_instances().create.assert_called_with(
-            body=expect_pipeline)
+            body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
@@ -379,7 +387,7 @@ class TestSubmit(unittest.TestCase):
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         expect_pipeline["owner_uuid"] = project_uuid
         stubs.api.pipeline_instances().create.assert_called_with(
-            body=expect_pipeline)
+            body=JsonDiffMatcher(expect_pipeline))
 
     @stubs
     def test_submit_container(self, stubs):
@@ -420,7 +428,7 @@ class TestSubmit(unittest.TestCase):
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
-            body=expect_container)
+            body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
@@ -436,11 +444,11 @@ class TestSubmit(unittest.TestCase):
         except:
             logging.exception("")
 
-        stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--disable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/job/cwl.input.json']
+        stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--disable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/cwl.input.json']
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
-            body=expect_container)
+            body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
@@ -458,11 +466,11 @@ class TestSubmit(unittest.TestCase):
         except:
             logging.exception("")
 
-        stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', "--output-name="+output_name, '--enable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/job/cwl.input.json']
+        stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', "--output-name="+output_name, '--enable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/cwl.input.json']
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
-            body=expect_container)
+            body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
@@ -480,11 +488,11 @@ class TestSubmit(unittest.TestCase):
         except:
             logging.exception("")
 
-        stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', "--output-tags="+output_tags, '--enable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/job/cwl.input.json']
+        stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', "--output-tags="+output_tags, '--enable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/cwl.input.json']
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
-            body=expect_container)
+            body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
@@ -504,9 +512,167 @@ class TestSubmit(unittest.TestCase):
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
-            body=expect_container)
+            body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
+
+    @mock.patch("arvados.collection.CollectionReader")
+    @mock.patch("time.sleep")
+    @stubs
+    def test_submit_file_keepref(self, stubs, tm, collectionReader):
+        capture_stdout = cStringIO.StringIO()
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug",
+             "tests/wf/submit_keepref_wf.cwl"],
+            capture_stdout, sys.stderr, api_client=stubs.api)
+        self.assertEqual(exited, 0)
+
+
+    @mock.patch("arvados.collection.CollectionReader")
+    @mock.patch("time.sleep")
+    @stubs
+    def test_submit_keepref(self, stubs, tm, reader):
+        capture_stdout = cStringIO.StringIO()
+
+        with open("tests/wf/expect_arvworkflow.cwl") as f:
+            reader().open().__enter__().read.return_value = f.read()
+
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug",
+             "keep:99999999999999999999999999999994+99/expect_arvworkflow.cwl#main", "-x", "XxX"],
+            capture_stdout, sys.stderr, api_client=stubs.api)
+        self.assertEqual(exited, 0)
+
+        expect_container = {
+            'priority': 1,
+            'mounts': {
+                '/var/spool/cwl': {
+                    'writable': True,
+                    'kind': 'collection'
+                },
+                'stdout': {
+                    'path': '/var/spool/cwl/cwl.output.json',
+                    'kind': 'file'
+                },
+                '/var/lib/cwl/workflow': {
+                    'portable_data_hash': '99999999999999999999999999999994+99',
+                    'kind': 'collection'
+                },
+                '/var/lib/cwl/cwl.input.json': {
+                    'content': {
+                        'x': 'XxX'
+                    },
+                    'kind': 'json'
+                }
+            }, 'state': 'Committed',
+            'owner_uuid': None,
+            'output_path': '/var/spool/cwl',
+            'name': 'expect_arvworkflow.cwl#main',
+            'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
+            'command': ['arvados-cwl-runner', '--local', '--api=containers', '--enable-reuse', '/var/lib/cwl/workflow/expect_arvworkflow.cwl#main', '/var/lib/cwl/cwl.input.json'],
+            'cwd': '/var/spool/cwl',
+            'runtime_constraints': {
+                'API': True,
+                'vcpus': 1,
+                'ram': 1073741824
+            },
+            "properties": {}
+        }
+
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+
+    @mock.patch("time.sleep")
+    @stubs
+    def test_submit_arvworkflow(self, stubs, tm):
+        capture_stdout = cStringIO.StringIO()
+
+        with open("tests/wf/expect_arvworkflow.cwl") as f:
+            stubs.api.workflows().get().execute.return_value = {"definition": f.read(), "name": "a test workflow"}
+
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=containers", "--debug",
+             "962eh-7fd4e-gkbzl62qqtfig37", "-x", "XxX"],
+            capture_stdout, sys.stderr, api_client=stubs.api)
+        self.assertEqual(exited, 0)
+
+        expect_container = {
+            'priority': 1,
+            'mounts': {
+                '/var/spool/cwl': {
+                    'writable': True,
+                    'kind': 'collection'
+                },
+                'stdout': {
+                    'path': '/var/spool/cwl/cwl.output.json',
+                    'kind': 'file'
+                },
+                '/var/lib/cwl/workflow.json': {
+                    'kind': 'json',
+                    'json': {
+                        'cwlVersion': 'v1.0',
+                        '$graph': [
+                            {
+                                'inputs': [
+                                    {
+                                        'inputBinding': {'position': 1},
+                                        'type': 'string',
+                                        'id': '#submit_tool.cwl/x'}
+                                ],
+                                'requirements': [
+                                    {'dockerPull': 'debian:8', 'class': 'DockerRequirement'}
+                                ],
+                                'id': '#submit_tool.cwl',
+                                'outputs': [],
+                                'baseCommand': 'cat',
+                                'class': 'CommandLineTool'
+                            }, {
+                                'id': '#main',
+                                'inputs': [
+                                    {'type': 'string', 'id': '#main/x'}
+                                ],
+                                'steps': [
+                                    {'in': [{'source': '#main/x', 'id': '#main/step1/x'}],
+                                     'run': '#submit_tool.cwl',
+                                     'id': '#main/step1',
+                                     'out': []}
+                                ],
+                                'class': 'Workflow',
+                                'outputs': []
+                            }
+                        ]
+                    }
+                },
+                '/var/lib/cwl/cwl.input.json': {
+                    'content': {
+                        'x': 'XxX'
+                    },
+                    'kind': 'json'
+                }
+            }, 'state': 'Committed',
+            'owner_uuid': None,
+            'output_path': '/var/spool/cwl',
+            'name': 'a test workflow',
+            'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
+            'command': ['arvados-cwl-runner', '--local', '--api=containers', '--enable-reuse', '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json'],
+            'cwd': '/var/spool/cwl',
+            'runtime_constraints': {
+                'API': True,
+                'vcpus': 1,
+                'ram': 1073741824
+            },
+            "properties": {
+                "template_uuid": "962eh-7fd4e-gkbzl62qqtfig37"
+            }
+        }
+
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+
 
     @stubs
     def test_submit_container_name(self, stubs):
@@ -527,6 +693,7 @@ class TestSubmit(unittest.TestCase):
             body=expect_container)
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
+
 
     @mock.patch("arvados.commands.keepdocker.find_one_image_hash")
     @mock.patch("cwltool.docker.get_image")

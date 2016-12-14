@@ -2,6 +2,8 @@ import logging
 import json
 import os
 
+import ruamel.yaml as yaml
+
 from cwltool.errors import WorkflowException
 from cwltool.process import get_feature, UnsupportedRequirement, shortname
 from cwltool.pathmapper import adjustFiles
@@ -12,6 +14,7 @@ import arvados.collection
 from .arvdocker import arv_docker_get_image
 from . import done
 from .runner import Runner, arvados_jobs_image
+from .fsaccess import CollectionFetcher
 
 logger = logging.getLogger('arvados.cwl-runner')
 
@@ -34,7 +37,8 @@ class ArvadosContainer(object):
             "output_path": self.outdir,
             "cwd": self.outdir,
             "priority": 1,
-            "state": "Committed"
+            "state": "Committed",
+            "properties": {}
         }
         runtime_constraints = {}
         mounts = {
@@ -110,12 +114,20 @@ class ArvadosContainer(object):
         container_request["use_existing"] = kwargs.get("enable_reuse", True)
         container_request["scheduling_parameters"] = scheduling_parameters
 
+        if kwargs.get("runnerjob", "").startswith("arvwf:"):
+            wfuuid = kwargs["runnerjob"][6:kwargs["runnerjob"].index("#")]
+            wfrecord = self.arvrunner.api.workflows().get(uuid=wfuuid).execute(num_retries=self.arvrunner.num_retries)
+            if container_request["name"] == "main":
+                container_request["name"] = wfrecord["name"]
+            container_request["properties"]["template_uuid"] = wfuuid
+
         try:
             response = self.arvrunner.api.container_requests().create(
                 body=container_request
             ).execute(num_retries=self.arvrunner.num_retries)
 
-            self.arvrunner.processes[response["uuid"]] = self
+            self.uuid = response["uuid"]
+            self.arvrunner.processes[self.uuid] = self
 
             logger.info("Container request %s (%s) state is %s", self.name, response["uuid"], response["state"])
 
@@ -170,35 +182,7 @@ class RunnerContainer(Runner):
 
         workflowmapper = super(RunnerContainer, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)
 
-        with arvados.collection.Collection(api_client=self.arvrunner.api,
-                                           keep_client=self.arvrunner.keep_client,
-                                           num_retries=self.arvrunner.num_retries) as jobobj:
-            with jobobj.open("cwl.input.json", "w") as f:
-                json.dump(self.job_order, f, sort_keys=True, indent=4)
-            jobobj.save_new(owner_uuid=self.arvrunner.project_uuid)
-
-        workflowname = os.path.basename(self.tool.tool["id"])
-        workflowpath = "/var/lib/cwl/workflow/%s" % workflowname
-        workflowcollection = workflowmapper.mapper(self.tool.tool["id"])[1]
-        workflowcollection = workflowcollection[5:workflowcollection.index('/')]
-        jobpath = "/var/lib/cwl/job/cwl.input.json"
-
-        command = ["arvados-cwl-runner", "--local", "--api=containers"]
-        if self.output_name:
-            command.append("--output-name=" + self.output_name)
-
-        if self.output_tags:
-            command.append("--output-tags=" + self.output_tags)
-
-        if self.enable_reuse:
-            command.append("--enable-reuse")
-        else:
-            command.append("--disable-reuse")
-
-        command.extend([workflowpath, jobpath])
-
-        return {
-            "command": command,
+        container_req = {
             "owner_uuid": self.arvrunner.project_uuid,
             "name": self.name,
             "output_path": "/var/spool/cwl",
@@ -207,13 +191,9 @@ class RunnerContainer(Runner):
             "state": "Committed",
             "container_image": arvados_jobs_image(self.arvrunner),
             "mounts": {
-                "/var/lib/cwl/workflow": {
-                    "kind": "collection",
-                    "portable_data_hash": "%s" % workflowcollection
-                },
-                jobpath: {
-                    "kind": "collection",
-                    "portable_data_hash": "%s/cwl.input.json" % jobobj.portable_data_hash()
+                "/var/lib/cwl/cwl.input.json": {
+                    "kind": "json",
+                    "content": self.job_order
                 },
                 "stdout": {
                     "kind": "file",
@@ -228,8 +208,50 @@ class RunnerContainer(Runner):
                 "vcpus": 1,
                 "ram": 1024*1024 * self.submit_runner_ram,
                 "API": True
-            }
+            },
+            "properties": {}
         }
+
+        workflowcollection = workflowmapper.mapper(self.tool.tool["id"])[1]
+        if workflowcollection.startswith("keep:"):
+            workflowcollection = workflowcollection[5:workflowcollection.index('/')]
+            workflowname = os.path.basename(self.tool.tool["id"])
+            workflowpath = "/var/lib/cwl/workflow/%s" % workflowname
+            container_req["mounts"]["/var/lib/cwl/workflow"] = {
+                "kind": "collection",
+                "portable_data_hash": "%s" % workflowcollection
+                }
+        elif workflowcollection.startswith("arvwf:"):
+            workflowpath = "/var/lib/cwl/workflow.json#main"
+            wfuuid = workflowcollection[6:workflowcollection.index("#")]
+            wfrecord = self.arvrunner.api.workflows().get(uuid=wfuuid).execute(num_retries=self.arvrunner.num_retries)
+            wfobj = yaml.safe_load(wfrecord["definition"])
+            if container_req["name"].startswith("arvwf:"):
+                container_req["name"] = wfrecord["name"]
+            container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
+                "kind": "json",
+                "json": wfobj
+            }
+            container_req["properties"]["template_uuid"] = wfuuid
+
+        command = ["arvados-cwl-runner", "--local", "--api=containers"]
+        if self.output_name:
+            command.append("--output-name=" + self.output_name)
+
+        if self.output_tags:
+            command.append("--output-tags=" + self.output_tags)
+
+        if self.enable_reuse:
+            command.append("--enable-reuse")
+        else:
+            command.append("--disable-reuse")
+
+        command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
+
+        container_req["command"] = command
+
+        return container_req
+
 
     def run(self, *args, **kwargs):
         kwargs["keepprefix"] = "keep:"
@@ -241,7 +263,7 @@ class RunnerContainer(Runner):
         ).execute(num_retries=self.arvrunner.num_retries)
 
         self.uuid = response["uuid"]
-        self.arvrunner.processes[response["uuid"]] = self
+        self.arvrunner.processes[self.uuid] = self
 
         logger.info("Submitted container %s", response["uuid"])
 

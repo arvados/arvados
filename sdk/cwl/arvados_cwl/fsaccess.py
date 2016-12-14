@@ -1,13 +1,20 @@
 import fnmatch
 import os
 import errno
+import urlparse
+import re
+
+import ruamel.yaml as yaml
 
 import cwltool.stdfsaccess
 from cwltool.pathmapper import abspath
+import cwltool.resolver
 
 import arvados.util
 import arvados.collection
 import arvados.arvfile
+
+from schema_salad.ref_resolver import DefaultFetcher
 
 class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
     """Implement the cwltool FsAccess interface for Arvados Collections."""
@@ -120,3 +127,80 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
             return path
         else:
             return os.path.realpath(path)
+
+class CollectionFetcher(DefaultFetcher):
+    def __init__(self, cache, session, api_client=None, keep_client=None):
+        super(CollectionFetcher, self).__init__(cache, session)
+        self.api_client = api_client
+        self.fsaccess = CollectionFsAccess("", api_client=api_client, keep_client=keep_client)
+
+    def fetch_text(self, url):
+        if url.startswith("keep:"):
+            with self.fsaccess.open(url, "r") as f:
+                return f.read()
+        if url.startswith("arvwf:"):
+            return self.api_client.workflows().get(uuid=url[6:]).execute()["definition"]
+        return super(CollectionFetcher, self).fetch_text(url)
+
+    def check_exists(self, url):
+        if url.startswith("keep:"):
+            return self.fsaccess.exists(url)
+        if url.startswith("arvwf:"):
+            if self.fetch_text(url):
+                return True
+        return super(CollectionFetcher, self).check_exists(url)
+
+    def urljoin(self, base_url, url):
+        if not url:
+            return base_url
+
+        urlsp = urlparse.urlsplit(url)
+        if urlsp.scheme or not base_url:
+            return url
+
+        basesp = urlparse.urlsplit(base_url)
+        if basesp.scheme in ("keep", "arvwf"):
+            if not basesp.path:
+                raise IOError(errno.EINVAL, "Invalid Keep locator", base_url)
+
+            baseparts = basesp.path.split("/")
+            urlparts = urlsp.path.split("/") if urlsp.path else []
+
+            pdh = baseparts.pop(0)
+
+            if basesp.scheme == "keep" and not arvados.util.keep_locator_pattern.match(pdh):
+                raise IOError(errno.EINVAL, "Invalid Keep locator", base_url)
+
+            if urlsp.path.startswith("/"):
+                baseparts = []
+                urlparts.pop(0)
+
+            if baseparts and urlsp.path:
+                baseparts.pop()
+
+            path = "/".join([pdh] + baseparts + urlparts)
+            return urlparse.urlunsplit((basesp.scheme, "", path, "", urlsp.fragment))
+
+        return super(CollectionFetcher, self).urljoin(base_url, url)
+
+workflow_uuid_pattern = re.compile(r'[a-z0-9]{5}-7fd4e-[a-z0-9]{15}')
+pipeline_template_uuid_pattern = re.compile(r'[a-z0-9]{5}-p5p6p-[a-z0-9]{15}')
+
+def collectionResolver(api_client, document_loader, uri):
+    if workflow_uuid_pattern.match(uri):
+        return "arvwf:%s#main" % (uri)
+
+    if pipeline_template_uuid_pattern.match(uri):
+        pt = api_client.pipeline_templates().get(uuid=uri).execute()
+        return "keep:" + pt["components"].values()[0]["script_parameters"]["cwl:tool"]
+
+    p = uri.split("/")
+    if arvados.util.keep_locator_pattern.match(p[0]):
+        return "keep:%s" % (uri)
+
+    if arvados.util.collection_uuid_pattern.match(p[0]):
+        return "keep:%s%s" % (api_client.collections().
+                              get(uuid=p[0]).execute()["portable_data_hash"],
+                              uri[len(p[0]):])
+
+    return cwltool.resolver.tool_resolver(document_loader, uri)
