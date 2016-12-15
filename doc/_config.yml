@@ -43,11 +43,9 @@ navbar:
       - user/tutorials/tutorial-keep-mount.html.textile.liquid
       - user/topics/keep.html.textile.liquid
       - user/topics/arv-copy.html.textile.liquid
-    - Using Common Workflow Language:
+    - Running workflows at the command line:
       - user/cwl/cwl-runner.html.textile.liquid
-      - user/cwl/cwl-style.html.textile.liquid
-    - Working on the command line:
-      - user/topics/running-workflow-command-line.html.textile.liquid
+      - user/cwl/cwl-run-options.html.textile.liquid
       - user/topics/running-pipeline-command-line.html.textile.liquid
       - user/topics/arv-run.html.textile.liquid
     - Working with git repositories:
@@ -56,12 +54,14 @@ navbar:
     - Develop an Arvados workflow:
       - user/tutorials/intro-crunch.html.textile.liquid
       - user/tutorials/writing-cwl-workflow.html.textile.liquid
+      - user/cwl/cwl-style.html.textile.liquid
+      - user/cwl/cwl-extensions.html.textile.liquid
+      - user/topics/arv-docker.html.textile.liquid
       - user/tutorials/running-external-program.html.textile.liquid
       - user/topics/crunch-tools-overview.html.textile.liquid
       - user/tutorials/tutorial-firstscript.html.textile.liquid
       - user/tutorials/tutorial-submit-job.html.textile.liquid
       - user/topics/tutorial-parallel.html.textile.liquid
-      - user/topics/arv-docker.html.textile.liquid
     - Develop a web service:
       - user/topics/arv-web.html.textile.liquid
     - Reference:
