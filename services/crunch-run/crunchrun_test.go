@@ -759,6 +759,14 @@ func (am *ArvMountCmdLine) ArvMountTest(c []string, token string) (*exec.Cmd, er
 	return nil, nil
 }
 
+func stubCert(temp string) string {
+	path := temp + "/ca-certificates.crt"
+	crt, _ := os.Create(path)
+	crt.Close()
+	arvadosclient.CertFiles = []string{path}
+	return path
+}
+
 func (s *TestSuite) TestSetupMounts(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
@@ -766,9 +774,14 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
 
-	realTemp, err := ioutil.TempDir("", "crunchrun_test-")
+	realTemp, err := ioutil.TempDir("", "crunchrun_test1-")
 	c.Assert(err, IsNil)
+	certTemp, err := ioutil.TempDir("", "crunchrun_test2-")
+	c.Assert(err, IsNil)
+	stubCertPath := stubCert(certTemp)
+
 	defer os.RemoveAll(realTemp)
+	defer os.RemoveAll(certTemp)
 
 	i := 0
 	cr.MkTempDir = func(_ string, prefix string) (string, error) {
@@ -799,7 +812,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp", stubCertPath + ":/etc/arvados/ca-certificates.crt:ro"})
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -816,7 +829,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/tmp0:/keeptmp"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/tmp0:/keeptmp", stubCertPath + ":/etc/arvados/ca-certificates.crt:ro"})
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -837,7 +850,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		sort.StringSlice(cr.Binds).Sort()
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro",
-			realTemp + "/keep1/tmp0:/keepout"})
+			realTemp + "/keep1/tmp0:/keepout",
+			stubCertPath + ":/etc/arvados/ca-certificates.crt:ro"})
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -859,7 +873,8 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		sort.StringSlice(cr.Binds).Sort()
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/keep1/by_id/59389a8f9ee9d399be35462a0f92541c+53:/keepinp:ro",
-			realTemp + "/keep1/tmp0:/keepout"})
+			realTemp + "/keep1/tmp0:/keepout",
+			stubCertPath + ":/etc/arvados/ca-certificates.crt:ro"})
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -879,7 +894,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		err := cr.SetupMounts()
 		c.Check(err, IsNil)
 		sort.StringSlice(cr.Binds).Sort()
-		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2/mountdata.json:/mnt/test.json:ro"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2/mountdata.json:/mnt/test.json:ro", stubCertPath + ":/etc/arvados/ca-certificates.crt:ro"})
 		content, err := ioutil.ReadFile(realTemp + "/2/mountdata.json")
 		c.Check(err, IsNil)
 		c.Check(content, DeepEquals, []byte(test.out))

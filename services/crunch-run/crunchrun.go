@@ -257,6 +257,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 
 	collectionPaths := []string{}
 	runner.Binds = nil
+	needCertMount := true
 
 	for bind, mnt := range runner.Container.Mounts {
 		if bind == "stdout" {
@@ -273,6 +274,9 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			if !strings.HasPrefix(mnt.Path, prefix) {
 				return fmt.Errorf("Stdout path does not start with OutputPath: %s, %s", mnt.Path, prefix)
 			}
+		}
+		if bind == "/etc/arvados/ca-certificates.crt" {
+			needCertMount = false
 		}
 
 		switch {
@@ -353,6 +357,16 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 
 	if runner.HostOutputDir == "" {
 		return fmt.Errorf("Output path does not correspond to a writable mount point")
+	}
+
+	if needCertMount {
+		for _, certfile := range arvadosclient.CertFiles {
+			_, err := os.Stat(certfile)
+			if err == nil {
+				runner.Binds = append(runner.Binds, fmt.Sprintf("%s:/etc/arvados/ca-certificates.crt:ro", certfile))
+				break
+			}
+		}
 	}
 
 	if pdhOnly {
