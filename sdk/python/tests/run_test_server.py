@@ -294,7 +294,10 @@ def run(leave_running_atexit=False):
     env = os.environ.copy()
     env['RAILS_ENV'] = 'test'
     env['ARVADOS_TEST_WSS_PORT'] = str(wss_port)
-    env.pop('ARVADOS_WEBSOCKETS', None)
+    if env.get('ARVADOS_TEST_EXPERIMENTAL_WS'):
+        env.pop('ARVADOS_WEBSOCKETS', None)
+    else:
+        env['ARVADOS_WEBSOCKETS'] = 'yes'
     env.pop('ARVADOS_TEST_API_HOST', None)
     env.pop('ARVADOS_API_HOST', None)
     env.pop('ARVADOS_API_HOST_INSECURE', None)
