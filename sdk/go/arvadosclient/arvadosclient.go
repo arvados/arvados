@@ -5,10 +5,12 @@ package arvadosclient
 import (
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -103,22 +105,51 @@ type ArvadosClient struct {
 	Retries int
 }
 
+var CertFiles = []string{
+	"/etc/arvados/ca-certificates.crt",   // Arvados specific
+	"/etc/ssl/certs/ca-certificates.crt", // Debian
+	"/etc/pki/tls/certs/ca-bundle.crt",   // Red Hat
+}
+
+// SetupRootCAs loads a set of root certificates into TLSClientConfig by
+// searching a default list of locations.
+func SetupRootCAs(tlsClientConfig *tls.Config) error {
+	// Container may not have certificates installed, so need to look for
+	// /etc/arvados/ca-certificates.crt in addition to normal system certs.
+
+	certs := x509.NewCertPool()
+	for _, file := range CertFiles {
+		data, err := ioutil.ReadFile(file)
+		if err == nil {
+			certs.AppendCertsFromPEM(data)
+			tlsClientConfig.RootCAs = certs
+			return nil
+		}
+	}
+
+	return fmt.Errorf("Unable to find TLS root certificates to use, tried %v", CertFiles)
+}
+
 // New returns an ArvadosClient using the given arvados.Client
 // configuration. This is useful for callers who load arvados.Client
 // fields from configuration files but still need to use the
 // arvadosclient.ArvadosClient package.
 func New(c *arvados.Client) (*ArvadosClient, error) {
-	return &ArvadosClient{
+	tlsconfig := &tls.Config{InsecureSkipVerify: c.Insecure}
+	SetupRootCAs(tlsconfig)
+	ac := &ArvadosClient{
 		Scheme:      "https",
 		ApiServer:   c.APIHost,
 		ApiToken:    c.AuthToken,
 		ApiInsecure: c.Insecure,
 		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: c.Insecure}}},
+			TLSClientConfig: tlsconfig}},
 		External:          false,
 		Retries:           2,
 		lastClosedIdlesAt: time.Now(),
-	}, nil
+	}
+
+	return ac, nil
 }
 
 // MakeArvadosClient creates a new ArvadosClient using the standard
@@ -130,13 +161,16 @@ func MakeArvadosClient() (ac *ArvadosClient, err error) {
 	insecure := matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 	external := matchTrue.MatchString(os.Getenv("ARVADOS_EXTERNAL_CLIENT"))
 
+	tlsconfig := &tls.Config{InsecureSkipVerify: insecure}
+	SetupRootCAs(tlsconfig)
+
 	ac = &ArvadosClient{
 		Scheme:      "https",
 		ApiServer:   os.Getenv("ARVADOS_API_HOST"),
 		ApiToken:    os.Getenv("ARVADOS_API_TOKEN"),
 		ApiInsecure: insecure,
 		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
+			TLSClientConfig: tlsconfig}},
 		External: external,
 		Retries:  2}
 
