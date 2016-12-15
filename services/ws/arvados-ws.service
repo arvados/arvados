@@ -1,0 +1,13 @@
+[Unit]
+Description=Arvados websocket server
+Documentation=https://doc.arvados.org/
+After=network.target
+AssertPathExists=/etc/arvados/ws/ws.yml
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/arvados-ws
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
