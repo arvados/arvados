@@ -7,8 +7,11 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/config"
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"github.com/coreos/go-systemd/daemon"
 )
+
+var logger = ctxlog.FromContext
 
 func main() {
 	log := logger(nil)
@@ -23,7 +26,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	loggerConfig(cfg)
+	ctxlog.SetLevel(cfg.LogLevel)
+	ctxlog.SetFormat(cfg.LogFormat)
 
 	if *dumpConfig {
 		txt, err := config.Dump(&cfg)

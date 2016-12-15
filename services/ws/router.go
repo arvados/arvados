@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
 	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/websocket"
 )
@@ -115,7 +116,7 @@ func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 
 	logger := logger(req.Context()).
 		WithField("RequestID", rtr.newReqID())
-	ctx := contextWithLogger(req.Context(), logger)
+	ctx := ctxlog.Context(req.Context(), logger)
 	req = req.WithContext(ctx)
 	logger.WithFields(logrus.Fields{
 		"remoteAddr":      req.RemoteAddr,
