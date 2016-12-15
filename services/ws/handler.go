@@ -53,6 +53,8 @@ func (h *handler) Handle(ws wsConn, eventSource eventSource, newSession func(wsC
 		return
 	}
 
+	// Receive websocket frames from the client and pass them to
+	// sess.Receive().
 	go func() {
 		buf := make([]byte, 2<<20)
 		for {
@@ -84,6 +86,9 @@ func (h *handler) Handle(ws wsConn, eventSource eventSource, newSession func(wsC
 		}
 	}()
 
+	// Take items from the outgoing queue, serialize them using
+	// sess.EventMessage() as needed, and send them to the client
+	// as websocket frames.
 	go func() {
 		for {
 			var ok bool

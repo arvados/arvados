@@ -254,7 +254,7 @@ func (c *Client) modelForUUID(dd *DiscoveryDocument, uuid string) (string, error
 		}
 	}
 	if model == "" {
-		return "", fmt.Errorf("unrecognized UUID infix: %q", infix)
+		return "", fmt.Errorf("unrecognized type portion %q in UUID %q", infix, uuid)
 	}
 	return model, nil
 }

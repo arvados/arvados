@@ -35,6 +35,9 @@ type v0session struct {
 	setupOnce     sync.Once
 }
 
+// newSessionV0 returns a v0 session: a partial port of the Rails/puma
+// implementation, with just enough functionality to support Workbench
+// and arv-mount.
 func newSessionV0(ws wsConn, sendq chan<- interface{}, db *sql.DB, pc permChecker, ac *arvados.Client) (session, error) {
 	sess := &v0session{
 		sendq:       sendq,
