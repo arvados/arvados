@@ -5,12 +5,12 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.curoverse.com/arvados.git/sdk/go/stats"
 	log "github.com/Sirupsen/logrus"
 )
 
@@ -97,25 +97,11 @@ func (loggingRouter *LoggingRESTRouter) ServeHTTP(wrappedResp http.ResponseWrite
 	}
 
 	lgr.WithFields(log.Fields{
-		"timeTotal":      loggedDuration(tDone.Sub(tStart)),
-		"timeToStatus":   loggedDuration(resp.sentHdr.Sub(tStart)),
-		"timeWriteBody":  loggedDuration(tDone.Sub(resp.sentHdr)),
+		"timeTotal":      stats.Duration(tDone.Sub(tStart)),
+		"timeToStatus":   stats.Duration(resp.sentHdr.Sub(tStart)),
+		"timeWriteBody":  stats.Duration(tDone.Sub(resp.sentHdr)),
 		"respStatusCode": resp.Status,
 		"respStatus":     statusText,
 		"respBytes":      resp.Length,
 	}).Info("response")
-}
-
-type loggedDuration time.Duration
-
-// MarshalJSON formats a duration as a number of seconds, using
-// fixed-point notation with no more than 6 decimal places.
-func (d loggedDuration) MarshalJSON() ([]byte, error) {
-	return []byte(d.String()), nil
-}
-
-// String formats a duration as a number of seconds, using
-// fixed-point notation with no more than 6 decimal places.
-func (d loggedDuration) String() string {
-	return fmt.Sprintf("%.6f", time.Duration(d).Seconds())
 }

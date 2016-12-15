@@ -66,6 +66,8 @@ class MountTestBase(unittest.TestCase):
 
     def tearDown(self):
         if self.llfuse_thread:
+            if self.operations.events:
+                self.operations.events.close(timeout=10)
             subprocess.call(["fusermount", "-u", "-z", self.mounttmp])
             t0 = time.time()
             self.llfuse_thread.join(timeout=10)

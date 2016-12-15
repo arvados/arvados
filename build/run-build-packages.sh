@@ -432,6 +432,8 @@ package_go_binary services/keepstore keepstore \
     "Keep storage daemon, accessible to clients on the LAN"
 package_go_binary services/keep-web keep-web \
     "Static web hosting service for user data stored in Arvados Keep"
+package_go_binary services/ws arvados-ws \
+    "Arvados Websocket server"
 package_go_binary tools/keep-block-check keep-block-check \
     "Verify that all data from one set of Keep servers to another was copied"
 package_go_binary tools/keep-rsync keep-rsync \
@@ -472,7 +474,8 @@ fpm_build lockfile "" "" python 0.12.2 --epoch 1
 # So we build this thing separately.
 #
 # Ward, 2016-03-17
-fpm_build schema_salad "" "" python 1.20.20161122192122 --depends "${PYTHON2_PKG_PREFIX}-lockfile >= 1:0.12.2-2"
+saladversion=$(cat "$WORKSPACE/sdk/cwl/setup.py" | grep schema-salad== | sed "s/.*==\(.*\)'.*/\1/")
+fpm_build schema_salad "" "" python $saladversion --depends "${PYTHON2_PKG_PREFIX}-lockfile >= 1:0.12.2-2"
 
 # And schema_salad now depends on ruamel-yaml, which apparently has a braindead setup.py that requires special arguments to build (otherwise, it aborts with 'error: you have to install with "pip install ."'). Sigh.
 # Ward, 2016-05-26
@@ -483,11 +486,11 @@ fpm_build ruamel.yaml "" "" python 0.12.4 --python-setup-py-arguments "--single-
 fpm_build cwltest "" "" python 1.0.20160907111242
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
-cwltoolversion=$(cat "$WORKSPACE/sdk/cwl/setup.py" | grep cwltool== | sed "s/.*==\(1\.0\..*\)'.*/\1/")
+cwltoolversion=$(cat "$WORKSPACE/sdk/cwl/setup.py" | grep cwltool== | sed "s/.*==\(.*\)'.*/\1/")
 fpm_build cwltool "" "" python $cwltoolversion
 
 # FPM eats the trailing .0 in the python-rdflib-jsonld package when built with 'rdflib-jsonld>=0.3.0'. Force the version. Ward, 2016-03-25
-fpm_build rdflib-jsonld "" "" python 0.3.0
+fpm_build rdflib-jsonld "" "" python 0.4.0
 
 # The PAM module
 if [[ $TARGET =~ debian|ubuntu ]]; then

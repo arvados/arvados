@@ -22,3 +22,8 @@ func LoadFile(cfg interface{}, configPath string) error {
 	}
 	return nil
 }
+
+// Dump returns a YAML representation of cfg.
+func Dump(cfg interface{}) ([]byte, error) {
+	return yaml.Marshal(cfg)
+}

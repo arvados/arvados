@@ -164,6 +164,7 @@ class TestJob(unittest.TestCase):
         arvjob.builder = mock.MagicMock()
         arvjob.output_callback = mock.MagicMock()
         arvjob.collect_outputs = mock.MagicMock()
+        arvjob.collect_outputs.return_value = {"out": "stuff"}
 
         arvjob.done({
             "state": "Complete",
@@ -189,6 +190,8 @@ class TestJob(unittest.TestCase):
                   'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                   'name': 'Output 9999999 of testjob'})
 
+        arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")
+
     @mock.patch("arvados.collection.CollectionReader")
     def test_done_use_existing_collection(self, reader):
         api = mock.MagicMock()
@@ -211,6 +214,7 @@ class TestJob(unittest.TestCase):
         arvjob.builder = mock.MagicMock()
         arvjob.output_callback = mock.MagicMock()
         arvjob.collect_outputs = mock.MagicMock()
+        arvjob.collect_outputs.return_value = {"out": "stuff"}
 
         arvjob.done({
             "state": "Complete",
@@ -227,6 +231,8 @@ class TestJob(unittest.TestCase):
             mock.call().execute(num_retries=0)])
 
         self.assertFalse(api.collections().create.called)
+
+        arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")
 
 
 class TestWorkflow(unittest.TestCase):

@@ -1,0 +1,94 @@
+---
+layout: default
+navsection: userguide
+title: "Using arvados-cwl-runner"
+...
+
+The following command line options are available for @arvados-cwl-runner@:
+
+table(table table-bordered table-condensed).
+|_. Option |_. Description |
+|==--basedir== BASEDIR|     Base directory used to resolve relative references in the input, default to directory of input object file or current directory (if inputs piped/provided on command line).|
+|==--version==|             Print version and exit|
+|==--verbose==|             Default logging|
+|==--quiet==|               Only print warnings and errors.|
+|==--debug==|               Print even more logging|
+|==--tool-help==|           Print command line help for tool|
+|==--enable-reuse==|Enable job reuse (default)|
+|==--disable-reuse==|Disable job reuse (always run new jobs).|
+|==--project-uuid UUID==|   Project that will own the workflow jobs, if not provided, will go to home project.|
+|==--output-name OUTPUT_NAME==|Name to use for collection that stores the final output.|
+|==--output-tags OUTPUT_TAGS==|Tags for the final output collection separated by commas, e.g., =='--output-tags tag0,tag1,tag2'==.|
+|==--ignore-docker-for-reuse==|Ignore Docker image version when deciding whether to reuse past jobs.|
+|==--submit==|              Submit workflow to run on Arvados.|
+|==--local==|               Control workflow from local host (submits jobs to Arvados).|
+|==--create-template==|     (Deprecated) synonym for ==--create-workflow.==|
+|==--create-workflow==|     Create an Arvados workflow (if using the 'containers' API) or pipeline template (if using the 'jobs' API). See ==--api==.|
+|==--update-workflow== UUID|Update an existing Arvados workflow or pipeline template with the given UUID.|
+|==--wait==|                After submitting workflow runner job, wait for completion.|
+|==--no-wait==|             Submit workflow runner job and exit.|
+|==--api== WORK_API|        Select work submission API, one of 'jobs' or 'containers'. Default is 'jobs' if that API is available, otherwise 'containers'.|
+|==--compute-checksum==|    Compute checksum of contents while collecting outputs|
+|==--submit-runner-ram== SUBMIT_RUNNER_RAM|RAM (in MiB) required for the workflow runner job (default 1024)|
+|==--name== NAME|           Name to use for workflow execution instance.|
+
+h3. Specify workflow and output names
+
+Use the @--name@ and @--output-name@ options to specify the name of the workflow and name of the output collection.
+
+<notextile>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --name "Example bwa run" --output-name "Example bwa output" bwa-mem.cwl bwa-mem-input.yml</span>
+arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
+2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Upload local files: "bwa-mem.cwl"
+2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Uploaded to qr1hi-4zz18-h7ljh5u76760ww2
+2016-06-30 14:56:40 arvados.cwl-runner[27002] INFO: Submitted job qr1hi-8i9sb-fm2n3b1w0l6bskg
+2016-06-30 14:56:41 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Running
+2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Complete
+2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Overall process status is success
+{
+    "aligned_sam": {
+        "path": "keep:54325254b226664960de07b3b9482349+154/HWI-ST1027_129_D0THKACXX.1_1.sam",
+        "checksum": "sha1$0dc46a3126d0b5d4ce213b5f0e86e2d05a54755a",
+        "class": "File",
+        "size": 30738986
+    }
+}
+</code></pre>
+</notextile>
+
+h3. Submit a workflow with no waiting
+
+To submit a workflow and exit immediately, use the @--no-wait@ option.  This will submit the workflow to Arvados, print out the UUID of the job that was submitted to standard output, and exit.
+
+<notextile>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --no-wait bwa-mem.cwl bwa-mem-input.yml</span>
+arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
+2016-06-30 15:07:52 arvados.arv-run[12480] INFO: Upload local files: "bwa-mem.cwl"
+2016-06-30 15:07:52 arvados.arv-run[12480] INFO: Uploaded to qr1hi-4zz18-eqnfwrow8aysa9q
+2016-06-30 15:07:52 arvados.cwl-runner[12480] INFO: Submitted job qr1hi-8i9sb-fm2n3b1w0l6bskg
+qr1hi-8i9sb-fm2n3b1w0l6bskg
+</code></pre>
+</notextile>
+
+h3. Control a workflow locally
+
+To run a workflow with local control, use @--local@.  This means that the host where you run @arvados-cwl-runner@ will be responsible for submitting jobs, however, the jobs themselves will still run on the Arvados cluster.  With @--local@, if you interrupt @arvados-cwl-runner@ or log out, the workflow will be terminated.
+
+<notextile>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --local bwa-mem.cwl bwa-mem-input.yml</span>
+arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
+2016-07-01 10:05:19 arvados.cwl-runner[16290] INFO: Pipeline instance qr1hi-d1hrv-92wcu6ldtio74r4
+2016-07-01 10:05:28 arvados.cwl-runner[16290] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-2nzzfbuf9zjrj4g) is Queued
+2016-07-01 10:05:29 arvados.cwl-runner[16290] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-2nzzfbuf9zjrj4g) is Running
+2016-07-01 10:05:45 arvados.cwl-runner[16290] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-2nzzfbuf9zjrj4g) is Complete
+2016-07-01 10:05:46 arvados.cwl-runner[16290] INFO: Overall process status is success
+{
+    "aligned_sam": {
+        "size": 30738986,
+        "path": "keep:15f56bad0aaa7364819bf14ca2a27c63+88/HWI-ST1027_129_D0THKACXX.1_1.sam",
+        "checksum": "sha1$0dc46a3126d0b5d4ce213b5f0e86e2d05a54755a",
+        "class": "File"
+    }
+}
+</code></pre>
+</notextile>
