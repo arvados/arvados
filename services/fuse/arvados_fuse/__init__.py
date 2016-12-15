@@ -377,7 +377,7 @@ class Operations(llfuse.Operations):
         if 'event_type' not in ev:
             return
         with llfuse.lock:
-            new_attrs = ev.get("properties", {}).get("new_attributes", {})
+            new_attrs = (ev.get("properties") or {}).get("new_attributes") or {}
             pdh = new_attrs.get("portable_data_hash")
             # new_attributes.modified_at currently lacks
             # subsecond precision (see #6347) so use event_at
@@ -391,7 +391,7 @@ class Operations(llfuse.Operations):
                 else:
                     item.update()
 
-            oldowner = ev.get("properties", {}).get("old_attributes", {}).get("owner_uuid")
+            oldowner = ((ev.get("properties") or {}).get("old_attributes") or {}).get("owner_uuid")
             newowner = ev.get("object_owner_uuid")
             for parent in (
                     self.inodes.inode_cache.find_by_uuid(oldowner) +
