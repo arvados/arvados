@@ -359,7 +359,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 		return fmt.Errorf("Output path does not correspond to a writable mount point")
 	}
 
-	if needCertMount {
+	if wantAPI := runner.Container.RuntimeConstraints.API; needCertMount && wantAPI != nil && *wantAPI {
 		for _, certfile := range arvadosclient.CertFiles {
 			_, err := os.Stat(certfile)
 			if err == nil {
