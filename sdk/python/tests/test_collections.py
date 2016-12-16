@@ -861,6 +861,8 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
             c.find("/.")
         with self.assertRaises(arvados.errors.ArgumentError):
             c.find("")
+        self.assertIs(c.find("./nonexistant.txt"), None)
+        self.assertIs(c.find("./nonexistantsubdir/nonexistant.txt"), None)
 
     def test_remove_in_subdir(self):
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
