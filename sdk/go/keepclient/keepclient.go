@@ -99,14 +99,11 @@ func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 		}
 	}
 
-	tlsconfig := &tls.Config{InsecureSkipVerify: arv.ApiInsecure}
-	arvadosclient.SetupRootCAs(tlsconfig)
-
 	kc := &KeepClient{
 		Arvados:       arv,
 		Want_replicas: defaultReplicationLevel,
 		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: tlsconfig}},
+			TLSClientConfig: arvadosclient.MakeTLSConfig(arv.ApiInsecure)}},
 		Retries: 2,
 	}
 	return kc

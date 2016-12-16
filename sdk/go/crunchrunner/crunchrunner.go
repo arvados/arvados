@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -10,7 +9,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"

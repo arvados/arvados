@@ -105,29 +105,31 @@ type ArvadosClient struct {
 	Retries int
 }
 
-var CertFiles = []string{
-	"/etc/arvados/ca-certificates.crt",   // Arvados specific
-	"/etc/ssl/certs/ca-certificates.crt", // Debian
-	"/etc/pki/tls/certs/ca-bundle.crt",   // Red Hat
-}
+var CertFiles = []string{"/etc/arvados/ca-certificates.crt"}
 
-// SetupRootCAs loads a set of root certificates into TLSClientConfig by
-// searching a default list of locations.
-func SetupRootCAs(tlsClientConfig *tls.Config) error {
-	// Container may not have certificates installed, so need to look for
-	// /etc/arvados/ca-certificates.crt in addition to normal system certs.
+// MakeTLSConfig sets up TLS configuration for communicating with Arvados and Keep services.
+func MakeTLSConfig(insecure bool) *tls.Config {
+	tlsconfig := tls.Config{InsecureSkipVerify: insecure}
 
-	certs := x509.NewCertPool()
-	for _, file := range CertFiles {
-		data, err := ioutil.ReadFile(file)
-		if err == nil {
-			certs.AppendCertsFromPEM(data)
-			tlsClientConfig.RootCAs = certs
-			return nil
+	if !insecure {
+		// Look for /etc/arvados/ca-certificates.crt in addition to normal system certs.
+		certs := x509.NewCertPool()
+		for _, file := range CertFiles {
+			data, err := ioutil.ReadFile(file)
+			if err == nil {
+				success := certs.AppendCertsFromPEM(data)
+				if !success {
+					fmt.Errorf("Did not load any certificates from %v", file)
+				} else {
+					tlsconfig.RootCAs = certs
+					break
+				}
+			}
 		}
+		// Will use system default CA roots if /etc/arvados/ca-certificates.crt not found.
 	}
 
-	return fmt.Errorf("Unable to find TLS root certificates to use, tried %v", CertFiles)
+	return &tlsconfig
 }
 
 // New returns an ArvadosClient using the given arvados.Client
@@ -135,15 +137,13 @@ func SetupRootCAs(tlsClientConfig *tls.Config) error {
 // fields from configuration files but still need to use the
 // arvadosclient.ArvadosClient package.
 func New(c *arvados.Client) (*ArvadosClient, error) {
-	tlsconfig := &tls.Config{InsecureSkipVerify: c.Insecure}
-	SetupRootCAs(tlsconfig)
 	ac := &ArvadosClient{
 		Scheme:      "https",
 		ApiServer:   c.APIHost,
 		ApiToken:    c.AuthToken,
 		ApiInsecure: c.Insecure,
 		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: tlsconfig}},
+			TLSClientConfig: MakeTLSConfig(c.Insecure)}},
 		External:          false,
 		Retries:           2,
 		lastClosedIdlesAt: time.Now(),
@@ -161,16 +161,13 @@ func MakeArvadosClient() (ac *ArvadosClient, err error) {
 	insecure := matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 	external := matchTrue.MatchString(os.Getenv("ARVADOS_EXTERNAL_CLIENT"))
 
-	tlsconfig := &tls.Config{InsecureSkipVerify: insecure}
-	SetupRootCAs(tlsconfig)
-
 	ac = &ArvadosClient{
 		Scheme:      "https",
 		ApiServer:   os.Getenv("ARVADOS_API_HOST"),
 		ApiToken:    os.Getenv("ARVADOS_API_TOKEN"),
 		ApiInsecure: insecure,
 		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: tlsconfig}},
+			TLSClientConfig: MakeTLSConfig(insecure)}},
 		External: external,
 		Retries:  2}
 
