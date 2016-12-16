@@ -16,6 +16,9 @@ import (
 
 const MaxLogLine = 1 << 14 // Child stderr lines >16KiB will be split
 
+var signalOnDeadPPID int
+var ppidCheckInterval = time.Second
+
 func main() {
 	reporter := crunchstat.Reporter{
 		Logger: log.New(os.Stderr, "crunchstat: ", 0),
@@ -24,6 +27,8 @@ func main() {
 	flag.StringVar(&reporter.CgroupRoot, "cgroup-root", "", "Root of cgroup tree")
 	flag.StringVar(&reporter.CgroupParent, "cgroup-parent", "", "Name of container parent under cgroup")
 	flag.StringVar(&reporter.CIDFile, "cgroup-cid", "", "Path to container id file")
+	flag.IntVar(&signalOnDeadPPID, "signal-on-dead-ppid", 15, "Signal to send child if crunchstat's parent process disappears")
+	flag.DurationVar(&ppidCheckInterval, "ppid-check-interval", ppidCheckInterval, "Time between checks for parent process disappearance")
 	pollMsec := flag.Int64("poll", 1000, "Reporting interval, in milliseconds")
 
 	flag.Parse()
@@ -77,6 +82,11 @@ func runCommand(argv []string, logger *log.Logger) error {
 	signal.Notify(sigChan, syscall.SIGTERM)
 	signal.Notify(sigChan, syscall.SIGINT)
 
+	// Kill our child proc if our parent process disappears
+	if signalOnDeadPPID != 0 {
+		go sendSignalOnDeadPPID(signalOnDeadPPID, os.Getppid(), cmd, logger)
+	}
+
 	// Funnel stderr through our channel
 	stderr_pipe, err := cmd.StderrPipe()
 	if err != nil {
@@ -95,6 +105,26 @@ func runCommand(argv []string, logger *log.Logger) error {
 	copyPipeToChildLog(stderr_pipe, log.New(os.Stderr, "", 0))
 
 	return cmd.Wait()
+}
+
+func sendSignalOnDeadPPID(signum, ppidOrig int, cmd *exec.Cmd, logger *log.Logger) {
+	for _ = range time.NewTicker(ppidCheckInterval).C {
+		ppid := os.Getppid()
+		if ppid == ppidOrig {
+			continue
+		}
+		if cmd.Process == nil {
+			// Child process isn't running yet
+			continue
+		}
+		logger.Printf("notice: crunchstat ppid changed from %d to %d -- killing child pid %d with signal %d", ppidOrig, ppid, cmd.Process.Pid, signum)
+		err := cmd.Process.Signal(syscall.Signal(signum))
+		if err != nil {
+			logger.Printf("error: sending signal: %d", err)
+			continue
+		}
+		break
+	}
 }
 
 func copyPipeToChildLog(in io.ReadCloser, logger *log.Logger) {
