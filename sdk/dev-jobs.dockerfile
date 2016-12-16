@@ -14,7 +14,7 @@ MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN apt-get update -q && apt-get install -qy git python-pip python-virtualenv python-dev libcurl4-gnutls-dev libgnutls28-dev nodejs
+RUN apt-get update -q && apt-get install -qy git python-pip python-virtualenv python-dev libcurl4-gnutls-dev libgnutls28-dev nodejs python-pyasn1-modules
 
 RUN pip install -U setuptools
 
