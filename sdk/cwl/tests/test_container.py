@@ -8,7 +8,7 @@ import functools
 import cwltool.process
 from schema_salad.ref_resolver import Loader
 
-from schema_salad.ref_resolver import Loader
+from .matcher import JsonDiffMatcher
 
 if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
@@ -48,7 +48,7 @@ class TestContainer(unittest.TestCase):
                                  make_fs_access=make_fs_access, tmpdir="/tmp"):
                 j.run(enable_reuse=enable_reuse)
                 runner.api.container_requests().create.assert_called_with(
-                    body={
+                    body=JsonDiffMatcher({
                         'environment': {
                             'HOME': '/var/spool/cwl',
                             'TMPDIR': '/tmp'
@@ -69,8 +69,9 @@ class TestContainer(unittest.TestCase):
                         'container_image': '99999999999999999999999999999993+99',
                         'command': ['ls', '/var/spool/cwl'],
                         'cwd': '/var/spool/cwl',
-                        'scheduling_parameters': {}
-                    })
+                        'scheduling_parameters': {},
+                        'properties': {},
+                    }))
 
     # The test passes some fields in builder.resources
     # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
@@ -141,7 +142,8 @@ class TestContainer(unittest.TestCase):
                 'cwd': '/var/spool/cwl',
                 'scheduling_parameters': {
                     'partitions': ['blurb']
-                }
+                },
+                'properties': {}
         }
 
         call_body = call_kwargs.get('body', None)

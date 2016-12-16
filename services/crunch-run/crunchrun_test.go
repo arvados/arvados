@@ -759,6 +759,14 @@ func (am *ArvMountCmdLine) ArvMountTest(c []string, token string) (*exec.Cmd, er
 	return nil, nil
 }
 
+func stubCert(temp string) string {
+	path := temp + "/ca-certificates.crt"
+	crt, _ := os.Create(path)
+	crt.Close()
+	arvadosclient.CertFiles = []string{path}
+	return path
+}
+
 func (s *TestSuite) TestSetupMounts(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
@@ -766,9 +774,14 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
 
-	realTemp, err := ioutil.TempDir("", "crunchrun_test-")
+	realTemp, err := ioutil.TempDir("", "crunchrun_test1-")
 	c.Assert(err, IsNil)
+	certTemp, err := ioutil.TempDir("", "crunchrun_test2-")
+	c.Assert(err, IsNil)
+	stubCertPath := stubCert(certTemp)
+
 	defer os.RemoveAll(realTemp)
+	defer os.RemoveAll(certTemp)
 
 	i := 0
 	cr.MkTempDir = func(_ string, prefix string) (string, error) {
@@ -802,6 +815,25 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp"})
 		cr.CleanupDirs()
 		checkEmpty()
+	}
+
+	{
+		i = 0
+		cr.Container.Mounts = make(map[string]arvados.Mount)
+		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
+		cr.OutputPath = "/tmp"
+
+		apiflag := true
+		cr.Container.RuntimeConstraints.API = &apiflag
+
+		err := cr.SetupMounts()
+		c.Check(err, IsNil)
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp", stubCertPath + ":/etc/arvados/ca-certificates.crt:ro"})
+		cr.CleanupDirs()
+		checkEmpty()
+
+		apiflag = false
 	}
 
 	{
