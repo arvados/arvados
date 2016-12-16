@@ -427,7 +427,7 @@ class ArvPutUploadJob(object):
             # bytes_written count is correct.
             for f in self.collection_file_paths(self._local_collection,
                                                 path_prefix=""):
-                if f != 'stdin' and not f in self._file_paths:
+                if f != 'stdin' and f != self.filename and not f in self._file_paths:
                     self._local_collection.remove(f)
             # Update bytes_written from current local collection and
             # report initial progress.
