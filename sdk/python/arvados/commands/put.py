@@ -811,6 +811,9 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         if args.stream or args.raw:
             logger.error("Cannot use --name with --stream or --raw")
             sys.exit(1)
+        elif args.update_collection:
+            logger.error("Cannot use --name with --update-collection")
+            sys.exit(1)
         collection_name = args.name
     else:
         collection_name = "Saved at {} by {}@{}".format(
