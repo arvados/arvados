@@ -105,7 +105,11 @@ type ArvadosClient struct {
 	Retries int
 }
 
-var CertFiles = []string{"/etc/arvados/ca-certificates.crt"}
+var CertFiles = []string{
+	"/etc/arvados/ca-certificates.crt",
+	"/etc/ssl/certs/ca-certificates.crt", // Debian/Ubuntu/Gentoo etc.
+	"/etc/pki/tls/certs/ca-bundle.crt",   // Fedora/RHEL
+}
 
 // MakeTLSConfig sets up TLS configuration for communicating with Arvados and Keep services.
 func MakeTLSConfig(insecure bool) *tls.Config {
@@ -119,14 +123,14 @@ func MakeTLSConfig(insecure bool) *tls.Config {
 			if err == nil {
 				success := certs.AppendCertsFromPEM(data)
 				if !success {
-					fmt.Errorf("Did not load any certificates from %v", file)
+					fmt.Printf("Unable to load any certificates from %v", file)
 				} else {
 					tlsconfig.RootCAs = certs
 					break
 				}
 			}
 		}
-		// Will use system default CA roots if /etc/arvados/ca-certificates.crt not found.
+		// Will use system default CA roots instead.
 	}
 
 	return &tlsconfig

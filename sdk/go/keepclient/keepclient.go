@@ -4,7 +4,6 @@ package keepclient
 import (
 	"bytes"
 	"crypto/md5"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"

@@ -912,9 +912,12 @@ func main() {
 	cgroupRoot := flag.String("cgroup-root", "/sys/fs/cgroup", "path to sysfs cgroup tree")
 	cgroupParent := flag.String("cgroup-parent", "docker", "name of container's parent cgroup (ignored if -cgroup-parent-subsystem is used)")
 	cgroupParentSubsystem := flag.String("cgroup-parent-subsystem", "", "use current cgroup for given subsystem as parent cgroup for container")
+	caCertsPath := flag.String("ca-certs", "/etc/arvados/ca-certificates.crt", "Path to TLS root certificates")
 	flag.Parse()
 
 	containerId := flag.Arg(0)
+
+	arvadosclient.CertFiles = []string{*caCertsPath}
 
 	api, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
