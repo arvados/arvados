@@ -125,7 +125,8 @@ def stubs(func):
                 '99999999999999999999999999999991+99/wf/submit_wf.cwl'
             },
             'repository': 'arvados',
-            'script_version': arvados_cwl.__version__,
+            'script_version': 'master',
+            'minimum_script_version': '570509ab4d2ef93d870fd2b1f2eab178afb1bad9',
             'script': 'cwl-runner'
         }
         stubs.pipeline_component = stubs.expect_job_spec.copy()
@@ -147,7 +148,8 @@ def stubs(func):
                         'arv:enable_reuse': True
                     },
                     'repository': 'arvados',
-                    'script_version': arvados_cwl.__version__,
+                    'script_version': 'master',
+                    'minimum_script_version': '570509ab4d2ef93d870fd2b1f2eab178afb1bad9',
                     'script': 'cwl-runner',
                     'job': {'state': 'Queued', 'uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'}
                 }
@@ -1039,7 +1041,8 @@ class TestTemplateInputs(unittest.TestCase):
                     },
                 },
                 'repository': 'arvados',
-                'script_version': arvados_cwl.__version__,
+                'script_version': 'master',
+                'minimum_script_version': '570509ab4d2ef93d870fd2b1f2eab178afb1bad9',
                 'script': 'cwl-runner',
             },
         },

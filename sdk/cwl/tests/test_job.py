@@ -12,6 +12,7 @@ import arvados_cwl
 import cwltool.process
 from schema_salad.ref_resolver import Loader
 from .mock_discovery import get_rootDesc
+from .matcher import JsonDiffMatcher
 
 if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
@@ -46,7 +47,7 @@ class TestJob(unittest.TestCase):
             for j in arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access):
                 j.run(enable_reuse=enable_reuse)
                 runner.api.jobs().create.assert_called_with(
-                    body={
+                    body=JsonDiffMatcher({
                         'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                         'runtime_constraints': {},
                         'script_parameters': {
@@ -56,7 +57,7 @@ class TestJob(unittest.TestCase):
                             }],
                         },
                         'script_version': 'master',
-                        'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
+                        'minimum_script_version': 'a3f2cb186e437bfce0031b024b2157b73ed2717d',
                         'repository': 'arvados',
                         'script': 'crunchrunner',
                         'runtime_constraints': {
@@ -65,11 +66,11 @@ class TestJob(unittest.TestCase):
                             'min_ram_mb_per_node': 1024,
                             'min_scratch_mb_per_node': 2048 # tmpdirSize + outdirSize
                         }
-                    },
+                    }),
                     find_or_create=enable_reuse,
                     filters=[['repository', '=', 'arvados'],
                              ['script', '=', 'crunchrunner'],
-                             ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
+                             ['script_version', 'in git', 'a3f2cb186e437bfce0031b024b2157b73ed2717d'],
                              ['docker_image_locator', 'in docker', 'arvados/jobs:'+arvados_cwl.__version__]]
                 )
 
@@ -113,7 +114,7 @@ class TestJob(unittest.TestCase):
         for j in arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access):
             j.run()
         runner.api.jobs().create.assert_called_with(
-            body={
+            body=JsonDiffMatcher({
                 'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                 'runtime_constraints': {},
                 'script_parameters': {
@@ -124,7 +125,7 @@ class TestJob(unittest.TestCase):
                     }]
             },
             'script_version': 'master',
-                'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
+                'minimum_script_version': 'a3f2cb186e437bfce0031b024b2157b73ed2717d',
                 'repository': 'arvados',
                 'script': 'crunchrunner',
                 'runtime_constraints': {
@@ -134,11 +135,11 @@ class TestJob(unittest.TestCase):
                     'min_scratch_mb_per_node': 5024, # tmpdirSize + outdirSize
                     'keep_cache_mb_per_task': 512
                 }
-            },
+            }),
             find_or_create=True,
             filters=[['repository', '=', 'arvados'],
                      ['script', '=', 'crunchrunner'],
-                     ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
+                     ['script_version', 'in git', 'a3f2cb186e437bfce0031b024b2157b73ed2717d'],
                      ['docker_image_locator', 'in docker', 'arvados/jobs:'+arvados_cwl.__version__]])
 
     @mock.patch("arvados.collection.CollectionReader")
@@ -275,8 +276,8 @@ class TestWorkflow(unittest.TestCase):
             subwf = f.read()
 
         runner.api.jobs().create.assert_called_with(
-            body={
-                'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
+            body=JsonDiffMatcher({
+                'minimum_script_version': 'a3f2cb186e437bfce0031b024b2157b73ed2717d',
                 'repository': 'arvados',
                 'script_version': 'master',
                 'script': 'crunchrunner',
@@ -296,10 +297,10 @@ class TestWorkflow(unittest.TestCase):
                     'docker_image': 'arvados/jobs:'+arvados_cwl.__version__,
                     'min_ram_mb_per_node': 1024
                 },
-                'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'},
+                'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'}),
             filters=[['repository', '=', 'arvados'],
                      ['script', '=', 'crunchrunner'],
-                     ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
+                     ['script_version', 'in git', 'a3f2cb186e437bfce0031b024b2157b73ed2717d'],
                      ['docker_image_locator', 'in docker', 'arvados/jobs:'+arvados_cwl.__version__]],
             find_or_create=True)
 
