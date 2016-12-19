@@ -40,7 +40,7 @@ class TestArvKeepPut < Minitest::Test
 
   def test_raw_file
     out, err = capture_subprocess_io do
-      assert arv_put('--raw', './tmp/foo')
+      assert arv_put('--no-cache', '--raw', './tmp/foo')
     end
     $stderr.write err
     assert_match '', err
@@ -87,7 +87,7 @@ class TestArvKeepPut < Minitest::Test
 
   def test_as_stream
     out, err = capture_subprocess_io do
-      assert arv_put('--as-stream', './tmp/foo')
+      assert arv_put('--no-cache', '--as-stream', './tmp/foo')
     end
     $stderr.write err
     assert_match '', err
@@ -96,7 +96,7 @@ class TestArvKeepPut < Minitest::Test
 
   def test_progress
     out, err = capture_subprocess_io do
-      assert arv_put('--manifest', '--progress', './tmp/foo')
+      assert arv_put('--no-cache', '--manifest', '--progress', './tmp/foo')
     end
     assert_match /%/, err
     assert match_collection_uuid(out)
@@ -104,7 +104,7 @@ class TestArvKeepPut < Minitest::Test
 
   def test_batch_progress
     out, err = capture_subprocess_io do
-      assert arv_put('--manifest', '--batch-progress', './tmp/foo')
+      assert arv_put('--no-cache', '--manifest', '--batch-progress', './tmp/foo')
     end
     assert_match /: 0 written 3 total/, err
     assert_match /: 3 written 3 total/, err

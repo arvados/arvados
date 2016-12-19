@@ -4,7 +4,6 @@ package keepclient
 import (
 	"bytes"
 	"crypto/md5"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -103,7 +102,7 @@ func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 		Arvados:       arv,
 		Want_replicas: defaultReplicationLevel,
 		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: arv.ApiInsecure}}},
+			TLSClientConfig: arvadosclient.MakeTLSConfig(arv.ApiInsecure)}},
 		Retries: 2,
 	}
 	return kc

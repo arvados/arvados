@@ -383,6 +383,8 @@ def ca_certs_path(fallback=httplib2.CA_CERTS):
     it returns the value of `fallback` (httplib2's CA certs by default).
     """
     for ca_certs_path in [
+        # Arvados specific:
+        '/etc/arvados/ca-certificates.crt',
         # Debian:
         '/etc/ssl/certs/ca-certificates.crt',
         # Red Hat:
