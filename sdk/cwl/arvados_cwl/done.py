@@ -1,4 +1,5 @@
 from cwltool.errors import WorkflowException
+from collections import deque
 
 def done(self, record, tmpdir, outdir, keepdir):
     colname = "Output %s of %s" % (record["output"][0:7], self.name)
@@ -22,8 +23,8 @@ def done(self, record, tmpdir, outdir, keepdir):
 
         if not collections["items"]:
             raise WorkflowException(
-                "Job output '%s' cannot be found on API server" % (
-                    record["output"]))
+                "[job %s] output '%s' cannot be found on API server" % (
+                    self.name, record["output"]))
 
         # Create new collection in the parent project
         # with the output contents.
@@ -41,3 +42,14 @@ def done_outputs(self, record, tmpdir, outdir, keepdir):
     self.builder.outdir = outdir
     self.builder.pathmapper.keepdir = keepdir
     return self.collect_outputs("keep:" + record["output"])
+
+def logtail(logcollection, logger, prefix, maxlen=25):
+    logtail = deque([], maxlen*len(logcollection))
+    for log in logcollection.keys():
+        with logcollection.open(log) as f:
+            for l in f:
+                logtail.append(l)
+    if len(logcollection) > 1:
+        logtail = sorted(logtail)[-maxlen:]
+    for l in logtail:
+        logger.info("%s%s" % (prefix, l.rstrip()))

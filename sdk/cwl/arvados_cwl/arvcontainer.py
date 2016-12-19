@@ -129,12 +129,12 @@ class ArvadosContainer(object):
             self.uuid = response["uuid"]
             self.arvrunner.processes[self.uuid] = self
 
-            logger.info("Container request %s (%s) state is %s", self.name, response["uuid"], response["state"])
+            logger.info("%s %s state is %s", self.arvrunner.label(self), response["uuid"], response["state"])
 
             if response["state"] == "Final":
                 self.done(response)
         except Exception as e:
-            logger.error("Got error %s" % str(e))
+            logger.error("%s got error %s" % (self.arvrunner.label(self), str(e)))
             self.output_callback({}, "permanentFail")
 
     def done(self, record):
@@ -157,17 +157,28 @@ class ArvadosContainer(object):
             else:
                 processStatus = "permanentFail"
 
-            outputs = {}
+            if processStatus == "permanentFail":
+                logc = arvados.collection.CollectionReader(container["log"],
+                                                           api_client=self.arvrunner.api,
+                                                           keep_client=self.arvrunner.keep_client,
+                                                           num_retries=self.arvrunner.num_retries)
+                done.logtail(logc, logger, self.arvrunner.label(self) + " ")
 
+            outputs = {}
             if container["output"]:
-                try:
-                    outputs = done.done_outputs(self, container, "/tmp", self.outdir, "/keep")
-                except Exception as e:
-                    logger.error("Got error %s" % str(e))
-                    self.output_callback({}, "permanentFail")
+                outputs = done.done_outputs(self, container, "/tmp", self.outdir, "/keep")
+        except WorkflowException as e:
+            logger.error("%s unable to collect output from %s:\n%s",
+                         self.arvrunner.label(self), container["output"], e, exc_info=(e if self.arvrunner.debug else False))
+            processStatus = "permanentFail"
+        except Exception as e:
+            logger.exception("%s while getting output object: %s", self.arvrunner.label(self), e)
+            self.output_callback({}, "permanentFail")
+        else:
             self.output_callback(outputs, processStatus)
         finally:
-            del self.arvrunner.processes[record["uuid"]]
+            if record["uuid"] in self.arvrunner.processes:
+                del self.arvrunner.processes[record["uuid"]]
 
 
 class RunnerContainer(Runner):
@@ -265,7 +276,7 @@ class RunnerContainer(Runner):
         self.uuid = response["uuid"]
         self.arvrunner.processes[self.uuid] = self
 
-        logger.info("Submitted container %s", response["uuid"])
+        logger.info("%s submitted container %s", self.arvrunner.label(self), response["uuid"])
 
         if response["state"] == "Final":
             self.done(response)
@@ -276,10 +287,10 @@ class RunnerContainer(Runner):
                 uuid=record["container_uuid"]
             ).execute(num_retries=self.arvrunner.num_retries)
         except Exception as e:
-            logger.exception("While getting runner container: %s", e)
+            logger.exception("%s while getting runner container: %s", self.arvrunner.label(self), e)
             self.arvrunner.output_callback({}, "permanentFail")
-            del self.arvrunner.processes[record["uuid"]]
         else:
             super(RunnerContainer, self).done(container)
         finally:
-            del self.arvrunner.processes[record["uuid"]]
+            if record["uuid"] in self.arvrunner.processes:
+                del self.arvrunner.processes[record["uuid"]]
