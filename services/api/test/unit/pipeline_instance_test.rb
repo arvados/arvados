@@ -38,6 +38,8 @@ class PipelineInstanceTest < ActiveSupport::TestCase
     pi = PipelineInstance.find_by_uuid 'zzzzz-d1hrv-f4gneyn6br1xize'
     assert_equal PipelineInstance::New, pi.state, 'expected state to be New after adding component with input'
     assert_equal pi.components.size, 1, 'expected one component'
+    assert_nil pi.started_at, 'expected started_at to be nil on new pipeline instance'
+    assert_nil pi.finished_at, 'expected finished_at to be nil on new pipeline instance'
 
     # add a component with no input not required
     component = {'script_parameters' => {"input_not_provided" => {"required" => false}}}
@@ -61,6 +63,8 @@ class PipelineInstanceTest < ActiveSupport::TestCase
     pi.save
     pi = PipelineInstance.find_by_uuid 'zzzzz-d1hrv-f4gneyn6br1xize'
     assert_equal PipelineInstance::RunningOnServer, pi.state, 'expected state to be RunningOnServer after updating state to RunningOnServer'
+    assert_not_nil pi.started_at, 'expected started_at to have a value on a running pipeline instance'
+    assert_nil pi.finished_at, 'expected finished_at to be nil on a running pipeline instance'
 
     pi.state = PipelineInstance::Paused
     pi.save
@@ -71,6 +75,8 @@ class PipelineInstanceTest < ActiveSupport::TestCase
     pi.save
     pi = PipelineInstance.find_by_uuid 'zzzzz-d1hrv-f4gneyn6br1xize'
     assert_equal PipelineInstance::Complete, pi.state, 'expected state to be Complete after updating state to Complete'
+    assert_not_nil pi.started_at, 'expected started_at to have a value on a completed pipeline instance'
+    assert_not_nil pi.finished_at, 'expected finished_at to have a value on a completed pipeline instance'
 
     pi.state = 'bogus'
     pi.save
@@ -81,6 +87,8 @@ class PipelineInstanceTest < ActiveSupport::TestCase
     pi.save
     pi = PipelineInstance.find_by_uuid 'zzzzz-d1hrv-f4gneyn6br1xize'
     assert_equal PipelineInstance::Failed, pi.state, 'expected state to be Failed after updating state to Failed'
+    assert_not_nil pi.started_at, 'expected started_at to have a value on a failed pipeline instance'
+    assert_not_nil pi.finished_at, 'expected finished_at to have a value on a failed pipeline instance'
   end
 
   test "update attributes for pipeline with two components" do

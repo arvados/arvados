@@ -12,6 +12,7 @@ class PipelineInstance < ArvadosModel
   before_validation :verify_status
   before_create :set_state_before_save
   before_save :set_state_before_save
+  before_save :update_timestamps_when_state_changes
 
   api_accessible :user, extend: :common do |t|
     t.add :pipeline_template_uuid
@@ -133,6 +134,17 @@ class PipelineInstance < ArvadosModel
   def set_state_before_save
     if self.components_look_ready? && (!self.state || self.state == New)
       self.state = Ready
+    end
+  end
+
+  def update_timestamps_when_state_changes
+    return if not (state_changed? or new_record?)
+
+    case state
+    when RunningOnServer, RunningOnClient
+      self.started_at ||= db_current_time
+    when Failed, Complete
+      self.finished_at ||= db_current_time
     end
   end
 
