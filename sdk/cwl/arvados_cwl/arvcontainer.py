@@ -68,17 +68,17 @@ class ArvadosContainer(object):
                 }
 
         if self.generatefiles["listing"]:
-            raise SourceLine(self.tool.get_requirement("InitialWorkDirRequirement")[0], None, UnsupportedRequirement).makeError("InitialWorkDirRequirement not supported with --api=containers")
+            raise UnsupportedRequirement("InitialWorkDirRequirement not supported with --api=containers")
 
         container_request["environment"] = {"TMPDIR": self.tmpdir, "HOME": self.outdir}
         if self.environment:
             container_request["environment"].update(self.environment)
 
         if self.stdin:
-            raise SourceLine(self.tool.tool, "stdin", UnsupportedRequirement).makeError("Stdin redirection currently not suppported")
+            raise UnsupportedRequirement("Stdin redirection currently not suppported")
 
         if self.stderr:
-            raise SourceLine(self.tool.tool, "stderr", UnsupportedRequirement).makeError("Stderr redirection currently not suppported")
+            raise UnsupportedRequirement("Stderr redirection currently not suppported")
 
         if self.stdout:
             mounts["stdout"] = {"kind": "file",

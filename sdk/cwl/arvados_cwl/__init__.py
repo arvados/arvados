@@ -17,6 +17,7 @@ import pkg_resources  # part of setuptools
 from cwltool.errors import WorkflowException
 import cwltool.main
 import cwltool.workflow
+import cwltool.process
 import schema_salad
 from schema_salad.sourceline import SourceLine
 
@@ -192,15 +193,25 @@ class ArvCwlRunner(object):
     def add_uploaded(self, src, pair):
         self.uploaded[src] = pair
 
-    def check_writable(self, obj):
+    def check_features(self, obj):
         if isinstance(obj, dict):
+            if obj.get("class") == "InitialWorkDirRequirement":
+                if self.work_api == "containers":
+                    raise UnsupportedRequirement("InitialWorkDirRequirement not supported with --api=containers")
             if obj.get("writable"):
                 raise SourceLine(obj, "writable", UnsupportedRequirement).makeError("InitialWorkDir feature 'writable: true' not supported")
+            if obj.get("class") == "CommandLineTool":
+                if self.work_api == "containers":
+                    if obj.get("stdin"):
+                        raise SourceLine(obj, "stdin", UnsupportedRequirement).makeError("Stdin redirection currently not suppported with --api=containers")
+                    if obj.get("stderr"):
+                        raise SourceLine(obj, "stderr", UnsupportedRequirement).makeError("Stderr redirection currently not suppported with --api=containers")
             for v in obj.itervalues():
-                self.check_writable(v)
+                self.check_features(v)
         if isinstance(obj, list):
-            for v in obj:
-                self.check_writable(v)
+            for i,v in enumerate(obj):
+                with SourceLine(obj, i, UnsupportedRequirement):
+                    self.check_features(v)
 
     def make_output_collection(self, name, tagsString, outputObj):
         outputObj = copy.deepcopy(outputObj)
@@ -309,7 +320,7 @@ class ArvCwlRunner(object):
     def arv_executor(self, tool, job_order, **kwargs):
         self.debug = kwargs.get("debug")
 
-        tool.visit(self.check_writable)
+        tool.visit(self.check_features)
 
         self.project_uuid = kwargs.get("project_uuid")
         self.pipeline = None
