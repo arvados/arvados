@@ -6,6 +6,8 @@ import json
 import re
 from cStringIO import StringIO
 
+from schema_salad.sourceline import SourceLine
+
 import cwltool.draft2tool
 from cwltool.draft2tool import CommandLineTool
 import cwltool.workflow
@@ -112,7 +114,8 @@ def upload_docker(arvrunner, tool):
         if docker_req:
             if docker_req.get("dockerOutputDirectory"):
                 # TODO: can be supported by containers API, but not jobs API.
-                raise UnsupportedRequirement("Option 'dockerOutputDirectory' of DockerRequirement not supported.")
+                raise SourceLine(docker_req, "dockerOutputDirectory", UnsupportedRequirement).makeError(
+                    "Option 'dockerOutputDirectory' of DockerRequirement not supported.")
             arv_docker_get_image(arvrunner.api, docker_req, True, arvrunner.project_uuid)
     elif isinstance(tool, cwltool.workflow.Workflow):
         for s in tool.steps:

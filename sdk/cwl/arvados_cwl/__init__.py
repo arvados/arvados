@@ -18,6 +18,7 @@ from cwltool.errors import WorkflowException
 import cwltool.main
 import cwltool.workflow
 import schema_salad
+from schema_salad.sourceline import SourceLine
 
 import arvados
 import arvados.config
@@ -194,7 +195,7 @@ class ArvCwlRunner(object):
     def check_writable(self, obj):
         if isinstance(obj, dict):
             if obj.get("writable"):
-                raise UnsupportedRequirement("InitialWorkDir feature 'writable: true' not supported")
+                raise SourceLine(obj, "writable", UnsupportedRequirement).makeError("InitialWorkDir feature 'writable: true' not supported")
             for v in obj.itervalues():
                 self.check_writable(v)
         if isinstance(obj, list):
@@ -629,6 +630,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
     arvargs.conformance_test = None
     arvargs.use_container = True
     arvargs.relax_path_checks = True
+    arvargs.validate = None
 
     return cwltool.main.main(args=arvargs,
                              stdout=stdout,
