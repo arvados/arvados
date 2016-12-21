@@ -751,10 +751,10 @@ func (runner *ContainerRunner) ContainerToken() (string, error) {
 func (runner *ContainerRunner) UpdateContainerFinal() error {
 	update := arvadosclient.Dict{}
 	update["state"] = runner.finalState
+	if runner.LogsPDH != nil {
+		update["log"] = *runner.LogsPDH
+	}
 	if runner.finalState == "Complete" {
-		if runner.LogsPDH != nil {
-			update["log"] = *runner.LogsPDH
-		}
 		if runner.ExitCode != nil {
 			update["exit_code"] = *runner.ExitCode
 		}
