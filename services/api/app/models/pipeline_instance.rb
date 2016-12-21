@@ -10,9 +10,9 @@ class PipelineInstance < ArvadosModel
   before_validation :bootstrap_components
   before_validation :update_state
   before_validation :verify_status
+  before_validation :update_timestamps_when_state_changes
   before_create :set_state_before_save
   before_save :set_state_before_save
-  before_save :update_timestamps_when_state_changes
 
   api_accessible :user, extend: :common do |t|
     t.add :pipeline_template_uuid
@@ -144,7 +144,9 @@ class PipelineInstance < ArvadosModel
     when RunningOnServer, RunningOnClient
       self.started_at ||= db_current_time
     when Failed, Complete
-      self.finished_at ||= db_current_time
+      current_time = db_current_time
+      self.started_at ||= current_time
+      self.finished_at ||= current_time
     end
   end
 
