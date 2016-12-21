@@ -4,8 +4,6 @@ import os
 
 import ruamel.yaml as yaml
 
-from schema_salad.sourceline import SourceLine
-
 from cwltool.errors import WorkflowException
 from cwltool.process import get_feature, UnsupportedRequirement, shortname
 from cwltool.pathmapper import adjustFiles

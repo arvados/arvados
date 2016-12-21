@@ -40,19 +40,20 @@ class ArvPathMapper(PathMapper):
                 # mount.
                 ab = abspath(src, self.input_basedir)
                 st = arvados.commands.run.statfile("", ab, fnPattern="keep:%s/%s")
-                if isinstance(st, arvados.commands.run.UploadFile):
-                    uploadfiles.add((src, ab, st))
-                elif isinstance(st, arvados.commands.run.ArvFile):
-                    self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % st.fn[5:], "File")
-                elif src.startswith("_:"):
-                    if "contents" in srcobj:
-                        pass
+                with SourceLine(srcobj, "location", WorkflowException):
+                    if isinstance(st, arvados.commands.run.UploadFile):
+                        uploadfiles.add((src, ab, st))
+                    elif isinstance(st, arvados.commands.run.ArvFile):
+                        self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % st.fn[5:], "File")
+                    elif src.startswith("_:"):
+                        if "contents" in srcobj:
+                            pass
+                        else:
+                            raise WorkflowException("File literal '%s' is missing contents" % src)
+                    elif src.startswith("arvwf:"):
+                        self._pathmap[src] = MapperEnt(src, src, "File")
                     else:
-                        raise SourceLine(srcobj, "location", WorkflowException).makeError("File literal '%s' is missing contents" % src)
-                elif src.startswith("arvwf:"):
-                    self._pathmap[src] = MapperEnt(src, src, "File")
-                else:
-                    raise SourceLine(srcobj, "location", WorkflowException).makeError("Input file path '%s' is invalid" % st)
+                        raise WorkflowException("Input file path '%s' is invalid" % st)
             if "secondaryFiles" in srcobj:
                 for l in srcobj["secondaryFiles"]:
                     self.visit(l, uploadfiles)

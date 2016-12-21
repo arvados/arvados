@@ -208,7 +208,7 @@ class ArvCwlRunner(object):
                         raise SourceLine(obj, "stderr", UnsupportedRequirement).makeError("Stderr redirection currently not suppported with --api=containers")
             for v in obj.itervalues():
                 self.check_features(v)
-        if isinstance(obj, list):
+        elif isinstance(obj, list):
             for i,v in enumerate(obj):
                 with SourceLine(obj, i, UnsupportedRequirement):
                     self.check_features(v)
