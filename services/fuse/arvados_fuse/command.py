@@ -126,6 +126,8 @@ class Mount(object):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
+        if self.operations.events:
+            self.operations.events.close(timeout=self.args.unmount_timeout)
         subprocess.call(["fusermount", "-u", "-z", self.args.mountpoint])
         self.llfuse_thread.join(timeout=self.args.unmount_timeout)
         if self.llfuse_thread.is_alive():

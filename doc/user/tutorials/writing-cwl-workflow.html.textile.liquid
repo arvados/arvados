@@ -8,21 +8,189 @@ title: "Writing a CWL workflow"
 
 {% include 'tutorial_expectations' %}
 
-h2. Registering a CWL workflow
+h2. Developing workflows
 
-Use @--create-workflow@ to register a CWL workflow with Arvados.
+For an introduction and and detailed documentation about writing CWL, see the "CWL User Guide":http://commonwl.org/v1.0/UserGuide.html and the "CWL Specification":http://commonwl.org/v1.0 .
 
-The following examples assume that you have prepared to run arvados-cwl-runner tool as explained in the "Using Common Workflow Language":{{site.baseurl}}/user/topics/running-workflow-command-line.html.textile.liquid page.
+See "Best Practices for writing CWL":{{site.baseurl}}/user/cwl/cwl-style.html and "Arvados CWL Extensions":{{site.baseurl}}/user/cwl/cwl-extensions.html for additional information about using CWL on Arvados.
 
-{% include 'register_cwl_workflow' %}
+h2. Registering a workflow to use in Workbench
 
-h2. Running a CWL workflow
+Use @--create-workflow@ to register a CWL workflow with Arvados.  This enables you to share workflows with other Arvados users, and run them by clicking the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a process...</span> button on the Workbench Dashboard and on the command line by UUID.
 
-h3. Running a workflow at command prompt
+<notextile>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --create-workflow bwa-mem.cwl</span>
+arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
+2016-07-01 12:21:01 arvados.arv-run[15796] INFO: Upload local files: "bwa-mem.cwl"
+2016-07-01 12:21:01 arvados.arv-run[15796] INFO: Uploaded to qr1hi-4zz18-7e0hedrmkuyoei3
+2016-07-01 12:21:01 arvados.cwl-runner[15796] INFO: Created template qr1hi-p5p6p-rjleou1dwr167v5
+qr1hi-p5p6p-rjleou1dwr167v5
+</code></pre>
+</notextile>
 
-Not yet implemented
+You can provide a partial input file to set default values for the workflow input parameters.  You can also use the @--name@ option to set the name of the workflow:
 
-h3. Running a workflow using Workbench
+<notextile>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner --name "My workflow with defaults" --create-workflow bwa-mem.cwl bwa-mem-template.yml</span>
+arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
+2016-07-01 14:09:50 arvados.arv-run[3730] INFO: Upload local files: "bwa-mem.cwl"
+2016-07-01 14:09:50 arvados.arv-run[3730] INFO: Uploaded to qr1hi-4zz18-0f91qkovk4ml18o
+2016-07-01 14:09:50 arvados.cwl-runner[3730] INFO: Created template qr1hi-p5p6p-0deqe6nuuyqns2i
+qr1hi-p5p6p-zuniv58hn8d0qd8
+</code></pre>
+</notextile>
 
-The workflow can also be executed using Workbench. Go to the Workbench Dashboard and click the <span class="btn btn-sm btn-primary"><i class="fa fa-fw fa-gear"></i> Run a process...</span> button and select the desired workflow.
+h3. Running registered workflows at the command line
 
+You can run a registered workflow at the command line by its UUID:
+
+<notextile>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arvados-cwl-runner qr1hi-p5p6p-zuniv58hn8d0qd8 --help</span>
+/home/peter/work/scripts/venv/bin/arvados-cwl-runner 0d62edcb9d25bf4dcdb20d8872ea7b438e12fc59 1.0.20161209192028, arvados-python-client 0.1.20161212125425, cwltool 1.0.20161207161158
+Resolved 'qr1hi-p5p6p-zuniv58hn8d0qd8' to 'keep:655c6cd07550151b210961ed1d3852cf+57/bwa-mem.cwl'
+usage: qr1hi-p5p6p-zuniv58hn8d0qd8 [-h] [--PL PL] --group_id GROUP_ID
+                                   --read_p1 READ_P1 [--read_p2 READ_P2]
+                                   [--reference REFERENCE] --sample_id
+                                   SAMPLE_ID
+                                   [job_order]
+
+positional arguments:
+  job_order             Job input json file
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --PL PL
+  --group_id GROUP_ID
+  --read_p1 READ_P1     The reads, in fastq format.
+  --read_p2 READ_P2     For mate paired reads, the second file (optional).
+  --reference REFERENCE
+                        The index files produced by `bwa index`
+  --sample_id SAMPLE_ID
+</code></pre>
+</notextile>
+
+h2. Using cwltool
+
+When developing a workflow, it is often helpful to run it on the local host to avoid the overhead of submitting to the cluster.  To execute a workflow only on the local host (without submitting jobs to an Arvados cluster) you can use the @cwltool@ command.  Note that when using @cwltool@ you must have the input data accessible on the local file system using either @arv-mount@ or @arv-get@ to fetch the data from Keep.
+
+<notextile>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arv-get 2463fa9efeb75e099685528b3b9071e0+438/ .</span>
+156 MiB / 156 MiB 100.0%
+~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">arv-get ae480c5099b81e17267b7445e35b4bc7+180/ .</span>
+23 MiB / 23 MiB 100.0%
+~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">cwltool bwa-mem-input.yml bwa-mem-input-local.yml</span>
+cwltool 1.0.20160629140624
+[job bwa-mem.cwl] /home/example/arvados/doc/user/cwl/bwa-mem$ docker \
+    run \
+    -i \
+    --volume=/home/example/arvados/doc/user/cwl/bwa-mem/19.fasta.ann:/var/lib/cwl/job979368791_bwa-mem/19.fasta.ann:ro \
+    --volume=/home/example/arvados/doc/user/cwl/bwa-mem/HWI-ST1027_129_D0THKACXX.1_1.fastq:/var/lib/cwl/job979368791_bwa-mem/HWI-ST1027_129_D0THKACXX.1_1.fastq:ro \
+    --volume=/home/example/arvados/doc/user/cwl/bwa-mem/19.fasta.sa:/var/lib/cwl/job979368791_bwa-mem/19.fasta.sa:ro \
+    --volume=/home/example/arvados/doc/user/cwl/bwa-mem/19.fasta.amb:/var/lib/cwl/job979368791_bwa-mem/19.fasta.amb:ro \
+    --volume=/home/example/arvados/doc/user/cwl/bwa-mem/19.fasta.pac:/var/lib/cwl/job979368791_bwa-mem/19.fasta.pac:ro \
+    --volume=/home/example/arvados/doc/user/cwl/bwa-mem/HWI-ST1027_129_D0THKACXX.1_2.fastq:/var/lib/cwl/job979368791_bwa-mem/HWI-ST1027_129_D0THKACXX.1_2.fastq:ro \
+    --volume=/home/example/arvados/doc/user/cwl/bwa-mem/19.fasta.bwt:/var/lib/cwl/job979368791_bwa-mem/19.fasta.bwt:ro \
+    --volume=/home/example/arvados/doc/user/cwl/bwa-mem:/var/spool/cwl:rw \
+    --volume=/tmp/tmpgzyou9:/tmp:rw \
+    --workdir=/var/spool/cwl \
+    --read-only=true \
+    --log-driver=none \
+    --user=1001 \
+    --rm \
+    --env=TMPDIR=/tmp \
+    --env=HOME=/var/spool/cwl \
+    biodckr/bwa \
+    bwa \
+    mem \
+    -t \
+    1 \
+    -R \
+    '@RG	ID:arvados_tutorial	PL:illumina	SM:HWI-ST1027_129' \
+    /var/lib/cwl/job979368791_bwa-mem/19.fasta \
+    /var/lib/cwl/job979368791_bwa-mem/HWI-ST1027_129_D0THKACXX.1_1.fastq \
+    /var/lib/cwl/job979368791_bwa-mem/HWI-ST1027_129_D0THKACXX.1_2.fastq > /home/example/arvados/doc/user/cwl/bwa-mem/HWI-ST1027_129_D0THKACXX.1_1.sam
+[M::bwa_idx_load_from_disk] read 0 ALT contigs
+[M::process] read 100000 sequences (10000000 bp)...
+[M::mem_pestat] # candidate unique pairs for (FF, FR, RF, RR): (0, 4745, 1, 0)
+[M::mem_pestat] skip orientation FF as there are not enough pairs
+[M::mem_pestat] analyzing insert size distribution for orientation FR...
+[M::mem_pestat] (25, 50, 75) percentile: (154, 181, 214)
+[M::mem_pestat] low and high boundaries for computing mean and std.dev: (34, 334)
+[M::mem_pestat] mean and std.dev: (185.63, 44.88)
+[M::mem_pestat] low and high boundaries for proper pairs: (1, 394)
+[M::mem_pestat] skip orientation RF as there are not enough pairs
+[M::mem_pestat] skip orientation RR as there are not enough pairs
+[M::mem_process_seqs] Processed 100000 reads in 9.848 CPU sec, 9.864 real sec
+[main] Version: 0.7.12-r1039
+[main] CMD: bwa mem -t 1 -R @RG	ID:arvados_tutorial	PL:illumina	SM:HWI-ST1027_129 /var/lib/cwl/job979368791_bwa-mem/19.fasta /var/lib/cwl/job979368791_bwa-mem/HWI-ST1027_129_D0THKACXX.1_1.fastq /var/lib/cwl/job979368791_bwa-mem/HWI-ST1027_129_D0THKACXX.1_2.fastq
+[main] Real time: 10.061 sec; CPU: 10.032 sec
+Final process status is success
+{
+    "aligned_sam": {
+        "size": 30738959,
+        "path": "/home/example/arvados/doc/user/cwl/bwa-mem/HWI-ST1027_129_D0THKACXX.1_1.sam",
+        "checksum": "sha1$0c668cca45fef02397bb5302880526d300ee4dac",
+        "class": "File"
+    }
+}
+</code></pre>
+</notextile>
+
+If you get the error @JavascriptException: Long-running script killed after 20 seconds.@ this may be due to the Dockerized Node.js engine taking too long to start.  You may address this by installing Node.js locally (run @apt-get install nodejs@ on Debian or Ubuntu) or by specifying a longer timeout with the @--eval-timeout@ option.  For example, run the workflow with @cwltool --eval-timeout=40@ for a 40-second timeout.
+
+h2. Making workflows directly executable
+
+You can make a workflow file directly executable (@cwl-runner@ should be an alias to @arvados-cwl-runner@) by adding the following line to the top of the file:
+
+<notextile>
+<pre><code>#!/usr/bin/env cwl-runner
+</code></pre>
+</notextile>
+
+<notextile>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">./bwa-mem.cwl bwa-mem-input.yml</span>
+arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
+2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Upload local files: "bwa-mem.cwl"
+2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Uploaded to qr1hi-4zz18-h7ljh5u76760ww2
+2016-06-30 14:56:40 arvados.cwl-runner[27002] INFO: Submitted job qr1hi-8i9sb-fm2n3b1w0l6bskg
+2016-06-30 14:56:41 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Running
+2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Complete
+2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Overall process status is success
+{
+    "aligned_sam": {
+        "path": "keep:54325254b226664960de07b3b9482349+154/HWI-ST1027_129_D0THKACXX.1_1.sam",
+        "checksum": "sha1$0dc46a3126d0b5d4ce213b5f0e86e2d05a54755a",
+        "class": "File",
+        "size": 30738986
+    }
+}
+</code></pre>
+</notextile>
+
+You can even make an input file directly executable the same way with the following two lines at the top:
+
+<notextile>
+<pre><code>#!/usr/bin/env cwl-runner
+cwl:tool: <span class="userinput">bwa-mem.cwl</span>
+</code></pre>
+</notextile>
+
+<notextile>
+<pre><code>~/arvados/doc/user/cwl/bwa-mem$ <span class="userinput">./bwa-mem-input.yml</span>
+arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107, cwltool 1.0.20160629140624
+2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Upload local files: "bwa-mem.cwl"
+2016-06-30 14:56:36 arvados.arv-run[27002] INFO: Uploaded to qr1hi-4zz18-h7ljh5u76760ww2
+2016-06-30 14:56:40 arvados.cwl-runner[27002] INFO: Submitted job qr1hi-8i9sb-fm2n3b1w0l6bskg
+2016-06-30 14:56:41 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Running
+2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Job bwa-mem.cwl (qr1hi-8i9sb-fm2n3b1w0l6bskg) is Complete
+2016-06-30 14:57:12 arvados.cwl-runner[27002] INFO: Overall process status is success
+{
+    "aligned_sam": {
+        "path": "keep:54325254b226664960de07b3b9482349+154/HWI-ST1027_129_D0THKACXX.1_1.sam",
+        "checksum": "sha1$0dc46a3126d0b5d4ce213b5f0e86e2d05a54755a",
+        "class": "File",
+        "size": 30738986
+    }
+}
+</code></pre>
+</notextile>

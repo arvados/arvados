@@ -5,10 +5,12 @@ package arvadosclient
 import (
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -103,22 +105,55 @@ type ArvadosClient struct {
 	Retries int
 }
 
+var CertFiles = []string{
+	"/etc/arvados/ca-certificates.crt",
+	"/etc/ssl/certs/ca-certificates.crt", // Debian/Ubuntu/Gentoo etc.
+	"/etc/pki/tls/certs/ca-bundle.crt",   // Fedora/RHEL
+}
+
+// MakeTLSConfig sets up TLS configuration for communicating with Arvados and Keep services.
+func MakeTLSConfig(insecure bool) *tls.Config {
+	tlsconfig := tls.Config{InsecureSkipVerify: insecure}
+
+	if !insecure {
+		// Look for /etc/arvados/ca-certificates.crt in addition to normal system certs.
+		certs := x509.NewCertPool()
+		for _, file := range CertFiles {
+			data, err := ioutil.ReadFile(file)
+			if err == nil {
+				success := certs.AppendCertsFromPEM(data)
+				if !success {
+					fmt.Printf("Unable to load any certificates from %v", file)
+				} else {
+					tlsconfig.RootCAs = certs
+					break
+				}
+			}
+		}
+		// Will use system default CA roots instead.
+	}
+
+	return &tlsconfig
+}
+
 // New returns an ArvadosClient using the given arvados.Client
 // configuration. This is useful for callers who load arvados.Client
 // fields from configuration files but still need to use the
 // arvadosclient.ArvadosClient package.
 func New(c *arvados.Client) (*ArvadosClient, error) {
-	return &ArvadosClient{
+	ac := &ArvadosClient{
 		Scheme:      "https",
 		ApiServer:   c.APIHost,
 		ApiToken:    c.AuthToken,
 		ApiInsecure: c.Insecure,
 		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: c.Insecure}}},
+			TLSClientConfig: MakeTLSConfig(c.Insecure)}},
 		External:          false,
 		Retries:           2,
 		lastClosedIdlesAt: time.Now(),
-	}, nil
+	}
+
+	return ac, nil
 }
 
 // MakeArvadosClient creates a new ArvadosClient using the standard
@@ -136,7 +171,7 @@ func MakeArvadosClient() (ac *ArvadosClient, err error) {
 		ApiToken:    os.Getenv("ARVADOS_API_TOKEN"),
 		ApiInsecure: insecure,
 		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: insecure}}},
+			TLSClientConfig: MakeTLSConfig(insecure)}},
 		External: external,
 		Retries:  2}
 

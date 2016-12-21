@@ -59,4 +59,32 @@ class ContainerRequestsController < ApplicationController
     end
   end
 
+  def copy
+    src = @object
+
+    @object = ContainerRequest.new
+
+    @object.command = src.command
+    @object.container_image = src.container_image
+    @object.cwd = src.cwd
+    @object.description = src.description
+    @object.environment = src.environment
+    @object.mounts = src.mounts
+    @object.name = src.name
+    @object.output_path = src.output_path
+    @object.priority = 1
+    @object.properties[:template_uuid] = src.properties[:template_uuid]
+    @object.runtime_constraints = src.runtime_constraints
+    @object.scheduling_parameters = src.scheduling_parameters
+    @object.state = 'Uncommitted'
+    @object.use_existing = false
+
+    # set owner_uuid to that of source, provided it is a project and writable by current user
+    current_project = Group.find(src.owner_uuid) rescue nil
+    if (current_project && current_project.writable_by.andand.include?(current_user.uuid))
+      @object.owner_uuid = src.owner_uuid
+    end
+
+    super
+  end
 end

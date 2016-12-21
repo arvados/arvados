@@ -53,21 +53,22 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         self.assertEqual(200, events.get(True, 5)['status'])
         human = arvados.api('v1').humans().create(body={}).execute()
 
+        want_uuids = []
+        if expected > 0:
+            want_uuids.append(human['uuid'])
+        if expected > 1:
+            want_uuids.append(ancestor['uuid'])
         log_object_uuids = []
-        for i in range(0, expected):
+        while set(want_uuids) - set(log_object_uuids):
             log_object_uuids.append(events.get(True, 5)['object_uuid'])
 
-        if expected > 0:
-            self.assertIn(human['uuid'], log_object_uuids)
-
-        if expected > 1:
-            self.assertIn(ancestor['uuid'], log_object_uuids)
-
-        with self.assertRaises(Queue.Empty):
-            # assertEqual just serves to show us what unexpected thing
-            # comes out of the queue when the assertRaises fails; when
-            # the test passes, this assertEqual doesn't get called.
-            self.assertEqual(events.get(True, 2), None)
+        if expected < 2:
+            with self.assertRaises(Queue.Empty):
+                # assertEqual just serves to show us what unexpected
+                # thing comes out of the queue when the assertRaises
+                # fails; when the test passes, this assertEqual
+                # doesn't get called.
+                self.assertEqual(events.get(True, 2), None)
 
     def test_subscribe_websocket(self):
         self._test_subscribe(
@@ -145,8 +146,8 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         return time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(t)) + self.isotz(-time.timezone/60)
 
     def isotz(self, offset):
-        """Convert minutes-east-of-UTC to ISO8601 time zone designator"""
-        return '{:+03d}{:02d}'.format(offset/60, offset%60)
+        """Convert minutes-east-of-UTC to RFC3339- and ISO-compatible time zone designator"""
+        return '{:+03d}:{:02d}'.format(offset/60, offset%60)
 
     # Test websocket reconnection on (un)execpted close
     def _test_websocket_reconnect(self, close_unexpected):

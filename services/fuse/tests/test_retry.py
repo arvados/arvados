@@ -50,7 +50,7 @@ class RetryPUT(IntegrationTest):
         q.put(mockedCurl)
         q.put(pycurl.Curl())
         q.put(pycurl.Curl())
-        with mock.patch('arvados.keep.KeepClient.KeepService._get_user_agent', side_effect=lambda: q.get(block=None)):
+        with mock.patch('arvados.keep.KeepClient.KeepService._get_user_agent', side_effect=q.get_nowait):
             self.pool_test(os.path.join(self.mnt, 'zzz'))
             self.assertTrue(mockedCurl.perform.called)
     @staticmethod
