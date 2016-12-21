@@ -576,6 +576,70 @@ func TestAzureBlobVolumeCreateBlobRaceDeadline(t *testing.T) {
 	}
 }
 
+func TestAzureBlobVolumeContextCancelGet(t *testing.T) {
+	testAzureBlobVolumeContextCancel(t, func(ctx context.Context, v *TestableAzureBlobVolume) error {
+		v.PutRaw(TestHash, TestBlock)
+		_, err := v.Get(ctx, TestHash, make([]byte, BlockSize))
+		return err
+	})
+}
+
+func TestAzureBlobVolumeContextCancelPut(t *testing.T) {
+	testAzureBlobVolumeContextCancel(t, func(ctx context.Context, v *TestableAzureBlobVolume) error {
+		return v.Put(ctx, TestHash, make([]byte, BlockSize))
+	})
+}
+
+func TestAzureBlobVolumeContextCancelCompare(t *testing.T) {
+	testAzureBlobVolumeContextCancel(t, func(ctx context.Context, v *TestableAzureBlobVolume) error {
+		v.PutRaw(TestHash, TestBlock)
+		return v.Compare(ctx, TestHash, TestBlock2)
+	})
+}
+
+func testAzureBlobVolumeContextCancel(t *testing.T, testFunc func(context.Context, *TestableAzureBlobVolume) error) {
+	defer func(t http.RoundTripper) {
+		http.DefaultTransport = t
+	}(http.DefaultTransport)
+	http.DefaultTransport = &http.Transport{
+		Dial: (&azStubDialer{}).Dial,
+	}
+
+	v := NewTestableAzureBlobVolume(t, false, 3)
+	defer v.Teardown()
+	v.azHandler.race = make(chan chan struct{})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	allDone := make(chan struct{})
+	go func() {
+		defer close(allDone)
+		err := testFunc(ctx, v)
+		if err != context.Canceled {
+			t.Errorf("got %T %q, expected %q", err, err, context.Canceled)
+		}
+	}()
+	releaseHandler := make(chan struct{})
+	select {
+	case <-allDone:
+		t.Error("testFunc finished without waiting for v.azHandler.race")
+	case <-time.After(10 * time.Second):
+		t.Error("timed out waiting to enter handler")
+	case v.azHandler.race <- releaseHandler:
+	}
+
+	cancel()
+
+	select {
+	case <-time.After(10 * time.Second):
+		t.Error("timed out waiting to cancel")
+	case <-allDone:
+	}
+
+	go func() {
+		<-releaseHandler
+	}()
+}
+
 func (v *TestableAzureBlobVolume) PutRaw(locator string, data []byte) {
 	v.azHandler.PutRaw(v.ContainerName, locator, data)
 }

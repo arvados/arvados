@@ -24,6 +24,8 @@ metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
 crunchrunner_re = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.(tmpdir|outdir|keep)\)=(.*)")
 
+crunchrunner_git_commit = 'a3f2cb186e437bfce0031b024b2157b73ed2717d'
+
 class ArvadosJob(object):
     """Submit and manage a Crunch job for executing a CWL CommandLineTool."""
 
@@ -109,7 +111,7 @@ class ArvadosJob(object):
 
         filters = [["repository", "=", "arvados"],
                    ["script", "=", "crunchrunner"],
-                   ["script_version", "in git", "9e5b98e8f5f4727856b53447191f9c06e3da2ba6"]]
+                   ["script_version", "in git", crunchrunner_git_commit]]
         if not self.arvrunner.ignore_docker_for_reuse:
             filters.append(["docker_image_locator", "in docker", runtime_constraints["docker_image"]])
 
@@ -121,7 +123,7 @@ class ArvadosJob(object):
                         "script": "crunchrunner",
                         "repository": "arvados",
                         "script_version": "master",
-                        "minimum_script_version": "9e5b98e8f5f4727856b53447191f9c06e3da2ba6",
+                        "minimum_script_version": crunchrunner_git_commit,
                         "script_parameters": {"tasks": [script_parameters]},
                         "runtime_constraints": runtime_constraints
                     },
@@ -247,7 +249,8 @@ class RunnerJob(Runner):
 
         return {
             "script": "cwl-runner",
-            "script_version": __version__,
+            "script_version": "master",
+            "minimum_script_version": "570509ab4d2ef93d870fd2b1f2eab178afb1bad9",
             "repository": "arvados",
             "script_parameters": self.job_order,
             "runtime_constraints": {

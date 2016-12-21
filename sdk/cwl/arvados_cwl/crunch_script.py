@@ -90,6 +90,7 @@ def run():
         args.quiet = False
         args.ignore_docker_for_reuse = False
         args.basedir = os.getcwd()
+        args.name = None
         args.cwl_runner_job={"uuid": arvados.current_job()["uuid"], "state": arvados.current_job()["state"]}
         outputObj = runner.arv_executor(t, job_order_object, **vars(args))
     except Exception as e:
