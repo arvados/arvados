@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -e
+
+sudo pg_boot
+if [[ -n "$WITH_DOCKER" ]]; then
+    sudo service docker start
+fi
+
+SRC=/src/arvados
+export WORKSPACE="/workspace"
+export TMPDIR=/tmp
+
+mkdir -p "$WORKSPACE"
+if [[ -e "$SRC/.gitignore" ]]; then
+    exclude_gitignore=(--exclude-from "$SRC/.gitignore")
+else
+    exclude_gitignore=()
+fi
+
+rsync -a --exclude packages --exclude cache --exclude tmp --exclude services/api/log --exclude apps/workbench/log --exclude 'sdk/*/Gemfile.lock' "${exclude_gitignore[@]}" "$SRC/" "$WORKSPACE/"
+
+cd "$WORKSPACE"
+ref="$1"; shift || true
+if [[ -n "$ref" ]]; then
+    if [[ "${#ref}" != 40 ]] || ! git checkout "$ref"; then
+        git checkout --detach HEAD
+        git fetch origin '+*:*'
+        git checkout "$ref"
+    fi
+fi
+
+cp services/api/config/database.yml{.example,}
+build/run-tests.sh --temp "$TMPDIR" "$@"

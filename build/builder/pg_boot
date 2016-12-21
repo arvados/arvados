@@ -1,0 +1,9 @@
+#!/bin/bash
+
+service postgresql start
+echo -n waiting for postgresql to start accepting connections: >&2
+while ! pg_isready >/dev/null; do
+    echo -n . >&2
+    sleep 0.2
+done
+echo " ready." >&2

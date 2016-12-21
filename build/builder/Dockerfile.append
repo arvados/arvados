@@ -1,0 +1,40 @@
+USER root
+ENV LANG en_US.utf8
+RUN echo ${LANG} UTF-8 | tee -a /etc/locale.gen && locale-gen -a
+RUN pg_dropcluster --stop 9.4 main; pg_createcluster --start 9.4 main
+ADD pg_boot /usr/local/sbin/
+ADD pg_shutdown /usr/local/sbin/
+RUN pg_boot && sudo -u postgres psql -c "create user arvados with createdb encrypted password 'xxxxxxxx'" && service postgresql stop
+ADD sudo_sv_updown /etc/sudoers.d/
+
+RUN echo user_allow_other > /etc/fuse.conf
+
+RUN addgroup --system fuse && adduser --gecos '' --disabled-password builder && adduser builder fuse
+RUN mkdir /workspace /src && chown builder:builder /workspace /src
+
+# checkout-and-build uses rsync
+RUN ${APT_GET_INSTALL} rsync && apt-get clean
+
+# Otherwise "bundle package" dies trying to read cached gems:
+RUN chmod -R a+rX /usr/local/lib/ruby/gems/2.3.0/cache
+
+# Otherwise sinfo waits 60 seconds for it to appear:
+RUN touch /etc/slurm-llnl/slurm.conf
+
+USER builder
+ENV PATH $PATH:/home/builder/.gem/ruby/2.3.0/bin
+RUN gem install --user bundler
+RUN cd /src && git clone --no-checkout git://git.curoverse.com/arvados.git && cd arvados && git gc
+WORKDIR /src/arvados
+
+USER root
+ADD checkout-and-test /usr/local/bin/
+
+USER builder
+# Seed ~/.gem with gem dependencies
+RUN checkout-and-test master --only install && sudo pg_shutdown
+
+# services/api tests assume tmp/pids/ already exists. Fix services/api and remove this.
+RUN mkdir -p /workspace/services/api/tmp/pids
+
+CMD TMPDIR=/tmp/arvados-build/tmp checkout-and-test

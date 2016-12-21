@@ -42,7 +42,7 @@ class RepositoriesTest < ActionDispatch::IntegrationTest
     gitsslport = File.read(portfile)
     Repository.any_instance.
       stubs(:http_fetch_url).
-      returns "https://localhost:#{gitsslport}/#{repo['name']}.git"
+      returns "https://0.0.0.0:#{gitsslport}/#{repo['name']}.git"
     commit_sha1 = '1de84a854e2b440dc53bf42f8548afa4c17da332'
     visit page_with_token('active', "/repositories/#{repo['uuid']}/commit/#{commit_sha1}")
     assert_text "Date:   Tue Mar 18 15:55:28 2014 -0400"

@@ -1,0 +1,5 @@
+Defaults lecture=never
+builder ALL=(ALL:ALL) NOPASSWD: /usr/local/sbin/pg_boot
+builder ALL=(ALL:ALL) NOPASSWD: /usr/local/sbin/pg_shutdown
+builder ALL=(ALL:ALL) NOPASSWD: /usr/sbin/service docker start
+builder ALL=(ALL:ALL) NOPASSWD: /usr/sbin/service docker stop

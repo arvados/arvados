@@ -1,4 +1,4 @@
 #!/bin/sh
-while ! psql postgres -c\\du >/dev/null 2>/dev/null ; do
-    sleep 1
+while ! pg_isready >/dev/null; do
+    sleep 0.2
 done

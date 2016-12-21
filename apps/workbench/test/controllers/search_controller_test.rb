@@ -13,7 +13,7 @@ class SearchControllerTest < ActionController::TestCase
       format: :js,
       title: 'Search',
       action_name: 'Show',
-      action_href: url_for(host: 'localhost', controller: :actions, action: :show),
+      action_href: url_for(host: '0.0.0.0', controller: :actions, action: :show),
       action_data: {}.to_json,
     }, session_for(:active)
     assert_response :success

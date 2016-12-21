@@ -814,14 +814,14 @@ test_apiserver() {
 }
 do_test services/api apiserver
 
-# Shortcut for when we're only running apiserver tests. This saves a bit of time,
-# because we don't need to start up the api server for subsequent tests.
-if [ ! -z "$only" ] && [ "$only" == "services/api" ]; then
-  rotate_logfile "$WORKSPACE/services/api/log/" "test.log"
-  exit_cleanly
-fi
-
-start_api
+# Avoid starting up the api server if there are no integration tests to do.
+case "$only" in
+    install|services/api)
+        ;;
+    *)
+        start_api
+        ;;
+esac
 
 test_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
