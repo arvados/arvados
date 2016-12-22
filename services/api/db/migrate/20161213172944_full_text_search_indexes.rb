@@ -14,6 +14,7 @@ class FullTextSearchIndexes < ActiveRecord::Migration
   def up
     # remove existing fts indexes and create up to date ones with no leading space
     fts_indexes.each do |t, i|
+      t.classify.constantize.reset_column_information
       ActiveRecord::Base.connection.indexes(t).each do |idx|
         if idx.name == i
           remove_index t.to_sym, :name => i
