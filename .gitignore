@@ -25,3 +25,5 @@ tmp
 sdk/cli/binstubs/
 sdk/cwl/arvados_cwl/_version.py
 services/api/config/arvados-clients.yml
+*#*
+.DS_Store
