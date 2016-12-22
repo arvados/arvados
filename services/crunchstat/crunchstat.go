@@ -16,6 +16,11 @@ import (
 
 const MaxLogLine = 1 << 14 // Child stderr lines >16KiB will be split
 
+var (
+	signalOnDeadPPID  int = 15
+	ppidCheckInterval     = time.Second
+)
+
 func main() {
 	reporter := crunchstat.Reporter{
 		Logger: log.New(os.Stderr, "crunchstat: ", 0),
@@ -24,12 +29,16 @@ func main() {
 	flag.StringVar(&reporter.CgroupRoot, "cgroup-root", "", "Root of cgroup tree")
 	flag.StringVar(&reporter.CgroupParent, "cgroup-parent", "", "Name of container parent under cgroup")
 	flag.StringVar(&reporter.CIDFile, "cgroup-cid", "", "Path to container id file")
+	flag.IntVar(&signalOnDeadPPID, "signal-on-dead-ppid", signalOnDeadPPID, "Signal to send child if crunchstat's parent process disappears (0 to disable)")
+	flag.DurationVar(&ppidCheckInterval, "ppid-check-interval", ppidCheckInterval, "Time between checks for parent process disappearance")
 	pollMsec := flag.Int64("poll", 1000, "Reporting interval, in milliseconds")
 
 	flag.Parse()
 
 	if reporter.CgroupRoot == "" {
 		reporter.Logger.Fatal("error: must provide -cgroup-root")
+	} else if signalOnDeadPPID < 0 {
+		reporter.Logger.Fatalf("-signal-on-dead-ppid=%d is invalid (use a positive signal number, or 0 to disable)", signalOnDeadPPID)
 	}
 	reporter.PollPeriod = time.Duration(*pollMsec) * time.Millisecond
 
@@ -77,6 +86,11 @@ func runCommand(argv []string, logger *log.Logger) error {
 	signal.Notify(sigChan, syscall.SIGTERM)
 	signal.Notify(sigChan, syscall.SIGINT)
 
+	// Kill our child proc if our parent process disappears
+	if signalOnDeadPPID != 0 {
+		go sendSignalOnDeadPPID(ppidCheckInterval, signalOnDeadPPID, os.Getppid(), cmd, logger)
+	}
+
 	// Funnel stderr through our channel
 	stderr_pipe, err := cmd.StderrPipe()
 	if err != nil {
@@ -95,6 +109,28 @@ func runCommand(argv []string, logger *log.Logger) error {
 	copyPipeToChildLog(stderr_pipe, log.New(os.Stderr, "", 0))
 
 	return cmd.Wait()
+}
+
+func sendSignalOnDeadPPID(intvl time.Duration, signum, ppidOrig int, cmd *exec.Cmd, logger *log.Logger) {
+	ticker := time.NewTicker(intvl)
+	for _ = range ticker.C {
+		ppid := os.Getppid()
+		if ppid == ppidOrig {
+			continue
+		}
+		if cmd.Process == nil {
+			// Child process isn't running yet
+			continue
+		}
+		logger.Printf("notice: crunchstat ppid changed from %d to %d -- killing child pid %d with signal %d", ppidOrig, ppid, cmd.Process.Pid, signum)
+		err := cmd.Process.Signal(syscall.Signal(signum))
+		if err != nil {
+			logger.Printf("error: sending signal: %s", err)
+			continue
+		}
+		ticker.Stop()
+		break
+	}
 }
 
 func copyPipeToChildLog(in io.ReadCloser, logger *log.Logger) {
