@@ -82,3 +82,8 @@ gem 'sshkey'
 gem 'safe_yaml'
 gem 'lograge'
 gem 'logstash-event'
+
+# Install any plugin gems
+Dir.glob(File.join(File.dirname(__FILE__), 'lib', '**', "Gemfile")) do |gemfile|
+    eval(IO.read(gemfile), binding)
+end
