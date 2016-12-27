@@ -20,6 +20,8 @@ type Collection struct {
 	ReplicationConfirmed   *int       `json:"replication_confirmed,omitempty"`
 	ReplicationConfirmedAt *time.Time `json:"replication_confirmed_at,omitempty"`
 	ReplicationDesired     *int       `json:"replication_desired,omitempty"`
+	DeleteAt               *time.Time `json:"delete_at,omitempty"`
+	IsTrash                bool       `json:"is_trash,omitempty"`
 }
 
 // SizedDigests returns the hash+size part of each data block
