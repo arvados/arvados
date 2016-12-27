@@ -479,7 +479,7 @@ fpm_build schema_salad "" "" python $saladversion --depends "${PYTHON2_PKG_PREFI
 
 # And schema_salad now depends on ruamel-yaml, which apparently has a braindead setup.py that requires special arguments to build (otherwise, it aborts with 'error: you have to install with "pip install ."'). Sigh.
 # Ward, 2016-05-26
-fpm_build ruamel.yaml "" "" python 0.12.4 --python-setup-py-arguments "--single-version-externally-managed"
+fpm_build ruamel.yaml "" "" python 0.13.7 --python-setup-py-arguments "--single-version-externally-managed"
 
 # Dependency of cwltool.  Fpm doesn't produce a package with the correct version
 # number unless we build it explicitly
