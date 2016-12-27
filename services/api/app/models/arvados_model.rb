@@ -597,7 +597,7 @@ class ArvadosModel < ActiveRecord::Base
     if self == ArvadosModel
       # If called directly as ArvadosModel.find_by_uuid rather than via subclass,
       # delegate to the appropriate subclass based on the given uuid.
-      self.resource_class_for_uuid(uuid).find_by_uuid(uuid)
+      self.resource_class_for_uuid(uuid).unscoped.find_by_uuid(uuid)
     else
       super
     end

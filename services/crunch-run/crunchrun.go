@@ -637,7 +637,7 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{
 			"collection": arvadosclient.Dict{
-				"expires_at":    time.Now().Add(runner.trashLifetime).Format(time.RFC3339),
+				"trash_at":      time.Now().Add(runner.trashLifetime).Format(time.RFC3339),
 				"name":          "output for " + runner.Container.UUID,
 				"manifest_text": manifestText}},
 		&response)
@@ -708,7 +708,7 @@ func (runner *ContainerRunner) CommitLogs() error {
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{
 			"collection": arvadosclient.Dict{
-				"expires_at":    time.Now().Add(runner.trashLifetime).Format(time.RFC3339),
+				"trash_at":      time.Now().Add(runner.trashLifetime).Format(time.RFC3339),
 				"name":          "logs for " + runner.Container.UUID,
 				"manifest_text": mt}},
 		&response)

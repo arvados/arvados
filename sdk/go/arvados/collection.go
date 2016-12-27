@@ -12,7 +12,7 @@ import (
 // Collection is an arvados#collection resource.
 type Collection struct {
 	UUID                   string     `json:"uuid,omitempty"`
-	ExpiresAt              *time.Time `json:"expires_at,omitempty"`
+	TrashAt                *time.Time `json:"trash_at,omitempty"`
 	ManifestText           string     `json:"manifest_text,omitempty"`
 	CreatedAt              *time.Time `json:"created_at,omitempty"`
 	ModifiedAt             *time.Time `json:"modified_at,omitempty"`

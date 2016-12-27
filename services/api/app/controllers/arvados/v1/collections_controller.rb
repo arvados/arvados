@@ -1,6 +1,8 @@
 require "arvados/keep"
 
 class Arvados::V1::CollectionsController < ApplicationController
+  include DbCurrentTime
+
   def self.limit_index_columns_read
     ["manifest_text"]
   end
@@ -9,6 +11,13 @@ class Arvados::V1::CollectionsController < ApplicationController
     if resource_attrs[:uuid] and (loc = Keep::Locator.parse(resource_attrs[:uuid]))
       resource_attrs[:portable_data_hash] = loc.to_s
       resource_attrs.delete :uuid
+    end
+    super
+  end
+
+  def find_objects_for_index
+    if params[:include_trash] || action_name == 'destroy'
+      @objects = Collection.unscoped.readable_by(*@read_users)
     end
     super
   end
@@ -23,10 +32,10 @@ class Arvados::V1::CollectionsController < ApplicationController
           manifest_text: c.signed_manifest_text,
         }
       end
+      true
     else
       super
     end
-    true
   end
 
   def show
@@ -35,6 +44,18 @@ class Arvados::V1::CollectionsController < ApplicationController
     else
       send_json @object
     end
+  end
+
+  def destroy
+    if !@object.is_trashed
+      @object.update_attributes!(trash_at: db_current_time)
+    end
+    earliest_delete = (@object.trash_at +
+                       Rails.configuration.blob_signature_ttl.seconds)
+    if @object.delete_at > earliest_delete
+      @object.update_attributes!(delete_at: earliest_delete)
+    end
+    show
   end
 
   def find_collections(visited, sp, &b)

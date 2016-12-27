@@ -101,8 +101,9 @@ class ProjectsControllerTest < ActionController::TestCase
   end
 
   test "project admin can remove collections from the project" do
-    # Deleting an object that supports 'expires_at' should make it
-    # completely inaccessible to API queries, not simply moved out of the project.
+    # Deleting an object that supports 'trash_at' should make it
+    # completely inaccessible to API queries, not simply moved out of
+    # the project.
     coll_key = "collection_to_remove_from_subproject"
     coll_uuid = api_fixture("collections")[coll_key]["uuid"]
     delete(:remove_item,
@@ -116,12 +117,12 @@ class ProjectsControllerTest < ActionController::TestCase
 
     use_token :subproject_admin
     assert_raise ArvadosApiClient::NotFoundException do
-      Collection.find(coll_uuid)
+      Collection.find(coll_uuid, cache: false)
     end
   end
 
   test "project admin can remove items from project other than collections" do
-    # An object which does not have an expired_at field (e.g. Specimen)
+    # An object which does not have an trash_at field (e.g. Specimen)
     # should be implicitly moved to the user's Home project when removed.
     specimen_uuid = api_fixture('specimens', 'in_asubproject')['uuid']
     delete(:remove_item,
