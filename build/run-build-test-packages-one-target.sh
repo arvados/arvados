@@ -7,7 +7,7 @@ Syntax:
         WORKSPACE=/path/to/arvados $(basename $0) [options]
 
 --target <target>
-    Distribution to build packages for (default: debian7)
+    Distribution to build packages for (default: debian8)
 --upload
     If the build and test steps are successful, upload the packages
     to a remote apt repository (default: false)
@@ -39,7 +39,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-TARGET=debian7
+TARGET=debian8
 UPLOAD=0
 
 eval set -- "$PARSEDOPTS"
