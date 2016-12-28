@@ -45,6 +45,7 @@ def done_outputs(self, record, tmpdir, outdir, keepdir):
     return self.collect_outputs("keep:" + record["output"])
 
 crunchstat_re = re.compile(r"^\d\d\d\d-\d\d-\d\d_\d\d:\d\d:\d\d [a-z0-9]{5}-8i9sb-[a-z0-9]{15} \d+ \d+ stderr crunchstat:")
+timestamp_re = re.compile(r"^(\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d\.\d+Z) (.*)")
 
 def logtail(logcollection, logger, header, maxlen=25):
     logtail = deque([], maxlen*len(logcollection))
@@ -52,9 +53,13 @@ def logtail(logcollection, logger, header, maxlen=25):
 
     for log in logcollection.keys():
         if not containersapi or log in ("crunch-run.txt", "stdout.txt", "stderr.txt"):
+            logname = log[:-4]
             with logcollection.open(log) as f:
                 for l in f:
-                    if containersapi or not crunchstat_re.match(l):
+                    if containersapi:
+                        g = timestamp_re.match(l)
+                        logtail.append("%s %s %s" % (g.group(1), logname, g.group(2)))
+                    elif not crunchstat_re.match(l):
                         logtail.append(l)
     if len(logcollection) > 1:
         logtail = sorted(logtail)[-maxlen:]
