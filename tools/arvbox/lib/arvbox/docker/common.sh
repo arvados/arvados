@@ -40,7 +40,7 @@ run_bundler() {
         frozen=""
     fi
     if ! test -x bundle ; then
-        bundlergem=$(ls -r $GEM_HOME/cache/bundler-*.gem 2>/dev/null | head -n1)
+        bundlergem=$(ls -r $GEM_HOME/cache/bundler-*.gem 2>/dev/null | head -n1 || true)
         if test -n "$bundlergem" ; then
             flock /var/lib/gems/gems.lock gem install --local --no-document $bundlergem
         else
