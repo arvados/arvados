@@ -88,7 +88,7 @@ def run():
         args.project_uuid = arvados.current_job()["owner_uuid"]
         args.enable_reuse = enable_reuse
         args.submit = False
-        args.debug = True
+        args.debug = False
         args.quiet = False
         args.ignore_docker_for_reuse = False
         args.basedir = os.getcwd()

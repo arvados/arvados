@@ -252,6 +252,9 @@ class RunnerContainer(Runner):
         if self.output_tags:
             command.append("--output-tags=" + self.output_tags)
 
+        if kwargs.get("debug"):
+            command.append("--debug")
+
         if self.enable_reuse:
             command.append("--enable-reuse")
         else:
