@@ -559,6 +559,12 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     exgroup.add_argument("--no-wait", action="store_false", help="Submit workflow runner job and exit.",
                         default=True, dest="wait")
 
+    exgroup = parser.add_mutually_exclusive_group()
+    exgroup.add_argument("--log-timestamps", action="store_true", help="Prefix logging lines with timestamp",
+                        default=True, dest="log_timestamps")
+    exgroup.add_argument("--no-log-timestamps", action="store_false", help="No timestamp on logging lines",
+                        default=True, dest="log_timestamps")
+
     parser.add_argument("--api", type=str,
                         default=None, dest="work_api",
                         help="Select work submission API, one of 'jobs' or 'containers'. Default is 'jobs' if that API is available, otherwise 'containers'.")
@@ -642,6 +648,13 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
     if arvargs.metrics:
         metrics.setLevel(logging.DEBUG)
         logging.getLogger("cwltool.metrics").setLevel(logging.DEBUG)
+
+    if arvargs.log_timestamps:
+        arvados.log_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(name)s %(levelname)s: %(message)s',
+            '%Y-%m-%d %H:%M:%S'))
+    else:
+        arvados.log_handler.setFormatter(logging.Formatter('%(name)s %(levelname)s: %(message)s'))
 
     arvargs.conformance_test = None
     arvargs.use_container = True

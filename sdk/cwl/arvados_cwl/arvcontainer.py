@@ -245,7 +245,7 @@ class RunnerContainer(Runner):
             }
             container_req["properties"]["template_uuid"] = wfuuid
 
-        command = ["arvados-cwl-runner", "--local", "--api=containers"]
+        command = ["arvados-cwl-runner", "--local", "--api=containers", "--no-log-timestamps"]
         if self.output_name:
             command.append("--output-name=" + self.output_name)
 

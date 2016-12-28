@@ -26,6 +26,9 @@ from cwltool.errors import WorkflowException
 logger = logging.getLogger('arvados.cwl-runner')
 
 def run():
+    # Timestamps are added by crunch-job, so don't print redundant timestamps.
+    arvados.log_handler.setFormatter(logging.Formatter('%(name)s %(levelname)s: %(message)s'))
+
     # Print package versions
     logger.info(arvados_cwl.versionstring())
 
