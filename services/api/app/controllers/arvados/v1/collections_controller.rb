@@ -16,7 +16,7 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def find_objects_for_index
-    if params[:include_trash] || action_name == 'destroy'
+    if params[:include_trash] || ['destroy', 'trash'].include?(action_name)
       @objects = Collection.unscoped.readable_by(*@read_users)
     end
     super
@@ -54,6 +54,13 @@ class Arvados::V1::CollectionsController < ApplicationController
                        Rails.configuration.blob_signature_ttl.seconds)
     if @object.delete_at > earliest_delete
       @object.update_attributes!(delete_at: earliest_delete)
+    end
+    show
+  end
+
+  def trash
+    if !@object.is_trashed
+      @object.update_attributes!(trash_at: db_current_time)
     end
     show
   end

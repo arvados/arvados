@@ -973,6 +973,21 @@ EOS
     c = Collection.unscoped.find_by_uuid(uuid)
     assert_operator c.trash_at, :<, db_current_time
     assert_operator c.delete_at, :<, db_current_time
-    assert_equal c.delete_at, c.trash_at + Rails.configuration.blob_signature_ttl
+  end
+
+  ['zzzzz-4zz18-mto52zx1s7sn3ih',
+   'zzzzz-4zz18-5qa38qghh1j3nvv',
+  ].each do |uuid|
+    test "trash collection #{uuid} via trash action with grace period" do
+      authorize_with :active
+      time_before_trashing = db_current_time
+      post :trash, {
+        id: uuid,
+      }
+      assert_response 200
+      c = Collection.unscoped.find_by_uuid(uuid)
+      assert_operator c.trash_at, :<, db_current_time
+      assert_operator c.delete_at, :>=, time_before_trashing + Rails.configuration.default_trash_lifetime
+    end
   end
 end
