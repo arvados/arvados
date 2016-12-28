@@ -162,7 +162,7 @@ class ArvadosContainer(object):
                                                            api_client=self.arvrunner.api,
                                                            keep_client=self.arvrunner.keep_client,
                                                            num_retries=self.arvrunner.num_retries)
-                done.logtail(logc, logger, self.arvrunner.label(self) + " ")
+                done.logtail(logc, logger, "%s error log:" % self.arvrunner.label(self))
 
             outputs = {}
             if container["output"]:

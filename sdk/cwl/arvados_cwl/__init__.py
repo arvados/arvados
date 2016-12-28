@@ -130,7 +130,7 @@ class ArvCwlRunner(object):
                     uuid = event["object_uuid"]
                     with self.lock:
                         j = self.processes[uuid]
-                        logger.info("%s %s is Running", self.arvrunner.label(j), uuid)
+                        logger.info("%s %s is Running", self.label(j), uuid)
                         j.running = True
                         j.update_pipeline_component(event["properties"]["new_attributes"])
                 elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled", "Final"):

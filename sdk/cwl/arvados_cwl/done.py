@@ -43,7 +43,7 @@ def done_outputs(self, record, tmpdir, outdir, keepdir):
     self.builder.pathmapper.keepdir = keepdir
     return self.collect_outputs("keep:" + record["output"])
 
-def logtail(logcollection, logger, prefix, maxlen=25):
+def logtail(logcollection, logger, header, maxlen=25):
     logtail = deque([], maxlen*len(logcollection))
     for log in logcollection.keys():
         with logcollection.open(log) as f:
@@ -51,5 +51,5 @@ def logtail(logcollection, logger, prefix, maxlen=25):
                 logtail.append(l)
     if len(logcollection) > 1:
         logtail = sorted(logtail)[-maxlen:]
-    for l in logtail:
-        logger.info("%s%s" % (prefix, l.rstrip()))
+    logtxt = "\n  ".join(l.strip() for l in logtail)
+    logger.info("%s\n  %s", header, logtxt)
