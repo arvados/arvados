@@ -13,6 +13,8 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/config"
 )
 
+const defaultConfigPath = "/etc/arvados/keep-balance/keep-balance.yml"
+
 // Config specifies site configuration, like API credentials and the
 // choice of which servers are to be balanced.
 //
@@ -65,7 +67,7 @@ func main() {
 	var config Config
 	var runOptions RunOptions
 
-	configPath := flag.String("config", "",
+	configPath := flag.String("config", defaultConfigPath,
 		"`path` of JSON or YAML configuration file")
 	serviceListPath := flag.String("config.KeepServiceList", "",
 		"`path` of JSON or YAML file with list of keep services to balance, as given by \"arv keep_service list\" "+
@@ -81,9 +83,6 @@ func main() {
 	flag.Usage = usage
 	flag.Parse()
 
-	if *configPath == "" {
-		log.Fatal("You must specify a config file (see `keep-balance -help`)")
-	}
 	mustReadConfig(&config, *configPath)
 	if *serviceListPath != "" {
 		mustReadConfig(&config.KeepServiceList, *serviceListPath)

@@ -6,7 +6,7 @@ AssertPathExists=/etc/arvados/keep-balance/keep-balance.yml
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/keep-balance -config /etc/arvados/keep-balance/keep-balance.yml -commit-pulls -commit-trash
+ExecStart=/usr/bin/keep-balance -commit-pulls -commit-trash
 Restart=always
 RestartSec=10s
 
