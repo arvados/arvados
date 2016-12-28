@@ -1,3 +1,4 @@
+import re
 from cwltool.errors import WorkflowException
 from collections import deque
 
@@ -43,13 +44,20 @@ def done_outputs(self, record, tmpdir, outdir, keepdir):
     self.builder.pathmapper.keepdir = keepdir
     return self.collect_outputs("keep:" + record["output"])
 
+crunchstat_re = re.compile(r"^\d\d\d\d-\d\d-\d\d_\d\d:\d\d:\d\d [a-z0-9]{5}-8i9sb-[a-z0-9]{15} \d+ \d+ stderr crunchstat:")
+
 def logtail(logcollection, logger, header, maxlen=25):
     logtail = deque([], maxlen*len(logcollection))
+    containersapi = ("crunch-run.txt" in logcollection)
+
     for log in logcollection.keys():
-        with logcollection.open(log) as f:
-            for l in f:
-                logtail.append(l)
+        if not containersapi or log in ("crunch-run.txt", "stdout.txt", "stderr.txt"):
+            with logcollection.open(log) as f:
+                for l in f:
+                    if containersapi or not crunchstat_re.match(l):
+                        logtail.append(l)
     if len(logcollection) > 1:
         logtail = sorted(logtail)[-maxlen:]
     logtxt = "\n  ".join(l.strip() for l in logtail)
-    logger.info("%s\n  %s", header, logtxt)
+    logger.info(header)
+    logger.info("\n  %s", logtxt)
