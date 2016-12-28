@@ -71,6 +71,9 @@ class ArvadosWorkflow(Workflow):
         kwargs["work_api"] = self.work_api
         req, _ = self.get_requirement("http://arvados.org/cwl#RunInSingleContainer")
         if req:
+            with SourceLine(self.tool, None, WorkflowException):
+                if "id" not in self.tool:
+                    raise WorkflowException("%s object must have 'id'" % (self.tool["class"]))
             document_loader, workflowobj, uri = (self.doc_loader, self.doc_loader.fetch(self.tool["id"]), self.tool["id"])
 
             with Perf(metrics, "subworkflow upload_deps"):
