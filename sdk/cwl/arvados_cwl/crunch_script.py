@@ -36,6 +36,7 @@ def run():
     runner = None
     try:
         job_order_object = arvados.current_job()['script_parameters']
+        toolpath = "file://%s/%s" % (os.environ['TASK_KEEPMOUNT'], job_order_object.pop("cwl:tool"))
 
         pdh_path = re.compile(r'^[0-9a-f]{32}\+\d+(/.+)?$')
 
@@ -78,7 +79,6 @@ def run():
         runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()),
                                           output_name=output_name, output_tags=output_tags)
 
-        toolpath = "file://%s/%s" % (os.environ['TASK_KEEPMOUNT'], job_order_object.pop("cwl:tool"))
         t = load_tool(toolpath, runner.arv_make_tool)
 
         args = argparse.Namespace()
