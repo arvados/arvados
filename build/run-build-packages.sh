@@ -109,7 +109,7 @@ case "$TARGET" in
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             'pycurl<7.21.5' contextlib2 pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
-            cachecontrol requests)
+            cachecontrol requests 'pathlib2>=2.1.0')
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         ;;
     debian8)
@@ -120,7 +120,7 @@ case "$TARGET" in
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
-            cachecontrol)
+            cachecontrol 'pathlib2>=2.1.0')
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         ;;
     ubuntu1204)
@@ -131,7 +131,7 @@ case "$TARGET" in
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             contextlib2 'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro isodate ruamel.ordereddict
-            cachecontrol requests)
+            cachecontrol requests 'pathlib2>=2.1.0')
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         ;;
     ubuntu1404)
@@ -140,7 +140,7 @@ case "$TARGET" in
             google-api-python-client==1.4.2 six uritemplate oauth2client==1.5.2 httplib2 \
             rsa 'pycurl<7.21.5' backports.ssl_match_hostname pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
-            cachecontrol)
+            cachecontrol 'pathlib2>=2.1.0')
         PYTHON3_BACKPORTS=(docker-py==1.7.2 requests websocket-client==0.37.0)
         ;;
     centos6)
@@ -160,7 +160,7 @@ case "$TARGET" in
             python-daemon llfuse==0.41.1 'pbr<1.0' pyyaml \
             'rdflib>=4.2.0' shellescape mistune typing avro requests \
             isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
-            ruamel.ordereddict cachecontrol)
+            ruamel.ordereddict cachecontrol 'pathlib2>=2.1.0')
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         export PYCURL_SSL_LIBRARY=nss
         ;;
@@ -180,7 +180,7 @@ case "$TARGET" in
             python-daemon==2.1.1 llfuse==0.41.1 'pbr<1.0' pyyaml \
             'rdflib>=4.2.0' shellescape mistune typing avro \
             isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
-            ruamel.ordereddict cachecontrol)
+            ruamel.ordereddict cachecontrol 'pathlib2>=2.1.0')
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         export PYCURL_SSL_LIBRARY=nss
         ;;
@@ -479,7 +479,7 @@ fpm_build schema_salad "" "" python $saladversion --depends "${PYTHON2_PKG_PREFI
 
 # And schema_salad now depends on ruamel-yaml, which apparently has a braindead setup.py that requires special arguments to build (otherwise, it aborts with 'error: you have to install with "pip install ."'). Sigh.
 # Ward, 2016-05-26
-fpm_build ruamel.yaml "" "" python 0.12.4 --python-setup-py-arguments "--single-version-externally-managed"
+fpm_build ruamel.yaml "" "" python 0.13.7 --python-setup-py-arguments "--single-version-externally-managed"
 
 # Dependency of cwltool.  Fpm doesn't produce a package with the correct version
 # number unless we build it explicitly

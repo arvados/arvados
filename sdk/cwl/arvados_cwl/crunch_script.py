@@ -48,8 +48,6 @@ def run():
         def keeppathObj(v):
             v["location"] = keeppath(v["location"])
 
-        job_order_object["cwl:tool"] = "file://%s/%s" % (os.environ['TASK_KEEPMOUNT'], job_order_object["cwl:tool"])
-
         for k,v in job_order_object.items():
             if isinstance(v, basestring) and arvados.util.keep_locator_pattern.match(v):
                 job_order_object[k] = {
@@ -80,7 +78,8 @@ def run():
         runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()),
                                           output_name=output_name, output_tags=output_tags)
 
-        t = load_tool(job_order_object, runner.arv_make_tool)
+        toolpath = "file://%s/%s" % (os.environ['TASK_KEEPMOUNT'], job_order_object.pop("cwl:tool"))
+        t = load_tool(toolpath, runner.arv_make_tool)
 
         args = argparse.Namespace()
         args.project_uuid = arvados.current_job()["owner_uuid"]
