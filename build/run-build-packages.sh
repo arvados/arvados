@@ -16,7 +16,7 @@ Options:
 --debug
     Output debug information (default: false)
 --target <target>
-    Distribution to build packages for (default: debian7)
+    Distribution to build packages for (default: debian8)
 --only-build <package>
     Build only a specific package (or $ONLY_BUILD from environment)
 --command
@@ -29,7 +29,7 @@ EOF
 
 EXITCODE=0
 DEBUG=${ARVADOS_DEBUG:-0}
-TARGET=debian7
+TARGET=debian8
 COMMAND=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
@@ -101,17 +101,6 @@ PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/dist-packages
 ## End Debian Python defaults.
 
 case "$TARGET" in
-    debian7)
-        FORMAT=deb
-        PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
-            oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
-            rsa uritemplate httplib2 ws4py pykka six \
-            ciso8601 pycrypto backports.ssl_match_hostname 'llfuse>=1.0' \
-            'pycurl<7.21.5' contextlib2 pyyaml 'rdflib>=4.2.0' \
-            shellescape mistune typing avro ruamel.ordereddict
-            cachecontrol requests 'pathlib2>=2.1.0')
-        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
-        ;;
     debian8)
         FORMAT=deb
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
