@@ -7,7 +7,7 @@ Syntax:
         WORKSPACE=/path/to/arvados $(basename $0) [options]
 
 --target <target>
-    Distribution to build packages for (default: debian7)
+    Distribution to build packages for (default: debian8)
 --command
     Build command to execute (default: use built-in Docker image command)
 --test-packages
@@ -48,7 +48,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-TARGET=debian7
+TARGET=debian8
 COMMAND=
 DEBUG=
 
