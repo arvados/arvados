@@ -174,6 +174,9 @@ docker_volume_args=(
 
 if [[ -n "$test_packages" ]]; then
     for p in $packages ; do
+        if [[ -n "$ONLY_BUILD" ]] && [[ "$p" != "$ONLY_BUILD" ]]; then
+            continue
+        fi
         echo
         echo "START: $p test on $IMAGE" >&2
         if docker run --rm \
