@@ -44,8 +44,8 @@ def done_outputs(self, record, tmpdir, outdir, keepdir):
     self.builder.pathmapper.keepdir = keepdir
     return self.collect_outputs("keep:" + record["output"])
 
-crunchstat_re = re.compile(r"^\d\d\d\d-\d\d-\d\d_\d\d:\d\d:\d\d [a-z0-9]{5}-8i9sb-[a-z0-9]{15} \d+ \d+ stderr crunchstat:")
-timestamp_re = re.compile(r"^(\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d\.\d+Z) (.*)")
+crunchstat_re = re.compile(r"^\d{4}-\d\d-\d\d_\d\d:\d\d:\d\d [a-z0-9]{5}-8i9sb-[a-z0-9]{15} \d+ \d+ stderr crunchstat:")
+timestamp_re = re.compile(r"^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d+Z) (.*)")
 
 def logtail(logcollection, logger, header, maxlen=25):
     logtail = deque([], maxlen*len(logcollection))
