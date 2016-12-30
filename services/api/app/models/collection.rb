@@ -454,10 +454,12 @@ class Collection < ArvadosModel
   # If trash_at is updated without touching delete_at, automatically
   # update delete_at to a sensible value.
   def default_trash_interval
-    if trash_at && trash_at_changed? && !delete_at_changed?
-      self.delete_at = trash_at + Rails.configuration.default_trash_lifetime.seconds
-    elsif trash_at.nil? && trash_at_changed? && !delete_at_changed?
-      self.delete_at = nil
+    if trash_at_changed? && !delete_at_changed?
+      if trash_at.nil?
+        self.delete_at = nil
+      else
+        self.delete_at = trash_at + Rails.configuration.default_trash_lifetime.seconds
+      end
     end
   end
 
