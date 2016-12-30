@@ -36,6 +36,13 @@ class SelectTest < ActionDispatch::IntegrationTest
     end
   end
 
+  test "select with default order" do
+    get "/arvados/v1/links", {format: :json, select: ['uuid']}, auth(:admin)
+    assert_response :success
+    uuids = json_response['items'].collect { |i| i['uuid'] }
+    assert_equal uuids, uuids.sort
+  end
+
   def assert_link_classes_ascend(current_class, prev_class)
     # Databases and Ruby don't always agree about string ordering with
     # punctuation.  If the strings aren't ascending normally, check

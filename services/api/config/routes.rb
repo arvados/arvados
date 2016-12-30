@@ -22,6 +22,7 @@ Server::Application.routes.draw do
       resources :collections do
         get 'provenance', on: :member
         get 'used_by', on: :member
+        post 'trash', on: :member
       end
       resources :groups do
         get 'contents', on: :collection

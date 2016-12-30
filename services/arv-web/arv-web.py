@@ -72,7 +72,7 @@ class ArvWeb(object):
                         et = 'add'
                     else:
                         et = 'remove'
-                if ev['properties']['new_attributes']['expires_at'] is not None:
+                if ev['properties']['new_attributes']['trash_at'] is not None:
                     et = 'remove'
 
             self.evqueue.put((self.project, et, ev['object_uuid']))

@@ -149,10 +149,10 @@ class ProjectsController < ApplicationController
         link.destroy
       end
 
-      # If this object has the 'expires_at' attribute, then simply mark it
-      # expired.
-      if item.attributes.include?("expires_at")
-        item.update_attributes expires_at: Time.now
+      # If this object has the 'trash_at' attribute, then simply mark it
+      # as trash.
+      if item.attributes.include?("trash_at")
+        item.update_attributes trash_at: Time.now
         @removed_uuids << item.uuid
       elsif item.owner_uuid == @object.uuid
         # Object is owned by this project. Remove it from the project by
@@ -161,7 +161,7 @@ class ProjectsController < ApplicationController
           item.update_attributes owner_uuid: current_user.uuid
           @removed_uuids << item.uuid
         rescue ArvadosApiClient::ApiErrorResponseException => e
-          if e.message.include? '_owner_uuid_name_unique'
+          if e.message.include? '_owner_uuid_'
             rename_to = item.name + ' removed from ' +
                         (@object.name ? @object.name : @object.uuid) +
                         ' at ' + Time.now.to_s
