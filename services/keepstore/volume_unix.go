@@ -275,7 +275,6 @@ func (v *UnixVolume) put(ctx context.Context, loc string, rdr io.Reader) error {
 	bpath := v.blockPath(loc)
 
 	if err := v.lock(ctx); err != nil {
-		log.Println("lock err:", err)
 		return err
 	}
 	defer v.unlock()
@@ -572,16 +571,12 @@ func (v *UnixVolume) lock(ctx context.Context) error {
 	}()
 	select {
 	case <-ctx.Done():
-		log.Print("ctx Done")
 		go func() {
-			log.Print("waiting <-locked")
 			<-locked
-			log.Print("unlocking")
 			v.locker.Unlock()
 		}()
 		return ctx.Err()
 	case <-locked:
-		log.Print("got lock")
 		return nil
 	}
 }
