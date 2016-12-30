@@ -933,7 +933,7 @@ EOS
   end
 
   test 'get trashed collection with include_trash' do
-    uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih'
+    uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
     authorize_with :active
     get :show, {
       id: uuid,
@@ -943,7 +943,7 @@ EOS
   end
 
   test 'get trashed collection without include_trash' do
-    uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih'
+    uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
     authorize_with :active
     get :show, {
       id: uuid,
@@ -964,7 +964,7 @@ EOS
   end
 
   test 'delete long-trashed collection immediately using http DELETE verb' do
-    uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih'
+    uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
     authorize_with :active
     delete :destroy, {
       id: uuid,
@@ -975,10 +975,15 @@ EOS
     assert_operator c.delete_at, :<, db_current_time
   end
 
-  ['zzzzz-4zz18-mto52zx1s7sn3ih',
-   'zzzzz-4zz18-5qa38qghh1j3nvv',
-  ].each do |uuid|
-    test "trash collection #{uuid} via trash action with grace period" do
+  ['zzzzz-4zz18-mto52zx1s7sn3ih', # expired_collection
+   :empty_collection_name_in_active_user_home_project,
+  ].each do |fixture|
+    test "trash collection #{fixture} via trash action with grace period" do
+      if fixture.is_a? String
+        uuid = fixture
+      else
+        uuid = collections(fixture).uuid
+      end
       authorize_with :active
       time_before_trashing = db_current_time
       post :trash, {

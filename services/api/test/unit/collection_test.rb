@@ -470,9 +470,8 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test "move to trash in SweepTrashedCollections" do
-    uuid = 'zzzzz-4zz18-4guozfh77ewd2f0'
-    c = Collection.where('uuid=? and is_trashed=false', uuid).first
-    assert c
+    c = collections(:trashed_on_next_sweep)
+    refute_empty Collection.where('uuid=? and is_trashed=false', c.uuid)
     assert_raises(ActiveRecord::RecordNotUnique) do
       act_as_user users(:active) do
         Collection.create!(owner_uuid: c.owner_uuid,
@@ -480,8 +479,8 @@ class CollectionTest < ActiveSupport::TestCase
       end
     end
     SweepTrashedCollections.sweep_now
-    c = Collection.unscoped.find_by_uuid(uuid)
-    assert_equal true, c.is_trashed
+    c = Collection.unscoped.where('uuid=? and is_trashed=true', c.uuid).first
+    assert c
     act_as_user users(:active) do
       assert Collection.create!(owner_uuid: c.owner_uuid,
                                 name: c.name)
@@ -489,7 +488,7 @@ class CollectionTest < ActiveSupport::TestCase
   end
 
   test "delete in SweepTrashedCollections" do
-    uuid = 'zzzzz-4zz18-3u1p5umicfpqszp'
+    uuid = 'zzzzz-4zz18-3u1p5umicfpqszp' # deleted_on_next_sweep
     assert_not_empty Collection.unscoped.where(uuid: uuid)
     SweepTrashedCollections.sweep_now
     assert_empty Collection.unscoped.where(uuid: uuid)
