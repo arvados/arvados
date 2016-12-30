@@ -166,7 +166,7 @@ case "$TARGET" in
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka  \
             ciso8601 pycrypto 'pycurl<7.21.5' \
-            python-daemon==2.1.1 'llfuse>=1.0' 'pbr<1.0' pyyaml \
+            python-daemon==2.1.1 'llfuse>=1.0' 'pbr<1.0' pyyaml contextlib2 \
             'rdflib>=4.2.0' shellescape mistune typing avro \
             isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
             ruamel.ordereddict cachecontrol 'pathlib2>=2.1.0')
