@@ -10,10 +10,10 @@ import (
 // getWithPipe invokes getter and copies the resulting data into
 // buf. If ctx is done before all data is copied, getWithPipe closes
 // the pipe with an error, and returns early with an error.
-func getWithPipe(ctx context.Context, loc string, buf []byte, getter func(context.Context, string, io.Writer) error) (int, error) {
+func getWithPipe(ctx context.Context, loc string, buf []byte, br BlockReader) (int, error) {
 	piper, pipew := io.Pipe()
 	go func() {
-		pipew.CloseWithError(getter(ctx, loc, pipew))
+		pipew.CloseWithError(br.ReadBlock(ctx, loc, pipew))
 	}()
 	done := make(chan struct{})
 	var size int
@@ -39,7 +39,7 @@ func getWithPipe(ctx context.Context, loc string, buf []byte, getter func(contex
 // from buf into the pipe. If ctx is done before all data is copied,
 // putWithPipe closes the pipe with an error, and returns early with
 // an error.
-func putWithPipe(ctx context.Context, loc string, buf []byte, putter func(context.Context, string, io.Reader) error) error {
+func putWithPipe(ctx context.Context, loc string, buf []byte, bw BlockWriter) error {
 	piper, pipew := io.Pipe()
 	copyErr := make(chan error)
 	go func() {
@@ -50,7 +50,7 @@ func putWithPipe(ctx context.Context, loc string, buf []byte, putter func(contex
 
 	putErr := make(chan error, 1)
 	go func() {
-		putErr <- putter(ctx, loc, piper)
+		putErr <- bw.WriteBlock(ctx, loc, piper)
 		close(putErr)
 	}()
 

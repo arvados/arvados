@@ -213,10 +213,11 @@ func (v *UnixVolume) stat(path string) (os.FileInfo, error) {
 // Get retrieves a block, copies it to the given slice, and returns
 // the number of bytes copied.
 func (v *UnixVolume) Get(ctx context.Context, loc string, buf []byte) (int, error) {
-	return getWithPipe(ctx, loc, buf, v.get)
+	return getWithPipe(ctx, loc, buf, v)
 }
 
-func (v *UnixVolume) get(ctx context.Context, loc string, w io.Writer) error {
+// ReadBlock implements BlockReader.
+func (v *UnixVolume) ReadBlock(ctx context.Context, loc string, w io.Writer) error {
 	path := v.blockPath(loc)
 	stat, err := v.stat(path)
 	if err != nil {
@@ -249,10 +250,11 @@ func (v *UnixVolume) Compare(ctx context.Context, loc string, expect []byte) err
 // returns a FullError.  If the write fails due to some other error,
 // that error is returned.
 func (v *UnixVolume) Put(ctx context.Context, loc string, block []byte) error {
-	return putWithPipe(ctx, loc, block, v.put)
+	return putWithPipe(ctx, loc, block, v)
 }
 
-func (v *UnixVolume) put(ctx context.Context, loc string, rdr io.Reader) error {
+// ReadBlock implements BlockWriter.
+func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) error {
 	if v.ReadOnly {
 		return MethodDisabledError
 	}
