@@ -465,7 +465,7 @@ class Collection < ArvadosModel
 
   def validate_trash_and_delete_timing
     if trash_at.nil? != delete_at.nil?
-      errors.add :delete_at, "must be nil if and only if trash_at is nil"
+      errors.add :delete_at, "must be set if trash_at is set, and must be nil otherwise"
     end
 
     earliest_delete = ([@validation_timestamp, trash_at_was].compact.min +
