@@ -1780,7 +1780,7 @@ sub log_writer_finish()
   close($log_pipe_in);
 
   my $logger_failed = 0;
-  my $read_result = log_writer_read_output(120);
+  my $read_result = log_writer_read_output(600);
   if ($read_result == -1) {
     $logger_failed = -1;
     Log (undef, "timed out reading from 'arv-put'");
