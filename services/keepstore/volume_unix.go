@@ -216,21 +216,19 @@ func (v *UnixVolume) Get(ctx context.Context, loc string, buf []byte) (int, erro
 	return getWithPipe(ctx, loc, buf, v.get)
 }
 
-func (v *UnixVolume) get(ctx context.Context, loc string, w *io.PipeWriter) {
+func (v *UnixVolume) get(ctx context.Context, loc string, w io.Writer) error {
 	path := v.blockPath(loc)
 	stat, err := v.stat(path)
 	if err != nil {
-		w.CloseWithError(v.translateError(err))
-		return
+		return v.translateError(err)
 	}
-	err = v.getFunc(ctx, path, func(rdr io.Reader) error {
+	return v.getFunc(ctx, path, func(rdr io.Reader) error {
 		n, err := io.Copy(w, rdr)
 		if err == nil && n != stat.Size() {
 			err = io.ErrUnexpectedEOF
 		}
 		return err
 	})
-	w.CloseWithError(err)
 }
 
 // Compare returns nil if Get(loc) would return the same content as
@@ -254,7 +252,7 @@ func (v *UnixVolume) Put(ctx context.Context, loc string, block []byte) error {
 	return putWithPipe(ctx, loc, block, v.put)
 }
 
-func (v *UnixVolume) put(ctx context.Context, loc string, rdr io.ReadCloser) error {
+func (v *UnixVolume) put(ctx context.Context, loc string, rdr io.Reader) error {
 	if v.ReadOnly {
 		return MethodDisabledError
 	}
@@ -283,11 +281,6 @@ func (v *UnixVolume) put(ctx context.Context, loc string, rdr io.ReadCloser) err
 	defer v.unlock()
 	if _, err := io.Copy(tmpfile, rdr); err != nil {
 		log.Printf("%s: writing to %s: %s\n", v, bpath, err)
-		tmpfile.Close()
-		os.Remove(tmpfile.Name())
-		return err
-	}
-	if err := rdr.Close(); err != nil {
 		tmpfile.Close()
 		os.Remove(tmpfile.Name())
 		return err
