@@ -83,7 +83,7 @@ cd $(dirname $0)
 
 FINAL_EXITCODE=0
 
-for dockerfile_path in $(find -name Dockerfile); do
+for dockerfile_path in $(find -name Dockerfile | grep package-build-dockerfiles); do
     if ./run-build-packages-one-target.sh --target "$(basename $(dirname "$dockerfile_path"))" --command "$COMMAND" $DEBUG $TEST_PACKAGES $ONLY_TEST ; then
         true
     else
