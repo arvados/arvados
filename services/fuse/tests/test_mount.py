@@ -267,14 +267,22 @@ class FuseSharedTest(MountTestBase):
 
         # check mtime on template
         st = os.stat(pipeline_template_path)
-        self.assertEqual(st.st_mtime, 1397493304)
+        try:
+            mtime = st.st_mtime_ns / 1000000000
+        except AttributeError:
+            mtime = st.st_mtime
+        self.assertEqual(mtime, 1397493304)
 
         # check mtime on collection
         st = os.stat(os.path.join(
                 self.mounttmp,
                 'FUSE User',
                 'collection #1 owned by FUSE'))
-        self.assertEqual(st.st_mtime, 1391448174)
+        try:
+            mtime = st.st_mtime_ns / 1000000000
+        except AttributeError:
+            mtime = st.st_mtime
+        self.assertEqual(mtime, 1391448174)
 
 
 class FuseHomeTest(MountTestBase):

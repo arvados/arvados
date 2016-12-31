@@ -74,7 +74,7 @@ import Queue
 # unlimited to avoid deadlocks, see https://arvados.org/issues/3198#note-43 for
 # details.
 
-llfuse.capi._notify_queue = Queue.Queue()
+llfuse._notify_queue = Queue.Queue()
 
 from fusedir import sanitize_filename, Directory, CollectionDirectory, TmpCollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
 from fusefile import StringFile, FuseArvadosFile
@@ -355,13 +355,12 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def destroy(self):
-        with llfuse.lock:
-            self._shutdown_started.set()
-            if self.events:
-                self.events.close()
-                self.events = None
+        self._shutdown_started.set()
+        if self.events:
+            self.events.close()
+            self.events = None
 
-            self.inodes.clear()
+        self.inodes.clear()
 
     def access(self, inode, mode, ctx):
         return True
@@ -400,7 +399,7 @@ class Operations(llfuse.Operations):
                 parent.update()
 
     @catch_exceptions
-    def getattr(self, inode):
+    def getattr(self, inode, ctx=None):
         if inode not in self.inodes:
             raise llfuse.FUSEError(errno.ENOENT)
 
@@ -432,19 +431,23 @@ class Operations(llfuse.Operations):
 
         entry.st_blksize = 512
         entry.st_blocks = (entry.st_size/512)+1
-        entry.st_atime = int(e.atime())
-        entry.st_mtime = int(e.mtime())
-        entry.st_ctime = int(e.mtime())
+        entry.st_atime_ns = int(e.atime() * 1000000000)
+        entry.st_mtime_ns = int(e.mtime() * 1000000000)
+        entry.st_ctime_ns = int(e.mtime() * 1000000000)
 
         return entry
 
     @catch_exceptions
-    def setattr(self, inode, attr):
+    def setattr(self, inode, attr, fields, fh, ctx):
         entry = self.getattr(inode)
 
-        e = self.inodes[inode]
+        if fh is not None and fh in self._filehandles:
+            handle = self._filehandles[fh]
+            e = handle.obj
+        else:
+            e = self.inodes[inode]
 
-        if attr.st_size is not None and isinstance(e, FuseArvadosFile):
+        if fields.update_size and isinstance(e, FuseArvadosFile):
             with llfuse.lock_released:
                 e.arvfile.truncate(attr.st_size)
                 entry.st_size = e.arvfile.size()
@@ -452,7 +455,7 @@ class Operations(llfuse.Operations):
         return entry
 
     @catch_exceptions
-    def lookup(self, parent_inode, name):
+    def lookup(self, parent_inode, name, ctx):
         name = unicode(name, self.inodes.encoding)
         inode = None
 
@@ -488,7 +491,7 @@ class Operations(llfuse.Operations):
                 self.inodes.del_entry(ent)
 
     @catch_exceptions
-    def open(self, inode, flags):
+    def open(self, inode, flags, ctx):
         if inode in self.inodes:
             p = self.inodes[inode]
         else:
@@ -575,7 +578,7 @@ class Operations(llfuse.Operations):
         self.release(fh)
 
     @catch_exceptions
-    def opendir(self, inode):
+    def opendir(self, inode, ctx):
         _logger.debug("arv-mount opendir: inode %i", inode)
 
         if inode in self.inodes:
@@ -614,7 +617,7 @@ class Operations(llfuse.Operations):
             e += 1
 
     @catch_exceptions
-    def statfs(self):
+    def statfs(self, ctx):
         st = llfuse.StatvfsData()
         st.f_bsize = 128 * 1024
         st.f_blocks = 0
@@ -676,19 +679,19 @@ class Operations(llfuse.Operations):
         return self.getattr(d.inode)
 
     @catch_exceptions
-    def unlink(self, inode_parent, name):
+    def unlink(self, inode_parent, name, ctx):
         _logger.debug("arv-mount unlink: parent_inode %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
         p.unlink(name)
 
     @catch_exceptions
-    def rmdir(self, inode_parent, name):
+    def rmdir(self, inode_parent, name, ctx):
         _logger.debug("arv-mount rmdir: parent_inode %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
         p.rmdir(name)
 
     @catch_exceptions
-    def rename(self, inode_parent_old, name_old, inode_parent_new, name_new):
+    def rename(self, inode_parent_old, name_old, inode_parent_new, name_new, ctx):
         _logger.debug("arv-mount rename: old_parent_inode %i '%s' new_parent_inode %i '%s'", inode_parent_old, name_old, inode_parent_new, name_new)
         src = self._check_writable(inode_parent_old)
         dest = self._check_writable(inode_parent_new)

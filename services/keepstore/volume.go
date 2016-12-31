@@ -7,6 +7,18 @@ import (
 	"time"
 )
 
+type BlockWriter interface {
+	// WriteBlock reads all data from r, writes it to a backing
+	// store as "loc", and returns the number of bytes written.
+	WriteBlock(ctx context.Context, loc string, r io.Reader) error
+}
+
+type BlockReader interface {
+	// ReadBlock retrieves data previously stored as "loc" and
+	// writes it to w.
+	ReadBlock(ctx context.Context, loc string, w io.Writer) error
+}
+
 // A Volume is an interface representing a Keep back-end storage unit:
 // for example, a single mounted disk, a RAID array, an Amazon S3 volume,
 // etc.

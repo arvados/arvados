@@ -1,4 +1,5 @@
 require 'arvados/keep'
+require 'sweep_trashed_collections'
 
 class Collection < ArvadosModel
   extend DbCurrentTime
@@ -8,17 +9,21 @@ class Collection < ArvadosModel
 
   serialize :properties, Hash
 
+  before_validation :set_validation_timestamp
   before_validation :default_empty_manifest
   before_validation :check_encoding
   before_validation :check_manifest_validity
   before_validation :check_signatures
   before_validation :strip_signatures_and_update_replication_confirmed
+  before_validation :ensure_trash_at_not_in_past
+  before_validation :sync_trash_state
+  before_validation :default_trash_interval
   validate :ensure_pdh_matches_manifest_text
+  validate :validate_trash_and_delete_timing
   before_save :set_file_names
-  before_save :expires_at_not_in_past
 
-  # Query only undeleted collections by default.
-  default_scope where("expires_at IS NULL or expires_at > statement_timestamp()")
+  # Query only untrashed collections by default.
+  default_scope where("is_trashed = false")
 
   api_accessible :user, extend: :common do |t|
     t.add :name
@@ -29,7 +34,9 @@ class Collection < ArvadosModel
     t.add :replication_desired
     t.add :replication_confirmed
     t.add :replication_confirmed_at
-    t.add :expires_at
+    t.add :delete_at
+    t.add :trash_at
+    t.add :is_trashed
   end
 
   after_initialize do
@@ -45,9 +52,9 @@ class Collection < ArvadosModel
                 # API response, and never let clients select the
                 # manifest_text column.
                 #
-                # We need expires_at to determine the correct
-                # timestamp in signed_manifest_text.
-                'manifest_text' => ['manifest_text', 'expires_at'],
+                # We need trash_at and is_trashed to determine the
+                # correct timestamp in signed_manifest_text.
+                'manifest_text' => ['manifest_text', 'trash_at', 'is_trashed'],
                 )
   end
 
@@ -77,7 +84,7 @@ class Collection < ArvadosModel
       api_token = current_api_client_authorization.andand.api_token
       signing_opts = {
         api_token: api_token,
-        now: db_current_time.to_i,
+        now: @validation_timestamp.to_i,
       }
       self.manifest_text.each_line do |entry|
         entry.split.each do |tok|
@@ -225,11 +232,15 @@ class Collection < ArvadosModel
   end
 
   def signed_manifest_text
-    if has_attribute? :manifest_text
+    if !has_attribute? :manifest_text
+      return nil
+    elsif is_trashed
+      return manifest_text
+    else
       token = current_api_client_authorization.andand.api_token
       exp = [db_current_time.to_i + Rails.configuration.blob_signature_ttl,
-             expires_at].compact.map(&:to_i).min
-      @signed_manifest_text = self.class.sign_manifest manifest_text, token, exp
+             trash_at].compact.map(&:to_i).min
+      self.class.sign_manifest manifest_text, token, exp
     end
   end
 
@@ -367,6 +378,11 @@ class Collection < ArvadosModel
     super - ["manifest_text"]
   end
 
+  def self.where *args
+    SweepTrashedCollections.sweep_if_stale
+    super
+  end
+
   protected
   def portable_manifest_text
     self.class.munge_manifest_locators(manifest_text) do |match|
@@ -403,13 +419,65 @@ class Collection < ArvadosModel
     super
   end
 
-  # If expires_at is being changed to a time in the past, change it to
+  # Use a single timestamp for all validations, even though each
+  # validation runs at a different time.
+  def set_validation_timestamp
+    @validation_timestamp = db_current_time
+  end
+
+  # If trash_at is being changed to a time in the past, change it to
   # now. This allows clients to say "expires {client-current-time}"
   # without failing due to clock skew, while avoiding odd log entries
   # like "expiry date changed to {1 year ago}".
-  def expires_at_not_in_past
-    if expires_at_changed? and expires_at
-      self.expires_at = [db_current_time, expires_at].max
+  def ensure_trash_at_not_in_past
+    if trash_at_changed? && trash_at
+      self.trash_at = [@validation_timestamp, trash_at].max
     end
+  end
+
+  # Caller can move into/out of trash by setting/clearing is_trashed
+  # -- however, if the caller also changes trash_at, then any changes
+  # to is_trashed are ignored.
+  def sync_trash_state
+    if is_trashed_changed? && !trash_at_changed?
+      if is_trashed
+        self.trash_at = @validation_timestamp
+      else
+        self.trash_at = nil
+        self.delete_at = nil
+      end
+    end
+    self.is_trashed = trash_at && trash_at <= @validation_timestamp || false
+    true
+  end
+
+  # If trash_at is updated without touching delete_at, automatically
+  # update delete_at to a sensible value.
+  def default_trash_interval
+    if trash_at_changed? && !delete_at_changed?
+      if trash_at.nil?
+        self.delete_at = nil
+      else
+        self.delete_at = trash_at + Rails.configuration.default_trash_lifetime.seconds
+      end
+    end
+  end
+
+  def validate_trash_and_delete_timing
+    if trash_at.nil? != delete_at.nil?
+      errors.add :delete_at, "must be set if trash_at is set, and must be nil otherwise"
+    end
+
+    earliest_delete = ([@validation_timestamp, trash_at_was].compact.min +
+                       Rails.configuration.blob_signature_ttl.seconds)
+    if delete_at && delete_at < earliest_delete
+      errors.add :delete_at, "#{delete_at} is too soon: earliest allowed is #{earliest_delete}"
+    end
+
+    if delete_at && delete_at < trash_at
+      errors.add :delete_at, "must not be earlier than trash_at"
+    end
+
+    true
   end
 end
