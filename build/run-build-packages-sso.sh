@@ -77,7 +77,7 @@ case "$TARGET" in
     ubuntu1404)
         FORMAT=deb
         ;;
-    centos6|centos7)
+    centos7)
         FORMAT=rpm
         ;;
     *)
