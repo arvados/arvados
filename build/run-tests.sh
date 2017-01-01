@@ -22,6 +22,8 @@ Options:
 --leave-temp   Do not remove GOPATH, virtualenv, and other temp dirs at exit.
                Instead, show the path to give as --temp to reuse them in
                subsequent invocations.
+--repeat N     Repeat each install/test step until it succeeds N times.
+--retry        Prompt to retry if an install or test suite fails.
 --skip-install Do not run any install steps. Just run tests.
                You should provide GOPATH, GEMHOME, and VENVDIR options
                from a previous invocation if you use this option.
@@ -219,14 +221,7 @@ do
             exit 1
             ;;
         --skip)
-            skipwhat="$1"; shift
-            if [[ "$skipwhat" == "apps/workbench" ]]; then
-              skip["apps/workbench_units"]=1
-              skip["apps/workbench_functionals"]=1
-              skip["apps/workbench_integration"]=1
-            else
-              skip[$skipwhat]=1
-            fi
+            skip[$1]=1
             ;;
         --only)
             only="$1"; skip[$1]=""; shift
@@ -247,6 +242,9 @@ do
             ;;
         --leave-temp)
             temp_preserve=1
+            ;;
+        --repeat)
+            repeat=$((${1}+0)); shift
             ;;
         --retry)
             retry=1
@@ -497,136 +495,151 @@ then
 fi
 
 retry() {
-    while ! ${@} && [[ "$retry" == 1 ]]
+    remain="${repeat}"
+    while :
     do
-        read -p 'Try again? [Y/n] ' x
-        if [[ "$x" != "y" ]] && [[ "$x" != "" ]]
-        then
+        if ${@}; then
+            if [[ "$remain" -gt 1 ]]; then
+                remain=$((${remain}-1))
+                title "Repeating ${remain} more times"
+            else
+                break
+            fi
+        elif [[ "$retry" == 1 ]]; then
+            read -p 'Try again? [Y/n] ' x
+            if [[ "$x" != "y" ]] && [[ "$x" != "" ]]
+            then
+                break
+            fi
+        else
             break
         fi
     done
 }
 
 do_test() {
-    retry do_test_once ${@}
+    case "${1}" in
+        apps/workbench_units | apps/workbench_functional | apps/workbench_integration)
+            suite=apps/workbench
+            ;;
+        *)
+            suite="${1}"
+            ;;
+    esac
+    if [[ -z "${skip[$suite]}" && -z "${skip[$1]}" && \
+                (-z "${only}" || "${only}" == "${suite}") ]]; then
+        retry do_test_once ${@}
+    else
+        title "Skipping ${1} tests"
+    fi
 }
 
 do_test_once() {
     unset result
-    to_test=$1
-    if (( [[ "$only" == "apps/workbench" ]] ) &&
-       ( [[ "$to_test" == "apps/workbench_units" ]] || [[ "$to_test" == "apps/workbench_functionals" ]] ||
-         [[ "$to_test" == "apps/workbench_integration" ]])); then
-      to_test="apps/workbench"
-    fi
-    if [[ -z "${skip[$1]}" ]] && ( [[ -z "$only" ]] || [[ "$only" == "$to_test" ]] )
+
+    title "Running $1 tests"
+    timer_reset
+    if [[ "$2" == "go" ]]
     then
-        title "Running $1 tests"
-        timer_reset
-        if [[ "$2" == "go" ]]
+        covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
+        coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
+        # We do "go get -t" here to catch compilation errors
+        # before trying "go test". Otherwise, coverage-reporting
+        # mode makes Go show the wrong line numbers when reporting
+        # compilation errors.
+        go get -t "git.curoverse.com/arvados.git/$1" || return 1
+        cd "$WORKSPACE/$1" || return 1
+        gofmt -e -d . | egrep . && result=1
+        if [[ -n "${testargs[$1]}" ]]
         then
-            covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
-            coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
-            # We do "go get -t" here to catch compilation errors
-            # before trying "go test". Otherwise, coverage-reporting
-            # mode makes Go show the wrong line numbers when reporting
-            # compilation errors.
-            go get -t "git.curoverse.com/arvados.git/$1" || return 1
-            cd "$WORKSPACE/$1" || return 1
-            gofmt -e -d . | egrep . && result=1
-            if [[ -n "${testargs[$1]}" ]]
-            then
-                # "go test -check.vv giturl" doesn't work, but this
-                # does:
-                cd "$WORKSPACE/$1" && go test ${short:+-short} ${testargs[$1]}
-            else
-                # The above form gets verbose even when testargs is
-                # empty, so use this form in such cases:
-                go test ${short:+-short} ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
-            fi
-            result=${result:-$?}
-            if [[ -f "$WORKSPACE/tmp/.$covername.tmp" ]]
-            then
-                go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"
-                rm "$WORKSPACE/tmp/.$covername.tmp"
-            fi
-        elif [[ "$2" == "pip" ]]
-        then
-            tries=0
-            cd "$WORKSPACE/$1" && while :
-            do
-                tries=$((${tries}+1))
-                # $3 can name a path directory for us to use, including trailing
-                # slash; e.g., the bin/ subdirectory of a virtualenv.
-                "${3}python" setup.py ${short:+--short-tests-only} test ${testargs[$1]}
-                result=$?
-                if [[ ${tries} < 3 && ${result} == 137 ]]
-                then
-                    printf '\n*****\n%s tests killed -- retrying\n*****\n\n' "$1"
-                    continue
-                else
-                    break
-                fi
-            done
-        elif [[ "$2" != "" ]]
-        then
-            "test_$2"
+            # "go test -check.vv giturl" doesn't work, but this
+            # does:
+            cd "$WORKSPACE/$1" && go test ${short:+-short} ${testargs[$1]}
         else
-            "test_$1"
+            # The above form gets verbose even when testargs is
+            # empty, so use this form in such cases:
+            go test ${short:+-short} ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
         fi
         result=${result:-$?}
-        checkexit $result "$1 tests"
-        title "End of $1 tests (`timer`)"
-        return $result
+        if [[ -f "$WORKSPACE/tmp/.$covername.tmp" ]]
+        then
+            go tool cover -html="$WORKSPACE/tmp/.$covername.tmp" -o "$WORKSPACE/tmp/$covername.html"
+            rm "$WORKSPACE/tmp/.$covername.tmp"
+        fi
+    elif [[ "$2" == "pip" ]]
+    then
+        tries=0
+        cd "$WORKSPACE/$1" && while :
+        do
+            tries=$((${tries}+1))
+            # $3 can name a path directory for us to use, including trailing
+            # slash; e.g., the bin/ subdirectory of a virtualenv.
+            "${3}python" setup.py ${short:+--short-tests-only} test ${testargs[$1]}
+            result=$?
+            if [[ ${tries} < 3 && ${result} == 137 ]]
+            then
+                printf '\n*****\n%s tests killed -- retrying\n*****\n\n' "$1"
+                continue
+            else
+                break
+            fi
+        done
+    elif [[ "$2" != "" ]]
+    then
+        "test_$2"
     else
-        title "Skipping $1 tests"
+        "test_$1"
     fi
+    result=${result:-$?}
+    checkexit $result "$1 tests"
+    title "End of $1 tests (`timer`)"
+    return $result
 }
 
 do_install() {
-    retry do_install_once ${@}
-}
-
-do_install_once() {
-    if [[ -z "$skip_install" || (-n "$only_install" && "$only_install" == "$1") ]]
-    then
-        title "Running $1 install"
-        timer_reset
-        if [[ "$2" == "go" ]]
-        then
-            go get -t "git.curoverse.com/arvados.git/$1"
-        elif [[ "$2" == "pip" ]]
-        then
-            # $3 can name a path directory for us to use, including trailing
-            # slash; e.g., the bin/ subdirectory of a virtualenv.
-
-            # Need to change to a different directory after creating
-            # the source dist package to avoid a pip bug.
-            # see https://arvados.org/issues/5766 for details.
-
-            # Also need to install twice, because if it believes the package is
-            # already installed, pip it won't install it.  So the first "pip
-            # install" ensures that the dependencies are met, the second "pip
-            # install" ensures that we've actually installed the local package
-            # we just built.
-            cd "$WORKSPACE/$1" \
-                && "${3}python" setup.py sdist rotate --keep=1 --match .tar.gz \
-                && cd "$WORKSPACE" \
-                && "${3}pip" install --quiet "$WORKSPACE/$1/dist"/*.tar.gz \
-                && "${3}pip" install --quiet --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
-        elif [[ "$2" != "" ]]
-        then
-            "install_$2"
-        else
-            "install_$1"
-        fi
-        result=$?
-        checkexit $result "$1 install"
-        title "End of $1 install (`timer`)"
-        return $result
+    if [[ -z "${skip_install}" && \
+                (-z "${only_install}" || "${only_install}" == "${1}") ]]; then
+        retry do_install_once ${@}
     else
         title "Skipping $1 install"
     fi
+}
+
+do_install_once() {
+    title "Running $1 install"
+    timer_reset
+    if [[ "$2" == "go" ]]
+    then
+        go get -t "git.curoverse.com/arvados.git/$1"
+    elif [[ "$2" == "pip" ]]
+    then
+        # $3 can name a path directory for us to use, including trailing
+        # slash; e.g., the bin/ subdirectory of a virtualenv.
+
+        # Need to change to a different directory after creating
+        # the source dist package to avoid a pip bug.
+        # see https://arvados.org/issues/5766 for details.
+
+        # Also need to install twice, because if it believes the package is
+        # already installed, pip it won't install it.  So the first "pip
+        # install" ensures that the dependencies are met, the second "pip
+        # install" ensures that we've actually installed the local package
+        # we just built.
+        cd "$WORKSPACE/$1" \
+            && "${3}python" setup.py sdist rotate --keep=1 --match .tar.gz \
+            && cd "$WORKSPACE" \
+            && "${3}pip" install --quiet "$WORKSPACE/$1/dist"/*.tar.gz \
+            && "${3}pip" install --quiet --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
+    elif [[ "$2" != "" ]]
+    then
+        "install_$2"
+    else
+        "install_$1"
+    fi
+    result=$?
+    checkexit $result "$1 install"
+    title "End of $1 install (`timer`)"
+    return $result
 }
 
 bundle_install_trylocal() {
