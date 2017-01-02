@@ -495,10 +495,10 @@ func TestAzureBlobVolumeRangeFenceposts(t *testing.T) {
 		}
 		gotHash := fmt.Sprintf("%x", md5.Sum(gotData))
 		if gotLen != size {
-			t.Error("length mismatch: got %d != %d", gotLen, size)
+			t.Errorf("length mismatch: got %d != %d", gotLen, size)
 		}
 		if gotHash != hash {
-			t.Error("hash mismatch: got %s != %s", gotHash, hash)
+			t.Errorf("hash mismatch: got %s != %s", gotHash, hash)
 		}
 	}
 }
@@ -684,6 +684,7 @@ func (s *StubbedAzureBlobSuite) TestStats(c *check.C) {
 	c.Check(err, check.NotNil)
 	c.Check(stats(), check.Matches, `.*"Ops":[^0],.*`)
 	c.Check(stats(), check.Matches, `.*"Errors":[^0],.*`)
+	c.Check(stats(), check.Matches, `.*"storage\.AzureStorageServiceError 404 \(404 Not Found\)":[^0].*`)
 	c.Check(stats(), check.Matches, `.*"InBytes":0,.*`)
 
 	err = s.volume.Put(context.Background(), loc, []byte("foo"))

@@ -872,35 +872,35 @@ type s3bucket struct {
 func (b *s3bucket) GetReader(path string) (io.ReadCloser, error) {
 	rdr, err := b.Bucket.GetReader(path)
 	b.stats.Tick(&b.stats.Ops, &b.stats.GetOps)
-	b.stats.tickErr(err)
+	b.stats.TickErr(err)
 	return NewCountingReader(rdr, b.stats.TickInBytes), err
 }
 
 func (b *s3bucket) Head(path string, headers map[string][]string) (*http.Response, error) {
 	resp, err := b.Bucket.Head(path, headers)
 	b.stats.Tick(&b.stats.Ops, &b.stats.HeadOps)
-	b.stats.tickErr(err)
+	b.stats.TickErr(err)
 	return resp, err
 }
 
 func (b *s3bucket) PutReader(path string, r io.Reader, length int64, contType string, perm s3.ACL, options s3.Options) error {
 	err := b.Bucket.PutReader(path, NewCountingReader(r, b.stats.TickOutBytes), length, contType, perm, options)
 	b.stats.Tick(&b.stats.Ops, &b.stats.PutOps)
-	b.stats.tickErr(err)
+	b.stats.TickErr(err)
 	return err
 }
 
 func (b *s3bucket) Put(path string, data []byte, contType string, perm s3.ACL, options s3.Options) error {
 	err := b.Bucket.PutReader(path, NewCountingReader(bytes.NewBuffer(data), b.stats.TickOutBytes), int64(len(data)), contType, perm, options)
 	b.stats.Tick(&b.stats.Ops, &b.stats.PutOps)
-	b.stats.tickErr(err)
+	b.stats.TickErr(err)
 	return err
 }
 
 func (b *s3bucket) Del(path string) error {
 	err := b.Bucket.Del(path)
 	b.stats.Tick(&b.stats.Ops, &b.stats.DelOps)
-	b.stats.tickErr(err)
+	b.stats.TickErr(err)
 	return err
 }
 
@@ -912,25 +912,15 @@ type s3bucketStats struct {
 	HeadOps uint64
 	DelOps  uint64
 	ListOps uint64
-
-	ErrorCodes map[string]uint64 `json:",omitempty"`
-
-	lock sync.Mutex
 }
 
-func (s *s3bucketStats) tickErr(err error) {
+func (s *s3bucketStats) TickErr(err error) {
 	if err == nil {
 		return
 	}
-	s.TickErr(err)
-	errStr := fmt.Sprintf("%T", err)
+	errType := fmt.Sprintf("%T", err)
 	if err, ok := err.(*s3.Error); ok {
-		errStr = errStr + fmt.Sprintf(" %d %s", err.StatusCode, err.Code)
+		errType = errType + fmt.Sprintf(" %d %s", err.StatusCode, err.Code)
 	}
-	s.lock.Lock()
-	if s.ErrorCodes == nil {
-		s.ErrorCodes = make(map[string]uint64)
-	}
-	s.ErrorCodes[errStr]++
-	s.lock.Unlock()
+	s.statsTicker.TickErr(err, errType)
 }

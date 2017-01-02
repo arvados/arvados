@@ -106,26 +106,6 @@ type AzureBlobVolume struct {
 	bsClient *azureBlobClient
 }
 
-// azureBlobClient wraps storage.BlobStorageClient in order to count
-// I/O and API usage stats.
-type azureBlobClient struct {
-	client *storage.BlobStorageClient
-	stats  azureBlobStats
-}
-
-type azureBlobStats struct {
-	statsTicker
-	Ops            uint64
-	GetOps         uint64
-	GetRangeOps    uint64
-	CreateOps      uint64
-	SetMetadataOps uint64
-	DelOps         uint64
-	ListOps        uint64
-
-	lock sync.Mutex
-}
-
 // Examples implements VolumeWithExamples.
 func (*AzureBlobVolume) Examples() []Volume {
 	return []Volume{
@@ -650,6 +630,36 @@ func (v *AzureBlobVolume) EmptyTrash() {
 // InternalStats returns bucket I/O and API call counters.
 func (v *AzureBlobVolume) InternalStats() interface{} {
 	return &v.bsClient.stats
+}
+
+type azureBlobStats struct {
+	statsTicker
+	Ops            uint64
+	GetOps         uint64
+	GetRangeOps    uint64
+	CreateOps      uint64
+	SetMetadataOps uint64
+	DelOps         uint64
+	ListOps        uint64
+}
+
+func (s *azureBlobStats) TickErr(err error) {
+	if err == nil {
+		return
+	}
+	errType := fmt.Sprintf("%T", err)
+	if err, ok := err.(storage.AzureStorageServiceError); ok {
+		errType = errType + fmt.Sprintf(" %d (%s)", err.StatusCode, err.Code)
+	}
+	log.Printf("errType %T, err %s", err, err)
+	s.statsTicker.TickErr(err, errType)
+}
+
+// azureBlobClient wraps storage.BlobStorageClient in order to count
+// I/O and API usage stats.
+type azureBlobClient struct {
+	client *storage.BlobStorageClient
+	stats  azureBlobStats
 }
 
 func (c *azureBlobClient) ContainerExists(cname string) (bool, error) {
