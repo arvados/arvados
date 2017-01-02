@@ -26,9 +26,12 @@ import (
 )
 
 const (
-	// The same fake credentials used by Microsoft's Azure emulator
-	emulatorAccountName = "devstoreaccount1"
-	emulatorAccountKey  = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
+	// This cannot be the fake account name "devstoreaccount1"
+	// used by Microsoft's Azure emulator: the Azure SDK
+	// recognizes that magic string and changes its behavior to
+	// cater to the Azure SDK's own test suite.
+	fakeAccountName = "fakeAccountName"
+	fakeAccountKey  = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
 )
 
 var azureTestContainer string
@@ -350,7 +353,7 @@ func NewTestableAzureBlobVolume(t TB, readonly bool, replication int) *TestableA
 		// Connect to stub instead of real Azure storage service
 		stubURLBase := strings.Split(azStub.URL, "://")[1]
 		var err error
-		if azClient, err = storage.NewClient(emulatorAccountName, emulatorAccountKey, stubURLBase, storage.DefaultAPIVersion, false); err != nil {
+		if azClient, err = storage.NewClient(fakeAccountName, fakeAccountKey, stubURLBase, storage.DefaultAPIVersion, false); err != nil {
 			t.Fatal(err)
 		}
 		container = "fakecontainername"
