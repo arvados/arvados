@@ -505,6 +505,41 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_equal prev_container_uuid, cr.container_uuid
   end
 
+  test "Set up output collection on finalized container request" do
+    set_user_from_auth :active
+    output_name = 'Test output collection'
+    cr = create_minimal_req!(priority: 1,
+                             state: ContainerRequest::Committed,
+                             output_name: output_name)
+    cr.reload
+    act_as_system_user do
+      c = Container.find_by_uuid(cr.container_uuid)
+      c.update_attributes!(state: Container::Locked)
+      c.update_attributes!(state: Container::Running)
+      c.update_attributes!(state: Container::Complete,
+                           exit_code: 0,
+                           output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
+                           log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
+    end
+    cr.reload
+    output_coll = Collection.find_by_uuid(cr.output_uuid)
+    assert_not_nil output_coll
+    assert_equal output_coll.name, output_name
+    # Now ask for a second CR, equal to the first one so it will reuse the container
+    cr2 = create_minimal_req!(priority: 1,
+                              state: ContainerRequest::Uncommitted,
+                              output_name: output_name)
+    cr2.state = ContainerRequest::Committed
+    cr2.save
+    assert_equal ContainerRequest::Final, cr2.state
+    output_coll_2 = Collection.find_by_uuid(cr2.output_uuid)
+    # Make sure the resulting output collection name include the original name
+    # plus the date
+    assert_not_equal output_coll_2.name, output_coll.name
+    assert output_coll_2.name.include? output_name
+    assert_match /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/, output_coll_2.name
+  end
+
   test "Finalize committed request when reusing a finished container" do
     set_user_from_auth :active
     cr = create_minimal_req!(priority: 1, state: ContainerRequest::Committed)

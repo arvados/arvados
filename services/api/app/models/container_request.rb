@@ -35,18 +35,19 @@ class ContainerRequest < ArvadosModel
     t.add :environment
     t.add :expires_at
     t.add :filters
+    t.add :log_uuid
     t.add :mounts
     t.add :name
+    t.add :output_name
     t.add :output_path
+    t.add :output_uuid
     t.add :priority
     t.add :properties
     t.add :requesting_container_uuid
     t.add :runtime_constraints
+    t.add :scheduling_parameters
     t.add :state
     t.add :use_existing
-    t.add :output_uuid
-    t.add :log_uuid
-    t.add :scheduling_parameters
   end
 
   # Supported states for a container request
@@ -90,15 +91,34 @@ class ContainerRequest < ArvadosModel
     ['output', 'log'].each do |out_type|
       pdh = c.send(out_type)
       next if pdh.nil?
+      if self.output_name and out_type == 'output'
+        coll_name = self.output_name
+      else
+        coll_name = "Container #{out_type} for request #{uuid}"
+      end
       manifest = Collection.where(portable_data_hash: pdh).first.manifest_text
-      coll = Collection.create!(owner_uuid: owner_uuid,
-                         manifest_text: manifest,
-                         portable_data_hash: pdh,
-                         name: "Container #{out_type} for request #{uuid}",
-                         properties: {
-                           'type' => out_type,
-                           'container_request' => uuid,
-                         })
+      begin
+        coll = Collection.create!(owner_uuid: owner_uuid,
+                                  manifest_text: manifest,
+                                  portable_data_hash: pdh,
+                                  name: coll_name,
+                                  properties: {
+                                    'type' => out_type,
+                                    'container_request' => uuid,
+                                  })
+      rescue ActiveRecord::RecordNotUnique => rn
+        ActiveRecord::Base.connection.execute 'ROLLBACK'
+        raise unless out_type == 'output' and self.output_name
+        # Postgres specific unique name check. See ApplicationController#create for
+        # a detailed explanation.
+        raise unless rn.original_exception.is_a? PG::UniqueViolation
+        err = rn.original_exception
+        detail = err.result.error_field(PG::Result::PG_DIAG_MESSAGE_DETAIL)
+        raise unless /^Key \(owner_uuid, name\)=\([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}, .*?\) already exists\./.match detail
+        # Output collection name collision detected: append a timestamp.
+        coll_name = "#{self.output_name} #{Time.now.getgm.strftime('%FT%TZ')}"
+        retry
+      end
       if out_type == 'output'
         out_coll = coll.uuid
       else
@@ -269,7 +289,8 @@ class ContainerRequest < ArvadosModel
                      :container_image, :cwd, :description, :environment,
                      :filters, :mounts, :name, :output_path, :priority,
                      :properties, :requesting_container_uuid, :runtime_constraints,
-                     :state, :container_uuid, :use_existing, :scheduling_parameters
+                     :state, :container_uuid, :use_existing, :scheduling_parameters,
+                     :output_name
 
     when Committed
       if container_uuid.nil?
@@ -281,14 +302,16 @@ class ContainerRequest < ArvadosModel
       end
 
       # Can update priority, container count, name and description
-      permitted.push :priority, :container_count, :container_count_max, :container_uuid, :name, :description
+      permitted.push :priority, :container_count, :container_count_max, :container_uuid,
+                     :name, :description
 
       if self.state_changed?
         # Allow create-and-commit in a single operation.
         permitted.push :command, :container_image, :cwd, :description, :environment,
                        :filters, :mounts, :name, :output_path, :properties,
                        :requesting_container_uuid, :runtime_constraints,
-                       :state, :container_uuid, :use_existing, :scheduling_parameters
+                       :state, :container_uuid, :use_existing, :scheduling_parameters,
+                       :output_name
       end
 
     when Final

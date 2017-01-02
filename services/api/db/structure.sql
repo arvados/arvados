@@ -294,7 +294,8 @@ CREATE TABLE container_requests (
     use_existing boolean DEFAULT true,
     scheduling_parameters text,
     output_uuid character varying(255),
-    log_uuid character varying(255)
+    log_uuid character varying(255),
+    output_name character varying(255) DEFAULT NULL::character varying
 );
 
 
@@ -1527,7 +1528,7 @@ CREATE INDEX container_requests_full_text_search_idx ON container_requests USING
 -- Name: container_requests_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
-CREATE INDEX container_requests_search_index ON container_requests USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, state, requesting_container_uuid, container_uuid, container_image, cwd, output_path, output_uuid, log_uuid);
+CREATE INDEX container_requests_search_index ON container_requests USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, state, requesting_container_uuid, container_uuid, container_image, cwd, output_path, output_uuid, log_uuid, output_name);
 
 
 --
@@ -2707,3 +2708,7 @@ INSERT INTO schema_migrations (version) VALUES ('20161115171221');
 INSERT INTO schema_migrations (version) VALUES ('20161115174218');
 
 INSERT INTO schema_migrations (version) VALUES ('20161213172944');
+
+INSERT INTO schema_migrations (version) VALUES ('20161223090712');
+
+INSERT INTO schema_migrations (version) VALUES ('20170102153111');
