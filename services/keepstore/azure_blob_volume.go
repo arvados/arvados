@@ -103,7 +103,27 @@ type AzureBlobVolume struct {
 	RequestTimeout        arvados.Duration
 
 	azClient storage.Client
-	bsClient storage.BlobStorageClient
+	bsClient *azureBlobClient
+}
+
+// azureBlobClient wraps storage.BlobStorageClient in order to count
+// I/O and API usage stats.
+type azureBlobClient struct {
+	client *storage.BlobStorageClient
+	stats  azureBlobStats
+}
+
+type azureBlobStats struct {
+	statsTicker
+	Ops            uint64
+	GetOps         uint64
+	GetRangeOps    uint64
+	CreateOps      uint64
+	SetMetadataOps uint64
+	DelOps         uint64
+	ListOps        uint64
+
+	lock sync.Mutex
 }
 
 // Examples implements VolumeWithExamples.
@@ -147,7 +167,10 @@ func (v *AzureBlobVolume) Start() error {
 	v.azClient.HTTPClient = &http.Client{
 		Timeout: time.Duration(v.RequestTimeout),
 	}
-	v.bsClient = v.azClient.GetBlobService()
+	bs := v.azClient.GetBlobService()
+	v.bsClient = &azureBlobClient{
+		client: &bs,
+	}
 
 	ok, err := v.bsClient.ContainerExists(v.ContainerName)
 	if err != nil {
@@ -622,4 +645,73 @@ func (v *AzureBlobVolume) EmptyTrash() {
 	}
 
 	log.Printf("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
+}
+
+// InternalStats returns bucket I/O and API call counters.
+func (v *AzureBlobVolume) InternalStats() interface{} {
+	return &v.bsClient.stats
+}
+
+func (c *azureBlobClient) ContainerExists(cname string) (bool, error) {
+	c.stats.Tick(&c.stats.Ops)
+	ok, err := c.client.ContainerExists(cname)
+	c.stats.TickErr(err)
+	return ok, err
+}
+
+func (c *azureBlobClient) GetBlobMetadata(cname, bname string) (map[string]string, error) {
+	c.stats.Tick(&c.stats.Ops)
+	m, err := c.client.GetBlobMetadata(cname, bname)
+	c.stats.TickErr(err)
+	return m, err
+}
+
+func (c *azureBlobClient) GetBlobProperties(cname, bname string) (*storage.BlobProperties, error) {
+	c.stats.Tick(&c.stats.Ops)
+	p, err := c.client.GetBlobProperties(cname, bname)
+	c.stats.TickErr(err)
+	return p, err
+}
+
+func (c *azureBlobClient) GetBlob(cname, bname string) (io.ReadCloser, error) {
+	c.stats.Tick(&c.stats.Ops, &c.stats.GetOps)
+	rdr, err := c.client.GetBlob(cname, bname)
+	c.stats.TickErr(err)
+	return NewCountingReader(rdr, c.stats.TickInBytes), err
+}
+
+func (c *azureBlobClient) GetBlobRange(cname, bname, byterange string, hdrs map[string]string) (io.ReadCloser, error) {
+	c.stats.Tick(&c.stats.Ops, &c.stats.GetRangeOps)
+	rdr, err := c.client.GetBlobRange(cname, bname, byterange, hdrs)
+	c.stats.TickErr(err)
+	return NewCountingReader(rdr, c.stats.TickInBytes), err
+}
+
+func (c *azureBlobClient) CreateBlockBlobFromReader(cname, bname string, size uint64, rdr io.Reader, hdrs map[string]string) error {
+	c.stats.Tick(&c.stats.Ops, &c.stats.CreateOps)
+	rdr = NewCountingReader(rdr, c.stats.TickOutBytes)
+	err := c.client.CreateBlockBlobFromReader(cname, bname, size, rdr, hdrs)
+	c.stats.TickErr(err)
+	return err
+}
+
+func (c *azureBlobClient) SetBlobMetadata(cname, bname string, m, hdrs map[string]string) error {
+	c.stats.Tick(&c.stats.Ops, &c.stats.SetMetadataOps)
+	err := c.client.SetBlobMetadata(cname, bname, m, hdrs)
+	c.stats.TickErr(err)
+	return err
+}
+
+func (c *azureBlobClient) ListBlobs(cname string, params storage.ListBlobsParameters) (storage.BlobListResponse, error) {
+	c.stats.Tick(&c.stats.Ops, &c.stats.ListOps)
+	resp, err := c.client.ListBlobs(cname, params)
+	c.stats.TickErr(err)
+	return resp, err
+}
+
+func (c *azureBlobClient) DeleteBlob(cname, bname string, hdrs map[string]string) error {
+	c.stats.Tick(&c.stats.Ops, &c.stats.DelOps)
+	err := c.client.DeleteBlob(cname, bname, hdrs)
+	c.stats.TickErr(err)
+	return err
 }
