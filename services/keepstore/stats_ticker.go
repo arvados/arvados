@@ -22,6 +22,9 @@ func (s *statsTicker) Tick(counters ...*uint64) {
 	}
 }
 
+// TickErr increments the overall error counter, as well as the
+// ErrorCodes entry for the given errType. If err is nil, TickErr is a
+// no-op.
 func (s *statsTicker) TickErr(err error, errType string) {
 	if err == nil {
 		return
@@ -36,10 +39,12 @@ func (s *statsTicker) TickErr(err error, errType string) {
 	s.lock.Unlock()
 }
 
+// TickInBytes increments the incoming byte counter by n.
 func (s *statsTicker) TickInBytes(n uint64) {
 	atomic.AddUint64(&s.InBytes, n)
 }
 
+// TickOutBytes increments the outgoing byte counter by n.
 func (s *statsTicker) TickOutBytes(n uint64) {
 	atomic.AddUint64(&s.OutBytes, n)
 }
