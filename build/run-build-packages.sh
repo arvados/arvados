@@ -106,7 +106,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six \
-            ciso8601 pycrypto backports.ssl_match_hostname 'llfuse>=1.0' \
+            ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
             cachecontrol 'pathlib2>=2.1.0')
@@ -117,7 +117,7 @@ case "$TARGET" in
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka six \
-            ciso8601 pycrypto backports.ssl_match_hostname 'llfuse>=1.0' \
+            ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             contextlib2 'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro isodate ruamel.ordereddict
             cachecontrol requests 'pathlib2>=2.1.0')
@@ -125,7 +125,7 @@ case "$TARGET" in
         ;;
     ubuntu1404)
         FORMAT=deb
-        PYTHON_BACKPORTS=(pyasn1==0.1.7 pyasn1-modules==0.0.5 'llfuse>=1.0' ciso8601 \
+        PYTHON_BACKPORTS=(pyasn1==0.1.7 pyasn1-modules==0.0.5 llfuse==0.41.1 ciso8601 \
             google-api-python-client==1.4.2 six uritemplate oauth2client==1.5.2 httplib2 \
             rsa 'pycurl<7.21.5' backports.ssl_match_hostname pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
@@ -145,7 +145,7 @@ case "$TARGET" in
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka  \
             ciso8601 pycrypto 'pycurl<7.21.5' \
-            python-daemon==2.1.1 'llfuse>=1.0' 'pbr<1.0' pyyaml contextlib2 \
+            python-daemon==2.1.1 llfuse==0.41.1 'pbr<1.0' pyyaml contextlib2 \
             'rdflib>=4.2.0' shellescape mistune typing avro \
             isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
             ruamel.ordereddict cachecontrol 'pathlib2>=2.1.0')
