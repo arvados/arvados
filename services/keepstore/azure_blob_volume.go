@@ -634,13 +634,15 @@ func (v *AzureBlobVolume) InternalStats() interface{} {
 
 type azureBlobStats struct {
 	statsTicker
-	Ops            uint64
-	GetOps         uint64
-	GetRangeOps    uint64
-	CreateOps      uint64
-	SetMetadataOps uint64
-	DelOps         uint64
-	ListOps        uint64
+	Ops              uint64
+	GetOps           uint64
+	GetRangeOps      uint64
+	GetMetadataOps   uint64
+	GetPropertiesOps uint64
+	CreateOps        uint64
+	SetMetadataOps   uint64
+	DelOps           uint64
+	ListOps          uint64
 }
 
 func (s *azureBlobStats) TickErr(err error) {
@@ -670,14 +672,14 @@ func (c *azureBlobClient) ContainerExists(cname string) (bool, error) {
 }
 
 func (c *azureBlobClient) GetBlobMetadata(cname, bname string) (map[string]string, error) {
-	c.stats.Tick(&c.stats.Ops)
+	c.stats.Tick(&c.stats.Ops, &c.stats.GetMetadataOps)
 	m, err := c.client.GetBlobMetadata(cname, bname)
 	c.stats.TickErr(err)
 	return m, err
 }
 
 func (c *azureBlobClient) GetBlobProperties(cname, bname string) (*storage.BlobProperties, error) {
-	c.stats.Tick(&c.stats.Ops)
+	c.stats.Tick(&c.stats.Ops, &c.stats.GetPropertiesOps)
 	p, err := c.client.GetBlobProperties(cname, bname)
 	c.stats.TickErr(err)
 	return p, err
