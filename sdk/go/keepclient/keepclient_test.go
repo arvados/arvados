@@ -505,6 +505,27 @@ func (s *StandaloneSuite) TestGet404(c *C) {
 	c.Check(r, Equals, nil)
 }
 
+func (s *StandaloneSuite) TestGetEmptyBlock(c *C) {
+	st := Error404Handler{make(chan string, 1)}
+
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
+
+	r, n, url2, err := kc.Get("d41d8cd98f00b204e9800998ecf8427e+0")
+	c.Check(err, IsNil)
+	c.Check(n, Equals, int64(0))
+	c.Check(url2, Equals, "")
+	c.Assert(r, NotNil)
+	buf, err := ioutil.ReadAll(r)
+	c.Check(err, IsNil)
+	c.Check(buf, DeepEquals, []byte{})
+}
+
 func (s *StandaloneSuite) TestGetFail(c *C) {
 	hash := fmt.Sprintf("%x", md5.Sum([]byte("foo")))
 
