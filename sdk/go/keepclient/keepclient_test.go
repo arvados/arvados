@@ -2,7 +2,6 @@ package keepclient
 
 import (
 	"crypto/md5"
-	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
@@ -28,8 +27,6 @@ func Test(t *testing.T) {
 var _ = Suite(&ServerRequiredSuite{})
 var _ = Suite(&StandaloneSuite{})
 
-var no_server = flag.Bool("no-server", false, "Skip 'ServerRequireSuite'")
-
 // Tests that require the Keep server running
 type ServerRequiredSuite struct{}
 
@@ -42,18 +39,11 @@ func pythonDir() string {
 }
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
-	if *no_server {
-		c.Skip("Skipping tests that require server")
-		return
-	}
 	arvadostest.StartAPI()
 	arvadostest.StartKeep(2, false)
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
-	if *no_server {
-		return
-	}
 	arvadostest.StopKeep(2)
 	arvadostest.StopAPI()
 }
