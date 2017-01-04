@@ -221,7 +221,7 @@ do
             exit 1
             ;;
         --skip)
-            skip[$1]=1
+            skip[$1]=1; shift
             ;;
         --only)
             only="$1"; skip[$1]=""; shift
