@@ -469,6 +469,7 @@ class TestSubmit(unittest.TestCase):
             logging.exception("")
 
         stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', "--output-name="+output_name, '--enable-reuse', '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/cwl.input.json']
+        stubs.expect_container_spec["output_name"] = output_name
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
