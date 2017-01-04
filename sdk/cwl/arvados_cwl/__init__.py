@@ -17,7 +17,9 @@ import pkg_resources  # part of setuptools
 from cwltool.errors import WorkflowException
 import cwltool.main
 import cwltool.workflow
+import cwltool.process
 import schema_salad
+from schema_salad.sourceline import SourceLine
 
 import arvados
 import arvados.config
@@ -44,6 +46,9 @@ logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
 logger.setLevel(logging.INFO)
 
+arvados.log_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(name)s %(levelname)s: %(message)s',
+        '%Y-%m-%d %H:%M:%S'))
 
 class ArvCwlRunner(object):
     """Execute a CWL tool or workflow, submit work (using either jobs or
@@ -125,7 +130,7 @@ class ArvCwlRunner(object):
                     uuid = event["object_uuid"]
                     with self.lock:
                         j = self.processes[uuid]
-                        logger.info("Job %s (%s) is Running", j.name, uuid)
+                        logger.info("%s %s is Running", self.label(j), uuid)
                         j.running = True
                         j.update_pipeline_component(event["properties"]["new_attributes"])
                 elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled", "Final"):
@@ -133,13 +138,15 @@ class ArvCwlRunner(object):
                     try:
                         self.cond.acquire()
                         j = self.processes[uuid]
-                        txt = self.work_api[0].upper() + self.work_api[1:-1]
-                        logger.info("%s %s (%s) is %s", txt, j.name, uuid, event["properties"]["new_attributes"]["state"])
+                        logger.info("%s %s is %s", self.label(j), uuid, event["properties"]["new_attributes"]["state"])
                         with Perf(metrics, "done %s" % j.name):
                             j.done(event["properties"]["new_attributes"])
                         self.cond.notify()
                     finally:
                         self.cond.release()
+
+    def label(self, obj):
+        return "[%s %s]" % (self.work_api[0:-1], obj.name)
 
     def poll_states(self):
         """Poll status of jobs or containers listed in the processes dict.
@@ -191,15 +198,25 @@ class ArvCwlRunner(object):
     def add_uploaded(self, src, pair):
         self.uploaded[src] = pair
 
-    def check_writable(self, obj):
+    def check_features(self, obj):
         if isinstance(obj, dict):
+            if obj.get("class") == "InitialWorkDirRequirement":
+                if self.work_api == "containers":
+                    raise UnsupportedRequirement("InitialWorkDirRequirement not supported with --api=containers")
             if obj.get("writable"):
-                raise UnsupportedRequirement("InitialWorkDir feature 'writable: true' not supported")
+                raise SourceLine(obj, "writable", UnsupportedRequirement).makeError("InitialWorkDir feature 'writable: true' not supported")
+            if obj.get("class") == "CommandLineTool":
+                if self.work_api == "containers":
+                    if obj.get("stdin"):
+                        raise SourceLine(obj, "stdin", UnsupportedRequirement).makeError("Stdin redirection currently not suppported with --api=containers")
+                    if obj.get("stderr"):
+                        raise SourceLine(obj, "stderr", UnsupportedRequirement).makeError("Stderr redirection currently not suppported with --api=containers")
             for v in obj.itervalues():
-                self.check_writable(v)
-        if isinstance(obj, list):
-            for v in obj:
-                self.check_writable(v)
+                self.check_features(v)
+        elif isinstance(obj, list):
+            for i,v in enumerate(obj):
+                with SourceLine(obj, i, UnsupportedRequirement):
+                    self.check_features(v)
 
     def make_output_collection(self, name, tagsString, outputObj):
         outputObj = copy.deepcopy(outputObj)
@@ -308,7 +325,7 @@ class ArvCwlRunner(object):
     def arv_executor(self, tool, job_order, **kwargs):
         self.debug = kwargs.get("debug")
 
-        tool.visit(self.check_writable)
+        tool.visit(self.check_features)
 
         self.project_uuid = kwargs.get("project_uuid")
         self.pipeline = None
@@ -542,6 +559,12 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     exgroup.add_argument("--no-wait", action="store_false", help="Submit workflow runner job and exit.",
                         default=True, dest="wait")
 
+    exgroup = parser.add_mutually_exclusive_group()
+    exgroup.add_argument("--log-timestamps", action="store_true", help="Prefix logging lines with timestamp",
+                        default=True, dest="log_timestamps")
+    exgroup.add_argument("--no-log-timestamps", action="store_false", help="No timestamp on logging lines",
+                        default=True, dest="log_timestamps")
+
     parser.add_argument("--api", type=str,
                         default=None, dest="work_api",
                         help="Select work submission API, one of 'jobs' or 'containers'. Default is 'jobs' if that API is available, otherwise 'containers'.")
@@ -626,9 +649,17 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
         metrics.setLevel(logging.DEBUG)
         logging.getLogger("cwltool.metrics").setLevel(logging.DEBUG)
 
+    if arvargs.log_timestamps:
+        arvados.log_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(name)s %(levelname)s: %(message)s',
+            '%Y-%m-%d %H:%M:%S'))
+    else:
+        arvados.log_handler.setFormatter(logging.Formatter('%(name)s %(levelname)s: %(message)s'))
+
     arvargs.conformance_test = None
     arvargs.use_container = True
     arvargs.relax_path_checks = True
+    arvargs.validate = None
 
     return cwltool.main.main(args=arvargs,
                              stdout=stdout,
@@ -643,4 +674,5 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
                              fetcher_constructor=partial(CollectionFetcher,
                                                          api_client=api_client,
                                                          keep_client=keep_client),
-                             resolver=partial(collectionResolver, api_client))
+                             resolver=partial(collectionResolver, api_client),
+                             logger_handler=arvados.log_handler)

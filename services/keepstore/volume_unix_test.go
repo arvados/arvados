@@ -323,14 +323,42 @@ func TestUnixVolumeCompare(t *testing.T) {
 	}
 }
 
-// TODO(twp): show that the underlying Read/Write operations executed
-// serially and not concurrently. The easiest way to do this is
-// probably to activate verbose or debug logging, capture log output
-// and examine it to confirm that Reads and Writes did not overlap.
-//
-// TODO(twp): a proper test of I/O serialization requires that a
-// second request start while the first one is still underway.
-// Guaranteeing that the test behaves this way requires some tricky
-// synchronization and mocking.  For now we'll just launch a bunch of
-// requests simultaenously in goroutines and demonstrate that they
-// return accurate results.
+func TestUnixVolumeContextCancelPut(t *testing.T) {
+	v := NewTestableUnixVolume(t, true, false)
+	defer v.Teardown()
+	v.locker.Lock()
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+		time.Sleep(50 * time.Millisecond)
+		v.locker.Unlock()
+	}()
+	err := v.Put(ctx, TestHash, TestBlock)
+	if err != context.Canceled {
+		t.Errorf("Put() returned %s -- expected short read / canceled", err)
+	}
+}
+
+func TestUnixVolumeContextCancelGet(t *testing.T) {
+	v := NewTestableUnixVolume(t, false, false)
+	defer v.Teardown()
+	bpath := v.blockPath(TestHash)
+	v.PutRaw(TestHash, TestBlock)
+	os.Remove(bpath)
+	err := syscall.Mkfifo(bpath, 0600)
+	if err != nil {
+		t.Fatalf("Mkfifo %s: %s", bpath, err)
+	}
+	defer os.Remove(bpath)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+	}()
+	buf := make([]byte, len(TestBlock))
+	n, err := v.Get(ctx, TestHash, buf)
+	if n == len(TestBlock) || err != context.Canceled {
+		t.Errorf("Get() returned %d, %s -- expected short read / canceled", n, err)
+	}
+}

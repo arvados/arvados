@@ -6,6 +6,8 @@ import os
 import arvados.commands.run
 import arvados.collection
 
+from schema_salad.sourceline import SourceLine
+
 from cwltool.pathmapper import PathMapper, MapperEnt, abspath, adjustFileObjs, adjustDirObjs
 from cwltool.workflow import WorkflowException
 
@@ -38,19 +40,20 @@ class ArvPathMapper(PathMapper):
                 # mount.
                 ab = abspath(src, self.input_basedir)
                 st = arvados.commands.run.statfile("", ab, fnPattern="keep:%s/%s")
-                if isinstance(st, arvados.commands.run.UploadFile):
-                    uploadfiles.add((src, ab, st))
-                elif isinstance(st, arvados.commands.run.ArvFile):
-                    self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % st.fn[5:], "File")
-                elif src.startswith("_:"):
-                    if "contents" in srcobj:
-                        pass
+                with SourceLine(srcobj, "location", WorkflowException):
+                    if isinstance(st, arvados.commands.run.UploadFile):
+                        uploadfiles.add((src, ab, st))
+                    elif isinstance(st, arvados.commands.run.ArvFile):
+                        self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % st.fn[5:], "File")
+                    elif src.startswith("_:"):
+                        if "contents" in srcobj:
+                            pass
+                        else:
+                            raise WorkflowException("File literal '%s' is missing contents" % src)
+                    elif src.startswith("arvwf:"):
+                        self._pathmap[src] = MapperEnt(src, src, "File")
                     else:
-                        raise WorkflowException("File literal '%s' is missing contents" % src)
-                elif src.startswith("arvwf:"):
-                    self._pathmap[src] = MapperEnt(src, src, "File")
-                else:
-                    raise WorkflowException("Input file path '%s' is invalid" % st)
+                        raise WorkflowException("Input file path '%s' is invalid" % st)
             if "secondaryFiles" in srcobj:
                 for l in srcobj["secondaryFiles"]:
                     self.visit(l, uploadfiles)
@@ -76,7 +79,7 @@ class ArvPathMapper(PathMapper):
             with c.open(path + "/" + obj["basename"], "w") as f:
                 f.write(obj["contents"].encode("utf-8"))
         else:
-            raise WorkflowException("Don't know what to do with '%s'" % obj["location"])
+            raise SourceLine(obj, "location", WorkflowException).makeError("Don't know what to do with '%s'" % obj["location"])
 
     def setup(self, referenced_files, basedir):
         # type: (List[Any], unicode) -> None

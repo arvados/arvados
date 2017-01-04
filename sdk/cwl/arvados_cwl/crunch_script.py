@@ -26,6 +26,9 @@ from cwltool.errors import WorkflowException
 logger = logging.getLogger('arvados.cwl-runner')
 
 def run():
+    # Timestamps are added by crunch-job, so don't print redundant timestamps.
+    arvados.log_handler.setFormatter(logging.Formatter('%(name)s %(levelname)s: %(message)s'))
+
     # Print package versions
     logger.info(arvados_cwl.versionstring())
 
@@ -36,6 +39,7 @@ def run():
     runner = None
     try:
         job_order_object = arvados.current_job()['script_parameters']
+        toolpath = "file://%s/%s" % (os.environ['TASK_KEEPMOUNT'], job_order_object.pop("cwl:tool"))
 
         pdh_path = re.compile(r'^[0-9a-f]{32}\+\d+(/.+)?$')
 
@@ -47,8 +51,6 @@ def run():
 
         def keeppathObj(v):
             v["location"] = keeppath(v["location"])
-
-        job_order_object["cwl:tool"] = "file://%s/%s" % (os.environ['TASK_KEEPMOUNT'], job_order_object["cwl:tool"])
 
         for k,v in job_order_object.items():
             if isinstance(v, basestring) and arvados.util.keep_locator_pattern.match(v):
@@ -80,13 +82,13 @@ def run():
         runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()),
                                           output_name=output_name, output_tags=output_tags)
 
-        t = load_tool(job_order_object, runner.arv_make_tool)
+        t = load_tool(toolpath, runner.arv_make_tool)
 
         args = argparse.Namespace()
         args.project_uuid = arvados.current_job()["owner_uuid"]
         args.enable_reuse = enable_reuse
         args.submit = False
-        args.debug = True
+        args.debug = False
         args.quiet = False
         args.ignore_docker_for_reuse = False
         args.basedir = os.getcwd()

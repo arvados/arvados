@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/base64"
+	"encoding/json"
 	"encoding/xml"
 	"flag"
 	"fmt"
@@ -23,12 +24,16 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/curoverse/azure-sdk-for-go/storage"
+	check "gopkg.in/check.v1"
 )
 
 const (
-	// The same fake credentials used by Microsoft's Azure emulator
-	emulatorAccountName = "devstoreaccount1"
-	emulatorAccountKey  = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
+	// This cannot be the fake account name "devstoreaccount1"
+	// used by Microsoft's Azure emulator: the Azure SDK
+	// recognizes that magic string and changes its behavior to
+	// cater to the Azure SDK's own test suite.
+	fakeAccountName = "fakeAccountName"
+	fakeAccountKey  = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
 )
 
 var azureTestContainer string
@@ -350,7 +355,7 @@ func NewTestableAzureBlobVolume(t TB, readonly bool, replication int) *TestableA
 		// Connect to stub instead of real Azure storage service
 		stubURLBase := strings.Split(azStub.URL, "://")[1]
 		var err error
-		if azClient, err = storage.NewClient(emulatorAccountName, emulatorAccountKey, stubURLBase, storage.DefaultAPIVersion, false); err != nil {
+		if azClient, err = storage.NewClient(fakeAccountName, fakeAccountKey, stubURLBase, storage.DefaultAPIVersion, false); err != nil {
 			t.Fatal(err)
 		}
 		container = "fakecontainername"
@@ -366,12 +371,13 @@ func NewTestableAzureBlobVolume(t TB, readonly bool, replication int) *TestableA
 		}
 	}
 
+	bs := azClient.GetBlobService()
 	v := &AzureBlobVolume{
 		ContainerName:    container,
 		ReadOnly:         readonly,
 		AzureReplication: replication,
 		azClient:         azClient,
-		bsClient:         azClient.GetBlobService(),
+		bsClient:         &azureBlobClient{client: &bs},
 	}
 
 	return &TestableAzureBlobVolume{
@@ -380,6 +386,29 @@ func NewTestableAzureBlobVolume(t TB, readonly bool, replication int) *TestableA
 		azStub:          azStub,
 		t:               t,
 	}
+}
+
+var _ = check.Suite(&StubbedAzureBlobSuite{})
+
+type StubbedAzureBlobSuite struct {
+	volume            *TestableAzureBlobVolume
+	origHTTPTransport http.RoundTripper
+}
+
+func (s *StubbedAzureBlobSuite) SetUpTest(c *check.C) {
+	s.origHTTPTransport = http.DefaultTransport
+	http.DefaultTransport = &http.Transport{
+		Dial: (&azStubDialer{}).Dial,
+	}
+	azureWriteRaceInterval = time.Millisecond
+	azureWriteRacePollTime = time.Nanosecond
+
+	s.volume = NewTestableAzureBlobVolume(c, false, 3)
+}
+
+func (s *StubbedAzureBlobSuite) TearDownTest(c *check.C) {
+	s.volume.Teardown()
+	http.DefaultTransport = s.origHTTPTransport
 }
 
 func TestAzureBlobVolumeWithGeneric(t *testing.T) {
@@ -466,10 +495,10 @@ func TestAzureBlobVolumeRangeFenceposts(t *testing.T) {
 		}
 		gotHash := fmt.Sprintf("%x", md5.Sum(gotData))
 		if gotLen != size {
-			t.Error("length mismatch: got %d != %d", gotLen, size)
+			t.Errorf("length mismatch: got %d != %d", gotLen, size)
 		}
 		if gotHash != hash {
-			t.Error("hash mismatch: got %s != %s", gotHash, hash)
+			t.Errorf("hash mismatch: got %s != %s", gotHash, hash)
 		}
 	}
 }
@@ -638,6 +667,36 @@ func testAzureBlobVolumeContextCancel(t *testing.T, testFunc func(context.Contex
 	go func() {
 		<-releaseHandler
 	}()
+}
+
+func (s *StubbedAzureBlobSuite) TestStats(c *check.C) {
+	stats := func() string {
+		buf, err := json.Marshal(s.volume.InternalStats())
+		c.Check(err, check.IsNil)
+		return string(buf)
+	}
+
+	c.Check(stats(), check.Matches, `.*"Ops":0,.*`)
+	c.Check(stats(), check.Matches, `.*"Errors":0,.*`)
+
+	loc := "acbd18db4cc2f85cedef654fccc4a4d8"
+	_, err := s.volume.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.NotNil)
+	c.Check(stats(), check.Matches, `.*"Ops":[^0],.*`)
+	c.Check(stats(), check.Matches, `.*"Errors":[^0],.*`)
+	c.Check(stats(), check.Matches, `.*"storage\.AzureStorageServiceError 404 \(404 Not Found\)":[^0].*`)
+	c.Check(stats(), check.Matches, `.*"InBytes":0,.*`)
+
+	err = s.volume.Put(context.Background(), loc, []byte("foo"))
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"OutBytes":3,.*`)
+	c.Check(stats(), check.Matches, `.*"CreateOps":1,.*`)
+
+	_, err = s.volume.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.IsNil)
+	_, err = s.volume.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"InBytes":6,.*`)
 }
 
 func (v *TestableAzureBlobVolume) PutRaw(locator string, data []byte) {

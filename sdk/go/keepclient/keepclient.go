@@ -167,6 +167,10 @@ func (kc *KeepClient) PutR(r io.Reader) (locator string, replicas int, err error
 }
 
 func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, int64, string, error) {
+	if strings.HasPrefix(locator, "d41d8cd98f00b204e9800998ecf8427e+0") {
+		return ioutil.NopCloser(bytes.NewReader(nil)), 0, "", nil
+	}
+
 	var errs []string
 
 	tries_remaining := 1 + kc.Retries

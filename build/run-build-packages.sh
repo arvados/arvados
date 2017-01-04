@@ -16,7 +16,7 @@ Options:
 --debug
     Output debug information (default: false)
 --target <target>
-    Distribution to build packages for (default: debian7)
+    Distribution to build packages for (default: debian8)
 --only-build <package>
     Build only a specific package (or $ONLY_BUILD from environment)
 --command
@@ -29,7 +29,7 @@ EOF
 
 EXITCODE=0
 DEBUG=${ARVADOS_DEBUG:-0}
-TARGET=debian7
+TARGET=debian8
 COMMAND=
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
@@ -101,37 +101,26 @@ PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/dist-packages
 ## End Debian Python defaults.
 
 case "$TARGET" in
-    debian7)
-        FORMAT=deb
-        PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
-            oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
-            rsa uritemplate httplib2 ws4py pykka six  \
-            ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
-            'pycurl<7.21.5' contextlib2 pyyaml 'rdflib>=4.2.0' \
-            shellescape mistune typing avro ruamel.ordereddict
-            cachecontrol requests)
-        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
-        ;;
     debian8)
         FORMAT=deb
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
-            rsa uritemplate httplib2 ws4py pykka six  \
+            rsa uritemplate httplib2 ws4py pykka six \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
-            cachecontrol)
+            cachecontrol 'pathlib2>=2.1.0')
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         ;;
     ubuntu1204)
         FORMAT=deb
         PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
-            rsa uritemplate httplib2 ws4py pykka six  \
+            rsa uritemplate httplib2 ws4py pykka six \
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             contextlib2 'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro isodate ruamel.ordereddict
-            cachecontrol requests)
+            cachecontrol requests 'pathlib2>=2.1.0')
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         ;;
     ubuntu1404)
@@ -140,29 +129,8 @@ case "$TARGET" in
             google-api-python-client==1.4.2 six uritemplate oauth2client==1.5.2 httplib2 \
             rsa 'pycurl<7.21.5' backports.ssl_match_hostname pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
-            cachecontrol)
+            cachecontrol 'pathlib2>=2.1.0')
         PYTHON3_BACKPORTS=(docker-py==1.7.2 requests websocket-client==0.37.0)
-        ;;
-    centos6)
-        FORMAT=rpm
-        PYTHON2_PACKAGE=$(rpm -qf "$(which python$PYTHON2_VERSION)" --queryformat '%{NAME}\n')
-        PYTHON2_PKG_PREFIX=$PYTHON2_PACKAGE
-        PYTHON2_PREFIX=/opt/rh/python27/root/usr
-        PYTHON2_INSTALL_LIB=lib/python$PYTHON2_VERSION/site-packages
-        PYTHON3_PACKAGE=$(rpm -qf "$(which python$PYTHON3_VERSION)" --queryformat '%{NAME}\n')
-        PYTHON3_PKG_PREFIX=$PYTHON3_PACKAGE
-        PYTHON3_PREFIX=/opt/rh/python33/root/usr
-        PYTHON3_INSTALL_LIB=lib/python$PYTHON3_VERSION/site-packages
-        PYTHON_BACKPORTS=(python-gflags==2.0 google-api-python-client==1.4.2 \
-            oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
-            rsa uritemplate httplib2 ws4py pykka six  \
-            ciso8601 pycrypto backports.ssl_match_hostname 'pycurl<7.21.5' \
-            python-daemon llfuse==0.41.1 'pbr<1.0' pyyaml \
-            'rdflib>=4.2.0' shellescape mistune typing avro requests \
-            isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
-            ruamel.ordereddict cachecontrol)
-        PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
-        export PYCURL_SSL_LIBRARY=nss
         ;;
     centos7)
         FORMAT=rpm
@@ -177,10 +145,10 @@ case "$TARGET" in
             oauth2client==1.5.2 pyasn1==0.1.7 pyasn1-modules==0.0.5 \
             rsa uritemplate httplib2 ws4py pykka  \
             ciso8601 pycrypto 'pycurl<7.21.5' \
-            python-daemon==2.1.1 llfuse==0.41.1 'pbr<1.0' pyyaml \
+            python-daemon==2.1.1 llfuse==0.41.1 'pbr<1.0' pyyaml contextlib2 \
             'rdflib>=4.2.0' shellescape mistune typing avro \
             isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
-            ruamel.ordereddict cachecontrol)
+            ruamel.ordereddict cachecontrol 'pathlib2>=2.1.0')
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         export PYCURL_SSL_LIBRARY=nss
         ;;
@@ -375,38 +343,6 @@ if [[ $TARGET =~ ubuntu1204 ]]; then
         "$WORKSPACE/packages/$TARGET/libfuse-dev_2.9.2-5_amd64.deb"
     apt-get -y --no-install-recommends -f install
     rm -rf $LIBFUSE_DIR
-elif [[ $TARGET =~ centos6 ]]; then
-    # port fuse 2.9.2 to centos 6
-    # install tools to build rpm from source
-    yum install -y rpm-build redhat-rpm-config
-    LIBFUSE_DIR=$(mktemp -d)
-    (
-        cd "$LIBFUSE_DIR"
-        # download fuse 2.9.2 centos 7 source rpm
-        file="fuse-2.9.2-6.el7.src.rpm" && curl -L -o "${file}" "http://vault.centos.org/7.2.1511/os/Source/SPackages/${file}"
-        (
-            # modify source rpm spec to remove conflict on filesystem version
-            mkdir -p /root/rpmbuild/SOURCES
-            cd /root/rpmbuild/SOURCES
-            rpm2cpio ${LIBFUSE_DIR}/fuse-2.9.2-6.el7.src.rpm | cpio -i
-            perl -pi -e 's/Conflicts:\s*filesystem.*//g' fuse.spec
-        )
-        # build rpms from source
-        rpmbuild -bb /root/rpmbuild/SOURCES/fuse.spec
-        rm -f fuse-2.9.2-6.el7.src.rpm
-        # move built RPMs to LIBFUSE_DIR
-        mv "/root/rpmbuild/RPMS/x86_64/fuse-2.9.2-6.el6.x86_64.rpm" ${LIBFUSE_DIR}/
-        mv "/root/rpmbuild/RPMS/x86_64/fuse-libs-2.9.2-6.el6.x86_64.rpm" ${LIBFUSE_DIR}/
-        mv "/root/rpmbuild/RPMS/x86_64/fuse-devel-2.9.2-6.el6.x86_64.rpm" ${LIBFUSE_DIR}/
-        rm -rf /root/rpmbuild
-    )
-    fpm_build "$LIBFUSE_DIR/fuse-libs-2.9.2-6.el6.x86_64.rpm" fuse-libs "Centos Developers" rpm "2.9.2" --iteration 5
-    fpm_build "$LIBFUSE_DIR/fuse-2.9.2-6.el6.x86_64.rpm" fuse "Centos Developers" rpm "2.9.2" --iteration 5 --no-auto-depends
-    fpm_build "$LIBFUSE_DIR/fuse-devel-2.9.2-6.el6.x86_64.rpm" fuse-devel "Centos Developers" rpm "2.9.2" --iteration 5 --no-auto-depends
-    yum install -y \
-        "$WORKSPACE/packages/$TARGET/fuse-libs-2.9.2-5.x86_64.rpm" \
-        "$WORKSPACE/packages/$TARGET/fuse-2.9.2-5.x86_64.rpm" \
-        "$WORKSPACE/packages/$TARGET/fuse-devel-2.9.2-5.x86_64.rpm"
 fi
 
 # Go binaries
@@ -479,7 +415,7 @@ fpm_build schema_salad "" "" python $saladversion --depends "${PYTHON2_PKG_PREFI
 
 # And schema_salad now depends on ruamel-yaml, which apparently has a braindead setup.py that requires special arguments to build (otherwise, it aborts with 'error: you have to install with "pip install ."'). Sigh.
 # Ward, 2016-05-26
-fpm_build ruamel.yaml "" "" python 0.12.4 --python-setup-py-arguments "--single-version-externally-managed"
+fpm_build ruamel.yaml "" "" python 0.13.7 --python-setup-py-arguments "--single-version-externally-managed"
 
 # Dependency of cwltool.  Fpm doesn't produce a package with the correct version
 # number unless we build it explicitly

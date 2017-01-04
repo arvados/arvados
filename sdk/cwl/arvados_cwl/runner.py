@@ -6,6 +6,8 @@ import json
 import re
 from cStringIO import StringIO
 
+from schema_salad.sourceline import SourceLine
+
 import cwltool.draft2tool
 from cwltool.draft2tool import CommandLineTool
 import cwltool.workflow
@@ -21,6 +23,7 @@ import ruamel.yaml as yaml
 from .arvdocker import arv_docker_get_image
 from .pathmapper import ArvPathMapper
 from ._version import __version__
+from . import done
 
 logger = logging.getLogger('arvados.cwl-runner')
 
@@ -112,7 +115,8 @@ def upload_docker(arvrunner, tool):
         if docker_req:
             if docker_req.get("dockerOutputDirectory"):
                 # TODO: can be supported by containers API, but not jobs API.
-                raise UnsupportedRequirement("Option 'dockerOutputDirectory' of DockerRequirement not supported.")
+                raise SourceLine(docker_req, "dockerOutputDirectory", UnsupportedRequirement).makeError(
+                    "Option 'dockerOutputDirectory' of DockerRequirement not supported.")
             arv_docker_get_image(arvrunner.api, docker_req, True, arvrunner.project_uuid)
     elif isinstance(tool, cwltool.workflow.Workflow):
         for s in tool.steps:
@@ -200,39 +204,48 @@ class Runner(object):
         return workflowmapper
 
     def done(self, record):
-        if record["state"] == "Complete":
-            if record.get("exit_code") is not None:
-                if record["exit_code"] == 33:
-                    processStatus = "UnsupportedRequirement"
-                elif record["exit_code"] == 0:
-                    processStatus = "success"
-                else:
-                    processStatus = "permanentFail"
-            else:
-                processStatus = "success"
-        else:
-            processStatus = "permanentFail"
-
-        outputs = {}
         try:
-            try:
-                self.final_output = record["output"]
-                outc = arvados.collection.CollectionReader(self.final_output,
+            if record["state"] == "Complete":
+                if record.get("exit_code") is not None:
+                    if record["exit_code"] == 33:
+                        processStatus = "UnsupportedRequirement"
+                    elif record["exit_code"] == 0:
+                        processStatus = "success"
+                    else:
+                        processStatus = "permanentFail"
+                else:
+                    processStatus = "success"
+            else:
+                processStatus = "permanentFail"
+
+            outputs = {}
+
+            if processStatus == "permanentFail":
+                logc = arvados.collection.CollectionReader(record["log"],
                                                            api_client=self.arvrunner.api,
                                                            keep_client=self.arvrunner.keep_client,
                                                            num_retries=self.arvrunner.num_retries)
-                if "cwl.output.json" in outc:
-                    with outc.open("cwl.output.json") as f:
-                        if f.size() > 0:
-                            outputs = json.load(f)
-                def keepify(fileobj):
-                    path = fileobj["location"]
-                    if not path.startswith("keep:"):
-                        fileobj["location"] = "keep:%s/%s" % (record["output"], path)
-                adjustFileObjs(outputs, keepify)
-                adjustDirObjs(outputs, keepify)
-            except Exception as e:
-                logger.exception("While getting final output object: %s", e)
+                done.logtail(logc, logger, "%s error log:" % self.arvrunner.label(self), maxlen=40)
+
+            self.final_output = record["output"]
+            outc = arvados.collection.CollectionReader(self.final_output,
+                                                       api_client=self.arvrunner.api,
+                                                       keep_client=self.arvrunner.keep_client,
+                                                       num_retries=self.arvrunner.num_retries)
+            if "cwl.output.json" in outc:
+                with outc.open("cwl.output.json") as f:
+                    if f.size() > 0:
+                        outputs = json.load(f)
+            def keepify(fileobj):
+                path = fileobj["location"]
+                if not path.startswith("keep:"):
+                    fileobj["location"] = "keep:%s/%s" % (record["output"], path)
+            adjustFileObjs(outputs, keepify)
+            adjustDirObjs(outputs, keepify)
+        except Exception as e:
+            logger.exception("[%s] While getting final output object: %s", self.name, e)
+            self.arvrunner.output_callback({}, "permanentFail")
+        else:
             self.arvrunner.output_callback(outputs, processStatus)
         finally:
             if record["uuid"] in self.arvrunner.processes:

@@ -471,6 +471,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   test "Retry on container cancelled" do
     set_user_from_auth :active
     cr = create_minimal_req!(priority: 1, state: "Committed", container_count_max: 2)
+    cr2 = create_minimal_req!(priority: 1, state: "Committed", container_count_max: 2, command: ["echo", "baz"])
     prev_container_uuid = cr.container_uuid
 
     c = act_as_system_user do
@@ -481,8 +482,10 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
 
     cr.reload
+    cr2.reload
     assert_equal "Committed", cr.state
     assert_equal prev_container_uuid, cr.container_uuid
+    assert_not_equal cr2.container_uuid, cr.container_uuid
     prev_container_uuid = cr.container_uuid
 
     act_as_system_user do
@@ -490,8 +493,10 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
 
     cr.reload
+    cr2.reload
     assert_equal "Committed", cr.state
     assert_not_equal prev_container_uuid, cr.container_uuid
+    assert_not_equal cr2.container_uuid, cr.container_uuid
     prev_container_uuid = cr.container_uuid
 
     c = act_as_system_user do
@@ -501,8 +506,10 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
 
     cr.reload
+    cr2.reload
     assert_equal "Final", cr.state
     assert_equal prev_container_uuid, cr.container_uuid
+    assert_not_equal cr2.container_uuid, cr.container_uuid
   end
 
   test "Set up output collection on finalized container request" do

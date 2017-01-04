@@ -7,6 +7,7 @@ import os
 import functools
 import cwltool.process
 from schema_salad.ref_resolver import Loader
+from schema_salad.sourceline import cmap
 
 from .matcher import JsonDiffMatcher
 
@@ -34,12 +35,12 @@ class TestContainer(unittest.TestCase):
 
             document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
-            tool = {
+            tool = cmap({
                 "inputs": [],
                 "outputs": [],
                 "baseCommand": "ls",
                 "arguments": [{"valueFrom": "$(runtime.outdir)"}]
-            }
+            })
             make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
             arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names,
                                                      basedir="", make_fs_access=make_fs_access, loader=Loader({}))
@@ -87,7 +88,7 @@ class TestContainer(unittest.TestCase):
         runner.api.collections().get().execute.return_value = {
             "portable_data_hash": "99999999999999999999999999999993+99"}
 
-        tool = {
+        tool = cmap({
             "inputs": [],
             "outputs": [],
             "hints": [{
@@ -105,7 +106,7 @@ class TestContainer(unittest.TestCase):
                 "partition": "blurb"
             }],
             "baseCommand": "ls"
-        }
+        })
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers",
                                                  avsc_names=avsc_names, make_fs_access=make_fs_access,

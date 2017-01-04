@@ -169,8 +169,10 @@ CREATE TABLE collections (
     name character varying(255),
     description character varying(524288),
     properties text,
-    expires_at timestamp without time zone,
-    file_names character varying(8192)
+    delete_at timestamp without time zone,
+    file_names character varying(8192),
+    trash_at timestamp without time zone,
+    is_trashed boolean DEFAULT false NOT NULL
 );
 
 
@@ -1497,13 +1499,6 @@ CREATE INDEX authorized_keys_search_index ON authorized_keys USING btree (uuid, 
 
 
 --
--- Name: collection_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE UNIQUE INDEX collection_owner_uuid_name_unique ON collections USING btree (owner_uuid, name) WHERE (expires_at IS NULL);
-
-
---
 -- Name: collections_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -1658,6 +1653,20 @@ CREATE INDEX index_collections_on_created_at ON collections USING btree (created
 
 
 --
+-- Name: index_collections_on_delete_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_collections_on_delete_at ON collections USING btree (delete_at);
+
+
+--
+-- Name: index_collections_on_is_trashed; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_collections_on_is_trashed ON collections USING btree (is_trashed);
+
+
+--
 -- Name: index_collections_on_modified_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -1669,6 +1678,20 @@ CREATE INDEX index_collections_on_modified_at ON collections USING btree (modifi
 --
 
 CREATE INDEX index_collections_on_owner_uuid ON collections USING btree (owner_uuid);
+
+
+--
+-- Name: index_collections_on_owner_uuid_and_name; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX index_collections_on_owner_uuid_and_name ON collections USING btree (owner_uuid, name) WHERE (is_trashed = false);
+
+
+--
+-- Name: index_collections_on_trash_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_collections_on_trash_at ON collections USING btree (trash_at);
 
 
 --
@@ -2709,6 +2732,9 @@ INSERT INTO schema_migrations (version) VALUES ('20161115174218');
 
 INSERT INTO schema_migrations (version) VALUES ('20161213172944');
 
+INSERT INTO schema_migrations (version) VALUES ('20161222153434');
+
 INSERT INTO schema_migrations (version) VALUES ('20161223090712');
 
 INSERT INTO schema_migrations (version) VALUES ('20170102153111');
+

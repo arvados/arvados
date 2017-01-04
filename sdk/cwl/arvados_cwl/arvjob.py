@@ -88,7 +88,8 @@ class ArvadosJob(object):
             (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
             if docker_req and kwargs.get("use_container") is not False:
                 if docker_req.get("dockerOutputDirectory"):
-                    raise UnsupportedRequirement("Option 'dockerOutputDirectory' of DockerRequirement not supported.")
+                    raise SourceLine(docker_req, "dockerOutputDirectory", UnsupportedRequirement).makeError(
+                        "Option 'dockerOutputDirectory' of DockerRequirement not supported.")
                 runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvrunner.project_uuid)
             else:
                 runtime_constraints["docker_image"] = arvados_jobs_image(self.arvrunner)
@@ -135,13 +136,13 @@ class ArvadosJob(object):
 
             self.update_pipeline_component(response)
 
-            logger.info("Job %s (%s) is %s", self.name, response["uuid"], response["state"])
+            logger.info("%s %s is %s", self.arvrunner.label(self), response["uuid"], response["state"])
 
             if response["state"] in ("Complete", "Failed", "Cancelled"):
                 with Perf(metrics, "done %s" % self.name):
                     self.done(response)
         except Exception as e:
-            logger.exception("Job %s error" % (self.name))
+            logger.exception("%s error" % (self.arvrunner.label(self)))
             self.output_callback({}, "permanentFail")
 
     def update_pipeline_component(self, record):
@@ -202,11 +203,15 @@ class ArvadosJob(object):
                             if g:
                                 dirs[g.group(1)] = g.group(2)
 
+                    if processStatus == "permanentFail":
+                        done.logtail(logc, logger, "%s error log:" % self.arvrunner.label(self))
+
                     with Perf(metrics, "output collection %s" % self.name):
                         outputs = done.done(self, record, dirs["tmpdir"],
                                             dirs["outdir"], dirs["keep"])
             except WorkflowException as e:
-                logger.error("Error while collecting output for job %s:\n%s", self.name, e, exc_info=(e if self.arvrunner.debug else False))
+                logger.error("%s unable to collect output from %s:\n%s",
+                             self.arvrunner.label(self), record["output"], e, exc_info=(e if self.arvrunner.debug else False))
                 processStatus = "permanentFail"
             except Exception as e:
                 logger.exception("Got unknown exception while collecting output for job %s:", self.name)
@@ -221,8 +226,8 @@ class ArvadosJob(object):
 
             self.output_callback(outputs, processStatus)
         finally:
-            del self.arvrunner.processes[record["uuid"]]
-
+            if record["uuid"] in self.arvrunner.processes:
+                del self.arvrunner.processes[record["uuid"]]
 
 class RunnerJob(Runner):
     """Submit and manage a Crunch job that runs crunch_scripts/cwl-runner."""

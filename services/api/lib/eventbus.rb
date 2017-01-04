@@ -316,6 +316,7 @@ class EventBus
         @mtx.synchronize do
           @connection_count -= 1
         end
+        ActiveRecord::Base.connection.close
       end
     end
 
