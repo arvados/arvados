@@ -74,7 +74,7 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
 
   [
     [:queued, :lock, :success, 'Locked'],
-    [:queued, :unlock, 422, 'Queued'],
+    [:queued, :unlock, :success, 'Queued'],
     [:locked, :lock, 422, 'Locked'],
     [:running, :lock, 422, 'Running'],
     [:running, :unlock, 422, 'Running'],

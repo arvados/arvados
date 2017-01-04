@@ -147,9 +147,7 @@ class Container < ArvadosModel
 
   def unlock
     with_lock do
-      if self.state == Queued
-        raise InvalidStateTransitionError
-      end
+      return if self.state == Queued
       self.state = Queued
       self.save!
     end

@@ -374,6 +374,8 @@ class ContainerTest < ActiveSupport::TestCase
     refute c.locked_by_uuid
     refute c.auth_uuid
 
+    assert_nothing_raised {c.unlock}
+
     refute c.update_attributes(state: Container::Running), "not locked"
     c.reload
     refute c.locked_by_uuid
