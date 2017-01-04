@@ -425,33 +425,50 @@ def copy_workflow(wf_uuid, src, dst, args):
     # fetch the workflow from the source instance
     wf = src.workflows().get(uuid=wf_uuid).execute(num_retries=args.retries)
 
+    # copy collections and docker images
     if args.recursive:
         wf_def = yaml.safe_load(wf["definition"])
         if wf_def is not None:
-            colls = []
+            locations = []
+            docker_images = {}
             graph = wf_def.get('$graph', None)
             if graph is not None:
-                workflow_collections(graph, colls)
+                workflow_collections(graph, locations, docker_images)
             else:
-                workflow_collections(wf_def, colls)
-            copy_collections(colls, src, dst, args)
+                workflow_collections(graph, locations, docker_images)
 
+            if locations:
+                copy_collections(locations, src, dst, args)
+
+            for image in docker_images:
+                copy_docker_image(image, docker_images[image], src, dst, args)
+
+    # copy the workflow itself
     del wf['uuid']
     wf['owner_uuid'] = args.project_uuid
-
     return dst.workflows().create(body=wf).execute(num_retries=args.retries)
 
-def workflow_collections(obj, colls):
+def workflow_collections(obj, locations, docker_images):
     if isinstance(obj, dict):
         loc = obj.get('location', None)
         if loc is not None:
             if loc.startswith("keep:"):
-                colls.append(loc[5:])
+                locations.append(loc[5:])
+
+        docker_image = obj.get('dockerImageId', None)
+        if docker_image is None:
+            docker_image = obj.get('dockerPull', None)
+        if docker_image is not None:
+            ds = docker_image.split(":", 1)
+            tag = ds[1] if len(ds)==2 else 'latest'
+            docker_images[ds[0]] = tag
+
         for x in obj:
-            workflow_collections(obj[x], colls)
+            workflow_collections(obj[x], locations, docker_images)
+
     if isinstance(obj, list):
         for x in obj:
-            workflow_collections(x, colls)
+            workflow_collections(x, locations, docker_images)
 
 # copy_collections(obj, src, dst, args)
 #
