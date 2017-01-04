@@ -405,8 +405,8 @@ class JobSummarizer(Summarizer):
 
 class PipelineSummarizer(object):
     def __init__(self, pipeline_instance_uuid, **kwargs):
-        arv = arvados.api('v1', model=OrderedJsonModel())
-        instance = arv.pipeline_instances().get(
+        self.arv = arvados.api('v1', model=OrderedJsonModel())
+        instance = self.arv.pipeline_instances().get(
             uuid=pipeline_instance_uuid).execute()
         self.summarizers = collections.OrderedDict()
         for cname, component in instance['components'].iteritems():
@@ -414,13 +414,19 @@ class PipelineSummarizer(object):
                 logger.warning(
                     "%s: skipping component with no job assigned", cname)
             else:
-                logger.info(
-                    "%s: job %s", cname, component['job']['uuid'])
-                summarizer = JobSummarizer(component['job'], **kwargs)
-                summarizer.label = '{} {}'.format(
-                    cname, component['job']['uuid'])
-                self.summarizers[cname] = summarizer
+                self.summarize_job(cname, component['job'], **kwargs)
         self.label = pipeline_instance_uuid
+
+    def summarize_job(self, cname, job, **kwargs):
+        uuid = job['uuid']
+        logger.info("%s: job %s", cname, uuid)
+        summarizer = JobSummarizer(job, **kwargs)
+        summarizer.label = '{} {}'.format(cname, uuid)
+        self.summarizers[cname] = summarizer
+        if 'components' in job:
+            for cname, uuid in job['components'].iteritems():
+                subjob = self.arv.jobs().get(uuid=uuid).execute()
+                self.summarize_job(cname, subjob, **kwargs)
 
     def run(self):
         threads = []
