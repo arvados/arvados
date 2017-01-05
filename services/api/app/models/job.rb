@@ -423,7 +423,7 @@ class Job < ArvadosModel
           output_changed? or
           log_changed? or
           tasks_summary_changed? or
-          state_changed? or
+          (state_changed? && state != Cancelled) or
           components_changed?
         logger.warn "User #{current_user.uuid if current_user} tried to change protected job attributes on locked #{self.class.to_s} #{uuid_was}"
         return false
