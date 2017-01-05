@@ -36,10 +36,12 @@ module Server
 
     I18n.enforce_available_locales = false
 
+    # Before using the filesystem backend for Rails.cache, check
+    # whether we own the relevant directory. If we don't, using it is
+    # likely to either fail or (if we're root) pollute it and cause
+    # other processes to fail later.
     default_cache_path = Rails.root.join('tmp', 'cache')
     if not File.owned?(default_cache_path)
-      # If we don't own the cache dir, using it will either fail or
-      # (if we're root) pollute it so other processes fail later.
       STDERR.puts("Defaulting to memory cache, because #{default_cache_path} " \
                   "owner (uid=#{File::Stat.new(default_cache_path).uid}) " \
                   "is not me (uid=#{Process.euid})")
