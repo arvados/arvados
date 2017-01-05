@@ -60,6 +60,21 @@ class Summarizer(object):
 
         logger.debug("%s: logdata %s", self.label, logdata)
 
+    def run_child(self, uuid):
+        if self._skip_child_jobs:
+            logger.warning('%s: omitting stats from child job %s'
+                           ' because --skip-child-jobs flag is on',
+                           self.label, uuid)
+            return
+        logger.debug('%s: follow %s', self.label, uuid)
+        child_summarizer = JobSummarizer(uuid)
+        child_summarizer.stats_max = self.stats_max
+        child_summarizer.task_stats = self.task_stats
+        child_summarizer.tasks = self.tasks
+        child_summarizer.starttime = self.starttime
+        child_summarizer.run()
+        logger.debug('%s: done %s', self.label, uuid)
+
     def run(self):
         logger.debug("%s: parsing logdata %s", self.label, self._logdata)
         for line in self._logdata:
@@ -80,22 +95,11 @@ class Summarizer(object):
                     self.stats_max['time']['elapsed'] = elapsed
                 continue
 
+            # Old style job logs only - newer style uses job['components']
+            uuid = None
             m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) stderr Queued job (?P<uuid>\S+)$', line)
             if m:
-                uuid = m.group('uuid')
-                if self._skip_child_jobs:
-                    logger.warning('%s: omitting stats from child job %s'
-                                   ' because --skip-child-jobs flag is on',
-                                   self.label, uuid)
-                    continue
-                logger.debug('%s: follow %s', self.label, uuid)
-                child_summarizer = JobSummarizer(uuid)
-                child_summarizer.stats_max = self.stats_max
-                child_summarizer.task_stats = self.task_stats
-                child_summarizer.tasks = self.tasks
-                child_summarizer.starttime = self.starttime
-                child_summarizer.run()
-                logger.debug('%s: done %s', self.label, uuid)
+                self.run_child(m.group('uuid'))
                 continue
 
             m = re.search(r'^(?P<timestamp>[^\s.]+)(\.\d+)? (?P<job_uuid>\S+) \d+ (?P<seq>\d+) stderr crunchstat: (?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n', line)
@@ -178,7 +182,12 @@ class Summarizer(object):
                             self.stats_max[category][stat] = val
             except Exception as e:
                 logger.info('Skipping malformed line: {}Error was: {}\n'.format(line, e))
-        logger.debug('%s: done parsing', self.label)
+        logger.debug('%s: done parsing log', self.label)
+
+        # Enabling this will roll up stats for all subjobs into the parent job
+        if False and 'components' in self.job:
+            for cname, component in self.job['components'].iteritems():
+                self.run_child(component)
 
         self.job_tot = collections.defaultdict(
             functools.partial(collections.defaultdict, int))
