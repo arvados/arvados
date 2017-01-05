@@ -167,7 +167,7 @@ def arvados_jobs_image(arvrunner):
 class Runner(object):
     def __init__(self, runner, tool, job_order, enable_reuse,
                  output_name, output_tags, submit_runner_ram=0,
-                 name=None):
+                 name=None, on_error=None):
         self.arvrunner = runner
         self.tool = tool
         self.job_order = job_order
@@ -178,6 +178,7 @@ class Runner(object):
         self.output_name = output_name
         self.output_tags = output_tags
         self.name = name
+        self.on_error = on_error
 
         if submit_runner_ram:
             self.submit_runner_ram = submit_runner_ram

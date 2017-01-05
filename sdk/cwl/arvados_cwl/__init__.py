@@ -358,7 +358,6 @@ class ArvCwlRunner(object):
         kwargs["enable_reuse"] = kwargs.get("enable_reuse")
         kwargs["use_container"] = True
         kwargs["tmpdir_prefix"] = "tmp"
-        kwargs["on_error"] = "continue"
         kwargs["compute_checksum"] = kwargs.get("compute_checksum")
 
         if not kwargs["name"]:
@@ -387,11 +386,11 @@ class ArvCwlRunner(object):
                 else:
                     runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name,
                                                 self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"),
-                                                name=kwargs.get("name"))
+                                                name=kwargs.get("name"), on_error=kwargs.get("on_error"))
             else:
                 runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name,
                                       self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"),
-                                      name=kwargs.get("name"))
+                                      name=kwargs.get("name"), on_error=kwargs.get("on_error"))
 
         if not kwargs.get("submit") and "cwl_runner_job" not in kwargs and not self.work_api == "containers":
             # Create pipeline for local run
@@ -580,6 +579,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--name", type=str,
                         help="Name to use for workflow execution instance.",
                         default=None)
+
+    parser.add_argument("--on-error", type=str,
+                        help="Desired workflow behavior when a step fails.  One of 'stop' or 'continue'. "
+                        "Default is 'continue'.", default="continue", choices=("stop", "continue"))
 
     parser.add_argument("workflow", type=str, nargs="?", default=None, help="The workflow to execute")
     parser.add_argument("job_order", nargs=argparse.REMAINDER, help="The input object to the workflow.")

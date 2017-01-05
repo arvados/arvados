@@ -79,6 +79,10 @@ def run():
             enable_reuse = job_order_object["arv:enable_reuse"]
             del job_order_object["arv:enable_reuse"]
 
+        if "arv:on_error" in job_order_object:
+            on_error = job_order_object["arv:on_error"]
+            del job_order_object["arv:on_error"]
+
         runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()),
                                           output_name=output_name, output_tags=output_tags)
 
@@ -87,6 +91,7 @@ def run():
         args = argparse.Namespace()
         args.project_uuid = arvados.current_job()["owner_uuid"]
         args.enable_reuse = enable_reuse
+        args.on_error = on_error
         args.submit = False
         args.debug = False
         args.quiet = False

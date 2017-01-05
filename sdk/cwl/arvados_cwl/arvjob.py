@@ -252,6 +252,9 @@ class RunnerJob(Runner):
 
         self.job_order["arv:enable_reuse"] = self.enable_reuse
 
+        if self.on_error:
+            self.job_order["arv:on_error"] = self.on_error
+
         return {
             "script": "cwl-runner",
             "script_version": "master",

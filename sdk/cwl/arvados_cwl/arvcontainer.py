@@ -260,6 +260,9 @@ class RunnerContainer(Runner):
         else:
             command.append("--disable-reuse")
 
+        if self.on_error:
+            command.append("--on-error=" + self.on_error)
+
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 
         container_req["command"] = command
