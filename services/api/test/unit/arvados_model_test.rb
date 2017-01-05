@@ -146,6 +146,28 @@ class ArvadosModelTest < ActiveSupport::TestCase
     end
   end
 
+  test "full text search index exists on models" do
+    fts_tables =  ["collections", "container_requests", "groups", "jobs",
+                   "pipeline_instances", "pipeline_templates", "workflows"]
+    fts_tables.each do |table|
+      table_class = table.classify.constantize
+      if table_class.respond_to?('full_text_searchable_columns')
+        fts_index_columns = table_class.full_text_searchable_columns
+        index_columns = nil
+        indexes = ActiveRecord::Base.connection.indexes(table)
+        fts_index_by_columns = indexes.select do |index|
+          if index.columns.first.match(/to_tsvector/)
+            index_columns = index.columns.first.scan(/\((?<columns>[A-Za-z_]+)\,/).flatten!
+            index_columns.sort == fts_index_columns.sort
+          else
+            false
+          end
+        end
+        assert !fts_index_by_columns.empty?, "#{table} has no FTS index with columns #{fts_index_columns}. Instead found FTS index with columns #{index_columns}"
+      end
+    end
+  end
+
   test "selectable_attributes includes database attributes" do
     assert_includes(Job.selectable_attributes, "success")
   end

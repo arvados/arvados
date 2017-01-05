@@ -248,6 +248,7 @@ class RunnerContainer(Runner):
         command = ["arvados-cwl-runner", "--local", "--api=containers", "--no-log-timestamps"]
         if self.output_name:
             command.append("--output-name=" + self.output_name)
+            container_req["output_name"] = self.output_name
 
         if self.output_tags:
             command.append("--output-tags=" + self.output_tags)
