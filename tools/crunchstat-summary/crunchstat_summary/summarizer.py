@@ -112,7 +112,7 @@ class Summarizer(object):
                 if m.group('category').endswith(':'):
                     # "stderr crunchstat: notice: ..."
                     continue
-                elif m.group('category') in ('error', 'caught'):
+                elif m.group('category') in ('error', 'caught', 'Running'):
                     continue
                 elif m.group('category') == 'read':
                     # "stderr crunchstat: read /proc/1234/net/dev: ..."
@@ -180,7 +180,7 @@ class Summarizer(object):
                         if val > self.stats_max[category][stat]:
                             self.stats_max[category][stat] = val
             except Exception as e:
-                logger.info('Skipping malformed line: {}Error was: {}\n'.format(line, e))
+                logger.info('Skipping malformed line beginning: {} Error was: {}\n'.format(line[0:100], e))
         logger.debug('%s: done parsing log', self.label)
 
         # Enabling this will roll up stats for all subjobs into the parent job
@@ -417,7 +417,7 @@ class PipelineSummarizer(object):
         self.instance = self.arv.pipeline_instances().get(
             uuid=pipeline_instance_uuid).execute()
         self.summarizers = collections.OrderedDict()
-        logger.info("%d total components" % len(self.instance['components']))
+        logger.info("Collecting %d top level components" % len(self.instance['components']))
         for cname, component in self.instance['components'].iteritems():
             if 'job' not in component:
                 logger.warning(
@@ -434,6 +434,7 @@ class PipelineSummarizer(object):
         summarizer.label = '{} {}'.format(cname, uuid)
         self.summarizers[cname] = summarizer
         if 'components' in job:
+            logger.debug("Collecting components for %s: job %s", cname, uuid)
             for cname, uuid in job['components'].iteritems():
                 subjob = self.arv.jobs().get(uuid=uuid).execute()
                 self.summarize_job(cname, subjob, **kwargs)
@@ -446,7 +447,7 @@ class PipelineSummarizer(object):
 
     def text_report(self):
         for cname, summarizer in self.summarizers.iteritems():
-            logger.info('Running %s', cname)
+            logger.info('Analyzing %s', cname)
             summarizer.run()
             txt = ''
             txt += '### Summary for {} ({})\n'.format(
@@ -456,15 +457,14 @@ class PipelineSummarizer(object):
             yield txt
 
     def html_header(self):
-        self.chartjs = crunchstat_summary.chartjs.ChartJS(
-            self.label)
+        self.chartjs = crunchstat_summary.chartjs.ChartJS()
         return self.chartjs.html_header(self.label)
 
     def html_report(self):
-        for cname, summarizer in self.summarizers:
-            logger.info('Running %s', cname)
+        for cname, summarizer in self.summarizers.iteritems():
+            logger.info('Analyzing %s', cname)
             summarizer.run()
-            yield self.chartjs.section(summarizer)
+            yield self.chartjs.section(summarizer)+", \n"
 
     def html_trailer(self):
         return self.chartjs.html_trailer()

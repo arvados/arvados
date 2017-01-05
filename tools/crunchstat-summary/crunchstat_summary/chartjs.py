@@ -16,7 +16,7 @@ class ChartJS(object):
         <title>{} stats</title>
         <script type="text/javascript" src="{}"></script>
         <script type="text/javascript">var sections = [
-        '''.format(cgi.escape(self.label), self.JSLIB)
+        '''.format(cgi.escape(label), self.JSLIB)
 
     def html_trailer(self):
         return '''];\n{}</script>
