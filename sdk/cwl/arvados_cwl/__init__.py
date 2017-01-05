@@ -344,13 +344,13 @@ class ArvCwlRunner(object):
                                       name=kwargs.get("name"))
                 tmpl.save()
                 # cwltool.main will write our return value to stdout.
-                return tmpl.uuid
+                return (tmpl.uuid, "success")
             else:
-                return upload_workflow(self, tool, job_order,
+                return (upload_workflow(self, tool, job_order,
                                        self.project_uuid,
                                        uuid=existing_uuid,
                                        submit_runner_ram=kwargs.get("submit_runner_ram"),
-                                       name=kwargs.get("name"))
+                                        name=kwargs.get("name")), "success")
 
         self.ignore_docker_for_reuse = kwargs.get("ignore_docker_for_reuse")
 
@@ -404,7 +404,7 @@ class ArvCwlRunner(object):
 
         if runnerjob and not kwargs.get("wait"):
             runnerjob.run(wait=kwargs.get("wait"))
-            return runnerjob.uuid
+            return (runnerjob.uuid, "success")
 
         self.poll_api = arvados.api('v1')
         self.polling_thread = threading.Thread(target=self.poll_states)
