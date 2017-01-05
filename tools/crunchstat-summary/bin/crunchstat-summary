@@ -12,4 +12,5 @@ logging.getLogger().addHandler(logging.StreamHandler())
 args = crunchstat_summary.command.ArgumentParser().parse_args(sys.argv[1:])
 cmd = crunchstat_summary.command.Command(args)
 cmd.run()
-print(cmd.report(), end='')
+for r in cmd.report():
+    print(r)

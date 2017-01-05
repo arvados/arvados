@@ -10,7 +10,6 @@ import itertools
 import math
 import re
 import sys
-import threading
 import _strptime
 
 from arvados.api import OrderedJsonModel
@@ -415,16 +414,18 @@ class JobSummarizer(Summarizer):
 class PipelineSummarizer(object):
     def __init__(self, pipeline_instance_uuid, **kwargs):
         self.arv = arvados.api('v1', model=OrderedJsonModel())
-        instance = self.arv.pipeline_instances().get(
+        self.instance = self.arv.pipeline_instances().get(
             uuid=pipeline_instance_uuid).execute()
         self.summarizers = collections.OrderedDict()
-        for cname, component in instance['components'].iteritems():
+        logger.info("%d total components" % len(self.instance['components']))
+        for cname, component in self.instance['components'].iteritems():
             if 'job' not in component:
                 logger.warning(
                     "%s: skipping component with no job assigned", cname)
             else:
                 self.summarize_job(cname, component['job'], **kwargs)
         self.label = pipeline_instance_uuid
+        self._kwargs = kwargs
 
     def summarize_job(self, cname, job, **kwargs):
         uuid = job['uuid']
@@ -437,25 +438,33 @@ class PipelineSummarizer(object):
                 subjob = self.arv.jobs().get(uuid=uuid).execute()
                 self.summarize_job(cname, subjob, **kwargs)
 
-    def run(self):
-        threads = []
-        for summarizer in self.summarizers.itervalues():
-            t = threading.Thread(target=summarizer.run)
-            t.daemon = True
-            t.start()
-            threads.append(t)
-        for t in threads:
-            t.join()
+    def text_header(self):
+        return ''
+
+    def text_trailer(self):
+        return ''
 
     def text_report(self):
-        txt = ''
         for cname, summarizer in self.summarizers.iteritems():
+            logger.info('Running %s', cname)
+            summarizer.run()
+            txt = ''
             txt += '### Summary for {} ({})\n'.format(
                 cname, summarizer.job['uuid'])
             txt += summarizer.text_report()
             txt += '\n'
-        return txt
+            yield txt
+
+    def html_header(self):
+        self.chartjs = crunchstat_summary.chartjs.ChartJS(
+            self.label)
+        return self.chartjs.html_header(self.label)
 
     def html_report(self):
-        return crunchstat_summary.chartjs.ChartJS(
-            self.label, self.summarizers.itervalues()).html()
+        for cname, summarizer in self.summarizers:
+            logger.info('Running %s', cname)
+            summarizer.run()
+            yield self.chartjs.section(summarizer)
+
+    def html_trailer(self):
+        return self.chartjs.html_trailer()

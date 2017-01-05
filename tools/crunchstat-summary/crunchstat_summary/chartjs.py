@@ -11,30 +11,23 @@ from crunchstat_summary import logger
 class ChartJS(object):
     JSLIB = 'https://cdnjs.cloudflare.com/ajax/libs/canvasjs/1.7.0/canvasjs.min.js'
 
-    def __init__(self, label, summarizers):
-        self.label = label
-        self.summarizers = summarizers
-
-    def html(self):
+    def html_header(self, label):
         return '''<!doctype html><html><head>
         <title>{} stats</title>
         <script type="text/javascript" src="{}"></script>
-        <script type="text/javascript">{}</script>
+        <script type="text/javascript">var sections = [
+        '''.format(cgi.escape(self.label), self.JSLIB)
+
+    def html_trailer(self):
+        return '''];\n{}</script>
         </head><body></body></html>
-        '''.format(cgi.escape(self.label), self.JSLIB, self.js())
+        '''.format(pkg_resources.resource_string('crunchstat_summary', 'chartjs.js'))
 
-    def js(self):
-        return 'var sections = {};\n{}'.format(
-            json.dumps(self.sections()),
-            pkg_resources.resource_string('crunchstat_summary', 'chartjs.js'))
-
-    def sections(self):
-        return [
-            {
-                'label': s.long_label(),
-                'charts': self.charts(s.label, s.tasks),
-            }
-            for s in self.summarizers]
+    def section(self, summarizer):
+        return json.dumps({
+                'label': summarizer.long_label(),
+                'charts': self.charts(summarizer.label, summarizer.tasks),
+            })
 
     def _axisY(self, tasks, stat):
         ymax = 1

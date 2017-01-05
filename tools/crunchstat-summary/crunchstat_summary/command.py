@@ -53,10 +53,16 @@ class Command(object):
             self.summer = summarizer.Summarizer(fh, **kwargs)
         else:
             self.summer = summarizer.Summarizer(sys.stdin, **kwargs)
-        return self.summer.run()
+        return self.summer
 
     def report(self):
-        if self.args.format == 'html':
-            return self.summer.html_report()
-        elif self.args.format == 'text':
-            return self.summer.text_report()
+        if self.args.format == 'text' or self.args.format == 'both':
+            yield self.summer.text_header()
+            for r in self.summer.text_report():
+                yield r
+            yield self.summer.text_trailer()
+        if self.args.format == 'html' or self.args.format == 'both':
+            yield self.summer.html_header()
+            for r in self.summer.html_report():
+                yield r
+            yield self.summer.html_trailer()
