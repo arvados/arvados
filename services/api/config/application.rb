@@ -35,5 +35,15 @@ module Server
     config.filter_parameters += [:password]
 
     I18n.enforce_available_locales = false
+
+    default_cache_path = Rails.root.join('tmp', 'cache')
+    if not File.owned?(default_cache_path)
+      # If we don't own the cache dir, using it will either fail or
+      # (if we're root) pollute it so other processes fail later.
+      STDERR.puts("Defaulting to memory cache, because #{default_cache_path} " \
+                  "owner (uid=#{File::Stat.new(default_cache_path).uid}) " \
+                  "is not me (uid=#{Process.euid})")
+      config.cache_store = :memory_store
+    end
   end
 end
