@@ -482,14 +482,11 @@ class ArvCwlRunner(object):
             self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, self.output_tags, self.final_output)
             self.set_crunch_output()
 
-        if self.final_status != "success":
-            raise WorkflowException("Workflow failed.")
-
         if kwargs.get("compute_checksum"):
             adjustDirObjs(self.final_output, partial(getListing, self.fs_access))
             adjustFileObjs(self.final_output, partial(compute_checksums, self.fs_access))
 
-        return self.final_output
+        return (self.final_output, self.final_status)
 
 
 def versionstring():
