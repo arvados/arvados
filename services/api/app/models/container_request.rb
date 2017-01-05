@@ -107,6 +107,11 @@ class ContainerRequest < ArvadosModel
                                     'container_request' => uuid,
                                   })
       rescue ActiveRecord::RecordNotUnique => rn
+        # In case this is executed as part of a transaction: When a Postgres exception happens,
+        # the following statements on the same transaction become invalid, so a rollback is
+        # needed. One example are Unit Tests, every test is enclosed inside a transaction so
+        # that the database can be reverted before every new test starts.
+        # See: http://api.rubyonrails.org/classes/ActiveRecord/Transactions/ClassMethods.html#module-ActiveRecord::Transactions::ClassMethods-label-Exception+handling+and+rolling+back
         ActiveRecord::Base.connection.execute 'ROLLBACK'
         raise unless out_type == 'output' and self.output_name
         # Postgres specific unique name check. See ApplicationController#create for
