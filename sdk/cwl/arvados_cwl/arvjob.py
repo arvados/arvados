@@ -223,9 +223,8 @@ class ArvadosJob(object):
                 logger.error("Unexpected output type %s '%s'", type(outputs), outputs)
                 outputs = {}
                 processStatus = "permanentFail"
-
-            self.output_callback(outputs, processStatus)
         finally:
+            self.output_callback(outputs, processStatus)
             if record["uuid"] in self.arvrunner.processes:
                 del self.arvrunner.processes[record["uuid"]]
 
