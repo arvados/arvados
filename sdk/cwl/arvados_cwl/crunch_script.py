@@ -67,6 +67,7 @@ def run():
         output_name = None
         output_tags = None
         enable_reuse = True
+        on_error = "continue"
         if "arv:output_name" in job_order_object:
             output_name = job_order_object["arv:output_name"]
             del job_order_object["arv:output_name"]
