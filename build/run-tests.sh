@@ -527,7 +527,8 @@ do_test() {
             ;;
     esac
     if [[ -z "${skip[$suite]}" && -z "${skip[$1]}" && \
-                (-z "${only}" || "${only}" == "${suite}") ]]; then
+                (-z "${only}" || "${only}" == "${suite}" || \
+                 "${only}" == "${1}") ]]; then
         retry do_test_once ${@}
     else
         title "Skipping ${1} tests"
