@@ -223,9 +223,8 @@ class ArvadosJob(object):
                 logger.error("Unexpected output type %s '%s'", type(outputs), outputs)
                 outputs = {}
                 processStatus = "permanentFail"
-
-            self.output_callback(outputs, processStatus)
         finally:
+            self.output_callback(outputs, processStatus)
             if record["uuid"] in self.arvrunner.processes:
                 del self.arvrunner.processes[record["uuid"]]
 
@@ -251,6 +250,9 @@ class RunnerJob(Runner):
             self.job_order["arv:output_tags"] = self.output_tags
 
         self.job_order["arv:enable_reuse"] = self.enable_reuse
+
+        if self.on_error:
+            self.job_order["arv:on_error"] = self.on_error
 
         return {
             "script": "cwl-runner",

@@ -344,13 +344,13 @@ class ArvCwlRunner(object):
                                       name=kwargs.get("name"))
                 tmpl.save()
                 # cwltool.main will write our return value to stdout.
-                return tmpl.uuid
+                return (tmpl.uuid, "success")
             else:
-                return upload_workflow(self, tool, job_order,
+                return (upload_workflow(self, tool, job_order,
                                        self.project_uuid,
                                        uuid=existing_uuid,
                                        submit_runner_ram=kwargs.get("submit_runner_ram"),
-                                       name=kwargs.get("name"))
+                                        name=kwargs.get("name")), "success")
 
         self.ignore_docker_for_reuse = kwargs.get("ignore_docker_for_reuse")
 
@@ -358,7 +358,6 @@ class ArvCwlRunner(object):
         kwargs["enable_reuse"] = kwargs.get("enable_reuse")
         kwargs["use_container"] = True
         kwargs["tmpdir_prefix"] = "tmp"
-        kwargs["on_error"] = "continue"
         kwargs["compute_checksum"] = kwargs.get("compute_checksum")
 
         if not kwargs["name"]:
@@ -387,11 +386,11 @@ class ArvCwlRunner(object):
                 else:
                     runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name,
                                                 self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"),
-                                                name=kwargs.get("name"))
+                                                name=kwargs.get("name"), on_error=kwargs.get("on_error"))
             else:
                 runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name,
                                       self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"),
-                                      name=kwargs.get("name"))
+                                      name=kwargs.get("name"), on_error=kwargs.get("on_error"))
 
         if not kwargs.get("submit") and "cwl_runner_job" not in kwargs and not self.work_api == "containers":
             # Create pipeline for local run
@@ -405,7 +404,7 @@ class ArvCwlRunner(object):
 
         if runnerjob and not kwargs.get("wait"):
             runnerjob.run(wait=kwargs.get("wait"))
-            return runnerjob.uuid
+            return (runnerjob.uuid, "success")
 
         self.poll_api = arvados.api('v1')
         self.polling_thread = threading.Thread(target=self.poll_states)
@@ -483,14 +482,11 @@ class ArvCwlRunner(object):
             self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, self.output_tags, self.final_output)
             self.set_crunch_output()
 
-        if self.final_status != "success":
-            raise WorkflowException("Workflow failed.")
-
         if kwargs.get("compute_checksum"):
             adjustDirObjs(self.final_output, partial(getListing, self.fs_access))
             adjustFileObjs(self.final_output, partial(compute_checksums, self.fs_access))
 
-        return self.final_output
+        return (self.final_output, self.final_status)
 
 
 def versionstring():
@@ -580,6 +576,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--name", type=str,
                         help="Name to use for workflow execution instance.",
                         default=None)
+
+    parser.add_argument("--on-error", type=str,
+                        help="Desired workflow behavior when a step fails.  One of 'stop' or 'continue'. "
+                        "Default is 'continue'.", default="continue", choices=("stop", "continue"))
 
     parser.add_argument("workflow", type=str, nargs="?", default=None, help="The workflow to execute")
     parser.add_argument("job_order", nargs=argparse.REMAINDER, help="The input object to the workflow.")

@@ -173,10 +173,9 @@ class ArvadosContainer(object):
             processStatus = "permanentFail"
         except Exception as e:
             logger.exception("%s while getting output object: %s", self.arvrunner.label(self), e)
-            self.output_callback({}, "permanentFail")
-        else:
-            self.output_callback(outputs, processStatus)
+            processStatus = "permanentFail"
         finally:
+            self.output_callback(outputs, processStatus)
             if record["uuid"] in self.arvrunner.processes:
                 del self.arvrunner.processes[record["uuid"]]
 
@@ -260,6 +259,9 @@ class RunnerContainer(Runner):
             command.append("--enable-reuse")
         else:
             command.append("--disable-reuse")
+
+        if self.on_error:
+            command.append("--on-error=" + self.on_error)
 
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 
