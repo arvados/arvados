@@ -121,7 +121,7 @@ GEMHOME=
 PERLINSTALLBASE=
 
 short=
-skip_install=
+only_install=
 temp=
 temp_preserve=
 
@@ -230,10 +230,9 @@ do
             short=1
             ;;
         --skip-install)
-            skip_install=1
+            only_install=nothing
             ;;
         --only-install)
-            skip_install=1
             only_install="$1"; shift
             ;;
         --temp)
@@ -598,8 +597,7 @@ do_test_once() {
 }
 
 do_install() {
-    if [[ -z "${skip_install}" && \
-                (-z "${only_install}" || "${only_install}" == "${1}") ]]; then
+    if [[ -z "${only_install}" || "${only_install}" == "${1}" ]]; then
         retry do_install_once ${@}
     else
         title "Skipping $1 install"
