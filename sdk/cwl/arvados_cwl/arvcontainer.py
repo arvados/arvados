@@ -236,7 +236,7 @@ class RunnerContainer(Runner):
             workflowpath = "/var/lib/cwl/workflow.json#main"
             container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
                 "kind": "json",
-                "json": packed
+                "content": packed
             }
             if self.tool.tool.get("id", "").startswith("arvwf:"):
                 container_req["properties"]["template_uuid"] = self.tool.tool["id"][6:33]
