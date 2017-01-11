@@ -190,8 +190,6 @@ class RunnerContainer(Runner):
         the +body+ argument to container_requests().create().
         """
 
-        packed = packed_workflow(self.arvrunner, self.tool)
-
         adjustDirObjs(self.job_order, trim_listing)
 
         container_req = {
@@ -224,13 +222,24 @@ class RunnerContainer(Runner):
             "properties": {}
         }
 
-        workflowpath = "/var/lib/cwl/workflow.json#main"
-        container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
-            "kind": "json",
-            "json": packed
-        }
-        if self.tool.tool.get("id", "").startswith("arvwf:"):
-            container_req["properties"]["template_uuid"] = self.tool.tool["id"][6:33]
+        if self.tool.tool.get("id", "").startswith("keep:"):
+            sp = self.tool.tool["id"].split('/')
+            workflowcollection = sp[0][5:]
+            workflowname = "/".join(sp[1:])
+            workflowpath = "/var/lib/cwl/workflow/%s" % workflowname
+            container_req["mounts"]["/var/lib/cwl/workflow"] = {
+                "kind": "collection",
+                "portable_data_hash": "%s" % workflowcollection
+            }
+        else:
+            packed = packed_workflow(self.arvrunner, self.tool)
+            workflowpath = "/var/lib/cwl/workflow.json#main"
+            container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
+                "kind": "json",
+                "json": packed
+            }
+            if self.tool.tool.get("id", "").startswith("arvwf:"):
+                container_req["properties"]["template_uuid"] = self.tool.tool["id"][6:33]
 
         command = ["arvados-cwl-runner", "--local", "--api=containers", "--no-log-timestamps"]
         if self.output_name:

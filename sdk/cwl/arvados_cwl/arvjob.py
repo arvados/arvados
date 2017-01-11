@@ -265,7 +265,7 @@ class RunnerJob(Runner):
         """
 
         if self.tool.tool["id"].startswith("keep:"):
-            pass
+            self.job_order["cwl:tool"] = self.tool.tool["id"][5:]
         else:
             packed = packed_workflow(self.arvrunner, self.tool)
             wf_pdh = self.upload_workflow_collection(packed)
