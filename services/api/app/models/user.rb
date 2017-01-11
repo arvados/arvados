@@ -166,8 +166,11 @@ class User < ArvadosModel
                     WHERE user_uuid = $1
                     AND target_owner_uuid IS NOT NULL
                     GROUP BY target_owner_uuid',
+                    # "name" arg is a query label that appears in logs:
                     "group_permissions for #{uuid}",
-                    [[nil, uuid]]).rows.each do |group_uuid, max_p_val|
+                    # "binds" arg is an array of [col_id, value] for '$1' vars:
+                    [[nil, uuid]],
+                    ).rows.each do |group_uuid, max_p_val|
       group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
     end
     Rails.cache.write "groups_for_user_#{self.uuid}", group_perms
