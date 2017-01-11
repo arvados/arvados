@@ -358,6 +358,7 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 		return err
 	}
 	defer rootdir.Close()
+	v.os.stats.Tick(&v.os.stats.ReaddirOps)
 	for {
 		names, err := rootdir.Readdirnames(1)
 		if err == io.EOF {
@@ -379,6 +380,7 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 			lastErr = err
 			continue
 		}
+		v.os.stats.Tick(&v.os.stats.ReaddirOps)
 		for {
 			fileInfo, err := blockdir.Readdir(1)
 			if err == io.EOF {
@@ -461,6 +463,7 @@ func (v *UnixVolume) Untrash(loc string) (err error) {
 		return MethodDisabledError
 	}
 
+	v.os.stats.Tick(&v.os.stats.ReaddirOps)
 	files, err := ioutil.ReadDir(v.blockDir(loc))
 	if err != nil {
 		return err
