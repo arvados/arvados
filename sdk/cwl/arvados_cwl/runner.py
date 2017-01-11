@@ -184,14 +184,15 @@ def upload_workflow_deps(arvrunner, tool):
     document_loader = tool.doc_loader
 
     def upload_tool_deps(deptool):
-        upload_dependencies(arvrunner,
-                            "%s dependencies" % (shortname(deptool["id"])),
-                            document_loader,
-                            deptool,
-                            deptool["id"],
-                            False,
-                            include_primary=False)
-        document_loader.idx[deptool["id"]] = deptool
+        if "id" in deptool:
+            upload_dependencies(arvrunner,
+                                "%s dependencies" % (shortname(deptool["id"])),
+                                document_loader,
+                                deptool,
+                                deptool["id"],
+                                False,
+                                include_primary=False)
+            document_loader.idx[deptool["id"]] = deptool
 
     tool.visit(upload_tool_deps)
 
