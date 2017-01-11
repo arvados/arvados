@@ -241,9 +241,11 @@ class RunnerJob(Runner):
         with collection.open("workflow.cwl", "w") as f:
             f.write(yaml.round_trip_dump(packed))
 
-        exists = self.arvrunner.api.collections().list(filters=[["owner_uuid", "=", self.arvrunner.project_uuid],
-                                                 ["portable_data_hash", "=", collection.portable_data_hash()],
-                                                 ["name", "like", self.name+"%"]]).execute(num_retries=self.arvrunner.num_retries)
+        filters = [["portable_data_hash", "=", collection.portable_data_hash()],
+                   ["name", "like", self.name+"%"]]
+        if self.arvrunner.project_uuid:
+            filters.append(["owner_uuid", "=", self.arvrunner.project_uuid])
+        exists = self.arvrunner.api.collections().list(filters=filters).execute(num_retries=self.arvrunner.num_retries)
 
         if exists["items"]:
             logger.info("Using collection %s", exists["items"][0]["uuid"])
@@ -385,10 +387,12 @@ class RunnerTemplate(object):
             if not isinstance(types, list):
                 types = [types]
             param['required'] = 'null' not in types
-            non_null_types = set(types) - set(['null'])
+            non_null_types = [t for t in types if t != "null"]
             if len(non_null_types) == 1:
                 the_type = [c for c in non_null_types][0]
-                dataclass = self.type_to_dataclass.get(the_type)
+                dataclass = None
+                if isinstance(the_type, basestring):
+                    dataclass = self.type_to_dataclass.get(the_type)
                 if dataclass:
                     param['dataclass'] = dataclass
             # Note: If we didn't figure out a single appropriate
