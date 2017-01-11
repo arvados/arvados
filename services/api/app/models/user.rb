@@ -57,6 +57,14 @@ class User < ArvadosModel
 
   ALL_PERMISSIONS = {read: true, write: true, manage: true}
 
+  # Map numeric permission levels (see lib/create_permission_view.sql)
+  # back to read/write/manage flags.
+  PERMS_FOR_VAL =
+    [{},
+     {read: true},
+     {read: true, write: true},
+     {read: true, write: true, manage: true}]
+
   def full_name
     "#{first_name} #{last_name}".strip
   end
@@ -140,32 +148,27 @@ class User < ArvadosModel
     self.class.transaction do
       # Check whether the temporary view has already been created
       # during this connection. If not, create it.
-      conn.execute 'SAVEPOINT check_permission_view'
+      conn.exec_query 'SAVEPOINT check_permission_view'
       begin
-        conn.execute('SELECT 1 FROM permission_view LIMIT 0')
+        conn.exec_query('SELECT 1 FROM permission_view LIMIT 0')
       rescue
-        conn.execute 'ROLLBACK TO SAVEPOINT check_permission_view'
+        conn.exec_query 'ROLLBACK TO SAVEPOINT check_permission_view'
         sql = File.read(Rails.root.join('lib', 'create_permission_view.sql'))
         conn.exec_query(sql)
-      else
-        conn.execute 'RELEASE SAVEPOINT check_permission_view'
+      ensure
+        conn.exec_query 'RELEASE SAVEPOINT check_permission_view'
       end
     end
 
     group_perms = {}
-    perms_for_val =
-      [{},
-       {read: true},
-       {read: true, write: true},
-       {read: true, write: true, manage: true}]
     conn.exec_query('SELECT target_owner_uuid, max(perm_level)
-                  FROM permission_view
-                  WHERE user_uuid = $1
-                  AND target_owner_uuid IS NOT NULL
-                  GROUP BY target_owner_uuid',
-                  "group_permissions for #{uuid}",
-                  [[nil, uuid]]).rows.each do |group_uuid, max_p_val|
-      group_perms[group_uuid] = perms_for_val[max_p_val.to_i]
+                    FROM permission_view
+                    WHERE user_uuid = $1
+                    AND target_owner_uuid IS NOT NULL
+                    GROUP BY target_owner_uuid',
+                    "group_permissions for #{uuid}",
+                    [[nil, uuid]]).rows.each do |group_uuid, max_p_val|
+      group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
     end
     Rails.cache.write "groups_for_user_#{self.uuid}", group_perms
     group_perms
