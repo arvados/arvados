@@ -129,7 +129,16 @@ class ApplicationController < ActionController::Base
       raise unless /^Key \(owner_uuid, name\)=\([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}, .*?\) already exists\./.match detail
 
       @object.uuid = nil
-      @object.name = "#{name_stem} (#{db_current_time.utc.iso8601(3)})"
+
+      new_name = "#{name_stem} (#{db_current_time.utc.iso8601(3)})"
+      if new_name == @object.name
+        # If the database is fast enough to do two attempts in the
+        # same millisecond, we need to wait to ensure we try a
+        # different timestamp on each attempt.
+        sleep 0.002
+        new_name = "#{name_stem} (#{db_current_time.utc.iso8601(3)})"
+      end
+      @object.name = new_name
       retry
     end
     show
