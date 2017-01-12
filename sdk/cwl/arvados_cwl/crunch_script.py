@@ -23,6 +23,8 @@ from cwltool.process import shortname, adjustFileObjs, adjustDirObjs, getListing
 from cwltool.load_tool import load_tool
 from cwltool.errors import WorkflowException
 
+from .fsaccess import CollectionFetcher
+
 logger = logging.getLogger('arvados.cwl-runner')
 
 def run():
@@ -87,7 +89,10 @@ def run():
         runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()),
                                           output_name=output_name, output_tags=output_tags)
 
-        t = load_tool(toolpath, runner.arv_make_tool)
+        t = load_tool(toolpath, runner.arv_make_tool,
+                      fetcher_constructor=functools.partial(CollectionFetcher,
+                                                            api_client=api,
+                                                            keep_client=arvados.keep.KeepClient(api_client=api, num_retries=4)))
 
         args = argparse.Namespace()
         args.project_uuid = arvados.current_job()["owner_uuid"]
