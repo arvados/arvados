@@ -19,6 +19,7 @@ class ApplicationController < ActionController::Base
   include CurrentApiClient
   include ThemesForRails::ActionController
   include LoadParam
+  include DbCurrentTime
 
   respond_to :json
   protect_from_forgery
@@ -47,6 +48,8 @@ class ApplicationController < ActionController::Base
   theme :select_theme
 
   attr_writer :resource_attrs
+
+  MAX_UNIQUE_NAME_ATTEMPTS = 10
 
   begin
     rescue_from(Exception,
@@ -97,13 +100,16 @@ class ApplicationController < ActionController::Base
     if @object.respond_to? :name and params[:ensure_unique_name]
       # Record the original name.  See below.
       name_stem = @object.name
-      counter = 1
+      retries = MAX_UNIQUE_NAME_ATTEMPTS
+    else
+      retries = 0
     end
 
     begin
       @object.save!
     rescue ActiveRecord::RecordNotUnique => rn
-      raise unless params[:ensure_unique_name]
+      raise unless retries > 0
+      retries -= 1
 
       # Dig into the error to determine if it is specifically calling out a
       # (owner_uuid, name) uniqueness violation.  In this specific case, and
@@ -122,13 +128,19 @@ class ApplicationController < ActionController::Base
       detail = err.result.error_field(PG::Result::PG_DIAG_MESSAGE_DETAIL)
       raise unless /^Key \(owner_uuid, name\)=\([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}, .*?\) already exists\./.match detail
 
-      # OK, this exception really is just a unique name constraint
-      # violation, and we've been asked to ensure_unique_name.
-      counter += 1
       @object.uuid = nil
-      @object.name = "#{name_stem} (#{counter})"
-      redo
-    end while false
+
+      new_name = "#{name_stem} (#{db_current_time.utc.iso8601(3)})"
+      if new_name == @object.name
+        # If the database is fast enough to do two attempts in the
+        # same millisecond, we need to wait to ensure we try a
+        # different timestamp on each attempt.
+        sleep 0.002
+        new_name = "#{name_stem} (#{db_current_time.utc.iso8601(3)})"
+      end
+      @object.name = new_name
+      retry
+    end
     show
   end
 
