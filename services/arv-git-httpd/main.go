@@ -10,6 +10,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"github.com/coreos/go-systemd/daemon"
+	"github.com/ghodss/yaml"
 )
 
 // Server configuration
@@ -44,6 +45,7 @@ func main() {
 		"Value for GITOLITE_HTTP_HOME environment variable. If not empty, GL_BYPASS_ACCESS_CHECKS=1 will also be set."+deprecated)
 
 	cfgPath := flag.String("config", defaultCfgPath, "Configuration file `path`.")
+	dumpConfig := flag.Bool("dump-config", false, "write current configuration to stdout and exit (useful for migrating from command line flags to config file)")
 	flag.Usage = usage
 	flag.Parse()
 
@@ -61,6 +63,15 @@ func main() {
 		if j, err := json.MarshalIndent(theConfig, "", "    "); err == nil {
 			log.Print("Current configuration:\n", string(j))
 		}
+	}
+
+	if *dumpConfig {
+		y, err := yaml.Marshal(theConfig)
+		if err != nil {
+			log.Fatal(err)
+		}
+		os.Stdout.Write(y)
+		os.Exit(0)
 	}
 
 	srv := &server{}

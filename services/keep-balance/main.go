@@ -11,6 +11,7 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
+	"github.com/ghodss/yaml"
 )
 
 const defaultConfigPath = "/etc/arvados/keep-balance/keep-balance.yml"
@@ -78,6 +79,7 @@ func main() {
 		"send pull requests (make more replicas of blocks that are underreplicated or are not in optimal rendezvous probe order)")
 	flag.BoolVar(&runOptions.CommitTrash, "commit-trash", false,
 		"send trash requests (delete unreferenced old blocks, and excess replicas of overreplicated blocks)")
+	dumpConfig := flag.Bool("dump-config", false, "write current configuration to stdout and exit")
 	dumpFlag := flag.Bool("dump", false, "dump details for each block to stdout")
 	debugFlag := flag.Bool("debug", false, "enable debug messages")
 	flag.Usage = usage
@@ -86,6 +88,15 @@ func main() {
 	mustReadConfig(&config, *configPath)
 	if *serviceListPath != "" {
 		mustReadConfig(&config.KeepServiceList, *serviceListPath)
+	}
+
+	if *dumpConfig {
+		y, err := yaml.Marshal(config)
+		if err != nil {
+			log.Fatal(err)
+		}
+		os.Stdout.Write(y)
+		os.Exit(0)
 	}
 
 	if *debugFlag {

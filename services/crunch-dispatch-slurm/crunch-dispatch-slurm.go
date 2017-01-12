@@ -5,11 +5,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/config"
-	"git.curoverse.com/arvados.git/sdk/go/dispatch"
-	"github.com/coreos/go-systemd/daemon"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,6 +13,13 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/config"
+	"git.curoverse.com/arvados.git/sdk/go/dispatch"
+	"github.com/coreos/go-systemd/daemon"
+	"github.com/ghodss/yaml"
 )
 
 // Config used by crunch-dispatch-slurm
@@ -56,6 +58,10 @@ func doMain() error {
 		"config",
 		defaultConfigPath,
 		"`path` to JSON or YAML configuration file")
+	dumpConfig := flag.Bool(
+		"dump-config",
+		false,
+		"write current configuration to stdout and exit")
 
 	// Parse args; omit the first arg which is the command name
 	flags.Parse(os.Args[1:])
@@ -87,6 +93,15 @@ func doMain() error {
 		os.Setenv("ARVADOS_EXTERNAL_CLIENT", "")
 	} else {
 		log.Printf("warning: Client credentials missing from config, so falling back on environment variables (deprecated).")
+	}
+
+	if *dumpConfig {
+		y, err := yaml.Marshal(theConfig)
+		if err != nil {
+			log.Fatal(err)
+		}
+		os.Stdout.Write(y)
+		os.Exit(0)
 	}
 
 	arv, err := arvadosclient.MakeArvadosClient()

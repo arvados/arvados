@@ -8,6 +8,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"github.com/coreos/go-systemd/daemon"
+	"github.com/ghodss/yaml"
 )
 
 var (
@@ -62,6 +63,8 @@ func main() {
 		"Only serve attachments at the given `host:port`"+deprecated)
 	flag.BoolVar(&cfg.TrustAllContent, "trust-all-content", false,
 		"Serve non-public content from a single origin. Dangerous: read docs before using!"+deprecated)
+	dumpConfig := flag.Bool("dump-config", false,
+		"write current configuration to stdout and exit")
 	flag.Usage = usage
 	flag.Parse()
 
@@ -76,6 +79,15 @@ func main() {
 	if cfg.deprecatedAllowAnonymous {
 		log.Printf("DEPRECATED: Using -allow-anonymous command line flag with ARVADOS_API_TOKEN environment variable. Use config file instead.")
 		cfg.AnonymousTokens = []string{os.Getenv("ARVADOS_API_TOKEN")}
+	}
+
+	if *dumpConfig {
+		y, err := yaml.Marshal(cfg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		os.Stdout.Write(y)
+		os.Exit(0)
 	}
 
 	os.Setenv("ARVADOS_API_HOST", cfg.Client.APIHost)

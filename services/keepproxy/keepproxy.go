@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -22,6 +21,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"github.com/coreos/go-systemd/daemon"
+	"github.com/ghodss/yaml"
 	"github.com/gorilla/mux"
 )
 
@@ -62,6 +62,7 @@ func main() {
 	var cfgPath string
 	const defaultCfgPath = "/etc/arvados/keepproxy/keepproxy.yml"
 	flagset.StringVar(&cfgPath, "config", defaultCfgPath, "Configuration file `path`")
+	dumpConfig := flagset.Bool("dump-config", false, "write current configuration to stdout and exit")
 	flagset.Parse(os.Args[1:])
 
 	err := config.LoadFile(cfg, cfgPath)
@@ -77,10 +78,19 @@ func main() {
 		if regexp.MustCompile("^(?i:1|yes|true)$").MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE")) {
 			cfg.Client.Insecure = true
 		}
-		if j, err := json.MarshalIndent(cfg, "", "    "); err == nil {
-			log.Print("Current configuration:\n", string(j))
+		if y, err := yaml.Marshal(cfg); err == nil && !*dumpConfig {
+			log.Print("Current configuration:\n", string(y))
 		}
 		cfg.Timeout = arvados.Duration(time.Duration(*timeoutSeconds) * time.Second)
+	}
+
+	if *dumpConfig {
+		y, err := yaml.Marshal(cfg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		os.Stdout.Write(y)
+		os.Exit(0)
 	}
 
 	arv, err := arvadosclient.New(&cfg.Client)
