@@ -11,7 +11,9 @@ import arvados
 import arvados_cwl
 import cwltool.process
 from schema_salad.ref_resolver import Loader
+from schema_salad.sourceline import cmap
 from .mock_discovery import get_rootDesc
+from .matcher import JsonDiffMatcher
 
 if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
@@ -33,12 +35,12 @@ class TestJob(unittest.TestCase):
             list_images_in_arv.return_value = [["zzzzz-4zz18-zzzzzzzzzzzzzzz"]]
             runner.api.collections().get().execute.return_vaulue = {"portable_data_hash": "99999999999999999999999999999993+99"}
 
-            tool = {
+            tool = cmap({
                 "inputs": [],
                 "outputs": [],
                 "baseCommand": "ls",
                 "arguments": [{"valueFrom": "$(runtime.outdir)"}]
-            }
+            })
             make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
             arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names,
                                                      basedir="", make_fs_access=make_fs_access, loader=Loader({}))
@@ -46,7 +48,7 @@ class TestJob(unittest.TestCase):
             for j in arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access):
                 j.run(enable_reuse=enable_reuse)
                 runner.api.jobs().create.assert_called_with(
-                    body={
+                    body=JsonDiffMatcher({
                         'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                         'runtime_constraints': {},
                         'script_parameters': {
@@ -56,7 +58,7 @@ class TestJob(unittest.TestCase):
                             }],
                         },
                         'script_version': 'master',
-                        'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
+                        'minimum_script_version': 'a3f2cb186e437bfce0031b024b2157b73ed2717d',
                         'repository': 'arvados',
                         'script': 'crunchrunner',
                         'runtime_constraints': {
@@ -65,11 +67,11 @@ class TestJob(unittest.TestCase):
                             'min_ram_mb_per_node': 1024,
                             'min_scratch_mb_per_node': 2048 # tmpdirSize + outdirSize
                         }
-                    },
+                    }),
                     find_or_create=enable_reuse,
                     filters=[['repository', '=', 'arvados'],
                              ['script', '=', 'crunchrunner'],
-                             ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
+                             ['script_version', 'in git', 'a3f2cb186e437bfce0031b024b2157b73ed2717d'],
                              ['docker_image_locator', 'in docker', 'arvados/jobs:'+arvados_cwl.__version__]]
                 )
 
@@ -113,7 +115,7 @@ class TestJob(unittest.TestCase):
         for j in arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access):
             j.run()
         runner.api.jobs().create.assert_called_with(
-            body={
+            body=JsonDiffMatcher({
                 'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                 'runtime_constraints': {},
                 'script_parameters': {
@@ -124,7 +126,7 @@ class TestJob(unittest.TestCase):
                     }]
             },
             'script_version': 'master',
-                'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
+                'minimum_script_version': 'a3f2cb186e437bfce0031b024b2157b73ed2717d',
                 'repository': 'arvados',
                 'script': 'crunchrunner',
                 'runtime_constraints': {
@@ -134,11 +136,11 @@ class TestJob(unittest.TestCase):
                     'min_scratch_mb_per_node': 5024, # tmpdirSize + outdirSize
                     'keep_cache_mb_per_task': 512
                 }
-            },
+            }),
             find_or_create=True,
             filters=[['repository', '=', 'arvados'],
                      ['script', '=', 'crunchrunner'],
-                     ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
+                     ['script_version', 'in git', 'a3f2cb186e437bfce0031b024b2157b73ed2717d'],
                      ['docker_image_locator', 'in docker', 'arvados/jobs:'+arvados_cwl.__version__]])
 
     @mock.patch("arvados.collection.CollectionReader")
@@ -164,6 +166,7 @@ class TestJob(unittest.TestCase):
         arvjob.builder = mock.MagicMock()
         arvjob.output_callback = mock.MagicMock()
         arvjob.collect_outputs = mock.MagicMock()
+        arvjob.collect_outputs.return_value = {"out": "stuff"}
 
         arvjob.done({
             "state": "Complete",
@@ -189,6 +192,8 @@ class TestJob(unittest.TestCase):
                   'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                   'name': 'Output 9999999 of testjob'})
 
+        arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")
+
     @mock.patch("arvados.collection.CollectionReader")
     def test_done_use_existing_collection(self, reader):
         api = mock.MagicMock()
@@ -211,6 +216,7 @@ class TestJob(unittest.TestCase):
         arvjob.builder = mock.MagicMock()
         arvjob.output_callback = mock.MagicMock()
         arvjob.collect_outputs = mock.MagicMock()
+        arvjob.collect_outputs.return_value = {"out": "stuff"}
 
         arvjob.done({
             "state": "Complete",
@@ -227,6 +233,8 @@ class TestJob(unittest.TestCase):
             mock.call().execute(num_retries=0)])
 
         self.assertFalse(api.collections().create.called)
+
+        arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")
 
 
 class TestWorkflow(unittest.TestCase):
@@ -269,8 +277,8 @@ class TestWorkflow(unittest.TestCase):
             subwf = f.read()
 
         runner.api.jobs().create.assert_called_with(
-            body={
-                'minimum_script_version': '9e5b98e8f5f4727856b53447191f9c06e3da2ba6',
+            body=JsonDiffMatcher({
+                'minimum_script_version': 'a3f2cb186e437bfce0031b024b2157b73ed2717d',
                 'repository': 'arvados',
                 'script_version': 'master',
                 'script': 'crunchrunner',
@@ -290,15 +298,15 @@ class TestWorkflow(unittest.TestCase):
                     'docker_image': 'arvados/jobs:'+arvados_cwl.__version__,
                     'min_ram_mb_per_node': 1024
                 },
-                'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'},
+                'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'}),
             filters=[['repository', '=', 'arvados'],
                      ['script', '=', 'crunchrunner'],
-                     ['script_version', 'in git', '9e5b98e8f5f4727856b53447191f9c06e3da2ba6'],
+                     ['script_version', 'in git', 'a3f2cb186e437bfce0031b024b2157b73ed2717d'],
                      ['docker_image_locator', 'in docker', 'arvados/jobs:'+arvados_cwl.__version__]],
             find_or_create=True)
 
         mockcollection().open().__enter__().write.assert_has_calls([mock.call(subwf)])
-        mockcollection().open().__enter__().write.assert_has_calls([mock.call('{sleeptime: 5}')])
+        mockcollection().open().__enter__().write.assert_has_calls([mock.call('sleeptime: 5')])
 
     def test_default_work_api(self):
         arvados_cwl.add_arv_hints()

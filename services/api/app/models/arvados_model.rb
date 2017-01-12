@@ -239,7 +239,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def logged_attributes
-    attributes.except *Rails.configuration.unlogged_attributes
+    attributes.except(*Rails.configuration.unlogged_attributes)
   end
 
   def self.full_text_searchable_columns
@@ -252,12 +252,7 @@ class ArvadosModel < ActiveRecord::Base
     parts = full_text_searchable_columns.collect do |column|
       "coalesce(#{column},'')"
     end
-    # We prepend a space to the tsvector() argument here. Otherwise,
-    # it might start with a column that has its own (non-full-text)
-    # index, which causes Postgres to use the column index instead of
-    # the tsvector index, which causes full text queries to be just as
-    # slow as if we had no index at all.
-    "to_tsvector('english', ' ' || #{parts.join(" || ' ' || ")})"
+    "to_tsvector('english', #{parts.join(" || ' ' || ")})"
   end
 
   def self.apply_filters query, filters
@@ -490,7 +485,7 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def foreign_key_attributes
-    attributes.keys.select { |a| a.match /_uuid$/ }
+    attributes.keys.select { |a| a.match(/_uuid$/) }
   end
 
   def skip_uuid_read_permission_check
@@ -505,7 +500,7 @@ class ArvadosModel < ActiveRecord::Base
     foreign_key_attributes.each do |attr|
       attr_value = send attr
       if attr_value.is_a? String and
-          attr_value.match /^[0-9a-f]{32,}(\+[@\w]+)*$/
+          attr_value.match(/^[0-9a-f]{32,}(\+[@\w]+)*$/)
         begin
           send "#{attr}=", Collection.normalize_uuid(attr_value)
         rescue
@@ -584,13 +579,12 @@ class ArvadosModel < ActiveRecord::Base
     unless uuid.is_a? String
       return nil
     end
-    resource_class = nil
 
     uuid.match HasUuid::UUID_REGEX do |re|
       return uuid_prefixes[re[1]] if uuid_prefixes[re[1]]
     end
 
-    if uuid.match /.+@.+/
+    if uuid.match(/.+@.+/)
       return Email
     end
 
@@ -603,7 +597,7 @@ class ArvadosModel < ActiveRecord::Base
     if self == ArvadosModel
       # If called directly as ArvadosModel.find_by_uuid rather than via subclass,
       # delegate to the appropriate subclass based on the given uuid.
-      self.resource_class_for_uuid(uuid).find_by_uuid(uuid)
+      self.resource_class_for_uuid(uuid).unscoped.find_by_uuid(uuid)
     else
       super
     end

@@ -180,8 +180,14 @@ common:
   # The default is 2 weeks.
   blob_signature_ttl: 1209600
 
-  # Default lifetime for ephemeral collections: 2 weeks.
+  # Default lifetime for ephemeral collections: 2 weeks. This must not
+  # be less than blob_signature_ttl.
   default_trash_lifetime: 1209600
+
+  # Interval (seconds) between trash sweeps. During a trash sweep,
+  # collections are marked as trash if their trash_at time has
+  # arrived, and deleted if their delete_at time has arrived.
+  trash_sweep_interval: 60
 
   # Maximum characters of (JSON-encoded) query parameters to include
   # in each request log entry. When params exceed this size, they will
@@ -444,3 +450,5 @@ test:
   workbench_address: https://localhost:3001/
   git_repositories_dir: <%= Rails.root.join 'tmp', 'git', 'test' %>
   git_internal_dir: <%= Rails.root.join 'tmp', 'internal.git' %>
+  websocket_address: <% if ENV['ARVADOS_TEST_EXPERIMENTAL_WS'] %>"wss://0.0.0.0:<%= ENV['ARVADOS_TEST_WSS_PORT'] %>/websocket"<% else %>false<% end %>
+  trash_sweep_interval: -1

@@ -341,7 +341,7 @@ class Container < ArvadosModel
       act_as_system_user do
 
         if self.state == Cancelled
-          retryable_requests = ContainerRequest.where("priority > 0 and state = 'Committed' and container_count < container_count_max")
+          retryable_requests = ContainerRequest.where("container_uuid = ? and priority > 0 and state = 'Committed' and container_count < container_count_max", uuid)
         else
           retryable_requests = []
         end

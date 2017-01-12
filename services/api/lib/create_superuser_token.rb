@@ -14,8 +14,12 @@ module CreateSuperUserToken
         api_client_auth = ApiClientAuthorization.
           where(api_token: supplied_token).
           first
-        if api_client_auth && !api_client_auth.user.uuid.match(/-000000000000000$/)
-          raise "Token already exists but is not a superuser token."
+        if !api_client_auth
+          # fall through to create a token
+        elsif !api_client_auth.user.uuid.match(/-000000000000000$/)
+          raise "Token exists but is not a superuser token."
+        elsif api_client_auth.scopes != ['all']
+          raise "Token exists but has limited scope #{api_client_auth.scopes.inspect}."
         end
       end
 
@@ -26,10 +30,11 @@ module CreateSuperUserToken
 
         # Check if there is an unexpired superuser token corresponding to this api client
         api_client_auth = ApiClientAuthorization.where(
-                'user_id = (?) AND
-                 api_client_id = (?) AND
+                'user_id = ? AND
+                 api_client_id = ? AND
+                 scopes = ? AND
                  (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)',
-               system_user.id, apiClient.id).first
+               system_user.id, apiClient.id, ['all'].to_yaml).first
 
         # none exist; create one with the supplied token
         if !api_client_auth

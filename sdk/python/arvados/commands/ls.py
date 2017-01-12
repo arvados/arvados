@@ -3,9 +3,12 @@
 from __future__ import print_function
 
 import argparse
+import sys
 
 import arvados
 import arvados.commands._util as arv_cmd
+
+from arvados._version import __version__
 
 def parse_args(args):
     parser = argparse.ArgumentParser(
@@ -16,6 +19,9 @@ def parse_args(args):
                         help="""Collection UUID or locator""")
     parser.add_argument('-s', action='store_true',
                         help="""List file sizes, in KiB.""")
+    parser.add_argument('--version', action='version',
+                        version="%s %s" % (sys.argv[0], __version__),
+                        help='Print version and exit.')
 
     return parser.parse_args(args)
 

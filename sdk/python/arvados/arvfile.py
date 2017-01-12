@@ -760,6 +760,14 @@ class ArvadosFile(object):
         return self.parent.writable()
 
     @synchronized
+    def permission_expired(self, as_of_dt=None):
+        """Returns True if any of the segment's locators is expired"""
+        for r in self._segments:
+            if KeepLocator(r.locator).permission_expired(as_of_dt):
+                return True
+        return False
+
+    @synchronized
     def segments(self):
         return copy.copy(self._segments)
 

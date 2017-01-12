@@ -7,8 +7,9 @@ import os
 import functools
 import cwltool.process
 from schema_salad.ref_resolver import Loader
+from schema_salad.sourceline import cmap
 
-from schema_salad.ref_resolver import Loader
+from .matcher import JsonDiffMatcher
 
 if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
@@ -34,12 +35,12 @@ class TestContainer(unittest.TestCase):
 
             document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
-            tool = {
+            tool = cmap({
                 "inputs": [],
                 "outputs": [],
                 "baseCommand": "ls",
                 "arguments": [{"valueFrom": "$(runtime.outdir)"}]
-            }
+            })
             make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
             arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names,
                                                      basedir="", make_fs_access=make_fs_access, loader=Loader({}))
@@ -48,7 +49,7 @@ class TestContainer(unittest.TestCase):
                                  make_fs_access=make_fs_access, tmpdir="/tmp"):
                 j.run(enable_reuse=enable_reuse)
                 runner.api.container_requests().create.assert_called_with(
-                    body={
+                    body=JsonDiffMatcher({
                         'environment': {
                             'HOME': '/var/spool/cwl',
                             'TMPDIR': '/tmp'
@@ -69,8 +70,9 @@ class TestContainer(unittest.TestCase):
                         'container_image': '99999999999999999999999999999993+99',
                         'command': ['ls', '/var/spool/cwl'],
                         'cwd': '/var/spool/cwl',
-                        'scheduling_parameters': {}
-                    })
+                        'scheduling_parameters': {},
+                        'properties': {},
+                    }))
 
     # The test passes some fields in builder.resources
     # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
@@ -86,7 +88,7 @@ class TestContainer(unittest.TestCase):
         runner.api.collections().get().execute.return_value = {
             "portable_data_hash": "99999999999999999999999999999993+99"}
 
-        tool = {
+        tool = cmap({
             "inputs": [],
             "outputs": [],
             "hints": [{
@@ -104,7 +106,7 @@ class TestContainer(unittest.TestCase):
                 "partition": "blurb"
             }],
             "baseCommand": "ls"
-        }
+        })
         make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers",
                                                  avsc_names=avsc_names, make_fs_access=make_fs_access,
@@ -141,7 +143,8 @@ class TestContainer(unittest.TestCase):
                 'cwd': '/var/spool/cwl',
                 'scheduling_parameters': {
                     'partitions': ['blurb']
-                }
+                },
+                'properties': {}
         }
 
         call_body = call_kwargs.get('body', None)
@@ -159,9 +162,11 @@ class TestContainer(unittest.TestCase):
         runner.num_retries = 0
         runner.ignore_docker_for_reuse = False
 
+        runner.api.containers().get().execute.return_value = {"state":"Complete",
+                                                              "output": "abc+123",
+                                                              "exit_code": 0}
+
         col().open.return_value = []
-        api.collections().list().execute.side_effect = ({"items": []},
-                                                        {"items": [{"manifest_text": "XYZ"}]})
 
         arvjob = arvados_cwl.ArvadosContainer(runner)
         arvjob.name = "testjob"
@@ -171,64 +176,17 @@ class TestContainer(unittest.TestCase):
         arvjob.successCodes = [0]
         arvjob.outdir = "/var/spool/cwl"
 
-        arvjob.done({
-            "state": "Complete",
-            "output": "99999999999999999999999999999993+99",
-            "log": "99999999999999999999999999999994+99",
-            "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
-            "exit_code": 0
-        })
-
-        api.collections().list.assert_has_calls([
-            mock.call(),
-            mock.call(filters=[['owner_uuid', '=', 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'],
-                          ['portable_data_hash', '=', '99999999999999999999999999999993+99'],
-                          ['name', '=', 'Output 9999999 of testjob']]),
-            mock.call().execute(num_retries=0),
-            mock.call(limit=1, filters=[['portable_data_hash', '=', '99999999999999999999999999999993+99']],
-                 select=['manifest_text']),
-            mock.call().execute(num_retries=0)])
-
-        api.collections().create.assert_called_with(
-            ensure_unique_name=True,
-            body={'portable_data_hash': '99999999999999999999999999999993+99',
-                  'manifest_text': 'XYZ',
-                  'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-                  'name': 'Output 9999999 of testjob'})
-
-    @mock.patch("arvados.collection.Collection")
-    def test_done_use_existing_collection(self, col):
-        api = mock.MagicMock()
-
-        runner = mock.MagicMock()
-        runner.api = api
-        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
-        runner.num_retries = 0
-
-        col().open.return_value = []
-        api.collections().list().execute.side_effect = ({"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2"}]},)
-
-        arvjob = arvados_cwl.ArvadosContainer(runner)
-        arvjob.name = "testjob"
-        arvjob.builder = mock.MagicMock()
-        arvjob.output_callback = mock.MagicMock()
-        arvjob.collect_outputs = mock.MagicMock()
-        arvjob.successCodes = [0]
-        arvjob.outdir = "/var/spool/cwl"
+        arvjob.collect_outputs.return_value = {"out": "stuff"}
 
         arvjob.done({
-            "state": "Complete",
-            "output": "99999999999999999999999999999993+99",
-            "log": "99999999999999999999999999999994+99",
-            "uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
-            "exit_code": 0
+            "state": "Final",
+            "log_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz1",
+            "output_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2",
+            "uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
+            "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         })
-
-        api.collections().list.assert_has_calls([
-            mock.call(),
-            mock.call(filters=[['owner_uuid', '=', 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'],
-                               ['portable_data_hash', '=', '99999999999999999999999999999993+99'],
-                               ['name', '=', 'Output 9999999 of testjob']]),
-            mock.call().execute(num_retries=0)])
 
         self.assertFalse(api.collections().create.called)
+
+        arvjob.collect_outputs.assert_called_with("keep:abc+123")
+        arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")

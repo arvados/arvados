@@ -17,17 +17,21 @@ import pkg_resources  # part of setuptools
 from cwltool.errors import WorkflowException
 import cwltool.main
 import cwltool.workflow
+import cwltool.process
 import schema_salad
+from schema_salad.sourceline import SourceLine
 
 import arvados
 import arvados.config
+from arvados.keep import KeepClient
+from arvados.errors import ApiError
 
 from .arvcontainer import ArvadosContainer, RunnerContainer
 from .arvjob import ArvadosJob, RunnerJob, RunnerTemplate
 from. runner import Runner, upload_instance
 from .arvtool import ArvadosCommandTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow
-from .fsaccess import CollectionFsAccess
+from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver
 from .perf import Perf
 from .pathmapper import FinalOutputPathMapper
 from ._version import __version__
@@ -42,6 +46,9 @@ logger = logging.getLogger('arvados.cwl-runner')
 metrics = logging.getLogger('arvados.cwl-runner.metrics')
 logger.setLevel(logging.INFO)
 
+arvados.log_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(name)s %(levelname)s: %(message)s',
+        '%Y-%m-%d %H:%M:%S'))
 
 class ArvCwlRunner(object):
     """Execute a CWL tool or workflow, submit work (using either jobs or
@@ -49,7 +56,7 @@ class ArvCwlRunner(object):
 
     """
 
-    def __init__(self, api_client, work_api=None, keep_client=None, output_name=None, output_tags=None):
+    def __init__(self, api_client, work_api=None, keep_client=None, output_name=None, output_tags=None, num_retries=4):
         self.api = api_client
         self.processes = {}
         self.lock = threading.Lock()
@@ -57,7 +64,7 @@ class ArvCwlRunner(object):
         self.final_output = None
         self.final_status = None
         self.uploaded = {}
-        self.num_retries = 4
+        self.num_retries = num_retries
         self.uuid = None
         self.stop_polling = threading.Event()
         self.poll_api = None
@@ -72,7 +79,9 @@ class ArvCwlRunner(object):
         else:
             self.keep_client = arvados.keep.KeepClient(api_client=self.api, num_retries=self.num_retries)
 
-        for api in ["jobs", "containers"]:
+        self.work_api = None
+        expected_api = ["jobs", "containers"]
+        for api in expected_api:
             try:
                 methods = self.api._rootDesc.get('resources')[api]['methods']
                 if ('httpMethod' in methods['create'] and
@@ -81,14 +90,18 @@ class ArvCwlRunner(object):
                     break
             except KeyError:
                 pass
+
         if not self.work_api:
             if work_api is None:
                 raise Exception("No supported APIs")
             else:
-                raise Exception("Unsupported API '%s'" % work_api)
+                raise Exception("Unsupported API '%s', expected one of %s" % (work_api, expected_api))
 
     def arv_make_tool(self, toolpath_object, **kwargs):
         kwargs["work_api"] = self.work_api
+        kwargs["fetcher_constructor"] = partial(CollectionFetcher,
+                                                api_client=self.api,
+                                                keep_client=self.keep_client)
         if "class" in toolpath_object and toolpath_object["class"] == "CommandLineTool":
             return ArvadosCommandTool(self, toolpath_object, **kwargs)
         elif "class" in toolpath_object and toolpath_object["class"] == "Workflow":
@@ -117,21 +130,23 @@ class ArvCwlRunner(object):
                     uuid = event["object_uuid"]
                     with self.lock:
                         j = self.processes[uuid]
-                        logger.info("Job %s (%s) is Running", j.name, uuid)
+                        logger.info("%s %s is Running", self.label(j), uuid)
                         j.running = True
                         j.update_pipeline_component(event["properties"]["new_attributes"])
-                elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled"):
+                elif event["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Cancelled", "Final"):
                     uuid = event["object_uuid"]
                     try:
                         self.cond.acquire()
                         j = self.processes[uuid]
-                        txt = self.work_api[0].upper() + self.work_api[1:-1]
-                        logger.info("%s %s (%s) is %s", txt, j.name, uuid, event["properties"]["new_attributes"]["state"])
+                        logger.info("%s %s is %s", self.label(j), uuid, event["properties"]["new_attributes"]["state"])
                         with Perf(metrics, "done %s" % j.name):
                             j.done(event["properties"]["new_attributes"])
                         self.cond.notify()
                     finally:
                         self.cond.release()
+
+    def label(self, obj):
+        return "[%s %s]" % (self.work_api[0:-1], obj.name)
 
     def poll_states(self):
         """Poll status of jobs or containers listed in the processes dict.
@@ -150,7 +165,7 @@ class ArvCwlRunner(object):
                     continue
 
                 if self.work_api == "containers":
-                    table = self.poll_api.containers()
+                    table = self.poll_api.container_requests()
                 elif self.work_api == "jobs":
                     table = self.poll_api.jobs()
 
@@ -183,15 +198,25 @@ class ArvCwlRunner(object):
     def add_uploaded(self, src, pair):
         self.uploaded[src] = pair
 
-    def check_writable(self, obj):
+    def check_features(self, obj):
         if isinstance(obj, dict):
+            if obj.get("class") == "InitialWorkDirRequirement":
+                if self.work_api == "containers":
+                    raise UnsupportedRequirement("InitialWorkDirRequirement not supported with --api=containers")
             if obj.get("writable"):
-                raise UnsupportedRequirement("InitialWorkDir feature 'writable: true' not supported")
+                raise SourceLine(obj, "writable", UnsupportedRequirement).makeError("InitialWorkDir feature 'writable: true' not supported")
+            if obj.get("class") == "CommandLineTool":
+                if self.work_api == "containers":
+                    if obj.get("stdin"):
+                        raise SourceLine(obj, "stdin", UnsupportedRequirement).makeError("Stdin redirection currently not suppported with --api=containers")
+                    if obj.get("stderr"):
+                        raise SourceLine(obj, "stderr", UnsupportedRequirement).makeError("Stderr redirection currently not suppported with --api=containers")
             for v in obj.itervalues():
-                self.check_writable(v)
-        if isinstance(obj, list):
-            for v in obj:
-                self.check_writable(v)
+                self.check_features(v)
+        elif isinstance(obj, list):
+            for i,v in enumerate(obj):
+                with SourceLine(obj, i, UnsupportedRequirement):
+                    self.check_features(v)
 
     def make_output_collection(self, name, tagsString, outputObj):
         outputObj = copy.deepcopy(outputObj)
@@ -277,6 +302,12 @@ class ArvCwlRunner(object):
         if self.work_api == "containers":
             try:
                 current = self.api.containers().current().execute(num_retries=self.num_retries)
+            except ApiError as e:
+                # Status code 404 just means we're not running in a container.
+                if e.resp.status != 404:
+                    logger.info("Getting current container: %s", e)
+                return
+            try:
                 self.api.containers().update(uuid=current['uuid'],
                                              body={
                                                  'output': self.final_output_collection.portable_data_hash(),
@@ -294,7 +325,7 @@ class ArvCwlRunner(object):
     def arv_executor(self, tool, job_order, **kwargs):
         self.debug = kwargs.get("debug")
 
-        tool.visit(self.check_writable)
+        tool.visit(self.check_features)
 
         self.project_uuid = kwargs.get("project_uuid")
         self.pipeline = None
@@ -308,14 +339,18 @@ class ArvCwlRunner(object):
             if self.work_api == "jobs":
                 tmpl = RunnerTemplate(self, tool, job_order,
                                       kwargs.get("enable_reuse"),
-                                      uuid=existing_uuid)
+                                      uuid=existing_uuid,
+                                      submit_runner_ram=kwargs.get("submit_runner_ram"),
+                                      name=kwargs.get("name"))
                 tmpl.save()
                 # cwltool.main will write our return value to stdout.
-                return tmpl.uuid
+                return (tmpl.uuid, "success")
             else:
-                return upload_workflow(self, tool, job_order,
+                return (upload_workflow(self, tool, job_order,
                                        self.project_uuid,
-                                       uuid=existing_uuid)
+                                       uuid=existing_uuid,
+                                       submit_runner_ram=kwargs.get("submit_runner_ram"),
+                                        name=kwargs.get("name")), "success")
 
         self.ignore_docker_for_reuse = kwargs.get("ignore_docker_for_reuse")
 
@@ -323,8 +358,10 @@ class ArvCwlRunner(object):
         kwargs["enable_reuse"] = kwargs.get("enable_reuse")
         kwargs["use_container"] = True
         kwargs["tmpdir_prefix"] = "tmp"
-        kwargs["on_error"] = "continue"
         kwargs["compute_checksum"] = kwargs.get("compute_checksum")
+
+        if not kwargs["name"]:
+            del kwargs["name"]
 
         if self.work_api == "containers":
             kwargs["outdir"] = "/var/spool/cwl"
@@ -342,27 +379,32 @@ class ArvCwlRunner(object):
         if kwargs.get("submit"):
             if self.work_api == "containers":
                 if tool.tool["class"] == "CommandLineTool":
+                    kwargs["runnerjob"] = tool.tool["id"]
                     runnerjob = tool.job(job_order,
                                          self.output_callback,
                                          **kwargs).next()
                 else:
-                    runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name, self.output_tags)
+                    runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name,
+                                                self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"),
+                                                name=kwargs.get("name"), on_error=kwargs.get("on_error"))
             else:
-                runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name, self.output_tags)
+                runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name,
+                                      self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"),
+                                      name=kwargs.get("name"), on_error=kwargs.get("on_error"))
 
         if not kwargs.get("submit") and "cwl_runner_job" not in kwargs and not self.work_api == "containers":
             # Create pipeline for local run
             self.pipeline = self.api.pipeline_instances().create(
                 body={
                     "owner_uuid": self.project_uuid,
-                    "name": shortname(tool.tool["id"]),
+                    "name": kwargs["name"] if kwargs.get("name") else shortname(tool.tool["id"]),
                     "components": {},
                     "state": "RunningOnClient"}).execute(num_retries=self.num_retries)
             logger.info("Pipeline instance %s", self.pipeline["uuid"])
 
         if runnerjob and not kwargs.get("wait"):
             runnerjob.run(wait=kwargs.get("wait"))
-            return runnerjob.uuid
+            return (runnerjob.uuid, "success")
 
         self.poll_api = arvados.api('v1')
         self.polling_thread = threading.Thread(target=self.poll_states)
@@ -440,14 +482,11 @@ class ArvCwlRunner(object):
             self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, self.output_tags, self.final_output)
             self.set_crunch_output()
 
-        if self.final_status != "success":
-            raise WorkflowException("Workflow failed.")
-
         if kwargs.get("compute_checksum"):
             adjustDirObjs(self.final_output, partial(getListing, self.fs_access))
             adjustFileObjs(self.final_output, partial(compute_checksums, self.fs_access))
 
-        return self.final_output
+        return (self.final_output, self.final_status)
 
 
 def versionstring():
@@ -516,6 +555,12 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     exgroup.add_argument("--no-wait", action="store_false", help="Submit workflow runner job and exit.",
                         default=True, dest="wait")
 
+    exgroup = parser.add_mutually_exclusive_group()
+    exgroup.add_argument("--log-timestamps", action="store_true", help="Prefix logging lines with timestamp",
+                        default=True, dest="log_timestamps")
+    exgroup.add_argument("--no-log-timestamps", action="store_false", help="No timestamp on logging lines",
+                        default=True, dest="log_timestamps")
+
     parser.add_argument("--api", type=str,
                         default=None, dest="work_api",
                         help="Select work submission API, one of 'jobs' or 'containers'. Default is 'jobs' if that API is available, otherwise 'containers'.")
@@ -523,6 +568,18 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--compute-checksum", action="store_true", default=False,
                         help="Compute checksum of contents while collecting outputs",
                         dest="compute_checksum")
+
+    parser.add_argument("--submit-runner-ram", type=int,
+                        help="RAM (in MiB) required for the workflow runner job (default 1024)",
+                        default=1024)
+
+    parser.add_argument("--name", type=str,
+                        help="Name to use for workflow execution instance.",
+                        default=None)
+
+    parser.add_argument("--on-error", type=str,
+                        help="Desired workflow behavior when a step fails.  One of 'stop' or 'continue'. "
+                        "Default is 'continue'.", default="continue", choices=("stop", "continue"))
 
     parser.add_argument("workflow", type=str, nargs="?", default=None, help="The workflow to execute")
     parser.add_argument("job_order", nargs=argparse.REMAINDER, help="The input object to the workflow.")
@@ -547,6 +604,10 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
     job_order_object = None
     arvargs = parser.parse_args(args)
 
+    if arvargs.version:
+        print versionstring()
+        return
+
     if arvargs.update_workflow:
         if arvargs.update_workflow.find('-7fd4e-') == 5:
             want_api = 'containers'
@@ -568,7 +629,11 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
     try:
         if api_client is None:
             api_client=arvados.api('v1', model=OrderedJsonModel())
-        runner = ArvCwlRunner(api_client, work_api=arvargs.work_api, keep_client=keep_client, output_name=arvargs.output_name, output_tags=arvargs.output_tags)
+        if keep_client is None:
+            keep_client = arvados.keep.KeepClient(api_client=api_client, num_retries=4)
+        runner = ArvCwlRunner(api_client, work_api=arvargs.work_api, keep_client=keep_client,
+                              num_retries=4, output_name=arvargs.output_name,
+                              output_tags=arvargs.output_tags)
     except Exception as e:
         logger.error(e)
         return 1
@@ -584,9 +649,17 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
         metrics.setLevel(logging.DEBUG)
         logging.getLogger("cwltool.metrics").setLevel(logging.DEBUG)
 
+    if arvargs.log_timestamps:
+        arvados.log_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(name)s %(levelname)s: %(message)s',
+            '%Y-%m-%d %H:%M:%S'))
+    else:
+        arvados.log_handler.setFormatter(logging.Formatter('%(name)s %(levelname)s: %(message)s'))
+
     arvargs.conformance_test = None
     arvargs.use_container = True
     arvargs.relax_path_checks = True
+    arvargs.validate = None
 
     return cwltool.main.main(args=arvargs,
                              stdout=stdout,
@@ -595,4 +668,11 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
                              makeTool=runner.arv_make_tool,
                              versionfunc=versionstring,
                              job_order_object=job_order_object,
-                             make_fs_access=partial(CollectionFsAccess, api_client=api_client))
+                             make_fs_access=partial(CollectionFsAccess,
+                                                    api_client=api_client,
+                                                    keep_client=keep_client),
+                             fetcher_constructor=partial(CollectionFetcher,
+                                                         api_client=api_client,
+                                                         keep_client=keep_client),
+                             resolver=partial(collectionResolver, api_client),
+                             logger_handler=arvados.log_handler)

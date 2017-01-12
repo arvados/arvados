@@ -32,6 +32,10 @@ class Node < ArvadosModel
     t.add lambda { |x| Rails.configuration.compute_node_nameservers }, :as => :nameservers
   end
 
+  after_initialize do
+    @bypass_arvados_authorization = false
+  end
+
   def domain
     super || Rails.configuration.compute_node_domain
   end
@@ -226,7 +230,7 @@ class Node < ArvadosModel
     (0..Rails.configuration.max_compute_nodes-1).each do |slot_number|
       hostname = hostname_for_slot(slot_number)
       hostfile = File.join Rails.configuration.dns_server_conf_dir, "#{hostname}.conf"
-      if !File.exists? hostfile
+      if !File.exist? hostfile
         n = Node.where(:slot_number => slot_number).first
         if n.nil? or n.ip_address.nil?
           dns_server_update(hostname, UNUSED_NODE_IP)

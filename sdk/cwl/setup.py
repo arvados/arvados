@@ -45,11 +45,14 @@ setup(name='arvados-cwl-runner',
           'bin/cwl-runner',
           'bin/arvados-cwl-runner'
       ],
-      # Make sure to update arvados/build/run-build-packages.sh as well
-      # when updating the cwltool version pin.
+      # Note that arvados/build/run-build-packages.sh looks at this
+      # file to determine what version of cwltool and schema-salad to build.
       install_requires=[
-          'cwltool==1.0.20161122201220',
-          'arvados-python-client>=0.1.20160826210445'
+          'cwltool==1.0.20170105144051',
+          'schema-salad==2.1.20161227191302',
+          'ruamel.yaml==0.13.7',
+          'arvados-python-client>=0.1.20160826210445',
+          'setuptools'
       ],
       data_files=[
           ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),

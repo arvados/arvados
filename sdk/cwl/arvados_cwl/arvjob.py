@@ -24,6 +24,8 @@ metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
 crunchrunner_re = re.compile(r"^\S+ \S+ \d+ \d+ stderr \S+ \S+ crunchrunner: \$\(task\.(tmpdir|outdir|keep)\)=(.*)")
 
+crunchrunner_git_commit = 'a3f2cb186e437bfce0031b024b2157b73ed2717d'
+
 class ArvadosJob(object):
     """Submit and manage a Crunch job for executing a CWL CommandLineTool."""
 
@@ -86,7 +88,8 @@ class ArvadosJob(object):
             (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
             if docker_req and kwargs.get("use_container") is not False:
                 if docker_req.get("dockerOutputDirectory"):
-                    raise UnsupportedRequirement("Option 'dockerOutputDirectory' of DockerRequirement not supported.")
+                    raise SourceLine(docker_req, "dockerOutputDirectory", UnsupportedRequirement).makeError(
+                        "Option 'dockerOutputDirectory' of DockerRequirement not supported.")
                 runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvrunner.project_uuid)
             else:
                 runtime_constraints["docker_image"] = arvados_jobs_image(self.arvrunner)
@@ -109,7 +112,7 @@ class ArvadosJob(object):
 
         filters = [["repository", "=", "arvados"],
                    ["script", "=", "crunchrunner"],
-                   ["script_version", "in git", "9e5b98e8f5f4727856b53447191f9c06e3da2ba6"]]
+                   ["script_version", "in git", crunchrunner_git_commit]]
         if not self.arvrunner.ignore_docker_for_reuse:
             filters.append(["docker_image_locator", "in docker", runtime_constraints["docker_image"]])
 
@@ -121,7 +124,7 @@ class ArvadosJob(object):
                         "script": "crunchrunner",
                         "repository": "arvados",
                         "script_version": "master",
-                        "minimum_script_version": "9e5b98e8f5f4727856b53447191f9c06e3da2ba6",
+                        "minimum_script_version": crunchrunner_git_commit,
                         "script_parameters": {"tasks": [script_parameters]},
                         "runtime_constraints": runtime_constraints
                     },
@@ -133,13 +136,13 @@ class ArvadosJob(object):
 
             self.update_pipeline_component(response)
 
-            logger.info("Job %s (%s) is %s", self.name, response["uuid"], response["state"])
+            logger.info("%s %s is %s", self.arvrunner.label(self), response["uuid"], response["state"])
 
             if response["state"] in ("Complete", "Failed", "Cancelled"):
                 with Perf(metrics, "done %s" % self.name):
                     self.done(response)
         except Exception as e:
-            logger.exception("Job %s error" % (self.name))
+            logger.exception("%s error" % (self.arvrunner.label(self)))
             self.output_callback({}, "permanentFail")
 
     def update_pipeline_component(self, record):
@@ -200,11 +203,15 @@ class ArvadosJob(object):
                             if g:
                                 dirs[g.group(1)] = g.group(2)
 
+                    if processStatus == "permanentFail":
+                        done.logtail(logc, logger, "%s error log:" % self.arvrunner.label(self))
+
                     with Perf(metrics, "output collection %s" % self.name):
                         outputs = done.done(self, record, dirs["tmpdir"],
                                             dirs["outdir"], dirs["keep"])
             except WorkflowException as e:
-                logger.error("Error while collecting output for job %s:\n%s", self.name, e, exc_info=(e if self.arvrunner.debug else False))
+                logger.error("%s unable to collect output from %s:\n%s",
+                             self.arvrunner.label(self), record["output"], e, exc_info=(e if self.arvrunner.debug else False))
                 processStatus = "permanentFail"
             except Exception as e:
                 logger.exception("Got unknown exception while collecting output for job %s:", self.name)
@@ -216,11 +223,10 @@ class ArvadosJob(object):
                 logger.error("Unexpected output type %s '%s'", type(outputs), outputs)
                 outputs = {}
                 processStatus = "permanentFail"
-
-            self.output_callback(outputs, processStatus)
         finally:
-            del self.arvrunner.processes[record["uuid"]]
-
+            self.output_callback(outputs, processStatus)
+            if record["uuid"] in self.arvrunner.processes:
+                del self.arvrunner.processes[record["uuid"]]
 
 class RunnerJob(Runner):
     """Submit and manage a Crunch job that runs crunch_scripts/cwl-runner."""
@@ -235,12 +241,6 @@ class RunnerJob(Runner):
 
         workflowmapper = super(RunnerJob, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)
 
-        # Need to filter this out, gets added by cwltool when providing
-        # parameters on the command line, and arv-run-pipeline-instance doesn't
-        # like it.
-        if "job_order" in self.job_order:
-            del self.job_order["job_order"]
-
         self.job_order["cwl:tool"] = workflowmapper.mapper(self.tool.tool["id"]).target[5:]
 
         if self.output_name:
@@ -251,13 +251,18 @@ class RunnerJob(Runner):
 
         self.job_order["arv:enable_reuse"] = self.enable_reuse
 
+        if self.on_error:
+            self.job_order["arv:on_error"] = self.on_error
+
         return {
             "script": "cwl-runner",
-            "script_version": __version__,
+            "script_version": "master",
+            "minimum_script_version": "570509ab4d2ef93d870fd2b1f2eab178afb1bad9",
             "repository": "arvados",
             "script_parameters": self.job_order,
             "runtime_constraints": {
-                "docker_image": arvados_jobs_image(self.arvrunner)
+                "docker_image": arvados_jobs_image(self.arvrunner),
+                "min_ram_mb_per_node": self.submit_runner_ram
             }
         }
 
@@ -280,7 +285,7 @@ class RunnerJob(Runner):
         self.arvrunner.pipeline = self.arvrunner.api.pipeline_instances().create(
             body={
                 "owner_uuid": self.arvrunner.project_uuid,
-                "name": shortname(self.tool.tool["id"]),
+                "name": self.name,
                 "components": {"cwl-runner": job_spec },
                 "state": "RunningOnServer"}).execute(num_retries=self.arvrunner.num_retries)
         logger.info("Created pipeline %s", self.arvrunner.pipeline["uuid"])
@@ -308,7 +313,8 @@ class RunnerTemplate(object):
         'string': 'text',
     }
 
-    def __init__(self, runner, tool, job_order, enable_reuse, uuid):
+    def __init__(self, runner, tool, job_order, enable_reuse, uuid,
+                 submit_runner_ram=0, name=None):
         self.runner = runner
         self.tool = tool
         self.job = RunnerJob(
@@ -317,7 +323,9 @@ class RunnerTemplate(object):
             job_order=job_order,
             enable_reuse=enable_reuse,
             output_name=None,
-            output_tags=None)
+            output_tags=None,
+            submit_runner_ram=submit_runner_ram,
+            name=name)
         self.uuid = uuid
 
     def pipeline_component_spec(self):

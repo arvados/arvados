@@ -7,14 +7,16 @@ Syntax:
         WORKSPACE=/path/to/arvados $(basename $0) [options]
 
 --target <target>
-    Distribution to build packages for (default: debian7)
+    Distribution to build packages for (default: debian8)
 --command
     Build command to execute (default: use built-in Docker image command)
 --test-packages
     Run package install test script "test-packages-$target.sh"
 --debug
     Output debug information (default: false)
---only-test
+--only-build <package>
+    Build only a specific package
+--only-test <package>
     Test only a specific package
 
 WORKSPACE=path         Path to the Arvados source tree to build packages from
@@ -40,13 +42,13 @@ if ! [[ -d "$WORKSPACE" ]]; then
 fi
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,debug,test-packages,target:,command:,only-test: \
+    help,debug,test-packages,target:,command:,only-test:,only-build: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
 fi
 
-TARGET=debian7
+TARGET=debian8
 COMMAND=
 DEBUG=
 
@@ -62,7 +64,11 @@ while [ $# -gt 0 ]; do
             TARGET="$2"; shift
             ;;
         --only-test)
+            test_packages=1
             packages="$2"; shift
+            ;;
+        --only-build)
+            ONLY_BUILD="$2"; shift
             ;;
         --debug)
             DEBUG=" --debug"
@@ -121,7 +127,6 @@ popd
 
 if test -z "$packages" ; then
     packages="arvados-api-server
-        arvados-data-manager
         arvados-docker-cleaner
         arvados-git-httpd
         arvados-node-manager
@@ -140,10 +145,6 @@ if test -z "$packages" ; then
         libarvados-perl"
 
     case "$TARGET" in
-        centos6)
-            packages="$packages python27-python-arvados-fuse
-                  python27-python-arvados-python-client python27-python-arvados-cwl-runner"
-            ;;
         *)
             packages="$packages python-arvados-fuse
                   python-arvados-python-client python-arvados-cwl-runner"
@@ -169,6 +170,9 @@ docker_volume_args=(
 
 if [[ -n "$test_packages" ]]; then
     for p in $packages ; do
+        if [[ -n "$ONLY_BUILD" ]] && [[ "$p" != "$ONLY_BUILD" ]]; then
+            continue
+        fi
         echo
         echo "START: $p test on $IMAGE" >&2
         if docker run --rm \
@@ -191,6 +195,7 @@ else
     if docker run --rm \
         "${docker_volume_args[@]}" \
         --env ARVADOS_DEBUG=1 \
+        --env "ONLY_BUILD=$ONLY_BUILD" \
         "$IMAGE" $COMMAND
     then
         echo

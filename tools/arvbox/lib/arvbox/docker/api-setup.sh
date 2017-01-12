@@ -82,5 +82,6 @@ if ! test -s /var/lib/arvados/superuser_token ; then
 fi
 
 rm -rf tmp
+mkdir -p tmp/cache
 
 bundle exec rake db:migrate

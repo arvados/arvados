@@ -150,9 +150,10 @@ func main() {
 	KeepVM = MakeRRVolumeManager(theConfig.Volumes)
 
 	// Middleware stack: logger, MaxRequests limiter, method handlers
-	http.Handle("/", &LoggingRESTRouter{
-		router: httpserver.NewRequestLimiter(theConfig.MaxRequests, MakeRESTRouter()),
-	})
+	router := MakeRESTRouter()
+	limiter := httpserver.NewRequestLimiter(theConfig.MaxRequests, router)
+	router.limiter = limiter
+	http.Handle("/", &LoggingRESTRouter{router: limiter})
 
 	// Set up a TCP listener.
 	listener, err := net.Listen("tcp", theConfig.Listen)

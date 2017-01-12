@@ -14,7 +14,7 @@ Options:
 --debug
     Output debug information (default: false)
 --target
-    Distribution to build packages for (default: debian7)
+    Distribution to build packages for (default: debian8)
 
 WORKSPACE=path         Path to the Arvados SSO source tree to build packages from
 
@@ -22,7 +22,7 @@ EOF
 
 EXITCODE=0
 DEBUG=${ARVADOS_DEBUG:-0}
-TARGET=debian7
+TARGET=debian8
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
     help,build-bundle-packages,debug,target: \
@@ -68,9 +68,6 @@ if [[ "$DEBUG" != 0 ]]; then
 fi
 
 case "$TARGET" in
-    debian7)
-        FORMAT=deb
-        ;;
     debian8)
         FORMAT=deb
         ;;
@@ -80,7 +77,7 @@ case "$TARGET" in
     ubuntu1404)
         FORMAT=deb
         ;;
-    centos6|centos7)
+    centos7)
         FORMAT=rpm
         ;;
     *)

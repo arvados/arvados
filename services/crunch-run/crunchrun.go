@@ -257,6 +257,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 
 	collectionPaths := []string{}
 	runner.Binds = nil
+	needCertMount := true
 
 	for bind, mnt := range runner.Container.Mounts {
 		if bind == "stdout" {
@@ -273,6 +274,9 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			if !strings.HasPrefix(mnt.Path, prefix) {
 				return fmt.Errorf("Stdout path does not start with OutputPath: %s, %s", mnt.Path, prefix)
 			}
+		}
+		if bind == "/etc/arvados/ca-certificates.crt" {
+			needCertMount = false
 		}
 
 		switch {
@@ -353,6 +357,16 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 
 	if runner.HostOutputDir == "" {
 		return fmt.Errorf("Output path does not correspond to a writable mount point")
+	}
+
+	if wantAPI := runner.Container.RuntimeConstraints.API; needCertMount && wantAPI != nil && *wantAPI {
+		for _, certfile := range arvadosclient.CertFiles {
+			_, err := os.Stat(certfile)
+			if err == nil {
+				runner.Binds = append(runner.Binds, fmt.Sprintf("%s:/etc/arvados/ca-certificates.crt:ro", certfile))
+				break
+			}
+		}
 	}
 
 	if pdhOnly {
@@ -623,7 +637,7 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{
 			"collection": arvadosclient.Dict{
-				"expires_at":    time.Now().Add(runner.trashLifetime).Format(time.RFC3339),
+				"trash_at":      time.Now().Add(runner.trashLifetime).Format(time.RFC3339),
 				"name":          "output for " + runner.Container.UUID,
 				"manifest_text": manifestText}},
 		&response)
@@ -694,7 +708,7 @@ func (runner *ContainerRunner) CommitLogs() error {
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{
 			"collection": arvadosclient.Dict{
-				"expires_at":    time.Now().Add(runner.trashLifetime).Format(time.RFC3339),
+				"trash_at":      time.Now().Add(runner.trashLifetime).Format(time.RFC3339),
 				"name":          "logs for " + runner.Container.UUID,
 				"manifest_text": mt}},
 		&response)
@@ -737,10 +751,10 @@ func (runner *ContainerRunner) ContainerToken() (string, error) {
 func (runner *ContainerRunner) UpdateContainerFinal() error {
 	update := arvadosclient.Dict{}
 	update["state"] = runner.finalState
+	if runner.LogsPDH != nil {
+		update["log"] = *runner.LogsPDH
+	}
 	if runner.finalState == "Complete" {
-		if runner.LogsPDH != nil {
-			update["log"] = *runner.LogsPDH
-		}
 		if runner.ExitCode != nil {
 			update["exit_code"] = *runner.ExitCode
 		}
@@ -800,6 +814,7 @@ func (runner *ContainerRunner) Run() (err error) {
 		checkErr(err)
 
 		if runner.finalState == "Queued" {
+			runner.CrunchLog.Close()
 			runner.UpdateContainerFinal()
 			return
 		}
@@ -832,6 +847,7 @@ func (runner *ContainerRunner) Run() (err error) {
 	// check for and/or load image
 	err = runner.LoadImage()
 	if err != nil {
+		runner.finalState = "Cancelled"
 		err = fmt.Errorf("While loading container image: %v", err)
 		return
 	}
@@ -839,6 +855,7 @@ func (runner *ContainerRunner) Run() (err error) {
 	// set up FUSE mount and binds
 	err = runner.SetupMounts()
 	if err != nil {
+		runner.finalState = "Cancelled"
 		err = fmt.Errorf("While setting up mounts: %v", err)
 		return
 	}
@@ -895,9 +912,14 @@ func main() {
 	cgroupRoot := flag.String("cgroup-root", "/sys/fs/cgroup", "path to sysfs cgroup tree")
 	cgroupParent := flag.String("cgroup-parent", "docker", "name of container's parent cgroup (ignored if -cgroup-parent-subsystem is used)")
 	cgroupParentSubsystem := flag.String("cgroup-parent-subsystem", "", "use current cgroup for given subsystem as parent cgroup for container")
+	caCertsPath := flag.String("ca-certs", "", "Path to TLS root certificates")
 	flag.Parse()
 
 	containerId := flag.Arg(0)
+
+	if *caCertsPath != "" {
+		arvadosclient.CertFiles = []string{*caCertsPath}
+	}
 
 	api, err := arvadosclient.MakeArvadosClient()
 	if err != nil {

@@ -31,6 +31,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         create_kwargs = create_kwargs.copy()
         create_kwargs.setdefault('external_ip', None)
         create_kwargs.setdefault('ex_metadata', {})
+        self._project = auth_kwargs.get("project")
         super(ComputeNodeDriver, self).__init__(
             auth_kwargs, list_kwargs, create_kwargs,
             driver_class)
@@ -44,7 +45,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
     def _init_image(self, image_name):
         return 'image', self.search_for(
-            image_name, 'list_images', self._name_key)
+            image_name, 'list_images', self._name_key, ex_project=self._project)
 
     def _init_network(self, network_name):
         return 'ex_network', self.search_for(

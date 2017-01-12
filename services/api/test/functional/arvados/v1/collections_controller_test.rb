@@ -1,6 +1,7 @@
 require 'test_helper'
 
 class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
+  include DbCurrentTime
 
   PERM_TOKEN_RE = /\+A[[:xdigit:]]+@[[:xdigit:]]{8}\b/
 
@@ -823,11 +824,11 @@ EOS
     [2**8, :success],
     [2**18, 422],
   ].each do |description_size, expected_response|
-    test "create collection with description size #{description_size}
+    # Descriptions are not part of search indexes. Skip until
+    # full-text search is implemented, at which point replace with a
+    # search in description.
+    skip "create collection with description size #{description_size}
           and expect response #{expected_response}" do
-      skip "(Descriptions are not part of search indexes. Skip until full-text search
-            is implemented, at which point replace with a search in description.)"
-
       authorize_with :active
 
       description = 'here is a collection with a very large description'
@@ -957,6 +958,70 @@ EOS
         }
       }
       assert_response 200
+    end
+  end
+
+  test 'get trashed collection with include_trash' do
+    uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
+    authorize_with :active
+    get :show, {
+      id: uuid,
+      include_trash: true,
+    }
+    assert_response 200
+  end
+
+  test 'get trashed collection without include_trash' do
+    uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
+    authorize_with :active
+    get :show, {
+      id: uuid,
+    }
+    assert_response 404
+  end
+
+  test 'trash collection using http DELETE verb' do
+    uuid = collections(:collection_owned_by_active).uuid
+    authorize_with :active
+    delete :destroy, {
+      id: uuid,
+    }
+    assert_response 200
+    c = Collection.unscoped.find_by_uuid(uuid)
+    assert_operator c.trash_at, :<, db_current_time
+    assert_equal c.delete_at, c.trash_at + Rails.configuration.blob_signature_ttl
+  end
+
+  test 'delete long-trashed collection immediately using http DELETE verb' do
+    uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
+    authorize_with :active
+    delete :destroy, {
+      id: uuid,
+    }
+    assert_response 200
+    c = Collection.unscoped.find_by_uuid(uuid)
+    assert_operator c.trash_at, :<, db_current_time
+    assert_operator c.delete_at, :<, db_current_time
+  end
+
+  ['zzzzz-4zz18-mto52zx1s7sn3ih', # expired_collection
+   :empty_collection_name_in_active_user_home_project,
+  ].each do |fixture|
+    test "trash collection #{fixture} via trash action with grace period" do
+      if fixture.is_a? String
+        uuid = fixture
+      else
+        uuid = collections(fixture).uuid
+      end
+      authorize_with :active
+      time_before_trashing = db_current_time
+      post :trash, {
+        id: uuid,
+      }
+      assert_response 200
+      c = Collection.unscoped.find_by_uuid(uuid)
+      assert_operator c.trash_at, :<, db_current_time
+      assert_operator c.delete_at, :>=, time_before_trashing + Rails.configuration.default_trash_lifetime
     end
   end
 end

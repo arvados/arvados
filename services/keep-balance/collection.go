@@ -30,7 +30,9 @@ func EachCollection(c *arvados.Client, pageSize int, f func(arvados.Collection) 
 		progress = func(_, _ int) {}
 	}
 
-	expectCount, err := countCollections(c, arvados.ResourceListParams{})
+	expectCount, err := countCollections(c, arvados.ResourceListParams{
+		IncludeTrash: true,
+	})
 	if err != nil {
 		return err
 	}
@@ -41,9 +43,10 @@ func EachCollection(c *arvados.Client, pageSize int, f func(arvados.Collection) 
 		limit = 1<<31 - 1
 	}
 	params := arvados.ResourceListParams{
-		Limit:  &limit,
-		Order:  "modified_at, uuid",
-		Select: []string{"uuid", "unsigned_manifest_text", "modified_at", "portable_data_hash", "replication_desired"},
+		Limit:        &limit,
+		Order:        "modified_at, uuid",
+		Select:       []string{"uuid", "unsigned_manifest_text", "modified_at", "portable_data_hash", "replication_desired"},
+		IncludeTrash: true,
 	}
 	var last arvados.Collection
 	var filterTime time.Time
@@ -89,10 +92,13 @@ func EachCollection(c *arvados.Client, pageSize int, f func(arvados.Collection) 
 	}
 	progress(callCount, expectCount)
 
-	if checkCount, err := countCollections(c, arvados.ResourceListParams{Filters: []arvados.Filter{{
-		Attr:     "modified_at",
-		Operator: "<=",
-		Operand:  filterTime}}}); err != nil {
+	if checkCount, err := countCollections(c, arvados.ResourceListParams{
+		Filters: []arvados.Filter{{
+			Attr:     "modified_at",
+			Operator: "<=",
+			Operand:  filterTime}},
+		IncludeTrash: true,
+	}); err != nil {
 		return err
 	} else if callCount < checkCount {
 		return fmt.Errorf("Retrieved %d collections with modtime <= T=%q, but server now reports there are %d collections with modtime <= T", callCount, filterTime, checkCount)

@@ -12,7 +12,7 @@ import (
 // Collection is an arvados#collection resource.
 type Collection struct {
 	UUID                   string     `json:"uuid,omitempty"`
-	ExpiresAt              *time.Time `json:"expires_at,omitempty"`
+	TrashAt                *time.Time `json:"trash_at,omitempty"`
 	ManifestText           string     `json:"manifest_text,omitempty"`
 	UnsignedManifestText   string     `json:"unsigned_manifest_text,omitempty"`
 	CreatedAt              *time.Time `json:"created_at,omitempty"`
@@ -21,6 +21,8 @@ type Collection struct {
 	ReplicationConfirmed   *int       `json:"replication_confirmed,omitempty"`
 	ReplicationConfirmedAt *time.Time `json:"replication_confirmed_at,omitempty"`
 	ReplicationDesired     *int       `json:"replication_desired,omitempty"`
+	DeleteAt               *time.Time `json:"delete_at,omitempty"`
+	IsTrashed              bool       `json:"is_trashed,omitempty"`
 }
 
 // SizedDigests returns the hash+size part of each data block

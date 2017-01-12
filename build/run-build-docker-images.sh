@@ -148,7 +148,7 @@ title "uploading images"
 
 timer_reset
 
-if [[ "$ECODE" != "0" ]]; then
+if [[ "$EXITCODE" != "0" ]]; then
     title "upload arvados images SKIPPED because build failed"
 else
     if [[ $upload == true ]]; then

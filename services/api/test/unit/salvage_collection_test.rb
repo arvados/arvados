@@ -60,7 +60,7 @@ class SalvageCollectionTest < ActiveSupport::TestCase
     updated_name = updated_src_collection.name
     assert_equal true, updated_name.include?(src_collection.name)
 
-    match = updated_name.match /^test collection.*salvaged data at (.*)\)$/
+    match = updated_name.match(/^test collection.*salvaged data at (.*)\)$/)
     assert_not_nil match
     assert_not_nil match[1]
     assert_empty updated_src_collection.manifest_text
@@ -68,7 +68,7 @@ class SalvageCollectionTest < ActiveSupport::TestCase
     # match[1] is the uuid of the new collection created from src_collection's salvaged data
     # use this to get the new collection and verify
     new_collection = Collection.find_by_uuid match[1]
-    match = new_collection.name.match /^salvaged from (.*),.*/
+    match = new_collection.name.match(/^salvaged from (.*),.*/)
     assert_not_nil match
     assert_equal src_collection.uuid, match[1]
 
@@ -80,7 +80,7 @@ class SalvageCollectionTest < ActiveSupport::TestCase
   end
 
   test "salvage collection with no uuid required argument" do
-    e = assert_raises RuntimeError do
+    assert_raises RuntimeError do
       salvage_collection nil
     end
   end
@@ -107,7 +107,7 @@ class SalvageCollectionTest < ActiveSupport::TestCase
     e = assert_raises RuntimeError do
       salvage_collection collections('user_agreement').uuid
     end
-    assert_match /Error during arv-put: pid \d+ exit \d+ \(cmd was \"arv-put .*\"\)/, e.message
+    assert_match(/Error during arv-put: pid \d+ exit \d+ \(cmd was \"arv-put .*\"\)/, e.message)
   end
 
   # This test uses BAD_MANIFEST, which has the following flaws:
@@ -146,7 +146,7 @@ class SalvageCollectionTest < ActiveSupport::TestCase
     updated_name = updated_src_collection.name
     assert_equal true, updated_name.include?(src_collection.name)
 
-    match = updated_name.match /^test collection.*salvaged data at (.*)\)$/
+    match = updated_name.match(/^test collection.*salvaged data at (.*)\)$/)
     assert_not_nil match
     assert_not_nil match[1]
     assert_empty updated_src_collection.manifest_text
@@ -154,7 +154,7 @@ class SalvageCollectionTest < ActiveSupport::TestCase
     # match[1] is the uuid of the new collection created from src_collection's salvaged data
     # use this to get the new collection and verify
     new_collection = Collection.find_by_uuid match[1]
-    match = new_collection.name.match /^salvaged from (.*),.*/
+    match = new_collection.name.match(/^salvaged from (.*),.*/)
     assert_not_nil match
     assert_equal src_collection.uuid, match[1]
     # verify the new collection's manifest includes the bad locators

@@ -103,7 +103,7 @@ type AzureBlobVolume struct {
 	RequestTimeout        arvados.Duration
 
 	azClient storage.Client
-	bsClient storage.BlobStorageClient
+	bsClient *azureBlobClient
 }
 
 // Examples implements VolumeWithExamples.
@@ -147,7 +147,10 @@ func (v *AzureBlobVolume) Start() error {
 	v.azClient.HTTPClient = &http.Client{
 		Timeout: time.Duration(v.RequestTimeout),
 	}
-	v.bsClient = v.azClient.GetBlobService()
+	bs := v.azClient.GetBlobService()
+	v.bsClient = &azureBlobClient{
+		client: &bs,
+	}
 
 	ok, err := v.bsClient.ContainerExists(v.ContainerName)
 	if err != nil {
@@ -187,7 +190,7 @@ func (v *AzureBlobVolume) Get(ctx context.Context, loc string, buf []byte) (int,
 	}
 	var deadline time.Time
 	haveDeadline := false
-	size, err := v.get(loc, buf)
+	size, err := v.get(ctx, loc, buf)
 	for err == nil && size == 0 && loc != "d41d8cd98f00b204e9800998ecf8427e" {
 		// Seeing a brand new empty block probably means we're
 		// in a race with CreateBlob, which under the hood
@@ -208,8 +211,12 @@ func (v *AzureBlobVolume) Get(ctx context.Context, loc string, buf []byte) (int,
 		} else if time.Now().After(deadline) {
 			break
 		}
-		time.Sleep(azureWriteRacePollTime)
-		size, err = v.get(loc, buf)
+		select {
+		case <-ctx.Done():
+			return 0, ctx.Err()
+		case <-time.After(azureWriteRacePollTime):
+		}
+		size, err = v.get(ctx, loc, buf)
 	}
 	if haveDeadline {
 		log.Printf("Race ended with size==%d", size)
@@ -217,7 +224,9 @@ func (v *AzureBlobVolume) Get(ctx context.Context, loc string, buf []byte) (int,
 	return size, err
 }
 
-func (v *AzureBlobVolume) get(loc string, buf []byte) (int, error) {
+func (v *AzureBlobVolume) get(ctx context.Context, loc string, buf []byte) (int, error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
 	expectSize := len(buf)
 	if azureMaxGetBytes < BlockSize {
 		// Unfortunately the handler doesn't tell us how long the blob
@@ -239,10 +248,18 @@ func (v *AzureBlobVolume) get(loc string, buf []byte) (int, error) {
 	// We'll update this actualSize if/when we get the last piece.
 	actualSize := -1
 	pieces := (expectSize + azureMaxGetBytes - 1) / azureMaxGetBytes
-	errors := make([]error, pieces)
+	errors := make(chan error, pieces)
 	var wg sync.WaitGroup
 	wg.Add(pieces)
 	for p := 0; p < pieces; p++ {
+		// Each goroutine retrieves one piece. If we hit an
+		// error, it is sent to the errors chan so get() can
+		// return it -- but only if the error happens before
+		// ctx is done. This way, if ctx is done before we hit
+		// any other error (e.g., requesting client has hung
+		// up), we return the original ctx.Err() instead of
+		// the secondary errors from the transfers that got
+		// interrupted as a result.
 		go func(p int) {
 			defer wg.Done()
 			startPos := p * azureMaxGetBytes
@@ -252,23 +269,51 @@ func (v *AzureBlobVolume) get(loc string, buf []byte) (int, error) {
 			}
 			var rdr io.ReadCloser
 			var err error
-			if startPos == 0 && endPos == expectSize {
-				rdr, err = v.bsClient.GetBlob(v.ContainerName, loc)
-			} else {
-				rdr, err = v.bsClient.GetBlobRange(v.ContainerName, loc, fmt.Sprintf("%d-%d", startPos, endPos-1), nil)
+			gotRdr := make(chan struct{})
+			go func() {
+				defer close(gotRdr)
+				if startPos == 0 && endPos == expectSize {
+					rdr, err = v.bsClient.GetBlob(v.ContainerName, loc)
+				} else {
+					rdr, err = v.bsClient.GetBlobRange(v.ContainerName, loc, fmt.Sprintf("%d-%d", startPos, endPos-1), nil)
+				}
+			}()
+			select {
+			case <-ctx.Done():
+				go func() {
+					<-gotRdr
+					if err == nil {
+						rdr.Close()
+					}
+				}()
+				return
+			case <-gotRdr:
 			}
 			if err != nil {
-				errors[p] = err
+				errors <- err
+				cancel()
 				return
 			}
-			defer rdr.Close()
+			go func() {
+				// Close the reader when the client
+				// hangs up or another piece fails
+				// (possibly interrupting ReadFull())
+				// or when all pieces succeed and
+				// get() returns.
+				<-ctx.Done()
+				rdr.Close()
+			}()
 			n, err := io.ReadFull(rdr, buf[startPos:endPos])
 			if pieces == 1 && (err == io.ErrUnexpectedEOF || err == io.EOF) {
 				// If we don't know the actual size,
 				// and just tried reading 64 MiB, it's
 				// normal to encounter EOF.
 			} else if err != nil {
-				errors[p] = err
+				if ctx.Err() == nil {
+					errors <- err
+				}
+				cancel()
+				return
 			}
 			if p == pieces-1 {
 				actualSize = startPos + n
@@ -276,10 +321,12 @@ func (v *AzureBlobVolume) get(loc string, buf []byte) (int, error) {
 		}(p)
 	}
 	wg.Wait()
-	for _, err := range errors {
-		if err != nil {
-			return 0, v.translateError(err)
-		}
+	close(errors)
+	if len(errors) > 0 {
+		return 0, v.translateError(<-errors)
+	}
+	if ctx.Err() != nil {
+		return 0, ctx.Err()
 	}
 	return actualSize, nil
 }
@@ -293,7 +340,23 @@ func (v *AzureBlobVolume) Compare(ctx context.Context, loc string, expect []byte
 	if trashed {
 		return os.ErrNotExist
 	}
-	rdr, err := v.bsClient.GetBlob(v.ContainerName, loc)
+	var rdr io.ReadCloser
+	gotRdr := make(chan struct{})
+	go func() {
+		defer close(gotRdr)
+		rdr, err = v.bsClient.GetBlob(v.ContainerName, loc)
+	}()
+	select {
+	case <-ctx.Done():
+		go func() {
+			<-gotRdr
+			if err == nil {
+				rdr.Close()
+			}
+		}()
+		return ctx.Err()
+	case <-gotRdr:
+	}
 	if err != nil {
 		return v.translateError(err)
 	}
@@ -306,7 +369,36 @@ func (v *AzureBlobVolume) Put(ctx context.Context, loc string, block []byte) err
 	if v.ReadOnly {
 		return MethodDisabledError
 	}
-	return v.bsClient.CreateBlockBlobFromReader(v.ContainerName, loc, uint64(len(block)), bytes.NewReader(block), nil)
+	// Send the block data through a pipe, so that (if we need to)
+	// we can close the pipe early and abandon our
+	// CreateBlockBlobFromReader() goroutine, without worrying
+	// about CreateBlockBlobFromReader() accessing our block
+	// buffer after we release it.
+	bufr, bufw := io.Pipe()
+	go func() {
+		io.Copy(bufw, bytes.NewReader(block))
+		bufw.Close()
+	}()
+	errChan := make(chan error)
+	go func() {
+		errChan <- v.bsClient.CreateBlockBlobFromReader(v.ContainerName, loc, uint64(len(block)), bufr, nil)
+	}()
+	select {
+	case <-ctx.Done():
+		theConfig.debugLogf("%s: taking CreateBlockBlobFromReader's input away: %s", v, ctx.Err())
+		// Our pipe might be stuck in Write(), waiting for
+		// io.Copy() to read. If so, un-stick it. This means
+		// CreateBlockBlobFromReader will get corrupt data,
+		// but that's OK: the size won't match, so the write
+		// will fail.
+		go io.Copy(ioutil.Discard, bufr)
+		// CloseWithError() will return once pending I/O is done.
+		bufw.CloseWithError(ctx.Err())
+		theConfig.debugLogf("%s: abandoning CreateBlockBlobFromReader goroutine", v)
+		return ctx.Err()
+	case err := <-errChan:
+		return err
+	}
 }
 
 // Touch updates the last-modified property of a block blob.
@@ -533,4 +625,105 @@ func (v *AzureBlobVolume) EmptyTrash() {
 	}
 
 	log.Printf("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
+}
+
+// InternalStats returns bucket I/O and API call counters.
+func (v *AzureBlobVolume) InternalStats() interface{} {
+	return &v.bsClient.stats
+}
+
+type azureBlobStats struct {
+	statsTicker
+	Ops              uint64
+	GetOps           uint64
+	GetRangeOps      uint64
+	GetMetadataOps   uint64
+	GetPropertiesOps uint64
+	CreateOps        uint64
+	SetMetadataOps   uint64
+	DelOps           uint64
+	ListOps          uint64
+}
+
+func (s *azureBlobStats) TickErr(err error) {
+	if err == nil {
+		return
+	}
+	errType := fmt.Sprintf("%T", err)
+	if err, ok := err.(storage.AzureStorageServiceError); ok {
+		errType = errType + fmt.Sprintf(" %d (%s)", err.StatusCode, err.Code)
+	}
+	log.Printf("errType %T, err %s", err, err)
+	s.statsTicker.TickErr(err, errType)
+}
+
+// azureBlobClient wraps storage.BlobStorageClient in order to count
+// I/O and API usage stats.
+type azureBlobClient struct {
+	client *storage.BlobStorageClient
+	stats  azureBlobStats
+}
+
+func (c *azureBlobClient) ContainerExists(cname string) (bool, error) {
+	c.stats.Tick(&c.stats.Ops)
+	ok, err := c.client.ContainerExists(cname)
+	c.stats.TickErr(err)
+	return ok, err
+}
+
+func (c *azureBlobClient) GetBlobMetadata(cname, bname string) (map[string]string, error) {
+	c.stats.Tick(&c.stats.Ops, &c.stats.GetMetadataOps)
+	m, err := c.client.GetBlobMetadata(cname, bname)
+	c.stats.TickErr(err)
+	return m, err
+}
+
+func (c *azureBlobClient) GetBlobProperties(cname, bname string) (*storage.BlobProperties, error) {
+	c.stats.Tick(&c.stats.Ops, &c.stats.GetPropertiesOps)
+	p, err := c.client.GetBlobProperties(cname, bname)
+	c.stats.TickErr(err)
+	return p, err
+}
+
+func (c *azureBlobClient) GetBlob(cname, bname string) (io.ReadCloser, error) {
+	c.stats.Tick(&c.stats.Ops, &c.stats.GetOps)
+	rdr, err := c.client.GetBlob(cname, bname)
+	c.stats.TickErr(err)
+	return NewCountingReader(rdr, c.stats.TickInBytes), err
+}
+
+func (c *azureBlobClient) GetBlobRange(cname, bname, byterange string, hdrs map[string]string) (io.ReadCloser, error) {
+	c.stats.Tick(&c.stats.Ops, &c.stats.GetRangeOps)
+	rdr, err := c.client.GetBlobRange(cname, bname, byterange, hdrs)
+	c.stats.TickErr(err)
+	return NewCountingReader(rdr, c.stats.TickInBytes), err
+}
+
+func (c *azureBlobClient) CreateBlockBlobFromReader(cname, bname string, size uint64, rdr io.Reader, hdrs map[string]string) error {
+	c.stats.Tick(&c.stats.Ops, &c.stats.CreateOps)
+	rdr = NewCountingReader(rdr, c.stats.TickOutBytes)
+	err := c.client.CreateBlockBlobFromReader(cname, bname, size, rdr, hdrs)
+	c.stats.TickErr(err)
+	return err
+}
+
+func (c *azureBlobClient) SetBlobMetadata(cname, bname string, m, hdrs map[string]string) error {
+	c.stats.Tick(&c.stats.Ops, &c.stats.SetMetadataOps)
+	err := c.client.SetBlobMetadata(cname, bname, m, hdrs)
+	c.stats.TickErr(err)
+	return err
+}
+
+func (c *azureBlobClient) ListBlobs(cname string, params storage.ListBlobsParameters) (storage.BlobListResponse, error) {
+	c.stats.Tick(&c.stats.Ops, &c.stats.ListOps)
+	resp, err := c.client.ListBlobs(cname, params)
+	c.stats.TickErr(err)
+	return resp, err
+}
+
+func (c *azureBlobClient) DeleteBlob(cname, bname string, hdrs map[string]string) error {
+	c.stats.Tick(&c.stats.Ops, &c.stats.DelOps)
+	err := c.client.DeleteBlob(cname, bname, hdrs)
+	c.stats.TickErr(err)
+	return err
 }

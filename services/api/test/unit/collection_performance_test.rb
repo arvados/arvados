@@ -17,8 +17,7 @@ class CollectionModelPerformanceTest < ActiveSupport::TestCase
   end
 
   # "crrud" == "create read render update delete", not a typo
-  test "crrud cycle for a collection with a big manifest)" do
-    slow_test
+  slow_test "crrud cycle for a collection with a big manifest)" do
     bigmanifest = time_block 'make example' do
       make_manifest(streams: 100,
                     files_per_stream: 100,
@@ -44,7 +43,7 @@ class CollectionModelPerformanceTest < ActiveSupport::TestCase
         c.signed_manifest_text
       end
       time_block 'sign + render' do
-        resp = c.as_api_response(nil)
+        c.as_api_response(nil)
       end
       loc = Blob.sign_locator(Digest::MD5.hexdigest('foo') + '+3',
                               api_token: api_token(:active))
