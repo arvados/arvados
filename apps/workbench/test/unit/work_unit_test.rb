@@ -53,11 +53,11 @@ class WorkUnitTest < ActiveSupport::TestCase
   end
 
   [
-    [Job, 'running_job_with_components', 1, 1, nil],
-    [Job, 'queued', nil, 0, 1],
-    [PipelineInstance, 'pipeline_in_running_state', 1, 1, nil],
-    [PipelineInstance, 'has_component_with_completed_jobs', 60, 60, nil],
-  ].each do |type, fixture, walltime, cputime, queuedtime|
+    [Job, 'running_job_with_components', 1, 1, nil, true],
+    [Job, 'queued', nil, 0, 1, false],
+    [PipelineInstance, 'pipeline_in_running_state', 1, 1, nil, false],
+    [PipelineInstance, 'has_component_with_completed_jobs', 60, 60, nil, true],
+  ].each do |type, fixture, walltime, cputime, queuedtime, cputime_more_than_walltime|
     test "times for #{fixture}" do
       use_token 'active'
       obj = find_fixture(type, fixture)
@@ -80,6 +80,8 @@ class WorkUnitTest < ActiveSupport::TestCase
       else
         assert_equal queuedtime, wu.queuedtime
       end
+
+      assert_equal cputime_more_than_walltime, (wu.cputime > wu.walltime) if wu.cputime and wu.walltime
     end
   end
 
