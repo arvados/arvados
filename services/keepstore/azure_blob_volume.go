@@ -97,6 +97,7 @@ func init() {
 type AzureBlobVolume struct {
 	StorageAccountName    string
 	StorageAccountKeyFile string
+	StorageBaseURL        string // "" means default, "core.windows.net"
 	ContainerName         string
 	AzureReplication      int
 	ReadOnly              bool
@@ -136,7 +137,10 @@ func (v *AzureBlobVolume) Start() error {
 	if err != nil {
 		return err
 	}
-	v.azClient, err = storage.NewBasicClient(v.StorageAccountName, accountKey)
+	if v.StorageBaseURL == "" {
+		v.StorageBaseURL = storage.DefaultBaseURL
+	}
+	v.azClient, err = storage.NewClient(v.StorageAccountName, accountKey, v.StorageBaseURL, storage.DefaultAPIVersion, true)
 	if err != nil {
 		return fmt.Errorf("creating Azure storage client: %s", err)
 	}
