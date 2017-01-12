@@ -117,6 +117,14 @@ func (*AzureBlobVolume) Examples() []Volume {
 			AzureReplication:      3,
 			RequestTimeout:        azureDefaultRequestTimeout,
 		},
+		&AzureBlobVolume{
+			StorageAccountName:    "cn-account-name",
+			StorageAccountKeyFile: "/etc/azure_cn_storage_account_key.txt",
+			StorageBaseURL:        "core.chinacloudapi.cn",
+			ContainerName:         "cn-container-name",
+			AzureReplication:      3,
+			RequestTimeout:        azureDefaultRequestTimeout,
+		},
 	}
 }
 
