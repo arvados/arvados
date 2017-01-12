@@ -345,7 +345,7 @@ EOS
         ensure_unique_name: true
       }
       assert_response :success
-      assert_equal 'owned_by_active (2)', json_response['name']
+      assert_match /^owned_by_active \(\d{4}-\d\d-\d\d.*?Z\)$/, json_response['name']
     end
   end
 
