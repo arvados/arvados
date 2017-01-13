@@ -113,7 +113,7 @@ def main():
     copy_opts.set_defaults(recursive=True)
 
     parser = argparse.ArgumentParser(
-        description='Copy a pipeline instance, template or collection from one Arvados instance to another.',
+        description='Copy a pipeline instance, template, workflow, or collection from one Arvados instance to another.',
         parents=[copy_opts, arv_cmd.retry_opt])
     args = parser.parse_args()
 
@@ -435,7 +435,7 @@ def copy_workflow(wf_uuid, src, dst, args):
             if graph is not None:
                 workflow_collections(graph, locations, docker_images)
             else:
-                workflow_collections(graph, locations, docker_images)
+                workflow_collections(wf_def, locations, docker_images)
 
             if locations:
                 copy_collections(locations, src, dst, args)
@@ -455,9 +455,7 @@ def workflow_collections(obj, locations, docker_images):
             if loc.startswith("keep:"):
                 locations.append(loc[5:])
 
-        docker_image = obj.get('dockerImageId', None)
-        if docker_image is None:
-            docker_image = obj.get('dockerPull', None)
+        docker_image = obj.get('dockerImageId', None) or obj.get('dockerPull', None)
         if docker_image is not None:
             ds = docker_image.split(":", 1)
             tag = ds[1] if len(ds)==2 else 'latest'
@@ -465,8 +463,7 @@ def workflow_collections(obj, locations, docker_images):
 
         for x in obj:
             workflow_collections(obj[x], locations, docker_images)
-
-    if isinstance(obj, list):
+    elif isinstance(obj, list):
         for x in obj:
             workflow_collections(x, locations, docker_images)
 
