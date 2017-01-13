@@ -51,7 +51,8 @@ setup(name='arvados-python-client',
           'pycurl >=7.19.5.1, <7.21.5',
           'python-gflags<3.0',
           'setuptools',
-          'ws4py'
+          'ws4py',
+          'ruamel.yaml==0.13.7'
       ],
       test_suite='tests',
       tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML'],
