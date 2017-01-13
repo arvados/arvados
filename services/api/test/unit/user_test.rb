@@ -276,10 +276,12 @@ class UserTest < ActiveSupport::TestCase
     assert @uninvited_user.can? :write=>"#{@uninvited_user.uuid}"
     assert @uninvited_user.can? :manage=>"#{@uninvited_user.uuid}"
 
-    assert @uninvited_user.groups_i_can(:read).size == 1, "inactive and uninvited user can only read anonymous user group"
-    assert @uninvited_user.groups_i_can(:read).first.ends_with? 'anonymouspublic' , "inactive and uninvited user can only read anonymous user group"
-    assert @uninvited_user.groups_i_can(:write).size == 0, "inactive and uninvited user should not be able write to any groups"
-    assert @uninvited_user.groups_i_can(:manage).size == 0, "inactive and uninvited user should not be able manage any groups"
+    assert_equal(@uninvited_user.groups_i_can(:read).sort,
+                 [@uninvited_user.uuid, groups(:anonymous_group).uuid].sort)
+    assert_equal(@uninvited_user.groups_i_can(:write),
+                 [@uninvited_user.uuid])
+    assert_equal(@uninvited_user.groups_i_can(:manage),
+                 [@uninvited_user.uuid])
   end
 
   test "find user method checks" do

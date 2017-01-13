@@ -171,9 +171,13 @@ def uploadfiles(files, api, dry_run=False, num_retries=0, project=None, fnPatter
                 collection.start_new_stream(stream)
             collection.write_file(f.fn, sp[1])
 
-        exists = api.collections().list(filters=[["owner_uuid", "=", project],
-                                                 ["portable_data_hash", "=", collection.portable_data_hash()],
-                                                 ["name", "=", name]]).execute(num_retries=num_retries)
+        filters=[["portable_data_hash", "=", collection.portable_data_hash()],
+                 ["name", "like", name+"%"]]
+        if project:
+            filters.append(["owner_uuid", "=", project])
+
+        exists = api.collections().list(filters=filters).execute(num_retries=num_retries)
+
         if exists["items"]:
             item = exists["items"][0]
             logger.info("Using collection %s", item["uuid"])

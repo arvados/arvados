@@ -510,6 +510,8 @@ completed_job_in_publicly_accessible_project:
   log: zzzzz-4zz18-4en62shvi99lxd4
   output: b519d9cb706a29fc7ea24dbea2f05851+93
   script_parameters_digest: 02a085407e751d00b5dc88f1bd5e8247
+  started_at: <%= 10.minute.ago.to_s(:db) %>
+  finished_at: <%= 5.minute.ago.to_s(:db) %>
 
 job_in_publicly_accessible_project_but_other_objects_elsewhere:
   uuid: zzzzz-8i9sb-jyq01muyhgr4ofj

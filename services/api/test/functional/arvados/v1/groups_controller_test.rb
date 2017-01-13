@@ -380,9 +380,8 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_not_equal(new_project['uuid'],
                      groups(:aproject).uuid,
                      "create returned same uuid as existing project")
-    assert_equal(new_project['name'],
-                 'A Project (2)',
-                 "new project name '#{new_project['name']}' was expected to be 'A Project (2)'")
+    assert_match(/^A Project \(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z\)$/,
+                 new_project['name'])
   end
 
   test "unsharing a project results in hiding it from previously shared user" do

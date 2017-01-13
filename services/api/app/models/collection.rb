@@ -31,6 +31,7 @@ class Collection < ArvadosModel
     t.add :properties
     t.add :portable_data_hash
     t.add :signed_manifest_text, as: :manifest_text
+    t.add :manifest_text, as: :unsigned_manifest_text
     t.add :replication_desired
     t.add :replication_confirmed
     t.add :replication_confirmed_at
@@ -55,6 +56,7 @@ class Collection < ArvadosModel
                 # We need trash_at and is_trashed to determine the
                 # correct timestamp in signed_manifest_text.
                 'manifest_text' => ['manifest_text', 'trash_at', 'is_trashed'],
+                'unsigned_manifest_text' => ['manifest_text'],
                 )
   end
 
