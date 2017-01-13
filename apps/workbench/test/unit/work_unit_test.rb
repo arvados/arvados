@@ -54,7 +54,7 @@ class WorkUnitTest < ActiveSupport::TestCase
 
   [
     [Job, 'running_job_with_components', 1, 1, nil],
-    [Job, 'queued', nil, nil, 1],
+    [Job, 'queued', nil, 0, 1],
     [PipelineInstance, 'pipeline_in_running_state', 1, 1, nil],
     [PipelineInstance, 'has_component_with_completed_jobs', 60, 60, nil],
   ].each do |type, fixture, walltime, cputime, queuedtime|
