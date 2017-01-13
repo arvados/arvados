@@ -401,7 +401,7 @@ class _BlockManager(object):
 
     """
 
-    DEFAULT_PUT_THREADS = 2
+    DEFAULT_PUT_THREADS = 6
     DEFAULT_GET_THREADS = 2
 
     def __init__(self, keep, copies=None):
@@ -498,7 +498,7 @@ class _BlockManager(object):
                 # blocks pending.  If they are full 64 MiB blocks, that means up to
                 # 256 MiB of internal buffering, which is the same size as the
                 # default download block cache in KeepClient.
-                self._put_queue = Queue.Queue(maxsize=2)
+                self._put_queue = Queue.Queue(maxsize=1)
 
                 self._put_threads = []
                 for i in xrange(0, self.num_put_threads):
