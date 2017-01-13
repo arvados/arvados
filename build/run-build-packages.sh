@@ -109,7 +109,7 @@ case "$TARGET" in
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
-            cachecontrol junit-xml==1.7)
+            cachecontrol junit-xml==1.7 futures==3.0.5)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         ;;
     ubuntu1204)
@@ -120,7 +120,7 @@ case "$TARGET" in
             ciso8601 pycrypto backports.ssl_match_hostname llfuse==0.41.1 \
             contextlib2 'pycurl<7.21.5' pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro isodate ruamel.ordereddict
-            cachecontrol requests junit-xml==1.7)
+            cachecontrol requests junit-xml==1.7 futures==3.0.5)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         ;;
     ubuntu1404)
@@ -129,7 +129,7 @@ case "$TARGET" in
             google-api-python-client==1.4.2 six uritemplate oauth2client==1.5.2 httplib2 \
             rsa 'pycurl<7.21.5' backports.ssl_match_hostname pyyaml 'rdflib>=4.2.0' \
             shellescape mistune typing avro ruamel.ordereddict
-            cachecontrol junit-xml==1.7)
+            cachecontrol junit-xml==1.7 futures==3.0.5)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 requests websocket-client==0.37.0)
         ;;
     centos7)
@@ -148,7 +148,7 @@ case "$TARGET" in
             python-daemon==2.1.1 llfuse==0.41.1 'pbr<1.0' pyyaml contextlib2 \
             'rdflib>=4.2.0' shellescape mistune typing avro \
             isodate pyparsing sparqlwrapper html5lib==0.9999999 keepalive \
-            ruamel.ordereddict cachecontrol junit-xml==1.7)
+            ruamel.ordereddict cachecontrol junit-xml==1.7 futures==3.0.5)
         PYTHON3_BACKPORTS=(docker-py==1.7.2 six requests websocket-client==0.37.0)
         export PYCURL_SSL_LIBRARY=nss
         ;;
