@@ -520,6 +520,15 @@ while read -r line || [[ -n "$line" ]]; do
   arch=${arr[5]}
   extra=${arr[6]}
 
+  if [[ "$FORMAT" == "rpm" ]]; then
+    if [[ "$arch" == "all" ]]; then
+      arch="noarch"
+    fi
+    if [[ "$arch" == "amd64" ]]; then
+      arch="x86_64"
+    fi
+  fi
+
   if [[ "$pkgtype" == "python" ]]; then
     outname=$(echo "$name" | sed -e 's/^python-//' -e 's/_/-/g' -e "s/^/${PYTHON2_PKG_PREFIX}-/")
   else
