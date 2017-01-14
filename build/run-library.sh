@@ -442,6 +442,11 @@ fpm_build () {
   FPM_EXIT_CODE=$?
 
   fpm_verify $FPM_EXIT_CODE $FPM_RESULTS
+
+  # if something went wrong and debug is off, print out the fpm command that errored
+  if [[ 0 -ne $? ]] && [[ "$STDOUT_IF_DEBUG" == "/dev/null" ]]; then
+    echo -e "\n${COMMAND_ARR[@]}\n"
+  fi
 }
 
 # verify build results
@@ -457,14 +462,19 @@ fpm_verify () {
 
   if [[ "$FPM_PACKAGE_NAME" == "" ]]; then
     EXITCODE=1
+    echo
     echo "Error: $PACKAGE: Unable to figure out package name from fpm results:"
     echo
     echo $FPM_RESULTS
     echo
+    return 1
   elif [[ "$FPM_RESULTS" =~ "File already exists" ]]; then
     echo "Package $FPM_PACKAGE_NAME exists, not rebuilding"
+    return 0
   elif [[ 0 -ne "$FPM_EXIT_CODE" ]]; then
+    EXITCODE=1
     echo "Error building package for $1:\n $FPM_RESULTS"
+    return 1
   fi
 }
 
