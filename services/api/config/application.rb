@@ -42,9 +42,14 @@ module Server
     # other processes to fail later.
     default_cache_path = Rails.root.join('tmp', 'cache')
     if not File.owned?(default_cache_path)
-      STDERR.puts("Defaulting to memory cache, because #{default_cache_path} " \
-                  "owner (uid=#{File::Stat.new(default_cache_path).uid}) " \
-                  "is not me (uid=#{Process.euid})")
+      if File.exist?(default_cache_path)
+        why = "owner (uid=#{File::Stat.new(default_cache_path).uid}) " +
+          "is not me (uid=#{Process.euid})"
+      else
+        why = "does not exist"
+      end
+      STDERR.puts("Defaulting to memory cache, " +
+                  "because #{default_cache_path} #{why}")
       config.cache_store = :memory_store
     end
   end

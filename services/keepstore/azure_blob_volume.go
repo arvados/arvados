@@ -97,6 +97,7 @@ func init() {
 type AzureBlobVolume struct {
 	StorageAccountName    string
 	StorageAccountKeyFile string
+	StorageBaseURL        string // "" means default, "core.windows.net"
 	ContainerName         string
 	AzureReplication      int
 	ReadOnly              bool
@@ -113,6 +114,14 @@ func (*AzureBlobVolume) Examples() []Volume {
 			StorageAccountName:    "example-account-name",
 			StorageAccountKeyFile: "/etc/azure_storage_account_key.txt",
 			ContainerName:         "example-container-name",
+			AzureReplication:      3,
+			RequestTimeout:        azureDefaultRequestTimeout,
+		},
+		&AzureBlobVolume{
+			StorageAccountName:    "cn-account-name",
+			StorageAccountKeyFile: "/etc/azure_cn_storage_account_key.txt",
+			StorageBaseURL:        "core.chinacloudapi.cn",
+			ContainerName:         "cn-container-name",
 			AzureReplication:      3,
 			RequestTimeout:        azureDefaultRequestTimeout,
 		},
@@ -136,7 +145,10 @@ func (v *AzureBlobVolume) Start() error {
 	if err != nil {
 		return err
 	}
-	v.azClient, err = storage.NewBasicClient(v.StorageAccountName, accountKey)
+	if v.StorageBaseURL == "" {
+		v.StorageBaseURL = storage.DefaultBaseURL
+	}
+	v.azClient, err = storage.NewClient(v.StorageAccountName, accountKey, v.StorageBaseURL, storage.DefaultAPIVersion, true)
 	if err != nil {
 		return fmt.Errorf("creating Azure storage client: %s", err)
 	}
