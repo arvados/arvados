@@ -113,6 +113,12 @@ package_go_binary() {
     fi
 
     cd $WORKSPACE/packages/$TARGET
+    test_package_presence $prog $version go
+
+    if [[ "$?" != "0" ]]; then
+      return 1
+    fi
+
     go get "git.curoverse.com/arvados.git/$src_path"
 
     declare -a switches=()
@@ -131,10 +137,15 @@ package_go_binary() {
 default_iteration() {
     local package_name="$1"; shift
     local package_version="$1"; shift
+    local package_type="$1"; shift
     local iteration=1
     if [[ $package_version =~ ^0\.1\.([0-9]{14})(\.|$) ]] && \
            [[ ${BASH_REMATCH[1]} -le $LICENSE_PACKAGE_TS ]]; then
         iteration=2
+    fi
+    if [[ $package_type =~ ^python ]]; then
+      # Fix --iteration for #9242.
+      iteration=2
     fi
     echo $iteration
 }
@@ -149,13 +160,80 @@ _build_rails_package_scripts() {
     done
 }
 
+test_rails_package_presence() {
+  local pkgname="$1"; shift
+  local srcdir="$1"; shift
+
+  if [[ -n "$ONLY_BUILD" ]] && [[ "$pkgname" != "$ONLY_BUILD" ]] ; then
+    return 1
+  fi
+
+  tmppwd=`pwd`
+
+  cd $srcdir
+
+  local version="$(version_from_git)"
+
+  cd $tmppwd
+
+  test_package_presence $pkgname $version rails $RAILS_PACKAGE_ITERATION
+}
+
+test_package_presence() {
+    local pkgname="$1"; shift
+    local version="$1"; shift
+    local pkgtype="$1"; shift
+    local iteration="$1"; shift
+    local arch="$1"; shift
+
+    if [[ -n "$ONLY_BUILD" ]] && [[ "$pkgname" != "$ONLY_BUILD" ]] ; then
+        return 1
+    fi
+
+    if [[ "$iteration" == "" ]]; then
+      iteration="$(default_iteration "$pkgname" "$version" "$pkgtype")"
+    fi
+
+    if [[ "$arch" == "" ]]; then
+      rpm_architecture="x86_64"
+      deb_architecture="amd64"
+
+      if [[ "$pkgtype" =~ ^(python|python3)$ ]]; then
+        rpm_architecture="all"
+        deb_architecture="all"
+      fi
+
+      # These packages have binary components
+      if [[ "$pkgname" =~ (ruamel|ciso|pycrypto|pyyaml) ]]; then
+        rpm_architecture="x86_64"
+        deb_architecture="amd64"
+      fi
+    else
+      rpm_architecture=$arch
+      deb_architecture=$arch
+    fi
+
+    if [[ "$FORMAT" == "deb" ]]; then
+      local complete_pkgname=$pkgname"_"$version"-"$iteration"_"$deb_architecture".deb"
+    else
+      local complete_pkgname="$pkgname-$version-$iteration.$rpm_architecture.rpm"
+    fi
+
+    if [[ -e "$complete_pkgname" ]]; then
+      echo "Package $complete_pkgname exists, not rebuilding!"
+      return 1
+    else
+      echo "Package $complete_pkgname not found, building"
+      return 0
+    fi
+}
+
 handle_rails_package() {
     local pkgname="$1"; shift
 
     if [[ -n "$ONLY_BUILD" ]] && [[ "$pkgname" != "$ONLY_BUILD" ]] ; then
         return 0
     fi
-
     local srcdir="$1"; shift
     local license_path="$1"; shift
     local scripts_dir="$(mktemp --tmpdir -d "$pkgname-XXXXXXXX.scripts")" && \
@@ -178,7 +256,7 @@ handle_rails_package() {
     local -a pos_args=("$srcdir/=$railsdir" "$pkgname" "Curoverse, Inc." dir
                        "$(cat "$version_file")")
     local license_arg="$license_path=$railsdir/$(basename "$license_path")"
-    local -a switches=(--iteration=7
+    local -a switches=(--iteration=$RAILS_PACKAGE_ITERATION
                        --after-install "$scripts_dir/postinst"
                        --before-remove "$scripts_dir/prerm"
                        --after-remove "$scripts_dir/postrm")
@@ -225,7 +303,7 @@ fpm_build () {
       return 0
   fi
 
-  local default_iteration_value="$(default_iteration "$PACKAGE" "$VERSION")"
+  local default_iteration_value="$(default_iteration "$PACKAGE" "$VERSION" "$PACKAGE_TYPE")"
 
   case "$PACKAGE_TYPE" in
       python)
@@ -239,8 +317,6 @@ fpm_build () {
               --python-install-data . \
               --exclude "${PYTHON2_INSTALL_LIB#/}/tests" \
               --depends "$PYTHON2_PACKAGE"
-          # Fix --iteration for #9242.
-          default_iteration_value=$(($default_iteration_value + 1))
           ;;
       python3)
           # fpm does not actually support a python3 package type.  Instead
@@ -256,8 +332,6 @@ fpm_build () {
               --python-install-data . \
               --exclude "${PYTHON3_INSTALL_LIB#/}/tests" \
               --depends "$PYTHON3_PACKAGE"
-          # Fix --iteration for #9242.
-          default_iteration_value=$(($default_iteration_value + 1))
           ;;
   esac
 
