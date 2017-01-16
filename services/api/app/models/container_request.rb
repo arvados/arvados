@@ -11,9 +11,11 @@ class ContainerRequest < ArvadosModel
   serialize :mounts, Hash
   serialize :runtime_constraints, Hash
   serialize :command, Array
+  serialize :scheduling_parameters, Hash
 
   before_validation :fill_field_defaults, :if => :new_record?
   before_validation :validate_runtime_constraints
+  before_validation :validate_scheduling_parameters
   before_validation :set_container
   validates :command, :container_image, :output_path, :cwd, :presence => true
   validate :validate_state_change
@@ -33,13 +35,17 @@ class ContainerRequest < ArvadosModel
     t.add :environment
     t.add :expires_at
     t.add :filters
+    t.add :log_uuid
     t.add :mounts
     t.add :name
+    t.add :output_name
     t.add :output_path
+    t.add :output_uuid
     t.add :priority
     t.add :properties
     t.add :requesting_container_uuid
     t.add :runtime_constraints
+    t.add :scheduling_parameters
     t.add :state
     t.add :use_existing
   end
@@ -79,21 +85,52 @@ class ContainerRequest < ArvadosModel
   # Finalize the container request after the container has
   # finished/cancelled.
   def finalize!
-    update_attributes!(state: Final)
+    out_coll = nil
+    log_coll = nil
     c = Container.find_by_uuid(container_uuid)
     ['output', 'log'].each do |out_type|
       pdh = c.send(out_type)
       next if pdh.nil?
+      if self.output_name and out_type == 'output'
+        coll_name = self.output_name
+      else
+        coll_name = "Container #{out_type} for request #{uuid}"
+      end
       manifest = Collection.where(portable_data_hash: pdh).first.manifest_text
-      Collection.create!(owner_uuid: owner_uuid,
-                         manifest_text: manifest,
-                         portable_data_hash: pdh,
-                         name: "Container #{out_type} for request #{uuid}",
-                         properties: {
-                           'type' => out_type,
-                           'container_request' => uuid,
-                         })
+      begin
+        coll = Collection.create!(owner_uuid: owner_uuid,
+                                  manifest_text: manifest,
+                                  portable_data_hash: pdh,
+                                  name: coll_name,
+                                  properties: {
+                                    'type' => out_type,
+                                    'container_request' => uuid,
+                                  })
+      rescue ActiveRecord::RecordNotUnique => rn
+        # In case this is executed as part of a transaction: When a Postgres exception happens,
+        # the following statements on the same transaction become invalid, so a rollback is
+        # needed. One example are Unit Tests, every test is enclosed inside a transaction so
+        # that the database can be reverted before every new test starts.
+        # See: http://api.rubyonrails.org/classes/ActiveRecord/Transactions/ClassMethods.html#module-ActiveRecord::Transactions::ClassMethods-label-Exception+handling+and+rolling+back
+        ActiveRecord::Base.connection.execute 'ROLLBACK'
+        raise unless out_type == 'output' and self.output_name
+        # Postgres specific unique name check. See ApplicationController#create for
+        # a detailed explanation.
+        raise unless rn.original_exception.is_a? PG::UniqueViolation
+        err = rn.original_exception
+        detail = err.result.error_field(PG::Result::PG_DIAG_MESSAGE_DETAIL)
+        raise unless /^Key \(owner_uuid, name\)=\([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}, .*?\) already exists\./.match detail
+        # Output collection name collision detected: append a timestamp.
+        coll_name = "#{self.output_name} #{Time.now.getgm.strftime('%FT%TZ')}"
+        retry
+      end
+      if out_type == 'output'
+        out_coll = coll.uuid
+      else
+        log_coll = coll.uuid
+      end
     end
+    update_attributes!(state: Final, output_uuid: out_coll, log_uuid: log_coll)
   end
 
   protected
@@ -105,6 +142,7 @@ class ContainerRequest < ArvadosModel
     self.mounts ||= {}
     self.cwd ||= "."
     self.container_count_max ||= Rails.configuration.container_count_max
+    self.scheduling_parameters ||= {}
   end
 
   # Create a new container (or find an existing one) to satisfy this
@@ -126,6 +164,7 @@ class ContainerRequest < ArvadosModel
       if not reusable.nil?
         reusable
       else
+        c_attrs[:scheduling_parameters] = self.scheduling_parameters
         Container.create!(c_attrs)
       end
     end
@@ -234,6 +273,17 @@ class ContainerRequest < ArvadosModel
     end
   end
 
+  def validate_scheduling_parameters
+    if self.state == Committed
+      if scheduling_parameters.include? 'partitions' and
+         (!scheduling_parameters['partitions'].is_a?(Array) ||
+          scheduling_parameters['partitions'].reject{|x| !x.is_a?(String)}.size !=
+            scheduling_parameters['partitions'].size)
+            errors.add :scheduling_parameters, "partitions must be an array of strings"
+      end
+    end
+  end
+
   def validate_change
     permitted = [:owner_uuid]
 
@@ -244,7 +294,8 @@ class ContainerRequest < ArvadosModel
                      :container_image, :cwd, :description, :environment,
                      :filters, :mounts, :name, :output_path, :priority,
                      :properties, :requesting_container_uuid, :runtime_constraints,
-                     :state, :container_uuid, :use_existing
+                     :state, :container_uuid, :use_existing, :scheduling_parameters,
+                     :output_name
 
     when Committed
       if container_uuid.nil?
@@ -256,14 +307,16 @@ class ContainerRequest < ArvadosModel
       end
 
       # Can update priority, container count, name and description
-      permitted.push :priority, :container_count, :container_count_max, :container_uuid, :name, :description
+      permitted.push :priority, :container_count, :container_count_max, :container_uuid,
+                     :name, :description
 
       if self.state_changed?
         # Allow create-and-commit in a single operation.
         permitted.push :command, :container_image, :cwd, :description, :environment,
                        :filters, :mounts, :name, :output_path, :properties,
                        :requesting_container_uuid, :runtime_constraints,
-                       :state, :container_uuid
+                       :state, :container_uuid, :use_existing, :scheduling_parameters,
+                       :output_name
       end
 
     when Final
@@ -271,8 +324,8 @@ class ContainerRequest < ArvadosModel
         errors.add :state, "of container request can only be set to Final by system."
       end
 
-      if self.state_changed? || self.name_changed? || self.description_changed?
-          permitted.push :state, :name, :description
+      if self.state_changed? || self.name_changed? || self.description_changed? || self.output_uuid_changed? || self.log_uuid_changed?
+          permitted.push :state, :name, :description, :output_uuid, :log_uuid
       else
         errors.add :state, "does not allow updates"
       end

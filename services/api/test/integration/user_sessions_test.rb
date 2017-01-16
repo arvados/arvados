@@ -110,7 +110,7 @@ class UserSessionsApiTest < ActionDispatch::IntegrationTest
         (repos.collect(&:name) +
          vm_links.collect { |link| link.properties['username'] }
          ).each do |name|
-          r = name.match /^(.{#{prefix.length}})(\d+)$/
+          r = name.match(/^(.{#{prefix.length}})(\d+)$/)
           assert_not_nil r, "#{name.inspect} does not match {prefix}\\d+"
           assert_equal(prefix, r[1],
                        "#{name.inspect} was not {#{prefix.inspect} plus digits}")

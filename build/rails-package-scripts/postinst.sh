@@ -122,14 +122,14 @@ setup_conffile() {
 
 prepare_database() {
   DB_MIGRATE_STATUS=`$COMMAND_PREFIX bundle exec rake db:migrate:status 2>&1 || true`
-  if echo $DB_MIGRATE_STATUS | grep -qF 'Schema migrations table does not exist yet.'; then
+  if echo "$DB_MIGRATE_STATUS" | grep -qF 'Schema migrations table does not exist yet.'; then
       # The database exists, but the migrations table doesn't.
       run_and_report "Setting up database" $COMMAND_PREFIX bundle exec \
                      rake "$RAILSPKG_DATABASE_LOAD_TASK" db:seed
-  elif echo $DB_MIGRATE_STATUS | grep -q '^database: '; then
+  elif echo "$DB_MIGRATE_STATUS" | grep -q '^database: '; then
       run_and_report "Running db:migrate" \
                      $COMMAND_PREFIX bundle exec rake db:migrate
-  elif echo $DB_MIGRATE_STATUS | grep -q 'database .* does not exist'; then
+  elif echo "$DB_MIGRATE_STATUS" | grep -q 'database .* does not exist'; then
       if ! run_and_report "Running db:setup" \
            $COMMAND_PREFIX bundle exec rake db:setup 2>/dev/null; then
           echo "Warning: unable to set up database." >&2

@@ -302,7 +302,7 @@ func (s *runSuite) TestDryRun(c *check.C) {
 		Logger:      s.logger(c),
 	}
 	s.stub.serveCurrentUserAdmin()
-	s.stub.serveFooBarFileCollections()
+	collReqs := s.stub.serveFooBarFileCollections()
 	s.stub.serveFourDiskKeepServices()
 	s.stub.serveKeepstoreIndexFoo4Bar1()
 	trashReqs := s.stub.serveKeepstoreTrash()
@@ -310,6 +310,9 @@ func (s *runSuite) TestDryRun(c *check.C) {
 	var bal Balancer
 	_, err := bal.Run(s.config, opts)
 	c.Check(err, check.IsNil)
+	for _, req := range collReqs.reqs {
+		c.Check(req.Form.Get("include_trash"), check.Equals, "true")
+	}
 	c.Check(trashReqs.Count(), check.Equals, 0)
 	c.Check(pullReqs.Count(), check.Equals, 0)
 	stats := bal.getStatistics()

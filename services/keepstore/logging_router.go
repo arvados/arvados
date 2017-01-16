@@ -4,10 +4,14 @@ package main
 // LoggingResponseWriter
 
 import (
-	"log"
+	"context"
 	"net/http"
 	"strings"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/httpserver"
+	"git.curoverse.com/arvados.git/sdk/go/stats"
+	log "github.com/Sirupsen/logrus"
 )
 
 // LoggingResponseWriter has anonymous fields ResponseWriter and ResponseBody
@@ -57,21 +61,47 @@ func (resp *LoggingResponseWriter) Write(data []byte) (int, error) {
 
 // LoggingRESTRouter is used to add logging capabilities to mux.Router
 type LoggingRESTRouter struct {
-	router http.Handler
+	router      http.Handler
+	idGenerator httpserver.IDGenerator
 }
 
 func (loggingRouter *LoggingRESTRouter) ServeHTTP(wrappedResp http.ResponseWriter, req *http.Request) {
-	t0 := time.Now()
+	tStart := time.Now()
+
+	// Attach a requestID-aware logger to the request context.
+	lgr := log.WithField("RequestID", loggingRouter.idGenerator.Next())
+	ctx := context.WithValue(req.Context(), "logger", lgr)
+	req = req.WithContext(ctx)
+
+	lgr = lgr.WithFields(log.Fields{
+		"remoteAddr":      req.RemoteAddr,
+		"reqForwardedFor": req.Header.Get("X-Forwarded-For"),
+		"reqMethod":       req.Method,
+		"reqPath":         req.URL.Path[1:],
+		"reqBytes":        req.ContentLength,
+	})
+	lgr.Debug("request")
+
 	resp := LoggingResponseWriter{http.StatusOK, 0, wrappedResp, "", zeroTime}
 	loggingRouter.router.ServeHTTP(&resp, req)
+	tDone := time.Now()
+
 	statusText := http.StatusText(resp.Status)
 	if resp.Status >= 400 {
 		statusText = strings.Replace(resp.ResponseBody, "\n", "", -1)
 	}
-	now := time.Now()
-	tTotal := now.Sub(t0)
-	tLatency := resp.sentHdr.Sub(t0)
-	tResponse := now.Sub(resp.sentHdr)
-	log.Printf("[%s] %s %s %d %.6fs %.6fs %.6fs %d %d \"%s\"", req.RemoteAddr, req.Method, req.URL.Path[1:], req.ContentLength, tTotal.Seconds(), tLatency.Seconds(), tResponse.Seconds(), resp.Status, resp.Length, statusText)
+	if resp.sentHdr == zeroTime {
+		// Nobody changed status or wrote any data, i.e., we
+		// returned a 200 response with no body.
+		resp.sentHdr = tDone
+	}
 
+	lgr.WithFields(log.Fields{
+		"timeTotal":      stats.Duration(tDone.Sub(tStart)),
+		"timeToStatus":   stats.Duration(resp.sentHdr.Sub(tStart)),
+		"timeWriteBody":  stats.Duration(tDone.Sub(resp.sentHdr)),
+		"respStatusCode": resp.Status,
+		"respStatus":     statusText,
+		"respBytes":      resp.Length,
+	}).Info("response")
 }

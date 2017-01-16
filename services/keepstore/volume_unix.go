@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -16,6 +15,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 type unixVolumeAdder struct {
@@ -110,6 +111,8 @@ type UnixVolume struct {
 	// something to lock during IO, typically a sync.Mutex (or nil
 	// to skip locking)
 	locker sync.Locker
+
+	os osWithStats
 }
 
 // Examples implements VolumeWithExamples.
@@ -144,7 +147,7 @@ func (v *UnixVolume) Start() error {
 	if v.DirectoryReplication == 0 {
 		v.DirectoryReplication = 1
 	}
-	_, err := os.Stat(v.Root)
+	_, err := v.os.Stat(v.Root)
 	return err
 }
 
@@ -154,27 +157,30 @@ func (v *UnixVolume) Touch(loc string) error {
 		return MethodDisabledError
 	}
 	p := v.blockPath(loc)
-	f, err := os.OpenFile(p, os.O_RDWR|os.O_APPEND, 0644)
+	f, err := v.os.OpenFile(p, os.O_RDWR|os.O_APPEND, 0644)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	if v.locker != nil {
-		v.locker.Lock()
-		defer v.locker.Unlock()
+	if err := v.lock(context.TODO()); err != nil {
+		return err
 	}
-	if e := lockfile(f); e != nil {
+	defer v.unlock()
+	if e := v.lockfile(f); e != nil {
 		return e
 	}
-	defer unlockfile(f)
+	defer v.unlockfile(f)
 	ts := syscall.NsecToTimespec(time.Now().UnixNano())
-	return syscall.UtimesNano(p, []syscall.Timespec{ts, ts})
+	v.os.stats.Tick(&v.os.stats.UtimesOps)
+	err = syscall.UtimesNano(p, []syscall.Timespec{ts, ts})
+	v.os.stats.TickErr(err)
+	return err
 }
 
 // Mtime returns the stored timestamp for the given locator.
 func (v *UnixVolume) Mtime(loc string) (time.Time, error) {
 	p := v.blockPath(loc)
-	fi, err := os.Stat(p)
+	fi, err := v.os.Stat(p)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -184,24 +190,21 @@ func (v *UnixVolume) Mtime(loc string) (time.Time, error) {
 // Lock the locker (if one is in use), open the file for reading, and
 // call the given function if and when the file is ready to read.
 func (v *UnixVolume) getFunc(ctx context.Context, path string, fn func(io.Reader) error) error {
-	if v.locker != nil {
-		v.locker.Lock()
-		defer v.locker.Unlock()
+	if err := v.lock(ctx); err != nil {
+		return err
 	}
-	if ctx.Err() != nil {
-		return ctx.Err()
-	}
-	f, err := os.Open(path)
+	defer v.unlock()
+	f, err := v.os.Open(path)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	return fn(f)
+	return fn(NewCountingReader(ioutil.NopCloser(f), v.os.stats.TickInBytes))
 }
 
 // stat is os.Stat() with some extra sanity checks.
 func (v *UnixVolume) stat(path string) (os.FileInfo, error) {
-	stat, err := os.Stat(path)
+	stat, err := v.os.Stat(path)
 	if err == nil {
 		if stat.Size() < 0 {
 			err = os.ErrInvalid
@@ -215,21 +218,23 @@ func (v *UnixVolume) stat(path string) (os.FileInfo, error) {
 // Get retrieves a block, copies it to the given slice, and returns
 // the number of bytes copied.
 func (v *UnixVolume) Get(ctx context.Context, loc string, buf []byte) (int, error) {
+	return getWithPipe(ctx, loc, buf, v)
+}
+
+// ReadBlock implements BlockReader.
+func (v *UnixVolume) ReadBlock(ctx context.Context, loc string, w io.Writer) error {
 	path := v.blockPath(loc)
 	stat, err := v.stat(path)
 	if err != nil {
-		return 0, v.translateError(err)
+		return v.translateError(err)
 	}
-	if stat.Size() > int64(len(buf)) {
-		return 0, TooLongError
-	}
-	var read int
-	size := int(stat.Size())
-	err = v.getFunc(ctx, path, func(rdr io.Reader) error {
-		read, err = io.ReadFull(rdr, buf[:size])
+	return v.getFunc(ctx, path, func(rdr io.Reader) error {
+		n, err := io.Copy(w, rdr)
+		if err == nil && n != stat.Size() {
+			err = io.ErrUnexpectedEOF
+		}
 		return err
 	})
-	return read, err
 }
 
 // Compare returns nil if Get(loc) would return the same content as
@@ -250,6 +255,11 @@ func (v *UnixVolume) Compare(ctx context.Context, loc string, expect []byte) err
 // returns a FullError.  If the write fails due to some other error,
 // that error is returned.
 func (v *UnixVolume) Put(ctx context.Context, loc string, block []byte) error {
+	return putWithPipe(ctx, loc, block, v)
+}
+
+// ReadBlock implements BlockWriter.
+func (v *UnixVolume) WriteBlock(ctx context.Context, loc string, rdr io.Reader) error {
 	if v.ReadOnly {
 		return MethodDisabledError
 	}
@@ -263,37 +273,34 @@ func (v *UnixVolume) Put(ctx context.Context, loc string, block []byte) error {
 		return err
 	}
 
-	tmpfile, tmperr := ioutil.TempFile(bdir, "tmp"+loc)
+	tmpfile, tmperr := v.os.TempFile(bdir, "tmp"+loc)
 	if tmperr != nil {
 		log.Printf("ioutil.TempFile(%s, tmp%s): %s", bdir, loc, tmperr)
 		return tmperr
 	}
+
 	bpath := v.blockPath(loc)
 
-	if v.locker != nil {
-		v.locker.Lock()
-		defer v.locker.Unlock()
+	if err := v.lock(ctx); err != nil {
+		return err
 	}
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	default:
-	}
-	if _, err := tmpfile.Write(block); err != nil {
+	defer v.unlock()
+	n, err := io.Copy(tmpfile, rdr)
+	v.os.stats.TickOutBytes(uint64(n))
+	if err != nil {
 		log.Printf("%s: writing to %s: %s\n", v, bpath, err)
 		tmpfile.Close()
-		os.Remove(tmpfile.Name())
+		v.os.Remove(tmpfile.Name())
 		return err
 	}
 	if err := tmpfile.Close(); err != nil {
 		log.Printf("closing %s: %s\n", tmpfile.Name(), err)
-		os.Remove(tmpfile.Name())
+		v.os.Remove(tmpfile.Name())
 		return err
 	}
-	if err := os.Rename(tmpfile.Name(), bpath); err != nil {
+	if err := v.os.Rename(tmpfile.Name(), bpath); err != nil {
 		log.Printf("rename %s %s: %s\n", tmpfile.Name(), bpath, err)
-		os.Remove(tmpfile.Name())
-		return err
+		return v.os.Remove(tmpfile.Name())
 	}
 	return nil
 }
@@ -302,18 +309,15 @@ func (v *UnixVolume) Put(ctx context.Context, loc string, block []byte) error {
 // current state, or nil if an error occurs.
 //
 func (v *UnixVolume) Status() *VolumeStatus {
-	var fs syscall.Statfs_t
-	var devnum uint64
-
-	if fi, err := os.Stat(v.Root); err == nil {
-		devnum = fi.Sys().(*syscall.Stat_t).Dev
-	} else {
+	fi, err := v.os.Stat(v.Root)
+	if err != nil {
 		log.Printf("%s: os.Stat: %s\n", v, err)
 		return nil
 	}
+	devnum := fi.Sys().(*syscall.Stat_t).Dev
 
-	err := syscall.Statfs(v.Root, &fs)
-	if err != nil {
+	var fs syscall.Statfs_t
+	if err := syscall.Statfs(v.Root, &fs); err != nil {
 		log.Printf("%s: statfs: %s\n", v, err)
 		return nil
 	}
@@ -322,7 +326,12 @@ func (v *UnixVolume) Status() *VolumeStatus {
 	// uses fs.Blocks - fs.Bfree.
 	free := fs.Bavail * uint64(fs.Bsize)
 	used := (fs.Blocks - fs.Bfree) * uint64(fs.Bsize)
-	return &VolumeStatus{v.Root, devnum, free, used}
+	return &VolumeStatus{
+		MountPoint: v.Root,
+		DeviceNum:  devnum,
+		BytesFree:  free,
+		BytesUsed:  used,
+	}
 }
 
 var blockDirRe = regexp.MustCompile(`^[0-9a-f]+$`)
@@ -344,11 +353,12 @@ var blockFileRe = regexp.MustCompile(`^[0-9a-f]{32}$`)
 //
 func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 	var lastErr error
-	rootdir, err := os.Open(v.Root)
+	rootdir, err := v.os.Open(v.Root)
 	if err != nil {
 		return err
 	}
 	defer rootdir.Close()
+	v.os.stats.Tick(&v.os.stats.ReaddirOps)
 	for {
 		names, err := rootdir.Readdirnames(1)
 		if err == io.EOF {
@@ -364,12 +374,13 @@ func (v *UnixVolume) IndexTo(prefix string, w io.Writer) error {
 			continue
 		}
 		blockdirpath := filepath.Join(v.Root, names[0])
-		blockdir, err := os.Open(blockdirpath)
+		blockdir, err := v.os.Open(blockdirpath)
 		if err != nil {
 			log.Print("Error reading ", blockdirpath, ": ", err)
 			lastErr = err
 			continue
 		}
+		v.os.stats.Tick(&v.os.stats.ReaddirOps)
 		for {
 			fileInfo, err := blockdir.Readdir(1)
 			if err == io.EOF {
@@ -412,36 +423,36 @@ func (v *UnixVolume) Trash(loc string) error {
 	if v.ReadOnly {
 		return MethodDisabledError
 	}
-	if v.locker != nil {
-		v.locker.Lock()
-		defer v.locker.Unlock()
+	if err := v.lock(context.TODO()); err != nil {
+		return err
 	}
+	defer v.unlock()
 	p := v.blockPath(loc)
-	f, err := os.OpenFile(p, os.O_RDWR|os.O_APPEND, 0644)
+	f, err := v.os.OpenFile(p, os.O_RDWR|os.O_APPEND, 0644)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	if e := lockfile(f); e != nil {
+	if e := v.lockfile(f); e != nil {
 		return e
 	}
-	defer unlockfile(f)
+	defer v.unlockfile(f)
 
 	// If the block has been PUT in the last blobSignatureTTL
 	// seconds, return success without removing the block. This
 	// protects data from garbage collection until it is no longer
 	// possible for clients to retrieve the unreferenced blocks
 	// anyway (because the permission signatures have expired).
-	if fi, err := os.Stat(p); err != nil {
+	if fi, err := v.os.Stat(p); err != nil {
 		return err
 	} else if time.Since(fi.ModTime()) < time.Duration(theConfig.BlobSignatureTTL) {
 		return nil
 	}
 
 	if theConfig.TrashLifetime == 0 {
-		return os.Remove(p)
+		return v.os.Remove(p)
 	}
-	return os.Rename(p, fmt.Sprintf("%v.trash.%d", p, time.Now().Add(theConfig.TrashLifetime.Duration()).Unix()))
+	return v.os.Rename(p, fmt.Sprintf("%v.trash.%d", p, time.Now().Add(theConfig.TrashLifetime.Duration()).Unix()))
 }
 
 // Untrash moves block from trash back into store
@@ -452,6 +463,7 @@ func (v *UnixVolume) Untrash(loc string) (err error) {
 		return MethodDisabledError
 	}
 
+	v.os.stats.Tick(&v.os.stats.ReaddirOps)
 	files, err := ioutil.ReadDir(v.blockDir(loc))
 	if err != nil {
 		return err
@@ -466,7 +478,7 @@ func (v *UnixVolume) Untrash(loc string) (err error) {
 	for _, f := range files {
 		if strings.HasPrefix(f.Name(), prefix) {
 			foundTrash = true
-			err = os.Rename(v.blockPath(f.Name()), v.blockPath(loc))
+			err = v.os.Rename(v.blockPath(f.Name()), v.blockPath(loc))
 			if err == nil {
 				break
 			}
@@ -553,13 +565,55 @@ func (v *UnixVolume) Replication() int {
 	return v.DirectoryReplication
 }
 
-// lockfile and unlockfile use flock(2) to manage kernel file locks.
-func lockfile(f *os.File) error {
-	return syscall.Flock(int(f.Fd()), syscall.LOCK_EX)
+// InternalStats returns I/O and filesystem ops counters.
+func (v *UnixVolume) InternalStats() interface{} {
+	return &v.os.stats
 }
 
-func unlockfile(f *os.File) error {
-	return syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+// lock acquires the serialize lock, if one is in use. If ctx is done
+// before the lock is acquired, lock returns ctx.Err() instead of
+// acquiring the lock.
+func (v *UnixVolume) lock(ctx context.Context) error {
+	if v.locker == nil {
+		return nil
+	}
+	locked := make(chan struct{})
+	go func() {
+		v.locker.Lock()
+		close(locked)
+	}()
+	select {
+	case <-ctx.Done():
+		go func() {
+			<-locked
+			v.locker.Unlock()
+		}()
+		return ctx.Err()
+	case <-locked:
+		return nil
+	}
+}
+
+// unlock releases the serialize lock, if one is in use.
+func (v *UnixVolume) unlock() {
+	if v.locker == nil {
+		return
+	}
+	v.locker.Unlock()
+}
+
+// lockfile and unlockfile use flock(2) to manage kernel file locks.
+func (v *UnixVolume) lockfile(f *os.File) error {
+	v.os.stats.Tick(&v.os.stats.FlockOps)
+	err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX)
+	v.os.stats.TickErr(err)
+	return err
+}
+
+func (v *UnixVolume) unlockfile(f *os.File) error {
+	err := syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+	v.os.stats.TickErr(err)
+	return err
 }
 
 // Where appropriate, translate a more specific filesystem error to an
@@ -605,7 +659,7 @@ func (v *UnixVolume) EmptyTrash() {
 		if deadline > time.Now().Unix() {
 			return nil
 		}
-		err = os.Remove(path)
+		err = v.os.Remove(path)
 		if err != nil {
 			log.Printf("EmptyTrash: Remove %v: %v", path, err)
 			return nil
@@ -620,4 +674,69 @@ func (v *UnixVolume) EmptyTrash() {
 	}
 
 	log.Printf("EmptyTrash stats for %v: Deleted %v bytes in %v blocks. Remaining in trash: %v bytes in %v blocks.", v.String(), bytesDeleted, blocksDeleted, bytesInTrash-bytesDeleted, blocksInTrash-blocksDeleted)
+}
+
+type unixStats struct {
+	statsTicker
+	OpenOps    uint64
+	StatOps    uint64
+	FlockOps   uint64
+	UtimesOps  uint64
+	CreateOps  uint64
+	RenameOps  uint64
+	UnlinkOps  uint64
+	ReaddirOps uint64
+}
+
+func (s *unixStats) TickErr(err error) {
+	if err == nil {
+		return
+	}
+	s.statsTicker.TickErr(err, fmt.Sprintf("%T", err))
+}
+
+type osWithStats struct {
+	stats unixStats
+}
+
+func (o *osWithStats) Open(name string) (*os.File, error) {
+	o.stats.Tick(&o.stats.OpenOps)
+	f, err := os.Open(name)
+	o.stats.TickErr(err)
+	return f, err
+}
+
+func (o *osWithStats) OpenFile(name string, flag int, perm os.FileMode) (*os.File, error) {
+	o.stats.Tick(&o.stats.OpenOps)
+	f, err := os.OpenFile(name, flag, perm)
+	o.stats.TickErr(err)
+	return f, err
+}
+
+func (o *osWithStats) Remove(path string) error {
+	o.stats.Tick(&o.stats.UnlinkOps)
+	err := os.Remove(path)
+	o.stats.TickErr(err)
+	return err
+}
+
+func (o *osWithStats) Rename(a, b string) error {
+	o.stats.Tick(&o.stats.RenameOps)
+	err := os.Rename(a, b)
+	o.stats.TickErr(err)
+	return err
+}
+
+func (o *osWithStats) Stat(path string) (os.FileInfo, error) {
+	o.stats.Tick(&o.stats.StatOps)
+	fi, err := os.Stat(path)
+	o.stats.TickErr(err)
+	return fi, err
+}
+
+func (o *osWithStats) TempFile(dir, base string) (*os.File, error) {
+	o.stats.Tick(&o.stats.CreateOps)
+	f, err := ioutil.TempFile(dir, base)
+	o.stats.TickErr(err)
+	return f, err
 }

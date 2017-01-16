@@ -60,13 +60,13 @@ class FailJobsTest < ActiveSupport::TestCase
 
   test 'command line help' do
     cmd = Rails.root.join('script/fail-jobs.rb').to_s
-    assert_match /Options:.*--before=/m, File.popen([cmd, '--help']).read
+    assert_match(/Options:.*--before=/m, File.popen([cmd, '--help']).read)
   end
 
   protected
 
   def assert_end_states
-    @job.values.map &:reload
+    @job.values.map(&:reload)
     assert_equal 'Failed', @job[:before_reboot].state
     assert_equal false, @job[:before_reboot].running
     assert_equal false, @job[:before_reboot].success

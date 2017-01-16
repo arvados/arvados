@@ -907,7 +907,7 @@ class ApplicationController < ActionController::Base
   # from the top three levels.
   # That is: get toplevel projects under home, get subprojects of
   # these projects, and so on until we hit the limit.
-  def my_wanted_projects user, page_size=100
+  def my_wanted_projects(user, page_size=100)
     return @my_wanted_projects if @my_wanted_projects
 
     from_top = []
@@ -922,7 +922,7 @@ class ApplicationController < ActionController::Base
       break if current_level.results.size == 0
       @too_many_projects = true if current_level.items_available > current_level.results.size
       from_top.concat current_level.results
-      uuids = current_level.results.collect { |x| x.uuid }
+      uuids = current_level.results.collect(&:uuid)
       depth += 1
       if depth >= 3
         @reached_level_limit = true
@@ -933,12 +933,12 @@ class ApplicationController < ActionController::Base
   end
 
   helper_method :my_wanted_projects_tree
-  def my_wanted_projects_tree user, page_size=100
-    build_my_wanted_projects_tree user, page_size
+  def my_wanted_projects_tree(user, page_size=100)
+    build_my_wanted_projects_tree(user, page_size)
     [@my_wanted_projects_tree, @too_many_projects, @reached_level_limit]
   end
 
-  def build_my_wanted_projects_tree user, page_size=100
+  def build_my_wanted_projects_tree(user, page_size=100)
     return @my_wanted_projects_tree if @my_wanted_projects_tree
 
     parent_of = {user.uuid => 'me'}

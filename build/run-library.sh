@@ -69,6 +69,10 @@ handle_ruby_gem() {
     local gem_version="$(nohash_version_from_git)"
     local gem_src_dir="$(pwd)"
 
+    if [[ -n "$ONLY_BUILD" ]] && [[ "$gem_name" != "$ONLY_BUILD" ]] ; then
+        return 0
+    fi
+
     if ! [[ -e "${gem_name}-${gem_version}.gem" ]]; then
         find -maxdepth 1 -name "${gem_name}-*.gem" -delete
 
@@ -83,6 +87,10 @@ package_go_binary() {
     local prog="$1"; shift
     local description="$1"; shift
     local license_file="${1:-agpl-3.0.txt}"; shift
+
+    if [[ -n "$ONLY_BUILD" ]] && [[ "$prog" != "$ONLY_BUILD" ]] ; then
+        return 0
+    fi
 
     debug_echo "package_go_binary $src_path as $prog"
 
@@ -143,6 +151,11 @@ _build_rails_package_scripts() {
 
 handle_rails_package() {
     local pkgname="$1"; shift
+
+    if [[ -n "$ONLY_BUILD" ]] && [[ "$pkgname" != "$ONLY_BUILD" ]] ; then
+        return 0
+    fi
+
     local srcdir="$1"; shift
     local license_path="$1"; shift
     local scripts_dir="$(mktemp --tmpdir -d "$pkgname-XXXXXXXX.scripts")" && \
@@ -165,7 +178,7 @@ handle_rails_package() {
     local -a pos_args=("$srcdir/=$railsdir" "$pkgname" "Curoverse, Inc." dir
                        "$(cat "$version_file")")
     local license_arg="$license_path=$railsdir/$(basename "$license_path")"
-    local -a switches=(--iteration=6
+    local -a switches=(--iteration=7
                        --after-install "$scripts_dir/postinst"
                        --before-remove "$scripts_dir/prerm"
                        --after-remove "$scripts_dir/postrm")
@@ -207,6 +220,10 @@ fpm_build () {
   # Optional: the package version number.  Passed to fpm -v.
   VERSION=$1
   shift
+
+  if [[ -n "$ONLY_BUILD" ]] && [[ "$PACKAGE_NAME" != "$ONLY_BUILD" ]] && [[ "$PACKAGE" != "$ONLY_BUILD" ]] ; then
+      return 0
+  fi
 
   local default_iteration_value="$(default_iteration "$PACKAGE" "$VERSION")"
 
@@ -289,7 +306,7 @@ fpm_build () {
   declare -a fpm_dirs=(
       # source dir part of 'dir' package ("/source=/dest" => "/source"):
       "${PACKAGE%%=/*}"
-      # backports ("llfuse==0.41.1" => "backports/python-llfuse")
+      # backports ("llfuse>=1.0" => "backports/python-llfuse")
       "${WORKSPACE}/backports/${PACKAGE_TYPE}-${PACKAGE%%[<=>]*}")
   if [[ -n "$PACKAGE_NAME" ]]; then
       fpm_dirs+=("${WORKSPACE}/backports/${PACKAGE_NAME}")

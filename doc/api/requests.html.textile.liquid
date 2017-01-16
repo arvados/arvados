@@ -1,0 +1,349 @@
+---
+layout: default
+navsection: api
+navmenu: Concepts
+title: REST API syntax
+...
+
+Arvados exposes a REST API using standard HTTP requests.
+
+h3. HTTP Method
+
+Use @GET@ to request individual resources or lists of resources.
+
+Use @POST@ to create new resources.
+
+Use @PUT@ to update an existing resource.
+
+Use @DELETE@ to remove an existing resource.
+
+As a special case, a @POST@ with the query parameter @_method=GET@ will be treated as a GET request.  This makes it possible to issue @GET@ requests where the query string exceeds the maximum request URI length, by putting the query string in the body of the request.
+
+h3. Request URI
+
+The URI portion of the request identifies the specific resource to operate on.  For example, operations on "collections":{{site.baseurl}}/api/methods/collections.html use the @https://{{ site.arvados_api_host }}/arvados/v1/collections@ request URI prefix.
+
+h3. Authorization header
+
+Every request must include an API token.  This identifies the user making the request for the purposes of access control.  In addition, tokens may be further "restricted in scope":{{site.baseurl}}/api/methods/api_client_authorizations.html#scope to only access certain API endpoints.
+
+API requests must provide the API token using the @Authorization@ header in the following format:
+
+<pre>
+$ curl -v -H "Authorization: OAuth2 xxxxapitokenxxxx" https://192.168.5.2:8000/arvados/v1/collections
+> GET /arvados/v1/collections HTTP/1.1
+> ...
+> Authorization: OAuth2 xxxxapitokenxxxx
+> ...
+</pre>
+
+h3. Parameters
+
+Request parameters may be provided in one of two ways.  They may be provided in the "query" section of request URI, or they may be provided in the body of the request with application/x-www-form-urlencoded encoding.  If parameters are provided in both places, their values will be merged.  Parameter names must be unique.  If a parameter appears multiple times, the behavior is undefined.
+
+Structured and nested parameter values must be provided as urlencoded JSON.
+
+h3. Result
+
+Results are returned JSON-encoded in the response body.
+
+h3. Errors
+
+If a request cannot be fulfilled, the API will return 4xx or 5xx HTTP status code.  Be aware that the API server may return a 404 (Not Found) status for resources that exist but for which the client does not have read access.  The API will also return an error record:
+
+table(table table-bordered table-condensed).
+|*Parameter name*|*Value*|*Description*|
+|errors|array|An array of one or more error messages|
+|error_token|string|a unique identifier used to correlate the error in the API server logs|
+
+h2. Examples
+
+h3. Create a new record
+
+<pre>
+$ curl -v -X POST --data-urlencode 'collection={"name":"empty collection"}' -H "Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections | jq .
+> POST /arvados/v1/collections HTTP/1.1
+> User-Agent: curl/7.38.0
+> Host: 192.168.5.2:8000
+> Accept: */*
+> Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr
+> Content-Length: 54
+> Content-Type: application/x-www-form-urlencoded
+>
+} [data not shown]
+< HTTP/1.1 200 OK
+< Content-Type: application/json; charset=utf-8
+< Transfer-Encoding: chunked
+< Connection: keep-alive
+< Status: 200 OK
+< Access-Control-Allow-Origin: *
+< Access-Control-Allow-Methods: GET, HEAD, PUT, POST, DELETE
+< Access-Control-Allow-Headers: Authorization
+< Access-Control-Max-Age: 86486400
+< X-UA-Compatible: IE=Edge,chrome=1
+< ETag: "2ec9ef5151c1f7a1486ad169c33ae462"
+< Cache-Control: max-age=0, private, must-revalidate
+< Set-Cookie: _server_session=BAh7BkkiD3Nlc3Npb25faWQGOgZFVEkiJTIwMjQ1NTE5YmEwMzU1MGZkMTBmYmY1YzllY2ZiMjFlBjsAVA%3D%3D--653bc9c20899d48ee8523e18d9a4c1cde0702577; path=/; HttpOnly
+< X-Request-Id: 56aa10bc49097f3b44d3ed946bf0e61e
+< X-Runtime: 0.049951
+< X-Powered-By: Phusion Passenger 4.0.41
+< Date: Fri, 28 Oct 2016 19:20:09 GMT
+< Server: nginx/1.4.7 + Phusion Passenger 4.0.41
+<
+{
+  "href": "/collections/962eh-4zz18-m1ma0mxxfg3mbcc",
+  "kind": "arvados#collection",
+  "etag": "c5ifrv1ox2tu6alb559ymtkb7",
+  "uuid": "962eh-4zz18-m1ma0mxxfg3mbcc",
+  "owner_uuid": "962eh-tpzed-000000000000000",
+  "created_at": "2016-10-28T19:20:09.320771531Z",
+  "modified_by_client_uuid": "962eh-ozdt8-lm5x8emraox8epg",
+  "modified_by_user_uuid": "962eh-tpzed-000000000000000",
+  "modified_at": "2016-10-28T19:20:09.319661000Z",
+  "name": "empty collection",
+  "description": null,
+  "properties": {},
+  "portable_data_hash": "d41d8cd98f00b204e9800998ecf8427e+0",
+  "manifest_text": "",
+  "replication_desired": null,
+  "replication_confirmed": null,
+  "replication_confirmed_at": null,
+  "expires_at": null
+}
+</pre>
+
+h3. Delete a record
+
+<pre>
+$ curl -X DELETE -v -H "Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections/962eh-4zz18-m1ma0mxxfg3mbcc | jq .
+> DELETE /arvados/v1/collections/962eh-4zz18-m1ma0mxxfg3mbcc HTTP/1.1
+> User-Agent: curl/7.38.0
+> Host: 192.168.5.2:8000
+> Accept: */*
+> Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr
+>
+< HTTP/1.1 200 OK
+< Content-Type: application/json; charset=utf-8
+< Transfer-Encoding: chunked
+< Connection: keep-alive
+< Status: 200 OK
+< Access-Control-Allow-Origin: *
+< Access-Control-Allow-Methods: GET, HEAD, PUT, POST, DELETE
+< Access-Control-Allow-Headers: Authorization
+< Access-Control-Max-Age: 86486400
+< X-UA-Compatible: IE=Edge,chrome=1
+< ETag: "1e8f72802cf1a6d0a5c4a1ebbfcc46a9"
+< Cache-Control: max-age=0, private, must-revalidate
+< Set-Cookie: _server_session=BAh7BkkiD3Nlc3Npb25faWQGOgZFVEkiJTc2NDYyY2M0NTNlNmU3M2Y2M2E3YmFiMWQ1MTEyZGZkBjsAVA%3D%3D--d28c7dd640bd24e2b12f01e77088072138dcf145; path=/; HttpOnly
+< X-Request-Id: e66fd3ab825bdb87301f5456161fb641
+< X-Runtime: 0.028788
+< X-Powered-By: Phusion Passenger 4.0.41
+< Date: Fri, 28 Oct 2016 19:33:31 GMT
+< Server: nginx/1.4.7 + Phusion Passenger 4.0.41
+<
+{
+  "href": "/collections/962eh-4zz18-m1ma0mxxfg3mbcc",
+  "kind": "arvados#collection",
+  "etag": "c5ifrv1ox2tu6alb559ymtkb7",
+  "uuid": "962eh-4zz18-m1ma0mxxfg3mbcc",
+  "owner_uuid": "962eh-tpzed-000000000000000",
+  "created_at": "2016-10-28T19:20:09.320771000Z",
+  "modified_by_client_uuid": "962eh-ozdt8-lm5x8emraox8epg",
+  "modified_by_user_uuid": "962eh-tpzed-000000000000000",
+  "modified_at": "2016-10-28T19:20:09.319661000Z",
+  "name": "empty collection",
+  "description": null,
+  "properties": {},
+  "portable_data_hash": "d41d8cd98f00b204e9800998ecf8427e+0",
+  "manifest_text": "",
+  "replication_desired": null,
+  "replication_confirmed": null,
+  "replication_confirmed_at": null,
+  "expires_at": null
+}
+</pre>
+
+h3. Get a specific record
+
+<pre>
+$ curl -v -H "Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km | jq .
+> GET /arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km HTTP/1.1
+> User-Agent: curl/7.38.0
+> Host: 192.168.5.2:8000
+> Accept: */*
+> Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr
+>
+< HTTP/1.1 200 OK
+< Content-Type: application/json; charset=utf-8
+< Transfer-Encoding: chunked
+< Connection: keep-alive
+< Status: 200 OK
+< Access-Control-Allow-Origin: *
+< Access-Control-Allow-Methods: GET, HEAD, PUT, POST, DELETE
+< Access-Control-Allow-Headers: Authorization
+< Access-Control-Max-Age: 86486400
+< X-UA-Compatible: IE=Edge,chrome=1
+< ETag: "fec2ddf433a352e5a2b5d356abd6d3d4"
+< Cache-Control: max-age=0, private, must-revalidate
+< X-Request-Id: 40b447507ff202ae9a0b0b3e0ebe98da
+< X-Runtime: 0.011404
+< X-Powered-By: Phusion Passenger 4.0.41
+< Date: Fri, 28 Oct 2016 18:59:09 GMT
+< Server: nginx/1.4.7 + Phusion Passenger 4.0.41
+<
+{
+  "href": "/collections/962eh-4zz18-xi32mpz2621o8km",
+  "kind": "arvados#collection",
+  "etag": "3mmn0s9e1z5s5opfofmtb9k8p",
+  "uuid": "962eh-4zz18-xi32mpz2621o8km",
+  "owner_uuid": "962eh-tpzed-000000000000000",
+  "created_at": "2016-10-27T14:47:43.792587000Z",
+  "modified_by_client_uuid": "962eh-ozdt8-lm5x8emraox8epg",
+  "modified_by_user_uuid": "962eh-tpzed-000000000000000",
+  "modified_at": "2016-10-27T14:47:43.792166000Z",
+  "name": "Saved at 2016-10-27 14:47:43 UTC by peter@debian",
+  "description": null,
+  "properties": {},
+  "portable_data_hash": "93a45073511646a5c3e2f4953fcf6f61+116",
+  "manifest_text": ". eff999f3b5158331eb44a9a93e3b36e1+67108864+Aad3839bea88bce22cbfe71cf4943de7dab3ea52a@5826180f db141bfd11f7da60dce9e5ee85a988b8+34038725+Ae8f48913fed782cbe463e0499ab37697ee06a2f8@5826180f 0:101147589:rna.SRR948778.bam\n",
+  "replication_desired": null,
+  "replication_confirmed": null,
+  "replication_confirmed_at": null,
+  "expires_at": null
+}
+</pre>
+
+h3. List records and filter by date
+
+(Note, return result is truncated).
+
+<pre>
+$ curl -v -G --data-urlencode 'filters=[["created_at",">","2016-11-08T21:38:24.124834000Z"]]' -H "Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections | jq .
+> GET /arvados/v1/collections?filters=%5B%5B%22uuid%22%2C%20%22%3D%22%2C%20%22962eh-4zz18-xi32mpz2621o8km%22%5D%5D HTTP/1.1
+> User-Agent: curl/7.38.0
+> Host: 192.168.5.2:8000
+> Accept: */*
+> Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr
+>
+< HTTP/1.1 200 OK
+< Content-Type: application/json; charset=utf-8
+< Transfer-Encoding: chunked
+< Connection: keep-alive
+< Status: 200 OK
+< Access-Control-Allow-Origin: *
+< Access-Control-Allow-Methods: GET, HEAD, PUT, POST, DELETE
+< Access-Control-Allow-Headers: Authorization
+< Access-Control-Max-Age: 86486400
+< X-UA-Compatible: IE=Edge,chrome=1
+< ETag: "76345ef24952f073acc3a0c550241d4e"
+< Cache-Control: max-age=0, private, must-revalidate
+< X-Request-Id: d34b8ede4ffc707d8ed172dc2f47ff5e
+< X-Runtime: 0.012727
+< X-Powered-By: Phusion Passenger 4.0.41
+< Date: Fri, 28 Oct 2016 19:08:52 GMT
+< Server: nginx/1.4.7 + Phusion Passenger 4.0.41
+<
+{
+  "kind": "arvados#collectionList",
+  "etag": "",
+  "self_link": "",
+  "offset": 0,
+  "limit": 100,
+  "items": [
+    {
+      "href": "/collections/962eh-4zz18-ybggo9im899vv60",
+      "kind": "arvados#collection",
+      "etag": "bvgrrsg63zsenb9wnpnp0nsgl",
+      "uuid": "962eh-4zz18-ybggo9im899vv60",
+      "owner_uuid": "962eh-tpzed-000000000000000",
+      "created_at": "2016-11-08T21:47:36.937106000Z",
+      "modified_by_client_uuid": null,
+      "modified_by_user_uuid": "962eh-tpzed-000000000000000",
+      "modified_at": "2016-11-08T21:47:36.936625000Z",
+      "name": "Log from cwl-runner job 962eh-8i9sb-45jww0k15fi5ldd",
+      "description": null,
+      "properties": {},
+      "portable_data_hash": "a7820b94717eff86229927565fedbd72+85",
+      "replication_desired": null,
+      "replication_confirmed": null,
+      "replication_confirmed_at": null,
+      "expires_at": null
+    },
+   ...
+    {
+      "href": "/collections/962eh-4zz18-37i1tfl5de5ild9",
+      "kind": "arvados#collection",
+      "etag": "2fa07dx52lux8wa1loehwyrc5",
+      "uuid": "962eh-4zz18-37i1tfl5de5ild9",
+      "owner_uuid": "962eh-tpzed-000000000000000",
+      "created_at": "2016-11-08T21:38:46.717798000Z",
+      "modified_by_client_uuid": null,
+      "modified_by_user_uuid": "962eh-tpzed-000000000000000",
+      "modified_at": "2016-11-08T21:38:46.717409000Z",
+      "name": null,
+      "description": null,
+      "properties": {},
+      "portable_data_hash": "9d43d4c8328640446f6e252cda584e7e+54",
+      "replication_desired": null,
+      "replication_confirmed": null,
+      "replication_confirmed_at": null,
+      "expires_at": null
+    }
+  ],
+  "items_available": 99
+}
+</pre>
+
+h3. Update a field
+
+<pre>
+$ curl -v -X PUT --data-urlencode 'collection={"name":"rna.SRR948778.bam"}' -H "Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr" https://192.168.5.2:8000/arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km | jq .
+> PUT /arvados/v1/collections/962eh-4zz18-xi32mpz2621o8km HTTP/1.1
+> User-Agent: curl/7.38.0
+> Host: 192.168.5.2:8000
+> Accept: */*
+> Authorization: OAuth2 oz0os4nyudswvglxhdlnrgnuelxptmj7qu7dpwvyz3g9ocqtr
+> Content-Length: 53
+> Content-Type: application/x-www-form-urlencoded
+>
+} [data not shown]
+< HTTP/1.1 200 OK
+< Content-Type: application/json; charset=utf-8
+< Transfer-Encoding: chunked
+< Connection: keep-alive
+< Status: 200 OK
+< Access-Control-Allow-Origin: *
+< Access-Control-Allow-Methods: GET, HEAD, PUT, POST, DELETE
+< Access-Control-Allow-Headers: Authorization
+< Access-Control-Max-Age: 86486400
+< X-UA-Compatible: IE=Edge,chrome=1
+< ETag: "fbb50d2847426eab793e3fcf346ca9eb"
+< Cache-Control: max-age=0, private, must-revalidate
+< Set-Cookie: _server_session=BAh7BkkiD3Nlc3Npb25faWQGOgZFVEkiJWI3NjFjMzVjMGI5OGExYmNjZDg0ZTg5MjZhMzcwMDE1BjsAVA%3D%3D--0e005d71fad15cb366e47361c38474b7447ba155; path=/; HttpOnly
+< X-Request-Id: 76d3cb3c0995af6133b0a73a64f57354
+< X-Runtime: 0.030756
+< X-Powered-By: Phusion Passenger 4.0.41
+< Date: Fri, 28 Oct 2016 19:15:16 GMT
+< Server: nginx/1.4.7 + Phusion Passenger 4.0.41
+<
+{
+  "href": "/collections/962eh-4zz18-xi32mpz2621o8km",
+  "kind": "arvados#collection",
+  "etag": "51509hhxo9qqjxqewnoz1b7og",
+  "uuid": "962eh-4zz18-xi32mpz2621o8km",
+  "owner_uuid": "962eh-tpzed-000000000000000",
+  "created_at": "2016-10-27T14:47:43.792587000Z",
+  "modified_by_client_uuid": "962eh-ozdt8-lm5x8emraox8epg",
+  "modified_by_user_uuid": "962eh-tpzed-000000000000000",
+  "modified_at": "2016-10-28T19:15:16.137814000Z",
+  "name": "rna.SRR948778.bam",
+  "description": null,
+  "properties": {},
+  "portable_data_hash": "93a45073511646a5c3e2f4953fcf6f61+116",
+  "manifest_text": ". eff999f3b5158331eb44a9a93e3b36e1+67108864+Acca57af82cc18c5dfa47bdfd16e335fccd09dfa5@582618c4 db141bfd11f7da60dce9e5ee85a988b8+34038725+A7764f122f41f92c2d5bde1852fcdd1bea5f8bd78@582618c4 0:101147589:rna.SRR948778.bam\n",
+  "replication_desired": null,
+  "replication_confirmed": null,
+  "replication_confirmed_at": null,
+  "expires_at": null
+}
+</pre>

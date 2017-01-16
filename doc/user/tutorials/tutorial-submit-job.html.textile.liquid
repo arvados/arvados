@@ -81,10 +81,10 @@ In the editor, enter the following template:
 * @"repository"@ is the name of a git repository to search for the script version.  You can access a list of available git repositories on the Arvados Workbench in the *Repositories* page using the <span class="fa fa-lg fa-user"></span> <span class="caret"></span> top navigation menu icon.
 * @"script_version"@ specifies the version of the script that you wish to run.  This can be in the form of an explicit Git revision hash, a tag, or a branch (in which case it will use the HEAD of the specified branch).  Arvados logs the script version that was used in the run, enabling you to go back and re-run any past job with the guarantee that the exact same code will be used as was used in the previous run.
 * @"script"@ specifies the filename of the script to run.  Crunch expects to find this in the @crunch_scripts/@ subdirectory of the Git repository.
-* @"runtime_constraints"@ describes the runtime environment required to run the job.  These are described in the "job record schema":{{site.baseurl}}/api/schema/Job.html
+* @"runtime_constraints"@ describes the runtime environment required to run the job.  These are described in the "job record schema":{{site.baseurl}}/api/methods/jobs.html
 
 h2. Running your pipeline
 
-Your new pipeline template should appear at the top of the Workbench "pipeline&nbsp;templates":{{site.arvados_workbench_host}}/pipeline_templates page.  You can run your pipeline "using Workbench":tutorial-pipeline-workbench.html or the "command line.":{{site.baseurl}}/user/topics/running-pipeline-command-line.html
+Your new pipeline template should appear at the top of the Workbench "pipeline&nbsp;templates":{{site.arvados_workbench_host}}/pipeline_templates page.  You can run your pipeline "using Workbench":tutorial-workflow-workbench.html or the "command line.":{{site.baseurl}}/user/topics/running-pipeline-command-line.html
 
-For more information and examples for writing pipelines, see the "pipeline template reference":{{site.baseurl}}/api/schema/PipelineTemplate.html
+For more information and examples for writing pipelines, see the "pipeline template reference":{{site.baseurl}}/api/methods/pipeline_templates.html

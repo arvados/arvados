@@ -1,13 +1,14 @@
 
+export PATH=${PATH}:/usr/local/go/bin:/var/lib/gems/bin
+export GEM_HOME=/var/lib/gems
+export GEM_PATH=/var/lib/gems
+
 if test -s /var/run/localip_override ; then
     localip=$(cat /var/run/localip_override)
 else
     defaultdev=$(/sbin/ip route|awk '/default/ { print $5 }')
     localip=$(ip addr show $defaultdev | grep 'inet ' | sed 's/ *inet \(.*\)\/.*/\1/')
 fi
-
-export GEM_HOME=/var/lib/gems
-export GEM_PATH=/var/lib/gems
 
 declare -A services
 services=(
@@ -38,6 +39,14 @@ run_bundler() {
     else
         frozen=""
     fi
+    if ! test -x bundle ; then
+        bundlergem=$(ls -r $GEM_HOME/cache/bundler-*.gem 2>/dev/null | head -n1 || true)
+        if test -n "$bundlergem" ; then
+            flock /var/lib/gems/gems.lock gem install --local --no-document $bundlergem
+        else
+            flock /var/lib/gems/gems.lock gem install --no-document bundler
+        fi
+    fi
     if ! flock /var/lib/gems/gems.lock bundle install --path $GEM_HOME --local --no-deployment $frozen "$@" ; then
         flock /var/lib/gems/gems.lock bundle install --path $GEM_HOME --no-deployment $frozen "$@"
     fi
@@ -45,7 +54,7 @@ run_bundler() {
 
 pip_install() {
     pushd /var/lib/pip
-    for p in $(ls http*.tar.gz) $(ls http*.whl) $(ls http*.zip) ; do
+    for p in $(ls http*.tar.gz) $(ls http*.tar.bz2) $(ls http*.whl) $(ls http*.zip) ; do
         if test -f $p ; then
             ln -sf $p $(echo $p | sed 's/.*%2F\(.*\)/\1/')
         fi

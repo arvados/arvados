@@ -26,8 +26,8 @@ if ! grep "^arvbox:" /etc/passwd >/dev/null 2>/dev/null ; then
           /var/lib/nginx /var/log/nginx /etc/ssl/private \
           /var/lib/gopath /var/lib/pip
 
-    mkdir -p /var/lib/gems/ruby/2.1.0
-    chown arvbox:arvbox -R /var/lib/gems/ruby/2.1.0
+    mkdir -p /var/lib/gems/ruby
+    chown arvbox:arvbox -R /var/lib/gems/ruby
 
     mkdir -p /tmp/crunch0 /tmp/crunch1
     chown crunch:crunch -R /tmp/crunch0 /tmp/crunch1

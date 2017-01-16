@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -20,6 +19,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/AdRoll/goamz/aws"
 	"github.com/AdRoll/goamz/s3"
+	log "github.com/Sirupsen/logrus"
 )
 
 const (
@@ -148,7 +148,7 @@ type S3Volume struct {
 	ReadOnly           bool
 	UnsafeDelete       bool
 
-	bucket *s3.Bucket
+	bucket *s3bucket
 
 	startOnce sync.Once
 }
@@ -230,9 +230,11 @@ func (v *S3Volume) Start() error {
 	client := s3.New(auth, region)
 	client.ConnectTimeout = time.Duration(v.ConnectTimeout)
 	client.ReadTimeout = time.Duration(v.ReadTimeout)
-	v.bucket = &s3.Bucket{
-		S3:   client,
-		Name: v.Bucket,
+	v.bucket = &s3bucket{
+		Bucket: &s3.Bucket{
+			S3:   client,
+			Name: v.Bucket,
+		},
 	}
 	return nil
 }
@@ -269,6 +271,7 @@ func (v *S3Volume) getReader(loc string) (rdr io.ReadCloser, err error) {
 	if err == nil || !os.IsNotExist(err) {
 		return
 	}
+
 	_, err = v.bucket.Head("recent/"+loc, nil)
 	err = v.translateError(err)
 	if err != nil {
@@ -280,6 +283,7 @@ func (v *S3Volume) getReader(loc string) (rdr io.ReadCloser, err error) {
 		err = os.ErrNotExist
 		return
 	}
+
 	rdr, err = v.bucket.GetReader(loc)
 	if err != nil {
 		log.Printf("warning: reading %s after successful fixRace: %s", loc, err)
@@ -442,16 +446,19 @@ func (v *S3Volume) Mtime(loc string) (time.Time, error) {
 func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 	// Use a merge sort to find matching sets of X and recent/X.
 	dataL := s3Lister{
-		Bucket:   v.bucket,
+		Bucket:   v.bucket.Bucket,
 		Prefix:   prefix,
 		PageSize: v.IndexPageSize,
 	}
 	recentL := s3Lister{
-		Bucket:   v.bucket,
+		Bucket:   v.bucket.Bucket,
 		Prefix:   "recent/" + prefix,
 		PageSize: v.IndexPageSize,
 	}
+	v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
+	v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 	for data, recent := dataL.First(), recentL.First(); data != nil; data = dataL.Next() {
+		v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 		if data.Key >= "g" {
 			// Conveniently, "recent/*" and "trash/*" are
 			// lexically greater than all hex-encoded data
@@ -473,10 +480,12 @@ func (v *S3Volume) IndexTo(prefix string, writer io.Writer) error {
 		for recent != nil {
 			if cmp := strings.Compare(recent.Key[7:], data.Key); cmp < 0 {
 				recent = recentL.Next()
+				v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 				continue
 			} else if cmp == 0 {
 				stamp = recent
 				recent = recentL.Next()
+				v.bucket.stats.Tick(&v.bucket.stats.Ops, &v.bucket.stats.ListOps)
 				break
 			} else {
 				// recent/X marker is missing: we'll
@@ -508,7 +517,7 @@ func (v *S3Volume) Trash(loc string) error {
 		if !s3UnsafeDelete {
 			return ErrS3TrashDisabled
 		}
-		return v.bucket.Del(loc)
+		return v.translateError(v.bucket.Del(loc))
 	}
 	err := v.checkRaceWindow(loc)
 	if err != nil {
@@ -611,9 +620,14 @@ func (v *S3Volume) Status() *VolumeStatus {
 	}
 }
 
+// InternalStats returns bucket I/O and API call counters.
+func (v *S3Volume) InternalStats() interface{} {
+	return &v.bucket.stats
+}
+
 // String implements fmt.Stringer.
 func (v *S3Volume) String() string {
-	return fmt.Sprintf("s3-bucket:%+q", v.bucket.Name)
+	return fmt.Sprintf("s3-bucket:%+q", v.Bucket)
 }
 
 // Writable returns false if all future Put, Mtime, and Delete calls
@@ -702,7 +716,7 @@ func (v *S3Volume) EmptyTrash() {
 
 	// Use a merge sort to find matching sets of trash/X and recent/X.
 	trashL := s3Lister{
-		Bucket:   v.bucket,
+		Bucket:   v.bucket.Bucket,
 		Prefix:   "trash/",
 		PageSize: v.IndexPageSize,
 	}
@@ -752,7 +766,9 @@ func (v *S3Volume) EmptyTrash() {
 				v.fixRace(loc)
 				v.Touch(loc)
 				continue
-			} else if _, err := v.bucket.Head(loc, nil); os.IsNotExist(err) {
+			}
+			_, err := v.bucket.Head(loc, nil)
+			if os.IsNotExist(err) {
 				log.Printf("notice: %s: EmptyTrash: detected recent race for %q, calling fixRace", v, loc)
 				v.fixRace(loc)
 				continue
@@ -845,4 +861,66 @@ func (lister *s3Lister) pop() (k *s3.Key) {
 		lister.buf = lister.buf[1:]
 	}
 	return
+}
+
+// s3bucket wraps s3.bucket and counts I/O and API usage stats.
+type s3bucket struct {
+	*s3.Bucket
+	stats s3bucketStats
+}
+
+func (b *s3bucket) GetReader(path string) (io.ReadCloser, error) {
+	rdr, err := b.Bucket.GetReader(path)
+	b.stats.Tick(&b.stats.Ops, &b.stats.GetOps)
+	b.stats.TickErr(err)
+	return NewCountingReader(rdr, b.stats.TickInBytes), err
+}
+
+func (b *s3bucket) Head(path string, headers map[string][]string) (*http.Response, error) {
+	resp, err := b.Bucket.Head(path, headers)
+	b.stats.Tick(&b.stats.Ops, &b.stats.HeadOps)
+	b.stats.TickErr(err)
+	return resp, err
+}
+
+func (b *s3bucket) PutReader(path string, r io.Reader, length int64, contType string, perm s3.ACL, options s3.Options) error {
+	err := b.Bucket.PutReader(path, NewCountingReader(r, b.stats.TickOutBytes), length, contType, perm, options)
+	b.stats.Tick(&b.stats.Ops, &b.stats.PutOps)
+	b.stats.TickErr(err)
+	return err
+}
+
+func (b *s3bucket) Put(path string, data []byte, contType string, perm s3.ACL, options s3.Options) error {
+	err := b.Bucket.PutReader(path, NewCountingReader(bytes.NewBuffer(data), b.stats.TickOutBytes), int64(len(data)), contType, perm, options)
+	b.stats.Tick(&b.stats.Ops, &b.stats.PutOps)
+	b.stats.TickErr(err)
+	return err
+}
+
+func (b *s3bucket) Del(path string) error {
+	err := b.Bucket.Del(path)
+	b.stats.Tick(&b.stats.Ops, &b.stats.DelOps)
+	b.stats.TickErr(err)
+	return err
+}
+
+type s3bucketStats struct {
+	statsTicker
+	Ops     uint64
+	GetOps  uint64
+	PutOps  uint64
+	HeadOps uint64
+	DelOps  uint64
+	ListOps uint64
+}
+
+func (s *s3bucketStats) TickErr(err error) {
+	if err == nil {
+		return
+	}
+	errType := fmt.Sprintf("%T", err)
+	if err, ok := err.(*s3.Error); ok {
+		errType = errType + fmt.Sprintf(" %d %s", err.StatusCode, err.Code)
+	}
+	s.statsTicker.TickErr(err, errType)
 }

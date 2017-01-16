@@ -44,18 +44,26 @@ class RackSocket
         if forked && EM.reactor_running?
           EM.stop
         end
-        Thread.new {
-          EM.run
-        }
+        Thread.new do
+          begin
+            EM.run
+          ensure
+            ActiveRecord::Base.connection.close
+          end
+        end
         die_gracefully_on_signal
       end
     else
       # faciliates debugging
       Thread.abort_on_exception = true
       # just spawn a thread and start it up
-      Thread.new {
-        EM.run
-      }
+      Thread.new do
+        begin
+          EM.run
+        ensure
+          ActiveRecord::Base.connection.close
+        end
+      end
     end
 
     # Create actual handler instance object from handler class.

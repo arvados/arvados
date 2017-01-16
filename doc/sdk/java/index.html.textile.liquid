@@ -2,8 +2,7 @@
 layout: default
 navsection: sdk
 navmenu: Java
-title: "Java SDK"
-
+title: "Installation"
 ...
 
 The Java SDK provides a generic set of wrappers so you can make API calls in java.
@@ -11,10 +10,10 @@ The Java SDK provides a generic set of wrappers so you can make API calls in jav
 h3. Introdution
 
 * The Java SDK requires Java 6 or later
-  
+
 * The Java SDK is implemented as a maven project. Hence, you would need a working
 maven environment to be able to build the source code. If you do not have maven setup,
-you may find the "Maven in 5 Minutes":http://maven.apache.org/guides/getting-started/maven-in-five-minutes.html link useful. 
+you may find the "Maven in 5 Minutes":http://maven.apache.org/guides/getting-started/maven-in-five-minutes.html link useful.
 
 * In this document $ARVADOS_HOME is used to refer to the directory where
 arvados code is cloned in your system. For ex: $ARVADOS_HOME = $HOME/arvados
@@ -38,7 +37,7 @@ ARVADOS_API_HOST_INSECURE: Set this to true if you are using self-signed
 </notextile>
 
 * Please see "api-tokens":{{site.baseurl}}/user/reference/api-tokens.html for full details.
-  	  
+
 
 h3. Building the Arvados SDK
 
@@ -124,7 +123,7 @@ The local repository is usually located in your home directory at <code class="u
 <pre>
 In Eclipse IDE:
 Window -> Preferences -> Java -> Build Path -> Classpath Variables
-    Click on the "New..." button and add a new 
+    Click on the "New..." button and add a new
     M2_REPO variable and set it to your local Maven repository
 </pre>
 </notextile>

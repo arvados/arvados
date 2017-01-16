@@ -4,15 +4,18 @@ import (
 	"bytes"
 	"context"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"github.com/AdRoll/goamz/s3"
 	"github.com/AdRoll/goamz/s3/s3test"
+	log "github.com/Sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 
@@ -79,6 +82,123 @@ func (s *StubbedS3Suite) TestIndex(c *check.C) {
 		idx := bytes.SplitAfter(buf.Bytes(), []byte{10})
 		c.Check(len(idx), check.Equals, spec.expectMatch+1)
 		c.Check(len(idx[len(idx)-1]), check.Equals, 0)
+	}
+}
+
+func (s *StubbedS3Suite) TestStats(c *check.C) {
+	v := s.newTestableVolume(c, 5*time.Minute, false, 2)
+	stats := func() string {
+		buf, err := json.Marshal(v.InternalStats())
+		c.Check(err, check.IsNil)
+		return string(buf)
+	}
+
+	c.Check(stats(), check.Matches, `.*"Ops":0,.*`)
+
+	loc := "acbd18db4cc2f85cedef654fccc4a4d8"
+	_, err := v.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.NotNil)
+	c.Check(stats(), check.Matches, `.*"Ops":[^0],.*`)
+	c.Check(stats(), check.Matches, `.*"\*s3.Error 404 [^"]*":[^0].*`)
+	c.Check(stats(), check.Matches, `.*"InBytes":0,.*`)
+
+	err = v.Put(context.Background(), loc, []byte("foo"))
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"OutBytes":3,.*`)
+	c.Check(stats(), check.Matches, `.*"PutOps":2,.*`)
+
+	_, err = v.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.IsNil)
+	_, err = v.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"InBytes":6,.*`)
+}
+
+type blockingHandler struct {
+	requested chan *http.Request
+	unblock   chan struct{}
+}
+
+func (h *blockingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if h.requested != nil {
+		h.requested <- r
+	}
+	if h.unblock != nil {
+		<-h.unblock
+	}
+	http.Error(w, "nothing here", http.StatusNotFound)
+}
+
+func (s *StubbedS3Suite) TestGetContextCancel(c *check.C) {
+	loc := "acbd18db4cc2f85cedef654fccc4a4d8"
+	buf := make([]byte, 3)
+
+	s.testContextCancel(c, func(ctx context.Context, v *TestableS3Volume) error {
+		_, err := v.Get(ctx, loc, buf)
+		return err
+	})
+}
+
+func (s *StubbedS3Suite) TestCompareContextCancel(c *check.C) {
+	loc := "acbd18db4cc2f85cedef654fccc4a4d8"
+	buf := []byte("bar")
+
+	s.testContextCancel(c, func(ctx context.Context, v *TestableS3Volume) error {
+		return v.Compare(ctx, loc, buf)
+	})
+}
+
+func (s *StubbedS3Suite) TestPutContextCancel(c *check.C) {
+	loc := "acbd18db4cc2f85cedef654fccc4a4d8"
+	buf := []byte("foo")
+
+	s.testContextCancel(c, func(ctx context.Context, v *TestableS3Volume) error {
+		return v.Put(ctx, loc, buf)
+	})
+}
+
+func (s *StubbedS3Suite) testContextCancel(c *check.C, testFunc func(context.Context, *TestableS3Volume) error) {
+	handler := &blockingHandler{}
+	srv := httptest.NewServer(handler)
+	defer srv.Close()
+
+	v := s.newTestableVolume(c, 5*time.Minute, false, 2)
+	vol := *v.S3Volume
+	vol.Endpoint = srv.URL
+	v = &TestableS3Volume{S3Volume: &vol}
+	v.Start()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	handler.requested = make(chan *http.Request)
+	handler.unblock = make(chan struct{})
+	defer close(handler.unblock)
+
+	doneFunc := make(chan struct{})
+	go func() {
+		err := testFunc(ctx, v)
+		c.Check(err, check.Equals, context.Canceled)
+		close(doneFunc)
+	}()
+
+	timeout := time.After(10 * time.Second)
+
+	// Wait for the stub server to receive a request, meaning
+	// Get() is waiting for an s3 operation.
+	select {
+	case <-timeout:
+		c.Fatal("timed out waiting for test func to call our handler")
+	case <-doneFunc:
+		c.Fatal("test func finished without even calling our handler!")
+	case <-handler.requested:
+	}
+
+	cancel()
+
+	select {
+	case <-timeout:
+		c.Fatal("timed out")
+	case <-doneFunc:
 	}
 }
 
@@ -290,18 +410,9 @@ func (s *StubbedS3Suite) newTestableVolume(c *check.C, raceWindow time.Duration,
 	srv, err := s3test.NewServer(&s3test.Config{Clock: clock})
 	c.Assert(err, check.IsNil)
 
-	tmp, err := ioutil.TempFile("", "keepstore")
-	c.Assert(err, check.IsNil)
-	defer os.Remove(tmp.Name())
-	_, err = tmp.Write([]byte("xxx\n"))
-	c.Assert(err, check.IsNil)
-	c.Assert(tmp.Close(), check.IsNil)
-
 	v := &TestableS3Volume{
 		S3Volume: &S3Volume{
 			Bucket:             TestBucketName,
-			AccessKeyFile:      tmp.Name(),
-			SecretKeyFile:      tmp.Name(),
 			Endpoint:           srv.URL(),
 			Region:             "test-region-1",
 			LocationConstraint: true,
@@ -311,13 +422,29 @@ func (s *StubbedS3Suite) newTestableVolume(c *check.C, raceWindow time.Duration,
 			ReadOnly:           readonly,
 			IndexPageSize:      1000,
 		},
+		c:           c,
 		server:      srv,
 		serverClock: clock,
 	}
-	c.Assert(v.Start(), check.IsNil)
+	v.Start()
 	err = v.bucket.PutBucket(s3.ACL("private"))
 	c.Assert(err, check.IsNil)
 	return v
+}
+
+func (v *TestableS3Volume) Start() error {
+	tmp, err := ioutil.TempFile("", "keepstore")
+	v.c.Assert(err, check.IsNil)
+	defer os.Remove(tmp.Name())
+	_, err = tmp.Write([]byte("xxx\n"))
+	v.c.Assert(err, check.IsNil)
+	v.c.Assert(tmp.Close(), check.IsNil)
+
+	v.S3Volume.AccessKeyFile = tmp.Name()
+	v.S3Volume.SecretKeyFile = tmp.Name()
+
+	v.c.Assert(v.S3Volume.Start(), check.IsNil)
+	return nil
 }
 
 // PutRaw skips the ContentMD5 test

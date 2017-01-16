@@ -21,7 +21,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       :filters => ['uuid', '=', 'ad02e37b6a7f45bbe2ead3c29a109b8a+54'].to_json
     }, auth(:active)
     assert_response 422
-    assert_match /nvalid element.*not an array/, json_response['errors'].join(' ')
+    assert_match(/nvalid element.*not an array/, json_response['errors'].join(' '))
   end
 
   test "get index with invalid filters (unsearchable column) responds 422" do
@@ -30,7 +30,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       :filters => [['this_column_does_not_exist', '=', 'bogus']].to_json
     }, auth(:active)
     assert_response 422
-    assert_match /nvalid attribute/, json_response['errors'].join(' ')
+    assert_match(/nvalid attribute/, json_response['errors'].join(' '))
   end
 
   test "get index with invalid filters (invalid operator) responds 422" do
@@ -39,7 +39,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       :filters => [['uuid', ':-(', 'displeased']].to_json
     }, auth(:active)
     assert_response 422
-    assert_match /nvalid operator/, json_response['errors'].join(' ')
+    assert_match(/nvalid operator/, json_response['errors'].join(' '))
   end
 
   test "get index with invalid filters (invalid operand type) responds 422" do
@@ -48,7 +48,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
       :filters => [['uuid', '=', {foo: 'bar'}]].to_json
     }, auth(:active)
     assert_response 422
-    assert_match /nvalid operand type/, json_response['errors'].join(' ')
+    assert_match(/nvalid operand type/, json_response['errors'].join(' '))
   end
 
   test "get index with where= (empty string)" do
@@ -73,7 +73,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
           :select => ['bogus'].to_json
         }, auth(:active)
     assert_response 422
-    assert_match /Invalid attribute.*bogus/, json_response['errors'].join(' ')
+    assert_match(/Invalid attribute.*bogus/, json_response['errors'].join(' '))
   end
 
   test "get index with select= (invalid attribute type) responds 422" do
@@ -82,7 +82,7 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
           :select => [['bogus']].to_json
         }, auth(:active)
     assert_response 422
-    assert_match /Invalid attribute.*bogus/, json_response['errors'].join(' ')
+    assert_match(/Invalid attribute.*bogus/, json_response['errors'].join(' '))
   end
 
   test "controller 404 response is json" do
@@ -242,8 +242,6 @@ class CollectionsApiTest < ActionDispatch::IntegrationTest
     }, auth(:active)
     assert_response :success
     assert_equal true, json_response['manifest_text'].include?('file4_in_subdir4.txt')
-
-    created = json_response
 
     # search using the filename
     search_using_full_text_search 'subdir2', 0

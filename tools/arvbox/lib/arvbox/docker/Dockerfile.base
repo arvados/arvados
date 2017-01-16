@@ -1,32 +1,48 @@
 FROM debian:8
 
-RUN apt-get update
+ENV DEBIAN_FRONTEND noninteractive
 
-RUN DEBIAN_FRONTEND=noninteractive apt-get -yq --no-install-recommends install \
-    postgresql-9.4 git build-essential runit \
-    ruby rake bundler curl libpq-dev ruby-dev \
+RUN apt-get clean && \
+    apt-get update && \
+    apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
+    postgresql-9.4 git build-essential runit curl libpq-dev \
     libcurl4-openssl-dev libssl-dev zlib1g-dev libpcre3-dev \
     openssh-server python-setuptools netcat-traditional \
-    python-epydoc graphviz bzip2 less sudo virtualenv
-
-RUN DEBIAN_FRONTEND=noninteractive apt-get -yq --no-install-recommends install \
+    python-epydoc graphviz bzip2 less sudo virtualenv \
     libpython-dev fuse libfuse-dev python-pip python-yaml \
     pkg-config libattr1-dev python-llfuse python-pycurl \
     libwww-perl libio-socket-ssl-perl libcrypt-ssleay-perl \
-    libjson-perl nginx gitolite3 lsof \
-    apt-transport-https ca-certificates slurm-wlm
+    libjson-perl nginx gitolite3 lsof libreadline-dev \
+    apt-transport-https ca-certificates slurm-wlm \
+    linkchecker python3-virtualenv python-virtualenv xvfb iceweasel && \
+    apt-get clean
 
-RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -yq --no-install-recommends install \
-    linkchecker python3-virtualenv python-virtualenv xvfb iceweasel
+ENV GOVERSION 1.7.3
 
+# Install golang binary
 RUN cd /usr/local && \
-    GOVERSION=1.7.1 && \
     curl -O http://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz && \
     tar -xzf go${GOVERSION}.linux-amd64.tar.gz && \
-    rm go${GOVERSION}.linux-amd64.tar.gz && \
-    cd bin && \
-    ln -s /usr/local/go/bin/* .
+    rm go${GOVERSION}.linux-amd64.tar.gz
+
+ENV PATH ${PATH}:/usr/local/go/bin
+
+ENV RUBYVERSION 2.1.8
+
+# Install Ruby from source
+RUN cd /usr/local/lib && \
+ curl -O http://cache.ruby-lang.org/pub/ruby/2.1/ruby-${RUBYVERSION}.tar.gz && \
+ tar xzf ruby-${RUBYVERSION}.tar.gz && \
+ cd ruby-${RUBYVERSION} && \
+ ./configure --disable-install-doc && \
+ make && \
+ make install && \
+ cd /usr/local/lib && \
+ rm -rf ruby-${RUBYVERSION}.tar.gz ruby-${RUBYVERSION}
+
+ENV GEM_HOME /var/lib/gems
+ENV GEM_PATH /var/lib/gems
+ENV PATH $PATH:/var/lib/gems/bin
 
 VOLUME /var/lib/docker
 VOLUME /var/log/nginx
@@ -51,6 +67,8 @@ RUN set -e && \
  curl -L -o/tmp/$PJS.tar.bz2 http://cache.arvados.org/$PJS.tar.bz2 && \
  tar -C /usr/local -xjf /tmp/$PJS.tar.bz2 && \
  ln -s ../$PJS/bin/phantomjs /usr/local/bin/
+
+RUN pip install -U setuptools
 
 ARG arvados_version
 RUN echo arvados_version is git commit $arvados_version

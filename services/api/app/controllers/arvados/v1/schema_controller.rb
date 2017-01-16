@@ -85,7 +85,7 @@ class Arvados::V1::SchemaController < ApplicationController
       if Rails.application.config.websocket_address
         discovery[:websocketUrl] = Rails.application.config.websocket_address
       elsif ENV['ARVADOS_WEBSOCKETS']
-        discovery[:websocketUrl] = (root_url.sub /^http/, 'ws') + "websocket"
+        discovery[:websocketUrl] = root_url.sub(/^http/, 'ws') + "websocket"
       end
 
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
@@ -383,21 +383,21 @@ class Arvados::V1::SchemaController < ApplicationController
               method = d_methods[action.to_sym]
             end
             if ctl_class.respond_to? "_#{action}_requires_parameters".to_sym
-              ctl_class.send("_#{action}_requires_parameters".to_sym).each do |k, v|
+              ctl_class.send("_#{action}_requires_parameters".to_sym).each do |l, v|
                 if v.is_a? Hash
-                  method[:parameters][k] = v
+                  method[:parameters][l] = v
                 else
-                  method[:parameters][k] = {}
+                  method[:parameters][l] = {}
                 end
-                if !method[:parameters][k][:default].nil?
+                if !method[:parameters][l][:default].nil?
                   # The JAVA SDK is sensitive to all values being strings
-                  method[:parameters][k][:default] = method[:parameters][k][:default].to_s
+                  method[:parameters][l][:default] = method[:parameters][l][:default].to_s
                 end
-                method[:parameters][k][:type] ||= 'string'
-                method[:parameters][k][:description] ||= ''
-                method[:parameters][k][:location] = (route.segment_keys.include?(k) ? 'path' : 'query')
-                if method[:parameters][k][:required].nil?
-                  method[:parameters][k][:required] = v != false
+                method[:parameters][l][:type] ||= 'string'
+                method[:parameters][l][:description] ||= ''
+                method[:parameters][l][:location] = (route.segment_keys.include?(l) ? 'path' : 'query')
+                if method[:parameters][l][:required].nil?
+                  method[:parameters][l][:required] = v != false
                 end
               end
             end

@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -13,6 +14,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	check "gopkg.in/check.v1"
 )
 
 type TestableUnixVolume struct {
@@ -323,14 +326,100 @@ func TestUnixVolumeCompare(t *testing.T) {
 	}
 }
 
-// TODO(twp): show that the underlying Read/Write operations executed
-// serially and not concurrently. The easiest way to do this is
-// probably to activate verbose or debug logging, capture log output
-// and examine it to confirm that Reads and Writes did not overlap.
-//
-// TODO(twp): a proper test of I/O serialization requires that a
-// second request start while the first one is still underway.
-// Guaranteeing that the test behaves this way requires some tricky
-// synchronization and mocking.  For now we'll just launch a bunch of
-// requests simultaenously in goroutines and demonstrate that they
-// return accurate results.
+func TestUnixVolumeContextCancelPut(t *testing.T) {
+	v := NewTestableUnixVolume(t, true, false)
+	defer v.Teardown()
+	v.locker.Lock()
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+		time.Sleep(50 * time.Millisecond)
+		v.locker.Unlock()
+	}()
+	err := v.Put(ctx, TestHash, TestBlock)
+	if err != context.Canceled {
+		t.Errorf("Put() returned %s -- expected short read / canceled", err)
+	}
+}
+
+func TestUnixVolumeContextCancelGet(t *testing.T) {
+	v := NewTestableUnixVolume(t, false, false)
+	defer v.Teardown()
+	bpath := v.blockPath(TestHash)
+	v.PutRaw(TestHash, TestBlock)
+	os.Remove(bpath)
+	err := syscall.Mkfifo(bpath, 0600)
+	if err != nil {
+		t.Fatalf("Mkfifo %s: %s", bpath, err)
+	}
+	defer os.Remove(bpath)
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+	}()
+	buf := make([]byte, len(TestBlock))
+	n, err := v.Get(ctx, TestHash, buf)
+	if n == len(TestBlock) || err != context.Canceled {
+		t.Errorf("Get() returned %d, %s -- expected short read / canceled", n, err)
+	}
+}
+
+var _ = check.Suite(&UnixVolumeSuite{})
+
+type UnixVolumeSuite struct {
+	volume *TestableUnixVolume
+}
+
+func (s *UnixVolumeSuite) TearDownTest(c *check.C) {
+	if s.volume != nil {
+		s.volume.Teardown()
+	}
+}
+
+func (s *UnixVolumeSuite) TestStats(c *check.C) {
+	s.volume = NewTestableUnixVolume(c, false, false)
+	stats := func() string {
+		buf, err := json.Marshal(s.volume.InternalStats())
+		c.Check(err, check.IsNil)
+		return string(buf)
+	}
+
+	c.Check(stats(), check.Matches, `.*"StatOps":0,.*`)
+	c.Check(stats(), check.Matches, `.*"Errors":0,.*`)
+
+	loc := "acbd18db4cc2f85cedef654fccc4a4d8"
+	_, err := s.volume.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.NotNil)
+	c.Check(stats(), check.Matches, `.*"StatOps":[^0],.*`)
+	c.Check(stats(), check.Matches, `.*"Errors":[^0],.*`)
+	c.Check(stats(), check.Matches, `.*"\*os\.PathError":[^0].*`)
+	c.Check(stats(), check.Matches, `.*"InBytes":0,.*`)
+	c.Check(stats(), check.Matches, `.*"OpenOps":0,.*`)
+	c.Check(stats(), check.Matches, `.*"CreateOps":0,.*`)
+
+	err = s.volume.Put(context.Background(), loc, []byte("foo"))
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"OutBytes":3,.*`)
+	c.Check(stats(), check.Matches, `.*"CreateOps":1,.*`)
+	c.Check(stats(), check.Matches, `.*"OpenOps":0,.*`)
+	c.Check(stats(), check.Matches, `.*"UtimesOps":0,.*`)
+
+	err = s.volume.Touch(loc)
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"FlockOps":1,.*`)
+	c.Check(stats(), check.Matches, `.*"OpenOps":1,.*`)
+	c.Check(stats(), check.Matches, `.*"UtimesOps":1,.*`)
+
+	_, err = s.volume.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.IsNil)
+	err = s.volume.Compare(context.Background(), loc, []byte("foo"))
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"InBytes":6,.*`)
+	c.Check(stats(), check.Matches, `.*"OpenOps":3,.*`)
+
+	err = s.volume.Trash(loc)
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"FlockOps":2,.*`)
+}

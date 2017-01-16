@@ -4,7 +4,11 @@ navsection: userguide
 title: "Running an Arvados pipeline"
 ...
 
-This tutorial demonstrates how to use the command line to run the same pipeline as described in "running a pipeline using Workbench.":{{site.baseurl}}/user/tutorials/tutorial-pipeline-workbench.html
+{% include 'crunch1only_begin' %}
+If the Jobs API is not available, use the "Common Workflow Language":{{site.baseurl}}/user/cwl/cwl-runner.html instead.
+{% include 'crunch1only_end' %}
+
+This tutorial demonstrates how to use the command line to run the same pipeline as described in "running a pipeline using Workbench.":{{site.baseurl}}/user/tutorials/tutorial-workflow-workbench.html
 
 {% include 'tutorial_expectations' %}
 {% include 'tutorial_cluster_name' %}

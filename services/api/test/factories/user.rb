@@ -4,7 +4,7 @@ end
 
 FactoryGirl.define do
   factory :user do
-    ignore do
+    transient do
       join_groups []
     end
     after :create do |user, evaluator|

@@ -5,13 +5,14 @@ import "encoding/json"
 // ResourceListParams expresses which results are requested in a
 // list/index API.
 type ResourceListParams struct {
-	Select   []string `json:"select,omitempty"`
-	Filters  []Filter `json:"filters,omitempty"`
-	Limit    *int     `json:"limit,omitempty"`
-	Offset   int      `json:"offset,omitempty"`
-	Order    string   `json:"order,omitempty"`
-	Distinct bool     `json:"distinct,omitempty"`
-	Count    bool     `json:"count,omitempty"`
+	Select       []string `json:"select,omitempty"`
+	Filters      []Filter `json:"filters,omitempty"`
+	IncludeTrash bool     `json:"include_trash,omitempty"`
+	Limit        *int     `json:"limit,omitempty"`
+	Offset       int      `json:"offset,omitempty"`
+	Order        string   `json:"order,omitempty"`
+	Distinct     bool     `json:"distinct,omitempty"`
+	Count        bool     `json:"count,omitempty"`
 }
 
 // A Filter restricts the set of records returned by a list/index API.

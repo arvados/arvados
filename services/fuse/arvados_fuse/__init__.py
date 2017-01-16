@@ -74,7 +74,12 @@ import Queue
 # unlimited to avoid deadlocks, see https://arvados.org/issues/3198#note-43 for
 # details.
 
-llfuse.capi._notify_queue = Queue.Queue()
+if hasattr(llfuse, 'capi'):
+    # llfuse < 0.42
+    llfuse.capi._notify_queue = Queue.Queue()
+else:
+    # llfuse >= 0.42
+    llfuse._notify_queue = Queue.Queue()
 
 from fusedir import sanitize_filename, Directory, CollectionDirectory, TmpCollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
 from fusefile import StringFile, FuseArvadosFile
@@ -355,12 +360,17 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def destroy(self):
-        with llfuse.lock:
-            self._shutdown_started.set()
-            if self.events:
-                self.events.close()
-                self.events = None
+        self._shutdown_started.set()
+        if self.events:
+            self.events.close()
+            self.events = None
 
+        if llfuse.lock.acquire():
+            # llfuse < 0.42
+            self.inodes.clear()
+            llfuse.lock.release()
+        else:
+            # llfuse >= 0.42
             self.inodes.clear()
 
     def access(self, inode, mode, ctx):
@@ -377,38 +387,30 @@ class Operations(llfuse.Operations):
         if 'event_type' not in ev:
             return
         with llfuse.lock:
+            new_attrs = (ev.get("properties") or {}).get("new_attributes") or {}
+            pdh = new_attrs.get("portable_data_hash")
+            # new_attributes.modified_at currently lacks
+            # subsecond precision (see #6347) so use event_at
+            # which should always be the same.
+            stamp = ev.get("event_at")
+
             for item in self.inodes.inode_cache.find_by_uuid(ev["object_uuid"]):
                 item.invalidate()
-                if ev["object_kind"] == "arvados#collection":
-                    new_attr = (ev.get("properties") and
-                                ev["properties"].get("new_attributes") and
-                                ev["properties"]["new_attributes"])
-
-                    # new_attributes.modified_at currently lacks
-                    # subsecond precision (see #6347) so use event_at
-                    # which should always be the same.
-                    record_version = (
-                        (ev["event_at"], new_attr["portable_data_hash"])
-                        if new_attr else None)
-
-                    item.update(to_record_version=record_version)
+                if stamp and pdh and ev.get("object_kind") == "arvados#collection":
+                    item.update(to_record_version=(stamp, pdh))
                 else:
                     item.update()
 
-            oldowner = (
-                ev.get("properties") and
-                ev["properties"].get("old_attributes") and
-                ev["properties"]["old_attributes"].get("owner_uuid"))
-            newowner = ev["object_owner_uuid"]
+            oldowner = ((ev.get("properties") or {}).get("old_attributes") or {}).get("owner_uuid")
+            newowner = ev.get("object_owner_uuid")
             for parent in (
                     self.inodes.inode_cache.find_by_uuid(oldowner) +
                     self.inodes.inode_cache.find_by_uuid(newowner)):
                 parent.invalidate()
                 parent.update()
 
-
     @catch_exceptions
-    def getattr(self, inode):
+    def getattr(self, inode, ctx=None):
         if inode not in self.inodes:
             raise llfuse.FUSEError(errno.ENOENT)
 
@@ -440,19 +442,36 @@ class Operations(llfuse.Operations):
 
         entry.st_blksize = 512
         entry.st_blocks = (entry.st_size/512)+1
-        entry.st_atime = int(e.atime())
-        entry.st_mtime = int(e.mtime())
-        entry.st_ctime = int(e.mtime())
+        if hasattr(entry, 'st_atime_ns'):
+            # llfuse >= 0.42
+            entry.st_atime_ns = int(e.atime() * 1000000000)
+            entry.st_mtime_ns = int(e.mtime() * 1000000000)
+            entry.st_ctime_ns = int(e.mtime() * 1000000000)
+        else:
+            # llfuse < 0.42
+            entry.st_atime = int(e.atime)
+            entry.st_mtime = int(e.mtime)
+            entry.st_ctime = int(e.mtime)
 
         return entry
 
     @catch_exceptions
-    def setattr(self, inode, attr):
+    def setattr(self, inode, attr, fields=None, fh=None, ctx=None):
         entry = self.getattr(inode)
 
-        e = self.inodes[inode]
+        if fh is not None and fh in self._filehandles:
+            handle = self._filehandles[fh]
+            e = handle.obj
+        else:
+            e = self.inodes[inode]
 
-        if attr.st_size is not None and isinstance(e, FuseArvadosFile):
+        if fields is None:
+            # llfuse < 0.42
+            update_size = attr.st_size is not None
+        else:
+            # llfuse >= 0.42
+            update_size = fields.update_size
+        if update_size and isinstance(e, FuseArvadosFile):
             with llfuse.lock_released:
                 e.arvfile.truncate(attr.st_size)
                 entry.st_size = e.arvfile.size()
@@ -460,7 +479,7 @@ class Operations(llfuse.Operations):
         return entry
 
     @catch_exceptions
-    def lookup(self, parent_inode, name):
+    def lookup(self, parent_inode, name, ctx=None):
         name = unicode(name, self.inodes.encoding)
         inode = None
 
@@ -496,7 +515,7 @@ class Operations(llfuse.Operations):
                 self.inodes.del_entry(ent)
 
     @catch_exceptions
-    def open(self, inode, flags):
+    def open(self, inode, flags, ctx=None):
         if inode in self.inodes:
             p = self.inodes[inode]
         else:
@@ -583,7 +602,7 @@ class Operations(llfuse.Operations):
         self.release(fh)
 
     @catch_exceptions
-    def opendir(self, inode):
+    def opendir(self, inode, ctx=None):
         _logger.debug("arv-mount opendir: inode %i", inode)
 
         if inode in self.inodes:
@@ -622,7 +641,7 @@ class Operations(llfuse.Operations):
             e += 1
 
     @catch_exceptions
-    def statfs(self):
+    def statfs(self, ctx=None):
         st = llfuse.StatvfsData()
         st.f_bsize = 128 * 1024
         st.f_blocks = 0
@@ -655,7 +674,7 @@ class Operations(llfuse.Operations):
         return p
 
     @catch_exceptions
-    def create(self, inode_parent, name, mode, flags, ctx):
+    def create(self, inode_parent, name, mode, flags, ctx=None):
         _logger.debug("arv-mount create: parent_inode %i '%s' %o", inode_parent, name, mode)
 
         p = self._check_writable(inode_parent)
@@ -671,7 +690,7 @@ class Operations(llfuse.Operations):
         return (fh, self.getattr(f.inode))
 
     @catch_exceptions
-    def mkdir(self, inode_parent, name, mode, ctx):
+    def mkdir(self, inode_parent, name, mode, ctx=None):
         _logger.debug("arv-mount mkdir: parent_inode %i '%s' %o", inode_parent, name, mode)
 
         p = self._check_writable(inode_parent)
@@ -684,19 +703,19 @@ class Operations(llfuse.Operations):
         return self.getattr(d.inode)
 
     @catch_exceptions
-    def unlink(self, inode_parent, name):
+    def unlink(self, inode_parent, name, ctx=None):
         _logger.debug("arv-mount unlink: parent_inode %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
         p.unlink(name)
 
     @catch_exceptions
-    def rmdir(self, inode_parent, name):
+    def rmdir(self, inode_parent, name, ctx=None):
         _logger.debug("arv-mount rmdir: parent_inode %i '%s'", inode_parent, name)
         p = self._check_writable(inode_parent)
         p.rmdir(name)
 
     @catch_exceptions
-    def rename(self, inode_parent_old, name_old, inode_parent_new, name_new):
+    def rename(self, inode_parent_old, name_old, inode_parent_new, name_new, ctx=None):
         _logger.debug("arv-mount rename: old_parent_inode %i '%s' new_parent_inode %i '%s'", inode_parent_old, name_old, inode_parent_new, name_new)
         src = self._check_writable(inode_parent_old)
         dest = self._check_writable(inode_parent_new)

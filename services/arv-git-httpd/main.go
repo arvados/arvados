@@ -67,7 +67,7 @@ func main() {
 	if err := srv.Start(); err != nil {
 		log.Fatal(err)
 	}
-	if _, err := daemon.SdNotify("READY=1"); err != nil {
+	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
 	log.Println("Listening at", srv.Addr)

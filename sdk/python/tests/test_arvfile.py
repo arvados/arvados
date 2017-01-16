@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import bz2
+import datetime
 import gzip
 import io
 import mock
@@ -569,6 +570,26 @@ class ArvadosFileReadAllDecompressedTestCase(ArvadosFileReadTestCase):
 class ArvadosFileReadlinesTestCase(ArvadosFileReadTestCase):
     def read_for_test(self, reader, byte_count, **kwargs):
         return ''.join(reader.readlines(**kwargs))
+
+
+class ArvadosFileTestCase(unittest.TestCase):
+    def datetime_to_hex(self, dt):
+        return hex(int(time.mktime(dt.timetuple())))[2:]
+
+    def test_permission_expired(self):
+        base_manifest = ". 781e5e245d69b566979b86e28d23f2c7+10+A715fd31f8111894f717eb1003c1b0216799dd9ec@{} 0:10:count.txt\n"
+        now = datetime.datetime.now()
+        a_week_ago = now - datetime.timedelta(days=7)
+        a_month_ago = now - datetime.timedelta(days=30)
+        a_week_from_now = now + datetime.timedelta(days=7)
+        with Collection(base_manifest.format(self.datetime_to_hex(a_week_from_now))) as c:
+            self.assertFalse(c.find('count.txt').permission_expired())
+        with Collection(base_manifest.format(self.datetime_to_hex(a_week_ago))) as c:
+            f = c.find('count.txt')
+            self.assertTrue(f.permission_expired())
+            self.assertTrue(f.permission_expired(a_week_from_now))
+            self.assertFalse(f.permission_expired(a_month_ago))
+
 
 class BlockManagerTest(unittest.TestCase):
     def test_bufferblock_append(self):

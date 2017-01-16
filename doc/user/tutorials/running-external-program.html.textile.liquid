@@ -22,7 +22,7 @@ This will open the template record in an interactive text editor (as specified b
 
 * @"name"@ is a human-readable name for the pipeline.
 * @"components"@ is a set of scripts or commands that make up the pipeline.  Each component is given an identifier (@"bwa-mem"@ and @"SortSam"@) in this example).
-** Each entry in components @"components"@ is an Arvados job submission.  For more information about individual jobs, see the "job object reference":{{site.baseurl}}/api/schema/Job.html and "job create method.":{{site.baseurl}}/api/methods/jobs.html#create
+** Each entry in components @"components"@ is an Arvados job submission.  For more information about individual jobs, see the "job resource reference.":{{site.baseurl}}/api/methods/jobs.html
 * @"repository"@, @"script_version"@, and @"script"@ indicate that we intend to use the external @"run-command"@ tool wrapper that is part of the Arvados.  These parameters are described in more detail in "Writing a script":tutorial-firstscript.html.
 * @"runtime_constraints"@ describes runtime resource requirements for the component.
 ** @"docker_image"@ specifies the "Docker":https://www.docker.com/ runtime environment in which to run the job.  The Docker image @"bcosc/arv-base-java"@ supplied here has the Java runtime environment, bwa, and samtools installed.
@@ -55,14 +55,14 @@ See the "run-command reference":{{site.baseurl}}/user/topics/run-command.html fo
 
 h2. Running your pipeline
 
-Your new pipeline template should appear at the top of the Workbench "pipeline&nbsp;templates":{{site.arvados_workbench_host}}/pipeline_templates page.  You can run your pipeline "using Workbench":tutorial-pipeline-workbench.html or the "command line.":{{site.baseurl}}/user/topics/running-pipeline-command-line.html
+Your new pipeline template should appear at the top of the Workbench "pipeline&nbsp;templates":{{site.arvados_workbench_host}}/pipeline_templates page.  You can run your pipeline "using Workbench":tutorial-workflow-workbench.html or the "command line.":{{site.baseurl}}/user/topics/running-pipeline-command-line.html
 
 Test data is available in the "Arvados Tutorial":{{site.arvados_workbench_host}}/projects/qr1hi-j7d0g-u7zg1qdaowykd8d project:
 
 * Choose <i class="fa fa-fw fa-archive"></i> "Tutorial chromosome 19 reference (2463fa9efeb75e099685528b3b9071e0+438)":{{site.arvados_workbench_host}}/collections/2463fa9efeb75e099685528b3b9071e0+438 for the "reference_collection" parameter
 * Choose <i class="fa fa-fw fa-archive"></i> "Tutorial sample exome (3229739b505d2b878b62aed09895a55a+142)":{{site.arvados_workbench_host}}/collections/3229739b505d2b878b62aed09895a55a+142 for the "sample" parameter
 
-For more information and examples for writing pipelines, see the "pipeline template reference":{{site.baseurl}}/api/schema/PipelineTemplate.html
+For more information and examples for writing pipelines, see the "pipeline template reference":{{site.baseurl}}/api/methods/pipeline_templates.html
 
 h2. Re-using your pipeline run
 

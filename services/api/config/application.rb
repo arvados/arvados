@@ -35,5 +35,22 @@ module Server
     config.filter_parameters += [:password]
 
     I18n.enforce_available_locales = false
+
+    # Before using the filesystem backend for Rails.cache, check
+    # whether we own the relevant directory. If we don't, using it is
+    # likely to either fail or (if we're root) pollute it and cause
+    # other processes to fail later.
+    default_cache_path = Rails.root.join('tmp', 'cache')
+    if not File.owned?(default_cache_path)
+      if File.exist?(default_cache_path)
+        why = "owner (uid=#{File::Stat.new(default_cache_path).uid}) " +
+          "is not me (uid=#{Process.euid})"
+      else
+        why = "does not exist"
+      end
+      STDERR.puts("Defaulting to memory cache, " +
+                  "because #{default_cache_path} #{why}")
+      config.cache_store = :memory_store
+    end
   end
 end

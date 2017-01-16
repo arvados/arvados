@@ -33,7 +33,7 @@ class NodeTest < ActiveSupport::TestCase
     conffile = Rails.root.join 'tmp', 'compute65535.conf'
     File.unlink conffile rescue nil
     assert Node.dns_server_update 'compute65535', '127.0.0.1'
-    assert_match /\"1\.0\.0\.127\.in-addr\.arpa\. IN PTR compute65535\.zzzzz\.arvadosapi\.com\"/, IO.read(conffile)
+    assert_match(/\"1\.0\.0\.127\.in-addr\.arpa\. IN PTR compute65535\.zzzzz\.arvadosapi\.com\"/, IO.read(conffile))
     File.unlink conffile
   end
 

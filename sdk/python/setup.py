@@ -46,12 +46,13 @@ setup(name='arvados-python-client',
       install_requires=[
           'google-api-python-client==1.4.2',
           'oauth2client >=1.4.6, <2',
-          'pyasn1-modules==0.0.5',
           'ciso8601',
           'httplib2',
           'pycurl >=7.19.5.1, <7.21.5',
           'python-gflags<3.0',
-          'ws4py'
+          'setuptools',
+          'ws4py',
+          'ruamel.yaml==0.13.7'
       ],
       test_suite='tests',
       tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML'],

@@ -6,13 +6,50 @@ title: "links"
 
 ...
 
-See "REST methods for working with Arvados resources":{{site.baseurl}}/api/methods.html
-
 API endpoint base: @https://{{ site.arvados_api_host }}/arvados/v1/links@
+
+Object type: @o0j2j@
+
+Example UUID: @zzzzz-o0j2j-0123456789abcde@
+
+h2. Resource
+
+Links are an extensible way to describe relationships between Arvados objects and metadata about individual objects.
+
+Each link has, in addition to the "Common resource fields":{{site.baseurl}}/api/resources.html:
+
+table(table table-bordered table-condensed).
+|_. Attribute|_. Type|_. Description|
+|head_uuid|string|The object being described or acted on.|
+|tail_uuid|string|The origin or actor in the description or action (may be null).|
+|link_class|string|Type of link|
+|name|string|Primary value of the link.|
+|properties|hash|Additional information, expressed as a key&rarr;value hash. Key: string. Value: string, number, array, or hash.|
+
+h2. Link classes
+
+Some classes are pre-defined by convention and have standard meanings attached to names.
+
+h3. permission
+
+See "permission links":{{site.baseurl}}/api/permission-model.html#links section of the permission model.
+
+h3. tag
+
+A **tag** link describes an object using an unparsed plain text string. Tags can be used to annotate objects that are not editable, like collections and objects shared as read-only.
+
+table(table table-bordered table-condensed).
+|_. tail_type&rarr;head_type|_. name&rarr;head_uuid {properties}|
+|&rarr;Collection           | _tag name_ &rarr; _collection uuid_|
+|&rarr;Job                  | _tag name_ &rarr; _job uuid_|
+
+h2. Methods
+
+See "Common resource methods":{{site.baseurl}}/api/methods.html for more information about @create@, @delete@, @get@, @list@, and @update@.
 
 Required arguments are displayed in %{background:#ccffcc}green%.
 
-h2. create
+h3. create
 
 Create a new Link.
 
@@ -22,7 +59,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 |link|object||query||
 
-h2. delete
+h3. delete
 
 Delete an existing Link.
 
@@ -32,7 +69,7 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Link in question.|path||
 
-h2. get
+h3. get
 
 Gets a Link's metadata by UUID.
 
@@ -42,29 +79,13 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Link in question.|path||
 
-h2. list
+h3. list
 
 List links.
 
-Arguments:
+See "common resource list method.":{{site.baseurl}}/api/methods.html#index
 
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-|limit|integer (default 100)|Maximum number of links to return.|query||
-|order|string|Order in which to return matching links.|query||
-|filters|array|Conditions for filtering links.|query||
-
-h2. render_not_found
-
-render_not_found links
-
-Arguments:
-
-table(table table-bordered table-condensed).
-|_. Argument |_. Type |_. Description |_. Location |_. Example |
-{background:#ccffcc}.|a|string||path||
-
-h2. update
+h3. update
 
 Update attributes of an existing Link.
 

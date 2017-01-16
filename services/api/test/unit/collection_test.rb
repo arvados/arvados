@@ -1,4 +1,5 @@
 require 'test_helper'
+require 'sweep_trashed_collections'
 
 class CollectionTest < ActiveSupport::TestCase
   include DbCurrentTime
@@ -28,7 +29,7 @@ class CollectionTest < ActiveSupport::TestCase
       c = create_collection "f\xc8o", Encoding::UTF_8
       assert !c.valid?
       assert_equal [:manifest_text], c.errors.messages.keys
-      assert_match /UTF-8/, c.errors.messages[:manifest_text].first
+      assert_match(/UTF-8/, c.errors.messages[:manifest_text].first)
     end
   end
 
@@ -37,7 +38,7 @@ class CollectionTest < ActiveSupport::TestCase
       c = create_collection "f\xc8o", Encoding::ASCII_8BIT
       assert !c.valid?
       assert_equal [:manifest_text], c.errors.messages.keys
-      assert_match /UTF-8/, c.errors.messages[:manifest_text].first
+      assert_match(/UTF-8/, c.errors.messages[:manifest_text].first)
     end
   end
 
@@ -107,11 +108,11 @@ class CollectionTest < ActiveSupport::TestCase
       assert c.valid?
       created_file_names = c.file_names
       assert created_file_names
-      assert_match /foo.txt/, c.file_names
+      assert_match(/foo.txt/, c.file_names)
 
       c.update_attribute 'manifest_text', ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:foo2.txt\n"
       assert_not_equal created_file_names, c.file_names
-      assert_match /foo2.txt/, c.file_names
+      assert_match(/foo2.txt/, c.file_names)
     end
   end
 
@@ -134,11 +135,11 @@ class CollectionTest < ActiveSupport::TestCase
 
         assert c.valid?
         assert c.file_names
-        assert_match /veryverylongfilename0000000000001.txt/, c.file_names
-        assert_match /veryverylongfilename0000000000002.txt/, c.file_names
+        assert_match(/veryverylongfilename0000000000001.txt/, c.file_names)
+        assert_match(/veryverylongfilename0000000000002.txt/, c.file_names)
         if not allow_truncate
-          assert_match /veryverylastfilename/, c.file_names
-          assert_match /laststreamname/, c.file_names
+          assert_match(/veryverylastfilename/, c.file_names)
+          assert_match(/laststreamname/, c.file_names)
         end
       end
     end
@@ -307,11 +308,11 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
-  test 'signature expiry does not exceed expires_at' do
+  test 'signature expiry does not exceed trash_at' do
     act_as_user users(:active) do
       t0 = db_current_time
       c = Collection.create!(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:x\n", name: 'foo')
-      c.update_attributes! expires_at: (t0 + 1.hours)
+      c.update_attributes! trash_at: (t0 + 1.hours)
       c.reload
       sig_exp = /\+A[0-9a-f]{40}\@([0-9]+)/.match(c.signed_manifest_text)[1].to_i
       assert_operator sig_exp.to_i, :<=, (t0 + 1.hours).to_i
@@ -322,10 +323,10 @@ class CollectionTest < ActiveSupport::TestCase
     act_as_user users(:active) do
       c = Collection.create!(manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:x\n",
                              name: 'foo',
-                             expires_at: db_current_time + 1.years)
+                             trash_at: db_current_time + 1.years)
       sig_exp = /\+A[0-9a-f]{40}\@([0-9]+)/.match(c.signed_manifest_text)[1].to_i
       expect_max_sig_exp = db_current_time.to_i + Rails.configuration.blob_signature_ttl
-      assert_operator c.expires_at.to_i, :>, expect_max_sig_exp
+      assert_operator c.trash_at.to_i, :>, expect_max_sig_exp
       assert_operator sig_exp.to_i, :<=, expect_max_sig_exp
     end
   end
@@ -348,7 +349,7 @@ class CollectionTest < ActiveSupport::TestCase
       uuid = c.uuid
 
       # mark collection as expired
-      c.update_attribute 'expires_at', Time.new.strftime("%Y-%m-%d")
+      c.update_attributes!(trash_at: Time.new.strftime("%Y-%m-%d"))
       c = Collection.where(uuid: uuid)
       assert_empty c, 'Should not be able to find expired collection'
 
@@ -359,6 +360,108 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  test 'trash_at cannot be set too far in the past' do
+    act_as_user users(:active) do
+      t0 = db_current_time
+      c = Collection.create!(manifest_text: '', name: 'foo')
+      c.update_attributes! trash_at: (t0 - 2.weeks)
+      c.reload
+      assert_operator c.trash_at, :>, t0
+    end
+  end
+
+  [['trash-to-delete interval negative',
+    :collection_owned_by_active,
+    {trash_at: Time.now+2.weeks, delete_at: Time.now},
+    {state: :invalid}],
+   ['trash-to-delete interval too short',
+    :collection_owned_by_active,
+    {trash_at: Time.now+3.days, delete_at: Time.now+7.days},
+    {state: :invalid}],
+   ['trash-to-delete interval ok',
+    :collection_owned_by_active,
+    {trash_at: Time.now, delete_at: Time.now+15.days},
+    {state: :trash_now}],
+   ['trash-to-delete interval short, but far enough in future',
+    :collection_owned_by_active,
+    {trash_at: Time.now+13.days, delete_at: Time.now+15.days},
+    {state: :trash_future}],
+   ['trash by setting is_trashed bool',
+    :collection_owned_by_active,
+    {is_trashed: true},
+    {state: :trash_now}],
+   ['trash in future by setting just trash_at',
+    :collection_owned_by_active,
+    {trash_at: Time.now+1.week},
+    {state: :trash_future}],
+   ['trash in future by setting trash_at and delete_at',
+    :collection_owned_by_active,
+    {trash_at: Time.now+1.week, delete_at: Time.now+4.weeks},
+    {state: :trash_future}],
+   ['untrash by clearing is_trashed bool',
+    :expired_collection,
+    {is_trashed: false},
+    {state: :not_trash}],
+  ].each do |test_name, fixture_name, updates, expect|
+    test test_name do
+      act_as_user users(:active) do
+        min_exp = (db_current_time +
+                   Rails.configuration.blob_signature_ttl.seconds)
+        if fixture_name == :expired_collection
+          # Fixture-finder shorthand doesn't find trashed collections
+          # because they're not in the default scope.
+          c = Collection.unscoped.find_by_uuid('zzzzz-4zz18-mto52zx1s7sn3ih')
+        else
+          c = collections(fixture_name)
+        end
+        updates_ok = c.update_attributes(updates)
+        expect_valid = expect[:state] != :invalid
+        assert_equal updates_ok, expect_valid, c.errors.full_messages.to_s
+        case expect[:state]
+        when :invalid
+          refute c.valid?
+        when :trash_now
+          assert c.is_trashed
+          assert_not_nil c.trash_at
+          assert_operator c.trash_at, :<=, db_current_time
+          assert_not_nil c.delete_at
+          assert_operator c.delete_at, :>=, min_exp
+        when :trash_future
+          refute c.is_trashed
+          assert_not_nil c.trash_at
+          assert_operator c.trash_at, :>, db_current_time
+          assert_not_nil c.delete_at
+          assert_operator c.delete_at, :>=, c.trash_at
+          # Currently this minimum interval is needed to prevent early
+          # garbage collection:
+          assert_operator c.delete_at, :>=, min_exp
+        when :not_trash
+          refute c.is_trashed
+          assert_nil c.trash_at
+          assert_nil c.delete_at
+        else
+          raise "bad expect[:state]==#{expect[:state].inspect} in test case"
+        end
+      end
+    end
+  end
+
+  test 'default trash interval > blob signature ttl' do
+    Rails.configuration.default_trash_lifetime = 86400 * 21 # 3 weeks
+    start = db_current_time
+    act_as_user users(:active) do
+      c = Collection.create!(manifest_text: '', name: 'foo')
+      c.update_attributes!(trash_at: start + 86400.seconds)
+      assert_operator c.delete_at, :>=, start + (86400*22).seconds
+      assert_operator c.delete_at, :<, start + (86400*22 + 30).seconds
+      c.destroy
+
+      c = Collection.create!(manifest_text: '', name: 'foo')
+      c.update_attributes!(is_trashed: true)
+      assert_operator c.delete_at, :>=, start + (86400*21).seconds
+    end
+  end
+
   test "find_all_for_docker_image resolves names that look like hashes" do
     coll_list = Collection.
       find_all_for_docker_image('a' * 64, nil, [users(:active)])
@@ -366,13 +469,28 @@ class CollectionTest < ActiveSupport::TestCase
     assert_includes(coll_uuids, collections(:docker_image).uuid)
   end
 
-  test 'expires_at cannot be set too far in the past' do
-    act_as_user users(:active) do
-      t0 = db_current_time
-      c = Collection.create!(manifest_text: '', name: 'foo')
-      c.update_attributes! expires_at: (t0 - 2.weeks)
-      c.reload
-      assert_operator c.expires_at, :>, t0
+  test "move to trash in SweepTrashedCollections" do
+    c = collections(:trashed_on_next_sweep)
+    refute_empty Collection.where('uuid=? and is_trashed=false', c.uuid)
+    assert_raises(ActiveRecord::RecordNotUnique) do
+      act_as_user users(:active) do
+        Collection.create!(owner_uuid: c.owner_uuid,
+                           name: c.name)
+      end
     end
+    SweepTrashedCollections.sweep_now
+    c = Collection.unscoped.where('uuid=? and is_trashed=true', c.uuid).first
+    assert c
+    act_as_user users(:active) do
+      assert Collection.create!(owner_uuid: c.owner_uuid,
+                                name: c.name)
+    end
+  end
+
+  test "delete in SweepTrashedCollections" do
+    uuid = 'zzzzz-4zz18-3u1p5umicfpqszp' # deleted_on_next_sweep
+    assert_not_empty Collection.unscoped.where(uuid: uuid)
+    SweepTrashedCollections.sweep_now
+    assert_empty Collection.unscoped.where(uuid: uuid)
   end
 end

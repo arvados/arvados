@@ -73,6 +73,7 @@ EOF
 fi
 
 rm -rf tmp
+mkdir -p tmp/cache
 
 bundle exec rake db:migrate
 

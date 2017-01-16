@@ -1,6 +1,8 @@
 require "arvados/keep"
 
 class Arvados::V1::CollectionsController < ApplicationController
+  include DbCurrentTime
+
   def self.limit_index_columns_read
     ["manifest_text"]
   end
@@ -9,6 +11,13 @@ class Arvados::V1::CollectionsController < ApplicationController
     if resource_attrs[:uuid] and (loc = Keep::Locator.parse(resource_attrs[:uuid]))
       resource_attrs[:portable_data_hash] = loc.to_s
       resource_attrs.delete :uuid
+    end
+    super
+  end
+
+  def find_objects_for_index
+    if params[:include_trash] || ['destroy', 'trash'].include?(action_name)
+      @objects = Collection.unscoped.readable_by(*@read_users)
     end
     super
   end
@@ -23,18 +32,39 @@ class Arvados::V1::CollectionsController < ApplicationController
           manifest_text: c.signed_manifest_text,
         }
       end
+      true
     else
       super
     end
-    true
   end
 
   def show
     if @object.is_a? Collection
+      # Omit unsigned_manifest_text
+      @select ||= model_class.selectable_attributes - ["unsigned_manifest_text"]
       super
     else
       send_json @object
     end
+  end
+
+  def destroy
+    if !@object.is_trashed
+      @object.update_attributes!(trash_at: db_current_time)
+    end
+    earliest_delete = (@object.trash_at +
+                       Rails.configuration.blob_signature_ttl.seconds)
+    if @object.delete_at > earliest_delete
+      @object.update_attributes!(delete_at: earliest_delete)
+    end
+    show
+  end
+
+  def trash
+    if !@object.is_trashed
+      @object.update_attributes!(trash_at: db_current_time)
+    end
+    show
   end
 
   def find_collections(visited, sp, &b)
@@ -125,9 +155,9 @@ class Arvados::V1::CollectionsController < ApplicationController
           visited[uuid] = job.as_api_response
           if direction == :search_up
             # Follow upstream collections referenced in the script parameters
-            find_collections(visited, job) do |hash, uuid|
+            find_collections(visited, job) do |hash, col_uuid|
               search_edges(visited, hash, :search_up) if hash
-              search_edges(visited, uuid, :search_up) if uuid
+              search_edges(visited, col_uuid, :search_up) if col_uuid
             end
           elsif direction == :search_down
             # Follow downstream job output
@@ -182,10 +212,10 @@ class Arvados::V1::CollectionsController < ApplicationController
   protected
 
   def load_limit_offset_order_params *args
-    if action_name == 'index'
-      # Omit manifest_text from index results unless expressly selected.
-      @select ||= model_class.selectable_attributes - ["manifest_text"]
-    end
     super
+    if action_name == 'index'
+      # Omit manifest_text and unsigned_manifest_text from index results unless expressly selected.
+      @select ||= model_class.selectable_attributes - ["manifest_text", "unsigned_manifest_text"]
+    end
   end
 end

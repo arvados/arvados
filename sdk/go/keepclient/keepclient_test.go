@@ -2,7 +2,6 @@ package keepclient
 
 import (
 	"crypto/md5"
-	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
@@ -28,8 +27,6 @@ func Test(t *testing.T) {
 var _ = Suite(&ServerRequiredSuite{})
 var _ = Suite(&StandaloneSuite{})
 
-var no_server = flag.Bool("no-server", false, "Skip 'ServerRequireSuite'")
-
 // Tests that require the Keep server running
 type ServerRequiredSuite struct{}
 
@@ -42,18 +39,11 @@ func pythonDir() string {
 }
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
-	if *no_server {
-		c.Skip("Skipping tests that require server")
-		return
-	}
 	arvadostest.StartAPI()
 	arvadostest.StartKeep(2, false)
 }
 
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
-	if *no_server {
-		return
-	}
 	arvadostest.StopKeep(2)
 	arvadostest.StopAPI()
 }
@@ -513,6 +503,27 @@ func (s *StandaloneSuite) TestGet404(c *C) {
 	c.Check(n, Equals, int64(0))
 	c.Check(url2, Equals, "")
 	c.Check(r, Equals, nil)
+}
+
+func (s *StandaloneSuite) TestGetEmptyBlock(c *C) {
+	st := Error404Handler{make(chan string, 1)}
+
+	ks := RunFakeKeepServer(st)
+	defer ks.listener.Close()
+
+	arv, err := arvadosclient.MakeArvadosClient()
+	kc, _ := MakeKeepClient(arv)
+	arv.ApiToken = "abc123"
+	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
+
+	r, n, url2, err := kc.Get("d41d8cd98f00b204e9800998ecf8427e+0")
+	c.Check(err, IsNil)
+	c.Check(n, Equals, int64(0))
+	c.Check(url2, Equals, "")
+	c.Assert(r, NotNil)
+	buf, err := ioutil.ReadAll(r)
+	c.Check(err, IsNil)
+	c.Check(buf, DeepEquals, []byte{})
 }
 
 func (s *StandaloneSuite) TestGetFail(c *C) {

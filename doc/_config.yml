@@ -28,9 +28,9 @@ navbar:
     - Welcome:
       - user/index.html.textile.liquid
       - user/getting_started/community.html.textile.liquid
-    - Run a pipeline using Workbench:
+    - Run a workflow using Workbench:
       - user/getting_started/workbench.html.textile.liquid
-      - user/tutorials/tutorial-pipeline-workbench.html.textile.liquid
+      - user/tutorials/tutorial-workflow-workbench.html.textile.liquid
     - Access an Arvados virtual machine:
       - user/getting_started/vm-login-with-webshell.html.textile.liquid
       - user/getting_started/ssh-access-unix.html.textile.liquid
@@ -43,23 +43,25 @@ navbar:
       - user/tutorials/tutorial-keep-mount.html.textile.liquid
       - user/topics/keep.html.textile.liquid
       - user/topics/arv-copy.html.textile.liquid
-    - Using Common Workflow Language:
+    - Running workflows at the command line:
       - user/cwl/cwl-runner.html.textile.liquid
-      - user/cwl/cwl-style.html.textile.liquid
-    - Working on the command line:
+      - user/cwl/cwl-run-options.html.textile.liquid
       - user/topics/running-pipeline-command-line.html.textile.liquid
       - user/topics/arv-run.html.textile.liquid
     - Working with git repositories:
       - user/tutorials/add-new-repository.html.textile.liquid
       - user/tutorials/git-arvados-guide.html.textile.liquid
-    - Develop an Arvados pipeline:
+    - Develop an Arvados workflow:
       - user/tutorials/intro-crunch.html.textile.liquid
+      - user/tutorials/writing-cwl-workflow.html.textile.liquid
+      - user/cwl/cwl-style.html.textile.liquid
+      - user/cwl/cwl-extensions.html.textile.liquid
+      - user/topics/arv-docker.html.textile.liquid
       - user/tutorials/running-external-program.html.textile.liquid
       - user/topics/crunch-tools-overview.html.textile.liquid
       - user/tutorials/tutorial-firstscript.html.textile.liquid
       - user/tutorials/tutorial-submit-job.html.textile.liquid
       - user/topics/tutorial-parallel.html.textile.liquid
-      - user/topics/arv-docker.html.textile.liquid
     - Develop a web service:
       - user/topics/arv-web.html.textile.liquid
     - Reference:
@@ -78,78 +80,67 @@ navbar:
       - sdk/index.html.textile.liquid
     - Python:
       - sdk/python/sdk-python.html.textile.liquid
+      - sdk/python/example.html.textile.liquid
       - sdk/python/python.html.textile.liquid
       - sdk/python/crunch-utility-libraries.html.textile.liquid
       - sdk/python/events.html.textile.liquid
-    - Perl:
-      - sdk/perl/index.html.textile.liquid
-    - Ruby:
-      - sdk/ruby/index.html.textile.liquid
-    - Java:
-      - sdk/java/index.html.textile.liquid
-    - Go:
-      - sdk/go/index.html.textile.liquid
     - CLI:
-      - sdk/cli/index.html.textile.liquid
       - sdk/cli/install.html.textile.liquid
+      - sdk/cli/index.html.textile.liquid
       - sdk/cli/reference.html.textile.liquid
       - sdk/cli/subcommands.html.textile.liquid
+    - Go:
+      - sdk/go/index.html.textile.liquid
+      - sdk/go/example.html.textile.liquid
+    - Perl:
+      - sdk/perl/index.html.textile.liquid
+      - sdk/perl/example.html.textile.liquid
+    - Ruby:
+      - sdk/ruby/index.html.textile.liquid
+      - sdk/ruby/example.html.textile.liquid
+    - Java:
+      - sdk/java/index.html.textile.liquid
+      - sdk/java/example.html.textile.liquid
   api:
     - Concepts:
       - api/index.html.textile.liquid
-      - api/authentication.html.textile.liquid
+      - api/tokens.html.textile.liquid
+      - api/requests.html.textile.liquid
       - api/methods.html.textile.liquid
       - api/resources.html.textile.liquid
-      - api/crunch-scripts.html.textile.liquid
       - api/permission-model.html.textile.liquid
-    - API Methods:
+      - api/storage.html.textile.liquid
+      - api/execution.html.textile.liquid
+    - Permission and authentication:
       - api/methods/api_client_authorizations.html.textile.liquid
       - api/methods/api_clients.html.textile.liquid
       - api/methods/authorized_keys.html.textile.liquid
-      - api/methods/collections.html.textile.liquid
-      - api/methods/container_requests.html.textile.liquid
-      - api/methods/containers.html.textile.liquid
       - api/methods/groups.html.textile.liquid
-      - api/methods/humans.html.textile.liquid
-      - api/methods/jobs.html.textile.liquid
-      - api/methods/job_tasks.html.textile.liquid
-      - api/methods/keep_disks.html.textile.liquid
+      - api/methods/users.html.textile.liquid
+    - System resources:
       - api/methods/keep_services.html.textile.liquid
       - api/methods/links.html.textile.liquid
       - api/methods/logs.html.textile.liquid
       - api/methods/nodes.html.textile.liquid
+      - api/methods/virtual_machines.html.textile.liquid
+      - api/methods/keep_disks.html.textile.liquid
+    - Data management:
+      - api/methods/collections.html.textile.liquid
+      - api/methods/repositories.html.textile.liquid
+    - Container engine:
+      - api/methods/container_requests.html.textile.liquid
+      - api/methods/containers.html.textile.liquid
+      - api/methods/workflows.html.textile.liquid
+    - Jobs engine (deprecated):
+      - api/crunch-scripts.html.textile.liquid
+      - api/methods/jobs.html.textile.liquid
+      - api/methods/job_tasks.html.textile.liquid
       - api/methods/pipeline_instances.html.textile.liquid
       - api/methods/pipeline_templates.html.textile.liquid
-      - api/methods/repositories.html.textile.liquid
+    - Metadata for bioinformatics:
+      - api/methods/humans.html.textile.liquid
       - api/methods/specimens.html.textile.liquid
       - api/methods/traits.html.textile.liquid
-      - api/methods/users.html.textile.liquid
-      - api/methods/virtual_machines.html.textile.liquid
-      - api/methods/workflows.html.textile.liquid
-    - Schema:
-      - api/schema/ApiClientAuthorization.html.textile.liquid
-      - api/schema/ApiClient.html.textile.liquid
-      - api/schema/AuthorizedKey.html.textile.liquid
-      - api/schema/Collection.html.textile.liquid
-      - api/schema/Container.html.textile.liquid
-      - api/schema/ContainerRequest.html.textile.liquid
-      - api/schema/Group.html.textile.liquid
-      - api/schema/Human.html.textile.liquid
-      - api/schema/Job.html.textile.liquid
-      - api/schema/JobTask.html.textile.liquid
-      - api/schema/KeepDisk.html.textile.liquid
-      - api/schema/KeepService.html.textile.liquid
-      - api/schema/Link.html.textile.liquid
-      - api/schema/Log.html.textile.liquid
-      - api/schema/Node.html.textile.liquid
-      - api/schema/PipelineInstance.html.textile.liquid
-      - api/schema/PipelineTemplate.html.textile.liquid
-      - api/schema/Repository.html.textile.liquid
-      - api/schema/Specimen.html.textile.liquid
-      - api/schema/Trait.html.textile.liquid
-      - api/schema/User.html.textile.liquid
-      - api/schema/VirtualMachine.html.textile.liquid
-      - api/schema/Workflow.html.textile.liquid
   installguide:
     - Overview:
       - install/index.html.textile.liquid
@@ -168,12 +159,12 @@ navbar:
       - install/configure-azure-blob-storage.html.textile.liquid
       - install/install-keepproxy.html.textile.liquid
       - install/install-keep-web.html.textile.liquid
-    - Install Crunch v2 on SLURM:
+    - Containers API support on SLURM:
       - install/crunch2-slurm/install-prerequisites.html.textile.liquid
       - install/crunch2-slurm/install-compute-node.html.textile.liquid
       - install/crunch2-slurm/install-dispatch.html.textile.liquid
       - install/crunch2-slurm/install-test.html.textile.liquid
-    - Install Crunch v1:
+    - Jobs API support (deprecated):
       - install/install-crunch-dispatch.html.textile.liquid
       - install/install-compute-node.html.textile.liquid
     - Helpful hints:

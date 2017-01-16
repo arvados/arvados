@@ -263,7 +263,7 @@ class LogTest < ActiveSupport::TestCase
     # appear too, but only if they are _not_ listed in known_logs
     # (i.e., we do not make any assertions about logs not mentioned in
     # either "known" or "expected".)
-    result_ids = result.collect &:id
+    result_ids = result.collect(&:id)
     expected_logs.each do |want|
       assert_includes result_ids, logs(want).id
     end

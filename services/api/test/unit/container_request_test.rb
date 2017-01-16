@@ -230,10 +230,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.reload
     assert_equal "Committed", cr.state
 
+    output_pdh = '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
+    log_pdh = 'fa7aeb5140e2848d39b416daeef4ffc5+45'
     act_as_system_user do
       c.update_attributes!(state: Container::Complete,
-                           output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
-                           log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
+                           output: output_pdh,
+                           log: log_pdh)
     end
 
     cr.reload
@@ -244,6 +246,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
                                        owner_uuid: project.uuid).count,
                    "Container #{out_type} should be copied to #{project.uuid}")
     end
+    assert_not_nil cr.output_uuid
+    assert_not_nil cr.log_uuid
+    output = Collection.find_by_uuid cr.output_uuid
+    assert_equal output_pdh, output.portable_data_hash
+    log = Collection.find_by_uuid cr.log_uuid
+    assert_equal log_pdh, log.portable_data_hash
   end
 
   test "Container makes container request, then is cancelled" do
@@ -463,6 +471,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
   test "Retry on container cancelled" do
     set_user_from_auth :active
     cr = create_minimal_req!(priority: 1, state: "Committed", container_count_max: 2)
+    cr2 = create_minimal_req!(priority: 1, state: "Committed", container_count_max: 2, command: ["echo", "baz"])
     prev_container_uuid = cr.container_uuid
 
     c = act_as_system_user do
@@ -473,8 +482,10 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
 
     cr.reload
+    cr2.reload
     assert_equal "Committed", cr.state
     assert_equal prev_container_uuid, cr.container_uuid
+    assert_not_equal cr2.container_uuid, cr.container_uuid
     prev_container_uuid = cr.container_uuid
 
     act_as_system_user do
@@ -482,8 +493,10 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
 
     cr.reload
+    cr2.reload
     assert_equal "Committed", cr.state
     assert_not_equal prev_container_uuid, cr.container_uuid
+    assert_not_equal cr2.container_uuid, cr.container_uuid
     prev_container_uuid = cr.container_uuid
 
     c = act_as_system_user do
@@ -493,8 +506,39 @@ class ContainerRequestTest < ActiveSupport::TestCase
     end
 
     cr.reload
+    cr2.reload
     assert_equal "Final", cr.state
     assert_equal prev_container_uuid, cr.container_uuid
+    assert_not_equal cr2.container_uuid, cr.container_uuid
+  end
+
+  test "Output collection name setting using output_name with name collision resolution" do
+    set_user_from_auth :active
+    output_name = collections(:foo_file).name
+
+    cr = create_minimal_req!(priority: 1,
+                             state: ContainerRequest::Committed,
+                             output_name: output_name)
+    act_as_system_user do
+      c = Container.find_by_uuid(cr.container_uuid)
+      c.update_attributes!(state: Container::Locked)
+      c.update_attributes!(state: Container::Running)
+      c.update_attributes!(state: Container::Complete,
+                           exit_code: 0,
+                           output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
+                           log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
+    end
+    cr.save
+    assert_equal ContainerRequest::Final, cr.state
+    output_coll = Collection.find_by_uuid(cr.output_uuid)
+    # Make sure the resulting output collection name include the original name
+    # plus the date
+    assert_not_equal output_name, output_coll.name,
+                     "It shouldn't exist more than one collection with the same owner and name '${output_name}'"
+    assert output_coll.name.include?(output_name),
+           "New name should include original name"
+    assert_match /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/, output_coll.name,
+                 "New name should include ISO8601 date"
   end
 
   test "Finalize committed request when reusing a finished container" do
@@ -549,6 +593,38 @@ class ContainerRequestTest < ActiveSupport::TestCase
         cr = create_minimal_req!(common_attrs.merge({state: state}))
         expected = Rails.configuration.container_default_keep_cache_ram if state == ContainerRequest::Committed and expected.nil?
         assert_equal expected, cr.runtime_constraints['keep_cache_ram']
+      end
+    end
+  end
+
+  [
+    [{"partitions" => ["fastcpu","vfastcpu", 100]}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
+    [{"partitions" => ["fastcpu","vfastcpu", 100]}, ContainerRequest::Uncommitted],
+    [{"partitions" => "fastcpu"}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
+    [{"partitions" => "fastcpu"}, ContainerRequest::Uncommitted],
+    [{"partitions" => ["fastcpu","vfastcpu"]}, ContainerRequest::Committed],
+  ].each do |sp, state, expected|
+    test "create container request with scheduling_parameters #{sp} in state #{state} and verify #{expected}" do
+      common_attrs = {cwd: "test",
+                      priority: 1,
+                      command: ["echo", "hello"],
+                      output_path: "test",
+                      scheduling_parameters: sp,
+                      mounts: {"test" => {"kind" => "json"}}}
+      set_user_from_auth :active
+
+      if expected == ActiveRecord::RecordInvalid
+        assert_raises(ActiveRecord::RecordInvalid) do
+          create_minimal_req!(common_attrs.merge({state: state}))
+        end
+      else
+        cr = create_minimal_req!(common_attrs.merge({state: state}))
+        assert_equal sp, cr.scheduling_parameters
+
+        if state == ContainerRequest::Committed
+          c = Container.find_by_uuid(cr.container_uuid)
+          assert_equal sp, c.scheduling_parameters
+        end
       end
     end
   end

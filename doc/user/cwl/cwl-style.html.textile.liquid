@@ -4,6 +4,8 @@ navsection: userguide
 title: Best Practices for writing CWL
 ...
 
+* To run on Arvados, a workflow should provide a @DockerRequirement@ in the @hints@ section.
+
 * Build a reusable library of components.  Share tool wrappers and subworkflows between projects.  Make use of and contribute to "community maintained workflows and tools":https://github.com/common-workflow-language/workflows and tool registries such as "Dockstore":http://dockstore.org .
 
 * When combining a parameter value with a string, such as adding a filename extension, write @$(inputs.file.basename).ext@ instead of @$(inputs.file.basename + 'ext')@.  The first form is evaluated as a simple text substitution, the second form (using the @+@ operator) is evaluated as an arbitrary Javascript expression and requires that you declare @InlineJavascriptRequirement@.

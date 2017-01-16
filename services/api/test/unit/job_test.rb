@@ -185,7 +185,7 @@ class JobTest < ActiveSupport::TestCase
       # Ensure valid_attrs doesn't produce errors -- otherwise we will
       # not know whether errors reported below are actually caused by
       # invalid_attrs.
-      dummy = Job.create! job_attrs
+      Job.create! job_attrs
 
       job = Job.create job_attrs(invalid_attrs)
       assert_raises(ActiveRecord::RecordInvalid, ArgumentError,
@@ -223,7 +223,7 @@ class JobTest < ActiveSupport::TestCase
 
       parameters.each do |parameter|
         expectations = parameter[2]
-        if parameter[1] == 'use_current_user_uuid'
+        if 'use_current_user_uuid' == parameter[1]
           parameter[1] = Thread.current[:user].uuid
         end
 
@@ -305,6 +305,24 @@ class JobTest < ActiveSupport::TestCase
     # Can update fields as the locked_by user
     job.update_attributes(state: "Failed")
     assert_equal "Failed", job.state
+  end
+
+  test "admin user can cancel a running job despite lock" do
+    set_user_from_auth :active_trustedclient
+    job = Job.create! job_attrs
+    job.lock current_user.uuid
+    assert_equal Job::Running, job.state
+
+    set_user_from_auth :spectator
+    assert_raises do
+      job.update_attributes!(state: Job::Cancelled)
+    end
+
+    set_user_from_auth :admin
+    job.reload
+    assert_equal Job::Running, job.state
+    job.update_attributes!(state: Job::Cancelled)
+    assert_equal Job::Cancelled, job.state
   end
 
   test "verify job queue position" do
@@ -411,7 +429,7 @@ class JobTest < ActiveSupport::TestCase
     }
     assert_raises(ActiveRecord::RecordInvalid,
                   "created job with a collection uuid in script_parameters") do
-      job = Job.create!(job_attrs(bad_params))
+      Job.create!(job_attrs(bad_params))
     end
   end
 

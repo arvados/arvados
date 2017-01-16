@@ -73,6 +73,25 @@ class CreateSuperUserTokenTest < ActiveSupport::TestCase
       create_superuser_token active_user_token
     end
     assert_not_nil e
-    assert_equal "Token already exists but is not a superuser token.", e.message
+    assert_equal "Token exists but is not a superuser token.", e.message
+  end
+
+  test "specified token has limited scope" do
+    active_user_token = api_client_authorizations("data_manager").api_token
+    e = assert_raises RuntimeError do
+      create_superuser_token active_user_token
+    end
+    assert_not_nil e
+    assert_match /^Token exists but has limited scope/, e.message
+  end
+
+  test "existing token has limited scope" do
+    active_user_token = api_client_authorizations("admin_vm").api_token
+    ApiClientAuthorization.
+      where(user_id: system_user.id).
+      update_all(scopes: ["GET /"])
+    fixture_tokens = ApiClientAuthorization.all.collect(&:api_token)
+    new_token = create_superuser_token
+    refute_includes(fixture_tokens, new_token)
   end
 end

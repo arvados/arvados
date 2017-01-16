@@ -1,6 +1,9 @@
 require 'test_helper'
 
 class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
+  include DbCurrentTime
+
+  PERM_TOKEN_RE = /\+A[[:xdigit:]]+@[[:xdigit:]]{8}\b/
 
   def permit_unsigned_manifests isok=true
     # Set security model for the life of a test.
@@ -10,9 +13,21 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
   def assert_signed_manifest manifest_text, label=''
     assert_not_nil manifest_text, "#{label} manifest_text was nil"
     manifest_text.scan(/ [[:xdigit:]]{32}\S*/) do |tok|
-      assert_match(/\+A[[:xdigit:]]+@[[:xdigit:]]{8}\b/, tok,
+      assert_match(PERM_TOKEN_RE, tok,
                    "Locator in #{label} manifest_text was not signed")
     end
+  end
+
+  def assert_unsigned_manifest resp, label=''
+    txt = resp['unsigned_manifest_text']
+    assert_not_nil(txt, "#{label} unsigned_manifest_text was nil")
+    locs = 0
+    txt.scan(/ [[:xdigit:]]{32}\S*/) do |tok|
+      locs += 1
+      refute_match(PERM_TOKEN_RE, tok,
+                   "Locator in #{label} unsigned_manifest_text was signed: #{tok}")
+    end
+    return locs
   end
 
   test "should get index" do
@@ -24,12 +39,13 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
            "basic Collections index included manifest_text")
   end
 
-  test "collections.get returns signed locators" do
+  test "collections.get returns signed locators, and no unsigned_manifest_text" do
     permit_unsigned_manifests
     authorize_with :active
     get :show, {id: collections(:foo_file).uuid}
     assert_response :success
     assert_signed_manifest json_response['manifest_text'], 'foo_file'
+    refute_includes json_response, 'unsigned_manifest_text'
   end
 
   test "index with manifest_text selected returns signed locators" do
@@ -40,9 +56,66 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert(assigns(:objects).andand.any?,
            "no Collections returned for index with columns selected")
     json_response["items"].each do |coll|
-      assert_equal(columns, columns & coll.keys,
+      assert_equal(coll.keys - ['kind'], columns,
                    "Collections index did not respect selected columns")
       assert_signed_manifest coll['manifest_text'], coll['uuid']
+    end
+  end
+
+  test "index with unsigned_manifest_text selected returns only unsigned locators" do
+    authorize_with :active
+    get :index, select: ['unsigned_manifest_text']
+    assert_response :success
+    assert_operator json_response["items"].count, :>, 0
+    locs = 0
+    json_response["items"].each do |coll|
+      assert_equal(coll.keys - ['kind'], ['unsigned_manifest_text'],
+                   "Collections index did not respect selected columns")
+      locs += assert_unsigned_manifest coll, coll['uuid']
+    end
+    assert_operator locs, :>, 0, "no locators found in any manifests"
+  end
+
+  test 'index without select returns everything except manifest' do
+    authorize_with :active
+    get :index
+    assert_response :success
+    assert json_response['items'].any?
+    json_response['items'].each do |coll|
+      assert_includes(coll.keys, 'uuid')
+      assert_includes(coll.keys, 'name')
+      assert_includes(coll.keys, 'created_at')
+      refute_includes(coll.keys, 'manifest_text')
+    end
+  end
+
+  ['', nil, false, 'null'].each do |select|
+    test "index with select=#{select.inspect} returns everything except manifest" do
+      authorize_with :active
+      get :index, select: select
+      assert_response :success
+      assert json_response['items'].any?
+      json_response['items'].each do |coll|
+        assert_includes(coll.keys, 'uuid')
+        assert_includes(coll.keys, 'name')
+        assert_includes(coll.keys, 'created_at')
+        refute_includes(coll.keys, 'manifest_text')
+      end
+    end
+  end
+
+  [["uuid"],
+   ["uuid", "manifest_text"],
+   '["uuid"]',
+   '["uuid", "manifest_text"]'].each do |select|
+    test "index with select=#{select.inspect} returns no name" do
+      authorize_with :active
+      get :index, select: select
+      assert_response :success
+      assert json_response['items'].any?
+      json_response['items'].each do |coll|
+        refute_includes(coll.keys, 'name')
+      end
     end
   end
 
@@ -272,7 +345,7 @@ EOS
         ensure_unique_name: true
       }
       assert_response :success
-      assert_equal 'owned_by_active (2)', json_response['name']
+      assert_match /^owned_by_active \(\d{4}-\d\d-\d\d.*?Z\)$/, json_response['name']
     end
   end
 
@@ -751,11 +824,11 @@ EOS
     [2**8, :success],
     [2**18, 422],
   ].each do |description_size, expected_response|
-    test "create collection with description size #{description_size}
+    # Descriptions are not part of search indexes. Skip until
+    # full-text search is implemented, at which point replace with a
+    # search in description.
+    skip "create collection with description size #{description_size}
           and expect response #{expected_response}" do
-      skip "(Descriptions are not part of search indexes. Skip until full-text search
-            is implemented, at which point replace with a search in description.)"
-
       authorize_with :active
 
       description = 'here is a collection with a very large description'
@@ -885,6 +958,70 @@ EOS
         }
       }
       assert_response 200
+    end
+  end
+
+  test 'get trashed collection with include_trash' do
+    uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
+    authorize_with :active
+    get :show, {
+      id: uuid,
+      include_trash: true,
+    }
+    assert_response 200
+  end
+
+  test 'get trashed collection without include_trash' do
+    uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
+    authorize_with :active
+    get :show, {
+      id: uuid,
+    }
+    assert_response 404
+  end
+
+  test 'trash collection using http DELETE verb' do
+    uuid = collections(:collection_owned_by_active).uuid
+    authorize_with :active
+    delete :destroy, {
+      id: uuid,
+    }
+    assert_response 200
+    c = Collection.unscoped.find_by_uuid(uuid)
+    assert_operator c.trash_at, :<, db_current_time
+    assert_equal c.delete_at, c.trash_at + Rails.configuration.blob_signature_ttl
+  end
+
+  test 'delete long-trashed collection immediately using http DELETE verb' do
+    uuid = 'zzzzz-4zz18-mto52zx1s7sn3ih' # expired_collection
+    authorize_with :active
+    delete :destroy, {
+      id: uuid,
+    }
+    assert_response 200
+    c = Collection.unscoped.find_by_uuid(uuid)
+    assert_operator c.trash_at, :<, db_current_time
+    assert_operator c.delete_at, :<, db_current_time
+  end
+
+  ['zzzzz-4zz18-mto52zx1s7sn3ih', # expired_collection
+   :empty_collection_name_in_active_user_home_project,
+  ].each do |fixture|
+    test "trash collection #{fixture} via trash action with grace period" do
+      if fixture.is_a? String
+        uuid = fixture
+      else
+        uuid = collections(fixture).uuid
+      end
+      authorize_with :active
+      time_before_trashing = db_current_time
+      post :trash, {
+        id: uuid,
+      }
+      assert_response 200
+      c = Collection.unscoped.find_by_uuid(uuid)
+      assert_operator c.trash_at, :<, db_current_time
+      assert_operator c.delete_at, :>=, time_before_trashing + Rails.configuration.default_trash_lifetime
     end
   end
 end

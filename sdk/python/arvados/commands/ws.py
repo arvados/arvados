@@ -6,12 +6,16 @@ import argparse
 import arvados
 import json
 from arvados.events import subscribe
+from arvados._version import __version__
 import signal
 
 def main(arguments=None):
     logger = logging.getLogger('arvados.arv-ws')
 
     parser = argparse.ArgumentParser()
+    parser.add_argument('--version', action='version',
+                        version="%s %s" % (sys.argv[0], __version__),
+                        help='Print version and exit.')
     parser.add_argument('-u', '--uuid', type=str, default="", help="Filter events on object_uuid")
     parser.add_argument('-f', '--filters', type=str, default="", help="Arvados query filter to apply to log events (JSON encoded)")
     parser.add_argument('-s', '--start-time', type=str, default="", help="Arvados query filter to fetch log events created at or after this time. This will be server time in UTC. Allowed format: YYYY-MM-DD or YYYY-MM-DD hh:mm:ss")
