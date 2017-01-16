@@ -4,12 +4,14 @@ import copy
 import json
 import time
 
-from cwltool.process import get_feature, shortname
+from cwltool.process import get_feature, shortname, UnsupportedRequirement
 from cwltool.errors import WorkflowException
 from cwltool.draft2tool import revmap_file, CommandLineTool
 from cwltool.load_tool import fetch_document
 from cwltool.builder import Builder
 from cwltool.pathmapper import adjustDirObjs
+
+from schema_salad.sourceline import SourceLine
 
 import ruamel.yaml as yaml
 
@@ -271,7 +273,7 @@ class RunnerJob(Runner):
         else:
             packed = packed_workflow(self.arvrunner, self.tool)
             wf_pdh = self.upload_workflow_collection(packed)
-            self.job_order["cwl:tool"] = "%s/workflow.cwl" % wf_pdh
+            self.job_order["cwl:tool"] = "%s/workflow.cwl#main" % wf_pdh
 
         adjustDirObjs(self.job_order, trim_listing)
 
