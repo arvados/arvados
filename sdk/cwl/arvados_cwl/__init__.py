@@ -211,6 +211,11 @@ class ArvCwlRunner(object):
                         raise SourceLine(obj, "stdin", UnsupportedRequirement).makeError("Stdin redirection currently not suppported with --api=containers")
                     if obj.get("stderr"):
                         raise SourceLine(obj, "stderr", UnsupportedRequirement).makeError("Stderr redirection currently not suppported with --api=containers")
+            if obj.get("class") == "DockerRequirement":
+                if obj.get("dockerOutputDirectory"):
+                    # TODO: can be supported by containers API, but not jobs API.
+                    raise SourceLine(obj, "dockerOutputDirectory", UnsupportedRequirement).makeError(
+                        "Option 'dockerOutputDirectory' of DockerRequirement not supported.")
             for v in obj.itervalues():
                 self.check_features(v)
         elif isinstance(obj, list):

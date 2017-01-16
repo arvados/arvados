@@ -124,7 +124,7 @@ def stubs(func):
                     'class': 'Directory'
                 },
                 'cwl:tool':
-                'f57578d5cfda7f70fef00cbc4b621e6b+58/workflow.cwl'
+                'f57578d5cfda7f70fef00cbc4b621e6b+58/workflow.cwl#main'
             },
             'repository': 'arvados',
             'script_version': 'master',
@@ -146,7 +146,7 @@ def stubs(func):
                               'listing': [
                                   {'basename': 'renamed.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999998+99/file1.txt'}
                               ]}},
-                        'cwl:tool': 'f57578d5cfda7f70fef00cbc4b621e6b+58/workflow.cwl',
+                        'cwl:tool': 'f57578d5cfda7f70fef00cbc4b621e6b+58/workflow.cwl#main',
                         'arv:enable_reuse': True,
                         'arv:on_error': 'continue'
                     },
@@ -180,7 +180,7 @@ def stubs(func):
                     'kind': 'collection'
                 },
                 '/var/lib/cwl/workflow.json': {
-                    'json': expect_packed_workflow,
+                    'content': expect_packed_workflow,
                     'kind': 'json'
                 },
                 'stdout': {
@@ -680,7 +680,7 @@ class TestSubmit(unittest.TestCase):
                 },
                 '/var/lib/cwl/workflow.json': {
                     'kind': 'json',
-                    'json': {
+                    'content': {
                         'cwlVersion': 'v1.0',
                         '$graph': [
                             {
@@ -1121,7 +1121,7 @@ class TestTemplateInputs(unittest.TestCase):
                 },
                 'script_parameters': {
                     'cwl:tool':
-                    '5800682d508698dc9ce6d2fc618f21d8+58/workflow.cwl',
+                    '5800682d508698dc9ce6d2fc618f21d8+58/workflow.cwl#main',
                     'optionalFloatInput': None,
                     'fileInput': {
                         'type': 'File',
