@@ -11,22 +11,6 @@ Two Arvados Rails servers store data in a PostgreSQL database: the SSO server, a
 
 Find the section for your distribution below, and follow it to install PostgreSQL on each host where you will deploy it.  Then follow the steps in the later section(s) to set up PostgreSQL for the Arvados service(s) that need it.
 
-h2(#centos6). Install PostgreSQL on CentOS 6
-
-# Install Software Collections:
-  <notextile><pre>~$ <span class="userinput">sudo yum install centos-release-scl scl-utils</span></pre></notextile>
-# Install PostgreSQL:
-  <notextile><pre>~$ <span class="userinput">sudo yum install rh-postgresql94-postgresql-server</span></pre></notextile>
-# Initialize the database:
-  <notextile><pre>~$ <span class="userinput">sudo scl enable rh-postgresql94 "postgresql-setup initdb"</span></pre></notextile>
-# Configure the database to accept password connections:
-  <notextile><pre><code>~$ <span class="userinput">sudo sed -ri -e 's/^(host +all +all +(127\.0\.0\.1\/32|::1\/128) +)ident$/\1md5/' /var/opt/rh/rh-postgresql94/lib/pgsql/data/pg_hba.conf</span></code></pre></notextile>
-# Configure the database to launch at boot:
-  <notextile><pre>~$ <span class="userinput">sudo chkconfig rh-postgresql94-postgresql on</span></pre></notextile>
-# Start the database:
-  <notextile><pre>~$ <span class="userinput">sudo service rh-postgresql94-postgresql start</span></pre></notextile>
-# "Set up Arvados credentials and databases":#rails_setup for the services that will use this PostgreSQL install.
-
 h2(#centos7). Install PostgreSQL on CentOS 7
 
 # Install PostgreSQL:
