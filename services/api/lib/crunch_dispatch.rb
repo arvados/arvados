@@ -169,7 +169,25 @@ class CrunchDispatch
       end
       usable_nodes << node
       if usable_nodes.count >= min_node_count
-        return usable_nodes.map { |n| n.hostname }
+        hostnames = usable_nodes.map(&:hostname)
+        log_nodes = usable_nodes.map do |n|
+          "#{n.hostname} #{n.uuid} #{n.properties.to_json}"
+        end
+        log_job = "#{job.uuid} #{job.runtime_constraints}"
+        log_text = "dispatching job #{log_job} to #{log_nodes.join(", ")}"
+        $stderr.puts log_text
+        begin
+          act_as_system_user do
+            Log.new(object_uuid: job.uuid,
+                    event_type: 'dispatch',
+                    owner_uuid: system_user_uuid,
+                    summary: "dispatching to #{hostnames.join(", ")}",
+                    properties: {'text' => log_text}).save!
+          end
+        rescue => e
+          $stderr.puts "dispatch: log.create failed: #{e}"
+        end
+        return hostnames
       end
     end
     nil
@@ -204,8 +222,8 @@ class CrunchDispatch
               owner_uuid: job.owner_uuid,
               summary: message,
               properties: {"text" => message}).save!
-    rescue
-      $stderr.puts "dispatch: log.create failed"
+    rescue => e
+      $stderr.puts "dispatch: log.create failed: #{e}"
     end
 
     if not skip_lock and not have_job_lock?(job)
