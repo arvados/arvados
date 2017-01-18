@@ -13,7 +13,7 @@ from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
 
 import ruamel.yaml as yaml
 
-from .runner import upload_docker, upload_dependencies, trim_listing
+from .runner import upload_dependencies, trim_listing, packed_workflow
 from .arvtool import ArvadosCommandTool
 from .perf import Perf
 
@@ -22,11 +22,8 @@ metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
 def upload_workflow(arvRunner, tool, job_order, project_uuid, uuid=None,
                     submit_runner_ram=0, name=None):
-    upload_docker(arvRunner, tool)
 
-    document_loader, workflowobj, uri = (tool.doc_loader, tool.doc_loader.fetch(tool.tool["id"]), tool.tool["id"])
-
-    packed = pack(document_loader, workflowobj, uri, tool.metadata)
+    packed = packed_workflow(arvRunner, tool)
 
     adjustDirObjs(job_order, trim_listing)
 
@@ -39,8 +36,8 @@ def upload_workflow(arvRunner, tool, job_order, project_uuid, uuid=None,
     if not name:
         name = tool.tool.get("label", os.path.basename(tool.tool["id"]))
 
-    upload_dependencies(arvRunner, name, document_loader,
-                        packed, uri, False)
+    upload_dependencies(arvRunner, name, tool.doc_loader,
+                        packed, tool.tool["id"], False)
 
     # TODO nowhere for submit_runner_ram to go.
 
