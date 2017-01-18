@@ -6,7 +6,7 @@ import json
 import re
 import subprocess
 
-from cStringIO import StringIO
+from StringIO import StringIO
 
 from schema_salad.sourceline import SourceLine
 
