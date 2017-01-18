@@ -1843,6 +1843,7 @@ sub croak
   my ($package, $file, $line) = caller;
   my $message = "@_ at $file line $line\n";
   Log (undef, $message);
+  release_allocation();
   freeze() if @jobstep_todo;
   create_output_collection() if @jobstep_todo;
   cleanup();
