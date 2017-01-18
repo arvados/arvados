@@ -973,7 +973,10 @@ class RichCollectionBase(CollectionBase):
             if stream:
                 buf.append(" ".join(normalize_stream(stream_name, stream)) + "\n")
             for dirname in [s for s in sorted_keys if isinstance(self[s], RichCollectionBase)]:
-                buf.append(self[dirname].manifest_text(stream_name=os.path.join(stream_name, dirname), strip=strip, normalize=True))
+                if only_committed:
+                    buf.append(self[dirname]._get_manifest_text(stream_name=os.path.join(stream_name, dirname), strip=strip, normalize=True, only_committed=only_committed))
+                else:
+                    buf.append(self[dirname].manifest_text(stream_name=os.path.join(stream_name, dirname), strip=strip, normalize=True))
             return "".join(buf)
         else:
             if strip:
@@ -1149,7 +1152,8 @@ class Collection(RichCollectionBase):
                  parent=None,
                  apiconfig=None,
                  block_manager=None,
-                 replication_desired=None):
+                 replication_desired=None,
+                 put_threads=None):
         """Collection constructor.
 
         :manifest_locator_or_text:
@@ -1186,6 +1190,7 @@ class Collection(RichCollectionBase):
         self._keep_client = keep_client
         self._block_manager = block_manager
         self.replication_desired = replication_desired
+        self.put_threads = put_threads
 
         if apiconfig:
             self._config = apiconfig
@@ -1276,7 +1281,7 @@ class Collection(RichCollectionBase):
             copies = (self.replication_desired or
                       self._my_api()._rootDesc.get('defaultCollectionReplication',
                                                    2))
-            self._block_manager = _BlockManager(self._my_keep(), copies=copies)
+            self._block_manager = _BlockManager(self._my_keep(), copies=copies, put_threads=self.put_threads)
         return self._block_manager
 
     def _remember_api_response(self, response):
