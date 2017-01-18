@@ -72,6 +72,7 @@ while [ $# -gt 0 ]; do
             ;;
         --debug)
             DEBUG=" --debug"
+            ARVADOS_DEBUG="1"
             ;;
         --command)
             COMMAND="$2"; shift
@@ -177,7 +178,7 @@ if [[ -n "$test_packages" ]]; then
         echo "START: $p test on $IMAGE" >&2
         if docker run --rm \
             "${docker_volume_args[@]}" \
-            --env ARVADOS_DEBUG=1 \
+            --env ARVADOS_DEBUG=$ARVADOS_DEBUG \
             --env "TARGET=$TARGET" \
             --env "WORKSPACE=/arvados" \
             "$IMAGE" $COMMAND $p
@@ -194,7 +195,7 @@ else
     echo "START: build packages on $IMAGE" >&2
     if docker run --rm \
         "${docker_volume_args[@]}" \
-        --env ARVADOS_DEBUG=1 \
+        --env ARVADOS_DEBUG=$ARVADOS_DEBUG \
         --env "ONLY_BUILD=$ONLY_BUILD" \
         "$IMAGE" $COMMAND
     then

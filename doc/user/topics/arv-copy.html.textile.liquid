@@ -81,3 +81,26 @@ For example, we can copy the same object using this tag.
 <pre><code>~$ <span class="userinput">arv-copy --src qr1hi --dst dst_cluster --dst-git-repo $USER/tutorial --no-recursive qr1hi-p5p6p-9pkaxt6qjnkxhhu</span>
 </code></pre>
 </notextile>
+
+h3. How to copy a workflow
+
+We will use the uuid @zzzzz-7fd4e-sampleworkflow1@ as an example workflow.
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv-copy --src zzzzz --dst dst_cluster --dst-git-repo $USER/tutorial zzzzz-7fd4e-sampleworkflow1</span>
+zzzzz-4zz18-jidprdejysravcr: 1143M / 1143M 100.0%
+2017-01-04 04:11:58 arvados.arv-copy[5906] INFO:
+2017-01-04 04:11:58 arvados.arv-copy[5906] INFO: Success: created copy with uuid dst_cluster-7fd4e-ojtgpne594ubkt7
+</code></pre>
+</notextile>
+
+The name, description, and workflow definition from the original workflow will be used for the destination copy. In addition, any *locations* and *docker images* found in the src workflow definition will also be copied to the destination recursively.
+
+If you would like to copy the object without dependencies, you can use the @--no-recursive@ flag.
+
+For example, we can copy the same object non-recursively using the following:
+
+<notextile>
+<pre><code>~$ <span class="userinput">arv-copy --src zzzzz --dst dst_cluster --dst-git-repo $USER/tutorial --no-recursive zzzzz-7fd4e-sampleworkflow1</span>
+</code></pre>
+</notextile>
