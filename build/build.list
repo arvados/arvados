@@ -39,6 +39,6 @@ centos7|html5lib|0.9999999|2|python|all
 centos7|keepalive|0.5|2|python|all
 all|lockfile|0.12.2|2|python|all|--epoch 1
 all|ruamel.yaml|0.13.7|2|python|amd64|--python-setup-py-arguments --single-version-externally-managed
-all|cwltest|1.0.20160907111242|2|python|all
+all|cwltest|1.0.20160907111242|3|python|all|--depends 'python-futures >= 3.0.5'
 all|rdflib-jsonld|0.4.0|2|python|all
 all|futures|3.0.5|2|python|all

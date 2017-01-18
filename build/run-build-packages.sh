@@ -519,6 +519,7 @@ while read -r line || [[ -n "$line" ]]; do
   pkgtype=${arr[4]}
   arch=${arr[5]}
   extra=${arr[6]}
+  declare -a 'extra_arr=('"$extra"')'
 
   if [[ "$FORMAT" == "rpm" ]]; then
     if [[ "$arch" == "all" ]]; then
@@ -557,7 +558,7 @@ while read -r line || [[ -n "$line" ]]; do
                 "python$PYTHON2_VERSION" setup.py $DASHQ_UNLESS_DEBUG egg_info build
                 chmod -R go+rX .
                 set +e
-                fpm_build . "$outname" "" "$pkgtype" "$version" --iteration "$iteration" $extra
+                fpm_build . "$outname" "" "$pkgtype" "$version" --iteration "$iteration" "${extra_arr[@]}"
                 # The upload step uses the package timestamp to determine
                 # if it is new.  --no-clobber plays nice with that.
                 mv --no-clobber "$outname"*.$FORMAT "$WORKSPACE/packages/$TARGET"
@@ -574,7 +575,7 @@ while read -r line || [[ -n "$line" ]]; do
       *)
           test_package_presence $outname $version $pkgtype $iteration $arch
           if [[ "$?" == "0" ]]; then
-            fpm_build "$name" "$outname" "" "$pkgtype" "$version" --iteration "$iteration" $extra
+            fpm_build "$name" "$outname" "" "$pkgtype" "$version" --iteration "$iteration" "${extra_arr[@]}"
           fi
           ;;
   esac
