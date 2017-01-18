@@ -199,7 +199,7 @@ test_package_presence() {
       deb_architecture="amd64"
 
       if [[ "$pkgtype" =~ ^(python|python3)$ ]]; then
-        rpm_architecture="all"
+        rpm_architecture="noarch"
         deb_architecture="all"
       fi
 
@@ -208,7 +208,7 @@ test_package_presence() {
         deb_architecture="all"
       fi
 
-      # These packages have binary components
+      # These python packages have binary components
       if [[ "$pkgname" =~ (ruamel|ciso|pycrypto|pyyaml) ]]; then
         rpm_architecture="x86_64"
         deb_architecture="amd64"
