@@ -501,7 +501,7 @@ class _BlockManager(object):
                 # blocks pending.  If they are full 64 MiB blocks, that means up to
                 # 256 MiB of internal buffering, which is the same size as the
                 # default download block cache in KeepClient.
-                self._put_queue = Queue.Queue(maxsize=1)
+                self._put_queue = Queue.Queue(maxsize=2)
 
                 self._put_threads = []
                 for i in xrange(0, self.num_put_threads):

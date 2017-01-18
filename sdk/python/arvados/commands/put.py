@@ -139,7 +139,7 @@ Set the number of upload threads to be used. Take into account that
 using lots of threads will increase the RAM requirements. Default is
 to use 2 threads.
 On high latency installations, using a greater number will improve
-overall troughput.
+overall throughput.
 """)
 
 run_opts = argparse.ArgumentParser(add_help=False)
@@ -520,7 +520,9 @@ class ArvPutUploadJob(object):
                     manifest = self._local_collection.manifest_text()
                 else:
                     # Get the manifest text without comitting pending blocks
-                    manifest = self._local_collection._get_manifest_text(".", strip=False, normalize=False, only_committed=True)
+                    manifest = self._local_collection.manifest_text(".", strip=False,
+                                                                    normalize=False,
+                                                                    only_committed=True)
                 # Update cache
                 with self._state_lock:
                     self._state['manifest'] = manifest

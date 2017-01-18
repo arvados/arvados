@@ -905,7 +905,8 @@ class RichCollectionBase(CollectionBase):
         return self._get_manifest_text(stream_name, True, True)
 
     @synchronized
-    def manifest_text(self, stream_name=".", strip=False, normalize=False):
+    def manifest_text(self, stream_name=".", strip=False, normalize=False,
+                      only_committed=False):
         """Get the manifest text for this collection, sub collections and files.
 
         This method will flush outstanding blocks to Keep.  By default, it will
@@ -924,10 +925,15 @@ class RichCollectionBase(CollectionBase):
           is not modified, return the original manifest text even if it is not
           in normalized form.
 
+        :only_committed:
+          If True, don't commit pending blocks.
+
         """
 
-        self._my_block_manager().commit_all()
-        return self._get_manifest_text(stream_name, strip, normalize)
+        if not only_committed:
+            self._my_block_manager().commit_all()
+        return self._get_manifest_text(stream_name, strip, normalize,
+                                       only_committed=only_committed)
 
     @synchronized
     def _get_manifest_text(self, stream_name, strip, normalize, only_committed=False):
@@ -973,10 +979,7 @@ class RichCollectionBase(CollectionBase):
             if stream:
                 buf.append(" ".join(normalize_stream(stream_name, stream)) + "\n")
             for dirname in [s for s in sorted_keys if isinstance(self[s], RichCollectionBase)]:
-                if only_committed:
-                    buf.append(self[dirname]._get_manifest_text(stream_name=os.path.join(stream_name, dirname), strip=strip, normalize=True, only_committed=only_committed))
-                else:
-                    buf.append(self[dirname].manifest_text(stream_name=os.path.join(stream_name, dirname), strip=strip, normalize=True))
+                buf.append(self[dirname].manifest_text(stream_name=os.path.join(stream_name, dirname), strip=strip, normalize=True, only_committed=only_committed))
             return "".join(buf)
         else:
             if strip:
