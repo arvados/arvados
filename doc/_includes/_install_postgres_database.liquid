@@ -1,6 +1,4 @@
-# Start a shell for the postgres user.  On CentOS 6:
-  <notextile><pre>~$ <span class="userinput">sudo -u postgres scl enable rh-postgresql94 bash</span>
-</pre></notextile> On any other distribution:
+# Start a shell for the postgres user:
   <notextile><pre>~$ <span class="userinput">sudo -u postgres bash</span></pre></notextile>
 # Generate a new database password:
   <notextile><pre>$ <span class="userinput">ruby -e 'puts rand(2**128).to_s(36)'</span>
