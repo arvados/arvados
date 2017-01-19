@@ -45,14 +45,7 @@ h2. Install the Python SDK and utilities
 {% assign rh_version = "6" %}
 {% include 'note_python_sc' %}
 
-On CentOS 6 and RHEL 6:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo yum install python27-python-arvados-python-client python27-python-arvados-fuse crunchrunner</span>
-</code></pre>
-</notextile>
-
-On other Red Hat-based systems:
+On Red Hat-based systems:
 
 <notextile>
 <pre><code>~$ <span class="userinput">echo 'exclude=python2-llfuse' | sudo tee -a /etc/yum.conf</span>
@@ -130,16 +123,7 @@ If you're not using RVM:
 
 Install cron.
 
-On CentOS 6 and RHEL 6:
-
-<notextile>
-<pre><code>~$ <span class="userinput">sudo yum install cronie</span>
-~$ <span class="userinput">sudo chkconfig crond on</span>
-~$ <span class="userinput">sudo service crond start</span>
-</code></pre>
-</notextile>
-
-On other Red Hat-based distributions:
+On Red Hat-based distributions:
 
 <notextile>
 <pre><code>~$ <span class="userinput">sudo yum install cronie</span>

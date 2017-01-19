@@ -1,48 +1,4 @@
-# FIXME: Remove this line after #6885 is done.
-fpm_args+=(--iteration 3)
-
 case "$TARGET" in
-    centos6)
-            fpm_depends+=(
-                cyrus-sasl-lib
-                glibc
-                keyutils-libs
-                krb5-libs
-                libcom_err
-                libcurl
-                libidn
-                libselinux
-                libssh2
-                nspr
-                nss
-                nss-softokn-freebl
-                nss-util
-                openldap
-                openssl
-                zlib
-            ) ;;
-    debian7)
-            fpm_depends+=(
-                libc6
-                libcomerr2
-                libcurl3-gnutls
-                libgcrypt11
-                libgnutls26
-                libgpg-error0
-                libgssapi-krb5-2
-                libidn11
-                libk5crypto3
-                libkeyutils1
-                libkrb5-3
-                libkrb5support0
-                libldap-2.4-2
-                libp11-kit0
-                librtmp0
-                libsasl2-2
-                libssh2-1
-                libtasn1-3
-                zlib1g
-            ) ;;
     debian8)
             fpm_depends+=(
                 libc6
