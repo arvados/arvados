@@ -12,7 +12,7 @@ type ResourceListParams struct {
 	Offset       int      `json:"offset,omitempty"`
 	Order        string   `json:"order,omitempty"`
 	Distinct     bool     `json:"distinct,omitempty"`
-	Count        bool     `json:"count,omitempty"`
+	Count        string   `json:"count,omitempty"`
 }
 
 // A Filter restricts the set of records returned by a list/index API.

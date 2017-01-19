@@ -11,7 +11,7 @@ func countCollections(c *arvados.Client, params arvados.ResourceListParams) (int
 	var page arvados.CollectionList
 	var zero int
 	params.Limit = &zero
-	params.Count = true
+	params.Count = "exact"
 	err := c.RequestAndDecode(&page, "GET", "arvados/v1/collections", nil, params)
 	return page.ItemsAvailable, err
 }
@@ -46,7 +46,7 @@ func EachCollection(c *arvados.Client, pageSize int, f func(arvados.Collection) 
 	params := arvados.ResourceListParams{
 		Limit:        &limit,
 		Order:        "modified_at, uuid",
-		Count:        false,
+		Count:        "none",
 		Select:       []string{"uuid", "unsigned_manifest_text", "modified_at", "portable_data_hash", "replication_desired"},
 		IncludeTrash: true,
 	}

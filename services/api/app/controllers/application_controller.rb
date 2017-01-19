@@ -506,12 +506,16 @@ class ApplicationController < ActionController::Base
       :limit => @limit,
       :items => @objects.as_api_response(nil, {select: @select})
     }
-    if params[:count].nil? || params[:count]
+    case params[:count]
+    when nil, '', 'exact'
       if @objects.respond_to? :except
         list[:items_available] = @objects.
           except(:limit).except(:offset).
           count(:id, distinct: true)
       end
+    when 'none'
+    else
+      raise ArgumentError.new("count parameter must be 'exact' or 'none'")
     end
     list
   end
@@ -574,7 +578,7 @@ class ApplicationController < ActionController::Base
       distinct: { type: 'boolean', required: false },
       limit: { type: 'integer', required: false, default: DEFAULT_LIMIT },
       offset: { type: 'integer', required: false, default: 0 },
-      count: { type: 'boolean', required: false, default: true},
+      count: { type: 'string', required: false, default: 'exact' },
     }
   end
 

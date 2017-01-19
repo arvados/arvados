@@ -255,9 +255,9 @@ class Arvados::V1::SchemaController < ApplicationController
                   location: "query"
                 },
                 count: {
-                  type: "boolean",
-                  description: "Count items_available.",
-                  default: "true",
+                  type: "string",
+                  description: "Type of count to return in items_available ('none' or 'exact').",
+                  default: "exact",
                   location: "query"
                 }
               },

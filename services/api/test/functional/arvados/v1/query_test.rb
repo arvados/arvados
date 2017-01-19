@@ -65,4 +65,33 @@ class Arvados::V1::QueryTest < ActionController::TestCase
     assert_equal('logs.event_type asc, logs.id asc',
                  assigns(:objects).order_values.join(', '))
   end
+
+  test 'do not count items_available if count=none' do
+    @controller = Arvados::V1::SpecimensController.new
+    authorize_with :active
+    get :index, {
+      count: 'none',
+    }
+    assert_response(:success)
+    refute(json_response.has_key?('items_available'))
+  end
+
+  [{}, {count: nil}, {count: ''}, {count: 'exact'}].each do |params|
+    test "count items_available if params=#{params.inspect}" do
+      @controller = Arvados::V1::SpecimensController.new
+      authorize_with :active
+      get :index, params
+      assert_response(:success)
+      assert_operator(json_response['items_available'], :>, 0)
+    end
+  end
+
+  test 'error if count=bogus' do
+    @controller = Arvados::V1::SpecimensController.new
+    authorize_with :active
+    get :index, {
+      count: 'bogus',
+    }
+    assert_response(422)
+  end
 end
