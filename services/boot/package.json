@@ -1,0 +1,20 @@
+{
+  "name": "gowebapp",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "dependencies": {},
+  "devDependencies": {
+    "bootstrap": "^3.3.7",
+    "check-dependencies": "",
+    "tap": "^9.0.3",
+    "tape": "^4.6.3",
+    "webpack": ""
+  },
+  "scripts": {
+    "dev": "WEBPACK_FLAGS=-d go generate && go get ./... && $GOPATH/bin/gowebapp -listen :${PORT:-8000}",
+    "test": "./node_modules/.bin/tap 'js/**/*_test.js'",
+    "build": "go generate && go get ./...",
+    "start": "npm run build && $GOPATH/bin/gowebapp -listen :${PORT:-8000}",
+    "webpack": "webpack $WEBPACK_FLAGS"
+  }
+}
