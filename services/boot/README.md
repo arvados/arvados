@@ -1,6 +1,6 @@
-# gowebapp
+# arvados-boot
 
-A basic skeleton web application server. Just add HTML, client-side JavaScript code, and server-side APIs.
+Coordinates Arvados system services.
 
 Strategy:
 * In development, use npm to install JavaScript libraries.
@@ -53,21 +53,6 @@ module.exports = {
     ...
 ```
 
-## generate before commit
-
-To make your project `go get`able, run `go generate` before committing. This updates `bindata_assetfs.go`. Consider doing this in `.git/hooks/pre-commit` in case you forget.
-
-If you don't need `go get` to work, and you prefer to keep generated files out of your source tree, you can:
-
-```sh
-git rm bindata_assetfs.go
-echo bindata_assetfs.go >>.gitignore
-git add .gitignore
-git commit -m 'remove generated data'
-```
-
-In this case, your build pipeline must run `go generate` before `go build`.
-
 ## run dev-mode server
 
 This runs webpack, updates bindata_assetfs.go with the new filesystem, builds a new Go binary, and runs it:
@@ -113,8 +98,3 @@ The server binary will be installed to `$GOPATH/bin/`.
 ```sh
 npm start
 ```
-
-## TODO
-
-* live dev mode with fsnotify and `webpack --watch -d`
-* etags
