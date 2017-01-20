@@ -177,7 +177,7 @@ class ArvCwlRunner(object):
 
                 for p in proc_states["items"]:
                     self.on_message({
-                       "object_uuid": p["uuid"],
+                        "object_uuid": p["uuid"],
                         "event_type": "update",
                         "properties": {
                             "new_attributes": p
