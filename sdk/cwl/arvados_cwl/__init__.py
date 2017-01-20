@@ -388,7 +388,7 @@ class ArvCwlRunner(object):
                                                 self.output_name,
                                                 self.output_tags,
                                                 submit_runner_ram=kwargs.get("submit_runner_ram"),
-                                                name=kwargs["name"],
+                                                name=kwargs.get("name"),
                                                 on_error=kwargs.get("on_error"),
                                                 submit_runner_image=kwargs.get("submit_runner_image"))
             elif self.work_api == "jobs":
@@ -396,7 +396,7 @@ class ArvCwlRunner(object):
                                       self.output_name,
                                       self.output_tags,
                                       submit_runner_ram=kwargs.get("submit_runner_ram"),
-                                      name=kwargs["name"],
+                                      name=kwargs.get("name"),
                                       on_error=kwargs.get("on_error"),
                                       submit_runner_image=kwargs.get("submit_runner_image"))
 
