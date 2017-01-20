@@ -84,7 +84,7 @@ class ArvadosContainer(object):
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if not docker_req:
-            docker_req = {"dockerImageId": arvados_jobs_image(self.arvrunner)}
+            docker_req = {"dockerImageId": "arvados/jobs"}
 
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
                                                                      docker_req,
@@ -199,7 +199,7 @@ class RunnerContainer(Runner):
             "cwd": "/var/spool/cwl",
             "priority": 1,
             "state": "Committed",
-            "container_image": arvados_jobs_image(self.arvrunner),
+            "container_image": arvados_jobs_image(self.arvrunner, self.jobs_image),
             "mounts": {
                 "/var/lib/cwl/cwl.input.json": {
                     "kind": "json",

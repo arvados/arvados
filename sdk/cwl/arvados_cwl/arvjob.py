@@ -92,7 +92,7 @@ class ArvadosJob(object):
                         "Option 'dockerOutputDirectory' of DockerRequirement not supported.")
                 runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvrunner.project_uuid)
             else:
-                runtime_constraints["docker_image"] = arvados_jobs_image(self.arvrunner)
+                runtime_constraints["docker_image"] = "arvados/jobs"
 
         resources = self.builder.resources
         if resources is not None:
@@ -261,7 +261,7 @@ class RunnerJob(Runner):
             "repository": "arvados",
             "script_parameters": self.job_order,
             "runtime_constraints": {
-                "docker_image": arvados_jobs_image(self.arvrunner),
+                "docker_image": arvados_jobs_image(self.arvrunner, self.jobs_image),
                 "min_ram_mb_per_node": self.submit_runner_ram
             }
         }

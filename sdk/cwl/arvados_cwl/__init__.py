@@ -384,13 +384,21 @@ class ArvCwlRunner(object):
                                          self.output_callback,
                                          **kwargs).next()
                 else:
-                    runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name,
-                                                self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"),
-                                                name=kwargs.get("name"), on_error=kwargs.get("on_error"))
-            else:
-                runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name,
-                                      self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"),
-                                      name=kwargs.get("name"), on_error=kwargs.get("on_error"))
+                    runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"),
+                                                self.output_name,
+                                                self.output_tags,
+                                                submit_runner_ram=kwargs.get("submit_runner_ram"),
+                                                name=kwargs["name"],
+                                                on_error=kwargs.get("on_error"),
+                                                submit_runner_image=kwargs.get("submit_runner_image"))
+            elif self.work_api == "jobs":
+                runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"),
+                                      self.output_name,
+                                      self.output_tags,
+                                      submit_runner_ram=kwargs.get("submit_runner_ram"),
+                                      name=kwargs["name"],
+                                      on_error=kwargs.get("on_error"),
+                                      submit_runner_image=kwargs.get("submit_runner_image"))
 
         if not kwargs.get("submit") and "cwl_runner_job" not in kwargs and not self.work_api == "containers":
             # Create pipeline for local run
@@ -572,6 +580,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--submit-runner-ram", type=int,
                         help="RAM (in MiB) required for the workflow runner job (default 1024)",
                         default=1024)
+
+    parser.add_argument("--submit-runner-image", type=str,
+                        help="Docker image for workflow runner job, default arvados/jobs:%s" % __version__,
+                        default=None)
 
     parser.add_argument("--name", type=str,
                         help="Name to use for workflow execution instance.",
