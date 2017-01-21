@@ -69,6 +69,7 @@ apps/workbench_profile
 doc
 services/api
 services/arv-git-httpd
+services/boot
 services/crunchstat
 services/dockercleaner
 services/fuse
@@ -543,22 +544,24 @@ do_test_once() {
     then
         covername="coverage-$(echo "$1" | sed -e 's/\//_/g')"
         coverflags=("-covermode=count" "-coverprofile=$WORKSPACE/tmp/.$covername.tmp")
+        gopkgpath="git.curoverse.com/arvados.git/$1"
         # We do "go get -t" here to catch compilation errors
         # before trying "go test". Otherwise, coverage-reporting
         # mode makes Go show the wrong line numbers when reporting
         # compilation errors.
-        go get -t "git.curoverse.com/arvados.git/$1" || return 1
-        cd "$WORKSPACE/$1" || return 1
+        cd "$GOPATH/src/${gopkgpath}" || return 1
+        go get -t . || return 1
+        go generate || return 1
         gofmt -e -d . | egrep . && result=1
         if [[ -n "${testargs[$1]}" ]]
         then
             # "go test -check.vv giturl" doesn't work, but this
             # does:
-            cd "$WORKSPACE/$1" && go test ${short:+-short} ${testargs[$1]}
+            go test ${short:+-short} ${testargs[$1]} .
         else
             # The above form gets verbose even when testargs is
             # empty, so use this form in such cases:
-            go test ${short:+-short} ${coverflags[@]} "git.curoverse.com/arvados.git/$1"
+            go test ${short:+-short} ${coverflags[@]} .
         fi
         result=${result:-$?}
         if [[ -f "$WORKSPACE/tmp/.$covername.tmp" ]]
@@ -590,6 +593,9 @@ do_test_once() {
     else
         "test_$1"
     fi
+    if [[ -e "${WORKSPACE}/${1}/package.json" ]]; then
+        cd "${WORKSPACE}/${1}" && npm test || result=1
+    fi
     result=${result:-$?}
     checkexit $result "$1 tests"
     title "End of $1 tests (`timer`)"
@@ -607,9 +613,15 @@ do_install() {
 do_install_once() {
     title "Running $1 install"
     timer_reset
+    cd "${WORKSPACE}/${1}" || return 1
+    if [[ -e "${WORKSPACE}/${1}/package.json" ]]; then
+        npm install || return 1
+    fi
     if [[ "$2" == "go" ]]
     then
-        go get -t "git.curoverse.com/arvados.git/$1"
+        go get -d -t "git.curoverse.com/arvados.git/$1" \
+            && go generate \
+            && go get "git.curoverse.com/arvados.git/$1"
     elif [[ "$2" == "pip" ]]
     then
         # $3 can name a path directory for us to use, including trailing
@@ -624,8 +636,7 @@ do_install_once() {
         # install" ensures that the dependencies are met, the second "pip
         # install" ensures that we've actually installed the local package
         # we just built.
-        cd "$WORKSPACE/$1" \
-            && "${3}python" setup.py sdist rotate --keep=1 --match .tar.gz \
+        "${3}python" setup.py sdist rotate --keep=1 --match .tar.gz \
             && cd "$WORKSPACE" \
             && "${3}pip" install --quiet "$WORKSPACE/$1/dist"/*.tar.gz \
             && "${3}pip" install --quiet --no-deps --ignore-installed "$WORKSPACE/$1/dist"/*.tar.gz
@@ -786,6 +797,7 @@ gostuff=(
     services/crunch-dispatch-slurm
     services/crunch-run
     services/ws
+    services/boot
     tools/keep-block-check
     tools/keep-exercise
     tools/keep-rsync

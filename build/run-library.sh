@@ -112,6 +112,8 @@ package_go_binary() {
         fi
     fi
 
+    go generate || return 1
+
     cd $WORKSPACE/packages/$TARGET
     test_package_presence $prog $version go
 

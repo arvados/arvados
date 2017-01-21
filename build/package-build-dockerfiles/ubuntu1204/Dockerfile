@@ -2,7 +2,10 @@ FROM ubuntu:precise
 MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 # Install dependencies and set up system.
-RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev curl git libattr1-dev libfuse-dev libpq-dev python-pip build-essential unzip
+RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev curl git libattr1-dev libfuse-dev libpq-dev python-pip build-essential unzip && apt-get clean
+
+# Node.js
+RUN curl -sL https://deb.nodesource.com/setup_6.x | bash && apt-get install -q -y nodejs && apt-get clean
 
 # Install RVM
 RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
@@ -14,7 +17,7 @@ RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
 
 # Install golang binary
 ADD generated/go1.7.1.linux-amd64.tar.gz /usr/local/
-RUN ln -s /usr/local/go/bin/go /usr/local/bin/
+RUN ln -s /usr/local/go/bin/go* /usr/local/bin/
 
 ENV WORKSPACE /arvados
 CMD ["/usr/local/rvm/bin/rvm-exec", "default", "bash", "/jenkins/run-build-packages.sh", "--target", "ubuntu1204"]

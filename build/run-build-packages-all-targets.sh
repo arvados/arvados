@@ -38,7 +38,7 @@ fi
 set -e
 
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
-    help,test-packages,debug,command:,only-test: \
+    help,test-packages,debug,command:,only-test:,only-build: \
     -- "" "$@")
 if [ $? -ne 0 ]; then
     exit 1
@@ -66,6 +66,9 @@ while [ $# -gt 0 ]; do
         --test-packages)
             TEST_PACKAGES="--test-packages"
             ;;
+        --only-build)
+            ONLY_BUILD="$1 $2"; shift
+            ;;
         --only-test)
             ONLY_TEST="$1 $2"; shift
             ;;
@@ -84,7 +87,7 @@ cd $(dirname $0)
 FINAL_EXITCODE=0
 
 for dockerfile_path in $(find -name Dockerfile | grep package-build-dockerfiles); do
-    if ./run-build-packages-one-target.sh --target "$(basename $(dirname "$dockerfile_path"))" --command "$COMMAND" $DEBUG $TEST_PACKAGES $ONLY_TEST ; then
+    if ./run-build-packages-one-target.sh --target "$(basename $(dirname "$dockerfile_path"))" --command "$COMMAND" $DEBUG $TEST_PACKAGES $ONLY_TEST $ONLY_BUILD ; then
         true
     else
         FINAL_EXITCODE=$?

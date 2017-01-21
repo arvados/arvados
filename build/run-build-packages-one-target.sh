@@ -128,6 +128,7 @@ popd
 
 if test -z "$packages" ; then
     packages="arvados-api-server
+        arvados-boot
         arvados-docker-cleaner
         arvados-git-httpd
         arvados-node-manager

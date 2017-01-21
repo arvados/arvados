@@ -4,6 +4,7 @@
 //go:generate sh -c "if [ -e bindata.tmp ]; then rm -r bindata.tmp; fi && mkdir bindata.tmp"
 //go:generate sh -c "npm run webpack ${WEBPACK_FLAGS:-p}"
 //go:generate sh -c "cp -rpL static/* bindata.tmp/"
-//go:generate go-bindata-assetfs -nometadata bindata.tmp/...
+//go:generate sh -c "PATH=${GOPATH}/bin:${PATH} go-bindata-assetfs -nometadata bindata.tmp/..."
+//go:generate gofmt -w bindata_assetfs.go
 
 package main
