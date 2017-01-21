@@ -918,6 +918,43 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.CleanupDirs()
 		checkEmpty()
 	}
+
+	// read-only mount points are allowed underneath output_dir mount point
+	{
+		i = 0
+		cr.Container.Mounts = make(map[string]arvados.Mount)
+		cr.Container.Mounts = map[string]arvados.Mount{
+			"/tmp":     {Kind: "tmp"},
+			"/tmp/foo": {Kind: "collection"},
+		}
+		cr.OutputPath = "/tmp"
+
+		os.MkdirAll(realTemp+"/keep1/tmp0", os.ModePerm)
+
+		err := cr.SetupMounts()
+		c.Check(err, IsNil)
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--file-cache", "512", "--mount-tmp", "tmp0", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp", realTemp + "/keep1/tmp0:/tmp/foo:ro"})
+		cr.CleanupDirs()
+		checkEmpty()
+	}
+
+	// writable mount points are not allowed underneath output_dir mount point
+	{
+		i = 0
+		cr.Container.Mounts = make(map[string]arvados.Mount)
+		cr.Container.Mounts = map[string]arvados.Mount{
+			"/tmp":     {Kind: "tmp"},
+			"/tmp/foo": {Kind: "collection", Writable: true},
+		}
+		cr.OutputPath = "/tmp"
+
+		err := cr.SetupMounts()
+		c.Check(err, NotNil)
+		c.Check(err, ErrorMatches, `Writable mount points are not permitted underneath the output_path.*`)
+		cr.CleanupDirs()
+		checkEmpty()
+	}
 }
 
 func (s *TestSuite) TestStdout(c *C) {

@@ -19,6 +19,7 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"syscall"
@@ -239,6 +240,8 @@ func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string, token string) (
 	return c, nil
 }
 
+var tmpBackedOutputDir = false
+
 func (runner *ContainerRunner) SetupMounts() (err error) {
 	runner.ArvMountPoint, err = runner.MkTempDir("", "keep")
 	if err != nil {
@@ -259,7 +262,14 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	runner.Binds = nil
 	needCertMount := true
 
-	for bind, mnt := range runner.Container.Mounts {
+	var binds []string
+	for bind, _ := range runner.Container.Mounts {
+		binds = append(binds, bind)
+	}
+	sort.Strings(binds)
+
+	for _, bind := range binds {
+		mnt := runner.Container.Mounts[bind]
 		if bind == "stdout" {
 			// Is it a "file" mount kind?
 			if mnt.Kind != "file" {
@@ -275,6 +285,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				return fmt.Errorf("Stdout path does not start with OutputPath: %s, %s", mnt.Path, prefix)
 			}
 		}
+
 		if bind == "/etc/arvados/ca-certificates.crt" {
 			needCertMount = false
 		}
@@ -305,6 +316,8 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			if mnt.Writable {
 				if bind == runner.Container.OutputPath {
 					runner.HostOutputDir = src
+				} else if strings.HasPrefix(bind, runner.Container.OutputPath+"/") {
+					return fmt.Errorf("Writable mount points are not permitted underneath the output_path: %v", bind)
 				}
 				runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", src, bind))
 			} else {
@@ -327,6 +340,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			}
 			runner.CleanupTempDir = append(runner.CleanupTempDir, runner.HostOutputDir)
 			runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", runner.HostOutputDir, bind))
+			tmpBackedOutputDir = true
 
 		case mnt.Kind == "tmp":
 			runner.Binds = append(runner.Binds, bind)
