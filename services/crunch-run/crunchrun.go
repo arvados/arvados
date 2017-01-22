@@ -242,8 +242,15 @@ func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string, token string) (
 
 var tmpBackedOutputDir = false
 
+func (runner *ContainerRunner) SetupArvMountPoint(prefix string) (err error) {
+	if runner.ArvMountPoint == "" {
+		runner.ArvMountPoint, err = runner.MkTempDir("", prefix)
+	}
+	return
+}
+
 func (runner *ContainerRunner) SetupMounts() (err error) {
-	runner.ArvMountPoint, err = runner.MkTempDir("", "keep")
+	err = runner.SetupArvMountPoint("keep")
 	if err != nil {
 		return fmt.Errorf("While creating keep mount temp dir: %v", err)
 	}
@@ -653,6 +660,57 @@ func (runner *ContainerRunner) CaptureOutput() error {
 		manifestText = rec.ManifestText
 	}
 
+	// Pre-populate output from the configured mount points
+	var binds []string
+	for bind, _ := range runner.Container.Mounts {
+		binds = append(binds, bind)
+	}
+	sort.Strings(binds)
+
+	for _, bind := range binds {
+		mnt := runner.Container.Mounts[bind]
+
+		bindSuffix := strings.TrimPrefix(bind, runner.Container.OutputPath)
+
+		if bindSuffix == bind || len(bindSuffix) <= 0 {
+			// either doesn't start with OutputPath or is OutputPath itself
+			continue
+		}
+
+		if strings.Index(bindSuffix, "/") != 0 {
+			return fmt.Errorf("Expected bind to be of the format '%v/*' but found: %v", runner.Container.OutputPath, bind)
+		}
+
+		jsondata, err := json.Marshal(mnt.Content)
+		if err != nil {
+			return fmt.Errorf("While marshal of mount content: %v", err)
+		}
+		var content map[string]interface{}
+		err = json.Unmarshal(jsondata, &content)
+		if err != nil {
+			return fmt.Errorf("While unmarshal of mount content: %v", err)
+		}
+
+		if content["exclude_from_output"] == true {
+			continue
+		}
+
+		idx := strings.Index(mnt.PortableDataHash, "/")
+		if idx > 0 {
+			mnt.Path = mnt.PortableDataHash[idx:]
+			mnt.PortableDataHash = mnt.PortableDataHash[0 : idx-1]
+		}
+
+		// append to manifest_text
+		m, err := runner.getCollectionManifestForPath(mnt, bindSuffix)
+		if err != nil {
+			return err
+		}
+
+		manifestText = manifestText + m
+	}
+
+	// Save output
 	var response arvados.Collection
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{
@@ -666,6 +724,79 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	}
 	runner.OutputPDH = &response.PortableDataHash
 	return nil
+}
+
+// Fetch the collection for the mnt.PortableDataHash
+// Return the manifest_text fragment corresponding to the specified mnt.Path
+//  after making any required updates.
+//  Ex:
+//    If mnt.Path is not speficied,
+//      return the entire manifest_text after replacing any "." with bindSuffix
+//    If mnt.Path corresponds to one stream,
+//      return the manitest_text for that stream after replacing that stream name with bindSuffix
+//    Otherwise, check if a filename in any one stream is being sought. Return the manitest_text
+//      for that stream after replacing that stream name and file name using bindSuffix components.
+func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, bindSuffix string) (string, error) {
+	var collection arvados.Collection
+	err := runner.ArvClient.Get("collections", mnt.PortableDataHash, nil, &collection)
+	if err != nil {
+		return "", fmt.Errorf("While getting collection for %v: %v", mnt.PortableDataHash, err)
+	}
+
+	manifestText := ""
+	if mnt.Path == "" {
+		// no path specified; return the entire manifest text
+		manifestText = collection.ManifestText
+		manifestText = strings.Replace(manifestText, "./", "."+bindSuffix+"/", -1)
+		manifestText = strings.Replace(manifestText, ". ", "."+bindSuffix+" ", -1)
+	} else {
+		// either a stream or file from a stream is being sought
+		bindIdx := strings.LastIndex(bindSuffix, "/")
+		var bindSubdir, bindFileName string
+		if bindIdx >= 0 {
+			bindSubdir = bindSuffix[0:bindIdx]
+			bindFileName = bindSuffix[bindIdx+1:]
+		}
+		pathIdx := strings.LastIndex(mnt.Path, "/")
+		var pathSubdir, pathFileName string
+		if pathIdx >= 0 {
+			pathSubdir = mnt.Path[0:pathIdx]
+			pathFileName = mnt.Path[pathIdx+1:]
+		}
+		streams := strings.Split(collection.ManifestText, "\n")
+		for _, stream := range streams {
+			tokens := strings.Split(stream, " ")
+			if tokens[0] == "."+mnt.Path {
+				// path refers to this stream
+				adjustedStream := strings.Replace(stream, mnt.Path, bindSuffix, -1)
+				manifestText = adjustedStream + "\n"
+				break
+			} else {
+				// look for a matching file in this stream
+				if tokens[0] == "."+pathSubdir {
+					// path refers to a file in this stream
+					for _, token := range tokens {
+						if strings.Index(token, ":"+pathFileName) > 0 {
+							// found the file in the stream; discard all other file tokens
+							for _, t := range tokens {
+								if strings.Index(t, ":") == 0 {
+									manifestText = " " + t
+								} else {
+									break // done reading all non-file tokens
+								}
+								token = strings.Replace(token, pathFileName, bindFileName, -1)
+								manifestText = manifestText + token + "\n"
+								manifestText = strings.Replace(manifestText, pathSubdir, bindSubdir, -1)
+								break
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return manifestText, nil
 }
 
 func (runner *ContainerRunner) loadDiscoveryVars() {

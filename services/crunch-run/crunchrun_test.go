@@ -518,7 +518,7 @@ func (s *TestSuite) TestUpdateContainerCancelled(c *C) {
 
 // Used by the TestFullRun*() test below to DRY up boilerplate setup to do full
 // dress rehearsal of the Run() function, starting from a JSON container record.
-func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner) {
+func FullRunHelper(c *C, record string, extraMounts []string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner) {
 	rec := arvados.Container{}
 	err := json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
@@ -533,6 +533,15 @@ func FullRunHelper(c *C, record string, fn func(t *TestDockerClient)) (api *ArvT
 	cr.statInterval = 100 * time.Millisecond
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
+
+	if extraMounts != nil && len(extraMounts) > 0 {
+		err := cr.SetupArvMountPoint("keep")
+		c.Check(err, IsNil)
+
+		for _, m := range extraMounts {
+			os.MkdirAll(cr.ArvMountPoint+"/by_id/"+m, os.ModePerm)
+		}
+	}
 
 	err = cr.Run()
 	c.Check(err, IsNil)
@@ -560,7 +569,7 @@ func (s *TestSuite) TestFullRunHello(c *C) {
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
-}`, func(t *TestDockerClient) {
+}`, nil, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "hello world\n"))
 		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{}
@@ -582,7 +591,7 @@ func (s *TestSuite) TestCrunchstat(c *C) {
 		"output_path": "/tmp",
 		"priority": 1,
 		"runtime_constraints": {}
-	}`, func(t *TestDockerClient) {
+	}`, nil, func(t *TestDockerClient) {
 		time.Sleep(time.Second)
 		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{}
@@ -615,7 +624,7 @@ func (s *TestSuite) TestFullRunStderr(c *C) {
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
-}`, func(t *TestDockerClient) {
+}`, nil, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "hello\n"))
 		t.logWriter.Write(dockerLog(2, "world\n"))
 		t.logWriter.Close()
@@ -641,7 +650,7 @@ func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
-}`, func(t *TestDockerClient) {
+}`, nil, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.cwd+"\n"))
 		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
@@ -663,7 +672,7 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
-}`, func(t *TestDockerClient) {
+}`, nil, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.cwd+"\n"))
 		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
@@ -737,7 +746,7 @@ func (s *TestSuite) TestFullRunSetEnv(c *C) {
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
-}`, func(t *TestDockerClient) {
+}`, nil, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
@@ -805,6 +814,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 	{
 		i = 0
+		cr.ArvMountPoint = ""
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
 		cr.OutputPath = "/tmp"
@@ -819,6 +829,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 	{
 		i = 0
+		cr.ArvMountPoint = ""
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
 		cr.OutputPath = "/tmp"
@@ -838,6 +849,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 	{
 		i = 0
+		cr.ArvMountPoint = ""
 		cr.Container.Mounts = map[string]arvados.Mount{
 			"/keeptmp": {Kind: "collection", Writable: true},
 		}
@@ -855,6 +867,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 	{
 		i = 0
+		cr.ArvMountPoint = ""
 		cr.Container.Mounts = map[string]arvados.Mount{
 			"/keepinp": {Kind: "collection", PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53"},
 			"/keepout": {Kind: "collection", Writable: true},
@@ -876,6 +889,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 	{
 		i = 0
+		cr.ArvMountPoint = ""
 		cr.Container.RuntimeConstraints.KeepCacheRAM = 512
 		cr.Container.Mounts = map[string]arvados.Mount{
 			"/keepinp": {Kind: "collection", PortableDataHash: "59389a8f9ee9d399be35462a0f92541c+53"},
@@ -905,6 +919,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		{in: map[string]int{"foo": 123}, out: `{"foo":123}`},
 	} {
 		i = 0
+		cr.ArvMountPoint = ""
 		cr.Container.Mounts = map[string]arvados.Mount{
 			"/mnt/test.json": {Kind: "json", Content: test.in},
 		}
@@ -922,6 +937,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	// Read-only mount points are allowed underneath output_dir mount point
 	{
 		i = 0
+		cr.ArvMountPoint = ""
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts = map[string]arvados.Mount{
 			"/tmp":     {Kind: "tmp"},
@@ -942,6 +958,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	// Writable mount points are not allowed underneath output_dir mount point
 	{
 		i = 0
+		cr.ArvMountPoint = ""
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts = map[string]arvados.Mount{
 			"/tmp":     {Kind: "tmp"},
@@ -959,6 +976,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	// Only mount points of kind 'collection' are allowed underneath output_dir mount point
 	{
 		i = 0
+		cr.ArvMountPoint = ""
 		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts = map[string]arvados.Mount{
 			"/tmp":     {Kind: "tmp"},
@@ -986,7 +1004,7 @@ func (s *TestSuite) TestStdout(c *C) {
 		"runtime_constraints": {}
 	}`
 
-	api, _ := FullRunHelper(c, helperRecord, func(t *TestDockerClient) {
+	api, _ := FullRunHelper(c, helperRecord, nil, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
@@ -1058,7 +1076,7 @@ func (s *TestSuite) TestFullRunWithAPI(c *C) {
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {"API": true}
-}`, func(t *TestDockerClient) {
+}`, nil, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[1][17:]+"\n"))
 		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
@@ -1082,7 +1100,7 @@ func (s *TestSuite) TestFullRunSetOutput(c *C) {
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {"API": true}
-}`, func(t *TestDockerClient) {
+}`, nil, func(t *TestDockerClient) {
 		t.api.Container.Output = "d4ab34d3d4f8a72f5c4973051ae69fab+122"
 		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
@@ -1091,4 +1109,150 @@ func (s *TestSuite) TestFullRunSetOutput(c *C) {
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
 	c.Check(api.CalledWith("container.output", "d4ab34d3d4f8a72f5c4973051ae69fab+122"), NotNil)
+}
+
+func (s *TestSuite) TestStdoutWithExcludeFromOutputMountPointUnderOutputDir(c *C) {
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {
+        "/tmp": {"kind": "tmp"},
+        "/tmp/foo": {"kind": "collection",
+                     "portable_data_hash": "a3e8f74c6f101eae01fa08bfb4e49b3a+54",
+                     "content": {"exclude_from_output": true}
+        },
+        "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"}
+    },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	extraMounts := []string{"a3e8f74c6f101eae01fa08bfb4e49b3a+54"}
+
+	api, _ := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
+		t.logWriter.Close()
+		t.finish <- dockerclient.WaitResult{ExitCode: 0}
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	c.Check(api.CalledWith("collection.manifest_text", "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out\n"), NotNil)
+}
+
+func (s *TestSuite) TestStdoutWithMountPointWithNoPathUnderOutputDir(c *C) {
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {
+        "/tmp": {"kind": "tmp"},
+        "/tmp/foo": {"kind": "collection", "portable_data_hash": "a3e8f74c6f101eae01fa08bfb4e49b3a+54"},
+        "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"}
+    },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	extraMounts := []string{"a3e8f74c6f101eae01fa08bfb4e49b3a+54"}
+
+	api, _ := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
+		t.logWriter.Close()
+		t.finish <- dockerclient.WaitResult{ExitCode: 0}
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	for _, v := range api.Content {
+		if v["collection"] != nil {
+			collection := v["collection"].(arvadosclient.Dict)
+			if strings.Index(collection["name"].(string), "output") == 0 {
+				streams := strings.Split(collection["manifest_text"].(string), "\n")
+				c.Check(streams[0], Equals, "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out")
+				c.Check(streams[1], Matches, `\.\/foo.*md5sum\.txt`)
+			}
+		}
+	}
+}
+
+func (s *TestSuite) TestStdoutWithMountPointForFileUnderOutputDir(c *C) {
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {
+        "/tmp": {"kind": "tmp"},
+        "/tmp/foo": {"kind": "collection", "portable_data_hash": "a3e8f74c6f101eae01fa08bfb4e49b3a+54/md5sum.txt"},
+        "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"}
+    },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	extraMounts := []string{"a3e8f74c6f101eae01fa08bfb4e49b3a+54"}
+
+	api, _ := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
+		t.logWriter.Close()
+		t.finish <- dockerclient.WaitResult{ExitCode: 0}
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	for _, v := range api.Content {
+		if v["collection"] != nil {
+			collection := v["collection"].(arvadosclient.Dict)
+			if strings.Index(collection["name"].(string), "output") == 0 {
+				streams := strings.Split(collection["manifest_text"].(string), "\n")
+				c.Check(streams[0], Equals, "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out")
+				c.Check(streams[1], Matches, `\.\/foo.*md5sum\.txt`)
+			}
+		}
+	}
+}
+
+func (s *TestSuite) TestStdoutWithMountPointForFileAsPathUnderOutputDir(c *C) {
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {
+        "/tmp": {"kind": "tmp"},
+        "/tmp/foo": {"kind": "collection", "portable_data_hash": "a3e8f74c6f101eae01fa08bfb4e49b3a+54", "path":"/md5sum.txt"},
+        "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"}
+    },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	extraMounts := []string{"a3e8f74c6f101eae01fa08bfb4e49b3a+54"}
+
+	api, _ := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
+		t.logWriter.Close()
+		t.finish <- dockerclient.WaitResult{ExitCode: 0}
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	for _, v := range api.Content {
+		if v["collection"] != nil {
+			collection := v["collection"].(arvadosclient.Dict)
+			if strings.Index(collection["name"].(string), "output") == 0 {
+				streams := strings.Split(collection["manifest_text"].(string), "\n")
+				c.Check(streams[0], Equals, "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out")
+				c.Check(streams[1], Matches, `\.\/foo.*md5sum\.txt`)
+			}
+		}
+	}
 }
