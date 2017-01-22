@@ -698,7 +698,7 @@ func (runner *ContainerRunner) CaptureOutput() error {
 		idx := strings.Index(mnt.PortableDataHash, "/")
 		if idx > 0 {
 			mnt.Path = mnt.PortableDataHash[idx:]
-			mnt.PortableDataHash = mnt.PortableDataHash[0 : idx-1]
+			mnt.PortableDataHash = mnt.PortableDataHash[0:idx]
 		}
 
 		// append to manifest_text
@@ -750,7 +750,7 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 		manifestText = strings.Replace(manifestText, "./", "."+bindSuffix+"/", -1)
 		manifestText = strings.Replace(manifestText, ". ", "."+bindSuffix+" ", -1)
 	} else {
-		// either a stream or file from a stream is being sought
+		// either a single stream or file from a stream is being sought
 		bindIdx := strings.LastIndex(bindSuffix, "/")
 		var bindSubdir, bindFileName string
 		if bindIdx >= 0 {
@@ -779,16 +779,17 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 						if strings.Index(token, ":"+pathFileName) > 0 {
 							// found the file in the stream; discard all other file tokens
 							for _, t := range tokens {
-								if strings.Index(t, ":") == 0 {
-									manifestText = " " + t
+								if strings.Index(t, ":") == -1 {
+									manifestText += (" " + t)
 								} else {
 									break // done reading all non-file tokens
 								}
-								token = strings.Replace(token, pathFileName, bindFileName, -1)
-								manifestText = manifestText + token + "\n"
-								manifestText = strings.Replace(manifestText, pathSubdir, bindSubdir, -1)
-								break
 							}
+							manifestText = strings.Trim(manifestText, " ")
+							token = strings.Replace(token, pathFileName, bindFileName, -1)
+							manifestText += (" " + token + "\n")
+							manifestText = strings.Replace(manifestText, pathSubdir, bindSubdir, -1)
+							break
 						}
 					}
 				}

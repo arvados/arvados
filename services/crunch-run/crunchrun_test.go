@@ -1197,7 +1197,7 @@ func (s *TestSuite) TestStdoutWithMountPointForFileUnderOutputDir(c *C) {
 		"runtime_constraints": {}
 	}`
 
-	extraMounts := []string{"a3e8f74c6f101eae01fa08bfb4e49b3a+54"}
+	extraMounts := []string{"a3e8f74c6f101eae01fa08bfb4e49b3a+54/md5sum.txt"}
 
 	api, _ := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
@@ -1213,7 +1213,7 @@ func (s *TestSuite) TestStdoutWithMountPointForFileUnderOutputDir(c *C) {
 			if strings.Index(collection["name"].(string), "output") == 0 {
 				streams := strings.Split(collection["manifest_text"].(string), "\n")
 				c.Check(streams[0], Equals, "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out")
-				c.Check(streams[1], Matches, `\.\/foo.*md5sum\.txt`)
+				c.Check(streams[1], Matches, `\.\ .*\ 0:46:foo`)
 			}
 		}
 	}
@@ -1251,7 +1251,7 @@ func (s *TestSuite) TestStdoutWithMountPointForFileAsPathUnderOutputDir(c *C) {
 			if strings.Index(collection["name"].(string), "output") == 0 {
 				streams := strings.Split(collection["manifest_text"].(string), "\n")
 				c.Check(streams[0], Equals, "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out")
-				c.Check(streams[1], Matches, `\.\/foo.*md5sum\.txt`)
+				c.Check(streams[1], Matches, `\.\ .*\ 0:46:foo`)
 			}
 		}
 	}
