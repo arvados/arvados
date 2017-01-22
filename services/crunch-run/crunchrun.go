@@ -290,6 +290,12 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			needCertMount = false
 		}
 
+		if strings.HasPrefix(bind, runner.Container.OutputPath+"/") && bind != runner.Container.OutputPath+"/" {
+			if mnt.Kind != "collection" {
+				return fmt.Errorf("Only mount points of kind 'collection' are supported underneath the output_path: %v", bind)
+			}
+		}
+
 		switch {
 		case mnt.Kind == "collection":
 			var src string

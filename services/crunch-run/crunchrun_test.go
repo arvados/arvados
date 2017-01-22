@@ -919,7 +919,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		checkEmpty()
 	}
 
-	// read-only mount points are allowed underneath output_dir mount point
+	// Read-only mount points are allowed underneath output_dir mount point
 	{
 		i = 0
 		cr.Container.Mounts = make(map[string]arvados.Mount)
@@ -939,7 +939,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		checkEmpty()
 	}
 
-	// writable mount points are not allowed underneath output_dir mount point
+	// Writable mount points are not allowed underneath output_dir mount point
 	{
 		i = 0
 		cr.Container.Mounts = make(map[string]arvados.Mount)
@@ -952,6 +952,23 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		err := cr.SetupMounts()
 		c.Check(err, NotNil)
 		c.Check(err, ErrorMatches, `Writable mount points are not permitted underneath the output_path.*`)
+		cr.CleanupDirs()
+		checkEmpty()
+	}
+
+	// Only mount points of kind 'collection' are allowed underneath output_dir mount point
+	{
+		i = 0
+		cr.Container.Mounts = make(map[string]arvados.Mount)
+		cr.Container.Mounts = map[string]arvados.Mount{
+			"/tmp":     {Kind: "tmp"},
+			"/tmp/foo": {Kind: "json"},
+		}
+		cr.OutputPath = "/tmp"
+
+		err := cr.SetupMounts()
+		c.Check(err, NotNil)
+		c.Check(err, ErrorMatches, `Only mount points of kind 'collection' are supported underneath the output_path.*`)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
