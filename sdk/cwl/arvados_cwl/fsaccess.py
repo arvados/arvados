@@ -3,6 +3,7 @@ import os
 import errno
 import urlparse
 import re
+import logging
 
 import ruamel.yaml as yaml
 
@@ -13,8 +14,11 @@ import cwltool.resolver
 import arvados.util
 import arvados.collection
 import arvados.arvfile
+import arvados.errors
 
 from schema_salad.ref_resolver import DefaultFetcher
+
+logger = logging.getLogger('arvados.cwl-runner')
 
 class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
     """Implement the cwltool FsAccess interface for Arvados Collections."""
@@ -146,11 +150,17 @@ class CollectionFetcher(DefaultFetcher):
         return super(CollectionFetcher, self).fetch_text(url)
 
     def check_exists(self, url):
-        if url.startswith("keep:"):
-            return self.fsaccess.exists(url)
-        if url.startswith("arvwf:"):
-            if self.fetch_text(url):
-                return True
+        try:
+            if url.startswith("keep:"):
+                return self.fsaccess.exists(url)
+            if url.startswith("arvwf:"):
+                if self.fetch_text(url):
+                    return True
+        except arvados.errors.NotFoundError:
+            return False
+        except:
+            logger.exception("Got unexpected exception checking if file exists:")
+            return False
         return super(CollectionFetcher, self).check_exists(url)
 
     def urljoin(self, base_url, url):
