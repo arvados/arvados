@@ -156,8 +156,9 @@ def upload_instance(arvrunner, name, tool, job_order):
 
         return workflowmapper
 
-def arvados_jobs_image(arvrunner):
-    img = "arvados/jobs:"+__version__
+def arvados_jobs_image(arvrunner, img):
+    """Determine if the right arvados/jobs image version is available.  If not, try to pull and upload it."""
+
     try:
         arv_docker_get_image(arvrunner.api, {"dockerPull": img}, True, arvrunner.project_uuid)
     except Exception as e:
@@ -167,7 +168,7 @@ def arvados_jobs_image(arvrunner):
 class Runner(object):
     def __init__(self, runner, tool, job_order, enable_reuse,
                  output_name, output_tags, submit_runner_ram=0,
-                 name=None, on_error=None):
+                 name=None, on_error=None, submit_runner_image=None):
         self.arvrunner = runner
         self.tool = tool
         self.job_order = job_order
@@ -179,6 +180,7 @@ class Runner(object):
         self.output_tags = output_tags
         self.name = name
         self.on_error = on_error
+        self.jobs_image = submit_runner_image or "arvados/jobs:"+__version__
 
         if submit_runner_ram:
             self.submit_runner_ram = submit_runner_ram

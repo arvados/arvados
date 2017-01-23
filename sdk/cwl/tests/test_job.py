@@ -62,7 +62,7 @@ class TestJob(unittest.TestCase):
                         'repository': 'arvados',
                         'script': 'crunchrunner',
                         'runtime_constraints': {
-                            'docker_image': 'arvados/jobs:'+arvados_cwl.__version__,
+                            'docker_image': 'arvados/jobs',
                             'min_cores_per_node': 1,
                             'min_ram_mb_per_node': 1024,
                             'min_scratch_mb_per_node': 2048 # tmpdirSize + outdirSize
@@ -72,7 +72,7 @@ class TestJob(unittest.TestCase):
                     filters=[['repository', '=', 'arvados'],
                              ['script', '=', 'crunchrunner'],
                              ['script_version', 'in git', 'a3f2cb186e437bfce0031b024b2157b73ed2717d'],
-                             ['docker_image_locator', 'in docker', 'arvados/jobs:'+arvados_cwl.__version__]]
+                             ['docker_image_locator', 'in docker', 'arvados/jobs']]
                 )
 
     # The test passes some fields in builder.resources
@@ -130,7 +130,7 @@ class TestJob(unittest.TestCase):
                 'repository': 'arvados',
                 'script': 'crunchrunner',
                 'runtime_constraints': {
-                    'docker_image': 'arvados/jobs:'+arvados_cwl.__version__,
+                    'docker_image': 'arvados/jobs',
                     'min_cores_per_node': 3,
                     'min_ram_mb_per_node': 3000,
                     'min_scratch_mb_per_node': 5024, # tmpdirSize + outdirSize
@@ -141,7 +141,7 @@ class TestJob(unittest.TestCase):
             filters=[['repository', '=', 'arvados'],
                      ['script', '=', 'crunchrunner'],
                      ['script_version', 'in git', 'a3f2cb186e437bfce0031b024b2157b73ed2717d'],
-                     ['docker_image_locator', 'in docker', 'arvados/jobs:'+arvados_cwl.__version__]])
+                     ['docker_image_locator', 'in docker', 'arvados/jobs']])
 
     @mock.patch("arvados.collection.CollectionReader")
     def test_done(self, reader):
@@ -295,14 +295,14 @@ class TestWorkflow(unittest.TestCase):
                 'runtime_constraints': {
                     'min_scratch_mb_per_node': 2048,
                     'min_cores_per_node': 1,
-                    'docker_image': 'arvados/jobs:'+arvados_cwl.__version__,
+                    'docker_image': 'arvados/jobs',
                     'min_ram_mb_per_node': 1024
                 },
                 'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'}),
             filters=[['repository', '=', 'arvados'],
                      ['script', '=', 'crunchrunner'],
                      ['script_version', 'in git', 'a3f2cb186e437bfce0031b024b2157b73ed2717d'],
-                     ['docker_image_locator', 'in docker', 'arvados/jobs:'+arvados_cwl.__version__]],
+                     ['docker_image_locator', 'in docker', 'arvados/jobs']],
             find_or_create=True)
 
         mockcollection().open().__enter__().write.assert_has_calls([mock.call(subwf)])
