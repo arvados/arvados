@@ -11,8 +11,12 @@ import (
 func main() {
 	listen := flag.String("listen", ":80", "addr:port or :port to listen on")
 	flag.Parse()
-	log.Printf("starting server at %s", *listen)
-	log.Fatal(http.ListenAndServe(*listen, stack(logger, apiOrAssets)))
+	go func() {
+		log.Printf("starting server at %s", *listen)
+		log.Fatal(http.ListenAndServe(*listen, stack(logger, apiOrAssets)))
+	}()
+	go runTasks(ctlTasks)
+	<-(chan struct{})(nil)
 }
 
 type middleware func(http.Handler) http.Handler
