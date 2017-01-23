@@ -20,6 +20,14 @@ type download struct {
 	Hash string
 }
 
+func (d *download) Children() []task {
+	return nil
+}
+
+func (d *download) ShortName() string {
+	return d.Dest
+}
+
 func (d *download) String() string {
 	return fmt.Sprintf("Download %q from %q", d.Dest, d.URL)
 }

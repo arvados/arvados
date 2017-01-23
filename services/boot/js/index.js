@@ -22,6 +22,10 @@ var checklist = [
         name: 'arvados-boot fail canary',
         api: '/api/error',
     },
+    {
+        name: 'arvados control node',
+        api: '/api/tasks/ctl',
+    },
 ]
 
 checklist.map(function(check) {

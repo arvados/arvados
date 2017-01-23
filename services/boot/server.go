@@ -63,6 +63,13 @@ func apiRoutes(http.Handler) http.Handler {
 	mux.HandleFunc("/api/ping", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{"time": time.Now().UTC()})
 	})
+	mux.HandleFunc("/api/tasks/ctl", func(w http.ResponseWriter, r *http.Request) {
+		rep, v := report(ctlTasks)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"Version": v,
+			"Tasks":   rep,
+		})
+	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(map[string]string{"error": "not found"})
