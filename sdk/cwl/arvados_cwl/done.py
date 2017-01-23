@@ -48,21 +48,44 @@ crunchstat_re = re.compile(r"^\d{4}-\d\d-\d\d_\d\d:\d\d:\d\d [a-z0-9]{5}-8i9sb-[
 timestamp_re = re.compile(r"^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d+Z) (.*)")
 
 def logtail(logcollection, logger, header, maxlen=25):
-    logtail = deque([], maxlen*len(logcollection))
+    if len(logcollection) == 0:
+        logger.info(header)
+        logger.info("  ** log is empty **")
+        return
+
     containersapi = ("crunch-run.txt" in logcollection)
+    mergelogs = {}
 
     for log in logcollection.keys():
         if not containersapi or log in ("crunch-run.txt", "stdout.txt", "stderr.txt"):
             logname = log[:-4]
+            logt = deque([], maxlen)
+            mergelogs[logname] = logt
             with logcollection.open(log) as f:
                 for l in f:
                     if containersapi:
                         g = timestamp_re.match(l)
-                        logtail.append("%s %s %s" % (g.group(1), logname, g.group(2)))
+                        logt.append((g.group(1), g.group(2)))
                     elif not crunchstat_re.match(l):
-                        logtail.append(l)
-    if len(logcollection) > 1:
-        logtail = sorted(logtail)[-maxlen:]
-    logtxt = "\n  ".join(l.strip() for l in logtail)
+                        logt.append(l)
+
+    if len(mergelogs) > 1:
+        keys = mergelogs.keys()
+        loglines = []
+        while True:
+            earliest = None
+            for k in keys:
+                if mergelogs[k]:
+                    if earliest is None or mergelogs[k][0][0] < mergelogs[earliest][0][0]:
+                        earliest = k
+            if earliest is None:
+                break
+            ts, msg = mergelogs[earliest].popleft()
+            loglines.append("%s %s %s" % (ts, earliest, msg))
+        loglines = loglines[-maxlen:]
+    else:
+        loglines = mergelogs.values()[0]
+
+    logtxt = "\n  ".join(l.strip() for l in loglines)
     logger.info(header)
     logger.info("\n  %s", logtxt)
