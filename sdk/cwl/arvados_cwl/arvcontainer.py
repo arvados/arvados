@@ -6,14 +6,14 @@ import ruamel.yaml as yaml
 
 from cwltool.errors import WorkflowException
 from cwltool.process import get_feature, UnsupportedRequirement, shortname
-from cwltool.pathmapper import adjustFiles
+from cwltool.pathmapper import adjustFiles, adjustDirObjs
 from cwltool.utils import aslist
 
 import arvados.collection
 
 from .arvdocker import arv_docker_get_image
 from . import done
-from .runner import Runner, arvados_jobs_image
+from .runner import Runner, arvados_jobs_image, packed_workflow, trim_listing
 from .fsaccess import CollectionFetcher
 
 logger = logging.getLogger('arvados.cwl-runner')
@@ -84,7 +84,7 @@ class ArvadosContainer(object):
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if not docker_req:
-            docker_req = {"dockerImageId": arvados_jobs_image(self.arvrunner)}
+            docker_req = {"dockerImageId": "arvados/jobs"}
 
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
                                                                      docker_req,
@@ -190,7 +190,7 @@ class RunnerContainer(Runner):
         the +body+ argument to container_requests().create().
         """
 
-        workflowmapper = super(RunnerContainer, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)
+        adjustDirObjs(self.job_order, trim_listing)
 
         container_req = {
             "owner_uuid": self.arvrunner.project_uuid,
@@ -199,7 +199,7 @@ class RunnerContainer(Runner):
             "cwd": "/var/spool/cwl",
             "priority": 1,
             "state": "Committed",
-            "container_image": arvados_jobs_image(self.arvrunner),
+            "container_image": arvados_jobs_image(self.arvrunner, self.jobs_image),
             "mounts": {
                 "/var/lib/cwl/cwl.input.json": {
                     "kind": "json",
@@ -222,27 +222,24 @@ class RunnerContainer(Runner):
             "properties": {}
         }
 
-        workflowcollection = workflowmapper.mapper(self.tool.tool["id"])[1]
-        if workflowcollection.startswith("keep:"):
-            workflowcollection = workflowcollection[5:workflowcollection.index('/')]
-            workflowname = os.path.basename(self.tool.tool["id"])
+        if self.tool.tool.get("id", "").startswith("keep:"):
+            sp = self.tool.tool["id"].split('/')
+            workflowcollection = sp[0][5:]
+            workflowname = "/".join(sp[1:])
             workflowpath = "/var/lib/cwl/workflow/%s" % workflowname
             container_req["mounts"]["/var/lib/cwl/workflow"] = {
                 "kind": "collection",
                 "portable_data_hash": "%s" % workflowcollection
-                }
-        elif workflowcollection.startswith("arvwf:"):
+            }
+        else:
+            packed = packed_workflow(self.arvrunner, self.tool)
             workflowpath = "/var/lib/cwl/workflow.json#main"
-            wfuuid = workflowcollection[6:workflowcollection.index("#")]
-            wfrecord = self.arvrunner.api.workflows().get(uuid=wfuuid).execute(num_retries=self.arvrunner.num_retries)
-            wfobj = yaml.safe_load(wfrecord["definition"])
-            if container_req["name"].startswith("arvwf:"):
-                container_req["name"] = wfrecord["name"]
             container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
                 "kind": "json",
-                "json": wfobj
+                "content": packed
             }
-            container_req["properties"]["template_uuid"] = wfuuid
+            if self.tool.tool.get("id", "").startswith("arvwf:"):
+                container_req["properties"]["template_uuid"] = self.tool.tool["id"][6:33]
 
         command = ["arvados-cwl-runner", "--local", "--api=containers", "--no-log-timestamps"]
         if self.output_name:
