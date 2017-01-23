@@ -124,7 +124,7 @@ def stubs(func):
                     'class': 'Directory'
                 },
                 'cwl:tool':
-                'f57578d5cfda7f70fef00cbc4b621e6b+58/workflow.cwl#main'
+                '4db32e8a15aa48ea084b2f38108f406d+60/workflow.cwl#main'
             },
             'repository': 'arvados',
             'script_version': 'master',
@@ -146,7 +146,7 @@ def stubs(func):
                               'listing': [
                                   {'basename': 'renamed.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999998+99/file1.txt'}
                               ]}},
-                        'cwl:tool': 'f57578d5cfda7f70fef00cbc4b621e6b+58/workflow.cwl#main',
+                        'cwl:tool': '4db32e8a15aa48ea084b2f38108f406d+60/workflow.cwl#main',
                         'arv:enable_reuse': True,
                         'arv:on_error': 'continue'
                     },
@@ -1121,7 +1121,7 @@ class TestTemplateInputs(unittest.TestCase):
                 },
                 'script_parameters': {
                     'cwl:tool':
-                    '5800682d508698dc9ce6d2fc618f21d8+58/workflow.cwl#main',
+                    '00e281847a33e1c0df93161d70a6fc5d+60/workflow.cwl#main',
                     'optionalFloatInput': None,
                     'fileInput': {
                         'type': 'File',

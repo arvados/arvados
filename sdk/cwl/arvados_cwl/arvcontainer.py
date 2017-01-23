@@ -129,10 +129,11 @@ class ArvadosContainer(object):
             self.uuid = response["uuid"]
             self.arvrunner.processes[self.uuid] = self
 
-            logger.info("%s %s state is %s", self.arvrunner.label(self), response["uuid"], response["state"])
-
             if response["state"] == "Final":
+                logger.info("%s reuse container %s", self.arvrunner.label(self), response["container_uuid"])
                 self.done(response)
+            else:
+                logger.info("%s %s state is %s", self.arvrunner.label(self), response["uuid"], response["state"])
         except Exception as e:
             logger.error("%s got error %s" % (self.arvrunner.label(self), str(e)))
             self.output_callback({}, "permanentFail")

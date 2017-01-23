@@ -306,7 +306,10 @@ class TestWorkflow(unittest.TestCase):
             find_or_create=True)
 
         mockcollection().open().__enter__().write.assert_has_calls([mock.call(subwf)])
-        mockcollection().open().__enter__().write.assert_has_calls([mock.call('sleeptime: 5')])
+        mockcollection().open().__enter__().write.assert_has_calls([mock.call(
+'''{
+  "sleeptime": 5
+}''')])
 
     def test_default_work_api(self):
         arvados_cwl.add_arv_hints()
