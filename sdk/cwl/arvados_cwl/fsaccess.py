@@ -129,17 +129,18 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
             return os.path.realpath(path)
 
 class CollectionFetcher(DefaultFetcher):
-    def __init__(self, cache, session, api_client=None, keep_client=None):
+    def __init__(self, cache, session, api_client=None, keep_client=None, num_retries=4):
         super(CollectionFetcher, self).__init__(cache, session)
         self.api_client = api_client
         self.fsaccess = CollectionFsAccess("", api_client=api_client, keep_client=keep_client)
+        self.num_retries = num_retries
 
     def fetch_text(self, url):
         if url.startswith("keep:"):
             with self.fsaccess.open(url, "r") as f:
                 return f.read()
         if url.startswith("arvwf:"):
-            record = self.api_client.workflows().get(uuid=url[6:]).execute()
+            record = self.api_client.workflows().get(uuid=url[6:]).execute(num_retries=self.num_retries)
             definition = record["definition"] + ('\nlabel: "%s"\n' % record["name"].replace('"', '\\"'))
             return definition
         return super(CollectionFetcher, self).fetch_text(url)
@@ -188,12 +189,12 @@ class CollectionFetcher(DefaultFetcher):
 workflow_uuid_pattern = re.compile(r'[a-z0-9]{5}-7fd4e-[a-z0-9]{15}')
 pipeline_template_uuid_pattern = re.compile(r'[a-z0-9]{5}-p5p6p-[a-z0-9]{15}')
 
-def collectionResolver(api_client, document_loader, uri):
+def collectionResolver(api_client, document_loader, uri, num_retries=4):
     if workflow_uuid_pattern.match(uri):
         return "arvwf:%s#main" % (uri)
 
     if pipeline_template_uuid_pattern.match(uri):
-        pt = api_client.pipeline_templates().get(uuid=uri).execute()
+        pt = api_client.pipeline_templates().get(uuid=uri).execute(num_retries=num_retries)
         return "keep:" + pt["components"].values()[0]["script_parameters"]["cwl:tool"]
 
     p = uri.split("/")

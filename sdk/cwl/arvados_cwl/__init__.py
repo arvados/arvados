@@ -713,6 +713,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
                                                     keep_client=keep_client),
                              fetcher_constructor=partial(CollectionFetcher,
                                                          api_client=api_client,
-                                                         keep_client=keep_client),
-                             resolver=partial(collectionResolver, api_client),
+                                                         keep_client=keep_client,
+                                                         num_retries=runner.num_retries),
+                             resolver=partial(collectionResolver, api_client, num_retries=runner.num_retries),
                              logger_handler=arvados.log_handler)
