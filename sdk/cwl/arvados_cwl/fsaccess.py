@@ -139,7 +139,9 @@ class CollectionFetcher(DefaultFetcher):
             with self.fsaccess.open(url, "r") as f:
                 return f.read()
         if url.startswith("arvwf:"):
-            return self.api_client.workflows().get(uuid=url[6:]).execute()["definition"]
+            record = self.api_client.workflows().get(uuid=url[6:]).execute()
+            definition = record["definition"] + ('\nlabel: "%s"\n' % record["name"].replace('"', '\\"'))
+            return definition
         return super(CollectionFetcher, self).fetch_text(url)
 
     def check_exists(self, url):
