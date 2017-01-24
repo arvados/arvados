@@ -67,7 +67,7 @@ class Arvados::V1::QueryTest < ActionController::TestCase
   end
 
   test 'do not count items_available if count=none' do
-    @controller = Arvados::V1::SpecimensController.new
+    @controller = Arvados::V1::LinksController.new
     authorize_with :active
     get :index, {
       count: 'none',
@@ -78,7 +78,7 @@ class Arvados::V1::QueryTest < ActionController::TestCase
 
   [{}, {count: nil}, {count: ''}, {count: 'exact'}].each do |params|
     test "count items_available if params=#{params.inspect}" do
-      @controller = Arvados::V1::SpecimensController.new
+      @controller = Arvados::V1::LinksController.new
       authorize_with :active
       get :index, params
       assert_response(:success)
@@ -87,7 +87,7 @@ class Arvados::V1::QueryTest < ActionController::TestCase
   end
 
   test 'error if count=bogus' do
-    @controller = Arvados::V1::SpecimensController.new
+    @controller = Arvados::V1::LinksController.new
     authorize_with :active
     get :index, {
       count: 'bogus',
