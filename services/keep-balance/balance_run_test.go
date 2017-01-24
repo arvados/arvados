@@ -138,7 +138,9 @@ func (s *stubServer) serveCollectionsButSkipOne() *reqTracker {
 		rt.Add(r)
 		if strings.Contains(r.Form.Get("filters"), `"modified_at","\u003c="`) {
 			io.WriteString(w, `{"items_available":3,"items":[]}`)
-		} else if strings.Contains(r.Form.Get("filters"), `"modified_at","\u003e="`) {
+		} else if strings.Contains(r.Form.Get("filters"), `"modified_at","\u003e`) {
+			io.WriteString(w, `{"items_available":0,"items":[]}`)
+		} else if strings.Contains(r.Form.Get("filters"), `"modified_at","="`) && strings.Contains(r.Form.Get("filters"), `"uuid","\u003e"`) {
 			io.WriteString(w, `{"items_available":0,"items":[]}`)
 		} else {
 			io.WriteString(w, `{"items_available":2,"items":[

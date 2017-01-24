@@ -246,12 +246,18 @@ class Arvados::V1::SchemaController < ApplicationController
                 },
                 select: {
                   type: "array",
-                  description: "Select which fields to return",
+                  description: "Select which fields to return.",
                   location: "query"
                 },
                 distinct: {
                   type: "boolean",
-                  description: "Return each distinct object",
+                  description: "Return each distinct object.",
+                  location: "query"
+                },
+                count: {
+                  type: "string",
+                  description: "Type of count to return in items_available ('none' or 'exact').",
+                  default: "exact",
                   location: "query"
                 }
               },
