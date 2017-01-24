@@ -54,13 +54,13 @@ h4. @list@
 Arguments accepted by the @list@ subcommand include:
 
 <pre>
-    --limit, -l <i>:     Maximum number of resources to return.
-   --offset, -o <i>:     Number of users to skip before first returned record.
-  --filters, -f <s>:     Conditions for filtering users.
-    --order, -r <s>:     Order in which to return matching users.
-   --select, -s <s>:     Select which fields to return
-     --distinct, -d:     Return each distinct object.
-         --no-count:     Don't count items_available.
+  -l, --limit=<i>        Maximum number of items to return. (Default: 100)
+  -o, --offset=<i>       Number of items to skip before first returned record. (Default: 0)
+  -f, --filters=<s>      Conditions for filtering items.
+  -r, --order=<s>        Order in which to return matching items.
+  -s, --select=<s>       Select which fields to return.
+  -d, --distinct         Return each distinct object.
+  -c, --count=<s>        Type of count to return in items_available ('none' or 'exact'). (Default: exact)
 </pre>
 
 The @--filters@ option takes a string describing a JSON list of filters on which the returned resources should be returned. Each filter is a three-element list of _[field, operator, value]_, where the _operator_ may be one of @=@, @<@, @<=@, @>@, @>=@, @!=@, @like@, or @ilike@.
