@@ -130,7 +130,7 @@ class ArvadosContainer(object):
             self.arvrunner.processes[self.uuid] = self
 
             if response["state"] == "Final":
-                logger.info("%s reuse container %s", self.arvrunner.label(self), response["container_uuid"])
+                logger.info("%s reused container %s", self.arvrunner.label(self), response["container_uuid"])
                 self.done(response)
             else:
                 logger.info("%s %s state is %s", self.arvrunner.label(self), response["uuid"], response["state"])

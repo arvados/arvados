@@ -141,8 +141,8 @@ class ArvadosJob(object):
 
             self.update_pipeline_component(response)
 
-            if response["state"] in ("Complete", "Failed", "Cancelled"):
-                logger.info("%s reuse job %s", self.arvrunner.label(self), response["uuid"])
+            if response["state"] == "Complete":
+                logger.info("%s reused job %s", self.arvrunner.label(self), response["uuid"])
                 with Perf(metrics, "done %s" % self.name):
                     self.done(response)
             else:
