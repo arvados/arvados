@@ -233,9 +233,10 @@ def stubs(func):
 
 
 class TestSubmit(unittest.TestCase):
+    @mock.patch("arvados_cwl.runner.arv_docker_get_image")
     @mock.patch("time.sleep")
     @stubs
-    def test_submit(self, stubs, tm):
+    def test_submit(self, stubs, tm, arvdock):
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
             ["--submit", "--no-wait", "--api=jobs", "--debug",
@@ -259,6 +260,11 @@ class TestSubmit(unittest.TestCase):
                 'name': 'submit_wf.cwl input',
             }), ensure_unique_name=True),
             mock.call().execute()])
+
+        arvdock.assert_has_calls([
+            mock.call(stubs.api, {"class": "DockerRequirement", "dockerPull": "debian:8"}, True, None),
+            mock.call(stubs.api, {'dockerPull': 'arvados/jobs:'+arvados_cwl.__version__}, True, None)
+        ])
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         stubs.api.pipeline_instances().create.assert_called_with(
