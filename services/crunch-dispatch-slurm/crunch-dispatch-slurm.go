@@ -3,6 +3,7 @@ package main
 // Dispatcher service for Crunch that submits containers to the slurm queue.
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -10,8 +11,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
 	"github.com/coreos/go-systemd/daemon"
-	"io"
-	"io/ioutil"
 	"log"
 	"math"
 	"os"
@@ -154,70 +153,31 @@ func submit(dispatcher *dispatch.Dispatcher,
 		}
 	}()
 
-	// Create the command and attach to stdin/stdout
 	cmd := sbatchCmd(container)
-	stdinWriter, stdinerr := cmd.StdinPipe()
-	if stdinerr != nil {
-		submitErr = fmt.Errorf("Error creating stdin pipe %v: %q", container.UUID, stdinerr)
-		return
-	}
 
-	stdoutReader, stdoutErr := cmd.StdoutPipe()
-	if stdoutErr != nil {
-		submitErr = fmt.Errorf("Error creating stdout pipe %v: %q", container.UUID, stdoutErr)
-		return
-	}
+	// Send a tiny script on stdin to execute the crunch-run
+	// command (slurm requires this to be a #! script)
+	cmd.Stdin = strings.NewReader(execScript(append(crunchRunCommand, container.UUID)))
 
-	stderrReader, stderrErr := cmd.StderrPipe()
-	if stderrErr != nil {
-		submitErr = fmt.Errorf("Error creating stderr pipe %v: %q", container.UUID, stderrErr)
-		return
-	}
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
 	// Mutex between squeue sync and running sbatch or scancel.
 	squeueUpdater.SlurmLock.Lock()
 	defer squeueUpdater.SlurmLock.Unlock()
 
-	log.Printf("sbatch starting: %+q", cmd.Args)
-	err := cmd.Start()
-	if err != nil {
-		submitErr = fmt.Errorf("Error starting sbatch: %v", err)
-		return
+	log.Printf("exec sbatch %+q", cmd.Args)
+	err := cmd.Run()
+	switch err.(type) {
+	case nil:
+		log.Printf("sbatch succeeded: %q", strings.TrimSpace(stdout.String()))
+		return nil
+	case *exec.ExitError:
+		return fmt.Errorf("sbatch %+q failed: %v (stderr: %q)", cmd.Args, err, stderr)
+	default:
+		return fmt.Errorf("exec failed: %v", err)
 	}
-
-	stdoutChan := make(chan []byte)
-	go func() {
-		b, _ := ioutil.ReadAll(stdoutReader)
-		stdoutReader.Close()
-		stdoutChan <- b
-		close(stdoutChan)
-	}()
-
-	stderrChan := make(chan []byte)
-	go func() {
-		b, _ := ioutil.ReadAll(stderrReader)
-		stderrReader.Close()
-		stderrChan <- b
-		close(stderrChan)
-	}()
-
-	// Send a tiny script on stdin to execute the crunch-run command
-	// slurm actually enforces that this must be a #! script
-	io.WriteString(stdinWriter, execScript(append(crunchRunCommand, container.UUID)))
-	stdinWriter.Close()
-
-	stdoutMsg := <-stdoutChan
-	stderrmsg := <-stderrChan
-
-	err = cmd.Wait()
-
-	if err != nil {
-		submitErr = fmt.Errorf("Container submission failed: %v: %v (stderr: %q)", cmd.Args, err, stderrmsg)
-		return
-	}
-
-	log.Printf("sbatch succeeded: %s", strings.TrimSpace(string(stdoutMsg)))
-	return
 }
 
 // If the container is marked as Locked, check if it is already in the slurm
