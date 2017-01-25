@@ -123,7 +123,8 @@ def upload_dependencies(arvrunner, name, document_loader,
 
 
 def upload_docker(arvrunner, tool):
-    """Visitor which uploads Docker images referenced in CommandLineTool objects."""
+    """Uploads Docker images used in CommandLineTool objects."""
+
     if isinstance(tool, CommandLineTool):
         (docker_req, docker_is_req) = get_feature(tool, "DockerRequirement")
         if docker_req:
@@ -132,6 +133,9 @@ def upload_docker(arvrunner, tool):
                 raise SourceLine(docker_req, "dockerOutputDirectory", UnsupportedRequirement).makeError(
                     "Option 'dockerOutputDirectory' of DockerRequirement not supported.")
             arv_docker_get_image(arvrunner.api, docker_req, True, arvrunner.project_uuid)
+    elif isinstance(tool, cwltool.workflow.Workflow):
+        for s in tool.steps:
+            upload_docker(arvrunner, s.embedded_tool)
 
 def packed_workflow(arvrunner, tool):
     """Create a packed workflow.
@@ -189,7 +193,8 @@ def upload_job_order(arvrunner, name, tool, job_order):
 
 def upload_workflow_deps(arvrunner, tool):
     # Ensure that Docker images needed by this workflow are available
-    tool.visit(partial(upload_docker, arvrunner))
+
+    upload_docker(arvrunner, tool)
 
     document_loader = tool.doc_loader
 
