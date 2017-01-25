@@ -215,6 +215,31 @@ def arvados_jobs_image(arvrunner, img):
         raise Exception("Docker image %s is not available\n%s" % (img, e) )
     return img
 
+def upload_workflow_collection(arvrunner, name, packed):
+    collection = arvados.collection.Collection(api_client=arvrunner.api,
+                                               keep_client=arvrunner.keep_client,
+                                               num_retries=arvrunner.num_retries)
+    with collection.open("workflow.cwl", "w") as f:
+        f.write(json.dumps(packed, indent=2, sort_keys=True, separators=(',',': ')))
+
+    filters = [["portable_data_hash", "=", collection.portable_data_hash()],
+               ["name", "like", name+"%"]]
+    if arvrunner.project_uuid:
+        filters.append(["owner_uuid", "=", arvrunner.project_uuid])
+    exists = arvrunner.api.collections().list(filters=filters).execute(num_retries=arvrunner.num_retries)
+
+    if exists["items"]:
+        logger.info("Using collection %s", exists["items"][0]["uuid"])
+    else:
+        collection.save_new(name=name,
+                            owner_uuid=arvrunner.project_uuid,
+                            ensure_unique_name=True,
+                            num_retries=arvrunner.num_retries)
+        logger.info("Uploaded to %s", collection.manifest_locator())
+
+    return collection.portable_data_hash()
+
+
 class Runner(object):
     """Base class for runner processes, which submit an instance of
     arvados-cwl-runner and wait for the final result."""

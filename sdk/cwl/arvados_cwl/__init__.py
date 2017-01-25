@@ -680,9 +680,11 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
 
     if arvargs.debug:
         logger.setLevel(logging.DEBUG)
+        logging.getLogger('arvados').setLevel(logging.DEBUG)
 
     if arvargs.quiet:
         logger.setLevel(logging.WARN)
+        logging.getLogger('arvados').setLevel(logging.WARN)
         logging.getLogger('arvados.arv-run').setLevel(logging.WARN)
 
     if arvargs.metrics:
