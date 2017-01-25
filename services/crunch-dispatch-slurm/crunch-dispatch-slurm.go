@@ -100,21 +100,16 @@ func doMain() error {
 	defer squeueUpdater.Done()
 
 	dispatcher := dispatch.Dispatcher{
-		Arv:            arv,
-		RunContainer:   run,
-		PollInterval:   time.Duration(theConfig.PollPeriod),
-		DoneProcessing: make(chan struct{})}
+		Arv:          arv,
+		RunContainer: run,
+		PollInterval: time.Duration(theConfig.PollPeriod),
+	}
 
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
 
-	err = dispatcher.RunDispatcher()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return dispatcher.Run()
 }
 
 // sbatchCmd
