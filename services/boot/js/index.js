@@ -6,49 +6,66 @@ require('./example.js')
 var m = require('mithril')
 var Stream = require('mithril/stream')
 
-var checklist = [
-    {
-        name: 'arvados-boot web gui',
-        api: null,
-        lastCheck: (new Date()).valueOf(),
-        error: Stream(null),
-        response: Stream('ok'),
-    },
-    {
-        name: 'arvados-boot web backend',
-        api: '/api/ping',
-    },
-    {
-        name: 'arvados-boot fail canary',
-        api: '/api/error',
-    },
-    {
-        name: 'arvados control node',
-        api: '/api/tasks/ctl',
-    },
-]
+var ctl = Stream({Tasks: [], Version: 0})
 
-checklist.map(function(check) {
-    if (!check.api) return
-    if (!check.response) check.response = Stream()
-    if (!check.error) check.error = Stream()
-    m.request({method: 'GET', url: check.api}).then(check.response).catch(check.error)
-})
+refresh.next = null
+refresh.xhr = null
+function refresh() {
+    const timeout = 60
+    if (refresh.xhr !== null) {
+        refresh.xhr.abort()
+        refresh.xhr = null
+    }
+    if (refresh.next !== null)
+        window.clearTimeout(refresh.next)
+    refresh.next = window.setTimeout(refresh, timeout*1000)
+    var version = ctl().Version
+    m.request({
+        method: 'GET',
+        url: '/api/tasks/ctl?timeout='+timeout+'&newerThan='+version,
+        config: function(xhr) { refresh.xhr = xhr },
+    })
+        .then(ctl)
+        .then(function() {
+            if (ctl().Version != version) {
+                // Got a new version -- assume the server is obeying
+                // newerThan, and start listening for the next version
+                // right away.
+                refresh()
+            } else {
+                if (refresh.next !== null)
+                    window.clearTimeout(refresh.next)
+                refresh.next = window.setTimeout(refresh, 5000)
+            }
+        })
+}
 
 var Home = {
     view: function(vnode) {
-        return m('.panel', checklist.map(function(check) {
-            return m('div.alert',
-                     {class: (!check.response() || check.error()) ? 'alert-danger' : 'alert-success'}, 
-                     [
-                         check.name,
-                         ': ',
-                         JSON.stringify(check.response()),
-                     ])
-        }))
+        return [
+            m('nav.navbar.navbar-toggleable-md.navbar-inverse.bg-primary',
+              m('a.navbar-brand[href=#]', 'arvados-boot'),
+              m('.collapse.navbar-collapse',
+                m('ul.navbar-nav',
+                  m('li.nav-item.active',
+                    m('a.nav-link[href=/]', {config: m.route}, 'health', m('span.sr-only', '(current)')))))),
+            m('.x-spacer', {height: '1em'}),
+            m('table.table', {style: {width: '350px'}},
+              m('tbody', ctl().Tasks.map(function(task) {
+                  return m('tr', [
+                      m('td', task.ShortName),
+                      m('td',
+                        m('span.badge',
+                          {class: task.State == 'OK' ? 'badge-success' : 'badge-danger'},
+                          task.State)),
+                  ])
+              }))),
+        ]
     }
 }
 
 m.route(document.getElementById('app'), '/', {
     '/': Home,
 })
+
+refresh()

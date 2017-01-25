@@ -12,10 +12,12 @@
     "webpack": ""
   },
   "scripts": {
-    "dev": "WEBPACK_FLAGS=-d go generate && go get ./... && $GOPATH/bin/boot -listen :${PORT:-8000}",
+    "dev": "WEBPACK_FLAGS=-d go generate && go get ./... && $GOPATH/bin/boot",
+    "dev-as-root": "WEBPACK_FLAGS=-d go generate && go get ./... && sudo $GOPATH/bin/boot",
     "test": "./node_modules/.bin/tap 'js/**/*_test.js'",
     "build": "go generate && go get ./...",
-    "start": "npm run build && $GOPATH/bin/boot -listen :${PORT:-8000}",
+    "start": "npm run build && $GOPATH/bin/boot",
+    "start-as-root": "npm run build && sudo $GOPATH/bin/boot",
     "webpack": "webpack $WEBPACK_FLAGS"
   }
 }

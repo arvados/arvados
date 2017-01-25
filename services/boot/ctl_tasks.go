@@ -8,4 +8,5 @@ var ctlTasks = []task{
 		Size: 29079005,
 		Mode: 0755,
 	},
+	&consulService{},
 }

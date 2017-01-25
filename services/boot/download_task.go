@@ -20,6 +20,8 @@ type download struct {
 	Hash string
 }
 
+func (d *download) Init(cfg *Config) {}
+
 func (d *download) Children() []task {
 	return nil
 }

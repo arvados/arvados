@@ -5,17 +5,38 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/config"
 )
 
+const defaultCfgPath = "/etc/arvados/boot/boot.yml"
+
+var cfg Config
+
 func main() {
-	listen := flag.String("listen", ":80", "addr:port or :port to listen on")
+	cfgPath := flag.String("config", defaultCfgPath, "`path` to config file")
 	flag.Parse()
+
+	if err := config.LoadFile(&cfg, *cfgPath); os.IsNotExist(err) && *cfgPath == defaultCfgPath {
+		log.Printf("WARNING: No config file specified or found, starting fresh!")
+	} else if err != nil {
+		log.Fatal(err)
+	}
+	cfg.SetDefaults()
 	go func() {
-		log.Printf("starting server at %s", *listen)
-		log.Fatal(http.ListenAndServe(*listen, stack(logger, apiOrAssets)))
+		log.Printf("starting server at %s", cfg.WebListen)
+		log.Fatal(http.ListenAndServe(cfg.WebListen, stack(logger, apiOrAssets)))
 	}()
-	go runTasks(ctlTasks)
+	go func() {
+		ticker := time.NewTicker(5 * time.Second)
+		for {
+			runTasks(&cfg, ctlTasks)
+			<-ticker.C
+		}
+	}()
 	<-(chan struct{})(nil)
 }
 
@@ -64,6 +85,13 @@ func apiRoutes(http.Handler) http.Handler {
 		json.NewEncoder(w).Encode(map[string]interface{}{"time": time.Now().UTC()})
 	})
 	mux.HandleFunc("/api/tasks/ctl", func(w http.ResponseWriter, r *http.Request) {
+		timeout := time.Minute
+		if v, err := strconv.ParseInt(r.FormValue("timeout"), 10, 64); err == nil {
+			timeout = time.Duration(v) * time.Second
+		}
+		if v, err := strconv.ParseInt(r.FormValue("newerThan"), 10, 64); err == nil {
+			TaskState.Wait(version(v), timeout, r.Context())
+		}
 		rep, v := report(ctlTasks)
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"Version": v,
