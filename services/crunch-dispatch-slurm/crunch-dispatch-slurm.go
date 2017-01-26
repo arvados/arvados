@@ -104,7 +104,7 @@ func doMain() error {
 	dispatcher := dispatch.Dispatcher{
 		Arv:            arv,
 		RunContainer:   run,
-		PollInterval:   time.Duration(theConfig.PollPeriod),
+		PollPeriod:     time.Duration(theConfig.PollPeriod),
 		MinRetryPeriod: time.Duration(theConfig.MinRetryPeriod),
 	}
 

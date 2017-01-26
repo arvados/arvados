@@ -39,7 +39,7 @@ type Dispatcher struct {
 	RunContainer func(*Dispatcher, arvados.Container, chan arvados.Container)
 
 	// Amount of time to wait between polling for updates.
-	PollInterval time.Duration
+	PollPeriod time.Duration
 
 	// Minimum time between two attempts to run the same container
 	MinRetryPeriod time.Duration
@@ -115,7 +115,7 @@ func (dispatcher *Dispatcher) getContainers(params arvadosclient.Dict, touched m
 }
 
 func (dispatcher *Dispatcher) pollContainers(stop chan struct{}) {
-	ticker := time.NewTicker(dispatcher.PollInterval)
+	ticker := time.NewTicker(dispatcher.PollPeriod)
 	defer ticker.Stop()
 
 	paramsQ := arvadosclient.Dict{

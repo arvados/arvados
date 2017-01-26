@@ -63,8 +63,8 @@ func (s *TestSuite) TestIntegration(c *C) {
 	crunchRunCommand = &echo
 
 	dispatcher := dispatch.Dispatcher{
-		Arv:          arv,
-		PollInterval: time.Second,
+		Arv:        arv,
+		PollPeriod: time.Second,
 		RunContainer: func(dispatcher *dispatch.Dispatcher,
 			container arvados.Container,
 			status chan arvados.Container) {
@@ -166,8 +166,8 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 	*crunchRunCommand = crunchCmd
 
 	dispatcher := dispatch.Dispatcher{
-		Arv:          arv,
-		PollInterval: time.Duration(1) * time.Second,
+		Arv:        arv,
+		PollPeriod: time.Duration(1) * time.Second,
 		RunContainer: func(dispatcher *dispatch.Dispatcher,
 			container arvados.Container,
 			status chan arvados.Container) {

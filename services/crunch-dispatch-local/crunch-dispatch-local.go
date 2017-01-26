@@ -58,7 +58,7 @@ func doMain() error {
 	dispatcher := dispatch.Dispatcher{
 		Arv:          arv,
 		RunContainer: run,
-		PollInterval: time.Duration(*pollInterval) * time.Second,
+		PollPeriod:   time.Duration(*pollInterval) * time.Second,
 	}
 
 	err = dispatcher.Run()
