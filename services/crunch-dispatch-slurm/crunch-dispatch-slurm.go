@@ -31,6 +31,9 @@ type Config struct {
 	//
 	// Example: []string{"crunch-run", "--cgroup-parent-subsystem=memory"}
 	CrunchRunCommand []string
+
+	// Minimum time between two attempts to run the same container
+	MinRetryPeriod arvados.Duration
 }
 
 func main() {
@@ -99,9 +102,10 @@ func doMain() error {
 	defer squeueUpdater.Done()
 
 	dispatcher := dispatch.Dispatcher{
-		Arv:          arv,
-		RunContainer: run,
-		PollInterval: time.Duration(theConfig.PollPeriod),
+		Arv:            arv,
+		RunContainer:   run,
+		PollInterval:   time.Duration(theConfig.PollPeriod),
+		MinRetryPeriod: time.Duration(theConfig.MinRetryPeriod),
 	}
 
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {

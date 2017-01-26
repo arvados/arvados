@@ -41,9 +41,14 @@ type Dispatcher struct {
 	// Amount of time to wait between polling for updates.
 	PollInterval time.Duration
 
+	// Minimum time between two attempts to run the same container
+	MinRetryPeriod time.Duration
+
 	mineMutex sync.Mutex
 	mineMap   map[string]chan arvados.Container
 	Auth      arvados.APIClientAuthorization
+
+	throttle throttle
 
 	stop chan struct{}
 }
@@ -171,6 +176,9 @@ func (dispatcher *Dispatcher) handleUpdate(container arvados.Container) {
 	}
 
 	if container.State == Queued && container.Priority > 0 {
+		if !dispatcher.throttle.Check(container.UUID) {
+			return
+		}
 		// Try to take the lock
 		if err := dispatcher.Lock(container.UUID); err != nil {
 			return
@@ -235,6 +243,7 @@ func (dispatcher *Dispatcher) Run() (err error) {
 
 	dispatcher.mineMap = make(map[string]chan arvados.Container)
 	dispatcher.stop = make(chan struct{})
+	dispatcher.throttle.hold = dispatcher.MinRetryPeriod
 	dispatcher.pollContainers(dispatcher.stop)
 	return nil
 }
