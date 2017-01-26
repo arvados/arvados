@@ -6,39 +6,36 @@ require('./example.js')
 var m = require('mithril')
 var Stream = require('mithril/stream')
 
-var ctl = Stream({Tasks: [], Version: 0})
+const refreshInterval = 5
 
-refresh.next = null
+var ctl = Stream({Tasks: [], Version: 0, Outdated: true})
+
 refresh.xhr = null
 function refresh() {
-    const timeout = 60
     if (refresh.xhr !== null) {
         refresh.xhr.abort()
         refresh.xhr = null
+        ctl().Outdated = true
+        m.redraw()
     }
-    if (refresh.next !== null)
-        window.clearTimeout(refresh.next)
-    refresh.next = window.setTimeout(refresh, timeout*1000)
-    var version = ctl().Version
     m.request({
         method: 'GET',
-        url: '/api/tasks/ctl?timeout='+timeout+'&newerThan='+version,
+        url: '/api/tasks/ctl?timeout='+refreshInterval+'&newerThan='+ctl().version,
         config: function(xhr) { refresh.xhr = xhr },
     })
-        .then(ctl)
-        .then(function() {
-            if (ctl().Version != version) {
+        .then(function(data) {
+            var isNew = data.Version != ctl().Version
+            ctl(data)
+            refresh.xhr = null
+            if (isNew)
                 // Got a new version -- assume the server is obeying
                 // newerThan, and start listening for the next version
                 // right away.
                 refresh()
-            } else {
-                if (refresh.next !== null)
-                    window.clearTimeout(refresh.next)
-                refresh.next = window.setTimeout(refresh, 5000)
-            }
         })
 }
+window.setInterval(refresh, refreshInterval*1000)
+refresh()
 
 var Home = {
     view: function(vnode) {
@@ -51,7 +48,7 @@ var Home = {
                     m('a.nav-link[href=/]', {config: m.route}, 'health', m('span.sr-only', '(current)')))))),
             m('.x-spacer', {height: '1em'}),
             m('table.table', {style: {width: '350px'}},
-              m('tbody', ctl().Tasks.map(function(task) {
+              m('tbody', {style: {opacity: ctl().Outdated ? .5 : 1}}, ctl().Tasks.map(function(task) {
                   return m('tr', [
                       m('td', task.ShortName),
                       m('td',
@@ -67,5 +64,3 @@ var Home = {
 m.route(document.getElementById('app'), '/', {
     '/': Home,
 })
-
-refresh()
