@@ -51,7 +51,11 @@ func (kc *KeepClient) ManifestFileReader(m manifest.Manifest, filename string) (
 	f := &file{
 		kc: kc,
 	}
-	return f, f.load(m, filename)
+	err := f.load(m, filename)
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
 }
 
 type file struct {
