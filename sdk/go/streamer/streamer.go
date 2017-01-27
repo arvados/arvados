@@ -37,6 +37,7 @@ package streamer
 
 import (
 	"errors"
+	"fmt"
 	"io"
 )
 
@@ -151,4 +152,30 @@ func (this *AsyncStream) Close() error {
 	close(this.subtract_reader)
 	close(this.wait_zero_readers)
 	return nil
+}
+
+func (this *StreamReader) Seek(offset int64, whence int) (int64, error) {
+	var want int64
+	switch whence {
+	case io.SeekStart:
+		want = offset
+	case io.SeekCurrent:
+		want = int64(this.offset) + offset
+	case io.SeekEnd:
+		want = int64(this.Len()) + offset
+	default:
+		return int64(this.offset), fmt.Errorf("invalid whence %d", whence)
+	}
+	if want < 0 {
+		return int64(this.offset), fmt.Errorf("attempted seek to %d", want)
+	}
+	if want > int64(this.Len()) {
+		want = int64(this.Len())
+	}
+	this.offset = int(want)
+	return want, nil
+}
+
+func (this *StreamReader) Len() uint64 {
+	return uint64(len(this.stream.buffer))
 }

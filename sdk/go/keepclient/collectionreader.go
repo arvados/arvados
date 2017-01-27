@@ -3,10 +3,10 @@ package keepclient
 import (
 	"errors"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/manifest"
+	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	"io"
 	"os"
-
-	"git.curoverse.com/arvados.git/sdk/go/manifest"
 )
 
 // A Reader implements, io.Reader, io.Seeker, and io.Closer, and has a
@@ -67,7 +67,7 @@ type file struct {
 	// current/latest segment accessed -- might or might not match pos
 	seg           *manifest.FileSegment
 	segStart      int64 // position of segment relative to file
-	segData       []byte
+	segData       *streamer.StreamReader
 	segNext       []*manifest.FileSegment
 	readaheadDone bool
 }
@@ -76,6 +76,9 @@ type file struct {
 func (f *file) Close() error {
 	f.kc = nil
 	f.segments = nil
+	if f.segData != nil {
+		f.segData.Close()
+	}
 	f.segData = nil
 	return nil
 }
@@ -88,6 +91,9 @@ func (f *file) Read(buf []byte) (int, error) {
 		// that does.
 		f.seg = nil
 		f.segStart = 0
+		if f.segData != nil {
+			f.segData.Close()
+		}
 		f.segData = nil
 		f.segNext = f.segments
 		for len(f.segNext) > 0 {
@@ -110,17 +116,17 @@ func (f *file) Read(buf []byte) (int, error) {
 		if err != nil {
 			return 0, err
 		}
-		if len(data) < f.seg.Offset+f.seg.Len {
-			return 0, fmt.Errorf("invalid segment (offset %d len %d) in %d-byte block %s", f.seg.Offset, f.seg.Len, len(data), f.seg.Locator)
+		if int(data.Len()) < f.seg.Offset+f.seg.Len {
+			return 0, fmt.Errorf("invalid segment (offset %d len %d) in %d-byte block %s", f.seg.Offset, f.seg.Len, data.Len(), f.seg.Locator)
 		}
-		f.segData = data[f.seg.Offset : f.seg.Offset+f.seg.Len]
+		f.segData = data
 	}
 	// dataOff and dataLen denote a portion of f.segData
 	// corresponding to a portion of the file at f.offset.
 	dataOff := int(f.offset - f.segStart)
-	dataLen := f.seg.Len - dataOff
+	dataLen := f.seg.Len - (f.seg.Offset + dataOff)
 
-	if !f.readaheadDone && len(f.segNext) > 0 && f.offset >= 1048576 && dataOff+dataLen > len(f.segData)/16 {
+	if !f.readaheadDone && len(f.segNext) > 0 && f.offset >= 1048576 && uint64(dataOff+dataLen) > f.segData.Len()/16 {
 		// If we have already read more than just the first
 		// few bytes of this file, and we have already
 		// consumed a noticeable portion of this segment, and
@@ -136,9 +142,10 @@ func (f *file) Read(buf []byte) (int, error) {
 	if n > dataLen {
 		n = dataLen
 	}
-	copy(buf[:n], f.segData[dataOff:dataOff+n])
-	f.offset += int64(n)
-	return n, nil
+	f.segData.Seek(int64(f.seg.Offset+dataOff), io.SeekStart)
+	count, err := f.segData.Read(buf[:n])
+	f.offset += int64(count)
+	return count, err
 }
 
 // Seek implements io.Seeker.
