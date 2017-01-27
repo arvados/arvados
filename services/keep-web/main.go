@@ -8,7 +8,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"github.com/coreos/go-systemd/daemon"
-	"github.com/ghodss/yaml"
 )
 
 var (
@@ -82,12 +81,7 @@ func main() {
 	}
 
 	if *dumpConfig {
-		y, err := yaml.Marshal(cfg)
-		if err != nil {
-			log.Fatal(err)
-		}
-		os.Stdout.Write(y)
-		os.Exit(0)
+		log.Fatal(config.DumpAndExit(cfg))
 	}
 
 	os.Setenv("ARVADOS_API_HOST", cfg.Client.APIHost)

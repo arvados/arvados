@@ -11,7 +11,6 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
-	"github.com/ghodss/yaml"
 )
 
 const defaultConfigPath = "/etc/arvados/keep-balance/keep-balance.yml"
@@ -91,12 +90,7 @@ func main() {
 	}
 
 	if *dumpConfig {
-		y, err := yaml.Marshal(config)
-		if err != nil {
-			log.Fatal(err)
-		}
-		os.Stdout.Write(y)
-		os.Exit(0)
+		log.Fatal(config.DumpAndExit(theConfig))
 	}
 
 	if *debugFlag {

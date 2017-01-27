@@ -19,7 +19,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/config"
 	"git.curoverse.com/arvados.git/sdk/go/dispatch"
 	"github.com/coreos/go-systemd/daemon"
-	"github.com/ghodss/yaml"
 )
 
 // Config used by crunch-dispatch-slurm
@@ -96,12 +95,7 @@ func doMain() error {
 	}
 
 	if *dumpConfig {
-		y, err := yaml.Marshal(theConfig)
-		if err != nil {
-			log.Fatal(err)
-		}
-		os.Stdout.Write(y)
-		os.Exit(0)
+		log.Fatal(config.DumpAndExit(theConfig))
 	}
 
 	arv, err := arvadosclient.MakeArvadosClient()

@@ -85,12 +85,7 @@ func main() {
 	}
 
 	if *dumpConfig {
-		y, err := yaml.Marshal(cfg)
-		if err != nil {
-			log.Fatal(err)
-		}
-		os.Stdout.Write(y)
-		os.Exit(0)
+		log.Fatal(config.DumpAndExit(cfg))
 	}
 
 	arv, err := arvadosclient.New(&cfg.Client)
