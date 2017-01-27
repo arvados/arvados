@@ -19,7 +19,7 @@ func (s *IntegrationSuite) TestRanges(c *check.C) {
 		for i := 0; i < blocksize; i++ {
 			testdata[i] = byte(' ')
 		}
-		copy(testdata[:3], []byte("foo"))
+		copy(testdata[1:4], []byte("foo"))
 		arv, err := arvadosclient.MakeArvadosClient()
 		c.Assert(err, check.Equals, nil)
 		arv.ApiToken = arvadostest.ActiveToken
@@ -27,12 +27,10 @@ func (s *IntegrationSuite) TestRanges(c *check.C) {
 		c.Assert(err, check.Equals, nil)
 		loc, _, err := kc.PutB(testdata[:])
 		c.Assert(err, check.Equals, nil)
+		loc2, _, err := kc.PutB([]byte{'Z'})
+		c.Assert(err, check.Equals, nil)
 
-		mtext := "."
-		for i := 0; i < 4; i++ {
-			mtext = mtext + " " + loc
-		}
-		mtext = mtext + fmt.Sprintf(" 0:%d:testdata.bin\n", blocksize*4)
+		mtext := fmt.Sprintf(". %s %s %s %s %s 1:%d:testdata.bin 0:1:space.txt\n", loc, loc, loc, loc, loc2, blocksize*4)
 		coll := map[string]interface{}{}
 		err = arv.Create("collections",
 			map[string]interface{}{
@@ -53,17 +51,18 @@ func (s *IntegrationSuite) TestRanges(c *check.C) {
 		expectBody string
 	}{
 		{"0-2", true, "foo"},
+		{"-2", true, " Z"},
 		{"1-4", true, "oo  "},
 		{"z-y", false, ""},
 		{"1000000-1000003", true, "foo "},
 		{"999999-1000003", true, " foo "},
 		{"2000000-2000003", true, "foo "},
 		{"1999999-2000002", true, " foo"},
-		{"3999998-3999999", true, "  "},
-		{"3999998-4000004", true, "  "},
-		{"3999998-", true, "  "},
+		{"3999998-3999999", true, " Z"},
+		{"3999998-4000004", true, " Z"},
+		{"3999998-", true, " Z"},
 	} {
-		c.Logf("%+v", trial)
+		c.Logf("trial: %#v", trial)
 		resp := httptest.NewRecorder()
 		req := &http.Request{
 			Method:     "GET",
@@ -79,10 +78,13 @@ func (s *IntegrationSuite) TestRanges(c *check.C) {
 		if trial.expectObey {
 			c.Check(resp.Code, check.Equals, http.StatusPartialContent)
 			c.Check(resp.Body.Len(), check.Equals, len(trial.expectBody))
-			c.Check(resp.Body.String()[:len(trial.expectBody)], check.Equals, trial.expectBody)
+			if resp.Body.Len() > 1000 {
+				c.Check(resp.Body.String()[:1000]+"[...]", check.Equals, trial.expectBody)
+			} else {
+				c.Check(resp.Body.String(), check.Equals, trial.expectBody)
+			}
 		} else {
-			c.Check(resp.Code, check.Equals, http.StatusOK)
-			c.Check(resp.Body.Len(), check.Equals, blocksize*4)
+			c.Check(resp.Code, check.Equals, http.StatusRequestedRangeNotSatisfiable)
 		}
 	}
 }

@@ -8,10 +8,11 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
+	"path"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
@@ -346,40 +347,18 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", t)
 		}
 	}
-	if rdr, ok := rdr.(keepclient.ReadCloserWithLen); ok {
+	if rdr, ok := rdr.(keepclient.Reader); ok {
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", rdr.Len()))
 	}
 
 	applyContentDispositionHdr(w, r, filename[basenamePos:], attachment)
-	rangeRdr, statusCode := applyRangeHdr(w, r, rdr)
 
-	w.WriteHeader(statusCode)
-	_, err = io.Copy(w, rangeRdr)
+	modstr, _ := collection["modified_at"].(string)
+	modtime, err := time.Parse(time.RFC3339Nano, modstr)
 	if err != nil {
-		statusCode, statusText = http.StatusBadGateway, err.Error()
+		modtime = time.Now()
 	}
-}
-
-var rangeRe = regexp.MustCompile(`^bytes=0-([0-9]*)$`)
-
-func applyRangeHdr(w http.ResponseWriter, r *http.Request, rdr keepclient.ReadCloserWithLen) (io.Reader, int) {
-	w.Header().Set("Accept-Ranges", "bytes")
-	hdr := r.Header.Get("Range")
-	fields := rangeRe.FindStringSubmatch(hdr)
-	if fields == nil {
-		return rdr, http.StatusOK
-	}
-	rangeEnd, err := strconv.ParseInt(fields[1], 10, 64)
-	if err != nil {
-		// Empty or too big for int64 == send entire content
-		return rdr, http.StatusOK
-	}
-	if uint64(rangeEnd) >= rdr.Len() {
-		return rdr, http.StatusOK
-	}
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", rangeEnd+1))
-	w.Header().Set("Content-Range", fmt.Sprintf("bytes %d-%d/%d", 0, rangeEnd, rdr.Len()))
-	return &io.LimitedReader{R: rdr, N: rangeEnd + 1}, http.StatusPartialContent
+	http.ServeContent(w, r, path.Base(filename), modtime, rdr)
 }
 
 func applyContentDispositionHdr(w http.ResponseWriter, r *http.Request, filename string, isAttachment bool) {
