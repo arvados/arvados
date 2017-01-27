@@ -72,6 +72,7 @@ type file struct {
 	readaheadDone bool
 }
 
+// Close implements io.Closer.
 func (f *file) Close() error {
 	f.kc = nil
 	f.segments = nil
@@ -79,6 +80,7 @@ func (f *file) Close() error {
 	return nil
 }
 
+// Read implements io.Reader.
 func (f *file) Read(buf []byte) (int, error) {
 	if f.seg == nil || f.offset < f.segStart || f.offset >= f.segStart+int64(f.seg.Len) {
 		// f.seg does not cover the current read offset
@@ -113,16 +115,19 @@ func (f *file) Read(buf []byte) (int, error) {
 		}
 		f.segData = data[f.seg.Offset : f.seg.Offset+f.seg.Len]
 	}
+	// dataOff and dataLen denote a portion of f.segData
+	// corresponding to a portion of the file at f.offset.
 	dataOff := int(f.offset - f.segStart)
 	dataLen := f.seg.Len - dataOff
 
-	if !f.readaheadDone && len(f.segNext) > 0 && f.offset >= 1048576 && dataOff+dataLen >= 1048576 {
+	if !f.readaheadDone && len(f.segNext) > 0 && f.offset >= 1048576 && dataOff+dataLen > len(f.segData)/16 {
 		// If we have already read more than just the first
-		// few bytes of this file, and more than just a few
-		// bytes of this block, and there's more data for this
-		// file in the next segment/block ... then there's a
-		// good chance we are going to want the next block
-		// soon. Start getting it into the cache now.
+		// few bytes of this file, and we have already
+		// consumed a noticeable portion of this segment, and
+		// there's more data for this file in the next segment
+		// ... then there's a good chance we are going to need
+		// the data for that next segment soon. Start getting
+		// it into the cache now.
 		go f.kc.cache().Get(f.kc, f.segNext[0].Locator)
 		f.readaheadDone = true
 	}
@@ -136,6 +141,7 @@ func (f *file) Read(buf []byte) (int, error) {
 	return n, nil
 }
 
+// Seek implements io.Seeker.
 func (f *file) Seek(offset int64, whence int) (int64, error) {
 	var want int64
 	switch whence {
@@ -158,6 +164,7 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 	return f.offset, nil
 }
 
+// Len returns the file size in bytes.
 func (f *file) Len() uint64 {
 	return uint64(f.size)
 }
