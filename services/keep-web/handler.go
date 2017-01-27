@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"html"
 	"io"
-	"mime"
 	"net/http"
 	"net/url"
 	"os"
@@ -336,29 +335,15 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}
 	defer rdr.Close()
 
-	basenamePos := strings.LastIndex(filename, "/")
-	if basenamePos < 0 {
-		basenamePos = 0
-	}
-	extPos := strings.LastIndex(filename, ".")
-	if extPos > basenamePos {
-		// Now extPos is safely >= 0.
-		if t := mime.TypeByExtension(filename[extPos:]); t != "" {
-			w.Header().Set("Content-Type", t)
-		}
-	}
-	if rdr, ok := rdr.(keepclient.Reader); ok {
-		w.Header().Set("Content-Length", fmt.Sprintf("%d", rdr.Len()))
-	}
-
-	applyContentDispositionHdr(w, r, filename[basenamePos:], attachment)
+	basename := path.Base(filename)
+	applyContentDispositionHdr(w, r, basename, attachment)
 
 	modstr, _ := collection["modified_at"].(string)
 	modtime, err := time.Parse(time.RFC3339Nano, modstr)
 	if err != nil {
 		modtime = time.Now()
 	}
-	http.ServeContent(w, r, path.Base(filename), modtime, rdr)
+	http.ServeContent(w, r, basename, modtime, rdr)
 }
 
 func applyContentDispositionHdr(w http.ResponseWriter, r *http.Request, filename string, isAttachment bool) {
