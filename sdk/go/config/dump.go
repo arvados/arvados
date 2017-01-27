@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 
 	"github.com/ghodss/yaml"
@@ -22,4 +23,5 @@ func DumpAndExit(cfg interface{}) error {
 		return err
 	}
 	os.Exit(0)
+	return errors.New("exit failed!?")
 }
