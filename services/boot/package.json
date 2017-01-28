@@ -14,6 +14,7 @@
   "scripts": {
     "dev": "WEBPACK_FLAGS=-d go generate && go get ./... && $GOPATH/bin/boot",
     "dev-as-root": "WEBPACK_FLAGS=-d go generate && go get ./... && sudo $GOPATH/bin/boot",
+    "dev-docker": "WEBPACK_FLAGS=-d go generate && go get ./... && docker build --tag=arvados-boot-test-runit testimage_runit && docker run -it --rm --volume=${GOPATH}/bin/boot:/usr/bin/arvados-boot:ro arvados-boot-test-runit",
     "test": "./node_modules/.bin/tap 'js/**/*_test.js'",
     "build": "go generate && go get ./...",
     "start": "npm run build && $GOPATH/bin/boot",

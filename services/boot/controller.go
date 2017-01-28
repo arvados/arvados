@@ -7,7 +7,13 @@ import (
 type controller struct{}
 
 func (c *controller) Boot(ctx context.Context) error {
-	return Concurrent{
-		consul,
+	return Series{
+		Concurrent{
+			cfg(ctx),
+			installCerts,
+		},
+		Concurrent{
+			consul,
+		},
 	}.Boot(ctx)
 }

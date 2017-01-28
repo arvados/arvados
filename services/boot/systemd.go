@@ -1,23 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 )
-
-type supervisor interface {
-	Running() (bool, error)
-	Start() error
-}
-
-func newSupervisor(name, cmd string, args ...string) supervisor {
-	return &systemdUnit{
-		name: name,
-		cmd:  cmd,
-		args: args,
-	}
-}
 
 type systemdUnit struct {
 	name string
@@ -25,7 +13,7 @@ type systemdUnit struct {
 	args []string
 }
 
-func (u *systemdUnit) Start() error {
+func (u *systemdUnit) Start(ctx context.Context) error {
 	cmd := exec.Command("systemd-run", append([]string{"--unit=arvados-" + u.name, u.cmd}, u.args...)...)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
@@ -36,8 +24,12 @@ func (u *systemdUnit) Start() error {
 	return err
 }
 
-func (u *systemdUnit) Running() (bool, error) {
-	cmd := exec.Command("systemctl", "status", "arvados-"+u.name)
+func (u *systemdUnit) Running(ctx context.Context) (bool, error) {
+	return runStatusCmd("systemctl", "status", "arvados-"+u.name)
+}
+
+func runStatusCmd(prog string, args ...string) (bool, error) {
+	cmd := exec.Command(prog, args...)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()

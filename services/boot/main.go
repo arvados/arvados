@@ -35,7 +35,11 @@ func main() {
 		ticker := time.NewTicker(5 * time.Second)
 		for {
 			err := ctl.Boot(withCfg(context.Background(), &cfg))
-			log.Printf("ctl.Boot: %v", err)
+			if err != nil {
+				log.Printf("controller boot failed: %v", err)
+			} else {
+				log.Printf("controller boot OK")
+			}
 			<-ticker.C
 		}
 	}()
@@ -103,7 +107,7 @@ func (cfg *Config) apiRoutes(http.Handler) http.Handler {
 			// "Tasks":   rep,
 			// TODO:
 			"Version": 1,
-			"Tasks": []int{},
+			"Tasks":   []int{},
 		})
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

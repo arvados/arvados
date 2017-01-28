@@ -1,5 +1,11 @@
 package main
 
+import (
+	"context"
+	"fmt"
+	"os"
+)
+
 type Config struct {
 	// 5 alphanumeric chars. Must be either xx*, yy*, zz*, or
 	// globally unique.
@@ -26,8 +32,24 @@ type Config struct {
 		Listen string
 	}
 
-	UsrDir  string
 	DataDir string
+	UsrDir  string
+
+	RunitSvDir string
+}
+
+func (c *Config) Boot(ctx context.Context) error {
+	for _, path := range []string{c.DataDir, c.UsrDir, c.UsrDir + "/bin"} {
+		if fi, err := os.Stat(path); err != nil {
+			err = os.MkdirAll(path, 0755)
+			if err != nil {
+				return err
+			}
+		} else if !fi.IsDir() {
+			return fmt.Errorf("%s: is not a directory", path)
+		}
+	}
+	return nil
 }
 
 func (c *Config) SetDefaults() {
@@ -52,7 +74,10 @@ func (c *Config) SetDefaults() {
 		c.DataDir = "/var/lib/arvados"
 	}
 	if c.UsrDir == "" {
-		c.DataDir = "/usr/local/arvados"
+		c.UsrDir = "/usr/local/arvados"
+	}
+	if c.RunitSvDir == "" {
+		c.RunitSvDir = "/etc/sv"
 	}
 	if c.WebGUI.Listen == "" {
 		c.WebGUI.Listen = "localhost:18000"

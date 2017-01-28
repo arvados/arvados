@@ -34,20 +34,24 @@ func (cb *consulBooter) Boot(ctx context.Context) error {
 	if cb.check(ctx) == nil {
 		return nil
 	}
+	dataDir := cfg.DataDir + "/consul"
+	if err := os.MkdirAll(dataDir, 0700); err != nil {
+		return err
+	}
 	args := []string{
 		"agent",
 		"-server",
 		"-advertise=127.0.0.1",
-		"-data-dir", cfg.DataDir + "/consul",
+		"-data-dir", dataDir,
 		"-bootstrap-expect", fmt.Sprintf("%d", len(cfg.ControlHosts))}
-	supervisor := newSupervisor("consul", bin, args...)
-	running, err := supervisor.Running()
+	supervisor := newSupervisor(ctx, "consul", bin, args...)
+	running, err := supervisor.Running(ctx)
 	if err != nil {
 		return err
 	}
 	if !running {
 		defer feedbackf(ctx, "starting consul service")()
-		err = supervisor.Start()
+		err = supervisor.Start(ctx)
 		if err != nil {
 			return fmt.Errorf("starting consul: %s", err)
 		}
