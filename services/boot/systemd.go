@@ -7,26 +7,26 @@ import (
 )
 
 type supervisor interface {
-	Check() (bool, error)
+	Running() (bool, error)
 	Start() error
 }
 
 func newSupervisor(name, cmd string, args ...string) supervisor {
 	return &systemdUnit{
 		name: name,
-		cmd: cmd,
+		cmd:  cmd,
 		args: args,
 	}
 }
 
 type systemdUnit struct {
 	name string
-	cmd string
+	cmd  string
 	args []string
 }
 
 func (u *systemdUnit) Start() error {
-	cmd := exec.Command("systemd-run", append([]string{"--unit=arvados-"+u.name, u.cmd}, u.args...)...)
+	cmd := exec.Command("systemd-run", append([]string{"--unit=arvados-" + u.name, u.cmd}, u.args...)...)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 	err := cmd.Run()
@@ -36,7 +36,7 @@ func (u *systemdUnit) Start() error {
 	return err
 }
 
-func (u *systemdUnit) Check() (bool, error) {
+func (u *systemdUnit) Running() (bool, error) {
 	cmd := exec.Command("systemctl", "status", "arvados-"+u.name)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr

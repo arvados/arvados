@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"log"
@@ -14,12 +15,11 @@ import (
 
 const defaultCfgPath = "/etc/arvados/boot/boot.yml"
 
-var cfg Config
-
 func main() {
 	cfgPath := flag.String("config", defaultCfgPath, "`path` to config file")
 	flag.Parse()
 
+	var cfg Config
 	if err := config.LoadFile(&cfg, *cfgPath); os.IsNotExist(err) && *cfgPath == defaultCfgPath {
 		log.Printf("WARNING: No config file specified or found, starting fresh!")
 	} else if err != nil {
@@ -27,13 +27,15 @@ func main() {
 	}
 	cfg.SetDefaults()
 	go func() {
-		log.Printf("starting server at %s", cfg.WebListen)
-		log.Fatal(http.ListenAndServe(cfg.WebListen, stack(logger, apiOrAssets)))
+		log.Printf("starting server at %s", cfg.WebGUI.Listen)
+		log.Fatal(http.ListenAndServe(cfg.WebGUI.Listen, stack(cfg.logger, cfg.apiOrAssets)))
 	}()
 	go func() {
+		var ctl Booter = &controller{}
 		ticker := time.NewTicker(5 * time.Second)
 		for {
-			runTasks(&cfg, ctlTasks)
+			err := ctl.Boot(withCfg(context.Background(), &cfg))
+			log.Printf("ctl.Boot: %v", err)
 			<-ticker.C
 		}
 	}()
@@ -53,7 +55,7 @@ func stack(m ...middleware) http.Handler {
 }
 
 // logs each request.
-func logger(next http.Handler) http.Handler {
+func (cfg *Config) logger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t := time.Now()
 		next.ServeHTTP(w, r)
@@ -63,15 +65,15 @@ func logger(next http.Handler) http.Handler {
 
 // dispatches /api/ to the API stack, everything else to the static
 // assets stack.
-func apiOrAssets(next http.Handler) http.Handler {
+func (cfg *Config) apiOrAssets(next http.Handler) http.Handler {
 	mux := http.NewServeMux()
-	mux.Handle("/api/", stack(apiHeaders, apiRoutes))
+	mux.Handle("/api/", stack(cfg.apiHeaders, cfg.apiRoutes))
 	mux.Handle("/", http.FileServer(assetFS()))
 	return mux
 }
 
 // adds response headers suitable for API responses
-func apiHeaders(next http.Handler) http.Handler {
+func (cfg *Config) apiHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		next.ServeHTTP(w, r)
@@ -79,23 +81,29 @@ func apiHeaders(next http.Handler) http.Handler {
 }
 
 // dispatches API routes
-func apiRoutes(http.Handler) http.Handler {
+func (cfg *Config) apiRoutes(http.Handler) http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/ping", func(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{"time": time.Now().UTC()})
 	})
-	mux.HandleFunc("/api/tasks/ctl", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/status/controller", func(w http.ResponseWriter, r *http.Request) {
 		timeout := time.Minute
 		if v, err := strconv.ParseInt(r.FormValue("timeout"), 10, 64); err == nil {
 			timeout = time.Duration(v) * time.Second
 		}
 		if v, err := strconv.ParseInt(r.FormValue("newerThan"), 10, 64); err == nil {
-			TaskState.Wait(version(v), timeout, r.Context())
+			log.Println(v, timeout)
+			// TODO: wait
+			// TaskState.Wait(version(v), timeout, r.Context())
 		}
-		rep, v := report(ctlTasks)
+		// TODO:
+		// rep, v := report(ctlTasks)
 		json.NewEncoder(w).Encode(map[string]interface{}{
-			"Version": v,
-			"Tasks":   rep,
+			// "Version": v,
+			// "Tasks":   rep,
+			// TODO:
+			"Version": 1,
+			"Tasks": []int{},
 		})
 	})
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

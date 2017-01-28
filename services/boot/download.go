@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -20,39 +21,22 @@ type download struct {
 	Hash string
 }
 
-func (d *download) Init(cfg *Config) {}
-
-func (d *download) Children() []task {
-	return nil
-}
-
-func (d *download) ShortName() string {
-	return d.Dest
-}
-
-func (d *download) String() string {
-	return fmt.Sprintf("Download %q from %q", d.Dest, d.URL)
-}
-
-func (d *download) Check() error {
+func (d *download) Boot(ctx context.Context) error {
 	fi, err := os.Stat(d.Dest)
-	if err != nil {
+	if os.IsNotExist(err) {
+		// fall through to fix
+	} else if err != nil {
 		return err
+	} else if d.Size > 0 && fi.Size() != d.Size {
+		err = fmt.Errorf("Size mismatch: %q is %d bytes, expected %d", d.Dest, fi.Size(), d.Size)
+	} else if d.Mode > 0 && fi.Mode() != d.Mode {
+		err = fmt.Errorf("Mode mismatch: %q is %s, expected %s", d.Dest, fi.Mode(), d.Mode)
+	} else {
+		return nil
 	}
-	if d.Size > 0 && fi.Size() != d.Size {
-		return fmt.Errorf("Size mismatch: %q is %d bytes, expected %d", d.Dest, fi.Size(), d.Size)
-	}
-	if d.Mode > 0 && fi.Mode() != d.Mode {
-		return fmt.Errorf("Mode mismatch: %q is %s, expected %s", d.Dest, fi.Mode(), d.Mode)
-	}
-	return nil
-}
 
-func (d *download) CanFix() bool {
-	return true
-}
+	defer feedbackf(ctx, "downloading %s", d.URL)()
 
-func (d *download) Fix() error {
 	out, err := ioutil.TempFile(path.Dir(d.Dest), path.Base(d.Dest))
 	if err != nil {
 		return err

@@ -50,7 +50,7 @@ var Home = {
             m('table.table', {style: {width: '350px'}},
               m('tbody', {style: {opacity: ctl().Outdated ? .5 : 1}}, ctl().Tasks.map(function(task) {
                   return m('tr', [
-                      m('td', task.ShortName),
+                      m('td', task.Name),
                       m('td',
                         m('span.badge',
                           {class: task.State == 'OK' ? 'badge-success' : 'badge-danger'},
