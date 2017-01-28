@@ -15,27 +15,27 @@ type Config struct {
 	// in production. System functions only when a majority are
 	// alive.
 	ControlHosts []string
+	Ports        portsConfig
+	WebGUI       webguiConfig
+	DataDir      string
+	UsrDir       string
+	RunitSvDir   string
+}
 
-	ConsulPorts struct {
-		DNS     int
-		HTTP    int
-		HTTPS   int
-		RPC     int
-		SerfLAN int `json:"Serf_LAN"`
-		SerfWAN int `json:"Serf_WAN"`
-		Server  int
-	}
+type portsConfig struct {
+	ConsulDNS     int
+	ConsulHTTP    int
+	ConsulHTTPS   int
+	ConsulRPC     int
+	ConsulSerfLAN int `json:"Serf_LAN"`
+	ConsulSerfWAN int `json:"Serf_WAN"`
+	ConsulServer  int
+}
 
-	WebGUI struct {
-		// addr:port to serve web-based setup/monitoring
-		// application
-		Listen string
-	}
-
-	DataDir string
-	UsrDir  string
-
-	RunitSvDir string
+type webguiConfig struct {
+	// addr:port to serve web-based setup/monitoring
+	// application
+	Listen string
 }
 
 func (c *Config) Boot(ctx context.Context) error {
@@ -52,34 +52,23 @@ func (c *Config) Boot(ctx context.Context) error {
 	return nil
 }
 
-func (c *Config) SetDefaults() {
-	if len(c.ControlHosts) == 0 {
-		c.ControlHosts = []string{"127.0.0.1"}
-	}
-	defaultPort := []int{18600, 18500, -1, 18400, 18301, 18302, 18300}
-	for i, port := range []*int{
-		&c.ConsulPorts.DNS,
-		&c.ConsulPorts.HTTP,
-		&c.ConsulPorts.HTTPS,
-		&c.ConsulPorts.RPC,
-		&c.ConsulPorts.SerfLAN,
-		&c.ConsulPorts.SerfWAN,
-		&c.ConsulPorts.Server,
-	} {
-		if *port == 0 {
-			*port = defaultPort[i]
-		}
-	}
-	if c.DataDir == "" {
-		c.DataDir = "/var/lib/arvados"
-	}
-	if c.UsrDir == "" {
-		c.UsrDir = "/usr/local/arvados"
-	}
-	if c.RunitSvDir == "" {
-		c.RunitSvDir = "/etc/sv"
-	}
-	if c.WebGUI.Listen == "" {
-		c.WebGUI.Listen = "localhost:18000"
+func DefaultConfig() *Config {
+	return &Config{
+		ControlHosts: []string{"127.0.0.1"},
+		Ports: portsConfig{
+			ConsulDNS:     18600,
+			ConsulHTTP:    18500,
+			ConsulHTTPS:   -1,
+			ConsulRPC:     18400,
+			ConsulSerfLAN: 18301,
+			ConsulSerfWAN: 18302,
+			ConsulServer:  18300,
+		},
+		DataDir:    "/var/lib/arvados",
+		UsrDir:     "/usr/local/arvados",
+		RunitSvDir: "/etc/sv",
+		WebGUI: webguiConfig{
+			Listen: "127.0.0.1:18000",
+		},
 	}
 }
