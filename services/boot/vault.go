@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"path"
 	"sync"
@@ -10,7 +11,10 @@ import (
 	"github.com/hashicorp/vault/api"
 )
 
-var vault = &vaultBooter{}
+var (
+	vault    = &vaultBooter{}
+	vaultCfg = api.DefaultConfig()
+)
 
 type vaultBooter struct {
 	sync.Mutex
@@ -34,6 +38,7 @@ func (vb *vaultBooter) Boot(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	cfgPath := path.Join(cfg.DataDir, "vault.hcl")
 	err = atomicWriteFile(cfgPath, []byte(fmt.Sprintf(`backend "consul" {
 		address = "127.0.0.1:%d"
@@ -60,22 +65,68 @@ func (vb *vaultBooter) Boot(ctx context.Context) error {
 			return fmt.Errorf("starting vault: %s", err)
 		}
 	}
+
+	vb.tryInit(ctx)
 	return vb.check(ctx)
 }
 
-var vaultCfg = api.DefaultConfig()
+func (vb *vaultBooter) tryInit(ctx context.Context) {
+	cfg := cfg(ctx)
+	vault, err := vb.client(ctx)
+	if err != nil {
+		return
+	}
+	if init, err := vault.Sys().InitStatus(); err != nil {
+		log.Printf("error: vault InitStatus: %s", err)
+		return
+	} else if init {
+		return
+	}
+	resp, err := vault.Sys().Init(&api.InitRequest{
+		SecretShares:    5,
+		SecretThreshold: 3,
+	})
+	if err != nil {
+		log.Printf("vault-init: %s", err)
+		return
+	}
+	atomicWriteJSON(path.Join(cfg.DataDir, "vault-keys.json"), resp, 0400)
+	atomicWriteFile(path.Join(cfg.DataDir, "vault-root-token.txt"), []byte(resp.RootToken), 0400)
+
+	for _, key := range resp.Keys {
+		resp, err := vault.Sys().Unseal(key)
+		if err != nil {
+			log.Printf("error: unseal: %s", err)
+			continue
+		}
+		if !resp.Sealed {
+			log.Printf("unseal successful")
+			break
+		}
+	}
+}
+
+func (vb *vaultBooter) client(ctx context.Context) (*api.Client, error) {
+	cfg := cfg(ctx)
+	vaultCfg.Address = fmt.Sprintf("http://0.0.0.0:%d", cfg.Ports.VaultServer)
+	return api.NewClient(vaultCfg)
+}
 
 func (vb *vaultBooter) check(ctx context.Context) error {
 	cfg := cfg(ctx)
-	vaultCfg.Address = fmt.Sprintf("http://0.0.0.0:%d", cfg.Ports.VaultServer)
-	vault, err := api.NewClient(vaultCfg)
+	vault, err := vb.client(ctx)
 	if err != nil {
 		return err
 	}
-	help, err := vault.Help("help")
+	token, err := ioutil.ReadFile(path.Join(cfg.DataDir, "vault-root-token.txt"))
 	if err != nil {
 		return err
 	}
-	log.Printf("%#v", help)
+	vault.SetToken(string(token))
+	if init, err := vault.Sys().InitStatus(); err != nil {
+		return err
+	} else if !init {
+		return fmt.Errorf("vault is not initialized")
+	}
 	return nil
 }

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
+	"strings"
 	"sync"
 
 	"github.com/hashicorp/consul/api"
@@ -38,16 +40,46 @@ func (cb *consulBooter) Boot(ctx context.Context) error {
 	if err := os.MkdirAll(dataDir, 0700); err != nil {
 		return err
 	}
-	args := []string{
-		"agent",
-		"-server",
-		"-datacenter=" + cfg.SiteID,
-		"-dns-port=" + fmt.Sprintf("%d", cfg.Ports.ConsulDNS),
-		"-http-port=" + fmt.Sprintf("%d", cfg.Ports.ConsulHTTP),
-		"-serf-lan-bind=0.0.0.0:" + fmt.Sprintf("%d", cfg.Ports.ConsulSerfLAN),
-		"-serf-wan-bind=0.0.0.0:" + fmt.Sprintf("%d", cfg.Ports.ConsulSerfWAN),
-		"-data-dir", dataDir,
-		"-bootstrap-expect", fmt.Sprintf("%d", len(cfg.ControlHosts))}
+	args := []string{"agent"}
+	{
+		cf := path.Join(cfg.DataDir, "consul-encrypt.json")
+		_, err := os.Stat(cf)
+		if os.IsNotExist(err) {
+			key, err := exec.Command(bin, "keygen").CombinedOutput()
+			if err != nil {
+				return err
+			}
+			err = atomicWriteJSON(cf, map[string]interface{}{
+				"encrypt": strings.TrimSpace(string(key)),
+			}, 0400)
+		}
+		if err != nil {
+			return err
+		}
+		args = append(args, "-config-file="+cf)
+	}
+	{
+		cf := path.Join(cfg.DataDir, "consul-ports.json")
+		err = atomicWriteJSON(cf, map[string]interface{}{
+			"bootstrap_expect": len(cfg.ControlHosts),
+			"data_dir":         dataDir,
+			"datacenter":       cfg.SiteID,
+			"server":           true,
+			"ports": map[string]int{
+				"dns":      cfg.Ports.ConsulDNS,
+				"http":     cfg.Ports.ConsulHTTP,
+				"https":    cfg.Ports.ConsulHTTPS,
+				"rpc":      cfg.Ports.ConsulRPC,
+				"serf_lan": cfg.Ports.ConsulSerfLAN,
+				"serf_wan": cfg.Ports.ConsulSerfWAN,
+				"server":   cfg.Ports.ConsulServer,
+			},
+		}, 0644)
+		if err != nil {
+			return err
+		}
+		args = append(args, "-config-file="+cf)
+	}
 	supervisor := newSupervisor(ctx, "consul", bin, args...)
 	running, err := supervisor.Running(ctx)
 	if err != nil {
@@ -87,4 +119,14 @@ func (cb *consulBooter) check(ctx context.Context) error {
 		return err
 	}
 	return nil
+}
+
+// OnlyNode returns true if this is the only consul node.
+func (cb *consulBooter) OnlyNode() (bool, error) {
+	c, err := api.NewClient(consulCfg)
+	if err != nil {
+		return false, err
+	}
+	nodes, _, err := c.Catalog().Nodes(nil)
+	return len(nodes) == 1, err
 }

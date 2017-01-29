@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path"
@@ -34,4 +35,12 @@ func atomicWriteFile(name string, data []byte, mode os.FileMode) error {
 	}
 	tmp = nil
 	return nil
+}
+
+func atomicWriteJSON(name string, data interface{}, mode os.FileMode) error {
+	j, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		return err
+	}
+	return atomicWriteFile(name, j, mode)
 }
