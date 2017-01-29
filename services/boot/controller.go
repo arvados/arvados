@@ -13,16 +13,19 @@ func (c *controller) Boot(ctx context.Context) error {
 		Concurrent{
 			cfg,
 			installCerts,
+			arvadosRepo,
 		},
 		Concurrent{
 			consul,
 			&download{
 				URL:  "https://releases.hashicorp.com/consul-template/0.18.0/consul-template_0.18.0_linux_amd64.zip",
 				Dest: path.Join(cfg.UsrDir, "bin", "consul-template"),
+				Size: 6912352,
 				Mode: 0755,
 			},
 		},
 		Concurrent{
+			vault,
 			dispatchLocal,
 			dispatchSLURM,
 			gitHTTP,

@@ -1,0 +1,81 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"path"
+	"sync"
+
+	"github.com/hashicorp/vault/api"
+)
+
+var vault = &vaultBooter{}
+
+type vaultBooter struct {
+	sync.Mutex
+}
+
+func (vb *vaultBooter) Boot(ctx context.Context) error {
+	vb.Lock()
+	defer vb.Unlock()
+
+	if vb.check(ctx) == nil {
+		return nil
+	}
+	cfg := cfg(ctx)
+	bin := cfg.UsrDir + "/bin/vault"
+	err := (&download{
+		URL:  "https://releases.hashicorp.com/vault/0.6.4/vault_0.6.4_linux_amd64.zip",
+		Dest: bin,
+		Size: 52518022,
+		Mode: 0755,
+	}).Boot(ctx)
+	if err != nil {
+		return err
+	}
+	cfgPath := path.Join(cfg.DataDir, "vault.hcl")
+	err = atomicWriteFile(cfgPath, []byte(fmt.Sprintf(`backend "consul" {
+		address = "127.0.0.1:%d"
+		path = "vault"
+	}
+	listener "tcp" {
+		address = "127.0.0.1:%d"
+		tls_disable = 1
+	}`, cfg.Ports.ConsulHTTP, cfg.Ports.VaultServer)), 0644)
+	if err != nil {
+		return err
+	}
+
+	args := []string{"server", "-config=" + cfgPath}
+	supervisor := newSupervisor(ctx, "vault", bin, args...)
+	running, err := supervisor.Running(ctx)
+	if err != nil {
+		return err
+	}
+	if !running {
+		defer feedbackf(ctx, "starting vault service")()
+		err = supervisor.Start(ctx)
+		if err != nil {
+			return fmt.Errorf("starting vault: %s", err)
+		}
+	}
+	return vb.check(ctx)
+}
+
+var vaultCfg = api.DefaultConfig()
+
+func (vb *vaultBooter) check(ctx context.Context) error {
+	cfg := cfg(ctx)
+	vaultCfg.Address = fmt.Sprintf("http://0.0.0.0:%d", cfg.Ports.VaultServer)
+	vault, err := api.NewClient(vaultCfg)
+	if err != nil {
+		return err
+	}
+	help, err := vault.Help("help")
+	if err != nil {
+		return err
+	}
+	log.Printf("%#v", help)
+	return nil
+}

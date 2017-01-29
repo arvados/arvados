@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 )
 
@@ -14,9 +13,7 @@ type systemdUnit struct {
 }
 
 func (u *systemdUnit) Start(ctx context.Context) error {
-	cmd := exec.Command("systemd-run", append([]string{"--unit=arvados-" + u.name, u.cmd}, u.args...)...)
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
+	cmd := command("systemd-run", append([]string{"--unit=arvados-" + u.name, u.cmd}, u.args...)...)
 	err := cmd.Run()
 	if err != nil {
 		err = fmt.Errorf("systemd-run: %s", err)
@@ -29,9 +26,7 @@ func (u *systemdUnit) Running(ctx context.Context) (bool, error) {
 }
 
 func runStatusCmd(prog string, args ...string) (bool, error) {
-	cmd := exec.Command(prog, args...)
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
+	cmd := command(prog, args...)
 	err := cmd.Run()
 	switch err.(type) {
 	case *exec.ExitError:

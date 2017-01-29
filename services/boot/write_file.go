@@ -1,0 +1,37 @@
+package main
+
+import (
+	"io/ioutil"
+	"os"
+	"path"
+)
+
+func atomicWriteFile(name string, data []byte, mode os.FileMode) error {
+	tmp, err := ioutil.TempFile(path.Dir(name), path.Base(name)+"~")
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if tmp != nil {
+			os.Remove(tmp.Name())
+		}
+	}()
+	_, err = tmp.Write(data)
+	if err != nil {
+		return err
+	}
+	err = tmp.Close()
+	if err != nil {
+		return err
+	}
+	err = os.Chmod(tmp.Name(), mode)
+	if err != nil {
+		return err
+	}
+	err = os.Rename(tmp.Name(), name)
+	if err != nil {
+		return err
+	}
+	tmp = nil
+	return nil
+}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"log"
 	"os"
@@ -22,6 +23,11 @@ func main() {
 	} else if err != nil {
 		log.Fatal(err)
 	}
+
+	enc := json.NewEncoder(os.Stderr)
+	enc.SetIndent("", "  ")
+	enc.Encode(cfg)
+
 	go runWebGUI(cfg)
 	go func() {
 		var ctl Booter = &controller{}
@@ -38,4 +44,3 @@ func main() {
 	}()
 	<-(chan struct{})(nil)
 }
-

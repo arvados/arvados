@@ -5,7 +5,6 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 )
@@ -33,9 +32,7 @@ func (agb *arvadosGoBooter) Boot(ctx context.Context) error {
 	cmd := path.Join(cfg.UsrDir, "bin", agb.name)
 	if _, err := os.Stat(cmd); err != nil {
 		if found, err := filepath.Glob(path.Join(cfg.UsrDir, "pkg", agb.name+"_*.deb")); err == nil && len(found) > 0 {
-			cmd := exec.Command("dpkg", "-i", found[0])
-			cmd.Stdout = os.Stderr
-			cmd.Stderr = os.Stderr
+			cmd := command("dpkg", "-i", found[0])
 			osPackageMutex.Lock()
 			err = cmd.Run()
 			osPackageMutex.Unlock()
@@ -44,13 +41,21 @@ func (agb *arvadosGoBooter) Boot(ctx context.Context) error {
 			}
 		}
 	}
+	cfgPath := path.Join("/etc/arvados", agb.name, agb.name+".yml")
+	atomicWriteFile(cfgPath+".ctmpl", []byte("{}"), 0644)
 	return Series{
 		&osPackage{
 			Debian: agb.name,
 		},
 		&supervisedService{
+			name: agb.name,
 			cmd:  path.Join(cfg.UsrDir, "bin", "consul-template"),
-			args: []string{"blah"},
+			args: []string{
+				"-consul-addr=127.0.0.1:8500",
+				"-template="+cfgPath+".ctmpl:"+cfgPath,
+				"-exec",
+				agb.name,
+			},
 		},
 	}.Boot(ctx)
 }

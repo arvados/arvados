@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
 )
 
 type Config struct {
@@ -20,6 +22,8 @@ type Config struct {
 	DataDir      string
 	UsrDir       string
 	RunitSvDir   string
+
+	ArvadosAptRepo aptRepoConfig
 }
 
 type portsConfig struct {
@@ -27,15 +31,22 @@ type portsConfig struct {
 	ConsulHTTP    int
 	ConsulHTTPS   int
 	ConsulRPC     int
-	ConsulSerfLAN int `json:"Serf_LAN"`
-	ConsulSerfWAN int `json:"Serf_WAN"`
+	ConsulSerfLAN int
+	ConsulSerfWAN int
 	ConsulServer  int
+	VaultServer   int
 }
 
 type webguiConfig struct {
 	// addr:port to serve web-based setup/monitoring
 	// application
 	Listen string
+}
+
+type aptRepoConfig struct {
+	Enabled bool
+	URL     string
+	Release string
 }
 
 func (c *Config) Boot(ctx context.Context) error {
@@ -53,8 +64,25 @@ func (c *Config) Boot(ctx context.Context) error {
 }
 
 func DefaultConfig() *Config {
+	var repoConf aptRepoConfig
+	if rel, err := ioutil.ReadFile("/etc/os-release"); err == nil {
+		rel := string(rel)
+		for _, try := range []string{"jessie", "precise", "xenial"} {
+			if !strings.Contains(rel, try) {
+				continue
+			}
+			repoConf = aptRepoConfig{
+				Enabled: true,
+				URL:     "http://apt.arvados.org/",
+				Release: try,
+			}
+			break
+		}
+	}
 	return &Config{
-		ControlHosts: []string{"127.0.0.1"},
+		SiteID:         "zzzzz",
+		ArvadosAptRepo: repoConf,
+		ControlHosts:   []string{"127.0.0.1"},
 		Ports: portsConfig{
 			ConsulDNS:     18600,
 			ConsulHTTP:    18500,
@@ -63,6 +91,7 @@ func DefaultConfig() *Config {
 			ConsulSerfLAN: 18301,
 			ConsulSerfWAN: 18302,
 			ConsulServer:  18300,
+			VaultServer:   18200,
 		},
 		DataDir:    "/var/lib/arvados",
 		UsrDir:     "/usr/local/arvados",

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 	"sync"
 )
@@ -56,9 +55,7 @@ func (pkg *osPackage) Boot(ctx context.Context) error {
 }
 
 func (*osPackage) aptGet(args ...string) error {
-	cmd := exec.Command("apt-get", args...)
-	cmd.Stdout = os.Stderr
-	cmd.Stderr = os.Stderr
+	cmd := command("apt-get", args...)
 	for _, kv := range os.Environ() {
 		if !strings.HasPrefix(kv, "DEBIAN_FRONTEND=") {
 			cmd.Env = append(cmd.Env, kv)

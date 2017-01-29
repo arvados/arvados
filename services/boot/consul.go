@@ -41,7 +41,11 @@ func (cb *consulBooter) Boot(ctx context.Context) error {
 	args := []string{
 		"agent",
 		"-server",
-		"-advertise=127.0.0.1",
+		"-datacenter=" + cfg.SiteID,
+		"-dns-port=" + fmt.Sprintf("%d", cfg.Ports.ConsulDNS),
+		"-http-port=" + fmt.Sprintf("%d", cfg.Ports.ConsulHTTP),
+		"-serf-lan-bind=0.0.0.0:" + fmt.Sprintf("%d", cfg.Ports.ConsulSerfLAN),
+		"-serf-wan-bind=0.0.0.0:" + fmt.Sprintf("%d", cfg.Ports.ConsulSerfWAN),
 		"-data-dir", dataDir,
 		"-bootstrap-expect", fmt.Sprintf("%d", len(cfg.ControlHosts))}
 	supervisor := newSupervisor(ctx, "consul", bin, args...)
@@ -72,6 +76,7 @@ var consulCfg = api.DefaultConfig()
 
 func (cb *consulBooter) check(ctx context.Context) error {
 	cfg := cfg(ctx)
+	consulCfg.Address = fmt.Sprintf("127.0.0.1:%d", cfg.Ports.ConsulHTTP)
 	consulCfg.Datacenter = cfg.SiteID
 	consul, err := api.NewClient(consulCfg)
 	if err != nil {
