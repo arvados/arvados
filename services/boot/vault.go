@@ -53,7 +53,7 @@ func (vb *vaultBooter) Boot(ctx context.Context) error {
 	}
 
 	args := []string{"server", "-config=" + cfgPath}
-	supervisor := newSupervisor(ctx, "vault", bin, args...)
+	supervisor := newSupervisor(ctx, "arvados-vault", bin, args...)
 	running, err := supervisor.Running(ctx)
 	if err != nil {
 		return err

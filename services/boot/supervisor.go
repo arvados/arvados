@@ -42,7 +42,7 @@ func (s *supervisedService) Boot(ctx context.Context) error {
 	if _, err := os.Stat(bin); err != nil {
 		return err
 	}
-	sup := newSupervisor(ctx, s.name, bin)
+	sup := newSupervisor(ctx, s.name, bin, s.args...)
 	if ok, err := sup.Running(ctx); err != nil {
 		return err
 	} else if !ok {

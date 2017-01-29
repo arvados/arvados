@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -12,15 +13,19 @@ import (
 var (
 	dispatchLocal = &arvadosGoBooter{name: "crunch-dispatch-local"}
 	dispatchSLURM = &arvadosGoBooter{name: "crunch-dispatch-slurm"}
-	gitHTTP       = &arvadosGoBooter{name: "arvados-git-httpd"}
-	keepbalance   = &arvadosGoBooter{name: "keep-balance"}
+	gitHTTP       = &arvadosGoBooter{name: "arvados-git-httpd", conf: "git-httpd"}
+	keepbalance   = &arvadosGoBooter{name: "keep-balance", tmpl: keepbalanceTmpl}
 	keepproxy     = &arvadosGoBooter{name: "keepproxy"}
 	keepstore     = &arvadosGoBooter{name: "keepstore"}
-	websocket     = &arvadosGoBooter{name: "arvados-ws"}
+	websocket     = &arvadosGoBooter{name: "arvados-ws", conf: "ws"}
+
+	keepbalanceTmpl = `{"RunPeriod":"1m"}`
 )
 
 type arvadosGoBooter struct {
 	name string
+	conf string
+	tmpl string
 }
 
 func availablePort() int {
@@ -29,6 +34,14 @@ func availablePort() int {
 
 func (agb *arvadosGoBooter) Boot(ctx context.Context) error {
 	cfg := cfg(ctx)
+
+	if agb.conf == "" {
+		agb.conf = agb.name
+	}
+	if agb.tmpl == "" {
+		agb.tmpl = "{}"
+	}
+
 	cmd := path.Join(cfg.UsrDir, "bin", agb.name)
 	if _, err := os.Stat(cmd); err != nil {
 		if found, err := filepath.Glob(path.Join(cfg.UsrDir, "pkg", agb.name+"_*.deb")); err == nil && len(found) > 0 {
@@ -41,8 +54,13 @@ func (agb *arvadosGoBooter) Boot(ctx context.Context) error {
 			}
 		}
 	}
-	cfgPath := path.Join("/etc/arvados", agb.name, agb.name+".yml")
-	atomicWriteFile(cfgPath+".ctmpl", []byte("{}"), 0644)
+	cfgPath := path.Join("/etc/arvados", agb.conf, agb.conf+".yml")
+	if err := os.MkdirAll(path.Dir(cfgPath), 0755); err != nil {
+		return err
+	}
+	if err := atomicWriteFile(cfgPath+".ctmpl", []byte("{}"), 0644); err != nil {
+		return err
+	}
 	return Series{
 		&osPackage{
 			Debian: agb.name,
@@ -51,8 +69,8 @@ func (agb *arvadosGoBooter) Boot(ctx context.Context) error {
 			name: agb.name,
 			cmd:  path.Join(cfg.UsrDir, "bin", "consul-template"),
 			args: []string{
-				"-consul-addr=127.0.0.1:8500",
-				"-template="+cfgPath+".ctmpl:"+cfgPath,
+				"-consul-addr=" + fmt.Sprintf("0.0.0.0:%d", cfg.Ports.ConsulHTTP),
+				"-template=" + cfgPath + ".ctmpl:" + cfgPath,
 				"-exec",
 				agb.name,
 			},

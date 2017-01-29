@@ -80,7 +80,7 @@ func (cb *consulBooter) Boot(ctx context.Context) error {
 		}
 		args = append(args, "-config-file="+cf)
 	}
-	supervisor := newSupervisor(ctx, "consul", bin, args...)
+	supervisor := newSupervisor(ctx, "arvados-consul", bin, args...)
 	running, err := supervisor.Running(ctx)
 	if err != nil {
 		return err

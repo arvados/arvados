@@ -45,7 +45,14 @@ func (cb Concurrent) Boot(ctx context.Context) error {
 		i, b := i, b
 		go func() {
 			defer wg.Done()
-			errs[i] = b.Boot(ctx)
+			err := b.Boot(ctx)
+			switch err.(type) {
+			case nil:
+			case *MultipleError:
+			default:
+				err = fmt.Errorf("%T: %s", b, err)
+			}
+			errs[i] = err
 		}()
 	}
 	wg.Wait()
