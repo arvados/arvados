@@ -13,6 +13,9 @@ var (
 	installCerts = &osPackage{
 		Debian: "ca-certificates",
 	}
+	installNginx = &osPackage{
+		Debian: "nginx",
+	}
 	installRunit = &osPackage{
 		Debian: "runit",
 	}

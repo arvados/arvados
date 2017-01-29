@@ -20,6 +20,9 @@ func (cb *consulBooter) Boot(ctx context.Context) error {
 	cb.Lock()
 	defer cb.Unlock()
 
+	if cb.check(ctx) == nil {
+		return nil
+	}
 	cfg := cfg(ctx)
 	bin := cfg.UsrDir + "/bin/consul"
 	err := (&download{
@@ -30,9 +33,6 @@ func (cb *consulBooter) Boot(ctx context.Context) error {
 	}).Boot(ctx)
 	if err != nil {
 		return err
-	}
-	if cb.check(ctx) == nil {
-		return nil
 	}
 	dataDir := cfg.DataDir + "/consul"
 	if err := os.MkdirAll(dataDir, 0700); err != nil {

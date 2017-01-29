@@ -75,7 +75,7 @@ func NewMultipleError(errs []error) error {
 		return errors[0]
 	}
 	return &MultipleError{
-		error:  fmt.Errorf("%d errors", len(errors)),
+		error:  fmt.Errorf("%d errors %q", len(errors), errors),
 		errors: errors,
 	}
 }
