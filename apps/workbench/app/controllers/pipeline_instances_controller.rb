@@ -188,7 +188,7 @@ class PipelineInstancesController < ApplicationController
     if provenance
       @prov_svg = ProvenanceHelper::create_provenance_graph provenance, "provenance_svg", {
         :request => request,
-        :direction => :bottom_up,
+        :direction => :top_down,
         :all_script_parameters => true,
         :combine_jobs => :script_and_version,
         :pips => pips,
