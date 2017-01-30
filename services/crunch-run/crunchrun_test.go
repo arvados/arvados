@@ -1219,7 +1219,7 @@ func (s *TestSuite) TestStdoutWithMountPointForFileUnderOutputDir(c *C) {
         "/tmp": {"kind": "tmp"},
         "/tmp/foo": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367"},
         "/tmp/foo/bar": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367/file2_in_main.txt"},
-        "/tmp/foo/sub1": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367/subdir1"},
+        "/tmp/foo/sub1": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367/subdir1/"},
         "/tmp/foo/sub1file2": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt"},
         "/tmp/foo/bar/sub2file2": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367/subdir1/subdir2/file2_in_subdir2.txt"},
         "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"}

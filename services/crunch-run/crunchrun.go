@@ -763,18 +763,22 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 			bindSubdir = "." + bindSuffix[0:bindIdx]
 			bindFileName = bindSuffix[bindIdx+1:]
 		}
-		pathIdx := strings.LastIndex(mnt.Path, "/")
+		mntPath := mnt.Path
+		if strings.HasSuffix(mntPath, "/") {
+			mntPath = mntPath[0 : len(mntPath)-1]
+		}
+		pathIdx := strings.LastIndex(mntPath, "/")
 		var pathSubdir, pathFileName string
 		if pathIdx >= 0 {
-			pathSubdir = "." + mnt.Path[0:pathIdx]
-			pathFileName = mnt.Path[pathIdx+1:]
+			pathSubdir = "." + mntPath[0:pathIdx]
+			pathFileName = mntPath[pathIdx+1:]
 		}
 		streams := strings.Split(collection.ManifestText, "\n")
 		for _, stream := range streams {
 			tokens := strings.Split(stream, " ")
-			if tokens[0] == "."+mnt.Path {
+			if tokens[0] == "."+mntPath {
 				// path refers to this complete stream
-				adjustedStream := strings.Replace(stream, "."+mnt.Path, "."+bindSuffix, -1)
+				adjustedStream := strings.Replace(stream, "."+mntPath, "."+bindSuffix, -1)
 				manifestText = adjustedStream + "\n"
 				break
 			} else {
