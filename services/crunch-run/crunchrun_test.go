@@ -57,6 +57,9 @@ var hwImageId = "9c31ee32b3d15268a0754e8edc74d4f815ee014b693bc5109058e431dd5caea
 var otherManifest = ". 68a84f561b1d1708c6baff5e019a9ab3+46+Ae5d0af96944a3690becb1decdf60cc1c937f556d@5693216f 0:46:md5sum.txt\n"
 var otherPDH = "a3e8f74c6f101eae01fa08bfb4e49b3a+54"
 
+var subdirManifest = ". 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0a18eda6411234567890@569fa8c3 0:9:file1_in_main.txt 9:18:file2_in_main.txt 27:5649:qr1hi-8i9sb-6tjg516fx3dhvnk.log.txt\n./subdir1 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0a18eda6419876543234@569fa8c4 0:9:file1_in_subdir1.txt 9:18:file2_in_subdir1.txt\n./subdir1/subdir2 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0a18eda6415544332211@569fa8c5 0:9:file1_in_subdir2.txt 9:19:file2_in_subdir2.txt\n"
+var subdirPDH = "a0def87f80dd594d4675809e83bd4f15+367"
+
 var fakeAuthUUID = "zzzzz-gj3su-55pqoyepgi2glem"
 var fakeAuthToken = "a3ltuwzqcu2u4sc0q7yhpc2w7s00fdcqecg5d6e0u3pfohmbjt"
 
@@ -182,6 +185,8 @@ func (client *ArvTestClient) Get(resourceType string, uuid string, parameters ar
 			output.(*arvados.Collection).ManifestText = hwManifest
 		} else if uuid == otherPDH {
 			output.(*arvados.Collection).ManifestText = otherManifest
+		} else if uuid == subdirPDH {
+			output.(*arvados.Collection).ManifestText = subdirManifest
 		}
 	}
 	if resourceType == "containers" {
@@ -1143,44 +1148,6 @@ func (s *TestSuite) TestStdoutWithExcludeFromOutputMountPointUnderOutputDir(c *C
 	c.Check(api.CalledWith("collection.manifest_text", "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out\n"), NotNil)
 }
 
-func (s *TestSuite) TestStdoutWithMountPointWithNoPathUnderOutputDir(c *C) {
-	helperRecord := `{
-		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
-		"cwd": "/bin",
-		"environment": {"FROBIZ": "bilbo"},
-		"mounts": {
-        "/tmp": {"kind": "tmp"},
-        "/tmp/foo": {"kind": "collection", "portable_data_hash": "a3e8f74c6f101eae01fa08bfb4e49b3a+54"},
-        "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"}
-    },
-		"output_path": "/tmp",
-		"priority": 1,
-		"runtime_constraints": {}
-	}`
-
-	extraMounts := []string{"a3e8f74c6f101eae01fa08bfb4e49b3a+54"}
-
-	api, _ := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
-		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{ExitCode: 0}
-	})
-
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	for _, v := range api.Content {
-		if v["collection"] != nil {
-			collection := v["collection"].(arvadosclient.Dict)
-			if strings.Index(collection["name"].(string), "output") == 0 {
-				streams := strings.Split(collection["manifest_text"].(string), "\n")
-				c.Check(streams[0], Equals, "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out")
-				c.Check(streams[1], Matches, `\.\/foo.*md5sum\.txt`)
-			}
-		}
-	}
-}
-
 func (s *TestSuite) TestStdoutWithMountPointForFileUnderOutputDir(c *C) {
 	helperRecord := `{
 		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
@@ -1213,13 +1180,13 @@ func (s *TestSuite) TestStdoutWithMountPointForFileUnderOutputDir(c *C) {
 			if strings.Index(collection["name"].(string), "output") == 0 {
 				streams := strings.Split(collection["manifest_text"].(string), "\n")
 				c.Check(streams[0], Equals, "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out")
-				c.Check(streams[1], Matches, `\.\ .*\ 0:46:foo`)
+				c.Check(streams[1], Equals, ". 68a84f561b1d1708c6baff5e019a9ab3+46+Ae5d0af96944a3690becb1decdf60cc1c937f556d@5693216f 0:46:foo")
 			}
 		}
 	}
 }
 
-func (s *TestSuite) TestStdoutWithMountPointForFileAsPathUnderOutputDir(c *C) {
+func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 	helperRecord := `{
 		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
 		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
@@ -1227,7 +1194,10 @@ func (s *TestSuite) TestStdoutWithMountPointForFileAsPathUnderOutputDir(c *C) {
 		"environment": {"FROBIZ": "bilbo"},
 		"mounts": {
         "/tmp": {"kind": "tmp"},
-        "/tmp/foo": {"kind": "collection", "portable_data_hash": "a3e8f74c6f101eae01fa08bfb4e49b3a+54", "path":"/md5sum.txt"},
+        "/tmp/foo": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367"},
+        "/tmp/foo/sub1": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367", "path":"/subdir1"},
+        "/tmp/foo/sub1file2": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367", "path":"/subdir1/file2_in_subdir1.txt"},
+        "/tmp/foo/sub2file2": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367", "path":"/subdir1/subdir2/file2_in_subdir2.txt"},
         "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"}
     },
 		"output_path": "/tmp",
@@ -1235,7 +1205,7 @@ func (s *TestSuite) TestStdoutWithMountPointForFileAsPathUnderOutputDir(c *C) {
 		"runtime_constraints": {}
 	}`
 
-	extraMounts := []string{"a3e8f74c6f101eae01fa08bfb4e49b3a+54"}
+	extraMounts := []string{"a0def87f80dd594d4675809e83bd4f15+367"}
 
 	api, _ := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
@@ -1249,9 +1219,18 @@ func (s *TestSuite) TestStdoutWithMountPointForFileAsPathUnderOutputDir(c *C) {
 		if v["collection"] != nil {
 			collection := v["collection"].(arvadosclient.Dict)
 			if strings.Index(collection["name"].(string), "output") == 0 {
-				streams := strings.Split(collection["manifest_text"].(string), "\n")
-				c.Check(streams[0], Equals, "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out")
-				c.Check(streams[1], Matches, `\.\ .*\ 0:46:foo`)
+				manifest := collection["manifest_text"].(string)
+
+				c.Check(-1, Not(Equals), strings.Index(manifest, "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out"))
+
+				origManifestWithDotReplacedAsFoo := strings.Replace(subdirManifest, "./", "./foo/", -1)
+				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo"+origManifestWithDotReplacedAsFoo[1:]))
+
+				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo/sub1 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0a18eda6419876543234@569fa8c4 0:9:file1_in_subdir1.txt 9:18:file2_in_subdir1.txt"))
+
+				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0a18eda6419876543234@569fa8c4 9:18:sub1file2"))
+
+				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0a18eda6415544332211@569fa8c5 9:19:sub2file2"))
 			}
 		}
 	}
