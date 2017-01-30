@@ -17,6 +17,8 @@ import arvados.keep
 from .matcher import JsonDiffMatcher
 from .mock_discovery import get_rootDesc
 
+import ruamel.yaml as yaml
+
 _rootDesc = None
 
 def stubs(func):
@@ -104,7 +106,7 @@ def stubs(func):
             'script_parameters': {
                 'x': {
                     'basename': 'blorp.txt',
-                    'location': 'keep:99999999999999999999999999999994+99/blorp.txt',
+                    'location': 'keep:99999999999999999999999999999992+99/blorp.txt',
                     'class': 'File'
                 },
                 'y': {
@@ -122,7 +124,7 @@ def stubs(func):
                     'class': 'Directory'
                 },
                 'cwl:tool':
-                '99999999999999999999999999999991+99/wf/submit_wf.cwl'
+                '4db32e8a15aa48ea084b2f38108f406d+60/workflow.cwl#main'
             },
             'repository': 'arvados',
             'script_version': 'master',
@@ -139,12 +141,12 @@ def stubs(func):
                     'runtime_constraints': {'docker_image': 'arvados/jobs:'+arvados_cwl.__version__, 'min_ram_mb_per_node': 1024},
                     'script_parameters': {
                         'y': {"value": {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'}},
-                        'x': {"value": {'basename': 'blorp.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999994+99/blorp.txt'}},
+                        'x': {"value": {'basename': 'blorp.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999992+99/blorp.txt'}},
                         'z': {"value": {'basename': 'anonymous', 'class': 'Directory',
                               'listing': [
                                   {'basename': 'renamed.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999998+99/file1.txt'}
                               ]}},
-                        'cwl:tool': '99999999999999999999999999999991+99/wf/submit_wf.cwl',
+                        'cwl:tool': '4db32e8a15aa48ea084b2f38108f406d+60/workflow.cwl#main',
                         'arv:enable_reuse': True,
                         'arv:on_error': 'continue'
                     },
@@ -167,6 +169,9 @@ def stubs(func):
         stubs.api.pipeline_instances().create().execute.return_value = stubs.pipeline_create
         stubs.api.pipeline_instances().get().execute.return_value = stubs.pipeline_with_job
 
+        with open("tests/wf/submit_wf_packed.cwl") as f:
+            expect_packed_workflow = yaml.round_trip_load(f)
+
         stubs.expect_container_spec = {
             'priority': 1,
             'mounts': {
@@ -174,9 +179,9 @@ def stubs(func):
                     'writable': True,
                     'kind': 'collection'
                 },
-                '/var/lib/cwl/workflow': {
-                    'portable_data_hash': '99999999999999999999999999999991+99',
-                    'kind': 'collection'
+                '/var/lib/cwl/workflow.json': {
+                    'content': expect_packed_workflow,
+                    'kind': 'json'
                 },
                 'stdout': {
                     'path': '/var/spool/cwl/cwl.output.json',
@@ -186,7 +191,7 @@ def stubs(func):
                     'kind': 'json',
                     'content': {
                         'y': {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'},
-                        'x': {'basename': u'blorp.txt', 'class': 'File', 'location': u'keep:99999999999999999999999999999994+99/blorp.txt'},
+                        'x': {'basename': u'blorp.txt', 'class': 'File', 'location': u'keep:99999999999999999999999999999992+99/blorp.txt'},
                         'z': {'basename': 'anonymous', 'class': 'Directory', 'listing': [
                             {'basename': 'renamed.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999998+99/file1.txt'}
                         ]}
@@ -198,7 +203,7 @@ def stubs(func):
             'owner_uuid': None,
             'command': ['arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
                         '--enable-reuse', '--on-error=continue',
-                        '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/cwl.input.json'],
+                        '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json'],
             'name': 'submit_wf.cwl',
             'container_image': 'arvados/jobs:'+arvados_cwl.__version__,
             'output_path': '/var/spool/cwl',
@@ -228,44 +233,42 @@ def stubs(func):
 
 
 class TestSubmit(unittest.TestCase):
+    @mock.patch("arvados_cwl.runner.arv_docker_get_image")
     @mock.patch("time.sleep")
     @stubs
-    def test_submit(self, stubs, tm):
+    def test_submit(self, stubs, tm, arvdock):
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--debug",
+            ["--submit", "--no-wait", "--api=jobs", "--debug",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
         stubs.api.collections().create.assert_has_calls([
             mock.call(),
-            mock.call(body={
+            mock.call(body=JsonDiffMatcher({
                 'manifest_text':
-                './tool d51232d96b6116d964a69bfb7e0c73bf+450 '
-                '0:16:blub.txt 16:434:submit_tool.cwl\n./wf '
-                'cc2ffb940e60adf1b2b282c67587e43d+413 0:413:submit_wf.cwl\n',
+                '. 5bcc9fe8f8d5992e6cf418dc7ce4dbb3+16 0:16:blub.txt\n',
                 'owner_uuid': None,
-                'name': 'submit_wf.cwl',
-            }, ensure_unique_name=True),
+                'name': 'submit_tool.cwl dependencies',
+            }), ensure_unique_name=True),
             mock.call().execute(),
-            mock.call(body={'manifest_text': '. d41d8cd98f00b204e9800998ecf8427e+0 '
-                            '0:0:blub.txt 0:0:submit_tool.cwl\n',
-                            'replication_desired': None,
-                            'name': 'New collection'
-            }, ensure_unique_name=True),
-            mock.call().execute(num_retries=4),
-            mock.call(body={
+            mock.call(body=JsonDiffMatcher({
                 'manifest_text':
                 '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
                 'owner_uuid': None,
-                'name': '#',
-            }, ensure_unique_name=True),
+                'name': 'submit_wf.cwl input',
+            }), ensure_unique_name=True),
             mock.call().execute()])
+
+        arvdock.assert_has_calls([
+            mock.call(stubs.api, {"class": "DockerRequirement", "dockerPull": "debian:8"}, True, None),
+            mock.call(stubs.api, {'dockerPull': 'arvados/jobs:'+arvados_cwl.__version__}, True, None)
+        ])
 
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
         stubs.api.pipeline_instances().create.assert_called_with(
-            body=expect_pipeline)
+            body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
@@ -275,14 +278,14 @@ class TestSubmit(unittest.TestCase):
     def test_submit_no_reuse(self, stubs, tm):
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--debug", "--disable-reuse",
+            ["--submit", "--no-wait", "--api=jobs", "--debug", "--disable-reuse",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
-        stubs.expect_pipeline_instance["components"]["cwl-runner"]["script_parameters"]["arv:enable_reuse"] = {"value": False}
-
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
+        expect_pipeline["components"]["cwl-runner"]["script_parameters"]["arv:enable_reuse"] = {"value": False}
+
         stubs.api.pipeline_instances().create.assert_called_with(
             body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
@@ -293,14 +296,14 @@ class TestSubmit(unittest.TestCase):
     def test_submit_on_error(self, stubs, tm):
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--debug", "--on-error=stop",
+            ["--submit", "--no-wait", "--api=jobs", "--debug", "--on-error=stop",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
-        stubs.expect_pipeline_instance["components"]["cwl-runner"]["script_parameters"]["arv:on_error"] = "stop"
-
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
+        expect_pipeline["components"]["cwl-runner"]["script_parameters"]["arv:on_error"] = "stop"
+
         stubs.api.pipeline_instances().create.assert_called_with(
             body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
@@ -317,9 +320,9 @@ class TestSubmit(unittest.TestCase):
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
-        stubs.expect_pipeline_instance["components"]["cwl-runner"]["runtime_constraints"]["min_ram_mb_per_node"] = 2048
-
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
+        expect_pipeline["components"]["cwl-runner"]["runtime_constraints"]["min_ram_mb_per_node"] = 2048
+
         stubs.api.pipeline_instances().create.assert_called_with(
             body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
@@ -348,9 +351,9 @@ class TestSubmit(unittest.TestCase):
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
-        stubs.expect_pipeline_instance["components"]["cwl-runner"]["script_parameters"]["arv:output_name"] = output_name
-
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
+        expect_pipeline["components"]["cwl-runner"]["script_parameters"]["arv:output_name"] = output_name
+
         stubs.api.pipeline_instances().create.assert_called_with(
             body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
@@ -367,9 +370,9 @@ class TestSubmit(unittest.TestCase):
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
-        stubs.expect_pipeline_instance["name"] = "hello job 123"
-
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
+        expect_pipeline["name"] = "hello job 123"
+
         stubs.api.pipeline_instances().create.assert_called_with(
             body=expect_pipeline)
         self.assertEqual(capture_stdout.getvalue(),
@@ -387,9 +390,9 @@ class TestSubmit(unittest.TestCase):
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
-        stubs.expect_pipeline_instance["components"]["cwl-runner"]["script_parameters"]["arv:output_tags"] = output_tags
-
         expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
+        expect_pipeline["components"]["cwl-runner"]["script_parameters"]["arv:output_tags"] = output_tags
+
         stubs.api.pipeline_instances().create.assert_called_with(
             body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
@@ -426,27 +429,19 @@ class TestSubmit(unittest.TestCase):
 
         stubs.api.collections().create.assert_has_calls([
             mock.call(),
-            mock.call(body={
+            mock.call(body=JsonDiffMatcher({
                 'manifest_text':
-                './tool d51232d96b6116d964a69bfb7e0c73bf+450 '
-                '0:16:blub.txt 16:434:submit_tool.cwl\n./wf '
-                'cc2ffb940e60adf1b2b282c67587e43d+413 0:413:submit_wf.cwl\n',
+                '. 5bcc9fe8f8d5992e6cf418dc7ce4dbb3+16 0:16:blub.txt\n',
                 'owner_uuid': None,
-                'name': 'submit_wf.cwl',
-            }, ensure_unique_name=True),
+                'name': 'submit_tool.cwl dependencies',
+            }), ensure_unique_name=True),
             mock.call().execute(),
-            mock.call(body={'manifest_text': '. d41d8cd98f00b204e9800998ecf8427e+0 '
-                            '0:0:blub.txt 0:0:submit_tool.cwl\n',
-                            'name': 'New collection',
-                            'replication_desired': None,
-            }, ensure_unique_name=True),
-            mock.call().execute(num_retries=4),
-            mock.call(body={
+            mock.call(body=JsonDiffMatcher({
                 'manifest_text':
                 '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
                 'owner_uuid': None,
-                'name': '#',
-            }, ensure_unique_name=True),
+                'name': 'submit_wf.cwl input',
+            }), ensure_unique_name=True),
             mock.call().execute()])
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
@@ -467,11 +462,11 @@ class TestSubmit(unittest.TestCase):
         except:
             logging.exception("")
 
-        stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
-                                                  '--disable-reuse', '--on-error=continue',
-                                                  '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/cwl.input.json']
-
         expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
+                                                  '--disable-reuse', '--on-error=continue',
+                                                  '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
@@ -490,11 +485,11 @@ class TestSubmit(unittest.TestCase):
         except:
             logging.exception("")
 
-        stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
-                                                  '--enable-reuse', '--on-error=stop',
-                                                  '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/cwl.input.json']
-
         expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
+                                                  '--enable-reuse', '--on-error=stop',
+                                                  '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
@@ -514,12 +509,12 @@ class TestSubmit(unittest.TestCase):
         except:
             logging.exception("")
 
-        stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
-                                                  "--output-name="+output_name, '--enable-reuse', '--on-error=continue',
-                                                  '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/cwl.input.json']
-        stubs.expect_container_spec["output_name"] = output_name
-
         expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
+                                                  "--output-name="+output_name, '--enable-reuse', '--on-error=continue',
+                                                  '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+        expect_container["output_name"] = output_name
+
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
@@ -539,11 +534,11 @@ class TestSubmit(unittest.TestCase):
         except:
             logging.exception("")
 
-        stubs.expect_container_spec["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
-                                                  "--output-tags="+output_tags, '--enable-reuse', '--on-error=continue',
-                                                  '/var/lib/cwl/workflow/submit_wf.cwl', '/var/lib/cwl/cwl.input.json']
-
         expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
+                                                  "--output-tags="+output_tags, '--enable-reuse', '--on-error=continue',
+                                                  '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
+
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
@@ -561,9 +556,9 @@ class TestSubmit(unittest.TestCase):
         except:
             logging.exception("")
 
-        stubs.expect_container_spec["runtime_constraints"]["ram"] = 2048*1024*1024
-
         expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["runtime_constraints"]["ram"] = 2048*1024*1024
+
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
@@ -639,6 +634,31 @@ class TestSubmit(unittest.TestCase):
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
+
+    @mock.patch("arvados.collection.CollectionReader")
+    @mock.patch("time.sleep")
+    @stubs
+    def test_submit_jobs_keepref(self, stubs, tm, reader):
+        capture_stdout = cStringIO.StringIO()
+
+        with open("tests/wf/expect_arvworkflow.cwl") as f:
+            reader().open().__enter__().read.return_value = f.read()
+
+        exited = arvados_cwl.main(
+            ["--submit", "--no-wait", "--api=jobs", "--debug",
+             "keep:99999999999999999999999999999994+99/expect_arvworkflow.cwl#main", "-x", "XxX"],
+            capture_stdout, sys.stderr, api_client=stubs.api)
+        self.assertEqual(exited, 0)
+
+        expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
+        expect_pipeline["components"]["cwl-runner"]["script_parameters"]["x"] = "XxX"
+        del expect_pipeline["components"]["cwl-runner"]["script_parameters"]["y"]
+        del expect_pipeline["components"]["cwl-runner"]["script_parameters"]["z"]
+        expect_pipeline["components"]["cwl-runner"]["script_parameters"]["cwl:tool"] = "99999999999999999999999999999994+99/expect_arvworkflow.cwl#main"
+        expect_pipeline["name"] = "expect_arvworkflow.cwl#main"
+        stubs.api.pipeline_instances().create.assert_called_with(
+            body=JsonDiffMatcher(expect_pipeline))
+
     @mock.patch("time.sleep")
     @stubs
     def test_submit_arvworkflow(self, stubs, tm):
@@ -666,9 +686,23 @@ class TestSubmit(unittest.TestCase):
                 },
                 '/var/lib/cwl/workflow.json': {
                     'kind': 'json',
-                    'json': {
+                    'content': {
                         'cwlVersion': 'v1.0',
                         '$graph': [
+                            {
+                                'id': '#main',
+                                'inputs': [
+                                    {'type': 'string', 'id': '#main/x'}
+                                ],
+                                'steps': [
+                                    {'in': [{'source': '#main/x', 'id': '#main/step1/x'}],
+                                     'run': '#submit_tool.cwl',
+                                     'id': '#main/step1',
+                                     'out': []}
+                                ],
+                                'class': 'Workflow',
+                                'outputs': []
+                            },
                             {
                                 'inputs': [
                                     {
@@ -683,19 +717,6 @@ class TestSubmit(unittest.TestCase):
                                 'outputs': [],
                                 'baseCommand': 'cat',
                                 'class': 'CommandLineTool'
-                            }, {
-                                'id': '#main',
-                                'inputs': [
-                                    {'type': 'string', 'id': '#main/x'}
-                                ],
-                                'steps': [
-                                    {'in': [{'source': '#main/x', 'id': '#main/step1/x'}],
-                                     'run': '#submit_tool.cwl',
-                                     'id': '#main/step1',
-                                     'out': []}
-                                ],
-                                'class': 'Workflow',
-                                'outputs': []
                             }
                         ]
                     }
@@ -743,11 +764,52 @@ class TestSubmit(unittest.TestCase):
         except:
             logging.exception("")
 
-        stubs.expect_container_spec["name"] = "hello container 123"
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["name"] = "hello container 123"
+
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+
+
+    @stubs
+    def test_submit_job_runner_image(self, stubs):
+        capture_stdout = cStringIO.StringIO()
+        try:
+            exited = arvados_cwl.main(
+                ["--submit", "--no-wait", "--api=jobs", "--debug", "--submit-runner-image=arvados/jobs:123",
+                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            self.assertEqual(exited, 0)
+        except:
+            logging.exception("")
+
+        stubs.expect_pipeline_instance["components"]["cwl-runner"]["runtime_constraints"]["docker_image"] = "arvados/jobs:123"
+
+        expect_pipeline = copy.deepcopy(stubs.expect_pipeline_instance)
+        stubs.api.pipeline_instances().create.assert_called_with(
+            body=JsonDiffMatcher(expect_pipeline))
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_pipeline_uuid + '\n')
+
+    @stubs
+    def test_submit_container_runner_image(self, stubs):
+        capture_stdout = cStringIO.StringIO()
+        try:
+            exited = arvados_cwl.main(
+                ["--submit", "--no-wait", "--api=containers", "--debug", "--submit-runner-image=arvados/jobs:123",
+                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            self.assertEqual(exited, 0)
+        except:
+            logging.exception("")
+
+        stubs.expect_container_spec["container_image"] = "arvados/jobs:123"
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
-            body=expect_container)
+            body=JsonDiffMatcher(expect_container))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_container_request_uuid + '\n')
 
@@ -793,7 +855,7 @@ class TestSubmit(unittest.TestCase):
                                                                           }], "items_available": 1, "offset": 0},
                                                                   {"items": [{"uuid": ""}], "items_available": 1, "offset": 0})
         arvrunner.api.collections().create().execute.return_value = {"uuid": ""}
-        self.assertEqual("arvados/jobs:"+arvados_cwl.__version__, arvados_cwl.runner.arvados_jobs_image(arvrunner))
+        self.assertEqual("arvados/jobs:"+arvados_cwl.__version__, arvados_cwl.runner.arvados_jobs_image(arvrunner, "arvados/jobs:"+arvados_cwl.__version__))
 
 class TestCreateTemplate(unittest.TestCase):
     existing_template_uuid = "zzzzz-d1hrv-validworkfloyml"
@@ -803,7 +865,7 @@ class TestCreateTemplate(unittest.TestCase):
             'dataclass': 'File',
             'required': True,
             'type': 'File',
-            'value': '99999999999999999999999999999994+99/blorp.txt',
+            'value': '99999999999999999999999999999992+99/blorp.txt',
         }
         expect_component['script_parameters']['y'] = {
             'dataclass': 'Collection',
@@ -1065,8 +1127,7 @@ class TestTemplateInputs(unittest.TestCase):
                 },
                 'script_parameters': {
                     'cwl:tool':
-                    '99999999999999999999999999999991+99/'
-                    'wf/inputs_test.cwl',
+                    '00e281847a33e1c0df93161d70a6fc5d+60/workflow.cwl#main',
                     'optionalFloatInput': None,
                     'fileInput': {
                         'type': 'File',
@@ -1126,7 +1187,7 @@ class TestTemplateInputs(unittest.TestCase):
         expect_template = copy.deepcopy(self.expect_template)
         params = expect_template[
             "components"]["inputs_test.cwl"]["script_parameters"]
-        params["fileInput"]["value"] = '99999999999999999999999999999994+99/blorp.txt'
+        params["fileInput"]["value"] = '99999999999999999999999999999992+99/blorp.txt'
         params["floatInput"]["value"] = 1.234
         params["boolInput"]["value"] = True
 

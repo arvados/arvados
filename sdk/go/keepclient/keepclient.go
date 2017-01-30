@@ -72,6 +72,7 @@ type KeepClient struct {
 	lock               sync.RWMutex
 	Client             *http.Client
 	Retries            int
+	BlockCache         *BlockCache
 
 	// set to 1 if all writable services are of disk type, otherwise 0
 	replicasPerService int
@@ -404,6 +405,14 @@ func (kc *KeepClient) getSortedRoots(locator string) []string {
 	// After trying all usable service hints, fall back to local roots.
 	found = append(found, NewRootSorter(kc.LocalRoots(), locator[0:32]).GetSortedRoots()...)
 	return found
+}
+
+func (kc *KeepClient) cache() *BlockCache {
+	if kc.BlockCache != nil {
+		return kc.BlockCache
+	} else {
+		return DefaultBlockCache
+	}
 }
 
 type Locator struct {
