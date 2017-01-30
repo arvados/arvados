@@ -673,7 +673,7 @@ func (runner *ContainerRunner) CaptureOutput() error {
 		bindSuffix := strings.TrimPrefix(bind, runner.Container.OutputPath)
 
 		if bindSuffix == bind || len(bindSuffix) <= 0 {
-			// either doesn't start with OutputPath or is OutputPath itself
+			// either does not start with OutputPath or is OutputPath itself
 			continue
 		}
 
@@ -730,12 +730,18 @@ func (runner *ContainerRunner) CaptureOutput() error {
 // Return the manifest_text fragment corresponding to the specified mnt.Path
 //  after making any required updates.
 //  Ex:
-//    If mnt.Path is not speficied,
+//    If mnt.Path is not specified,
 //      return the entire manifest_text after replacing any "." with bindSuffix
 //    If mnt.Path corresponds to one stream,
-//      return the manitest_text for that stream after replacing that stream name with bindSuffix
-//    Otherwise, check if a filename in any one stream is being sought. Return the manitest_text
-//      for that stream after replacing that stream name and file name using bindSuffix components.
+//      return the manifest_text for that stream after replacing that stream name with bindSuffix
+//    Otherwise, check if a filename in any one stream is being sought. Return the manifest_text
+//      for that stream after replacing stream name with bindSuffix minus the last word
+//      and the file name with last word of the bindSuffix
+//  Allowed path examples:
+//    "path":"/"
+//    "path":"/subdir1"
+//    "path":"/subdir1/subdir2"
+//    "path":"/subdir/filename" etc
 func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, bindSuffix string) (string, error) {
 	var collection arvados.Collection
 	err := runner.ArvClient.Get("collections", mnt.PortableDataHash, nil, &collection)
@@ -744,7 +750,7 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 	}
 
 	manifestText := ""
-	if mnt.Path == "" {
+	if mnt.Path == "" || mnt.Path == "/" {
 		// no path specified; return the entire manifest text
 		manifestText = collection.ManifestText
 		manifestText = strings.Replace(manifestText, "./", "."+bindSuffix+"/", -1)
@@ -754,26 +760,26 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 		bindIdx := strings.LastIndex(bindSuffix, "/")
 		var bindSubdir, bindFileName string
 		if bindIdx >= 0 {
-			bindSubdir = bindSuffix[0:bindIdx]
+			bindSubdir = "." + bindSuffix[0:bindIdx]
 			bindFileName = bindSuffix[bindIdx+1:]
 		}
 		pathIdx := strings.LastIndex(mnt.Path, "/")
 		var pathSubdir, pathFileName string
 		if pathIdx >= 0 {
-			pathSubdir = mnt.Path[0:pathIdx]
+			pathSubdir = "." + mnt.Path[0:pathIdx]
 			pathFileName = mnt.Path[pathIdx+1:]
 		}
 		streams := strings.Split(collection.ManifestText, "\n")
 		for _, stream := range streams {
 			tokens := strings.Split(stream, " ")
 			if tokens[0] == "."+mnt.Path {
-				// path refers to this stream
-				adjustedStream := strings.Replace(stream, mnt.Path, bindSuffix, -1)
+				// path refers to this complete stream
+				adjustedStream := strings.Replace(stream, "."+mnt.Path, "."+bindSuffix, -1)
 				manifestText = adjustedStream + "\n"
 				break
 			} else {
 				// look for a matching file in this stream
-				if tokens[0] == "."+pathSubdir {
+				if tokens[0] == pathSubdir {
 					// path refers to a file in this stream
 					for _, token := range tokens {
 						if strings.Index(token, ":"+pathFileName) > 0 {
@@ -786,7 +792,7 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 								}
 							}
 							manifestText = strings.Trim(manifestText, " ")
-							token = strings.Replace(token, pathFileName, bindFileName, -1)
+							token = strings.Replace(token, ":"+pathFileName, ":"+bindFileName, -1)
 							manifestText += (" " + token + "\n")
 							manifestText = strings.Replace(manifestText, pathSubdir, bindSubdir, -1)
 							break
