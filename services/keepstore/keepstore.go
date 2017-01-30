@@ -16,7 +16,6 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	log "github.com/Sirupsen/logrus"
 	"github.com/coreos/go-systemd/daemon"
-	"github.com/ghodss/yaml"
 )
 
 // A Keep "block" is 64MB.
@@ -105,12 +104,7 @@ func main() {
 	}
 
 	if *dumpConfig {
-		y, err := yaml.Marshal(theConfig)
-		if err != nil {
-			log.Fatal(err)
-		}
-		os.Stdout.Write(y)
-		os.Exit(0)
+		log.Fatal(config.DumpAndExit(theConfig))
 	}
 
 	err = theConfig.Start()
