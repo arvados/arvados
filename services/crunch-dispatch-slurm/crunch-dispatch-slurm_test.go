@@ -158,12 +158,12 @@ func (s *TestSuite) integrationTest(c *C,
 		},
 	}
 
-	squeueUpdater.StartMonitor(time.Duration(500) * time.Millisecond)
+	squeueUpdater = Squeue{Period: 500 * time.Millisecond}
 
 	err = dispatcher.Run()
 	c.Assert(err, IsNil)
 
-	squeueUpdater.Done()
+	squeueUpdater.Stop()
 
 	c.Check(sbatchCmdLine, DeepEquals, sbatchCmdComps)
 

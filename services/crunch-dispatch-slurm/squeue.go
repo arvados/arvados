@@ -1,11 +1,10 @@
 package main
 
 import (
-	"bufio"
-	"io"
-	"io/ioutil"
+	"bytes"
 	"log"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 )
@@ -13,126 +12,83 @@ import (
 // Squeue implements asynchronous polling monitor of the SLURM queue using the
 // command 'squeue'.
 type Squeue struct {
-	squeueContents []string
-	squeueDone     chan struct{}
-	squeueCond     *sync.Cond
-	SlurmLock      sync.Mutex
+	Period    time.Duration
+	hasUUID   map[string]bool
+	startOnce sync.Once
+	done      chan struct{}
+	sync.Cond
 }
 
-// squeueFunc
 func squeueFunc() *exec.Cmd {
 	return exec.Command("squeue", "--all", "--format=%j")
 }
 
 var squeueCmd = squeueFunc
 
-// RunSqueue runs squeue once and captures the output.  If it succeeds, set
-// "squeueContents" and then wake up any goroutines waiting squeueCond in
-// CheckSqueue().  If there was an error, log it and leave the threads blocked.
-func (squeue *Squeue) RunSqueue() {
-	var newSqueueContents []string
+// HasUUID checks if a given container UUID is in the slurm queue.
+// This does not run squeue directly, but instead blocks until woken
+// up by next successful update of squeue.
+func (squeue *Squeue) HasUUID(uuid string) bool {
+	squeue.startOnce.Do(squeue.start)
 
+	squeue.L.Lock()
+	defer squeue.L.Unlock()
+
+	// block until next squeue broadcast signaling an update.
+	squeue.Wait()
+	return squeue.hasUUID[uuid]
+}
+
+// Stop stops the squeue monitoring goroutine. Do not call HasUUID
+// after calling Stop.
+func (squeue *Squeue) Stop() {
+	if squeue.done != nil {
+		close(squeue.done)
+	}
+}
+
+// check gets the names of jobs in the SLURM queue (running and
+// queued). If it succeeds, it updates squeue.hasUUID and wakes up any
+// goroutines that are waiting in HasUUID().
+func (squeue *Squeue) check() {
 	// Mutex between squeue sync and running sbatch or scancel.  This
 	// establishes a sequence so that squeue doesn't run concurrently with
 	// sbatch or scancel; the next update of squeue will occur only after
 	// sbatch or scancel has completed.
-	squeue.SlurmLock.Lock()
-	defer squeue.SlurmLock.Unlock()
-
-	// Also ensure unlock on all return paths
+	squeue.L.Lock()
+	defer squeue.L.Unlock()
 
 	cmd := squeueCmd()
-	sq, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Printf("Error creating stdout pipe for squeue: %v", err)
+	stdout, stderr := &bytes.Buffer{}, &bytes.Buffer{}
+	cmd.Stdout, cmd.Stderr = stdout, stderr
+	if err := cmd.Run(); err != nil {
+		log.Printf("Error running %q %q: %s %q", cmd.Path, cmd.Args, err, stderr.String())
 		return
 	}
 
-	stderrReader, err := cmd.StderrPipe()
-	if err != nil {
-		log.Printf("Error creating stderr pipe for squeue: %v", err)
-		return
+	uuids := strings.Split(stdout.String(), "\n")
+	squeue.hasUUID = make(map[string]bool, len(uuids))
+	for _, uuid := range uuids {
+		squeue.hasUUID[uuid] = true
 	}
+	squeue.Broadcast()
+}
 
-	err = cmd.Start()
-	if err != nil {
-		log.Printf("Error running squeue: %v", err)
-		return
-	}
-
-	stderrChan := make(chan []byte)
+// Initialize, and start a goroutine to call check() once per
+// squeue.Period until terminated by calling Stop().
+func (squeue *Squeue) start() {
+	squeue.L = &sync.Mutex{}
+	squeue.done = make(chan struct{})
 	go func() {
-		b, _ := ioutil.ReadAll(stderrReader)
-		stderrChan <- b
-		close(stderrChan)
+		ticker := time.NewTicker(squeue.Period)
+		for {
+			select {
+			case <-squeue.done:
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				squeue.check()
+			}
+		}
 	}()
-
-	scanner := bufio.NewScanner(sq)
-	for scanner.Scan() {
-		newSqueueContents = append(newSqueueContents, scanner.Text())
-	}
-	io.Copy(ioutil.Discard, sq)
-
-	stderrmsg := <-stderrChan
-
-	err = cmd.Wait()
-
-	if scanner.Err() != nil {
-		log.Printf("Error reading from squeue pipe: %v", err)
-	}
-	if err != nil {
-		log.Printf("Error running %v %v: %v %q", cmd.Path, cmd.Args, err, string(stderrmsg))
-	}
-
-	if scanner.Err() == nil && err == nil {
-		squeue.squeueCond.L.Lock()
-		squeue.squeueContents = newSqueueContents
-		squeue.squeueCond.Broadcast()
-		squeue.squeueCond.L.Unlock()
-	}
-}
-
-// CheckSqueue checks if a given container UUID is in the slurm queue.  This
-// does not run squeue directly, but instead blocks until woken up by next
-// successful update of squeue.
-func (squeue *Squeue) CheckSqueue(uuid string) bool {
-	squeue.squeueCond.L.Lock()
-	// block until next squeue broadcast signaling an update.
-	squeue.squeueCond.Wait()
-	contents := squeue.squeueContents
-	squeue.squeueCond.L.Unlock()
-
-	for _, k := range contents {
-		if k == uuid {
-			return true
-		}
-	}
-	return false
-}
-
-// StartMonitor starts the squeue monitoring goroutine.
-func (squeue *Squeue) StartMonitor(pollInterval time.Duration) {
-	squeue.squeueCond = sync.NewCond(&sync.Mutex{})
-	squeue.squeueDone = make(chan struct{})
-	go squeue.SyncSqueue(pollInterval)
-}
-
-// Done stops the squeue monitoring goroutine.
-func (squeue *Squeue) Done() {
-	squeue.squeueDone <- struct{}{}
-	close(squeue.squeueDone)
-}
-
-// SyncSqueue periodically polls RunSqueue() at the given duration until
-// terminated by calling Done().
-func (squeue *Squeue) SyncSqueue(pollInterval time.Duration) {
-	ticker := time.NewTicker(pollInterval)
-	for {
-		select {
-		case <-squeue.squeueDone:
-			return
-		case <-ticker.C:
-			squeue.RunSqueue()
-		}
-	}
 }

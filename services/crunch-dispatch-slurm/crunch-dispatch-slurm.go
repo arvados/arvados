@@ -98,8 +98,8 @@ func doMain() error {
 	}
 	arv.Retries = 25
 
-	squeueUpdater.StartMonitor(time.Duration(theConfig.PollPeriod))
-	defer squeueUpdater.Done()
+	squeueUpdater = Squeue{Period: time.Duration(theConfig.PollPeriod)}
+	defer squeueUpdater.Stop()
 
 	dispatcher := dispatch.Dispatcher{
 		Arv:            arv,
@@ -168,8 +168,8 @@ func submit(dispatcher *dispatch.Dispatcher,
 	cmd.Stderr = &stderr
 
 	// Mutex between squeue sync and running sbatch or scancel.
-	squeueUpdater.SlurmLock.Lock()
-	defer squeueUpdater.SlurmLock.Unlock()
+	squeueUpdater.L.Lock()
+	defer squeueUpdater.L.Unlock()
 
 	log.Printf("exec sbatch %+q", cmd.Args)
 	err := cmd.Run()
@@ -192,7 +192,7 @@ func submit(dispatcher *dispatch.Dispatcher,
 func monitorSubmitOrCancel(dispatcher *dispatch.Dispatcher, container arvados.Container, monitorDone *bool) {
 	submitted := false
 	for !*monitorDone {
-		if squeueUpdater.CheckSqueue(container.UUID) {
+		if squeueUpdater.HasUUID(container.UUID) {
 			// Found in the queue, so continue monitoring
 			submitted = true
 		} else if container.State == dispatch.Locked && !submitted {
@@ -257,14 +257,14 @@ func run(dispatcher *dispatch.Dispatcher,
 		if container.Priority == 0 && (container.State == dispatch.Locked || container.State == dispatch.Running) {
 			log.Printf("Canceling container %s", container.UUID)
 			// Mutex between squeue sync and running sbatch or scancel.
-			squeueUpdater.SlurmLock.Lock()
+			squeueUpdater.L.Lock()
 			cmd := scancelCmd(container)
 			msg, err := cmd.CombinedOutput()
-			squeueUpdater.SlurmLock.Unlock()
+			squeueUpdater.L.Unlock()
 
 			if err != nil {
 				log.Printf("Error stopping container %s with %v %v: %v %v", container.UUID, cmd.Path, cmd.Args, err, string(msg))
-				if squeueUpdater.CheckSqueue(container.UUID) {
+				if squeueUpdater.HasUUID(container.UUID) {
 					log.Printf("Container %s is still in squeue after scancel.", container.UUID)
 					continue
 				}
