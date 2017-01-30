@@ -4,16 +4,21 @@ import copy
 import json
 import time
 
-from cwltool.process import get_feature, shortname
+from cwltool.process import get_feature, shortname, UnsupportedRequirement
 from cwltool.errors import WorkflowException
 from cwltool.draft2tool import revmap_file, CommandLineTool
 from cwltool.load_tool import fetch_document
 from cwltool.builder import Builder
+from cwltool.pathmapper import adjustDirObjs
+
+from schema_salad.sourceline import SourceLine
+
+import ruamel.yaml as yaml
 
 import arvados.collection
 
 from .arvdocker import arv_docker_get_image
-from .runner import Runner, arvados_jobs_image
+from .runner import Runner, arvados_jobs_image, packed_workflow, trim_listing, upload_workflow_collection
 from .pathmapper import InitialWorkDirPathMapper
 from .perf import Perf
 from . import done
@@ -92,7 +97,7 @@ class ArvadosJob(object):
                         "Option 'dockerOutputDirectory' of DockerRequirement not supported.")
                 runtime_constraints["docker_image"] = arv_docker_get_image(self.arvrunner.api, docker_req, pull_image, self.arvrunner.project_uuid)
             else:
-                runtime_constraints["docker_image"] = arvados_jobs_image(self.arvrunner)
+                runtime_constraints["docker_image"] = "arvados/jobs"
 
         resources = self.builder.resources
         if resources is not None:
@@ -136,11 +141,12 @@ class ArvadosJob(object):
 
             self.update_pipeline_component(response)
 
-            logger.info("%s %s is %s", self.arvrunner.label(self), response["uuid"], response["state"])
-
-            if response["state"] in ("Complete", "Failed", "Cancelled"):
+            if response["state"] == "Complete":
+                logger.info("%s reused job %s", self.arvrunner.label(self), response["uuid"])
                 with Perf(metrics, "done %s" % self.name):
                     self.done(response)
+            else:
+                logger.info("%s %s is %s", self.arvrunner.label(self), response["uuid"], response["state"])
         except Exception as e:
             logger.exception("%s error" % (self.arvrunner.label(self)))
             self.output_callback({}, "permanentFail")
@@ -239,9 +245,14 @@ class RunnerJob(Runner):
         a pipeline template or pipeline instance.
         """
 
-        workflowmapper = super(RunnerJob, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)
+        if self.tool.tool["id"].startswith("keep:"):
+            self.job_order["cwl:tool"] = self.tool.tool["id"][5:]
+        else:
+            packed = packed_workflow(self.arvrunner, self.tool)
+            wf_pdh = upload_workflow_collection(self.arvrunner, self.name, packed)
+            self.job_order["cwl:tool"] = "%s/workflow.cwl#main" % wf_pdh
 
-        self.job_order["cwl:tool"] = workflowmapper.mapper(self.tool.tool["id"]).target[5:]
+        adjustDirObjs(self.job_order, trim_listing)
 
         if self.output_name:
             self.job_order["arv:output_name"] = self.output_name
@@ -261,7 +272,7 @@ class RunnerJob(Runner):
             "repository": "arvados",
             "script_parameters": self.job_order,
             "runtime_constraints": {
-                "docker_image": arvados_jobs_image(self.arvrunner),
+                "docker_image": arvados_jobs_image(self.arvrunner, self.jobs_image),
                 "min_ram_mb_per_node": self.submit_runner_ram
             }
         }
@@ -355,10 +366,12 @@ class RunnerTemplate(object):
             if not isinstance(types, list):
                 types = [types]
             param['required'] = 'null' not in types
-            non_null_types = set(types) - set(['null'])
+            non_null_types = [t for t in types if t != "null"]
             if len(non_null_types) == 1:
                 the_type = [c for c in non_null_types][0]
-                dataclass = self.type_to_dataclass.get(the_type)
+                dataclass = None
+                if isinstance(the_type, basestring):
+                    dataclass = self.type_to_dataclass.get(the_type)
                 if dataclass:
                     param['dataclass'] = dataclass
             # Note: If we didn't figure out a single appropriate

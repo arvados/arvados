@@ -250,7 +250,11 @@ func (fw FileWrapper) Len() uint64 {
 	return fw.len
 }
 
-func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
+func (fw FileWrapper) Seek(int64, int) (int64, error) {
+	return 0, errors.New("not implemented")
+}
+
+func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.Reader, error) {
 	if filename == hwImageId+".tar" {
 		rdr := ioutil.NopCloser(&bytes.Buffer{})
 		client.Called = true
@@ -329,7 +333,7 @@ func (KeepErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
 	return "", 0, errors.New("KeepError")
 }
 
-func (KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
+func (KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.Reader, error) {
 	return nil, errors.New("KeepError")
 }
 
@@ -353,7 +357,11 @@ func (ErrorReader) Len() uint64 {
 	return 0
 }
 
-func (KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error) {
+func (ErrorReader) Seek(int64, int) (int64, error) {
+	return 0, errors.New("ErrorReader")
+}
+
+func (KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.Reader, error) {
 	return ErrorReader{}, nil
 }
 

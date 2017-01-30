@@ -41,7 +41,7 @@ var ErrCancelled = errors.New("Cancelled")
 // IKeepClient is the minimal Keep API methods used by crunch-run.
 type IKeepClient interface {
 	PutHB(hash string, buf []byte) (string, int, error)
-	ManifestFileReader(m manifest.Manifest, filename string) (keepclient.ReadCloserWithLen, error)
+	ManifestFileReader(m manifest.Manifest, filename string) (keepclient.Reader, error)
 }
 
 // NewLogWriter is a factory function to create a new log writer.
