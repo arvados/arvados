@@ -28,10 +28,6 @@ type arvadosGoBooter struct {
 	tmpl string
 }
 
-func availablePort() int {
-	return rand.Intn(10000) + 20000
-}
-
 func (agb *arvadosGoBooter) Boot(ctx context.Context) error {
 	cfg := cfg(ctx)
 
@@ -58,7 +54,9 @@ func (agb *arvadosGoBooter) Boot(ctx context.Context) error {
 	if err := os.MkdirAll(path.Dir(cfgPath), 0755); err != nil {
 		return err
 	}
-	if err := atomicWriteFile(cfgPath+".ctmpl", []byte("{}"), 0644); err != nil {
+	// ctmpl := []byte(fmt.Sprintf(`{{tree %q | explode | toJSONPretty}}`, agb.name))
+	ctmpl := []byte(`{}`)
+	if err := atomicWriteFile(cfgPath+".ctmpl", ctmpl, 0644); err != nil {
 		return err
 	}
 	return Series{

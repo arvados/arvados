@@ -28,9 +28,10 @@ func newSupervisor(ctx context.Context, name, cmd string, args ...string) superv
 	}
 }
 
+// supervised by systemd/runit/etc and registered with consul
 type supervisedService struct {
-	name string
-	cmd  string
+	name string		// name to register with consul
+	cmd  string		// program to run (absolute path)
 	args []string
 }
 
@@ -71,4 +72,8 @@ func (s *supervisedService) Boot(ctx context.Context) error {
 		Name: s.name,
 		Port: availablePort(),
 	})
+}
+
+func availablePort() int {
+	return rand.Intn(10000) + 20000
 }

@@ -61,10 +61,12 @@ func (cb *consulBooter) Boot(ctx context.Context) error {
 	{
 		cf := path.Join(cfg.DataDir, "consul-ports.json")
 		err = atomicWriteJSON(cf, map[string]interface{}{
+			"client_addr":      "0.0.0.0",
 			"bootstrap_expect": len(cfg.ControlHosts),
 			"data_dir":         dataDir,
 			"datacenter":       cfg.SiteID,
 			"server":           true,
+			"ui":               true,
 			"ports": map[string]int{
 				"dns":      cfg.Ports.ConsulDNS,
 				"http":     cfg.Ports.ConsulHTTP,
