@@ -254,30 +254,25 @@ func run(dispatcher *dispatch.Dispatcher,
 	go monitorSubmitOrCancel(dispatcher, container, &monitorDone)
 
 	for container = range status {
-		if !(container.State == dispatch.Locked || container.State == dispatch.Running) {
-			continue
-		}
-		if container.Priority != 0 {
-			continue
-		}
-		log.Printf("Canceling container %s", container.UUID)
+		if container.Priority == 0 && (container.State == dispatch.Locked || container.State == dispatch.Running) {
+			log.Printf("Canceling container %s", container.UUID)
+			// Mutex between squeue sync and running sbatch or scancel.
+			squeueUpdater.SlurmLock.Lock()
+			cmd := scancelCmd(container)
+			msg, err := cmd.CombinedOutput()
+			squeueUpdater.SlurmLock.Unlock()
 
-		// Mutex between squeue sync and running sbatch or scancel.
-		squeueUpdater.SlurmLock.Lock()
-		cmd := scancelCmd(container)
-		msg, err := cmd.CombinedOutput()
-		squeueUpdater.SlurmLock.Unlock()
-
-		if err != nil {
-			log.Printf("Error stopping container %s with %v %v: %v %v", container.UUID, cmd.Path, cmd.Args, err, string(msg))
-			if squeueUpdater.CheckSqueue(container.UUID) {
-				log.Printf("Container %s is still in squeue after scancel.", container.UUID)
-				continue
+			if err != nil {
+				log.Printf("Error stopping container %s with %v %v: %v %v", container.UUID, cmd.Path, cmd.Args, err, string(msg))
+				if squeueUpdater.CheckSqueue(container.UUID) {
+					log.Printf("Container %s is still in squeue after scancel.", container.UUID)
+					continue
+				}
 			}
-		}
 
-		// Ignore errors; if necessary, we'll try again next time
-		dispatcher.UpdateState(container.UUID, dispatch.Cancelled)
+			// Ignore errors; if necessary, we'll try again next time
+			dispatcher.UpdateState(container.UUID, dispatch.Cancelled)
+		}
 	}
 	monitorDone = true
 }
