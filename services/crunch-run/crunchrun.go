@@ -240,8 +240,6 @@ func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string, token string) (
 	return c, nil
 }
 
-var tmpBackedOutputDir = false
-
 func (runner *ContainerRunner) SetupArvMountPoint(prefix string) (err error) {
 	if runner.ArvMountPoint == "" {
 		runner.ArvMountPoint, err = runner.MkTempDir("", prefix)
@@ -353,7 +351,6 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			}
 			runner.CleanupTempDir = append(runner.CleanupTempDir, runner.HostOutputDir)
 			runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", runner.HostOutputDir, bind))
-			tmpBackedOutputDir = true
 
 		case mnt.Kind == "tmp":
 			runner.Binds = append(runner.Binds, bind)
@@ -751,7 +748,7 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 
 	manifestText := ""
 	if mnt.Path == "" || mnt.Path == "/" {
-		// no path specified; return the entire manifest text
+		// no path specified; return the entire manifest text after making adjustments
 		manifestText = collection.ManifestText
 		manifestText = strings.Replace(manifestText, "./", "."+bindSuffix+"/", -1)
 		manifestText = strings.Replace(manifestText, ". ", "."+bindSuffix+" ", -1)
@@ -792,7 +789,7 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 								if strings.Index(t, ":") == -1 {
 									manifestText += (" " + t)
 								} else {
-									break // done reading all non-file tokens
+									break // done reading all non-file tokens of this stream
 								}
 							}
 							manifestText = strings.Trim(manifestText, " ")
