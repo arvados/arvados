@@ -520,7 +520,7 @@ class ArvPutUploadJob(object):
                     manifest = self._local_collection.manifest_text()
                 else:
                     # Get the manifest text without comitting pending blocks
-                    manifest = self._local_collection.manifest_text(".", strip=False,
+                    manifest = self._local_collection.manifest_text(strip=False,
                                                                     normalize=False,
                                                                     only_committed=True)
                 # Update cache
