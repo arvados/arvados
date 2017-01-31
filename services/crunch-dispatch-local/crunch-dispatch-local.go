@@ -10,7 +10,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -54,15 +56,23 @@ func doMain() error {
 	arv.Retries = 25
 
 	dispatcher := dispatch.Dispatcher{
-		Arv:            arv,
-		RunContainer:   run,
-		PollInterval:   time.Duration(*pollInterval) * time.Second,
-		DoneProcessing: make(chan struct{})}
+		Arv:          arv,
+		RunContainer: run,
+		PollPeriod:   time.Duration(*pollInterval) * time.Second,
+	}
 
-	err = dispatcher.RunDispatcher()
+	err = dispatcher.Run()
 	if err != nil {
 		return err
 	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGQUIT)
+	sig := <-c
+	log.Printf("Received %s, shutting down", sig)
+	signal.Stop(c)
+
+	dispatcher.Stop()
 
 	runningCmdsMutex.Lock()
 	// Finished dispatching; interrupt any crunch jobs that are still running
