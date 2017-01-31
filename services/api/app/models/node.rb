@@ -139,23 +139,21 @@ class Node < ArvadosModel
   end
 
   def dns_server_update
-    if hostname_changed? && hostname_was
+    if ip_address_changed? && ip_address
+      Node.where('id != ? and ip_address = ?',
+                 id, ip_address).each do |stale_node|
+        # One or more(!) stale node records have the same IP address
+        # as the new node. Clear the ip_address field on the stale
+        # nodes. Otherwise, we (via SLURM) might inadvertently connect
+        # to the new node using the old node's hostname.
+        stale_node.update_attributes!(ip_address: nil)
+      end
+    end
+    if hostname_was && hostname_changed?
       self.class.dns_server_update(hostname_was, UNUSED_NODE_IP)
     end
-    if hostname_changed? or ip_address_changed?
-      if ip_address
-        Node.where('id != ? and ip_address = ? and last_ping_at < ?',
-                   id, ip_address, 10.minutes.ago).each do |stale_node|
-          # One or more stale compute node records have the same IP
-          # address as the new node.  Clear the ip_address field on
-          # the stale nodes.
-          stale_node.ip_address = nil
-          stale_node.save!
-        end
-      end
-      if hostname
-        self.class.dns_server_update(hostname, ip_address || UNUSED_NODE_IP)
-      end
+    if hostname && (hostname_changed? || ip_address_changed?)
+      self.class.dns_server_update(hostname, ip_address || UNUSED_NODE_IP)
     end
   end
 

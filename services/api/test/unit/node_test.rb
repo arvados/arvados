@@ -152,4 +152,31 @@ class NodeTest < ActiveSupport::TestCase
       node.update_attributes!(hostname: 'foo0', ip_address: '10.11.12.14')
     end
   end
+
+  test 'newest ping wins IP address conflict' do
+    act_as_system_user do
+      n1, n2 = Node.create!, Node.create!
+
+      n1.ping(ip: '10.5.5.5', ping_secret: n1.info['ping_secret'])
+      n1.reload
+
+      Node.expects(:dns_server_update).with(n1.hostname, Node::UNUSED_NODE_IP)
+      Node.expects(:dns_server_update).with(Not(equals(n1.hostname)), '10.5.5.5')
+      n2.ping(ip: '10.5.5.5', ping_secret: n2.info['ping_secret'])
+
+      n1.reload
+      n2.reload
+      assert_nil n1.ip_address
+      assert_equal '10.5.5.5', n2.ip_address
+
+      Node.expects(:dns_server_update).with(n2.hostname, Node::UNUSED_NODE_IP)
+      Node.expects(:dns_server_update).with(n1.hostname, '10.5.5.5')
+      n1.ping(ip: '10.5.5.5', ping_secret: n1.info['ping_secret'])
+
+      n1.reload
+      n2.reload
+      assert_nil n2.ip_address
+      assert_equal '10.5.5.5', n1.ip_address
+    end
+  end
 end
