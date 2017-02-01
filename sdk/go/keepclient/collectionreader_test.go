@@ -2,10 +2,10 @@ package keepclient
 
 import (
 	"crypto/md5"
-	"crypto/rand"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"strconv"
@@ -161,28 +161,70 @@ func (s *CollectionReaderUnit) TestCollectionReaderContent(c *check.C) {
 
 func (s *CollectionReaderUnit) TestCollectionReaderManyBlocks(c *check.C) {
 	h := md5.New()
+	var testdata []byte
 	buf := make([]byte, 4096)
 	locs := make([]string, len(buf))
 	filesize := 0
 	for i := 0; i < len(locs); i++ {
-		_, err := io.ReadFull(rand.Reader, buf[:i])
-		c.Assert(err, check.IsNil)
+		_, err := rand.Read(buf[:i])
 		h.Write(buf[:i])
 		locs[i], _, err = s.kc.PutB(buf[:i])
 		c.Assert(err, check.IsNil)
 		filesize += i
+		testdata = append(testdata, buf[:i]...)
 	}
 	manifest := "./random " + strings.Join(locs, " ") + " 0:" + strconv.Itoa(filesize) + ":bytes.bin\n"
 	dataMD5 := h.Sum(nil)
 
 	checkMD5 := md5.New()
 	rdr, err := s.kc.CollectionFileReader(map[string]interface{}{"manifest_text": manifest}, "random/bytes.bin")
-	c.Check(err, check.IsNil)
+	c.Assert(err, check.IsNil)
+	defer rdr.Close()
+
 	_, err = io.Copy(checkMD5, rdr)
 	c.Check(err, check.IsNil)
 	_, err = rdr.Read(make([]byte, 1))
 	c.Check(err, check.Equals, io.EOF)
 	c.Check(checkMD5.Sum(nil), check.DeepEquals, dataMD5)
+
+	size, err := rdr.Seek(0, io.SeekEnd)
+	c.Check(err, check.IsNil)
+	buf = make([]byte, len(testdata))
+	copy(buf, testdata)
+	curPos := size
+	for i := 0; i < 16; i++ {
+		offset := rand.Intn(len(buf) - 1)
+		count := rand.Intn(len(buf) - offset)
+		if rand.Intn(2) == 0 {
+			curPos, err = rdr.Seek(int64(offset)-curPos, io.SeekCurrent)
+		} else {
+			curPos, err = rdr.Seek(int64(offset), io.SeekStart)
+		}
+		c.Check(curPos, check.Equals, int64(offset))
+		for count > 0 {
+			n, err := rdr.Read(buf[offset : offset+count])
+			c.Assert(err, check.IsNil)
+			c.Assert(n > 0, check.Equals, true)
+			offset += n
+			count -= n
+		}
+		curPos, err = rdr.Seek(0, io.SeekCurrent)
+		c.Check(curPos, check.Equals, int64(offset))
+	}
+	c.Check(md5.Sum(buf), check.DeepEquals, md5.Sum(testdata))
+	c.Check(buf[:1000], check.DeepEquals, testdata[:1000])
+
+	curPos, err = rdr.Seek(size+12345, io.SeekCurrent)
+	c.Check(err, check.IsNil)
+	c.Check(curPos, check.Equals, size)
+
+	curPos, err = rdr.Seek(8-size, io.SeekCurrent)
+	c.Check(err, check.IsNil)
+	c.Check(curPos, check.Equals, int64(8))
+
+	curPos, err = rdr.Seek(-9, io.SeekCurrent)
+	c.Check(err, check.NotNil)
+	c.Check(curPos, check.Equals, int64(8))
 }
 
 func (s *CollectionReaderUnit) TestCollectionReaderCloseEarly(c *check.C) {
