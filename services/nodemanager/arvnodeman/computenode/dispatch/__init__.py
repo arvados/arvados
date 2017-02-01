@@ -306,7 +306,6 @@ class ComputeNodeMonitorActor(config.actor_class):
     ):
         super(ComputeNodeMonitorActor, self).__init__()
         self._later = self.actor_ref.tell_proxy()
-        self._last_log = None
         self._shutdowns = shutdown_timer
         self._cloud_node_fqdn = cloud_fqdn_func
         self._timer = timer_actor
@@ -334,9 +333,6 @@ class ComputeNodeMonitorActor(config.actor_class):
         self.subscribers.add(subscriber)
 
     def _debug(self, msg, *args):
-        if msg == self._last_log:
-            return
-        self._last_log = msg
         self._logger.debug(msg, *args)
 
     def get_state(self):
