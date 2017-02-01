@@ -1134,7 +1134,7 @@ func (s *TestSuite) TestStdoutWithExcludeFromOutputMountPointUnderOutputDir(c *C
         "/tmp": {"kind": "tmp"},
         "/tmp/foo": {"kind": "collection",
                      "portable_data_hash": "a3e8f74c6f101eae01fa08bfb4e49b3a+54",
-                     "content": {"exclude_from_output": true}
+                     "exclude_from_output": true
         },
         "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"}
     },

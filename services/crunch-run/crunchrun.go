@@ -674,21 +674,11 @@ func (runner *ContainerRunner) CaptureOutput() error {
 			continue
 		}
 
-		if strings.Index(bindSuffix, "/") != 0 {
-			return fmt.Errorf("Expected bind to be of the format '%v/*' but found: %v", runner.Container.OutputPath, bind)
+		if strings.HasPrefix(bindSuffix, "/") == false {
+			bindSuffix = "/" + bindSuffix
 		}
 
-		jsondata, err := json.Marshal(mnt.Content)
-		if err != nil {
-			return fmt.Errorf("While marshal of mount content: %v", err)
-		}
-		var content map[string]interface{}
-		err = json.Unmarshal(jsondata, &content)
-		if err != nil {
-			return fmt.Errorf("While unmarshal of mount content: %v", err)
-		}
-
-		if content["exclude_from_output"] == true {
+		if mnt.ExcludeFromOutput == true {
 			continue
 		}
 
