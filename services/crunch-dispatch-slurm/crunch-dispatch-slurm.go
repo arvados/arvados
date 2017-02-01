@@ -160,10 +160,7 @@ func submit(dispatcher *dispatch.Dispatcher,
 			// OK, no cleanup needed
 			return
 		}
-		err := dispatcher.Unlock(container.UUID)
-		if err != nil {
-			log.Printf("Error unlocking container %s: %v", container.UUID, err)
-		}
+		dispatcher.Unlock(container.UUID)
 	}()
 
 	cmd := sbatchCmd(container)
