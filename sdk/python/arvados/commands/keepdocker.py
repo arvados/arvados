@@ -36,6 +36,9 @@ keepdocker_parser.add_argument(
 keepdocker_parser.add_argument(
     '-f', '--force', action='store_true', default=False,
     help="Re-upload the image even if it already exists on the server")
+keepdocker_parser.add_argument(
+    '--force-image-format', action='store_true', default=False,
+    help="Proceed even if the image format is not supported by the server")
 
 _group = keepdocker_parser.add_mutually_exclusive_group()
 _group.add_argument(
@@ -80,6 +83,35 @@ def check_docker(proc, description):
     if proc.returncode != 0:
         raise DockerError("docker {} returned status code {}".
                           format(description, proc.returncode))
+
+def docker_image_format(image_hash):
+    """Return the registry format ('v1' or 'v2') of the given image."""
+    cmd = popen_docker(['inspect', '--format={{.Id}}', image_hash],
+                        stdout=subprocess.PIPE)
+    try:
+        image_id = next(cmd.stdout).strip()
+        if image_id.startswith('sha256:'):
+            return 'v2'
+        elif ':' not in image_id:
+            return 'v1'
+        else:
+            return 'unknown'
+    finally:
+        check_docker(cmd, "inspect")
+
+def docker_image_compatible(api, image_hash):
+    supported = api._rootDesc.get('dockerImageFormats', [])
+    if not supported:
+        print >>sys.stderr, "arv-keepdocker: warning: server does not specify supported image formats (see docker_image_formats in server config). Continuing."
+        return True
+
+    fmt = docker_image_format(image_hash)
+    if fmt in supported:
+        return True
+    else:
+        print >>sys.stderr, "arv-keepdocker: image format is {!r} " \
+            "but server supports only {!r}".format(fmt, supported)
+        return False
 
 def docker_images():
     # Yield a DockerImage tuple for each installed image.
@@ -312,6 +344,14 @@ def main(arguments=None, stdout=sys.stdout):
     except DockerError as error:
         print >>sys.stderr, "arv-keepdocker:", error.message
         sys.exit(1)
+
+    if not docker_image_compatible(api, image_hash):
+        if args.force_image_format:
+            print >>sys.stderr, "arv-keepdocker: forcing incompatible image"
+        else:
+            print >>sys.stderr, "arv-keepdocker: refusing to store " \
+                "incompatible format (use --force-image-format to override)"
+            sys.exit(1)
 
     image_repo_tag = '{}:{}'.format(args.image, args.tag) if not image_hash.startswith(args.image.lower()) else None
 
