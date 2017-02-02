@@ -436,9 +436,11 @@ class ArvPutUploadJob(object):
                 raise ArvPutUploadNotPending()
             # Remove local_collection's files that don't exist locally anymore, so the
             # bytes_written count is correct.
+            # Using a set because is lot faster than a list in this case
+            file_paths = set(self._file_paths)
             for f in self.collection_file_paths(self._local_collection,
                                                 path_prefix=""):
-                if f != 'stdin' and f != self.filename and not f in self._file_paths:
+                if f != 'stdin' and f != self.filename and not f in file_paths:
                     self._local_collection.remove(f)
             # Update bytes_written from current local collection and
             # report initial progress.
@@ -703,12 +705,12 @@ class ArvPutUploadJob(object):
         """
         try:
             with self._state_lock:
-                state = copy.deepcopy(self._state)
+                state = json.dumps(self._state)
             new_cache_fd, new_cache_name = tempfile.mkstemp(
                 dir=os.path.dirname(self._cache_filename))
             self._lock_file(new_cache_fd)
             new_cache = os.fdopen(new_cache_fd, 'r+')
-            json.dump(state, new_cache)
+            new_cache.write(state)
             new_cache.flush()
             os.fsync(new_cache)
             os.rename(new_cache_name, self._cache_filename)
