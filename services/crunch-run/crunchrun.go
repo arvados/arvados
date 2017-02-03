@@ -713,6 +713,8 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	return nil
 }
 
+var outputCollections = make(map[string]arvados.Collection)
+
 // Fetch the collection for the mnt.PortableDataHash
 // Return the manifest_text fragment corresponding to the specified mnt.Path
 //  after making any required updates.
@@ -730,11 +732,16 @@ func (runner *ContainerRunner) CaptureOutput() error {
 //    "path":"/subdir1/subdir2"
 //    "path":"/subdir/filename" etc
 func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, bindSuffix string) (string, error) {
-	var collection arvados.Collection
-	err := runner.ArvClient.Get("collections", mnt.PortableDataHash, nil, &collection)
-	if err != nil {
-		return "", fmt.Errorf("While getting collection for %v: %v", mnt.PortableDataHash, err)
+	collection := outputCollections[mnt.PortableDataHash]
+	if collection.PortableDataHash == "" {
+		err := runner.ArvClient.Get("collections", mnt.PortableDataHash, nil, &collection)
+		if err != nil {
+			return "", fmt.Errorf("While getting collection for %v: %v", mnt.PortableDataHash, err)
+		}
+		outputCollections[mnt.PortableDataHash] = collection
 	}
+
+	manifest := manifest.Manifest{Text: collection.ManifestText}
 
 	manifestText := ""
 	if mnt.Path == "" || mnt.Path == "/" {
@@ -770,28 +777,19 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 				break
 			} else {
 				// look for a matching file in this stream
-				if tokens[0] == pathSubdir {
-					// path refers to a file in this stream
-					for _, token := range tokens {
-						if strings.Index(token, ":"+pathFileName) > 0 {
-							// found the file in the stream; discard all other file tokens
-							for _, t := range tokens {
-								if strings.Index(t, ":") == -1 {
-									manifestText += (" " + t)
-								} else {
-									break // done reading all non-file tokens of this stream
-								}
-							}
-							manifestText = strings.Trim(manifestText, " ")
-							token = strings.Replace(token, ":"+pathFileName, ":"+bindFileName, -1)
-							manifestText += (" " + token + "\n")
-							manifestText = strings.Replace(manifestText, pathSubdir, bindSubdir, -1)
-							break
-						}
-					}
+				fs := manifest.FileSegmentForPath(mntPath[1:])
+				if fs != "" {
+					manifestText = strings.Replace(fs, ":"+pathFileName, ":"+bindFileName, -1)
+					manifestText = strings.Replace(manifestText, pathSubdir, bindSubdir, -1)
+					manifestText += "\n"
+					break
 				}
 			}
 		}
+	}
+
+	if manifestText == "" {
+		runner.CrunchLog.Printf("No manifest segment found for bind '%v' with path '%v'", bindSuffix, mnt.Path)
 	}
 
 	return manifestText, nil

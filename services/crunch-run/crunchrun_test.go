@@ -57,8 +57,8 @@ var hwImageId = "9c31ee32b3d15268a0754e8edc74d4f815ee014b693bc5109058e431dd5caea
 var otherManifest = ". 68a84f561b1d1708c6baff5e019a9ab3+46+Ae5d0af96944a3690becb1decdf60cc1c937f556d@5693216f 0:46:md5sum.txt\n"
 var otherPDH = "a3e8f74c6f101eae01fa08bfb4e49b3a+54"
 
-var subdirManifest = ". 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 0:9:file1_in_main.txt 9:18:file2_in_main.txt 27:5649:zzzzz-8i9sb-bcdefghijkdhvnk.log.txt\n./subdir1 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 0:9:file1_in_subdir1.txt 9:18:file2_in_subdir1.txt\n./subdir1/subdir2 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 0:9:file1_in_subdir2.txt 9:19:file2_in_subdir2.txt\n"
-var subdirPDH = "a0def87f80dd594d4675809e83bd4f15+367"
+var normalizedManifestWithSubdirs = ". 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 0:9:file1_in_main.txt 9:18:file2_in_main.txt 27:5649:zzzzz-8i9sb-bcdefghijkdhvnk.log.txt\n./subdir1 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 0:9:file1_in_subdir1.txt 9:18:file2_in_subdir1.txt\n./subdir1/subdir2 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 0:9:file1_in_subdir2.txt 9:18:file2_in_subdir2.txt\n"
+var normalizedWithSubdirsPDH = "a0def87f80dd594d4675809e83bd4f15+367"
 
 var fakeAuthUUID = "zzzzz-gj3su-55pqoyepgi2glem"
 var fakeAuthToken = "a3ltuwzqcu2u4sc0q7yhpc2w7s00fdcqecg5d6e0u3pfohmbjt"
@@ -185,8 +185,8 @@ func (client *ArvTestClient) Get(resourceType string, uuid string, parameters ar
 			output.(*arvados.Collection).ManifestText = hwManifest
 		} else if uuid == otherPDH {
 			output.(*arvados.Collection).ManifestText = otherManifest
-		} else if uuid == subdirPDH {
-			output.(*arvados.Collection).ManifestText = subdirManifest
+		} else if uuid == normalizedWithSubdirsPDH {
+			output.(*arvados.Collection).ManifestText = normalizedManifestWithSubdirs
 		}
 	}
 	if resourceType == "containers" {
@@ -1194,7 +1194,7 @@ func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 
 				c.Check(-1, Not(Equals), strings.Index(manifest, "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out"))
 
-				origManifestWithDotReplacedAsFoo := strings.Replace(subdirManifest, "./", "./foo/", -1)
+				origManifestWithDotReplacedAsFoo := strings.Replace(normalizedManifestWithSubdirs, "./", "./foo/", -1)
 				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo"+origManifestWithDotReplacedAsFoo[1:]))
 
 				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 9:18:bar"))
@@ -1203,7 +1203,7 @@ func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 
 				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 9:18:sub1file2"))
 
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo/bar 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 9:19:sub2file2"))
+				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo/bar 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 9:18:sub2file2"))
 			}
 		}
 	}
@@ -1252,7 +1252,7 @@ func (s *TestSuite) TestStdoutWithMountPointForFileUnderOutputDir(c *C) {
 
 				c.Check(-1, Not(Equals), strings.Index(manifest, "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out"))
 
-				origManifestWithDotReplacedAsFoo := strings.Replace(subdirManifest, "./", "./foo/", -1)
+				origManifestWithDotReplacedAsFoo := strings.Replace(normalizedManifestWithSubdirs, "./", "./foo/", -1)
 				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo"+origManifestWithDotReplacedAsFoo[1:]))
 
 				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 9:18:bar"))
@@ -1261,7 +1261,7 @@ func (s *TestSuite) TestStdoutWithMountPointForFileUnderOutputDir(c *C) {
 
 				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 9:18:sub1file2"))
 
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo/bar 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 9:19:sub2file2"))
+				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo/bar 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 9:18:sub2file2"))
 			}
 		}
 	}
