@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"math/rand"
 	"os"
 
 	"github.com/hashicorp/consul/api"
@@ -30,8 +31,8 @@ func newSupervisor(ctx context.Context, name, cmd string, args ...string) superv
 
 // supervised by systemd/runit/etc and registered with consul
 type supervisedService struct {
-	name string		// name to register with consul
-	cmd  string		// program to run (absolute path)
+	name string // name to register with consul
+	cmd  string // program to run (absolute path)
 	args []string
 }
 
