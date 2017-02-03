@@ -445,7 +445,7 @@ class ArvPutUploadJob(object):
             # report initial progress.
             self._update()
             # Actual file upload
-            self._upload_started = True
+            self._upload_started = True # Used by the update thread to start checkpointing
             self._upload_files()
         finally:
             if not self.dry_run:
@@ -824,6 +824,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     global api_client
 
     logger = logging.getLogger('arvados.arv_put')
+    logger.setLevel(logging.INFO)
     args = parse_arguments(arguments)
     status = 0
     if api_client is None:
@@ -863,6 +864,10 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     else:
         reporter = None
 
+    # If this is used by a human, and there's at least one directory to be
+    # uploaded, the expected bytes calculation can take a moment. 
+    if args.progress and any([os.path.isdir(f) for f in args.paths]):
+        logger.info("Calculating upload size, this could take some time...")
     bytes_expected = expected_bytes_for(args.paths)
 
     try:
