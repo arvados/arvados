@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -18,29 +19,15 @@ func (r *runitService) Start(ctx context.Context) error {
 	if err := installRunit.Boot(ctx); err != nil {
 		return err
 	}
-	svdir := r.svdir(ctx)
-	if err := os.MkdirAll(svdir, 0755); err != nil {
-		return err
-	}
-	tmp, err := ioutil.TempFile(svdir, "run~")
-	if err != nil {
-		return err
-	}
-	fmt.Fprintf(tmp, "#!/bin/sh\n\nexec %q", r.cmd)
+
+	var script bytes.Buffer
+	fmt.Fprintf(script, "#!/bin/sh\n\nexec %q", r.cmd)
 	for _, arg := range r.args {
-		fmt.Fprintf(tmp, " %q", arg)
+		fmt.Fprintf(script, " %q", arg)
 	}
-	fmt.Fprintf(tmp, " 2>&1\n")
-	tmp.Close()
-	if err := os.Chmod(tmp.Name(), 0755); err != nil {
-		os.Remove(tmp.Name())
-		return err
-	}
-	if err := os.Rename(tmp.Name(), path.Join(svdir, "run")); err != nil {
-		os.Remove(tmp.Name())
-		return err
-	}
-	return nil
+	fmt.Fprintf(script, " 2>&1\n")
+
+	return atomicWriteFile(path.Join(r.svdir(ctx), "run"), script.Bytes(), 0755)
 }
 
 func (r *runitService) Running(ctx context.Context) (bool, error) {

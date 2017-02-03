@@ -8,6 +8,9 @@ import (
 )
 
 func atomicWriteFile(name string, data []byte, mode os.FileMode) error {
+	if err := os.MkdirAll(path.Dir(name), 0755); err != nil {
+		return err
+	}
 	tmp, err := ioutil.TempFile(path.Dir(name), path.Base(name)+"~")
 	if err != nil {
 		return err

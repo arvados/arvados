@@ -32,7 +32,7 @@ func newSupervisor(ctx context.Context, name, cmd string, args ...string) superv
 // supervised by systemd/runit/etc and registered with consul
 type supervisedService struct {
 	name string // name to register with consul
-	cmd  string // program to run (absolute path)
+	cmd  string // program to run (absolute path) -- if blank, use name
 	args []string
 }
 
