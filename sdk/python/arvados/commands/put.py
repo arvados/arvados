@@ -865,7 +865,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         reporter = None
 
     # If this is used by a human, and there's at least one directory to be
-    # uploaded, the expected bytes calculation can take a moment. 
+    # uploaded, the expected bytes calculation can take a moment.
     if args.progress and any([os.path.isdir(f) for f in args.paths]):
         logger.info("Calculating upload size, this could take some time...")
     bytes_expected = expected_bytes_for(args.paths)
