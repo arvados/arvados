@@ -382,7 +382,7 @@ class ArvPutUploadJob(object):
         self._collection_lock = threading.Lock()
         self._remote_collection = None # Collection being updated (if asked)
         self._local_collection = None # Collection from previous run manifest
-        self._file_paths = [] # Files to be updated in remote collection
+        self._file_paths = set() # Files to be updated in remote collection
         self._stop_checkpointer = threading.Event()
         self._checkpointer = threading.Thread(target=self._update_task)
         self._checkpointer.daemon = True
@@ -546,7 +546,7 @@ class ArvPutUploadJob(object):
         should_upload = False
         new_file_in_cache = False
         # Record file path for updating the remote collection before exiting
-        self._file_paths.append(filename)
+        self._file_paths.add(filename)
 
         with self._state_lock:
             # If no previous cached data on this file, store it for an eventual
@@ -703,12 +703,15 @@ class ArvPutUploadJob(object):
         """
         try:
             with self._state_lock:
-                state = copy.deepcopy(self._state)
+                # We're not using copy.deepcopy() here because it's a lot slower
+                # than json.dumps(), and we're already needing JSON format to be
+                # saved on disk.
+                state = json.dumps(self._state)
             new_cache_fd, new_cache_name = tempfile.mkstemp(
                 dir=os.path.dirname(self._cache_filename))
             self._lock_file(new_cache_fd)
             new_cache = os.fdopen(new_cache_fd, 'r+')
-            json.dump(state, new_cache)
+            new_cache.write(state)
             new_cache.flush()
             os.fsync(new_cache)
             os.rename(new_cache_name, self._cache_filename)
