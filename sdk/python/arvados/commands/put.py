@@ -382,7 +382,7 @@ class ArvPutUploadJob(object):
         self._collection_lock = threading.Lock()
         self._remote_collection = None # Collection being updated (if asked)
         self._local_collection = None # Collection from previous run manifest
-        self._file_paths = [] # Files to be updated in remote collection
+        self._file_paths = set() # Files to be updated in remote collection
         self._stop_checkpointer = threading.Event()
         self._checkpointer = threading.Thread(target=self._update_task)
         self._checkpointer.daemon = True
@@ -436,11 +436,9 @@ class ArvPutUploadJob(object):
                 raise ArvPutUploadNotPending()
             # Remove local_collection's files that don't exist locally anymore, so the
             # bytes_written count is correct.
-            # Using a set because is lot faster than a list in this case
-            file_paths = set(self._file_paths)
             for f in self.collection_file_paths(self._local_collection,
                                                 path_prefix=""):
-                if f != 'stdin' and f != self.filename and not f in file_paths:
+                if f != 'stdin' and f != self.filename and not f in self._file_paths:
                     self._local_collection.remove(f)
             # Update bytes_written from current local collection and
             # report initial progress.
@@ -548,7 +546,7 @@ class ArvPutUploadJob(object):
         should_upload = False
         new_file_in_cache = False
         # Record file path for updating the remote collection before exiting
-        self._file_paths.append(filename)
+        self._file_paths.add(filename)
 
         with self._state_lock:
             # If no previous cached data on this file, store it for an eventual
@@ -705,6 +703,9 @@ class ArvPutUploadJob(object):
         """
         try:
             with self._state_lock:
+                # We're not using copy.deepcopy() here because it's a lot slower
+                # than json.dumps(), and we're already needing JSON format to be
+                # saved on disk.
                 state = json.dumps(self._state)
             new_cache_fd, new_cache_name = tempfile.mkstemp(
                 dir=os.path.dirname(self._cache_filename))
