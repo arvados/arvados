@@ -59,7 +59,8 @@ class CrunchDispatchTest < ActiveSupport::TestCase
      [2, 16384, ['compute2', 'compute1']],
      [2, 8000, ['compute4', 'compute3']],
     ].each do |min_nodes, min_ram, expect_nodes|
-      job = Job.new(runtime_constraints: {
+      job = Job.new(uuid: 'zzzzz-8i9sb-382lhiizavzhqlp',
+                    runtime_constraints: {
                       'min_nodes' => min_nodes,
                       'min_ram_mb_per_node' => min_ram,
                     })

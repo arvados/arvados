@@ -64,7 +64,7 @@ type RunOptions struct {
 var debugf = func(string, ...interface{}) {}
 
 func main() {
-	var config Config
+	var cfg Config
 	var runOptions RunOptions
 
 	configPath := flag.String("config", defaultConfigPath,
@@ -78,19 +78,24 @@ func main() {
 		"send pull requests (make more replicas of blocks that are underreplicated or are not in optimal rendezvous probe order)")
 	flag.BoolVar(&runOptions.CommitTrash, "commit-trash", false,
 		"send trash requests (delete unreferenced old blocks, and excess replicas of overreplicated blocks)")
+	dumpConfig := flag.Bool("dump-config", false, "write current configuration to stdout and exit")
 	dumpFlag := flag.Bool("dump", false, "dump details for each block to stdout")
 	debugFlag := flag.Bool("debug", false, "enable debug messages")
 	flag.Usage = usage
 	flag.Parse()
 
-	mustReadConfig(&config, *configPath)
+	mustReadConfig(&cfg, *configPath)
 	if *serviceListPath != "" {
-		mustReadConfig(&config.KeepServiceList, *serviceListPath)
+		mustReadConfig(&cfg.KeepServiceList, *serviceListPath)
+	}
+
+	if *dumpConfig {
+		log.Fatal(config.DumpAndExit(cfg))
 	}
 
 	if *debugFlag {
 		debugf = log.Printf
-		if j, err := json.Marshal(config); err != nil {
+		if j, err := json.Marshal(cfg); err != nil {
 			log.Fatal(err)
 		} else {
 			log.Printf("config is %s", j)
@@ -99,13 +104,13 @@ func main() {
 	if *dumpFlag {
 		runOptions.Dumper = log.New(os.Stdout, "", log.LstdFlags)
 	}
-	err := CheckConfig(config, runOptions)
+	err := CheckConfig(cfg, runOptions)
 	if err != nil {
 		// (don't run)
 	} else if runOptions.Once {
-		_, err = (&Balancer{}).Run(config, runOptions)
+		_, err = (&Balancer{}).Run(cfg, runOptions)
 	} else {
-		err = RunForever(config, runOptions, nil)
+		err = RunForever(cfg, runOptions, nil)
 	}
 	if err != nil {
 		log.Fatal(err)

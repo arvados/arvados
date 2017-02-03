@@ -85,8 +85,12 @@ class ArvPathMapper(PathMapper):
         # type: (List[Any], unicode) -> None
         uploadfiles = set()
 
-        for k,v in self.arvrunner.get_uploaded().iteritems():
-            self._pathmap[k] = MapperEnt(v.resolved, self.collection_pattern % v.resolved[5:], "File")
+        already_uploaded = self.arvrunner.get_uploaded()
+        for k in referenced_files:
+            loc = k["location"]
+            if loc in already_uploaded:
+                v = already_uploaded[loc]
+                self._pathmap[loc] = MapperEnt(v.resolved, self.collection_pattern % v.resolved[5:], "File")
 
         for srcobj in referenced_files:
             self.visit(srcobj, uploadfiles)

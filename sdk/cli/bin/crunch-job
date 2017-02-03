@@ -715,6 +715,15 @@ foreach (split (/\n/, $Job->{knobs}))
 {
   Log (undef, "knob " . $_);
 }
+my $resp = api_call(
+  'nodes/list',
+  'filters' => [['hostname', 'in', \@node]],
+  'order' => 'hostname',
+  'limit' => scalar(@node),
+    );
+for my $n (@{$resp->{items}}) {
+  Log(undef, "$n->{hostname} $n->{uuid} ".JSON::encode_json($n->{properties}));
+}
 
 
 
@@ -1843,6 +1852,7 @@ sub croak
   my ($package, $file, $line) = caller;
   my $message = "@_ at $file line $line\n";
   Log (undef, $message);
+  release_allocation();
   freeze() if @jobstep_todo;
   create_output_collection() if @jobstep_todo;
   cleanup();

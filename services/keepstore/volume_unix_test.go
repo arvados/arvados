@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -13,6 +14,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	check "gopkg.in/check.v1"
 )
 
 type TestableUnixVolume struct {
@@ -361,4 +364,62 @@ func TestUnixVolumeContextCancelGet(t *testing.T) {
 	if n == len(TestBlock) || err != context.Canceled {
 		t.Errorf("Get() returned %d, %s -- expected short read / canceled", n, err)
 	}
+}
+
+var _ = check.Suite(&UnixVolumeSuite{})
+
+type UnixVolumeSuite struct {
+	volume *TestableUnixVolume
+}
+
+func (s *UnixVolumeSuite) TearDownTest(c *check.C) {
+	if s.volume != nil {
+		s.volume.Teardown()
+	}
+}
+
+func (s *UnixVolumeSuite) TestStats(c *check.C) {
+	s.volume = NewTestableUnixVolume(c, false, false)
+	stats := func() string {
+		buf, err := json.Marshal(s.volume.InternalStats())
+		c.Check(err, check.IsNil)
+		return string(buf)
+	}
+
+	c.Check(stats(), check.Matches, `.*"StatOps":0,.*`)
+	c.Check(stats(), check.Matches, `.*"Errors":0,.*`)
+
+	loc := "acbd18db4cc2f85cedef654fccc4a4d8"
+	_, err := s.volume.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.NotNil)
+	c.Check(stats(), check.Matches, `.*"StatOps":[^0],.*`)
+	c.Check(stats(), check.Matches, `.*"Errors":[^0],.*`)
+	c.Check(stats(), check.Matches, `.*"\*os\.PathError":[^0].*`)
+	c.Check(stats(), check.Matches, `.*"InBytes":0,.*`)
+	c.Check(stats(), check.Matches, `.*"OpenOps":0,.*`)
+	c.Check(stats(), check.Matches, `.*"CreateOps":0,.*`)
+
+	err = s.volume.Put(context.Background(), loc, []byte("foo"))
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"OutBytes":3,.*`)
+	c.Check(stats(), check.Matches, `.*"CreateOps":1,.*`)
+	c.Check(stats(), check.Matches, `.*"OpenOps":0,.*`)
+	c.Check(stats(), check.Matches, `.*"UtimesOps":0,.*`)
+
+	err = s.volume.Touch(loc)
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"FlockOps":1,.*`)
+	c.Check(stats(), check.Matches, `.*"OpenOps":1,.*`)
+	c.Check(stats(), check.Matches, `.*"UtimesOps":1,.*`)
+
+	_, err = s.volume.Get(context.Background(), loc, make([]byte, 3))
+	c.Check(err, check.IsNil)
+	err = s.volume.Compare(context.Background(), loc, []byte("foo"))
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"InBytes":6,.*`)
+	c.Check(stats(), check.Matches, `.*"OpenOps":3,.*`)
+
+	err = s.volume.Trash(loc)
+	c.Check(err, check.IsNil)
+	c.Check(stats(), check.Matches, `.*"FlockOps":2,.*`)
 }

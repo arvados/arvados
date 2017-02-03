@@ -558,20 +558,12 @@ class ProjectsTest < ActionDispatch::IntegrationTest
   end
 
   test "add new project using projects dropdown" do
-    # verify that selection options are disabled on the project until an item is selected
     visit page_with_token 'active', '/'
 
     # Add a new project
     find("#projects-menu").click
     click_link 'Add a new project'
     assert_text 'New project'
-    assert_text 'No description provided'
-
-    # Add one more new project
-    find("#projects-menu").click
-    click_link 'Add a new project'
-    match = /New project \(\d\)/.match page.text
-    assert match, 'Expected project name not found'
     assert_text 'No description provided'
   end
 

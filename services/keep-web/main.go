@@ -62,6 +62,8 @@ func main() {
 		"Only serve attachments at the given `host:port`"+deprecated)
 	flag.BoolVar(&cfg.TrustAllContent, "trust-all-content", false,
 		"Serve non-public content from a single origin. Dangerous: read docs before using!"+deprecated)
+	dumpConfig := flag.Bool("dump-config", false,
+		"write current configuration to stdout and exit")
 	flag.Usage = usage
 	flag.Parse()
 
@@ -76,6 +78,10 @@ func main() {
 	if cfg.deprecatedAllowAnonymous {
 		log.Printf("DEPRECATED: Using -allow-anonymous command line flag with ARVADOS_API_TOKEN environment variable. Use config file instead.")
 		cfg.AnonymousTokens = []string{os.Getenv("ARVADOS_API_TOKEN")}
+	}
+
+	if *dumpConfig {
+		log.Fatal(config.DumpAndExit(cfg))
 	}
 
 	os.Setenv("ARVADOS_API_HOST", cfg.Client.APIHost)

@@ -42,7 +42,7 @@
           <% if current_obj.can_cancel? and @object.editable? %>
               <%= form_tag "#{current_obj.uri}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
                 <%= hidden_field_tag :return_to, url_for(@object) %>
-                <%= button_tag "Cancel", {class: 'btn btn-xs btn-danger', id: "cancel-child-button"} %>
+                <%= button_tag "Cancel", {class: 'btn btn-xs btn-warning', id: "cancel-child-button"} %>
               <% end %>
           <% end %>
           </div>

@@ -120,6 +120,18 @@ You can work around this issue by disabling the Docker daemon's systemd integrat
 
 {% include 'notebox_end' %}
 
+h3. MinRetryPeriod: Rate-limit repeated attempts to start containers
+
+If SLURM is unable to run a container, the dispatcher will submit it again after the next PollPeriod. If PollPeriod is very short, this can be excessive. If MinRetryPeriod is set, the dispatcher will avoid submitting the same container to SLURM more than once in the given time span.
+
+<notextile>
+<pre><code class="userinput">Client:
+  APIHost: <b>zzzzz.arvadosapi.com</b>
+  AuthToken: <b>zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</b>
+MinRetryPeriod: <b>30s</b>
+</code></pre>
+</notextile>
+
 h2. Restart the dispatcher
 
 {% include 'notebox_begin' %}

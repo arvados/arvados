@@ -905,7 +905,8 @@ class RichCollectionBase(CollectionBase):
         return self._get_manifest_text(stream_name, True, True)
 
     @synchronized
-    def manifest_text(self, stream_name=".", strip=False, normalize=False):
+    def manifest_text(self, stream_name=".", strip=False, normalize=False,
+                      only_committed=False):
         """Get the manifest text for this collection, sub collections and files.
 
         This method will flush outstanding blocks to Keep.  By default, it will
@@ -924,10 +925,15 @@ class RichCollectionBase(CollectionBase):
           is not modified, return the original manifest text even if it is not
           in normalized form.
 
+        :only_committed:
+          If True, don't commit pending blocks.
+
         """
 
-        self._my_block_manager().commit_all()
-        return self._get_manifest_text(stream_name, strip, normalize)
+        if not only_committed:
+            self._my_block_manager().commit_all()
+        return self._get_manifest_text(stream_name, strip, normalize,
+                                       only_committed=only_committed)
 
     @synchronized
     def _get_manifest_text(self, stream_name, strip, normalize, only_committed=False):
@@ -973,7 +979,7 @@ class RichCollectionBase(CollectionBase):
             if stream:
                 buf.append(" ".join(normalize_stream(stream_name, stream)) + "\n")
             for dirname in [s for s in sorted_keys if isinstance(self[s], RichCollectionBase)]:
-                buf.append(self[dirname].manifest_text(stream_name=os.path.join(stream_name, dirname), strip=strip, normalize=True))
+                buf.append(self[dirname].manifest_text(stream_name=os.path.join(stream_name, dirname), strip=strip, normalize=True, only_committed=only_committed))
             return "".join(buf)
         else:
             if strip:
@@ -1149,7 +1155,8 @@ class Collection(RichCollectionBase):
                  parent=None,
                  apiconfig=None,
                  block_manager=None,
-                 replication_desired=None):
+                 replication_desired=None,
+                 put_threads=None):
         """Collection constructor.
 
         :manifest_locator_or_text:
@@ -1186,6 +1193,7 @@ class Collection(RichCollectionBase):
         self._keep_client = keep_client
         self._block_manager = block_manager
         self.replication_desired = replication_desired
+        self.put_threads = put_threads
 
         if apiconfig:
             self._config = apiconfig
@@ -1276,7 +1284,7 @@ class Collection(RichCollectionBase):
             copies = (self.replication_desired or
                       self._my_api()._rootDesc.get('defaultCollectionReplication',
                                                    2))
-            self._block_manager = _BlockManager(self._my_keep(), copies=copies)
+            self._block_manager = _BlockManager(self._my_keep(), copies=copies, put_threads=self.put_threads)
         return self._block_manager
 
     def _remember_api_response(self, response):

@@ -57,6 +57,14 @@ class User < ArvadosModel
 
   ALL_PERMISSIONS = {read: true, write: true, manage: true}
 
+  # Map numeric permission levels (see lib/create_permission_view.sql)
+  # back to read/write/manage flags.
+  PERMS_FOR_VAL =
+    [{},
+     {read: true},
+     {read: true, write: true},
+     {read: true, write: true, manage: true}]
+
   def full_name
     "#{first_name} #{last_name}".strip
   end
@@ -135,60 +143,38 @@ class User < ArvadosModel
   # Return a hash of {group_uuid: perm_hash} where perm_hash[:read]
   # and perm_hash[:write] are true if this user can read and write
   # objects owned by group_uuid.
-  #
-  # The permission graph is built by repeatedly enumerating all
-  # permission links reachable from self.uuid, and then calling
-  # search_permissions
   def calculate_group_permissions
-      permissions_from = {}
-      todo = {self.uuid => true}
-      done = {}
-      # Build the equivalence class of permissions starting with
-      # self.uuid. On each iteration of this loop, todo contains
-      # the next set of uuids in the permission equivalence class
-      # to evaluate.
-      while !todo.empty?
-        lookup_uuids = todo.keys
-        lookup_uuids.each do |uuid| done[uuid] = true end
-        todo = {}
-        newgroups = []
-        # include all groups owned by the current set of uuids.
-        Group.where('owner_uuid in (?)', lookup_uuids).each do |group|
-          newgroups << [group.owner_uuid, group.uuid, 'can_manage']
-        end
-        # add any permission links from the current lookup_uuids to a Group.
-        Link.where('link_class = ? and tail_uuid in (?) and ' \
-                   '(head_uuid like ? or (name = ? and head_uuid like ?))',
-                   'permission',
-                   lookup_uuids,
-                   Group.uuid_like_pattern,
-                   'can_manage',
-                   User.uuid_like_pattern).each do |link|
-          newgroups << [link.tail_uuid, link.head_uuid, link.name]
-        end
-        newgroups.each do |tail_uuid, head_uuid, perm_name|
-          unless done.has_key? head_uuid
-            todo[head_uuid] = true
-          end
-          link_permissions = {}
-          case perm_name
-          when 'can_read'
-            link_permissions = {read:true}
-          when 'can_write'
-            link_permissions = {read:true,write:true}
-          when 'can_manage'
-            link_permissions = ALL_PERMISSIONS
-          end
-          permissions_from[tail_uuid] ||= {}
-          permissions_from[tail_uuid][head_uuid] ||= {}
-          link_permissions.each do |k,v|
-            permissions_from[tail_uuid][head_uuid][k] ||= v
-          end
-        end
+    conn = ActiveRecord::Base.connection
+    self.class.transaction do
+      # Check whether the temporary view has already been created
+      # during this connection. If not, create it.
+      conn.exec_query 'SAVEPOINT check_permission_view'
+      begin
+        conn.exec_query('SELECT 1 FROM permission_view LIMIT 0')
+      rescue
+        conn.exec_query 'ROLLBACK TO SAVEPOINT check_permission_view'
+        sql = File.read(Rails.root.join('lib', 'create_permission_view.sql'))
+        conn.exec_query(sql)
+      ensure
+        conn.exec_query 'RELEASE SAVEPOINT check_permission_view'
       end
-      perms = search_permissions(self.uuid, permissions_from)
-      Rails.cache.write "groups_for_user_#{self.uuid}", perms
-      perms
+    end
+
+    group_perms = {}
+    conn.exec_query('SELECT target_owner_uuid, max(perm_level)
+                    FROM permission_view
+                    WHERE user_uuid = $1
+                    AND target_owner_uuid IS NOT NULL
+                    GROUP BY target_owner_uuid',
+                    # "name" arg is a query label that appears in logs:
+                    "group_permissions for #{uuid}",
+                    # "binds" arg is an array of [col_id, value] for '$1' vars:
+                    [[nil, uuid]],
+                    ).rows.each do |group_uuid, max_p_val|
+      group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
+    end
+    Rails.cache.write "groups_for_user_#{self.uuid}", group_perms
+    group_perms
   end
 
   # Return a hash of {group_uuid: perm_hash} where perm_hash[:read]

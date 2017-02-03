@@ -29,7 +29,7 @@ On a Debian-based system, install the following packages:
 On a Red Hat-based system, install the following packages:
 
 <notextile>
-<pre><code>~$ <span class="userinput">sudo yum install bison make automake gcc gcc-c++ graphviz git python27-python-arvados-python-client arvados-workbench</span>
+<pre><code>~$ <span class="userinput">sudo yum install bison make automake gcc gcc-c++ graphviz git python-arvados-python-client arvados-workbench</span>
 </code></pre>
 </notextile>
 
@@ -84,14 +84,6 @@ For best performance, we recommend you use Nginx as your Web server front-end, w
 <notextile>
 <ol>
 <li><a href="https://www.phusionpassenger.com/library/walkthroughs/deploy/ruby/ownserver/nginx/oss/install_passenger_main.html">Install Nginx and Phusion Passenger</a>.</li>
-
-<li>If you're deploying on an older Red Hat-based distribution and installed Pythyon 2.7 from Software Collections, configure Nginx to use it:
-
-<pre><code>~$ <span class="userinput">sudo usermod --shell /bin/bash nginx</span>
-~$ <span class="userinput">sudo -u nginx sh -c 'echo "[[ -z \$PS1 ]] && source scl_source enable python27" >>~/.bash_profile'</span>
-</code></pre>
-
-</li>
 
 <li><p>Edit the http section of your Nginx configuration to run the Passenger server, and act as a front-end for it.  You might add a block like the following, adding SSL and logging parameters to taste:</p>
 

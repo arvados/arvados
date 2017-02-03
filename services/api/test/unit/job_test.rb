@@ -307,6 +307,24 @@ class JobTest < ActiveSupport::TestCase
     assert_equal "Failed", job.state
   end
 
+  test "admin user can cancel a running job despite lock" do
+    set_user_from_auth :active_trustedclient
+    job = Job.create! job_attrs
+    job.lock current_user.uuid
+    assert_equal Job::Running, job.state
+
+    set_user_from_auth :spectator
+    assert_raises do
+      job.update_attributes!(state: Job::Cancelled)
+    end
+
+    set_user_from_auth :admin
+    job.reload
+    assert_equal Job::Running, job.state
+    job.update_attributes!(state: Job::Cancelled)
+    assert_equal Job::Cancelled, job.state
+  end
+
   test "verify job queue position" do
     job1 = Job.create! job_attrs
     assert_equal 'Queued', job1.state, "Incorrect job state for newly created job1"

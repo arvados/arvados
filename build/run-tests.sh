@@ -88,6 +88,7 @@ sdk/python
 sdk/ruby
 sdk/go/arvados
 sdk/go/arvadosclient
+sdk/go/dispatch
 sdk/go/keepclient
 sdk/go/httpserver
 sdk/go/manifest
@@ -121,7 +122,7 @@ GEMHOME=
 PERLINSTALLBASE=
 
 short=
-skip_install=
+only_install=
 temp=
 temp_preserve=
 
@@ -230,10 +231,9 @@ do
             short=1
             ;;
         --skip-install)
-            skip_install=1
+            only_install=nothing
             ;;
         --only-install)
-            skip_install=1
             only_install="$1"; shift
             ;;
         --temp)
@@ -527,7 +527,8 @@ do_test() {
             ;;
     esac
     if [[ -z "${skip[$suite]}" && -z "${skip[$1]}" && \
-                (-z "${only}" || "${only}" == "${suite}") ]]; then
+                (-z "${only}" || "${only}" == "${suite}" || \
+                 "${only}" == "${1}") ]]; then
         retry do_test_once ${@}
     else
         title "Skipping ${1} tests"
@@ -597,8 +598,7 @@ do_test_once() {
 }
 
 do_install() {
-    if [[ -z "${skip_install}" && \
-                (-z "${only_install}" || "${only_install}" == "${1}") ]]; then
+    if [[ -z "${only_install}" || "${only_install}" == "${1}" ]]; then
         retry do_install_once ${@}
     else
         title "Skipping $1 install"
@@ -770,6 +770,7 @@ gostuff=(
     sdk/go/arvados
     sdk/go/arvadosclient
     sdk/go/blockdigest
+    sdk/go/dispatch
     sdk/go/httpserver
     sdk/go/manifest
     sdk/go/streamer

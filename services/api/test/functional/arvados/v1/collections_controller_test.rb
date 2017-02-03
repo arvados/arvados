@@ -3,6 +3,8 @@ require 'test_helper'
 class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
   include DbCurrentTime
 
+  PERM_TOKEN_RE = /\+A[[:xdigit:]]+@[[:xdigit:]]{8}\b/
+
   def permit_unsigned_manifests isok=true
     # Set security model for the life of a test.
     Rails.configuration.permit_create_collection_with_unsigned_manifest = isok
@@ -11,9 +13,21 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
   def assert_signed_manifest manifest_text, label=''
     assert_not_nil manifest_text, "#{label} manifest_text was nil"
     manifest_text.scan(/ [[:xdigit:]]{32}\S*/) do |tok|
-      assert_match(/\+A[[:xdigit:]]+@[[:xdigit:]]{8}\b/, tok,
+      assert_match(PERM_TOKEN_RE, tok,
                    "Locator in #{label} manifest_text was not signed")
     end
+  end
+
+  def assert_unsigned_manifest resp, label=''
+    txt = resp['unsigned_manifest_text']
+    assert_not_nil(txt, "#{label} unsigned_manifest_text was nil")
+    locs = 0
+    txt.scan(/ [[:xdigit:]]{32}\S*/) do |tok|
+      locs += 1
+      refute_match(PERM_TOKEN_RE, tok,
+                   "Locator in #{label} unsigned_manifest_text was signed: #{tok}")
+    end
+    return locs
   end
 
   test "should get index" do
@@ -25,12 +39,13 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
            "basic Collections index included manifest_text")
   end
 
-  test "collections.get returns signed locators" do
+  test "collections.get returns signed locators, and no unsigned_manifest_text" do
     permit_unsigned_manifests
     authorize_with :active
     get :show, {id: collections(:foo_file).uuid}
     assert_response :success
     assert_signed_manifest json_response['manifest_text'], 'foo_file'
+    refute_includes json_response, 'unsigned_manifest_text'
   end
 
   test "index with manifest_text selected returns signed locators" do
@@ -41,10 +56,24 @@ class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
     assert(assigns(:objects).andand.any?,
            "no Collections returned for index with columns selected")
     json_response["items"].each do |coll|
-      assert_equal(columns, columns & coll.keys,
+      assert_equal(coll.keys - ['kind'], columns,
                    "Collections index did not respect selected columns")
       assert_signed_manifest coll['manifest_text'], coll['uuid']
     end
+  end
+
+  test "index with unsigned_manifest_text selected returns only unsigned locators" do
+    authorize_with :active
+    get :index, select: ['unsigned_manifest_text']
+    assert_response :success
+    assert_operator json_response["items"].count, :>, 0
+    locs = 0
+    json_response["items"].each do |coll|
+      assert_equal(coll.keys - ['kind'], ['unsigned_manifest_text'],
+                   "Collections index did not respect selected columns")
+      locs += assert_unsigned_manifest coll, coll['uuid']
+    end
+    assert_operator locs, :>, 0, "no locators found in any manifests"
   end
 
   test 'index without select returns everything except manifest' do
@@ -316,7 +345,7 @@ EOS
         ensure_unique_name: true
       }
       assert_response :success
-      assert_equal 'owned_by_active (2)', json_response['name']
+      assert_match /^owned_by_active \(\d{4}-\d\d-\d\d.*?Z\)$/, json_response['name']
     end
   end
 

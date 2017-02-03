@@ -37,6 +37,7 @@ class Arvados::V1::SchemaController < ApplicationController
         defaultTrashLifetime: Rails.application.config.default_trash_lifetime,
         blobSignatureTtl: Rails.application.config.blob_signature_ttl,
         maxRequestSize: Rails.application.config.max_request_size,
+        dockerImageFormats: Rails.application.config.docker_image_formats,
         parameters: {
           alt: {
             type: "string",
@@ -246,12 +247,18 @@ class Arvados::V1::SchemaController < ApplicationController
                 },
                 select: {
                   type: "array",
-                  description: "Select which fields to return",
+                  description: "Select which fields to return.",
                   location: "query"
                 },
                 distinct: {
                   type: "boolean",
-                  description: "Return each distinct object",
+                  description: "Return each distinct object.",
+                  location: "query"
+                },
+                count: {
+                  type: "string",
+                  description: "Type of count to return in items_available ('none' or 'exact').",
+                  default: "exact",
                   location: "query"
                 }
               },

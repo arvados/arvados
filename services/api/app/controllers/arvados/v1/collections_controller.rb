@@ -40,6 +40,8 @@ class Arvados::V1::CollectionsController < ApplicationController
 
   def show
     if @object.is_a? Collection
+      # Omit unsigned_manifest_text
+      @select ||= model_class.selectable_attributes - ["unsigned_manifest_text"]
       super
     else
       send_json @object
@@ -212,8 +214,8 @@ class Arvados::V1::CollectionsController < ApplicationController
   def load_limit_offset_order_params *args
     super
     if action_name == 'index'
-      # Omit manifest_text from index results unless expressly selected.
-      @select ||= model_class.selectable_attributes - ["manifest_text"]
+      # Omit manifest_text and unsigned_manifest_text from index results unless expressly selected.
+      @select ||= model_class.selectable_attributes - ["manifest_text", "unsigned_manifest_text"]
     end
   end
 end

@@ -28,7 +28,7 @@ from arvados.errors import ApiError
 
 from .arvcontainer import ArvadosContainer, RunnerContainer
 from .arvjob import ArvadosJob, RunnerJob, RunnerTemplate
-from. runner import Runner, upload_instance
+from. runner import Runner, upload_docker, upload_job_order, upload_workflow_deps, upload_dependencies
 from .arvtool import ArvadosCommandTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow
 from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver
@@ -211,6 +211,11 @@ class ArvCwlRunner(object):
                         raise SourceLine(obj, "stdin", UnsupportedRequirement).makeError("Stdin redirection currently not suppported with --api=containers")
                     if obj.get("stderr"):
                         raise SourceLine(obj, "stderr", UnsupportedRequirement).makeError("Stderr redirection currently not suppported with --api=containers")
+            if obj.get("class") == "DockerRequirement":
+                if obj.get("dockerOutputDirectory"):
+                    # TODO: can be supported by containers API, but not jobs API.
+                    raise SourceLine(obj, "dockerOutputDirectory", UnsupportedRequirement).makeError(
+                        "Option 'dockerOutputDirectory' of DockerRequirement not supported.")
             for v in obj.itervalues():
                 self.check_features(v)
         elif isinstance(obj, list):
@@ -334,23 +339,44 @@ class ArvCwlRunner(object):
                                                                  keep_client=self.keep_client)
         self.fs_access = make_fs_access(kwargs["basedir"])
 
+        if not kwargs.get("name"):
+            kwargs["name"] = self.name = tool.tool.get("label") or tool.metadata.get("label") or os.path.basename(tool.tool["id"])
+
+        # Upload direct dependencies of workflow steps, get back mapping of files to keep references.
+        # Also uploads docker images.
+        upload_workflow_deps(self, tool)
+
+        # Reload tool object which may have been updated by
+        # upload_workflow_deps
+        tool = self.arv_make_tool(tool.doc_loader.idx[tool.tool["id"]],
+                                  makeTool=self.arv_make_tool,
+                                  loader=tool.doc_loader,
+                                  avsc_names=tool.doc_schema,
+                                  metadata=tool.metadata)
+
+        # Upload local file references in the job order.
+        job_order = upload_job_order(self, "%s input" % kwargs["name"],
+                                     tool, job_order)
+
         existing_uuid = kwargs.get("update_workflow")
         if existing_uuid or kwargs.get("create_workflow"):
+            # Create a pipeline template or workflow record and exit.
             if self.work_api == "jobs":
                 tmpl = RunnerTemplate(self, tool, job_order,
                                       kwargs.get("enable_reuse"),
                                       uuid=existing_uuid,
                                       submit_runner_ram=kwargs.get("submit_runner_ram"),
-                                      name=kwargs.get("name"))
+                                      name=kwargs["name"])
                 tmpl.save()
                 # cwltool.main will write our return value to stdout.
-                return tmpl.uuid
-            else:
-                return upload_workflow(self, tool, job_order,
-                                       self.project_uuid,
-                                       uuid=existing_uuid,
-                                       submit_runner_ram=kwargs.get("submit_runner_ram"),
-                                       name=kwargs.get("name"))
+                return (tmpl.uuid, "success")
+            elif self.work_api == "containers":
+                return (upload_workflow(self, tool, job_order,
+                                        self.project_uuid,
+                                        uuid=existing_uuid,
+                                        submit_runner_ram=kwargs.get("submit_runner_ram"),
+                                        name=kwargs["name"]),
+                        "success")
 
         self.ignore_docker_for_reuse = kwargs.get("ignore_docker_for_reuse")
 
@@ -358,11 +384,7 @@ class ArvCwlRunner(object):
         kwargs["enable_reuse"] = kwargs.get("enable_reuse")
         kwargs["use_container"] = True
         kwargs["tmpdir_prefix"] = "tmp"
-        kwargs["on_error"] = "continue"
         kwargs["compute_checksum"] = kwargs.get("compute_checksum")
-
-        if not kwargs["name"]:
-            del kwargs["name"]
 
         if self.work_api == "containers":
             kwargs["outdir"] = "/var/spool/cwl"
@@ -374,26 +396,39 @@ class ArvCwlRunner(object):
             kwargs["docker_outdir"] = "$(task.outdir)"
             kwargs["tmpdir"] = "$(task.tmpdir)"
 
-        upload_instance(self, shortname(tool.tool["id"]), tool, job_order)
-
         runnerjob = None
         if kwargs.get("submit"):
+            # Submit a runner job to run the workflow for us.
             if self.work_api == "containers":
                 if tool.tool["class"] == "CommandLineTool":
                     kwargs["runnerjob"] = tool.tool["id"]
+                    upload_dependencies(self,
+                                        kwargs["name"],
+                                        tool.doc_loader,
+                                        tool.tool,
+                                        tool.tool["id"],
+                                        False)
                     runnerjob = tool.job(job_order,
                                          self.output_callback,
                                          **kwargs).next()
                 else:
-                    runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name,
-                                                self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"),
-                                                name=kwargs.get("name"))
-            else:
-                runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"), self.output_name,
-                                      self.output_tags, submit_runner_ram=kwargs.get("submit_runner_ram"),
-                                      name=kwargs.get("name"))
+                    runnerjob = RunnerContainer(self, tool, job_order, kwargs.get("enable_reuse"),
+                                                self.output_name,
+                                                self.output_tags,
+                                                submit_runner_ram=kwargs.get("submit_runner_ram"),
+                                                name=kwargs.get("name"),
+                                                on_error=kwargs.get("on_error"),
+                                                submit_runner_image=kwargs.get("submit_runner_image"))
+            elif self.work_api == "jobs":
+                runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"),
+                                      self.output_name,
+                                      self.output_tags,
+                                      submit_runner_ram=kwargs.get("submit_runner_ram"),
+                                      name=kwargs.get("name"),
+                                      on_error=kwargs.get("on_error"),
+                                      submit_runner_image=kwargs.get("submit_runner_image"))
 
-        if not kwargs.get("submit") and "cwl_runner_job" not in kwargs and not self.work_api == "containers":
+        if not kwargs.get("submit") and "cwl_runner_job" not in kwargs and self.work_api == "jobs":
             # Create pipeline for local run
             self.pipeline = self.api.pipeline_instances().create(
                 body={
@@ -405,7 +440,7 @@ class ArvCwlRunner(object):
 
         if runnerjob and not kwargs.get("wait"):
             runnerjob.run(wait=kwargs.get("wait"))
-            return runnerjob.uuid
+            return (runnerjob.uuid, "success")
 
         self.poll_api = arvados.api('v1')
         self.polling_thread = threading.Thread(target=self.poll_states)
@@ -483,14 +518,11 @@ class ArvCwlRunner(object):
             self.final_output, self.final_output_collection = self.make_output_collection(self.output_name, self.output_tags, self.final_output)
             self.set_crunch_output()
 
-        if self.final_status != "success":
-            raise WorkflowException("Workflow failed.")
-
         if kwargs.get("compute_checksum"):
             adjustDirObjs(self.final_output, partial(getListing, self.fs_access))
             adjustFileObjs(self.final_output, partial(compute_checksums, self.fs_access))
 
-        return self.final_output
+        return (self.final_output, self.final_status)
 
 
 def versionstring():
@@ -577,9 +609,17 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         help="RAM (in MiB) required for the workflow runner job (default 1024)",
                         default=1024)
 
+    parser.add_argument("--submit-runner-image", type=str,
+                        help="Docker image for workflow runner job, default arvados/jobs:%s" % __version__,
+                        default=None)
+
     parser.add_argument("--name", type=str,
                         help="Name to use for workflow execution instance.",
                         default=None)
+
+    parser.add_argument("--on-error", type=str,
+                        help="Desired workflow behavior when a step fails.  One of 'stop' or 'continue'. "
+                        "Default is 'continue'.", default="continue", choices=("stop", "continue"))
 
     parser.add_argument("workflow", type=str, nargs="?", default=None, help="The workflow to execute")
     parser.add_argument("job_order", nargs=argparse.REMAINDER, help="The input object to the workflow.")
@@ -640,9 +680,11 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
 
     if arvargs.debug:
         logger.setLevel(logging.DEBUG)
+        logging.getLogger('arvados').setLevel(logging.DEBUG)
 
     if arvargs.quiet:
         logger.setLevel(logging.WARN)
+        logging.getLogger('arvados').setLevel(logging.WARN)
         logging.getLogger('arvados.arv-run').setLevel(logging.WARN)
 
     if arvargs.metrics:
@@ -673,6 +715,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
                                                     keep_client=keep_client),
                              fetcher_constructor=partial(CollectionFetcher,
                                                          api_client=api_client,
-                                                         keep_client=keep_client),
-                             resolver=partial(collectionResolver, api_client),
+                                                         keep_client=keep_client,
+                                                         num_retries=runner.num_retries),
+                             resolver=partial(collectionResolver, api_client, num_retries=runner.num_retries),
                              logger_handler=arvados.log_handler)
