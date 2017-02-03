@@ -229,6 +229,49 @@ func parseManifestStream(s string) (m ManifestStream) {
 	return
 }
 
+func (m *Manifest) ManifestStreamForPath(path string) string {
+	manifestForPath := ""
+	locators := []string{}
+	for ms := range m.StreamIter() {
+		if ms.StreamName != "./"+path {
+			continue
+		}
+
+		locators = append(locators, ms.Blocks...)
+
+		currentName := ""
+		currentSpan := []uint64{0, 0}
+		for _, fss := range ms.FileStreamSegments {
+			if fss.Name != currentName && currentName != "" {
+				manifestForPath += fmt.Sprintf("%v", currentSpan[0]) + ":" + fmt.Sprintf("%v", currentSpan[1]) + ":" + currentName + " "
+			}
+
+			if fss.Name != currentName {
+				currentName = fss.Name
+				currentSpan = []uint64{0, 0}
+			}
+
+			if currentSpan[1] == 0 {
+				currentSpan = []uint64{fss.SegPos, fss.SegLen}
+			} else {
+				if currentSpan[1] == fss.SegPos {
+					currentSpan[1] += fss.SegLen
+				} else {
+					manifestForPath += fmt.Sprintf("%v", currentSpan[0]) + ":" + fmt.Sprintf("%v", currentSpan[1]+fss.SegLen) + ":" + fss.Name + " "
+					currentSpan = []uint64{fss.SegPos, fss.SegPos + fss.SegLen}
+				}
+			}
+		}
+		manifestForPath += fmt.Sprintf("%v", currentSpan[0]) + ":" + fmt.Sprintf("%v", currentSpan[1]) + ":" + currentName + " "
+	}
+
+	if len(locators) > 0 {
+		return "./" + path + " " + strings.Join(locators, " ") + " " + manifestForPath
+	}
+
+	return ""
+}
+
 func (m *Manifest) StreamIter() <-chan ManifestStream {
 	ch := make(chan ManifestStream)
 	go func(input string) {
@@ -272,10 +315,36 @@ func (m *Manifest) FileSegmentForPath(filepath string) string {
 		dir = "./" + filepath[0:idx]
 		file = filepath[idx+1:]
 	}
+
+	var fileSegments []FileSegment
 	for fs := range m.FileSegmentIterByName(filepath) {
-		return fmt.Sprintf("%v %v %v:%v:%v", dir, fs.Locator, fs.Offset, fs.Len, file)
+		fileSegments = append(fileSegments, *fs)
 	}
-	return ""
+
+	if len(fileSegments) == 0 {
+		return ""
+	}
+
+	locators := ""
+	manifestForFile := ""
+	currentSpan := []int{0, 0}
+	for _, fs := range fileSegments {
+		locators += fs.Locator + " "
+
+		if currentSpan[1] == 0 {
+			currentSpan = []int{fs.Offset, fs.Len}
+		} else {
+			if currentSpan[1] == fs.Offset {
+				currentSpan[1] += fs.Len
+			} else {
+				manifestForFile += strconv.Itoa(currentSpan[0]) + ":" + strconv.Itoa(currentSpan[1]+fs.Len) + ":" + file + " "
+				currentSpan = []int{fs.Offset, fs.Offset + fs.Len}
+			}
+		}
+	}
+	manifestForFile += strconv.Itoa(currentSpan[0]) + ":" + strconv.Itoa(currentSpan[1]) + ":" + file
+
+	return fmt.Sprintf("%v %v %v", dir, strings.Trim(locators, " "), manifestForFile)
 }
 
 // Blocks may appear multiple times within the same manifest if they

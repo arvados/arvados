@@ -767,23 +767,19 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 			pathSubdir = "." + mntPath[0:pathIdx]
 			pathFileName = mntPath[pathIdx+1:]
 		}
-		streams := strings.Split(collection.ManifestText, "\n")
-		for _, stream := range streams {
-			tokens := strings.Split(stream, " ")
-			if tokens[0] == "."+mntPath {
-				// path refers to this complete stream
-				adjustedStream := strings.Replace(stream, "."+mntPath, "."+bindSuffix, -1)
-				manifestText = adjustedStream + "\n"
-				break
-			} else {
-				// look for a matching file in this stream
-				fs := manifest.FileSegmentForPath(mntPath[1:])
-				if fs != "" {
-					manifestText = strings.Replace(fs, ":"+pathFileName, ":"+bindFileName, -1)
-					manifestText = strings.Replace(manifestText, pathSubdir, bindSubdir, -1)
-					manifestText += "\n"
-					break
-				}
+
+		manifestStreamForPath := manifest.ManifestStreamForPath(mntPath[1:])
+		if manifestStreamForPath != "" {
+			// path refers to this complete stream
+			adjustedStream := strings.Replace(manifestStreamForPath, "."+mntPath, "."+bindSuffix, -1)
+			manifestText = adjustedStream + "\n"
+		} else {
+			// look for a matching file in this stream
+			fs := manifest.FileSegmentForPath(mntPath[1:])
+			if fs != "" {
+				manifestText = strings.Replace(fs, ":"+pathFileName, ":"+bindFileName, -1)
+				manifestText = strings.Replace(manifestText, pathSubdir, bindSubdir, -1)
+				manifestText += "\n"
 			}
 		}
 	}
