@@ -2,8 +2,12 @@
 
 from __future__ import absolute_import, print_function
 
+import subprocess
+
 from . import clientactor
 from . import config
+
+import arvados.util
 
 class ArvadosNodeListMonitorActor(clientactor.RemotePollLoopActor):
     """Actor to poll the Arvados node list.
@@ -19,8 +23,27 @@ class ArvadosNodeListMonitorActor(clientactor.RemotePollLoopActor):
         return node['uuid']
 
     def _send_request(self):
-        return self._client.nodes().list(limit=10000).execute()['items']
+        nodelist = arvados.util.list_all(self._client.nodes)
 
+        # node hostname, state
+        sinfo_out = subprocess.check_output(["sinfo", "--noheader", "--format=%n %t"])
+        nodestates = {}
+        for out in sinfo_out.splitlines():
+            nodename, state = out.split(" ", 2)
+            if state in ('alloc', 'comp'):
+                nodestates[nodename] = 'busy'
+            elif state == 'idle':
+                nodestates[nodename] = 'idle'
+            else:
+                nodestates[nodename] = 'down'
+
+        for n in nodelist:
+            if n["slot_number"] and n["hostname"] and n["hostname"] in nodestates:
+                n["crunch_worker_state"] = nodestates[n["hostname"]]
+            else:
+                n["crunch_worker_state"] = 'down'
+
+        return nodelist
 
 class CloudNodeListMonitorActor(clientactor.RemotePollLoopActor):
     """Actor to poll the cloud node list.
