@@ -743,10 +743,9 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 
 	manifest := manifest.Manifest{Text: collection.ManifestText}
 
-	manifestText := ""
+	manifestText := manifest.NormalizedManifestForPath(mnt.Path)
 	if mnt.Path == "" || mnt.Path == "/" {
 		// no path specified; return the entire manifest text after making adjustments
-		manifestText = collection.ManifestText
 		manifestText = strings.Replace(manifestText, "./", "."+bindSuffix+"/", -1)
 		manifestText = strings.Replace(manifestText, ". ", "."+bindSuffix+" ", -1)
 	} else {
@@ -768,19 +767,13 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 			pathFileName = mntPath[pathIdx+1:]
 		}
 
-		manifestStreamForPath := manifest.ManifestStreamForPath(mntPath[1:])
-		if manifestStreamForPath != "" {
+		if strings.Index(manifestText, "."+mntPath+" ") != -1 {
 			// path refers to this complete stream
-			adjustedStream := strings.Replace(manifestStreamForPath, "."+mntPath, "."+bindSuffix, -1)
-			manifestText = adjustedStream + "\n"
+			manifestText = strings.Replace(manifestText, "."+mntPath, "."+bindSuffix, -1)
 		} else {
 			// look for a matching file in this stream
-			fs := manifest.FileSegmentForPath(mntPath[1:])
-			if fs != "" {
-				manifestText = strings.Replace(fs, ":"+pathFileName, ":"+bindFileName, -1)
-				manifestText = strings.Replace(manifestText, pathSubdir, bindSubdir, -1)
-				manifestText += "\n"
-			}
+			manifestText = strings.Replace(manifestText, ":"+pathFileName, ":"+bindFileName, -1)
+			manifestText = strings.Replace(manifestText, pathSubdir, bindSubdir, -1)
 		}
 	}
 
