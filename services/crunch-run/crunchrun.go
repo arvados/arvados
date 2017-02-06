@@ -741,9 +741,31 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 		outputCollections[mnt.PortableDataHash] = collection
 	}
 
-	manifest := manifest.Manifest{Text: collection.ManifestText}
+	if collection.ManifestText == "" {
+		runner.CrunchLog.Printf("No manifest text for collection %v", collection.PortableDataHash)
+		return "", nil
+	}
 
+	manifest := manifest.Manifest{Text: collection.ManifestText}
 	manifestText := manifest.NormalizedManifestForPath(mnt.Path)
+
+	if manifestText == "" {
+		// It could be denormalized manifest
+		mntPath := strings.Trim(mnt.Path, "/")
+		manifestText = strings.Replace(collection.ManifestText, "./", "."+bindSuffix+"/", -1)
+		manifestText = strings.Replace(manifestText, ". ", "."+bindSuffix+" ", -1)
+		wanted := ""
+		for _, token := range strings.Split(manifestText, " ") {
+			if strings.Index(token, ":") == -1 {
+				wanted += " " + token
+			} else if strings.Index(token, ":"+mntPath) >= 0 {
+				wanted += " " + token + "\n"
+				break
+			}
+		}
+		return wanted, nil
+	}
+
 	if mnt.Path == "" || mnt.Path == "/" {
 		// no path specified; return the entire manifest text after making adjustments
 		manifestText = strings.Replace(manifestText, "./", "."+bindSuffix+"/", -1)
