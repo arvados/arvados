@@ -4,16 +4,16 @@ import (
 	"context"
 	"io/ioutil"
 	"os"
-	"sync"
 )
 
 var arvadosRepo = &arvadosRepoBooter{}
 
-type arvadosRepoBooter struct {
-	sync.Mutex
-}
+type arvadosRepoBooter struct {}
 
 func (*arvadosRepoBooter) Boot(ctx context.Context) error {
+	osPackageMutex.Lock()
+	defer osPackageMutex.Unlock()
+
 	cfg := cfg(ctx)
 	repo := cfg.ArvadosAptRepo
 	if !repo.Enabled {
