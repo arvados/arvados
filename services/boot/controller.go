@@ -24,7 +24,10 @@ func (c *controller) Boot(ctx context.Context) error {
 			},
 			consul,
 		},
-		vault,
+		Concurrent{
+			vault,
+			nomad,
+		},
 		Concurrent{
 			dispatchLocal,
 			dispatchSLURM,

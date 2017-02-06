@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
 	"path"
 )
 
@@ -20,7 +18,7 @@ func (r *runitService) Start(ctx context.Context) error {
 		return err
 	}
 
-	var script bytes.Buffer
+	script := &bytes.Buffer{}
 	fmt.Fprintf(script, "#!/bin/sh\n\nexec %q", r.cmd)
 	for _, arg := range r.args {
 		fmt.Fprintf(script, " %q", arg)

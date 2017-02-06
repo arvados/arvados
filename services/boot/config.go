@@ -34,6 +34,9 @@ type portsConfig struct {
 	ConsulSerfLAN int
 	ConsulSerfWAN int
 	ConsulServer  int
+	NomadHTTP     int
+	NomadRPC      int
+	NomadSerf     int
 	VaultServer   int
 }
 
@@ -91,6 +94,9 @@ func DefaultConfig() *Config {
 			ConsulSerfLAN: 18301,
 			ConsulSerfWAN: 18302,
 			ConsulServer:  18300,
+			NomadHTTP:     14646,
+			NomadRPC:      14647,
+			NomadSerf:     14648,
 			VaultServer:   18200,
 		},
 		DataDir:    "/var/lib/arvados",
