@@ -313,6 +313,8 @@ func (m *Manifest) NormalizedManifestForPath(path string) string {
 			} else {
 				if currentSpan[1] == fss.SegPos {
 					currentSpan[1] += fss.SegLen
+				} else if currentSpan[0]+currentSpan[1] == fss.SegPos {
+					currentSpan[1] = fss.SegPos + fss.SegLen
 				} else {
 					manifestForPath += fmt.Sprintf("%v", currentSpan[0]) + ":" + fmt.Sprintf("%v", currentSpan[1]+fss.SegLen) + ":" + fss.Name + " "
 					currentSpan = []uint64{fss.SegPos, fss.SegPos + fss.SegLen}

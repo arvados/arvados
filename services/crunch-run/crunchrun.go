@@ -755,12 +755,18 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 		manifestText = strings.Replace(collection.ManifestText, "./", "."+bindSuffix+"/", -1)
 		manifestText = strings.Replace(manifestText, ". ", "."+bindSuffix+" ", -1)
 		wanted := ""
-		for _, token := range strings.Split(manifestText, " ") {
-			if strings.Index(token, ":") == -1 {
-				wanted += " " + token
-			} else if strings.Index(token, ":"+mntPath) >= 0 {
-				wanted += " " + token + "\n"
-				break
+		for _, stream := range strings.Split(manifestText, "\n") {
+			if strings.Index(stream, mntPath) == -1 {
+				continue
+			}
+
+			for _, token := range strings.Split(manifestText, " ") {
+				if strings.Index(token, ":") == -1 {
+					wanted += " " + token
+				} else if strings.Index(token, ":"+mntPath) >= 0 {
+					wanted += " " + token + "\n"
+					break
+				}
 			}
 		}
 		return wanted, nil
