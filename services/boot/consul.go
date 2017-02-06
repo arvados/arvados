@@ -8,6 +8,7 @@ import (
 	"path"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/consul/api"
 )
@@ -36,25 +37,25 @@ func (cb *consulBooter) Boot(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	dataDir := cfg.DataDir + "/consul"
+	dataDir := path.Join(cfg.DataDir, "consul")
 	if err := os.MkdirAll(dataDir, 0700); err != nil {
 		return err
 	}
 	args := []string{"agent"}
 	{
 		cf := path.Join(cfg.DataDir, "consul-encrypt.json")
-		_, err := os.Stat(cf)
-		if os.IsNotExist(err) {
+		if _, err := os.Stat(cf); err != nil && !os.IsNotExist(err) {
+			return err
+		} else if err != nil {
 			key, err := exec.Command(bin, "keygen").CombinedOutput()
 			if err != nil {
 				return err
 			}
-			err = atomicWriteJSON(cf, map[string]interface{}{
+			if err = atomicWriteJSON(cf, map[string]interface{}{
 				"encrypt": strings.TrimSpace(string(key)),
-			}, 0400)
-		}
-		if err != nil {
-			return err
+			}, 0400); err != nil {
+				return err
+			}
 		}
 		args = append(args, "-config-file="+cf)
 	}
@@ -103,7 +104,7 @@ func (cb *consulBooter) Boot(ctx context.Context) error {
 			}
 		}
 	}
-	return cb.check(ctx)
+	return waitCheck(ctx, 30*time.Second, cb.check)
 }
 
 var consulCfg = api.DefaultConfig()

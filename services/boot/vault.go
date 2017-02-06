@@ -7,6 +7,7 @@ import (
 	"log"
 	"path"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/vault/api"
 )
@@ -66,29 +67,37 @@ func (vb *vaultBooter) Boot(ctx context.Context) error {
 		}
 	}
 
-	vb.tryInit(ctx)
-	return vb.check(ctx)
+	if err := vb.tryInit(ctx); err != nil {
+		return err
+	}
+	return waitCheck(ctx, 30*time.Second, vb.check)
 }
 
-func (vb *vaultBooter) tryInit(ctx context.Context) {
+func (vb *vaultBooter) tryInit(ctx context.Context) error {
 	cfg := cfg(ctx)
-	vault, err := vb.client(ctx)
-	if err != nil {
-		return
-	}
-	if init, err := vault.Sys().InitStatus(); err != nil {
-		log.Printf("error: vault InitStatus: %s", err)
-		return
+
+	var vault *api.Client
+	var init bool
+	if err := waitCheck(ctx, time.Minute, func(context.Context) error {
+		var err error
+		vault, err = vb.client(ctx)
+		if err != nil {
+			return err
+		}
+		init, err = vault.Sys().InitStatus()
+		return err
+	}); err != nil {
+		return err
 	} else if init {
-		return
+		return nil
 	}
+
 	resp, err := vault.Sys().Init(&api.InitRequest{
 		SecretShares:    5,
 		SecretThreshold: 3,
 	})
 	if err != nil {
-		log.Printf("vault-init: %s", err)
-		return
+		return fmt.Errorf("vault-init: %s", err)
 	}
 	atomicWriteJSON(path.Join(cfg.DataDir, "vault-keys.json"), resp, 0400)
 	atomicWriteFile(path.Join(cfg.DataDir, "vault-root-token.txt"), []byte(resp.RootToken), 0400)
@@ -101,9 +110,10 @@ func (vb *vaultBooter) tryInit(ctx context.Context) {
 		}
 		if !resp.Sealed {
 			log.Printf("unseal successful")
-			break
+			return nil
 		}
 	}
+	return fmt.Errorf("vault unseal failed!")
 }
 
 func (vb *vaultBooter) client(ctx context.Context) (*api.Client, error) {

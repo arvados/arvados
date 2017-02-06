@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"sync"
+	"time"
 
 	"github.com/hashicorp/nomad/api"
 )
@@ -28,7 +29,7 @@ func (nb *nomadBooter) Boot(ctx context.Context) error {
 	err := (&download{
 		URL:  "https://releases.hashicorp.com/nomad/0.5.4/nomad_0.5.4_linux_amd64.zip",
 		Dest: bin,
-		//Size: 29079005,
+		Size: 34150464,
 		Mode: 0755,
 	}).Boot(ctx)
 	if err != nil {
@@ -79,7 +80,7 @@ func (nb *nomadBooter) Boot(ctx context.Context) error {
 			return fmt.Errorf("starting nomad: %s", err)
 		}
 	}
-	return nb.check(ctx)
+	return waitCheck(ctx, 30*time.Second, nb.check)
 }
 
 var nomadCfg = api.DefaultConfig()

@@ -6,7 +6,6 @@ import (
 	"flag"
 	"log"
 	"os"
-	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/config"
 )
@@ -28,19 +27,9 @@ func main() {
 	enc.SetIndent("", "  ")
 	enc.Encode(cfg)
 
-	go runWebGUI(cfg)
-	go func() {
-		var ctl Booter = &controller{}
-		ticker := time.NewTicker(5 * time.Second)
-		for {
-			err := ctl.Boot(withCfg(context.Background(), cfg))
-			if err != nil {
-				log.Printf("controller boot failed: %v", err)
-			} else {
-				log.Printf("controller boot OK")
-			}
-			<-ticker.C
-		}
-	}()
-	<-(chan struct{})(nil)
+	var ctl Booter = &controller{}
+	err := ctl.Boot(withCfg(context.Background(), cfg))
+	if err != nil {
+		log.Printf("controller boot failed: %v", err)
+	}
 }
