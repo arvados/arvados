@@ -37,6 +37,7 @@ class Arvados::V1::SchemaController < ApplicationController
         defaultTrashLifetime: Rails.application.config.default_trash_lifetime,
         blobSignatureTtl: Rails.application.config.blob_signature_ttl,
         maxRequestSize: Rails.application.config.max_request_size,
+        dockerImageFormats: Rails.application.config.docker_image_formats,
         parameters: {
           alt: {
             type: "string",

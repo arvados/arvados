@@ -146,25 +146,24 @@ func (s *TestSuite) integrationTest(c *C,
 
 	theConfig.CrunchRunCommand = []string{"echo"}
 
-	doneProcessing := make(chan struct{})
 	dispatcher := dispatch.Dispatcher{
-		Arv:          arv,
-		PollInterval: time.Duration(1) * time.Second,
+		Arv:        arv,
+		PollPeriod: time.Duration(1) * time.Second,
 		RunContainer: func(dispatcher *dispatch.Dispatcher,
 			container arvados.Container,
 			status chan arvados.Container) {
 			go runContainer(dispatcher, container)
 			run(dispatcher, container, status)
-			doneProcessing <- struct{}{}
+			dispatcher.Stop()
 		},
-		DoneProcessing: doneProcessing}
+	}
 
-	squeueUpdater.StartMonitor(time.Duration(500) * time.Millisecond)
+	sqCheck = SqueueChecker{Period: 500 * time.Millisecond}
 
-	err = dispatcher.RunDispatcher()
+	err = dispatcher.Run()
 	c.Assert(err, IsNil)
 
-	squeueUpdater.Done()
+	sqCheck.Stop()
 
 	c.Check(sbatchCmdLine, DeepEquals, sbatchCmdComps)
 
@@ -208,10 +207,9 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 
 	theConfig.CrunchRunCommand = []string{crunchCmd}
 
-	doneProcessing := make(chan struct{})
 	dispatcher := dispatch.Dispatcher{
-		Arv:          arv,
-		PollInterval: time.Duration(1) * time.Second,
+		Arv:        arv,
+		PollPeriod: time.Duration(1) * time.Second,
 		RunContainer: func(dispatcher *dispatch.Dispatcher,
 			container arvados.Container,
 			status chan arvados.Container) {
@@ -221,18 +219,18 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 				dispatcher.UpdateState(container.UUID, dispatch.Complete)
 			}()
 			run(dispatcher, container, status)
-			doneProcessing <- struct{}{}
+			dispatcher.Stop()
 		},
-		DoneProcessing: doneProcessing}
+	}
 
 	go func() {
 		for i := 0; i < 80 && !strings.Contains(buf.String(), expected); i++ {
 			time.Sleep(100 * time.Millisecond)
 		}
-		dispatcher.DoneProcessing <- struct{}{}
+		dispatcher.Stop()
 	}()
 
-	err := dispatcher.RunDispatcher()
+	err := dispatcher.Run()
 	c.Assert(err, IsNil)
 
 	c.Check(buf.String(), Matches, `(?ms).*`+expected+`.*`)

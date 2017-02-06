@@ -62,17 +62,16 @@ func (s *TestSuite) TestIntegration(c *C) {
 	echo := "echo"
 	crunchRunCommand = &echo
 
-	doneProcessing := make(chan struct{})
 	dispatcher := dispatch.Dispatcher{
-		Arv:          arv,
-		PollInterval: time.Second,
+		Arv:        arv,
+		PollPeriod: time.Second,
 		RunContainer: func(dispatcher *dispatch.Dispatcher,
 			container arvados.Container,
 			status chan arvados.Container) {
 			run(dispatcher, container, status)
-			doneProcessing <- struct{}{}
+			dispatcher.Stop()
 		},
-		DoneProcessing: doneProcessing}
+	}
 
 	startCmd = func(container arvados.Container, cmd *exec.Cmd) error {
 		dispatcher.UpdateState(container.UUID, "Running")
@@ -80,7 +79,7 @@ func (s *TestSuite) TestIntegration(c *C) {
 		return cmd.Start()
 	}
 
-	err = dispatcher.RunDispatcher()
+	err = dispatcher.Run()
 	c.Assert(err, IsNil)
 
 	// Wait for all running crunch jobs to complete / terminate
@@ -166,17 +165,16 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 
 	*crunchRunCommand = crunchCmd
 
-	doneProcessing := make(chan struct{})
 	dispatcher := dispatch.Dispatcher{
-		Arv:          arv,
-		PollInterval: time.Duration(1) * time.Second,
+		Arv:        arv,
+		PollPeriod: time.Duration(1) * time.Second,
 		RunContainer: func(dispatcher *dispatch.Dispatcher,
 			container arvados.Container,
 			status chan arvados.Container) {
 			run(dispatcher, container, status)
-			doneProcessing <- struct{}{}
+			dispatcher.Stop()
 		},
-		DoneProcessing: doneProcessing}
+	}
 
 	startCmd = func(container arvados.Container, cmd *exec.Cmd) error {
 		dispatcher.UpdateState(container.UUID, "Running")
@@ -188,10 +186,10 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 		for i := 0; i < 80 && !strings.Contains(buf.String(), expected); i++ {
 			time.Sleep(100 * time.Millisecond)
 		}
-		dispatcher.DoneProcessing <- struct{}{}
+		dispatcher.Stop()
 	}()
 
-	err := dispatcher.RunDispatcher()
+	err := dispatcher.Run()
 	c.Assert(err, IsNil)
 
 	// Wait for all running crunch jobs to complete / terminate
