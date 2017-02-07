@@ -25,4 +25,24 @@ class Arvados::V1::PipelineInstancesControllerTest < ActionController::TestCase
     assert_equal({}, assigns(:object).components)
   end
 
+  [
+    true,
+    false
+  ].each do |cascade|
+    test "cancel a pipeline instance with cascade=#{cascade}" do
+      authorize_with :active
+      pi_uuid = pipeline_instances(:job_child_pipeline_with_components_at_level_2).uuid
+
+      post :cancel, {id: pi_uuid, cascade: cascade}
+      assert_response :success
+
+      pi = PipelineInstance.where(uuid: pi_uuid).first
+      assert_equal "Paused", pi.state
+
+      children = Job.where(uuid: ['zzzzz-8i9sb-job1atlevel3noc', 'zzzzz-8i9sb-job2atlevel3noc'])
+      children.each do |child|
+        assert_equal ("Cancelled" == child.state), cascade
+      end
+    end
+  end
 end

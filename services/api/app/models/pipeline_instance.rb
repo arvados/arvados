@@ -100,6 +100,26 @@ class PipelineInstance < ArvadosModel
     self.where("state = 'RunningOnServer'")
   end
 
+  def cancel cascade=nil
+    if self.state.in?([RunningOnServer, RunningOnClient])
+      self.state = Paused
+      self.save!
+    elsif self.state != Paused
+      raise InvalidStateTransitionError
+    end
+
+    return if !cascade
+
+    # cancel all child jobs
+    children = self.components.andand.collect{|_, c| c['job']}.compact.collect{|j| j['uuid']}.compact
+
+    return if children.empty?
+
+    Job.where(uuid: children).each do |job|
+      job.cancel cascade if job.state.in?([Job::Queued, Job::Running])
+    end
+  end
+
   protected
   def bootstrap_components
     if pipeline_template and (!components or components.empty?)

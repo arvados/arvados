@@ -46,7 +46,7 @@ class Arvados::V1::JobsController < ApplicationController
 
   def cancel
     reload_object_before_update
-    @object.update_attributes! state: Job::Cancelled
+    @object.cancel params[:cascade]
     show
   end
 

@@ -284,6 +284,32 @@ class Job < ArvadosModel
     end
   end
 
+  def cancel cascade=nil
+    if self.state.in?([Queued, Running])
+      self.state = Cancelled
+      self.save!
+    elsif self.state != Cancelled
+      raise InvalidStateTransitionError
+    end
+
+    return if !cascade
+
+    # cancel all children; they could be jobs or pipeline instances
+    children = self.components.andand.collect{|_, u| u}.compact
+
+    return if children.empty?
+
+    # cancel any child jobs
+    Job.where(uuid: children).each do |job|
+      job.cancel cascade if job.state.in?([Queued, Running])
+    end
+
+    # cancel any child pipelines
+    PipelineInstance.where(uuid: children).each do |pi|
+      pi.cancel cascade if pi.state.in?([PipelineInstance::RunningOnServer, PipelineInstance::RunningOnClient])
+    end
+  end
+
   protected
 
   def self.sorted_hash_digest h

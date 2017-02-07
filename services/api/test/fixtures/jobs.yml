@@ -557,3 +557,178 @@ running_job_with_components:
     component1: zzzzz-8i9sb-jyq01m7in1jlofj
     component2: zzzzz-d1hrv-partdonepipelin
   script_parameters_digest: 99914b932bd37a50b983c5e7c90ae93b
+
+# This main level job is in running state with one job and one pipeline instance components
+running_job_with_components_at_level_1:
+  uuid: zzzzz-8i9sb-jobcomponentsl1
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  created_at: <%= 12.hour.ago.to_s(:db) %>
+  started_at: <%= 12.hour.ago.to_s(:db) %>
+  finished_at: ~
+  repository: active/foo
+  script: hash
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
+  script_parameters_digest: 99914b932bd37a50b983c5e7c90ae93b
+  running: true
+  success: ~
+  output: ~
+  priority: 0
+  log: ~
+  is_locked_by_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  tasks_summary:
+    failed: 0
+    todo: 3
+    running: 1
+    done: 1
+  runtime_constraints: {}
+  state: Running
+  components:
+    component1: zzzzz-8i9sb-jobcomponentsl2
+    component2: zzzzz-d1hrv-picomponentsl02
+
+# This running job, a child of level_1, has one child component
+running_job_with_components_at_level_2:
+  uuid: zzzzz-8i9sb-jobcomponentsl2
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  created_at: <%= 12.hour.ago.to_s(:db) %>
+  started_at: <%= 12.hour.ago.to_s(:db) %>
+  finished_at: ~
+  repository: active/foo
+  script: hash
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
+  script_parameters_digest: 99914b932bd37a50b983c5e7c90ae93b
+  running: true
+  success: ~
+  output: ~
+  priority: 0
+  log: ~
+  is_locked_by_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  tasks_summary:
+    failed: 0
+    todo: 3
+    running: 1
+    done: 1
+  runtime_constraints: {}
+  state: Running
+  components:
+    component1: zzzzz-8i9sb-job1atlevel3noc
+
+# The below two running jobs, children of level_2, have no child components
+running_job_1_with_components_at_level_3:
+  uuid: zzzzz-8i9sb-job1atlevel3noc
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  created_at: <%= 12.hour.ago.to_s(:db) %>
+  started_at: <%= 12.hour.ago.to_s(:db) %>
+  finished_at: ~
+  repository: active/foo
+  script: hash
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
+  script_parameters_digest: 99914b932bd37a50b983c5e7c90ae93b
+  running: true
+  success: ~
+  output: ~
+  priority: 0
+  log: ~
+  is_locked_by_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  tasks_summary:
+    failed: 0
+    todo: 3
+    running: 1
+    done: 1
+  runtime_constraints: {}
+  state: Running
+
+running_job_2_with_components_at_level_3:
+  uuid: zzzzz-8i9sb-job2atlevel3noc
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  created_at: <%= 12.hour.ago.to_s(:db) %>
+  started_at: <%= 12.hour.ago.to_s(:db) %>
+  finished_at: ~
+  repository: active/foo
+  script: hash
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
+  script_parameters_digest: 99914b932bd37a50b983c5e7c90ae93b
+  running: true
+  success: ~
+  output: ~
+  priority: 0
+  log: ~
+  is_locked_by_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  tasks_summary:
+    failed: 0
+    todo: 3
+    running: 1
+    done: 1
+  runtime_constraints: {}
+  state: Running
+
+# The two jobs below are so confused, they have circular relationship
+running_job_1_with_circular_component_relationship:
+  uuid: zzzzz-8i9sb-job1withcirculr
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  created_at: <%= 12.hour.ago.to_s(:db) %>
+  started_at: <%= 12.hour.ago.to_s(:db) %>
+  finished_at: ~
+  repository: active/foo
+  script: hash
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
+  script_parameters_digest: 99914b932bd37a50b983c5e7c90ae93b
+  running: true
+  success: ~
+  output: ~
+  priority: 0
+  log: ~
+  is_locked_by_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  tasks_summary:
+    failed: 0
+    todo: 3
+    running: 1
+    done: 1
+  runtime_constraints: {}
+  state: Running
+  components:
+    component1: zzzzz-8i9sb-job2withcirculr
+
+running_job_2_with_circular_component_relationship:
+  uuid: zzzzz-8i9sb-job2withcirculr
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  cancelled_at: ~
+  cancelled_by_user_uuid: ~
+  cancelled_by_client_uuid: ~
+  created_at: <%= 12.hour.ago.to_s(:db) %>
+  started_at: <%= 12.hour.ago.to_s(:db) %>
+  finished_at: ~
+  repository: active/foo
+  script: hash
+  script_version: 1de84a854e2b440dc53bf42f8548afa4c17da332
+  script_parameters_digest: 99914b932bd37a50b983c5e7c90ae93b
+  running: true
+  success: ~
+  output: ~
+  priority: 0
+  log: ~
+  is_locked_by_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  tasks_summary:
+    failed: 0
+    todo: 3
+    running: 1
+    done: 1
+  runtime_constraints: {}
+  state: Running
+  components:
+    component1: zzzzz-8i9sb-job1withcirculr
