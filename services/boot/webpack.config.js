@@ -3,7 +3,7 @@ module.exports = {
         js: './js',
     },
     output: {
-        directory: 'bindata.tmp',
+        path: 'bindata.tmp',
         filename: 'bindata.tmp/[name].js',
     },
 };
