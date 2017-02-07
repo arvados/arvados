@@ -31,14 +31,14 @@ func (c *controller) Boot(ctx context.Context) error {
 				nomad,
 			},
 		},
-		Concurrent{
-			dispatchLocal,
-			dispatchSLURM,
-			gitHTTP,
-			keepbalance,
-			keepproxy,
-			keepstore,
-			websocket,
-		},
+		// Concurrent{
+		// 	dispatchLocal,
+		// 	dispatchSLURM,
+		// 	gitHTTP,
+		// 	keepbalance,
+		// 	keepproxy,
+		// 	keepstore,
+		// 	websocket,
+		// },
 	}.Boot(ctx)
 }
