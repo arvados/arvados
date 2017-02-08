@@ -149,17 +149,11 @@ class ProjectsController < ApplicationController
         link.destroy
       end
 
-      # If this object has the 'trash_at' attribute, then simply mark it
-      # as trash.
-      if item.attributes.include?("trash_at")
-        item.update_attributes trash_at: Time.now
-        @removed_uuids << item.uuid
-      elsif item.owner_uuid == @object.uuid
-        # Object is owned by this project. Remove it from the project by
-        # changing owner to the current user.
+      if item.class == Collection && item.owner_uuid == @object.uuid
+        # Collection is owned by this project. Remove it from the project by
+        # changing owner to the current user before asking for deletion.
         begin
           item.update_attributes owner_uuid: current_user.uuid
-          @removed_uuids << item.uuid
         rescue ArvadosApiClient::ApiErrorResponseException => e
           if e.message.include? '_owner_uuid_'
             rename_to = item.name + ' removed from ' +
@@ -169,12 +163,13 @@ class ProjectsController < ApplicationController
             updates[:name] = rename_to
             updates[:owner_uuid] = current_user.uuid
             item.update_attributes updates
-            @removed_uuids << item.uuid
           else
             raise
           end
         end
       end
+      @removed_uuids << item.uuid
+      item.destroy
     end
   end
 
