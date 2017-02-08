@@ -19,7 +19,7 @@ import arvados.collection
 
 from .arvdocker import arv_docker_get_image
 from .runner import Runner, arvados_jobs_image, packed_workflow, trim_listing, upload_workflow_collection
-from .pathmapper import InitialWorkDirPathMapper
+from .pathmapper import VwdPathMapper
 from .perf import Perf
 from . import done
 from ._version import __version__
@@ -51,8 +51,8 @@ class ArvadosJob(object):
                                                     keep_client=self.arvrunner.keep_client,
                                                     num_retries=self.arvrunner.num_retries)
                 script_parameters["task.vwd"] = {}
-                generatemapper = InitialWorkDirPathMapper([self.generatefiles], "", "",
-                                                          separateDirs=False)
+                generatemapper = VwdPathMapper([self.generatefiles], "", "",
+                                               separateDirs=False)
 
                 with Perf(metrics, "createfiles %s" % self.name):
                     for f, p in generatemapper.items():
@@ -60,8 +60,9 @@ class ArvadosJob(object):
                             with vwd.open(p.target, "w") as n:
                                 n.write(p.resolved.encode("utf-8"))
 
-                with Perf(metrics, "generatefiles.save_new %s" % self.name):
-                    vwd.save_new()
+                if vwd:
+                    with Perf(metrics, "generatefiles.save_new %s" % self.name):
+                        vwd.save_new()
 
                 for f, p in generatemapper.items():
                     if p.type == "File":

@@ -30,13 +30,13 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
         self.collections = {}
 
     def get_collection(self, path):
-        p = path.split("/")
-        if p[0].startswith("keep:") and arvados.util.keep_locator_pattern.match(p[0][5:]):
-            pdh = p[0][5:]
+        p, rest = path.split("/", 1)
+        if p.startswith("keep:") and arvados.util.keep_locator_pattern.match(p[5:]):
+            pdh = p[5:]
             if pdh not in self.collections:
                 self.collections[pdh] = arvados.collection.CollectionReader(pdh, api_client=self.api_client,
                                                                             keep_client=self.keep_client)
-            return (self.collections[pdh], "/".join(p[1:]))
+            return (self.collections[pdh], rest)
         else:
             return (None, path)
 
