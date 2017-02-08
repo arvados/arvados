@@ -149,11 +149,16 @@ class ProjectsController < ApplicationController
         link.destroy
       end
 
-      if item.class == Collection && item.owner_uuid == @object.uuid
-        # Collection is owned by this project. Remove it from the project by
-        # changing owner to the current user before asking for deletion.
+      if item.class == Collection
+        # Use delete API on collections
+        @removed_uuids << item.uuid
+        item.destroy
+      elsif item.owner_uuid == @object.uuid
+        # Object is owned by this project. Remove it from the project by
+        # changing owner to the current user.
         begin
           item.update_attributes owner_uuid: current_user.uuid
+          @removed_uuids << item.uuid
         rescue ArvadosApiClient::ApiErrorResponseException => e
           if e.message.include? '_owner_uuid_'
             rename_to = item.name + ' removed from ' +
@@ -163,13 +168,12 @@ class ProjectsController < ApplicationController
             updates[:name] = rename_to
             updates[:owner_uuid] = current_user.uuid
             item.update_attributes updates
+            @removed_uuids << item.uuid
           else
             raise
           end
         end
       end
-      @removed_uuids << item.uuid
-      item.destroy
     end
   end
 
