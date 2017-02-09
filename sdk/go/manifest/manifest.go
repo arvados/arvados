@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
+	"path"
 	"regexp"
 	"sort"
 	"strconv"
@@ -15,9 +16,6 @@ import (
 )
 
 var ErrInvalidToken = errors.New("Invalid token")
-
-var LocatorPattern = regexp.MustCompile(
-	"^[0-9a-fA-F]{32}\\+[0-9]+(\\+[A-Z][A-Za-z0-9@_-]+)*$")
 
 type Manifest struct {
 	Text string
@@ -28,12 +26,6 @@ type BlockLocator struct {
 	Digest blockdigest.BlockDigest
 	Size   int
 	Hints  []string
-}
-
-type DataSegment struct {
-	BlockLocator
-	Locator      string
-	StreamOffset uint64
 }
 
 // FileSegment is a portion of a file that is contained within a
@@ -56,9 +48,19 @@ type FileStreamSegment struct {
 type ManifestStream struct {
 	StreamName         string
 	Blocks             []string
+	BlockOffsets       []uint64
 	FileStreamSegments []FileStreamSegment
 	Err                error
 }
+
+// Array of segments referencing file content
+type segmentedFile []FileSegment
+
+// Map of files to list of file segments referencing file content
+type segmentedStream map[string]segmentedFile
+
+// Map of streams
+type segmentedManifest map[string]segmentedStream
 
 var escapeSeq = regexp.MustCompile(`\\([0-9]{3}|\\)`)
 
@@ -74,16 +76,30 @@ func unescapeSeq(seq string) string {
 	return string([]byte{byte(i)})
 }
 
+func EscapeName(s string) string {
+	raw := []byte(s)
+	escaped := make([]byte, 0, len(s))
+	for _, c := range raw {
+		if c <= 32 {
+			oct := fmt.Sprintf("\\%03o", c)
+			escaped = append(escaped, []byte(oct)...)
+		} else {
+			escaped = append(escaped, c)
+		}
+	}
+	return string(escaped)
+}
+
 func UnescapeName(s string) string {
 	return escapeSeq.ReplaceAllStringFunc(s, unescapeSeq)
 }
 
 func ParseBlockLocator(s string) (b BlockLocator, err error) {
-	if !LocatorPattern.MatchString(s) {
+	if !blockdigest.LocatorPattern.MatchString(s) {
 		err = fmt.Errorf("String \"%s\" does not match BlockLocator pattern "+
 			"\"%s\".",
 			s,
-			LocatorPattern.String())
+			blockdigest.LocatorPattern.String())
 	} else {
 		tokens := strings.Split(s, "+")
 		var blockSize int64
@@ -124,7 +140,7 @@ func parseFileStreamSegment(tok string) (ft FileStreamSegment, err error) {
 }
 
 func (s *ManifestStream) FileSegmentIterByName(filepath string) <-chan *FileSegment {
-	ch := make(chan *FileSegment)
+	ch := make(chan *FileSegment, 64)
 	go func() {
 		s.sendFileSegmentIterByName(filepath, ch)
 		close(ch)
@@ -132,10 +148,39 @@ func (s *ManifestStream) FileSegmentIterByName(filepath string) <-chan *FileSegm
 	return ch
 }
 
+func firstBlock(offsets []uint64, range_start uint64) int {
+	// range_start/block_start is the inclusive lower bound
+	// range_end/block_end is the exclusive upper bound
+
+	hi := len(offsets) - 1
+	var lo int
+	i := ((hi + lo) / 2)
+	block_start := offsets[i]
+	block_end := offsets[i+1]
+
+	// perform a binary search for the first block
+	// assumes that all of the blocks are contiguous, so range_start is guaranteed
+	// to either fall into the range of a block or be outside the block range entirely
+	for !(range_start >= block_start && range_start < block_end) {
+		if lo == i {
+			// must be out of range, fail
+			return -1
+		}
+		if range_start > block_start {
+			lo = i
+		} else {
+			hi = i
+			i = ((hi + lo) / 2)
+			block_start = offsets[i]
+			block_end = offsets[i+1]
+		}
+	}
+	return i
+}
+
 func (s *ManifestStream) sendFileSegmentIterByName(filepath string, ch chan<- *FileSegment) {
-	blockLens := make([]int, 0, len(s.Blocks))
 	// This is what streamName+"/"+fileName will look like:
-	target := "./" + filepath
+	target := fixStreamName(filepath)
 	for _, fTok := range s.FileStreamSegments {
 		wantPos := fTok.SegPos
 		wantLen := fTok.SegLen
@@ -148,43 +193,40 @@ func (s *ManifestStream) sendFileSegmentIterByName(filepath string, ch chan<- *F
 			ch <- &FileSegment{Locator: "d41d8cd98f00b204e9800998ecf8427e+0", Offset: 0, Len: 0}
 			continue
 		}
-		// Linear search for blocks containing data for this
-		// file
-		var blockPos uint64 = 0 // position of block in stream
-		for i, loc := range s.Blocks {
+
+		// Binary search to determine first block in the stream
+		i := firstBlock(s.BlockOffsets, wantPos)
+		if i == -1 {
+			// Shouldn't happen, file segments are checked in parseManifestStream
+			panic(fmt.Sprintf("File segment %v extends past end of stream", fTok))
+		}
+		for ; i < len(s.Blocks); i++ {
+			blockPos := s.BlockOffsets[i]
+			blockEnd := s.BlockOffsets[i+1]
+			if blockEnd <= wantPos {
+				// Shouldn't happen, FirstBlock() should start
+				// us on the right block, so if this triggers
+				// that means there is a bug.
+				panic(fmt.Sprintf("Block end %v comes before start of file segment %v", blockEnd, wantPos))
+			}
 			if blockPos >= wantPos+wantLen {
+				// current block comes after current file span
 				break
 			}
-			if len(blockLens) <= i {
-				blockLens = blockLens[:i+1]
-				b, err := ParseBlockLocator(loc)
-				if err != nil {
-					// Unparseable locator -> unusable
-					// stream.
-					ch <- nil
-					return
-				}
-				blockLens[i] = b.Size
-			}
-			blockLen := uint64(blockLens[i])
-			if blockPos+blockLen <= wantPos {
-				blockPos += blockLen
-				continue
-			}
+
 			fseg := FileSegment{
-				Locator: loc,
+				Locator: s.Blocks[i],
 				Offset:  0,
-				Len:     blockLens[i],
+				Len:     int(blockEnd - blockPos),
 			}
 			if blockPos < wantPos {
 				fseg.Offset = int(wantPos - blockPos)
 				fseg.Len -= fseg.Offset
 			}
-			if blockPos+blockLen > wantPos+wantLen {
+			if blockEnd > wantPos+wantLen {
 				fseg.Len = int(wantPos+wantLen-blockPos) - fseg.Offset
 			}
 			ch <- &fseg
-			blockPos += blockLen
 		}
 	}
 }
@@ -213,6 +255,19 @@ func parseManifestStream(s string) (m ManifestStream) {
 		return
 	}
 
+	m.BlockOffsets = make([]uint64, len(m.Blocks)+1)
+	var streamoffset uint64
+	for i, b := range m.Blocks {
+		bl, err := ParseBlockLocator(b)
+		if err != nil {
+			m.Err = err
+			return
+		}
+		m.BlockOffsets[i] = streamoffset
+		streamoffset += uint64(bl.Size)
+	}
+	m.BlockOffsets[len(m.Blocks)] = streamoffset
+
 	if len(fileTokens) == 0 {
 		m.Err = fmt.Errorf("No file tokens found")
 		return
@@ -224,10 +279,207 @@ func parseManifestStream(s string) (m ManifestStream) {
 			m.Err = fmt.Errorf("Invalid file token: %s", ft)
 			break
 		}
+		if pft.SegPos+pft.SegLen > streamoffset {
+			m.Err = fmt.Errorf("File segment %s extends past end of stream %d", ft, streamoffset)
+			break
+		}
 		m.FileStreamSegments = append(m.FileStreamSegments, pft)
 	}
 
 	return
+}
+
+func fixStreamName(sn string) string {
+	sn = path.Clean(sn)
+	if strings.HasPrefix(sn, "/") {
+		sn = "." + sn
+	} else if sn != "." {
+		sn = "./" + sn
+	}
+	return sn
+}
+
+func splitPath(srcpath string) (streamname, filename string) {
+	pathIdx := strings.LastIndex(srcpath, "/")
+	if pathIdx >= 0 {
+		streamname = srcpath[0:pathIdx]
+		filename = srcpath[pathIdx+1:]
+	} else {
+		streamname = srcpath
+		filename = ""
+	}
+	return
+}
+
+func (m *Manifest) segment() *segmentedManifest {
+	files := make(segmentedManifest)
+
+	for stream := range m.StreamIter() {
+		if stream.Err != nil {
+			// Skip streams with errors
+			continue
+		}
+		currentStreamfiles := make(map[string]bool)
+		for _, f := range stream.FileStreamSegments {
+			sn := stream.StreamName
+			if strings.HasSuffix(sn, "/") {
+				sn = sn[0 : len(sn)-1]
+			}
+			path := sn + "/" + f.Name
+			streamname, filename := splitPath(path)
+			if files[streamname] == nil {
+				files[streamname] = make(segmentedStream)
+			}
+			if !currentStreamfiles[path] {
+				segs := files[streamname][filename]
+				for seg := range stream.FileSegmentIterByName(path) {
+					if seg.Len > 0 {
+						segs = append(segs, *seg)
+					}
+				}
+				files[streamname][filename] = segs
+				currentStreamfiles[path] = true
+			}
+		}
+	}
+
+	return &files
+}
+
+func (stream segmentedStream) normalizedText(name string) string {
+	var sortedfiles []string
+	for k, _ := range stream {
+		sortedfiles = append(sortedfiles, k)
+	}
+	sort.Strings(sortedfiles)
+
+	stream_tokens := []string{EscapeName(name)}
+
+	blocks := make(map[string]int64)
+	var streamoffset int64
+
+	// Go through each file and add each referenced block exactly once.
+	for _, streamfile := range sortedfiles {
+		for _, segment := range stream[streamfile] {
+			if _, ok := blocks[segment.Locator]; !ok {
+				stream_tokens = append(stream_tokens, segment.Locator)
+				blocks[segment.Locator] = streamoffset
+				b, _ := ParseBlockLocator(segment.Locator)
+				streamoffset += int64(b.Size)
+			}
+		}
+	}
+
+	if len(stream_tokens) == 1 {
+		stream_tokens = append(stream_tokens, "d41d8cd98f00b204e9800998ecf8427e+0")
+	}
+
+	for _, streamfile := range sortedfiles {
+		// Add in file segments
+		span_start := int64(-1)
+		span_end := int64(0)
+		fout := EscapeName(streamfile)
+		for _, segment := range stream[streamfile] {
+			// Collapse adjacent segments
+			streamoffset = blocks[segment.Locator] + int64(segment.Offset)
+			if span_start == -1 {
+				span_start = streamoffset
+				span_end = streamoffset + int64(segment.Len)
+			} else {
+				if streamoffset == span_end {
+					span_end += int64(segment.Len)
+				} else {
+					stream_tokens = append(stream_tokens, fmt.Sprintf("%d:%d:%s", span_start, span_end-span_start, fout))
+					span_start = streamoffset
+					span_end = streamoffset + int64(segment.Len)
+				}
+			}
+		}
+
+		if span_start != -1 {
+			stream_tokens = append(stream_tokens, fmt.Sprintf("%d:%d:%s", span_start, span_end-span_start, fout))
+		}
+
+		if len(stream[streamfile]) == 0 {
+			stream_tokens = append(stream_tokens, fmt.Sprintf("0:0:%s", fout))
+		}
+	}
+
+	return strings.Join(stream_tokens, " ") + "\n"
+}
+
+func (m segmentedManifest) manifestTextForPath(srcpath, relocate string) string {
+	srcpath = fixStreamName(srcpath)
+
+	var suffix string
+	if strings.HasSuffix(relocate, "/") {
+		suffix = "/"
+	}
+	relocate = fixStreamName(relocate) + suffix
+
+	streamname, filename := splitPath(srcpath)
+
+	if stream, ok := m[streamname]; ok {
+		// check if it refers to a single file in a stream
+		filesegs, okfile := stream[filename]
+		if okfile {
+			newstream := make(segmentedStream)
+			relocate_stream, relocate_filename := splitPath(relocate)
+			if relocate_filename == "" {
+				relocate_filename = filename
+			}
+			newstream[relocate_filename] = filesegs
+			return newstream.normalizedText(relocate_stream)
+		}
+	}
+
+	// Going to extract multiple streams
+	prefix := srcpath + "/"
+
+	if strings.HasSuffix(relocate, "/") {
+		relocate = relocate[0 : len(relocate)-1]
+	}
+
+	var sortedstreams []string
+	for k, _ := range m {
+		sortedstreams = append(sortedstreams, k)
+	}
+	sort.Strings(sortedstreams)
+
+	manifest := ""
+	for _, k := range sortedstreams {
+		if strings.HasPrefix(k, prefix) || k == srcpath {
+			manifest += m[k].normalizedText(relocate + k[len(srcpath):])
+		}
+	}
+	return manifest
+}
+
+// ManifestTextForPath extracts some or all of the manifest and returns
+// normalized manifest text.  This is a swiss army knife function that can be
+// used a couple of different ways:
+//
+// If 'srcpath' points to a single file, it will return manifest text for just that file.
+// The value of "relocate" is can be used to rename the file or set the file stream.
+//
+// ManifestTextForPath("./foo", ".")  (extract file "foo" and put it in stream ".")
+// ManifestTextForPath("./foo", "./bar")  (extract file "foo", rename it to "bar" in stream ".")
+// ManifestTextForPath("./foo", "./bar/") (extract file "foo", rename it to "./bar/foo")
+// ManifestTextForPath("./foo", "./bar/baz") (extract file "foo", rename it to "./bar/baz")
+//
+// Otherwise it will return the manifest text for all streams with the prefix in "srcpath" and place
+// them under the path in "relocate".
+//
+// ManifestTextForPath(".", ".")  (return entire normalized manfest text)
+// ManifestTextForPath("./stream", ".")  (extract "./stream" to "." and "./stream/subdir" to "./subdir")
+// ManifestTextForPath("./stream", "./bar")  (extract "./stream" to "./bar" and "./stream/subdir" to "./bar/subdir")
+func (m *Manifest) ManifestTextForPath(srcpath, relocate string) string {
+	return m.segment().manifestTextForPath(srcpath, relocate)
+}
+
+// NormalizedText returns the manifest text in normalized form.
+func (m *Manifest) NormalizedText() string {
+	return m.ManifestTextForPath(".", ".")
 }
 
 func (m *Manifest) StreamIter() <-chan ManifestStream {
@@ -253,10 +505,11 @@ func (m *Manifest) StreamIter() <-chan ManifestStream {
 }
 
 func (m *Manifest) FileSegmentIterByName(filepath string) <-chan *FileSegment {
-	ch := make(chan *FileSegment)
+	ch := make(chan *FileSegment, 64)
+	filepath = fixStreamName(filepath)
 	go func() {
 		for stream := range m.StreamIter() {
-			if !strings.HasPrefix("./"+filepath, stream.StreamName+"/") {
+			if !strings.HasPrefix(filepath, stream.StreamName+"/") {
 				continue
 			}
 			stream.sendFileSegmentIterByName(filepath, ch)
