@@ -54,9 +54,11 @@ func main() {
 			newPermChecker: func() permChecker { return newPermChecker(cfg.Client) },
 		},
 	}
-	// Bootstrap the eventSource by attaching a dummy subscriber
-	// and hanging up.
-	eventSource.NewSink().Stop()
+
+	go func() {
+		eventSource.Run()
+		log.Fatal("event source stopped")
+	}()
 
 	if _, err := daemon.SdNotify(false, "READY=1"); err != nil {
 		log.WithError(err).Warn("error notifying init daemon")
