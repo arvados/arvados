@@ -63,6 +63,8 @@ func (ps *pgEventSource) listenerProblem(et pq.ListenerEventType, err error) {
 	ps.cancel()
 }
 
+// Run listens for event notifications on the "logs" channel and sends
+// them to all subscribers.
 func (ps *pgEventSource) Run() {
 	logger(nil).Debug("pgEventSource Run starting")
 	defer logger(nil).Debug("pgEventSource Run finished")
@@ -71,7 +73,6 @@ func (ps *pgEventSource) Run() {
 	ps.cancel = cancel
 	defer cancel()
 
-	ps.sinks = make(map[*pgEventSink]bool)
 	defer func() {
 		// Disconnect all clients
 		ps.mtx.Lock()
@@ -192,6 +193,9 @@ func (ps *pgEventSource) NewSink() eventSink {
 		source:  ps,
 	}
 	ps.mtx.Lock()
+	if ps.sinks == nil {
+		ps.sinks = make(map[*pgEventSink]bool)
+	}
 	ps.sinks[sink] = true
 	ps.mtx.Unlock()
 	return sink
