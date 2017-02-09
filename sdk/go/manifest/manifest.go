@@ -200,7 +200,7 @@ func (s *ManifestStream) sendFileSegmentIterByName(filepath string, ch chan<- *F
 			// Shouldn't happen, file segments are checked in parseManifestStream
 			panic(fmt.Sprintf("File segment %v extends past end of stream", fTok))
 		}
-		for i < len(s.Blocks) {
+		for ; i < len(s.Blocks); i++ {
 			blockPos := s.BlockOffsets[i]
 			blockEnd := s.BlockOffsets[i+1]
 			if blockEnd <= wantPos {
@@ -227,7 +227,6 @@ func (s *ManifestStream) sendFileSegmentIterByName(filepath string, ch chan<- *F
 				fseg.Len = int(wantPos+wantLen-blockPos) - fseg.Offset
 			}
 			ch <- &fseg
-			i += 1
 		}
 	}
 }
