@@ -136,6 +136,10 @@ class PipelineInstance < ArvadosBase
     PipelineInstanceWorkUnit.new(self, label || self.name, self.uuid)
   end
 
+  def cancel
+    arvados_api_client.api "pipeline_instances/#{self.uuid}/", "cancel", {"cascade" => true}
+  end
+
   private
 
   def components_map

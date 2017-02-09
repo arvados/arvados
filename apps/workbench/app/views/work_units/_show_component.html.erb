@@ -4,8 +4,8 @@
   <div class="col-md-4">
     <% if wu.is_paused? %>
       <p>
-        This <%= wu.title %> is paused. Children that are already running
-        will continue to run, but no new processes will be submitted.
+        This <%= wu.title %> is paused. Children that were running
+        were cancelled and no new processes will be submitted.
       </p>
     <% end %>
 
@@ -23,9 +23,10 @@
     </div>
     <div class="col-md-2">
       <% if wu.can_cancel? and @object.editable? %>
+        <% confirm = if wu.confirm_cancellation then {confirm: wu.confirm_cancellation} else {} end %>
         <%= form_tag "#{wu.uri}/cancel", remote: true, style: "display:inline; padding-left: 1em" do |f| %>
           <%= hidden_field_tag :return_to, url_for(@object) %>
-          <%= button_tag "Cancel", {class: 'btn btn-xs btn-warning', id: "cancel-obj-button"} %>
+          <%= button_tag "Cancel", {class: 'btn btn-xs btn-warning', id: "cancel-obj-button", data: confirm} %>
         <% end %>
       <% end %>
     </div>
