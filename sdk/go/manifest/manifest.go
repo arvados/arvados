@@ -48,7 +48,7 @@ type FileStreamSegment struct {
 type ManifestStream struct {
 	StreamName         string
 	Blocks             []string
-	BlockOffsets       []uint64
+	blockOffsets       []uint64
 	FileStreamSegments []FileStreamSegment
 	Err                error
 }
@@ -162,6 +162,7 @@ func firstBlock(offsets []uint64, range_start uint64) int {
 	// assumes that all of the blocks are contiguous, so range_start is guaranteed
 	// to either fall into the range of a block or be outside the block range entirely
 	for !(range_start >= block_start && range_start < block_end) {
+		fmt.Println(i, block_start, block_end)
 		if lo == i {
 			// must be out of range, fail
 			return -1
@@ -170,10 +171,10 @@ func firstBlock(offsets []uint64, range_start uint64) int {
 			lo = i
 		} else {
 			hi = i
-			i = ((hi + lo) / 2)
-			block_start = offsets[i]
-			block_end = offsets[i+1]
 		}
+		i = ((hi + lo) / 2)
+		block_start = offsets[i]
+		block_end = offsets[i+1]
 	}
 	return i
 }
@@ -195,14 +196,14 @@ func (s *ManifestStream) sendFileSegmentIterByName(filepath string, ch chan<- *F
 		}
 
 		// Binary search to determine first block in the stream
-		i := firstBlock(s.BlockOffsets, wantPos)
+		i := firstBlock(s.blockOffsets, wantPos)
 		if i == -1 {
 			// Shouldn't happen, file segments are checked in parseManifestStream
 			panic(fmt.Sprintf("File segment %v extends past end of stream", fTok))
 		}
 		for ; i < len(s.Blocks); i++ {
-			blockPos := s.BlockOffsets[i]
-			blockEnd := s.BlockOffsets[i+1]
+			blockPos := s.blockOffsets[i]
+			blockEnd := s.blockOffsets[i+1]
 			if blockEnd <= wantPos {
 				// Shouldn't happen, FirstBlock() should start
 				// us on the right block, so if this triggers
@@ -255,7 +256,7 @@ func parseManifestStream(s string) (m ManifestStream) {
 		return
 	}
 
-	m.BlockOffsets = make([]uint64, len(m.Blocks)+1)
+	m.blockOffsets = make([]uint64, len(m.Blocks)+1)
 	var streamoffset uint64
 	for i, b := range m.Blocks {
 		bl, err := ParseBlockLocator(b)
@@ -263,10 +264,10 @@ func parseManifestStream(s string) (m ManifestStream) {
 			m.Err = err
 			return
 		}
-		m.BlockOffsets[i] = streamoffset
+		m.blockOffsets[i] = streamoffset
 		streamoffset += uint64(bl.Size)
 	}
-	m.BlockOffsets[len(m.Blocks)] = streamoffset
+	m.blockOffsets[len(m.Blocks)] = streamoffset
 
 	if len(fileTokens) == 0 {
 		m.Err = fmt.Errorf("No file tokens found")
@@ -311,13 +312,13 @@ func splitPath(srcpath string) (streamname, filename string) {
 	return
 }
 
-func (m *Manifest) segment() *segmentedManifest {
+func (m *Manifest) segment() (*segmentedManifest, error) {
 	files := make(segmentedManifest)
 
 	for stream := range m.StreamIter() {
 		if stream.Err != nil {
-			// Skip streams with errors
-			continue
+			// Stream has an error
+			return nil, stream.Err
 		}
 		currentStreamfiles := make(map[string]bool)
 		for _, f := range stream.FileStreamSegments {
@@ -343,7 +344,7 @@ func (m *Manifest) segment() *segmentedManifest {
 		}
 	}
 
-	return &files
+	return &files, nil
 }
 
 func (stream segmentedStream) normalizedText(name string) string {
@@ -455,9 +456,12 @@ func (m segmentedManifest) manifestTextForPath(srcpath, relocate string) string 
 	return manifest
 }
 
-// ManifestTextForPath extracts some or all of the manifest and returns
-// normalized manifest text.  This is a swiss army knife function that can be
-// used a couple of different ways:
+// Extract extracts some or all of the manifest and returns the extracted
+// portion as a normalized manifest.  This is a swiss army knife function that
+// can be several ways:
+//
+// If 'srcpath' and 'relocate' are '.' it simply returns an equivalent manifest
+// in normalized form.
 //
 // If 'srcpath' points to a single file, it will return manifest text for just that file.
 // The value of "relocate" is can be used to rename the file or set the file stream.
@@ -473,13 +477,14 @@ func (m segmentedManifest) manifestTextForPath(srcpath, relocate string) string 
 // ManifestTextForPath(".", ".")  (return entire normalized manfest text)
 // ManifestTextForPath("./stream", ".")  (extract "./stream" to "." and "./stream/subdir" to "./subdir")
 // ManifestTextForPath("./stream", "./bar")  (extract "./stream" to "./bar" and "./stream/subdir" to "./bar/subdir")
-func (m *Manifest) ManifestTextForPath(srcpath, relocate string) string {
-	return m.segment().manifestTextForPath(srcpath, relocate)
-}
-
-// NormalizedText returns the manifest text in normalized form.
-func (m *Manifest) NormalizedText() string {
-	return m.ManifestTextForPath(".", ".")
+func (m Manifest) Extract(srcpath, relocate string) (ret Manifest) {
+	segmented, err := m.segment()
+	if err != nil {
+		ret.Err = err
+		return
+	}
+	ret.Text = segmented.manifestTextForPath(srcpath, relocate)
+	return
 }
 
 func (m *Manifest) StreamIter() <-chan ManifestStream {
