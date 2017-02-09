@@ -204,7 +204,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
             self.success = success_flag
         return super(ComputeNodeShutdownActor, self)._finished()
 
-    def cancel_shutdown(self, reason):
+    def cancel_shutdown(self, reason, **kwargs):
         self.cancel_reason = reason
         self._logger.info("Shutdown cancelled: %s.", reason)
         self._finished(success_flag=False)
@@ -215,19 +215,19 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
             try:
                 return orig_func(self, *args, **kwargs)
             except Exception as error:
-                self._logger.error("Actor error %s", error, exc_info=True)
+                self._logger.error("Actor error %s", error)
                 self._logger.debug("", exc_info=True)
-                self._later.cancel_shutdown("Unhandled exception %s" % error)
+                self._later.cancel_shutdown("Unhandled exception %s" % error, try_resume=False)
         return finish_wrapper
 
     @_cancel_on_exception
     def shutdown_node(self):
         if self.cancellable:
             self._logger.info("Checking that node is still eligible for shutdown")
-            # Check that we still want to shut down the node.
             eligible, reason = self._monitor.shutdown_eligible().get()
             if not eligible:
-                self.cancel_shutdown("No longer eligible for shut down because %s" % reason)
+                self.cancel_shutdown("No longer eligible for shut down because %s" % reason,
+                                     try_resume=True)
                 return
 
         self._logger.info("Starting shutdown")
@@ -239,7 +239,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
             else:
                 self._finished(success_flag=True)
         else:
-            self.cancel_shutdown(self.DESTROY_FAILED)
+            self.cancel_shutdown(self.DESTROY_FAILED, try_resume=False)
 
     @ComputeNodeStateChangeBase._finish_on_exception
     @RetryMixin._retry(config.ARVADOS_ERRORS)
