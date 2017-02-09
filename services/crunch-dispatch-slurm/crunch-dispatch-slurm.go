@@ -151,18 +151,7 @@ var sbatchCmd = sbatchFunc
 var scancelCmd = scancelFunc
 
 // Submit job to slurm using sbatch.
-func submit(dispatcher *dispatch.Dispatcher,
-	container arvados.Container, crunchRunCommand []string) (submitErr error) {
-	defer func() {
-		// If we didn't get as far as submitting a slurm job,
-		// unlock the container and return it to the queue.
-		if submitErr == nil {
-			// OK, no cleanup needed
-			return
-		}
-		dispatcher.Unlock(container.UUID)
-	}()
-
+func submit(dispatcher *dispatch.Dispatcher, container arvados.Container, crunchRunCommand []string) error {
 	cmd := sbatchCmd(container)
 
 	// Send a tiny script on stdin to execute the crunch-run
@@ -179,13 +168,18 @@ func submit(dispatcher *dispatch.Dispatcher,
 
 	log.Printf("exec sbatch %+q", cmd.Args)
 	err := cmd.Run()
+
 	switch err.(type) {
 	case nil:
 		log.Printf("sbatch succeeded: %q", strings.TrimSpace(stdout.String()))
 		return nil
+
 	case *exec.ExitError:
+		dispatcher.Unlock(container.UUID)
 		return fmt.Errorf("sbatch %+q failed: %v (stderr: %q)", cmd.Args, err, stderr.Bytes())
+
 	default:
+		dispatcher.Unlock(container.UUID)
 		return fmt.Errorf("exec failed: %v", err)
 	}
 }
