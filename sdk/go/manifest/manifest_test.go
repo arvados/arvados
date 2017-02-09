@@ -115,7 +115,7 @@ func TestStreamIterShortManifestWithBlankStreams(t *testing.T) {
 		firstStream,
 		ManifestStream{StreamName: ".",
 			Blocks:             []string{"b746e3d2104645f2f64cd3cc69dd895d+15693477+E2866e643690156651c03d876e638e674dcd79475@5441920c"},
-			FileStreamSegments: []FileStreamSegment{{0, 15893477, "chr10_band0_s0_e3000000.fj"}}})
+			FileStreamSegments: []FileStreamSegment{{0, 15693477, "chr10_band0_s0_e3000000.fj"}}})
 
 	received, ok := <-streamIter
 	if ok {
@@ -257,19 +257,19 @@ func TestNormalizeManifest(t *testing.T) {
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
 . 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt
 `}
-	expectEqual(t, m1.NormalizeManifest(),
+	expectEqual(t, m1.NormalizedText(),
 		`. 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:127:md5sum.txt
 `)
 
 	m2 := Manifest{Text: `. 204e43b8a1185621ca55a94839582e6f+67108864 b9677abbac956bd3e86b1deb28dfac03+67108864 fc15aff2a762b13f521baf042140acec+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:227212247:var-GS000016015-ASM.tsv.bz2
 `}
-	expectEqual(t, m2.NormalizeManifest(), m2.Text)
+	expectEqual(t, m2.NormalizedText(), m2.Text)
 
 	m3 := Manifest{Text: `. 5348b82a029fd9e971a811ce1f71360b+43 3:40:md5sum.txt
 . 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
 . 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt
 `}
-	expectEqual(t, m3.NormalizeManifest(), `. 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 3:124:md5sum.txt
+	expectEqual(t, m3.NormalizedText(), `. 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 3:124:md5sum.txt
 `)
 
 	m4 := Manifest{Text: `. 204e43b8a1185621ca55a94839582e6f+67108864 0:3:foo/bar
@@ -277,48 +277,70 @@ func TestNormalizeManifest(t *testing.T) {
 ./foo 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar
 `}
 
-	expectEqual(t, m4.NormalizeManifest(),
+	expectEqual(t, m4.NormalizedText(),
 		`./foo 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar
 ./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
 `)
 
-	expectEqual(t, m4.ManifestForPath("./foo", "."), ". 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar\n")
-	expectEqual(t, m4.ManifestForPath("./foo", "./baz"), "./baz 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar\n")
-	expectEqual(t, m4.ManifestForPath("./foo/bar", "."), ". 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar\n")
-	expectEqual(t, m4.ManifestForPath("./foo/bar", "./baz"), ". 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:baz 67108864:3:baz\n")
-	expectEqual(t, m4.ManifestForPath("./foo/bar", "./quux/"), "./quux 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar\n")
-	expectEqual(t, m4.ManifestForPath(".", "."), `./foo 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar
+	expectEqual(t, m4.ManifestTextForPath("./foo", "."), ". 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar\n")
+	expectEqual(t, m4.ManifestTextForPath("./foo", "./baz"), "./baz 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar\n")
+	expectEqual(t, m4.ManifestTextForPath("./foo/bar", "."), ". 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar\n")
+	expectEqual(t, m4.ManifestTextForPath("./foo/bar", "./baz"), ". 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:baz 67108864:3:baz\n")
+	expectEqual(t, m4.ManifestTextForPath("./foo/bar", "./quux/"), "./quux 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar\n")
+	expectEqual(t, m4.ManifestTextForPath("./foo/bar", "./quux/baz"), "./quux 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:baz 67108864:3:baz\n")
+	expectEqual(t, m4.ManifestTextForPath(".", "."), `./foo 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar
 ./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
 `)
-	expectEqual(t, m4.ManifestForPath(".", "./zip"), `./zip/foo 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar
+	expectEqual(t, m4.ManifestTextForPath(".", "./zip"), `./zip/foo 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar
 ./zip/zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
+`)
+
+	expectEqual(t, m4.ManifestTextForPath("foo/.//bar/../../zzz/", "/waz/"), `./waz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
 `)
 
 	m5 := Manifest{Text: `. 204e43b8a1185621ca55a94839582e6f+67108864 0:3:foo/bar
 ./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
 ./foo 204e43b8a1185621ca55a94839582e6f+67108864 3:3:bar
 `}
-	expectEqual(t, m5.NormalizeManifest(),
+	expectEqual(t, m5.NormalizedText(),
 		`./foo 204e43b8a1185621ca55a94839582e6f+67108864 0:6:bar
 ./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
 `)
 
 	m8 := Manifest{Text: `./a\040b\040c 59ca0efa9f5633cb0371bbc0355478d8+13 0:13:hello\040world.txt
 `}
-	expectEqual(t, m8.NormalizeManifest(), m8.Text)
+	expectEqual(t, m8.NormalizedText(), m8.Text)
 
 	m9 := Manifest{Text: ". acbd18db4cc2f85cedef654fccc4a4d8+40 0:10:one 20:10:two 10:10:one 30:10:two\n"}
-	expectEqual(t, m9.ManifestForPath("", ""), ". acbd18db4cc2f85cedef654fccc4a4d8+40 0:20:one 20:20:two\n")
+	expectEqual(t, m9.ManifestTextForPath("", ""), ". acbd18db4cc2f85cedef654fccc4a4d8+40 0:20:one 20:20:two\n")
 
 	m10 := Manifest{Text: ". acbd18db4cc2f85cedef654fccc4a4d8+40 0:10:one 20:10:two 10:10:one 30:10:two\n"}
-	expectEqual(t, m10.ManifestForPath("./two", "./three"), ". acbd18db4cc2f85cedef654fccc4a4d8+40 20:20:three\n")
+	expectEqual(t, m10.ManifestTextForPath("./two", "./three"), ". acbd18db4cc2f85cedef654fccc4a4d8+40 20:20:three\n")
 
 	m11 := Manifest{Text: arvadostest.PathologicalManifest}
-	expectEqual(t, m11.NormalizeManifest(), `. acbd18db4cc2f85cedef654fccc4a4d8+3 37b51d194a7513e45b56f6524f2d51f2+3 73feffa4b7f6bb68e44cf984c85f6e88+3+Z+K@xyzzy d41d8cd98f00b204e9800998ecf8427e+0 0:1:f 1:4:ooba 5:1:r 5:4:rbaz 9:0:zero@0 9:0:zero@1 9:0:zero@4 9:0:zero@9
-./foo acbd18db4cc2f85cedef654fccc4a4d8+3 d41d8cd98f00b204e9800998ecf8427e+0 0:3:foo 0:3:foo 3:0:zero
+	expectEqual(t, m11.NormalizedText(), `. acbd18db4cc2f85cedef654fccc4a4d8+3 37b51d194a7513e45b56f6524f2d51f2+3 73feffa4b7f6bb68e44cf984c85f6e88+3+Z+K@xyzzy 0:1:f 1:4:ooba 5:1:r 5:4:rbaz 0:0:zero@0 0:0:zero@1 0:0:zero@4 0:0:zero@9
+./foo acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo 0:3:foo 0:0:zero
 ./foo\040bar acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:baz 0:3:baz\040waz
 ./overlapReverse acbd18db4cc2f85cedef654fccc4a4d8+3 2:1:o 2:1:ofoo 0:3:ofoo 1:2:oo
-./segmented acbd18db4cc2f85cedef654fccc4a4d8+3 37b51d194a7513e45b56f6524f2d51f2+3 d41d8cd98f00b204e9800998ecf8427e+0 0:1:frob 5:1:frob 1:1:frob 6:0:frob 3:1:frob 1:2:oof 0:1:oof
+./segmented acbd18db4cc2f85cedef654fccc4a4d8+3 37b51d194a7513e45b56f6524f2d51f2+3 0:1:frob 5:1:frob 1:1:frob 3:1:frob 1:2:oof 0:1:oof
+`)
+
+	m12 := Manifest{Text: `./foo 204e43b8a1185621ca55a94839582e6f+67108864 0:3:bar
+./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
+./foo/baz 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar
+`}
+
+	expectEqual(t, m12.ManifestTextForPath("./foo", "."), `. 204e43b8a1185621ca55a94839582e6f+67108864 0:3:bar
+./baz 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar
+`)
+	expectEqual(t, m12.ManifestTextForPath("./foo", "./blub"), `./blub 204e43b8a1185621ca55a94839582e6f+67108864 0:3:bar
+./blub/baz 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar
+`)
+	expectEqual(t, m12.ManifestTextForPath("./foo", "./blub/"), `./blub 204e43b8a1185621ca55a94839582e6f+67108864 0:3:bar
+./blub/baz 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar
+`)
+	expectEqual(t, m12.ManifestTextForPath("./foo/", "./blub/"), `./blub 204e43b8a1185621ca55a94839582e6f+67108864 0:3:bar
+./blub/baz 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar
 `)
 
 }
