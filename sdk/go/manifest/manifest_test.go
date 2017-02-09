@@ -251,9 +251,3 @@ func TestBlockIterWithBadManifest(t *testing.T) {
 		}
 	}
 }
-
-func TestNormalizeManifest(t *testing.T) {
-	m := Manifest{Text: ". acbd18db4cc2f85cedef654fccc4a4d8+40 0:10:one 10:10:one 20:10:two 30:10:two\n"}
-	normalized := m.NormalizedManifestForPath("")
-	expectEqual(t, normalized, ". acbd18db4cc2f85cedef654fccc4a4d8+40 0:20:one 20:40:two\n")
-}
