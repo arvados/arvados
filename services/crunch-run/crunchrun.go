@@ -699,6 +699,7 @@ func (runner *ContainerRunner) CaptureOutput() error {
 
 	// Save output
 	var response arvados.Collection
+	manifestText := manifest.Manifest{Text: manifestText}.NormalizedText()
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{
 			"collection": arvadosclient.Dict{
@@ -747,68 +748,7 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 	}
 
 	manifest := manifest.Manifest{Text: collection.ManifestText}
-	manifestText := manifest.NormalizedManifestForPath(mnt.Path)
-
-	if manifestText == "" {
-		// It could be denormalized manifest
-		mntPath := strings.Trim(mnt.Path, "/")
-		manifestText = strings.Replace(collection.ManifestText, "./", "."+bindSuffix+"/", -1)
-		manifestText = strings.Replace(manifestText, ". ", "."+bindSuffix+" ", -1)
-		wanted := ""
-		for _, stream := range strings.Split(manifestText, "\n") {
-			if strings.Index(stream, mntPath) == -1 {
-				continue
-			}
-
-			for _, token := range strings.Split(manifestText, " ") {
-				if strings.Index(token, ":") == -1 {
-					wanted += " " + token
-				} else if strings.Index(token, ":"+mntPath) >= 0 {
-					wanted += " " + token + "\n"
-					break
-				}
-			}
-		}
-		return wanted, nil
-	}
-
-	if mnt.Path == "" || mnt.Path == "/" {
-		// no path specified; return the entire manifest text after making adjustments
-		manifestText = strings.Replace(manifestText, "./", "."+bindSuffix+"/", -1)
-		manifestText = strings.Replace(manifestText, ". ", "."+bindSuffix+" ", -1)
-	} else {
-		// either a single stream or file from a stream is being sought
-		bindIdx := strings.LastIndex(bindSuffix, "/")
-		var bindSubdir, bindFileName string
-		if bindIdx >= 0 {
-			bindSubdir = "." + bindSuffix[0:bindIdx]
-			bindFileName = bindSuffix[bindIdx+1:]
-		}
-		mntPath := mnt.Path
-		if strings.HasSuffix(mntPath, "/") {
-			mntPath = mntPath[0 : len(mntPath)-1]
-		}
-		pathIdx := strings.LastIndex(mntPath, "/")
-		var pathSubdir, pathFileName string
-		if pathIdx >= 0 {
-			pathSubdir = "." + mntPath[0:pathIdx]
-			pathFileName = mntPath[pathIdx+1:]
-		}
-
-		if strings.Index(manifestText, "."+mntPath+" ") != -1 {
-			// path refers to this complete stream
-			manifestText = strings.Replace(manifestText, "."+mntPath, "."+bindSuffix, -1)
-		} else {
-			// look for a matching file in this stream
-			manifestText = strings.Replace(manifestText, ":"+pathFileName, ":"+bindFileName, -1)
-			manifestText = strings.Replace(manifestText, pathSubdir, bindSubdir, -1)
-		}
-	}
-
-	if manifestText == "" {
-		runner.CrunchLog.Printf("No manifest segment found for bind '%v' with path '%v'", bindSuffix, mnt.Path)
-	}
-
+	manifestText := manifest.ManifestTextForPath(mnt.Path, bindSuffix)
 	return manifestText, nil
 }
 
