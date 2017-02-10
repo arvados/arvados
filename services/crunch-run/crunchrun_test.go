@@ -57,10 +57,10 @@ var hwImageId = "9c31ee32b3d15268a0754e8edc74d4f815ee014b693bc5109058e431dd5caea
 var otherManifest = ". 68a84f561b1d1708c6baff5e019a9ab3+46+Ae5d0af96944a3690becb1decdf60cc1c937f556d@5693216f 0:46:md5sum.txt\n"
 var otherPDH = "a3e8f74c6f101eae01fa08bfb4e49b3a+54"
 
-var normalizedManifestWithSubdirs = ". 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 0:9:file1_in_main.txt 9:18:file2_in_main.txt 27:5649:zzzzz-8i9sb-bcdefghijkdhvnk.log.txt\n./subdir1 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 0:9:file1_in_subdir1.txt 9:18:file2_in_subdir1.txt\n./subdir1/subdir2 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 0:9:file1_in_subdir2.txt 9:18:file2_in_subdir2.txt\n"
+var normalizedManifestWithSubdirs = ". 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 0:9:file1_in_main.txt 9:18:file2_in_main.txt 0:27:zzzzz-8i9sb-bcdefghijkdhvnk.log.txt\n./subdir1 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 0:9:file1_in_subdir1.txt 9:18:file2_in_subdir1.txt\n./subdir1/subdir2 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 0:9:file1_in_subdir2.txt 9:18:file2_in_subdir2.txt\n"
 var normalizedWithSubdirsPDH = "a0def87f80dd594d4675809e83bd4f15+367"
 
-var denormalizedManifestWithSubdirs = ". 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 0:9:file1_in_main.txt 9:18:file2_in_main.txt 27:5649:zzzzz-8i9sb-bcdefghijkdhvnk.log.txt 5676:10:subdir1/file1_in_subdir1.txt 5686:18:subdir1/file2_in_subdir1.txt\n"
+var denormalizedManifestWithSubdirs = ". 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 0:9:file1_in_main.txt 9:18:file2_in_main.txt 0:27:zzzzz-8i9sb-bcdefghijkdhvnk.log.txt 0:10:subdir1/file1_in_subdir1.txt 10:17:subdir1/file2_in_subdir1.txt\n"
 var denormalizedWithSubdirsPDH = "b0def87f80dd594d4675809e83bd4f15+367"
 
 var fakeAuthUUID = "zzzzz-gj3su-55pqoyepgi2glem"
@@ -536,7 +536,7 @@ func (s *TestSuite) TestUpdateContainerCancelled(c *C) {
 
 // Used by the TestFullRun*() test below to DRY up boilerplate setup to do full
 // dress rehearsal of the Run() function, starting from a JSON container record.
-func FullRunHelper(c *C, record string, extraMounts []string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner) {
+func FullRunHelper(c *C, record string, extraMounts []string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner, realTemp string) {
 	rec := arvados.Container{}
 	err := json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
@@ -551,6 +551,22 @@ func FullRunHelper(c *C, record string, extraMounts []string, fn func(t *TestDoc
 	cr.statInterval = 100 * time.Millisecond
 	am := &ArvMountCmdLine{}
 	cr.RunArvMount = am.ArvMountTest
+
+	realTemp, err = ioutil.TempDir("", "crunchrun_test1-")
+	c.Assert(err, IsNil)
+	defer os.RemoveAll(realTemp)
+
+	tempcount := 0
+	cr.MkTempDir = func(_ string, prefix string) (string, error) {
+		tempcount++
+		d := fmt.Sprintf("%s/%s%d", realTemp, prefix, tempcount)
+		err := os.Mkdir(d, os.ModePerm)
+		if err != nil && strings.Contains(err.Error(), ": file exists") {
+			// Test case must have pre-populated the tempdir
+			err = nil
+		}
+		return d, err
+	}
 
 	if extraMounts != nil && len(extraMounts) > 0 {
 		err := cr.SetupArvMountPoint("keep")
@@ -578,7 +594,7 @@ func FullRunHelper(c *C, record string, extraMounts []string, fn func(t *TestDoc
 }
 
 func (s *TestSuite) TestFullRunHello(c *C) {
-	api, _ := FullRunHelper(c, `{
+	api, _, _ := FullRunHelper(c, `{
     "command": ["echo", "hello world"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
@@ -600,7 +616,7 @@ func (s *TestSuite) TestFullRunHello(c *C) {
 }
 
 func (s *TestSuite) TestCrunchstat(c *C) {
-	api, _ := FullRunHelper(c, `{
+	api, _, _ := FullRunHelper(c, `{
 		"command": ["sleep", "1"],
 		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
 		"cwd": ".",
@@ -633,7 +649,7 @@ func (s *TestSuite) TestCrunchstat(c *C) {
 }
 
 func (s *TestSuite) TestFullRunStderr(c *C) {
-	api, _ := FullRunHelper(c, `{
+	api, _, _ := FullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo hello ; echo world 1>&2 ; exit 1"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
@@ -659,7 +675,7 @@ func (s *TestSuite) TestFullRunStderr(c *C) {
 }
 
 func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
-	api, _ := FullRunHelper(c, `{
+	api, _, _ := FullRunHelper(c, `{
     "command": ["pwd"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": ".",
@@ -681,7 +697,7 @@ func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
 }
 
 func (s *TestSuite) TestFullRunSetCwd(c *C) {
-	api, _ := FullRunHelper(c, `{
+	api, _, _ := FullRunHelper(c, `{
     "command": ["pwd"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": "/bin",
@@ -755,7 +771,7 @@ func (s *TestSuite) TestCancel(c *C) {
 }
 
 func (s *TestSuite) TestFullRunSetEnv(c *C) {
-	api, _ := FullRunHelper(c, `{
+	api, _, _ := FullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo $FROBIZ"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": "/bin",
@@ -1022,7 +1038,7 @@ func (s *TestSuite) TestStdout(c *C) {
 		"runtime_constraints": {}
 	}`
 
-	api, _ := FullRunHelper(c, helperRecord, nil, func(t *TestDockerClient) {
+	api, _, _ := FullRunHelper(c, helperRecord, nil, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
@@ -1085,7 +1101,7 @@ func (s *TestSuite) TestStdoutWithWrongKindCollection(c *C) {
 func (s *TestSuite) TestFullRunWithAPI(c *C) {
 	os.Setenv("ARVADOS_API_HOST", "test.arvados.org")
 	defer os.Unsetenv("ARVADOS_API_HOST")
-	api, _ := FullRunHelper(c, `{
+	api, _, _ := FullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo $ARVADOS_API_HOST"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": "/bin",
@@ -1109,7 +1125,7 @@ func (s *TestSuite) TestFullRunWithAPI(c *C) {
 func (s *TestSuite) TestFullRunSetOutput(c *C) {
 	os.Setenv("ARVADOS_API_HOST", "test.arvados.org")
 	defer os.Unsetenv("ARVADOS_API_HOST")
-	api, _ := FullRunHelper(c, `{
+	api, _, _ := FullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo $ARVADOS_API_HOST"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
     "cwd": "/bin",
@@ -1150,7 +1166,7 @@ func (s *TestSuite) TestStdoutWithExcludeFromOutputMountPointUnderOutputDir(c *C
 
 	extraMounts := []string{"a3e8f74c6f101eae01fa08bfb4e49b3a+54"}
 
-	api, _ := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
+	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
@@ -1169,64 +1185,10 @@ func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 		"environment": {"FROBIZ": "bilbo"},
 		"mounts": {
         "/tmp": {"kind": "tmp"},
-        "/tmp/foo": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367", "path":"/"},
         "/tmp/foo/bar": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367", "path":"/file2_in_main.txt"},
         "/tmp/foo/sub1": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367", "path":"/subdir1"},
         "/tmp/foo/sub1file2": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367", "path":"/subdir1/file2_in_subdir1.txt"},
-        "/tmp/foo/bar/sub2file2": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367", "path":"/subdir1/subdir2/file2_in_subdir2.txt"},
-        "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"}
-    },
-		"output_path": "/tmp",
-		"priority": 1,
-		"runtime_constraints": {}
-	}`
-
-	extraMounts := []string{"a0def87f80dd594d4675809e83bd4f15+367"}
-
-	api, _ := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
-		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
-		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{ExitCode: 0}
-	})
-
-	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
-	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
-	for _, v := range api.Content {
-		if v["collection"] != nil {
-			collection := v["collection"].(arvadosclient.Dict)
-			if strings.Index(collection["name"].(string), "output") == 0 {
-				manifest := collection["manifest_text"].(string)
-
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out"))
-
-				origManifestWithDotReplacedAsFoo := strings.Replace(normalizedManifestWithSubdirs, "./", "./foo/", -1)
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo"+origManifestWithDotReplacedAsFoo[1:]))
-
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 9:18:bar"))
-
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo/sub1 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 0:9:file1_in_subdir1.txt 9:18:file2_in_subdir1.txt"))
-
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 9:18:sub1file2"))
-
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo/bar 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 9:18:sub2file2"))
-			}
-		}
-	}
-}
-
-func (s *TestSuite) TestStdoutWithMountPointForFileUnderOutputDir(c *C) {
-	helperRecord := `{
-		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
-		"cwd": "/bin",
-		"environment": {"FROBIZ": "bilbo"},
-		"mounts": {
-        "/tmp": {"kind": "tmp"},
-        "/tmp/foo": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367"},
-        "/tmp/foo/bar": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367/file2_in_main.txt"},
-        "/tmp/foo/sub1": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367/subdir1/"},
-        "/tmp/foo/sub1file2": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt"},
-        "/tmp/foo/bar/sub2file2": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367/subdir1/subdir2/file2_in_subdir2.txt"},
+        "/tmp/foo/baz/sub2file2": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367", "path":"/subdir1/subdir2/file2_in_subdir2.txt"},
         "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"}
     },
 		"output_path": "/tmp",
@@ -1235,16 +1197,22 @@ func (s *TestSuite) TestStdoutWithMountPointForFileUnderOutputDir(c *C) {
 	}`
 
 	extraMounts := []string{
-		"a0def87f80dd594d4675809e83bd4f15+367",
 		"a0def87f80dd594d4675809e83bd4f15+367/file2_in_main.txt",
 		"a0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt",
 		"a0def87f80dd594d4675809e83bd4f15+367/subdir1/subdir2/file2_in_subdir2.txt",
 	}
 
-	api, _ := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
+	api, runner, realtemp := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
+	})
+
+	c.Check(runner.Binds, DeepEquals, []string{realtemp + "/2:/tmp",
+		realtemp + "/keep1/by_id/a0def87f80dd594d4675809e83bd4f15+367/file2_in_main.txt:/tmp/foo/bar:ro",
+		realtemp + "/keep1/by_id/a0def87f80dd594d4675809e83bd4f15+367/subdir1/subdir2/file2_in_subdir2.txt:/tmp/foo/baz/sub2file2:ro",
+		realtemp + "/keep1/by_id/a0def87f80dd594d4675809e83bd4f15+367/subdir1:/tmp/foo/sub1:ro",
+		realtemp + "/keep1/by_id/a0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt:/tmp/foo/sub1file2:ro",
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
@@ -1255,18 +1223,12 @@ func (s *TestSuite) TestStdoutWithMountPointForFileUnderOutputDir(c *C) {
 			if strings.Index(collection["name"].(string), "output") == 0 {
 				manifest := collection["manifest_text"].(string)
 
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out"))
-
-				origManifestWithDotReplacedAsFoo := strings.Replace(normalizedManifestWithSubdirs, "./", "./foo/", -1)
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo"+origManifestWithDotReplacedAsFoo[1:]))
-
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 9:18:bar"))
-
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo/sub1 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 0:9:file1_in_subdir1.txt 9:18:file2_in_subdir1.txt"))
-
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 9:18:sub1file2"))
-
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo/bar 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 9:18:sub2file2"))
+				c.Check(manifest, Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
+./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 9:18:bar 9:18:sub1file2
+./foo/baz 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 9:18:sub2file2
+./foo/sub1 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 0:9:file1_in_subdir1.txt 9:18:file2_in_subdir1.txt
+./foo/sub1/subdir2 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 0:9:file1_in_subdir2.txt 9:18:file2_in_subdir2.txt
+`)
 			}
 		}
 	}
@@ -1280,8 +1242,7 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 		"environment": {"FROBIZ": "bilbo"},
 		"mounts": {
         "/tmp": {"kind": "tmp"},
-        "/tmp/foo": {"kind": "collection", "portable_data_hash": "b0def87f80dd594d4675809e83bd4f15+367", "path":"/"},
-        "/tmp/foo/bar": {"kind": "collection", "portable_data_hash": "b0def87f80dd594d4675809e83bd4f15+367", "path":"subdir1/file2_in_subdir1.txt"},
+        "/tmp/foo/bar": {"kind": "collection", "portable_data_hash": "b0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt"},
         "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"}
     },
 		"output_path": "/tmp",
@@ -1289,9 +1250,11 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 		"runtime_constraints": {}
 	}`
 
-	extraMounts := []string{"b0def87f80dd594d4675809e83bd4f15+367"}
+	extraMounts := []string{
+		"b0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt",
+	}
 
-	api, _ := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
+	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
 		t.finish <- dockerclient.WaitResult{ExitCode: 0}
@@ -1305,12 +1268,9 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 			if strings.Index(collection["name"].(string), "output") == 0 {
 				manifest := collection["manifest_text"].(string)
 
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out"))
-
-				origManifestWithDotReplacedAsFoo := strings.Replace(denormalizedManifestWithSubdirs, "./", "./foo/", -1)
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo"+origManifestWithDotReplacedAsFoo[1:]))
-
-				c.Check(-1, Not(Equals), strings.Index(manifest, "./foo/bar 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 5686:18:subdir1/file2_in_subdir1.txt"))
+				c.Check(manifest, Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
+./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 10:17:bar
+`)
 			}
 		}
 	}

@@ -317,7 +317,21 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				if mnt.Writable {
 					return fmt.Errorf("Can never write to a collection specified by portable data hash")
 				}
+				idx := strings.Index(mnt.PortableDataHash, "/")
+				if idx > 0 {
+					mnt.Path = path.Clean(mnt.PortableDataHash[idx:])
+					mnt.PortableDataHash = mnt.PortableDataHash[0:idx]
+					runner.Container.Mounts[bind] = mnt
+				}
 				src = fmt.Sprintf("%s/by_id/%s", runner.ArvMountPoint, mnt.PortableDataHash)
+				if mnt.Path != "" && mnt.Path != "." {
+					if strings.HasPrefix(mnt.Path, "./") {
+						mnt.Path = mnt.Path[2:]
+					} else if strings.HasPrefix(mnt.Path, "/") {
+						mnt.Path = mnt.Path[1:]
+					}
+					src += "/" + mnt.Path
+				}
 			} else {
 				src = fmt.Sprintf("%s/tmp%d", runner.ArvMountPoint, tmpcount)
 				arvMountCmd = append(arvMountCmd, "--mount-tmp")
@@ -674,18 +688,8 @@ func (runner *ContainerRunner) CaptureOutput() error {
 			continue
 		}
 
-		if strings.HasPrefix(bindSuffix, "/") == false {
-			bindSuffix = "/" + bindSuffix
-		}
-
 		if mnt.ExcludeFromOutput == true {
 			continue
-		}
-
-		idx := strings.Index(mnt.PortableDataHash, "/")
-		if idx > 0 {
-			mnt.Path = mnt.PortableDataHash[idx:]
-			mnt.PortableDataHash = mnt.PortableDataHash[0:idx]
 		}
 
 		// append to manifest_text
@@ -699,7 +703,8 @@ func (runner *ContainerRunner) CaptureOutput() error {
 
 	// Save output
 	var response arvados.Collection
-	manifestText := manifest.Manifest{Text: manifestText}.NormalizedText()
+	manifest := manifest.Manifest{Text: manifestText}
+	manifestText = manifest.Extract(".", ".").Text
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{
 			"collection": arvadosclient.Dict{
@@ -747,9 +752,12 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 		return "", nil
 	}
 
-	manifest := manifest.Manifest{Text: collection.ManifestText}
-	manifestText := manifest.ManifestTextForPath(mnt.Path, bindSuffix)
-	return manifestText, nil
+	mft := manifest.Manifest{Text: collection.ManifestText}
+	extracted := mft.Extract(mnt.Path, bindSuffix)
+	if extracted.Err != nil {
+		return "", fmt.Errorf("Error parsing manifest for %v: %v", mnt.PortableDataHash, extracted.Err.Error())
+	}
+	return extracted.Text, nil
 }
 
 func (runner *ContainerRunner) loadDiscoveryVars() {
