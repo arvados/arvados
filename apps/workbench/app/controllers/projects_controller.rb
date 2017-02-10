@@ -149,10 +149,9 @@ class ProjectsController < ApplicationController
         link.destroy
       end
 
-      # If this object has the 'trash_at' attribute, then simply mark it
-      # as trash.
-      if item.attributes.include?("trash_at")
-        item.update_attributes trash_at: Time.now
+      if item.class == Collection
+        # Use delete API on collections
+        item.destroy
         @removed_uuids << item.uuid
       elsif item.owner_uuid == @object.uuid
         # Object is owned by this project. Remove it from the project by
