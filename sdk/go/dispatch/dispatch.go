@@ -118,30 +118,29 @@ func (d *Dispatcher) start(c arvados.Container) *runTracker {
 func (d *Dispatcher) checkForUpdates(filters [][]interface{}) {
 	params := arvadosclient.Dict{
 		"filters": filters,
-		"order":   []string{"priority desc"},
-		"limit":   "1000"}
+		"order":   []string{"priority desc"}}
 
 	var list arvados.ContainerList
-	err := d.Arv.List("containers", params, &list)
-	if err != nil {
-		log.Printf("Error getting list of containers: %q", err)
-		return
+	for offset, more := 0, true; more; offset += len(list.Items) {
+		params["offset"] = offset
+		err := d.Arv.List("containers", params, &list)
+		if err != nil {
+			log.Printf("Error getting list of containers: %q", err)
+			return
+		}
+		more = list.ItemsAvailable > len(list.Items)
+		d.checkListForUpdates(list.Items)
 	}
+}
 
-	if list.ItemsAvailable > len(list.Items) {
-		// TODO: support paging
-		log.Printf("Warning!  %d containers are available but only received %d, paged requests are not yet supported, some containers may be ignored.",
-			list.ItemsAvailable,
-			len(list.Items))
-	}
-
+func (d *Dispatcher) checkListForUpdates(containers []arvados.Container) {
 	d.mtx.Lock()
 	defer d.mtx.Unlock()
 	if d.running == nil {
 		d.running = make(map[string]*runTracker)
 	}
 
-	for _, c := range list.Items {
+	for _, c := range containers {
 		tracker, running := d.running[c.UUID]
 		if c.LockedByUUID != "" && c.LockedByUUID != d.auth.UUID {
 			log.Printf("debug: ignoring %s locked by %s", c.UUID, c.LockedByUUID)
