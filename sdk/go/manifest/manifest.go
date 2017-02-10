@@ -356,16 +356,16 @@ func (stream segmentedStream) normalizedText(name string) string {
 
 	stream_tokens := []string{EscapeName(name)}
 
-	blocks := make(map[string]int64)
+	blocks := make(map[blockdigest.BlockDigest]int64)
 	var streamoffset int64
 
 	// Go through each file and add each referenced block exactly once.
 	for _, streamfile := range sortedfiles {
 		for _, segment := range stream[streamfile] {
-			if _, ok := blocks[segment.Locator]; !ok {
+			b, _ := ParseBlockLocator(segment.Locator)
+			if _, ok := blocks[b.Digest]; !ok {
 				stream_tokens = append(stream_tokens, segment.Locator)
-				blocks[segment.Locator] = streamoffset
-				b, _ := ParseBlockLocator(segment.Locator)
+				blocks[b.Digest] = streamoffset
 				streamoffset += int64(b.Size)
 			}
 		}
@@ -382,7 +382,8 @@ func (stream segmentedStream) normalizedText(name string) string {
 		fout := EscapeName(streamfile)
 		for _, segment := range stream[streamfile] {
 			// Collapse adjacent segments
-			streamoffset = blocks[segment.Locator] + int64(segment.Offset)
+			b, _ := ParseBlockLocator(segment.Locator)
+			streamoffset = blocks[b.Digest] + int64(segment.Offset)
 			if span_start == -1 {
 				span_start = streamoffset
 				span_end = streamoffset + int64(segment.Len)
