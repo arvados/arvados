@@ -4,11 +4,14 @@
 package dispatch
 
 import (
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"context"
+	"fmt"
 	"log"
 	"sync"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 )
 
 const (
@@ -19,231 +22,173 @@ const (
 	Cancelled = arvados.ContainerStateCancelled
 )
 
-// Dispatcher holds the state of the dispatcher
+type runner struct {
+	closing bool
+	updates chan arvados.Container
+}
+
+func (ex *runner) close() {
+	if !ex.closing {
+		close(ex.updates)
+	}
+	ex.closing = true
+}
+
+func (ex *runner) update(c arvados.Container) {
+	if ex.closing {
+		return
+	}
+	select {
+	case <-ex.updates:
+		log.Print("debug: executor is handling updates slowly, discarded previous update for %s", c.UUID)
+	default:
+	}
+	ex.updates <- c
+}
+
 type Dispatcher struct {
-	// The Arvados client
-	Arv *arvadosclient.ArvadosClient
-
-	// When a new queued container appears and is either already owned by
-	// this dispatcher or is successfully locked, the dispatcher will call
-	// go RunContainer().  The RunContainer() goroutine gets a channel over
-	// which it will receive updates to the container state.  The
-	// RunContainer() goroutine should only assume status updates come when
-	// the container record changes on the API server; if it needs to
-	// monitor the job submission to the underlying slurm/grid engine/etc
-	// queue it should spin up its own polling goroutines.  When the
-	// channel is closed, that means the container is no longer being
-	// handled by this dispatcher and the goroutine should terminate.  The
-	// goroutine is responsible for draining the 'status' channel, failure
-	// to do so may deadlock the dispatcher.
-	RunContainer func(*Dispatcher, arvados.Container, chan arvados.Container)
-
-	// Amount of time to wait between polling for updates.
-	PollPeriod time.Duration
-
-	// Minimum time between two attempts to run the same container
+	Arv            *arvadosclient.ArvadosClient
+	PollPeriod     time.Duration
 	MinRetryPeriod time.Duration
+	RunContainer   Runner
 
-	mineMutex sync.Mutex
-	mineMap   map[string]chan arvados.Container
-	Auth      arvados.APIClientAuthorization
-
+	auth     arvados.APIClientAuthorization
+	mtx      sync.Mutex
+	running  map[string]*runner
 	throttle throttle
-
-	stop chan struct{}
 }
 
-// Goroutine-safely add/remove uuid to the set of "my" containers, i.e., ones
-// for which this process is actively starting/monitoring.  Returns channel to
-// be used to send container status updates.
-func (dispatcher *Dispatcher) setMine(uuid string) chan arvados.Container {
-	dispatcher.mineMutex.Lock()
-	defer dispatcher.mineMutex.Unlock()
-	if ch, ok := dispatcher.mineMap[uuid]; ok {
-		return ch
+// A Runner executes a container. If it starts any goroutines, it must
+// not return until it can guarantee that none of those goroutines
+// will do anything with this container.
+type Runner func(*Dispatcher, arvados.Container, <-chan arvados.Container)
+
+func (d *Dispatcher) Run(ctx context.Context) error {
+	err := d.Arv.Call("GET", "api_client_authorizations", "", "current", nil, &d.auth)
+	if err != nil {
+		return fmt.Errorf("error getting my token UUID: %v", err)
 	}
 
-	ch := make(chan arvados.Container)
-	dispatcher.mineMap[uuid] = ch
-	return ch
-}
+	poll := time.NewTicker(d.PollPeriod)
+	defer poll.Stop()
 
-// Release a container which is no longer being monitored.
-func (dispatcher *Dispatcher) notMine(uuid string) {
-	dispatcher.mineMutex.Lock()
-	defer dispatcher.mineMutex.Unlock()
-	if ch, ok := dispatcher.mineMap[uuid]; ok {
-		close(ch)
-		delete(dispatcher.mineMap, uuid)
-	}
-}
-
-// checkMine returns true if there is a channel for updates associated
-// with container c.  If update is true, also send the container record on
-// the channel.
-func (dispatcher *Dispatcher) checkMine(c arvados.Container, update bool) bool {
-	dispatcher.mineMutex.Lock()
-	defer dispatcher.mineMutex.Unlock()
-	ch, ok := dispatcher.mineMap[c.UUID]
-	if ok {
-		if update {
-			ch <- c
+	for {
+		running := make([]string, 0, len(d.running))
+		d.mtx.Lock()
+		for uuid := range d.running {
+			running = append(running, uuid)
 		}
-		return true
+		d.mtx.Unlock()
+		if len(running) == 0 {
+			// API bug: ["uuid", "not in", []] does not match everything
+			running = []string{"X"}
+		}
+		d.checkForUpdates([][]interface{}{
+			{"uuid", "in", running}})
+		d.checkForUpdates([][]interface{}{
+			{"state", "=", Queued},
+			{"priority", ">", "0"},
+			{"uuid", "not in", running}})
+		d.checkForUpdates([][]interface{}{
+			{"locked_by_uuid", "=", d.auth.UUID},
+			{"uuid", "not in", running}})
+		select {
+		case <-poll.C:
+			continue
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	}
-	return false
 }
 
-func (dispatcher *Dispatcher) getContainers(params arvadosclient.Dict, touched map[string]bool) {
-	var containers arvados.ContainerList
-	err := dispatcher.Arv.List("containers", params, &containers)
+func (d *Dispatcher) start(c arvados.Container) *runner {
+	ex := &runner{
+		updates: make(chan arvados.Container, 1),
+	}
+	if d.running == nil {
+		d.running = make(map[string]*runner)
+	}
+	d.running[c.UUID] = ex
+	go func() {
+		d.RunContainer(d, c, ex.updates)
+		d.mtx.Lock()
+		delete(d.running, c.UUID)
+		d.mtx.Unlock()
+	}()
+	return ex
+}
+
+func (d *Dispatcher) checkForUpdates(filters [][]interface{}) {
+	params := arvadosclient.Dict{
+		"filters": filters,
+		"order":   []string{"priority desc"},
+		"limit":   "1000"}
+
+	var list arvados.ContainerList
+	err := d.Arv.List("containers", params, &list)
 	if err != nil {
 		log.Printf("Error getting list of containers: %q", err)
 		return
 	}
 
-	if containers.ItemsAvailable > len(containers.Items) {
+	if list.ItemsAvailable > len(list.Items) {
 		// TODO: support paging
 		log.Printf("Warning!  %d containers are available but only received %d, paged requests are not yet supported, some containers may be ignored.",
-			containers.ItemsAvailable,
-			len(containers.Items))
+			list.ItemsAvailable,
+			len(list.Items))
 	}
-	for _, container := range containers.Items {
-		touched[container.UUID] = true
-		dispatcher.handleUpdate(container)
-	}
-}
 
-func (dispatcher *Dispatcher) pollContainers(stop chan struct{}) {
-	ticker := time.NewTicker(dispatcher.PollPeriod)
-	defer ticker.Stop()
-
-	paramsQ := arvadosclient.Dict{
-		"filters": [][]interface{}{{"state", "=", "Queued"}, {"priority", ">", "0"}},
-		"order":   []string{"priority desc"},
-		"limit":   "1000"}
-	paramsP := arvadosclient.Dict{
-		"filters": [][]interface{}{{"locked_by_uuid", "=", dispatcher.Auth.UUID}},
-		"limit":   "1000"}
-
-	for {
-		touched := make(map[string]bool)
-		dispatcher.getContainers(paramsQ, touched)
-		dispatcher.getContainers(paramsP, touched)
-		dispatcher.mineMutex.Lock()
-		var monitored []string
-		for k := range dispatcher.mineMap {
-			if _, ok := touched[k]; !ok {
-				monitored = append(monitored, k)
+	d.mtx.Lock()
+	defer d.mtx.Unlock()
+	for _, c := range list.Items {
+		ex, running := d.running[c.UUID]
+		if c.LockedByUUID != "" && c.LockedByUUID != d.auth.UUID {
+			log.Printf("debug: ignoring %s locked by %s", c.UUID, c.LockedByUUID)
+		} else if running {
+			switch c.State {
+			case Queued:
+				ex.close()
+			case Locked, Running:
+				ex.update(c)
+			case Cancelled, Complete:
+				ex.close()
+			}
+		} else {
+			switch c.State {
+			case Queued:
+				if err := d.lock(c.UUID); err != nil {
+					log.Printf("Error locking container %s: %s", c.UUID, err)
+				} else {
+					c.State = Locked
+					d.start(c).update(c)
+				}
+			case Locked, Running:
+				d.start(c).update(c)
+			case Cancelled, Complete:
+				ex.close()
 			}
 		}
-		dispatcher.mineMutex.Unlock()
-		if monitored != nil {
-			dispatcher.getContainers(arvadosclient.Dict{
-				"filters": [][]interface{}{{"uuid", "in", monitored}}}, touched)
-		}
-		select {
-		case <-ticker.C:
-		case <-stop:
-			return
-		}
-	}
-}
-
-func (dispatcher *Dispatcher) handleUpdate(container arvados.Container) {
-	if container.State == Queued && dispatcher.checkMine(container, false) {
-		// If we previously started the job, something failed, and it
-		// was re-queued, this dispatcher might still be monitoring it.
-		// Stop the existing monitor, then try to lock and run it
-		// again.
-		dispatcher.notMine(container.UUID)
-	}
-
-	if container.LockedByUUID != dispatcher.Auth.UUID && container.State != Queued {
-		// If container is Complete, Cancelled, or Queued, LockedByUUID
-		// will be nil.  If the container was formerly Locked, moved
-		// back to Queued and then locked by another dispatcher,
-		// LockedByUUID will be different.  In either case, we want
-		// to stop monitoring it.
-		log.Printf("Container %v now in state %q with locked_by_uuid %q", container.UUID, container.State, container.LockedByUUID)
-		dispatcher.notMine(container.UUID)
-		return
-	}
-
-	if dispatcher.checkMine(container, true) {
-		// Already monitored, sent status update
-		return
-	}
-
-	if container.State == Queued && container.Priority > 0 {
-		if !dispatcher.throttle.Check(container.UUID) {
-			return
-		}
-		// Try to take the lock
-		if err := dispatcher.Lock(container.UUID); err != nil {
-			return
-		}
-		container.State = Locked
-	}
-
-	if container.State == Locked || container.State == Running {
-		// Not currently monitored but in Locked or Running state and
-		// owned by this dispatcher, so start monitoring.
-		go dispatcher.RunContainer(dispatcher, container, dispatcher.setMine(container.UUID))
 	}
 }
 
 // UpdateState makes an API call to change the state of a container.
-func (dispatcher *Dispatcher) UpdateState(uuid string, newState arvados.ContainerState) error {
-	err := dispatcher.Arv.Update("containers", uuid,
+func (d *Dispatcher) UpdateState(uuid string, state arvados.ContainerState) error {
+	err := d.Arv.Update("containers", uuid,
 		arvadosclient.Dict{
-			"container": arvadosclient.Dict{"state": newState}},
-		nil)
+			"container": arvadosclient.Dict{"state": state},
+		}, nil)
 	if err != nil {
-		log.Printf("Error updating container %s to state %q: %q", uuid, newState, err)
+		log.Printf("Error updating container %s to state %q: %s", uuid, state, err)
 	}
 	return err
 }
 
 // Lock makes the lock API call which updates the state of a container to Locked.
-func (dispatcher *Dispatcher) Lock(uuid string) error {
-	err := dispatcher.Arv.Call("POST", "containers", uuid, "lock", nil, nil)
-	if err != nil {
-		log.Printf("Error locking container %s: %q", uuid, err)
-	}
-	return err
+func (d *Dispatcher) lock(uuid string) error {
+	return d.Arv.Call("POST", "containers", uuid, "lock", nil, nil)
 }
 
 // Unlock makes the unlock API call which updates the state of a container to Queued.
-func (dispatcher *Dispatcher) Unlock(uuid string) error {
-	err := dispatcher.Arv.Call("POST", "containers", uuid, "unlock", nil, nil)
-	if err != nil {
-		log.Printf("Error unlocking container %s: %q", uuid, err)
-	}
-	return err
-}
-
-// Stop causes Run to return after the current polling cycle.
-func (dispatcher *Dispatcher) Stop() {
-	if dispatcher.stop == nil {
-		// already stopped
-		return
-	}
-	close(dispatcher.stop)
-	dispatcher.stop = nil
-}
-
-// Run runs the main loop of the dispatcher.
-func (dispatcher *Dispatcher) Run() (err error) {
-	err = dispatcher.Arv.Call("GET", "api_client_authorizations", "", "current", nil, &dispatcher.Auth)
-	if err != nil {
-		log.Printf("Error getting my token UUID: %v", err)
-		return
-	}
-
-	dispatcher.mineMap = make(map[string]chan arvados.Container)
-	dispatcher.stop = make(chan struct{})
-	dispatcher.throttle.hold = dispatcher.MinRetryPeriod
-	dispatcher.pollContainers(dispatcher.stop)
-	return nil
+func (d *Dispatcher) Unlock(uuid string) error {
+	return d.Arv.Call("POST", "containers", uuid, "unlock", nil, nil)
 }
