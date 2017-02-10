@@ -151,8 +151,8 @@ class ProjectsController < ApplicationController
 
       if item.class == Collection
         # Use delete API on collections
-        @removed_uuids << item.uuid
         item.destroy
+        @removed_uuids << item.uuid
       elsif item.owner_uuid == @object.uuid
         # Object is owned by this project. Remove it from the project by
         # changing owner to the current user.
