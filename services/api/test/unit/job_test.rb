@@ -502,4 +502,51 @@ class JobTest < ActiveSupport::TestCase
       update_all(output: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+1')
     assert_nil Job.find_reusable(example_attrs, {}, [], [users(:active)])
   end
+
+  [
+    true,
+    false,
+  ].each do |cascade|
+    test "cancel job with cascade #{cascade}" do
+      job = Job.find_by_uuid jobs(:running_job_with_components_at_level_1).uuid
+      job.cancel cascade: cascade
+      assert_equal Job::Cancelled, job.state
+
+      descendents = ['zzzzz-8i9sb-jobcomponentsl2',
+                     'zzzzz-d1hrv-picomponentsl02',
+                     'zzzzz-8i9sb-job1atlevel3noc',
+                     'zzzzz-8i9sb-job2atlevel3noc']
+
+      jobs = Job.where(uuid: descendents)
+      jobs.each do |j|
+        assert_equal ('Cancelled' == j.state), cascade
+      end
+
+      pipelines = PipelineInstance.where(uuid: descendents)
+      pipelines.each do |pi|
+        assert_equal ('Paused' == pi.state), cascade
+      end
+    end
+  end
+
+  test 'cancelling a completed job raises error' do
+    job = Job.find_by_uuid jobs(:job_with_latest_version).uuid
+    assert job
+    assert_equal 'Complete', job.state
+
+    assert_raises(ArvadosModel::InvalidStateTransitionError) do
+      job.cancel
+    end
+  end
+
+  test 'cancelling a job with circular relationship with another does not result in an infinite loop' do
+    job = Job.find_by_uuid jobs(:running_job_2_with_circular_component_relationship).uuid
+
+    job.cancel cascade: true
+
+    assert_equal Job::Cancelled, job.state
+
+    child = Job.find_by_uuid job.components.collect{|_, uuid| uuid}[0]
+    assert_equal Job::Cancelled, child.state
+  end
 end

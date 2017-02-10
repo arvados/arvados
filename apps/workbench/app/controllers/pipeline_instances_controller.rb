@@ -341,6 +341,15 @@ class PipelineInstancesController < ApplicationController
     @unreadable_inputs_present
   end
 
+  def cancel
+    @object.cancel
+    if params[:return_to]
+      redirect_to params[:return_to]
+    else
+      redirect_to @object
+    end
+  end
+
   protected
   def for_comparison v
     if v.is_a? Hash or v.is_a? Array

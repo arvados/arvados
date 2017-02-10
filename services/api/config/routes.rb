@@ -54,7 +54,9 @@ Server::Application.routes.draw do
       resources :nodes do
         post 'ping', on: :member
       end
-      resources :pipeline_instances
+      resources :pipeline_instances do
+        post 'cancel', on: :member
+      end
       resources :pipeline_templates
       resources :workflows
       resources :repositories do
