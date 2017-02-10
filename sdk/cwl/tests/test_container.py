@@ -127,7 +127,7 @@ class TestContainer(unittest.TestCase):
                 'runtime_constraints': {
                     'vcpus': 3,
                     'ram': 3145728000,
-                    'keep_cache_ram': 512,
+                    'keep_cache_ram': 536870912,
                     'API': True
                 },
                 'use_existing': True,
