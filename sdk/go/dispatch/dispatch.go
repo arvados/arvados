@@ -103,8 +103,7 @@ func (d *Dispatcher) runningUUIDs() []string {
 // Start a runner in a new goroutine, and send the initial container
 // record to its updates channel.
 func (d *Dispatcher) start(c arvados.Container) *runTracker {
-	updates := make(chan arvados.Container, 1)
-	tracker := &runTracker{updates: updates}
+	tracker := &runTracker{updates: make(chan arvados.Container, 1)}
 	tracker.updates <- c
 	go func() {
 		d.RunContainer(d, c, tracker.updates)
@@ -204,7 +203,7 @@ func (d *Dispatcher) Unlock(uuid string) error {
 
 type runTracker struct {
 	closing bool
-	updates chan<- arvados.Container
+	updates chan arvados.Container
 }
 
 func (tracker *runTracker) close() {
