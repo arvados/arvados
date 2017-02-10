@@ -509,7 +509,7 @@ class JobTest < ActiveSupport::TestCase
   ].each do |cascade|
     test "cancel job with cascade #{cascade}" do
       job = Job.find_by_uuid jobs(:running_job_with_components_at_level_1).uuid
-      job.cancel cascade
+      job.cancel cascade: cascade
       assert_equal Job::Cancelled, job.state
 
       descendents = ['zzzzz-8i9sb-jobcomponentsl2',
@@ -542,7 +542,7 @@ class JobTest < ActiveSupport::TestCase
   test 'cancelling a job with circular relationship with another does not result in an infinite loop' do
     job = Job.find_by_uuid jobs(:running_job_2_with_circular_component_relationship).uuid
 
-    job.cancel true
+    job.cancel cascade: true
 
     assert_equal Job::Cancelled, job.state
 

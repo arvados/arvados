@@ -5,7 +5,7 @@ class Arvados::V1::PipelineInstancesController < ApplicationController
 
   def cancel
     reload_object_before_update
-    @object.cancel params[:cascade]
+    @object.cancel cascade: params[:cascade]
     show
   end
 end

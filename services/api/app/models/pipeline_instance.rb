@@ -100,7 +100,14 @@ class PipelineInstance < ArvadosModel
     self.where("state = 'RunningOnServer'")
   end
 
-  def cancel cascade=nil
+  def cancel(cascade: false, need_transaction: true)
+    if need_transaction
+      ActiveRecord::Base.transaction do
+        cancel(cascade: cascade, need_transaction: false)
+      end
+      return
+    end
+
     if self.state.in?([RunningOnServer, RunningOnClient])
       self.state = Paused
       self.save!
@@ -115,8 +122,8 @@ class PipelineInstance < ArvadosModel
 
     return if children.empty?
 
-    Job.where(uuid: children).each do |job|
-      job.cancel cascade if job.state.in?([Job::Queued, Job::Running])
+    Job.where(uuid: children, state: [Job::Queued, Job::Running]).each do |job|
+      job.cancel(cascade: cascade, need_transaction: false)
     end
   end
 

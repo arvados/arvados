@@ -284,7 +284,14 @@ class Job < ArvadosModel
     end
   end
 
-  def cancel cascade=nil
+  def cancel(cascade: false, need_transaction: true)
+    if need_transaction
+      ActiveRecord::Base.transaction do
+        cancel(cascade: cascade, need_transaction: false)
+      end
+      return
+    end
+
     if self.state.in?([Queued, Running])
       self.state = Cancelled
       self.save!
@@ -300,13 +307,13 @@ class Job < ArvadosModel
     return if children.empty?
 
     # cancel any child jobs
-    Job.where(uuid: children).each do |job|
-      job.cancel cascade if job.state.in?([Queued, Running])
+    Job.where(uuid: children, state: [Queued, Running]).each do |job|
+      job.cancel(cascade: cascade, need_transaction: false)
     end
 
     # cancel any child pipelines
-    PipelineInstance.where(uuid: children).each do |pi|
-      pi.cancel cascade if pi.state.in?([PipelineInstance::RunningOnServer, PipelineInstance::RunningOnClient])
+    PipelineInstance.where(uuid: children, state: [PipelineInstance::RunningOnServer, PipelineInstance::RunningOnClient]).each do |pi|
+      pi.cancel(cascade: cascade, need_transaction: false)
     end
   end
 
