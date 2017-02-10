@@ -35,9 +35,9 @@ const (
 // parameter when retrieving the collection record).
 var ErrNoManifest = errors.New("Collection has no manifest")
 
-// CollectionFileReader returns a Reader that reads file content from
-// a collection. The filename must be given relative to the root of
-// the collection, without a leading "./".
+// CollectionFileReader returns a Reader that reads content from a single file
+// in the collection. The filename must be relative to the root of the
+// collection.  A leading prefix of "/" or "./" in the filename is ignored.
 func (kc *KeepClient) CollectionFileReader(collection map[string]interface{}, filename string) (Reader, error) {
 	mText, ok := collection["manifest_text"].(string)
 	if !ok {
