@@ -184,7 +184,7 @@ func submit(dispatcher *dispatch.Dispatcher,
 		log.Printf("sbatch succeeded: %q", strings.TrimSpace(stdout.String()))
 		return nil
 	case *exec.ExitError:
-		return fmt.Errorf("sbatch %+q failed: %v (stderr: %q)", cmd.Args, err, stderr)
+		return fmt.Errorf("sbatch %+q failed: %v (stderr: %q)", cmd.Args, err, stderr.Bytes())
 	default:
 		return fmt.Errorf("exec failed: %v", err)
 	}
