@@ -22,30 +22,6 @@ const (
 	Cancelled = arvados.ContainerStateCancelled
 )
 
-type runner struct {
-	closing bool
-	updates chan arvados.Container
-}
-
-func (ex *runner) close() {
-	if !ex.closing {
-		close(ex.updates)
-	}
-	ex.closing = true
-}
-
-func (ex *runner) update(c arvados.Container) {
-	if ex.closing {
-		return
-	}
-	select {
-	case <-ex.updates:
-		log.Print("debug: executor is handling updates slowly, discarded previous update for %s", c.UUID)
-	default:
-	}
-	ex.updates <- c
-}
-
 type Dispatcher struct {
 	Arv            *arvadosclient.ArvadosClient
 	PollPeriod     time.Duration
@@ -54,7 +30,7 @@ type Dispatcher struct {
 
 	auth     arvados.APIClientAuthorization
 	mtx      sync.Mutex
-	running  map[string]*runner
+	running  map[string]*runTracker
 	throttle throttle
 }
 
@@ -73,25 +49,15 @@ func (d *Dispatcher) Run(ctx context.Context) error {
 	defer poll.Stop()
 
 	for {
-		running := make([]string, 0, len(d.running))
-		d.mtx.Lock()
-		for uuid := range d.running {
-			running = append(running, uuid)
-		}
-		d.mtx.Unlock()
-		if len(running) == 0 {
-			// API bug: ["uuid", "not in", []] does not match everything
-			running = []string{"X"}
-		}
 		d.checkForUpdates([][]interface{}{
-			{"uuid", "in", running}})
+			{"uuid", "in", d.runningUUIDs()}})
+		d.checkForUpdates([][]interface{}{
+			{"locked_by_uuid", "=", d.auth.UUID},
+			{"uuid", "not in", d.runningUUIDs()}})
 		d.checkForUpdates([][]interface{}{
 			{"state", "=", Queued},
 			{"priority", ">", "0"},
-			{"uuid", "not in", running}})
-		d.checkForUpdates([][]interface{}{
-			{"locked_by_uuid", "=", d.auth.UUID},
-			{"uuid", "not in", running}})
+			{"uuid", "not in", d.runningUUIDs()}})
 		select {
 		case <-poll.C:
 			continue
@@ -101,21 +67,34 @@ func (d *Dispatcher) Run(ctx context.Context) error {
 	}
 }
 
-func (d *Dispatcher) start(c arvados.Container) *runner {
-	ex := &runner{
-		updates: make(chan arvados.Container, 1),
+func (d *Dispatcher) runningUUIDs() []string {
+	d.mtx.Lock()
+	defer d.mtx.Unlock()
+	if len(d.running) == 0 {
+		// API bug: ["uuid", "not in", []] does not match everything
+		return []string{"X"}
 	}
-	if d.running == nil {
-		d.running = make(map[string]*runner)
+	uuids := make([]string, 0, len(d.running))
+	for x := range d.running {
+		uuids = append(uuids, x)
 	}
-	d.running[c.UUID] = ex
+	return uuids
+}
+
+// Start a runner in a new goroutine, and send the initial container
+// record to its updates channel.
+func (d *Dispatcher) start(c arvados.Container) *runTracker {
+	updates := make(chan arvados.Container, 1)
+	tracker := &runTracker{updates: updates}
+	tracker.updates <- c
 	go func() {
-		d.RunContainer(d, c, ex.updates)
+		d.RunContainer(d, c, tracker.updates)
+
 		d.mtx.Lock()
 		delete(d.running, c.UUID)
 		d.mtx.Unlock()
 	}()
-	return ex
+	return tracker
 }
 
 func (d *Dispatcher) checkForUpdates(filters [][]interface{}) {
@@ -140,32 +119,36 @@ func (d *Dispatcher) checkForUpdates(filters [][]interface{}) {
 
 	d.mtx.Lock()
 	defer d.mtx.Unlock()
+	if d.running == nil {
+		d.running = make(map[string]*runTracker)
+	}
+
 	for _, c := range list.Items {
-		ex, running := d.running[c.UUID]
+		tracker, running := d.running[c.UUID]
 		if c.LockedByUUID != "" && c.LockedByUUID != d.auth.UUID {
 			log.Printf("debug: ignoring %s locked by %s", c.UUID, c.LockedByUUID)
 		} else if running {
 			switch c.State {
 			case Queued:
-				ex.close()
+				tracker.close()
 			case Locked, Running:
-				ex.update(c)
+				tracker.update(c)
 			case Cancelled, Complete:
-				ex.close()
+				tracker.close()
 			}
 		} else {
 			switch c.State {
 			case Queued:
 				if err := d.lock(c.UUID); err != nil {
-					log.Printf("Error locking container %s: %s", c.UUID, err)
+					log.Printf("debug: error locking container %s: %s", c.UUID, err)
 				} else {
 					c.State = Locked
-					d.start(c).update(c)
+					d.running[c.UUID] = d.start(c)
 				}
 			case Locked, Running:
-				d.start(c).update(c)
+				d.running[c.UUID] = d.start(c)
 			case Cancelled, Complete:
-				ex.close()
+				tracker.close()
 			}
 		}
 	}
@@ -191,4 +174,28 @@ func (d *Dispatcher) lock(uuid string) error {
 // Unlock makes the unlock API call which updates the state of a container to Queued.
 func (d *Dispatcher) Unlock(uuid string) error {
 	return d.Arv.Call("POST", "containers", uuid, "unlock", nil, nil)
+}
+
+type runTracker struct {
+	closing bool
+	updates chan<- arvados.Container
+}
+
+func (tracker *runTracker) close() {
+	if !tracker.closing {
+		close(tracker.updates)
+	}
+	tracker.closing = true
+}
+
+func (tracker *runTracker) update(c arvados.Container) {
+	if tracker.closing {
+		return
+	}
+	select {
+	case <-tracker.updates:
+		log.Printf("debug: runner is handling updates slowly, discarded previous update for %s", c.UUID)
+	default:
+	}
+	tracker.updates <- c
 }
