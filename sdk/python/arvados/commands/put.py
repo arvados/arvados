@@ -737,7 +737,14 @@ class ArvPutUploadJob(object):
         return self._my_collection().manifest_locator()
 
     def portable_data_hash(self):
-        return self._my_collection().portable_data_hash()
+        pdh = self._my_collection().portable_data_hash()
+        m = self._my_collection().stripped_manifest()
+        local_pdh = hashlib.md5(m).hexdigest() + '+' + str(len(m))
+        if pdh != local_pdh:
+            logger.warning("\n".join([
+                "arv-put: API server provided PDH differs from local manifest.",
+                "         This should not happen; showing API server version."]))
+        return pdh
 
     def manifest_text(self, stream_name=".", strip=False, normalize=False):
         return self._my_collection().manifest_text(stream_name, strip, normalize)

@@ -1063,8 +1063,13 @@ class RichCollectionBase(CollectionBase):
 
     def portable_data_hash(self):
         """Get the portable data hash for this collection's manifest."""
-        stripped = self.portable_manifest_text()
-        return hashlib.md5(stripped).hexdigest() + '+' + str(len(stripped))
+        if self._manifest_locator and self.committed():
+            # If the collection is already saved on the API server, and it's committed
+            # then return API server's PDH response.
+            return self._portable_data_hash
+        else:
+            stripped = self.portable_manifest_text()
+            return hashlib.md5(stripped).hexdigest() + '+' + str(len(stripped))
 
     @synchronized
     def subscribe(self, callback):
@@ -1203,6 +1208,7 @@ class Collection(RichCollectionBase):
         self.num_retries = num_retries if num_retries is not None else 0
         self._manifest_locator = None
         self._manifest_text = None
+        self._portable_data_hash = None
         self._api_response = None
         self._past_versions = set()
 
@@ -1469,6 +1475,7 @@ class Collection(RichCollectionBase):
                 ).execute(
                     num_retries=num_retries))
             self._manifest_text = self._api_response["manifest_text"]
+            self._portable_data_hash = self._api_response["portable_data_hash"]
             self.set_committed()
 
         return self._manifest_text
@@ -1527,6 +1534,7 @@ class Collection(RichCollectionBase):
             text = self._api_response["manifest_text"]
 
             self._manifest_locator = self._api_response["uuid"]
+            self._portable_data_hash = self._api_response["portable_data_hash"]
 
             self._manifest_text = text
             self.set_committed()
