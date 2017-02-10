@@ -22,18 +22,21 @@
     <% end %>
   </div>
 
+  <div class="panel-heading">
+    <span class="panel-title">Used in jobs</span>
+  </div>
+
   <% jobs = Job.order("created_at desc").filter([["components", "like", "%#{@object.uuid}%"]]).limit(10) %>
-  <% if jobs.results.size > 0
-     message = "Used in the jobs"
+  <%
+     too_many_message = ""
      if jobs.items_available > jobs.results.size
-       message += ' (' + (jobs.items_available - jobs.results.size).to_s + ' more jobs are not listed)'
+       too_many_message = (jobs.items_available - jobs.results.size).to_s + ' more jobs are not listed.'
      end
   %>
-    <div class="panel-heading">
-      <span class="panel-title"> <%= message %> </span>
-    </div>
-
-    <div class="panel-body used-in-jobs">
+  <div class="panel-body used-in-jobs">
+    <% if too_many_message != "" %>
+      <p><i><%= too_many_message %></i></p>
+    <% end %>
     <% jobs.each do |j| %>
       <% j.components.each do |k, v| %>
         <% if v == @object.uuid %>
@@ -47,5 +50,5 @@
         <% end %>
       <% end %>
     <% end %>
-  <% end %>
+  </div>
 </div>
