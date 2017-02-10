@@ -63,14 +63,21 @@ class ArvadosContainer(object):
 
         for f in self.pathmapper.files():
             res, p, tp = self.pathmapper.mapper(f)
-            pdh, path = res[5:].split("/", 1)
+            if res.startswith("keep:"):
+                res = res[5:]
+            elif res.startswith("/keep/"):
+                res = res[6:]
+            else:
+                continue
+            sp = res.split("/", 1)
+            pdh = sp[0]
             if pdh not in dirs:
                 mounts[p] = {
                     "kind": "collection",
                     "portable_data_hash": pdh
                 }
-                if path:
-                    mounts[p]["path"] = path
+                if len(sp) == 2:
+                    mounts[p]["path"] = sp[1]
 
         with Perf(metrics, "generatefiles %s" % self.name):
             if self.generatefiles["listing"]:
