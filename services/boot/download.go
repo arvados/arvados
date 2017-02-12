@@ -97,7 +97,7 @@ func (d *download) Boot(ctx context.Context) error {
 	if d.Size > 0 && d.Size != n {
 		return fmt.Errorf("Size mismatch: got %d bytes, expected %d", n, d.Size)
 	} else if d.Size == 0 {
-		log.Printf("%s: size was %d", d, n)
+		log.Printf("%v: size was %d", d, n)
 	}
 	if err = out.Close(); err != nil {
 		return err
