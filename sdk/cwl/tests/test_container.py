@@ -152,6 +152,129 @@ class TestContainer(unittest.TestCase):
         for key in call_body:
             self.assertEqual(call_body_expected.get(key), call_body.get(key))
 
+
+    # The test passes some fields in builder.resources
+    # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    @mock.patch("arvados.collection.Collection")
+    def test_initial_work_dir(self, collection_mock, keepdocker):
+        arv_docker_clear_cache()
+        runner = mock.MagicMock()
+        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+        runner.ignore_docker_for_reuse = False
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
+        sourcemock = mock.MagicMock()
+        def get_collection_mock(p):
+            if "/" in p:
+                return (sourcemock, p.split("/", 1)[1])
+            else:
+                return (sourcemock, "")
+        runner.fs_access.get_collection.side_effect = get_collection_mock
+
+        vwdmock = mock.MagicMock()
+        collection_mock.return_value = vwdmock
+        vwdmock.portable_data_hash.return_value = "99999999999999999999999999999996+99"
+
+        tool = cmap({
+            "inputs": [],
+            "outputs": [],
+            "hints": [{
+                "class": "InitialWorkDirRequirement",
+                "listing": [{
+                    "class": "File",
+                    "basename": "foo",
+                    "location": "keep:99999999999999999999999999999995+99/bar"
+                },
+                {
+                    "class": "Directory",
+                    "basename": "foo2",
+                    "location": "keep:99999999999999999999999999999995+99"
+                },
+                {
+                    "class": "File",
+                    "basename": "filename",
+                    "location": "keep:99999999999999999999999999999995+99/baz/filename"
+                },
+                {
+                    "class": "Directory",
+                    "basename": "subdir",
+                    "location": "keep:99999999999999999999999999999995+99/subdir"
+                }                        ]
+            }],
+            "baseCommand": "ls"
+        })
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers",
+                                                 avsc_names=avsc_names, make_fs_access=make_fs_access,
+                                                 loader=Loader({}))
+        arvtool.formatgraph = None
+        for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_initial_work_dir",
+                             make_fs_access=make_fs_access, tmpdir="/tmp"):
+            j.run()
+
+        call_args, call_kwargs = runner.api.container_requests().create.call_args
+
+        vwdmock.copy.assert_has_calls([mock.call('bar', 'foo', source_collection=sourcemock)])
+        vwdmock.copy.assert_has_calls([mock.call('', 'foo2', source_collection=sourcemock)])
+        vwdmock.copy.assert_has_calls([mock.call('baz/filename', 'filename', source_collection=sourcemock)])
+        vwdmock.copy.assert_has_calls([mock.call('subdir', 'subdir', source_collection=sourcemock)])
+
+        call_body_expected = {
+                'environment': {
+                    'HOME': '/var/spool/cwl',
+                    'TMPDIR': '/tmp'
+                },
+                'name': 'test_initial_work_dir',
+                'runtime_constraints': {
+                    'vcpus': 1,
+                    'ram': 1073741824
+                },
+                'use_existing': True,
+                'priority': 1,
+                'mounts': {
+                    '/var/spool/cwl': {'kind': 'tmp'},
+                    '/var/spool/cwl/foo': {
+                        'kind': 'collection',
+                        'path': 'foo',
+                        'portable_data_hash': '99999999999999999999999999999996+99'
+                    },
+                    '/var/spool/cwl/foo2': {
+                        'kind': 'collection',
+                        'path': 'foo2',
+                        'portable_data_hash': '99999999999999999999999999999996+99'
+                    },
+                    '/var/spool/cwl/filename': {
+                        'kind': 'collection',
+                        'path': 'filename',
+                        'portable_data_hash': '99999999999999999999999999999996+99'
+                    },
+                    '/var/spool/cwl/subdir': {
+                        'kind': 'collection',
+                        'path': 'subdir',
+                        'portable_data_hash': '99999999999999999999999999999996+99'
+                    }
+                },
+                'state': 'Committed',
+                'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                'output_path': '/var/spool/cwl',
+                'container_image': '99999999999999999999999999999993+99',
+                'command': ['ls'],
+                'cwd': '/var/spool/cwl',
+                'scheduling_parameters': {
+                },
+                'properties': {}
+        }
+
+        call_body = call_kwargs.get('body', None)
+        self.assertNotEqual(None, call_body)
+        for key in call_body:
+            self.assertEqual(call_body_expected.get(key), call_body.get(key))
+
     @mock.patch("arvados.collection.Collection")
     def test_done(self, col):
         api = mock.MagicMock()

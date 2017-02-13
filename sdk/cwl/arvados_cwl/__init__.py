@@ -33,7 +33,7 @@ from .arvtool import ArvadosCommandTool
 from .arvworkflow import ArvadosWorkflow, upload_workflow
 from .fsaccess import CollectionFsAccess, CollectionFetcher, collectionResolver
 from .perf import Perf
-from .pathmapper import FinalOutputPathMapper
+from .pathmapper import NoFollowPathMapper
 from ._version import __version__
 
 from cwltool.pack import pack
@@ -200,9 +200,6 @@ class ArvCwlRunner(object):
 
     def check_features(self, obj):
         if isinstance(obj, dict):
-            if obj.get("class") == "InitialWorkDirRequirement":
-                if self.work_api == "containers":
-                    raise UnsupportedRequirement("InitialWorkDirRequirement not supported with --api=containers")
             if obj.get("writable"):
                 raise SourceLine(obj, "writable", UnsupportedRequirement).makeError("InitialWorkDir feature 'writable: true' not supported")
             if obj.get("class") == "CommandLineTool":
@@ -233,7 +230,7 @@ class ArvCwlRunner(object):
         adjustDirObjs(outputObj, capture)
         adjustFileObjs(outputObj, capture)
 
-        generatemapper = FinalOutputPathMapper(files, "", "", separateDirs=False)
+        generatemapper = NoFollowPathMapper(files, "", "", separateDirs=False)
 
         final = arvados.collection.Collection(api_client=self.api,
                                               keep_client=self.keep_client,
