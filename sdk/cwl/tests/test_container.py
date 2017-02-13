@@ -169,7 +169,12 @@ class TestContainer(unittest.TestCase):
             "portable_data_hash": "99999999999999999999999999999993+99"}
 
         sourcemock = mock.MagicMock()
-        runner.fs_access.get_collection.return_value = (sourcemock, "bar")
+        def get_collection_mock(p):
+            if "/" in p:
+                return (sourcemock, p.split("/", 1)[1])
+            else:
+                return (sourcemock, "")
+        runner.fs_access.get_collection.side_effect = get_collection_mock
 
         vwdmock = mock.MagicMock()
         collection_mock.return_value = vwdmock
@@ -188,8 +193,18 @@ class TestContainer(unittest.TestCase):
                 {
                     "class": "Directory",
                     "basename": "foo2",
-                    "location": "keep:99999999999999999999999999999997+99"
-                }]
+                    "location": "keep:99999999999999999999999999999995+99"
+                },
+                {
+                    "class": "File",
+                    "basename": "filename",
+                    "location": "keep:99999999999999999999999999999995+99/baz/filename"
+                },
+                {
+                    "class": "Directory",
+                    "basename": "subdir",
+                    "location": "keep:99999999999999999999999999999995+99/subdir"
+                }                        ]
             }],
             "baseCommand": "ls"
         })
@@ -204,8 +219,10 @@ class TestContainer(unittest.TestCase):
 
         call_args, call_kwargs = runner.api.container_requests().create.call_args
 
-        vwdmock.copy.assert_has_calls([mock.call('bar', 'foo', source_collection=sourcemock)],
-                                      [mock.call('', 'foo2', source_collection=sourcemock)])
+        vwdmock.copy.assert_has_calls([mock.call('bar', 'foo', source_collection=sourcemock)])
+        vwdmock.copy.assert_has_calls([mock.call('', 'foo2', source_collection=sourcemock)])
+        vwdmock.copy.assert_has_calls([mock.call('baz/filename', 'filename', source_collection=sourcemock)])
+        vwdmock.copy.assert_has_calls([mock.call('subdir', 'subdir', source_collection=sourcemock)])
 
         call_body_expected = {
                 'environment': {
@@ -229,6 +246,16 @@ class TestContainer(unittest.TestCase):
                     '/var/spool/cwl/foo2': {
                         'kind': 'collection',
                         'path': 'foo2',
+                        'portable_data_hash': '99999999999999999999999999999996+99'
+                    },
+                    '/var/spool/cwl/filename': {
+                        'kind': 'collection',
+                        'path': 'filename',
+                        'portable_data_hash': '99999999999999999999999999999996+99'
+                    },
+                    '/var/spool/cwl/subdir': {
+                        'kind': 'collection',
+                        'path': 'subdir',
                         'portable_data_hash': '99999999999999999999999999999996+99'
                     }
                 },
