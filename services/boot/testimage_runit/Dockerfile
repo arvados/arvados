@@ -11,4 +11,4 @@ RUN ["bash", "-c", "echo en_US.utf8 UTF-8 | tee -a /etc/locale.gen && locale-gen
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends ca-certificates locales nginx postgresql runit
 
-CMD ["bash", "-c", "coproc arvados-boot; runsvdir /etc/sv"]
+CMD ["bash", "-c", "coproc runsvdir /etc/sv; arvados-boot"]

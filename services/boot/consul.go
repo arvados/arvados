@@ -29,9 +29,9 @@ func (cb *consulBooter) Boot(ctx context.Context) error {
 	cfg := cfg(ctx)
 	bin := cfg.UsrDir + "/bin/consul"
 	err := (&download{
-		URL:  "https://releases.hashicorp.com/consul/0.7.2/consul_0.7.2_linux_amd64.zip",
+		URL:  "https://releases.hashicorp.com/consul/0.7.4/consul_0.7.4_linux_amd64.zip",
 		Dest: bin,
-		Size: 29079005,
+		Size: 36003597,
 		Mode: 0755,
 	}).Boot(ctx)
 	if err != nil {
