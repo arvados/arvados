@@ -638,6 +638,62 @@ docker_image_collection_tag2:
   properties:
     image_timestamp: "2014-06-10T14:30:00.184019565Z"
 
+docker_image_collection_hextag:
+  uuid: zzzzz-o0j2j-2591ao7zubhaoxh
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2017-02-13 21:41:06.769936997 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2017-02-13 21:41:06.769422000 Z
+  tail_uuid: ~
+  link_class: docker_image_repo+tag
+  name: arvados/apitestfixture:b25678748af0cac6d1180b9ca4ce3ef31f2b06602f471aad8dfd421e149b0d75
+  head_uuid: zzzzz-4zz18-1v45jub259sjjgb
+  properties: {}
+  updated_at: 2017-02-13 21:41:06.769422000 Z
+
+docker_1_12_image_hash:
+  uuid: zzzzz-o0j2j-f58l58fn65n8v6k
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2017-02-13 21:35:12.602828136 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2017-02-13 21:35:12.602309000 Z
+  tail_uuid: ~
+  link_class: docker_image_hash
+  name: sha256:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678
+  head_uuid: zzzzz-4zz18-1g4g0vhpjn9wq7i
+  properties: {}
+  updated_at: 2017-02-13 21:35:12.602309000 Z
+
+docker_1_12_image_tag:
+  uuid: zzzzz-o0j2j-dybsy0m3u96jkbv
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2017-02-13 21:37:47.441406362 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2017-02-13 21:37:47.440882000 Z
+  tail_uuid: ~
+  link_class: docker_image_repo+tag
+  name: arvados/apitestfixture:latest
+  head_uuid: zzzzz-4zz18-1g4g0vhpjn9wq7i
+  properties: {}
+  updated_at: 2017-02-13 21:37:47.440882000 Z
+
+docker_1_12_image_hextag:
+  uuid: zzzzz-o0j2j-06hzef4u1hbk1g5
+  owner_uuid: zzzzz-tpzed-000000000000000
+  created_at: 2017-02-13 21:37:47.441406362 Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-000000000000000
+  modified_at: 2017-02-13 21:37:47.440882000 Z
+  tail_uuid: ~
+  link_class: docker_image_repo+tag
+  name: arvados/apitestfixture:b25678748af0cac6d1180b9ca4ce3ef31f2b06602f471aad8dfd421e149b0d75
+  head_uuid: zzzzz-4zz18-1g4g0vhpjn9wq7i
+  properties: {}
+  updated_at: 2017-02-13 21:37:47.440882000 Z
+
 ancient_docker_image_collection_hash:
   # This image helps test that searches for Docker images find
   # the latest available image: the hash is the same as
