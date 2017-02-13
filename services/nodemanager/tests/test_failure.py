@@ -29,7 +29,7 @@ class BogusActor(arvnodeman.baseactor.BaseNodeManagerActor):
         time.sleep(2)
         return True
 
-class ActorUnhandledExceptionTest(unittest.TestCase):
+class ActorUnhandledExceptionTest(testutil.ActorTestMixin, unittest.TestCase):
     def test_fatal_error(self):
         for e in (MemoryError(), threading.ThreadError(), OSError(errno.ENOMEM, "")):
             with mock.patch('os.kill') as kill_mock:
@@ -45,7 +45,7 @@ class ActorUnhandledExceptionTest(unittest.TestCase):
         act.actor_ref.stop(block=True)
         self.assertFalse(kill_mock.called)
 
-class WatchdogActorTest(unittest.TestCase):
+class WatchdogActorTest(testutil.ActorTestMixin, unittest.TestCase):
     @mock.patch('os.kill')
     def test_time_timout(self, kill_mock):
         act = BogusActor.start(OSError(errno.ENOENT, ""))
