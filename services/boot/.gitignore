@@ -3,3 +3,4 @@ bindata.tmp
 node_modules
 bindata_assetfs.go
 npm-debug.log
+boot
