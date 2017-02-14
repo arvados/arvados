@@ -3,6 +3,7 @@
 from __future__ import absolute_import, print_function
 
 import unittest
+import mock
 
 import arvnodeman.nodelist as nodelist
 from . import testutil
@@ -16,13 +17,43 @@ class ArvadosNodeListMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
             *args, **kwargs)
         self.client.nodes().list().execute.side_effect = side_effect
 
-    def test_uuid_is_subscription_key(self):
+    @mock.patch("subprocess.check_output")
+    def test_uuid_is_subscription_key(self, sinfo_mock):
+        sinfo_mock.return_value = ""
         node = testutil.arvados_node_mock()
-        self.build_monitor([{'items': [node]}])
+        self.build_monitor([{
+            'items': [node],
+            'items_available': 1,
+            'offset': 0
+        }, {
+            'items': [],
+            'items_available': 1,
+            'offset': 1
+        }])
         self.monitor.subscribe_to(node['uuid'],
                                   self.subscriber).get(self.TIMEOUT)
         self.stop_proxy(self.monitor)
         self.subscriber.assert_called_with(node)
+        self.assertEqual("down", node["crunch_worker_state"])
+
+    @mock.patch("subprocess.check_output")
+    def test_update_from_sinfo(self, sinfo_mock):
+        sinfo_mock.return_value = "compute99 alloc"
+        node = testutil.arvados_node_mock()
+        self.build_monitor([{
+            'items': [node],
+            'items_available': 1,
+            'offset': 0
+        }, {
+            'items': [],
+            'items_available': 1,
+            'offset': 1
+        }])
+        self.monitor.subscribe_to(node['uuid'],
+                                  self.subscriber).get(self.TIMEOUT)
+        self.stop_proxy(self.monitor)
+        self.subscriber.assert_called_with(node)
+        self.assertEqual("busy", node["crunch_worker_state"])
 
 
 class CloudNodeListMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
@@ -54,4 +85,3 @@ class CloudNodeListMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
 
 if __name__ == '__main__':
     unittest.main()
-

@@ -23,7 +23,7 @@ class ArvadosNodeListMonitorActor(clientactor.RemotePollLoopActor):
         return node['uuid']
 
     def _send_request(self):
-        nodelist = arvados.util.list_all(self._client.nodes)
+        nodelist = arvados.util.list_all(self._client.nodes().list)
 
         # node hostname, state
         sinfo_out = subprocess.check_output(["sinfo", "--noheader", "--format=%n %t"])
