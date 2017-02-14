@@ -61,6 +61,8 @@ if test $config = dev ; then
   pip_install \$(ls -r dist/arvados-cwl-runner-*.tar.gz | head -n1)
 fi
 
+pip install cwltest
+
 mkdir -p /tmp/cwltest
 cd /tmp/cwltest
 if ! test -d common-workflow-language ; then
