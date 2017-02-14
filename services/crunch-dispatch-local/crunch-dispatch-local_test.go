@@ -2,11 +2,7 @@ package main
 
 import (
 	"bytes"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/dispatch"
-	. "gopkg.in/check.v1"
+	"context"
 	"io"
 	"log"
 	"net/http"
@@ -16,6 +12,12 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/dispatch"
+	. "gopkg.in/check.v1"
 )
 
 // Gocheck boilerplate
@@ -62,14 +64,13 @@ func (s *TestSuite) TestIntegration(c *C) {
 	echo := "echo"
 	crunchRunCommand = &echo
 
+	ctx, cancel := context.WithCancel(context.Background())
 	dispatcher := dispatch.Dispatcher{
 		Arv:        arv,
 		PollPeriod: time.Second,
-		RunContainer: func(dispatcher *dispatch.Dispatcher,
-			container arvados.Container,
-			status chan arvados.Container) {
-			run(dispatcher, container, status)
-			dispatcher.Stop()
+		RunContainer: func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) {
+			run(d, c, s)
+			cancel()
 		},
 	}
 
@@ -79,8 +80,8 @@ func (s *TestSuite) TestIntegration(c *C) {
 		return cmd.Start()
 	}
 
-	err = dispatcher.Run()
-	c.Assert(err, IsNil)
+	err = dispatcher.Run(ctx)
+	c.Assert(err, Equals, context.Canceled)
 
 	// Wait for all running crunch jobs to complete / terminate
 	waitGroup.Wait()
@@ -115,7 +116,7 @@ func (s *MockArvadosServerSuite) Test_APIErrorUpdatingContainerState(c *C) {
 	apiStubResponses["/arvados/v1/containers/zzzzz-dz642-xxxxxxxxxxxxxx1"] =
 		arvadostest.StubResponse{500, string(`{}`)}
 
-	testWithServerStub(c, apiStubResponses, "echo", "Error locking container zzzzz-dz642-xxxxxxxxxxxxxx1")
+	testWithServerStub(c, apiStubResponses, "echo", "error locking container zzzzz-dz642-xxxxxxxxxxxxxx1")
 }
 
 func (s *MockArvadosServerSuite) Test_ContainerStillInRunningAfterRun(c *C) {
@@ -165,14 +166,13 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 
 	*crunchRunCommand = crunchCmd
 
+	ctx, cancel := context.WithCancel(context.Background())
 	dispatcher := dispatch.Dispatcher{
 		Arv:        arv,
 		PollPeriod: time.Duration(1) * time.Second,
-		RunContainer: func(dispatcher *dispatch.Dispatcher,
-			container arvados.Container,
-			status chan arvados.Container) {
-			run(dispatcher, container, status)
-			dispatcher.Stop()
+		RunContainer: func(d *dispatch.Dispatcher, c arvados.Container, s <-chan arvados.Container) {
+			run(d, c, s)
+			cancel()
 		},
 	}
 
@@ -186,11 +186,11 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 		for i := 0; i < 80 && !strings.Contains(buf.String(), expected); i++ {
 			time.Sleep(100 * time.Millisecond)
 		}
-		dispatcher.Stop()
+		cancel()
 	}()
 
-	err := dispatcher.Run()
-	c.Assert(err, IsNil)
+	err := dispatcher.Run(ctx)
+	c.Assert(err, Equals, context.Canceled)
 
 	// Wait for all running crunch jobs to complete / terminate
 	waitGroup.Wait()
