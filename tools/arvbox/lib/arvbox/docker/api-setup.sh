@@ -78,7 +78,8 @@ if ! test -f /var/lib/arvados/api_database_setup ; then
 fi
 
 if ! test -s /var/lib/arvados/superuser_token ; then
-    bundle exec ./script/create_superuser_token.rb > /var/lib/arvados/superuser_token
+    superuser_tok=$(bundle exec ./script/create_superuser_token.rb)
+    echo "$superuser_tok" > /var/lib/arvados/superuser_token
 fi
 
 rm -rf tmp
