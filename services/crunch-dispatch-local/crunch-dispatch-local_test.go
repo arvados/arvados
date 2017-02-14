@@ -116,7 +116,7 @@ func (s *MockArvadosServerSuite) Test_APIErrorUpdatingContainerState(c *C) {
 	apiStubResponses["/arvados/v1/containers/zzzzz-dz642-xxxxxxxxxxxxxx1"] =
 		arvadostest.StubResponse{500, string(`{}`)}
 
-	testWithServerStub(c, apiStubResponses, "echo", "Error locking container zzzzz-dz642-xxxxxxxxxxxxxx1")
+	testWithServerStub(c, apiStubResponses, "echo", "error locking container zzzzz-dz642-xxxxxxxxxxxxxx1")
 }
 
 func (s *MockArvadosServerSuite) Test_ContainerStillInRunningAfterRun(c *C) {
