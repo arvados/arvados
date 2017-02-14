@@ -13,7 +13,7 @@ import (
 // command 'squeue'.
 type SqueueChecker struct {
 	Period    time.Duration
-	hasUUID   map[string]bool
+	uuids     map[string]bool
 	startOnce sync.Once
 	done      chan struct{}
 	sync.Cond
@@ -36,7 +36,7 @@ func (sqc *SqueueChecker) HasUUID(uuid string) bool {
 
 	// block until next squeue broadcast signaling an update.
 	sqc.Wait()
-	return sqc.hasUUID[uuid]
+	return sqc.uuids[uuid]
 }
 
 // Stop stops the squeue monitoring goroutine. Do not call HasUUID
@@ -48,7 +48,7 @@ func (sqc *SqueueChecker) Stop() {
 }
 
 // check gets the names of jobs in the SLURM queue (running and
-// queued). If it succeeds, it updates squeue.hasUUID and wakes up any
+// queued). If it succeeds, it updates squeue.uuids and wakes up any
 // goroutines that are waiting in HasUUID().
 func (sqc *SqueueChecker) check() {
 	// Mutex between squeue sync and running sbatch or scancel.  This
@@ -67,9 +67,9 @@ func (sqc *SqueueChecker) check() {
 	}
 
 	uuids := strings.Split(stdout.String(), "\n")
-	sqc.hasUUID = make(map[string]bool, len(uuids))
+	sqc.uuids = make(map[string]bool, len(uuids))
 	for _, uuid := range uuids {
-		sqc.hasUUID[uuid] = true
+		sqc.uuids[uuid] = true
 	}
 	sqc.Broadcast()
 }
@@ -91,4 +91,9 @@ func (sqc *SqueueChecker) start() {
 			}
 		}
 	}()
+}
+
+// All Uuids in squeue
+func (sqc *SqueueChecker) AllUuids() map[string]bool {
+	return sqc.uuids
 }

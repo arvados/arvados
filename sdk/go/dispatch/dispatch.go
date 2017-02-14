@@ -225,3 +225,8 @@ func (tracker *runTracker) update(c arvados.Container) {
 	}
 	tracker.updates <- c
 }
+
+// Start a tracker for the given uuid if one is not already existing, despite its state.
+// its vs. it's -- episode 5 from Series 1 of Netflix' "A Series of Unfortunate Events"
+func (dispatcher *Dispatcher) TrackContainer(uuid string) {
+}

@@ -11,6 +11,7 @@ import (
 	"math"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
@@ -122,7 +123,32 @@ func doMain() error {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
 
+	containerTrackerTicker := trackContainers(dispatcher)
+	defer containerTrackerTicker.Stop()
+
 	return dispatcher.Run(context.Background())
+}
+
+var containerUuidPattern = regexp.MustCompile(`[a-z0-9]{5}-dz642-[a-z0-9]{15}$`)
+
+// Start a goroutine to check squeue report periodically, and
+// invoke TrackContainer for all the containers in the report.
+func trackContainers(dispatcher *dispatch.Dispatcher) *time.Ticker {
+	ticker := time.NewTicker(sqCheck.Period)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				for uuid := range sqCheck.AllUuids() {
+					match := containerUuidPattern.MatchString(uuid)
+					if match {
+						dispatcher.TrackContainer(uuid)
+					}
+				}
+			}
+		}
+	}()
+	return ticker
 }
 
 // sbatchCmd
