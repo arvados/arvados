@@ -36,7 +36,7 @@ type Dispatcher struct {
 
 	auth     arvados.APIClientAuthorization
 	mtx      sync.Mutex
-	running  map[string]*runTracker
+	trackers map[string]*runTracker
 	throttle throttle
 }
 
@@ -68,15 +68,16 @@ func (d *Dispatcher) Run(ctx context.Context) error {
 	defer poll.Stop()
 
 	for {
+		tracked := d.trackedUUIDs()
 		d.checkForUpdates([][]interface{}{
-			{"uuid", "in", d.runningUUIDs()}})
+			{"uuid", "in", tracked}})
 		d.checkForUpdates([][]interface{}{
 			{"locked_by_uuid", "=", d.auth.UUID},
-			{"uuid", "not in", d.runningUUIDs()}})
+			{"uuid", "not in", tracked}})
 		d.checkForUpdates([][]interface{}{
 			{"state", "=", Queued},
 			{"priority", ">", "0"},
-			{"uuid", "not in", d.runningUUIDs()}})
+			{"uuid", "not in", tracked}})
 		select {
 		case <-poll.C:
 			continue
@@ -86,15 +87,16 @@ func (d *Dispatcher) Run(ctx context.Context) error {
 	}
 }
 
-func (d *Dispatcher) runningUUIDs() []string {
+func (d *Dispatcher) trackedUUIDs() []string {
 	d.mtx.Lock()
 	defer d.mtx.Unlock()
-	if len(d.running) == 0 {
-		// API bug: ["uuid", "not in", []] does not match everything
-		return []string{"X"}
+	if len(d.trackers) == 0 {
+		// API bug: ["uuid", "not in", []] does not work as
+		// expected, but this does:
+		return []string{"this-uuid-does-not-exist"}
 	}
-	uuids := make([]string, 0, len(d.running))
-	for x := range d.running {
+	uuids := make([]string, 0, len(d.trackers))
+	for x := range d.trackers {
 		uuids = append(uuids, x)
 	}
 	return uuids
@@ -109,7 +111,7 @@ func (d *Dispatcher) start(c arvados.Container) *runTracker {
 		d.RunContainer(d, c, tracker.updates)
 
 		d.mtx.Lock()
-		delete(d.running, c.UUID)
+		delete(d.trackers, c.UUID)
 		d.mtx.Unlock()
 	}()
 	return tracker
@@ -136,15 +138,15 @@ func (d *Dispatcher) checkForUpdates(filters [][]interface{}) {
 func (d *Dispatcher) checkListForUpdates(containers []arvados.Container) {
 	d.mtx.Lock()
 	defer d.mtx.Unlock()
-	if d.running == nil {
-		d.running = make(map[string]*runTracker)
+	if d.trackers == nil {
+		d.trackers = make(map[string]*runTracker)
 	}
 
 	for _, c := range containers {
-		tracker, running := d.running[c.UUID]
+		tracker, alreadyTracking := d.trackers[c.UUID]
 		if c.LockedByUUID != "" && c.LockedByUUID != d.auth.UUID {
 			log.Printf("debug: ignoring %s locked by %s", c.UUID, c.LockedByUUID)
-		} else if running {
+		} else if alreadyTracking {
 			switch c.State {
 			case Queued:
 				tracker.close()
@@ -165,12 +167,12 @@ func (d *Dispatcher) checkListForUpdates(containers []arvados.Container) {
 					break
 				}
 				c.State = Locked
-				d.running[c.UUID] = d.start(c)
+				d.trackers[c.UUID] = d.start(c)
 			case Locked, Running:
 				if !d.throttle.Check(c.UUID) {
 					break
 				}
-				d.running[c.UUID] = d.start(c)
+				d.trackers[c.UUID] = d.start(c)
 			case Cancelled, Complete:
 				tracker.close()
 			}
