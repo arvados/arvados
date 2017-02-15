@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -46,7 +47,7 @@ func main() {
 
 var (
 	theConfig Config
-	sqCheck   SqueueChecker
+	sqCheck   = &SqueueChecker{}
 )
 
 const defaultConfigPath = "/etc/arvados/crunch-dispatch-slurm/crunch-dispatch-slurm.yml"
@@ -107,10 +108,10 @@ func doMain() error {
 	}
 	arv.Retries = 25
 
-	sqCheck = SqueueChecker{Period: time.Duration(theConfig.PollPeriod)}
+	sqCheck = &SqueueChecker{Period: time.Duration(theConfig.PollPeriod)}
 	defer sqCheck.Stop()
 
-	dispatcher := dispatch.Dispatcher{
+	dispatcher := &dispatch.Dispatcher{
 		Arv:            arv,
 		RunContainer:   run,
 		PollPeriod:     time.Duration(theConfig.PollPeriod),
@@ -121,7 +122,7 @@ func doMain() error {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
 
-	return dispatcher.Run()
+	return dispatcher.Run(context.Background())
 }
 
 // sbatchCmd
@@ -134,7 +135,7 @@ func sbatchFunc(container arvados.Container) *exec.Cmd {
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--job-name=%s", container.UUID))
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--mem-per-cpu=%d", int(memPerCPU)))
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs))
-	if container.SchedulingParameters.Partitions != nil {
+	if len(container.SchedulingParameters.Partitions) > 0 {
 		sbatchArgs = append(sbatchArgs, fmt.Sprintf("--partition=%s", strings.Join(container.SchedulingParameters.Partitions, ",")))
 	}
 
@@ -151,18 +152,7 @@ var sbatchCmd = sbatchFunc
 var scancelCmd = scancelFunc
 
 // Submit job to slurm using sbatch.
-func submit(dispatcher *dispatch.Dispatcher,
-	container arvados.Container, crunchRunCommand []string) (submitErr error) {
-	defer func() {
-		// If we didn't get as far as submitting a slurm job,
-		// unlock the container and return it to the queue.
-		if submitErr == nil {
-			// OK, no cleanup needed
-			return
-		}
-		dispatcher.Unlock(container.UUID)
-	}()
-
+func submit(dispatcher *dispatch.Dispatcher, container arvados.Container, crunchRunCommand []string) error {
 	cmd := sbatchCmd(container)
 
 	// Send a tiny script on stdin to execute the crunch-run
@@ -179,108 +169,90 @@ func submit(dispatcher *dispatch.Dispatcher,
 
 	log.Printf("exec sbatch %+q", cmd.Args)
 	err := cmd.Run()
+
 	switch err.(type) {
 	case nil:
 		log.Printf("sbatch succeeded: %q", strings.TrimSpace(stdout.String()))
 		return nil
+
 	case *exec.ExitError:
-		return fmt.Errorf("sbatch %+q failed: %v (stderr: %q)", cmd.Args, err, stderr)
+		dispatcher.Unlock(container.UUID)
+		return fmt.Errorf("sbatch %+q failed: %v (stderr: %q)", cmd.Args, err, stderr.Bytes())
+
 	default:
+		dispatcher.Unlock(container.UUID)
 		return fmt.Errorf("exec failed: %v", err)
 	}
 }
 
-// If the container is marked as Locked, check if it is already in the slurm
-// queue.  If not, submit it.
-//
-// If the container is marked as Running, check if it is in the slurm queue.
-// If not, mark it as Cancelled.
-func monitorSubmitOrCancel(dispatcher *dispatch.Dispatcher, container arvados.Container, monitorDone *bool) {
-	submitted := false
-	for !*monitorDone {
-		if sqCheck.HasUUID(container.UUID) {
-			// Found in the queue, so continue monitoring
-			submitted = true
-		} else if container.State == dispatch.Locked && !submitted {
-			// Not in queue but in Locked state and we haven't
-			// submitted it yet, so submit it.
+// Submit a container to the slurm queue (or resume monitoring if it's
+// already in the queue).  Cancel the slurm job if the container's
+// priority changes to zero or its state indicates it's no longer
+// running.
+func run(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-			log.Printf("About to submit queued container %v", container.UUID)
+	if ctr.State == dispatch.Locked && !sqCheck.HasUUID(ctr.UUID) {
+		log.Printf("Submitting container %s to slurm", ctr.UUID)
+		if err := submit(disp, ctr, theConfig.CrunchRunCommand); err != nil {
+			log.Printf("Error submitting container %s to slurm: %s", ctr.UUID, err)
+			disp.Unlock(ctr.UUID)
+			return
+		}
+	}
 
-			if err := submit(dispatcher, container, theConfig.CrunchRunCommand); err != nil {
-				log.Printf("Error submitting container %s to slurm: %v",
-					container.UUID, err)
-				// maybe sbatch is broken, put it back to queued
-				dispatcher.Unlock(container.UUID)
+	log.Printf("Start monitoring container %s", ctr.UUID)
+	defer log.Printf("Done monitoring container %s", ctr.UUID)
+
+	// If the container disappears from the slurm queue, there is
+	// no point in waiting for further dispatch updates: just
+	// clean up and return.
+	go func(uuid string) {
+		for ctx.Err() == nil && sqCheck.HasUUID(uuid) {
+		}
+		cancel()
+	}(ctr.UUID)
+
+	for {
+		select {
+		case <-ctx.Done():
+			// Disappeared from squeue
+			if err := disp.Arv.Get("containers", ctr.UUID, nil, &ctr); err != nil {
+				log.Printf("Error getting final container state for %s: %s", ctr.UUID, err)
 			}
-			submitted = true
-		} else {
-			// Not in queue and we are not going to submit it.
-			// Refresh the container state. If it is
-			// Complete/Cancelled, do nothing, if it is Locked then
-			// release it back to the Queue, if it is Running then
-			// clean up the record.
-
-			var con arvados.Container
-			err := dispatcher.Arv.Get("containers", container.UUID, nil, &con)
-			if err != nil {
-				log.Printf("Error getting final container state: %v", err)
-			}
-
-			switch con.State {
-			case dispatch.Locked:
-				log.Printf("Container %s in state %v but missing from slurm queue, changing to %v.",
-					container.UUID, con.State, dispatch.Queued)
-				dispatcher.Unlock(container.UUID)
+			switch ctr.State {
 			case dispatch.Running:
-				st := dispatch.Cancelled
-				log.Printf("Container %s in state %v but missing from slurm queue, changing to %v.",
-					container.UUID, con.State, st)
-				dispatcher.UpdateState(container.UUID, st)
-			default:
-				// Container state is Queued, Complete or Cancelled so stop monitoring it.
-				return
+				disp.UpdateState(ctr.UUID, dispatch.Cancelled)
+			case dispatch.Locked:
+				disp.Unlock(ctr.UUID)
+			}
+			return
+		case updated, ok := <-status:
+			if !ok {
+				log.Printf("Dispatcher says container %s is done: cancel slurm job", ctr.UUID)
+				scancel(ctr)
+			} else if updated.Priority == 0 {
+				log.Printf("Container %s has state %q, priority %d: cancel slurm job", ctr.UUID, updated.State, updated.Priority)
+				scancel(ctr)
 			}
 		}
 	}
 }
 
-// Run or monitor a container.
-//
-// Monitor status updates.  If the priority changes to zero, cancel the
-// container using scancel.
-func run(dispatcher *dispatch.Dispatcher,
-	container arvados.Container,
-	status chan arvados.Container) {
+func scancel(ctr arvados.Container) {
+	sqCheck.L.Lock()
+	cmd := scancelCmd(ctr)
+	msg, err := cmd.CombinedOutput()
+	sqCheck.L.Unlock()
 
-	log.Printf("Monitoring container %v started", container.UUID)
-	defer log.Printf("Monitoring container %v finished", container.UUID)
-
-	monitorDone := false
-	go monitorSubmitOrCancel(dispatcher, container, &monitorDone)
-
-	for container = range status {
-		if container.Priority == 0 && (container.State == dispatch.Locked || container.State == dispatch.Running) {
-			log.Printf("Canceling container %s", container.UUID)
-			// Mutex between squeue sync and running sbatch or scancel.
-			sqCheck.L.Lock()
-			cmd := scancelCmd(container)
-			msg, err := cmd.CombinedOutput()
-			sqCheck.L.Unlock()
-
-			if err != nil {
-				log.Printf("Error stopping container %s with %v %v: %v %v", container.UUID, cmd.Path, cmd.Args, err, string(msg))
-				if sqCheck.HasUUID(container.UUID) {
-					log.Printf("Container %s is still in squeue after scancel.", container.UUID)
-					continue
-				}
-			}
-
-			// Ignore errors; if necessary, we'll try again next time
-			dispatcher.UpdateState(container.UUID, dispatch.Cancelled)
-		}
+	if err != nil {
+		log.Printf("%q %q: %s %q", cmd.Path, cmd.Args, err, msg)
+		time.Sleep(time.Second)
+	} else if sqCheck.HasUUID(ctr.UUID) {
+		log.Printf("container %s is still in squeue after scancel", ctr.UUID)
+		time.Sleep(time.Second)
 	}
-	monitorDone = true
 }
 
 func readConfig(dst interface{}, path string) error {

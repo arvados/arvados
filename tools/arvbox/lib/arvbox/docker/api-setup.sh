@@ -56,6 +56,7 @@ development:
   auto_setup_new_users_with_vm_uuid: $vm_uuid
   auto_setup_new_users_with_repository: true
   default_collection_replication: 1
+  docker_image_formats: ["v1"]
 EOF
 
 (cd config && /usr/local/lib/arvbox/application_yml_override.py)
@@ -78,7 +79,8 @@ if ! test -f /var/lib/arvados/api_database_setup ; then
 fi
 
 if ! test -s /var/lib/arvados/superuser_token ; then
-    bundle exec ./script/create_superuser_token.rb > /var/lib/arvados/superuser_token
+    superuser_tok=$(bundle exec ./script/create_superuser_token.rb)
+    echo "$superuser_tok" > /var/lib/arvados/superuser_token
 fi
 
 rm -rf tmp

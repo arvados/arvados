@@ -1,14 +1,14 @@
 package manifest
 
 import (
+	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	"io/ioutil"
 	"reflect"
 	"regexp"
 	"runtime"
 	"testing"
-
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 )
 
 func getStackTrace() string {
@@ -115,7 +115,7 @@ func TestStreamIterShortManifestWithBlankStreams(t *testing.T) {
 		firstStream,
 		ManifestStream{StreamName: ".",
 			Blocks:             []string{"b746e3d2104645f2f64cd3cc69dd895d+15693477+E2866e643690156651c03d876e638e674dcd79475@5441920c"},
-			FileStreamSegments: []FileStreamSegment{{0, 15893477, "chr10_band0_s0_e3000000.fj"}}})
+			FileStreamSegments: []FileStreamSegment{{0, 15693477, "chr10_band0_s0_e3000000.fj"}}})
 
 	received, ok := <-streamIter
 	if ok {
@@ -250,4 +250,122 @@ func TestBlockIterWithBadManifest(t *testing.T) {
 			t.Fatalf("Expected error not found. Expected: %v; Found: %v", testCase[1], manifest.Err.Error())
 		}
 	}
+}
+
+func TestNormalizeManifest(t *testing.T) {
+	m1 := Manifest{Text: `. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
+. 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
+. 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt
+`}
+	expectEqual(t, m1.Extract(".", ".").Text,
+		`. 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 0:127:md5sum.txt
+`)
+
+	m2 := Manifest{Text: `. 204e43b8a1185621ca55a94839582e6f+67108864 b9677abbac956bd3e86b1deb28dfac03+67108864 fc15aff2a762b13f521baf042140acec+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:227212247:var-GS000016015-ASM.tsv.bz2
+`}
+	expectEqual(t, m2.Extract(".", ".").Text, m2.Text)
+
+	m3 := Manifest{Text: `. 5348b82a029fd9e971a811ce1f71360b+43 3:40:md5sum.txt
+. 085c37f02916da1cad16f93c54d899b7+41 0:41:md5sum.txt
+. 8b22da26f9f433dea0a10e5ec66d73ba+43 0:43:md5sum.txt
+`}
+	expectEqual(t, m3.Extract(".", ".").Text, `. 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 3:124:md5sum.txt
+`)
+	expectEqual(t, m3.Extract("/md5sum.txt", "/wiggle.txt").Text, `. 5348b82a029fd9e971a811ce1f71360b+43 085c37f02916da1cad16f93c54d899b7+41 8b22da26f9f433dea0a10e5ec66d73ba+43 3:124:wiggle.txt
+`)
+
+	m4 := Manifest{Text: `. 204e43b8a1185621ca55a94839582e6f+67108864 0:3:foo/bar
+./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
+./foo 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar
+`}
+
+	expectEqual(t, m4.Extract(".", ".").Text,
+		`./foo 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar
+./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
+`)
+
+	expectEqual(t, m4.Extract("./foo", ".").Text, ". 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar\n")
+	expectEqual(t, m4.Extract("./foo", "./baz").Text, "./baz 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar\n")
+	expectEqual(t, m4.Extract("./foo/bar", ".").Text, ". 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar\n")
+	expectEqual(t, m4.Extract("./foo/bar", "./baz").Text, ". 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:baz 67108864:3:baz\n")
+	expectEqual(t, m4.Extract("./foo/bar", "./quux/").Text, "./quux 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar\n")
+	expectEqual(t, m4.Extract("./foo/bar", "./quux/baz").Text, "./quux 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:baz 67108864:3:baz\n")
+	expectEqual(t, m4.Extract(".", ".").Text, `./foo 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar
+./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
+`)
+	expectEqual(t, m4.Extract(".", "./zip").Text, `./zip/foo 204e43b8a1185621ca55a94839582e6f+67108864 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar 67108864:3:bar
+./zip/zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
+`)
+
+	expectEqual(t, m4.Extract("foo/.//bar/../../zzz/", "/waz/").Text, `./waz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
+`)
+
+	m5 := Manifest{Text: `. 204e43b8a1185621ca55a94839582e6f+67108864 0:3:foo/bar
+./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
+./foo 204e43b8a1185621ca55a94839582e6f+67108864 3:3:bar
+`}
+	expectEqual(t, m5.Extract(".", ".").Text,
+		`./foo 204e43b8a1185621ca55a94839582e6f+67108864 0:6:bar
+./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
+`)
+
+	m8 := Manifest{Text: `./a\040b\040c 59ca0efa9f5633cb0371bbc0355478d8+13 0:13:hello\040world.txt
+`}
+	expectEqual(t, m8.Extract(".", ".").Text, m8.Text)
+
+	m9 := Manifest{Text: ". acbd18db4cc2f85cedef654fccc4a4d8+40 0:10:one 20:10:two 10:10:one 30:10:two\n"}
+	expectEqual(t, m9.Extract("", "").Text, ". acbd18db4cc2f85cedef654fccc4a4d8+40 0:20:one 20:20:two\n")
+
+	m10 := Manifest{Text: ". acbd18db4cc2f85cedef654fccc4a4d8+40 0:10:one 20:10:two 10:10:one 30:10:two\n"}
+	expectEqual(t, m10.Extract("./two", "./three").Text, ". acbd18db4cc2f85cedef654fccc4a4d8+40 20:20:three\n")
+
+	m11 := Manifest{Text: arvadostest.PathologicalManifest}
+	expectEqual(t, m11.Extract(".", ".").Text, `. acbd18db4cc2f85cedef654fccc4a4d8+3 37b51d194a7513e45b56f6524f2d51f2+3 73feffa4b7f6bb68e44cf984c85f6e88+3+Z+K@xyzzy 0:1:f 1:4:ooba 5:1:r 5:4:rbaz 0:0:zero@0 0:0:zero@1 0:0:zero@4 0:0:zero@9
+./foo acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:foo 0:3:foo 0:0:zero
+./foo\040bar acbd18db4cc2f85cedef654fccc4a4d8+3 0:3:baz 0:3:baz\040waz
+./overlapReverse acbd18db4cc2f85cedef654fccc4a4d8+3 2:1:o 2:1:ofoo 0:3:ofoo 1:2:oo
+./segmented acbd18db4cc2f85cedef654fccc4a4d8+3 37b51d194a7513e45b56f6524f2d51f2+3 0:1:frob 5:1:frob 1:1:frob 3:1:frob 1:2:oof 0:1:oof
+`)
+
+	m12 := Manifest{Text: `./foo 204e43b8a1185621ca55a94839582e6f+67108864 0:3:bar
+./zzz 204e43b8a1185621ca55a94839582e6f+67108864 0:999:zzz
+./foo/baz 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar
+`}
+
+	expectEqual(t, m12.Extract("./foo", ".").Text, `. 204e43b8a1185621ca55a94839582e6f+67108864 0:3:bar
+./baz 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar
+`)
+	expectEqual(t, m12.Extract("./foo", "./blub").Text, `./blub 204e43b8a1185621ca55a94839582e6f+67108864 0:3:bar
+./blub/baz 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar
+`)
+	expectEqual(t, m12.Extract("./foo", "./blub/").Text, `./blub 204e43b8a1185621ca55a94839582e6f+67108864 0:3:bar
+./blub/baz 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar
+`)
+	expectEqual(t, m12.Extract("./foo/", "./blub/").Text, `./blub 204e43b8a1185621ca55a94839582e6f+67108864 0:3:bar
+./blub/baz 323d2a3ce20370c4ca1d3462a344f8fd+25885655 0:3:bar
+`)
+
+	m13 := Manifest{Text: `foo 204e43b8a1185621ca55a94839582e6f+67108864 0:3:bar
+`}
+
+	expectEqual(t, m13.Extract(".", ".").Text, ``)
+	expectEqual(t, m13.Extract(".", ".").Err.Error(), "Invalid stream name: foo")
+
+	m14 := Manifest{Text: `./foo 204e43b8a1185621ca55a94839582e6f+67108864 67108863:3:bar
+`}
+
+	expectEqual(t, m14.Extract(".", ".").Text, ``)
+	expectEqual(t, m14.Extract(".", ".").Err.Error(), "File segment 67108863:3:bar extends past end of stream 67108864")
+
+	m15 := Manifest{Text: `./foo 204e43b8a1185621ca55a94839582e6f+67108864 0:3bar
+`}
+
+	expectEqual(t, m15.Extract(".", ".").Text, ``)
+	expectEqual(t, m15.Extract(".", ".").Err.Error(), "Invalid file token: 0:3bar")
+}
+
+func TestFirstBlock(t *testing.T) {
+	fmt.Println("ZZZ")
+	expectEqual(t, firstBlock([]uint64{1, 2, 3, 4}, 3), 2)
+	expectEqual(t, firstBlock([]uint64{1, 2, 3, 4, 5, 6}, 4), 3)
 }

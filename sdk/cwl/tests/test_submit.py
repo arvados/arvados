@@ -124,7 +124,7 @@ def stubs(func):
                     'class': 'Directory'
                 },
                 'cwl:tool':
-                '4db32e8a15aa48ea084b2f38108f406d+60/workflow.cwl#main'
+                '99999999999999999999999999999994+99/workflow.cwl#main'
             },
             'repository': 'arvados',
             'script_version': 'master',
@@ -146,7 +146,7 @@ def stubs(func):
                               'listing': [
                                   {'basename': 'renamed.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999998+99/file1.txt'}
                               ]}},
-                        'cwl:tool': '4db32e8a15aa48ea084b2f38108f406d+60/workflow.cwl#main',
+                        'cwl:tool': '99999999999999999999999999999994+99/workflow.cwl#main',
                         'arv:enable_reuse': True,
                         'arv:on_error': 'continue'
                     },
@@ -374,7 +374,7 @@ class TestSubmit(unittest.TestCase):
         expect_pipeline["name"] = "hello job 123"
 
         stubs.api.pipeline_instances().create.assert_called_with(
-            body=expect_pipeline)
+            body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
@@ -1127,7 +1127,7 @@ class TestTemplateInputs(unittest.TestCase):
                 },
                 'script_parameters': {
                     'cwl:tool':
-                    '00e281847a33e1c0df93161d70a6fc5d+60/workflow.cwl#main',
+                    '99999999999999999999999999999992+99/workflow.cwl#main',
                     'optionalFloatInput': None,
                     'fileInput': {
                         'type': 'File',
@@ -1188,6 +1188,7 @@ class TestTemplateInputs(unittest.TestCase):
         params = expect_template[
             "components"]["inputs_test.cwl"]["script_parameters"]
         params["fileInput"]["value"] = '99999999999999999999999999999992+99/blorp.txt'
+        params["cwl:tool"] = '99999999999999999999999999999994+99/workflow.cwl#main'
         params["floatInput"]["value"] = 1.234
         params["boolInput"]["value"] = True
 

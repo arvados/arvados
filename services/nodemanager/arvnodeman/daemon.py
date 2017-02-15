@@ -25,7 +25,6 @@ class _BaseNodeTracker(object):
     def __init__(self):
         self.nodes = {}
         self.orphans = {}
-        self._blacklist = set()
 
     # Proxy the methods listed below to self.nodes.
     def _proxy_method(name):
@@ -44,9 +43,6 @@ class _BaseNodeTracker(object):
     def add(self, record):
         self.nodes[self.record_key(record)] = record
 
-    def blacklist(self, key):
-        self._blacklist.add(key)
-
     def update_record(self, key, item):
         setattr(self.nodes[key], self.RECORD_ATTR, item)
 
@@ -54,9 +50,7 @@ class _BaseNodeTracker(object):
         unseen = set(self.nodes.iterkeys())
         for item in response:
             key = self.item_key(item)
-            if key in self._blacklist:
-                continue
-            elif key in unseen:
+            if key in unseen:
                 unseen.remove(key)
                 self.update_record(key, item)
             else:
@@ -214,7 +208,14 @@ class NodeManagerDaemonActor(actor_class):
             if hasattr(record.cloud_node, "_nodemanager_recently_booted"):
                 self.cloud_nodes.add(record)
             else:
-                record.actor.stop()
+                # Node disappeared from the cloud node list.  Stop the monitor
+                # actor if necessary and forget about the node.
+                if record.actor:
+                    try:
+                        record.actor.stop()
+                    except pykka.ActorDeadError:
+                        pass
+                    record.actor = None
                 record.cloud_node = None
 
     def _register_arvados_node(self, key, arv_node):
@@ -437,24 +438,29 @@ class NodeManagerDaemonActor(actor_class):
 
     def node_finished_shutdown(self, shutdown_actor):
         try:
-            cloud_node, success, cancel_reason = self._get_actor_attrs(
-                shutdown_actor, 'cloud_node', 'success', 'cancel_reason')
+            cloud_node, success = self._get_actor_attrs(
+                shutdown_actor, 'cloud_node', 'success')
         except pykka.ActorDeadError:
             return
         cloud_node_id = cloud_node.id
         record = self.cloud_nodes[cloud_node_id]
         shutdown_actor.stop()
+        record.shutdown_actor = None
+
         if not success:
-            if cancel_reason == self._node_shutdown.NODE_BROKEN:
-                self.cloud_nodes.blacklist(cloud_node_id)
-            record.shutdown_actor = None
-        else:
-            # If the node went from being booted to being shut down without ever
-            # appearing in the cloud node list, it will have the
-            # _nodemanager_recently_booted tag, so get rid of it so that the node
-            # can be forgotten completely.
-            if hasattr(self.cloud_nodes[cloud_node_id].cloud_node, "_nodemanager_recently_booted"):
-                del self.cloud_nodes[cloud_node_id].cloud_node._nodemanager_recently_booted
+            return
+
+        # Shutdown was successful, so stop the monitor actor, otherwise it
+        # will keep offering the node as a candidate for shutdown.
+        record.actor.stop()
+        record.actor = None
+
+        # If the node went from being booted to being shut down without ever
+        # appearing in the cloud node list, it will have the
+        # _nodemanager_recently_booted tag, so get rid of it so that the node
+        # can be forgotten completely.
+        if hasattr(record.cloud_node, "_nodemanager_recently_booted"):
+            del record.cloud_node._nodemanager_recently_booted
 
     def shutdown(self):
         self._logger.info("Shutting down after signal.")

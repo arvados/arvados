@@ -81,6 +81,10 @@ class JobWorkUnit < ProxyWorkUnit
     state_label.in? ["Queued", "Running"]
   end
 
+  def confirm_cancellation
+    "All unfinished child jobs and pipelines will also be canceled, even if they are being used in another job or pipeline. Are you sure you want to cancel this job?"
+  end
+
   def uri
     uuid = get(:uuid)
     "/jobs/#{uuid}"

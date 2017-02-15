@@ -19,6 +19,7 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"syscall"
@@ -239,8 +240,15 @@ func (runner *ContainerRunner) ArvMountCmd(arvMountCmd []string, token string) (
 	return c, nil
 }
 
+func (runner *ContainerRunner) SetupArvMountPoint(prefix string) (err error) {
+	if runner.ArvMountPoint == "" {
+		runner.ArvMountPoint, err = runner.MkTempDir("", prefix)
+	}
+	return
+}
+
 func (runner *ContainerRunner) SetupMounts() (err error) {
-	runner.ArvMountPoint, err = runner.MkTempDir("", "keep")
+	err = runner.SetupArvMountPoint("keep")
 	if err != nil {
 		return fmt.Errorf("While creating keep mount temp dir: %v", err)
 	}
@@ -259,7 +267,14 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	runner.Binds = nil
 	needCertMount := true
 
-	for bind, mnt := range runner.Container.Mounts {
+	var binds []string
+	for bind, _ := range runner.Container.Mounts {
+		binds = append(binds, bind)
+	}
+	sort.Strings(binds)
+
+	for _, bind := range binds {
+		mnt := runner.Container.Mounts[bind]
 		if bind == "stdout" {
 			// Is it a "file" mount kind?
 			if mnt.Kind != "file" {
@@ -275,8 +290,15 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				return fmt.Errorf("Stdout path does not start with OutputPath: %s, %s", mnt.Path, prefix)
 			}
 		}
+
 		if bind == "/etc/arvados/ca-certificates.crt" {
 			needCertMount = false
+		}
+
+		if strings.HasPrefix(bind, runner.Container.OutputPath+"/") && bind != runner.Container.OutputPath+"/" {
+			if mnt.Kind != "collection" {
+				return fmt.Errorf("Only mount points of kind 'collection' are supported underneath the output_path: %v", bind)
+			}
 		}
 
 		switch {
@@ -295,7 +317,21 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				if mnt.Writable {
 					return fmt.Errorf("Can never write to a collection specified by portable data hash")
 				}
+				idx := strings.Index(mnt.PortableDataHash, "/")
+				if idx > 0 {
+					mnt.Path = path.Clean(mnt.PortableDataHash[idx:])
+					mnt.PortableDataHash = mnt.PortableDataHash[0:idx]
+					runner.Container.Mounts[bind] = mnt
+				}
 				src = fmt.Sprintf("%s/by_id/%s", runner.ArvMountPoint, mnt.PortableDataHash)
+				if mnt.Path != "" && mnt.Path != "." {
+					if strings.HasPrefix(mnt.Path, "./") {
+						mnt.Path = mnt.Path[2:]
+					} else if strings.HasPrefix(mnt.Path, "/") {
+						mnt.Path = mnt.Path[1:]
+					}
+					src += "/" + mnt.Path
+				}
 			} else {
 				src = fmt.Sprintf("%s/tmp%d", runner.ArvMountPoint, tmpcount)
 				arvMountCmd = append(arvMountCmd, "--mount-tmp")
@@ -305,6 +341,8 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			if mnt.Writable {
 				if bind == runner.Container.OutputPath {
 					runner.HostOutputDir = src
+				} else if strings.HasPrefix(bind, runner.Container.OutputPath+"/") {
+					return fmt.Errorf("Writable mount points are not permitted underneath the output_path: %v", bind)
 				}
 				runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", src, bind))
 			} else {
@@ -633,7 +671,40 @@ func (runner *ContainerRunner) CaptureOutput() error {
 		manifestText = rec.ManifestText
 	}
 
+	// Pre-populate output from the configured mount points
+	var binds []string
+	for bind, _ := range runner.Container.Mounts {
+		binds = append(binds, bind)
+	}
+	sort.Strings(binds)
+
+	for _, bind := range binds {
+		mnt := runner.Container.Mounts[bind]
+
+		bindSuffix := strings.TrimPrefix(bind, runner.Container.OutputPath)
+
+		if bindSuffix == bind || len(bindSuffix) <= 0 {
+			// either does not start with OutputPath or is OutputPath itself
+			continue
+		}
+
+		if mnt.ExcludeFromOutput == true {
+			continue
+		}
+
+		// append to manifest_text
+		m, err := runner.getCollectionManifestForPath(mnt, bindSuffix)
+		if err != nil {
+			return err
+		}
+
+		manifestText = manifestText + m
+	}
+
+	// Save output
 	var response arvados.Collection
+	manifest := manifest.Manifest{Text: manifestText}
+	manifestText = manifest.Extract(".", ".").Text
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{
 			"collection": arvadosclient.Dict{
@@ -646,6 +717,47 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	}
 	runner.OutputPDH = &response.PortableDataHash
 	return nil
+}
+
+var outputCollections = make(map[string]arvados.Collection)
+
+// Fetch the collection for the mnt.PortableDataHash
+// Return the manifest_text fragment corresponding to the specified mnt.Path
+//  after making any required updates.
+//  Ex:
+//    If mnt.Path is not specified,
+//      return the entire manifest_text after replacing any "." with bindSuffix
+//    If mnt.Path corresponds to one stream,
+//      return the manifest_text for that stream after replacing that stream name with bindSuffix
+//    Otherwise, check if a filename in any one stream is being sought. Return the manifest_text
+//      for that stream after replacing stream name with bindSuffix minus the last word
+//      and the file name with last word of the bindSuffix
+//  Allowed path examples:
+//    "path":"/"
+//    "path":"/subdir1"
+//    "path":"/subdir1/subdir2"
+//    "path":"/subdir/filename" etc
+func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, bindSuffix string) (string, error) {
+	collection := outputCollections[mnt.PortableDataHash]
+	if collection.PortableDataHash == "" {
+		err := runner.ArvClient.Get("collections", mnt.PortableDataHash, nil, &collection)
+		if err != nil {
+			return "", fmt.Errorf("While getting collection for %v: %v", mnt.PortableDataHash, err)
+		}
+		outputCollections[mnt.PortableDataHash] = collection
+	}
+
+	if collection.ManifestText == "" {
+		runner.CrunchLog.Printf("No manifest text for collection %v", collection.PortableDataHash)
+		return "", nil
+	}
+
+	mft := manifest.Manifest{Text: collection.ManifestText}
+	extracted := mft.Extract(mnt.Path, bindSuffix)
+	if extracted.Err != nil {
+		return "", fmt.Errorf("Error parsing manifest for %v: %v", mnt.PortableDataHash, extracted.Err.Error())
+	}
+	return extracted.Text, nil
 }
 
 func (runner *ContainerRunner) loadDiscoveryVars() {

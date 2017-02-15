@@ -3,10 +3,8 @@ package main
 // Dispatcher service for Crunch that runs containers locally.
 
 import (
+	"context"
 	"flag"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/dispatch"
 	"log"
 	"os"
 	"os/exec"
@@ -14,6 +12,10 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/dispatch"
 )
 
 func main() {
@@ -61,7 +63,8 @@ func doMain() error {
 		PollPeriod:   time.Duration(*pollInterval) * time.Second,
 	}
 
-	err = dispatcher.Run()
+	ctx, cancel := context.WithCancel(context.Background())
+	err = dispatcher.Run(ctx)
 	if err != nil {
 		return err
 	}
@@ -72,7 +75,7 @@ func doMain() error {
 	log.Printf("Received %s, shutting down", sig)
 	signal.Stop(c)
 
-	dispatcher.Stop()
+	cancel()
 
 	runningCmdsMutex.Lock()
 	// Finished dispatching; interrupt any crunch jobs that are still running
@@ -103,7 +106,7 @@ var startCmd = startFunc
 // crunch-run terminates, mark the container as Cancelled.
 func run(dispatcher *dispatch.Dispatcher,
 	container arvados.Container,
-	status chan arvados.Container) {
+	status <-chan arvados.Container) {
 
 	uuid := container.UUID
 
@@ -170,8 +173,7 @@ func run(dispatcher *dispatch.Dispatcher,
 	if err != nil {
 		log.Printf("Error getting final container state: %v", err)
 	}
-	if container.LockedByUUID == dispatcher.Auth.UUID &&
-		(container.State == dispatch.Locked || container.State == dispatch.Running) {
+	if container.State == dispatch.Locked || container.State == dispatch.Running {
 		log.Printf("After %s process termination, container state for %v is %q.  Updating it to %q",
 			*crunchRunCommand, container.State, uuid, dispatch.Cancelled)
 		dispatcher.UpdateState(uuid, dispatch.Cancelled)
