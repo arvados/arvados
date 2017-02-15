@@ -6,8 +6,9 @@ import subprocess
 import time
 
 from . import \
-    ComputeNodeSetupActor, ComputeNodeUpdateActor, ComputeNodeMonitorActor
+    ComputeNodeSetupActor, ComputeNodeMonitorActor
 from . import ComputeNodeShutdownActor as ShutdownActorBase
+from . import ComputeNodeUpdateActor as UpdateActorBase
 from .. import RetryMixin
 
 class SlurmMixin(object):
@@ -75,3 +76,11 @@ class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
         else:
             # any other state.
             self._later.shutdown_node()
+
+class ComputeNodeUpdateActor(UpdateActorBase):
+    def sync_node(self, cloud_node, arvados_node):
+        try:
+            subprocess.check_output(['scontrol', 'update', 'NodeName=' + arvados_node["hostname"], 'Weight=%i' % int(cloud_node.size.price * 1000)])
+        except OSError:
+            self._logger.warn("Unable to set slurm node weight.", exc_info=True)
+        return super(ComputeNodeUpdateActor, self).sync_node(cloud_node, arvados_node)
