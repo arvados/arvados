@@ -155,6 +155,7 @@ class NodeManagerDaemonActor(actor_class):
         start_time = self._cloud_driver.node_start_time(cloud_node)
         shutdown_timer = cnode.ShutdownTimer(start_time,
                                              self.shutdown_windows)
+        cloud_node.size = self.server_calculator.find_size(cloud_node.size.id)
         actor = self._node_actor.start(
             cloud_node=cloud_node,
             cloud_node_start_time=start_time,
