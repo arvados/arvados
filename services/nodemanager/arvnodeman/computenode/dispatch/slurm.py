@@ -79,8 +79,9 @@ class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
 
 class ComputeNodeUpdateActor(UpdateActorBase):
     def sync_node(self, cloud_node, arvados_node):
-        try:
-            subprocess.check_output(['scontrol', 'update', 'NodeName=' + arvados_node["hostname"], 'Weight=%i' % int(cloud_node.size.price * 1000)])
-        except OSError:
-            self._logger.warn("Unable to set slurm node weight.", exc_info=True)
+        if arvados_node.get("hostname"):
+            try:
+                subprocess.check_output(['scontrol', 'update', 'NodeName=' + arvados_node["hostname"], 'Weight=%i' % int(cloud_node.size.price * 1000)])
+            except:
+                self._logger.error("Unable to set slurm node weight.", exc_info=True)
         return super(ComputeNodeUpdateActor, self).sync_node(cloud_node, arvados_node)
