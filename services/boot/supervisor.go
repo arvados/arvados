@@ -52,10 +52,7 @@ func (s *supervisedService) Boot(ctx context.Context) error {
 			return err
 		}
 	}
-	if err := consul.Boot(ctx); err != nil {
-		return err
-	}
-	consul, err := api.NewClient(consulCfg)
+	consul, err := consul.master(ctx)
 	if err != nil {
 		return err
 	}

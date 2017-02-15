@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -60,14 +63,23 @@ func (cb *consulBooter) Boot(ctx context.Context) error {
 		args = append(args, "-config-file="+cf)
 	}
 	{
+		masterToken := generateUUID()
+		os.Setenv("CONSUL_TOKEN", masterToken)
+		err = atomicWriteFile(cfg.masterTokenFile(), []byte(masterToken), 0600)
+		if err != nil {
+			return err
+		}
 		cf := path.Join(cfg.DataDir, "consul-ports.json")
 		err = atomicWriteJSON(cf, map[string]interface{}{
-			"client_addr":      "0.0.0.0",
-			"bootstrap_expect": len(cfg.ControlHosts),
-			"data_dir":         dataDir,
-			"datacenter":       cfg.SiteID,
-			"server":           true,
-			"ui":               true,
+			"acl_datacenter":     cfg.SiteID,
+			"acl_default_policy": "deny",
+			"acl_master_token":   masterToken,
+			"client_addr":        "0.0.0.0",
+			"bootstrap_expect":   len(cfg.ControlHosts),
+			"data_dir":           dataDir,
+			"datacenter":         cfg.SiteID,
+			"server":             true,
+			"ui":                 true,
 			"ports": map[string]int{
 				"dns":      cfg.Ports.ConsulDNS,
 				"http":     cfg.Ports.ConsulHTTP,
@@ -109,11 +121,21 @@ func (cb *consulBooter) Boot(ctx context.Context) error {
 
 var consulCfg = api.DefaultConfig()
 
-func (cb *consulBooter) check(ctx context.Context) error {
+func (cb *consulBooter) master(ctx context.Context) (*api.Client, error) {
 	cfg := cfg(ctx)
-	consulCfg.Address = fmt.Sprintf("127.0.0.1:%d", cfg.Ports.ConsulHTTP)
-	consulCfg.Datacenter = cfg.SiteID
-	consul, err := api.NewClient(consulCfg)
+	masterToken, err := ioutil.ReadFile(cfg.masterTokenFile())
+	if err != nil {
+		return nil, err
+	}
+	ccfg := api.DefaultConfig()
+	ccfg.Address = fmt.Sprintf("127.0.0.1:%d", cfg.Ports.ConsulHTTP)
+	ccfg.Datacenter = cfg.SiteID
+	ccfg.Token = string(masterToken)
+	return api.NewClient(ccfg)
+}
+
+func (cb *consulBooter) check(ctx context.Context) error {
+	consul, err := cb.master(ctx)
 	if err != nil {
 		return err
 	}
@@ -121,6 +143,14 @@ func (cb *consulBooter) check(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	acls, qmeta, err := consul.ACL().List(nil)
+	if err != nil {
+		return err
+	}
+	e := json.NewEncoder(os.Stderr)
+	e.SetIndent("", "  ")
+	e.Encode(acls)
+	e.Encode(qmeta)
 	return nil
 }
 
@@ -132,4 +162,12 @@ func (cb *consulBooter) OnlyNode() (bool, error) {
 	}
 	nodes, _, err := c.Catalog().Nodes(nil)
 	return len(nodes) == 1, err
+}
+
+func generateUUID() string {
+	var r [16]byte
+	if _, err := rand.Read(r[:]); err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("%x", r)
 }

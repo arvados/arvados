@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"strings"
 )
 
@@ -106,4 +107,8 @@ func DefaultConfig() *Config {
 			Listen: "127.0.0.1:18000",
 		},
 	}
+}
+
+func (cfg *Config) masterTokenFile() string {
+	return path.Join(cfg.DataDir, "consul-master-token.txt")
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -9,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	consulAPI "github.com/hashicorp/consul/api"
 	"github.com/hashicorp/vault/api"
 )
 
@@ -40,15 +42,21 @@ func (vb *vaultBooter) Boot(ctx context.Context) error {
 		return err
 	}
 
+	masterToken, err := ioutil.ReadFile(cfg.masterTokenFile())
+	if err != nil {
+		return err
+	}
+
 	cfgPath := path.Join(cfg.DataDir, "vault.hcl")
 	err = atomicWriteFile(cfgPath, []byte(fmt.Sprintf(`backend "consul" {
 		address = "127.0.0.1:%d"
 		path = "vault"
+		token = %q
 	}
 	listener "tcp" {
 		address = "127.0.0.1:%d"
 		tls_disable = 1
-	}`, cfg.Ports.ConsulHTTP, cfg.Ports.VaultServer)), 0644)
+	}`, cfg.Ports.ConsulHTTP, masterToken, cfg.Ports.VaultServer)), 0644)
 	if err != nil {
 		return err
 	}
@@ -101,7 +109,9 @@ func (vb *vaultBooter) tryInit(ctx context.Context) error {
 	}
 	atomicWriteJSON(path.Join(cfg.DataDir, "vault-keys.json"), resp, 0400)
 	atomicWriteFile(path.Join(cfg.DataDir, "vault-root-token.txt"), []byte(resp.RootToken), 0400)
+	vault.SetToken(resp.RootToken)
 
+	ok := false
 	for _, key := range resp.Keys {
 		resp, err := vault.Sys().Unseal(key)
 		if err != nil {
@@ -110,10 +120,39 @@ func (vb *vaultBooter) tryInit(ctx context.Context) error {
 		}
 		if !resp.Sealed {
 			log.Printf("unseal successful")
-			return nil
+			ok = true
+			break
 		}
 	}
-	return fmt.Errorf("vault unseal failed!")
+	if !ok {
+		return fmt.Errorf("vault unseal failed!")
+	}
+
+	master, err := consul.master(ctx)
+	if err != nil {
+		return err
+	}
+	token, _, err := master.ACL().Create(&consulAPI.ACLEntry{Name: "vault", Type: "management"}, nil)
+	if err != nil {
+		return err
+	}
+	err = waitCheck(ctx, 30*time.Second, func(context.Context) error {
+		return vault.Sys().Mount("consul", &api.MountInput{Type: "consul"})
+	})
+	if err != nil {
+		return err
+	}
+	_, err = vault.Logical().Write("consul/config/access", map[string]interface{}{
+		"address": fmt.Sprintf("127.0.0.1:%d", cfg.Ports.ConsulHTTP),
+		"token":   string(token),
+	})
+	if err != nil {
+		return err
+	}
+	_, err = vault.Logical().Write("consul/roles/write-all", map[string]interface{}{
+		"policy": base64.StdEncoding.EncodeToString([]byte(`key "" { policy = "write" }`)),
+	})
+	return err
 }
 
 func (vb *vaultBooter) client(ctx context.Context) (*api.Client, error) {
