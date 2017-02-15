@@ -17,7 +17,7 @@ RUN apt-get clean && \
     linkchecker python3-virtualenv python-virtualenv xvfb iceweasel && \
     apt-get clean
 
-ENV GOVERSION 1.7.4
+ENV GOVERSION 1.7.5
 
 # Install golang binary
 RUN curl -f http://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | \
