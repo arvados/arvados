@@ -26,7 +26,7 @@ RUN curl -f http://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.
 ENV PATH ${PATH}:/usr/local/go/bin
 
 ENV RUBYVERSION_MINOR 2.3
-ENV RUBYVERSION 2.3.1
+ENV RUBYVERSION 2.3.3
 
 # Install Ruby from source
 RUN cd /tmp && \
