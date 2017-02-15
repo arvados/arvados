@@ -52,6 +52,11 @@ class CloudNodeListMonitorActor(clientactor.RemotePollLoopActor):
     nodes, and sends it to subscribers.
     """
 
+    def __init__(self, client, timer_actor, server_calc, *args, **kwargs):
+        super(CloudNodeListMonitorActor, self).__init__(
+            client, timer_actor, *args, **kwargs)
+        self._calculator = server_calc
+
     def is_common_error(self, exception):
         return self._client.is_cloud_exception(exception)
 
@@ -59,5 +64,10 @@ class CloudNodeListMonitorActor(clientactor.RemotePollLoopActor):
         return node.id
 
     def _send_request(self):
-        n = self._client.list_nodes()
-        return n
+        nodes = self._client.list_nodes()
+        for n in nodes:
+            # Replace with libcloud NodeSize object with compatible
+            # CloudSizeWrapper object which merges the size info reported from
+            # the cloud with size information from the configuration file.
+            n.size = self._calculator.find_size(n.size.id)
+        return nodes

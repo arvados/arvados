@@ -6,6 +6,7 @@ import unittest
 import mock
 
 import arvnodeman.nodelist as nodelist
+from libcloud.compute.base import NodeSize
 from . import testutil
 
 class ArvadosNodeListMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
@@ -66,7 +67,7 @@ class CloudNodeListMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
             self.name = 'test{}.example.com'.format(count)
             self.private_ips = ['10.0.0.{}'.format(count)]
             self.public_ips = []
-            self.size = None
+            self.size = testutil.MockSize(1)
             self.state = 0
 
 
@@ -77,11 +78,13 @@ class CloudNodeListMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
 
     def test_id_is_subscription_key(self):
         node = self.MockNode(1)
-        self.build_monitor([[node]])
+        mock_calc = mock.MagicMock()
+        mock_calc.find_size.return_value = testutil.MockSize(2)
+        self.build_monitor([[node]], mock_calc)
         self.monitor.subscribe_to('1', self.subscriber).get(self.TIMEOUT)
         self.stop_proxy(self.monitor)
         self.subscriber.assert_called_with(node)
-
+        self.assertEqual(testutil.MockSize(2), node.size)
 
 if __name__ == '__main__':
     unittest.main()

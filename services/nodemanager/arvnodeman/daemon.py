@@ -155,7 +155,6 @@ class NodeManagerDaemonActor(actor_class):
         start_time = self._cloud_driver.node_start_time(cloud_node)
         shutdown_timer = cnode.ShutdownTimer(start_time,
                                              self.shutdown_windows)
-        cloud_node.size = self.server_calculator.find_size(cloud_node.size.id)
         actor = self._node_actor.start(
             cloud_node=cloud_node,
             cloud_node_start_time=start_time,
@@ -273,9 +272,9 @@ class NodeManagerDaemonActor(actor_class):
 
     def _total_price(self):
         cost = 0
-        cost += sum(self.server_calculator.find_size(self.sizes_booting[c].id).price
-                  for c in self.booting.iterkeys())
-        cost += sum(self.server_calculator.find_size(c.cloud_node.size.id).price
+        cost += sum(self.sizes_booting[c].price
+                    for c in self.booting.iterkeys())
+        cost += sum(c.cloud_node.size.price
                     for c in self.cloud_nodes.nodes.itervalues())
         return cost
 
