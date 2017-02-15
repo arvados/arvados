@@ -91,35 +91,19 @@ class Container < ArvadosModel
       where('mounts = ?', self.deep_sort_hash(attrs[:mounts]).to_yaml).
       where('runtime_constraints = ?', self.deep_sort_hash(attrs[:runtime_constraints]).to_yaml)
 
-    # Check for Completed candidates that had consistent outputs.
+    # Check for Completed candidates whose output and log are both readable.
     completed = candidates.where(state: Complete).where(exit_code: 0)
-    outputs = completed.select('output').group('output').limit(2)
-    if outputs.count.count != 1
-      Rails.logger.debug("Found #{outputs.count.length} different outputs")
-    elsif Collection.
-        readable_by(current_user).
-        where(portable_data_hash: outputs.first.output).
-        count < 1
-      Rails.logger.info("Found reusable container(s) " +
-                        "but output #{outputs.first} is not readable " +
-                        "by user #{current_user.uuid}")
-    else
-      # Return the oldest eligible container whose log is still
-      # present and readable by current_user.
-      readable_pdh = Collection.
-        readable_by(current_user).
-        select('portable_data_hash')
-      completed = completed.
-        where("log in (#{readable_pdh.to_sql})").
-        order('finished_at asc').
-        limit(1)
-      if completed.first
-        return completed.first
-      else
-        Rails.logger.info("Found reusable container(s) but none with a log " +
-                          "readable by user #{current_user.uuid}")
-      end
-    end
+    select_readable_pdh = Collection.
+      readable_by(current_user).
+      select(:portable_data_hash).
+      to_sql
+    usable = completed.
+      order('finished_at ASC').
+      where("log IN (#{select_readable_pdh})").
+      where("output IN (#{select_readable_pdh})").
+      limit(1).
+      first
+    return usable if usable
 
     # Check for Running candidates and return the most likely to finish sooner.
     running = candidates.where(state: Running).
