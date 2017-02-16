@@ -77,6 +77,12 @@ class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
             # any other state.
             self._later.shutdown_node()
 
+    def _destroy_node(self):
+        if self._nodename:
+            self._set_node_state(self._nodename, 'DOWN')
+        super(ComputeNodeShutdownActor, self)._destroy_node()
+
+
 class ComputeNodeUpdateActor(UpdateActorBase):
     def sync_node(self, cloud_node, arvados_node):
         if arvados_node.get("hostname"):

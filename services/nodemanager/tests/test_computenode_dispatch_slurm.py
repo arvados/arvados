@@ -33,7 +33,7 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
         proc_mock.return_value = end_state
         proc_mock.side_effect = None
         self.check_success_flag(True, 3)
-        self.check_slurm_got_args(proc_mock, 'compute63')
+        self.check_slurm_got_args(proc_mock, 'NodeName=compute63')
 
     def make_wait_state_test(start_state='drng\n', end_state='drain\n'):
         def test(self, proc_mock):
