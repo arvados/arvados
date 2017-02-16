@@ -96,7 +96,7 @@ class ContainerRequest < ArvadosModel
       else
         coll_name = "Container #{out_type} for request #{uuid}"
       end
-      manifest = Collection.where(portable_data_hash: pdh).first.manifest_text
+      manifest = Collection.unscoped.where(portable_data_hash: pdh).first.manifest_text
       begin
         coll = Collection.create!(owner_uuid: owner_uuid,
                                   manifest_text: manifest,
