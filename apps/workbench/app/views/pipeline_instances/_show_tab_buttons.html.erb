@@ -27,10 +27,11 @@
     <% end %>
   <% else %>
     <% if @object.state.in? ['RunningOnClient', 'RunningOnServer'] %>
-      <%= link_to(url_for('pipeline_instance[state]' => 'Paused'),
+      <%= link_to(cancel_pipeline_instance_path,
           class: 'btn btn-primary run-pipeline-button',
           title: 'Pause this pipeline',
-          method: :patch
+          data: {confirm: 'All unfinished child jobs will be canceled, even if they are being used in another job or pipeline. Are you sure you want to pause this pipeline?'},
+          method: :post
           ) do %>
         <i class="fa fa-fw fa-pause"></i> Pause
       <% end %>

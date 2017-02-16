@@ -60,11 +60,11 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
   end
 
   [
-    ['jobs', 'running_job_with_components', true],
-    ['pipeline_instances', 'components_is_jobspec', false],
+    ['jobs', 'running_job_with_components', true, true],
+    ['pipeline_instances', 'components_is_jobspec', true, true],
     ['containers', 'running', false],
     ['container_requests', 'running', true],
-  ].each do |type, fixture, cancelable|
+  ].each do |type, fixture, cancelable, confirm_cancellation|
     test "cancel button for #{type}/#{fixture}" do
       if cancelable
         need_selenium 'to cancel'
@@ -74,14 +74,32 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
       visit page_with_token "active", "/#{type}/#{obj['uuid']}"
 
       assert_text 'created_at'
-
       if cancelable
         assert_text 'priority: 1' if type.include?('container')
-        assert_selector 'button', text: 'Cancel'
-        first('a,button', text: 'Cancel').click
+        if type.include?('pipeline')
+          assert_selector 'a', text: 'Pause'
+          first('a,link', text: 'Pause').click
+        else
+          assert_selector 'button', text: 'Cancel'
+          first('a,button', text: 'Cancel').click
+        end
+        if confirm_cancellation
+          alert = page.driver.browser.switch_to.alert
+          alert.accept
+        end
         wait_for_ajax
       end
-      assert_text 'priority: 0' if cancelable and type.include?('container')
+
+      if type.include?('pipeline')
+        assert_selector 'a', text: 'Resume'
+        assert_no_selector 'a', text: 'Pause'
+      elsif type.include?('job')
+        assert_text 'Cancelled'
+        assert_text 'Paused'  # this job has a pipeline child which was also cancelled
+        assert_no_selector 'button', text: 'Cancel'
+      elsif cancelable
+        assert_text 'priority: 0'
+      end
     end
   end
 

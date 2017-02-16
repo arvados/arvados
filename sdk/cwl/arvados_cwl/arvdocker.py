@@ -1,6 +1,7 @@
 import logging
 import sys
 import threading
+import copy
 
 from schema_salad.sourceline import SourceLine
 
@@ -17,6 +18,7 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
     """Check if a Docker image is available in Keep, if not, upload it using arv-keepdocker."""
 
     if "dockerImageId" not in dockerRequirement and "dockerPull" in dockerRequirement:
+        dockerRequirement = copy.deepcopy(dockerRequirement)
         dockerRequirement["dockerImageId"] = dockerRequirement["dockerPull"]
         if hasattr(dockerRequirement, 'lc'):
             dockerRequirement.lc.data["dockerImageId"] = dockerRequirement.lc.data["dockerPull"]

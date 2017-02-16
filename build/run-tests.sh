@@ -89,6 +89,7 @@ sdk/python
 sdk/ruby
 sdk/go/arvados
 sdk/go/arvadosclient
+sdk/go/dispatch
 sdk/go/keepclient
 sdk/go/httpserver
 sdk/go/manifest
@@ -780,6 +781,7 @@ gostuff=(
     sdk/go/arvados
     sdk/go/arvadosclient
     sdk/go/blockdigest
+    sdk/go/dispatch
     sdk/go/httpserver
     sdk/go/manifest
     sdk/go/streamer

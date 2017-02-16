@@ -4,7 +4,9 @@ from functools import partial
 import logging
 import json
 import re
-from cStringIO import StringIO
+import subprocess
+
+from StringIO import StringIO
 
 from schema_salad.sourceline import SourceLine
 
@@ -16,6 +18,7 @@ from cwltool.load_tool import fetch_document
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
 from cwltool.utils import aslist
 from cwltool.builder import substitute
+from cwltool.pack import pack
 
 import arvados.collection
 import ruamel.yaml as yaml
@@ -45,7 +48,7 @@ def trim_listing(obj):
         del obj["location"]
 
 def upload_dependencies(arvrunner, name, document_loader,
-                        workflowobj, uri, loadref_run):
+                        workflowobj, uri, loadref_run, include_primary=True):
     """Upload the dependencies of the workflowobj document to Keep.
 
     Returns a pathmapper object mapping local paths to keep references.  Also
@@ -92,8 +95,12 @@ def upload_dependencies(arvrunner, name, document_loader,
 
     normalizeFilesDirs(sc)
 
-    if "id" in workflowobj:
+    if include_primary and "id" in workflowobj:
         sc.append({"class": "File", "location": workflowobj["id"]})
+
+    if "$schemas" in workflowobj:
+        for s in workflowobj["$schemas"]:
+            sc.append({"class": "File", "location": s})
 
     mapper = ArvPathMapper(arvrunner, sc, "",
                            "keep:%s",
@@ -106,10 +113,18 @@ def upload_dependencies(arvrunner, name, document_loader,
     adjustFileObjs(workflowobj, setloc)
     adjustDirObjs(workflowobj, setloc)
 
+    if "$schemas" in workflowobj:
+        sch = []
+        for s in workflowobj["$schemas"]:
+            sch.append(mapper.mapper(s).resolved)
+        workflowobj["$schemas"] = sch
+
     return mapper
 
 
 def upload_docker(arvrunner, tool):
+    """Uploads Docker images used in CommandLineTool objects."""
+
     if isinstance(tool, CommandLineTool):
         (docker_req, docker_is_req) = get_feature(tool, "DockerRequirement")
         if docker_req:
@@ -122,52 +137,121 @@ def upload_docker(arvrunner, tool):
         for s in tool.steps:
             upload_docker(arvrunner, s.embedded_tool)
 
-def upload_instance(arvrunner, name, tool, job_order):
-        upload_docker(arvrunner, tool)
+def packed_workflow(arvrunner, tool):
+    """Create a packed workflow.
 
-        for t in tool.tool["inputs"]:
-            def setSecondary(fileobj):
-                if isinstance(fileobj, dict) and fileobj.get("class") == "File":
-                    if "secondaryFiles" not in fileobj:
-                        fileobj["secondaryFiles"] = [{"location": substitute(fileobj["location"], sf), "class": "File"} for sf in t["secondaryFiles"]]
+    A "packed" workflow is one where all the components have been combined into a single document."""
 
-                if isinstance(fileobj, list):
-                    for e in fileobj:
-                        setSecondary(e)
+    return pack(tool.doc_loader, tool.doc_loader.fetch(tool.tool["id"]),
+                tool.tool["id"], tool.metadata)
 
-            if shortname(t["id"]) in job_order and t.get("secondaryFiles"):
-                setSecondary(job_order[shortname(t["id"])])
+def tag_git_version(packed):
+    if tool.tool["id"].startswith("file://"):
+        path = os.path.dirname(tool.tool["id"][7:])
+        try:
+            githash = subprocess.check_output(['git', 'log', '--first-parent', '--max-count=1', '--format=%H'], stderr=subprocess.STDOUT, cwd=path).strip()
+        except (OSError, subprocess.CalledProcessError):
+            pass
+        else:
+            packed["http://schema.org/version"] = githash
 
-        workflowmapper = upload_dependencies(arvrunner,
-                                             name,
-                                             tool.doc_loader,
-                                             tool.tool,
-                                             tool.tool["id"],
-                                             True)
-        jobmapper = upload_dependencies(arvrunner,
-                                        os.path.basename(job_order.get("id", "#")),
-                                        tool.doc_loader,
-                                        job_order,
-                                        job_order.get("id", "#"),
-                                        False)
 
-        if "id" in job_order:
-            del job_order["id"]
+def upload_job_order(arvrunner, name, tool, job_order):
+    """Upload local files referenced in the input object and return updated input
+    object with 'location' updated to the proper keep references.
+    """
 
-        return workflowmapper
+    for t in tool.tool["inputs"]:
+        def setSecondary(fileobj):
+            if isinstance(fileobj, dict) and fileobj.get("class") == "File":
+                if "secondaryFiles" not in fileobj:
+                    fileobj["secondaryFiles"] = [{"location": substitute(fileobj["location"], sf), "class": "File"} for sf in t["secondaryFiles"]]
 
-def arvados_jobs_image(arvrunner):
-    img = "arvados/jobs:"+__version__
+            if isinstance(fileobj, list):
+                for e in fileobj:
+                    setSecondary(e)
+
+        if shortname(t["id"]) in job_order and t.get("secondaryFiles"):
+            setSecondary(job_order[shortname(t["id"])])
+
+    jobmapper = upload_dependencies(arvrunner,
+                                    name,
+                                    tool.doc_loader,
+                                    job_order,
+                                    job_order.get("id", "#"),
+                                    False)
+
+    if "id" in job_order:
+        del job_order["id"]
+
+    # Need to filter this out, gets added by cwltool when providing
+    # parameters on the command line.
+    if "job_order" in job_order:
+        del job_order["job_order"]
+
+    return job_order
+
+def upload_workflow_deps(arvrunner, tool):
+    # Ensure that Docker images needed by this workflow are available
+
+    upload_docker(arvrunner, tool)
+
+    document_loader = tool.doc_loader
+
+    def upload_tool_deps(deptool):
+        if "id" in deptool:
+            upload_dependencies(arvrunner,
+                                "%s dependencies" % (shortname(deptool["id"])),
+                                document_loader,
+                                deptool,
+                                deptool["id"],
+                                False,
+                                include_primary=False)
+            document_loader.idx[deptool["id"]] = deptool
+
+    tool.visit(upload_tool_deps)
+
+def arvados_jobs_image(arvrunner, img):
+    """Determine if the right arvados/jobs image version is available.  If not, try to pull and upload it."""
+
     try:
         arv_docker_get_image(arvrunner.api, {"dockerPull": img}, True, arvrunner.project_uuid)
     except Exception as e:
         raise Exception("Docker image %s is not available\n%s" % (img, e) )
     return img
 
+def upload_workflow_collection(arvrunner, name, packed):
+    collection = arvados.collection.Collection(api_client=arvrunner.api,
+                                               keep_client=arvrunner.keep_client,
+                                               num_retries=arvrunner.num_retries)
+    with collection.open("workflow.cwl", "w") as f:
+        f.write(json.dumps(packed, indent=2, sort_keys=True, separators=(',',': ')))
+
+    filters = [["portable_data_hash", "=", collection.portable_data_hash()],
+               ["name", "like", name+"%"]]
+    if arvrunner.project_uuid:
+        filters.append(["owner_uuid", "=", arvrunner.project_uuid])
+    exists = arvrunner.api.collections().list(filters=filters).execute(num_retries=arvrunner.num_retries)
+
+    if exists["items"]:
+        logger.info("Using collection %s", exists["items"][0]["uuid"])
+    else:
+        collection.save_new(name=name,
+                            owner_uuid=arvrunner.project_uuid,
+                            ensure_unique_name=True,
+                            num_retries=arvrunner.num_retries)
+        logger.info("Uploaded to %s", collection.manifest_locator())
+
+    return collection.portable_data_hash()
+
+
 class Runner(object):
+    """Base class for runner processes, which submit an instance of
+    arvados-cwl-runner and wait for the final result."""
+
     def __init__(self, runner, tool, job_order, enable_reuse,
                  output_name, output_tags, submit_runner_ram=0,
-                 name=None, on_error=None):
+                 name=None, on_error=None, submit_runner_image=None):
         self.arvrunner = runner
         self.tool = tool
         self.job_order = job_order
@@ -179,6 +263,7 @@ class Runner(object):
         self.output_tags = output_tags
         self.name = name
         self.on_error = on_error
+        self.jobs_image = submit_runner_image or "arvados/jobs:"+__version__
 
         if submit_runner_ram:
             self.submit_runner_ram = submit_runner_ram
@@ -191,20 +276,9 @@ class Runner(object):
     def update_pipeline_component(self, record):
         pass
 
-    def arvados_job_spec(self, *args, **kwargs):
-        if self.name is None:
-            self.name = self.tool.tool.get("label") or os.path.basename(self.tool.tool["id"])
-
-        # Need to filter this out, gets added by cwltool when providing
-        # parameters on the command line.
-        if "job_order" in self.job_order:
-            del self.job_order["job_order"]
-
-        workflowmapper = upload_instance(self.arvrunner, self.name, self.tool, self.job_order)
-        adjustDirObjs(self.job_order, trim_listing)
-        return workflowmapper
-
     def done(self, record):
+        """Base method for handling a completed runner."""
+
         try:
             if record["state"] == "Complete":
                 if record.get("exit_code") is not None:

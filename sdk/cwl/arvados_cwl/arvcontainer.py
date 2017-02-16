@@ -6,17 +6,20 @@ import ruamel.yaml as yaml
 
 from cwltool.errors import WorkflowException
 from cwltool.process import get_feature, UnsupportedRequirement, shortname
-from cwltool.pathmapper import adjustFiles
+from cwltool.pathmapper import adjustFiles, adjustDirObjs
 from cwltool.utils import aslist
 
 import arvados.collection
 
 from .arvdocker import arv_docker_get_image
 from . import done
-from .runner import Runner, arvados_jobs_image
+from .runner import Runner, arvados_jobs_image, packed_workflow, trim_listing
 from .fsaccess import CollectionFetcher
+from .pathmapper import NoFollowPathMapper
+from .perf import Perf
 
 logger = logging.getLogger('arvados.cwl-runner')
+metrics = logging.getLogger('arvados.cwl-runner.metrics')
 
 class ArvadosContainer(object):
     """Submit and manage a Crunch container request for executing a CWL CommandLineTool."""
@@ -50,23 +53,61 @@ class ArvadosContainer(object):
 
         dirs = set()
         for f in self.pathmapper.files():
-            _, p, tp = self.pathmapper.mapper(f)
-            if tp == "Directory" and '/' not in p[6:]:
+            pdh, p, tp = self.pathmapper.mapper(f)
+            if tp == "Directory" and '/' not in pdh:
                 mounts[p] = {
                     "kind": "collection",
-                    "portable_data_hash": p[6:]
+                    "portable_data_hash": pdh[5:]
                 }
-                dirs.add(p[6:])
-        for f in self.pathmapper.files():
-            _, p, tp = self.pathmapper.mapper(f)
-            if p[6:].split("/")[0] not in dirs:
-                mounts[p] = {
-                    "kind": "collection",
-                    "portable_data_hash": p[6:]
-                }
+                dirs.add(pdh)
 
-        if self.generatefiles["listing"]:
-            raise UnsupportedRequirement("InitialWorkDirRequirement not supported with --api=containers")
+        for f in self.pathmapper.files():
+            res, p, tp = self.pathmapper.mapper(f)
+            if res.startswith("keep:"):
+                res = res[5:]
+            elif res.startswith("/keep/"):
+                res = res[6:]
+            else:
+                continue
+            sp = res.split("/", 1)
+            pdh = sp[0]
+            if pdh not in dirs:
+                mounts[p] = {
+                    "kind": "collection",
+                    "portable_data_hash": pdh
+                }
+                if len(sp) == 2:
+                    mounts[p]["path"] = sp[1]
+
+        with Perf(metrics, "generatefiles %s" % self.name):
+            if self.generatefiles["listing"]:
+                vwd = arvados.collection.Collection(api_client=self.arvrunner.api,
+                                                    keep_client=self.arvrunner.keep_client,
+                                                    num_retries=self.arvrunner.num_retries)
+                generatemapper = NoFollowPathMapper([self.generatefiles], "", "",
+                                                    separateDirs=False)
+
+                with Perf(metrics, "createfiles %s" % self.name):
+                    for f, p in generatemapper.items():
+                        if not p.target:
+                            pass
+                        elif p.type in ("File", "Directory"):
+                            source, path = self.arvrunner.fs_access.get_collection(p.resolved)
+                            vwd.copy(path, p.target, source_collection=source)
+                        elif p.type == "CreateFile":
+                            with vwd.open(p.target, "w") as n:
+                                n.write(p.resolved.encode("utf-8"))
+
+                with Perf(metrics, "generatefiles.save_new %s" % self.name):
+                    vwd.save_new()
+
+                for f, p in generatemapper.items():
+                    if not p.target:
+                        continue
+                    mountpoint = "%s/%s" % (self.outdir, p.target)
+                    mounts[mountpoint] = {"kind": "collection",
+                                          "portable_data_hash": vwd.portable_data_hash(),
+                                          "path": p.target}
 
         container_request["environment"] = {"TMPDIR": self.tmpdir, "HOME": self.outdir}
         if self.environment:
@@ -84,7 +125,7 @@ class ArvadosContainer(object):
 
         (docker_req, docker_is_req) = get_feature(self, "DockerRequirement")
         if not docker_req:
-            docker_req = {"dockerImageId": arvados_jobs_image(self.arvrunner)}
+            docker_req = {"dockerImageId": "arvados/jobs"}
 
         container_request["container_image"] = arv_docker_get_image(self.arvrunner.api,
                                                                      docker_req,
@@ -103,7 +144,7 @@ class ArvadosContainer(object):
         runtime_req, _ = get_feature(self, "http://arvados.org/cwl#RuntimeConstraints")
         if runtime_req:
             if "keep_cache" in runtime_req:
-                runtime_constraints["keep_cache_ram"] = runtime_req["keep_cache"]
+                runtime_constraints["keep_cache_ram"] = runtime_req["keep_cache"] * 2**20
 
         partition_req, _ = get_feature(self, "http://arvados.org/cwl#PartitionRequirement")
         if partition_req:
@@ -129,10 +170,11 @@ class ArvadosContainer(object):
             self.uuid = response["uuid"]
             self.arvrunner.processes[self.uuid] = self
 
-            logger.info("%s %s state is %s", self.arvrunner.label(self), response["uuid"], response["state"])
-
             if response["state"] == "Final":
+                logger.info("%s reused container %s", self.arvrunner.label(self), response["container_uuid"])
                 self.done(response)
+            else:
+                logger.info("%s %s state is %s", self.arvrunner.label(self), response["uuid"], response["state"])
         except Exception as e:
             logger.error("%s got error %s" % (self.arvrunner.label(self), str(e)))
             self.output_callback({}, "permanentFail")
@@ -190,7 +232,7 @@ class RunnerContainer(Runner):
         the +body+ argument to container_requests().create().
         """
 
-        workflowmapper = super(RunnerContainer, self).arvados_job_spec(dry_run=dry_run, pull_image=pull_image, **kwargs)
+        adjustDirObjs(self.job_order, trim_listing)
 
         container_req = {
             "owner_uuid": self.arvrunner.project_uuid,
@@ -199,7 +241,7 @@ class RunnerContainer(Runner):
             "cwd": "/var/spool/cwl",
             "priority": 1,
             "state": "Committed",
-            "container_image": arvados_jobs_image(self.arvrunner),
+            "container_image": arvados_jobs_image(self.arvrunner, self.jobs_image),
             "mounts": {
                 "/var/lib/cwl/cwl.input.json": {
                     "kind": "json",
@@ -222,27 +264,24 @@ class RunnerContainer(Runner):
             "properties": {}
         }
 
-        workflowcollection = workflowmapper.mapper(self.tool.tool["id"])[1]
-        if workflowcollection.startswith("keep:"):
-            workflowcollection = workflowcollection[5:workflowcollection.index('/')]
-            workflowname = os.path.basename(self.tool.tool["id"])
+        if self.tool.tool.get("id", "").startswith("keep:"):
+            sp = self.tool.tool["id"].split('/')
+            workflowcollection = sp[0][5:]
+            workflowname = "/".join(sp[1:])
             workflowpath = "/var/lib/cwl/workflow/%s" % workflowname
             container_req["mounts"]["/var/lib/cwl/workflow"] = {
                 "kind": "collection",
                 "portable_data_hash": "%s" % workflowcollection
-                }
-        elif workflowcollection.startswith("arvwf:"):
+            }
+        else:
+            packed = packed_workflow(self.arvrunner, self.tool)
             workflowpath = "/var/lib/cwl/workflow.json#main"
-            wfuuid = workflowcollection[6:workflowcollection.index("#")]
-            wfrecord = self.arvrunner.api.workflows().get(uuid=wfuuid).execute(num_retries=self.arvrunner.num_retries)
-            wfobj = yaml.safe_load(wfrecord["definition"])
-            if container_req["name"].startswith("arvwf:"):
-                container_req["name"] = wfrecord["name"]
             container_req["mounts"]["/var/lib/cwl/workflow.json"] = {
                 "kind": "json",
-                "json": wfobj
+                "content": packed
             }
-            container_req["properties"]["template_uuid"] = wfuuid
+            if self.tool.tool.get("id", "").startswith("arvwf:"):
+                container_req["properties"]["template_uuid"] = self.tool.tool["id"][6:33]
 
         command = ["arvados-cwl-runner", "--local", "--api=containers", "--no-log-timestamps"]
         if self.output_name:

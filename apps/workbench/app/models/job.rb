@@ -27,7 +27,7 @@ class Job < ArvadosBase
   end
 
   def cancel
-    arvados_api_client.api "jobs/#{self.uuid}/", "cancel", {}
+    arvados_api_client.api "jobs/#{self.uuid}/", "cancel", {"cascade" => true}
   end
 
   def self.queue_size

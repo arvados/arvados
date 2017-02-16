@@ -3,10 +3,9 @@ package arvados
 import (
 	"bufio"
 	"fmt"
+	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	"strings"
 	"time"
-
-	"git.curoverse.com/arvados.git/sdk/go/manifest"
 )
 
 // Collection is an arvados#collection resource.
@@ -46,7 +45,7 @@ func (c *Collection) SizedDigests() ([]SizedDigest, error) {
 			return nil, fmt.Errorf("Invalid stream (<3 tokens): %q", line)
 		}
 		for _, token := range tokens[1:] {
-			if !manifest.LocatorPattern.MatchString(token) {
+			if !blockdigest.LocatorPattern.MatchString(token) {
 				// FIXME: ensure it's a file token
 				break
 			}

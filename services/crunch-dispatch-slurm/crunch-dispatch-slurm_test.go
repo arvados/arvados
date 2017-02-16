@@ -2,11 +2,8 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/dispatch"
 	"io"
 	"io/ioutil"
 	"log"
@@ -18,6 +15,10 @@ import (
 	"testing"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/dispatch"
 	. "gopkg.in/check.v1"
 )
 
@@ -59,30 +60,50 @@ func (s *MockArvadosServerSuite) TearDownTest(c *C) {
 }
 
 func (s *TestSuite) TestIntegrationNormal(c *C) {
-	container := s.integrationTest(c, func() *exec.Cmd { return exec.Command("echo", "zzzzz-dz642-queuedcontainer") },
+	done := false
+	container := s.integrationTest(c,
+		func() *exec.Cmd {
+			if done {
+				return exec.Command("true")
+			} else {
+				return exec.Command("echo", "zzzzz-dz642-queuedcontainer")
+			}
+		},
 		[]string(nil),
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
 			time.Sleep(3 * time.Second)
 			dispatcher.UpdateState(container.UUID, dispatch.Complete)
+			done = true
 		})
 	c.Check(container.State, Equals, arvados.ContainerStateComplete)
 }
 
 func (s *TestSuite) TestIntegrationCancel(c *C) {
-
-	// Override sbatchCmd
+	var cmd *exec.Cmd
 	var scancelCmdLine []string
 	defer func(orig func(arvados.Container) *exec.Cmd) {
 		scancelCmd = orig
 	}(scancelCmd)
+	attempt := 0
 	scancelCmd = func(container arvados.Container) *exec.Cmd {
-		scancelCmdLine = scancelFunc(container).Args
-		return exec.Command("echo")
+		if attempt++; attempt == 1 {
+			return exec.Command("false")
+		} else {
+			scancelCmdLine = scancelFunc(container).Args
+			cmd = exec.Command("echo")
+			return cmd
+		}
 	}
 
 	container := s.integrationTest(c,
-		func() *exec.Cmd { return exec.Command("echo", "zzzzz-dz642-queuedcontainer") },
+		func() *exec.Cmd {
+			if cmd != nil && cmd.ProcessState != nil {
+				return exec.Command("true")
+			} else {
+				return exec.Command("echo", "zzzzz-dz642-queuedcontainer")
+			}
+		},
 		[]string(nil),
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
@@ -146,25 +167,23 @@ func (s *TestSuite) integrationTest(c *C,
 
 	theConfig.CrunchRunCommand = []string{"echo"}
 
-	doneProcessing := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
 	dispatcher := dispatch.Dispatcher{
-		Arv:          arv,
-		PollInterval: time.Duration(1) * time.Second,
-		RunContainer: func(dispatcher *dispatch.Dispatcher,
-			container arvados.Container,
-			status chan arvados.Container) {
-			go runContainer(dispatcher, container)
-			run(dispatcher, container, status)
-			doneProcessing <- struct{}{}
+		Arv:        arv,
+		PollPeriod: time.Duration(1) * time.Second,
+		RunContainer: func(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) {
+			go runContainer(disp, ctr)
+			run(disp, ctr, status)
+			cancel()
 		},
-		DoneProcessing: doneProcessing}
+	}
 
-	squeueUpdater.StartMonitor(time.Duration(500) * time.Millisecond)
+	sqCheck = &SqueueChecker{Period: 500 * time.Millisecond}
 
-	err = dispatcher.RunDispatcher()
-	c.Assert(err, IsNil)
+	err = dispatcher.Run(ctx)
+	c.Assert(err, Equals, context.Canceled)
 
-	squeueUpdater.Done()
+	sqCheck.Stop()
 
 	c.Check(sbatchCmdLine, DeepEquals, sbatchCmdComps)
 
@@ -208,32 +227,30 @@ func testWithServerStub(c *C, apiStubResponses map[string]arvadostest.StubRespon
 
 	theConfig.CrunchRunCommand = []string{crunchCmd}
 
-	doneProcessing := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
 	dispatcher := dispatch.Dispatcher{
-		Arv:          arv,
-		PollInterval: time.Duration(1) * time.Second,
-		RunContainer: func(dispatcher *dispatch.Dispatcher,
-			container arvados.Container,
-			status chan arvados.Container) {
+		Arv:        arv,
+		PollPeriod: time.Duration(1) * time.Second,
+		RunContainer: func(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados.Container) {
 			go func() {
 				time.Sleep(1 * time.Second)
-				dispatcher.UpdateState(container.UUID, dispatch.Running)
-				dispatcher.UpdateState(container.UUID, dispatch.Complete)
+				disp.UpdateState(ctr.UUID, dispatch.Running)
+				disp.UpdateState(ctr.UUID, dispatch.Complete)
 			}()
-			run(dispatcher, container, status)
-			doneProcessing <- struct{}{}
+			run(disp, ctr, status)
+			cancel()
 		},
-		DoneProcessing: doneProcessing}
+	}
 
 	go func() {
 		for i := 0; i < 80 && !strings.Contains(buf.String(), expected); i++ {
 			time.Sleep(100 * time.Millisecond)
 		}
-		dispatcher.DoneProcessing <- struct{}{}
+		cancel()
 	}()
 
-	err := dispatcher.RunDispatcher()
-	c.Assert(err, IsNil)
+	err := dispatcher.Run(ctx)
+	c.Assert(err, Equals, context.Canceled)
 
 	c.Check(buf.String(), Matches, `(?ms).*`+expected+`.*`)
 }

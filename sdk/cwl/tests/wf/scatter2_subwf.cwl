@@ -1,41 +1,77 @@
-cwlVersion: v1.0
-$graph:
-- class: Workflow
-  id: '#main'
-  inputs:
-  - type: int
-    id: '#main/sleeptime'
-  outputs:
-  - type: string
-    outputSource: '#main/sleep1/out'
-    id: '#main/out'
-  steps:
-  - in:
-    - valueFrom: |
-        ${
-          return String(inputs.sleeptime) + "b";
+{
+  "$graph": [
+    {
+      "class": "Workflow",
+      "hints": [],
+      "id": "#main",
+      "inputs": [
+        {
+          "id": "#main/sleeptime",
+          "type": "int"
         }
-      id: '#main/sleep1/blurb'
-    - source: '#main/sleeptime'
-      id: '#main/sleep1/sleeptime'
-    out: ['#main/sleep1/out']
-    run:
-      class: CommandLineTool
-      inputs:
-      - type: int
-        inputBinding: {position: 1}
-        id: '#main/sleep1/sleeptime'
-      outputs:
-      - type: string
-        outputBinding:
-          outputEval: out
-        id: '#main/sleep1/out'
-      baseCommand: sleep
-    id: '#main/sleep1'
-  requirements:
-  - {class: InlineJavascriptRequirement}
-  - {class: ScatterFeatureRequirement}
-  - {class: StepInputExpressionRequirement}
-  - {class: SubworkflowFeatureRequirement}
-  hints:
-  - class: http://arvados.org/cwl#RunInSingleContainer
+      ],
+      "outputs": [
+        {
+          "id": "#main/out",
+          "outputSource": "#main/sleep1/out",
+          "type": "string"
+        }
+      ],
+      "requirements": [
+        {
+          "class": "InlineJavascriptRequirement"
+        },
+        {
+          "class": "ScatterFeatureRequirement"
+        },
+        {
+          "class": "StepInputExpressionRequirement"
+        },
+        {
+          "class": "SubworkflowFeatureRequirement"
+        }
+      ],
+      "steps": [
+        {
+          "id": "#main/sleep1",
+          "in": [
+            {
+              "id": "#main/sleep1/blurb",
+              "valueFrom": "${\n  return String(inputs.sleeptime) + \"b\";\n}\n"
+            },
+            {
+              "id": "#main/sleep1/sleeptime",
+              "source": "#main/sleeptime"
+            }
+          ],
+          "out": [
+            "#main/sleep1/out"
+          ],
+          "run": {
+            "baseCommand": "sleep",
+            "class": "CommandLineTool",
+            "inputs": [
+              {
+                "id": "#main/sleep1/sleeptime",
+                "inputBinding": {
+                  "position": 1
+                },
+                "type": "int"
+              }
+            ],
+            "outputs": [
+              {
+                "id": "#main/sleep1/out",
+                "outputBinding": {
+                  "outputEval": "out"
+                },
+                "type": "string"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "cwlVersion": "v1.0"
+}

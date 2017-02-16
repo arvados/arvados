@@ -91,3 +91,13 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
         proc_mock.return_value = 'drain\n'
         super(SLURMComputeNodeShutdownActorTestCase,
               self).test_arvados_node_cleaned_after_shutdown()
+
+    def test_cancellable_shutdown(self, proc_mock):
+        proc_mock.return_value = 'other\n'
+        super(SLURMComputeNodeShutdownActorTestCase,
+              self).test_cancellable_shutdown()
+
+    def test_uncancellable_shutdown(self, proc_mock):
+        proc_mock.return_value = 'other\n'
+        super(SLURMComputeNodeShutdownActorTestCase,
+              self).test_uncancellable_shutdown()

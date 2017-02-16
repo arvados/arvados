@@ -229,7 +229,7 @@ class ContainerRequest < ArvadosModel
     if !coll
       raise ArvadosModel::UnresolvableContainerError.new "docker image #{container_image.inspect} not found"
     end
-    return coll.portable_data_hash
+    return Collection.docker_migration_pdh([current_user], coll.portable_data_hash)
   end
 
   def set_container

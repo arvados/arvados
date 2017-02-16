@@ -282,6 +282,17 @@ common:
   # Docker image to be used when none found in runtime_constraints of a job
   default_docker_image_for_jobs: false
 
+  # List of supported Docker Registry image formats that compute nodes
+  # are able to use. `arv keep docker` will error out if a user tries
+  # to store an image with an unsupported format. Use an empty array
+  # to skip the compatibility check (and display a warning message to
+  # that effect).
+  #
+  # Example for sites running docker < 1.10: ["v1"]
+  # Example for sites running docker >= 1.10: ["v2"]
+  # Example for disabling check: []
+  docker_image_formats: ["v2"]
+
   # :none or :slurm_immediate
   crunch_job_wrapper: :none
 

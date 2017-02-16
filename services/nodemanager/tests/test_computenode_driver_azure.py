@@ -130,7 +130,7 @@ echo z1.test > /var/tmp/arv-node-data/meta-data/instance-type
     def test_node_found_after_timeout_has_fixed_size(self):
         size = testutil.MockSize(4)
         node_props = {'hardwareProfile': {'vmSize': size.id}}
-        cloud_node = testutil.cloud_node_mock(
-            size=None, tags={'arvados-class': 'test'}, properties=node_props)
+        cloud_node = testutil.cloud_node_mock(tags={'arvados-class': 'test'}, properties=node_props)
+        cloud_node.size = None
         self.check_node_found_after_timeout_has_fixed_size(
             size, cloud_node, {'tag_arvados-class': 'test'})

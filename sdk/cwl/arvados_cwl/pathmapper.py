@@ -85,8 +85,12 @@ class ArvPathMapper(PathMapper):
         # type: (List[Any], unicode) -> None
         uploadfiles = set()
 
-        for k,v in self.arvrunner.get_uploaded().iteritems():
-            self._pathmap[k] = MapperEnt(v.resolved, self.collection_pattern % v.resolved[5:], "File")
+        already_uploaded = self.arvrunner.get_uploaded()
+        for k in referenced_files:
+            loc = k["location"]
+            if loc in already_uploaded:
+                v = already_uploaded[loc]
+                self._pathmap[loc] = MapperEnt(v.resolved, self.collection_pattern % v.resolved[5:], "File")
 
         for srcobj in referenced_files:
             self.visit(srcobj, uploadfiles)
@@ -179,7 +183,7 @@ class StagingPathMapper(PathMapper):
                 self.visitlisting(obj.get("secondaryFiles", []), stagedir, basedir)
 
 
-class InitialWorkDirPathMapper(StagingPathMapper):
+class VwdPathMapper(StagingPathMapper):
     def setup(self, referenced_files, basedir):
         # type: (List[Any], unicode) -> None
 
@@ -192,7 +196,7 @@ class InitialWorkDirPathMapper(StagingPathMapper):
                 self._pathmap[path] = MapperEnt("$(task.keep)/%s" % ab[5:], tgt, type)
 
 
-class FinalOutputPathMapper(StagingPathMapper):
+class NoFollowPathMapper(StagingPathMapper):
     _follow_dirs = False
     def setup(self, referenced_files, basedir):
         # type: (List[Any], unicode) -> None

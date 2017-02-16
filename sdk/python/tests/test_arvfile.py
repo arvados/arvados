@@ -68,7 +68,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                                                  "manifest_text":". 781e5e245d69b566979b86e28d23f2c7+10 0:8:count.txt\n",
                                                  "replication_desired":None},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
-                                                 "manifest_text":". 781e5e245d69b566979b86e28d23f2c7+10 0:8:count.txt\n"})
+                                                 "manifest_text":". 781e5e245d69b566979b86e28d23f2c7+10 0:8:count.txt\n",
+                                                 "portable_data_hash":"7fcd0eaac3aad4c31a6a0e756475da92+52"})
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n',
                              api_client=api, keep_client=keep) as c:
             writer = c.open("count.txt", "r+")
@@ -96,7 +97,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                                                  "manifest_text": ". 781e5e245d69b566979b86e28d23f2c7+10 acbd18db4cc2f85cedef654fccc4a4d8+3 0:13:count.txt\n",
                                                  "replication_desired":None},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
-                                                 "manifest_text": ". 781e5e245d69b566979b86e28d23f2c7+10 acbd18db4cc2f85cedef654fccc4a4d8+3 0:13:count.txt\n"})
+                                                 "manifest_text": ". 781e5e245d69b566979b86e28d23f2c7+10 acbd18db4cc2f85cedef654fccc4a4d8+3 0:13:count.txt\n",
+                                                 "portable_data_hash":"c5c3af76565c8efb6a806546bcf073f3+88"})
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n',
                              api_client=api, keep_client=keep) as c:
             writer = c.open("count.txt", "r+")
@@ -233,7 +235,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                                                  "manifest_text": ". a5de24f4417cfba9d5825eadc2f4ca49+67108000 598cc1a4ccaef8ab6e4724d87e675d78+32892000 0:100000000:count.txt\n",
                                                  "replication_desired":None},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
-                                                 "manifest_text": ". a5de24f4417cfba9d5825eadc2f4ca49+67108000 598cc1a4ccaef8ab6e4724d87e675d78+32892000 0:100000000:count.txt\n"})
+                                                 "manifest_text": ". a5de24f4417cfba9d5825eadc2f4ca49+67108000 598cc1a4ccaef8ab6e4724d87e675d78+32892000 0:100000000:count.txt\n",
+                                                 "portable_data_hash":"9132ca8e3f671c76103a38f5bc24328c+108"})
         with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
                              api_client=api, keep_client=keep) as c:
             writer = c.open("count.txt", "r+")
@@ -325,7 +328,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                                                  "manifest_text": ". 37400a68af9abdd76ca5bf13e819e42a+32892003 a5de24f4417cfba9d5825eadc2f4ca49+67108000 32892000:3:count.txt 32892006:67107997:count.txt 0:32892000:count.txt\n",
                                                  "replication_desired":None},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
-                                                 "manifest_text": ". 37400a68af9abdd76ca5bf13e819e42a+32892003 a5de24f4417cfba9d5825eadc2f4ca49+67108000 32892000:3:count.txt 32892006:67107997:count.txt 0:32892000:count.txt\n"})
+                                                 "manifest_text": ". 37400a68af9abdd76ca5bf13e819e42a+32892003 a5de24f4417cfba9d5825eadc2f4ca49+67108000 32892000:3:count.txt 32892006:67107997:count.txt 0:32892000:count.txt\n",
+                                                 "portable_data_hash":"217665c6b713e1b78dfba7ebd42344db+156"})
         with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
                              api_client=api, keep_client=keep) as c:
             writer = c.open("count.txt", "r+")
@@ -348,7 +352,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                                                  "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n",
                                                  "replication_desired":None},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
-                                                 "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n"})
+                                                 "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n",
+                                                 "portable_data_hash":"7a461a8c58601798f690f8b368ac4423+51"})
         with Collection(api_client=api, keep_client=keep) as c:
             writer = c.open("count.txt", "w+")
             self.assertEqual(writer.size(), 0)
@@ -370,7 +375,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                                                  "manifest_text":"./foo/bar 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n",
                                                  "replication_desired":None},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
-                                                 "manifest_text":"./foo/bar 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n"})
+                                                 "manifest_text":"./foo/bar 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n",
+                                                 "portable_data_hash":"1b02aaa62528d28a5be41651cbb9d7c7+59"})
         with Collection(api_client=api, keep_client=keep) as c:
             self.assertIsNone(c.api_response())
             writer = c.open("foo/bar/count.txt", "w+")
@@ -386,7 +392,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                                                  "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n",
                                                  "replication_desired":None},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
-                                                 "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n"})
+                                                 "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 0:8:count.txt\n",
+                                                 "portable_data_hash":"7a461a8c58601798f690f8b368ac4423+51"})
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n',
                              api_client=api, keep_client=keep) as c:
             writer = c.open("count.txt", "w+")
@@ -416,7 +423,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                                                  "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 e8dc4081b13434b45189a720b77b6818+8 0:8:count1.txt 8:8:count2.txt\n",
                                                  "replication_desired":None},
                                                 {"uuid":"zzzzz-4zz18-mockcollection0",
-                                                 "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 e8dc4081b13434b45189a720b77b6818+8 0:8:count1.txt 8:8:count2.txt\n"})
+                                                 "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 e8dc4081b13434b45189a720b77b6818+8 0:8:count1.txt 8:8:count2.txt\n",
+                                                 "portable_data_hash":"71e7bb6c00d31fc2b4364199fd97be08+102"})
         with Collection(api_client=api, keep_client=keep) as c:
             w1 = c.open("count1.txt", "w")
             w2 = c.open("count2.txt", "w")

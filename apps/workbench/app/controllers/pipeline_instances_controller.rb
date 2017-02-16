@@ -188,6 +188,7 @@ class PipelineInstancesController < ApplicationController
     if provenance
       @prov_svg = ProvenanceHelper::create_provenance_graph provenance, "provenance_svg", {
         :request => request,
+        :direction => :top_down,
         :all_script_parameters => true,
         :combine_jobs => :script_and_version,
         :pips => pips,
@@ -338,6 +339,15 @@ class PipelineInstancesController < ApplicationController
     end
 
     @unreadable_inputs_present
+  end
+
+  def cancel
+    @object.cancel
+    if params[:return_to]
+      redirect_to params[:return_to]
+    else
+      redirect_to @object
+    end
   end
 
   protected

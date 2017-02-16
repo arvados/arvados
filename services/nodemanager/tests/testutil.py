@@ -209,7 +209,9 @@ class RemotePollLoopActorTestMixin(ActorTestMixin):
         self.monitor = self.TEST_CLASS.start(
             self.client, self.timer, *args, **kwargs).proxy()
 
-def cloud_node_mock(node_num=99, size=MockSize(1), **extra):
+def cloud_node_mock(node_num=99, size=None, **extra):
+    if size is None:
+        size = MockSize(node_num)
     node = mock.NonCallableMagicMock(
         ['id', 'name', 'state', 'public_ips', 'private_ips', 'driver', 'size',
          'image', 'extra'],

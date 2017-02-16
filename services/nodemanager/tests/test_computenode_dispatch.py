@@ -201,14 +201,19 @@ class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
         else:
             self.fail("success flag {} is not {}".format(last_flag, expected))
 
-    def test_uncancellable_shutdown(self, *mocks):
-        self.make_mocks(shutdown_open=False)
-        self.cloud_client.destroy_node.return_value = False
-        self.make_actor(cancellable=False)
-        self.check_success_flag(None, 0)
-        self.shutdowns._set_state(True, 600)
+    def test_cancellable_shutdown(self, *mocks):
+        self.make_mocks(shutdown_open=True, arvados_node=testutil.arvados_node_mock(crunch_worker_state="busy"))
         self.cloud_client.destroy_node.return_value = True
-        self.check_success_flag(True)
+        self.make_actor(cancellable=True)
+        self.check_success_flag(False)
+        self.assertFalse(self.cloud_client.destroy_node.called)
+
+    def test_uncancellable_shutdown(self, *mocks):
+        self.make_mocks(shutdown_open=True, arvados_node=testutil.arvados_node_mock(crunch_worker_state="busy"))
+        self.cloud_client.destroy_node.return_value = True
+        self.make_actor(cancellable=False)
+        self.check_success_flag(True, 2)
+        self.assertTrue(self.cloud_client.destroy_node.called)
 
     def test_arvados_node_cleaned_after_shutdown(self, *mocks):
         cloud_node = testutil.cloud_node_mock(62)
@@ -247,21 +252,13 @@ class ComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
         self.check_success_flag(True)
         self.assertTrue(self.cloud_client.destroy_node.called)
 
-    def test_shutdown_retries_when_cloud_fails(self):
-        self.make_mocks()
-        self.cloud_client.destroy_node.return_value = False
-        self.make_actor(start_time=0)
-        self.assertIsNone(self.shutdown_actor.success.get(self.TIMEOUT))
-        self.cloud_client.destroy_node.return_value = True
-        self.check_success_flag(True)
-
-    def test_shutdown_cancelled_when_cloud_fails_on_broken_node(self):
+    def test_shutdown_cancelled_when_destroy_node_fails(self):
         self.make_mocks(node_broken=True)
         self.cloud_client.destroy_node.return_value = False
         self.make_actor(start_time=0)
         self.check_success_flag(False, 2)
         self.assertEqual(1, self.cloud_client.destroy_node.call_count)
-        self.assertEqual(self.ACTOR_CLASS.NODE_BROKEN,
+        self.assertEqual(self.ACTOR_CLASS.DESTROY_FAILED,
                          self.shutdown_actor.cancel_reason.get(self.TIMEOUT))
 
     def test_late_subscribe(self):

@@ -112,6 +112,9 @@ case "$TARGET" in
     ubuntu1404)
         FORMAT=deb
         ;;
+    ubuntu1604)
+        FORMAT=deb
+        ;;
     centos7)
         FORMAT=rpm
         PYTHON2_PACKAGE=$(rpm -qf "$(which python$PYTHON2_VERSION)" --queryformat '%{NAME}\n')

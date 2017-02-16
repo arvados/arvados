@@ -171,7 +171,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
     """
     # Reasons for a shutdown to be cancelled.
     WINDOW_CLOSED = "shutdown window closed"
-    NODE_BROKEN = "cloud failed to shut down broken node"
+    DESTROY_FAILED = "destroy_node failed"
 
     def __init__(self, timer_actor, cloud_client, arvados_client, node_monitor,
                  cancellable=True, retry_wait=1, max_retry_wait=180):
@@ -204,7 +204,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
             self.success = success_flag
         return super(ComputeNodeShutdownActor, self)._finished()
 
-    def cancel_shutdown(self, reason):
+    def cancel_shutdown(self, reason, **kwargs):
         self.cancel_reason = reason
         self._logger.info("Shutdown cancelled: %s.", reason)
         self._finished(success_flag=False)
@@ -216,26 +216,30 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
                 return orig_func(self, *args, **kwargs)
             except Exception as error:
                 self._logger.error("Actor error %s", error)
-                self._later.cancel_shutdown("Unhandled exception %s" % error)
+                self._logger.debug("", exc_info=True)
+                self._later.cancel_shutdown("Unhandled exception %s" % error, try_resume=False)
         return finish_wrapper
 
     @_cancel_on_exception
-    @RetryMixin._retry()
     def shutdown_node(self):
+        if self.cancellable:
+            self._logger.info("Checking that node is still eligible for shutdown")
+            eligible, reason = self._monitor.shutdown_eligible().get()
+            if not eligible:
+                self.cancel_shutdown("No longer eligible for shut down because %s" % reason,
+                                     try_resume=True)
+                return
+
         self._logger.info("Starting shutdown")
         arv_node = self._arvados_node()
-        if not self._cloud.destroy_node(self.cloud_node):
-            if self._cloud.broken(self.cloud_node):
-                self._later.cancel_shutdown(self.NODE_BROKEN)
-                return
+        if self._cloud.destroy_node(self.cloud_node):
+            self._logger.info("Shutdown success")
+            if arv_node:
+                self._later.clean_arvados_node(arv_node)
             else:
-                # Force a retry.
-                raise cloud_types.LibcloudError("destroy_node failed")
-        self._logger.info("Shutdown success")
-        if arv_node is None:
-            self._finished(success_flag=True)
+                self._finished(success_flag=True)
         else:
-            self._later.clean_arvados_node(arv_node)
+            self.cancel_shutdown(self.DESTROY_FAILED, try_resume=False)
 
     @ComputeNodeStateChangeBase._finish_on_exception
     @RetryMixin._retry(config.ARVADOS_ERRORS)
@@ -306,7 +310,6 @@ class ComputeNodeMonitorActor(config.actor_class):
     ):
         super(ComputeNodeMonitorActor, self).__init__()
         self._later = self.actor_ref.tell_proxy()
-        self._last_log = None
         self._shutdowns = shutdown_timer
         self._cloud_node_fqdn = cloud_fqdn_func
         self._timer = timer_actor
@@ -334,9 +337,6 @@ class ComputeNodeMonitorActor(config.actor_class):
         self.subscribers.add(subscriber)
 
     def _debug(self, msg, *args):
-        if msg == self._last_log:
-            return
-        self._last_log = msg
         self._logger.debug(msg, *args)
 
     def get_state(self):
@@ -345,6 +345,10 @@ class ComputeNodeMonitorActor(config.actor_class):
         # If this node is not associated with an Arvados node, return 'unpaired'.
         if self.arvados_node is None:
             return 'unpaired'
+
+        # This node is indicated as non-functioning by the cloud
+        if self._cloud.broken(self.cloud_node):
+            return 'down'
 
         state = self.arvados_node['crunch_worker_state']
 

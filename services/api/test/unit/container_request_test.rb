@@ -1,6 +1,9 @@
 require 'test_helper'
+require 'helpers/docker_migration_helper'
 
 class ContainerRequestTest < ActiveSupport::TestCase
+  include DockerMigrationHelper
+
   def create_minimal_req! attrs={}
     defaults = {
       command: ["echo", "foo"],
@@ -411,6 +414,22 @@ class ContainerRequestTest < ActiveSupport::TestCase
         cr.send :container_image_for_container
       end
     end
+  end
+
+  test "migrated docker image" do
+    Rails.configuration.docker_image_formats = ['v2']
+    add_docker19_migration_link
+
+    set_user_from_auth :active
+    cr = create_minimal_req!(command: ["true", "1"],
+                             container_image: collections(:docker_image).portable_data_hash)
+    assert_equal(cr.send(:container_image_for_container),
+                 collections(:docker_image_1_12).portable_data_hash)
+
+    cr = create_minimal_req!(command: ["true", "2"],
+                             container_image: links(:docker_image_collection_tag).name)
+    assert_equal(cr.send(:container_image_for_container),
+                 collections(:docker_image_1_12).portable_data_hash)
   end
 
   test "requestor can retrieve container owned by dispatch" do

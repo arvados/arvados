@@ -11,7 +11,7 @@ Syntax:
 --command
     Build command to execute (default: use built-in Docker image command)
 --test-packages
-    Run package install test script "test-packages-$target.sh"
+    Run package install test script "test-packages-[target].sh"
 --debug
     Output debug information (default: false)
 --only-build <package>
@@ -99,7 +99,8 @@ if [[ -n "$test_packages" ]]; then
 
     if [[ -n "$(find $WORKSPACE/packages/$TARGET -name '*.deb')" ]] ; then
         (cd $WORKSPACE/packages/$TARGET
-         dpkg-scanpackages .  2> >(grep -v 'warning' 1>&2) | gzip -c > Packages.gz
+          dpkg-scanpackages .  2> >(grep -v 'warning' 1>&2) | tee Packages | gzip -c > Packages.gz
+          apt-ftparchive -o APT::FTPArchive::Release::Origin=Arvados release . > Release
         )
     fi
 

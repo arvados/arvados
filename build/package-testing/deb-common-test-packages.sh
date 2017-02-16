@@ -11,7 +11,7 @@ export ARV_PACKAGES_DIR="/arvados/packages/$target"
 dpkg-query --show > "$ARV_PACKAGES_DIR/$1.before"
 
 apt-get -qq update
-apt-get --assume-yes --force-yes install "$1"
+apt-get --assume-yes --allow-unauthenticated install "$1"
 
 dpkg-query --show > "$ARV_PACKAGES_DIR/$1.after"
 

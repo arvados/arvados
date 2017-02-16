@@ -9,7 +9,7 @@ $graph:
     type: File
     default:
       class: File
-      location: keep:99999999999999999999999999999991+99/tool/blub.txt
+      location: keep:99999999999999999999999999999991+99/blub.txt
     inputBinding:
       position: 1
   outputs: []
@@ -19,7 +19,7 @@ $graph:
   inputs:
   - id: '#main/x'
     type: File
-    default: {class: File, location: 'keep:99999999999999999999999999999991+99/input/blorp.txt',
+    default: {class: File, location: 'keep:99999999999999999999999999999992+99/blorp.txt',
       basename: blorp.txt}
   - id: '#main/y'
     type: Directory

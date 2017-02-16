@@ -6,6 +6,7 @@ import datetime
 import errno
 import json
 import os
+import re
 import subprocess
 import sys
 import tarfile
@@ -36,6 +37,9 @@ keepdocker_parser.add_argument(
 keepdocker_parser.add_argument(
     '-f', '--force', action='store_true', default=False,
     help="Re-upload the image even if it already exists on the server")
+keepdocker_parser.add_argument(
+    '--force-image-format', action='store_true', default=False,
+    help="Proceed even if the image format is not supported by the server")
 
 _group = keepdocker_parser.add_mutually_exclusive_group()
 _group.add_argument(
@@ -80,6 +84,35 @@ def check_docker(proc, description):
     if proc.returncode != 0:
         raise DockerError("docker {} returned status code {}".
                           format(description, proc.returncode))
+
+def docker_image_format(image_hash):
+    """Return the registry format ('v1' or 'v2') of the given image."""
+    cmd = popen_docker(['inspect', '--format={{.Id}}', image_hash],
+                        stdout=subprocess.PIPE)
+    try:
+        image_id = next(cmd.stdout).strip()
+        if image_id.startswith('sha256:'):
+            return 'v2'
+        elif ':' not in image_id:
+            return 'v1'
+        else:
+            return 'unknown'
+    finally:
+        check_docker(cmd, "inspect")
+
+def docker_image_compatible(api, image_hash):
+    supported = api._rootDesc.get('dockerImageFormats', [])
+    if not supported:
+        print >>sys.stderr, "arv-keepdocker: warning: server does not specify supported image formats (see docker_image_formats in server config). Continuing."
+        return True
+
+    fmt = docker_image_format(image_hash)
+    if fmt in supported:
+        return True
+    else:
+        print >>sys.stderr, "arv-keepdocker: image format is {!r} " \
+            "but server supports only {!r}".format(fmt, supported)
+        return False
 
 def docker_images():
     # Yield a DockerImage tuple for each installed image.
@@ -291,6 +324,68 @@ def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None)
 def items_owned_by(owner_uuid, arv_items):
     return (item for item in arv_items if item['owner_uuid'] == owner_uuid)
 
+def _uuid2pdh(api, uuid):
+    return api.collections().list(
+        filters=[['uuid', '=', uuid]],
+        select=['portable_data_hash'],
+    ).execute()['items'][0]['portable_data_hash']
+
+_migration_link_class = 'docker_image_migration'
+_migration_link_name = 'migrate_1.9_1.10'
+def _migrate19_link(api, root_uuid, old_uuid, new_uuid):
+    old_pdh = _uuid2pdh(api, old_uuid)
+    new_pdh = _uuid2pdh(api, new_uuid)
+    if not api.links().list(filters=[
+            ['owner_uuid', '=', root_uuid],
+            ['link_class', '=', _migration_link_class],
+            ['name', '=', _migration_link_name],
+            ['tail_uuid', '=', old_pdh],
+            ['head_uuid', '=', new_pdh]]).execute()['items']:
+        print >>sys.stderr, 'Creating migration link {} -> {}: '.format(
+            old_pdh, new_pdh),
+        link = api.links().create(body={
+            'owner_uuid': root_uuid,
+            'link_class': _migration_link_class,
+            'name': _migration_link_name,
+            'tail_uuid': old_pdh,
+            'head_uuid': new_pdh,
+        }).execute()
+        print >>sys.stderr, '{}'.format(link['uuid'])
+        return link
+
+def migrate19():
+    api = arvados.api('v1')
+    user = api.users().current().execute()
+    if not user['is_admin']:
+        raise Exception("This command requires an admin token")
+    root_uuid = user['uuid'][:12] + '000000000000000'
+    new_image_uuids = {}
+    images = list_images_in_arv(api, 2)
+    is_new = lambda img: img['dockerhash'].startswith('sha256:')
+
+    count_new = 0
+    for uuid, img in images:
+        if not re.match(r'^[0-9a-f]{64}$', img["tag"]):
+            continue
+        key = (img["repo"], img["tag"])
+        if is_new(img) and key not in new_image_uuids:
+            count_new += 1
+            new_image_uuids[key] = uuid
+
+    count_migrations = 0
+    new_links = []
+    for uuid, img in images:
+        key = (img['repo'], img['tag'])
+        if not is_new(img) and key in new_image_uuids:
+            count_migrations += 1
+            link = _migrate19_link(api, root_uuid, uuid, new_image_uuids[key])
+            if link:
+                new_links.append(link)
+
+    print >>sys.stderr, "=== {} new-format images, {} migrations detected, " \
+        "{} links added.".format(count_new, count_migrations, len(new_links))
+    return new_links
+
 def main(arguments=None, stdout=sys.stdout):
     args = arg_parser.parse_args(arguments)
     api = arvados.api('v1')
@@ -312,6 +407,14 @@ def main(arguments=None, stdout=sys.stdout):
     except DockerError as error:
         print >>sys.stderr, "arv-keepdocker:", error.message
         sys.exit(1)
+
+    if not docker_image_compatible(api, image_hash):
+        if args.force_image_format:
+            print >>sys.stderr, "arv-keepdocker: forcing incompatible image"
+        else:
+            print >>sys.stderr, "arv-keepdocker: refusing to store " \
+                "incompatible format (use --force-image-format to override)"
+            sys.exit(1)
 
     image_repo_tag = '{}:{}'.format(args.image, args.tag) if not image_hash.startswith(args.image.lower()) else None
 

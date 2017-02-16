@@ -30,6 +30,7 @@ class JobsController < ApplicationController
 
     @svg = ProvenanceHelper::create_provenance_graph nodes, "provenance_svg", {
       :request => request,
+      :direction => :top_down,
       :all_script_parameters => true,
       :script_version_nodes => true}
   end

@@ -1,10 +1,10 @@
-Currently, only Ruby 2.1 is supported.
+Ruby 2.3 is recommended; Ruby 2.1 is also known to work.
 
 h4(#rvm). *Option 1: Install with RVM*
 
 <notextile>
 <pre><code><span class="userinput">sudo gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3
-\curl -sSL https://get.rvm.io | sudo bash -s stable --ruby=2.1
+\curl -sSL https://get.rvm.io | sudo bash -s stable --ruby=2.3
 </span></code></pre></notextile>
 
 Either log out and log back in to activate RVM, or explicitly load it in all open shells like this:
@@ -53,8 +53,8 @@ Build and install Ruby:
 <notextile>
 <pre><code><span class="userinput">mkdir -p ~/src
 cd ~/src
-curl http://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.7.tar.gz | tar xz
-cd ruby-2.1.7
+curl -f http://cache.ruby-lang.org/pub/ruby/2.3/ruby-2.3.3.tar.gz | tar xz
+cd ruby-2.3.3
 ./configure --disable-install-rdoc
 make
 sudo make install

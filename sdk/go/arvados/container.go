@@ -19,13 +19,14 @@ type Container struct {
 
 // Mount is special behavior to attach to a filesystem path or device.
 type Mount struct {
-	Kind             string      `json:"kind"`
-	Writable         bool        `json:"writable"`
-	PortableDataHash string      `json:"portable_data_hash"`
-	UUID             string      `json:"uuid"`
-	DeviceType       string      `json:"device_type"`
-	Path             string      `json:"path"`
-	Content          interface{} `json:"content"`
+	Kind              string      `json:"kind"`
+	Writable          bool        `json:"writable"`
+	PortableDataHash  string      `json:"portable_data_hash"`
+	UUID              string      `json:"uuid"`
+	DeviceType        string      `json:"device_type"`
+	Path              string      `json:"path"`
+	Content           interface{} `json:"content"`
+	ExcludeFromOutput bool        `json:"exclude_from_output"`
 }
 
 // RuntimeConstraints specify a container's compute resources (RAM,

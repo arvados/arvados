@@ -11,6 +11,8 @@ type ResourceListParams struct {
 	Limit        *int     `json:"limit,omitempty"`
 	Offset       int      `json:"offset,omitempty"`
 	Order        string   `json:"order,omitempty"`
+	Distinct     bool     `json:"distinct,omitempty"`
+	Count        string   `json:"count,omitempty"`
 }
 
 // A Filter restricts the set of records returned by a list/index API.

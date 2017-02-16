@@ -108,7 +108,7 @@ docker_image:
   manifest_text: ". d21353cfe035e3e384563ee55eadbb2f+67108864 5c77a43e329b9838cbec18ff42790e57+55605760 0:122714624:d8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678.tar\n"
   name: docker_image
 
-# untagged docker image with sha256:{hash}.tar filename
+# tagged docker image with sha256:{hash}.tar filename
 docker_image_1_12:
   uuid: zzzzz-4zz18-1g4g0vhpjn9wq7i
   portable_data_hash: d740a57097711e08eb9b2a93518f20ab+174

@@ -61,3 +61,58 @@ Can be used for "stdin" and "stdout" targets.|<pre><code>{
  "kind":"json",
  "content":{"foo":"bar"}
 }</pre>|
+
+h2(#pre-populate-output). Pre-populate output using Mount points
+
+When a container's output_path is a tmp mount backed by local disk, this output directory can be pre-populated with content from existing collections. This content can be specified by mounting collections at mount points that are subdirectories of output_path. Certain restrictions apply:
+
+1. Only mount points of kind @collection@ are supported.
+
+2. Mount points underneath output_path must not use @"writable":true@. If any of them are set as @writable@, the API will refuse to create/update the container request, and crunch-run will fail the container.
+
+3. If any such mount points are configured as @exclude_from_output":true@, they will be excluded from the output.
+
+If any process in the container tries to modify, remove, or rename these mount points or anything underneath them, the operation will fail and the container output and the underlying collections used to pre-populate are unaffected.
+
+h3. Example mount point configurations
+
+All the below examples are based on this collection:
+<pre><code>
+portable_data_hash cdfbe2e823222d26483d52e5089d553c+175
+
+manifest_text: ./alice 03032680d3fa0561ef4f85071140861e+13+A04e9d06459cda00aa997565bd78001061cf5bffb@58ab593d 0:13:hello.txt\n./bob d820b9df970e1b498e7723c50b107e1b+11+A42d162a60210479d1cfaf9fbb98d494ac6322ae6@58ab593d 0:11:hello.txt\n./carol cf72b172ff969250ae14a893a6745440+13+A476a2fd39e14e9c03af3076bd17e3612c075ff66@58ab593d 0:13:hello.txt\n
+</code></pre>
+
+table(table table-bordered table-condensed).
+|{width:40%}. *Mount point*|{width:30%}. *Description*|{width:30%}. *Resulting collection manifest text*|
+|<pre><code>"mounts": {
+  "/tmp/foo": {
+    "kind": "collection",
+    "portable_data_hash": "cdfbe2...+175"
+  },
+},
+"output_path": "/tmp"
+</code></pre>|No path specified and hence the entire collection will be mounted.|./*foo/*alice 030326... 0:13:hello.txt\n
+./*foo/*bob d820b9... 0:11:hello.txt\n
+./*foo/*carol cf72b1... 0:13:hello.txt\n
+*Note:* Here the "." in streams is replaced with *foo*.|
+|<pre><code>"mounts": {
+  "/tmp/foo/bar": {
+    "kind": "collection",
+    "portable_data_hash": "cdfbe2...+175"
+    "path": "alice"
+  },
+},
+"output_path": "/tmp"
+</code></pre>|Specified path refers to the subdirectory *alice* in the collection.|./*foo/bar* 030326... 0:13:hello.txt\n
+*Note:* only the manifest text segment for the subdirectory *alice* is included after replacing the subdirectory *alice* with *foo/bar*.|
+|<pre><code>"mounts": {
+  "/tmp/foo/bar": {
+    "kind": "collection",
+    "portable_data_hash": "cdfbe2...+175"
+    "path": "alice/hello.txt"
+  },
+},
+"output_path": "/tmp"
+</code></pre>|Specified path refers to the file *hello.txt* in the *alice* subdirectory|./*foo* 030326... 0:13:*bar*\n
+*Note:* Here the subdirectory *alice* is replaced with *foo* and the filename *hello.txt* from this subdirectory is replaced with *bar*.|

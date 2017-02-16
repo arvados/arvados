@@ -3,6 +3,7 @@ import os
 import errno
 import urlparse
 import re
+import logging
 
 import ruamel.yaml as yaml
 
@@ -13,8 +14,11 @@ import cwltool.resolver
 import arvados.util
 import arvados.collection
 import arvados.arvfile
+import arvados.errors
 
 from schema_salad.ref_resolver import DefaultFetcher
+
+logger = logging.getLogger('arvados.cwl-runner')
 
 class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
     """Implement the cwltool FsAccess interface for Arvados Collections."""
@@ -26,13 +30,14 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
         self.collections = {}
 
     def get_collection(self, path):
-        p = path.split("/")
-        if p[0].startswith("keep:") and arvados.util.keep_locator_pattern.match(p[0][5:]):
-            pdh = p[0][5:]
+        sp = path.split("/", 1)
+        p = sp[0]
+        if p.startswith("keep:") and arvados.util.keep_locator_pattern.match(p[5:]):
+            pdh = p[5:]
             if pdh not in self.collections:
                 self.collections[pdh] = arvados.collection.CollectionReader(pdh, api_client=self.api_client,
                                                                             keep_client=self.keep_client)
-            return (self.collections[pdh], "/".join(p[1:]))
+            return (self.collections[pdh], sp[1] if len(sp) == 2 else None)
         else:
             return (None, path)
 
@@ -129,25 +134,34 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
             return os.path.realpath(path)
 
 class CollectionFetcher(DefaultFetcher):
-    def __init__(self, cache, session, api_client=None, keep_client=None):
+    def __init__(self, cache, session, api_client=None, keep_client=None, num_retries=4):
         super(CollectionFetcher, self).__init__(cache, session)
         self.api_client = api_client
         self.fsaccess = CollectionFsAccess("", api_client=api_client, keep_client=keep_client)
+        self.num_retries = num_retries
 
     def fetch_text(self, url):
         if url.startswith("keep:"):
             with self.fsaccess.open(url, "r") as f:
                 return f.read()
         if url.startswith("arvwf:"):
-            return self.api_client.workflows().get(uuid=url[6:]).execute()["definition"]
+            record = self.api_client.workflows().get(uuid=url[6:]).execute(num_retries=self.num_retries)
+            definition = record["definition"] + ('\nlabel: "%s"\n' % record["name"].replace('"', '\\"'))
+            return definition
         return super(CollectionFetcher, self).fetch_text(url)
 
     def check_exists(self, url):
-        if url.startswith("keep:"):
-            return self.fsaccess.exists(url)
-        if url.startswith("arvwf:"):
-            if self.fetch_text(url):
-                return True
+        try:
+            if url.startswith("keep:"):
+                return self.fsaccess.exists(url)
+            if url.startswith("arvwf:"):
+                if self.fetch_text(url):
+                    return True
+        except arvados.errors.NotFoundError:
+            return False
+        except:
+            logger.exception("Got unexpected exception checking if file exists:")
+            return False
         return super(CollectionFetcher, self).check_exists(url)
 
     def urljoin(self, base_url, url):
@@ -186,12 +200,12 @@ class CollectionFetcher(DefaultFetcher):
 workflow_uuid_pattern = re.compile(r'[a-z0-9]{5}-7fd4e-[a-z0-9]{15}')
 pipeline_template_uuid_pattern = re.compile(r'[a-z0-9]{5}-p5p6p-[a-z0-9]{15}')
 
-def collectionResolver(api_client, document_loader, uri):
+def collectionResolver(api_client, document_loader, uri, num_retries=4):
     if workflow_uuid_pattern.match(uri):
         return "arvwf:%s#main" % (uri)
 
     if pipeline_template_uuid_pattern.match(uri):
-        pt = api_client.pipeline_templates().get(uuid=uri).execute()
+        pt = api_client.pipeline_templates().get(uuid=uri).execute(num_retries=num_retries)
         return "keep:" + pt["components"].values()[0]["script_parameters"]["cwl:tool"]
 
     p = uri.split("/")

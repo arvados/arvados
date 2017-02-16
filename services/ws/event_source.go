@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"strconv"
 	"strings"
@@ -35,51 +36,74 @@ type pgEventSource struct {
 	pqListener *pq.Listener
 	queue      chan *event
 	sinks      map[*pgEventSink]bool
-	setupOnce  sync.Once
 	mtx        sync.Mutex
-	shutdown   chan error
 
 	lastQDelay time.Duration
 	eventsIn   uint64
 	eventsOut  uint64
+
+	cancel func()
 }
 
 var _ debugStatuser = (*pgEventSource)(nil)
 
-func (ps *pgEventSource) setup() {
-	ps.shutdown = make(chan error, 1)
-	ps.sinks = make(map[*pgEventSink]bool)
+func (ps *pgEventSource) listenerProblem(et pq.ListenerEventType, err error) {
+	if et == pq.ListenerEventConnected {
+		logger(nil).Debug("pgEventSource connected")
+		return
+	}
+
+	// Until we have a mechanism for catching up on missed events,
+	// we cannot recover from a dropped connection without
+	// breaking our promises to clients.
+	logger(nil).
+		WithField("eventType", et).
+		WithError(err).
+		Error("listener problem")
+	ps.cancel()
+}
+
+// Run listens for event notifications on the "logs" channel and sends
+// them to all subscribers.
+func (ps *pgEventSource) Run() {
+	logger(nil).Debug("pgEventSource Run starting")
+	defer logger(nil).Debug("pgEventSource Run finished")
+
+	ctx, cancel := context.WithCancel(context.Background())
+	ps.cancel = cancel
+	defer cancel()
+
+	defer func() {
+		// Disconnect all clients
+		ps.mtx.Lock()
+		for sink := range ps.sinks {
+			close(sink.channel)
+		}
+		ps.sinks = nil
+		ps.mtx.Unlock()
+	}()
 
 	db, err := sql.Open("postgres", ps.DataSource)
 	if err != nil {
 		logger(nil).WithError(err).Fatal("sql.Open failed")
+		return
 	}
 	if err = db.Ping(); err != nil {
 		logger(nil).WithError(err).Fatal("db.Ping failed")
+		return
 	}
 	ps.db = db
 
-	ps.pqListener = pq.NewListener(ps.DataSource, time.Second, time.Minute, func(ev pq.ListenerEventType, err error) {
-		if err != nil {
-			// Until we have a mechanism for catching up
-			// on missed events, we cannot recover from a
-			// dropped connection without breaking our
-			// promises to clients.
-			logger(nil).WithError(err).Error("listener problem")
-			ps.shutdown <- err
-		}
-	})
+	ps.pqListener = pq.NewListener(ps.DataSource, time.Second, time.Minute, ps.listenerProblem)
 	err = ps.pqListener.Listen("logs")
 	if err != nil {
 		logger(nil).WithError(err).Fatal("pq Listen failed")
 	}
-	logger(nil).Debug("pgEventSource listening")
+	defer ps.pqListener.Close()
+	logger(nil).Debug("pq Listen setup done")
 
-	go ps.run()
-}
-
-func (ps *pgEventSource) run() {
 	ps.queue = make(chan *event, ps.QueueSize)
+	defer close(ps.queue)
 
 	go func() {
 		for e := range ps.queue {
@@ -111,11 +135,8 @@ func (ps *pgEventSource) run() {
 	defer ticker.Stop()
 	for {
 		select {
-		case err, ok := <-ps.shutdown:
-			if ok {
-				logger(nil).WithError(err).Info("shutdown")
-			}
-			close(ps.queue)
+		case <-ctx.Done():
+			logger(nil).Debug("ctx done")
 			return
 
 		case <-ticker.C:
@@ -124,10 +145,19 @@ func (ps *pgEventSource) run() {
 
 		case pqEvent, ok := <-ps.pqListener.Notify:
 			if !ok {
-				close(ps.queue)
+				logger(nil).Debug("pqListener Notify chan closed")
 				return
 			}
+			if pqEvent == nil {
+				// pq should call listenerProblem
+				// itself in addition to sending us a
+				// nil event, so this might be
+				// superfluous:
+				ps.listenerProblem(-1, nil)
+				continue
+			}
 			if pqEvent.Channel != "logs" {
+				logger(nil).WithField("pqEvent", pqEvent).Error("unexpected notify from wrong channel")
 				continue
 			}
 			logID, err := strconv.ParseUint(pqEvent.Extra, 10, 64)
@@ -158,19 +188,20 @@ func (ps *pgEventSource) run() {
 // quickly as possible because when one sink stops being ready, all
 // other sinks block.
 func (ps *pgEventSource) NewSink() eventSink {
-	ps.setupOnce.Do(ps.setup)
 	sink := &pgEventSink{
 		channel: make(chan *event, 1),
 		source:  ps,
 	}
 	ps.mtx.Lock()
+	if ps.sinks == nil {
+		ps.sinks = make(map[*pgEventSink]bool)
+	}
 	ps.sinks[sink] = true
 	ps.mtx.Unlock()
 	return sink
 }
 
 func (ps *pgEventSource) DB() *sql.DB {
-	ps.setupOnce.Do(ps.setup)
 	return ps.db
 }
 
@@ -201,6 +232,7 @@ func (sink *pgEventSink) Channel() <-chan *event {
 	return sink.channel
 }
 
+// Stop sending events to the sink's channel.
 func (sink *pgEventSink) Stop() {
 	go func() {
 		// Ensure this sink cannot fill up and block the
@@ -210,7 +242,9 @@ func (sink *pgEventSink) Stop() {
 		}
 	}()
 	sink.source.mtx.Lock()
-	delete(sink.source.sinks, sink)
+	if _, ok := sink.source.sinks[sink]; ok {
+		delete(sink.source.sinks, sink)
+		close(sink.channel)
+	}
 	sink.source.mtx.Unlock()
-	close(sink.channel)
 }

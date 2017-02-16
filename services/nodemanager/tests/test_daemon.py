@@ -48,12 +48,19 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         return mock_actor
 
     def make_daemon(self, cloud_nodes=[], arvados_nodes=[], want_sizes=[],
-                    avail_sizes=[(testutil.MockSize(1), {"cores": 1})],
+                    avail_sizes=None,
                     min_nodes=0, max_nodes=8,
                     shutdown_windows=[54, 5, 1],
                     max_total_price=None):
         for name in ['cloud_nodes', 'arvados_nodes', 'server_wishlist']:
             setattr(self, name + '_poller', mock.MagicMock(name=name + '_mock'))
+
+        if not avail_sizes:
+            if cloud_nodes or want_sizes:
+                avail_sizes=[(c.size, {"cores": int(c.id)}) for c in cloud_nodes] + [(s, {"cores": 1}) for s in want_sizes]
+            else:
+                avail_sizes=[(testutil.MockSize(1), {"cores": 1})]
+
         self.arv_factory = mock.MagicMock(name='arvados_mock')
         api_client = mock.MagicMock(name='api_client')
         api_client.nodes().create().execute.side_effect = [testutil.arvados_node_mock(1),
@@ -65,6 +72,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.cloud_updates = mock.MagicMock(name='updates_mock')
         self.timer = testutil.MockTimer(deliver_immediately=False)
         self.cloud_factory().node_id.side_effect = lambda node: node.id
+        self.cloud_factory().broken.return_value = False
 
         self.node_setup = mock.MagicMock(name='setup_mock')
         self.node_setup.start.side_effect = self.mock_node_start
@@ -138,7 +146,8 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
     def test_arvados_node_un_and_re_paired(self):
         # We need to create the Arvados node mock after spinning up the daemon
         # to make sure it's new enough to pair with the cloud node.
-        self.make_daemon([testutil.cloud_node_mock(3)], arvados_nodes=None)
+        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(3)],
+                         arvados_nodes=None)
         arv_node = testutil.arvados_node_mock(3)
         self.daemon.update_arvados_nodes([arv_node]).get(self.TIMEOUT)
         self.check_monitors_arvados_nodes(arv_node)
@@ -151,7 +160,8 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
     def test_old_arvados_node_not_double_assigned(self):
         arv_node = testutil.arvados_node_mock(3, age=9000)
         size = testutil.MockSize(3)
-        self.make_daemon(arvados_nodes=[arv_node], avail_sizes=[(size, {"cores":1})])
+        self.make_daemon(arvados_nodes=[arv_node],
+                         avail_sizes=[(size, {"cores":1})])
         self.daemon.update_server_wishlist([size]).get(self.TIMEOUT)
         self.daemon.update_server_wishlist([size, size]).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
@@ -162,26 +172,27 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.assertIn(None, used_nodes)
 
     def test_node_count_satisfied(self):
-        self.make_daemon([testutil.cloud_node_mock()],
+        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(1)],
                          want_sizes=[testutil.MockSize(1)])
         self.stop_proxy(self.daemon)
         self.assertFalse(self.node_setup.start.called)
 
     def test_dont_count_missing_as_busy(self):
         size = testutil.MockSize(1)
-        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(1),
-                                      testutil.cloud_node_mock(2)],
+        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(1, size=size),
+                                      testutil.cloud_node_mock(2, size=size)],
                          arvados_nodes=[testutil.arvados_node_mock(1),
-                                      testutil.arvados_node_mock(2,
-                                                                 last_ping_at='1970-01-01T01:02:03.04050607Z')],
+                                        testutil.arvados_node_mock(
+                                            2,
+                                            last_ping_at='1970-01-01T01:02:03.04050607Z')],
                          want_sizes=[size, size])
         self.stop_proxy(self.daemon)
         self.assertTrue(self.node_setup.start.called)
 
     def test_missing_counts_towards_max(self):
         size = testutil.MockSize(1)
-        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(1),
-                                      testutil.cloud_node_mock(2)],
+        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(1, size=size),
+                                      testutil.cloud_node_mock(2, size=size)],
                          arvados_nodes=[testutil.arvados_node_mock(1),
                                         testutil.arvados_node_mock(2, last_ping_at='1970-01-01T01:02:03.04050607Z')],
                          want_sizes=[size, size],
@@ -191,7 +202,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
 
     def test_excess_counts_missing(self):
         size = testutil.MockSize(1)
-        cloud_nodes = [testutil.cloud_node_mock(1), testutil.cloud_node_mock(2)]
+        cloud_nodes = [testutil.cloud_node_mock(1, size=size), testutil.cloud_node_mock(2, size=size)]
         self.make_daemon(cloud_nodes=cloud_nodes,
                          arvados_nodes=[testutil.arvados_node_mock(1),
                                         testutil.arvados_node_mock(2, last_ping_at='1970-01-01T01:02:03.04050607Z')],
@@ -203,7 +214,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
 
     def test_missing_shutdown_not_excess(self):
         size = testutil.MockSize(1)
-        cloud_nodes = [testutil.cloud_node_mock(1), testutil.cloud_node_mock(2)]
+        cloud_nodes = [testutil.cloud_node_mock(1, size=size), testutil.cloud_node_mock(2, size=size)]
         self.make_daemon(cloud_nodes=cloud_nodes,
                          arvados_nodes=[testutil.arvados_node_mock(1),
                                         testutil.arvados_node_mock(2, last_ping_at='1970-01-01T01:02:03.04050607Z')],
@@ -257,7 +268,8 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                           for call in self.node_setup.start.call_args_list])
 
     def test_no_new_node_when_ge_min_nodes_busy(self):
-        cloud_nodes = [testutil.cloud_node_mock(n) for n in range(1, 4)]
+        size = testutil.MockSize(2)
+        cloud_nodes = [testutil.cloud_node_mock(n, size=size) for n in range(1, 4)]
         arv_nodes = [testutil.arvados_node_mock(n, job_uuid=True)
                      for n in range(1, 4)]
         self.make_daemon(cloud_nodes, arv_nodes, [], min_nodes=2)
@@ -265,9 +277,10 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.assertEqual(0, self.node_setup.start.call_count)
 
     def test_no_new_node_when_max_nodes_busy(self):
-        self.make_daemon([testutil.cloud_node_mock(3)],
-                         [testutil.arvados_node_mock(3, job_uuid=True)],
-                         [testutil.MockSize(3)],
+        size = testutil.MockSize(3)
+        self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(3)],
+                         arvados_nodes=[testutil.arvados_node_mock(3, job_uuid=True)],
+                         want_sizes=[size],
                          max_nodes=1)
         self.stop_proxy(self.daemon)
         self.assertFalse(self.node_setup.start.called)
@@ -275,6 +288,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
     def start_node_boot(self, cloud_node=None, arv_node=None, id_num=1):
         if cloud_node is None:
             cloud_node = testutil.cloud_node_mock(id_num)
+        id_num = int(cloud_node.id)
         if arv_node is None:
             arv_node = testutil.arvados_node_mock(id_num)
         self.make_daemon(want_sizes=[testutil.MockSize(id_num)],
@@ -295,7 +309,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.update_cloud_nodes([cloud_node])
         self.monitor_list()[0].proxy().cloud_node_start_time = time.time()-1801
         self.daemon.update_server_wishlist(
-            [testutil.MockSize(1)]).get(self.TIMEOUT)
+            [testutil.MockSize(4)]).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
         self.assertEqual(2, self.node_setup.start.call_count)
 
@@ -483,10 +497,11 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.assertTrue(self.node_shutdown.start.called)
 
     def test_shutdown_declined_when_idle_and_job_queued(self):
-        cloud_nodes = [testutil.cloud_node_mock(n) for n in [3, 4]]
+        size = testutil.MockSize(1)
+        cloud_nodes = [testutil.cloud_node_mock(n, size=size) for n in [3, 4]]
         arv_nodes = [testutil.arvados_node_mock(3, job_uuid=True),
                      testutil.arvados_node_mock(4, job_uuid=None)]
-        self.make_daemon(cloud_nodes, arv_nodes, [testutil.MockSize(1)])
+        self.make_daemon(cloud_nodes, arv_nodes, [size])
         self.assertEqual(2, self.alive_monitor_count())
         for mon_ref in self.monitor_list():
             monitor = mon_ref.proxy()
@@ -514,7 +529,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.node_finished_shutdown(self.last_shutdown).get(self.TIMEOUT)
         self.assertEqual(0, self.alive_monitor_count())
 
-    def test_broken_node_blackholed_after_cancelled_shutdown(self):
+    def test_broken_node_not_counted(self):
         size = testutil.MockSize(8)
         cloud_node = testutil.cloud_node_mock(8, size=size)
         wishlist = [size]
@@ -526,7 +541,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         shutdown_proxy = self.node_shutdown.start().proxy
         shutdown_proxy().cloud_node.get.return_value = cloud_node
         shutdown_proxy().success.get.return_value = False
-        shutdown_proxy().cancel_reason.get.return_value = self.node_shutdown.NODE_BROKEN
+        self.cloud_factory().broken.return_value = True
         self.daemon.update_server_wishlist([]).get(self.TIMEOUT)
         self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
         self.daemon.node_finished_shutdown(shutdown_proxy()).get(self.TIMEOUT)

@@ -8,14 +8,14 @@ RUN yum -q -y install make automake gcc gcc-c++ libyaml-devel patch readline-dev
 RUN curl --silent --location https://rpm.nodesource.com/setup_6.x | bash - && yum install -y nodejs
 
 # Install golang binary
-ADD generated/go1.7.1.linux-amd64.tar.gz /usr/local/
-RUN ln -s /usr/local/go/bin/go* /usr/local/bin/
+ADD generated/go1.7.5.linux-amd64.tar.gz /usr/local/
+RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 
 # Install RVM
 RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
     curl -L https://get.rvm.io | bash -s stable && \
-    /usr/local/rvm/bin/rvm install 2.1 && \
-    /usr/local/rvm/bin/rvm alias create default ruby-2.1 && \
+    /usr/local/rvm/bin/rvm install 2.3 && \
+    /usr/local/rvm/bin/rvm alias create default ruby-2.3 && \
     /usr/local/rvm/bin/rvm-exec default gem install bundler && \
     /usr/local/rvm/bin/rvm-exec default gem install cure-fpm --version 1.6.0b
 

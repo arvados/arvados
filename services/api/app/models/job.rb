@@ -215,7 +215,8 @@ class Job < ArvadosModel
       else
         image_locator = nil
       end
-      filters << ["docker_image_locator", "=", image_locator]
+      filters << ["docker_image_locator", "=",
+                  Collection.docker_migration_pdh(read_users, image_locator)]
       if sdk_version = attrs[:runtime_constraints].andand["arvados_sdk_version"]
         filters += default_git_filters("arvados_sdk_version", "arvados", sdk_version)
       end
@@ -281,6 +282,39 @@ class Job < ArvadosModel
       [[attr_name, "=", commit_hash]]
     else
       []
+    end
+  end
+
+  def cancel(cascade: false, need_transaction: true)
+    if need_transaction
+      ActiveRecord::Base.transaction do
+        cancel(cascade: cascade, need_transaction: false)
+      end
+      return
+    end
+
+    if self.state.in?([Queued, Running])
+      self.state = Cancelled
+      self.save!
+    elsif self.state != Cancelled
+      raise InvalidStateTransitionError
+    end
+
+    return if !cascade
+
+    # cancel all children; they could be jobs or pipeline instances
+    children = self.components.andand.collect{|_, u| u}.compact
+
+    return if children.empty?
+
+    # cancel any child jobs
+    Job.where(uuid: children, state: [Queued, Running]).each do |job|
+      job.cancel(cascade: cascade, need_transaction: false)
+    end
+
+    # cancel any child pipelines
+    PipelineInstance.where(uuid: children, state: [PipelineInstance::RunningOnServer, PipelineInstance::RunningOnClient]).each do |pi|
+      pi.cancel(cascade: cascade, need_transaction: false)
     end
   end
 
@@ -390,10 +424,11 @@ class Job < ArvadosModel
   end
 
   def find_docker_image_locator
-    runtime_constraints['docker_image'] =
-        Rails.configuration.default_docker_image_for_jobs if ((runtime_constraints.is_a? Hash) and
-                                                              (runtime_constraints['docker_image']).nil? and
-                                                              Rails.configuration.default_docker_image_for_jobs)
+    if runtime_constraints.is_a? Hash
+      runtime_constraints['docker_image'] ||=
+        Rails.configuration.default_docker_image_for_jobs
+    end
+
     resolve_runtime_constraint("docker_image",
                                :docker_image_locator) do |image_search|
       image_tag = runtime_constraints['docker_image_tag']
@@ -403,6 +438,12 @@ class Job < ArvadosModel
         [false, "not found for #{image_search}"]
       end
     end
+    Rails.logger.info("docker_image_locator is #{docker_image_locator}")
+    if docker_image_locator && docker_image_locator_changed?
+      self.docker_image_locator =
+        Collection.docker_migration_pdh([current_user], docker_image_locator)
+    end
+    Rails.logger.info("docker_image_locator is #{docker_image_locator}")
   end
 
   def permission_to_update

@@ -1,4 +1,4 @@
-if not File.exists?('/usr/bin/git') then
+if not File.exist?('/usr/bin/git') then
   STDERR.puts "\nGit binary not found, aborting. Please install git and run gem build from a checked out copy of the git repository.\n\n"
   exit
 end
@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.authors     = ["Arvados Authors"]
   s.email       = 'gem-dev@curoverse.com'
   #s.bindir      = '.'
-  s.licenses    = ['Apache License, Version 2.0']
+  s.licenses    = ['Apache-2.0']
   s.files       = ["bin/arv", "bin/arv-run-pipeline-instance",
                    "bin/arv-crunch-job", "bin/arv-tag", "bin/crunch-job",
                    "LICENSE-2.0.txt"]
