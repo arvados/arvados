@@ -47,7 +47,7 @@ class Node < ArvadosModel
   def crunch_worker_state
     return 'down' if slot_number.nil?
     case self.info.andand['slurm_state']
-    when 'alloc', 'comp'
+    when 'alloc', 'comp', 'mix', 'drng'
       'busy'
     when 'idle'
       'idle'
@@ -102,7 +102,7 @@ class Node < ArvadosModel
 
     # Assign slot_number
     if self.slot_number.nil?
-      try_slot = 0
+      try_slot = 1
       begin
         self.slot_number = try_slot
         begin
