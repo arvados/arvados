@@ -22,7 +22,13 @@ class NoCrMountsAndWorkflowDefInFullTextSearchIndex < ActiveRecord::Migration
 
   def down
     fts_indexes.each do |t, i|
-      remove_index t.to_sym, :name => i
+      t.classify.constantize.reset_column_information
+      ActiveRecord::Base.connection.indexes(t).each do |idx|
+        if idx.name == i
+          remove_index t.to_sym, :name => i
+          break
+        end
+      end
     end
   end
 end
