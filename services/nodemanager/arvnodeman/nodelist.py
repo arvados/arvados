@@ -30,7 +30,10 @@ class ArvadosNodeListMonitorActor(clientactor.RemotePollLoopActor):
         nodestates = {}
         for out in sinfo_out.splitlines():
             nodename, state = out.split(" ", 2)
-            if state in ('alloc', 'comp'):
+            if state in ('alloc', 'alloc*',
+                         'comp',  'comp*',
+                         'mix',   'mix*',
+                         'drng',  'drng*'):
                 nodestates[nodename] = 'busy'
             elif state == 'idle':
                 nodestates[nodename] = 'idle'
