@@ -165,6 +165,7 @@ navbar:
       - install/crunch2-slurm/install-compute-node.html.textile.liquid
       - install/crunch2-slurm/install-dispatch.html.textile.liquid
       - install/crunch2-slurm/install-test.html.textile.liquid
+      - install/install-nodemanager.html.textile.liquid
     - Jobs API support (deprecated):
       - install/install-crunch-dispatch.html.textile.liquid
       - install/install-compute-node.html.textile.liquid
