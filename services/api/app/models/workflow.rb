@@ -39,4 +39,8 @@ class Workflow < ArvadosModel
       end
     end
   end
+
+  def self.full_text_searchable_columns
+    super - ["definition"]
+  end
 end

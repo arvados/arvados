@@ -133,6 +133,10 @@ class ContainerRequest < ArvadosModel
     update_attributes!(state: Final, output_uuid: out_coll, log_uuid: log_coll)
   end
 
+  def self.full_text_searchable_columns
+    super - ["mounts"]
+  end
+
   protected
 
   def fill_field_defaults
