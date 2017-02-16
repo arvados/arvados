@@ -102,7 +102,7 @@ class Node < ArvadosModel
 
     # Assign slot_number
     if self.slot_number.nil?
-      try_slot = 0
+      try_slot = 1
       begin
         self.slot_number = try_slot
         begin
