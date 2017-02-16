@@ -1,7 +1,9 @@
 require 'test_helper'
 require 'helpers/git_test_helper'
+require 'helpers/docker_migration_helper'
 
 class JobTest < ActiveSupport::TestCase
+  include DockerMigrationHelper
   include GitTestHelper
 
   BAD_COLLECTION = "#{'f' * 32}+0"
@@ -409,6 +411,60 @@ class JobTest < ActiveSupport::TestCase
     job.runtime_constraints.delete("docker_image")
     refute(job.valid?,
            "Job with SDK constraint valid after clearing Docker image")
+  end
+
+  test "use migrated docker image if requesting old-format image by tag" do
+    Rails.configuration.docker_image_formats = ['v2']
+    add_docker19_migration_link
+    job = Job.create!(
+      job_attrs(
+        script: 'foo',
+        runtime_constraints: {
+          'docker_image' => links(:docker_image_collection_tag).name}))
+    assert(job.valid?)
+    assert_equal(job.docker_image_locator, collections(:docker_image_1_12).portable_data_hash)
+  end
+
+  test "use migrated docker image if requesting old-format image by pdh" do
+    Rails.configuration.docker_image_formats = ['v2']
+    add_docker19_migration_link
+    job = Job.create!(
+      job_attrs(
+        script: 'foo',
+        runtime_constraints: {
+          'docker_image' => collections(:docker_image).portable_data_hash}))
+    assert(job.valid?)
+    assert_equal(job.docker_image_locator, collections(:docker_image_1_12).portable_data_hash)
+  end
+
+  [[:docker_image, :docker_image, :docker_image_1_12],
+   [:docker_image_1_12, :docker_image, :docker_image_1_12],
+   [:docker_image, :docker_image_1_12, :docker_image_1_12],
+   [:docker_image_1_12, :docker_image_1_12, :docker_image_1_12],
+  ].each do |existing_image, request_image, expect_image|
+    test "if a #{existing_image} job exists, #{request_image} yields #{expect_image} after migration" do
+      Rails.configuration.docker_image_formats = ['v1']
+      oldjob = Job.create!(
+        job_attrs(
+          script: 'foobar1',
+          runtime_constraints: {
+            'docker_image' => collections(existing_image).portable_data_hash}))
+      oldjob.reload
+      assert_equal(oldjob.docker_image_locator,
+                   collections(existing_image).portable_data_hash)
+
+      Rails.configuration.docker_image_formats = ['v2']
+      add_docker19_migration_link
+
+      newjob = Job.create!(
+        job_attrs(
+          script: 'foobar1',
+          runtime_constraints: {
+            'docker_image' => collections(request_image).portable_data_hash}))
+      newjob.reload
+      assert_equal(newjob.docker_image_locator,
+                   collections(expect_image).portable_data_hash)
+    end
   end
 
   test "can't create job with SDK version assigned directly" do
