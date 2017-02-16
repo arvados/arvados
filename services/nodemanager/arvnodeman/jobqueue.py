@@ -3,6 +3,7 @@
 from __future__ import absolute_import, print_function
 
 import logging
+import subprocess
 
 from . import clientactor
 from .config import ARVADOS_ERRORS
@@ -109,7 +110,24 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
         self._calculator = server_calc
 
     def _send_request(self):
-        return self._client.jobs().queue().execute()['items']
+        # cpus, memory, tempory disk space, reason, job name
+        squeue_out = subprocess.check_output(["squeue", "--state=PENDING", "--noheader", "--format=%c %m %d %r %j"])
+        queuelist = []
+        for out in squeue_out.splitlines():
+            cpu, ram, disk, reason, jobname = out.split(" ", 4)
+            if reason == "Resources":
+                queuelist.append({
+                    "uuid": jobname,
+                    "runtime_constraints": {
+                        "min_cores_per_node": cpu,
+                        "min_ram_mb_per_node": ram,
+                        "min_scratch_mb_per_node": disk
+                    }
+                })
+
+        queuelist.extend(self._client.jobs().queue().execute()['items'])
+
+        return queuelist
 
     def _got_response(self, queue):
         server_list = self._calculator.servers_for_queue(queue)

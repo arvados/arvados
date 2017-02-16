@@ -95,7 +95,7 @@ class CrunchDispatch
       # hasn't been able to communicate with it recently.
       state.sub!(/^idle\*/, "down")
       state.sub!(/\W+$/, "")
-      state = "down" unless %w(idle alloc down).include?(state)
+      state = "down" unless %w(idle alloc comp mix drng down).include?(state)
       slurm_nodes[hostname] = {state: state, job: nil}
     end
     each_slurm_line("squeue", "%j") do |hostname, job_uuid|
