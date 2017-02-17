@@ -39,3 +39,5 @@ var (
 
 // BlobSigningKey used by the test servers
 const BlobSigningKey = "zfhgfenhffzltr9dixws36j1yhksjoll2grmku38mi7yxd66h5j4q9w4jzanezacp8s6q0ro3hxakfye02152hncy6zml2ed0uc"
+
+const QueuedContainerUuid = "zzzzz-dz642-queuedcontainer"

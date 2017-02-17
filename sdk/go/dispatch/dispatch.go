@@ -21,6 +21,7 @@ const (
 	Cancelled = arvados.ContainerStateCancelled
 )
 
+// Dispatcher struct
 type Dispatcher struct {
 	Arv *arvadosclient.ArvadosClient
 
@@ -202,6 +203,38 @@ func (d *Dispatcher) Unlock(uuid string) error {
 	return d.Arv.Call("POST", "containers", uuid, "unlock", nil, nil)
 }
 
+// TrackContainer starts a tracker for given uuid if one is not already existing, despite its state.
+func (d *Dispatcher) TrackContainer(uuid string) {
+	if d.trackers == nil {
+		d.trackers = make(map[string]*runTracker)
+	}
+
+	_, alreadyTracking := d.trackers[uuid]
+	if alreadyTracking {
+		return
+	}
+
+	d.mtx.Lock()
+	defer d.mtx.Unlock()
+
+	_, alreadyTracking = d.trackers[uuid]
+	if alreadyTracking {
+		return
+	}
+
+	var cntr arvados.Container
+	err := d.Arv.Call("GET", "containers", uuid, "", nil, &cntr)
+	if err != nil {
+		log.Printf("Error getting container %s: %s", uuid, err)
+		return
+	}
+
+	tracker := &runTracker{updates: make(chan arvados.Container, 1)}
+	tracker.updates <- cntr
+
+	d.trackers[uuid] = tracker
+}
+
 type runTracker struct {
 	closing bool
 	updates chan arvados.Container
@@ -224,9 +257,4 @@ func (tracker *runTracker) update(c arvados.Container) {
 	default:
 	}
 	tracker.updates <- c
-}
-
-// Start a tracker for the given uuid if one is not already existing, despite its state.
-// its vs. it's -- episode 5 from Series 1 of Netflix' "A Series of Unfortunate Events"
-func (dispatcher *Dispatcher) TrackContainer(uuid string) {
 }
