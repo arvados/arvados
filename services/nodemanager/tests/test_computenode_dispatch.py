@@ -273,11 +273,13 @@ class ComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
 
 class ComputeNodeUpdateActorTestCase(testutil.ActorTestMixin,
                                      unittest.TestCase):
+    ACTOR_CLASS = dispatch.ComputeNodeUpdateActor
+
     def make_actor(self):
         self.driver = mock.MagicMock(name='driver_mock')
-        self.updater = dispatch.ComputeNodeUpdateActor.start(self.driver).proxy()
+        self.updater = self.ACTOR_CLASS.start(self.driver).proxy()
 
-    def test_node_sync(self):
+    def test_node_sync(self, *args):
         self.make_actor()
         cloud_node = testutil.cloud_node_mock()
         arv_node = testutil.arvados_node_mock()
@@ -285,7 +287,7 @@ class ComputeNodeUpdateActorTestCase(testutil.ActorTestMixin,
         self.driver().sync_node.assert_called_with(cloud_node, arv_node)
 
     @testutil.no_sleep
-    def test_node_sync_error(self):
+    def test_node_sync_error(self, *args):
         self.make_actor()
         cloud_node = testutil.cloud_node_mock()
         arv_node = testutil.arvados_node_mock()

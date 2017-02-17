@@ -95,7 +95,6 @@ type ContainerRunner struct {
 	SigChan        chan os.Signal
 	ArvMountExit   chan error
 	finalState     string
-	trashLifetime  time.Duration
 
 	statLogger   io.WriteCloser
 	statReporter *crunchstat.Reporter
@@ -708,7 +707,7 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{
 			"collection": arvadosclient.Dict{
-				"trash_at":      time.Now().Add(runner.trashLifetime).Format(time.RFC3339),
+				"is_trashed":    true,
 				"name":          "output for " + runner.Container.UUID,
 				"manifest_text": manifestText}},
 		&response)
@@ -758,14 +757,6 @@ func (runner *ContainerRunner) getCollectionManifestForPath(mnt arvados.Mount, b
 		return "", fmt.Errorf("Error parsing manifest for %v: %v", mnt.PortableDataHash, extracted.Err.Error())
 	}
 	return extracted.Text, nil
-}
-
-func (runner *ContainerRunner) loadDiscoveryVars() {
-	tl, err := runner.ArvClient.Discovery("defaultTrashLifetime")
-	if err != nil {
-		log.Fatalf("getting defaultTrashLifetime from discovery document: %s", err)
-	}
-	runner.trashLifetime = time.Duration(tl.(float64)) * time.Second
 }
 
 func (runner *ContainerRunner) CleanupDirs() {
@@ -820,7 +811,7 @@ func (runner *ContainerRunner) CommitLogs() error {
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{
 			"collection": arvadosclient.Dict{
-				"trash_at":      time.Now().Add(runner.trashLifetime).Format(time.RFC3339),
+				"is_trashed":    true,
 				"name":          "logs for " + runner.Container.UUID,
 				"manifest_text": mt}},
 		&response)
@@ -1015,7 +1006,6 @@ func NewContainerRunner(api IArvadosClient,
 	cr.Container.UUID = containerUUID
 	cr.CrunchLog = NewThrottledLogger(cr.NewLogWriter("crunch-run"))
 	cr.CrunchLog.Immediate = log.New(os.Stderr, containerUUID+" ", 0)
-	cr.loadDiscoveryVars()
 	return cr
 }
 

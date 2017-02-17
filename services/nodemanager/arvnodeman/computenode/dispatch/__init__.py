@@ -229,7 +229,9 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
                 self.cancel_shutdown("No longer eligible for shut down because %s" % reason,
                                      try_resume=True)
                 return
+        self._destroy_node()
 
+    def _destroy_node(self):
         self._logger.info("Starting shutdown")
         arv_node = self._arvados_node()
         if self._cloud.destroy_node(self.cloud_node):

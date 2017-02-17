@@ -3,6 +3,7 @@
 from __future__ import absolute_import, print_function
 
 import unittest
+import mock
 
 import arvnodeman.jobqueue as jobqueue
 from . import testutil
@@ -121,8 +122,24 @@ class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
         super(JobQueueMonitorActorTestCase, self).build_monitor(*args, **kwargs)
         self.client.jobs().queue().execute.side_effect = side_effect
 
-    def test_subscribers_get_server_lists(self):
+    @mock.patch("subprocess.check_output")
+    def test_subscribers_get_server_lists(self, mock_squeue):
+        mock_squeue.return_value = ""
+
         self.build_monitor([{'items': [1, 2]}], self.MockCalculator())
+        self.monitor.subscribe(self.subscriber).get(self.TIMEOUT)
+        self.stop_proxy(self.monitor)
+        self.subscriber.assert_called_with([testutil.MockSize(1),
+                                            testutil.MockSize(2)])
+
+    @mock.patch("subprocess.check_output")
+    def test_squeue_server_list(self, mock_squeue):
+        mock_squeue.return_value = """1 0 0 Resources zzzzz-zzzzz-zzzzzzzzzzzzzzy
+2 0 0 Resources zzzzz-zzzzz-zzzzzzzzzzzzzzz
+"""
+
+        super(JobQueueMonitorActorTestCase, self).build_monitor(jobqueue.ServerCalculator(
+            [(testutil.MockSize(n), {'cores': n, 'ram': n, 'scratch': n}) for n in range(1, 3)]))
         self.monitor.subscribe(self.subscriber).get(self.TIMEOUT)
         self.stop_proxy(self.monitor)
         self.subscriber.assert_called_with([testutil.MockSize(1),
