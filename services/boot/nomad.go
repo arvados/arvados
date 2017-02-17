@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"sync"
@@ -36,6 +37,11 @@ func (nb *nomadBooter) Boot(ctx context.Context) error {
 		return err
 	}
 
+	masterToken, err := ioutil.ReadFile(cfg.masterTokenFile())
+	if err != nil {
+		return err
+	}
+
 	dataDir := path.Join(cfg.DataDir, "nomad")
 	if err := os.MkdirAll(dataDir, 0700); err != nil {
 		return err
@@ -51,6 +57,7 @@ func (nb *nomadBooter) Boot(ctx context.Context) error {
 		},
 		"consul": map[string]interface{}{
 			"address": fmt.Sprintf("127.0.0.1:%d", cfg.Ports.ConsulHTTP),
+			"token":   string(masterToken),
 		},
 		"data_dir":   dataDir,
 		"datacenter": cfg.SiteID,

@@ -128,31 +128,54 @@ func (vb *vaultBooter) tryInit(ctx context.Context) error {
 		return fmt.Errorf("vault unseal failed!")
 	}
 
+	// Use master token to create a management token
 	master, err := consul.master(ctx)
 	if err != nil {
 		return err
 	}
-	token, _, err := master.ACL().Create(&consulAPI.ACLEntry{Name: "vault", Type: "management"}, nil)
+	mgmtToken, _, err := master.ACL().Create(&consulAPI.ACLEntry{Name: "vault", Type: "management"}, nil)
 	if err != nil {
 		return err
 	}
-	err = waitCheck(ctx, 30*time.Second, func(context.Context) error {
+	if err = atomicWriteFile(path.Join(cfg.DataDir, "vault-mgmt-token.txt"), []byte(mgmtToken), 0400); err != nil {
+		return err
+	}
+
+	// Mount+configure consul backend
+	if err = waitCheck(ctx, 30*time.Second, func(context.Context) error {
+		// Typically this first fails "500 node not active but
+		// active node not found" but then succeeds.
 		return vault.Sys().Mount("consul", &api.MountInput{Type: "consul"})
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 	_, err = vault.Logical().Write("consul/config/access", map[string]interface{}{
 		"address": fmt.Sprintf("127.0.0.1:%d", cfg.Ports.ConsulHTTP),
-		"token":   string(token),
+		"token":   string(mgmtToken),
 	})
 	if err != nil {
 		return err
 	}
+
+	// Create a role
 	_, err = vault.Logical().Write("consul/roles/write-all", map[string]interface{}{
 		"policy": base64.StdEncoding.EncodeToString([]byte(`key "" { policy = "write" }`)),
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Generate a new token with the write-all role
+	secret, err := vault.Logical().Read("consul/creds/write-all")
+	if err != nil {
+		return err
+	}
+	token, ok := secret.Data["token"].(string)
+	if !ok {
+		return fmt.Errorf("secret token broken?? %+v", secret)
+	}
+	log.Printf("Vault supplied token with lease duration %s (renewable=%v): %q", time.Duration(secret.LeaseDuration)*time.Second, secret.Renewable, token)
+	return nil
 }
 
 func (vb *vaultBooter) client(ctx context.Context) (*api.Client, error) {
