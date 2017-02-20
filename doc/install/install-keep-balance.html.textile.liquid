@@ -6,6 +6,11 @@ title: Install Keep-balance
 
 Keep-balance deletes unreferenced and overreplicated blocks from Keep servers, makes additional copies of underreplicated blocks, and moves blocks into optimal locations as needed (e.g., after adding new servers).
 
+{% include 'notebox_begin' %}
+
+If you are installing keep-balance on an existing system with valuable data, you can run keep-balance in "dry run" mode first and review its logs as a precaution. To do this, use the @keepstore -never-delete=true@ flag or remove the @-commit-trash@ flag from your keep-balance startup script.
+
+{% include 'notebox_end' %}
 
 h2. Install keep-balance
 
