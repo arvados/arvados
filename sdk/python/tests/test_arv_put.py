@@ -261,12 +261,19 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
             data = random.choice(['x', 'y', 'z']) * 1024 * 1024 # 1 MB
             fileobj.write(data)
         fileobj.close()
+        # Temp dir containing small files to be repacked
+        self.small_files_dir = tempfile.mkdtemp()
+        data = 'y' * 1024 * 1024 # 1 MB
+        for i in range(1, 70):
+            with open(os.path.join(self.small_files_dir, str(i)), 'w') as f:
+                f.write(data + str(i))
         self.arvfile_write = getattr(arvados.arvfile.ArvadosFileWriter, 'write')
 
     def tearDown(self):
         super(ArvPutUploadJobTest, self).tearDown()
         shutil.rmtree(self.tempdir)
         os.unlink(self.large_file_name)
+        shutil.rmtree(self.small_files_dir)
 
     def test_writer_works_without_cache(self):
         cwriter = arv_put.ArvPutUploadJob(['/dev/null'], resume=False)
@@ -336,6 +343,26 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         self.assertEqual(writer.bytes_written + writer2.bytes_written - writer2.bytes_skipped,
                          os.path.getsize(self.large_file_name))
         writer2.destroy_cache()
+
+    # Test for bug #11002
+    def test_graceful_exit_while_repacking_small_blocks(self):
+        def wrapped_delete(*args, **kwargs):
+            raise SystemExit("Simulated error")
+
+        with mock.patch('arvados.arvfile._BlockManager._delete_bufferblock',
+                        autospec=True) as mocked_delete:
+            mocked_delete.side_effect = wrapped_delete
+            # Upload a little more than 1 block, wrapped_delete will make the first block
+            # commit to fail.
+            # arv-put should not exit with an exception by trying to commit the collection
+            # as it's in an inconsistent state.
+            writer = arv_put.ArvPutUploadJob([self.small_files_dir],
+                                             replication_desired=1)
+            try:
+                writer.start(save_collection=False)
+            except:
+                self.fail("arv-put command is trying to use a corrupted BlockManager. See https://dev.arvados.org/issues/11002")
+        writer.destroy_cache()
 
     def test_no_resume_when_asked(self):
         def wrapped_write(*args, **kwargs):
