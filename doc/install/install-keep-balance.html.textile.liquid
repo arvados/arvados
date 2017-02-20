@@ -1,0 +1,155 @@
+---
+layout: default
+navsection: installguide
+title: Install Keep-balance
+...
+
+Keep-balance deletes unreferenced and overreplicated blocks from Keep servers, makes additional copies of underreplicated blocks, and moves blocks into optimal locations as needed (e.g., after adding new servers).
+
+
+h2. Install keep-balance
+
+Keep-balance can be installed anywhere with access to Keep services. Typically it runs on the same host as keepproxy.
+
+On Debian-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install keep-balance</span>
+</code></pre>
+</notextile>
+
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install keep-balance</span>
+</code></pre>
+</notextile>
+
+Verify that @keep-balance@ is functional:
+
+<notextile>
+<pre><code>~$ <span class="userinput">keep-balance -h</span>
+...
+Usage: keep-balance [options]
+
+Options:
+  -commit-pulls
+        send pull requests (make more replicas of blocks that are underreplicated or are not in optimal rendezvous probe order)
+  -commit-trash
+        send trash requests (delete unreferenced old blocks, and excess replicas of overreplicated blocks)
+...
+</code></pre>
+</notextile>
+
+h3. Create a keep-balance token
+
+Create a privileged Arvados API token for use by keep-balance. *On the API server*, run:
+
+<notextile>
+<pre><code>apiserver:~$ <span class="userinput">cd /var/www/arvados-api/current</span>
+apiserver:/var/www/arvados-api/current$ <span class="userinput">sudo -u <b>webserver-user</b> RAILS_ENV=production bundle exec script/create_superuser_token.rb</span>
+zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+</code></pre>
+</notextile>
+
+h3. Create a configuration file
+
+Create @/etc/arvados/keep-balance/keep-balance.yml@ using the token you generated in the previous step.  Follow this YAML format:
+
+<notextile>
+<pre><code>Client:
+  APIHost: <span class="userinput">uuid_prefix.your.domain</span>:443
+  AuthToken: zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+KeepServiceTypes:
+  - disk
+RunPeriod: 10m
+CollectionBatchSize: 100000
+CollectionBuffers: 1000
+</code></pre>
+</notextile>
+
+If your API server's SSL certificate is not signed by a recognized CA, add the @Insecure@ option to the @Client@ section:
+
+<notextile>
+<pre><code>Client:
+  <span class="userinput">Insecure: true</span>
+  APIHost: ...
+</code></pre>
+</notextile>
+
+h3. Start the service (option 1: systemd)
+
+If your system does not use systemd, skip this section and follow the "runit instructions":#runit instead.
+
+If your system uses systemd, the keep-balance service should already be set up. Start it and check its status:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo systemctl restart keep-balance</span>
+~$ <span class="userinput">sudo systemctl status keep-balance</span>
+&#x25cf; keep-balance.service - Arvados Keep Balance
+   Loaded: loaded (/lib/systemd/system/keep-balance.service; enabled)
+   Active: active (running) since Sat 2017-02-14 18:46:01 UTC; 3 days ago
+     Docs: https://doc.arvados.org/
+ Main PID: 541 (keep-balance)
+   CGroup: /system.slice/keep-balance.service
+           └─541 /usr/bin/keep-balance -commit-pulls -commit-trash
+
+Feb 14 18:46:01 zzzzz.arvadosapi.com keep-balance[541]: 2017/02/14 18:46:01 starting up: will scan every 10m0s and on SIGUSR1
+Feb 14 18:56:01 zzzzz.arvadosapi.com keep-balance[541]: 2017/02/14 18:56:01 Run: start
+Feb 14 18:56:01 zzzzz.arvadosapi.com keep-balance[541]: 2017/02/14 18:56:01 skipping zzzzz-bi6l4-rbtrws2jxul6i4t with service type "proxy"
+Feb 14 18:56:01 zzzzz.arvadosapi.com keep-balance[541]: 2017/02/14 18:56:01 clearing existing trash lists, in case the new rendezvous order differs from previous run
+</code></pre>
+</notextile>
+
+h3(#runit). Start the service (option 2: runit)
+
+Install runit to supervise the keep-balance daemon.  {% include 'install_runit' %}
+
+Create a supervised service.
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo mkdir /etc/service/keep-balance</span>
+~$ <span class="userinput">cd /etc/service/keep-balance</span>
+~$ <span class="userinput">sudo mkdir log log/main</span>
+~$ <span class="userinput">printf '#!/bin/sh\nexec keep-balance -commit-pulls -commit-trash 2>&1\n' | sudo tee run</span>
+~$ <span class="userinput">printf '#!/bin/sh\nexec svlogd main\n' | sudo tee log/run</span>
+~$ <span class="userinput">sudo chmod +x run log/run</span>
+~$ <span class="userinput">sudo sv exit .</span>
+~$ <span class="userinput">cd -</span>
+</code></pre>
+</notextile>
+
+Use @sv stat@ and check the log file to verify the service is running.
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo sv stat /etc/service/keep-balance</span>
+run: /etc/service/keep-balance: (pid 12520) 2s; run: log: (pid 12519) 2s
+~$ <span class="userinput">tail /etc/service/keep-balance/log/main/current</span>
+2017/02/14 18:46:01 starting up: will scan every 10m0s and on SIGUSR1
+2017/02/14 18:56:01 Run: start
+2017/02/14 18:56:01 skipping zzzzz-bi6l4-rbtrws2jxul6i4t with service type "proxy"
+2017/02/14 18:56:01 clearing existing trash lists, in case the new rendezvous order differs from previous run
+</code></pre>
+</notextile>
+
+h2. Enable delete operations on keepstore volumes
+
+Ensure your keepstore services have the "delete" operation enabled. Otherwise, even when unneeded data is identified by keep-balance, it will never be deleted from the underlying storage devices.
+
+Either use the @EnableDelete@ flag in your YAML configuration file @/etc/arvados/keepstore/keepstore.yml@:
+
+<notextile>
+<pre><code>...
+BlobSigningKeyFile: /etc/keepstore/blob-signing.key
+<span class="userinput">EnableDelete: true</span>
+Listen: :25107
+...
+</code></pre>
+</notextile>
+
+Or use the @-never-delete=false@ command line flag in your run script:
+
+<notextile>
+<pre><code>keepstore <span class="userinput">-never-delete=false</span> -volume=...
+</code></pre>
+</notextile>
