@@ -6,6 +6,7 @@ import datetime
 import errno
 import json
 import os
+import re
 import subprocess
 import sys
 import tarfile
@@ -322,6 +323,68 @@ def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None)
 
 def items_owned_by(owner_uuid, arv_items):
     return (item for item in arv_items if item['owner_uuid'] == owner_uuid)
+
+def _uuid2pdh(api, uuid):
+    return api.collections().list(
+        filters=[['uuid', '=', uuid]],
+        select=['portable_data_hash'],
+    ).execute()['items'][0]['portable_data_hash']
+
+_migration_link_class = 'docker_image_migration'
+_migration_link_name = 'migrate_1.9_1.10'
+def _migrate19_link(api, root_uuid, old_uuid, new_uuid):
+    old_pdh = _uuid2pdh(api, old_uuid)
+    new_pdh = _uuid2pdh(api, new_uuid)
+    if not api.links().list(filters=[
+            ['owner_uuid', '=', root_uuid],
+            ['link_class', '=', _migration_link_class],
+            ['name', '=', _migration_link_name],
+            ['tail_uuid', '=', old_pdh],
+            ['head_uuid', '=', new_pdh]]).execute()['items']:
+        print >>sys.stderr, 'Creating migration link {} -> {}: '.format(
+            old_pdh, new_pdh),
+        link = api.links().create(body={
+            'owner_uuid': root_uuid,
+            'link_class': _migration_link_class,
+            'name': _migration_link_name,
+            'tail_uuid': old_pdh,
+            'head_uuid': new_pdh,
+        }).execute()
+        print >>sys.stderr, '{}'.format(link['uuid'])
+        return link
+
+def migrate19():
+    api = arvados.api('v1')
+    user = api.users().current().execute()
+    if not user['is_admin']:
+        raise Exception("This command requires an admin token")
+    root_uuid = user['uuid'][:12] + '000000000000000'
+    new_image_uuids = {}
+    images = list_images_in_arv(api, 2)
+    is_new = lambda img: img['dockerhash'].startswith('sha256:')
+
+    count_new = 0
+    for uuid, img in images:
+        if not re.match(r'^[0-9a-f]{64}$', img["tag"]):
+            continue
+        key = (img["repo"], img["tag"])
+        if is_new(img) and key not in new_image_uuids:
+            count_new += 1
+            new_image_uuids[key] = uuid
+
+    count_migrations = 0
+    new_links = []
+    for uuid, img in images:
+        key = (img['repo'], img['tag'])
+        if not is_new(img) and key in new_image_uuids:
+            count_migrations += 1
+            link = _migrate19_link(api, root_uuid, uuid, new_image_uuids[key])
+            if link:
+                new_links.append(link)
+
+    print >>sys.stderr, "=== {} new-format images, {} migrations detected, " \
+        "{} links added.".format(count_new, count_migrations, len(new_links))
+    return new_links
 
 def main(arguments=None, stdout=sys.stdout):
     args = arg_parser.parse_args(arguments)

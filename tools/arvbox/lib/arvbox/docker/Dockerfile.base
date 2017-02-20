@@ -17,28 +17,26 @@ RUN apt-get clean && \
     linkchecker python3-virtualenv python-virtualenv xvfb iceweasel && \
     apt-get clean
 
-ENV GOVERSION 1.7.3
+ENV GOVERSION 1.7.5
 
 # Install golang binary
-RUN cd /usr/local && \
-    curl -O http://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz && \
-    tar -xzf go${GOVERSION}.linux-amd64.tar.gz && \
-    rm go${GOVERSION}.linux-amd64.tar.gz
+RUN curl -f http://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | \
+    tar -C /usr/local -xzf -
 
 ENV PATH ${PATH}:/usr/local/go/bin
 
-ENV RUBYVERSION 2.1.8
+ENV RUBYVERSION_MINOR 2.3
+ENV RUBYVERSION 2.3.3
 
 # Install Ruby from source
-RUN cd /usr/local/lib && \
- curl -O http://cache.ruby-lang.org/pub/ruby/2.1/ruby-${RUBYVERSION}.tar.gz && \
- tar xzf ruby-${RUBYVERSION}.tar.gz && \
+RUN cd /tmp && \
+ curl -f http://cache.ruby-lang.org/pub/ruby/${RUBYVERSION_MINOR}/ruby-${RUBYVERSION}.tar.gz | tar -xzf - && \
  cd ruby-${RUBYVERSION} && \
  ./configure --disable-install-doc && \
  make && \
  make install && \
- cd /usr/local/lib && \
- rm -rf ruby-${RUBYVERSION}.tar.gz ruby-${RUBYVERSION}
+ cd /tmp && \
+ rm -rf ruby-${RUBYVERSION}
 
 ENV GEM_HOME /var/lib/gems
 ENV GEM_PATH /var/lib/gems
@@ -54,7 +52,8 @@ RUN apt-key adv --keyserver hkp://pool.sks-keyservers.net:80 --recv-keys 58118E8
 RUN mkdir -p /etc/apt/sources.list.d && \
     echo deb https://apt.dockerproject.org/repo debian-jessie main > /etc/apt/sources.list.d/docker.list && \
     apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -yq install docker-engine=1.9.1-0~jessie
+    apt-get -yq install docker-engine=1.9.1-0~jessie && \
+    apt-get clean
 
 RUN rm -rf /var/lib/postgresql && mkdir -p /var/lib/postgresql
 

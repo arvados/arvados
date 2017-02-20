@@ -13,6 +13,7 @@ import unittest
 
 import arvados.commands.keepdocker as arv_keepdocker
 import arvados_testutil as tutil
+import run_test_server
 
 
 class StopTest(Exception):
@@ -36,6 +37,22 @@ class ArvKeepdockerTestCase(unittest.TestCase):
                 self.run_arv_keepdocker(['--version'])
         self.assertEqual(out.getvalue(), '')
         self.assertRegexpMatches(err.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
+
+    def test_migrate19(self):
+        try:
+            sys.argv = ['arv-migrate-docker19']
+
+            added = arv_keepdocker.migrate19()
+            self.assertEqual(len(added), 1)
+            self.assertEqual(added[0]['link_class'], 'docker_image_migration')
+            self.assertEqual(added[0]['name'], 'migrate_1.9_1.10')
+            self.assertEqual(added[0]['tail_uuid'], 'fa3c1a9cb6783f85f2ecda037e07b8c3+167')
+            self.assertEqual(added[0]['head_uuid'], 'd740a57097711e08eb9b2a93518f20ab+174')
+
+            added = arv_keepdocker.migrate19()
+            self.assertEqual(added, [])
+        finally:
+            run_test_server.reset()
 
     @mock.patch('arvados.commands.keepdocker.find_image_hashes',
                 return_value=['abc123'])

@@ -374,7 +374,7 @@ class TestSubmit(unittest.TestCase):
         expect_pipeline["name"] = "hello job 123"
 
         stubs.api.pipeline_instances().create.assert_called_with(
-            body=expect_pipeline)
+            body=JsonDiffMatcher(expect_pipeline))
         self.assertEqual(capture_stdout.getvalue(),
                          stubs.expect_pipeline_uuid + '\n')
 
