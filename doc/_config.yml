@@ -162,6 +162,7 @@ navbar:
       - install/install-keep-balance.html.textile.liquid
     - Containers API support on SLURM:
       - install/crunch2-slurm/install-prerequisites.html.textile.liquid
+      - install/crunch2-slurm/install-slurm.html.textile.liquid
       - install/crunch2-slurm/install-compute-node.html.textile.liquid
       - install/crunch2-slurm/install-dispatch.html.textile.liquid
       - install/crunch2-slurm/install-test.html.textile.liquid

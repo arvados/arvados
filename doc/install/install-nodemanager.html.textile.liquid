@@ -6,6 +6,8 @@ title: Install Node Manager
 
 Arvados Node Manager provides elastic computing for Arvados and SLURM by creating and destroying virtual machines on demand.  Node Manager currently supports Amazon Web Services (AWS), Google Cloud Platform (GCP) and Microsoft Azure.
 
+Note: node manager is only required for elastic computing cloud environments.  Fixed clusters do not require node manager.
+
 h2. Install
 
 Node manager may run anywhere.  It must be able to communicate with the cluster's SLURM controller using the command line tools @sinfo@, @squeue@ and @scontrol@.
@@ -24,7 +26,15 @@ On Red Hat-based systems:
 </code></pre>
 </notextile>
 
-h2. Configure
+h2. Create compute image
+
+First, create a virtual machine operating system image that will be used to
+initialize new compute nodes.  This must have @slurm@ installed with a correct
+@slurm.conf@.
+
+Configure node manage as described below to use this compute image.
+
+h2. Configure node manager
 
 The configuration file at @/etc/arvados-node-manager/config.ini@ .  Some configuration details are specific to the cloud provider you are using:
 
@@ -528,3 +538,7 @@ price = 1.12
 </pre>
 
 h2. Running
+
+<pre>
+$ arvados-node-manager --config /etc/arvados-node-manager/config.ini
+</pre>
