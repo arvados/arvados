@@ -346,13 +346,13 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
 
     # Test for bug #11002
     def test_graceful_exit_while_repacking_small_blocks(self):
-        def wrapped_delete(*args, **kwargs):
-            raise SystemExit("Simulated error")
+        def wrapped_commit(*args, **kwargs):
+            raise Exception("Simulated error")
 
-        with mock.patch('arvados.arvfile._BlockManager._delete_bufferblock',
-                        autospec=True) as mocked_delete:
-            mocked_delete.side_effect = wrapped_delete
-            # Upload a little more than 1 block, wrapped_delete will make the first block
+        with mock.patch('arvados.arvfile._BlockManager.commit_bufferblock',
+                        autospec=True) as mocked_commit:
+            mocked_commit.side_effect = wrapped_commit
+            # Upload a little more than 1 block, wrapped_commit will make the first block
             # commit to fail.
             # arv-put should not exit with an exception by trying to commit the collection
             # as it's in an inconsistent state.
@@ -360,7 +360,7 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
                                              replication_desired=1)
             try:
                 writer.start(save_collection=False)
-            except:
+            except AttributeError:
                 self.fail("arv-put command is trying to use a corrupted BlockManager. See https://dev.arvados.org/issues/11002")
         writer.destroy_cache()
 
