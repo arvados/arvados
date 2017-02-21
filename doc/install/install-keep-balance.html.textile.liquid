@@ -4,7 +4,7 @@ navsection: installguide
 title: Install Keep-balance
 ...
 
-Keep-balance deletes unreferenced and overreplicated blocks from Keep servers, makes additional copies of underreplicated blocks, and moves blocks into optimal locations as needed (e.g., after adding new servers).
+Keep-balance deletes unreferenced and overreplicated blocks from Keep servers, makes additional copies of underreplicated blocks, and moves blocks into optimal locations as needed (e.g. after adding new servers).
 
 {% include 'notebox_begin' %}
 
@@ -14,7 +14,7 @@ If you are installing keep-balance on an existing system with valuable data, you
 
 h2. Install keep-balance
 
-Keep-balance can be installed anywhere with access to Keep services. Typically it runs on the same host as keepproxy.
+Keep-balance can be installed anywhere with network access to Keep services. Typically it runs on the same host as keepproxy.
 
 On Debian-based systems:
 
@@ -59,7 +59,7 @@ zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 
 h3. Create a configuration file
 
-Create @/etc/arvados/keep-balance/keep-balance.yml@ using the token you generated in the previous step.  Follow this YAML format:
+On the host running keep-balance, create @/etc/arvados/keep-balance/keep-balance.yml@ using the token you generated in the previous step.  Follow this YAML format:
 
 <notextile>
 <pre><code>Client:
