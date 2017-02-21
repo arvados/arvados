@@ -92,15 +92,16 @@ class Container < ArvadosModel
       where('runtime_constraints = ?', self.deep_sort_hash(attrs[:runtime_constraints]).to_yaml)
 
     # Check for Completed candidates whose output and log are both readable.
-    completed = candidates.where(state: Complete).where(exit_code: 0)
     select_readable_pdh = Collection.
       readable_by(current_user).
       select(:portable_data_hash).
       to_sql
-    usable = completed.
-      order('finished_at ASC').
+    usable = candidates.
+      where(state: Complete).
+      where(exit_code: 0).
       where("log IN (#{select_readable_pdh})").
       where("output IN (#{select_readable_pdh})").
+      order('finished_at ASC').
       limit(1).
       first
     return usable if usable
