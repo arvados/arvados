@@ -391,6 +391,7 @@ class ArvPutUploadJob(object):
         self._upload_started = False
         self.logger = logger
         self.dry_run = dry_run
+        self._checkpoint_before_quit = True
 
         if not self.use_cache and self.resume:
             raise ArvPutArgumentConflict('resume cannot be True when use_cache is False')
@@ -447,20 +448,21 @@ class ArvPutUploadJob(object):
             # Actual file upload
             self._upload_started = True # Used by the update thread to start checkpointing
             self._upload_files()
+        except KeyboardInterrupt:
+            self.logger.warning("User interrupt request, cleaning up before exiting.")
+            self._checkpoint_before_quit = False
+            raise
         finally:
             if not self.dry_run:
                 # Stop the thread before doing anything else
                 self._stop_checkpointer.set()
                 self._checkpointer.join()
-                try:
+                if self._checkpoint_before_quit:
                     # Commit all pending blocks & one last _update()
                     self._local_collection.manifest_text()
                     self._update(final=True)
                     if save_collection:
                         self.save_collection()
-                except AttributeError:
-                    # Exception caught in inconsistent state, finish as is.
-                    self.logger.warning("Couldn't save last checkpoint while exiting.")
             if self.use_cache:
                 self._cache_file.close()
 
