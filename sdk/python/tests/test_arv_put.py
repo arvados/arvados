@@ -347,7 +347,7 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
     # Test for bug #11002
     def test_graceful_exit_while_repacking_small_blocks(self):
         def wrapped_commit(*args, **kwargs):
-            raise Exception("Simulated error")
+            raise SystemExit("Simulated error")
 
         with mock.patch('arvados.arvfile._BlockManager.commit_bufferblock',
                         autospec=True) as mocked_commit:
@@ -359,7 +359,8 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
             writer = arv_put.ArvPutUploadJob([self.small_files_dir],
                                              replication_desired=1)
             try:
-                writer.start(save_collection=False)
+                with self.assertRaises(SystemExit):
+                    writer.start(save_collection=False)
             except AttributeError:
                 self.fail("arv-put command is trying to use a corrupted BlockManager. See https://dev.arvados.org/issues/11002")
         writer.destroy_cache()
