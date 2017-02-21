@@ -10,7 +10,7 @@ import mock
 
 import arvnodeman.computenode.dispatch.slurm as slurm_dispatch
 from . import testutil
-from .test_computenode_dispatch import ComputeNodeShutdownActorMixin
+from .test_computenode_dispatch import ComputeNodeShutdownActorMixin, ComputeNodeUpdateActorTestCase
 
 @mock.patch('subprocess.check_output')
 class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
@@ -33,7 +33,7 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
         proc_mock.return_value = end_state
         proc_mock.side_effect = None
         self.check_success_flag(True, 3)
-        self.check_slurm_got_args(proc_mock, 'compute63')
+        self.check_slurm_got_args(proc_mock, 'NodeName=compute63')
 
     def make_wait_state_test(start_state='drng\n', end_state='drain\n'):
         def test(self, proc_mock):
@@ -91,3 +91,24 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
         proc_mock.return_value = 'drain\n'
         super(SLURMComputeNodeShutdownActorTestCase,
               self).test_arvados_node_cleaned_after_shutdown()
+
+    def test_cancellable_shutdown(self, proc_mock):
+        proc_mock.return_value = 'other\n'
+        super(SLURMComputeNodeShutdownActorTestCase,
+              self).test_cancellable_shutdown()
+
+    def test_uncancellable_shutdown(self, proc_mock):
+        proc_mock.return_value = 'other\n'
+        super(SLURMComputeNodeShutdownActorTestCase,
+              self).test_uncancellable_shutdown()
+
+@mock.patch('subprocess.check_output')
+class SLURMComputeNodeUpdateActorTestCase(ComputeNodeUpdateActorTestCase):
+    ACTOR_CLASS = slurm_dispatch.ComputeNodeUpdateActor
+
+    def test_update_node_weight(self, check_output):
+        self.make_actor()
+        cloud_node = testutil.cloud_node_mock()
+        arv_node = testutil.arvados_node_mock()
+        self.updater.sync_node(cloud_node, arv_node).get(self.TIMEOUT)
+        check_output.assert_called_with(['scontrol', 'update', 'NodeName=compute99', 'Weight=99000'])

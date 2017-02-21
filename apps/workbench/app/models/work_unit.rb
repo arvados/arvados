@@ -119,6 +119,10 @@ class WorkUnit
     # returns true if this work unit can be canceled
   end
 
+  def confirm_cancellation
+    # returns true if this work unit wants to use a confirmation for cancellation
+  end
+
   def uri
     # returns the uri for this work unit
   end

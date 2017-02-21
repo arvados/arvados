@@ -96,7 +96,7 @@ class ContainerRequest < ArvadosModel
       else
         coll_name = "Container #{out_type} for request #{uuid}"
       end
-      manifest = Collection.where(portable_data_hash: pdh).first.manifest_text
+      manifest = Collection.unscoped.where(portable_data_hash: pdh).first.manifest_text
       begin
         coll = Collection.create!(owner_uuid: owner_uuid,
                                   manifest_text: manifest,
@@ -131,6 +131,10 @@ class ContainerRequest < ArvadosModel
       end
     end
     update_attributes!(state: Final, output_uuid: out_coll, log_uuid: log_coll)
+  end
+
+  def self.full_text_searchable_columns
+    super - ["mounts"]
   end
 
   protected
@@ -229,7 +233,7 @@ class ContainerRequest < ArvadosModel
     if !coll
       raise ArvadosModel::UnresolvableContainerError.new "docker image #{container_image.inspect} not found"
     end
-    return coll.portable_data_hash
+    return Collection.docker_migration_pdh([current_user], coll.portable_data_hash)
   end
 
   def set_container

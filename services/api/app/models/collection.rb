@@ -2,6 +2,7 @@ require 'arvados/keep'
 require 'sweep_trashed_collections'
 
 class Collection < ArvadosModel
+  extend CurrentApiClient
   extend DbCurrentTime
   include HasUuid
   include KindAndEtag
@@ -370,6 +371,23 @@ class Collection < ArvadosModel
 
   def self.for_latest_docker_image(search_term, search_tag=nil, readers=nil)
     find_all_for_docker_image(search_term, search_tag, readers).first
+  end
+
+  # If the given pdh is an old-format docker image, old-format images
+  # aren't supported by the compute nodes according to site config,
+  # and a migrated new-format image is available, return the migrated
+  # image's pdh. Otherwise, just return pdh.
+  def self.docker_migration_pdh(read_users, pdh)
+    if Rails.configuration.docker_image_formats.include?('v1')
+      return pdh
+    end
+    Collection.readable_by(*read_users).
+      joins('INNER JOIN links ON head_uuid=portable_data_hash').
+      where('tail_uuid=? AND link_class=? AND links.owner_uuid=?',
+            pdh, 'docker_image_migration', system_user_uuid).
+      order('links.created_at desc').
+      select('portable_data_hash').
+      first.andand.portable_data_hash || pdh
   end
 
   def self.searchable_columns operator

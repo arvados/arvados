@@ -75,6 +75,7 @@ ArvadosWorkbench::Application.routes.draw do
     get 'choose', on: :collection
   end
   resources :pipeline_instances do
+    post 'cancel', :on => :member
     get 'compare', on: :collection
     post 'copy', on: :member
   end

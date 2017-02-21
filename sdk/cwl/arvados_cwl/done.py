@@ -69,7 +69,7 @@ def logtail(logcollection, logger, header, maxlen=25):
                     elif not crunchstat_re.match(l):
                         logt.append(l)
 
-    if len(mergelogs) > 1:
+    if containersapi:
         keys = mergelogs.keys()
         loglines = []
         while True:

@@ -1,7 +1,9 @@
 require 'test_helper'
 require 'helpers/git_test_helper'
+require 'helpers/docker_migration_helper'
 
 class JobTest < ActiveSupport::TestCase
+  include DockerMigrationHelper
   include GitTestHelper
 
   BAD_COLLECTION = "#{'f' * 32}+0"
@@ -411,6 +413,60 @@ class JobTest < ActiveSupport::TestCase
            "Job with SDK constraint valid after clearing Docker image")
   end
 
+  test "use migrated docker image if requesting old-format image by tag" do
+    Rails.configuration.docker_image_formats = ['v2']
+    add_docker19_migration_link
+    job = Job.create!(
+      job_attrs(
+        script: 'foo',
+        runtime_constraints: {
+          'docker_image' => links(:docker_image_collection_tag).name}))
+    assert(job.valid?)
+    assert_equal(job.docker_image_locator, collections(:docker_image_1_12).portable_data_hash)
+  end
+
+  test "use migrated docker image if requesting old-format image by pdh" do
+    Rails.configuration.docker_image_formats = ['v2']
+    add_docker19_migration_link
+    job = Job.create!(
+      job_attrs(
+        script: 'foo',
+        runtime_constraints: {
+          'docker_image' => collections(:docker_image).portable_data_hash}))
+    assert(job.valid?)
+    assert_equal(job.docker_image_locator, collections(:docker_image_1_12).portable_data_hash)
+  end
+
+  [[:docker_image, :docker_image, :docker_image_1_12],
+   [:docker_image_1_12, :docker_image, :docker_image_1_12],
+   [:docker_image, :docker_image_1_12, :docker_image_1_12],
+   [:docker_image_1_12, :docker_image_1_12, :docker_image_1_12],
+  ].each do |existing_image, request_image, expect_image|
+    test "if a #{existing_image} job exists, #{request_image} yields #{expect_image} after migration" do
+      Rails.configuration.docker_image_formats = ['v1']
+      oldjob = Job.create!(
+        job_attrs(
+          script: 'foobar1',
+          runtime_constraints: {
+            'docker_image' => collections(existing_image).portable_data_hash}))
+      oldjob.reload
+      assert_equal(oldjob.docker_image_locator,
+                   collections(existing_image).portable_data_hash)
+
+      Rails.configuration.docker_image_formats = ['v2']
+      add_docker19_migration_link
+
+      newjob = Job.create!(
+        job_attrs(
+          script: 'foobar1',
+          runtime_constraints: {
+            'docker_image' => collections(request_image).portable_data_hash}))
+      newjob.reload
+      assert_equal(newjob.docker_image_locator,
+                   collections(expect_image).portable_data_hash)
+    end
+  end
+
   test "can't create job with SDK version assigned directly" do
     check_creation_prohibited(arvados_sdk_version: SDK_MASTER)
   end
@@ -501,5 +557,52 @@ class JobTest < ActiveSupport::TestCase
     Job.where(uuid: jobs(:job_with_latest_version).uuid).
       update_all(output: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+1')
     assert_nil Job.find_reusable(example_attrs, {}, [], [users(:active)])
+  end
+
+  [
+    true,
+    false,
+  ].each do |cascade|
+    test "cancel job with cascade #{cascade}" do
+      job = Job.find_by_uuid jobs(:running_job_with_components_at_level_1).uuid
+      job.cancel cascade: cascade
+      assert_equal Job::Cancelled, job.state
+
+      descendents = ['zzzzz-8i9sb-jobcomponentsl2',
+                     'zzzzz-d1hrv-picomponentsl02',
+                     'zzzzz-8i9sb-job1atlevel3noc',
+                     'zzzzz-8i9sb-job2atlevel3noc']
+
+      jobs = Job.where(uuid: descendents)
+      jobs.each do |j|
+        assert_equal ('Cancelled' == j.state), cascade
+      end
+
+      pipelines = PipelineInstance.where(uuid: descendents)
+      pipelines.each do |pi|
+        assert_equal ('Paused' == pi.state), cascade
+      end
+    end
+  end
+
+  test 'cancelling a completed job raises error' do
+    job = Job.find_by_uuid jobs(:job_with_latest_version).uuid
+    assert job
+    assert_equal 'Complete', job.state
+
+    assert_raises(ArvadosModel::InvalidStateTransitionError) do
+      job.cancel
+    end
+  end
+
+  test 'cancelling a job with circular relationship with another does not result in an infinite loop' do
+    job = Job.find_by_uuid jobs(:running_job_2_with_circular_component_relationship).uuid
+
+    job.cancel cascade: true
+
+    assert_equal Job::Cancelled, job.state
+
+    child = Job.find_by_uuid job.components.collect{|_, uuid| uuid}[0]
+    assert_equal Job::Cancelled, child.state
   end
 end

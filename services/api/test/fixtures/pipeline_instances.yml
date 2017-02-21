@@ -420,6 +420,45 @@ failed_pipeline_with_two_jobs:
       uuid: zzzzz-8i9sb-cjs4pklxxjykqqq
       log: zzzzz-4zz18-op4e2lbej01tcvu
 
+# This pipeline is a child of another running job and has it's own running children
+job_child_pipeline_with_components_at_level_2:
+  state: RunningOnServer
+  uuid: zzzzz-d1hrv-picomponentsl02
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: <%= 12.hour.ago.to_s(:db) %>
+  started_at: <%= 12.hour.ago.to_s(:db) %>
+  components:
+   foo:
+    script: foo
+    script_version: master
+    script_parameters: {}
+    job:
+      uuid: zzzzz-8i9sb-job1atlevel3noc
+      script_version: master
+      created_at: <%= 12.hour.ago.to_s(:db) %>
+      started_at: <%= 12.hour.ago.to_s(:db) %>
+      state: Running
+      tasks_summary:
+        failed: 0
+        todo: 0
+        running: 1
+        done: 1
+   bar:
+    script: bar
+    script_version: master
+    script_parameters: {}
+    job:
+      uuid: zzzzz-8i9sb-job2atlevel3noc
+      script_version: master
+      created_at: <%= 12.hour.ago.to_s(:db) %>
+      started_at: <%= 12.hour.ago.to_s(:db) %>
+      state: Running
+      tasks_summary:
+        failed: 0
+        todo: 1
+        running: 2
+        done: 3
+
 # Test Helper trims the rest of the file
 
 # Do not add your fixtures below this line as the rest of this file will be trimmed by test_helper

@@ -6,8 +6,9 @@ import subprocess
 import time
 
 from . import \
-    ComputeNodeSetupActor, ComputeNodeUpdateActor, ComputeNodeMonitorActor
+    ComputeNodeSetupActor, ComputeNodeMonitorActor
 from . import ComputeNodeShutdownActor as ShutdownActorBase
+from . import ComputeNodeUpdateActor as UpdateActorBase
 from .. import RetryMixin
 
 class SlurmMixin(object):
@@ -39,9 +40,9 @@ class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
             self._later.issue_slurm_drain()
 
     @RetryMixin._retry((subprocess.CalledProcessError,))
-    def cancel_shutdown(self, reason):
+    def cancel_shutdown(self, reason, try_resume=True):
         if self._nodename:
-            if self._get_slurm_state(self._nodename) in self.SLURM_DRAIN_STATES:
+            if try_resume and self._get_slurm_state(self._nodename) in self.SLURM_DRAIN_STATES:
                 # Resume from "drng" or "drain"
                 self._set_node_state(self._nodename, 'RESUME')
             else:
@@ -70,8 +71,23 @@ class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
             self._timer.schedule(time.time() + 10,
                                  self._later.await_slurm_drain)
         elif output in ("idle\n"):
-            # Not in "drng" so cancel self.
-            self.cancel_shutdown("slurm state is %s" % output.strip())
+            # Not in "drng" but idle, don't shut down
+            self.cancel_shutdown("slurm state is %s" % output.strip(), try_resume=False)
         else:
             # any other state.
             self._later.shutdown_node()
+
+    def _destroy_node(self):
+        if self._nodename:
+            self._set_node_state(self._nodename, 'DOWN')
+        super(ComputeNodeShutdownActor, self)._destroy_node()
+
+
+class ComputeNodeUpdateActor(UpdateActorBase):
+    def sync_node(self, cloud_node, arvados_node):
+        if arvados_node.get("hostname"):
+            try:
+                subprocess.check_output(['scontrol', 'update', 'NodeName=' + arvados_node["hostname"], 'Weight=%i' % int(cloud_node.size.price * 1000)])
+            except:
+                self._logger.error("Unable to set slurm node weight.", exc_info=True)
+        return super(ComputeNodeUpdateActor, self).sync_node(cloud_node, arvados_node)
