@@ -832,6 +832,9 @@ class CrunchDispatch
         unless (@todo_pipelines.empty? and @pipe_auth_tokens.empty?) or did_recently(:update_pipelines, 5.0)
           update_pipelines
         end
+        unless did_recently('check_orphaned_slurm_jobs', 60)
+          check_orphaned_slurm_jobs
+        end
       end
       reap_children
       select(@running.values.collect { |j| [j[:stdout], j[:stderr]] }.flatten,
@@ -892,6 +895,39 @@ class CrunchDispatch
     end
   end
 
+  def check_orphaned_slurm_jobs
+    act_as_system_user do
+      if Rails.configuration.crunch_job_wrapper == :slurm_immediate
+        squeue_uuids = File.popen(['squeue', '-a', '-h', '-o', '%j']).readlines.map do |line|
+          line.strip.split(' ', 1)
+        end.collect{|l| l[0]}.
+            select{|uuid| uuid.match(HasUuid::UUID_REGEX)}.
+            select{|uuid| !@running.has_key?(uuid)}
+
+        return if squeue_uuids.size == 0
+
+        scancel_uuids = squeue_uuids - Job.where('uuid in (?) and (state=? or modified_at>?)',
+                                                 squeue_uuids, 'Running', (Time.now - 60)).collect(&:uuid)
+        scancel_uuids.each do |uuid|
+          Rails.logger.info "orphaned job: scancel #{uuid}"
+          scancel uuid, true
+        end
+      end
+    end
+  end
+
+  def sudo_preface
+    return [] if not Server::Application.config.crunch_job_user
+    ["sudo", "-E", "-u",
+     Server::Application.config.crunch_job_user,
+     "LD_LIBRARY_PATH=#{ENV['LD_LIBRARY_PATH']}",
+     "PATH=#{ENV['PATH']}",
+     "PERLLIB=#{ENV['PERLLIB']}",
+     "PYTHONPATH=#{ENV['PYTHONPATH']}",
+     "RUBYLIB=#{ENV['RUBYLIB']}",
+     "GEM_PATH=#{ENV['GEM_PATH']}"]
+  end
+
   protected
 
   def have_job_lock?(job)
@@ -934,23 +970,14 @@ class CrunchDispatch
     end
   end
 
-  def scancel slurm_id
-    cmd = sudo_preface + ['scancel', slurm_id]
+  def scancel slurm_id, use_name=false
+    scancel_cmd = ['scancel']
+    scancel_cmd << '-n' if use_name
+    scancel_cmd << slurm_id
+    cmd = sudo_preface + scancel_cmd
     puts File.popen(cmd).read
     if not $?.success?
       Rails.logger.error "scancel #{slurm_id.shellescape}: $?"
     end
-  end
-
-  def sudo_preface
-    return [] if not Server::Application.config.crunch_job_user
-    ["sudo", "-E", "-u",
-     Server::Application.config.crunch_job_user,
-     "LD_LIBRARY_PATH=#{ENV['LD_LIBRARY_PATH']}",
-     "PATH=#{ENV['PATH']}",
-     "PERLLIB=#{ENV['PERLLIB']}",
-     "PYTHONPATH=#{ENV['PYTHONPATH']}",
-     "RUBYLIB=#{ENV['RUBYLIB']}",
-     "GEM_PATH=#{ENV['GEM_PATH']}"]
   end
 end

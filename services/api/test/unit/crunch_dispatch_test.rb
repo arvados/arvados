@@ -202,4 +202,23 @@ class CrunchDispatchTest < ActiveSupport::TestCase
       assert_equal 5, job[:log_throttle_lines_so_far]
     end
   end
+
+  test 'scancel orphaned job nodes' do
+    Rails.configuration.crunch_job_wrapper = :slurm_immediate
+    act_as_system_user do
+      dispatch = CrunchDispatch.new
+
+      squeue_resp = File.popen("echo zzzzz-8i9sb-pshmckwoma9plh7\necho thisisnotvalidjobuuid\necho zzzzz-8i9sb-4cf0abc123e809j\n")
+
+      File.expects(:popen).
+        with(['squeue', '-a', '-h', '-o', '%j']).
+        returns(squeue_resp)
+
+      File.expects(:popen).
+        with(dispatch.sudo_preface + ['scancel', '-n', 'zzzzz-8i9sb-4cf0abc123e809j']).
+        returns(squeue_resp)
+
+      dispatch.check_orphaned_slurm_jobs
+    end
+  end
 end
