@@ -39,13 +39,9 @@ Verify that Keepproxy is functional:
 
 <notextile>
 <pre><code>~$ <span class="userinput">keepproxy -h</span>
-Usage of keepproxy:
-  -default-replicas=2: Default number of replicas to write if not specified by the client.
-  -listen=":25107": Interface on which to listen for requests, in the format ipaddr:port. e.g. -listen=10.0.1.24:8000. Use -listen=:port to listen on all network interfaces.
-  -no-get=false: If set, disable GET operations
-  -no-put=false: If set, disable PUT operations
-  -pid="": Path to write pid file
-  -timeout=15: Timeout on requests to internal Keep services (default 15 seconds)
+...
+Usage: keepproxy [-config path/to/keepproxy.yml]
+...
 </code></pre>
 </notextile>
 
