@@ -8,7 +8,7 @@ Keep-balance deletes unreferenced and overreplicated blocks from Keep servers, m
 
 {% include 'notebox_begin' %}
 
-If you are installing keep-balance on an existing system with valuable data, you can run keep-balance in "dry run" mode first and review its logs as a precaution. To do this, use the @keepstore -never-delete=true@ flag or remove the @-commit-trash@ flag from your keep-balance startup script.
+If you are installing keep-balance on an existing system with valuable data, you can run keep-balance in "dry run" mode first and review its logs as a precaution. To do this, edit your keep-balance startup script to use the flags @-commit-pulls=false -commit-trash=false@.
 
 {% include 'notebox_end' %}
 
