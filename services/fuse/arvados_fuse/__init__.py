@@ -589,6 +589,7 @@ class Operations(llfuse.Operations):
     @catch_exceptions
     def release(self, fh):
         if fh in self._filehandles:
+            _logger.debug("arv-mount release fh %i", fh)
             try:
                 self._filehandles[fh].flush()
             except Exception:

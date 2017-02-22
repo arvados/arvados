@@ -154,6 +154,9 @@ class Mount(object):
         # Configure a log handler based on command-line switches.
         if self.args.logfile:
             log_handler = logging.FileHandler(self.args.logfile)
+            log_handler.setFormatter(logging.Formatter(
+                '%(asctime)s %(name)s[%(process)d] %(levelname)s: %(message)s',
+                '%Y-%m-%d %H:%M:%S'))
         else:
             log_handler = None
 
@@ -163,6 +166,9 @@ class Mount(object):
 
         if self.args.debug:
             arvados.logger.setLevel(logging.DEBUG)
+            logging.getLogger('arvados.keep').setLevel(logging.DEBUG)
+            logging.getLogger('arvados.api').setLevel(logging.DEBUG)
+            logging.getLogger('arvados.collection').setLevel(logging.DEBUG)
             self.logger.debug("arv-mount debugging enabled")
 
         self.logger.info("enable write is %s", self.args.enable_write)
