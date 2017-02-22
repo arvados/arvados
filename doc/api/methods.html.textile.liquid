@@ -8,7 +8,7 @@ title: Common resource methods
 
 The following methods are available for most resources.  Some resources may limit who can perform certain operations.  Consult documentation for individual resource types for details.
 
-The methods are relative to the base URI, e.g. @/arvados/v1/resource_type@.  For arguments specifying a *Location* of @path@, the value of the argument is incorporated into the path portion of the URI.  For example, a @uuid@ of @aaaaa-bbbbb-ccccccccccccccc@ in a path position yields a URI of @/arvados/v1/resource_type/aaaaa-bbbbb-ccccccccccccccc@.
+The methods are relative to the base URI, e.g., @/arvados/v1/resource_type@.  For arguments specifying a *Location* of @path@, the value of the argument is incorporated into the path portion of the URI.  For example, a @uuid@ of @aaaaa-bbbbb-ccccccccccccccc@ in a path position yields a URI of @/arvados/v1/resource_type/aaaaa-bbbbb-ccccccccccccccc@.
 
 Arguments specifying a *Location* of @query@ are incorporated into the query portion of the URI or request body.  For example, @/arvados/v1/resource_type?resource_type={}@.
 
@@ -26,7 +26,7 @@ Arguments:
 
 table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |
-|{resource_type}|object|Name is the singular form of the resource type, e.g. for the "collections" resource, this argument is "collection"|query||
+|{resource_type}|object|Name is the singular form of the resource type, e.g., for the "collections" resource, this argument is "collection"|query||
 
 h2. delete
 
