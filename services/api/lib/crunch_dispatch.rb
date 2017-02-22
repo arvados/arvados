@@ -871,22 +871,14 @@ class CrunchDispatch
       end
       Rails.logger.info "fail_jobs: threshold is #{threshold}"
 
-      if Rails.configuration.crunch_job_wrapper == :slurm_immediate
-        # [["slurm_job_id", "slurm_job_name"], ...]
-        squeue = File.popen(['squeue', '-h', '-o', '%i %j']).readlines.map do |line|
-          line.strip.split(' ', 2)
-        end
-      else
-        squeue = []
-      end
-
+      squeue = squeue_jobs
       Job.where('state = ? and started_at < ?', Job::Running, threshold).
         each do |job|
         Rails.logger.debug "fail_jobs: #{job.uuid} started #{job.started_at}"
-        squeue.each do |slurm_id, slurm_name|
+        squeue.each do |slurm_name|
           if slurm_name == job.uuid
-            Rails.logger.info "fail_jobs: scancel #{slurm_id} for #{job.uuid}"
-            scancel slurm_id
+            Rails.logger.info "fail_jobs: scancel #{job.uuid}"
+            scancel slurm_name
           end
         end
         fail_job(job, "cleaned up stale job: started before #{threshold}",
@@ -897,21 +889,19 @@ class CrunchDispatch
 
   def check_orphaned_slurm_jobs
     act_as_system_user do
-      if Rails.configuration.crunch_job_wrapper == :slurm_immediate
-        squeue_uuids = File.popen(['squeue', '-a', '-h', '-o', '%j']).readlines.map do |line|
-          line.strip.split(' ', 1)
-        end.collect{|l| l[0]}.
-            select{|uuid| uuid.match(HasUuid::UUID_REGEX)}.
-            select{|uuid| !@running.has_key?(uuid)}
+      squeue_uuids = squeue_jobs.select{|uuid| uuid.match(HasUuid::UUID_REGEX)}.
+                                  select{|uuid| !@running.has_key?(uuid)}
 
-        return if squeue_uuids.size == 0
+      return if squeue_uuids.size == 0
 
-        scancel_uuids = squeue_uuids - Job.where('uuid in (?) and (state=? or modified_at>?)',
-                                                 squeue_uuids, 'Running', (Time.now - 60)).collect(&:uuid)
-        scancel_uuids.each do |uuid|
-          Rails.logger.info "orphaned job: scancel #{uuid}"
-          scancel uuid, true
-        end
+      scancel_uuids = squeue_uuids - Job.where('uuid in (?) and (state in (?) or modified_at>?)',
+                                               squeue_uuids,
+                                               ['Running', 'Queued'],
+                                               (Time.now - 60)).
+                                         collect(&:uuid)
+      scancel_uuids.each do |uuid|
+        Rails.logger.info "orphaned job: scancel #{uuid}"
+        scancel uuid
       end
     end
   end
@@ -970,14 +960,22 @@ class CrunchDispatch
     end
   end
 
-  def scancel slurm_id, use_name=false
-    scancel_cmd = ['scancel']
-    scancel_cmd << '-n' if use_name
-    scancel_cmd << slurm_id
-    cmd = sudo_preface + scancel_cmd
+  # An array of job_uuids in squeue
+  def squeue_jobs
+    if Rails.configuration.crunch_job_wrapper == :slurm_immediate
+      squeue = File.popen(['squeue', '-a', '-h', '-o', '%j']).readlines.map do |line|
+        line.strip
+      end
+    else
+      squeue = []
+    end
+  end
+
+  def scancel slurm_name
+    cmd = sudo_preface + ['scancel', '-n', slurm_name]
     puts File.popen(cmd).read
     if not $?.success?
-      Rails.logger.error "scancel #{slurm_id.shellescape}: $?"
+      Rails.logger.error "scancel #{slurm_name.shellescape}: $?"
     end
   end
 end

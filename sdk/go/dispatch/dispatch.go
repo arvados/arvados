@@ -205,19 +205,14 @@ func (d *Dispatcher) Unlock(uuid string) error {
 
 // TrackContainer starts a tracker for given uuid if one is not already existing, despite its state.
 func (d *Dispatcher) TrackContainer(uuid string) {
+	d.mtx.Lock()
+	defer d.mtx.Unlock()
+
 	if d.trackers == nil {
 		d.trackers = make(map[string]*runTracker)
 	}
 
 	_, alreadyTracking := d.trackers[uuid]
-	if alreadyTracking {
-		return
-	}
-
-	d.mtx.Lock()
-	defer d.mtx.Unlock()
-
-	_, alreadyTracking = d.trackers[uuid]
 	if alreadyTracking {
 		return
 	}
@@ -229,10 +224,7 @@ func (d *Dispatcher) TrackContainer(uuid string) {
 		return
 	}
 
-	tracker := &runTracker{updates: make(chan arvados.Container, 1)}
-	tracker.updates <- cntr
-
-	d.trackers[uuid] = tracker
+	d.trackers[uuid] = d.start(c)
 }
 
 type runTracker struct {

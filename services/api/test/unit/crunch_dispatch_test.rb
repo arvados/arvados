@@ -209,6 +209,7 @@ class CrunchDispatchTest < ActiveSupport::TestCase
       dispatch = CrunchDispatch.new
 
       squeue_resp = File.popen("echo zzzzz-8i9sb-pshmckwoma9plh7\necho thisisnotvalidjobuuid\necho zzzzz-8i9sb-4cf0abc123e809j\n")
+      scancel_resp = File.popen("true")
 
       File.expects(:popen).
         with(['squeue', '-a', '-h', '-o', '%j']).
@@ -216,7 +217,7 @@ class CrunchDispatchTest < ActiveSupport::TestCase
 
       File.expects(:popen).
         with(dispatch.sudo_preface + ['scancel', '-n', 'zzzzz-8i9sb-4cf0abc123e809j']).
-        returns(squeue_resp)
+        returns(scancel_resp)
 
       dispatch.check_orphaned_slurm_jobs
     end
