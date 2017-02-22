@@ -48,7 +48,7 @@ Options:
 
 h3. Create a keep-balance token
 
-Create a privileged Arvados API token for use by keep-balance. *On the API server*, run:
+Create an Arvados superuser token for use by keep-balance. *On the API server*, run:
 
 <notextile>
 <pre><code>apiserver:~$ <span class="userinput">cd /var/www/arvados-api/current</span>
@@ -139,9 +139,19 @@ run: /etc/service/keep-balance: (pid 12520) 2s; run: log: (pid 12519) 2s
 
 h2. Enable delete operations on keepstore volumes
 
-Ensure your keepstore services have the "delete" operation enabled. Otherwise, even when unneeded data is identified by keep-balance, it will never be deleted from the underlying storage devices.
+Ensure your keepstore services have the "delete" operation enabled. If it is disabled (which is the default), unneeded blocks will be identified by keep-balance, but will never be deleted from the underlying storage devices.
 
-Either use the @EnableDelete@ flag in your YAML configuration file @/etc/arvados/keepstore/keepstore.yml@:
+Add the @-never-delete=false@ command line flag to your keepstore run script:
+
+<notextile>
+<pre><code>keepstore <span class="userinput">-never-delete=false</span> -volume=...
+</code></pre>
+</notextile>
+
+{% comment %}
+// To replace the above section when the keepstore page recommends YAML...
+
+Use the @EnableDelete@ flag in your YAML configuration file @/etc/arvados/keepstore/keepstore.yml@:
 
 <notextile>
 <pre><code>...
@@ -151,10 +161,4 @@ Listen: :25107
 ...
 </code></pre>
 </notextile>
-
-Or use the @-never-delete=false@ command line flag in your run script:
-
-<notextile>
-<pre><code>keepstore <span class="userinput">-never-delete=false</span> -volume=...
-</code></pre>
-</notextile>
+{% endcomment %}
