@@ -38,6 +38,12 @@ def split(path):
         stream_name, file_name = '.', path
     return stream_name, file_name
 
+
+class UnownedBlockError(Exception):
+    """Raised when there's an writable block without an owner on the BlockManager."""
+    pass
+
+
 class _FileLikeObjectBase(object):
     def __init__(self, name, mode):
         self.name = name
@@ -571,7 +577,11 @@ class _BlockManager(object):
             # A WRITABLE block always has an owner.
             # A WRITABLE block with its owner.closed() implies that it's
             # size is <= KEEP_BLOCK_SIZE/2.
-            small_blocks = [b for b in self._bufferblocks.values() if b.state() == _BufferBlock.WRITABLE and b.owner.closed()]
+            try:
+                small_blocks = [b for b in self._bufferblocks.values() if b.state() == _BufferBlock.WRITABLE and b.owner.closed()]
+            except AttributeError:
+                # Writable blocks without owner shouldn't exist.
+                raise UnownedBlockError()
 
             if len(small_blocks) <= 1:
                 # Not enough small blocks for repacking
