@@ -493,4 +493,20 @@ class CollectionTest < ActiveSupport::TestCase
     SweepTrashedCollections.sweep_now
     assert_empty Collection.unscoped.where(uuid: uuid)
   end
+
+  test "delete referring links in SweepTrashedCollections" do
+    uuid = collections(:trashed_on_next_sweep).uuid
+    act_as_system_user do
+      Link.create!(head_uuid: uuid,
+                   tail_uuid: system_user_uuid,
+                   link_class: 'whatever',
+                   name: 'something')
+    end
+    past = db_current_time
+    Collection.unscoped.where(uuid: uuid).
+      update_all(is_trashed: true, trash_at: past, delete_at: past)
+    assert_not_empty Collection.unscoped.where(uuid: uuid)
+    SweepTrashedCollections.sweep_now
+    assert_empty Collection.unscoped.where(uuid: uuid)
+  end
 end

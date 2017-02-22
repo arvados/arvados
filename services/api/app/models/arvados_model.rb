@@ -32,7 +32,11 @@ class ArvadosModel < ActiveRecord::Base
   # Note: This only returns permission links. It does not account for
   # permissions obtained via user.is_admin or
   # user.uuid==object.owner_uuid.
-  has_many :permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission'"
+  has_many(:permissions,
+           foreign_key: :head_uuid,
+           class_name: 'Link',
+           primary_key: :uuid,
+           conditions: "link_class = 'permission'")
 
   class PermissionDeniedError < StandardError
     def http_status

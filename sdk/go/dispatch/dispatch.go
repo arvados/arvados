@@ -175,7 +175,7 @@ func (d *Dispatcher) checkListForUpdates(containers []arvados.Container) {
 				}
 				d.trackers[c.UUID] = d.start(c)
 			case Cancelled, Complete:
-				tracker.close()
+				// no-op (we already stopped monitoring)
 			}
 		}
 	}

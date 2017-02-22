@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo owner_uuid: $2 >&2
+
