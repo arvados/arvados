@@ -23,6 +23,8 @@ import sys
 import tempfile
 import threading
 import time
+import traceback
+
 from apiclient import errors as apiclient_errors
 from arvados._version import __version__
 
@@ -448,9 +450,11 @@ class ArvPutUploadJob(object):
             # Actual file upload
             self._upload_started = True # Used by the update thread to start checkpointing
             self._upload_files()
-        except KeyboardInterrupt:
-            self.logger.warning("User interrupt request, cleaning up before exiting.")
+        except (SystemExit, Exception) as e:
             self._checkpoint_before_quit = False
+            # Log stack trace only when Ctrl-C isn't pressed (SIGINT)
+            if not isinstance(e, SystemExit) or e.code != -2:
+                self.logger.warning("Abnormal termination:\n{}".format(traceback.format_exc(e)))
             raise
         finally:
             if not self.dry_run:

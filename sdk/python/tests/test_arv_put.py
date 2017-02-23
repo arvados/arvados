@@ -322,6 +322,8 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
             data = args[1]
             # Exit only on last block
             if len(data) < arvados.config.KEEP_BLOCK_SIZE:
+                # Simulate a checkpoint before quitting. Ensure block commit.
+                self.writer._update(final=True)
                 raise SystemExit("Simulated error")
             return self.arvfile_write(*args, **kwargs)
 
@@ -330,6 +332,8 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
             mocked_write.side_effect = wrapped_write
             writer = arv_put.ArvPutUploadJob([self.large_file_name],
                                              replication_desired=1)
+            # We'll be accessing from inside the wrapper
+            self.writer = writer
             with self.assertRaises(SystemExit):
                 writer.start(save_collection=False)
             # Confirm that the file was partially uploaded
@@ -343,6 +347,7 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         self.assertEqual(writer.bytes_written + writer2.bytes_written - writer2.bytes_skipped,
                          os.path.getsize(self.large_file_name))
         writer2.destroy_cache()
+        del(self.writer)
 
     # Test for bug #11002
     def test_graceful_exit_while_repacking_small_blocks(self):
@@ -370,6 +375,8 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
             data = args[1]
             # Exit only on last block
             if len(data) < arvados.config.KEEP_BLOCK_SIZE:
+                # Simulate a checkpoint before quitting.
+                self.writer._update()
                 raise SystemExit("Simulated error")
             return self.arvfile_write(*args, **kwargs)
 
@@ -378,6 +385,8 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
             mocked_write.side_effect = wrapped_write
             writer = arv_put.ArvPutUploadJob([self.large_file_name],
                                              replication_desired=1)
+            # We'll be accessing from inside the wrapper
+            self.writer = writer
             with self.assertRaises(SystemExit):
                 writer.start(save_collection=False)
             # Confirm that the file was partially uploaded
@@ -393,12 +402,15 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         self.assertEqual(writer2.bytes_written,
                          os.path.getsize(self.large_file_name))
         writer2.destroy_cache()
+        del(self.writer)
 
     def test_no_resume_when_no_cache(self):
         def wrapped_write(*args, **kwargs):
             data = args[1]
             # Exit only on last block
             if len(data) < arvados.config.KEEP_BLOCK_SIZE:
+                # Simulate a checkpoint before quitting.
+                self.writer._update()
                 raise SystemExit("Simulated error")
             return self.arvfile_write(*args, **kwargs)
 
@@ -407,6 +419,8 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
             mocked_write.side_effect = wrapped_write
             writer = arv_put.ArvPutUploadJob([self.large_file_name],
                                              replication_desired=1)
+            # We'll be accessing from inside the wrapper
+            self.writer = writer
             with self.assertRaises(SystemExit):
                 writer.start(save_collection=False)
             # Confirm that the file was partially uploaded
@@ -423,13 +437,15 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         self.assertEqual(writer2.bytes_written,
                          os.path.getsize(self.large_file_name))
         writer2.destroy_cache()
-
+        del(self.writer)
 
     def test_dry_run_feature(self):
         def wrapped_write(*args, **kwargs):
             data = args[1]
             # Exit only on last block
             if len(data) < arvados.config.KEEP_BLOCK_SIZE:
+                # Simulate a checkpoint before quitting.
+                self.writer._update()
                 raise SystemExit("Simulated error")
             return self.arvfile_write(*args, **kwargs)
 
@@ -438,6 +454,8 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
             mocked_write.side_effect = wrapped_write
             writer = arv_put.ArvPutUploadJob([self.large_file_name],
                                              replication_desired=1)
+            # We'll be accessing from inside the wrapper
+            self.writer = writer
             with self.assertRaises(SystemExit):
                 writer.start(save_collection=False)
             # Confirm that the file was partially uploaded
@@ -473,7 +491,7 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
                                     replication_desired=1,
                                     dry_run=True,
                                     resume=False)
-
+        del(self.writer)
 
 class ArvadosExpectedBytesTest(ArvadosBaseTestCase):
     TEST_SIZE = os.path.getsize(__file__)
