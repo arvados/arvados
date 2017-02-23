@@ -130,7 +130,7 @@ func (d *Dispatcher) checkForUpdates(filters [][]interface{}) {
 			log.Printf("Error getting list of containers: %q", err)
 			return
 		}
-		more = list.ItemsAvailable > len(list.Items)
+		more = len(list.Items) > 0 && list.ItemsAvailable > len(list.Items)+offset
 		d.checkListForUpdates(list.Items)
 	}
 }
