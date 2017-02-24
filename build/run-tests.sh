@@ -548,14 +548,14 @@ do_test_once() {
         # before trying "go test". Otherwise, coverage-reporting
         # mode makes Go show the wrong line numbers when reporting
         # compilation errors.
-        go get -t "git.curoverse.com/arvados.git/$1" || return 1
-        cd "$WORKSPACE/$1" || return 1
-        gofmt -e -d . | egrep . && result=1
-        if [[ -n "${testargs[$1]}" ]]
+        go get -t "git.curoverse.com/arvados.git/$1" && \
+            cd "$WORKSPACE/$1" && \
+            [[ -z "$(gofmt -e -d . | tee /dev/stderr)" ]] && \
+            if [[ -n "${testargs[$1]}" ]]
         then
             # "go test -check.vv giturl" doesn't work, but this
             # does:
-            cd "$WORKSPACE/$1" && go test ${short:+-short} ${testargs[$1]}
+            go test ${short:+-short} ${testargs[$1]}
         else
             # The above form gets verbose even when testargs is
             # empty, so use this form in such cases:
