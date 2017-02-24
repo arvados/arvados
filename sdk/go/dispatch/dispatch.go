@@ -224,7 +224,7 @@ func (d *Dispatcher) TrackContainer(uuid string) {
 		return
 	}
 
-	d.trackers[uuid] = d.start(c)
+	d.trackers[uuid] = d.start(cntr)
 }
 
 type runTracker struct {
