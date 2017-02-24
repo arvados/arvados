@@ -314,6 +314,10 @@ class ArvCwlRunner(object):
                                              body={
                                                  'output': self.final_output_collection.portable_data_hash(),
                                              }).execute(num_retries=self.num_retries)
+                self.api.collections().update(uuid=self.final_output_collection.manifest_locator(),
+                                              body={
+                                                  'is_trashed': True
+                                              }).execute(num_retries=self.num_retries)
             except Exception as e:
                 logger.info("Setting container output: %s", e)
         elif self.work_api == "jobs" and "TASK_UUID" in os.environ:
