@@ -109,6 +109,7 @@ def kill_server_pid(pidfile, wait=10, passenger_root=False):
         try:
             exited, _ = os.waitpid(server_pid, os.WNOHANG)
             if exited > 0:
+                _remove_pidfile(pidfile)
                 return
         except OSError:
             # already exited, or isn't our child process
@@ -122,6 +123,7 @@ def kill_server_pid(pidfile, wait=10, passenger_root=False):
             if error.errno == errno.ESRCH:
                 # Thrown by os.getpgid() or os.kill() if the process
                 # does not exist, i.e., our work here is done.
+                _remove_pidfile(pidfile)
                 return
             raise
         time.sleep(0.1)
@@ -130,6 +132,13 @@ def kill_server_pid(pidfile, wait=10, passenger_root=False):
     print("Server PID {} ({}) did not exit, giving up after {}s".
           format(server_pid, pidfile, wait),
           file=sys.stderr)
+
+def _remove_pidfile(pidfile):
+    try:
+        os.unlink(pidfile)
+    except:
+        if os.path.lexists(pidfile):
+            raise
 
 def find_available_port():
     """Return an IPv4 port number that is not in use right now.
