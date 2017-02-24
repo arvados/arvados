@@ -12,11 +12,11 @@ func Test(t *testing.T) {
 	check.TestingT(t)
 }
 
-var _ = check.Suite(&Suite{})
+var _ = check.Suite(&ThrottleTestSuite{})
 
-type Suite struct{}
+type ThrottleTestSuite struct{}
 
-func (*Suite) TestThrottle(c *check.C) {
+func (*ThrottleTestSuite) TestThrottle(c *check.C) {
 	uuid := "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
 
 	t := throttle{}

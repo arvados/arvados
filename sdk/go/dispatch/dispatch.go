@@ -21,6 +21,7 @@ const (
 	Cancelled = arvados.ContainerStateCancelled
 )
 
+// Dispatcher struct
 type Dispatcher struct {
 	Arv *arvadosclient.ArvadosClient
 
@@ -200,6 +201,30 @@ func (d *Dispatcher) lock(uuid string) error {
 // Unlock makes the unlock API call which updates the state of a container to Queued.
 func (d *Dispatcher) Unlock(uuid string) error {
 	return d.Arv.Call("POST", "containers", uuid, "unlock", nil, nil)
+}
+
+// TrackContainer starts a tracker for given uuid if one is not already existing, despite its state.
+func (d *Dispatcher) TrackContainer(uuid string) {
+	d.mtx.Lock()
+	defer d.mtx.Unlock()
+
+	if d.trackers == nil {
+		d.trackers = make(map[string]*runTracker)
+	}
+
+	_, alreadyTracking := d.trackers[uuid]
+	if alreadyTracking {
+		return
+	}
+
+	var cntr arvados.Container
+	err := d.Arv.Call("GET", "containers", uuid, "", nil, &cntr)
+	if err != nil {
+		log.Printf("Error getting container %s: %s", uuid, err)
+		return
+	}
+
+	d.trackers[uuid] = d.start(c)
 }
 
 type runTracker struct {

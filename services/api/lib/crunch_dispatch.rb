@@ -832,6 +832,9 @@ class CrunchDispatch
         unless (@todo_pipelines.empty? and @pipe_auth_tokens.empty?) or did_recently(:update_pipelines, 5.0)
           update_pipelines
         end
+        unless did_recently('check_orphaned_slurm_jobs', 60)
+          check_orphaned_slurm_jobs
+        end
       end
       reap_children
       select(@running.values.collect { |j| [j[:stdout], j[:stderr]] }.flatten,
@@ -868,28 +871,51 @@ class CrunchDispatch
       end
       Rails.logger.info "fail_jobs: threshold is #{threshold}"
 
-      if Rails.configuration.crunch_job_wrapper == :slurm_immediate
-        # [["slurm_job_id", "slurm_job_name"], ...]
-        squeue = File.popen(['squeue', '-h', '-o', '%i %j']).readlines.map do |line|
-          line.strip.split(' ', 2)
-        end
-      else
-        squeue = []
-      end
-
+      squeue = squeue_jobs
       Job.where('state = ? and started_at < ?', Job::Running, threshold).
         each do |job|
         Rails.logger.debug "fail_jobs: #{job.uuid} started #{job.started_at}"
-        squeue.each do |slurm_id, slurm_name|
+        squeue.each do |slurm_name|
           if slurm_name == job.uuid
-            Rails.logger.info "fail_jobs: scancel #{slurm_id} for #{job.uuid}"
-            scancel slurm_id
+            Rails.logger.info "fail_jobs: scancel #{job.uuid}"
+            scancel slurm_name
           end
         end
         fail_job(job, "cleaned up stale job: started before #{threshold}",
                  skip_lock: true)
       end
     end
+  end
+
+  def check_orphaned_slurm_jobs
+    act_as_system_user do
+      squeue_uuids = squeue_jobs.select{|uuid| uuid.match(HasUuid::UUID_REGEX)}.
+                                  select{|uuid| !@running.has_key?(uuid)}
+
+      return if squeue_uuids.size == 0
+
+      scancel_uuids = squeue_uuids - Job.where('uuid in (?) and (state in (?) or modified_at>?)',
+                                               squeue_uuids,
+                                               ['Running', 'Queued'],
+                                               (Time.now - 60)).
+                                         collect(&:uuid)
+      scancel_uuids.each do |uuid|
+        Rails.logger.info "orphaned job: scancel #{uuid}"
+        scancel uuid
+      end
+    end
+  end
+
+  def sudo_preface
+    return [] if not Server::Application.config.crunch_job_user
+    ["sudo", "-E", "-u",
+     Server::Application.config.crunch_job_user,
+     "LD_LIBRARY_PATH=#{ENV['LD_LIBRARY_PATH']}",
+     "PATH=#{ENV['PATH']}",
+     "PERLLIB=#{ENV['PERLLIB']}",
+     "PYTHONPATH=#{ENV['PYTHONPATH']}",
+     "RUBYLIB=#{ENV['RUBYLIB']}",
+     "GEM_PATH=#{ENV['GEM_PATH']}"]
   end
 
   protected
@@ -934,23 +960,22 @@ class CrunchDispatch
     end
   end
 
-  def scancel slurm_id
-    cmd = sudo_preface + ['scancel', slurm_id]
-    puts File.popen(cmd).read
-    if not $?.success?
-      Rails.logger.error "scancel #{slurm_id.shellescape}: $?"
+  # An array of job_uuids in squeue
+  def squeue_jobs
+    if Rails.configuration.crunch_job_wrapper == :slurm_immediate
+      File.popen(['squeue', '-a', '-h', '-o', '%j']).readlines.map do |line|
+        line.strip
+      end
+    else
+      []
     end
   end
 
-  def sudo_preface
-    return [] if not Server::Application.config.crunch_job_user
-    ["sudo", "-E", "-u",
-     Server::Application.config.crunch_job_user,
-     "LD_LIBRARY_PATH=#{ENV['LD_LIBRARY_PATH']}",
-     "PATH=#{ENV['PATH']}",
-     "PERLLIB=#{ENV['PERLLIB']}",
-     "PYTHONPATH=#{ENV['PYTHONPATH']}",
-     "RUBYLIB=#{ENV['RUBYLIB']}",
-     "GEM_PATH=#{ENV['GEM_PATH']}"]
+  def scancel slurm_name
+    cmd = sudo_preface + ['scancel', '-n', slurm_name]
+    puts File.popen(cmd).read
+    if not $?.success?
+      Rails.logger.error "scancel #{slurm_name.shellescape}: $?"
+    end
   end
 end
