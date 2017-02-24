@@ -269,10 +269,12 @@ class Container < ArvadosModel
     # that a container cannot "claim" a collection that it doesn't otherwise
     # have access to just by setting the output field to the collection PDH.
     if output_changed?
-      c = Collection.
-          readable_by(current_user).
-          where(portable_data_hash: self.output).
-          first
+      c = Collection.unscoped do
+        Collection.
+            readable_by(current_user).
+            where(portable_data_hash: self.output).
+            first
+      end
       if !c
         errors.add :output, "collection must exist and be readable by current user."
       end

@@ -506,4 +506,17 @@ class ContainerTest < ActiveSupport::TestCase
     end
   end
 
+  test "can set trashed output on running container" do
+    c, _ = minimal_new
+    set_user_from_auth :dispatch1
+    c.lock
+    c.update_attributes! state: Container::Running
+
+    output = Collection.unscoped.find_by_uuid('zzzzz-4zz18-mto52zx1s7sn3jk')
+
+    assert output.is_trashed
+    assert c.update_attributes output: output.portable_data_hash
+    assert c.update_attributes! state: Container::Complete
+  end
+
 end
