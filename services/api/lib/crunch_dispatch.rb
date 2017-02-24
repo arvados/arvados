@@ -963,11 +963,11 @@ class CrunchDispatch
   # An array of job_uuids in squeue
   def squeue_jobs
     if Rails.configuration.crunch_job_wrapper == :slurm_immediate
-      squeue = File.popen(['squeue', '-a', '-h', '-o', '%j']).readlines.map do |line|
+      File.popen(['squeue', '-a', '-h', '-o', '%j']).readlines.map do |line|
         line.strip
       end
     else
-      squeue = []
+      []
     end
   end
 
