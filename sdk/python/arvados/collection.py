@@ -544,7 +544,7 @@ class RichCollectionBase(CollectionBase):
                     else:
                         item = ArvadosFile(self, pathcomponents[0])
                     self._items[pathcomponents[0]] = item
-                    self._committed = False
+                    self.set_committed(False)
                     self.notify(ADD, self, pathcomponents[0], item)
                 return item
             else:
@@ -552,7 +552,7 @@ class RichCollectionBase(CollectionBase):
                     # create new collection
                     item = Subcollection(self, pathcomponents[0])
                     self._items[pathcomponents[0]] = item
-                    self._committed = False
+                    self.set_committed(False)
                     self.notify(ADD, self, pathcomponents[0], item)
                 if isinstance(item, RichCollectionBase):
                     return item.find_or_create(pathcomponents[1], create_type)
@@ -659,20 +659,26 @@ class RichCollectionBase(CollectionBase):
     @synchronized
     def committed(self):
         """Determine if the collection has been committed to the API server."""
-
-        if self._committed is False:
-            return False
-        for v in self._items.values():
-            if v.committed() is False:
-                return False
-        return True
+        return self._committed
 
     @synchronized
-    def set_committed(self):
-        """Recursively set committed flag to True."""
-        self._committed = True
-        for k,v in self._items.items():
-            v.set_committed()
+    def set_committed(self, value=True):
+        """Recursively set committed flag.
+
+        If value is True, set committed to be True for this and all children.
+
+        If value is False, set committed to be False for this and all parents.
+        """
+        if value == self._committed:
+            return
+        if value:
+            for k,v in self._items.items():
+                v.set_committed(True)
+            self._committed = True
+        else:
+            self._committed = False
+            if self.parent is not None:
+                self.parent.set_committed(False)
 
     @synchronized
     def __iter__(self):
@@ -703,7 +709,7 @@ class RichCollectionBase(CollectionBase):
     def __delitem__(self, p):
         """Delete an item by name which is directly contained by this collection."""
         del self._items[p]
-        self._committed = False
+        self.set_committed(False)
         self.notify(DEL, self, p, None)
 
     @synchronized
@@ -746,7 +752,7 @@ class RichCollectionBase(CollectionBase):
                 raise IOError(errno.ENOTEMPTY, "Directory not empty", path)
             deleteditem = self._items[pathcomponents[0]]
             del self._items[pathcomponents[0]]
-            self._committed = False
+            self.set_committed(False)
             self.notify(DEL, self, pathcomponents[0], deleteditem)
         else:
             item.remove(pathcomponents[1])
@@ -795,7 +801,7 @@ class RichCollectionBase(CollectionBase):
             item = source_obj.clone(self, target_name)
 
         self._items[target_name] = item
-        self._committed = False
+        self.set_committed(False)
 
         if modified_from:
             self.notify(MOD, self, target_name, (modified_from, item))
@@ -1022,7 +1028,7 @@ class RichCollectionBase(CollectionBase):
 
         """
         if changes:
-            self._committed = False
+            self.set_committed(False)
         for change in changes:
             event_type = change[0]
             path = change[1]
@@ -1476,7 +1482,7 @@ class Collection(RichCollectionBase):
                     num_retries=num_retries))
             self._manifest_text = self._api_response["manifest_text"]
             self._portable_data_hash = self._api_response["portable_data_hash"]
-            self.set_committed()
+            self.set_committed(True)
 
         return self._manifest_text
 
@@ -1537,7 +1543,7 @@ class Collection(RichCollectionBase):
             self._portable_data_hash = self._api_response["portable_data_hash"]
 
             self._manifest_text = text
-            self.set_committed()
+            self.set_committed(True)
 
         return text
 
@@ -1602,7 +1608,7 @@ class Collection(RichCollectionBase):
                 stream_name = None
                 state = STREAM_NAME
 
-        self.set_committed()
+        self.set_committed(True)
 
     @synchronized
     def notify(self, event, collection, name, item):
@@ -1652,7 +1658,7 @@ class Subcollection(RichCollectionBase):
     @must_be_writable
     @synchronized
     def _reparent(self, newparent, newname):
-        self._committed = False
+        self.set_committed(False)
         self.flush()
         self.parent.remove(self.name, recursive=True)
         self.parent = newparent

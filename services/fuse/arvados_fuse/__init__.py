@@ -105,14 +105,16 @@ class Handle(object):
         self.obj.dec_use()
 
     def flush(self):
-        if self.obj.writable():
-            return self.obj.flush()
+        pass
 
 
 class FileHandle(Handle):
     """Connects a numeric file handle to a File  object that has
     been opened by the client."""
-    pass
+
+    def flush(self):
+        if self.obj.writable():
+            return self.obj.flush()
 
 
 class DirectoryHandle(Handle):
@@ -589,6 +591,7 @@ class Operations(llfuse.Operations):
     @catch_exceptions
     def release(self, fh):
         if fh in self._filehandles:
+            _logger.debug("arv-mount release fh %i", fh)
             try:
                 self._filehandles[fh].flush()
             except Exception:
