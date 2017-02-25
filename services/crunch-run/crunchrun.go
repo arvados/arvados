@@ -5,12 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"git.curoverse.com/arvados.git/lib/crunchstat"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"git.curoverse.com/arvados.git/sdk/go/manifest"
-	"github.com/curoverse/dockerclient"
 	"io"
 	"io/ioutil"
 	"log"
@@ -24,6 +18,13 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"git.curoverse.com/arvados.git/lib/crunchstat"
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.curoverse.com/arvados.git/sdk/go/manifest"
+	"github.com/curoverse/dockerclient"
 )
 
 // IArvadosClient is the minimal Arvados API methods used by crunch-run.
@@ -123,18 +124,27 @@ func (runner *ContainerRunner) SetupSignals() {
 	signal.Notify(runner.SigChan, syscall.SIGINT)
 	signal.Notify(runner.SigChan, syscall.SIGQUIT)
 
-	go func(sig <-chan os.Signal) {
-		for range sig {
-			if !runner.Cancelled {
-				runner.CancelLock.Lock()
-				runner.Cancelled = true
-				if runner.ContainerID != "" {
-					runner.Docker.StopContainer(runner.ContainerID, 10)
-				}
-				runner.CancelLock.Unlock()
-			}
-		}
+	go func(sig chan os.Signal) {
+		<-sig
+		runner.stop()
+		signal.Stop(sig)
 	}(runner.SigChan)
+}
+
+// stop the underlying Docker container.
+func (runner *ContainerRunner) stop() {
+	runner.CancelLock.Lock()
+	defer runner.CancelLock.Unlock()
+	if runner.Cancelled {
+		return
+	}
+	runner.Cancelled = true
+	if runner.ContainerID != "" {
+		err := runner.Docker.StopContainer(runner.ContainerID, 10)
+		if err != nil {
+			log.Printf("StopContainer failed: %s", err)
+		}
+	}
 }
 
 // LoadImage determines the docker image id from the container record and
@@ -600,12 +610,22 @@ func (runner *ContainerRunner) StartContainer() error {
 func (runner *ContainerRunner) WaitFinish() error {
 	runner.CrunchLog.Print("Waiting for container to finish")
 
-	result := runner.Docker.Wait(runner.ContainerID)
-	wr := <-result
-	if wr.Error != nil {
-		return fmt.Errorf("While waiting for container to finish: %v", wr.Error)
+	waitDocker := runner.Docker.Wait(runner.ContainerID)
+	waitMount := runner.ArvMountExit
+	for waitDocker != nil {
+		select {
+		case err := <-waitMount:
+			runner.CrunchLog.Printf("arv-mount exited before container finished: %v", err)
+			waitMount = nil
+			runner.stop()
+		case wr := <-waitDocker:
+			if wr.Error != nil {
+				return fmt.Errorf("While waiting for container to finish: %v", wr.Error)
+			}
+			runner.ExitCode = &wr.ExitCode
+			waitDocker = nil
+		}
 	}
-	runner.ExitCode = &wr.ExitCode
 
 	// wait for stdout/stderr to complete
 	<-runner.loggingDone
