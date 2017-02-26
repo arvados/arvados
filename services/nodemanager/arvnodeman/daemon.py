@@ -272,9 +272,9 @@ class NodeManagerDaemonActor(actor_class):
 
     def _total_price(self):
         cost = 0
-        cost += sum(self.server_calculator.find_size(self.sizes_booting[c].id).price
-                  for c in self.booting.iterkeys())
-        cost += sum(self.server_calculator.find_size(c.cloud_node.size.id).price
+        cost += sum(self.sizes_booting[c].price
+                    for c in self.booting.iterkeys())
+        cost += sum(c.cloud_node.size.price
                     for c in self.cloud_nodes.nodes.itervalues())
         return cost
 

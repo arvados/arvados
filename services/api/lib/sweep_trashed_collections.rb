@@ -23,8 +23,11 @@ module SweepTrashedCollections
     end
     if need
       Thread.new do
+        Thread.current.abort_on_exception = false
         begin
           sweep_now
+        rescue => e
+          Rails.logger.error "#{e.class}: #{e}\n#{e.backtrace.join("\n\t")}"
         ensure
           ActiveRecord::Base.connection.close
         end

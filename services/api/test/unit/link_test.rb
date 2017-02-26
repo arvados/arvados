@@ -7,17 +7,27 @@ class LinkTest < ActiveSupport::TestCase
     set_user_from_auth :admin_trustedclient
   end
 
-  test "cannot delete an object referenced by links" do
-    ob = Specimen.create
-    link = Link.create(tail_uuid: users(:active).uuid,
-                       head_uuid: ob.uuid,
-                       link_class: 'test',
-                       name: 'test')
+  test "cannot delete an object referenced by unwritable links" do
+    ob = act_as_user users(:active) do
+      Specimen.create
+    end
+    link = act_as_user users(:admin) do
+      Link.create(tail_uuid: users(:active).uuid,
+                  head_uuid: ob.uuid,
+                  link_class: 'test',
+                  name: 'test')
+    end
     assert_equal users(:admin).uuid, link.owner_uuid
-    assert_raises(ActiveRecord::DeleteRestrictionError,
+    assert_raises(ArvadosModel::PermissionDeniedError,
                   "should not delete #{ob.uuid} with link #{link.uuid}") do
+      act_as_user users(:active) do
+        ob.destroy
+      end
+    end
+    act_as_user users(:admin) do
       ob.destroy
     end
+    assert_empty Link.where(uuid: link.uuid)
   end
 
   def new_active_link_valid?(link_attrs)

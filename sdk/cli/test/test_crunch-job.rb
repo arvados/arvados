@@ -8,6 +8,7 @@ class TestCrunchJob < Minitest::Test
 
   JOBSPEC = {
     grep_local: {
+      owner_uuid: 'zzzzz-j7d0g-it30l961gq3t0oi',
       script: 'grep',
       script_version: 'master',
       repository: File.absolute_path('../../../..', __FILE__),
@@ -93,6 +94,14 @@ class TestCrunchJob < Minitest::Test
     assert_match /Failing mount stub was called/, err
     assert_match /clean work dirs: exit 44\n$/, err
     assert_equal SPECIAL_EXIT[:EX_RETRY_UNLOCKED], $?.exitstatus
+  end
+
+  def test_output_collection_owner_uuid
+    j = jobspec :grep_local
+    out, err = capture_subprocess_io do
+      tryjobrecord j, binstubs: ['output_coll_owner']
+    end
+    assert_match /owner_uuid: #{j['owner_uuid']}/, err
   end
 
   def test_docker_image_missing

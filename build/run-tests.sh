@@ -523,7 +523,7 @@ retry() {
 
 do_test() {
     case "${1}" in
-        apps/workbench_units | apps/workbench_functional | apps/workbench_integration)
+        apps/workbench_units | apps/workbench_functionals | apps/workbench_integration)
             suite=apps/workbench
             ;;
         *)
@@ -553,15 +553,15 @@ do_test_once() {
         # before trying "go test". Otherwise, coverage-reporting
         # mode makes Go show the wrong line numbers when reporting
         # compilation errors.
-        cd "$GOPATH/src/${gopkgpath}" || return 1
-        go get -t . || return 1
-        go generate || return 1
-        gofmt -e -d . | egrep . && result=1
-        if [[ -n "${testargs[$1]}" ]]
+        go get -t "git.curoverse.com/arvados.git/$1" && \
+            cd "$WORKSPACE/$1" && \
+            go generate && \
+            [[ -z "$(gofmt -e -d . | tee /dev/stderr)" ]] && \
+            if [[ -n "${testargs[$1]}" ]]
         then
             # "go test -check.vv giturl" doesn't work, but this
             # does:
-            go test ${short:+-short} ${testargs[$1]} .
+            go test ${short:+-short} ${testargs[$1]}
         else
             # The above form gets verbose even when testargs is
             # empty, so use this form in such cases:

@@ -1602,9 +1602,10 @@ sub create_output_collection
 import arvados
 import sys
 print (arvados.api("v1").collections().
-       create(body={"manifest_text": sys.stdin.read()}).
+       create(body={"manifest_text": sys.stdin.read(),
+                    "owner_uuid": sys.argv[2]}).
        execute(num_retries=int(sys.argv[1]))["portable_data_hash"])
-}, retry_count());
+}, retry_count(), $Job->{owner_uuid});
 
   my $task_idx = -1;
   my $manifest_size = 0;

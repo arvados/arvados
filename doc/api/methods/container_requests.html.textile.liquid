@@ -58,17 +58,18 @@ h2(#scheduling_parameters). {% include 'container_scheduling_parameters' %}
 
 h2(#container_reuse). Container reuse
 
-When a container request is "Committed", the system will try to find and reuse any preexisting Container with the same exact command, cwd, environment, output_path, container_image, mounts, and runtime_constraints as this container request. The serialized fields environment, mounts and runtime_constraints are sorted to facilitate comparison.
+When a container request is "Committed", the system will try to find and reuse an existing Container with the same command, cwd, environment, output_path, container_image, mounts, and runtime_constraints being requested. (Hashes in the serialized fields environment, mounts and runtime_constraints are compared without regard to key order.)
 
-The system will use the following scheme to determine which Container to consider for reuse: A Container with the same exact command, cwd, environment, output_path, container_image, mounts, and runtime_constraints as this container request and,
-* The oldest successfully finished container, i.e., in state "Complete" with exit_code of 0. If matching containers with different outputs are found, the system will forgo reusing any of these finished containers and instead look for suitable containers in other states
-* The oldest "Running" container with the highest progress, i.e., the container that is most likely to finish first
-* The oldest "Locked" container with the highest priority, i.e., the container that is most likely to start first
-* The oldest "Queued" container with the highest priority, i.e, the container that is most likely to start first
+In order of preference, the system will use:
+* The first matching container to have finished successfully (i.e., reached state "Complete" with an exit_code of 0) whose log and output collections are still available.
+* The oldest matching "Running" container with the highest progress, i.e., the container that is most likely to finish first.
+* The oldest matching "Locked" container with the highest priority, i.e., the container that is most likely to start first.
+* The oldest matching "Queued" container with the highest priority, i.e,, the container that is most likely to start first.
+* A new container.
 
 h2(#cancel_container). Canceling a container request
 
-A container request may be canceled by setting it's priority to 0, using an update call.
+A container request may be canceled by setting its priority to 0, using an update call.
 
 When a container request is canceled, it will still reflect the state of the Container it is associated with via the container_uuid attribute. If that Container is being reused by any other container_requests that are still active, i.e., not yet canceled, that Container may continue to run or be scheduled to run by the system in future. However, if no other container_requests are using that Contianer, then the Container will get canceled as well.
 

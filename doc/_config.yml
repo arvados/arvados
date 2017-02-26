@@ -159,6 +159,7 @@ navbar:
       - install/configure-azure-blob-storage.html.textile.liquid
       - install/install-keepproxy.html.textile.liquid
       - install/install-keep-web.html.textile.liquid
+      - install/install-keep-balance.html.textile.liquid
     - Containers API support on SLURM:
       - install/crunch2-slurm/install-prerequisites.html.textile.liquid
       - install/crunch2-slurm/install-compute-node.html.textile.liquid

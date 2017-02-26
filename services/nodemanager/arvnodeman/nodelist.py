@@ -2,8 +2,12 @@
 
 from __future__ import absolute_import, print_function
 
+import subprocess
+
 from . import clientactor
 from . import config
+
+import arvados.util
 
 class ArvadosNodeListMonitorActor(clientactor.RemotePollLoopActor):
     """Actor to poll the Arvados node list.
@@ -19,8 +23,30 @@ class ArvadosNodeListMonitorActor(clientactor.RemotePollLoopActor):
         return node['uuid']
 
     def _send_request(self):
-        return self._client.nodes().list(limit=10000).execute()['items']
+        nodelist = arvados.util.list_all(self._client.nodes().list)
 
+        # node hostname, state
+        sinfo_out = subprocess.check_output(["sinfo", "--noheader", "--format=%n %t"])
+        nodestates = {}
+        for out in sinfo_out.splitlines():
+            nodename, state = out.split(" ", 2)
+            if state in ('alloc', 'alloc*',
+                         'comp',  'comp*',
+                         'mix',   'mix*',
+                         'drng',  'drng*'):
+                nodestates[nodename] = 'busy'
+            elif state == 'idle':
+                nodestates[nodename] = 'idle'
+            else:
+                nodestates[nodename] = 'down'
+
+        for n in nodelist:
+            if n["slot_number"] and n["hostname"] and n["hostname"] in nodestates:
+                n["crunch_worker_state"] = nodestates[n["hostname"]]
+            else:
+                n["crunch_worker_state"] = 'down'
+
+        return nodelist
 
 class CloudNodeListMonitorActor(clientactor.RemotePollLoopActor):
     """Actor to poll the cloud node list.
@@ -29,6 +55,11 @@ class CloudNodeListMonitorActor(clientactor.RemotePollLoopActor):
     nodes, and sends it to subscribers.
     """
 
+    def __init__(self, client, timer_actor, server_calc, *args, **kwargs):
+        super(CloudNodeListMonitorActor, self).__init__(
+            client, timer_actor, *args, **kwargs)
+        self._calculator = server_calc
+
     def is_common_error(self, exception):
         return self._client.is_cloud_exception(exception)
 
@@ -36,5 +67,10 @@ class CloudNodeListMonitorActor(clientactor.RemotePollLoopActor):
         return node.id
 
     def _send_request(self):
-        n = self._client.list_nodes()
-        return n
+        nodes = self._client.list_nodes()
+        for n in nodes:
+            # Replace with libcloud NodeSize object with compatible
+            # CloudSizeWrapper object which merges the size info reported from
+            # the cloud with size information from the configuration file.
+            n.size = self._calculator.find_size(n.size.id)
+        return nodes
