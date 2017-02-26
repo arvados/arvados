@@ -7,6 +7,7 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/agent"
 	"git.curoverse.com/arvados.git/sdk/go/config"
+	vaultAPI "github.com/hashicorp/vault/api"
 )
 
 func Command() *Setup {
@@ -18,14 +19,18 @@ func Command() *Setup {
 
 type Setup struct {
 	*agent.Agent
+	InitVault  bool
 	PreloadDir string
 
+	encryptKey  string
 	masterToken string
+	vaultCfg    *vaultAPI.Config
 }
 
 func (s *Setup) ParseFlags(args []string) error {
 	fs := flag.NewFlagSet("setup", flag.ContinueOnError)
 	fs.StringVar(&s.ClusterID, "cluster-id", s.ClusterID, "five-character cluster ID")
+	fs.BoolVar(&s.InitVault, "init-vault", s.InitVault, "initialize the vault if needed")
 	fs.BoolVar(&s.Unseal, "unseal", s.Unseal, "unseal the vault automatically")
 	return fs.Parse(args)
 }
@@ -41,6 +46,7 @@ func (s *Setup) Run() error {
 		(&osPackage{Debian: "nginx"}).install,
 		s.installRunit,
 		s.installConsul,
+		s.installVault,
 	} {
 		err := f()
 		if err != nil {

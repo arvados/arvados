@@ -14,7 +14,7 @@ import (
 )
 
 func (s *Setup) installConsul() error {
-	prog := s.UsrDir + "/bin/consul"
+	prog := path.Join(s.UsrDir, "bin", "consul")
 	err := (&download{
 		URL:        "https://releases.hashicorp.com/consul/0.7.5/consul_0.7.5_linux_amd64.zip",
 		Dest:       prog,
@@ -25,49 +25,34 @@ func (s *Setup) installConsul() error {
 	if err != nil {
 		return err
 	}
+
+	if err := s.consulInit(); err != nil {
+		return err
+	}
+	if s.consulCheck() == nil {
+		return nil
+	}
+
 	dataDir := path.Join(s.DataDir, "consul")
 	if err := os.MkdirAll(dataDir, 0700); err != nil {
 		return err
 	}
 
-	keyPath := path.Join(s.DataDir, "encrypt-key.txt")
-	key, err := ioutil.ReadFile(keyPath)
-	if os.IsNotExist(err) {
-		key, err = exec.Command(prog, "keygen").CombinedOutput()
-		if err != nil {
-			return err
-		}
-		err = atomicWriteFile(keyPath, key, 0400)
-	}
-	if err != nil {
-		return err
-	}
-	encryptKey := strings.TrimSpace(string(key))
-
-	tokPath := path.Join(s.DataDir, "master-token.txt")
-	if tok, err := ioutil.ReadFile(tokPath); err != nil {
-		s.masterToken = generateToken()
-		err = atomicWriteFile(tokPath, []byte(s.masterToken), 0600)
-		if err != nil {
-			return err
-		}
-	} else {
-		s.masterToken = string(tok)
-	}
-
 	cf := path.Join(s.DataDir, "consul-config.json")
 	{
 		c := map[string]interface{}{
-			"acl_datacenter":     s.ClusterID,
-			"acl_default_policy": "deny",
-			"acl_master_token":   s.masterToken,
-			"bootstrap_expect":   len(s.ControlHosts),
-			"client_addr":        "0.0.0.0",
-			"data_dir":           dataDir,
-			"datacenter":         s.ClusterID,
-			"encrypt":            encryptKey,
-			"server":             true,
-			"ui":                 true,
+			"acl_agent_token":       s.masterToken,
+			"acl_datacenter":        s.ClusterID,
+			"acl_default_policy":    "deny",
+			"acl_enforce_version_8": true,
+			"acl_master_token":      s.masterToken,
+			"bootstrap_expect":      len(s.ControlHosts),
+			"client_addr":           "0.0.0.0",
+			"data_dir":              dataDir,
+			"datacenter":            s.ClusterID,
+			"encrypt":               s.encryptKey,
+			"server":                true,
+			"ui":                    true,
 			"ports": map[string]int{
 				"dns":      s.Ports.ConsulDNS,
 				"http":     s.Ports.ConsulHTTP,
@@ -123,6 +108,35 @@ func (s *Setup) consulMaster() (*api.Client, error) {
 	ccfg.Datacenter = s.ClusterID
 	ccfg.Token = string(masterToken)
 	return api.NewClient(ccfg)
+}
+
+func (s *Setup) consulInit() error {
+	prog := path.Join(s.UsrDir, "bin", "consul")
+	keyPath := path.Join(s.DataDir, "encrypt-key.txt")
+	key, err := ioutil.ReadFile(keyPath)
+	if os.IsNotExist(err) {
+		key, err = exec.Command(prog, "keygen").CombinedOutput()
+		if err != nil {
+			return err
+		}
+		err = atomicWriteFile(keyPath, key, 0400)
+	}
+	if err != nil {
+		return err
+	}
+	s.encryptKey = strings.TrimSpace(string(key))
+
+	tokPath := path.Join(s.DataDir, "master-token.txt")
+	if tok, err := ioutil.ReadFile(tokPath); err != nil {
+		s.masterToken = generateToken()
+		err = atomicWriteFile(tokPath, []byte(s.masterToken), 0600)
+		if err != nil {
+			return err
+		}
+	} else {
+		s.masterToken = string(tok)
+	}
+	return nil
 }
 
 func (s *Setup) consulCheck() error {
