@@ -196,6 +196,9 @@ sanity_checks() {
     echo -n 'gitolite: '
     which gitolite \
         || fatal "No gitolite. Try: apt-get install gitolite3"
+    echo -n 'docker-compose: '
+    which docker-compose \
+        || fatal "No docker-compose. Try: sudo curl -L https://github.com/docker/compose/releases/download/1.11.2/docker-compose-`uname -s`-`uname -m` --output /usr/local/bin/docker-compose && sudo chmod +x /usr/local/bin/docker-compose"
 }
 
 rotate_logfile() {

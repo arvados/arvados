@@ -16,9 +16,9 @@ import (
 func (s *Setup) installConsul() error {
 	prog := s.UsrDir + "/bin/consul"
 	err := (&download{
-		URL:        "https://releases.hashicorp.com/consul/0.7.4/consul_0.7.4_linux_amd64.zip",
+		URL:        "https://releases.hashicorp.com/consul/0.7.5/consul_0.7.5_linux_amd64.zip",
 		Dest:       prog,
-		Size:       36003597,
+		Size:       36003713,
 		Mode:       0755,
 		PreloadDir: s.PreloadDir,
 	}).install()
@@ -29,43 +29,45 @@ func (s *Setup) installConsul() error {
 	if err := os.MkdirAll(dataDir, 0700); err != nil {
 		return err
 	}
-	args := []string{"agent"}
-	{
-		cf := path.Join(s.DataDir, "consul-encrypt.json")
-		if _, err := os.Stat(cf); err != nil && !os.IsNotExist(err) {
-			return err
-		} else if err != nil {
-			key, err := exec.Command(prog, "keygen").CombinedOutput()
-			if err != nil {
-				return err
-			}
-			if err = atomicWriteJSON(cf, map[string]interface{}{
-				"encrypt": strings.TrimSpace(string(key)),
-			}, 0400); err != nil {
-				return err
-			}
-		}
-		args = append(args, "-config-file="+cf)
-	}
-	{
-		s.masterToken = generateToken()
-		// os.Setenv("CONSUL_TOKEN", s.masterToken)
-		err = atomicWriteFile(path.Join(s.DataDir, "master-token.txt"), []byte(s.masterToken), 0600)
+
+	keyPath := path.Join(s.DataDir, "encrypt-key.txt")
+	key, err := ioutil.ReadFile(keyPath)
+	if os.IsNotExist(err) {
+		key, err = exec.Command(prog, "keygen").CombinedOutput()
 		if err != nil {
 			return err
 		}
-		cf := path.Join(s.DataDir, "consul-config.json")
-		err = atomicWriteJSON(cf, map[string]interface{}{
-			"acl_datacenter":        s.ClusterID,
-			"acl_default_policy":    "deny",
-			"acl_enforce_version_8": true,
-			"acl_master_token":      s.masterToken,
-			"client_addr":           "0.0.0.0",
-			"bootstrap_expect":      len(s.ControlHosts),
-			"data_dir":              dataDir,
-			"datacenter":            s.ClusterID,
-			"server":                true,
-			"ui":                    true,
+		err = atomicWriteFile(keyPath, key, 0400)
+	}
+	if err != nil {
+		return err
+	}
+	encryptKey := strings.TrimSpace(string(key))
+
+	tokPath := path.Join(s.DataDir, "master-token.txt")
+	if tok, err := ioutil.ReadFile(tokPath); err != nil {
+		s.masterToken = generateToken()
+		err = atomicWriteFile(tokPath, []byte(s.masterToken), 0600)
+		if err != nil {
+			return err
+		}
+	} else {
+		s.masterToken = string(tok)
+	}
+
+	cf := path.Join(s.DataDir, "consul-config.json")
+	{
+		c := map[string]interface{}{
+			"acl_datacenter":     s.ClusterID,
+			"acl_default_policy": "deny",
+			"acl_master_token":   s.masterToken,
+			"bootstrap_expect":   len(s.ControlHosts),
+			"client_addr":        "0.0.0.0",
+			"data_dir":           dataDir,
+			"datacenter":         s.ClusterID,
+			"encrypt":            encryptKey,
+			"server":             true,
+			"ui":                 true,
 			"ports": map[string]int{
 				"dns":      s.Ports.ConsulDNS,
 				"http":     s.Ports.ConsulHTTP,
@@ -75,23 +77,30 @@ func (s *Setup) installConsul() error {
 				"serf_wan": s.Ports.ConsulSerfWAN,
 				"server":   s.Ports.ConsulServer,
 			},
-		}, 0644)
+		}
+		err = atomicWriteJSON(cf, c, 0600)
 		if err != nil {
 			return err
 		}
-		args = append(args, "-config-file="+cf)
 	}
+
 	err = s.installService(daemon{
 		name:       "arvados-consul",
 		prog:       prog,
-		args:       args,
+		args:       []string{"agent", "-config-file=" + cf},
 		noRegister: true,
 	})
 	if err != nil {
 		return err
 	}
+	if err = waitCheck(20*time.Second, s.consulCheck); err != nil {
+		return err
+	}
 	if len(s.ControlHosts) > 1 {
-		cmd := exec.Command(prog, append([]string{"join"}, s.ControlHosts...)...)
+		args := []string{"join"}
+		args = append(args, fmt.Sprintf("-rpc-addr=127.0.0.1:%d", s.Ports.ConsulRPC))
+		args = append(args, s.ControlHosts...)
+		cmd := exec.Command(prog, args...)
 		cmd.Stdout = os.Stderr
 		cmd.Stderr = os.Stderr
 		err := cmd.Run()
@@ -99,7 +108,7 @@ func (s *Setup) installConsul() error {
 			return fmt.Errorf("consul join: %s", err)
 		}
 	}
-	return waitCheck(20*time.Second, s.consulCheck)
+	return nil
 }
 
 var consulCfg = api.DefaultConfig()
