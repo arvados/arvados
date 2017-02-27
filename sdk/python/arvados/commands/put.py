@@ -453,6 +453,9 @@ class ArvPutUploadJob(object):
         except (SystemExit, Exception) as e:
             self._checkpoint_before_quit = False
             # Log stack trace only when Ctrl-C isn't pressed (SIGINT)
+            # Note: We're expecting SystemExit instead of KeyboardInterrupt because
+            #   we have a custom signal handler in place that raises SystemExit with
+            #   the catched signal's code.
             if not isinstance(e, SystemExit) or e.code != -2:
                 self.logger.warning("Abnormal termination:\n{}".format(traceback.format_exc(e)))
             raise
