@@ -3,6 +3,7 @@ package setup
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 
 	"git.curoverse.com/arvados.git/lib/agent"
@@ -11,8 +12,14 @@ import (
 )
 
 func Command() *Setup {
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Fatalf("hostname: %s", err)
+	}
+
 	return &Setup{
 		Agent:      agent.Command(),
+		LANHost:    hostname,
 		PreloadDir: "/var/cache/arvados",
 	}
 }
@@ -20,6 +27,7 @@ func Command() *Setup {
 type Setup struct {
 	*agent.Agent
 	InitVault  bool
+	LANHost    string
 	PreloadDir string
 
 	encryptKey  string

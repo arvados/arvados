@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
 	"time"
@@ -40,12 +39,7 @@ func (s *Setup) installVault() error {
 		return err
 	}
 
-	buf, err := exec.Command("hostname").Output()
-	if err != nil {
-		return err
-	}
-	host := strings.TrimSpace(string(buf))
-	haAddr := fmt.Sprintf("http://%s:%d", host, s.Ports.VaultServer)
+	haAddr := fmt.Sprintf("http://%s:%d", s.LANHost, s.Ports.VaultServer)
 
 	cfgPath := path.Join(s.DataDir, "vault.hcl")
 	err = atomicWriteFile(cfgPath, []byte(fmt.Sprintf(`
@@ -68,7 +62,7 @@ func (s *Setup) installVault() error {
 		haAddr,
 		"vault-"+s.ClusterID+"/",
 		s.masterToken,
-		fmt.Sprintf("%s:%d", host, s.Ports.VaultServer),
+		fmt.Sprintf("%s:%d", s.LANHost, s.Ports.VaultServer),
 	)), 0600)
 	if err != nil {
 		return err
@@ -97,7 +91,7 @@ func (s *Setup) installVault() error {
 
 func (s *Setup) vaultBootstrap() error {
 	var vault *vaultAPI.Client
-	var init bool
+	var initialized bool
 	resp := &vaultAPI.InitResponse{}
 	if err := waitCheck(time.Minute, func() error {
 		var err error
@@ -105,13 +99,13 @@ func (s *Setup) vaultBootstrap() error {
 		if err != nil {
 			return err
 		}
-		init, err = vault.Sys().InitStatus()
+		initialized, err = vault.Sys().InitStatus()
 		if err != nil {
 			return err
 		} else if s.InitVault {
 			return nil
 		}
-		_, err = os.Stat(path.Join(s.DataDir, "vault", "keys.json"))
+		_, err = os.Stat(path.Join(s.DataDir, "vault", "mgmt-token.txt"))
 		if err != nil {
 			log.Print("vault is not initialized, waiting")
 			return fmt.Errorf("vault is not initialized")
@@ -119,7 +113,7 @@ func (s *Setup) vaultBootstrap() error {
 		return nil
 	}); err != nil {
 		return err
-	} else if !init {
+	} else if !initialized && s.InitVault {
 		resp, err = vault.Sys().Init(&vaultAPI.InitRequest{
 			SecretShares:    5,
 			SecretThreshold: 3,
@@ -158,44 +152,56 @@ func (s *Setup) vaultBootstrap() error {
 		return fmt.Errorf("vault unseal failed!")
 	}
 
-	// Use master token to create a management token
-	master, err := s.consulMaster()
-	if err != nil {
-		return err
-	}
-	mgmtToken, _, err := master.ACL().Create(&consulAPI.ACLEntry{Name: "vault", Type: "management"}, nil)
-	if err != nil {
-		return err
-	}
-	if err = atomicWriteFile(path.Join(s.DataDir, "vault", "mgmt-token.txt"), []byte(mgmtToken), 0400); err != nil {
-		return err
+	if s.InitVault {
+		// Use master token to create a management token
+		master, err := s.consulMaster()
+		if err != nil {
+			return err
+		}
+		mgmtToken, _, err := master.ACL().Create(&consulAPI.ACLEntry{Name: "vault", Type: "management"}, nil)
+		if err != nil {
+			return err
+		}
+
+		// Mount+configure consul backend
+		alreadyMounted := false
+		if err = waitCheck(30*time.Second, func() error {
+			// Typically this first fails "500 node not active but
+			// active node not found" but then succeeds.
+			err := vault.Sys().Mount("consul", &vaultAPI.MountInput{Type: "consul"})
+			if err != nil && strings.Contains(err.Error(), "existing mount at consul") {
+				alreadyMounted = true
+				err = nil
+			}
+			return err
+		}); err != nil {
+			return err
+		}
+		_, err = vault.Logical().Write("consul/config/access", map[string]interface{}{
+			"address": fmt.Sprintf("127.0.0.1:%d", s.Ports.ConsulHTTP),
+			"token":   string(mgmtToken),
+		})
+		if err != nil {
+			return err
+		}
+
+		// Create a role
+		_, err = vault.Logical().Write("consul/roles/write-all", map[string]interface{}{
+			"policy": base64.StdEncoding.EncodeToString([]byte(`key "" { policy = "write" }`)),
+		})
+		if err != nil {
+			return err
+		}
+
+		// Write mgmtToken after bootstrapping is done. If
+		// other nodes share our vault data dir, this is their
+		// signal to try unseal.
+		if err = atomicWriteFile(path.Join(s.DataDir, "vault", "mgmt-token.txt"), []byte(mgmtToken), 0400); err != nil {
+			return err
+		}
 	}
 
-	// Mount+configure consul backend
-	if err = waitCheck(30*time.Second, func() error {
-		// Typically this first fails "500 node not active but
-		// active node not found" but then succeeds.
-		return vault.Sys().Mount("consul", &vaultAPI.MountInput{Type: "consul"})
-	}); err != nil {
-		return err
-	}
-	_, err = vault.Logical().Write("consul/config/access", map[string]interface{}{
-		"address": fmt.Sprintf("127.0.0.1:%d", s.Ports.ConsulHTTP),
-		"token":   string(mgmtToken),
-	})
-	if err != nil {
-		return err
-	}
-
-	// Create a role
-	_, err = vault.Logical().Write("consul/roles/write-all", map[string]interface{}{
-		"policy": base64.StdEncoding.EncodeToString([]byte(`key "" { policy = "write" }`)),
-	})
-	if err != nil {
-		return err
-	}
-
-	// Generate a new token with the write-all role
+	// Test: generate a new token with the write-all role
 	secret, err := vault.Logical().Read("consul/creds/write-all")
 	if err != nil {
 		return err
@@ -205,16 +211,17 @@ func (s *Setup) vaultBootstrap() error {
 		return fmt.Errorf("secret token broken?? %+v", secret)
 	}
 	log.Printf("Vault supplied token with lease duration %s (renewable=%v): %q", time.Duration(secret.LeaseDuration)*time.Second, secret.Renewable, token)
+
 	return nil
 }
 
 func (s *Setup) vaultInit() error {
 	s.vaultCfg = vaultAPI.DefaultConfig()
+	s.vaultCfg.Address = fmt.Sprintf("http://%s:%d", s.LANHost, s.Ports.VaultServer)
 	return nil
 }
 
 func (s *Setup) vaultClient() (*vaultAPI.Client, error) {
-	s.vaultCfg.Address = fmt.Sprintf("http://0.0.0.0:%d", s.Ports.VaultServer)
 	return vaultAPI.NewClient(s.vaultCfg)
 }
 
