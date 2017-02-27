@@ -16,6 +16,8 @@ const (
 
 	Dispatch1Token    = "kwi8oowusvbutahacwk2geulqewy5oaqmpalczfna4b6bb0hfw"
 	Dispatch1AuthUUID = "zzzzz-gj3su-k9dvestay1plssr"
+
+	QueuedContainerUUID = "zzzzz-dz642-queuedcontainer"
 )
 
 // PathologicalManifest : A valid manifest designed to test

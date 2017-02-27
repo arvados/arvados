@@ -11,6 +11,7 @@ import (
 	"math"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
@@ -122,7 +123,28 @@ func doMain() error {
 		log.Printf("Error notifying init daemon: %v", err)
 	}
 
+	go checkSqueueForOrphans(dispatcher, sqCheck)
+
 	return dispatcher.Run(context.Background())
+}
+
+var containerUuidPattern = regexp.MustCompile(`^[a-z0-9]{5}-dz642-[a-z0-9]{15}$`)
+
+// Check the next squeue report, and invoke TrackContainer for all the
+// containers in the report. This gives us a chance to cancel slurm
+// jobs started by a previous dispatch process that never released
+// their slurm allocations even though their container states are
+// Cancelled or Complete. See https://dev.arvados.org/issues/10979
+func checkSqueueForOrphans(dispatcher *dispatch.Dispatcher, sqCheck *SqueueChecker) {
+	for _, uuid := range sqCheck.All() {
+		if !containerUuidPattern.MatchString(uuid) {
+			continue
+		}
+		err := dispatcher.TrackContainer(uuid)
+		if err != nil {
+			log.Printf("checkSqueueForOrphans: TrackContainer(%s): %s", uuid, err)
+		}
+	}
 }
 
 // sbatchCmd

@@ -140,7 +140,7 @@ class ContainerTest < ActiveSupport::TestCase
     assert_equal reused.uuid, c_older.uuid
   end
 
-  test "find_reusable method should not select completed container when inconsistent outputs exist" do
+  test "find_reusable method should select oldest completed container when inconsistent outputs exist" do
     set_user_from_auth :active
     common_attrs = REUSABLE_COMMON_ATTRS.merge({environment: {"var" => "complete"}, priority: 1})
     completed_attrs = {
@@ -165,16 +165,20 @@ class ContainerTest < ActiveSupport::TestCase
     cr.container_uuid = c_output2.uuid
     cr.save!
 
+    out1 = '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
+    log1 = collections(:real_log_collection).portable_data_hash
     c_output1.update_attributes!({state: Container::Locked})
     c_output1.update_attributes!({state: Container::Running})
-    c_output1.update_attributes!(completed_attrs.merge({output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'}))
+    c_output1.update_attributes!(completed_attrs.merge({log: log1, output: out1}))
 
+    out2 = 'fa7aeb5140e2848d39b416daeef4ffc5+45'
     c_output2.update_attributes!({state: Container::Locked})
     c_output2.update_attributes!({state: Container::Running})
-    c_output2.update_attributes!(completed_attrs.merge({output: 'fa7aeb5140e2848d39b416daeef4ffc5+45'}))
+    c_output2.update_attributes!(completed_attrs.merge({log: log1, output: out2}))
 
     reused = Container.find_reusable(common_attrs)
-    assert_nil reused
+    assert_not_nil reused
+    assert_equal reused.uuid, c_output1.uuid
   end
 
   test "find_reusable method should select running container by start date" do
@@ -499,6 +503,35 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :not_running_container_auth
     assert_raises ArvadosModel::PermissionDeniedError do
       c.update_attributes! output: collections(:foo_file).portable_data_hash
+    end
+  end
+
+  test "can set trashed output on running container" do
+    c, _ = minimal_new
+    set_user_from_auth :dispatch1
+    c.lock
+    c.update_attributes! state: Container::Running
+
+    output = Collection.unscoped.find_by_uuid('zzzzz-4zz18-mto52zx1s7sn3jk')
+
+    assert output.is_trashed
+    assert c.update_attributes output: output.portable_data_hash
+    assert c.update_attributes! state: Container::Complete
+  end
+
+  test "not allowed to set trashed output that is not readable by current user" do
+    c, _ = minimal_new
+    set_user_from_auth :dispatch1
+    c.lock
+    c.update_attributes! state: Container::Running
+
+    output = Collection.unscoped.find_by_uuid('zzzzz-4zz18-mto52zx1s7sn3jr')
+
+    Thread.current[:api_client_authorization] = ApiClientAuthorization.find_by_uuid(c.auth_uuid)
+    Thread.current[:user] = User.find_by_id(Thread.current[:api_client_authorization].user_id)
+
+    assert_raises ActiveRecord::RecordInvalid do
+      c.update_attributes! output: output.portable_data_hash
     end
   end
 

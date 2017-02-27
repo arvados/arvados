@@ -811,7 +811,7 @@ class ArvadosFile(object):
 
             self._segments.append(Range(new_loc, other_segment.range_start, other_segment.range_size, other_segment.segment_offset))
 
-        self._committed = False
+        self.set_committed(False)
 
     def __eq__(self, other):
         if other is self:
@@ -851,9 +851,18 @@ class ArvadosFile(object):
         self._segments = segs
 
     @synchronized
-    def set_committed(self):
-        """Set committed flag to True"""
-        self._committed = True
+    def set_committed(self, value=True):
+        """Set committed flag.
+
+        If value is True, set committed to be True.
+
+        If value is False, set committed to be False for this and all parents.
+        """
+        if value == self._committed:
+            return
+        self._committed = value
+        if self._committed is False and self.parent is not None:
+            self.parent.set_committed(False)
 
     @synchronized
     def committed(self):
@@ -914,7 +923,7 @@ class ArvadosFile(object):
                     new_segs.append(r)
 
             self._segments = new_segs
-            self._committed = False
+            self.set_committed(False)
         elif size > self.size():
             raise IOError(errno.EINVAL, "truncate() does not support extending the file size")
 
@@ -1001,7 +1010,7 @@ class ArvadosFile(object):
                 n += config.KEEP_BLOCK_SIZE
             return
 
-        self._committed = False
+        self.set_committed(False)
 
         if self._current_bblock is None or self._current_bblock.state() != _BufferBlock.WRITABLE:
             self._current_bblock = self.parent._my_block_manager().alloc_bufferblock(owner=self)
@@ -1064,7 +1073,7 @@ class ArvadosFile(object):
 
     def _add_segment(self, blocks, pos, size):
         """Internal implementation of add_segment."""
-        self._committed = False
+        self.set_committed(False)
         for lr in locators_and_ranges(blocks, pos, size):
             last = self._segments[-1] if self._segments else Range(0, 0, 0, 0)
             r = Range(lr.locator, last.range_start+last.range_size, lr.segment_size, lr.segment_offset)
@@ -1101,7 +1110,7 @@ class ArvadosFile(object):
     @must_be_writable
     @synchronized
     def _reparent(self, newparent, newname):
-        self._committed = False
+        self.set_committed(False)
         self.flush(sync=True)
         self.parent.remove(self.name)
         self.parent = newparent
