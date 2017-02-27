@@ -649,7 +649,7 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	_, err = os.Stat(collectionMetafile)
 	if err != nil {
 		// Regular directory
-		cw := CollectionWriter{runner.Kc, nil, sync.Mutex{}}
+		cw := CollectionWriter{0, runner.Kc, nil, nil, sync.Mutex{}}
 		manifestText, err = cw.WriteTree(runner.HostOutputDir, runner.CrunchLog.Logger)
 		if err != nil {
 			return fmt.Errorf("While uploading output files: %v", err)
@@ -1002,7 +1002,7 @@ func NewContainerRunner(api IArvadosClient,
 	cr.NewLogWriter = cr.NewArvLogWriter
 	cr.RunArvMount = cr.ArvMountCmd
 	cr.MkTempDir = ioutil.TempDir
-	cr.LogCollection = &CollectionWriter{kc, nil, sync.Mutex{}}
+	cr.LogCollection = &CollectionWriter{0, kc, nil, nil, sync.Mutex{}}
 	cr.Container.UUID = containerUUID
 	cr.CrunchLog = NewThrottledLogger(cr.NewLogWriter("crunch-run"))
 	cr.CrunchLog.Immediate = log.New(os.Stderr, containerUUID+" ", 0)

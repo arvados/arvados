@@ -87,27 +87,50 @@ func (m *CollectionFileWriter) NewFile(fn string) {
 	m.fn = fn
 }
 
-func (m *CollectionFileWriter) goUpload() {
+func (m *CollectionFileWriter) goUpload(workers chan struct{}) {
+	var mtx sync.Mutex
+	var wg sync.WaitGroup
+
 	var errors []error
 	uploader := m.uploader
 	finish := m.finish
 	for block := range uploader {
-		hash := fmt.Sprintf("%x", md5.Sum(block.data[0:block.offset]))
-		signedHash, _, err := m.IKeepClient.PutHB(hash, block.data[0:block.offset])
-		if err != nil {
-			errors = append(errors, err)
-		} else {
-			m.ManifestStream.Blocks = append(m.ManifestStream.Blocks, signedHash)
-		}
+		mtx.Lock()
+		m.ManifestStream.Blocks = append(m.ManifestStream.Blocks, "")
+		blockIndex := len(m.ManifestStream.Blocks) - 1
+		mtx.Unlock()
+
+		workers <- struct{}{} // wait for an available worker slot
+		wg.Add(1)
+
+		go func(block *Block, blockIndex int) {
+			hash := fmt.Sprintf("%x", md5.Sum(block.data[0:block.offset]))
+			signedHash, _, err := m.IKeepClient.PutHB(hash, block.data[0:block.offset])
+			<-workers
+
+			mtx.Lock()
+			if err != nil {
+				errors = append(errors, err)
+			} else {
+				m.ManifestStream.Blocks[blockIndex] = signedHash
+			}
+			mtx.Unlock()
+
+			wg.Done()
+		}(block, blockIndex)
 	}
+	wg.Wait()
+
 	finish <- errors
 }
 
 // CollectionWriter implements creating new Keep collections by opening files
 // and writing to them.
 type CollectionWriter struct {
+	MaxWriters int
 	IKeepClient
 	Streams []*CollectionFileWriter
+	workers chan struct{}
 	mtx     sync.Mutex
 }
 
@@ -134,10 +157,18 @@ func (m *CollectionWriter) Open(path string) io.WriteCloser {
 		make(chan *Block),
 		make(chan []error),
 		fn}
-	go fw.goUpload()
 
 	m.mtx.Lock()
 	defer m.mtx.Unlock()
+	if m.workers == nil {
+		if m.MaxWriters < 1 {
+			m.MaxWriters = 2
+		}
+		m.workers = make(chan struct{}, m.MaxWriters)
+	}
+
+	go fw.goUpload(m.workers)
+
 	m.Streams = append(m.Streams, fw)
 
 	return fw
@@ -218,10 +249,13 @@ func (m *CollectionWriter) ManifestText() (mt string, err error) {
 }
 
 type WalkUpload struct {
+	MaxWriters  int
 	kc          IKeepClient
 	stripPrefix string
 	streamMap   map[string]*CollectionFileWriter
 	status      *log.Logger
+	workers     chan struct{}
+	mtx         sync.Mutex
 }
 
 // WalkFunc walks a directory tree, uploads each file found and adds it to the
@@ -252,7 +286,17 @@ func (m *WalkUpload) WalkFunc(path string, info os.FileInfo, err error) error {
 			make(chan *Block),
 			make(chan []error),
 			""}
-		go m.streamMap[dir].goUpload()
+
+		m.mtx.Lock()
+		if m.workers == nil {
+			if m.MaxWriters < 1 {
+				m.MaxWriters = 2
+			}
+			m.workers = make(chan struct{}, m.MaxWriters)
+		}
+		m.mtx.Unlock()
+
+		go m.streamMap[dir].goUpload(m.workers)
 	}
 
 	fileWriter := m.streamMap[dir]
@@ -281,7 +325,7 @@ func (m *WalkUpload) WalkFunc(path string, info os.FileInfo, err error) error {
 
 func (cw *CollectionWriter) WriteTree(root string, status *log.Logger) (manifest string, err error) {
 	streamMap := make(map[string]*CollectionFileWriter)
-	wu := &WalkUpload{cw.IKeepClient, root, streamMap, status}
+	wu := &WalkUpload{0, cw.IKeepClient, root, streamMap, status, nil, sync.Mutex{}}
 	err = filepath.Walk(root, wu.WalkFunc)
 
 	if err != nil {
