@@ -96,6 +96,7 @@ func (sqc *SqueueChecker) start() {
 // All waits for the next squeue invocation, and returns all job
 // names reported by squeue.
 func (sqc *SqueueChecker) All() []string {
+	sqc.startOnce.Do(sqc.start)
 	sqc.L.Lock()
 	defer sqc.L.Unlock()
 	sqc.Wait()
