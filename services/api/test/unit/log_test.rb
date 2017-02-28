@@ -51,6 +51,10 @@ class LogTest < ActiveSupport::TestCase
                       'old_etag', 'old_attributes')
     assert_properties(new_props_test, event_type, props,
                       'new_etag', 'new_attributes')
+    ['old_attributes', 'new_attributes'].each do |logattr|
+      next if !props[logattr]
+      assert_match /"created_at":"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{9}Z"/, Oj.dump(props, mode: :compat)
+    end
     yield props if block_given?
   end
 

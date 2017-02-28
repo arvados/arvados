@@ -23,6 +23,8 @@ import sys
 import tempfile
 import threading
 import time
+import traceback
+
 from apiclient import errors as apiclient_errors
 from arvados._version import __version__
 
@@ -391,6 +393,7 @@ class ArvPutUploadJob(object):
         self._upload_started = False
         self.logger = logger
         self.dry_run = dry_run
+        self._checkpoint_before_quit = True
 
         if not self.use_cache and self.resume:
             raise ArvPutArgumentConflict('resume cannot be True when use_cache is False')
@@ -447,16 +450,26 @@ class ArvPutUploadJob(object):
             # Actual file upload
             self._upload_started = True # Used by the update thread to start checkpointing
             self._upload_files()
+        except (SystemExit, Exception) as e:
+            self._checkpoint_before_quit = False
+            # Log stack trace only when Ctrl-C isn't pressed (SIGINT)
+            # Note: We're expecting SystemExit instead of KeyboardInterrupt because
+            #   we have a custom signal handler in place that raises SystemExit with
+            #   the catched signal's code.
+            if not isinstance(e, SystemExit) or e.code != -2:
+                self.logger.warning("Abnormal termination:\n{}".format(traceback.format_exc(e)))
+            raise
         finally:
             if not self.dry_run:
                 # Stop the thread before doing anything else
                 self._stop_checkpointer.set()
                 self._checkpointer.join()
-                # Commit all pending blocks & one last _update()
-                self._local_collection.manifest_text()
-                self._update(final=True)
-                if save_collection:
-                    self.save_collection()
+                if self._checkpoint_before_quit:
+                    # Commit all pending blocks & one last _update()
+                    self._local_collection.manifest_text()
+                    self._update(final=True)
+                    if save_collection:
+                        self.save_collection()
             if self.use_cache:
                 self._cache_file.close()
 

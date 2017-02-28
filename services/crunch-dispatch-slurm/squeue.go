@@ -49,7 +49,7 @@ func (sqc *SqueueChecker) Stop() {
 
 // check gets the names of jobs in the SLURM queue (running and
 // queued). If it succeeds, it updates squeue.uuids and wakes up any
-// goroutines that are waiting in HasUUID().
+// goroutines that are waiting in HasUUID() or All().
 func (sqc *SqueueChecker) check() {
 	// Mutex between squeue sync and running sbatch or scancel.  This
 	// establishes a sequence so that squeue doesn't run concurrently with
@@ -93,7 +93,16 @@ func (sqc *SqueueChecker) start() {
 	}()
 }
 
-// All Uuids in squeue
-func (sqc *SqueueChecker) AllUuids() map[string]bool {
-	return sqc.uuids
+// All waits for the next squeue invocation, and returns all job
+// names reported by squeue.
+func (sqc *SqueueChecker) All() []string {
+	sqc.startOnce.Do(sqc.start)
+	sqc.L.Lock()
+	defer sqc.L.Unlock()
+	sqc.Wait()
+	var uuids []string
+	for uuid := range sqc.uuids {
+		uuids = append(uuids, uuid)
+	}
+	return uuids
 }

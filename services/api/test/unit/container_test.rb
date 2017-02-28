@@ -506,4 +506,33 @@ class ContainerTest < ActiveSupport::TestCase
     end
   end
 
+  test "can set trashed output on running container" do
+    c, _ = minimal_new
+    set_user_from_auth :dispatch1
+    c.lock
+    c.update_attributes! state: Container::Running
+
+    output = Collection.unscoped.find_by_uuid('zzzzz-4zz18-mto52zx1s7sn3jk')
+
+    assert output.is_trashed
+    assert c.update_attributes output: output.portable_data_hash
+    assert c.update_attributes! state: Container::Complete
+  end
+
+  test "not allowed to set trashed output that is not readable by current user" do
+    c, _ = minimal_new
+    set_user_from_auth :dispatch1
+    c.lock
+    c.update_attributes! state: Container::Running
+
+    output = Collection.unscoped.find_by_uuid('zzzzz-4zz18-mto52zx1s7sn3jr')
+
+    Thread.current[:api_client_authorization] = ApiClientAuthorization.find_by_uuid(c.auth_uuid)
+    Thread.current[:user] = User.find_by_id(Thread.current[:api_client_authorization].user_id)
+
+    assert_raises ActiveRecord::RecordInvalid do
+      c.update_attributes! output: output.portable_data_hash
+    end
+  end
+
 end
