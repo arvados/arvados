@@ -6,12 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	"git.curoverse.com/arvados.git/sdk/go/manifest"
-	"github.com/curoverse/dockerclient"
-	. "gopkg.in/check.v1"
 	"io"
 	"io/ioutil"
 	"os"
@@ -23,6 +17,13 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	"git.curoverse.com/arvados.git/sdk/go/manifest"
+	"github.com/curoverse/dockerclient"
+	. "gopkg.in/check.v1"
 )
 
 // Gocheck boilerplate
@@ -717,7 +718,28 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "/bin\n"), Equals, true)
 }
 
-func (s *TestSuite) TestCancel(c *C) {
+func (s *TestSuite) TestStopOnSignal(c *C) {
+	s.testStopContainer(c, func(cr *ContainerRunner) {
+		go func() {
+			for cr.ContainerID == "" {
+				time.Sleep(time.Millisecond)
+			}
+			cr.SigChan <- syscall.SIGINT
+		}()
+	})
+}
+
+func (s *TestSuite) TestStopOnArvMountDeath(c *C) {
+	s.testStopContainer(c, func(cr *ContainerRunner) {
+		cr.ArvMountExit = make(chan error)
+		go func() {
+			cr.ArvMountExit <- exec.Command("true").Run()
+			close(cr.ArvMountExit)
+		}()
+	})
+}
+
+func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
 	record := `{
     "command": ["/bin/sh", "-c", "echo foo && sleep 30 && echo bar"],
     "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
@@ -744,30 +766,27 @@ func (s *TestSuite) TestCancel(c *C) {
 
 	api := &ArvTestClient{Container: rec}
 	cr := NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	am := &ArvMountCmdLine{}
-	cr.RunArvMount = am.ArvMountTest
+	cr.RunArvMount = func([]string, string) (*exec.Cmd, error) { return nil, nil }
+	setup(cr)
 
+	done := make(chan error)
 	go func() {
-		for cr.ContainerID == "" {
-			time.Sleep(time.Millisecond)
-		}
-		cr.SigChan <- syscall.SIGINT
+		done <- cr.Run()
 	}()
-
-	err = cr.Run()
-
-	c.Check(err, IsNil)
-	if err != nil {
-		for k, v := range api.Logs {
-			c.Log(k)
-			c.Log(v.String())
-		}
+	select {
+	case <-time.After(20 * time.Second):
+		c.Fatal("timed out")
+	case err = <-done:
+		c.Check(err, IsNil)
+	}
+	for k, v := range api.Logs {
+		c.Log(k)
+		c.Log(v.String())
 	}
 
 	c.Check(api.CalledWith("container.log", nil), NotNil)
 	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
 	c.Check(strings.HasSuffix(api.Logs["stdout"].String(), "foo\n"), Equals, true)
-
 }
 
 func (s *TestSuite) TestFullRunSetEnv(c *C) {
