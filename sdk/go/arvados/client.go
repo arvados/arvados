@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -241,7 +242,12 @@ func (c *Client) DiscoveryDocument() (*DiscoveryDocument, error) {
 	return c.dd, nil
 }
 
+var pdhRegexp = regexp.MustCompile(`^[0-9a-f]{32}\+\d+$`)
+
 func (c *Client) modelForUUID(dd *DiscoveryDocument, uuid string) (string, error) {
+	if pdhRegexp.MatchString(uuid) {
+		return "Collection", nil
+	}
 	if len(uuid) != 27 {
 		return "", fmt.Errorf("invalid UUID: %q", uuid)
 	}

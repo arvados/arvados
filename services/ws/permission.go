@@ -36,13 +36,22 @@ type cachingPermChecker struct {
 	*arvados.Client
 	cache      map[string]cacheEnt
 	maxCurrent int
+
+	nChecks  uint64
+	nMisses  uint64
+	nInvalid uint64
 }
 
 func (pc *cachingPermChecker) SetToken(token string) {
+	if pc.Client.AuthToken == token {
+		return
+	}
 	pc.Client.AuthToken = token
+	pc.cache = make(map[string]cacheEnt)
 }
 
 func (pc *cachingPermChecker) Check(uuid string) (bool, error) {
+	pc.nChecks++
 	logger := logger(nil).
 		WithField("token", pc.Client.AuthToken).
 		WithField("uuid", uuid)
@@ -55,8 +64,11 @@ func (pc *cachingPermChecker) Check(uuid string) (bool, error) {
 	var buf map[string]interface{}
 	path, err := pc.PathForUUID("get", uuid)
 	if err != nil {
+		pc.nInvalid++
 		return false, err
 	}
+
+	pc.nMisses++
 	err = pc.RequestAndDecode(&buf, "GET", path, nil, url.Values{
 		"select": {`["uuid"]`},
 	})
@@ -64,12 +76,7 @@ func (pc *cachingPermChecker) Check(uuid string) (bool, error) {
 	var allowed bool
 	if err == nil {
 		allowed = true
-	} else if txErr, ok := err.(*arvados.TransactionError); ok && txErr.StatusCode == http.StatusNotFound {
-		allowed = false
-	} else if txErr.StatusCode == http.StatusForbidden {
-		// Some requests are expressly forbidden for reasons
-		// other than "you aren't allowed to know whether this
-		// UUID exists" (404).
+	} else if txErr, ok := err.(*arvados.TransactionError); ok && pc.isNotAllowed(txErr.StatusCode) {
 		allowed = false
 	} else {
 		logger.WithError(err).Error("lookup error")
@@ -78,6 +85,15 @@ func (pc *cachingPermChecker) Check(uuid string) (bool, error) {
 	logger.WithField("allowed", allowed).Debug("cache miss")
 	pc.cache[uuid] = cacheEnt{Time: now, allowed: allowed}
 	return allowed, nil
+}
+
+func (pc *cachingPermChecker) isNotAllowed(status int) bool {
+	switch status {
+	case http.StatusForbidden, http.StatusUnauthorized, http.StatusNotFound:
+		return true
+	default:
+		return false
+	}
 }
 
 func (pc *cachingPermChecker) tidy() {
