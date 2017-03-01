@@ -1,3 +1,4 @@
+require 'safe_json'
 require 'test_helper'
 require 'create_superuser_token'
 
