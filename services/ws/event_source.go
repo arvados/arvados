@@ -43,6 +43,9 @@ type pgEventSource struct {
 	eventsOut  uint64
 
 	cancel func()
+
+	setupOnce sync.Once
+	ready     chan bool
 }
 
 var _ debugStatuser = (*pgEventSource)(nil)
@@ -63,11 +66,24 @@ func (ps *pgEventSource) listenerProblem(et pq.ListenerEventType, err error) {
 	ps.cancel()
 }
 
+func (ps *pgEventSource) setup() {
+	ps.ready = make(chan bool)
+}
+
+// waitReady returns when private fields (cancel, db) are available
+// for tests to use.
+func (ps *pgEventSource) waitReady() {
+	ps.setupOnce.Do(ps.setup)
+	<-ps.ready
+}
+
 // Run listens for event notifications on the "logs" channel and sends
 // them to all subscribers.
 func (ps *pgEventSource) Run() {
 	logger(nil).Debug("pgEventSource Run starting")
 	defer logger(nil).Debug("pgEventSource Run finished")
+
+	ps.setupOnce.Do(ps.setup)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	ps.cancel = cancel
@@ -101,6 +117,8 @@ func (ps *pgEventSource) Run() {
 	}
 	defer ps.pqListener.Close()
 	logger(nil).Debug("pq Listen setup done")
+
+	close(ps.ready)
 
 	ps.queue = make(chan *event, ps.QueueSize)
 	defer close(ps.queue)

@@ -1,38 +1,15 @@
 package main
 
-import (
-	"database/sql"
-
-	"git.curoverse.com/arvados.git/sdk/go/config"
-	check "gopkg.in/check.v1"
-)
+import check "gopkg.in/check.v1"
 
 var _ = check.Suite(&eventSuite{})
 
 type eventSuite struct{}
 
 func (*eventSuite) TestDetail(c *check.C) {
-	var railsDB struct {
-		Test struct {
-			Database string
-			Username string
-			Password string
-			Host     string
-		}
-	}
-	err := config.LoadFile(&railsDB, "../api/config/database.yml")
-	c.Assert(err, check.IsNil)
-	cfg := pgConfig{
-		"dbname":   railsDB.Test.Database,
-		"host":     railsDB.Test.Host,
-		"password": railsDB.Test.Password,
-		"user":     railsDB.Test.Username,
-	}
-	db, err := sql.Open("postgres", cfg.ConnectionString())
-	c.Assert(err, check.IsNil)
 	e := &event{
 		LogID: 17,
-		db:    db,
+		db:    testDB(),
 	}
 	logRow := e.Detail()
 	c.Assert(logRow, check.NotNil)

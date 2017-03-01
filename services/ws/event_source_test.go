@@ -14,7 +14,7 @@ var _ = check.Suite(&eventSourceSuite{})
 
 type eventSourceSuite struct{}
 
-func testDBConfig() (pgConfig, error) {
+func testDBConfig() pgConfig {
 	var railsDB struct {
 		Test struct {
 			Database string
@@ -25,7 +25,7 @@ func testDBConfig() (pgConfig, error) {
 	}
 	err := config.LoadFile(&railsDB, "../api/config/database.yml")
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	cfg := pgConfig{
 		"dbname":   railsDB.Test.Database,
@@ -33,22 +33,20 @@ func testDBConfig() (pgConfig, error) {
 		"password": railsDB.Test.Password,
 		"user":     railsDB.Test.Username,
 	}
-	return cfg, nil
+	return cfg
 }
 
-func testDB() (*sql.DB, error) {
-	cfg, err := testDBConfig()
+func testDB() *sql.DB {
+	db, err := sql.Open("postgres", testDBConfig().ConnectionString())
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
-	return sql.Open("postgres", cfg.ConnectionString())
+	return db
 }
 
 func (*eventSourceSuite) TestEventSource(c *check.C) {
-	cfg, err := testDBConfig()
-	if err != nil {
-		c.Fatal(err)
-	}
+	cfg := testDBConfig()
+	db := testDB()
 	pges := &pgEventSource{
 		DataSource: cfg.ConnectionString(),
 		QueueSize:  4,
@@ -59,15 +57,8 @@ func (*eventSourceSuite) TestEventSource(c *check.C) {
 		sinks[i] = pges.NewSink()
 	}
 
-	// wait for listener to start, as evidenced by queue channel
-	// appearing (relying on internal implementation detail here)
-	for deadline := time.Now().Add(10 * time.Second); pges.queue == nil; time.Sleep(10 * time.Millisecond) {
-		c.Assert(time.Now().After(deadline), check.Equals, false)
-	}
+	pges.waitReady()
 	defer pges.cancel()
-
-	db, err := testDB()
-	c.Assert(err, check.IsNil)
 
 	done := make(chan bool, 1)
 
