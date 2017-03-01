@@ -1,5 +1,6 @@
 require 'has_uuid'
 require 'record_filters'
+require 'serializers'
 
 class ArvadosModel < ActiveRecord::Base
   self.abstract_class = true
@@ -452,6 +453,19 @@ class ArvadosModel < ActiveRecord::Base
     else
       x
     end
+  end
+
+  def self.where_serialized(colname, value)
+    where("#{colname.to_s} IN (?)", [value.to_yaml, SafeJSON.dump(value)])
+  end
+
+  Serializer = {
+    Hash => HashSerializer,
+    Array => ArraySerializer,
+  }
+
+  def self.serialize(colname, type)
+    super(colname, Serializer[type])
   end
 
   def ensure_serialized_attribute_type

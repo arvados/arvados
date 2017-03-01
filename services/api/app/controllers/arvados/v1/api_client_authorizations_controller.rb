@@ -1,3 +1,5 @@
+require 'safe_json'
+
 class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
   accept_attribute_as_json :scopes, Array
   before_filter :current_api_client_is_trusted, :except => [:current]
@@ -16,7 +18,7 @@ class Arvados::V1::ApiClientAuthorizationsController < ApplicationController
       new(user_id: system_user.id,
           api_client_id: params[:api_client_id] || current_api_client.andand.id,
           created_by_ip_address: remote_ip,
-          scopes: Oj.strict_load(params[:scopes] || '["all"]'))
+          scopes: SafeJSON.load(params[:scopes] || '["all"]'))
     @object.save!
     show
   end

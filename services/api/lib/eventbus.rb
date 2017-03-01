@@ -3,10 +3,11 @@
 Thread.abort_on_exception = true
 
 require 'eventmachine'
-require 'oj'
 require 'faye/websocket'
-require 'record_filters'
 require 'load_param'
+require 'oj'
+require 'record_filters'
+require 'safe_json'
 require 'set'
 require 'thread'
 
@@ -79,7 +80,7 @@ class EventBus
   end
 
   def send_message(ws, obj)
-    ws.send(Oj.dump(obj, mode: :compat))
+    ws.send(SafeJSON.dump(obj))
   end
 
   # Push out any pending events to the connection +ws+
@@ -181,7 +182,7 @@ class EventBus
     begin
       begin
         # Parse event data as JSON
-        p = (Oj.strict_load event.data).symbolize_keys
+        p = SafeJSON.load(event.data).symbolize_keys
         filter = Filter.new(p)
       rescue Oj::Error => e
         send_message(ws, {status: 400, message: "malformed request"})

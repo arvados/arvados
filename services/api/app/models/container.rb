@@ -1,4 +1,5 @@
 require 'whitelist_update'
+require 'safe_json'
 
 class Container < ArvadosModel
   include HasUuid
@@ -83,13 +84,13 @@ class Container < ArvadosModel
 
   def self.find_reusable(attrs)
     candidates = Container.
-      where('command = ?', attrs[:command].to_yaml).
+      where_serialized(:command, attrs[:command]).
       where('cwd = ?', attrs[:cwd]).
-      where('environment = ?', self.deep_sort_hash(attrs[:environment]).to_yaml).
+      where_serialized(:environment, self.deep_sort_hash(attrs[:environment])).
       where('output_path = ?', attrs[:output_path]).
       where('container_image = ?', attrs[:container_image]).
-      where('mounts = ?', self.deep_sort_hash(attrs[:mounts]).to_yaml).
-      where('runtime_constraints = ?', self.deep_sort_hash(attrs[:runtime_constraints]).to_yaml)
+      where_serialized(:mounts, self.deep_sort_hash(attrs[:mounts])).
+      where_serialized(:runtime_constraints, self.deep_sort_hash(attrs[:runtime_constraints]))
 
     # Check for Completed candidates whose output and log are both readable.
     select_readable_pdh = Collection.

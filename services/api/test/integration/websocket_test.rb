@@ -1,6 +1,7 @@
-require 'test_helper'
-require 'oj'
 require 'database_cleaner'
+require 'oj'
+require 'safe_json'
+require 'test_helper'
 
 DatabaseCleaner.strategy = :deletion
 
@@ -112,7 +113,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
 
     ws_helper do |ws|
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         status = d["status"]
         ws.close
       end
@@ -130,7 +131,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         status = d["status"]
         ws.close
       end
@@ -152,7 +153,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -189,7 +190,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -229,7 +230,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -268,7 +269,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -312,7 +313,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -350,7 +351,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -394,7 +395,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -442,7 +443,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -487,7 +488,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -557,7 +558,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -581,7 +582,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         status = d["status"]
         ws.close
       end
@@ -599,7 +600,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         status = d["status"]
         ws.close
       end
@@ -617,7 +618,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         status = d["status"]
         ws.close
       end
@@ -640,7 +641,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         case state
         when (1..Rails.configuration.websocket_max_filters)
           assert_equal 200, d["status"]
@@ -675,7 +676,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         case state
         when 1
           assert_equal 200, d["status"]
@@ -712,7 +713,7 @@ class WebsocketTest < ActionDispatch::IntegrationTest
       end
 
       ws.on :message do |event|
-        d = Oj.strict_load event.data
+        d = SafeJSON.load event.data
         case state
         when 1
           assert_equal 200, d["status"]
