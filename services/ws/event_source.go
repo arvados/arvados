@@ -70,9 +70,14 @@ func (ps *pgEventSource) setup() {
 	ps.ready = make(chan bool)
 }
 
-// waitReady returns when private fields (cancel, db) are available
-// for tests to use.
-func (ps *pgEventSource) waitReady() {
+// Close stops listening for new events and disconnects all clients.
+func (ps *pgEventSource) Close() {
+	ps.WaitReady()
+	ps.cancel()
+}
+
+// WaitReady returns when the event listener is connected.
+func (ps *pgEventSource) WaitReady() {
 	ps.setupOnce.Do(ps.setup)
 	<-ps.ready
 }
@@ -84,6 +89,12 @@ func (ps *pgEventSource) Run() {
 	defer logger(nil).Debug("pgEventSource Run finished")
 
 	ps.setupOnce.Do(ps.setup)
+	ready := ps.ready
+	defer func() {
+		if ready != nil {
+			close(ready)
+		}
+	}()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	ps.cancel = cancel
@@ -101,11 +112,11 @@ func (ps *pgEventSource) Run() {
 
 	db, err := sql.Open("postgres", ps.DataSource)
 	if err != nil {
-		logger(nil).WithError(err).Fatal("sql.Open failed")
+		logger(nil).WithError(err).Error("sql.Open failed")
 		return
 	}
 	if err = db.Ping(); err != nil {
-		logger(nil).WithError(err).Fatal("db.Ping failed")
+		logger(nil).WithError(err).Error("db.Ping failed")
 		return
 	}
 	ps.db = db
@@ -113,12 +124,15 @@ func (ps *pgEventSource) Run() {
 	ps.pqListener = pq.NewListener(ps.DataSource, time.Second, time.Minute, ps.listenerProblem)
 	err = ps.pqListener.Listen("logs")
 	if err != nil {
-		logger(nil).WithError(err).Fatal("pq Listen failed")
+		logger(nil).WithError(err).Error("pq Listen failed")
+		return
 	}
 	defer ps.pqListener.Close()
 	logger(nil).Debug("pq Listen setup done")
 
-	close(ps.ready)
+	close(ready)
+	// Avoid double-close in deferred func
+	ready = nil
 
 	ps.queue = make(chan *event, ps.QueueSize)
 	defer close(ps.queue)

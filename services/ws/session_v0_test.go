@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
-	"net/http"
 	"net/url"
 	"os"
 	"time"
@@ -228,57 +226,13 @@ func (s *v0Suite) expectLog(c *check.C, r *json.Decoder) *arvados.Log {
 	return lg
 }
 
-func (s *v0Suite) testClient() (*testServer, *websocket.Conn, *json.Decoder, *json.Encoder) {
+func (s *v0Suite) testClient() (*server, *websocket.Conn, *json.Decoder, *json.Encoder) {
 	srv := newTestServer()
-	conn, err := websocket.Dial("ws://"+srv.addr+"/websocket?api_token="+s.token, "", "http://"+srv.addr)
+	conn, err := websocket.Dial("ws://"+srv.listener.Addr().String()+"/websocket?api_token="+s.token, "", "http://"+srv.listener.Addr().String())
 	if err != nil {
 		panic(err)
 	}
 	w := json.NewEncoder(conn)
 	r := json.NewDecoder(conn)
 	return srv, conn, r, w
-}
-
-type testServer struct {
-	http.Server
-	addr string
-	ln   net.Listener
-	pges *pgEventSource
-}
-
-func (srv *testServer) Close() {
-	srv.ln.Close()
-	srv.pges.cancel()
-}
-
-func newTestServer() *testServer {
-	ln, err := net.Listen("tcp", ":")
-	if err != nil {
-		panic(err)
-	}
-	cfg := defaultConfig()
-	cfg.Client = *(arvados.NewClientFromEnv())
-	pges := &pgEventSource{
-		DataSource: testDBConfig().ConnectionString(),
-		QueueSize:  4,
-	}
-	srv := &testServer{
-		Server: http.Server{
-			Addr:         ":",
-			ReadTimeout:  10 * time.Second,
-			WriteTimeout: 10 * time.Second,
-			Handler: &router{
-				Config:         &cfg,
-				eventSource:    pges,
-				newPermChecker: func() permChecker { return newPermChecker(cfg.Client) },
-			},
-		},
-		addr: ln.Addr().String(),
-		ln:   ln,
-		pges: pges,
-	}
-	go pges.Run()
-	go srv.Serve(ln)
-	pges.waitReady()
-	return srv
 }

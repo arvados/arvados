@@ -57,7 +57,7 @@ func (*eventSourceSuite) TestEventSource(c *check.C) {
 		sinks[i] = pges.NewSink()
 	}
 
-	pges.waitReady()
+	pges.WaitReady()
 	defer pges.cancel()
 
 	done := make(chan bool, 1)
