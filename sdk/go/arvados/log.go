@@ -6,13 +6,13 @@ import (
 
 // Log is an arvados#log record
 type Log struct {
-	ID              uint64                 `json:"id"`
-	UUID            string                 `json:"uuid"`
-	ObjectUUID      string                 `json:"object_uuid"`
-	ObjectOwnerUUID string                 `json:"object_owner_uuid"`
-	EventType       string                 `json:"event_type"`
+	ID              uint64                 `json:"id,omitempty"`
+	UUID            string                 `json:"uuid,omitempty"`
+	ObjectUUID      string                 `json:"object_uuid,omitempty"`
+	ObjectOwnerUUID string                 `json:"object_owner_uuid,omitempty"`
+	EventType       string                 `json:"event_type,omitempty"`
 	EventAt         *time.Time             `json:"event,omitempty"`
-	Properties      map[string]interface{} `json:"properties"`
+	Properties      map[string]interface{} `json:"properties,omitempty"`
 	CreatedAt       *time.Time             `json:"created_at,omitempty"`
 }
 

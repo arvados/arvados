@@ -2,17 +2,21 @@ package arvadostest
 
 // IDs of API server's test fixtures
 const (
-	SpectatorToken        = "zw2f4gwx8hw8cjre7yp6v1zylhrhn3m5gvjq73rtpwhmknrybu"
-	ActiveToken           = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
-	AdminToken            = "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h"
-	AnonymousToken        = "4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi"
-	DataManagerToken      = "320mkve8qkswstz7ff61glpk3mhgghmg67wmic7elw4z41pke1"
-	FooCollection         = "zzzzz-4zz18-fy296fx3hot09f7"
-	NonexistentCollection = "zzzzz-4zz18-totallynotexist"
-	HelloWorldCollection  = "zzzzz-4zz18-4en62shvi99lxd4"
-	FooBarDirCollection   = "zzzzz-4zz18-foonbarfilesdir"
-	FooPdh                = "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"
-	HelloWorldPdh         = "55713e6a34081eb03609e7ad5fcad129+62"
+	SpectatorToken          = "zw2f4gwx8hw8cjre7yp6v1zylhrhn3m5gvjq73rtpwhmknrybu"
+	ActiveToken             = "3kg6k6lzmp9kj5cpkcoxie963cmvjahbt2fod9zru30k1jqdmi"
+	AdminToken              = "4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h"
+	AnonymousToken          = "4kg6k6lzmp9kj4cpkcoxie964cmvjahbt4fod9zru44k4jqdmi"
+	DataManagerToken        = "320mkve8qkswstz7ff61glpk3mhgghmg67wmic7elw4z41pke1"
+	ActiveUserUUID          = "zzzzz-tpzed-xurymjxw79nv3jz"
+	SpectatorUserUUID       = "zzzzz-tpzed-l1s2piq4t4mps8r"
+	UserAgreementCollection = "zzzzz-4zz18-uukreo9rbgwsujr" // user_agreement_in_anonymously_accessible_project
+	FooCollection           = "zzzzz-4zz18-fy296fx3hot09f7"
+	NonexistentCollection   = "zzzzz-4zz18-totallynotexist"
+	HelloWorldCollection    = "zzzzz-4zz18-4en62shvi99lxd4"
+	FooBarDirCollection     = "zzzzz-4zz18-foonbarfilesdir"
+	UserAgreementPDH        = "b519d9cb706a29fc7ea24dbea2f05851+93"
+	FooPdh                  = "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"
+	HelloWorldPdh           = "55713e6a34081eb03609e7ad5fcad129+62"
 
 	Dispatch1Token    = "kwi8oowusvbutahacwk2geulqewy5oaqmpalczfna4b6bb0hfw"
 	Dispatch1AuthUUID = "zzzzz-gj3su-k9dvestay1plssr"
