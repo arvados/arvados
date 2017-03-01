@@ -242,11 +242,13 @@ func (s *v0Suite) testClient() (*testServer, *websocket.Conn, *json.Decoder, *js
 type testServer struct {
 	http.Server
 	addr string
-	stop chan bool
+	ln   net.Listener
+	pges *pgEventSource
 }
 
 func (srv *testServer) Close() {
-	close(srv.stop)
+	srv.ln.Close()
+	srv.pges.cancel()
 }
 
 func newTestServer() *testServer {
@@ -256,7 +258,7 @@ func newTestServer() *testServer {
 	}
 	cfg := defaultConfig()
 	cfg.Client = *(arvados.NewClientFromEnv())
-	es := &pgEventSource{
+	pges := &pgEventSource{
 		DataSource: testDBConfig().ConnectionString(),
 		QueueSize:  4,
 	}
@@ -267,20 +269,16 @@ func newTestServer() *testServer {
 			WriteTimeout: 10 * time.Second,
 			Handler: &router{
 				Config:         &cfg,
-				eventSource:    es,
+				eventSource:    pges,
 				newPermChecker: func() permChecker { return newPermChecker(cfg.Client) },
 			},
 		},
 		addr: ln.Addr().String(),
-		stop: make(chan bool),
+		ln:   ln,
+		pges: pges,
 	}
-	go es.Run()
+	go pges.Run()
 	go srv.Serve(ln)
-	go func() {
-		<-srv.stop
-		ln.Close()
-		es.cancel()
-	}()
-	es.waitReady()
+	pges.waitReady()
 	return srv
 }
