@@ -91,6 +91,7 @@ func Command() *Agent {
 		DataDir:    "/var/lib/arvados",
 		UsrDir:     "/usr/local/arvados",
 		RunitSvDir: "/etc/sv",
+		Unseal:     true,
 	}
 }
 

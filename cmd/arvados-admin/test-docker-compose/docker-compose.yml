@@ -11,7 +11,7 @@ services:
       - ./encrypt-key.txt:/var/lib/arvados/encrypt-key.txt:ro
       - ./master-token.txt:/var/lib/arvados/master-token.txt:ro
       - vault:/var/lib/arvados/vault
-    command: ["bash", "-c", "runsvdir /etc/sv & arvados-admin setup -unseal=true -init-vault=true && wait"]
+    command: ["bash", "-c", "runsvdir /etc/sv & arvados-admin setup -init-vault=true -wait"]
   sys1:
     build: ../test-debian8
     cap_add:
@@ -23,7 +23,7 @@ services:
       - ./encrypt-key.txt:/var/lib/arvados/encrypt-key.txt:ro
       - ./master-token.txt:/var/lib/arvados/master-token.txt:ro
       - vault:/var/lib/arvados/vault
-    command: ["bash", "-c", "runsvdir /etc/sv & arvados-admin setup -unseal=true && wait"]
+    command: ["bash", "-c", "runsvdir /etc/sv & arvados-admin setup -wait"]
   sys2:
     build: ../test-debian8
     cap_add:
@@ -35,6 +35,6 @@ services:
       - ./encrypt-key.txt:/var/lib/arvados/encrypt-key.txt:ro
       - ./master-token.txt:/var/lib/arvados/master-token.txt:ro
       - vault:/var/lib/arvados/vault
-    command: ["bash", "-c", "runsvdir /etc/sv & arvados-admin setup -unseal=true && wait"]
+    command: ["bash", "-c", "runsvdir /etc/sv & arvados-admin setup -wait"]
 volumes:
   vault:
