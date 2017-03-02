@@ -58,6 +58,10 @@ testlogger = INFO
         self.assertEqual(1, kwargs['cores'])
         self.assertEqual(0.8, kwargs['price'])
 
+    def test_default_node_mem_scaling(self):
+        config = self.load_config()
+        self.assertEqual(0.95, config.getfloat('Daemon', 'node_mem_scaling'))
+
     def test_shutdown_windows(self):
         config = self.load_config()
         self.assertEqual([52, 6, 2], config.shutdown_windows())

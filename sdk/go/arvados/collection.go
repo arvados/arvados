@@ -3,9 +3,10 @@ package arvados
 import (
 	"bufio"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 	"strings"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/blockdigest"
 )
 
 // Collection is an arvados#collection resource.
@@ -14,6 +15,7 @@ type Collection struct {
 	TrashAt                *time.Time `json:"trash_at,omitempty"`
 	ManifestText           string     `json:"manifest_text,omitempty"`
 	UnsignedManifestText   string     `json:"unsigned_manifest_text,omitempty"`
+	Name                   string     `json:"name,omitempty"`
 	CreatedAt              *time.Time `json:"created_at,omitempty"`
 	ModifiedAt             *time.Time `json:"modified_at,omitempty"`
 	PortableDataHash       string     `json:"portable_data_hash,omitempty"`

@@ -726,6 +726,7 @@ func (runner *ContainerRunner) CaptureOutput() error {
 	manifestText = manifest.Extract(".", ".").Text
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{
+			"ensure_unique_name": true,
 			"collection": arvadosclient.Dict{
 				"is_trashed":    true,
 				"name":          "output for " + runner.Container.UUID,
@@ -830,6 +831,7 @@ func (runner *ContainerRunner) CommitLogs() error {
 	var response arvados.Collection
 	err = runner.ArvClient.Create("collections",
 		arvadosclient.Dict{
+			"ensure_unique_name": true,
 			"collection": arvadosclient.Dict{
 				"is_trashed":    true,
 				"name":          "logs for " + runner.Container.UUID,

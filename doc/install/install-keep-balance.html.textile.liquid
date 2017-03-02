@@ -59,9 +59,20 @@ zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
 </code></pre>
 </notextile>
 
-h3. Create a configuration file
+h3. Update keepstore configuration files
 
-On the host running keep-balance, create @/etc/arvados/keep-balance/keep-balance.yml@ using the token you generated in the previous step.  Follow this YAML format:
+On each node that runs keepstore, save the token you generated in the previous step in a text file like @/etc/arvados/keepstore/system-auth-token.txt@ and then create or update @/etc/arvados/keepstore/keepstore.yml@ with the following key:
+
+<notextile>
+<pre><code>SystemAuthTokenFile: /etc/arvados/keepstore/system-auth-token.txt
+</code></pre>
+</notextile>
+
+Restart all keepstore services to apply the updated configuration.
+
+h3. Create a keep-balance configuration file
+
+On the host running keep-balance, create @/etc/arvados/keep-balance/keep-balance.yml@ using the token you generated above.  Follow this YAML format:
 
 <notextile>
 <pre><code>Client:

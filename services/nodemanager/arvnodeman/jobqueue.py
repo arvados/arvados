@@ -19,13 +19,14 @@ class ServerCalculator(object):
     """
 
     class CloudSizeWrapper(object):
-        def __init__(self, real_size, **kwargs):
+        def __init__(self, real_size, node_mem_scaling, **kwargs):
             self.real = real_size
             for name in ['id', 'name', 'ram', 'disk', 'bandwidth', 'price',
                          'extra']:
                 setattr(self, name, getattr(self.real, name))
             self.cores = kwargs.pop('cores')
             self.scratch = self.disk
+            self.ram = int(self.ram * node_mem_scaling)
             for name, override in kwargs.iteritems():
                 if not hasattr(self, name):
                     raise ValueError("unrecognized size field '%s'" % (name,))
@@ -42,8 +43,9 @@ class ServerCalculator(object):
             return True
 
 
-    def __init__(self, server_list, max_nodes=None, max_price=None):
-        self.cloud_sizes = [self.CloudSizeWrapper(s, **kws)
+    def __init__(self, server_list, max_nodes=None, max_price=None,
+                 node_mem_scaling=0.95):
+        self.cloud_sizes = [self.CloudSizeWrapper(s, node_mem_scaling, **kws)
                             for s, kws in server_list]
         self.cloud_sizes.sort(key=lambda s: s.price)
         self.max_nodes = max_nodes or float('inf')

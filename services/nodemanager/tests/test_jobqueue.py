@@ -28,6 +28,22 @@ class ServerCalculatorTestCase(unittest.TestCase):
         servlist = self.calculate(servcalc, {'min_nodes': 3})
         self.assertEqual(3, len(servlist))
 
+    def test_default_5pct_ram_value_decrease(self):
+        servcalc = self.make_calculator([1])
+        servlist = self.calculate(servcalc, {'min_ram_mb_per_node': 128})
+        self.assertEqual(0, len(servlist))
+        servlist = self.calculate(servcalc, {'min_ram_mb_per_node': 121})
+        self.assertEqual(1, len(servlist))
+
+    def test_custom_node_mem_scaling_factor(self):
+        # Simulate a custom 'node_mem_scaling' config parameter by passing
+        # the value to ServerCalculator
+        servcalc = self.make_calculator([1], node_mem_scaling=0.5)
+        servlist = self.calculate(servcalc, {'min_ram_mb_per_node': 128})
+        self.assertEqual(0, len(servlist))
+        servlist = self.calculate(servcalc, {'min_ram_mb_per_node': 64})
+        self.assertEqual(1, len(servlist))
+
     def test_implicit_server_count(self):
         servcalc = self.make_calculator([1])
         servlist = self.calculate(servcalc, {}, {'min_nodes': 3})

@@ -1316,6 +1316,7 @@ class Collection(RichCollectionBase):
                 uuid=self._manifest_locator).execute(
                     num_retries=self.num_retries))
             self._manifest_text = self._api_response['manifest_text']
+            self._portable_data_hash = self._api_response['portable_data_hash']
             # If not overriden via kwargs, we should try to load the
             # replication_desired from the API server
             if self.replication_desired is None:
