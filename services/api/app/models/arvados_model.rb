@@ -456,7 +456,8 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def self.where_serialized(colname, value)
-    where("#{colname.to_s} IN (?)", [value.to_yaml, SafeJSON.dump(value)])
+    sorted = deep_sort_hash(value)
+    where("#{colname.to_s} IN (?)", [sorted.to_yaml, SafeJSON.dump(sorted)])
   end
 
   Serializer = {

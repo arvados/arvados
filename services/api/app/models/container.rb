@@ -86,11 +86,11 @@ class Container < ArvadosModel
     candidates = Container.
       where_serialized(:command, attrs[:command]).
       where('cwd = ?', attrs[:cwd]).
-      where_serialized(:environment, self.deep_sort_hash(attrs[:environment])).
+      where_serialized(:environment, attrs[:environment]).
       where('output_path = ?', attrs[:output_path]).
       where('container_image = ?', attrs[:container_image]).
-      where_serialized(:mounts, self.deep_sort_hash(attrs[:mounts])).
-      where_serialized(:runtime_constraints, self.deep_sort_hash(attrs[:runtime_constraints]))
+      where_serialized(:mounts, attrs[:mounts]).
+      where_serialized(:runtime_constraints, attrs[:runtime_constraints])
 
     # Check for Completed candidates whose output and log are both readable.
     select_readable_pdh = Collection.
