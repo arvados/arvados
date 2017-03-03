@@ -1,5 +1,4 @@
 require 'database_cleaner'
-require 'oj'
 require 'safe_json'
 require 'test_helper'
 
