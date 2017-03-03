@@ -1,3 +1,5 @@
+require 'safe_json'
+
 class Job < ArvadosModel
   include HasUuid
   include KindAndEtag

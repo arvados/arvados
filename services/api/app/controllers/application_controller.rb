@@ -1,3 +1,5 @@
+require 'safe_json'
+
 module ApiTemplateOverride
   def allowed_to_render?(fieldset, field, model, options)
     return false if !super
@@ -209,7 +211,7 @@ class ApplicationController < ActionController::Base
     # The obvious render(json: ...) forces a slow JSON encoder. See
     # #3021 and commit logs. Might be fixed in Rails 4.1.
     render({
-             text: Oj.dump(response, mode: :compat).html_safe,
+             text: SafeJSON.dump(response).html_safe,
              content_type: 'application/json'
            }.merge opts)
   end
@@ -467,7 +469,7 @@ class ApplicationController < ActionController::Base
 
   def load_json_value(hash, key, must_be_class=nil)
     if hash[key].is_a? String
-      hash[key] = Oj.strict_load(hash[key], symbol_keys: false)
+      hash[key] = SafeJSON.load(hash[key])
       if must_be_class and !hash[key].is_a? must_be_class
         raise TypeError.new("parameter #{key.to_s} must be a #{must_be_class.to_s}")
       end

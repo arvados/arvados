@@ -1,3 +1,4 @@
+require 'safe_json'
 require 'test_helper'
 require 'helpers/manifest_examples'
 require 'helpers/time_block'
@@ -14,7 +15,7 @@ class CollectionsApiPerformanceTest < ActionDispatch::IntegrationTest
                     api_token: api_token(:active))
     end
     json = time_block "JSON encode #{bigmanifest.length>>20}MiB manifest" do
-      Oj.dump({"manifest_text" => bigmanifest})
+      SafeJSON.dump({"manifest_text" => bigmanifest})
     end
     time_block 'create' do
       post '/arvados/v1/collections', {collection: json}, auth(:active)
@@ -45,7 +46,7 @@ class CollectionsApiPerformanceTest < ActionDispatch::IntegrationTest
                                  bytes_per_block: 2**26,
                                  api_token: api_token(:active))
     json = time_block "JSON encode #{hugemanifest.length>>20}MiB manifest" do
-      Oj.dump({manifest_text: hugemanifest})
+      SafeJSON.dump({manifest_text: hugemanifest})
     end
     vmpeak "post" do
       post '/arvados/v1/collections', {collection: json}, auth(:active)
