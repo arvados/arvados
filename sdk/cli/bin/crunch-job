@@ -418,15 +418,17 @@ if ($docker_locator = $Job->{docker_image_locator}) {
   $docker_stream =~ s/^\.//;
   my $docker_install_script = qq{
 loaded() {
-  [[ \$($docker_bin inspect --format="{{.ID}}" \Q$docker_hash\E) = \Q$docker_hash\E ]]
+  id=\$($docker_bin inspect --format="{{.ID}}" \Q$docker_hash\E) || return 1
+  echo "image ID is \$id"
+  [[ \${id} = \Q$docker_hash\E ]]
 }
-if loaded 2>/dev/null; then
+if loaded >&2 2>/dev/null; then
   echo >&2 "image is already present"
   exit 0
 fi
 echo >&2 "docker image is not present; loading"
 arv-get \Q$docker_locator$docker_stream/$docker_hash.tar\E | $docker_bin load
-if ! loaded; then
+if ! loaded >&2; then
   echo >&2 "`docker load` exited 0, but image is not found (!)"
   exit 1
 fi
