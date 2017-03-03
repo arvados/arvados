@@ -323,7 +323,7 @@ class Job < ArvadosModel
   protected
 
   def self.sorted_hash_digest h
-    Digest::MD5.hexdigest(SafeJSON.dump(deep_sort_hash(h)))
+    Digest::MD5.hexdigest(Oj.dump(deep_sort_hash(h)))
   end
 
   def foreign_key_attributes
