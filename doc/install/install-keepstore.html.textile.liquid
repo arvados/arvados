@@ -142,7 +142,7 @@ Install this script as the run script for the keepstore service, modifying it as
 <pre><code>#!/bin/sh
 
 exec 2>&1
-exec GOGC=10 GOMAXPROCS=<span class="userinput">4</span> keepstore \
+exec GOGC=10 keepstore \
  -enforce-permissions=true \
  -blob-signing-key-file=<span class="userinput">/etc/keepstore/blob-signing.key</span> \
  -max-buffers=<span class="userinput">100</span> \
@@ -152,8 +152,6 @@ exec GOGC=10 GOMAXPROCS=<span class="userinput">4</span> keepstore \
  -volume=<span class="userinput">/mnt2/keep</span>
 </code></pre>
 </notextile>
-
-The @GOMAXPROCS@ environment variable determines the maximum number of concurrent threads, and should normally be set to the number of CPU cores present.
 
 The @-max-buffers@ argument limits keepstore's memory usage. It should be set such that @max-buffers * 64MiB + 10%@ fits comfortably in memory. For example, @-max-buffers=100@ is suitable for a host with 8 GiB RAM.
 
