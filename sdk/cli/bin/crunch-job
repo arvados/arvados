@@ -417,18 +417,20 @@ if ($docker_locator = $Job->{docker_image_locator}) {
   Log (undef, "docker image hash is $docker_hash");
   $docker_stream =~ s/^\.//;
   my $docker_install_script = qq{
-if $docker_bin images -q --no-trunc --all | grep -xF \Q$docker_hash\E >/dev/null; then
-    exit 0
+loaded() {
+  [[ \$($docker_bin inspect --format="{{.ID}}" \Q$docker_hash\E) = \Q$docker_hash\E ]]
+}
+if loaded 2>/dev/null; then
+  echo >&2 "image is already present"
+  exit 0
 fi
-declare -a exit_codes=("\${PIPESTATUS[@]}")
-if [ 0 != "\${exit_codes[0]}" ]; then
-   exit "\${exit_codes[0]}"  # `docker images` failed
-elif [ 1 != "\${exit_codes[1]}" ]; then
-   exit "\${exit_codes[1]}"  # `grep` encountered an error
-else
-   # Everything worked fine, but grep didn't find the image on this host.
-   arv-get \Q$docker_locator$docker_stream/$docker_hash.tar\E | $docker_bin load
+echo >&2 "docker image is not present; loading"
+arv-get \Q$docker_locator$docker_stream/$docker_hash.tar\E | $docker_bin load
+if ! loaded; then
+  echo >&2 "`docker load` exited 0, but image is not found (!)"
+  exit 1
 fi
+echo >&2 "image loaded successfully"
 };
 
   my ($exited, $stdout, $stderr) = srun_sync(
