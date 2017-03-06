@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import shutil
 import _strptime
 
 from operator import itemgetter
@@ -20,9 +21,16 @@ import arvados
 import arvados.util
 import arvados.commands._util as arv_cmd
 import arvados.commands.put as arv_put
+from arvados.collection import CollectionReader
 import ciso8601
+import logging
+import arvados.config
 
 from arvados._version import __version__
+
+logger = logging.getLogger('arvados.keepdocker')
+logger.setLevel(logging.DEBUG if arvados.config.get('ARVADOS_DEBUG')
+                else logging.INFO)
 
 EARLIEST_DATETIME = datetime.datetime(datetime.MINYEAR, 1, 1, 0, 0, 0)
 STAT_CACHE_ERRORS = (IOError, OSError, ValueError)
@@ -103,15 +111,15 @@ def docker_image_format(image_hash):
 def docker_image_compatible(api, image_hash):
     supported = api._rootDesc.get('dockerImageFormats', [])
     if not supported:
-        print >>sys.stderr, "arv-keepdocker: warning: server does not specify supported image formats (see docker_image_formats in server config). Continuing."
+        logger.warn("server does not specify supported image formats (see docker_image_formats in server config). Continuing.")
         return True
 
     fmt = docker_image_format(image_hash)
     if fmt in supported:
         return True
     else:
-        print >>sys.stderr, "arv-keepdocker: image format is {!r} " \
-            "but server supports only {!r}".format(fmt, supported)
+        logger.error("image format is {!r} " \
+            "but server supports only {!r}".format(fmt, supported))
         return False
 
 def docker_images():
@@ -332,59 +340,82 @@ def _uuid2pdh(api, uuid):
 
 _migration_link_class = 'docker_image_migration'
 _migration_link_name = 'migrate_1.9_1.10'
-def _migrate19_link(api, root_uuid, old_uuid, new_uuid):
-    old_pdh = _uuid2pdh(api, old_uuid)
-    new_pdh = _uuid2pdh(api, new_uuid)
-    if not api.links().list(filters=[
-            ['owner_uuid', '=', root_uuid],
-            ['link_class', '=', _migration_link_class],
-            ['name', '=', _migration_link_name],
-            ['tail_uuid', '=', old_pdh],
-            ['head_uuid', '=', new_pdh]]).execute()['items']:
-        print >>sys.stderr, 'Creating migration link {} -> {}: '.format(
-            old_pdh, new_pdh),
-        link = api.links().create(body={
-            'owner_uuid': root_uuid,
-            'link_class': _migration_link_class,
-            'name': _migration_link_name,
-            'tail_uuid': old_pdh,
-            'head_uuid': new_pdh,
-        }).execute()
-        print >>sys.stderr, '{}'.format(link['uuid'])
-        return link
 
 def migrate19():
-    api = arvados.api('v1')
-    user = api.users().current().execute()
-    if not user['is_admin']:
-        raise Exception("This command requires an admin token")
-    root_uuid = user['uuid'][:12] + '000000000000000'
-    new_image_uuids = {}
-    images = list_images_in_arv(api, 2)
+    api_client  = arvados.api()
+
+    images = arvados.commands.keepdocker.list_images_in_arv(api_client, 3)
+
     is_new = lambda img: img['dockerhash'].startswith('sha256:')
 
     count_new = 0
+    old_images = []
     for uuid, img in images:
-        if not re.match(r'^[0-9a-f]{64}$', img["tag"]):
+        if img["dockerhash"].startswith("sha256:"):
             continue
-        key = (img["repo"], img["tag"])
-        if is_new(img) and key not in new_image_uuids:
-            count_new += 1
-            new_image_uuids[key] = uuid
+        key = (img["repo"], img["tag"], img["timestamp"])
+        old_images.append(img)
 
-    count_migrations = 0
-    new_links = []
-    for uuid, img in images:
-        key = (img['repo'], img['tag'])
-        if not is_new(img) and key in new_image_uuids:
-            count_migrations += 1
-            link = _migrate19_link(api, root_uuid, uuid, new_image_uuids[key])
-            if link:
-                new_links.append(link)
+    migration_links = arvados.util.list_all(api_client.links().list, filters=[
+        ['link_class', '=', _migration_link_class],
+        ['name', '=', _migration_link_name],
+    ])
 
-    print >>sys.stderr, "=== {} new-format images, {} migrations detected, " \
-        "{} links added.".format(count_new, count_migrations, len(new_links))
-    return new_links
+    already_migrated = set()
+    for m in migration_links:
+        already_migrated.add(m["tail_uuid"])
+
+    need_migrate = [img for img in old_images if img["collection"] not in already_migrated]
+
+    logger.info("Already migrated %i images", len(already_migrated))
+    logger.info("Need to migrate %i images", len(need_migrate))
+
+    for old_image in need_migrate:
+        logger.info("Migrating %s", old_image["collection"])
+
+        col = CollectionReader(old_image["collection"])
+        tarfile = col.keys()[0]
+
+        try:
+            varlibdocker = tempfile.mkdtemp()
+            with tempfile.NamedTemporaryFile() as envfile:
+                envfile.write("ARVADOS_API_HOST=%s\n" % (os.environ["ARVADOS_API_HOST"]))
+                envfile.write("ARVADOS_API_TOKEN=%s\n" % (os.environ["ARVADOS_API_TOKEN"]))
+                envfile.write("ARVADOS_API_HOST_INSECURE=%s\n" % (os.environ["ARVADOS_API_HOST_INSECURE"]))
+                envfile.flush()
+
+                dockercmd = ["docker", "run",
+                             "--privileged",
+                             "--rm",
+                             "--env-file", envfile.name,
+                             "--volume", "%s:/var/lib/docker" % varlibdocker,
+                             "arvados/docker19-migrate",
+                             "/root/migrate.sh",
+                             "%s/%s" % (old_image["collection"], tarfile),
+                             tarfile[0:40],
+                             old_image["repo"],
+                             old_image["tag"],
+                             col.api_response()["owner_uuid"]]
+
+                out = subprocess.check_output(dockercmd)
+
+            new_collection = re.search(r"Migrated uuid is ([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15})", out)
+            api_client.links().create(body={"link": {
+                'owner_uuid': col.api_response()["owner_uuid"],
+                'link_class': arvados.commands.keepdocker._migration_link_class,
+                'name': arvados.commands.keepdocker._migration_link_name,
+                'tail_uuid': old_image["collection"],
+                'head_uuid': new_collection.group(1)
+                }}).execute(num_retries=3)
+
+            logger.info("Migrated '%s' to '%s'", old_image["collection"], new_collection.group(1))
+        except Exception as e:
+            logger.exception("Migration failed")
+        finally:
+            shutil.rmtree(varlibdocker)
+
+    logger.info("All done")
+
 
 def main(arguments=None, stdout=sys.stdout):
     args = arg_parser.parse_args(arguments)
@@ -405,15 +436,15 @@ def main(arguments=None, stdout=sys.stdout):
     try:
         image_hash = find_one_image_hash(args.image, args.tag)
     except DockerError as error:
-        print >>sys.stderr, "arv-keepdocker:", error.message
+        logger.error(error.message)
         sys.exit(1)
 
     if not docker_image_compatible(api, image_hash):
         if args.force_image_format:
-            print >>sys.stderr, "arv-keepdocker: forcing incompatible image"
+            logger.warn("forcing incompatible image")
         else:
-            print >>sys.stderr, "arv-keepdocker: refusing to store " \
-                "incompatible format (use --force-image-format to override)"
+            logger.error("refusing to store " \
+                "incompatible format (use --force-image-format to override)")
             sys.exit(1)
 
     image_repo_tag = '{}:{}'.format(args.image, args.tag) if not image_hash.startswith(args.image.lower()) else None
