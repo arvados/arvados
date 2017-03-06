@@ -484,6 +484,7 @@ func (s *TestSuite) TestCommitLogs(c *C) {
 	c.Check(err, IsNil)
 
 	c.Check(api.Calls, Equals, 2)
+	c.Check(api.Content[1]["ensure_unique_name"], Equals, true)
 	c.Check(api.Content[1]["collection"].(arvadosclient.Dict)["name"], Equals, "logs for zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	c.Check(api.Content[1]["collection"].(arvadosclient.Dict)["manifest_text"], Equals, ". 744b2e4553123b02fa7b452ec5c18993+123 0:123:crunch-run.txt\n")
 	c.Check(*cr.LogsPDH, Equals, "63da7bdacf08c40f604daad80c261e9a+60")
@@ -1238,6 +1239,7 @@ func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
 	for _, v := range api.Content {
 		if v["collection"] != nil {
+			c.Check(v["ensure_unique_name"], Equals, true)
 			collection := v["collection"].(arvadosclient.Dict)
 			if strings.Index(collection["name"].(string), "output") == 0 {
 				manifest := collection["manifest_text"].(string)
