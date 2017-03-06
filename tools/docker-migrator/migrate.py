@@ -36,31 +36,39 @@ def main():
     for m in migration_links:
         already_migrated.add(m["tail_uuid"])
 
-    for old_image in old_images:
-        if old_image["collection"] in already_migrated:
-            continue
+    need_migrate = [img for img in old_images if img["collection"] not in already_migrated]
+
+    print "Already migrated %i images" % (len(already_migrated))
+    print "Need to migrate %i images" % (len(need_migrate))
+
+    for old_image in need_migrate:
+        print "Migrating %s" % (old_image["collection"])
+
         col = CollectionReader(old_image["collection"])
         tarfile = col.keys()[0]
 
-        varlibdocker = tempfile.mkdtemp()
-
         try:
-            dockercmd = ["docker", "run",
-                         "--privileged",
-                         "--rm",
-                         "--env", "ARVADOS_API_HOST=%s" % (os.environ["ARVADOS_API_HOST"]),
-                         "--env", "ARVADOS_API_TOKEN=%s" % (os.environ["ARVADOS_API_TOKEN"]),
-                         "--env", "ARVADOS_API_HOST_INSECURE=%s" % (os.environ["ARVADOS_API_HOST_INSECURE"]),
-                         "--volume", "%s:/var/lib/docker" % varlibdocker,
-                         "arvados/docker19-migrate",
-                         "/root/migrate.sh",
-                         "%s/%s" % (old_image["collection"], tarfile),
-                         tarfile[0:40],
-                         old_image["repo"],
-                         old_image["tag"],
-                         col.api_response()["owner_uuid"]]
+            varlibdocker = tempfile.mkdtemp()
+            with tempfile.NamedTemporaryFile() as envfile:
+                envfile.write("ARVADOS_API_HOST=%s\n" % (os.environ["ARVADOS_API_HOST"]))
+                envfile.write("ARVADOS_API_TOKEN=%s\n" % (os.environ["ARVADOS_API_TOKEN"]))
+                envfile.write("ARVADOS_API_HOST_INSECURE=%s\n" % (os.environ["ARVADOS_API_HOST_INSECURE"]))
+                envfile.flush()
 
-            out = subprocess.check_output(dockercmd)
+                dockercmd = ["docker", "run",
+                             "--privileged",
+                             "--rm",
+                             "--env-file", envfile.name,
+                             "--volume", "%s:/var/lib/docker" % varlibdocker,
+                             "arvados/docker19-migrate",
+                             "/root/migrate.sh",
+                             "%s/%s" % (old_image["collection"], tarfile),
+                             tarfile[0:40],
+                             old_image["repo"],
+                             old_image["tag"],
+                             col.api_response()["owner_uuid"]]
+
+                out = subprocess.check_output(dockercmd)
 
             new_collection = re.search(r"Migrated uuid is ([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15})", out)
             api_client.links().create(body={"link": {
@@ -74,6 +82,8 @@ def main():
             print "Migrated '%s' to '%s'" % (old_image["collection"], new_collection.group(1))
         finally:
             shutil.rmtree(varlibdocker)
+
+    print "All done"
 
 
 main()
