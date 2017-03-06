@@ -27,8 +27,6 @@ def main():
         key = (img["repo"], img["tag"], img["timestamp"])
         old_images.append(img)
 
-    print old_images
-
     migration_links = arvados.util.list_all(api_client.links().list, filters=[
         ['link_class', '=', arvados.commands.keepdocker._migration_link_class],
         ['name', '=', arvados.commands.keepdocker._migration_link_name],
@@ -37,12 +35,6 @@ def main():
     already_migrated = set()
     for m in migration_links:
         already_migrated.add(m["tail_uuid"])
-
-#            ['tail_uuid', '=', old_pdh],
-#            ['head_uuid', '=', new_pdh]]).execute()['items']
-
-    pprint(old_images)
-    pprint(already_migrated)
 
     for old_image in old_images:
         if old_image["collection"] in already_migrated:
@@ -66,12 +58,20 @@ def main():
                          tarfile[0:40],
                          old_image["repo"],
                          old_image["tag"],
-                         old_image["owner_uuid"]]
+                         col.api_response()["owner_uuid"]]
 
             out = subprocess.check_output(dockercmd)
 
             new_collection = re.search(r"Migrated uuid is ([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15})", out)
-            print "New collection is '%s'" % new_collection.group(1)
+            api_client.links().create(body={"link": {
+                'owner_uuid': col.api_response()["owner_uuid"],
+                'link_class': arvados.commands.keepdocker._migration_link_class,
+                'name': arvados.commands.keepdocker._migration_link_name,
+                'tail_uuid': old_image["collection"],
+                'head_uuid': new_collection.group(1)
+                }}).execute(num_retries=3)
+
+            print "Migrated '%s' to '%s'" % (old_image["collection"], new_collection.group(1))
         finally:
             shutil.rmtree(varlibdocker)
 
