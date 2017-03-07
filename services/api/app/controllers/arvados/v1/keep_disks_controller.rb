@@ -1,5 +1,6 @@
 class Arvados::V1::KeepDisksController < ApplicationController
-  skip_before_filter :require_auth_scope, :only => :ping
+  skip_before_filter :require_auth_scope, only: :ping
+  skip_before_filter :render_404_if_no_object, only: :ping
 
   def self._ping_requires_parameters
     {
@@ -15,8 +16,19 @@ class Arvados::V1::KeepDisksController < ApplicationController
 
   def ping
     params[:service_host] ||= request.env['REMOTE_ADDR']
+    if !params[:uuid] && current_user.andand.is_admin
+      # Create a new KeepDisk and ping it.
+      @object = KeepDisk.new(filesystem_uuid: params[:filesystem_uuid])
+      @object.save!
+
+      # In the first ping from this new filesystem_uuid, we can't
+      # expect the keep node to know the ping_secret so we made sure
+      # we got an admin token. Here we add ping_secret to params so
+      # the ping call below is properly authenticated.
+      params[:ping_secret] = @object.ping_secret
+    end
     act_as_system_user do
-      if not @object.ping params
+      if !@object.andand.ping(params)
         return render_not_found "object not found"
       end
       # Render the :superuser view (i.e., include the ping_secret) even
@@ -30,21 +42,5 @@ class Arvados::V1::KeepDisksController < ApplicationController
     # all users can list all keep disks
     @objects = model_class.where('1=1')
     super
-  end
-
-  def find_object_by_uuid
-    @object = KeepDisk.where(uuid: (params[:id] || params[:uuid])).first
-    if !@object && current_user.andand.is_admin
-      # Create a new KeepDisk and ping it.
-      @object = KeepDisk.new(filesystem_uuid: params[:filesystem_uuid])
-      @object.save!
-
-      # In the first ping from this new filesystem_uuid, we can't
-      # expect the keep node to know the ping_secret so we made sure
-      # we got an admin token. Here we add ping_secret to params so
-      # KeepNode.ping() understands this update is properly
-      # authenticated.
-      params[:ping_secret] = @object.ping_secret
-    end
   end
 end
