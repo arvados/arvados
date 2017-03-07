@@ -409,7 +409,8 @@ def migrate19():
             with tempfile.NamedTemporaryFile() as envfile:
                 envfile.write("ARVADOS_API_HOST=%s\n" % (os.environ["ARVADOS_API_HOST"]))
                 envfile.write("ARVADOS_API_TOKEN=%s\n" % (os.environ["ARVADOS_API_TOKEN"]))
-                envfile.write("ARVADOS_API_HOST_INSECURE=%s\n" % (os.environ["ARVADOS_API_HOST_INSECURE"]))
+                if "ARVADOS_API_HOST_INSECURE" in os.environ:
+                    envfile.write("ARVADOS_API_HOST_INSECURE=%s\n" % (os.environ["ARVADOS_API_HOST_INSECURE"]))
                 envfile.flush()
 
                 dockercmd = ["docker", "run",
