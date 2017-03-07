@@ -45,7 +45,8 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
                        'max_total_price': '0',
                        'boot_fail_after': str(sys.maxint),
                        'node_stale_after': str(60 * 60 * 2),
-                       'watchdog': '600'},
+                       'watchdog': '600',
+                       'node_mem_scaling': '0.95'},
             'Logging': {'file': '/dev/stderr',
                         'level': 'WARNING'},
         }.iteritems():
