@@ -29,12 +29,13 @@ module CreateSuperUserToken
         apiClient =  ApiClient.find_or_create_by_url_prefix_and_is_trusted("ssh://root@localhost/", true)
 
         # Check if there is an unexpired superuser token corresponding to this api client
-        api_client_auth = ApiClientAuthorization.where(
-                'user_id = ? AND
-                 api_client_id = ? AND
-                 scopes = ? AND
-                 (expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)',
-               system_user.id, apiClient.id, ['all'].to_yaml).first
+        api_client_auth =
+          ApiClientAuthorization.
+          where(user_id: system_user.id).
+          where(api_client_id: apiClient.id).
+          where_serialized(:scopes, ['all']).
+          where('(expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP)').
+          first
 
         # none exist; create one with the supplied token
         if !api_client_auth

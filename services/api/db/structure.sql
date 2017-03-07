@@ -29,71 +29,6 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
--- Name: groups; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE groups (
-    id integer NOT NULL,
-    uuid character varying(255),
-    owner_uuid character varying(255),
-    created_at timestamp without time zone NOT NULL,
-    modified_by_client_uuid character varying(255),
-    modified_by_user_uuid character varying(255),
-    modified_at timestamp without time zone,
-    name character varying(255) NOT NULL,
-    description character varying(524288),
-    updated_at timestamp without time zone NOT NULL,
-    group_class character varying(255)
-);
-
-
---
--- Name: links; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE links (
-    id integer NOT NULL,
-    uuid character varying(255),
-    owner_uuid character varying(255),
-    created_at timestamp without time zone NOT NULL,
-    modified_by_client_uuid character varying(255),
-    modified_by_user_uuid character varying(255),
-    modified_at timestamp without time zone,
-    tail_uuid character varying(255),
-    link_class character varying(255),
-    name character varying(255),
-    head_uuid character varying(255),
-    properties text,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: users; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE users (
-    id integer NOT NULL,
-    uuid character varying(255),
-    owner_uuid character varying(255) NOT NULL,
-    created_at timestamp without time zone NOT NULL,
-    modified_by_client_uuid character varying(255),
-    modified_by_user_uuid character varying(255),
-    modified_at timestamp without time zone,
-    email character varying(255),
-    first_name character varying(255),
-    last_name character varying(255),
-    identity_url character varying(255),
-    is_admin boolean,
-    prefs text,
-    updated_at timestamp without time zone NOT NULL,
-    default_owner_uuid character varying(255),
-    is_active boolean DEFAULT false,
-    username character varying(255)
-);
-
-
---
 -- Name: api_client_authorizations; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -439,6 +374,25 @@ ALTER SEQUENCE containers_id_seq OWNED BY containers.id;
 
 
 --
+-- Name: groups; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE groups (
+    id integer NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255),
+    created_at timestamp without time zone NOT NULL,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    modified_at timestamp without time zone,
+    name character varying(255) NOT NULL,
+    description character varying(524288),
+    updated_at timestamp without time zone NOT NULL,
+    group_class character varying(255)
+);
+
+
+--
 -- Name: groups_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -702,6 +656,27 @@ CREATE SEQUENCE keep_services_id_seq
 --
 
 ALTER SEQUENCE keep_services_id_seq OWNED BY keep_services.id;
+
+
+--
+-- Name: links; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE links (
+    id integer NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255),
+    created_at timestamp without time zone NOT NULL,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    modified_at timestamp without time zone,
+    tail_uuid character varying(255),
+    link_class character varying(255),
+    name character varying(255),
+    head_uuid character varying(255),
+    properties text,
+    updated_at timestamp without time zone NOT NULL
+);
 
 
 --
@@ -1007,6 +982,31 @@ CREATE SEQUENCE traits_id_seq
 --
 
 ALTER SEQUENCE traits_id_seq OWNED BY traits.id;
+
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE users (
+    id integer NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255) NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    modified_at timestamp without time zone,
+    email character varying(255),
+    first_name character varying(255),
+    last_name character varying(255),
+    identity_url character varying(255),
+    is_admin boolean,
+    prefs text,
+    updated_at timestamp without time zone NOT NULL,
+    default_owner_uuid character varying(255),
+    is_active boolean DEFAULT false,
+    username character varying(255)
+);
 
 
 --
@@ -2743,3 +2743,5 @@ INSERT INTO schema_migrations (version) VALUES ('20170105160301');
 INSERT INTO schema_migrations (version) VALUES ('20170105160302');
 
 INSERT INTO schema_migrations (version) VALUES ('20170216170823');
+
+INSERT INTO schema_migrations (version) VALUES ('20170301225558');
