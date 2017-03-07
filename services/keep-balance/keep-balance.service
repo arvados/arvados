@@ -3,6 +3,10 @@ Description=Arvados Keep Balance
 Documentation=https://doc.arvados.org/
 After=network.target
 AssertPathExists=/etc/arvados/keep-balance/keep-balance.yml
+# systemd<230
+StartLimitInterval=0
+# systemd>=230
+StartLimitIntervalSec=0
 
 [Service]
 Type=simple

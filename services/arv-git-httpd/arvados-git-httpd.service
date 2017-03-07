@@ -3,11 +3,16 @@ Description=Arvados git server
 Documentation=https://doc.arvados.org/
 After=network.target
 AssertPathExists=/etc/arvados/git-httpd/git-httpd.yml
+# systemd<230
+StartLimitInterval=0
+# systemd>=230
+StartLimitIntervalSec=0
 
 [Service]
 Type=notify
 ExecStart=/usr/bin/arvados-git-httpd
 Restart=always
+RestartSec=1
 
 [Install]
 WantedBy=multi-user.target

@@ -3,11 +3,16 @@ Description=Arvados Keep Storage Daemon
 Documentation=https://doc.arvados.org/
 After=network.target
 AssertPathExists=/etc/arvados/keepstore/keepstore.yml
+# systemd<230
+StartLimitInterval=0
+# systemd>=230
+StartLimitIntervalSec=0
 
 [Service]
 Type=notify
 ExecStart=/usr/bin/keepstore
 Restart=always
+RestartSec=1
 
 [Install]
 WantedBy=multi-user.target
