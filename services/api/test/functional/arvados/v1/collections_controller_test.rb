@@ -293,6 +293,18 @@ EOS
     end
   end
 
+  test "cannot update collection using portable data hash" do
+    authorize_with :active
+    foo_collection = collections(:foo_file)
+    post :update, {
+      id: collections(:foo_file)[:portable_data_hash],
+      collection: {
+        name: "foo_file",
+      }
+    }
+    assert_response 404
+  end
+
   test "create with owner_uuid set to owned group" do
     permit_unsigned_manifests
     authorize_with :active

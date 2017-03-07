@@ -29,7 +29,8 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def find_object_by_uuid
-    if loc = Keep::Locator.parse(params[:id])
+    if %w(show provenance used_by).include?(action_name) &&
+        (loc = Keep::Locator.parse(params[:id]))
       loc.strip_hints!
       if c = Collection.readable_by(*@read_users).where({ portable_data_hash: loc.to_s }).limit(1).first
         @object = {
