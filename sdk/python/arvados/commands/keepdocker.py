@@ -342,6 +342,34 @@ _migration_link_class = 'docker_image_migration'
 _migration_link_name = 'migrate_1.9_1.10'
 
 def migrate19():
+    """Docker image format migration tool for Arvados.
+
+    This converts Docker images stored in Arvados from image format v1
+    (Docker <= 1.9) to image format v2 (Docker >= 1.10).
+
+    Requires Docker running on the local host.
+
+    Usage:
+
+    1) Run arvados/docker/migrate-docker19/build.sh to create
+    arvados/migrate-docker19 Docker image.
+
+    2) Set ARVADOS_API_HOST and ARVADOS_API_TOKEN to the cluster you want to migrate.
+
+    3) Run arv-migrate-docker19
+
+    This will query Arvados for v1 format Docker images.  For each image that
+    does not already have a corresponding v2 format image (as indicated by a
+    docker_image_migration tag) it will perform the following process:
+
+    i) download the image from Arvados
+    ii) load it into Docker
+    iii) update the Docker version, which updates the image
+    iv) save the v2 format image and upload to Arvados
+    v) create a migration link
+
+    """
+
     api_client  = arvados.api()
 
     images = arvados.commands.keepdocker.list_images_in_arv(api_client, 3)
@@ -389,7 +417,7 @@ def migrate19():
                              "--rm",
                              "--env-file", envfile.name,
                              "--volume", "%s:/var/lib/docker" % varlibdocker,
-                             "arvados/docker19-migrate",
+                             "arvados/migrate-docker19",
                              "/root/migrate.sh",
                              "%s/%s" % (old_image["collection"], tarfile),
                              tarfile[0:40],

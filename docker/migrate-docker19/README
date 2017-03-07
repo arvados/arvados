@@ -7,7 +7,8 @@ Requires Docker running on the local host.
 
 Usage:
 
-1) Run ./build.sh to create arvados/docker19-migrate Docker image.
+1) Run arvados/docker/migrate-docker19/build.sh to create
+arvados/migrate-docker19 Docker image.
 
 2) Set ARVADOS_API_HOST and ARVADOS_API_TOKEN to the cluster you want to migrate.
 
