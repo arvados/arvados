@@ -38,8 +38,8 @@ from .pathmapper import NoFollowPathMapper
 from ._version import __version__
 
 from cwltool.pack import pack
-from cwltool.process import shortname, UnsupportedRequirement, getListing, use_custom_schema
-from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
+from cwltool.process import shortname, UnsupportedRequirement, use_custom_schema
+from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, get_listing
 from cwltool.draft2tool import compute_checksums
 from arvados.api import OrderedJsonModel
 
@@ -521,7 +521,7 @@ class ArvCwlRunner(object):
             self.set_crunch_output()
 
         if kwargs.get("compute_checksum"):
-            adjustDirObjs(self.final_output, partial(getListing, self.fs_access))
+            adjustDirObjs(self.final_output, partial(get_listing, self.fs_access))
             adjustFileObjs(self.final_output, partial(compute_checksums, self.fs_access))
 
         return (self.final_output, self.final_status)
@@ -633,6 +633,14 @@ def add_arv_hints():
     res = pkg_resources.resource_stream(__name__, 'arv-cwl-schema.yml')
     use_custom_schema("v1.0", "http://arvados.org/cwl", res.read())
     res.close()
+    cwltool.process.supportedProcessRequirements.extend([
+        "http://arvados.org/cwl#RunInSingleContainer",
+        "http://arvados.org/cwl#OutputDirType",
+        "http://arvados.org/cwl#RuntimeConstraints",
+        "http://arvados.org/cwl#PartitionRequirement",
+        "http://arvados.org/cwl#APIRequirement"
+    ])
+
 
 def main(args, stdout, stderr, api_client=None, keep_client=None):
     parser = arg_parser()

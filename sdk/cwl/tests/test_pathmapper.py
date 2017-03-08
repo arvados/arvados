@@ -36,7 +36,7 @@ class TestPathmap(unittest.TestCase):
             "location": "keep:99999999999999999999999999999991+99/hw.py"
         }], "", "/test/%s", "/test/%s/%s")
 
-        self.assertEqual({'keep:99999999999999999999999999999991+99/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File')},
+        self.assertEqual({'keep:99999999999999999999999999999991+99/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File', staged=True)},
                          p._pathmap)
 
     @mock.patch("arvados.commands.run.uploadfiles")
@@ -52,7 +52,7 @@ class TestPathmap(unittest.TestCase):
             "location": "tests/hw.py"
         }], "", "/test/%s", "/test/%s/%s")
 
-        self.assertEqual({'tests/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File')},
+        self.assertEqual({'tests/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File', staged=True)},
                          p._pathmap)
 
     @mock.patch("arvados.commands.run.uploadfiles")
@@ -60,7 +60,7 @@ class TestPathmap(unittest.TestCase):
         """Test pathmapper handling previously uploaded files."""
 
         arvrunner = arvados_cwl.ArvCwlRunner(self.api)
-        arvrunner.add_uploaded('tests/hw.py', MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='', type='File'))
+        arvrunner.add_uploaded('tests/hw.py', MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='', type='File', staged=True))
 
         upl.side_effect = upload_mock
 
@@ -69,7 +69,7 @@ class TestPathmap(unittest.TestCase):
             "location": "tests/hw.py"
         }], "", "/test/%s", "/test/%s/%s")
 
-        self.assertEqual({'tests/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File')},
+        self.assertEqual({'tests/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File', staged=True)},
                          p._pathmap)
 
     @mock.patch("arvados.commands.run.uploadfiles")
@@ -92,5 +92,5 @@ class TestPathmap(unittest.TestCase):
             "location": "tests/hw.py"
         }], "", "/test/%s", "/test/%s/%s")
 
-        self.assertEqual({'tests/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File')},
+        self.assertEqual({'tests/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File', staged=True)},
                          p._pathmap)

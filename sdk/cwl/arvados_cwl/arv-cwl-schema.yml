@@ -40,8 +40,6 @@ $graph:
 
 - name: OutputDirType
   type: enum
-  extends: cwl:ProcessRequirement
-  inVocab: false
   symbols:
     - local_output_dir
     - keep_output_dir
