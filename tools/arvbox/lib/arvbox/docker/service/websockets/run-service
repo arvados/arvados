@@ -5,26 +5,31 @@ set -ex -o pipefail
 
 . /usr/local/lib/arvbox/common.sh
 
-cd /usr/src/arvados/services/api
-export RAILS_ENV=development
+mkdir -p /var/lib/gopath
+cd /var/lib/gopath
 
-run_bundler --without=development
+export GOPATH=$PWD
+mkdir -p "$GOPATH/src/git.curoverse.com"
+ln -sfn "/usr/src/arvados" "$GOPATH/src/git.curoverse.com/arvados.git"
+flock /var/lib/gopath/gopath.lock go get -t "git.curoverse.com/arvados.git/services/ws"
+install bin/ws /usr/local/bin/arvados-ws
 
 if test "$1" = "--only-deps" ; then
     exit
 fi
 
-flock /var/lib/arvados/api.lock /usr/local/lib/arvbox/api-setup.sh
+database_pw=$(cat /var/lib/arvados/api_database_pw)
 
-set +u
-if test "$1" = "--only-setup" ; then
-    exit
-fi
+cat >/var/lib/arvados/arvados-ws.yml <<EOF
+Client:
+  APIHost: $localip:${services[api]}
+  Insecure: true
+Postgres:
+  dbname: arvados_development
+  user: arvados
+  password: $database_pw
+  host: localhost
+Listen: :8002
+EOF
 
-export ARVADOS_WEBSOCKETS=ws-only
-
-# serving ssl directly doesn't work, gets
-# Rack app error: #<TypeError: no implicit conversion of Puma::MiniSSL::Socket into Integer>
-#exec bundle exec puma -b "ssl://0.0.0.0:${services[websockets]}?cert=/var/lib/arvados/self-signed.pem&key=/var/lib/arvados/self-signed.key"
-
-exec bundle exec puma -p${services[websockets]}
+exec /usr/local/bin/arvados-ws -config /var/lib/arvados/arvados-ws.yml
