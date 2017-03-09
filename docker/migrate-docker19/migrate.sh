@@ -2,6 +2,14 @@
 
 set -e
 
+function cleanup {
+    kill $(cat /var/run/docker.pid)
+    sleep 1
+    rm -rf /var/lib/docker/*
+}
+
+trap cleanup EXIT
+
 /root/dnd.sh &
 sleep 2
 
@@ -28,11 +36,6 @@ sleep 2
 
 docker images -a
 
-UUID=$(arv-keepdocker --project-uuid=$project_uuid $image_repo $image_tag)
-
-kill $(cat /var/run/docker.pid)
-sleep 1
-
-chmod ugo+rwx -R /var/lib/docker
+UUID=$(arv-keepdocker --force-image-format --project-uuid=$project_uuid $image_repo $image_tag)
 
 echo "Migrated uuid is $UUID"

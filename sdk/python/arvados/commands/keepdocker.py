@@ -393,16 +393,26 @@ def migrate19():
     for m in migration_links:
         already_migrated.add(m["tail_uuid"])
 
-    need_migrate = [img for img in old_images if img["collection"] not in already_migrated]
+    items = arvados.util.list_all(api_client.collections().list,
+                                  filters=[["uuid", "in", [img["collection"] for img in old_images]]],
+                                  select=["uuid", "portable_data_hash"])
+    uuid_to_pdh = {i["uuid"]: i["portable_data_hash"] for i in items}
+    need_migrate = [img for img in old_images
+                    if uuid_to_pdh[img["collection"]] not in already_migrated]
 
     logger.info("Already migrated %i images", len(already_migrated))
     logger.info("Need to migrate %i images", len(need_migrate))
 
+    success = []
+    failures = []
     for old_image in need_migrate:
-        logger.info("Migrating %s", old_image["collection"])
+        if uuid_to_pdh[old_image["collection"]] in already_migrated:
+            continue
 
-        col = CollectionReader(old_image["collection"])
-        tarfile = col.keys()[0]
+        logger.info("Migrating %s:%s (%s)", old_image["repo"], old_image["tag"], old_image["collection"])
+
+        oldcol = CollectionReader(old_image["collection"])
+        tarfile = oldcol.keys()[0]
 
         try:
             varlibdocker = tempfile.mkdtemp()
@@ -424,26 +434,37 @@ def migrate19():
                              tarfile[0:40],
                              old_image["repo"],
                              old_image["tag"],
-                             col.api_response()["owner_uuid"]]
+                             oldcol.api_response()["owner_uuid"]]
 
                 out = subprocess.check_output(dockercmd)
 
-            new_collection = re.search(r"Migrated uuid is ([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15})", out)
-            api_client.links().create(body={"link": {
-                'owner_uuid': col.api_response()["owner_uuid"],
-                'link_class': arvados.commands.keepdocker._migration_link_class,
-                'name': arvados.commands.keepdocker._migration_link_name,
-                'tail_uuid': old_image["collection"],
-                'head_uuid': new_collection.group(1)
-                }}).execute(num_retries=3)
+            migrated = re.search(r"Migrated uuid is ([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15})", out)
+            if migrated:
+                newcol = CollectionReader(migrated.group(1))
 
-            logger.info("Migrated '%s' to '%s'", old_image["collection"], new_collection.group(1))
+                api_client.links().create(body={"link": {
+                    'owner_uuid': oldcol.api_response()["owner_uuid"],
+                    'link_class': arvados.commands.keepdocker._migration_link_class,
+                    'name': arvados.commands.keepdocker._migration_link_name,
+                    'tail_uuid': oldcol.portable_data_hash(),
+                    'head_uuid': newcol.portable_data_hash()
+                    }}).execute(num_retries=3)
+
+                logger.info("Migrated '%s' to '%s'", oldcol.portable_data_hash(), newcol.portable_data_hash())
+                already_migrated.add(oldcol.portable_data_hash())
+                success.append(old_image["collection"])
+            else:
+                logger.error("Error migrating '%s'", old_image["collection"])
+                failures.append(old_image["collection"])
         except Exception as e:
             logger.exception("Migration failed")
+            failures.append(old_image["collection"])
         finally:
             shutil.rmtree(varlibdocker)
 
-    logger.info("All done")
+    logger.info("Successfully migrated %i images", len(success))
+    if failures:
+        logger.error("Failure migrating images: %s", failures)
 
 
 def main(arguments=None, stdout=sys.stdout):
