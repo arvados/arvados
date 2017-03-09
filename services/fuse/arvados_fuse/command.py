@@ -31,6 +31,8 @@ class ArgumentParser(argparse.ArgumentParser):
         self.add_argument('mountpoint', type=str, help="""Mount point.""")
         self.add_argument('--allow-other', action='store_true',
                             help="""Let other users read the mount""")
+        self.add_argument('--subtype', type=str, metavar='STRING',
+                            help="""Report mounted filesystem type as "fuse.STRING", instead of just "fuse".""")
 
         mode = self.add_mutually_exclusive_group()
 
@@ -148,6 +150,8 @@ class Mount(object):
                 if getattr(self.args, optname)]
         # Increase default read/write size from 4KiB to 128KiB
         opts += ["big_writes", "max_read=131072"]
+        if self.args.subtype:
+            opts += ["subtype="+self.args.subtype]
         return opts
 
     def _setup_logging(self):
