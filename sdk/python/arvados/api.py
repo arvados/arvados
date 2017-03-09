@@ -205,7 +205,7 @@ def api(version=None, cache=True, host=None, token=None, insecure=False, **kwarg
 
     kwargs['http'] = _patch_http_request(kwargs['http'], token)
 
-    svc = apiclient_discovery.build('arvados', version, **kwargs)
+    svc = apiclient_discovery.build('arvados', version, cache_discovery=False, **kwargs)
     svc.api_token = token
     svc.insecure = insecure
     kwargs['http'].max_request_size = svc._rootDesc.get('maxRequestSize', 0)
