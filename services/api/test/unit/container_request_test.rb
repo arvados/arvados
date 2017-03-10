@@ -420,6 +420,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     Rails.configuration.docker_image_formats = ['v2']
     add_docker19_migration_link
 
+    # Test that it returns only v2 images even though request is for v1 image.
+
     set_user_from_auth :active
     cr = create_minimal_req!(command: ["true", "1"],
                              container_image: collections(:docker_image).portable_data_hash)
@@ -430,6 +432,55 @@ class ContainerRequestTest < ActiveSupport::TestCase
                              container_image: links(:docker_image_collection_tag).name)
     assert_equal(cr.send(:container_image_for_container),
                  collections(:docker_image_1_12).portable_data_hash)
+  end
+
+  test "use unmigrated docker image" do
+    Rails.configuration.docker_image_formats = ['v1']
+    add_docker19_migration_link
+
+    # Test that it returns only supported v1 images even though there is a
+    # migration link.
+
+    set_user_from_auth :active
+    cr = create_minimal_req!(command: ["true", "1"],
+                             container_image: collections(:docker_image).portable_data_hash)
+    assert_equal(cr.send(:container_image_for_container),
+                 collections(:docker_image).portable_data_hash)
+
+    cr = create_minimal_req!(command: ["true", "2"],
+                             container_image: links(:docker_image_collection_tag).name)
+    assert_equal(cr.send(:container_image_for_container),
+                 collections(:docker_image).portable_data_hash)
+  end
+
+  test "incompatible docker image v1" do
+    Rails.configuration.docker_image_formats = ['v1']
+    add_docker19_migration_link
+
+    # Don't return unsupported v2 image even if we ask for it directly.
+    set_user_from_auth :active
+    cr = create_minimal_req!(command: ["true", "1"],
+                             container_image: collections(:docker_image_1_12).portable_data_hash)
+    assert_raises(ArvadosModel::UnresolvableContainerError) do
+      cr.send(:container_image_for_container)
+    end
+  end
+
+  test "incompatible docker image v2" do
+    Rails.configuration.docker_image_formats = ['v2']
+    # No migration link, don't return unsupported v1 image,
+
+    set_user_from_auth :active
+    cr = create_minimal_req!(command: ["true", "1"],
+                             container_image: collections(:docker_image).portable_data_hash)
+    assert_raises(ArvadosModel::UnresolvableContainerError) do
+      cr.send(:container_image_for_container)
+    end
+    cr = create_minimal_req!(command: ["true", "2"],
+                             container_image: links(:docker_image_collection_tag).name)
+    assert_raises(ArvadosModel::UnresolvableContainerError) do
+      cr.send(:container_image_for_container)
+    end
   end
 
   test "requestor can retrieve container owned by dispatch" do
