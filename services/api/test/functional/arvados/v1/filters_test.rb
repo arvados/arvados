@@ -95,4 +95,56 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
       end
     end
   end
+
+  test "full text search with count='none'" do
+    @controller = Arvados::V1::GroupsController.new
+    authorize_with :admin
+
+    get :contents, {
+      format: :json,
+      count: 'none',
+      limit: 1000,
+      filters: [['any', '@@', Rails.configuration.uuid_prefix]],
+    }
+
+    assert_response :success
+
+    all_objects = Hash.new(0)
+    json_response['items'].map{|o| o['kind']}.each{|t| all_objects[t] += 1}
+
+    assert_equal true, all_objects['arvados#group']>0
+    assert_equal true, all_objects['arvados#job']>0
+    assert_equal true, all_objects['arvados#pipelineInstance']>0
+    assert_equal true, all_objects['arvados#pipelineTemplate']>0
+
+    # Perform test again mimicking a second page request with:
+    # last_object_class = PipelineInstance
+    #   and hence groups and jobs should not be included in the response
+    # offset = 5, which means first 5 pipeline instances were already received in page 1
+    #   and hence the remaining pipeline instances and all other object types should be included in the response
+
+    @test_counter = 0  # Reset executed action counter
+
+    @controller = Arvados::V1::GroupsController.new
+
+    get :contents, {
+      format: :json,
+      count: 'none',
+      limit: 1000,
+      offset: '5',
+      last_object_class: 'PipelineInstance',
+      filters: [['any', '@@', Rails.configuration.uuid_prefix]],
+    }
+
+    assert_response :success
+
+    second_page = Hash.new(0)
+    json_response['items'].map{|o| o['kind']}.each{|t| second_page[t] += 1}
+
+    assert_equal false, second_page.include?('arvados#group')
+    assert_equal false, second_page.include?('arvados#job')
+    assert_equal true, second_page['arvados#pipelineInstance']>0
+    assert_equal all_objects['arvados#pipelineInstance'], second_page['arvados#pipelineInstance']+5
+    assert_equal true, second_page['arvados#pipelineTemplate']>0
+  end
 end
