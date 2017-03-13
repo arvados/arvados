@@ -395,7 +395,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "container_image_for_container(pdh)" do
     set_user_from_auth :active
-    [:docker_image, :docker_image_1_12].each do |coll|
+    [[:docker_image, 'v1'], [:docker_image_1_12, 'v2']].each do |coll, ver|
+      Rails.configuration.docker_image_formats = [ver]
       pdh = collections(coll).portable_data_hash
       cr = ContainerRequest.new(container_image: pdh)
       resolved = cr.send :container_image_for_container
