@@ -232,11 +232,18 @@ class ApplicationController < ActionController::Base
       objects = @objects
     end
     if objects.respond_to?(:result_offset) and
-        objects.respond_to?(:result_limit) and
-        objects.respond_to?(:items_available)
+        objects.respond_to?(:result_limit)
       next_offset = objects.result_offset + objects.result_limit
-      if next_offset < objects.items_available
+      if objects.respond_to?(:items_available) and (next_offset < objects.items_available)
         next_offset
+      elsif @objects.results.size > 0 and (params[:count] == 'none' or
+           (params[:controller] == 'search' and params[:action] == 'choose'))
+        last_object_class = @objects.last.class
+        if params['last_object_class'].nil? or params['last_object_class'] == last_object_class.to_s
+          next_offset
+        else
+          @objects.select{|obj| obj.class == last_object_class}.size
+        end
       else
         nil
       end
