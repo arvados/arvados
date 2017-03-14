@@ -67,7 +67,7 @@ class TestContainer(unittest.TestCase):
                         'state': 'Committed',
                         'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                         'output_path': '/var/spool/cwl',
-                        'container_image': '99999999999999999999999999999993+99',
+                        'container_image': 'arvados/jobs',
                         'command': ['ls', '/var/spool/cwl'],
                         'cwd': '/var/spool/cwl',
                         'scheduling_parameters': {},
@@ -138,7 +138,7 @@ class TestContainer(unittest.TestCase):
                 'state': 'Committed',
                 'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                 'output_path': '/var/spool/cwl',
-                'container_image': '99999999999999999999999999999993+99',
+                'container_image': 'arvados/jobs',
                 'command': ['ls'],
                 'cwd': '/var/spool/cwl',
                 'scheduling_parameters': {
@@ -262,7 +262,7 @@ class TestContainer(unittest.TestCase):
                 'state': 'Committed',
                 'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                 'output_path': '/var/spool/cwl',
-                'container_image': '99999999999999999999999999999993+99',
+                'container_image': 'arvados/jobs',
                 'command': ['ls'],
                 'cwd': '/var/spool/cwl',
                 'scheduling_parameters': {
