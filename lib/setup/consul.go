@@ -13,6 +13,51 @@ import (
 	"github.com/hashicorp/consul/api"
 )
 
+func (s *Setup) consulTemplateTrigger(name, dst, tmpl string, mode os.FileMode, reload string) error {
+	atomicWriteFile(dst+".tmpl", []byte(tmpl), mode)
+
+	svdir := "/etc/sv/" + name
+	cfgPath := svdir + "/consul.json"
+	atomicWriteJSON(cfgPath, map[string]interface{}{
+		"consul": map[string]interface{}{
+			"address": fmt.Sprintf("%s:%d", s.LANHost, s.Agent.Ports.ConsulHTTP),
+			"token":   s.masterToken,
+		},
+		"vault": map[string]interface{}{
+			"address": fmt.Sprintf("http://%s:%d", s.LANHost, s.Agent.Ports.VaultServer),
+		},
+	}, 0600)
+
+	ct := path.Join(s.UsrDir, "bin", "consul-template")
+	args := []string{
+		"-config", cfgPath, "-template", dst + ".tmpl:" + dst + ":" + reload,
+	}
+	script := fmt.Sprintf("#!/bin/sh\nexec %q ", ct)
+	for _, a := range args {
+		script = script + fmt.Sprintf(" %q", a)
+	}
+	script = script + "\n"
+
+	atomicWriteFile(svdir+"/run", []byte(script), 0755)
+	err := command("sv", "term", svdir).Run()
+	if _, ok := err.(*exec.ExitError); err != nil && !ok {
+		// "sv could not send term" is ok, but "sv not found" is not ok
+		return err
+	}
+	return nil
+}
+
+func (s *Setup) installConsulTemplate() error {
+	prog := path.Join(s.UsrDir, "bin", "consul-template")
+	return (&download{
+		URL:        "https://releases.hashicorp.com/consul-template/0.18.1/consul-template_0.18.1_linux_amd64.zip",
+		Dest:       prog,
+		Size:       6932736,
+		Mode:       0755,
+		PreloadDir: s.PreloadDir,
+	}).install()
+}
+
 func (s *Setup) installConsul() error {
 	prog := path.Join(s.UsrDir, "bin", "consul")
 	err := (&download{

@@ -30,6 +30,7 @@ type Setup struct {
 	InitVault  bool
 	LANHost    string
 	PreloadDir string
+	RunAPI     bool
 	Wait       bool
 
 	encryptKey  string
@@ -42,6 +43,7 @@ func (s *Setup) ParseFlags(args []string) error {
 	fs.StringVar(&s.ClusterID, "cluster-id", s.ClusterID, "five-character cluster ID")
 	fs.BoolVar(&s.InitVault, "init-vault", s.InitVault, "initialize the vault if needed")
 	fs.BoolVar(&s.Unseal, "unseal", s.Unseal, "unseal the vault automatically")
+	fs.BoolVar(&s.RunAPI, "run-api", s.RunAPI, "run API server on this node")
 	fs.BoolVar(&s.Wait, "wait", s.Wait, "wait for all nodes to come up before exiting")
 	return fs.Parse(args)
 }
@@ -57,7 +59,10 @@ func (s *Setup) Run() error {
 		(&osPackage{Debian: "nginx"}).install,
 		s.installRunit,
 		s.installConsul,
+		s.installConsulTemplate,
 		s.installVault,
+		s.generateSelfSignedCert,
+		s.installArvadosServices,
 	} {
 		err := f()
 		if err != nil {
@@ -72,6 +77,20 @@ func (s *Setup) Run() error {
 			log.Printf("setup: consulMaster(): %s", err)
 			continue
 		}
+
+		apiSvcs, _, err := cc.Catalog().Service("arvados-api", "", nil)
+		if err != nil {
+			log.Printf("setup: consul.Catalog().Service(): %s", err)
+			continue
+		} else if len(apiSvcs) == 0 {
+			if wait <= 2*time.Second {
+				wait = wait * 2
+				log.Printf("setup: waiting for arvados-api service to appear")
+			}
+			continue
+		}
+		log.Printf("arvados-api service: %#v", apiSvcs)
+
 		ok = true
 		svcs, _, err := cc.Catalog().Services(nil)
 		if err != nil {

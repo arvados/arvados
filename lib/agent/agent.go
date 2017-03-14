@@ -42,6 +42,13 @@ type PortsConfig struct {
 	NomadRPC      int
 	NomadSerf     int
 	VaultServer   int
+
+	API       int
+	GitHTTP   int
+	KeepWeb   int
+	Keepproxy int
+	Keepstore int
+	Websocket int
 }
 
 type RepoConfig struct {
@@ -87,6 +94,13 @@ func Command() *Agent {
 			NomadRPC:      14647,
 			NomadSerf:     14648,
 			VaultServer:   18200,
+
+			API:       8000,
+			GitHTTP:   9001,
+			KeepWeb:   9002,
+			Keepproxy: 25100,
+			Keepstore: 25107,
+			Websocket: 8100,
 		},
 		DataDir:    "/var/lib/arvados",
 		UsrDir:     "/usr/local/arvados",
