@@ -444,18 +444,31 @@ class JobTest < ActiveSupport::TestCase
   ].each do |existing_image, request_image, expect_image|
     test "if a #{existing_image} job exists, #{request_image} yields #{expect_image} after migration" do
       Rails.configuration.docker_image_formats = ['v1']
-      oldjob = Job.create!(
-        job_attrs(
-          script: 'foobar1',
-          runtime_constraints: {
-            'docker_image' => collections(existing_image).portable_data_hash}))
-      oldjob.reload
-      assert_equal(oldjob.docker_image_locator,
-                   collections(existing_image).portable_data_hash)
+
+      if existing_image == :docker_image
+        oldjob = Job.create!(
+          job_attrs(
+            script: 'foobar1',
+            runtime_constraints: {
+              'docker_image' => collections(existing_image).portable_data_hash}))
+        oldjob.reload
+        assert_equal(oldjob.docker_image_locator,
+                     collections(existing_image).portable_data_hash)
+      elsif existing_image == :docker_image_1_12
+        assert_raises(ActiveRecord::RecordInvalid,
+                      "Should not resolve v2 image when only v1 is supported") do
+        oldjob = Job.create!(
+          job_attrs(
+            script: 'foobar1',
+            runtime_constraints: {
+              'docker_image' => collections(existing_image).portable_data_hash}))
+        end
+      end
 
       Rails.configuration.docker_image_formats = ['v2']
       add_docker19_migration_link
 
+      # Check that both v1 and v2 images get resolved to v2.
       newjob = Job.create!(
         job_attrs(
           script: 'foobar1',

@@ -149,7 +149,7 @@ class Job < ArvadosModel
         image_hashes = Array.wrap(operand).flat_map do |search_term|
           image_search, image_tag = search_term.split(':', 2)
           Collection.
-            find_all_for_docker_image(image_search, image_tag, read_users).
+            find_all_for_docker_image(image_search, image_tag, read_users, filter_compatible_format: false).
             map(&:portable_data_hash)
         end
         filters << [attr, operator.sub(/ docker$/, ""), image_hashes]
@@ -217,8 +217,7 @@ class Job < ArvadosModel
       else
         image_locator = nil
       end
-      filters << ["docker_image_locator", "=",
-                  Collection.docker_migration_pdh(read_users, image_locator)]
+      filters << ["docker_image_locator", "=", image_locator]
       if sdk_version = attrs[:runtime_constraints].andand["arvados_sdk_version"]
         filters += default_git_filters("arvados_sdk_version", "arvados", sdk_version)
       end
@@ -440,12 +439,6 @@ class Job < ArvadosModel
         [false, "not found for #{image_search}"]
       end
     end
-    Rails.logger.info("docker_image_locator is #{docker_image_locator}")
-    if docker_image_locator && docker_image_locator_changed?
-      self.docker_image_locator =
-        Collection.docker_migration_pdh([current_user], docker_image_locator)
-    end
-    Rails.logger.info("docker_image_locator is #{docker_image_locator}")
   end
 
   def permission_to_update

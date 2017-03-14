@@ -316,8 +316,53 @@ class Collection < ArvadosModel
     [hash_part, size_part].compact.join '+'
   end
 
-  # Return array of Collection objects
-  def self.find_all_for_docker_image(search_term, search_tag=nil, readers=nil)
+  def self.get_compatible_images(readers, pattern, collections)
+    if collections.empty?
+      return []
+    end
+
+    migrations = Hash[
+      Link.where('tail_uuid in (?) AND link_class=? AND links.owner_uuid=?',
+                 collections.map(&:portable_data_hash),
+                 'docker_image_migration',
+                 system_user_uuid).
+      order('links.created_at asc').
+      map { |l|
+        [l.tail_uuid, l.head_uuid]
+      }]
+
+    migrated_collections = Hash[
+      Collection.readable_by(*readers).
+      where('portable_data_hash in (?)', migrations.values).
+      map { |c|
+        [c.portable_data_hash, c]
+      }]
+
+    collections.map { |c|
+      # Check if the listed image is compatible first, if not, then try the
+      # migration link.
+      manifest = Keep::Manifest.new(c.manifest_text)
+      if manifest.exact_file_count?(1) and manifest.files[0][1] =~ pattern
+        c
+      elsif m = migrated_collections[migrations[c.portable_data_hash]]
+        manifest = Keep::Manifest.new(m.manifest_text)
+        if manifest.exact_file_count?(1) and manifest.files[0][1] =~ pattern
+          m
+        end
+      end
+    }.compact
+  end
+
+  # Resolve a Docker repo+tag, hash, or collection PDH to an array of
+  # Collection objects, sorted by timestamp starting with the most recent
+  # match.
+  #
+  # If filter_compatible_format is true (the default), only return image
+  # collections which are support by the installation as indicated by
+  # Rails.configuration.docker_image_formats.  Will follow
+  # 'docker_image_migration' links if search_term resolves to an incompatible
+  # image, but an equivalent compatible image is available.
+  def self.find_all_for_docker_image(search_term, search_tag=nil, readers=nil, filter_compatible_format: true)
     readers ||= [Thread.current[:user]]
     base_search = Link.
       readable_by(*readers).
@@ -325,20 +370,23 @@ class Collection < ArvadosModel
       joins("JOIN collections ON links.head_uuid = collections.uuid").
       order("links.created_at DESC")
 
+    if (Rails.configuration.docker_image_formats.include? 'v1' and
+        Rails.configuration.docker_image_formats.include? 'v2') or filter_compatible_format == false
+      pattern = /^(sha256:)?[0-9A-Fa-f]{64}\.tar$/
+    elsif Rails.configuration.docker_image_formats.include? 'v2'
+      pattern = /^(sha256:)[0-9A-Fa-f]{64}\.tar$/
+    elsif Rails.configuration.docker_image_formats.include? 'v1'
+      pattern = /^[0-9A-Fa-f]{64}\.tar$/
+    else
+      raise "Unrecognized configuration for docker_image_formats #{Rails.configuration.docker_image_formats}"
+    end
+
     # If the search term is a Collection locator that contains one file
     # that looks like a Docker image, return it.
     if loc = Keep::Locator.parse(search_term)
       loc.strip_hints!
-      coll_match = readable_by(*readers).where(portable_data_hash: loc.to_s).limit(1).first
-      if coll_match
-        # Check if the Collection contains exactly one file whose name
-        # looks like a saved Docker image.
-        manifest = Keep::Manifest.new(coll_match.manifest_text)
-        if manifest.exact_file_count?(1) and
-            (manifest.files[0][1] =~ /^(sha256:)?[0-9A-Fa-f]{64}\.tar$/)
-          return [coll_match]
-        end
-      end
+      coll_match = readable_by(*readers).where(portable_data_hash: loc.to_s).limit(1)
+      return get_compatible_images(readers, pattern, coll_match)
     end
 
     if search_tag.nil? and (n = search_term.index(":"))
@@ -362,32 +410,23 @@ class Collection < ArvadosModel
     # so that anything with an image timestamp is considered more recent than
     # anything without; then we use the link's created_at as a tiebreaker.
     uuid_timestamps = {}
-    matches.all.map do |link|
+    matches.each do |link|
       uuid_timestamps[link.head_uuid] = [(-link.properties["image_timestamp"].to_datetime.to_i rescue 0),
        -link.created_at.to_i]
+     end
+
+    sorted = Collection.where('uuid in (?)', uuid_timestamps.keys).sort_by { |c|
+      uuid_timestamps[c.uuid]
+    }
+    compatible = get_compatible_images(readers, pattern, sorted)
+    if sorted.length > 0 and compatible.empty?
+      raise ArvadosModel::UnresolvableContainerError.new "Matching Docker image is incompatible with 'docker_image_formats' configuration."
     end
-    Collection.where('uuid in (?)', uuid_timestamps.keys).sort_by { |c| uuid_timestamps[c.uuid] }
+    compatible
   end
 
   def self.for_latest_docker_image(search_term, search_tag=nil, readers=nil)
     find_all_for_docker_image(search_term, search_tag, readers).first
-  end
-
-  # If the given pdh is an old-format docker image, old-format images
-  # aren't supported by the compute nodes according to site config,
-  # and a migrated new-format image is available, return the migrated
-  # image's pdh. Otherwise, just return pdh.
-  def self.docker_migration_pdh(read_users, pdh)
-    if Rails.configuration.docker_image_formats.include?('v1')
-      return pdh
-    end
-    Collection.readable_by(*read_users).
-      joins('INNER JOIN links ON head_uuid=portable_data_hash').
-      where('tail_uuid=? AND link_class=? AND links.owner_uuid=?',
-            pdh, 'docker_image_migration', system_user_uuid).
-      order('links.created_at desc').
-      select('portable_data_hash').
-      first.andand.portable_data_hash || pdh
   end
 
   def self.searchable_columns operator
