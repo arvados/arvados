@@ -96,7 +96,10 @@ class Arvados::V1::GroupsController < ApplicationController
       @offset = 0 if seen_last_class  # reset offset for the new next type being processed
 
       # if current klass is same as params['last_object_class'], mark that fact
-      seen_last_class = true if(params['count'].andand.==('none') and (params['last_object_class'].nil? or params['last_object_class'].empty? or params['last_object_class'] == klass.to_s))
+      seen_last_class = true if((params['count'].andand.==('none')) and
+                                (params['last_object_class'].nil? or
+                                 params['last_object_class'].empty? or
+                                 params['last_object_class'] == klass.to_s))
 
       # if klasses are specified, skip all other klass types
       next if wanted_klasses.any? and !wanted_klasses.include?(klass.to_s)
