@@ -23,3 +23,9 @@ ii) load it into Docker
 iii) update the Docker version, which updates the image
 iv) save the v2 format image and upload to Arvados
 v) create a migration link
+
+Once the Docker images in Keep have been migrated, upgrade the version of Docker used across the cluster.  Finally, update the API server configuration from "v1" to "v2" to reflect the supported Docker image version:
+
+<pre>
+docker_image_formats: ["v2"]
+</pre>
