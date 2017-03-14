@@ -1,0 +1,25 @@
+---
+layout: default
+navsection: installguide
+title: Migrating Docker images
+...
+
+If you have an existing Arvados installation using Docker 1.9 and wish to update to Docker 1.10+, you must migrate the Docker images stored in Keep.
+
+The @arv-migrate-docker19@ tool converts Docker images stored in Arvados from image format v1 (Docker <= 1.9) to image format v2 (Docker >= 1.10).
+
+Requires Docker running on the local host (can be either 1.9 or 1.10+).
+
+Usage:
+
+# Run @arvados/docker/migrate-docker19/build.sh@ to create @arvados/migrate-docker19@ Docker image.
+# Set ARVADOS_API_HOST and ARVADOS_API_TOKEN to the cluster you want to migrate.
+# Run @arv-migrate-docker19@ from the Arvados Python SDK on the host (not in a container).
+
+This will query Arvados for v1 format Docker images.  For each image that does not already have a corresponding v2 format image (as indicated by a docker_image_migration tag) it will perform the following process:
+
+i) download the image from Arvados
+ii) load it into Docker
+iii) update the Docker version, which updates the image
+iv) save the v2 format image and upload to Arvados
+v) create a migration link

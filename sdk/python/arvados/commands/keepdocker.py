@@ -356,7 +356,7 @@ def migrate19():
 
     2) Set ARVADOS_API_HOST and ARVADOS_API_TOKEN to the cluster you want to migrate.
 
-    3) Run arv-migrate-docker19
+    3) Run arv-migrate-docker19 from the Arvados Python SDK on the host (not in a container).
 
     This will query Arvados for v1 format Docker images.  For each image that
     does not already have a corresponding v2 format image (as indicated by a
