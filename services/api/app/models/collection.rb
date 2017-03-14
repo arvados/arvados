@@ -362,7 +362,7 @@ class Collection < ArvadosModel
   # Rails.configuration.docker_image_formats.  Will follow
   # 'docker_image_migration' links if search_term resolves to an incompatible
   # image, but an equivalent compatible image is available.
-  def self.find_all_for_docker_image(search_term, search_tag=nil, readers=nil, filter_compatible_format=true)
+  def self.find_all_for_docker_image(search_term, search_tag=nil, readers=nil, filter_compatible_format: true)
     readers ||= [Thread.current[:user]]
     base_search = Link.
       readable_by(*readers).
@@ -386,9 +386,7 @@ class Collection < ArvadosModel
     if loc = Keep::Locator.parse(search_term)
       loc.strip_hints!
       coll_match = readable_by(*readers).where(portable_data_hash: loc.to_s).limit(1)
-      if compatible_img = get_compatible_images(readers, pattern, coll_match)
-        return compatible_img
-      end
+      return get_compatible_images(readers, pattern, coll_match)
     end
 
     if search_tag.nil? and (n = search_term.index(":"))
