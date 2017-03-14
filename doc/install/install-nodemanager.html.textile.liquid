@@ -6,7 +6,7 @@ title: Install Node Manager
 
 Arvados Node Manager provides elastic computing for Arvados and SLURM by creating and destroying virtual machines on demand.  Node Manager currently supports Amazon Web Services (AWS), Google Cloud Platform (GCP) and Microsoft Azure.
 
-Note: node manager is only required for elastic computing cloud environments.  Fixed clusters do not require node manager.
+Note: node manager is only required for elastic computing cloud environments.  Fixed size clusters do not require node manager.
 
 h2. Install
 
@@ -28,11 +28,11 @@ On Red Hat-based systems:
 
 h2. Create compute image
 
-First, create a virtual machine operating system image that will be used to
-initialize new compute nodes.  This must have @slurm@ installed with a correct
-@slurm.conf@.
+Configure a virtual machine following the "instructions to set up a compute node.":{{site.baseurl}}/install/crunch2-slurm/install-compute-node.html and set it up to run a "ping script":{{site.baseurl}}/install/install-compute-ping.html at boot.
 
-Configure node manage as described below to use this compute image.
+Create a virtual machine image using the commands provided by your cloud provider.  We recommend using a tool such as "Packer":https://www.packer.io/ to automate this process.
+
+Configure node manager to use the image with the @image@ or @image_id@ parameter.
 
 h2. Configure node manager
 
