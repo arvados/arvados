@@ -33,7 +33,7 @@ group :development do
 end
 
 group :test, :diagnostics, :performance do
-  gem 'minitest', '~> 5.0'
+  gem 'minitest', '~> 5.10'
   gem 'selenium-webdriver'
   gem 'capybara'
   gem 'poltergeist'

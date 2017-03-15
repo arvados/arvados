@@ -153,7 +153,7 @@ GEM
     metaclass (0.0.4)
     mime-types (2.99)
     mini_portile (0.6.2)
-    minitest (5.8.4)
+    minitest (5.10.1)
     mocha (1.1.0)
       metaclass (~> 0.0.1)
     morrisjs-rails (0.5.1)
@@ -292,7 +292,7 @@ DEPENDENCIES
   less-rails
   lograge
   logstash-event
-  minitest (~> 5.0)
+  minitest (~> 5.10)
   mocha
   morrisjs-rails
   multi_json

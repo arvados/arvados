@@ -64,6 +64,8 @@ apps/workbench (*)
 apps/workbench_units (*)
 apps/workbench_functionals (*)
 apps/workbench_integration (*)
+apps/workbench_integration_all_but_ps (*)
+apps/workbench_integration_only_ps (*)
 apps/workbench_benchmark
 apps/workbench_profile
 doc
@@ -102,8 +104,10 @@ tools/keep-exercise
 tools/keep-rsync
 tools/keep-block-check
 
-(*) apps/workbench is shorthand for apps/workbench_units +
-    apps/workbench_functionals + apps/workbench_integration
+(*) apps/workbench is shorthand for
+    apps/workbench_units +
+    apps/workbench_functionals +
+    apps/workbench_integration_all_but_ps + apps/workbench_integration_only_ps
 
 EOF
 
@@ -519,7 +523,7 @@ retry() {
 
 do_test() {
     case "${1}" in
-        apps/workbench_units | apps/workbench_functionals | apps/workbench_integration)
+        apps/workbench_units | apps/workbench_functionals | apps/workbench_integration_all_but_ps | apps/workbench_integration_only_ps)
             suite=apps/workbench
             ;;
         *)
@@ -885,6 +889,19 @@ test_workbench_integration() {
 }
 do_test apps/workbench_integration workbench_integration
 
+test_workbench_integration_all_but_ps() {
+    start_nginx_proxy_services \
+        && cd "$WORKSPACE/apps/workbench" \
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:integration TESTOPTS=-e/^\(test_pipeline\|test_project\)\.*$/
+}
+do_test apps/workbench_integration_all_but_ps workbench_integration_all_but_ps
+
+test_workbench_integration_only_ps() {
+    start_nginx_proxy_services \
+        && cd "$WORKSPACE/apps/workbench" \
+        && env RAILS_ENV=test ${short:+RAILS_TEST_SHORT=1} bundle exec rake test:integration TESTOPTS=-v TEST=test/integration/p*.rb
+}
+do_test apps/workbench_integration_only_ps workbench_integration_only_ps
 
 test_workbench_benchmark() {
     start_nginx_proxy_services \
