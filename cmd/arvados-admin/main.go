@@ -7,12 +7,14 @@ import (
 
 	"git.curoverse.com/arvados.git/cmd"
 	"git.curoverse.com/arvados.git/lib/agent"
+	"git.curoverse.com/arvados.git/lib/configure"
 	"git.curoverse.com/arvados.git/lib/setup"
 )
 
 var cmds = map[string]cmd.Command{
-	"agent": agent.Command(),
-	"setup": setup.Command(),
+	"agent":     agent.Command(),
+	"setup":     setup.Command(),
+	"configure": configure.Command(),
 }
 
 func main() {

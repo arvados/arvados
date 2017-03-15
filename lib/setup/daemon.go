@@ -33,7 +33,7 @@ func (s *Setup) installService(d daemon) error {
 	if d.noRegister {
 		return nil
 	}
-	consul, err := s.consulMaster()
+	consul, err := s.ConsulMaster()
 	if err != nil {
 		return err
 	}

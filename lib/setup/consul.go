@@ -143,15 +143,18 @@ func (s *Setup) installConsul() error {
 
 var consulCfg = api.DefaultConfig()
 
-func (s *Setup) consulMaster() (*api.Client, error) {
-	masterToken, err := ioutil.ReadFile(path.Join(s.DataDir, "master-token.txt"))
-	if err != nil {
-		return nil, err
+func (s *Setup) ConsulMaster() (*api.Client, error) {
+	if s.masterToken == "" {
+		t, err := ioutil.ReadFile(path.Join(s.DataDir, "master-token.txt"))
+		if err != nil {
+			return nil, err
+		}
+		s.masterToken = string(t)
 	}
 	ccfg := api.DefaultConfig()
 	ccfg.Address = fmt.Sprintf("127.0.0.1:%d", s.Ports.ConsulHTTP)
 	ccfg.Datacenter = s.ClusterID
-	ccfg.Token = string(masterToken)
+	ccfg.Token = s.masterToken
 	return api.NewClient(ccfg)
 }
 
@@ -185,7 +188,7 @@ func (s *Setup) consulInit() error {
 }
 
 func (s *Setup) consulCheck() error {
-	consul, err := s.consulMaster()
+	consul, err := s.ConsulMaster()
 	if err != nil {
 		return err
 	}
@@ -195,7 +198,7 @@ func (s *Setup) consulCheck() error {
 
 // OnlyNode returns true if this is the only consul node.
 func (s *Setup) OnlyNode() (bool, error) {
-	c, err := s.consulMaster()
+	c, err := s.ConsulMaster()
 	if err != nil {
 		return false, err
 	}

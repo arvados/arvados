@@ -154,7 +154,7 @@ func (s *Setup) vaultBootstrap() error {
 
 	if s.InitVault {
 		// Use master token to create a management token
-		master, err := s.consulMaster()
+		master, err := s.ConsulMaster()
 		if err != nil {
 			return err
 		}

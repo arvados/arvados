@@ -195,17 +195,17 @@ func (s *Setup) installArvadosServices() error {
 			func() error {
 				return os.Symlink("../sites-available/arvados-api.conf", "/etc/nginx/sites-enabled/arvados-api.conf")
 			})
-		c, err := s.consulMaster()
+		c, err := s.ConsulMaster()
 		if err != nil {
 			return err
 		}
 		err = c.Agent().ServiceRegister(&consul.AgentServiceRegistration{
 			ID:   "arvados-api:" + s.LANHost,
-			Name: "api",
+			Name: "arvados-api",
 			Port: s.Agent.Ports.API,
 			Checks: consul.AgentServiceChecks{
 				{
-					HTTP:     fmt.Sprintf("http://%s:%d/discovery/v1/apis/arvados/v1/rest", s.LANHost, s.Agent.Ports.API),
+					HTTP:     fmt.Sprintf("http://127.0.0.1:%d/discovery/v1/apis/arvados/v1/rest", s.Agent.Ports.API),
 					Interval: "15s",
 				},
 			},

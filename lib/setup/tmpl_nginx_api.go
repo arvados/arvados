@@ -1,7 +1,7 @@
 package setup
 
 const tmplNginxAPI = `server {
-  listen 127.0.0.1:8000;
+  listen 127.0.0.1:{{ key "arvados/service/API/port" }};
   server_name localhost-api;
 
   root /var/www/arvados-api/current/public;
@@ -21,11 +21,11 @@ const tmplNginxAPI = `server {
 }
 
 upstream api {
-  server     127.0.0.1:8000  fail_timeout=10s;
+  server     127.0.0.1:{{ key "arvados/service/API/port" }} fail_timeout=10s;
 }
 
 upstream websockets {
-  server     127.0.0.1:8100  fail_timeout=10s;
+  server     127.0.0.1:{{ key "arvados/service/Websocket/port" }} fail_timeout=10s;
 }
 
 proxy_http_version 1.1;

@@ -61,6 +61,7 @@ func (s *Setup) Run() error {
 		s.installConsul,
 		s.installConsulTemplate,
 		s.installVault,
+		s.maybeConfigure,
 		s.generateSelfSignedCert,
 		s.installArvadosServices,
 	} {
@@ -72,7 +73,7 @@ func (s *Setup) Run() error {
 
 	wait := 2 * time.Second
 	for ok := false; s.Wait && !ok; time.Sleep(wait) {
-		cc, err := s.consulMaster()
+		cc, err := s.ConsulMaster()
 		if err != nil {
 			log.Printf("setup: consulMaster(): %s", err)
 			continue
