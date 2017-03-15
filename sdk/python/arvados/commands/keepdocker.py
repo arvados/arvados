@@ -372,6 +372,11 @@ def migrate19():
 
     api_client  = arvados.api()
 
+    user = api_client.users().current().execute()
+    if not user['is_admin']:
+        raise Exception("This command requires an admin token")
+    sys_uuid = user['uuid'][:12] + '000000000000000'
+
     images = arvados.commands.keepdocker.list_images_in_arv(api_client, 3)
 
     is_new = lambda img: img['dockerhash'].startswith('sha256:')
@@ -443,7 +448,7 @@ def migrate19():
                 newcol = CollectionReader(migrated.group(1))
 
                 api_client.links().create(body={"link": {
-                    'owner_uuid': oldcol.api_response()["owner_uuid"],
+                    'owner_uuid': sys_uuid,
                     'link_class': arvados.commands.keepdocker._migration_link_class,
                     'name': arvados.commands.keepdocker._migration_link_name,
                     'tail_uuid': oldcol.portable_data_hash(),
