@@ -97,6 +97,7 @@ type ContainerRunner struct {
 	ArvMountExit   chan error
 	finalState     string
 
+	infoLogger   io.WriteCloser
 	statLogger   io.WriteCloser
 	statReporter *crunchstat.Reporter
 	statInterval time.Duration
@@ -502,6 +503,51 @@ func (runner *ContainerRunner) StartCrunchstat() {
 		PollPeriod:   runner.statInterval,
 	}
 	runner.statReporter.Start()
+}
+
+type infoCommand struct {
+	label   string
+	command string
+	args    []string
+}
+
+func newInfoCommand(label string, command string) infoCommand {
+	cmd := strings.Split(command, " ")
+	return infoCommand{
+		label:   label,
+		command: cmd[0],
+		args:    cmd[1:],
+	}
+}
+
+// Gather node information and store it on the log for debugging
+// purposes.
+func (runner *ContainerRunner) LogNodeInfo() (err error) {
+	w := runner.NewLogWriter("node-info")
+	logger := log.New(w, "node-info", 0)
+
+	commands := []infoCommand{
+		newInfoCommand("Host Information", "uname -a"),
+		newInfoCommand("CPU Information", "cat /proc/cpuinfo"),
+		newInfoCommand("Memory Information", "cat /proc/meminfo"),
+		newInfoCommand("Disk Space", "df -m"),
+	}
+
+	var out []byte
+	for _, command := range commands {
+		out, err = exec.Command(command.command, command.args...).Output()
+		if err != nil {
+			return fmt.Errorf("While running command '%s': %v",
+				command.command, err)
+		}
+		logger.Printf("%s:\n%s\n", command.label, out)
+	}
+
+	err = w.Close()
+	if err != nil {
+		return fmt.Errorf("While closing node-info logs: %v", err)
+	}
+	return nil
 }
 
 // AttachLogs connects the docker container stdout and stderr logs to the
@@ -986,6 +1032,12 @@ func (runner *ContainerRunner) Run() (err error) {
 	}
 
 	err = runner.CreateContainer()
+	if err != nil {
+		return
+	}
+
+	// Gather and record node information
+	err = runner.LogNodeInfo()
 	if err != nil {
 		return
 	}
