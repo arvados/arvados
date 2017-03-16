@@ -509,18 +509,8 @@ func (runner *ContainerRunner) StartCrunchstat() {
 }
 
 type infoCommand struct {
-	label   string
-	command string
-	args    []string
-}
-
-func newInfoCommand(label string, command string) infoCommand {
-	cmd := strings.Split(command, " ")
-	return infoCommand{
-		label:   label,
-		command: cmd[0],
-		args:    cmd[1:],
-	}
+	label string
+	cmd   []string
 }
 
 // Gather node information and store it on the log for debugging
@@ -530,19 +520,31 @@ func (runner *ContainerRunner) LogNodeInfo() (err error) {
 	logger := log.New(w, "node-info", 0)
 
 	commands := []infoCommand{
-		newInfoCommand("Host Information", "uname -a"),
-		newInfoCommand("CPU Information", "cat /proc/cpuinfo"),
-		newInfoCommand("Memory Information", "cat /proc/meminfo"),
-		newInfoCommand("Disk Space", "df -m"),
+		infoCommand{
+			label: "Host Information",
+			cmd:   []string{"uname", "-a"},
+		},
+		infoCommand{
+			label: "CPU Information",
+			cmd:   []string{"cat", "/proc/cpuinfo"},
+		},
+		infoCommand{
+			label: "Memory Information",
+			cmd:   []string{"cat", "/proc/meminfo"},
+		},
+		infoCommand{
+			label: "Disk Space",
+			cmd:   []string{"df", "-m"},
+		},
 	}
 
 	// Run commands with informational output to be logged.
 	var out []byte
 	for _, command := range commands {
-		out, err = exec.Command(command.command, command.args...).Output()
+		out, err = exec.Command(command.cmd[0], command.cmd[1:]...).Output()
 		if err != nil {
 			return fmt.Errorf("While running command '%s': %v",
-				command.command, err)
+				command.cmd[0], err)
 		}
 		logger.Println(command.label)
 		for _, line := range strings.Split(string(out), "\n") {
