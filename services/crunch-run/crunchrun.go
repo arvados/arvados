@@ -533,6 +533,7 @@ func (runner *ContainerRunner) LogNodeInfo() (err error) {
 		newInfoCommand("Disk Space", "df -m"),
 	}
 
+	// Run commands with informational output to be logged.
 	var out []byte
 	for _, command := range commands {
 		out, err = exec.Command(command.command, command.args...).Output()
@@ -540,7 +541,10 @@ func (runner *ContainerRunner) LogNodeInfo() (err error) {
 			return fmt.Errorf("While running command '%s': %v",
 				command.command, err)
 		}
-		logger.Printf("%s:\n%s\n", command.label, out)
+		logger.Println(command.label)
+		for _, line := range strings.Split(string(out), "\n") {
+			logger.Println(" ", line)
+		}
 	}
 
 	err = w.Close()
