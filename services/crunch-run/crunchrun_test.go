@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime/pprof"
 	"sort"
 	"strings"
 	"sync"
@@ -525,7 +526,7 @@ func (s *TestSuite) TestUpdateContainerCancelled(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	cr.Cancelled = true
+	cr.cCancelled = true
 	cr.finalState = "Cancelled"
 
 	err := cr.UpdateContainerFinal()
@@ -748,7 +749,7 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
 func (s *TestSuite) TestStopOnSignal(c *C) {
 	s.testStopContainer(c, func(cr *ContainerRunner) {
 		go func() {
-			for cr.ContainerID == "" {
+			for !cr.cStarted {
 				time.Sleep(time.Millisecond)
 			}
 			cr.SigChan <- syscall.SIGINT
@@ -802,6 +803,7 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
 	}()
 	select {
 	case <-time.After(20 * time.Second):
+		pprof.Lookup("goroutine").WriteTo(os.Stderr, 1)
 		c.Fatal("timed out")
 	case err = <-done:
 		c.Check(err, IsNil)

@@ -91,8 +91,6 @@ type ContainerRunner struct {
 	CleanupTempDir []string
 	Binds          []string
 	OutputPDH      *string
-	CancelLock     sync.Mutex
-	Cancelled      bool
 	SigChan        chan os.Signal
 	ArvMountExit   chan error
 	finalState     string
@@ -115,6 +113,10 @@ type ContainerRunner struct {
 	// parent to be X" feature even on sites where the "specify
 	// cgroup parent" feature breaks.
 	setCgroupParent string
+
+	cStateLock sync.Mutex
+	cStarted   bool // StartContainer() succeeded
+	cCancelled bool // StopContainer() invoked
 }
 
 // SetupSignals sets up signal handling to gracefully terminate the underlying
@@ -127,6 +129,7 @@ func (runner *ContainerRunner) SetupSignals() {
 
 	go func(sig chan os.Signal) {
 		<-sig
+		log.Print("signal handler calling runner.stop()")
 		runner.stop()
 		signal.Stop(sig)
 	}(runner.SigChan)
@@ -134,13 +137,13 @@ func (runner *ContainerRunner) SetupSignals() {
 
 // stop the underlying Docker container.
 func (runner *ContainerRunner) stop() {
-	runner.CancelLock.Lock()
-	defer runner.CancelLock.Unlock()
-	if runner.Cancelled {
+	runner.cStateLock.Lock()
+	defer runner.cStateLock.Unlock()
+	if runner.cCancelled {
 		return
 	}
-	runner.Cancelled = true
-	if runner.ContainerID != "" {
+	runner.cCancelled = true
+	if runner.cStarted {
 		err := runner.Docker.StopContainer(runner.ContainerID, 10)
 		if err != nil {
 			log.Printf("StopContainer failed: %s", err)
@@ -648,10 +651,16 @@ func (runner *ContainerRunner) CreateContainer() error {
 // StartContainer starts the docker container created by CreateContainer.
 func (runner *ContainerRunner) StartContainer() error {
 	runner.CrunchLog.Printf("Starting Docker container id '%s'", runner.ContainerID)
+	runner.cStateLock.Lock()
+	defer runner.cStateLock.Unlock()
+	if runner.cCancelled {
+		return ErrCancelled
+	}
 	err := runner.Docker.StartContainer(runner.ContainerID, &runner.HostConfig)
 	if err != nil {
 		return fmt.Errorf("could not start container: %v", err)
 	}
+	runner.cStarted = true
 	return nil
 }
 
@@ -896,9 +905,9 @@ func (runner *ContainerRunner) CommitLogs() error {
 
 // UpdateContainerRunning updates the container state to "Running"
 func (runner *ContainerRunner) UpdateContainerRunning() error {
-	runner.CancelLock.Lock()
-	defer runner.CancelLock.Unlock()
-	if runner.Cancelled {
+	runner.cStateLock.Lock()
+	defer runner.cStateLock.Unlock()
+	if runner.cCancelled {
 		return ErrCancelled
 	}
 	return runner.ArvClient.Update("containers", runner.Container.UUID,
@@ -942,9 +951,9 @@ func (runner *ContainerRunner) UpdateContainerFinal() error {
 
 // IsCancelled returns the value of Cancelled, with goroutine safety.
 func (runner *ContainerRunner) IsCancelled() bool {
-	runner.CancelLock.Lock()
-	defer runner.CancelLock.Unlock()
-	return runner.Cancelled
+	runner.cStateLock.Lock()
+	defer runner.cStateLock.Unlock()
+	return runner.cCancelled
 }
 
 // NewArvLogWriter creates an ArvLogWriter
