@@ -243,16 +243,15 @@ class NodeManagerDaemonActor(actor_class):
         return s
 
     def _node_states(self, size):
-        states = pykka.get_all(rec.actor.get_state()
-                               for rec in self.cloud_nodes.nodes.itervalues()
-                               if ((size is None or rec.cloud_node.size.id == size.id) and
-                                   rec.shutdown_actor is None and
-                                   rec.actor is not None))
-        states += ['shutdown' for rec in self.cloud_nodes.nodes.itervalues()
-                   if ((size is None or rec.cloud_node.size.id == size.id) and
-                       (rec.shutdown_actor is not None or
-                        rec.actor is None))]
-        return states
+        proxy_states = []
+        states = []
+        for rec in self.cloud_nodes.nodes.itervalues():
+            if size is None or rec.cloud_node.size.id == size.id:
+                if rec.shutdown_actor is None and rec.actor is not None:
+                    proxy_states.append(rec.actor.get_state())
+                else:
+                    states.append("shutdown")
+        return states + pykka.get_all(proxy_states)
 
     def _state_counts(self, size):
         states = self._node_states(size)
