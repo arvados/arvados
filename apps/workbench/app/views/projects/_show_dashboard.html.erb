@@ -140,6 +140,7 @@
     </div>
 
     <div class="col-md-6">
+      <% if PipelineInstance.api_exists?(:index) %>
       <% nodes = Node.filter([["last_ping_at", ">", Time.now - 3600]]).results %>
       <div class="panel panel-default" style="min-height: 10.5em">
         <div class="panel-heading"><span class="panel-title">Compute node status</span>
@@ -173,6 +174,7 @@
           </div>
         </div>
       </div>
+      <% end %>
       <% if Rails.configuration.show_recent_collections_on_dashboard %>
       <div class="panel panel-default">
         <div class="panel-heading"><span class="panel-title">Recent collections</span>
