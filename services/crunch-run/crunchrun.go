@@ -95,7 +95,6 @@ type ContainerRunner struct {
 	ArvMountExit   chan error
 	finalState     string
 
-	infoLogger   io.WriteCloser
 	statLogger   io.WriteCloser
 	statReporter *crunchstat.Reporter
 	statInterval time.Duration
@@ -555,6 +554,34 @@ func (runner *ContainerRunner) LogNodeInfo() (err error) {
 	err = w.Close()
 	if err != nil {
 		return fmt.Errorf("While closing node-info logs: %v", err)
+	}
+	return nil
+}
+
+// Get and save the raw JSON container record from the API server
+func (runner *ContainerRunner) LogContainerRecord() (err error) {
+	w := &ArvLogWriter{
+		runner.ArvClient,
+		runner.Container.UUID,
+		"container",
+		runner.LogCollection.Open("container.json"),
+	}
+	logger := log.New(w, "container", 0)
+
+	// Convert container record to pretty-printed JSON []byte
+	rec, err := json.MarshalIndent(runner.Container, "", "    ")
+	if err != nil {
+		return fmt.Errorf("While converting container record to JSON: %v", err)
+	}
+
+	// Write JSON record line-by-line
+	for _, line := range strings.Split(string(rec), "\n") {
+		logger.Println(line)
+	}
+
+	err = w.Close()
+	if err != nil {
+		return fmt.Errorf("While closing container.json log: %v", err)
 	}
 	return nil
 }
@@ -1053,6 +1080,11 @@ func (runner *ContainerRunner) Run() (err error) {
 
 	// Gather and record node information
 	err = runner.LogNodeInfo()
+	if err != nil {
+		return
+	}
+	// Save container.json record on log collection
+	err = runner.LogContainerRecord()
 	if err != nil {
 		return
 	}

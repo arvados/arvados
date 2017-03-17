@@ -651,7 +651,7 @@ func (s *TestSuite) TestCrunchstat(c *C) {
 	c.Check(api.Logs["crunchstat"].String(), Matches, `(?ms).*cgroup stats files never appeared for abcde\n`)
 }
 
-func (s *TestSuite) TestNodeInfo(c *C) {
+func (s *TestSuite) TestNodeInfoLog(c *C) {
 	api, _, _ := FullRunHelper(c, `{
 		"command": ["sleep", "1"],
 		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
@@ -675,6 +675,29 @@ func (s *TestSuite) TestNodeInfo(c *C) {
 	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*CPU Information.*`)
 	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Memory Information.*`)
 	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Disk Space.*`)
+}
+
+func (s *TestSuite) TestContainerRecordLog(c *C) {
+	api, _, _ := FullRunHelper(c, `{
+		"command": ["sleep", "1"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": ".",
+		"environment": {},
+		"mounts": {"/tmp": {"kind": "tmp"} },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`, nil, func(t *TestDockerClient) {
+		time.Sleep(time.Second)
+		t.logWriter.Close()
+		t.finish <- dockerclient.WaitResult{}
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+
+	c.Assert(api.Logs["container"], NotNil)
+	c.Check(api.Logs["container"].String(), Matches, `(?ms).*container_image.*`)
 }
 
 func (s *TestSuite) TestFullRunStderr(c *C) {
