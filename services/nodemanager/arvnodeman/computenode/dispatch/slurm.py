@@ -79,7 +79,7 @@ class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
 
     def _destroy_node(self):
         if self._nodename:
-            self._set_node_state(self._nodename, 'DOWN')
+            self._set_node_state(self._nodename, 'DOWN', 'Reason=Node Manager shutdown')
         super(ComputeNodeShutdownActor, self)._destroy_node()
 
 
