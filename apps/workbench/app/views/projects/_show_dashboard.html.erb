@@ -25,17 +25,25 @@
 %>
 
 <%
+  recent_procs_panel_width = 6
   if !PipelineInstance.api_exists?(:index)
     recent_procs_title = 'Recent processes'
     run_proc_title = 'Choose a workflow to run:'
+    show_node_status = false
+    # Recent processes panel should take the entire width when is the only one
+    # being rendered.
+    if !Rails.configuration.show_recent_collections_on_dashboard
+      recent_procs_panel_width = 12
+    end
   else
     recent_procs_title = 'Recent pipelines and processes'
     run_proc_title = 'Choose a pipeline or workflow to run:'
+    show_node_status = true
   end
 %>
 
   <div class="row">
-    <div class="col-md-6">
+    <div class="col-md-<%= recent_procs_panel_width %>">
       <div class="panel panel-default" style="min-height: 10.5em">
         <div class="panel-heading">
           <span class="panel-title"><%=recent_procs_title%></span>
@@ -140,6 +148,7 @@
     </div>
 
     <div class="col-md-6">
+      <% if show_node_status %>
       <% nodes = Node.filter([["last_ping_at", ">", Time.now - 3600]]).results %>
       <div class="panel panel-default" style="min-height: 10.5em">
         <div class="panel-heading"><span class="panel-title">Compute node status</span>
@@ -173,6 +182,7 @@
           </div>
         </div>
       </div>
+      <% end %>
       <% if Rails.configuration.show_recent_collections_on_dashboard %>
       <div class="panel panel-default">
         <div class="panel-heading"><span class="panel-title">Recent collections</span>
