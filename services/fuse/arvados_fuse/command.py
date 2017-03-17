@@ -91,9 +91,9 @@ class ArgumentParser(argparse.ArgumentParser):
         self.add_argument('--crunchstat-interval', type=float, help="Write stats to stderr every N seconds (default disabled)", default=0)
 
         self.add_argument('--unmount', action='store_true', default=False,
-                          help="Forcefully unmount the specified mountpoint (if it's a fuse mount) and exit")
+                          help="Forcefully unmount the specified mountpoint (if it's a fuse mount) and exit. Use /path/... to unmount all fuse mounts below /path as well as /path itself.")
         self.add_argument('--replace', action='store_true', default=False,
-                          help="Forcefully unmount any existing fuse mount before mounting")
+                          help="If a fuse mount is already present at mountpoint, forcefully unmount it before mounting")
         self.add_argument('--unmount-timeout',
                           type=float, default=2.0,
                           help="Time to wait for graceful shutdown after --exec program exits and filesystem is unmounted")
@@ -146,7 +146,7 @@ class Mount(object):
 
     def run(self):
         if self.args.unmount:
-            unmount(self.args.mountpoint, timeout=self.args.unmount_timeout)
+            unmount_all(self.args.mountpoint, timeout=self.args.unmount_timeout)
         elif self.args.exec_args:
             self._run_exec()
         else:

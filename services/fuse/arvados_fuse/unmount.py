@@ -1,7 +1,48 @@
+import collections
 import errno
 import os
 import subprocess
 import time
+
+
+MountInfo = collections.namedtuple(
+    'MountInfo', ['is_fuse', 'major', 'minor', 'mnttype', 'path'])
+
+
+def mountinfo():
+    mi = []
+    with open('/proc/self/mountinfo') as f:
+        for m in f.readlines():
+            mntid, pmntid, dev, root, path, extra = m.split(" ", 5)
+            mnttype = extra.split(" - ")[1].split(" ", 1)[0]
+            major, minor = dev.split(":")
+            mi.append(MountInfo(
+                is_fuse=(mnttype == "fuse" or mnttype.startswith("fuse.")),
+                major=major,
+                minor=minor,
+                mnttype=mnttype,
+                path=path,
+            ))
+    return mi
+
+
+def unmount_all(path, timeout=10):
+    if not path.endswith("/..."):
+        return unmount(path, timeout=timeout)
+    root = os.path.realpath(path[:-4])
+
+    paths = []
+    for m in mountinfo():
+        if m.path == root or m.path.startswith(root+"/"):
+            paths.append(m.path)
+            if not m.is_fuse:
+                raise Exception(
+                    "cannot unmount {}: non-fuse mountpoint {}".format(
+                        path, m))
+    for path in sorted(paths, key=len, reverse=True):
+        unmount(path, timeout=timeout)
+    return len(paths) > 0
+
 
 def unmount(path, timeout=10):
     """Unmount the fuse mount at path.
@@ -28,14 +69,10 @@ def unmount(path, timeout=10):
             raise Exception("timed out")
 
         mounted = False
-        with open('/proc/self/mountinfo') as mi:
-            for m in mi.readlines():
-                mntid, pmntid, dev, root, mnt, extra = m.split(" ", 5)
-                mnttype = extra.split(" - ")[1].split(" ")[0]
-                if not (mnttype == "fuse" or mnttype.startswith("fuse.")):
-                    continue
+        for m in mountinfo():
+            if m.is_fuse:
                 try:
-                    if os.path.realpath(mnt) == path:
+                    if os.path.realpath(m.path) == path:
                         was_mounted = True
                         mounted = True
                         break
@@ -44,9 +81,9 @@ def unmount(path, timeout=10):
         if not mounted:
             return was_mounted
 
-        major, minor = dev.split(":")
         try:
-            with open('/sys/fs/fuse/connections/'+str(minor)+'/abort', 'w') as f:
+            with open('/sys/fs/fuse/connections/{}/abort'.format(m.minor),
+                      'w') as f:
                 f.write("1")
         except OSError as e:
             if e.errno != errno.ENOENT:
