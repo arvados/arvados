@@ -15,7 +15,7 @@ class DisabledApiTest < ActionController::TestCase
     assert_includes @response.body, "Run a process"
   end
 
-  test "dashboard compute node status when pipeline_instance index API is disabled" do
+  test "dashboard compute node status not shown when pipeline_instance index API is disabled" do
     @controller = ProjectsController.new
 
     dd = ArvadosApiClient.new_or_current.discovery.deep_dup
