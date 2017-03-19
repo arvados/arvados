@@ -477,6 +477,6 @@ test:
   workbench_address: https://localhost:3001/
   git_repositories_dir: <%= Rails.root.join 'tmp', 'git', 'test' %>
   git_internal_dir: <%= Rails.root.join 'tmp', 'internal.git' %>
-  websocket_address: <% if ENV['ARVADOS_TEST_EXPERIMENTAL_WS'] %>"wss://0.0.0.0:<%= ENV['ARVADOS_TEST_WSS_PORT'] %>/websocket"<% else %>false<% end %>
+  websocket_address: "wss://0.0.0.0:<%= ENV['ARVADOS_TEST_WSS_PORT'] %>/websocket"
   trash_sweep_interval: -1
   docker_image_formats: ["v1"]
