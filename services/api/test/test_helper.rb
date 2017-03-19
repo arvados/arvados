@@ -23,6 +23,7 @@ end
 require File.expand_path('../../config/environment', __FILE__)
 require 'rails/test_help'
 require 'mocha'
+require 'mocha/mini_test'
 
 module ArvadosTestSupport
   def json_response
@@ -122,8 +123,6 @@ class ActiveSupport::TestCase
   def self.slow_test(name, &block)
     define_method(name, block) unless skip_slow_tests?
   end
-
-  alias_method :skip, :omit
 end
 
 class ActionController::TestCase

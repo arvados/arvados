@@ -53,15 +53,25 @@ class ArvadosModelTest < ActiveSupport::TestCase
     {'a' => {'foo' => {:bar => 'baz'}}},
     {'a' => {'foo' => {'bar' => :baz}}},
     {'a' => {'foo' => ['bar', :baz]}},
+  ].each do |x|
+    test "prevent symbol keys in serialized db columns: #{x.inspect}" do
+      set_user_from_auth :active
+      link = Link.create!(link_class: 'test',
+                          properties: x)
+      raw = ActiveRecord::Base.connection.
+          select_value("select properties from links where uuid='#{link.uuid}'")
+      refute_match(/:[fb]/, raw)
+    end
+  end
+
+  [ {['foo'] => 'bar'},
+    {'a' => {['foo', :foo] => 'bar'}},
+    {'a' => {{'foo' => 'bar'} => 'bar'}},
     {'a' => {['foo', :foo] => ['bar', 'baz']}},
   ].each do |x|
-    test "refuse symbol keys in serialized attribute: #{x.inspect}" do
-      set_user_from_auth :admin_trustedclient
-      assert_nothing_raised do
-        Link.create!(link_class: 'test',
-                     properties: {})
-      end
-      assert_raises ActiveRecord::RecordInvalid do
+    test "refuse non-string keys in serialized db columns: #{x.inspect}" do
+      set_user_from_auth :active
+      assert_raises(ArgumentError) do
         Link.create!(link_class: 'test',
                      properties: x)
       end
@@ -81,10 +91,11 @@ class ArvadosModelTest < ActiveSupport::TestCase
 
   test "No HashWithIndifferentAccess in database" do
     set_user_from_auth :admin_trustedclient
-    assert_raises ActiveRecord::RecordInvalid do
-      Link.create!(link_class: 'test',
-                   properties: {'foo' => 'bar'}.with_indifferent_access)
-    end
+    link = Link.create!(link_class: 'test',
+                        properties: {'foo' => 'bar'}.with_indifferent_access)
+    raw = ActiveRecord::Base.connection.
+      select_value("select properties from links where uuid='#{link.uuid}'")
+    assert_equal '{"foo":"bar"}', raw
   end
 
   test "store long string" do

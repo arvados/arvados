@@ -18,8 +18,8 @@ end
 require 'load_param'
 
 class ApplicationController < ActionController::Base
-  include CurrentApiClient
   include ThemesForRails::ActionController
+  include CurrentApiClient
   include LoadParam
   include DbCurrentTime
 
@@ -47,7 +47,7 @@ class ApplicationController < ActionController::Base
   before_filter(:render_404_if_no_object,
                 except: [:index, :create] + ERROR_ACTIONS)
 
-  theme :select_theme
+  theme Rails.configuration.arvados_theme
 
   attr_writer :resource_attrs
 
@@ -488,7 +488,7 @@ class ApplicationController < ActionController::Base
 
   def remote_ip
     # Caveat: this is highly dependent on the proxy setup. YMMV.
-    if request.headers.has_key?('HTTP_X_REAL_IP') then
+    if request.headers.key?('HTTP_X_REAL_IP') then
       # We're behind a reverse proxy
       @remote_ip = request.headers['HTTP_X_REAL_IP']
     else
@@ -561,9 +561,5 @@ class ApplicationController < ActionController::Base
       end
     end
     super(*opts)
-  end
-
-  def select_theme
-    return Rails.configuration.arvados_theme
   end
 end

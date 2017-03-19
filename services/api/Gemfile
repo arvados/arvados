@@ -1,9 +1,8 @@
 source 'https://rubygems.org'
 
-gem 'rails', '~> 3.2'
-
-# Bundle edge Rails instead:
-# gem 'rails',     :git => 'git://github.com/rails/rails.git'
+gem 'rails', '~> 4.0'
+gem 'responders', '~> 2.0'
+gem 'protected_attributes'
 
 group :test, :development do
   gem 'factory_girl_rails'
@@ -21,38 +20,17 @@ end
 # pg is the only supported database driver.
 gem 'pg'
 
-# Start using multi_json once we are on Rails 3.2;
-# Rails 3.1 has a dependency on multi_json < 1.3.0 but we need version 1.3.4 to
-# fix bug https://github.com/collectiveidea/json_spec/issues/27
 gem 'multi_json'
 gem 'oj'
 gem 'oj_mimic_json'
 
-# Gems used only for assets and not required
-# in production environments by default.
-group :assets do
-  gem 'sass-rails',   '~> 3.2'
-  gem 'coffee-rails', '~> 3.2'
-
-  # See https://github.com/sstephenson/execjs#readme for more supported runtimes
-  gem 'therubyracer'
-
-  gem 'uglifier', '~> 2.0'
-end
+# for building assets
+gem 'sass-rails',   '~> 4.0'
+gem 'coffee-rails', '~> 4.0'
+gem 'therubyracer'
+gem 'uglifier', '~> 2.0'
 
 gem 'jquery-rails'
-
-# To use ActiveModel has_secure_password
-# gem 'bcrypt-ruby', '~> 3.0.0'
-
-# Use unicorn as the web server
-# gem 'unicorn'
-
-# Deploy with Capistrano
-# gem 'capistrano'
-
-# To use debugger
-# gem 'ruby-debug'
 
 gem 'rvm-capistrano', :group => :test
 
@@ -70,13 +48,10 @@ gem 'test_after_commit', :group => :test
 gem 'trollop'
 gem 'faye-websocket'
 
-gem 'themes_for_rails'
+gem 'themes_for_rails', git: 'https://github.com/curoverse/themes_for_rails'
 
 gem 'arvados', '>= 0.1.20150615153458'
 gem 'arvados-cli', '>= 0.1.20161017193526'
-
-# pg_power lets us use partial indexes in schema.rb in Rails 3
-gem 'pg_power'
 
 gem 'puma', '~> 2.0'
 gem 'sshkey'
@@ -85,6 +60,6 @@ gem 'lograge'
 gem 'logstash-event'
 
 # Install any plugin gems
-Dir.glob(File.join(File.dirname(__FILE__), 'lib', '**', "Gemfile")) do |gemfile|
-    eval(IO.read(gemfile), binding)
+Dir.glob(File.join(File.dirname(__FILE__), 'lib', '**', "Gemfile")) do |f|
+    eval(IO.read(f), binding)
 end

@@ -4,11 +4,11 @@
 
 require 'test_helper'
 
-class Arvados::V1::ApiTokensScopeTest < ActionController::IntegrationTest
+class ApiTokensScopeTest < ActionDispatch::IntegrationTest
   fixtures :all
 
   def v1_url(*parts)
-    (['arvados', 'v1'] + parts).join('/')
+    (['', 'arvados', 'v1'] + parts).join('/')
   end
 
   test "user list token can only list users" do

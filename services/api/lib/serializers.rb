@@ -1,7 +1,13 @@
 require 'safe_json'
 
 class Serializer
+  class TypeMismatch < ArgumentError
+  end
+
   def self.dump(val)
+    if !val.is_a?(object_class)
+      raise TypeMismatch.new("cannot serialize #{val.class} as #{object_class}")
+    end
     SafeJSON.dump(val)
   end
 

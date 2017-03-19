@@ -34,6 +34,13 @@ module Server
     # Configure sensitive parameters which will be filtered from the log file.
     config.filter_parameters += [:password]
 
+    # Load entire application at startup.
+    config.eager_load = true
+
+    config.active_record.raise_in_transactional_callbacks = true
+
+    config.active_support.test_order = :sorted
+
     I18n.enforce_available_locales = false
 
     # Before using the filesystem backend for Rails.cache, check

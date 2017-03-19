@@ -176,7 +176,7 @@ class JobTest < ActiveSupport::TestCase
   [
    {script_parameters: ""},
    {script_parameters: []},
-   {script_parameters: {symbols: :are_not_allowed_here}},
+   {script_parameters: {["foo"] => ["bar"]}},
    {runtime_constraints: ""},
    {runtime_constraints: []},
    {tasks_summary: ""},
@@ -189,8 +189,8 @@ class JobTest < ActiveSupport::TestCase
       # invalid_attrs.
       Job.create! job_attrs
 
-      job = Job.create job_attrs(invalid_attrs)
-      assert_raises(ActiveRecord::RecordInvalid, ArgumentError,
+      job = Job.new(job_attrs(invalid_attrs))
+      assert_raises(ActiveRecord::RecordInvalid, ArgumentError, RuntimeError,
                     "save! did not raise the expected exception") do
         job.save!
       end

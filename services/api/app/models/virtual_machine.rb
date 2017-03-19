@@ -3,7 +3,11 @@ class VirtualMachine < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
 
-  has_many :login_permissions, :foreign_key => :head_uuid, :class_name => 'Link', :primary_key => :uuid, :conditions => "link_class = 'permission' and name = 'can_login'"
+  has_many(:login_permissions,
+           -> { where("link_class = 'permission' and name = 'can_login'") },
+           foreign_key: :head_uuid,
+           class_name: 'Link',
+           primary_key: :uuid)
 
   api_accessible :user, extend: :common do |t|
     t.add :hostname

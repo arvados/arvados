@@ -9,10 +9,6 @@ class ArvadosModel < ActiveRecord::Base
   include DbCurrentTime
   extend RecordFilters
 
-  attr_protected :created_at
-  attr_protected :modified_by_user_uuid
-  attr_protected :modified_by_client_uuid
-  attr_protected :modified_at
   after_initialize :log_start_state
   before_save :ensure_permission_to_save
   before_save :ensure_owner_uuid_is_permitted
@@ -27,17 +23,16 @@ class ArvadosModel < ActiveRecord::Base
   after_find :convert_serialized_symbols_to_strings
   before_validation :normalize_collection_uuids
   before_validation :set_default_owner
-  validate :ensure_serialized_attribute_type
   validate :ensure_valid_uuids
 
   # Note: This only returns permission links. It does not account for
   # permissions obtained via user.is_admin or
   # user.uuid==object.owner_uuid.
   has_many(:permissions,
+           ->{where(link_class: 'permission')},
            foreign_key: :head_uuid,
            class_name: 'Link',
-           primary_key: :uuid,
-           conditions: "link_class = 'permission'")
+           primary_key: :uuid)
 
   class PermissionDeniedError < StandardError
     def http_status
@@ -75,6 +70,31 @@ class ArvadosModel < ActiveRecord::Base
 
   def href
     "#{current_api_base}/#{self.class.to_s.pluralize.underscore}/#{self.uuid}"
+  end
+
+  def self.permit_attribute_params raw_params
+    # strong_parameters does not provide security: permissions are
+    # implemented with before_save hooks.
+    #
+    # The following permit! is necessary even with
+    # "ActionController::Parameters.permit_all_parameters = true",
+    # because permit_all does not permit nested attributes.
+    if has_nonstring_keys?(raw_params)
+      raise ArgumentError.new("Parameters cannot have non-string keys")
+    end
+    ActionController::Parameters.new(raw_params).permit!
+  end
+
+  def initialize raw_params={}, *args
+    super(self.class.permit_attribute_params(raw_params), *args)
+  end
+
+  def self.create raw_params={}, *args
+    super(permit_attribute_params(raw_params), *args)
+  end
+
+  def update_attributes raw_params={}, *args
+    super(self.class.permit_attribute_params(raw_params), *args)
   end
 
   def self.selectable_attributes(template=:user)
@@ -463,12 +483,26 @@ class ArvadosModel < ActiveRecord::Base
 
   def update_modified_by_fields
     current_time = db_current_time
+    self.created_at = created_at_was || current_time
     self.updated_at = current_time
     self.owner_uuid ||= current_default_owner if self.respond_to? :owner_uuid=
     self.modified_at = current_time
     self.modified_by_user_uuid = current_user ? current_user.uuid : nil
     self.modified_by_client_uuid = current_api_client ? current_api_client.uuid : nil
     true
+  end
+
+  def self.has_nonstring_keys? x
+    if x.is_a? Hash
+      x.each do |k,v|
+        return true if !(k.is_a?(String) || k.is_a?(Symbol)) || has_nonstring_keys?(v)
+      end
+    elsif x.is_a? Array
+      x.each do |v|
+        return true if has_nonstring_keys?(v)
+      end
+    end
+    false
   end
 
   def self.has_symbols? x
@@ -517,25 +551,18 @@ class ArvadosModel < ActiveRecord::Base
   }
 
   def self.serialize(colname, type)
-    super(colname, Serializer[type])
+    coder = Serializer[type]
+    @serialized_attributes ||= {}
+    @serialized_attributes[colname.to_s] = coder
+    super(colname, coder)
   end
 
-  def ensure_serialized_attribute_type
-    # Specifying a type in the "serialize" declaration causes rails to
-    # raise an exception if a different data type is retrieved from
-    # the database during load().  The validation preventing such
-    # crash-inducing records from being inserted in the database in
-    # the first place seems to have been left as an exercise to the
-    # developer.
-    self.class.serialized_attributes.each do |colname, attr|
-      if attr.object_class
-        if self.attributes[colname].class != attr.object_class
-          self.errors.add colname.to_sym, "must be a #{attr.object_class.to_s}, not a #{self.attributes[colname].class.to_s}"
-        elsif self.class.has_symbols? attributes[colname]
-          self.errors.add colname.to_sym, "must not contain symbols: #{attributes[colname].inspect}"
-        end
-      end
-    end
+  def self.serialized_attributes
+    @serialized_attributes ||= {}
+  end
+
+  def serialized_attributes
+    self.class.serialized_attributes
   end
 
   def convert_serialized_symbols_to_strings
@@ -548,8 +575,8 @@ class ArvadosModel < ActiveRecord::Base
     self.class.serialized_attributes.each do |colname, attr|
       if self.class.has_symbols? attributes[colname]
         attributes[colname] = self.class.recursive_stringify attributes[colname]
-        self.send(colname + '=',
-                  self.class.recursive_stringify(attributes[colname]))
+        send(colname + '=',
+             self.class.recursive_stringify(attributes[colname]))
       end
     end
   end
