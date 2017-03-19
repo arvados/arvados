@@ -541,8 +541,15 @@ class ArvadosModel < ActiveRecord::Base
   end
 
   def self.where_serialized(colname, value)
-    sorted = deep_sort_hash(value)
-    where("#{colname.to_s} IN (?)", [sorted.to_yaml, SafeJSON.dump(sorted)])
+    if value.empty?
+      # rails4 stores as null, rails3 stored as serialized [] or {}
+      sql = "#{colname.to_s} is null or #{colname.to_s} IN (?)"
+      sorted = value
+    else
+      sql = "#{colname.to_s} IN (?)"
+      sorted = deep_sort_hash(value)
+    end
+    where(sql, [sorted.to_yaml, SafeJSON.dump(sorted)])
   end
 
   Serializer = {
