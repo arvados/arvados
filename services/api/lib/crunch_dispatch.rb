@@ -963,7 +963,10 @@ class CrunchDispatch
   # An array of job_uuids in squeue
   def squeue_jobs
     if Rails.configuration.crunch_job_wrapper == :slurm_immediate
-      File.popen(['squeue', '-a', '-h', '-o', '%j']).readlines.map do |line|
+      p = File.popen(['squeue', '-a', '-h', '-o', '%j'])
+      # Avoid zombie processes stack up
+      Process.detach(p.pid)
+      p.readlines.map do |line|
         line.strip
       end
     else
@@ -973,7 +976,10 @@ class CrunchDispatch
 
   def scancel slurm_name
     cmd = sudo_preface + ['scancel', '-n', slurm_name]
-    puts File.popen(cmd).read
+    p = File.popen(cmd)
+    # Avoid zombie processes stack up
+    Process.detach(p.pid)
+    puts p.read
     if not $?.success?
       Rails.logger.error "scancel #{slurm_name.shellescape}: $?"
     end
