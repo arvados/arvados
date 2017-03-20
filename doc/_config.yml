@@ -174,3 +174,5 @@ navbar:
     - Helpful hints:
       - install/copy_pipeline_from_curoverse.html.textile.liquid
       - install/cheat_sheet.html.textile.liquid
+    - Migrating from Docker 1.9:
+      - install/migrate-docker19.html.textile.liquid

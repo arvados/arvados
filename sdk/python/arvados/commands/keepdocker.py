@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import shutil
 import _strptime
 
 from operator import itemgetter
@@ -20,9 +21,16 @@ import arvados
 import arvados.util
 import arvados.commands._util as arv_cmd
 import arvados.commands.put as arv_put
+from arvados.collection import CollectionReader
 import ciso8601
+import logging
+import arvados.config
 
 from arvados._version import __version__
+
+logger = logging.getLogger('arvados.keepdocker')
+logger.setLevel(logging.DEBUG if arvados.config.get('ARVADOS_DEBUG')
+                else logging.INFO)
 
 EARLIEST_DATETIME = datetime.datetime(datetime.MINYEAR, 1, 1, 0, 0, 0)
 STAT_CACHE_ERRORS = (IOError, OSError, ValueError)
@@ -103,15 +111,15 @@ def docker_image_format(image_hash):
 def docker_image_compatible(api, image_hash):
     supported = api._rootDesc.get('dockerImageFormats', [])
     if not supported:
-        print >>sys.stderr, "arv-keepdocker: warning: server does not specify supported image formats (see docker_image_formats in server config). Continuing."
+        logger.warn("server does not specify supported image formats (see docker_image_formats in server config). Continuing.")
         return True
 
     fmt = docker_image_format(image_hash)
     if fmt in supported:
         return True
     else:
-        print >>sys.stderr, "arv-keepdocker: image format is {!r} " \
-            "but server supports only {!r}".format(fmt, supported)
+        logger.error("image format is {!r} " \
+            "but server supports only {!r}".format(fmt, supported))
         return False
 
 def docker_images():
@@ -330,62 +338,6 @@ def _uuid2pdh(api, uuid):
         select=['portable_data_hash'],
     ).execute()['items'][0]['portable_data_hash']
 
-_migration_link_class = 'docker_image_migration'
-_migration_link_name = 'migrate_1.9_1.10'
-def _migrate19_link(api, root_uuid, old_uuid, new_uuid):
-    old_pdh = _uuid2pdh(api, old_uuid)
-    new_pdh = _uuid2pdh(api, new_uuid)
-    if not api.links().list(filters=[
-            ['owner_uuid', '=', root_uuid],
-            ['link_class', '=', _migration_link_class],
-            ['name', '=', _migration_link_name],
-            ['tail_uuid', '=', old_pdh],
-            ['head_uuid', '=', new_pdh]]).execute()['items']:
-        print >>sys.stderr, 'Creating migration link {} -> {}: '.format(
-            old_pdh, new_pdh),
-        link = api.links().create(body={
-            'owner_uuid': root_uuid,
-            'link_class': _migration_link_class,
-            'name': _migration_link_name,
-            'tail_uuid': old_pdh,
-            'head_uuid': new_pdh,
-        }).execute()
-        print >>sys.stderr, '{}'.format(link['uuid'])
-        return link
-
-def migrate19():
-    api = arvados.api('v1')
-    user = api.users().current().execute()
-    if not user['is_admin']:
-        raise Exception("This command requires an admin token")
-    root_uuid = user['uuid'][:12] + '000000000000000'
-    new_image_uuids = {}
-    images = list_images_in_arv(api, 2)
-    is_new = lambda img: img['dockerhash'].startswith('sha256:')
-
-    count_new = 0
-    for uuid, img in images:
-        if not re.match(r'^[0-9a-f]{64}$', img["tag"]):
-            continue
-        key = (img["repo"], img["tag"])
-        if is_new(img) and key not in new_image_uuids:
-            count_new += 1
-            new_image_uuids[key] = uuid
-
-    count_migrations = 0
-    new_links = []
-    for uuid, img in images:
-        key = (img['repo'], img['tag'])
-        if not is_new(img) and key in new_image_uuids:
-            count_migrations += 1
-            link = _migrate19_link(api, root_uuid, uuid, new_image_uuids[key])
-            if link:
-                new_links.append(link)
-
-    print >>sys.stderr, "=== {} new-format images, {} migrations detected, " \
-        "{} links added.".format(count_new, count_migrations, len(new_links))
-    return new_links
-
 def main(arguments=None, stdout=sys.stdout):
     args = arg_parser.parse_args(arguments)
     api = arvados.api('v1')
@@ -393,8 +345,14 @@ def main(arguments=None, stdout=sys.stdout):
     if args.image is None or args.image == 'images':
         fmt = "{:30}  {:10}  {:12}  {:29}  {:20}\n"
         stdout.write(fmt.format("REPOSITORY", "TAG", "IMAGE ID", "COLLECTION", "CREATED"))
-        for i, j in list_images_in_arv(api, args.retries):
-            stdout.write(fmt.format(j["repo"], j["tag"], j["dockerhash"][0:12], i, j["timestamp"].strftime("%c")))
+        try:
+            for i, j in list_images_in_arv(api, args.retries):
+                stdout.write(fmt.format(j["repo"], j["tag"], j["dockerhash"][0:12], i, j["timestamp"].strftime("%c")))
+        except IOError as e:
+            if e.errno == errno.EPIPE:
+                pass
+            else:
+                raise
         sys.exit(0)
 
     # Pull the image if requested, unless the image is specified as a hash
@@ -405,15 +363,15 @@ def main(arguments=None, stdout=sys.stdout):
     try:
         image_hash = find_one_image_hash(args.image, args.tag)
     except DockerError as error:
-        print >>sys.stderr, "arv-keepdocker:", error.message
+        logger.error(error.message)
         sys.exit(1)
 
     if not docker_image_compatible(api, image_hash):
         if args.force_image_format:
-            print >>sys.stderr, "arv-keepdocker: forcing incompatible image"
+            logger.warn("forcing incompatible image")
         else:
-            print >>sys.stderr, "arv-keepdocker: refusing to store " \
-                "incompatible format (use --force-image-format to override)"
+            logger.error("refusing to store " \
+                "incompatible format (use --force-image-format to override)")
             sys.exit(1)
 
     image_repo_tag = '{}:{}'.format(args.image, args.tag) if not image_hash.startswith(args.image.lower()) else None
@@ -455,7 +413,7 @@ def main(arguments=None, stdout=sys.stdout):
                         api, args.retries,
                         filters=[['link_class', '=', 'docker_image_repo+tag'],
                                  ['name', '=', image_repo_tag],
-                                 ['head_uuid', 'in', collections]])
+                                 ['head_uuid', 'in', [c["uuid"] for c in collections]]])
                 else:
                     existing_repo_tag = []
 
