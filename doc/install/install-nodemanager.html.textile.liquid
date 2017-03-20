@@ -1,0 +1,562 @@
+---
+layout: default
+navsection: installguide
+title: Install Node Manager
+...
+
+Arvados Node Manager provides elastic computing for Arvados and SLURM by creating and destroying virtual machines on demand.  Node Manager currently supports Amazon Web Services (AWS), Google Cloud Platform (GCP) and Microsoft Azure.
+
+Note: node manager is only required for elastic computing cloud environments.  Fixed size clusters do not require node manager.
+
+h2. Install
+
+Node manager may run anywhere, however it must be able to communicate with the cloud provider's APIs, and use the command line tools @sinfo@, @squeue@ and @scontrol@ to communicate with the cluster's SLURM controller.
+
+On Debian-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo apt-get install arvados-node-manager</span>
+</code></pre>
+</notextile>
+
+On Red Hat-based systems:
+
+<notextile>
+<pre><code>~$ <span class="userinput">sudo yum install arvados-node-manager</span>
+</code></pre>
+</notextile>
+
+h2. Create compute image
+
+Configure a virtual machine following the "instructions to set up a compute node.":{{site.baseurl}}/install/crunch2-slurm/install-compute-node.html and set it up to run a "ping script":{{site.baseurl}}/install/install-compute-ping.html at boot.
+
+Create a virtual machine image using the commands provided by your cloud provider.  We recommend using a tool such as "Packer":https://www.packer.io/ to automate this process.
+
+Configure node manager to use the image with the @image@ or @image_id@ parameter.
+
+h2. Configure node manager
+
+The configuration file at @/etc/arvados-node-manager/config.ini@ .  Some configuration details are specific to the cloud provider you are using:
+
+* "Amazon Web Services":#aws
+* "Google Cloud Platform":#gcp
+* "Microsoft Azure":#azure
+
+h3(#aws). Amazon Web Services
+
+<pre>
+# EC2 configuration for Arvados Node Manager.
+# All times are in seconds unless specified otherwise.
+
+[Daemon]
+# The dispatcher can customize the start and stop procedure for
+# cloud nodes.  For example, the SLURM dispatcher drains nodes
+# through SLURM before shutting them down.
+dispatcher = slurm
+
+# Node Manager will ensure that there are at least this many nodes running at
+# all times.  If node manager needs to start new idle nodes for the purpose of
+# satisfying min_nodes, it will use the cheapest node type.  However, depending
+# on usage patterns, it may also satisfy min_nodes by keeping alive some
+# more-expensive nodes
+min_nodes = 0
+
+# Node Manager will not start any compute nodes when at least this
+# many are running.
+max_nodes = 8
+
+# Upper limit on rate of spending (in $/hr), will not boot additional nodes
+# if total price of already running nodes meets or exceeds this threshold.
+# default 0 means no limit.
+max_total_price = 0
+
+# Poll EC2 nodes and Arvados for new information every N seconds.
+poll_time = 60
+
+# Polls have exponential backoff when services fail to respond.
+# This is the longest time to wait between polls.
+max_poll_time = 300
+
+# If Node Manager can't succesfully poll a service for this long,
+# it will never start or stop compute nodes, on the assumption that its
+# information is too outdated.
+poll_stale_after = 600
+
+# If Node Manager boots a cloud node, and it does not pair with an Arvados
+# node before this long, assume that there was a cloud bootstrap failure and
+# shut it down.  Note that normal shutdown windows apply (see the Cloud
+# section), so this should be shorter than the first shutdown window value.
+boot_fail_after = 1800
+
+# "Node stale time" affects two related behaviors.
+# 1. If a compute node has been running for at least this long, but it
+# isn't paired with an Arvados node, do not shut it down, but leave it alone.
+# This prevents the node manager from shutting down a node that might
+# actually be doing work, but is having temporary trouble contacting the
+# API server.
+# 2. When the Node Manager starts a new compute node, it will try to reuse
+# an Arvados node that hasn't been updated for this long.
+node_stale_after = 14400
+
+# Scaling factor to be applied to nodes' available RAM size. Usually there's a
+# variable discrepancy between the advertised RAM value on cloud nodes and the
+# actual amount available.
+# If not set, this value will be set to 0.95
+node_mem_scaling = 0.95
+
+# File path for Certificate Authorities
+certs_file = /etc/ssl/certs/ca-certificates.crt
+
+[Logging]
+# Log file path
+file = /var/log/arvados/node-manager.log
+
+# Log level for most Node Manager messages.
+# Choose one of DEBUG, INFO, WARNING, ERROR, or CRITICAL.
+# WARNING lets you know when polling a service fails.
+# INFO additionally lets you know when a compute node is started or stopped.
+level = INFO
+
+# You can also set different log levels for specific libraries.
+# Pykka is the Node Manager's actor library.
+# Setting this to DEBUG will display tracebacks for uncaught
+# exceptions in the actors, but it's also very chatty.
+pykka = WARNING
+
+# Setting apiclient to INFO will log the URL of every Arvados API request.
+apiclient = WARNING
+
+[Arvados]
+host = zyxwv.arvadosapi.com
+token = ARVADOS_TOKEN
+timeout = 15
+
+# Accept an untrusted SSL certificate from the API server?
+insecure = no
+
+[Cloud]
+provider = ec2
+
+# It's usually most cost-effective to shut down compute nodes during narrow
+# windows of time.  For example, EC2 bills each node by the hour, so the best
+# time to shut down a node is right before a new hour of uptime starts.
+# Shutdown windows define these periods of time.  These are windows in
+# full minutes, separated by commas.  Counting from the time the node is
+# booted, the node WILL NOT shut down for N1 minutes; then it MAY shut down
+# for N2 minutes; then it WILL NOT shut down for N3 minutes; and so on.
+# For example, "54, 5, 1" means the node may shut down from the 54th to the
+# 59th minute of each hour of uptime.
+# Specify at least two windows.  You can add as many as you need beyond that.
+shutdown_windows = 54, 5, 1
+
+[Cloud Credentials]
+key = KEY
+secret = SECRET_KEY
+region = us-east-1
+timeout = 60
+
+[Cloud List]
+# This section defines filters that find compute nodes.
+# Tags that you specify here will automatically be added to nodes you create.
+# Replace colons in Amazon filters with underscores
+# (e.g., write "tag:mytag" as "tag_mytag").
+instance-state-name = running
+tag_arvados-class = dynamic-compute
+tag_cluster = zyxwv
+
+[Cloud Create]
+# New compute nodes will send pings to Arvados at this host.
+# You may specify a port, and use brackets to disambiguate IPv6 addresses.
+ping_host = hostname:port
+
+# Give the name of an SSH key on AWS...
+ex_keyname = string
+
+# ... or a file path for an SSH key that can log in to the compute node.
+# (One or the other, not both.)
+# ssh_key = path
+
+# The EC2 IDs of the image and subnet compute nodes should use.
+image_id = idstring
+subnet_id = idstring
+
+# Comma-separated EC2 IDs for the security group(s) assigned to each
+# compute node.
+security_groups = idstring1, idstring2
+
+
+# You can define any number of Size sections to list EC2 sizes you're
+# willing to use.  The Node Manager should boot the cheapest size(s) that
+# can run jobs in the queue.
+#
+# Each size section MUST define the number of cores are available in this
+# size class (since libcloud does not provide any consistent API for exposing
+# this setting).
+# You may also want to define the amount of scratch space (expressed
+# in GB) for Crunch jobs.  You can also override Amazon's provided
+# data fields (such as price per hour) by setting them here.
+
+[Size m4.large]
+cores = 2
+price = 0.126
+scratch = 100
+
+[Size m4.xlarge]
+cores = 4
+price = 0.252
+scratch = 100
+</pre>
+
+h3(#gcp). Google Cloud Platform
+
+<pre>
+# Google Compute Engine configuration for Arvados Node Manager.
+# All times are in seconds unless specified otherwise.
+
+[Daemon]
+# Node Manager will ensure that there are at least this many nodes running at
+# all times.  If node manager needs to start new idle nodes for the purpose of
+# satisfying min_nodes, it will use the cheapest node type.  However, depending
+# on usage patterns, it may also satisfy min_nodes by keeping alive some
+# more-expensive nodes
+min_nodes = 0
+
+# Node Manager will not start any compute nodes when at least this
+# running at all times.  By default, these will be the cheapest node size.
+max_nodes = 8
+
+# Poll compute nodes and Arvados for new information every N seconds.
+poll_time = 60
+
+# Upper limit on rate of spending (in $/hr), will not boot additional nodes
+# if total price of already running nodes meets or exceeds this threshold.
+# default 0 means no limit.
+max_total_price = 0
+
+# Polls have exponential backoff when services fail to respond.
+# This is the longest time to wait between polls.
+max_poll_time = 300
+
+# If Node Manager can't succesfully poll a service for this long,
+# it will never start or stop compute nodes, on the assumption that its
+# information is too outdated.
+poll_stale_after = 600
+
+# "Node stale time" affects two related behaviors.
+# 1. If a compute node has been running for at least this long, but it
+# isn't paired with an Arvados node, do not shut it down, but leave it alone.
+# This prevents the node manager from shutting down a node that might
+# actually be doing work, but is having temporary trouble contacting the
+# API server.
+# 2. When the Node Manager starts a new compute node, it will try to reuse
+# an Arvados node that hasn't been updated for this long.
+node_stale_after = 14400
+
+# Scaling factor to be applied to nodes' available RAM size. Usually there's a
+# variable discrepancy between the advertised RAM value on cloud nodes and the
+# actual amount available.
+# If not set, this value will be set to 0.95
+node_mem_scaling = 0.95
+
+# File path for Certificate Authorities
+certs_file = /etc/ssl/certs/ca-certificates.crt
+
+[Logging]
+# Log file path
+file = /var/log/arvados/node-manager.log
+
+# Log level for most Node Manager messages.
+# Choose one of DEBUG, INFO, WARNING, ERROR, or CRITICAL.
+# WARNING lets you know when polling a service fails.
+# INFO additionally lets you know when a compute node is started or stopped.
+level = INFO
+
+# You can also set different log levels for specific libraries.
+# Pykka is the Node Manager's actor library.
+# Setting this to DEBUG will display tracebacks for uncaught
+# exceptions in the actors, but it's also very chatty.
+pykka = WARNING
+
+# Setting apiclient to INFO will log the URL of every Arvados API request.
+apiclient = WARNING
+
+[Arvados]
+host = zyxwv.arvadosapi.com
+token = ARVADOS_TOKEN
+timeout = 15
+
+# Accept an untrusted SSL certificate from the API server?
+insecure = no
+
+[Cloud]
+provider = gce
+
+# Shutdown windows define periods of time when a node may and may not
+# be shut down.  These are windows in full minutes, separated by
+# commas.  Counting from the time the node is booted, the node WILL
+# NOT shut down for N1 minutes; then it MAY shut down for N2 minutes;
+# then it WILL NOT shut down for N3 minutes; and so on.  For example,
+# "54, 5, 1" means the node may shut down from the 54th to the 59th
+# minute of each hour of uptime.
+# GCE bills by the minute, and does not provide information about when
+# a node booted.  Node Manager will store this information in metadata
+# when it boots a node; if that information is not available, it will
+# assume the node booted at the epoch.  These shutdown settings are
+# very aggressive.  You may want to adjust this if you want more
+# continuity of service from a single node.
+shutdown_windows = 20, 999999
+
+[Cloud Credentials]
+user_id = client_email_address@developer.gserviceaccount.com
+key = path_to_certificate.pem
+project = project-id-from-google-cloud-dashboard
+timeout = 60
+
+# Valid location (zone) names: https://cloud.google.com/compute/docs/zones
+datacenter = us-central1-a
+
+# Optional settings. For full documentation see
+# http://libcloud.readthedocs.org/en/latest/compute/drivers/gce.html#libcloud.compute.drivers.gce.GCENodeDriver
+#
+# auth_type = SA               # SA, IA or GCE
+# scopes = https://www.googleapis.com/auth/compute
+# credential_file =
+
+[Cloud List]
+# A comma-separated list of tags that must be applied to a node for it to
+# be considered a compute node.
+# The driver will automatically apply these tags to nodes it creates.
+tags = zyxwv, compute
+
+[Cloud Create]
+# New compute nodes will send pings to Arvados at this host.
+# You may specify a port, and use brackets to disambiguate IPv6 addresses.
+ping_host = hostname:port
+
+# A file path for an SSH key that can log in to the compute node.
+# ssh_key = path
+
+# The GCE image name and network zone name to use when creating new nodes.
+image = debian-7
+# network = your_network_name
+
+# JSON string of service account authorizations for this cluster.
+# See http://libcloud.readthedocs.org/en/latest/compute/drivers/gce.html#specifying-service-account-scopes
+# service_accounts = [{'email':'account@example.com', 'scopes':['storage-ro']}]
+
+
+# You can define any number of Size sections to list node sizes you're
+# willing to use.  The Node Manager should boot the cheapest size(s) that
+# can run jobs in the queue.
+#
+# The Size fields are interpreted the same way as with a libcloud NodeSize:
+# http://libcloud.readthedocs.org/en/latest/compute/api.html#libcloud.compute.base.NodeSize
+#
+# See https://cloud.google.com/compute/docs/machine-types for a list
+# of known machine types that may be used as a Size parameter.
+#
+# Each size section MUST define the number of cores are available in this
+# size class (since libcloud does not provide any consistent API for exposing
+# this setting).
+# You may also want to define the amount of scratch space (expressed
+# in GB) for Crunch jobs.
+# You can also override Google's provided data fields (such as price per hour)
+# by setting them here.
+
+[Size n1-standard-2]
+cores = 2
+price = 0.076
+scratch = 100
+
+[Size n1-standard-4]
+cores = 4
+price = 0.152
+scratch = 200
+</pre>
+
+h3(#azure). Microsoft Azure
+
+<pre>
+# Azure configuration for Arvados Node Manager.
+# All times are in seconds unless specified otherwise.
+
+[Daemon]
+# The dispatcher can customize the start and stop procedure for
+# cloud nodes.  For example, the SLURM dispatcher drains nodes
+# through SLURM before shutting them down.
+dispatcher = slurm
+
+# Node Manager will ensure that there are at least this many nodes running at
+# all times.  If node manager needs to start new idle nodes for the purpose of
+# satisfying min_nodes, it will use the cheapest node type.  However, depending
+# on usage patterns, it may also satisfy min_nodes by keeping alive some
+# more-expensive nodes
+min_nodes = 0
+
+# Node Manager will not start any compute nodes when at least this
+# many are running.
+max_nodes = 8
+
+# Upper limit on rate of spending (in $/hr), will not boot additional nodes
+# if total price of already running nodes meets or exceeds this threshold.
+# default 0 means no limit.
+max_total_price = 0
+
+# Poll Azure nodes and Arvados for new information every N seconds.
+poll_time = 60
+
+# Polls have exponential backoff when services fail to respond.
+# This is the longest time to wait between polls.
+max_poll_time = 300
+
+# If Node Manager can't succesfully poll a service for this long,
+# it will never start or stop compute nodes, on the assumption that its
+# information is too outdated.
+poll_stale_after = 600
+
+# If Node Manager boots a cloud node, and it does not pair with an Arvados
+# node before this long, assume that there was a cloud bootstrap failure and
+# shut it down.  Note that normal shutdown windows apply (see the Cloud
+# section), so this should be shorter than the first shutdown window value.
+boot_fail_after = 1800
+
+# "Node stale time" affects two related behaviors.
+# 1. If a compute node has been running for at least this long, but it
+# isn't paired with an Arvados node, do not shut it down, but leave it alone.
+# This prevents the node manager from shutting down a node that might
+# actually be doing work, but is having temporary trouble contacting the
+# API server.
+# 2. When the Node Manager starts a new compute node, it will try to reuse
+# an Arvados node that hasn't been updated for this long.
+node_stale_after = 14400
+
+# Scaling factor to be applied to nodes' available RAM size. Usually there's a
+# variable discrepancy between the advertised RAM value on cloud nodes and the
+# actual amount available.
+# If not set, this value will be set to 0.95
+node_mem_scaling = 0.95
+
+# File path for Certificate Authorities
+certs_file = /etc/ssl/certs/ca-certificates.crt
+
+[Logging]
+# Log file path
+file = /var/log/arvados/node-manager.log
+
+# Log level for most Node Manager messages.
+# Choose one of DEBUG, INFO, WARNING, ERROR, or CRITICAL.
+# WARNING lets you know when polling a service fails.
+# INFO additionally lets you know when a compute node is started or stopped.
+level = INFO
+
+# You can also set different log levels for specific libraries.
+# Pykka is the Node Manager's actor library.
+# Setting this to DEBUG will display tracebacks for uncaught
+# exceptions in the actors, but it's also very chatty.
+pykka = WARNING
+
+# Setting apiclient to INFO will log the URL of every Arvados API request.
+apiclient = WARNING
+
+[Arvados]
+host = zyxwv.arvadosapi.com
+token = ARVADOS_TOKEN
+timeout = 15
+
+# Accept an untrusted SSL certificate from the API server?
+insecure = no
+
+[Cloud]
+provider = azure
+
+# Shutdown windows define periods of time when a node may and may not be shut
+# down.  These are windows in full minutes, separated by commas.  Counting from
+# the time the node is booted, the node WILL NOT shut down for N1 minutes; then
+# it MAY shut down for N2 minutes; then it WILL NOT shut down for N3 minutes;
+# and so on.  For example, "20, 999999" means the node may shut down between
+# the 20th and 999999th minutes of uptime.
+# Azure bills by the minute, so it makes sense to agressively shut down idle
+# nodes.  Specify at least two windows.  You can add as many as you need beyond
+# that.
+shutdown_windows = 20, 999999
+
+[Cloud Credentials]
+# Use "azure account list" with the azure CLI to get these values.
+tenant_id = 00000000-0000-0000-0000-000000000000
+subscription_id = 00000000-0000-0000-0000-000000000000
+
+# The following directions are based on
+# https://azure.microsoft.com/en-us/documentation/articles/resource-group-authenticate-service-principal/
+#
+# azure config mode arm
+# azure ad app create --name "<Your Application Display Name>" --home-page "<https://YourApplicationHomePage>" --identifier-uris "<https://YouApplicationUri>" --password <Your_Password>
+# azure ad sp create "<Application_Id>"
+# azure role assignment create --objectId "<Object_Id>" -o Owner -c /subscriptions/{subscriptionId}/
+#
+# Use <Application_Id> for "key" and the <Your_Password> for "secret"
+#
+key = 00000000-0000-0000-0000-000000000000
+secret = PASSWORD
+timeout = 60
+region = East US
+
+[Cloud List]
+# The resource group in which the compute node virtual machines will be created
+# and listed.
+ex_resource_group = ArvadosResourceGroup
+
+[Cloud Create]
+# The compute node image, as a link to a VHD in Azure blob store.
+image = https://example.blob.core.windows.net/system/Microsoft.Compute/Images/images/zyxwv-compute-osDisk.vhd
+
+# Path to a local ssh key file that will be used to provision new nodes.
+ssh_key = /home/arvadosuser/.ssh/id_rsa.pub
+
+# The account name for the admin user that will be provisioned on new nodes.
+ex_user_name = arvadosuser
+
+# The Azure storage account that will be used to store the node OS disk images.
+ex_storage_account = arvadosstorage
+
+# The virtual network the VMs will be associated with.
+ex_network = ArvadosNetwork
+
+# Optional subnet of the virtual network.
+#ex_subnet = default
+
+# Node tags
+tag_arvados-class = dynamic-compute
+tag_cluster = zyxwv
+
+# the API server to ping
+ping_host = hostname:port
+
+# You can define any number of Size sections to list Azure sizes you're willing
+# to use.  The Node Manager should boot the cheapest size(s) that can run jobs
+# in the queue.  You must also provide price per hour as the Azure driver
+# compute currently does not report prices.
+#
+# See https://azure.microsoft.com/en-us/pricing/details/virtual-machines/
+# for a list of known machine types that may be used as a Size parameter.
+#
+# Each size section MUST define the number of cores are available in this
+# size class (since libcloud does not provide any consistent API for exposing
+# this setting).
+# You may also want to define the amount of scratch space (expressed
+# in GB) for Crunch jobs.  You can also override Microsoft's provided
+# data fields by setting them here.
+
+[Size Standard_D3]
+cores = 4
+price = 0.56
+
+[Size Standard_D4]
+cores = 8
+price = 1.12
+</pre>
+
+h2. Running
+
+<pre>
+$ arvados-node-manager --config /etc/arvados-node-manager/config.ini
+</pre>

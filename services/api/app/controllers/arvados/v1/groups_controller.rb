@@ -91,8 +91,24 @@ class Arvados::V1::GroupsController < ApplicationController
       end
     end
 
+    seen_last_class = false
     klasses.each do |klass|
+      @offset = 0 if seen_last_class  # reset offset for the new next type being processed
+
+      # if current klass is same as params['last_object_class'], mark that fact
+      seen_last_class = true if((params['count'].andand.==('none')) and
+                                (params['last_object_class'].nil? or
+                                 params['last_object_class'].empty? or
+                                 params['last_object_class'] == klass.to_s))
+
+      # if klasses are specified, skip all other klass types
       next if wanted_klasses.any? and !wanted_klasses.include?(klass.to_s)
+
+      # don't reprocess klass types that were already seen
+      next if params['count'] == 'none' and !seen_last_class
+
+      # don't process rest of object types if we already have needed number of objects
+      break if params['count'] == 'none' and all_objects.size >= limit_all
 
       # If the currently requested orders specifically match the
       # table_name for the current klass, apply that order.

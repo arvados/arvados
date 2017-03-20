@@ -106,14 +106,22 @@ run() {
 
     shift
 
+    need_setup=1
+
     if docker ps -a --filter "status=running" | grep -E "$ARVBOX_CONTAINER$" -q ; then
-        echo "Container $ARVBOX_CONTAINER is already running"
-        exit 0
+        if test "$CONFIG" = test ; then
+            need_setup=0
+        else
+            echo "Container $ARVBOX_CONTAINER is already running"
+            exit 0
+        fi
     fi
 
-    if docker ps -a | grep -E "$ARVBOX_CONTAINER$" -q ; then
-        echo "Container $ARVBOX_CONTAINER already exists but is not running; use restart or rebuild"
-        exit 1
+    if test $need_setup = 1 ; then
+        if docker ps -a | grep -E "$ARVBOX_CONTAINER$" -q ; then
+            echo "Container $ARVBOX_CONTAINER already exists but is not running; use restart or reboot"
+            exit 1
+        fi
     fi
 
     if test ! -z "$TAG"
@@ -186,35 +194,37 @@ run() {
 
             mkdir -p $VAR_DATA/test
 
-            docker run \
-                   --detach \
-                   --name=$ARVBOX_CONTAINER \
-                   --privileged \
-                   "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
-                   "--volume=$SSO_ROOT:/usr/src/sso:rw" \
-                   "--volume=$PG_DATA:/var/lib/postgresql:rw" \
-                   "--volume=$VAR_DATA:/var/lib/arvados:rw" \
-                   "--volume=$PASSENGER:/var/lib/passenger:rw" \
-                   "--volume=$GEMS:/var/lib/gems:rw" \
-                   "--volume=$PIPCACHE:/var/lib/pip:rw" \
-                   "--volume=$GOSTUFF:/var/lib/gopath:rw" \
-                   arvados/arvbox-dev$TAG \
-                   /usr/local/bin/runsvinit -svdir=/etc/test-service
+            if test "$need_setup" = 1 ; then
+                docker run \
+                       --detach \
+                       --name=$ARVBOX_CONTAINER \
+                       --privileged \
+                       "--volume=$ARVADOS_ROOT:/usr/src/arvados:rw" \
+                       "--volume=$SSO_ROOT:/usr/src/sso:rw" \
+                       "--volume=$PG_DATA:/var/lib/postgresql:rw" \
+                       "--volume=$VAR_DATA:/var/lib/arvados:rw" \
+                       "--volume=$PASSENGER:/var/lib/passenger:rw" \
+                       "--volume=$GEMS:/var/lib/gems:rw" \
+                       "--volume=$PIPCACHE:/var/lib/pip:rw" \
+                       "--volume=$GOSTUFF:/var/lib/gopath:rw" \
+                       arvados/arvbox-dev$TAG \
+                       /usr/local/bin/runsvinit -svdir=/etc/test-service
 
-            docker exec -ti \
-                    $ARVBOX_CONTAINER \
-                    /usr/local/lib/arvbox/runsu.sh \
-                    /usr/local/lib/arvbox/waitforpostgres.sh
+                docker exec -ti \
+                       $ARVBOX_CONTAINER \
+                       /usr/local/lib/arvbox/runsu.sh \
+                       /usr/local/lib/arvbox/waitforpostgres.sh
 
-            docker exec -ti \
-                   $ARVBOX_CONTAINER \
-                   /usr/local/lib/arvbox/runsu.sh \
-                   /var/lib/arvbox/service/sso/run-service --only-setup
+                docker exec -ti \
+                       $ARVBOX_CONTAINER \
+                       /usr/local/lib/arvbox/runsu.sh \
+                       /var/lib/arvbox/service/sso/run-service --only-setup
 
-            docker exec -ti \
-                   $ARVBOX_CONTAINER \
-                   /usr/local/lib/arvbox/runsu.sh \
-                   /var/lib/arvbox/service/api/run-service --only-setup
+                docker exec -ti \
+                       $ARVBOX_CONTAINER \
+                       /usr/local/lib/arvbox/runsu.sh \
+                       /var/lib/arvbox/service/api/run-service --only-setup
+            fi
 
             docker exec -ti \
                    $ARVBOX_CONTAINER \
