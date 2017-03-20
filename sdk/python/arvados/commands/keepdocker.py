@@ -345,8 +345,14 @@ def main(arguments=None, stdout=sys.stdout):
     if args.image is None or args.image == 'images':
         fmt = "{:30}  {:10}  {:12}  {:29}  {:20}\n"
         stdout.write(fmt.format("REPOSITORY", "TAG", "IMAGE ID", "COLLECTION", "CREATED"))
-        for i, j in list_images_in_arv(api, args.retries):
-            stdout.write(fmt.format(j["repo"], j["tag"], j["dockerhash"][0:12], i, j["timestamp"].strftime("%c")))
+        try:
+            for i, j in list_images_in_arv(api, args.retries):
+                stdout.write(fmt.format(j["repo"], j["tag"], j["dockerhash"][0:12], i, j["timestamp"].strftime("%c")))
+        except IOError as e:
+            if e.errno == errno.EPIPE:
+                pass
+            else:
+                raise
         sys.exit(0)
 
     # Pull the image if requested, unless the image is specified as a hash
