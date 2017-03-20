@@ -413,7 +413,7 @@ def main(arguments=None, stdout=sys.stdout):
                         api, args.retries,
                         filters=[['link_class', '=', 'docker_image_repo+tag'],
                                  ['name', '=', image_repo_tag],
-                                 ['head_uuid', 'in', collections]])
+                                 ['head_uuid', 'in', [c["uuid"] for c in collections]]])
                 else:
                     existing_repo_tag = []
 
