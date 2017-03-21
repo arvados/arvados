@@ -312,8 +312,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     lambda { |resolved| resolved["ram"] == 1234234234 }],
   ].each do |rc, okfunc|
     test "resolve runtime constraint range #{rc} to values" do
-      cr = ContainerRequest.new(runtime_constraints: rc)
-      resolved = cr.send :runtime_constraints_for_container
+      resolved = Container.resolve_runtime_constraints(rc)
       assert(okfunc.call(resolved),
              "container runtime_constraints was #{resolved.inspect}")
     end
@@ -345,10 +344,9 @@ class ContainerRequestTest < ActiveSupport::TestCase
   ].each do |mounts, okfunc|
     test "resolve mounts #{mounts.inspect} to values" do
       set_user_from_auth :active
-      cr = ContainerRequest.new(mounts: mounts)
-      resolved = cr.send :mounts_for_container
+      resolved = Container.resolve_mounts(mounts)
       assert(okfunc.call(resolved),
-             "mounts_for_container returned #{resolved.inspect}")
+             "Container.resolve_mounts returned #{resolved.inspect}")
     end
   end
 
@@ -361,9 +359,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
         "path" => "/foo",
       },
     }
-    cr = ContainerRequest.new(mounts: m)
     assert_raises(ArvadosModel::UnresolvableContainerError) do
-      cr.send :mounts_for_container
+      Container.resolve_mounts(m)
     end
   end
 
@@ -377,9 +374,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
         "path" => "/foo",
       },
     }
-    cr = ContainerRequest.new(mounts: m)
     assert_raises(ArgumentError) do
-      cr.send :mounts_for_container
+      Container.resolve_mounts(m)
     end
   end
 
@@ -387,21 +383,19 @@ class ContainerRequestTest < ActiveSupport::TestCase
    'arvados/apitestfixture',
    'd8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678',
   ].each do |tag|
-    test "container_image_for_container(#{tag.inspect})" do
+    test "Container.resolve_container_image(#{tag.inspect})" do
       set_user_from_auth :active
-      cr = ContainerRequest.new(container_image: tag)
-      resolved = cr.send :container_image_for_container
+      resolved = Container.resolve_container_image(tag)
       assert_equal resolved, collections(:docker_image).portable_data_hash
     end
   end
 
-  test "container_image_for_container(pdh)" do
+  test "Container.resolve_container_image(pdh)" do
     set_user_from_auth :active
     [[:docker_image, 'v1'], [:docker_image_1_12, 'v2']].each do |coll, ver|
       Rails.configuration.docker_image_formats = [ver]
       pdh = collections(coll).portable_data_hash
-      cr = ContainerRequest.new(container_image: pdh)
-      resolved = cr.send :container_image_for_container
+      resolved = Container.resolve_container_image(pdh)
       assert_equal resolved, pdh
     end
   end
@@ -412,9 +406,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
   ].each do |img|
     test "container_image_for_container(#{img.inspect}) => 422" do
       set_user_from_auth :active
-      cr = ContainerRequest.new(container_image: img)
       assert_raises(ArvadosModel::UnresolvableContainerError) do
-        cr.send :container_image_for_container
+        Container.resolve_container_image(img)
       end
     end
   end
@@ -428,12 +421,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
     set_user_from_auth :active
     cr = create_minimal_req!(command: ["true", "1"],
                              container_image: collections(:docker_image).portable_data_hash)
-    assert_equal(cr.send(:container_image_for_container),
+    assert_equal(Container.resolve_container_image(cr.container_image),
                  collections(:docker_image_1_12).portable_data_hash)
 
     cr = create_minimal_req!(command: ["true", "2"],
                              container_image: links(:docker_image_collection_tag).name)
-    assert_equal(cr.send(:container_image_for_container),
+    assert_equal(Container.resolve_container_image(cr.container_image),
                  collections(:docker_image_1_12).portable_data_hash)
   end
 
@@ -447,12 +440,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
     set_user_from_auth :active
     cr = create_minimal_req!(command: ["true", "1"],
                              container_image: collections(:docker_image).portable_data_hash)
-    assert_equal(cr.send(:container_image_for_container),
+    assert_equal(Container.resolve_container_image(cr.container_image),
                  collections(:docker_image).portable_data_hash)
 
     cr = create_minimal_req!(command: ["true", "2"],
                              container_image: links(:docker_image_collection_tag).name)
-    assert_equal(cr.send(:container_image_for_container),
+    assert_equal(Container.resolve_container_image(cr.container_image),
                  collections(:docker_image).portable_data_hash)
   end
 
@@ -465,7 +458,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr = create_minimal_req!(command: ["true", "1"],
                              container_image: collections(:docker_image_1_12).portable_data_hash)
     assert_raises(ArvadosModel::UnresolvableContainerError) do
-      cr.send(:container_image_for_container)
+      Container.resolve_container_image(cr.container_image)
     end
   end
 
@@ -477,12 +470,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr = create_minimal_req!(command: ["true", "1"],
                              container_image: collections(:docker_image).portable_data_hash)
     assert_raises(ArvadosModel::UnresolvableContainerError) do
-      cr.send(:container_image_for_container)
+      Container.resolve_container_image(cr.container_image)
     end
     cr = create_minimal_req!(command: ["true", "2"],
                              container_image: links(:docker_image_collection_tag).name)
     assert_raises(ArvadosModel::UnresolvableContainerError) do
-      cr.send(:container_image_for_container)
+      Container.resolve_container_image(cr.container_image)
     end
   end
 
@@ -609,7 +602,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
                      "It shouldn't exist more than one collection with the same owner and name '${output_name}'"
     assert output_coll.name.include?(output_name),
            "New name should include original name"
-    assert_match /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/, output_coll.name,
+    assert_match /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z/, output_coll.name,
                  "New name should include ISO8601 date"
   end
 

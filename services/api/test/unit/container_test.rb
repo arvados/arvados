@@ -157,21 +157,21 @@ class ContainerTest < ActiveSupport::TestCase
       log: 'ea10d51bcf88862dbcc36eb292017dfd+45',
     }
 
-    set_user_from_auth :dispatch1
+    cr = ContainerRequest.new common_attrs
+    cr.use_existing = false
+    cr.state = ContainerRequest::Committed
+    cr.save!
+    c_output1 = Container.where(uuid: cr.container_uuid).first
 
-    c_output1 = Container.create common_attrs
-    c_output2 = Container.create common_attrs
+    cr = ContainerRequest.new common_attrs
+    cr.use_existing = false
+    cr.state = ContainerRequest::Committed
+    cr.save!
+    c_output2 = Container.where(uuid: cr.container_uuid).first
+
     assert_not_equal c_output1.uuid, c_output2.uuid
 
-    cr = ContainerRequest.new common_attrs
-    cr.state = ContainerRequest::Committed
-    cr.container_uuid = c_output1.uuid
-    cr.save!
-
-    cr = ContainerRequest.new common_attrs
-    cr.state = ContainerRequest::Committed
-    cr.container_uuid = c_output2.uuid
-    cr.save!
+    set_user_from_auth :dispatch1
 
     out1 = '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
     log1 = collections(:real_log_collection).portable_data_hash
@@ -184,9 +184,8 @@ class ContainerTest < ActiveSupport::TestCase
     c_output2.update_attributes!({state: Container::Running})
     c_output2.update_attributes!(completed_attrs.merge({log: log1, output: out2}))
 
-    reused = Container.find_reusable(common_attrs)
-    assert_not_nil reused
-    assert_equal reused.uuid, c_output1.uuid
+    reused = Container.resolve(ContainerRequest.new(common_attrs))
+    assert_equal c_output1.uuid, reused.uuid
   end
 
   test "find_reusable method should select running container by start date" do

@@ -99,33 +99,16 @@ class ContainerRequest < ArvadosModel
       manifest = Collection.unscoped do
         Collection.where(portable_data_hash: pdh).first.manifest_text
       end
-      begin
-        coll = Collection.create!(owner_uuid: owner_uuid,
-                                  manifest_text: manifest,
-                                  portable_data_hash: pdh,
-                                  name: coll_name,
-                                  properties: {
-                                    'type' => out_type,
-                                    'container_request' => uuid,
-                                  })
-      rescue ActiveRecord::RecordNotUnique => rn
-        # In case this is executed as part of a transaction: When a Postgres exception happens,
-        # the following statements on the same transaction become invalid, so a rollback is
-        # needed. One example are Unit Tests, every test is enclosed inside a transaction so
-        # that the database can be reverted before every new test starts.
-        # See: http://api.rubyonrails.org/classes/ActiveRecord/Transactions/ClassMethods.html#module-ActiveRecord::Transactions::ClassMethods-label-Exception+handling+and+rolling+back
-        ActiveRecord::Base.connection.execute 'ROLLBACK'
-        raise unless out_type == 'output' and self.output_name
-        # Postgres specific unique name check. See ApplicationController#create for
-        # a detailed explanation.
-        raise unless rn.original_exception.is_a? PG::UniqueViolation
-        err = rn.original_exception
-        detail = err.result.error_field(PG::Result::PG_DIAG_MESSAGE_DETAIL)
-        raise unless /^Key \(owner_uuid, name\)=\([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}, .*?\) already exists\./.match detail
-        # Output collection name collision detected: append a timestamp.
-        coll_name = "#{self.output_name} #{Time.now.getgm.strftime('%FT%TZ')}"
-        retry
-      end
+
+      coll = Collection.new(owner_uuid: owner_uuid,
+                            manifest_text: manifest,
+                            portable_data_hash: pdh,
+                            name: coll_name,
+                            properties: {
+                              'type' => out_type,
+                              'container_request' => uuid,
+                            })
+      coll.save_with_unique_name!
       if out_type == 'output'
         out_coll = coll.uuid
       else
@@ -151,96 +134,6 @@ class ContainerRequest < ArvadosModel
     self.scheduling_parameters ||= {}
   end
 
-  # Create a new container (or find an existing one) to satisfy this
-  # request.
-  def resolve
-    c_mounts = mounts_for_container
-    c_runtime_constraints = {
-      'keep_cache_ram' =>
-      Rails.configuration.container_default_keep_cache_ram,
-    }.merge(runtime_constraints_for_container)
-    c_container_image = container_image_for_container
-    c = act_as_system_user do
-      c_attrs = {command: self.command,
-                 cwd: self.cwd,
-                 environment: self.environment,
-                 output_path: self.output_path,
-                 container_image: c_container_image,
-                 mounts: c_mounts,
-                 runtime_constraints: c_runtime_constraints}
-
-      reusable = self.use_existing ? Container.find_reusable(c_attrs) : nil
-      if not reusable.nil?
-        reusable
-      else
-        c_attrs[:scheduling_parameters] = self.scheduling_parameters
-        Container.create!(c_attrs)
-      end
-    end
-    self.container_uuid = c.uuid
-  end
-
-  # Return a runtime_constraints hash that complies with
-  # self.runtime_constraints but is suitable for saving in a container
-  # record, i.e., has specific values instead of ranges.
-  #
-  # Doing this as a step separate from other resolutions, like "git
-  # revision range to commit hash", makes sense only when there is no
-  # opportunity to reuse an existing container (e.g., container reuse
-  # is not implemented yet, or we have already found that no existing
-  # containers are suitable).
-  def runtime_constraints_for_container
-    rc = {}
-    runtime_constraints.each do |k, v|
-      if v.is_a? Array
-        rc[k] = v[0]
-      else
-        rc[k] = v
-      end
-    end
-    rc
-  end
-
-  # Return a mounts hash suitable for a Container, i.e., with every
-  # readonly collection UUID resolved to a PDH.
-  def mounts_for_container
-    c_mounts = {}
-    mounts.each do |k, mount|
-      mount = mount.dup
-      c_mounts[k] = mount
-      if mount['kind'] != 'collection'
-        next
-      end
-      if (uuid = mount.delete 'uuid')
-        c = Collection.
-          readable_by(current_user).
-          where(uuid: uuid).
-          select(:portable_data_hash).
-          first
-        if !c
-          raise ArvadosModel::UnresolvableContainerError.new "cannot mount collection #{uuid.inspect}: not found"
-        end
-        if mount['portable_data_hash'].nil?
-          # PDH not supplied by client
-          mount['portable_data_hash'] = c.portable_data_hash
-        elsif mount['portable_data_hash'] != c.portable_data_hash
-          # UUID and PDH supplied by client, but they don't agree
-          raise ArgumentError.new "cannot mount collection #{uuid.inspect}: current portable_data_hash #{c.portable_data_hash.inspect} does not match #{c['portable_data_hash'].inspect} in request"
-        end
-      end
-    end
-    return c_mounts
-  end
-
-  # Return a container_image PDH suitable for a Container.
-  def container_image_for_container
-    coll = Collection.for_latest_docker_image(container_image)
-    if !coll
-      raise ArvadosModel::UnresolvableContainerError.new "docker image #{container_image.inspect} not found"
-    end
-    coll.portable_data_hash
-  end
-
   def set_container
     if (container_uuid_changed? and
         not current_user.andand.is_admin and
@@ -249,7 +142,7 @@ class ContainerRequest < ArvadosModel
       return false
     end
     if state_changed? and state == Committed and container_uuid.nil?
-      resolve
+      self.container_uuid = Container.resolve(self).uuid
     end
     if self.container_uuid != self.container_uuid_was
       if self.container_count_changed?

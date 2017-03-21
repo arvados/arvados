@@ -243,6 +243,57 @@ class ArvadosModel < ActiveRecord::Base
           permission_link_classes: ['permission', 'resources'])
   end
 
+  def save_with_unique_name!
+    uuid_was = uuid
+    name_was = name
+    max_retries = 2
+    transaction do
+      conn = ActiveRecord::Base.connection
+      conn.exec_query 'SAVEPOINT save_with_unique_name'
+      begin
+        save!
+      rescue ActiveRecord::RecordNotUnique => rn
+        raise if max_retries == 0
+        max_retries -= 1
+
+        conn.exec_query 'ROLLBACK TO SAVEPOINT save_with_unique_name'
+
+        # Dig into the error to determine if it is specifically calling out a
+        # (owner_uuid, name) uniqueness violation.  In this specific case, and
+        # the client requested a unique name with ensure_unique_name==true,
+        # update the name field and try to save again.  Loop as necessary to
+        # discover a unique name.  It is necessary to handle name choosing at
+        # this level (as opposed to the client) to ensure that record creation
+        # never fails due to a race condition.
+        err = rn.original_exception
+        raise unless err.is_a?(PG::UniqueViolation)
+
+        # Unfortunately ActiveRecord doesn't abstract out any of the
+        # necessary information to figure out if this the error is actually
+        # the specific case where we want to apply the ensure_unique_name
+        # behavior, so the following code is specialized to Postgres.
+        detail = err.result.error_field(PG::Result::PG_DIAG_MESSAGE_DETAIL)
+        raise unless /^Key \(owner_uuid, name\)=\([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}, .*?\) already exists\./.match detail
+
+        new_name = "#{name_was} (#{db_current_time.utc.iso8601(3)})"
+        if new_name == name
+          # If the database is fast enough to do two attempts in the
+          # same millisecond, we need to wait to ensure we try a
+          # different timestamp on each attempt.
+          sleep 0.002
+          new_name = "#{name_was} (#{db_current_time.utc.iso8601(3)})"
+        end
+
+        self[:name] = new_name
+        self[:uuid] = nil if uuid_was.nil? && !uuid.nil?
+        conn.exec_query 'SAVEPOINT save_with_unique_name'
+        retry
+      ensure
+        conn.exec_query 'RELEASE SAVEPOINT save_with_unique_name'
+      end
+    end
+  end
+
   def logged_attributes
     attributes.except(*Rails.configuration.unlogged_attributes)
   end
