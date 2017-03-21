@@ -11,14 +11,22 @@ class ContainerTest < ActiveSupport::TestCase
     runtime_constraints: {"vcpus" => 1, "ram" => 1},
   }
 
-  REUSABLE_COMMON_ATTRS = {container_image: "9ae44d5792468c58bcf85ce7353c7027+124",
-                           cwd: "test",
-                           command: ["echo", "hello"],
-                           output_path: "test",
-                           runtime_constraints: {"vcpus" => 4,
-                                                 "ram" => 12000000000},
-                           mounts: {"test" => {"kind" => "json"}},
-                           environment: {"var" => 'val'}}
+  REUSABLE_COMMON_ATTRS = {
+    container_image: "9ae44d5792468c58bcf85ce7353c7027+124",
+    cwd: "test",
+    command: ["echo", "hello"],
+    output_path: "test",
+    runtime_constraints: {
+      "ram" => 12000000000,
+      "vcpus" => 4,
+    },
+    mounts: {
+      "test" => {"kind" => "json"},
+    },
+    environment: {
+      "var" => "val",
+    },
+  }
 
   def minimal_new attrs={}
     cr = ContainerRequest.new DEFAULT_ATTRS.merge(attrs)
@@ -86,7 +94,7 @@ class ContainerTest < ActiveSupport::TestCase
   test "Container serialized hash attributes sorted before save" do
     env = {"C" => 3, "B" => 2, "A" => 1}
     m = {"F" => {"kind" => 3}, "E" => {"kind" => 2}, "D" => {"kind" => 1}}
-    rc = {"vcpus" => 1, "ram" => 1}
+    rc = {"vcpus" => 1, "ram" => 1, "keep_cache_ram" => 1}
     c, _ = minimal_new(environment: env, mounts: m, runtime_constraints: rc)
     assert_equal c.environment.to_json, Container.deep_sort_hash(env).to_json
     assert_equal c.mounts.to_json, Container.deep_sort_hash(m).to_json
