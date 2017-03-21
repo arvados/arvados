@@ -51,8 +51,6 @@ class ApplicationController < ActionController::Base
 
   attr_writer :resource_attrs
 
-  MAX_UNIQUE_NAME_ATTEMPTS = 10
-
   begin
     rescue_from(Exception,
                 ArvadosModel::PermissionDeniedError,
@@ -99,50 +97,12 @@ class ApplicationController < ActionController::Base
   def create
     @object = model_class.new resource_attrs
 
-    if @object.respond_to? :name and params[:ensure_unique_name]
-      # Record the original name.  See below.
-      name_stem = @object.name
-      retries = MAX_UNIQUE_NAME_ATTEMPTS
+    if @object.respond_to?(:name) && params[:ensure_unique_name]
+      @object.save_with_unique_name!
     else
-      retries = 0
-    end
-
-    begin
       @object.save!
-    rescue ActiveRecord::RecordNotUnique => rn
-      raise unless retries > 0
-      retries -= 1
-
-      # Dig into the error to determine if it is specifically calling out a
-      # (owner_uuid, name) uniqueness violation.  In this specific case, and
-      # the client requested a unique name with ensure_unique_name==true,
-      # update the name field and try to save again.  Loop as necessary to
-      # discover a unique name.  It is necessary to handle name choosing at
-      # this level (as opposed to the client) to ensure that record creation
-      # never fails due to a race condition.
-      raise unless rn.original_exception.is_a? PG::UniqueViolation
-
-      # Unfortunately ActiveRecord doesn't abstract out any of the
-      # necessary information to figure out if this the error is actually
-      # the specific case where we want to apply the ensure_unique_name
-      # behavior, so the following code is specialized to Postgres.
-      err = rn.original_exception
-      detail = err.result.error_field(PG::Result::PG_DIAG_MESSAGE_DETAIL)
-      raise unless /^Key \(owner_uuid, name\)=\([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}, .*?\) already exists\./.match detail
-
-      @object.uuid = nil
-
-      new_name = "#{name_stem} (#{db_current_time.utc.iso8601(3)})"
-      if new_name == @object.name
-        # If the database is fast enough to do two attempts in the
-        # same millisecond, we need to wait to ensure we try a
-        # different timestamp on each attempt.
-        sleep 0.002
-        new_name = "#{name_stem} (#{db_current_time.utc.iso8601(3)})"
-      end
-      @object.name = new_name
-      retry
     end
+
     show
   end
 
