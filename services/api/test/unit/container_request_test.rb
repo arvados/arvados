@@ -123,6 +123,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
     cr.reload
 
+    assert_equal({"vcpus" => 2, "ram" => 30}, cr.runtime_constraints)
+
     assert_not_nil cr.container_uuid
     c = Container.find_by_uuid cr.container_uuid
     assert_not_nil c
@@ -502,8 +504,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
                       command: ["echo", "hello"],
                       output_path: "test",
                       runtime_constraints: {"vcpus" => 4,
-                                            "ram" => 12000000000,
-                                            "keep_cache_ram" => 268435456},
+                                            "ram" => 12000000000},
                       mounts: {"test" => {"kind" => "json"}}}
       set_user_from_auth :active
       cr1 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Committed,
@@ -638,34 +639,6 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr3.update_attributes!(state: ContainerRequest::Committed)
     assert_equal cr.container_uuid, cr3.container_uuid
     assert_equal ContainerRequest::Final, cr3.state
-  end
-
-  [
-    [{"vcpus" => 1, "ram" => 123, "keep_cache_ram" => 100}, ContainerRequest::Committed, 100],
-    [{"vcpus" => 1, "ram" => 123}, ContainerRequest::Uncommitted],
-    [{"vcpus" => 1, "ram" => 123}, ContainerRequest::Committed],
-    [{"vcpus" => 1, "ram" => 123, "keep_cache_ram" => -1}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
-    [{"vcpus" => 1, "ram" => 123, "keep_cache_ram" => '123'}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
-  ].each do |rc, state, expected|
-    test "create container request with #{rc} in state #{state} and verify keep_cache_ram #{expected}" do
-      common_attrs = {cwd: "test",
-                      priority: 1,
-                      command: ["echo", "hello"],
-                      output_path: "test",
-                      runtime_constraints: rc,
-                      mounts: {"test" => {"kind" => "json"}}}
-      set_user_from_auth :active
-
-      if expected == ActiveRecord::RecordInvalid
-        assert_raises(ActiveRecord::RecordInvalid) do
-          create_minimal_req!(common_attrs.merge({state: state}))
-        end
-      else
-        cr = create_minimal_req!(common_attrs.merge({state: state}))
-        expected = Rails.configuration.container_default_keep_cache_ram if state == ContainerRequest::Committed and expected.nil?
-        assert_equal expected, cr.runtime_constraints['keep_cache_ram']
-      end
-    end
   end
 
   [

@@ -155,7 +155,10 @@ class ContainerRequest < ArvadosModel
   # request.
   def resolve
     c_mounts = mounts_for_container
-    c_runtime_constraints = runtime_constraints_for_container
+    c_runtime_constraints = {
+      'keep_cache_ram' =>
+      Rails.configuration.container_default_keep_cache_ram,
+    }.merge(runtime_constraints_for_container)
     c_container_image = container_image_for_container
     c = act_as_system_user do
       c_attrs = {command: self.command,
@@ -261,20 +264,17 @@ class ContainerRequest < ArvadosModel
   def validate_runtime_constraints
     case self.state
     when Committed
-      ['vcpus', 'ram'].each do |k|
-        if not (runtime_constraints.include? k and
-                runtime_constraints[k].is_a? Integer and
-                runtime_constraints[k] > 0)
-          errors.add :runtime_constraints, "#{k} must be a positive integer"
+      [['vcpus', true],
+       ['ram', true],
+       ['keep_cache_ram', false]].each do |k, required|
+        if !required && !runtime_constraints.include?(k)
+          next
         end
-      end
-
-      if runtime_constraints.include? 'keep_cache_ram' and
-         (!runtime_constraints['keep_cache_ram'].is_a?(Integer) or
-          runtime_constraints['keep_cache_ram'] <= 0)
-            errors.add :runtime_constraints, "keep_cache_ram must be a positive integer"
-      elsif !runtime_constraints.include? 'keep_cache_ram'
-        runtime_constraints['keep_cache_ram'] = Rails.configuration.container_default_keep_cache_ram
+        v = runtime_constraints[k]
+        unless (v.is_a?(Integer) && v > 0)
+          errors.add(:runtime_constraints,
+                     "[#{k}]=#{v.inspect} must be a positive integer")
+        end
       end
     end
   end
