@@ -1,4 +1,5 @@
 require 'test_helper'
+require 'audit_logs'
 
 class LogTest < ActiveSupport::TestCase
   include CurrentApiClient
@@ -309,6 +310,75 @@ class LogTest < ActiveSupport::TestCase
       assert_logged(coll, :delete) do |props|
         assert_equal(txt, props['old_attributes']['manifest_text'])
       end
+    end
+  end
+
+  def assert_no_logs_deleted
+    logs_before = Log.unscoped.all.count
+    yield
+    assert_equal logs_before, Log.unscoped.all.count
+  end
+
+  def remaining_audit_logs
+    Log.unscoped.where('event_type in (?)', %w(create update destroy delete))
+  end
+
+  test 'retain old audit logs with default settings' do
+    assert_no_logs_deleted do
+      AuditLogs.delete_old(
+        max_age: Rails.configuration.max_audit_log_age,
+        max_batch: Rails.configuration.max_audit_log_delete_batch)
+    end
+  end
+
+  test 'retain old audit logs with batch=0' do
+    assert_no_logs_deleted do
+      AuditLogs.delete_old(max_age: 1, max_batch: 0)
+    end
+  end
+
+  test 'delete old audit logs with production settings' do
+    initial_log_count = Log.unscoped.all.count
+    AuditLogs.delete_old(max_age: 180, max_batch: 100000)
+    assert_operator remaining_audit_logs.count, :<, initial_log_count
+  end
+
+  test 'delete old audit logs in multiple batches' do
+    AuditLogs.delete_old(max_age: 0, max_batch: 2)
+    assert_equal [], remaining_audit_logs.collect(&:uuid)
+  end
+
+  test 'delete old audit logs in thread' do
+    begin
+      Rails.configuration.max_audit_log_age = 20
+      Rails.configuration.max_audit_log_delete_batch = 100000
+      Rails.cache.delete 'AuditLogs'
+      initial_log_count = Log.unscoped.all.count + 1
+      act_as_system_user do
+        Log.create!()
+        initial_log_count += 1
+      end
+      deadline = Time.now + 10
+      while remaining_audit_logs.count == initial_log_count
+        if Time.now > deadline
+          raise "timed out"
+        end
+        sleep 0.1
+      end
+      assert_operator remaining_audit_logs.count, :<, initial_log_count
+    ensure
+      # The test framework rolls back our transactions, but that
+      # doesn't undo the deletes we did from separate threads.
+      ActiveRecord::Base.connection.exec_query 'ROLLBACK'
+      Thread.new do
+        begin
+          dc = DatabaseController.new
+          dc.define_singleton_method :render do |*args| end
+          dc.reset
+        ensure
+          ActiveRecord::Base.connection.close
+        end
+      end.join
     end
   end
 end

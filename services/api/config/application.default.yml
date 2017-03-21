@@ -232,6 +232,22 @@ common:
   # crunchstat logs from the logs table.
   clean_container_log_rows_after: <%= 30.days %>
 
+  # Time to keep audit logs (a row in the log table added each time an
+  # Arvados object is created, modified, or deleted) in the PostgreSQL
+  # database. Currently, websocket event notifications rely on audit
+  # logs, so this should not be set lower than 600 (5 minutes).
+  max_audit_log_age: 1209600
+
+  # Maximum number of log rows to delete in a single SQL transaction.
+  #
+  # If max_audit_log_delete_batch is 0, log entries will never be
+  # deleted by Arvados. Cleanup can be done by an external process
+  # without affecting any Arvados system processes, as long as very
+  # recent (<5 minutes old) logs are not deleted.
+  #
+  # 100000 is a reasonable batch size for most sites.
+  max_audit_log_delete_batch: 0
+
   # The maximum number of compute nodes that can be in use simultaneously
   # If this limit is reduced, any existing nodes with slot number >= new limit
   # will not be counted against the new limit. In other words, the new limit
@@ -464,3 +480,4 @@ test:
   websocket_address: <% if ENV['ARVADOS_TEST_EXPERIMENTAL_WS'] %>"wss://0.0.0.0:<%= ENV['ARVADOS_TEST_WSS_PORT'] %>/websocket"<% else %>false<% end %>
   trash_sweep_interval: -1
   docker_image_formats: ["v1"]
+  max_audit_log_delete_batch: 0
