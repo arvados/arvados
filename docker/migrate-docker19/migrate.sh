@@ -6,6 +6,7 @@ function cleanup {
     kill $(cat /var/run/docker.pid)
     sleep 1
     rm -rf /var/lib/docker/*
+    rm -rf /root/.cache/arvados/docker/*
 }
 
 trap cleanup EXIT

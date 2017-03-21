@@ -154,6 +154,7 @@ def main(arguments=None):
         start = time.time()
 
         varlibdocker = tempfile.mkdtemp()
+        dockercache = tempfile.mkdtemp()
         try:
             with tempfile.NamedTemporaryFile() as envfile:
                 envfile.write("ARVADOS_API_HOST=%s\n" % (os.environ["ARVADOS_API_HOST"]))
@@ -167,6 +168,7 @@ def main(arguments=None):
                              "--rm",
                              "--env-file", envfile.name,
                              "--volume", "%s:/var/lib/docker" % varlibdocker,
+                             "--volume", "%s:/root/.cache/arvados/docker" % dockercache,
                              "arvados/migrate-docker19",
                              "/root/migrate.sh",
                              "%s/%s" % (old_image["collection"], tarfile),
@@ -211,6 +213,7 @@ def main(arguments=None):
             failures.append(old_image["collection"])
         finally:
             shutil.rmtree(varlibdocker)
+            shutil.rmtree(dockercache)
 
     logger.info("Successfully migrated %i images", len(success))
     if failures:
