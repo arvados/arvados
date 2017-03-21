@@ -14,7 +14,7 @@ CGROUP=/sys/fs/cgroup
 [ -d $CGROUP ] || mkdir $CGROUP
 
 if mountpoint -q $CGROUP ; then
-    break
+    true
 else
     mount -n -t tmpfs -o uid=0,gid=0,mode=0755 cgroup $CGROUP
 fi
@@ -52,10 +52,10 @@ do
         # Systemd and OpenRC (and possibly others) both create such a
         # cgroup. To avoid the aforementioned bug, we symlink "foo" to
         # "name=foo". This shouldn't have any adverse effect.
-        echo $SUBSYS | grep -q ^name= && {
-                NAME=$(echo $SUBSYS | sed s/^name=//)
-                ln -s $SUBSYS $CGROUP/$NAME
-        }
+        #echo $SUBSYS | grep -q ^name= && {
+        #        NAME=$(echo $SUBSYS | sed s/^name=//)
+        #        ln -s $SUBSYS $CGROUP/$NAME
+        #}
 
         # Likewise, on at least one system, it has been reported that
         # systemd would mount the CPU and CPU accounting controllers
@@ -96,6 +96,4 @@ rm -rf /var/run/docker.pid
 
 read pid cmd state ppid pgrp session tty_nr tpgid rest < /proc/self/stat
 
-if ! docker daemon --storage-driver=overlay $DOCKER_DAEMON_ARGS ; then
-    docker daemon $DOCKER_DAEMON_ARGS
-fi
+exec docker daemon --storage-driver=vfs $DOCKER_DAEMON_ARGS
