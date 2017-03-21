@@ -6,7 +6,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   include UsersTestHelper
 
   setup do
-    @all_links_at_start = Link.all
+    @initial_link_count = Link.count
     @vm_uuid = virtual_machines(:testvm).uuid
   end
 
@@ -107,7 +107,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_nil created['identity_url'], 'expected no identity_url'
 
     # arvados#user, repo link and link add user to 'All users' group
-    verify_num_links @all_links_at_start, 4
+    verify_links_added 4
 
     verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
         created['uuid'], created['email'], 'arvados#user', false, 'User'
@@ -269,7 +269,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
     # four extra links; system_group, login, group and repo perms
-    verify_num_links @all_links_at_start, 4
+    verify_links_added 4
   end
 
   test "setup user with fake vm and expect error" do
@@ -306,7 +306,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
     # five extra links; system_group, login, group, vm, repo
-    verify_num_links @all_links_at_start, 5
+    verify_links_added 5
   end
 
   test "setup user with valid email, no vm and no repo as input" do
@@ -324,7 +324,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert_equal response_object['email'], 'foo@example.com', 'expected given email'
 
     # three extra links; system_group, login, and group
-    verify_num_links @all_links_at_start, 3
+    verify_links_added 3
 
     verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
         response_object['uuid'], response_object['email'], 'arvados#user', false, 'User'
@@ -361,7 +361,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         'expecting first name'
 
     # five extra links; system_group, login, group, repo and vm
-    verify_num_links @all_links_at_start, 5
+    verify_links_added 5
   end
 
   test "setup user with an existing user email and check different object is created" do
@@ -384,7 +384,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         'expected different uuid after create operation'
     assert_equal inactive_user['email'], response_object['email'], 'expected given email'
     # system_group, openid, group, and repo. No vm link.
-    verify_num_links @all_links_at_start, 4
+    verify_links_added 4
   end
 
   test "setup user with openid prefix" do
@@ -412,7 +412,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     # verify links
     # four new links: system_group, arvados#user, repo, and 'All users' group.
-    verify_num_links @all_links_at_start, 4
+    verify_links_added 4
 
     verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
         created['uuid'], created['email'], 'arvados#user', false, 'User'
@@ -472,7 +472,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
 
     # five new links: system_group, arvados#user, repo, vm and 'All
     # users' group link
-    verify_num_links @all_links_at_start, 5
+    verify_links_added 5
 
     verify_link response_items, 'arvados#user', true, 'permission', 'can_login',
         created['uuid'], created['email'], 'arvados#user', false, 'User'
@@ -841,9 +841,9 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
                  "admin's filtered index did not return inactive user")
   end
 
-  def verify_num_links (original_links, expected_additional_links)
-    assert_equal expected_additional_links, Link.all.size-original_links.size,
-        "Expected #{expected_additional_links.inspect} more links"
+  def verify_links_added more
+    assert_equal @initial_link_count+more, Link.count,
+        "Started with #{@initial_link_count} links, expected #{more} more"
   end
 
   def find_obj_in_resp (response_items, object_type, head_kind=nil)
