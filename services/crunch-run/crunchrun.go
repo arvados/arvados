@@ -533,7 +533,11 @@ func (runner *ContainerRunner) LogNodeInfo() (err error) {
 		},
 		infoCommand{
 			label: "Disk Space",
-			cmd:   []string{"df", "-m"},
+			cmd:   []string{"df", "-m", "/"},
+		},
+		infoCommand{
+			label: "Disk Space",
+			cmd:   []string{"df", "-m", os.TempDir()},
 		},
 	}
 
