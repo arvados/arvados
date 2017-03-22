@@ -1,5 +1,6 @@
 require 'minitest/autorun'
 require 'digest/md5'
+require 'active_support'
 require 'active_support/core_ext'
 require 'tempfile'
 
