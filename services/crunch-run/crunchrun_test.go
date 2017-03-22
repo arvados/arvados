@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime/pprof"
 	"sort"
 	"strings"
 	"sync"
@@ -183,6 +184,21 @@ func (client *ArvTestClient) Call(method, resourceType, uuid, action string, par
 	}
 }
 
+func (client *ArvTestClient) CallRaw(method, resourceType, uuid, action string,
+	parameters arvadosclient.Dict) (reader io.ReadCloser, err error) {
+	j := []byte(`{
+		"command": ["sleep", "1"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": ".",
+		"environment": {},
+		"mounts": {"/tmp": {"kind": "tmp"} },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`)
+	return ioutil.NopCloser(bytes.NewReader(j)), nil
+}
+
 func (client *ArvTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
 	if resourceType == "collections" {
 		if uuid == hwPDH {
@@ -319,6 +335,11 @@ func (ArvErrorTestClient) Create(resourceType string,
 
 func (ArvErrorTestClient) Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error {
 	return errors.New("ArvError")
+}
+
+func (ArvErrorTestClient) CallRaw(method, resourceType, uuid, action string,
+	parameters arvadosclient.Dict) (reader io.ReadCloser, err error) {
+	return nil, errors.New("ArvError")
 }
 
 func (ArvErrorTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
@@ -525,7 +546,7 @@ func (s *TestSuite) TestUpdateContainerCancelled(c *C) {
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
-	cr.Cancelled = true
+	cr.cCancelled = true
 	cr.finalState = "Cancelled"
 
 	err := cr.UpdateContainerFinal()
@@ -650,6 +671,56 @@ func (s *TestSuite) TestCrunchstat(c *C) {
 	c.Check(api.Logs["crunchstat"].String(), Matches, `(?ms).*cgroup stats files never appeared for abcde\n`)
 }
 
+func (s *TestSuite) TestNodeInfoLog(c *C) {
+	api, _, _ := FullRunHelper(c, `{
+		"command": ["sleep", "1"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": ".",
+		"environment": {},
+		"mounts": {"/tmp": {"kind": "tmp"} },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`, nil, func(t *TestDockerClient) {
+		time.Sleep(time.Second)
+		t.logWriter.Close()
+		t.finish <- dockerclient.WaitResult{}
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+
+	c.Assert(api.Logs["node-info"], NotNil)
+	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Host Information.*`)
+	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*CPU Information.*`)
+	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Memory Information.*`)
+	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Disk Space.*`)
+	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Disk INodes.*`)
+}
+
+func (s *TestSuite) TestContainerRecordLog(c *C) {
+	api, _, _ := FullRunHelper(c, `{
+		"command": ["sleep", "1"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": ".",
+		"environment": {},
+		"mounts": {"/tmp": {"kind": "tmp"} },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`, nil, func(t *TestDockerClient) {
+		time.Sleep(time.Second)
+		t.logWriter.Close()
+		t.finish <- dockerclient.WaitResult{}
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+
+	c.Assert(api.Logs["container"], NotNil)
+	c.Check(api.Logs["container"].String(), Matches, `(?ms).*container_image.*`)
+}
+
 func (s *TestSuite) TestFullRunStderr(c *C) {
 	api, _, _ := FullRunHelper(c, `{
     "command": ["/bin/sh", "-c", "echo hello ; echo world 1>&2 ; exit 1"],
@@ -722,7 +793,7 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
 func (s *TestSuite) TestStopOnSignal(c *C) {
 	s.testStopContainer(c, func(cr *ContainerRunner) {
 		go func() {
-			for cr.ContainerID == "" {
+			for !cr.cStarted {
 				time.Sleep(time.Millisecond)
 			}
 			cr.SigChan <- syscall.SIGINT
@@ -776,6 +847,7 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
 	}()
 	select {
 	case <-time.After(20 * time.Second):
+		pprof.Lookup("goroutine").WriteTo(os.Stderr, 1)
 		c.Fatal("timed out")
 	case err = <-done:
 		c.Check(err, IsNil)

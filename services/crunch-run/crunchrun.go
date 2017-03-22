@@ -33,6 +33,7 @@ type IArvadosClient interface {
 	Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error
 	Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error
 	Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error
+	CallRaw(method string, resourceType string, uuid string, action string, parameters arvadosclient.Dict) (reader io.ReadCloser, err error)
 	Discovery(key string) (interface{}, error)
 }
 
@@ -91,8 +92,6 @@ type ContainerRunner struct {
 	CleanupTempDir []string
 	Binds          []string
 	OutputPDH      *string
-	CancelLock     sync.Mutex
-	Cancelled      bool
 	SigChan        chan os.Signal
 	ArvMountExit   chan error
 	finalState     string
@@ -114,6 +113,10 @@ type ContainerRunner struct {
 	// parent to be X" feature even on sites where the "specify
 	// cgroup parent" feature breaks.
 	setCgroupParent string
+
+	cStateLock sync.Mutex
+	cStarted   bool // StartContainer() succeeded
+	cCancelled bool // StopContainer() invoked
 }
 
 // SetupSignals sets up signal handling to gracefully terminate the underlying
@@ -133,13 +136,13 @@ func (runner *ContainerRunner) SetupSignals() {
 
 // stop the underlying Docker container.
 func (runner *ContainerRunner) stop() {
-	runner.CancelLock.Lock()
-	defer runner.CancelLock.Unlock()
-	if runner.Cancelled {
+	runner.cStateLock.Lock()
+	defer runner.cStateLock.Unlock()
+	if runner.cCancelled {
 		return
 	}
-	runner.Cancelled = true
-	if runner.ContainerID != "" {
+	runner.cCancelled = true
+	if runner.cStarted {
 		err := runner.Docker.StopContainer(runner.ContainerID, 10)
 		if err != nil {
 			log.Printf("StopContainer failed: %s", err)
@@ -504,6 +507,98 @@ func (runner *ContainerRunner) StartCrunchstat() {
 	runner.statReporter.Start()
 }
 
+type infoCommand struct {
+	label string
+	cmd   []string
+}
+
+// Gather node information and store it on the log for debugging
+// purposes.
+func (runner *ContainerRunner) LogNodeInfo() (err error) {
+	w := runner.NewLogWriter("node-info")
+	logger := log.New(w, "node-info", 0)
+
+	commands := []infoCommand{
+		infoCommand{
+			label: "Host Information",
+			cmd:   []string{"uname", "-a"},
+		},
+		infoCommand{
+			label: "CPU Information",
+			cmd:   []string{"cat", "/proc/cpuinfo"},
+		},
+		infoCommand{
+			label: "Memory Information",
+			cmd:   []string{"cat", "/proc/meminfo"},
+		},
+		infoCommand{
+			label: "Disk Space",
+			cmd:   []string{"df", "-m", "/", os.TempDir()},
+		},
+		infoCommand{
+			label: "Disk INodes",
+			cmd:   []string{"df", "-i", "/", os.TempDir()},
+		},
+	}
+
+	// Run commands with informational output to be logged.
+	var out []byte
+	for _, command := range commands {
+		out, err = exec.Command(command.cmd[0], command.cmd[1:]...).CombinedOutput()
+		if err != nil {
+			return fmt.Errorf("While running command %q: %v",
+				command.cmd, err)
+		}
+		logger.Println(command.label)
+		for _, line := range strings.Split(string(out), "\n") {
+			logger.Println(" ", line)
+		}
+	}
+
+	err = w.Close()
+	if err != nil {
+		return fmt.Errorf("While closing node-info logs: %v", err)
+	}
+	return nil
+}
+
+// Get and save the raw JSON container record from the API server
+func (runner *ContainerRunner) LogContainerRecord() (err error) {
+	w := &ArvLogWriter{
+		runner.ArvClient,
+		runner.Container.UUID,
+		"container",
+		runner.LogCollection.Open("container.json"),
+	}
+	// Get Container record JSON from the API Server
+	reader, err := runner.ArvClient.CallRaw("GET", "containers", runner.Container.UUID, "", nil)
+	if err != nil {
+		return fmt.Errorf("While retrieving container record from the API server: %v", err)
+	}
+	defer reader.Close()
+	// Read the API server response as []byte
+	json_bytes, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return fmt.Errorf("While reading container record API server response: %v", err)
+	}
+	// Decode the JSON []byte
+	var cr map[string]interface{}
+	if err = json.Unmarshal(json_bytes, &cr); err != nil {
+		return fmt.Errorf("While decoding the container record JSON response: %v", err)
+	}
+	// Re-encode it using indentation to improve readability
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "    ")
+	if err = enc.Encode(cr); err != nil {
+		return fmt.Errorf("While logging the JSON container record: %v", err)
+	}
+	err = w.Close()
+	if err != nil {
+		return fmt.Errorf("While closing container.json log: %v", err)
+	}
+	return nil
+}
+
 // AttachLogs connects the docker container stdout and stderr logs to the
 // Arvados logger which logs to Keep and the API server logs table.
 func (runner *ContainerRunner) AttachStreams() (err error) {
@@ -598,10 +693,16 @@ func (runner *ContainerRunner) CreateContainer() error {
 // StartContainer starts the docker container created by CreateContainer.
 func (runner *ContainerRunner) StartContainer() error {
 	runner.CrunchLog.Printf("Starting Docker container id '%s'", runner.ContainerID)
+	runner.cStateLock.Lock()
+	defer runner.cStateLock.Unlock()
+	if runner.cCancelled {
+		return ErrCancelled
+	}
 	err := runner.Docker.StartContainer(runner.ContainerID, &runner.HostConfig)
 	if err != nil {
 		return fmt.Errorf("could not start container: %v", err)
 	}
+	runner.cStarted = true
 	return nil
 }
 
@@ -846,9 +947,9 @@ func (runner *ContainerRunner) CommitLogs() error {
 
 // UpdateContainerRunning updates the container state to "Running"
 func (runner *ContainerRunner) UpdateContainerRunning() error {
-	runner.CancelLock.Lock()
-	defer runner.CancelLock.Unlock()
-	if runner.Cancelled {
+	runner.cStateLock.Lock()
+	defer runner.cStateLock.Unlock()
+	if runner.cCancelled {
 		return ErrCancelled
 	}
 	return runner.ArvClient.Update("containers", runner.Container.UUID,
@@ -892,9 +993,9 @@ func (runner *ContainerRunner) UpdateContainerFinal() error {
 
 // IsCancelled returns the value of Cancelled, with goroutine safety.
 func (runner *ContainerRunner) IsCancelled() bool {
-	runner.CancelLock.Lock()
-	defer runner.CancelLock.Unlock()
-	return runner.Cancelled
+	runner.cStateLock.Lock()
+	defer runner.cStateLock.Unlock()
+	return runner.cCancelled
 }
 
 // NewArvLogWriter creates an ArvLogWriter
@@ -986,6 +1087,17 @@ func (runner *ContainerRunner) Run() (err error) {
 	}
 
 	err = runner.CreateContainer()
+	if err != nil {
+		return
+	}
+
+	// Gather and record node information
+	err = runner.LogNodeInfo()
+	if err != nil {
+		return
+	}
+	// Save container.json record on log collection
+	err = runner.LogContainerRecord()
 	if err != nil {
 		return
 	}
