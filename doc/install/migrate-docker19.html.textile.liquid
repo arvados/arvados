@@ -12,8 +12,9 @@ Requires Docker running on the local host (can be either 1.9 or 1.10+).
 
 Usage:
 
-# Run @arvados/docker/migrate-docker19/build.sh@ to create @arvados/migrate-docker19@ Docker image.
+# Install arvados/migrate-docker19 image: @docker pull arvados/migrate-docker19@. If you're unable to do this, you can run @arvados/docker/migrate-docker19/build.sh@ to create @arvados/migrate-docker19@ Docker image.
 # Set ARVADOS_API_HOST and ARVADOS_API_TOKEN to the cluster you want to migrate.
+# Your $TMPDIR should have the size of the biggest image in the cluster. You can set up a different dir (i.e. export TMPDIR=/mnt/tmp). Make sure that the user running the docker daemon has permissions to write in that directory
 # Run @arv-migrate-docker19@ from the Arvados Python SDK on the host (not in a container).
 
 This will query Arvados for v1 format Docker images.  For each image that does not already have a corresponding v2 format image (as indicated by a docker_image_migration tag) it will perform the following process:
