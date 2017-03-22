@@ -695,6 +695,7 @@ func (s *TestSuite) TestNodeInfoLog(c *C) {
 	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*CPU Information.*`)
 	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Memory Information.*`)
 	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Disk Space.*`)
+	c.Check(api.Logs["node-info"].String(), Matches, `(?ms).*Disk INodes.*`)
 }
 
 func (s *TestSuite) TestContainerRecordLog(c *C) {

@@ -533,19 +533,11 @@ func (runner *ContainerRunner) LogNodeInfo() (err error) {
 		},
 		infoCommand{
 			label: "Disk Space",
-			cmd:   []string{"df", "-m", "/"},
-		},
-		infoCommand{
-			label: "Disk Space",
-			cmd:   []string{"df", "-m", os.TempDir()},
+			cmd:   []string{"df", "-m", "/", os.TempDir()},
 		},
 		infoCommand{
 			label: "Disk INodes",
-			cmd:   []string{"df", "-i", "/"},
-		},
-		infoCommand{
-			label: "Disk INodes",
-			cmd:   []string{"df", "-i", os.TempDir()},
+			cmd:   []string{"df", "-i", "/", os.TempDir()},
 		},
 	}
 
@@ -583,6 +575,7 @@ func (runner *ContainerRunner) LogContainerRecord() (err error) {
 	if err != nil {
 		return fmt.Errorf("While retrieving container record from the API server: %v", err)
 	}
+	defer reader.Close()
 	// Read the API server response as []byte
 	json_bytes, err := ioutil.ReadAll(reader)
 	if err != nil {
