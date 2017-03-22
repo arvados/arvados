@@ -79,8 +79,17 @@ class ArvadosModel < ActiveRecord::Base
     # The following permit! is necessary even with
     # "ActionController::Parameters.permit_all_parameters = true",
     # because permit_all does not permit nested attributes.
-    if has_nonstring_keys?(raw_params)
-      raise ArgumentError.new("Parameters cannot have non-string keys")
+    if raw_params
+      serialized_attributes.each do |colname, coder|
+        param = raw_params[colname.to_sym]
+        if param.nil?
+          # ok
+        elsif !param.is_a?(coder.object_class)
+          raise ArgumentError.new("#{colname} parameter must be #{coder.object_class}, not #{param.class}")
+        elsif has_nonstring_keys?(param)
+          raise ArgumentError.new("#{colname} parameter cannot have non-string hash keys")
+        end
+      end
     end
     ActionController::Parameters.new(raw_params).permit!
   end
