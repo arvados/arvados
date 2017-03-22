@@ -7,7 +7,7 @@ class Log < ArvadosModel
   serialize :properties, Hash
   before_validation :set_default_event_at
   after_save :send_notify
-  after_save { AuditLogs.tidy_in_background }
+  after_commit { AuditLogs.tidy_in_background }
 
   api_accessible :user, extend: :common do |t|
     t.add :id
