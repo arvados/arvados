@@ -15,6 +15,7 @@ from apiclient import errors as apiclient_errors
 import config
 import errors
 import util
+import cache
 
 _logger = logging.getLogger('arvados.api')
 
@@ -136,7 +137,7 @@ def http_cache(data_type):
         util.mkdir_dash_p(path)
     except OSError:
         path = None
-    return path
+    return cache.SafeHTTPCache(path)
 
 def api(version=None, cache=True, host=None, token=None, insecure=False, **kwargs):
     """Return an apiclient Resources object for an Arvados instance.
