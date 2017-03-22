@@ -18,7 +18,7 @@ class SafeHTTPCache(object):
     def _clean(self, threshold=0):
         for ent in os.listdir(self._dir):
             fnm = os.path.join(self._dir, ent)
-            if os.path.isdir(fnm):
+            if os.path.isdir(fnm) or not fnm.endswith('.tmp'):
                 continue
             stat = os.lstat(fnm)
             if stat.st_mtime < threshold:
