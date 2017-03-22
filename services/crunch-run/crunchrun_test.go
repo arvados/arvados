@@ -184,6 +184,21 @@ func (client *ArvTestClient) Call(method, resourceType, uuid, action string, par
 	}
 }
 
+func (client *ArvTestClient) CallRaw(method, resourceType, uuid, action string,
+	parameters arvadosclient.Dict) (reader io.ReadCloser, err error) {
+	j := []byte(`{
+		"command": ["sleep", "1"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": ".",
+		"environment": {},
+		"mounts": {"/tmp": {"kind": "tmp"} },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`)
+	return ioutil.NopCloser(bytes.NewReader(j)), nil
+}
+
 func (client *ArvTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
 	if resourceType == "collections" {
 		if uuid == hwPDH {
@@ -320,6 +335,11 @@ func (ArvErrorTestClient) Create(resourceType string,
 
 func (ArvErrorTestClient) Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error {
 	return errors.New("ArvError")
+}
+
+func (ArvErrorTestClient) CallRaw(method, resourceType, uuid, action string,
+	parameters arvadosclient.Dict) (reader io.ReadCloser, err error) {
+	return nil, errors.New("ArvError")
 }
 
 func (ArvErrorTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {

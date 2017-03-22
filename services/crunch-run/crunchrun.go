@@ -33,6 +33,7 @@ type IArvadosClient interface {
 	Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error
 	Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error
 	Call(method, resourceType, uuid, action string, parameters arvadosclient.Dict, output interface{}) error
+	CallRaw(method string, resourceType string, uuid string, action string, parameters arvadosclient.Dict) (reader io.ReadCloser, err error)
 	Discovery(key string) (interface{}, error)
 }
 
@@ -128,7 +129,6 @@ func (runner *ContainerRunner) SetupSignals() {
 
 	go func(sig chan os.Signal) {
 		<-sig
-		log.Print("signal handler calling runner.stop()")
 		runner.stop()
 		signal.Stop(sig)
 	}(runner.SigChan)
@@ -566,19 +566,27 @@ func (runner *ContainerRunner) LogContainerRecord() (err error) {
 		"container",
 		runner.LogCollection.Open("container.json"),
 	}
-	logger := log.New(w, "container", 0)
-
-	// Convert container record to pretty-printed JSON []byte
-	rec, err := json.MarshalIndent(runner.Container, "", "    ")
+	// Get Container record JSON from the API Server
+	reader, err := runner.ArvClient.CallRaw("GET", "containers", runner.Container.UUID, "", nil)
 	if err != nil {
-		return fmt.Errorf("While converting container record to JSON: %v", err)
+		return fmt.Errorf("While retrieving container record from the API server: %v", err)
 	}
-
-	// Write JSON record line-by-line
-	for _, line := range strings.Split(string(rec), "\n") {
-		logger.Println(line)
+	// Read the API server response as []byte
+	json_bytes, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return fmt.Errorf("While reading container record API server response: %v", err)
 	}
-
+	// Decode the JSON []byte
+	var cr map[string]interface{}
+	if err = json.Unmarshal(json_bytes, &cr); err != nil {
+		return fmt.Errorf("While decoding the container record JSON response: %v", err)
+	}
+	// Re-encode it using indentation to improve readability
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "    ")
+	if err = enc.Encode(cr); err != nil {
+		return fmt.Errorf("While logging the JSON container record: %v", err)
+	}
 	err = w.Close()
 	if err != nil {
 		return fmt.Errorf("While closing container.json log: %v", err)
