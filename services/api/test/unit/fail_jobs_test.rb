@@ -38,12 +38,12 @@ class FailJobsTest < ActiveSupport::TestCase
   test 'cancel slurm jobs' do
     Rails.configuration.crunch_job_wrapper = :slurm_immediate
     Rails.configuration.crunch_job_user = 'foobar'
-    fake_squeue = File.popen("echo #{@job[:before_reboot].uuid}")
-    fake_scancel = File.popen("true")
-    File.expects(:popen).
+    fake_squeue = IO.popen("echo #{@job[:before_reboot].uuid}")
+    fake_scancel = IO.popen("true")
+    IO.expects(:popen).
       with(['squeue', '-a', '-h', '-o', '%j']).
       returns(fake_squeue)
-    File.expects(:popen).
+    IO.expects(:popen).
       with(includes('sudo', '-u', 'foobar', 'scancel', '-n', @job[:before_reboot].uuid)).
       returns(fake_scancel)
     @dispatch.fail_jobs(before: Time.at(BOOT_TIME).to_s)

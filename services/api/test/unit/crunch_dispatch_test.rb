@@ -208,14 +208,14 @@ class CrunchDispatchTest < ActiveSupport::TestCase
     act_as_system_user do
       dispatch = CrunchDispatch.new
 
-      squeue_resp = File.popen("echo zzzzz-8i9sb-pshmckwoma9plh7\necho thisisnotvalidjobuuid\necho zzzzz-8i9sb-4cf0abc123e809j\n")
-      scancel_resp = File.popen("true")
+      squeue_resp = IO.popen("echo zzzzz-8i9sb-pshmckwoma9plh7\necho thisisnotvalidjobuuid\necho zzzzz-8i9sb-4cf0abc123e809j\n")
+      scancel_resp = IO.popen("true")
 
-      File.expects(:popen).
+      IO.expects(:popen).
         with(['squeue', '-a', '-h', '-o', '%j']).
         returns(squeue_resp)
 
-      File.expects(:popen).
+      IO.expects(:popen).
         with(dispatch.sudo_preface + ['scancel', '-n', 'zzzzz-8i9sb-4cf0abc123e809j']).
         returns(scancel_resp)
 
