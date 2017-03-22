@@ -37,7 +37,7 @@ class CacheTest(unittest.TestCase):
         shutil.rmtree(self._dir)
 
     def test_cache_crud(self):
-        c = arvados.cache.SafeHTTPCache(self._dir)
+        c = arvados.cache.SafeHTTPCache(self._dir, max_age=0)
         url = 'https://example.com/foo?bar=baz'
         data1 = _random(256)
         data2 = _random(128)

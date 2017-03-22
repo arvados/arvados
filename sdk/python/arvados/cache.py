@@ -2,10 +2,31 @@ import errno
 import md5
 import os
 import tempfile
+import time
 
 class SafeHTTPCache(object):
-    def __init__(self, path=None):
+    """Thread-safe replacement for httplib2.FileCache"""
+
+    def __init__(self, path=None, max_age=None):
         self._dir = path
+        if max_age is not None:
+            try:
+                self._clean(threshold=time.time() - max_age)
+            except:
+                pass
+
+    def _clean(self, threshold=0):
+        for ent in os.listdir(self._dir):
+            fnm = os.path.join(self._dir, ent)
+            if os.path.isdir(fnm):
+                continue
+            stat = os.lstat(fnm)
+            if stat.st_mtime < threshold:
+                try:
+                    os.unlink(fnm)
+                except OSError as err:
+                    if err.errno != errno.ENOENT:
+                        raise
 
     def __str__(self):
         return self._dir
