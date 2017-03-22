@@ -11,7 +11,7 @@ class SafeHTTPCache(object):
         return self._dir
 
     def _filename(self, url):
-        return os.path.join(self._dir, md5.new(url).hexdigest())
+        return os.path.join(self._dir, md5.new(url).hexdigest()+'.tmp')
 
     def get(self, url):
         filename = self._filename(url)
