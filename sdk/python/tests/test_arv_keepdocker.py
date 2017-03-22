@@ -54,9 +54,9 @@ class ArvKeepdockerTestCase(unittest.TestCase):
         for supported, img_id, expect_ok in [
                 (['v1'], old_id, True),
                 (['v1'], new_id, False),
-                (None, old_id, True),
-                ([], old_id, True),
-                ([], new_id, True),
+                (None, old_id, False),
+                ([], old_id, False),
+                ([], new_id, False),
                 (['v1', 'v2'], new_id, True),
                 (['v1'], new_id, False),
                 (['v2'], new_id, True)]:

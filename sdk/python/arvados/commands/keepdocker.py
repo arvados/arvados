@@ -111,8 +111,8 @@ def docker_image_format(image_hash):
 def docker_image_compatible(api, image_hash):
     supported = api._rootDesc.get('dockerImageFormats', [])
     if not supported:
-        logger.warn("server does not specify supported image formats (see docker_image_formats in server config). Continuing.")
-        return True
+        logger.warn("server does not specify supported image formats (see docker_image_formats in server config).")
+        return False
 
     fmt = docker_image_format(image_hash)
     if fmt in supported:

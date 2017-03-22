@@ -33,8 +33,6 @@ On Debian-based systems:
 
 h2. Set up SLURM
 
-Install SLURM following "the same process you used to install the Crunch dispatcher":install-crunch-dispatch.html#slurm.
+Install SLURM on the compute node using the same process you used on the API server in the "previous step":install-slurm.html.
 
-h2. Copy configuration files from the dispatcher (API server)
-
-The @slurm.conf@ and @/etc/munge/munge.key@ files need to be identical across the dispatcher and all compute nodes. Copy the files you created in the "Install the Crunch dispatcher":install-crunch-dispatch.html step to this compute node.
+The @slurm.conf@ and @/etc/munge/munge.key@ files must be identical on all SLURM nodes. Copy the files you created on the API server in the "previous step":install-slurm.html to each compute node.

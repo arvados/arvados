@@ -34,9 +34,19 @@ import arvados.config
 ARVADOS_DIR = os.path.realpath(os.path.join(MY_DIRNAME, '../../..'))
 SERVICES_SRC_DIR = os.path.join(ARVADOS_DIR, 'services')
 if 'GOPATH' in os.environ:
+    # Add all GOPATH bin dirs to PATH -- but insert them after the
+    # ruby gems bin dir, to ensure "bundle" runs the Ruby bundler
+    # command, not the golang.org/x/tools/cmd/bundle command.
     gopaths = os.environ['GOPATH'].split(':')
-    gobins = [os.path.join(path, 'bin') for path in gopaths]
-    os.environ['PATH'] = ':'.join(gobins) + ':' + os.environ['PATH']
+    addbins = [os.path.join(path, 'bin') for path in gopaths]
+    newbins = []
+    for path in os.environ['PATH'].split(':'):
+        newbins.append(path)
+        if os.path.exists(os.path.join(path, 'bundle')):
+            newbins += addbins
+            addbins = []
+    newbins += addbins
+    os.environ['PATH'] = ':'.join(newbins)
 
 TEST_TMPDIR = os.path.join(ARVADOS_DIR, 'tmp')
 if not os.path.exists(TEST_TMPDIR):
