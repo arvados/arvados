@@ -964,9 +964,11 @@ class CrunchDispatch
   def squeue_jobs
     if Rails.configuration.crunch_job_wrapper == :slurm_immediate
       p = IO.popen(['squeue', '-a', '-h', '-o', '%j'])
-      l = p.readlines.map {|line| line.strip}
-      p.close
-      l
+      begin
+        p.readlines.map {|line| line.strip}
+      ensure
+        p.close
+      end
     else
       []
     end
