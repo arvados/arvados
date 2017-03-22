@@ -539,15 +539,23 @@ func (runner *ContainerRunner) LogNodeInfo() (err error) {
 			label: "Disk Space",
 			cmd:   []string{"df", "-m", os.TempDir()},
 		},
+		infoCommand{
+			label: "Disk INodes",
+			cmd:   []string{"df", "-i", "/"},
+		},
+		infoCommand{
+			label: "Disk INodes",
+			cmd:   []string{"df", "-i", os.TempDir()},
+		},
 	}
 
 	// Run commands with informational output to be logged.
 	var out []byte
 	for _, command := range commands {
-		out, err = exec.Command(command.cmd[0], command.cmd[1:]...).Output()
+		out, err = exec.Command(command.cmd[0], command.cmd[1:]...).CombinedOutput()
 		if err != nil {
-			return fmt.Errorf("While running command '%s': %v",
-				command.cmd[0], err)
+			return fmt.Errorf("While running command %q: %v",
+				command.cmd, err)
 		}
 		logger.Println(command.label)
 		for _, line := range strings.Split(string(out), "\n") {
