@@ -29,6 +29,8 @@ class ApiTokensScopeTest < ActionDispatch::IntegrationTest
     assert_response 403
     get(v1_url('specimens', specimens(:owned_by_active_user).uuid), *get_args)
     assert_response :success
+    head(v1_url('specimens', specimens(:owned_by_active_user).uuid), *get_args)
+    assert_response :success
     get(v1_url('specimens', specimens(:owned_by_spectator).uuid), *get_args)
     assert_includes(403..404, @response.status)
   end
