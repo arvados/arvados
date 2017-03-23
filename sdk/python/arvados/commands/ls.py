@@ -3,12 +3,15 @@
 from __future__ import print_function
 
 import argparse
+import collections
 import sys
 
 import arvados
 import arvados.commands._util as arv_cmd
 
 from arvados._version import __version__
+
+FileInfo = collections.namedtuple('FileInfo', ['stream_name', 'name', 'size'])
 
 def parse_args(args):
     parser = argparse.ArgumentParser(
@@ -26,10 +29,10 @@ def parse_args(args):
     return parser.parse_args(args)
 
 def size_formatter(coll_file):
-    return "{:>10}".format((coll_file.size() + 1023) / 1024)
+    return "{:>10}".format((coll_file.size + 1023) / 1024)
 
 def name_formatter(coll_file):
-    return "{}/{}".format(coll_file.stream_name(), coll_file.name)
+    return "{}/{}".format(coll_file.stream_name, coll_file.name)
 
 def main(args, stdout, stderr, api_client=None):
     args = parse_args(args)
@@ -40,7 +43,6 @@ def main(args, stdout, stderr, api_client=None):
     try:
         cr = arvados.CollectionReader(args.locator, api_client=api_client,
                                       num_retries=args.retries)
-        cr.normalize()
     except (arvados.errors.ArgumentError,
             arvados.errors.NotFoundError) as error:
         print("arv-ls: error fetching collection: {}".format(error),
@@ -52,7 +54,17 @@ def main(args, stdout, stderr, api_client=None):
         formatters.append(size_formatter)
     formatters.append(name_formatter)
 
-    for f in cr.all_files():
+    for f in files_in_collection(cr):
         print(*(info_func(f) for info_func in formatters), file=stdout)
 
     return 0
+
+def files_in_collection(c, stream_name='.'):
+    for i in sorted(c.keys()):
+        if isinstance(c[i], arvados.arvfile.ArvadosFile):
+            yield FileInfo(stream_name=stream_name,
+                           name=i,
+                           size=c[i].size())
+        elif isinstance(c[i], arvados.collection.Subcollection):
+            for f in files_in_collection(c[i], "{}/{}".format(stream_name, i)):
+                yield f
