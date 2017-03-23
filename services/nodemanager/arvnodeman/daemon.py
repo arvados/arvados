@@ -232,7 +232,7 @@ class NodeManagerDaemonActor(actor_class):
     def try_pairing(self):
         for record in self.cloud_nodes.unpaired():
             for arv_rec in self.arvados_nodes.unpaired():
-                if record.actor.offer_arvados_pair(arv_rec.arvados_node).get():
+                if record.actor is not None and record.actor.offer_arvados_pair(arv_rec.arvados_node).get():
                     self._pair_nodes(record, arv_rec.arvados_node)
                     break
 
