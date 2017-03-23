@@ -50,10 +50,6 @@ class ActiveSupport::TestCase
   include ArvadosTestSupport
   include CurrentApiClient
 
-  setup do
-    Rails.logger.warn "\n\n#{'=' * 70}\n#{self.class}\##{method_name}\n#{'-' * 70}\n\n"
-  end
-
   teardown do
     Thread.current[:api_client_ip_address] = nil
     Thread.current[:api_client_authorization] = nil
@@ -61,6 +57,7 @@ class ActiveSupport::TestCase
     Thread.current[:api_client] = nil
     Thread.current[:user] = nil
     restore_configuration
+    User.invalidate_permissions_cache
   end
 
   def assert_not_allowed
