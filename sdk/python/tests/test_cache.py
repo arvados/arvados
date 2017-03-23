@@ -1,7 +1,10 @@
+from __future__ import print_function
+
 import md5
 import mock
 import shutil
 import random
+import sys
 import tempfile
 import threading
 import unittest
@@ -22,13 +25,19 @@ class CacheTestThread(threading.Thread):
     def run(self):
         c = arvados.cache.SafeHTTPCache(self._dir)
         url = 'http://example.com/foo'
+        self.ok = True
         for x in range(16):
-            data_in = _random(128)
-            data_in = md5.new(data_in).hexdigest() + "\n" + str(data_in)
-            c.set(url, data_in)
-            data_out = c.get(url)
-            digest, content = data_out.split("\n", 1)
-            self.ok = (digest == md5.new(content).hexdigest())
+            try:
+                data_in = _random(128)
+                data_in = md5.new(data_in).hexdigest() + "\n" + str(data_in)
+                c.set(url, data_in)
+                data_out = c.get(url)
+                digest, content = data_out.split("\n", 1)
+                if digest != md5.new(content).hexdigest():
+                    self.ok = False
+            except Exception as err:
+                self.ok = False
+                print("cache failed: {}".format(err), file=sys.stderr)
 
 
 class CacheTest(unittest.TestCase):
