@@ -62,12 +62,13 @@ def unmount(path, timeout=10):
     path = os.path.realpath(path)
 
     was_mounted = False
-    t0 = time.time()
-    delay = 0
-    while True:
-        if timeout and t0 + timeout < time.time():
-            raise Exception("timed out")
+    attempted = False
+    if timeout is None:
+        deadline = None
+    else:
+        deadline = time.time() + timeout
 
+    while True:
         mounted = False
         for m in mountinfo():
             if m.is_fuse:
@@ -81,6 +82,14 @@ def unmount(path, timeout=10):
         if not mounted:
             return was_mounted
 
+        if attempted:
+            delay = 1
+            if deadline:
+                delay = min(delay, deadline - time.time())
+                if delay <= 0:
+                    raise Exception("timed out")
+            time.sleep(delay)
+
         try:
             with open('/sys/fs/fuse/connections/{}/abort'.format(m.minor),
                       'w') as f:
@@ -88,11 +97,9 @@ def unmount(path, timeout=10):
         except OSError as e:
             if e.errno != errno.ENOENT:
                 raise
+
+        attempted = True
         try:
             subprocess.check_call(["fusermount", "-u", "-z", path])
         except subprocess.CalledProcessError:
             pass
-
-        time.sleep(delay)
-        if delay == 0:
-            delay = 1
