@@ -71,6 +71,7 @@ func (s *Setup) Run() error {
 		}
 	}
 
+	checkStatus := map[string]string{}
 	wait := 2 * time.Second
 	for ok := false; s.Wait && !ok; time.Sleep(wait) {
 		cc, err := s.ConsulMaster()
@@ -90,7 +91,6 @@ func (s *Setup) Run() error {
 			}
 			continue
 		}
-		log.Printf("arvados-api service: %#v", apiSvcs)
 
 		ok = true
 		svcs, _, err := cc.Catalog().Services(nil)
@@ -106,10 +106,13 @@ func (s *Setup) Run() error {
 			}
 
 			for _, check := range checks {
+				if checkStatus[check.CheckID] != check.Status {
+					log.Printf("setup: node %q service %q check %q state %q", check.Node, check.ServiceName, check.CheckID, check.Status)
+				}
 				if check.Status != "passing" {
-					log.Printf("waiting for node %q service %q check %q state %q", check.Node, check.ServiceName, check.CheckID, check.Status)
 					ok = false
 				}
+				checkStatus[check.CheckID] = check.Status
 			}
 		}
 		if ok {
