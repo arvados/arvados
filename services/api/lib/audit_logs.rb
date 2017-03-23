@@ -15,7 +15,7 @@ module AuditLogs
       File.open(lockfile, File::RDWR|File::CREAT, 0600) do |f|
         return unless f.flock(File::LOCK_NB|File::LOCK_EX)
 
-        sql = "select clock_timestamp() - interval '#{max_age} seconds'"
+        sql = "select clock_timestamp() - interval '#{'%.9f' % max_age} seconds'"
         threshold = ActiveRecord::Base.connection.select_value(sql).to_time.utc
         Rails.logger.info "AuditLogs: deleting logs older than #{threshold}"
 
