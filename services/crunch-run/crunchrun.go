@@ -117,6 +117,9 @@ type ContainerRunner struct {
 	cStateLock sync.Mutex
 	cStarted   bool // StartContainer() succeeded
 	cCancelled bool // StopContainer() invoked
+
+	enableNetwork string // one of "default" or "always"
+	networkMode   string // passed through to HostConfig.NetworkMode
 }
 
 // SetupSignals sets up signal handling to gracefully terminate the underlying
@@ -658,6 +661,15 @@ func (runner *ContainerRunner) CreateContainer() error {
 	for k, v := range runner.Container.Environment {
 		runner.ContainerConfig.Env = append(runner.ContainerConfig.Env, k+"="+v)
 	}
+
+	runner.HostConfig = dockerclient.HostConfig{
+		Binds:        runner.Binds,
+		CgroupParent: runner.setCgroupParent,
+		LogConfig: dockerclient.LogConfig{
+			Type: "none",
+		},
+	}
+
 	if wantAPI := runner.Container.RuntimeConstraints.API; wantAPI != nil && *wantAPI {
 		tok, err := runner.ContainerToken()
 		if err != nil {
@@ -668,23 +680,19 @@ func (runner *ContainerRunner) CreateContainer() error {
 			"ARVADOS_API_HOST="+os.Getenv("ARVADOS_API_HOST"),
 			"ARVADOS_API_HOST_INSECURE="+os.Getenv("ARVADOS_API_HOST_INSECURE"),
 		)
-		runner.ContainerConfig.NetworkDisabled = false
+		runner.HostConfig.NetworkMode = runner.networkMode
 	} else {
-		runner.ContainerConfig.NetworkDisabled = true
+		if runner.enableNetwork == "always" {
+			runner.HostConfig.NetworkMode = runner.networkMode
+		} else {
+			runner.HostConfig.NetworkMode = "none"
+		}
 	}
 
 	var err error
 	runner.ContainerID, err = runner.Docker.CreateContainer(&runner.ContainerConfig, "", nil)
 	if err != nil {
 		return fmt.Errorf("While creating container: %v", err)
-	}
-
-	runner.HostConfig = dockerclient.HostConfig{
-		Binds:        runner.Binds,
-		CgroupParent: runner.setCgroupParent,
-		LogConfig: dockerclient.LogConfig{
-			Type: "none",
-		},
 	}
 
 	return runner.AttachStreams()
@@ -1149,6 +1157,14 @@ func main() {
 	cgroupParent := flag.String("cgroup-parent", "docker", "name of container's parent cgroup (ignored if -cgroup-parent-subsystem is used)")
 	cgroupParentSubsystem := flag.String("cgroup-parent-subsystem", "", "use current cgroup for given subsystem as parent cgroup for container")
 	caCertsPath := flag.String("ca-certs", "", "Path to TLS root certificates")
+	enableNetwork := flag.String("container-enable-networking", "default",
+		`Specify if networking should be enabled for container.  One of 'default', 'always':
+    	default: only enable networking if container requests it.
+    	always:  containers always have networking enabled
+    	`)
+	networkMode := flag.String("container-network-mode", "default",
+		`Set networking mode for container.  Corresponds to Docker network mode (--net).
+    	`)
 	flag.Parse()
 
 	containerId := flag.Arg(0)
@@ -1180,6 +1196,8 @@ func main() {
 	cr.statInterval = *statInterval
 	cr.cgroupRoot = *cgroupRoot
 	cr.expectCgroupParent = *cgroupParent
+	cr.enableNetwork = *enableNetwork
+	cr.networkMode = *networkMode
 	if *cgroupParentSubsystem != "" {
 		p := findCgroup(*cgroupParentSubsystem)
 		cr.setCgroupParent = p
