@@ -323,6 +323,8 @@ class LogTest < ActiveSupport::TestCase
     Log.unscoped.where('event_type in (?)', %w(create update destroy delete))
   end
 
+  # Default settings should not delete anything -- some sites rely on
+  # the original "keep everything forever" behavior.
   test 'retain old audit logs with default settings' do
     assert_no_logs_deleted do
       AuditLogs.delete_old(
@@ -331,20 +333,26 @@ class LogTest < ActiveSupport::TestCase
     end
   end
 
-  test 'retain old audit logs with batch=0' do
+  # Batch size 0 should retain all logs -- even if max_age is very
+  # short, and even if the default settings (and associated test) have
+  # changed.
+  test 'retain old audit logs with max_audit_log_delete_batch=0' do
     assert_no_logs_deleted do
       AuditLogs.delete_old(max_age: 1, max_batch: 0)
     end
   end
 
+  # We recommend a more conservative age of 5 minutes for production,
+  # but 3 minutes suits our test data better (and is test-worthy in
+  # that it's expected to work correctly in production).
   test 'delete old audit logs with production settings' do
     initial_log_count = Log.unscoped.all.count
     AuditLogs.delete_old(max_age: 180, max_batch: 100000)
     assert_operator remaining_audit_logs.count, :<, initial_log_count
   end
 
-  test 'delete old audit logs in multiple batches' do
-    AuditLogs.delete_old(max_age: 0, max_batch: 2)
+  test 'delete all audit logs in multiple batches' do
+    AuditLogs.delete_old(max_age: 0.00001, max_batch: 2)
     assert_equal [], remaining_audit_logs.collect(&:uuid)
   end
 

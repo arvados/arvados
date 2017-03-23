@@ -232,10 +232,12 @@ common:
   # crunchstat logs from the logs table.
   clean_container_log_rows_after: <%= 30.days %>
 
-  # Time to keep audit logs (a row in the log table added each time an
-  # Arvados object is created, modified, or deleted) in the PostgreSQL
-  # database. Currently, websocket event notifications rely on audit
-  # logs, so this should not be set lower than 600 (5 minutes).
+  # Time to keep audit logs, in seconds. (An audit log is a row added
+  # to the "logs" table in the PostgreSQL database each time an
+  # Arvados object is created, modified, or deleted.)
+  #
+  # Currently, websocket event notifications rely on audit logs, so
+  # this should not be set lower than 600 (5 minutes).
   max_audit_log_age: 1209600
 
   # Maximum number of log rows to delete in a single SQL transaction.
@@ -480,4 +482,3 @@ test:
   websocket_address: <% if ENV['ARVADOS_TEST_EXPERIMENTAL_WS'] %>"wss://0.0.0.0:<%= ENV['ARVADOS_TEST_WSS_PORT'] %>/websocket"<% else %>false<% end %>
   trash_sweep_interval: -1
   docker_image_formats: ["v1"]
-  max_audit_log_delete_batch: 0
