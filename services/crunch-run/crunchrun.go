@@ -1161,10 +1161,10 @@ func main() {
 		`Specify if networking should be enabled for container.  One of 'default', 'always':
     	default: only enable networking if container requests it.
     	always:  containers always have networking enabled
-        `)
+    	`)
 	networkMode := flag.String("container-network-mode", "default",
 		`Set networking mode for container.  Corresponds to Docker network mode (--net).
-        `)
+    	`)
 	flag.Parse()
 
 	containerId := flag.Arg(0)
