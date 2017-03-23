@@ -63,6 +63,7 @@ class CacheTest(unittest.TestCase):
             t.join()
             self.assertTrue(t.ok)
 
+
 class CacheIntegrationTest(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
 
