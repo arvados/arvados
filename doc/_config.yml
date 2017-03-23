@@ -151,6 +151,7 @@ navbar:
       - install/install-postgresql.html.textile.liquid
       - install/install-sso.html.textile.liquid
       - install/install-api-server.html.textile.liquid
+      - install/install-ws.html.textile.liquid
       - install/install-arv-git-httpd.html.textile.liquid
       - install/install-workbench-app.html.textile.liquid
       - install/install-shell-server.html.textile.liquid
