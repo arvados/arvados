@@ -1,4 +1,5 @@
 import md5
+import mock
 import shutil
 import random
 import tempfile
@@ -6,6 +7,7 @@ import threading
 import unittest
 
 import arvados.cache
+import run_test_server
 
 
 def _random(n):
@@ -60,3 +62,11 @@ class CacheTest(unittest.TestCase):
         for t in threads:
             t.join()
             self.assertTrue(t.ok)
+
+class CacheIntegrationTest(run_test_server.TestCaseWithServers):
+    MAIN_SERVER = {}
+
+    def test_cache_used_by_default_client(self):
+        with mock.patch('arvados.cache.SafeHTTPCache.get') as getter:
+            arvados.api('v1')._rootDesc.get('foobar')
+            getter.assert_called()
