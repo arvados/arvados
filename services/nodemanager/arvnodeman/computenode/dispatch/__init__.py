@@ -348,10 +348,6 @@ class ComputeNodeMonitorActor(config.actor_class):
         if self.arvados_node is None:
             return 'unpaired'
 
-        # This node is indicated as non-functioning by the cloud
-        if self._cloud.broken(self.cloud_node):
-            return 'down'
-
         state = self.arvados_node['crunch_worker_state']
 
         # If state information is not available because it is missing or the
