@@ -293,6 +293,21 @@ class CollectionsController < ApplicationController
     sharing_popup
   end
 
+  def remove_selected_files
+    uuids, source_paths = selected_collection_files params
+
+    arv_coll = Arv::Collection.new(@object.manifest_text)
+    source_paths[uuids[0]].each do |p|
+      arv_coll.rm "."+p
+    end
+
+    if @object.update_attributes manifest_text: arv_coll.manifest_text
+      show
+    else
+      self.render_error status: 422
+    end
+  end
+
   protected
 
   def find_usable_token(token_list)

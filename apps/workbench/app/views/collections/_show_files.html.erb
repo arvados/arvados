@@ -27,6 +27,13 @@
                     'data-selection-action' => 'combine-collections',
                     'data-toggle' => 'dropdown'
               %></li>
+            <li><%= link_to "Remove selected files", '#',
+                    method: :post,
+                    'data-href' => url_for(action: :remove_selected_files),
+                    'data-selection-param-name' => 'selection[]',
+                    'data-selection-action' => 'remove-selected-files',
+                    'data-toggle' => 'dropdown'
+              %></li>
           </ul>
         </div>
         <div class="btn-group btn-group-sm">
