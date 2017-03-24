@@ -1,6 +1,8 @@
 require "arvados/keep"
 
 class Collection < ArvadosBase
+  attr_accessor :filename
+
   MD5_EMPTY = 'd41d8cd98f00b204e9800998ecf8427e'
 
   def default_name
@@ -71,7 +73,7 @@ class Collection < ArvadosBase
   end
 
   def editable_attributes
-    %w(name description manifest_text)
+    %w(name description manifest_text filename)
   end
 
   def provenance

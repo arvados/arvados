@@ -99,9 +99,14 @@
                   <i class="fa fa-fw fa-trash-o"></i>
                 <% end %>
             <% end %>
-
         <% if CollectionsHelper::is_image(filename) %>
-            <i class="fa fa-fw fa-bar-chart-o"></i> <%= filename %></div>
+            <i class="fa fa-fw fa-bar-chart-o"></i>
+              <% if @object.editable? %>
+                <%= render_editable_attribute @object, 'filename', filename, {'data-value' => file_path, 'data-toggle' => 'manual', 'selection_path' => 'rename-file-path:'+file_path} %>
+              <% else %>
+                <%= filename %>
+              <% end %>
+            </div>
           <div class="collection_files_inline">
             <%= link_to(image_tag("#{url_for object}/#{file_path}"),
                         link_params.merge(disposition: 'inline'),
@@ -109,7 +114,12 @@
           </div>
          </div>
         <% else %>
-            <i class="fa fa-fw fa-file" href="<%=object.uuid%>/<%=file_path%>" ></i> <%= filename %></div>
+              <% if @object.editable? %>
+                <i class="fa fa-fw fa-file"></i><%= render_editable_attribute @object, 'filename', filename, {'data-value' => file_path, 'data-toggle' => 'manual', 'selection_path' => 'rename-file-path:'+file_path} %>
+              <% else %>
+                <i class="fa fa-fw fa-file" href="<%=object.uuid%>/<%=file_path%>" ></i> <%= filename %>
+              <% end %>
+            </div>
          </div>
         <% end %>
         </li>

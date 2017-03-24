@@ -274,10 +274,10 @@ module ApplicationHelper
       "data-placement" => "bottom",
       "data-type" => input_type,
       "data-title" => "Edit #{attr.to_s.gsub '_', ' '}",
-      "data-name" => attr,
+      "data-name" => htmloptions['selection_path'] || attr,
       "data-object-uuid" => object.uuid,
       "data-toggle" => "manual",
-      "data-value" => attrvalue,
+      "data-value" => htmloptions['data-value'] || attrvalue,
       "id" => span_id,
       :class => "editable #{is_textile?( object, attr ) ? 'editable-textile' : ''}"
     }.merge(htmloptions).merge(ajax_options)
