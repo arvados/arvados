@@ -1,22 +1,15 @@
-import arvados
-import arvados.safeapi
-import arvados_fuse as fuse
-import glob
 import json
 import llfuse
+import logging
+import mock
 import os
-import shutil
 import subprocess
-import sys
-import tempfile
-import threading
 import time
 import unittest
-import logging
-import multiprocessing
+
+import arvados
+import arvados_fuse as fuse
 import run_test_server
-import mock
-import re
 
 from mount_test_base import MountTestBase
 
