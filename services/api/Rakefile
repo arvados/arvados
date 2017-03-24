@@ -70,7 +70,6 @@ module Kernel
   alias_method :orig_backtick, :`
   def `(*args) #`#` sorry, parsers
     args[0].sub!(/\Apg_dump -i /, 'pg_dump ') rescue nil
-    STDERR.puts "`#{args.inspect}`"
     orig_backtick(*args)
   end
 end
