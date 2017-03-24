@@ -19,6 +19,7 @@ from arvados_cwl.pathmapper import ArvPathMapper
 def upload_mock(files, api, dry_run=False, num_retries=0, project=None, fnPattern="$(file %s/%s)", name=None):
     pdh = "99999999999999999999999999999991+99"
     for c in files:
+        c.keepref = "%s/%s" % (pdh, os.path.basename(c.fn))
         c.fn = fnPattern % (pdh, os.path.basename(c.fn))
 
 class TestPathmap(unittest.TestCase):

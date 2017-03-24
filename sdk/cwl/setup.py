@@ -52,7 +52,7 @@ setup(name='arvados-cwl-runner',
           'schema-salad==2.2.20170222151604',
           'typing==3.5.3.0',
           'ruamel.yaml==0.13.7',
-          'arvados-python-client>=0.1.20170112173420',
+          'arvados-python-client>=0.1.20170324133136',
           'setuptools'
       ],
       data_files=[
