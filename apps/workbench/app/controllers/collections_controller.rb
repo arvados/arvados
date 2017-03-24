@@ -308,6 +308,19 @@ class CollectionsController < ApplicationController
     end
   end
 
+  def rename_selected_file
+    arv_coll = Arv::Collection.new(@object.manifest_text)
+    source_paths[uuids[0]].each do |p|
+      arv_coll.rename "./"+params[:src], "./"+params[:dst]
+    end
+
+    if @object.update_attributes manifest_text: arv_coll.manifest_text
+      show
+    else
+      self.render_error status: 422
+    end
+  end
+
   protected
 
   def find_usable_token(token_list)
