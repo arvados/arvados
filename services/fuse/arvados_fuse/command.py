@@ -12,6 +12,7 @@ import time
 
 import arvados.commands._util as arv_cmd
 from arvados_fuse import *
+from arvados_fuse.unmount import unmount, unmount_all
 from arvados_fuse._version import __version__
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -345,20 +346,14 @@ From here, the following directories are available:
 
     def _run_standalone(self):
         try:
-            llfuse.init(self.operations, self.args.mountpoint, self._fuse_options())
-
-            if not self.args.foreground:
-                self.daemon_ctx = daemon.DaemonContext(
-                    working_directory=os.path.dirname(self.args.mountpoint),
-                    files_preserve=range(
-                        3, resource.getrlimit(resource.RLIMIT_NOFILE)[1]))
-                self.daemon_ctx.open()
-
-            # Subscribe to change events from API server
-            if self.listen_for_events and not self.args.disable_event_listening:
-                self.operations.listen_for_events()
-
-            self._llfuse_main()
+            with self:
+                if not self.args.foreground:
+                    self.daemon_ctx = daemon.DaemonContext(
+                        working_directory=os.path.dirname(self.args.mountpoint),
+                        files_preserve=range(
+                            3, resource.getrlimit(resource.RLIMIT_NOFILE)[1]))
+                    self.daemon_ctx.open()
+                self.llfuse_thread.join(timeout=None)
         except Exception as e:
             self.logger.exception('arv-mount: exception during mount: %s', e)
             exit(getattr(e, 'errno', 1))
