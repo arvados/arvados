@@ -52,12 +52,12 @@ class ArvPathMapper(PathMapper):
                     else:
                         raise WorkflowException("Input file path '%s' is invalid" % st)
             elif src.startswith("_:"):
-                if "contents" in srcobj:
-                    pass
-                else:
-                    raise WorkflowException("File literal '%s' is missing contents" % src)
+                if srcobj["class"] == "File" and "contents" not in srcobj:
+                    raise WorkflowException("File literal '%s' is missing `contents`" % src)
+                if srcobj["class"] == "Directory" and "listing" not in srcobj:
+                    raise WorkflowException("Directory literal '%s' is missing `listing`" % src)
             else:
-                self._pathmap[src] = MapperEnt(src, src, "File", True)
+                self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
 
         with SourceLine(srcobj, "secondaryFiles", WorkflowException):
             for l in srcobj.get("secondaryFiles", []):
