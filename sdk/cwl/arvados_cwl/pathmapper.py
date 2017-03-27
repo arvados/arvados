@@ -37,26 +37,27 @@ class ArvPathMapper(PathMapper):
             self._pathmap[src] = MapperEnt(src, self.collection_pattern % src[5:], srcobj["class"], True)
 
         if src not in self._pathmap:
-            # Local FS ref, may need to be uploaded or may be on keep
-            # mount.
-            ab = abspath(src, self.input_basedir)
-            st = arvados.commands.run.statfile("", ab,
-                                               fnPattern="keep:%s/%s",
-                                               dirPattern="keep:%s/%s")
-            with SourceLine(srcobj, "location", WorkflowException):
-                if isinstance(st, arvados.commands.run.UploadFile):
-                    uploadfiles.add((src, ab, st))
-                elif isinstance(st, arvados.commands.run.ArvFile):
-                    self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % st.fn[5:], "File", True)
-                elif src.startswith("_:"):
-                    if "contents" in srcobj:
-                        pass
+            if src.startswith("file:"):
+                # Local FS ref, may need to be uploaded or may be on keep
+                # mount.
+                ab = abspath(src, self.input_basedir)
+                st = arvados.commands.run.statfile("", ab,
+                                                   fnPattern="keep:%s/%s",
+                                                   dirPattern="keep:%s/%s")
+                with SourceLine(srcobj, "location", WorkflowException):
+                    if isinstance(st, arvados.commands.run.UploadFile):
+                        uploadfiles.add((src, ab, st))
+                    elif isinstance(st, arvados.commands.run.ArvFile):
+                        self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % st.fn[5:], "File", True)
                     else:
-                        raise WorkflowException("File literal '%s' is missing contents" % src)
-                elif src.startswith("arvwf:"):
-                    self._pathmap[src] = MapperEnt(src, src, "File", True)
+                        raise WorkflowException("Input file path '%s' is invalid" % st)
+            elif src.startswith("_:"):
+                if "contents" in srcobj:
+                    pass
                 else:
-                    raise WorkflowException("Input file path '%s' is invalid" % st)
+                    raise WorkflowException("File literal '%s' is missing contents" % src)
+            else:
+                self._pathmap[src] = MapperEnt(src, src, "File", True)
 
         with SourceLine(srcobj, "secondaryFiles", WorkflowException):
             for l in srcobj.get("secondaryFiles", []):
