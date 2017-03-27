@@ -298,4 +298,42 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     # Make sure we're not still on the old collection page.
     refute_match(%r{/collections/#{col['uuid']}}, page.current_url)
   end
+
+  test "remove selected collection files using checkboxes and dropdown option" do
+    visit page_with_token('active', '/collections/zzzzz-4zz18-a21ux3541sxa8sf')
+    assert(page.has_text?('file1'), 'file not found - file1')
+    assert(page.has_text?('file2'), 'file not found - file2')
+
+    # now in collection page
+    # remove first file from both subdirs
+    input_files = page.all('input[type=checkbox]')
+    input_files[0].click
+
+    click_button 'Selection...'
+    within('.selection-action-container') do
+      click_link 'Remove selected files'
+    end
+
+    # now in the newly created collection page
+    assert(page.has_no_text?('file1'), 'file not found - file')
+    assert(page.has_text?('file2'), 'file not found - file2')
+  end
+
+  test "remove a collection file using trash icon" do
+    need_selenium 'to confirm remove'
+
+    visit page_with_token('active', '/collections/zzzzz-4zz18-a21ux3541sxa8sf')
+    assert(page.has_text?('file1'), 'file not found - file1')
+    assert(page.has_text?('file2'), 'file not found - file2')
+
+    # now in collection page
+    first('.fa-trash-o').click
+    alert = page.driver.browser.switch_to.alert
+    alert.accept
+    wait_for_ajax
+
+    # now in the newly created collection page
+    assert(page.has_no_text?('file1'), 'file not found - file')
+    assert(page.has_text?('file2'), 'file not found - file2')
+  end
 end

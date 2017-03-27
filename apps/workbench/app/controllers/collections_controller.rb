@@ -334,7 +334,7 @@ class CollectionsController < ApplicationController
         self.render_error status: 422
       end
     else
-      # Non a file rename; use default
+      # Not a file rename; use default
       super
     end
   end
