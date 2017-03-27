@@ -3,7 +3,6 @@ import urlparse
 from functools import partial
 import logging
 import json
-import re
 import subprocess
 
 from StringIO import StringIO
@@ -29,8 +28,6 @@ from ._version import __version__
 from . import done
 
 logger = logging.getLogger('arvados.cwl-runner')
-
-cwltool.draft2tool.ACCEPTLIST_RE = re.compile(r".*")
 
 def trim_listing(obj):
     """Remove 'listing' field from Directory objects that are keep references.
