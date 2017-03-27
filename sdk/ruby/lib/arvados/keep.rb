@@ -35,7 +35,7 @@ module Keep
     def self.parse(tok)
       begin
         Locator.parse!(tok)
-      rescue ArgumentError => e
+      rescue ArgumentError
         nil
       end
     end
@@ -112,7 +112,7 @@ module Keep
         stream_name = nil
         block_tokens = []
         file_tokens = []
-        line.scan /\S+/ do |token|
+        line.scan(/\S+/) do |token|
           if stream_name.nil?
             stream_name = unescape token
           elsif file_tokens.empty? and Locator.valid? token
@@ -152,7 +152,7 @@ module Keep
       @text.each_line do |line|
         stream_name = nil
         in_file_tokens = false
-        line.scan /\S+/ do |token|
+        line.scan(/\S+/) do |token|
           if stream_name.nil?
             stream_name = unescape token
           elsif in_file_tokens or not Locator.valid? token
