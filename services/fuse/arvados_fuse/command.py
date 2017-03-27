@@ -105,6 +105,7 @@ class ArgumentParser(argparse.ArgumentParser):
 
 class Mount(object):
     def __init__(self, args, logger=logging.getLogger('arvados.arv-mount')):
+        self.daemon = False
         self.logger = logger
         self.args = args
         self.listen_for_events = False
@@ -125,6 +126,12 @@ class Mount(object):
         if self.args.replace:
             unmount(self.args.mountpoint, timeout=self.args.unmount_timeout)
         llfuse.init(self.operations, self.args.mountpoint, self._fuse_options())
+        if self.daemon:
+            daemon.DaemonContext(
+                working_directory=os.path.dirname(self.args.mountpoint),
+                files_preserve=range(
+                    3, resource.getrlimit(resource.RLIMIT_NOFILE)[1])
+            ).open()
         if self.listen_for_events and not self.args.disable_event_listening:
             self.operations.listen_for_events()
         self.llfuse_thread = threading.Thread(None, lambda: self._llfuse_main())
@@ -346,13 +353,8 @@ From here, the following directories are available:
 
     def _run_standalone(self):
         try:
+            self.daemon = not self.args.foreground
             with self:
-                if not self.args.foreground:
-                    self.daemon_ctx = daemon.DaemonContext(
-                        working_directory=os.path.dirname(self.args.mountpoint),
-                        files_preserve=range(
-                            3, resource.getrlimit(resource.RLIMIT_NOFILE)[1]))
-                    self.daemon_ctx.open()
                 self.llfuse_thread.join(timeout=None)
         except Exception as e:
             self.logger.exception('arv-mount: exception during mount: %s', e)
