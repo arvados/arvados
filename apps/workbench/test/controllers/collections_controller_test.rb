@@ -632,4 +632,108 @@ class CollectionsControllerTest < ActionController::TestCase
       assert_equal "https://download.example/c=#{id.sub '+', '-'}/_/w%20a%20z?api_token=#{tok}", @response.redirect_url
     end
   end
+
+  test "remove selected files from collection" do
+    use_token :active
+
+    # create a new collection to test; using existing collections will cause other tests to fail,
+    # and resetting fixtures after each test makes it take almost 4 times to run this test file.
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n./dir1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n"
+
+    collection = Collection.create(manifest_text: manifest_text)
+    assert_includes(manifest_text, "0:0:file1")
+
+    # now remove all files named 'file1' from the collection
+    post :remove_selected_files, {
+      id: collection['uuid'],
+      selection: ["#{collection['uuid']}/file1",
+                  "#{collection['uuid']}/dir1/file1"],
+      format: :json
+    }, session_for(:active)
+    assert_response :success
+
+    # verify no 'file1' in the updated collection
+    collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
+    manifest_text = collection['manifest_text']
+    assert_not_includes(manifest_text, "0:0:file1")
+    assert_includes(manifest_text, "0:0:file2") # but other files still exist
+  end
+
+  test "remove all files from a subdir of a collection" do
+    use_token :active
+
+    # create a new collection to test
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n./dir1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n"
+
+    collection = Collection.create(manifest_text: manifest_text)
+    assert_includes(manifest_text, "0:0:file1")
+
+    # now remove all files from "dir1" subdir of the collection
+    post :remove_selected_files, {
+      id: collection['uuid'],
+      selection: ["#{collection['uuid']}/dir1/file1",
+                  "#{collection['uuid']}/dir1/file2"],
+      format: :json
+    }, session_for(:active)
+    assert_response :success
+
+    # verify that "./dir1" no longer exists in this collection's manifest text
+    collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
+    manifest_text = collection['manifest_text']
+    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1 0:0:file2\n/, manifest_text
+  end
+
+  test "rename file in a collection" do
+    use_token :active
+
+    # create a new collection to test
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n./dir1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:dir1file1 0:0:dir1file2\n"
+
+    collection = Collection.create(manifest_text: manifest_text)
+    assert_includes(manifest_text, "0:0:file1")
+
+    # rename 'file1' as 'file1renamed' and verify
+    post :update, {
+      id: collection['uuid'],
+      collection: {
+        'rename-file-path:file1' => 'file1renamed'
+      },
+      format: :json
+    }, session_for(:active)
+    assert_response :success
+
+    collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
+    manifest_text = collection['manifest_text']
+    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed 0:0:file2\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2\n/, manifest_text
+
+    # now rename 'file2' such that it is moved into 'dir1'
+    @test_counter = 0
+    post :update, {
+      id: collection['uuid'],
+      collection: {
+        'rename-file-path:file2' => 'dir1/file2'
+      },
+      format: :json
+    }, session_for(:active)
+    assert_response :success
+
+    collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
+    manifest_text = collection['manifest_text']
+    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2 0:0:file2\n/, manifest_text
+
+    # now rename 'dir1/dir1file1' such that it is moved into a new subdir
+    @test_counter = 0
+    post :update, {
+      id: collection['uuid'],
+      collection: {
+        'rename-file-path:dir1/dir1file1' => 'dir2/dir3/dir1file1moved'
+      },
+      format: :json
+    }, session_for(:active)
+    assert_response :success
+
+    collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
+    manifest_text = collection['manifest_text']
+    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file2 0:0:file2\n.\/dir2\/dir3 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1moved\n/, manifest_text
+  end
 end

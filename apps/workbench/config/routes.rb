@@ -88,7 +88,6 @@ ArvadosWorkbench::Application.routes.draw do
     post 'unshare', :on => :member
     get 'choose', on: :collection
     post 'remove_selected_files', on: :member
-    post 'rename_selected_file', on: :member
   end
   get('/collections/download/:uuid/:reader_token/*file' => 'collections#show_file',
       format: false)

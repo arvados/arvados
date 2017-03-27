@@ -1,4 +1,5 @@
 require "arvados/keep"
+require "arvados/collection"
 require "uri"
 
 class CollectionsController < ApplicationController
@@ -299,19 +300,6 @@ class CollectionsController < ApplicationController
     arv_coll = Arv::Collection.new(@object.manifest_text)
     source_paths[uuids[0]].each do |p|
       arv_coll.rm "."+p
-    end
-
-    if @object.update_attributes manifest_text: arv_coll.manifest_text
-      show
-    else
-      self.render_error status: 422
-    end
-  end
-
-  def rename_selected_file
-    arv_coll = Arv::Collection.new(@object.manifest_text)
-    source_paths[uuids[0]].each do |p|
-      arv_coll.rename "./"+params[:src], "./"+params[:dst]
     end
 
     if @object.update_attributes manifest_text: arv_coll.manifest_text
