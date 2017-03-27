@@ -1,8 +1,14 @@
 ENV["RAILS_ENV"] = "test"
 unless ENV["NO_COVERAGE_TEST"]
   begin
-    require 'simplecov'
-    require 'simplecov-rcov'
+    verbose_orig = $VERBOSE
+    begin
+      $VERBOSE = nil
+      require 'simplecov'
+      require 'simplecov-rcov'
+    ensure
+      $VERBOSE = verbose_orig
+    end
     class SimpleCov::Formatter::MergedFormatter
       def format(result)
         SimpleCov::Formatter::HTMLFormatter.new.format(result)

@@ -3,11 +3,25 @@ require File.expand_path('../boot', __FILE__)
 require 'rails/all'
 require 'digest'
 
+module Kernel
+  def suppress_warnings
+    verbose_orig = $VERBOSE
+    begin
+      $VERBOSE = nil
+      yield
+    ensure
+      $VERBOSE = verbose_orig
+    end
+  end
+end
+
 if defined?(Bundler)
-  # If you precompile assets before deploying to production, use this line
-  Bundler.require(*Rails.groups(:assets => %w(development test)))
-  # If you want your assets lazily compiled in production, use this line
-  # Bundler.require(:default, :assets, Rails.env)
+  suppress_warnings do
+    # If you precompile assets before deploying to production, use this line
+    Bundler.require(*Rails.groups(:assets => %w(development test)))
+    # If you want your assets lazily compiled in production, use this line
+    # Bundler.require(:default, :assets, Rails.env)
+  end
 end
 
 module Server
