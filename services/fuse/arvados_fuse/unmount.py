@@ -26,25 +26,7 @@ def mountinfo():
     return mi
 
 
-def unmount_all(path, timeout=10):
-    if not path.endswith("/..."):
-        return unmount(path, timeout=timeout)
-    root = os.path.realpath(path[:-4])
-
-    paths = []
-    for m in mountinfo():
-        if m.path == root or m.path.startswith(root+"/"):
-            paths.append(m.path)
-            if not m.is_fuse:
-                raise Exception(
-                    "cannot unmount {}: non-fuse mountpoint {}".format(
-                        path, m))
-    for path in sorted(paths, key=len, reverse=True):
-        unmount(path, timeout=timeout)
-    return len(paths) > 0
-
-
-def unmount(path, timeout=10):
+def unmount(path, timeout=10, recursive=False):
     """Unmount the fuse mount at path.
 
     Unmounting is done by writing 1 to the "abort" control file in
@@ -60,6 +42,19 @@ def unmount(path, timeout=10):
     """
 
     path = os.path.realpath(path)
+
+    if recursive:
+        paths = []
+        for m in mountinfo():
+            if m.path == path or m.path.startswith(path+"/"):
+                paths.append(m.path)
+                if not m.is_fuse:
+                    raise Exception(
+                        "cannot unmount {}: non-fuse mountpoint {}".format(
+                            path, m))
+        for path in sorted(paths, key=len, reverse=True):
+            unmount(path, timeout=timeout, recursive=False)
+        return len(paths) > 0
 
     was_mounted = False
     attempted = False

@@ -12,7 +12,7 @@ import time
 
 import arvados.commands._util as arv_cmd
 from arvados_fuse import *
-from arvados_fuse.unmount import unmount, unmount_all
+from arvados_fuse.unmount import unmount
 from arvados_fuse._version import __version__
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -90,10 +90,13 @@ class ArgumentParser(argparse.ArgumentParser):
 
         self.add_argument('--crunchstat-interval', type=float, help="Write stats to stderr every N seconds (default disabled)", default=0)
 
-        self.add_argument('--unmount', action='store_true', default=False,
-                          help="Forcefully unmount the specified mountpoint (if it's a fuse mount) and exit. Use /path/... to unmount all fuse mounts below /path as well as /path itself.")
-        self.add_argument('--replace', action='store_true', default=False,
-                          help="If a fuse mount is already present at mountpoint, forcefully unmount it before mounting")
+        unmount = self.add_mutually_exclusive_group()
+        unmount.add_argument('--unmount', action='store_true', default=False,
+                             help="Forcefully unmount the specified mountpoint (if it's a fuse mount) and exit.")
+        unmount.add_argument('--unmount-all', action='store_true', default=False,
+                             help="Forcefully unmount every fuse mount at or below the specified mountpoint and exit.")
+        unmount.add_argument('--replace', action='store_true', default=False,
+                             help="If a fuse mount is already present at mountpoint, forcefully unmount it before mounting")
         self.add_argument('--unmount-timeout',
                           type=float, default=2.0,
                           help="Time to wait for graceful shutdown after --exec program exits and filesystem is unmounted")
@@ -124,7 +127,8 @@ class Mount(object):
 
     def __enter__(self):
         if self.args.replace:
-            unmount(self.args.mountpoint, timeout=self.args.unmount_timeout)
+            unmount(path=self.args.mountpoint,
+                    timeout=self.args.unmount_timeout)
         llfuse.init(self.operations, self.args.mountpoint, self._fuse_options())
         if self.daemon:
             daemon.DaemonContext(
@@ -152,8 +156,10 @@ class Mount(object):
                                 self.args.unmount_timeout)
 
     def run(self):
-        if self.args.unmount:
-            unmount_all(self.args.mountpoint, timeout=self.args.unmount_timeout)
+        if self.args.unmount or self.args.unmount_all:
+            unmount(path=self.args.mountpoint,
+                    timeout=self.args.unmount_timeout,
+                    recursive=self.args.unmount_all)
         elif self.args.exec_args:
             self._run_exec()
         else:
