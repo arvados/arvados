@@ -1,8 +1,6 @@
 require "arvados/keep"
 
 class Collection < ArvadosBase
-  attr_accessor :filename
-
   MD5_EMPTY = 'd41d8cd98f00b204e9800998ecf8427e'
 
   def default_name
