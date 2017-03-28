@@ -12,7 +12,9 @@ import time
 import subprocess
 import logging
 import sys
+import errno
 import arvados.commands._util as arv_cmd
+import arvados.collection
 
 from arvados._version import __version__
 
@@ -105,25 +107,41 @@ def determine_project(root, current_user):
 # original parameter string).
 def statfile(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)"):
     absfn = os.path.abspath(fn)
-    if os.path.exists(absfn):
+    try:
         st = os.stat(absfn)
-        if stat.S_ISREG(st.st_mode):
-            sp = os.path.split(absfn)
-            (pdh, branch) = is_in_collection(sp[0], sp[1])
-            if pdh:
+        sp = os.path.split(absfn)
+        (pdh, branch) = is_in_collection(sp[0], sp[1])
+        if pdh:
+            if stat.S_ISREG(st.st_mode):
                 return ArvFile(prefix, fnPattern % (pdh, branch))
-            else:
-                # trim leading '/' for path prefix test later
-                return UploadFile(prefix, absfn[1:])
-        if stat.S_ISDIR(st.st_mode):
-            sp = os.path.split(absfn)
-            (pdh, branch) = is_in_collection(sp[0], sp[1])
-            if pdh:
+            elif stat.S_ISDIR(st.st_mode):
                 return ArvFile(prefix, dirPattern % (pdh, branch))
+            else:
+                raise Exception("%s is not a regular file or directory" % absfn)
+        else:
+            # trim leading '/' for path prefix test later
+            return UploadFile(prefix, absfn[1:])
+    except OSError as e:
+        if e.errno == errno.ENOENT:
+            pass
+        else:
+            raise
 
     return prefix+fn
 
-def uploadfiles(files, api, dry_run=False, num_retries=0, project=None, fnPattern="$(file %s/%s)", name=None):
+def write_file(collection, pathprefix, fn):
+    with open(os.path.join(pathprefix, fn)) as src:
+        dst = collection.open(fn, "w")
+        r = src.read(1024*128)
+        while r:
+            dst.write(r)
+            r = src.read(1024*128)
+        dst.close(flush=False)
+
+def uploadfiles(files, api, dry_run=False, num_retries=0,
+                project=None,
+                fnPattern="$(file %s/%s)",
+                name=None):
     # Find the smallest path prefix that includes all the files that need to be uploaded.
     # This starts at the root and iteratively removes common parent directory prefixes
     # until all file paths no longer have a common parent.
@@ -152,9 +170,6 @@ def uploadfiles(files, api, dry_run=False, num_retries=0, project=None, fnPatter
             for c in files:
                 c.fn = c.fn[len(pathstep):]
 
-    orgdir = os.getcwd()
-    os.chdir(pathprefix)
-
     logger.info("Upload local files: \"%s\"", '" "'.join([c.fn for c in files]))
 
     if dry_run:
@@ -162,39 +177,44 @@ def uploadfiles(files, api, dry_run=False, num_retries=0, project=None, fnPatter
         pdh = "$(input)"
     else:
         files = sorted(files, key=lambda x: x.fn)
-        collection = arvados.CollectionWriter(api, num_retries=num_retries)
-        stream = None
+        collection = arvados.collection.Collection(api_client=api, num_retries=num_retries)
+        prev = ""
         for f in files:
-            sp = os.path.split(f.fn)
-            if sp[0] != stream:
-                stream = sp[0]
-                collection.start_new_stream(stream)
-            collection.write_file(f.fn, sp[1])
+            localpath = os.path.join(pathprefix, f.fn)
+            if prev and localpath.startswith(prev+"/"):
+                # If this path is inside an already uploaded subdirectory,
+                # don't redundantly re-upload it.
+                # e.g. we uploaded /tmp/foo and the next file is /tmp/foo/bar
+                # skip it because it starts with "/tmp/foo/"
+                continue
+            prev = localpath
+            if os.path.isfile(localpath):
+                write_file(collection, pathprefix, f.fn)
+            elif os.path.isdir(localpath):
+                for root, dirs, iterfiles in os.walk(localpath):
+                    root = root[len(pathprefix):]
+                    for src in iterfiles:
+                        write_file(collection, pathprefix, os.path.join(root, src))
 
         filters=[["portable_data_hash", "=", collection.portable_data_hash()],
                  ["name", "like", name+"%"]]
         if project:
             filters.append(["owner_uuid", "=", project])
 
-        exists = api.collections().list(filters=filters).execute(num_retries=num_retries)
+        exists = api.collections().list(filters=filters, limit=1).execute(num_retries=num_retries)
 
         if exists["items"]:
             item = exists["items"][0]
-            logger.info("Using collection %s", item["uuid"])
+            pdh = item["portable_data_hash"]
+            logger.info("Using collection %s (%s)", pdh, item["uuid"])
         else:
-            body = {"owner_uuid": project, "manifest_text": collection.manifest_text()}
-            if name is not None:
-                body["name"] = name
-            item = api.collections().create(body=body, ensure_unique_name=True).execute()
-            logger.info("Uploaded to %s", item["uuid"])
-
-        pdh = item["portable_data_hash"]
+            collection.save_new(name=name, owner_uuid=project, ensure_unique_name=True)
+            pdh = collection.portable_data_hash()
+            logger.info("Uploaded to %s (%s)", pdh, collection.manifest_locator())
 
     for c in files:
         c.keepref = "%s/%s" % (pdh, c.fn)
         c.fn = fnPattern % (pdh, c.fn)
-
-    os.chdir(orgdir)
 
 
 def main(arguments=None):

@@ -63,3 +63,13 @@ namespace :db do
     end
   end
 end
+
+# Work around Rails3+PostgreSQL9.5 incompatibility (pg_dump used to
+# accept -i as a no-op, but now it's not accepted at all).
+module Kernel
+  alias_method :orig_backtick, :`
+  def `(*args) #`#` sorry, parsers
+    args[0].sub!(/\Apg_dump -i /, 'pg_dump ') rescue nil
+    orig_backtick(*args)
+  end
+end
