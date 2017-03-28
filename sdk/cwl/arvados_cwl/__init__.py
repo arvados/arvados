@@ -38,7 +38,7 @@ from .pathmapper import NoFollowPathMapper
 from ._version import __version__
 
 from cwltool.pack import pack
-from cwltool.process import shortname, UnsupportedRequirement, getListing
+from cwltool.process import shortname, UnsupportedRequirement, getListing, use_custom_schema
 from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
 from cwltool.draft2tool import compute_checksums
 from arvados.api import OrderedJsonModel
@@ -629,17 +629,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     return parser
 
 def add_arv_hints():
-    cache = {}
     cwltool.draft2tool.ACCEPTLIST_EN_RELAXED_RE = re.compile(r".*")
     res = pkg_resources.resource_stream(__name__, 'arv-cwl-schema.yml')
-    cache["http://arvados.org/cwl"] = res.read()
+    use_custom_schema("v1.0", "http://arvados.org/cwl", res.read())
     res.close()
-    document_loader, cwlnames, _, _ = cwltool.process.get_schema("v1.0")
-    _, extnames, _, _ = schema_salad.schema.load_schema("http://arvados.org/cwl", cache=cache)
-    for n in extnames.names:
-        if not cwlnames.has_name("http://arvados.org/cwl#"+n, ""):
-            cwlnames.add_name("http://arvados.org/cwl#"+n, "", extnames.get_name(n, ""))
-        document_loader.idx["http://arvados.org/cwl#"+n] = {}
 
 def main(args, stdout, stderr, api_client=None, keep_client=None):
     parser = arg_parser()

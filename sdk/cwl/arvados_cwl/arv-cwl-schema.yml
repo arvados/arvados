@@ -1,7 +1,32 @@
 $base: "http://arvados.org/cwl#"
+$namespaces:
+  cwl: "https://w3id.org/cwl/cwl#"
+  cwltool: "http://commonwl.org/cwltool#"
 $graph:
+- $import: https://w3id.org/cwl/CommonWorkflowLanguage.yml
+
+- name: cwltool:LoadListingRequirement
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  fields:
+    class:
+      type: string
+      doc: "Always 'LoadListingRequirement'"
+      jsonldPredicate:
+        "_id": "@type"
+        "_type": "@vocab"
+    loadListing:
+      type:
+        - "null"
+        - type: enum
+          name: LoadListingEnum
+          symbols: [shallow, deep]
+
 - name: RunInSingleContainer
   type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
   doc: |
     Indicates that a subworkflow should run in a single container
     and not be scheduled as separate steps.
@@ -15,6 +40,8 @@ $graph:
 
 - name: OutputDirType
   type: enum
+  extends: cwl:ProcessRequirement
+  inVocab: false
   symbols:
     - local_output_dir
     - keep_output_dir
@@ -38,6 +65,8 @@ $graph:
 
 - name: RuntimeConstraints
   type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
   doc: |
     Set Arvados-specific runtime hints.
   fields:
@@ -62,6 +91,8 @@ $graph:
 
 - name: PartitionRequirement
   type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
   doc: |
     Select preferred compute partitions on which to run jobs.
   fields:
@@ -72,6 +103,8 @@ $graph:
 
 - name: APIRequirement
   type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
   doc: |
     Indicates that process wants to access to the Arvados API.  Will be granted
     limited network access and have ARVADOS_API_HOST and ARVADOS_API_TOKEN set
