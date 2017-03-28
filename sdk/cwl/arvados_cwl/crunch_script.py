@@ -19,7 +19,7 @@ import re
 import functools
 
 from arvados.api import OrderedJsonModel
-from cwltool.process import shortname, adjustFileObjs, adjustDirObjs, getListing, normalizeFilesDirs
+from cwltool.process import shortname, adjustFileObjs, adjustDirObjs, normalizeFilesDirs
 from cwltool.load_tool import load_tool
 from cwltool.errors import WorkflowException
 
@@ -64,7 +64,6 @@ def run():
         adjustFileObjs(job_order_object, keeppathObj)
         adjustDirObjs(job_order_object, keeppathObj)
         normalizeFilesDirs(job_order_object)
-        adjustDirObjs(job_order_object, functools.partial(getListing, arvados_cwl.fsaccess.CollectionFsAccess("", api_client=api)))
 
         output_name = None
         output_tags = None
