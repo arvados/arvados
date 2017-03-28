@@ -11,6 +11,7 @@ import threading
 import hashlib
 import copy
 import json
+import re
 from functools import partial
 import pkg_resources  # part of setuptools
 
@@ -629,6 +630,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
 def add_arv_hints():
     cache = {}
+    cwltool.draft2tool.ACCEPTLIST_EN_RELAXED_RE = re.compile(r".*")
     res = pkg_resources.resource_stream(__name__, 'arv-cwl-schema.yml')
     cache["http://arvados.org/cwl"] = res.read()
     res.close()
