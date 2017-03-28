@@ -177,9 +177,9 @@ GEM
       rack (>= 1.2, < 3)
     oj (2.18.5)
     oj_mimic_json (1.0.1)
-    omniauth (1.6.1)
-      hashie (>= 3.4.6, < 3.6.0)
-      rack (>= 1.6.2, < 3)
+    omniauth (1.4.2)
+      hashie (>= 1.2, < 4)
+      rack (>= 1.0, < 3)
     omniauth-oauth2 (1.4.0)
       oauth2 (~> 1.0)
       omniauth (~> 1.2)
@@ -295,7 +295,7 @@ DEPENDENCIES
   multi_json
   oj
   oj_mimic_json
-  omniauth (~> 1.1)
+  omniauth (~> 1.4.0)
   omniauth-oauth2 (~> 1.1)
   passenger
   pg
