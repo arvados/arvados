@@ -340,4 +340,21 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
     assert(page.has_text?('file1renamed'), 'file not found - file1renamed')
   end
+
+  test "remove/rename file options not presented if user cannot update a collection" do
+    # visit a publicly accessible collection as 'spectator'
+    visit page_with_token('spectator', '/collections/zzzzz-4zz18-uukreo9rbgwsujr')
+
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li', text: 'Create new collection with selected files'
+      assert_no_selector 'li', text: 'Remove selected files'
+    end
+
+    within('.collection_files') do
+      assert(page.has_text?('GNU_General_Public_License'), 'file not found - GNU_General_Public_License')
+      assert_nil first('.fa-pencil')
+      assert_nil first('.fa-trash-o')
+    end
+  end
 end

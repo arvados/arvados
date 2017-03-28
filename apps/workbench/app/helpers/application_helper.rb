@@ -274,7 +274,7 @@ module ApplicationHelper
       "data-placement" => "bottom",
       "data-type" => input_type,
       "data-title" => "Edit #{attr.to_s.gsub '_', ' '}",
-      "data-name" => htmloptions['selection_path'] || attr,
+      "data-name" => htmloptions['selection_name'] || attr,
       "data-object-uuid" => object.uuid,
       "data-toggle" => "manual",
       "data-value" => htmloptions['data-value'] || attrvalue,

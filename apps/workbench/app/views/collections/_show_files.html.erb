@@ -27,6 +27,7 @@
                     'data-selection-action' => 'combine-collections',
                     'data-toggle' => 'dropdown'
               %></li>
+            <% if @object.editable? %>
             <li><%= link_to "Remove selected files", '#',
                     method: :post,
                     'data-href' => url_for(action: :remove_selected_files),
@@ -34,6 +35,7 @@
                     'data-selection-action' => 'remove-selected-files',
                     'data-toggle' => 'dropdown'
               %></li>
+            <% end %>
           </ul>
         </div>
         <div class="btn-group btn-group-sm">
@@ -115,7 +117,7 @@
          </div>
         <% else %>
               <% if @object.editable? %>
-                <i class="fa fa-fw fa-file"></i><%= render_editable_attribute @object, 'filename', filename, {'data-value' => file_path, 'data-toggle' => 'manual', 'selection_path' => 'rename-file-path:'+file_path} %>
+                <i class="fa fa-fw fa-file"></i><%= render_editable_attribute @object, 'filename', filename, {'data-value' => file_path, 'data-toggle' => 'manual', 'selection_name' => 'rename-file-path:'+file_path} %>
               <% else %>
                 <i class="fa fa-fw fa-file" href="<%=object.uuid%>/<%=file_path%>" ></i> <%= filename %>
               <% end %>
