@@ -152,6 +152,8 @@ class CollectionFetcher(DefaultFetcher):
 
     def check_exists(self, url):
         try:
+            if url.startswith("http://arvados.org/cwl"):
+                return True
             if url.startswith("keep:"):
                 return self.fsaccess.exists(url)
             if url.startswith("arvwf:"):
