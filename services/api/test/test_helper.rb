@@ -66,6 +66,14 @@ class ActiveSupport::TestCase
     User.invalidate_permissions_cache
   end
 
+  def assert_equal(expect, *args)
+    if expect.nil?
+      assert_nil(*args)
+    else
+      super
+    end
+  end
+
   def assert_not_allowed
     # Provide a block that calls a Rails boolean "true or false" success value,
     # like model.save or model.destroy.  This method will test that it either
