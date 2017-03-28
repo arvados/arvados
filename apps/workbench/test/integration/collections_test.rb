@@ -299,13 +299,11 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     refute_match(%r{/collections/#{col['uuid']}}, page.current_url)
   end
 
-  test "remove selected collection files using checkboxes and dropdown option" do
+  test "remove a file from collection using checkbox and dropdown option" do
     visit page_with_token('active', '/collections/zzzzz-4zz18-a21ux3541sxa8sf')
     assert(page.has_text?('file1'), 'file not found - file1')
-    assert(page.has_text?('file2'), 'file not found - file2')
 
-    # now in collection page
-    # remove first file from both subdirs
+    # remove first file
     input_files = page.all('input[type=checkbox]')
     input_files[0].click
 
@@ -314,26 +312,32 @@ class CollectionsTest < ActionDispatch::IntegrationTest
       click_link 'Remove selected files'
     end
 
-    # now in the newly created collection page
-    assert(page.has_no_text?('file1'), 'file not found - file')
+    assert(page.has_no_text?('file1'), 'file found - file')
     assert(page.has_text?('file2'), 'file not found - file2')
   end
 
-  test "remove a collection file using trash icon" do
+  test "remove a file in collection using trash icon" do
     need_selenium 'to confirm remove'
 
     visit page_with_token('active', '/collections/zzzzz-4zz18-a21ux3541sxa8sf')
     assert(page.has_text?('file1'), 'file not found - file1')
-    assert(page.has_text?('file2'), 'file not found - file2')
 
-    # now in collection page
     first('.fa-trash-o').click
-    alert = page.driver.browser.switch_to.alert
-    alert.accept
-    wait_for_ajax
+    page.driver.browser.switch_to.alert.accept
 
-    # now in the newly created collection page
-    assert(page.has_no_text?('file1'), 'file not found - file')
+    assert(page.has_no_text?('file1'), 'file found - file')
     assert(page.has_text?('file2'), 'file not found - file2')
+  end
+
+  test "rename a file in collection" do
+    visit page_with_token('active', '/collections/zzzzz-4zz18-a21ux3541sxa8sf')
+
+    within('.collection_files') do
+      first('.fa-pencil').click
+      find('.editable-input input').set('file1renamed')
+      find('.editable-submit').click
+    end
+
+    assert(page.has_text?('file1renamed'), 'file not found - file1renamed')
   end
 end
