@@ -17,14 +17,14 @@ class UnmountTest(IntegrationTest):
 
     def test_replace(self):
         subprocess.check_call(
-            ['arv-mount', '--subtype', 'test', '--replace',
+            ['./bin/arv-mount', '--subtype', 'test', '--replace',
              self.mnt])
         subprocess.check_call(
-            ['arv-mount', '--subtype', 'test', '--replace',
+            ['./bin/arv-mount', '--subtype', 'test', '--replace',
              '--unmount-timeout', '10',
              self.mnt])
         subprocess.check_call(
-            ['arv-mount', '--subtype', 'test', '--replace',
+            ['./bin/arv-mount', '--subtype', 'test', '--replace',
              '--unmount-timeout', '10',
              self.mnt,
              '--exec', 'true'])
@@ -46,7 +46,7 @@ class UnmountTest(IntegrationTest):
             mnt = self.tmp+'/'+d
             mounts.append(mnt)
             subprocess.check_call(
-                ['arv-mount', '--subtype', 'test', mnt])
+                ['./bin/arv-mount', '--subtype', 'test', mnt])
 
         # Wait for mounts to attach
         deadline = time.time() + 10
@@ -55,7 +55,7 @@ class UnmountTest(IntegrationTest):
             self.assertLess(time.time(), deadline)
 
         self.assertEqual(mounts, self._mounted(mounts))
-        subprocess.check_call(['arv-mount', '--unmount', self.tmp])
+        subprocess.check_call(['./bin/arv-mount', '--unmount', self.tmp])
         self.assertEqual(mounts, self._mounted(mounts))
-        subprocess.check_call(['arv-mount', '--unmount-all', self.tmp])
+        subprocess.check_call(['./bin/arv-mount', '--unmount-all', self.tmp])
         self.assertEqual([], self._mounted(mounts))
