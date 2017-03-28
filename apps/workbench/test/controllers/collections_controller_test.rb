@@ -506,7 +506,7 @@ class CollectionsControllerTest < ActionController::TestCase
     collection = api_fixture('collections')['foo_file']
     get :show, {id: collection['uuid']}, session_for(:active)
     assert_includes @response.body, collection['name']
-    assert_match /href="#{collection['uuid']}\/foo" ><\/i> foo</, @response.body
+    assert_match /not authorized to manage collection sharing links/, @response.body
   end
 
   test "No Upload tab on non-writable collection" do
