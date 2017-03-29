@@ -638,7 +638,8 @@ def add_arv_hints():
         "http://arvados.org/cwl#OutputDirType",
         "http://arvados.org/cwl#RuntimeConstraints",
         "http://arvados.org/cwl#PartitionRequirement",
-        "http://arvados.org/cwl#APIRequirement"
+        "http://arvados.org/cwl#APIRequirement",
+        "http://commonwl.org/cwltool#LoadListingRequirement"
     ])
 
 
@@ -722,4 +723,5 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
                                                          keep_client=keep_client,
                                                          num_retries=runner.num_retries),
                              resolver=partial(collectionResolver, api_client, num_retries=runner.num_retries),
-                             logger_handler=arvados.log_handler)
+                             logger_handler=arvados.log_handler,
+                             custom_schema_callback=add_arv_hints)
