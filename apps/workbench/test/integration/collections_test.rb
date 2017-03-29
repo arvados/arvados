@@ -298,4 +298,63 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     # Make sure we're not still on the old collection page.
     refute_match(%r{/collections/#{col['uuid']}}, page.current_url)
   end
+
+  test "remove a file from collection using checkbox and dropdown option" do
+    visit page_with_token('active', '/collections/zzzzz-4zz18-a21ux3541sxa8sf')
+    assert(page.has_text?('file1'), 'file not found - file1')
+
+    # remove first file
+    input_files = page.all('input[type=checkbox]')
+    input_files[0].click
+
+    click_button 'Selection...'
+    within('.selection-action-container') do
+      click_link 'Remove selected files'
+    end
+
+    assert(page.has_no_text?('file1'), 'file found - file')
+    assert(page.has_text?('file2'), 'file not found - file2')
+  end
+
+  test "remove a file in collection using trash icon" do
+    need_selenium 'to confirm remove'
+
+    visit page_with_token('active', '/collections/zzzzz-4zz18-a21ux3541sxa8sf')
+    assert(page.has_text?('file1'), 'file not found - file1')
+
+    first('.fa-trash-o').click
+    page.driver.browser.switch_to.alert.accept
+
+    assert(page.has_no_text?('file1'), 'file found - file')
+    assert(page.has_text?('file2'), 'file not found - file2')
+  end
+
+  test "rename a file in collection" do
+    visit page_with_token('active', '/collections/zzzzz-4zz18-a21ux3541sxa8sf')
+
+    within('.collection_files') do
+      first('.fa-pencil').click
+      find('.editable-input input').set('file1renamed')
+      find('.editable-submit').click
+    end
+
+    assert(page.has_text?('file1renamed'), 'file not found - file1renamed')
+  end
+
+  test "remove/rename file options not presented if user cannot update a collection" do
+    # visit a publicly accessible collection as 'spectator'
+    visit page_with_token('spectator', '/collections/zzzzz-4zz18-uukreo9rbgwsujr')
+
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li', text: 'Create new collection with selected files'
+      assert_no_selector 'li', text: 'Remove selected files'
+    end
+
+    within('.collection_files') do
+      assert(page.has_text?('GNU_General_Public_License'), 'file not found - GNU_General_Public_License')
+      assert_nil first('.fa-pencil')
+      assert_nil first('.fa-trash-o')
+    end
+  end
 end

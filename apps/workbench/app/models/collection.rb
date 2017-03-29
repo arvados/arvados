@@ -71,7 +71,7 @@ class Collection < ArvadosBase
   end
 
   def editable_attributes
-    %w(name description manifest_text)
+    %w(name description manifest_text filename)
   end
 
   def provenance

@@ -1,4 +1,5 @@
 require "arvados/keep"
+require "arvados/collection"
 require "uri"
 
 class CollectionsController < ApplicationController
@@ -291,6 +292,51 @@ class CollectionsController < ApplicationController
       s.destroy
     end
     sharing_popup
+  end
+
+  def remove_selected_files
+    uuids, source_paths = selected_collection_files params
+
+    arv_coll = Arv::Collection.new(@object.manifest_text)
+    source_paths[uuids[0]].each do |p|
+      arv_coll.rm "."+p
+    end
+
+    if @object.update_attributes manifest_text: arv_coll.manifest_text
+      show
+    else
+      self.render_error status: 422
+    end
+  end
+
+  def update
+    updated_attr = params[:collection].each.select {|a| a[0].andand.start_with? 'rename-file-path:'}
+
+    if updated_attr.size > 0
+      # Is it file rename?
+      file_path = updated_attr[0][0].split('rename-file-path:')[-1]
+
+      new_file_path = updated_attr[0][1]
+      if new_file_path.start_with?('./')
+        # looks good
+      elsif new_file_path.start_with?('/')
+        new_file_path = '.' + new_file_path
+      else
+        new_file_path = './' + new_file_path
+      end
+
+      arv_coll = Arv::Collection.new(@object.manifest_text)
+      arv_coll.rename "./"+file_path, new_file_path
+
+      if @object.update_attributes manifest_text: arv_coll.manifest_text
+        show
+      else
+        self.render_error status: 422
+      end
+    else
+      # Not a file rename; use default
+      super
+    end
   end
 
   protected
