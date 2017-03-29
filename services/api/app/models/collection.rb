@@ -163,7 +163,7 @@ class Collection < ArvadosModel
       false
     elsif portable_data_hash[0..31] != computed_pdh[0..31]
       errors.add(:portable_data_hash,
-                 "does not match computed hash #{computed_pdh}")
+                 "'#{portable_data_hash}' does not match computed hash '#{computed_pdh}'")
       false
     else
       # Ignore the client-provided size part: always store
