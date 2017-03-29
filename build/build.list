@@ -16,7 +16,7 @@ debian8,ubuntu1204,ubuntu1404,ubuntu1604|backports.ssl_match_hostname|3.5.0.1|2|
 debian8,ubuntu1204,ubuntu1404,centos7|llfuse|0.41.1|3|python|amd64
 debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|pycurl|7.19.5.3|3|python|amd64
 debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|pyyaml|3.12|2|python|amd64
-debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|rdflib|4.2.1|2|python|all
+debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|rdflib|4.2.2|2|python|all
 debian8,ubuntu1204,ubuntu1404,centos7|shellescape|3.4.1|2|python|all
 debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|mistune|0.7.3|2|python|all
 debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|typing|3.5.3.0|2|python|all
@@ -34,8 +34,6 @@ ubuntu1204,centos7|isodate|0.5.4|2|python|all
 centos7|daemon|2.1.1|2|python|all
 centos7|pbr|0.11.1|2|python|all
 centos7|pyparsing|2.1.10|2|python|all
-centos7|sparqlwrapper|1.8.0|2|python|all
-centos7|html5lib|0.9999999|2|python|all
 centos7|keepalive|0.5|2|python|all
 debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|lockfile|0.12.2|2|python|all|--epoch 1
 all|ruamel.yaml|0.13.7|2|python|amd64|--python-setup-py-arguments --single-version-externally-managed
