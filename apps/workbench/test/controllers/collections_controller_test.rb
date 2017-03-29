@@ -641,7 +641,7 @@ class CollectionsControllerTest < ActionController::TestCase
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n./dir1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n"
 
     collection = Collection.create(manifest_text: manifest_text)
-    assert_includes(manifest_text, "0:0:file1")
+    assert_includes(collection['manifest_text'], "0:0:file1")
 
     # now remove all files named 'file1' from the collection
     post :remove_selected_files, {
@@ -654,9 +654,8 @@ class CollectionsControllerTest < ActionController::TestCase
 
     # verify no 'file1' in the updated collection
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
-    manifest_text = collection['manifest_text']
-    assert_not_includes(manifest_text, "0:0:file1")
-    assert_includes(manifest_text, "0:0:file2") # but other files still exist
+    assert_not_includes(collection['manifest_text'], "0:0:file1")
+    assert_includes(collection['manifest_text'], "0:0:file2") # but other files still exist
   end
 
   test "remove all files from a subdir of a collection" do
@@ -666,7 +665,7 @@ class CollectionsControllerTest < ActionController::TestCase
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n./dir1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n"
 
     collection = Collection.create(manifest_text: manifest_text)
-    assert_includes(manifest_text, "0:0:file1")
+    assert_includes(collection['manifest_text'], "0:0:file1")
 
     # now remove all files from "dir1" subdir of the collection
     post :remove_selected_files, {
@@ -679,8 +678,8 @@ class CollectionsControllerTest < ActionController::TestCase
 
     # verify that "./dir1" no longer exists in this collection's manifest text
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
-    manifest_text = collection['manifest_text']
-    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1 0:0:file2\n/, manifest_text
+    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1 0:0:file2\n$/, collection['manifest_text']
+    assert_not_includes(collection['manifest_text'], 'dir1')
   end
 
   test "rename file in a collection" do
@@ -690,7 +689,7 @@ class CollectionsControllerTest < ActionController::TestCase
     manifest_text = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n./dir1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:dir1file1 0:0:dir1file2\n"
 
     collection = Collection.create(manifest_text: manifest_text)
-    assert_includes(manifest_text, "0:0:file1")
+    assert_includes(collection['manifest_text'], "0:0:file1")
 
     # rename 'file1' as 'file1renamed' and verify
     post :update, {
@@ -703,8 +702,7 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_response :success
 
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
-    manifest_text = collection['manifest_text']
-    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed 0:0:file2\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2\n/, manifest_text
+    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed 0:0:file2\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2\n$/, collection['manifest_text']
 
     # now rename 'file2' such that it is moved into 'dir1'
     @test_counter = 0
@@ -718,8 +716,7 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_response :success
 
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
-    manifest_text = collection['manifest_text']
-    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2 0:0:file2\n/, manifest_text
+    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2 0:0:file2\n$/, collection['manifest_text']
 
     # now rename 'dir1/dir1file1' such that it is moved into a new subdir
     @test_counter = 0
@@ -733,7 +730,6 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_response :success
 
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
-    manifest_text = collection['manifest_text']
-    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file2 0:0:file2\n.\/dir2\/dir3 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1moved\n/, manifest_text
+    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file2 0:0:file2\n.\/dir2\/dir3 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1moved\n$/, collection['manifest_text']
   end
 end
