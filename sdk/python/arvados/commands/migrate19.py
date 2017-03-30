@@ -125,17 +125,19 @@ def main(arguments=None):
     uuid_to_collection = {i["uuid"]: i for i in items}
 
     need_migrate = {}
+    totalbytes = 0
     biggest = 0
     biggest_pdh = None
     for img in old_images:
         i = uuid_to_collection[img["collection"]]
         pdh = i["portable_data_hash"]
-        if pdh not in already_migrated and (only_migrate is None or pdh in only_migrate):
+        if pdh not in already_migrated and pdh not in need_migrate and (only_migrate is None or pdh in only_migrate):
             need_migrate[pdh] = img
             with CollectionReader(i["manifest_text"]) as c:
                 if c.values()[0].size() > biggest:
                     biggest = c.values()[0].size()
                     biggest_pdh = pdh
+                totalbytes += c.values()[0].size()
 
 
     if args.storage_driver == "vfs":
@@ -153,6 +155,7 @@ def main(arguments=None):
     logger.info("Need to migrate %i images", len(need_migrate))
     logger.info("Using tempdir %s", tempfile.gettempdir())
     logger.info("Biggest image %s is about %i MiB", biggest_pdh, biggest/(2**20))
+    logger.info("Total data to migrate about %i MiB", totalbytes/(2**20))
 
     df_out = subprocess.check_output(["df", "-B1", tempfile.gettempdir()])
     ln = df_out.splitlines()[1]
