@@ -527,14 +527,16 @@ class Collection < ArvadosModel
       errors.add :delete_at, "must be set if trash_at is set, and must be nil otherwise"
     end
 
-    earliest_delete = ([@validation_timestamp, trash_at_was].compact.min +
-                       Rails.configuration.blob_signature_ttl.seconds)
-    if delete_at && delete_at < earliest_delete
-      errors.add :delete_at, "#{delete_at} is too soon: earliest allowed is #{earliest_delete}"
-    end
-
-    if delete_at && delete_at < trash_at
-      errors.add :delete_at, "must not be earlier than trash_at"
+    if delete_at
+      if delete_at < trash_at
+        errors.add :delete_at, "must not be earlier than trash_at"
+      else
+        earliest_delete = ([@validation_timestamp, trash_at_was].compact.min +
+                           Rails.configuration.blob_signature_ttl.seconds)
+        if delete_at < earliest_delete
+          self.delete_at = earliest_delete
+        end
+      end
     end
 
     true

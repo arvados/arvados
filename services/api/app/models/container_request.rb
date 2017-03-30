@@ -102,18 +102,12 @@ class ContainerRequest < ArvadosModel
       next if pdh.nil?
       coll_name = "Container #{out_type} for request #{uuid}"
       trash_at = nil
-      delete_at = nil
       if out_type == 'output'
         if self.output_name
           coll_name = self.output_name
         end
         if self.output_ttl > 0
           trash_at = db_current_time + self.output_ttl
-          # delete_at cannot be sooner than blob_signature_ttl, even
-          # after the delay between now and the collection validation.
-          delete_at = db_current_time +
-                      [self.output_ttl,
-                       Rails.configuration.blob_signature_ttl + 60].max
         end
       end
       manifest = Collection.unscoped do
@@ -125,7 +119,7 @@ class ContainerRequest < ArvadosModel
                             portable_data_hash: pdh,
                             name: coll_name,
                             trash_at: trash_at,
-                            delete_at: delete_at,
+                            delete_at: trash_at,
                             properties: {
                               'type' => out_type,
                               'container_request' => uuid,

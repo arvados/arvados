@@ -627,15 +627,15 @@ class ContainerRequestTest < ActiveSupport::TestCase
     assert_not_nil(trash)
     assert_not_nil(delete)
     assert_in_delta(trash, now + 1.second, 10)
-    assert_in_delta(delete, now + Rails.configuration.blob_signature_ttl.second, 120)
+    assert_in_delta(delete, now + Rails.configuration.blob_signature_ttl.second, 10)
   end
 
   def check_output_ttl_1y(now, trash, delete)
     year = (86400*365).second
     assert_not_nil(trash)
     assert_not_nil(delete)
-    assert_in_delta(trash, now + year, 20)
-    assert_in_delta(delete, now + year, 20)
+    assert_in_delta(trash, now + year, 10)
+    assert_in_delta(delete, now + year, 10)
   end
 
   def run_container(cr)
