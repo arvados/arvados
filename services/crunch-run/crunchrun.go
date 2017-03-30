@@ -743,7 +743,7 @@ func (runner *ContainerRunner) CreateContainer() error {
 		}
 	}
 
-	createdBody, err := runner.Docker.ContainerCreate(context.TODO(), &runner.ContainerConfig, nil, nil, "")
+	createdBody, err := runner.Docker.ContainerCreate(context.TODO(), &runner.ContainerConfig, &runner.HostConfig, nil, runner.Container.UUID)
 	if err != nil {
 		return fmt.Errorf("While creating container: %v", err)
 	}
