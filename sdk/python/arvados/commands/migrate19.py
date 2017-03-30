@@ -186,10 +186,10 @@ def main(arguments=None):
         dockercache = tempfile.mkdtemp()
         try:
             with tempfile.NamedTemporaryFile() as envfile:
-                envfile.write("ARVADOS_API_HOST=%s\n" % (os.environ["ARVADOS_API_HOST"]))
-                envfile.write("ARVADOS_API_TOKEN=%s\n" % (os.environ["ARVADOS_API_TOKEN"]))
-                if "ARVADOS_API_HOST_INSECURE" in os.environ:
-                    envfile.write("ARVADOS_API_HOST_INSECURE=%s\n" % (os.environ["ARVADOS_API_HOST_INSECURE"]))
+                envfile.write("ARVADOS_API_HOST=%s\n" % (arvados.config.get("ARVADOS_API_HOST")))
+                envfile.write("ARVADOS_API_TOKEN=%s\n" % (arvados.config.get("ARVADOS_API_TOKEN")))
+                if arvados.config.get("ARVADOS_API_HOST_INSECURE"):
+                    envfile.write("ARVADOS_API_HOST_INSECURE=%s\n" % (arvados.config.get("ARVADOS_API_HOST_INSECURE")))
                 envfile.flush()
 
                 dockercmd = ["docker", "run",
@@ -218,7 +218,7 @@ def main(arguments=None):
 
                 if initial_space:
                     isp = int(initial_space.group(1))
-                    logger.debug("Available space initially: %i MiB", (isp)/(2**20))
+                    logger.info("Available space initially: %i MiB", (isp)/(2**20))
                     if imgload_space:
                         sp = int(imgload_space.group(1))
                         logger.debug("Used after load: %i MiB", (isp-sp)/(2**20))
@@ -227,11 +227,11 @@ def main(arguments=None):
                         logger.debug("Used after upgrade: %i MiB", (isp-sp)/(2**20))
                     if keepdocker_space:
                         sp = int(keepdocker_space.group(1))
-                        logger.debug("Used after upload: %i MiB", (isp-sp)/(2**20))
+                        logger.info("Used after upload: %i MiB", (isp-sp)/(2**20))
 
                 if cleanup_space:
                     sp = int(cleanup_space.group(1))
-                    logger.info("Available after cleanup: %i MiB", (sp)/(2**20))
+                    logger.debug("Available after cleanup: %i MiB", (sp)/(2**20))
 
                 if proc.returncode != 0:
                     logger.error("Failed with return code %i", proc.returncode)
