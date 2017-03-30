@@ -11,6 +11,7 @@ import sys
 import time
 
 import arvados.commands._util as arv_cmd
+from arvados_fuse import crunchstat
 from arvados_fuse import *
 from arvados_fuse.unmount import unmount
 from arvados_fuse._version import __version__
