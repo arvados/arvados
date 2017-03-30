@@ -60,7 +60,11 @@ def main(args, stdout, stderr, api_client=None):
     return 0
 
 def files_in_collection(c, stream_name='.'):
-    for i in sorted(c.keys(), key=lambda k: k.upper()):
+    # Sort first by file type, then alphabetically by file path.
+    for i in sorted(c.keys(),
+                    key=lambda k: (
+                        isinstance(c[k], arvados.collection.Subcollection),
+                        k.upper())):
         if isinstance(c[i], arvados.arvfile.ArvadosFile):
             yield FileInfo(stream_name=stream_name,
                            name=i,
