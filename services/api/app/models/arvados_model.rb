@@ -386,36 +386,31 @@ class ArvadosModel < ActiveRecord::Base
       raise PermissionDeniedError
     end
 
-    # Verify "write" permission on old owner
-    # default fail unless one of:
-    # owner_uuid did not change
-    # previous owner_uuid is nil
-    # current user is the old owner
-    # current user is this object
-    # current user can_write old owner
-    unless !owner_uuid_changed? or
-        owner_uuid_was.nil? or
-        current_user.uuid == self.owner_uuid_was or
-        current_user.uuid == self.uuid or
-        current_user.can? write: self.owner_uuid_was
-      logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{uuid} but does not have permission to write old owner_uuid #{owner_uuid_was}"
-      errors.add :owner_uuid, "cannot be changed without write permission on old owner"
-      raise PermissionDeniedError
-    end
-
-    # Verify "write" permission on new owner
-    # default fail unless one of:
-    # current_user is this object
-    # current user can_write new owner, or this object if owner unchanged
-    if new_record? or owner_uuid_changed? or is_a?(ApiClientAuthorization)
-      write_target = owner_uuid
+    if new_record? || owner_uuid_changed?
+      # Permission on owner_uuid_was is needed to move an existing
+      # object away from its previous owner (which implies permission
+      # to modify this object itself, so we don't need to check that
+      # separately). Permission on the new owner_uuid is also needed.
+      [['old', owner_uuid_was],
+       ['new', owner_uuid]
+      ].each do |which, check_uuid|
+        if check_uuid.nil?
+          # old_owner_uuid is nil? New record, no need to check.
+        elsif !current_user.can?(write: check_uuid)
+          logger.warn "User #{current_user.uuid} tried to set ownership of #{self.class.to_s} #{self.uuid} but does not have permission to write #{which} owner_uuid #{check_uuid}"
+          errors.add :owner_uuid, "cannot be set or changed without write permission on #{which} owner"
+          raise PermissionDeniedError
+        end
+      end
     else
-      write_target = uuid
-    end
-    unless current_user == self or current_user.can? write: write_target
-      logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{uuid} but does not have permission to write new owner_uuid #{owner_uuid}"
-      errors.add :owner_uuid, "cannot be changed without write permission on new owner"
-      raise PermissionDeniedError
+      # If the object already existed and we're not changing
+      # owner_uuid, we only need write permission on the object
+      # itself.
+      if !current_user.can?(write: self.uuid)
+        logger.warn "User #{current_user.uuid} tried to modify #{self.class.to_s} #{self.uuid} without write permission"
+        errors.add :uuid, "is not writable"
+        raise PermissionDeniedError
+      end
     end
 
     true
