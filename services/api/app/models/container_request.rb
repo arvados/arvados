@@ -109,6 +109,8 @@ class ContainerRequest < ArvadosModel
         end
         if self.output_ttl > 0
           trash_at = db_current_time + self.output_ttl
+          # delete_at cannot be sooner than blob_signature_ttl, even
+          # after the delay between now and the collection validation.
           delete_at = db_current_time +
                       [self.output_ttl,
                        Rails.configuration.blob_signature_ttl + 60].max
