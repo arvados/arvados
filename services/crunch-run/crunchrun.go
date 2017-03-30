@@ -25,8 +25,10 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
+
 	dockertypes "github.com/docker/docker/api/types"
-	containertypes "github.com/docker/docker/api/types/container"
+	dockercontainer "github.com/docker/docker/api/types/container"
+	dockernetwork "github.com/docker/docker/api/types/network"
 	dockerclient "github.com/docker/docker/client"
 )
 
@@ -61,8 +63,8 @@ type ThinDockerClient interface {
 	ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error)
 	ImageLoad(ctx context.Context, input io.Reader, quiet bool) (dockertypes.ImageLoadResponse, error)
 	ImageRemove(ctx context.Context, image string, options dockertypes.ImageRemoveOptions) ([]dockertypes.ImageDeleteResponseItem, error)
-	ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
-		networkingConfig *network.NetworkingConfig, containerName string) (container.ContainerCreateCreatedBody, error)
+	ContainerCreate(ctx context.Context, config *dockercontainer.Config, hostConfig *dockercontainer.HostConfig,
+		networkingConfig *dockernetwork.NetworkingConfig, containerName string) (dockercontainer.ContainerCreateCreatedBody, error)
 	ContainerStart(ctx context.Context, container string, options dockertypes.ContainerStartOptions) error
 	ContainerAttach(ctx context.Context, container string, options dockertypes.ContainerAttachOptions) (dockertypes.HijackedResponse, error)
 	ContainerStop(ctx context.Context, container string, timeout *time.Duration) error
@@ -76,8 +78,8 @@ type ContainerRunner struct {
 	ArvClient IArvadosClient
 	Kc        IKeepClient
 	arvados.Container
-	ContainerConfig containertypes.Config
-	dockerclient.HostConfig
+	ContainerConfig dockercontainer.Config
+	dockercontainer.HostConfig
 	token       string
 	ContainerID string
 	ExitCode    *int
@@ -150,7 +152,8 @@ func (runner *ContainerRunner) stop() {
 	}
 	runner.cCancelled = true
 	if runner.cStarted {
-		err := runner.Docker.ContainerStop(context.TODO(), runner.ContainerID, 10)
+		timeout := time.Duration(10)
+		err := runner.Docker.ContainerStop(context.TODO(), runner.ContainerID, &(timeout))
 		if err != nil {
 			log.Printf("StopContainer failed: %s", err)
 		}
@@ -191,7 +194,7 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 			return fmt.Errorf("While creating ManifestFileReader for container image: %v", err)
 		}
 
-		response, err = runner.Docker.ImageLoad(context.TODO(), readCloser, false)
+		response, err := runner.Docker.ImageLoad(context.TODO(), readCloser, false)
 		response.Body.Close()
 		if err != nil {
 			return fmt.Errorf("While loading container image into Docker: %v", err)
@@ -613,9 +616,8 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 
 	runner.CrunchLog.Print("Attaching container streams")
 
-	var containerReader io.Reader
-	containerReader, err = runner.Docker.ContainerAttach(context.TODO(), runner.ContainerID,
-		&dockertypes.ContainerAttachOptions{Stream: true, Stdout: true, Stderr: true})
+	response, err := runner.Docker.ContainerAttach(context.TODO(), runner.ContainerID,
+		dockertypes.ContainerAttachOptions{Stream: true, Stdout: true, Stderr: true})
 	if err != nil {
 		return fmt.Errorf("While attaching container stdout/stderr streams: %v", err)
 	}
@@ -649,7 +651,7 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 	}
 	runner.Stderr = NewThrottledLogger(runner.NewLogWriter("stderr"))
 
-	go runner.ProcessDockerAttach(containerReader)
+	go runner.ProcessDockerAttach(response.Reader)
 
 	return nil
 }
@@ -669,9 +671,9 @@ func (runner *ContainerRunner) CreateContainer() error {
 
 	runner.ContainerID = createdBody.ID
 	runner.HostConfig = dockerclient.HostConfig{
-		Binds:        runner.Binds,
-		CgroupParent: runner.setCgroupParent,
-		LogConfig: dockerclient.LogConfig{
+		Binds:  runner.Binds,
+		Cgroup: dockercontainer.CgroupSpec(runner.setCgroupParent),
+		LogConfig: dockercontainer.LogConfig{
 			Type: "none",
 		},
 	}
@@ -711,7 +713,8 @@ func (runner *ContainerRunner) StartContainer() error {
 	if runner.cCancelled {
 		return ErrCancelled
 	}
-	err := runner.Docker.StartContainer(runner.ContainerID, &runner.HostConfig)
+	err := runner.Docker.ContainerStart(context.TODO(), runner.ContainerID,
+		dockertypes.ContainerStartOptions{})
 	if err != nil {
 		return fmt.Errorf("could not start container: %v", err)
 	}
@@ -724,21 +727,24 @@ func (runner *ContainerRunner) StartContainer() error {
 func (runner *ContainerRunner) WaitFinish() error {
 	runner.CrunchLog.Print("Waiting for container to finish")
 
-	waitDocker := runner.Docker.Wait(runner.ContainerID)
+	waitDocker, err := runner.Docker.ContainerWait(context.TODO(), runner.ContainerID)
+	if err != nil {
+		return fmt.Errorf("container wait: %v", err)
+	}
+
+	if waitDocker != 0 { // what is the acceptable waitDocker code?
+		runner.CrunchLog.Printf("container wait API status code: %v", waitDocker)
+		code := int(waitDocker)
+		runner.ExitCode = &code
+	}
+
 	waitMount := runner.ArvMountExit
-	for waitDocker != nil {
-		select {
-		case err := <-waitMount:
-			runner.CrunchLog.Printf("arv-mount exited before container finished: %v", err)
-			waitMount = nil
-			runner.stop()
-		case wr := <-waitDocker:
-			if wr.Error != nil {
-				return fmt.Errorf("While waiting for container to finish: %v", wr.Error)
-			}
-			runner.ExitCode = &wr.ExitCode
-			waitDocker = nil
-		}
+	select {
+	case err := <-waitMount:
+		runner.CrunchLog.Printf("arv-mount exited before container finished: %v", err)
+		waitMount = nil
+		runner.stop()
+	default:
 	}
 
 	// wait for stdout/stderr to complete
