@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -24,7 +25,9 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
-	"github.com/curoverse/dockerclient"
+	dockertypes "github.com/docker/docker/api/types"
+	containertypes "github.com/docker/docker/api/types/container"
+	dockerclient "github.com/docker/docker/client"
 )
 
 // IArvadosClient is the minimal Arvados API methods used by crunch-run.
@@ -55,14 +58,15 @@ type MkTempDir func(string, string) (string, error)
 
 // ThinDockerClient is the minimal Docker client interface used by crunch-run.
 type ThinDockerClient interface {
-	StopContainer(id string, timeout int) error
-	InspectImage(id string) (*dockerclient.ImageInfo, error)
-	LoadImage(reader io.Reader) error
-	CreateContainer(config *dockerclient.ContainerConfig, name string, authConfig *dockerclient.AuthConfig) (string, error)
-	StartContainer(id string, config *dockerclient.HostConfig) error
-	AttachContainer(id string, options *dockerclient.AttachOptions) (io.ReadCloser, error)
-	Wait(id string) <-chan dockerclient.WaitResult
-	RemoveImage(name string, force bool) ([]*dockerclient.ImageDelete, error)
+	ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error)
+	ImageLoad(ctx context.Context, input io.Reader, quiet bool) (dockertypes.ImageLoadResponse, error)
+	ImageRemove(ctx context.Context, image string, options dockertypes.ImageRemoveOptions) ([]dockertypes.ImageDeleteResponseItem, error)
+	ContainerCreate(ctx context.Context, config *container.Config, hostConfig *container.HostConfig,
+		networkingConfig *network.NetworkingConfig, containerName string) (container.ContainerCreateCreatedBody, error)
+	ContainerStart(ctx context.Context, container string, options dockertypes.ContainerStartOptions) error
+	ContainerAttach(ctx context.Context, container string, options dockertypes.ContainerAttachOptions) (dockertypes.HijackedResponse, error)
+	ContainerStop(ctx context.Context, container string, timeout *time.Duration) error
+	ContainerWait(ctx context.Context, container string) (int64, error)
 }
 
 // ContainerRunner is the main stateful struct used for a single execution of a
@@ -72,7 +76,7 @@ type ContainerRunner struct {
 	ArvClient IArvadosClient
 	Kc        IKeepClient
 	arvados.Container
-	dockerclient.ContainerConfig
+	ContainerConfig containertypes.Config
 	dockerclient.HostConfig
 	token       string
 	ContainerID string
@@ -146,7 +150,7 @@ func (runner *ContainerRunner) stop() {
 	}
 	runner.cCancelled = true
 	if runner.cStarted {
-		err := runner.Docker.StopContainer(runner.ContainerID, 10)
+		err := runner.Docker.ContainerStop(context.TODO(), runner.ContainerID, 10)
 		if err != nil {
 			log.Printf("StopContainer failed: %s", err)
 		}
@@ -177,7 +181,7 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 
 	runner.CrunchLog.Printf("Using Docker image id '%s'", imageID)
 
-	_, err = runner.Docker.InspectImage(imageID)
+	_, _, err = runner.Docker.ImageInspectWithRaw(context.TODO(), imageID)
 	if err != nil {
 		runner.CrunchLog.Print("Loading Docker image from keep")
 
@@ -187,7 +191,8 @@ func (runner *ContainerRunner) LoadImage() (err error) {
 			return fmt.Errorf("While creating ManifestFileReader for container image: %v", err)
 		}
 
-		err = runner.Docker.LoadImage(readCloser)
+		response, err = runner.Docker.ImageLoad(context.TODO(), readCloser, false)
+		response.Body.Close()
 		if err != nil {
 			return fmt.Errorf("While loading container image into Docker: %v", err)
 		}
@@ -609,8 +614,8 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 	runner.CrunchLog.Print("Attaching container streams")
 
 	var containerReader io.Reader
-	containerReader, err = runner.Docker.AttachContainer(runner.ContainerID,
-		&dockerclient.AttachOptions{Stream: true, Stdout: true, Stderr: true})
+	containerReader, err = runner.Docker.ContainerAttach(context.TODO(), runner.ContainerID,
+		&dockertypes.ContainerAttachOptions{Stream: true, Stdout: true, Stderr: true})
 	if err != nil {
 		return fmt.Errorf("While attaching container stdout/stderr streams: %v", err)
 	}
@@ -662,6 +667,7 @@ func (runner *ContainerRunner) CreateContainer() error {
 		runner.ContainerConfig.Env = append(runner.ContainerConfig.Env, k+"="+v)
 	}
 
+	runner.ContainerID = createdBody.ID
 	runner.HostConfig = dockerclient.HostConfig{
 		Binds:        runner.Binds,
 		CgroupParent: runner.setCgroupParent,
@@ -689,8 +695,7 @@ func (runner *ContainerRunner) CreateContainer() error {
 		}
 	}
 
-	var err error
-	runner.ContainerID, err = runner.Docker.CreateContainer(&runner.ContainerConfig, "", nil)
+	createdBody, err := runner.Docker.ContainerCreate(context.TODO(), &runner.ContainerConfig, nil, nil, "")
 	if err != nil {
 		return fmt.Errorf("While creating container: %v", err)
 	}
@@ -1186,8 +1191,10 @@ func main() {
 	}
 	kc.Retries = 4
 
-	var docker *dockerclient.DockerClient
-	docker, err = dockerclient.NewDockerClient("unix:///var/run/docker.sock", nil)
+	var docker *dockerclient.Client
+	// API version 1.21 corresponds to Docker 1.9, which is currently the
+	// minimum version we want to support.
+	docker, err = dockerclient.NewClient(dockerclient.DefaultDockerHost, "1.21", nil, nil)
 	if err != nil {
 		log.Fatalf("%s: %v", containerId, err)
 	}
