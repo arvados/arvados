@@ -716,8 +716,7 @@ func (runner *ContainerRunner) CreateContainer() error {
 		runner.ContainerConfig.Env = append(runner.ContainerConfig.Env, k+"="+v)
 	}
 
-	runner.ContainerID = createdBody.ID
-	runner.HostConfig = dockerclient.HostConfig{
+	runner.HostConfig = dockercontainer.HostConfig{
 		Binds:  runner.Binds,
 		Cgroup: dockercontainer.CgroupSpec(runner.setCgroupParent),
 		LogConfig: dockercontainer.LogConfig{
@@ -735,12 +734,12 @@ func (runner *ContainerRunner) CreateContainer() error {
 			"ARVADOS_API_HOST="+os.Getenv("ARVADOS_API_HOST"),
 			"ARVADOS_API_HOST_INSECURE="+os.Getenv("ARVADOS_API_HOST_INSECURE"),
 		)
-		runner.HostConfig.NetworkMode = runner.networkMode
+		runner.HostConfig.NetworkMode = dockercontainer.NetworkMode(runner.networkMode)
 	} else {
 		if runner.enableNetwork == "always" {
-			runner.HostConfig.NetworkMode = runner.networkMode
+			runner.HostConfig.NetworkMode = dockercontainer.NetworkMode(runner.networkMode)
 		} else {
-			runner.HostConfig.NetworkMode = "none"
+			runner.HostConfig.NetworkMode = dockercontainer.NetworkMode("none")
 		}
 	}
 
@@ -748,6 +747,8 @@ func (runner *ContainerRunner) CreateContainer() error {
 	if err != nil {
 		return fmt.Errorf("While creating container: %v", err)
 	}
+
+	runner.ContainerID = createdBody.ID
 
 	return runner.AttachStreams()
 }
