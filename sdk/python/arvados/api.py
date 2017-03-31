@@ -136,7 +136,7 @@ def http_cache(data_type):
     try:
         util.mkdir_dash_p(path)
     except OSError:
-        path = None
+        return None
     return cache.SafeHTTPCache(path, max_age=60*60*24*2)
 
 def api(version=None, cache=True, host=None, token=None, insecure=False, **kwargs):
