@@ -159,41 +159,36 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 abort("failed to download '{}': {}".format(collection, error))
         sys.exit(0)
 
-    reader.normalize()
-
     # Scan the collection. Make an array of (stream, file, local
     # destination filename) tuples, and add up total size to extract.
     todo = []
     todo_bytes = 0
     try:
-        for s in reader.all_streams():
-            for f in s.all_files():
-                if get_prefix and get_prefix[-1] == os.sep:
-                    if 0 != string.find(os.path.join(s.name(), f.name()),
-                                        '.' + get_prefix):
-                        continue
-                    if args.destination == "-":
-                        dest_path = "-"
-                    else:
-                        dest_path = os.path.join(
-                            args.destination,
-                            os.path.join(s.name(), f.name())[len(get_prefix)+1:])
-                        if (not (args.n or args.f or args.skip_existing) and
-                            os.path.exists(dest_path)):
-                            abort('Local file %s already exists.' % (dest_path,))
+        for s, f in files_in_collection(reader):
+            if get_prefix and get_prefix[-1] == os.sep:
+                if 0 != string.find(os.path.join(s.stream_name(), f.name),
+                                    '.' + get_prefix):
+                    continue
+                if args.destination == "-":
+                    dest_path = "-"
                 else:
-                    if os.path.join(s.name(), f.name()) != '.' + get_prefix:
-                        continue
-                    dest_path = args.destination
-                todo += [(s, f, dest_path)]
-                todo_bytes += f.size()
+                    dest_path = os.path.join(
+                        args.destination,
+                        os.path.join(s.stream_name(), f.name)[len(get_prefix)+1:])
+                    if (not (args.n or args.f or args.skip_existing) and
+                        os.path.exists(dest_path)):
+                        abort('Local file %s already exists.' % (dest_path,))
+            else:
+                if os.path.join(s.stream_name(), f.name) != '.' + get_prefix:
+                    continue
+                dest_path = args.destination
+            todo += [(s, f, dest_path)]
+            todo_bytes += f.size()
     except arvados.errors.NotFoundError as e:
         abort(e)
 
-    # Read data, and (if not -n) write to local file(s) or pipe.
-
     out_bytes = 0
-    for s,f,outfilename in todo:
+    for s, f, outfilename in todo:
         outfile = None
         digestor = None
         if not args.n:
@@ -217,26 +212,27 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         if args.hash:
             digestor = hashlib.new(args.hash)
         try:
-            for data in f.readall():
-                if outfile:
-                    outfile.write(data)
-                if digestor:
-                    digestor.update(data)
-                out_bytes += len(data)
-                if args.progress:
-                    sys.stderr.write('\r%d MiB / %d MiB %.1f%%' %
-                                     (out_bytes >> 20,
-                                      todo_bytes >> 20,
-                                      (100
-                                       if todo_bytes==0
-                                       else 100.0*out_bytes/todo_bytes)))
-                elif args.batch_progress:
-                    sys.stderr.write('%s %d read %d total\n' %
-                                     (sys.argv[0], os.getpid(),
-                                      out_bytes, todo_bytes))
+            with s.open(f.name, 'r') as file_reader:
+                for data in file_reader.readall():
+                    if outfile:
+                        outfile.write(data)
+                    if digestor:
+                        digestor.update(data)
+                    out_bytes += len(data)
+                    if args.progress:
+                        sys.stderr.write('\r%d MiB / %d MiB %.1f%%' %
+                                         (out_bytes >> 20,
+                                          todo_bytes >> 20,
+                                          (100
+                                           if todo_bytes==0
+                                           else 100.0*out_bytes/todo_bytes)))
+                    elif args.batch_progress:
+                        sys.stderr.write('%s %d read %d total\n' %
+                                         (sys.argv[0], os.getpid(),
+                                          out_bytes, todo_bytes))
             if digestor:
                 sys.stderr.write("%s  %s/%s\n"
-                                 % (digestor.hexdigest(), s.name(), f.name()))
+                                 % (digestor.hexdigest(), s.stream_name(), f.name))
         except KeyboardInterrupt:
             if outfile and (outfile.fileno() > 2) and not outfile.closed:
                 os.unlink(outfile.name)
@@ -244,3 +240,15 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
 
     if args.progress:
         sys.stderr.write('\n')
+
+def files_in_collection(c):
+    # Sort first by file type, then alphabetically by file path.
+    for i in sorted(c.keys(),
+                    key=lambda k: (
+                        isinstance(c[k], arvados.collection.Subcollection),
+                        k.upper())):
+        if isinstance(c[i], arvados.arvfile.ArvadosFile):
+            yield (c, c[i])
+        elif isinstance(c[i], arvados.collection.Subcollection):
+            for s, f in files_in_collection(c[i]):
+                yield (s, f)
