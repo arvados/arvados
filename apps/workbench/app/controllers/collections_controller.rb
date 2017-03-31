@@ -326,12 +326,19 @@ class CollectionsController < ApplicationController
       end
 
       arv_coll = Arv::Collection.new(@object.manifest_text)
-      arv_coll.rename "./"+file_path, new_file_path
 
-      if @object.update_attributes manifest_text: arv_coll.manifest_text
-        show
-      else
+      dst_exists = arv_coll.exist? new_file_path
+      if dst_exists
+        @errors = 'Duplicate file path. Please use a different name.'
         self.render_error status: 422
+      else
+        arv_coll.rename "./"+file_path, new_file_path
+
+        if @object.update_attributes manifest_text: arv_coll.manifest_text
+          show
+        else
+          self.render_error status: 422
+        end
       end
     else
       # Not a file rename; use default
