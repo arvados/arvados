@@ -327,8 +327,7 @@ class CollectionsController < ApplicationController
 
       arv_coll = Arv::Collection.new(@object.manifest_text)
 
-      dst_exists = arv_coll.exist? new_file_path
-      if dst_exists
+      if arv_coll.exist?(new_file_path)
         @errors = 'Duplicate file path. Please use a different name.'
         self.render_error status: 422
       else
