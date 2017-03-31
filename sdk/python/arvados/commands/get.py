@@ -14,10 +14,7 @@ import arvados.commands._util as arv_cmd
 from arvados._version import __version__
 
 api_client = None
-
-def abort(msg, code=1):
-    print >>sys.stderr, "arv-get:", msg
-    exit(code)
+logger = logging.getLogger('arvados.arv-get')
 
 parser = argparse.ArgumentParser(
     description='Copy data from Keep to a local file or pipe.',
@@ -88,8 +85,8 @@ overwritten. This option causes even devices, sockets, and fifos to be
 skipped.
 """)
 
-def parse_arguments(arguments, logger):
-    args = parser.parse_args()
+def parse_arguments(arguments, stdout, stderr):
+    args = parser.parse_args(arguments)
 
     if args.locator[-1] == os.sep:
         args.r = True
@@ -120,17 +117,16 @@ def parse_arguments(arguments, logger):
     # either going to a named file, or going (via stdout) to something
     # that isn't a tty.
     if (not (args.batch_progress or args.no_progress)
-        and sys.stderr.isatty()
+        and stderr.isatty()
         and (args.destination != '-'
-             or not sys.stdout.isatty())):
+             or not stdout.isatty())):
         args.progress = True
     return args
 
 def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     global api_client
     
-    logger = logging.getLogger('arvados.arv-get')
-    args = parse_arguments(arguments, logger)
+    args = parse_arguments(arguments, stdout, stderr)
     if api_client is None:
         api_client = arvados.api('v1')
 
@@ -148,16 +144,18 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 open_flags |= os.O_EXCL
             try:
                 if args.destination == "-":
-                    sys.stdout.write(reader.manifest_text())
+                    stdout.write(reader.manifest_text())
                 else:
                     out_fd = os.open(args.destination, open_flags)
                     with os.fdopen(out_fd, 'wb') as out_file:
                         out_file.write(reader.manifest_text())
             except (IOError, OSError) as error:
-                abort("can't write to '{}': {}".format(args.destination, error))
+                logger.error("can't write to '{}': {}".format(args.destination, error))
+                return 1
             except (arvados.errors.ApiError, arvados.errors.KeepReadError) as error:
-                abort("failed to download '{}': {}".format(collection, error))
-        sys.exit(0)
+                logger.error("failed to download '{}': {}".format(collection, error))
+                return 1
+        return 0
 
     # Scan the collection. Make an array of (stream, file, local
     # destination filename) tuples, and add up total size to extract.
@@ -177,7 +175,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                         os.path.join(s.stream_name(), f.name)[len(get_prefix)+1:])
                     if (not (args.n or args.f or args.skip_existing) and
                         os.path.exists(dest_path)):
-                        abort('Local file %s already exists.' % (dest_path,))
+                        logger.error('Local file %s already exists.' % (dest_path,))
+                        return 1
             else:
                 if os.path.join(s.stream_name(), f.name) != '.' + get_prefix:
                     continue
@@ -185,7 +184,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
             todo += [(s, f, dest_path)]
             todo_bytes += f.size()
     except arvados.errors.NotFoundError as e:
-        abort(e)
+        logger.error(e)
+        return 1
 
     out_bytes = 0
     for s, f, outfilename in todo:
@@ -193,7 +193,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         digestor = None
         if not args.n:
             if outfilename == "-":
-                outfile = sys.stdout
+                outfile = stdout
             else:
                 if args.skip_existing and os.path.exists(outfilename):
                     logger.debug('Local file %s exists. Skipping.', outfilename)
@@ -202,13 +202,15 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                                    os.path.isdir(outfilename)):
                     # Good thing we looked again: apparently this file wasn't
                     # here yet when we checked earlier.
-                    abort('Local file %s already exists.' % (outfilename,))
+                    logger.error('Local file %s already exists.' % (outfilename,))
+                    return 1
                 if args.r:
                     arvados.util.mkdir_dash_p(os.path.dirname(outfilename))
                 try:
                     outfile = open(outfilename, 'wb')
                 except Exception as error:
-                    abort('Open(%s) failed: %s' % (outfilename, error))
+                    logger.error('Open(%s) failed: %s' % (outfilename, error))
+                    return 1
         if args.hash:
             digestor = hashlib.new(args.hash)
         try:
@@ -220,26 +222,26 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                         digestor.update(data)
                     out_bytes += len(data)
                     if args.progress:
-                        sys.stderr.write('\r%d MiB / %d MiB %.1f%%' %
-                                         (out_bytes >> 20,
-                                          todo_bytes >> 20,
-                                          (100
-                                           if todo_bytes==0
-                                           else 100.0*out_bytes/todo_bytes)))
+                        stderr.write('\r%d MiB / %d MiB %.1f%%' %
+                                     (out_bytes >> 20,
+                                      todo_bytes >> 20,
+                                      (100
+                                       if todo_bytes==0
+                                       else 100.0*out_bytes/todo_bytes)))
                     elif args.batch_progress:
-                        sys.stderr.write('%s %d read %d total\n' %
-                                         (sys.argv[0], os.getpid(),
-                                          out_bytes, todo_bytes))
+                        stderr.write('%s %d read %d total\n' %
+                                     (sys.argv[0], os.getpid(),
+                                      out_bytes, todo_bytes))
             if digestor:
-                sys.stderr.write("%s  %s/%s\n"
-                                 % (digestor.hexdigest(), s.stream_name(), f.name))
+                stderr.write("%s  %s/%s\n"
+                             % (digestor.hexdigest(), s.stream_name(), f.name))
         except KeyboardInterrupt:
             if outfile and (outfile.fileno() > 2) and not outfile.closed:
                 os.unlink(outfile.name)
             break
 
     if args.progress:
-        sys.stderr.write('\n')
+        stderr.write('\n')
 
 def files_in_collection(c):
     # Sort first by file type, then alphabetically by file path.

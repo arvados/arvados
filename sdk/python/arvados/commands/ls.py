@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import argparse
 import collections
+import logging
 import sys
 
 import arvados
@@ -34,19 +35,21 @@ def size_formatter(coll_file):
 def name_formatter(coll_file):
     return "{}/{}".format(coll_file.stream_name, coll_file.name)
 
-def main(args, stdout, stderr, api_client=None):
+def main(args, stdout, stderr, api_client=None, logger=None):
     args = parse_args(args)
 
     if api_client is None:
         api_client = arvados.api('v1')
+
+    if logger is None:
+        logger = logging.getLogger('arvados.arv-ls')
 
     try:
         cr = arvados.CollectionReader(args.locator, api_client=api_client,
                                       num_retries=args.retries)
     except (arvados.errors.ArgumentError,
             arvados.errors.NotFoundError) as error:
-        print("arv-ls: error fetching collection: {}".format(error),
-              file=stderr)
+        logger.error("error fetching collection: {}".format(error))
         return 1
 
     formatters = []
