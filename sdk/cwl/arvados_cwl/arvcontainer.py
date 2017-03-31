@@ -42,7 +42,8 @@ class ArvadosContainer(object):
             "cwd": self.outdir,
             "priority": 1,
             "state": "Committed",
-            "properties": {}
+            "properties": {},
+            "output_ttl", self.arvrunner.output_ttl
         }
         runtime_constraints = {}
 
@@ -200,6 +201,8 @@ class ArvadosContainer(object):
 
     def done(self, record):
         try:
+            self.arvrunner.add_intermediate_output(record["output_uuid"])
+
             container = self.arvrunner.api.containers().get(
                 uuid=record["container_uuid"]
             ).execute(num_retries=self.arvrunner.num_retries)
