@@ -780,7 +780,7 @@ func (runner *ContainerRunner) WaitFinish() error {
 		return fmt.Errorf("container wait: %v", err)
 	}
 
-	runner.CrunchLog.Printf("container wait API status code: %v", waitDocker)
+	runner.CrunchLog.Printf("Container exited with code: %v", waitDocker)
 	code := int(waitDocker)
 	runner.ExitCode = &code
 

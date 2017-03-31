@@ -683,11 +683,11 @@ func (s *TestSuite) TestNodeInfoLog(c *C) {
 		"output_path": "/tmp",
 		"priority": 1,
 		"runtime_constraints": {}
-	}`, nil, func(t *TestDockerClient) {
-		time.Sleep(time.Second)
-		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{}
-	})
+	}`, nil, 0,
+		func(t *TestDockerClient) {
+			time.Sleep(time.Second)
+			t.logWriter.Close()
+		})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
@@ -710,11 +710,11 @@ func (s *TestSuite) TestContainerRecordLog(c *C) {
 		"output_path": "/tmp",
 		"priority": 1,
 		"runtime_constraints": {}
-	}`, nil, func(t *TestDockerClient) {
-		time.Sleep(time.Second)
-		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{}
-	})
+	}`, nil, 0,
+		func(t *TestDockerClient) {
+			time.Sleep(time.Second)
+			t.logWriter.Close()
+		})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
