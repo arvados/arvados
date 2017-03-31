@@ -17,8 +17,8 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     authorize_with :inactive
     get :index
     assert_response :success
-    node_items = JSON.parse(@response.body)['items']
-    assert_equal 0, node_items.size
+    assert_equal 0, json_response['items'].size
+    assert_equal 0, json_response['items_available']
   end
 
   # active user sees non-secret attributes of up and recently-up nodes
@@ -26,8 +26,9 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
     authorize_with :active
     get :index
     assert_response :success
-    node_items = JSON.parse(@response.body)['items']
-    assert_not_equal 0, node_items.size
+    assert_operator 0, :<, json_response['items_available']
+    node_items = json_response['items']
+    assert_operator 0, :<, node_items.size
     found_busy_node = false
     node_items.each do |node|
       assert_nil node['info'].andand['ping_secret']
@@ -113,6 +114,7 @@ class Arvados::V1::NodesControllerTest < ActionController::TestCase
       authorize_with user
       get :index, {select: ['domain']}
       assert_response :success
+      assert_operator 0, :<, json_response['items_available']
     end
   end
 
