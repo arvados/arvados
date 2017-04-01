@@ -17,10 +17,10 @@ from .stream import StreamReader
 from ._normalize_stream import normalize_stream
 from ._ranges import Range, LocatorAndRange
 from .safeapi import ThreadSafeApiCache
-from . import config
-from . import errors
-from . import util
-from . import events
+import arvados.config as config
+import arvados.errors as errors
+import arvados.util
+import arvados.events as events
 from arvados.retry import retry_method
 
 _logger = logging.getLogger('arvados.collection')
@@ -52,7 +52,7 @@ class CollectionBase(object):
             if fields:
                 clean_fields = fields[:1] + [
                     (re.sub(r'\+[^\d][^\+]*', '', x)
-                     if re.match(util.keep_locator_pattern, x)
+                     if re.match(arvados.util.keep_locator_pattern, x)
                      else x)
                     for x in fields[1:]]
                 clean += [' '.join(clean_fields), "\n"]
@@ -181,7 +181,7 @@ class CollectionWriter(CollectionBase):
 
     def _work_trees(self):
         path, stream_name, max_manifest_depth = self._queued_trees[0]
-        d = util.listdir_recursive(
+        d = arvados.util.listdir_recursive(
             path, max_depth = (None if max_manifest_depth == 0 else 0))
         if d:
             self._queue_dirents(stream_name, d)
@@ -1223,11 +1223,11 @@ class Collection(RichCollectionBase):
         self.events = None
 
         if manifest_locator_or_text:
-            if re.match(util.keep_locator_pattern, manifest_locator_or_text):
+            if re.match(arvados.util.keep_locator_pattern, manifest_locator_or_text):
                 self._manifest_locator = manifest_locator_or_text
-            elif re.match(util.collection_uuid_pattern, manifest_locator_or_text):
+            elif re.match(arvados.util.collection_uuid_pattern, manifest_locator_or_text):
                 self._manifest_locator = manifest_locator_or_text
-            elif re.match(util.manifest_pattern, manifest_locator_or_text):
+            elif re.match(arvados.util.manifest_pattern, manifest_locator_or_text):
                 self._manifest_text = manifest_locator_or_text
             else:
                 raise errors.ArgumentError(
@@ -1343,10 +1343,10 @@ class Collection(RichCollectionBase):
         error_via_api = None
         error_via_keep = None
         should_try_keep = ((self._manifest_text is None) and
-                           util.keep_locator_pattern.match(
+                           arvados.util.keep_locator_pattern.match(
                                self._manifest_locator))
         if ((self._manifest_text is None) and
-            util.signed_locator_pattern.match(self._manifest_locator)):
+            arvados.util.signed_locator_pattern.match(self._manifest_locator)):
             error_via_keep = self._populate_from_keep()
         if self._manifest_text is None:
             error_via_api = self._populate_from_api_server()
@@ -1372,7 +1372,7 @@ class Collection(RichCollectionBase):
 
 
     def _has_collection_uuid(self):
-        return self._manifest_locator is not None and re.match(util.collection_uuid_pattern, self._manifest_locator)
+        return self._manifest_locator is not None and re.match(arvados.util.collection_uuid_pattern, self._manifest_locator)
 
     def __enter__(self):
         return self
