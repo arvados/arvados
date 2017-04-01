@@ -3,25 +3,29 @@ from __future__ import absolute_import
 from future import standard_library
 standard_library.install_aliases()
 from builtins import object
+import bz2
+import fcntl
 import gflags
+import hashlib
 import http.client
 import httplib2
+import json
 import logging
 import os
 import pprint
-import sys
-import types
-import subprocess
-import json
-import UserDict
 import re
-import hashlib
 import string
-import bz2
-import zlib
-import fcntl
-import time
+import subprocess
+import sys
 import threading
+import time
+import types
+import zlib
+
+if sys.version_info >= (3, 0):
+    from collections import UserDict
+else:
+    from UserDict import UserDict
 
 from .api import api, api_from_config, http_cache
 from .collection import CollectionReader, CollectionWriter, ResumableCollectionWriter
@@ -68,7 +72,7 @@ def current_task(num_retries=5):
     for tries_left in RetryLoop(num_retries=num_retries, backoff_start=2):
         try:
             task = api('v1').job_tasks().get(uuid=os.environ['TASK_UUID']).execute()
-            task = UserDict.UserDict(task)
+            task = UserDict(task)
             task.set_output = types.MethodType(task_set_output, task)
             task.tmpdir = os.environ['TASK_WORK']
             _current_task = task
@@ -88,7 +92,7 @@ def current_job(num_retries=5):
     for tries_left in RetryLoop(num_retries=num_retries, backoff_start=2):
         try:
             job = api('v1').jobs().get(uuid=os.environ['JOB_UUID']).execute()
-            job = UserDict.UserDict(job)
+            job = UserDict(job)
             job.tmpdir = os.environ['JOB_WORK']
             _current_job = job
             return job
