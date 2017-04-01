@@ -34,10 +34,10 @@ class CacheTestThread(threading.Thread):
         for x in range(16):
             try:
                 data_in = _random(128)
-                data_in = md5.new(data_in).hexdigest() + "\n" + str(data_in)
+                data_in = md5.new(data_in).hexdigest() + bytes("\n") + bytes(data_in)
                 c.set(url, data_in)
                 data_out = c.get(url)
-                digest, content = data_out.split("\n", 1)
+                digest, _, content = data_out.partition("\n")
                 if digest != md5.new(content).hexdigest():
                     self.ok = False
             except Exception as err:

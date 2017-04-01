@@ -107,8 +107,8 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
             # Error if it is not ASCII
             self.keep_client.put(u'\xe2')
 
-        with self.assertRaises(arvados.errors.ArgumentError):
-            # Must be a string type
+        with self.assertRaises(AttributeError):
+            # Must be bytes or have an encode() method
             self.keep_client.put({})
 
     def test_KeepHeadTest(self):

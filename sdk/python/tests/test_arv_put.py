@@ -24,7 +24,10 @@ import threading
 import hashlib
 import random
 
-from io import StringIO
+if sys.version_info >= (3, 0):
+    from io import StringIO
+else:
+    from cStringIO import StringIO
 
 import arvados
 import arvados.commands.put as arv_put

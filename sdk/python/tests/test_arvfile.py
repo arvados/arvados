@@ -36,7 +36,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             return self.blocks.get(locator)
         def put(self, data, num_retries=None, copies=None):
             pdh = tutil.str_keep_locator(data)
-            self.blocks[pdh] = str(data)
+            self.blocks[pdh] = bytes(data)
             return pdh
 
     class MockApi(object):

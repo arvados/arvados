@@ -22,6 +22,11 @@ import threading
 from . import timer
 import urllib.parse
 
+if sys.version_info >= (3, 0):
+    from io import BytesIO
+else:
+    from cStringIO import StringIO as BytesIO
+
 import arvados
 import arvados.config as config
 import arvados.errors
@@ -335,7 +340,7 @@ class KeepClient(object):
             try:
                 with timer.Timer() as t:
                     self._headers = {}
-                    response_body = io.StringIO()
+                    response_body = BytesIO()
                     curl.setopt(pycurl.NOSIGNAL, 1)
                     curl.setopt(pycurl.OPENSOCKETFUNCTION, self._socket_open)
                     curl.setopt(pycurl.URL, url.encode('utf-8'))
@@ -412,8 +417,8 @@ class KeepClient(object):
             try:
                 with timer.Timer() as t:
                     self._headers = {}
-                    body_reader = io.StringIO(body)
-                    response_body = io.StringIO()
+                    body_reader = BytesIO(body)
+                    response_body = BytesIO()
                     curl.setopt(pycurl.NOSIGNAL, 1)
                     curl.setopt(pycurl.OPENSOCKETFUNCTION, self._socket_open)
                     curl.setopt(pycurl.URL, url.encode('utf-8'))
@@ -486,7 +491,8 @@ class KeepClient(object):
             curl.setopt(pycurl.LOW_SPEED_LIMIT, int(math.ceil(bandwidth_bps)))
 
         def _headerfunction(self, header_line):
-            header_line = header_line.decode('iso-8859-1')
+            if isinstance(header_line, bytes):
+                header_line = header_line.decode('iso-8859-1')
             if ':' in header_line:
                 name, value = header_line.split(':', 1)
                 name = name.strip().lower()
@@ -1066,10 +1072,8 @@ class KeepClient(object):
           KeepClient is initialized.
         """
 
-        if isinstance(data, str):
-            data = data.encode("ascii")
-        elif not isinstance(data, str):
-            raise arvados.errors.ArgumentError("Argument 'data' to KeepClient.put is not type 'str'")
+        if not isinstance(data, bytes):
+            data = data.encode()
 
         self.put_counter.add(1)
 
