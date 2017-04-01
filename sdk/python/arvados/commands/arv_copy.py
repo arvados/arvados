@@ -804,7 +804,7 @@ def select_git_url(api, repo_name, retries, allow_insecure_http, allow_insecure_
 
     if git_url.startswith("http:"):
         if allow_insecure_http:
-            logger.warn("Using insecure git url %s but will allow this because %s", git_url, allow_insecure_http_opt)
+            logger.warning("Using insecure git url %s but will allow this because %s", git_url, allow_insecure_http_opt)
         else:
             raise Exception("Refusing to use insecure git url %s, use %s if you really want this." % (git_url, allow_insecure_http_opt))
 

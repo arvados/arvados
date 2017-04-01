@@ -112,7 +112,7 @@ def docker_image_format(image_hash):
 def docker_image_compatible(api, image_hash):
     supported = api._rootDesc.get('dockerImageFormats', [])
     if not supported:
-        logger.warn("server does not specify supported image formats (see docker_image_formats in server config).")
+        logger.warning("server does not specify supported image formats (see docker_image_formats in server config).")
         return False
 
     fmt = docker_image_format(image_hash)
@@ -369,7 +369,7 @@ def main(arguments=None, stdout=sys.stdout):
 
     if not docker_image_compatible(api, image_hash):
         if args.force_image_format:
-            logger.warn("forcing incompatible image")
+            logger.warning("forcing incompatible image")
         else:
             logger.error("refusing to store " \
                 "incompatible format (use --force-image-format to override)")

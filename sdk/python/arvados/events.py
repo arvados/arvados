@@ -124,14 +124,14 @@ class EventClient(object):
 
     def on_closed(self):
         if not self.is_closed.is_set():
-            _logger.warn("Unexpected close. Reconnecting.")
+            _logger.warning("Unexpected close. Reconnecting.")
             for tries_left in RetryLoop(num_retries=25, backoff_start=.1, max_wait=15):
                 try:
                     self._setup_event_client()
-                    _logger.warn("Reconnect successful.")
+                    _logger.warning("Reconnect successful.")
                     break
                 except Exception as e:
-                    _logger.warn("Error '%s' during websocket reconnect.", e)
+                    _logger.warning("Error '%s' during websocket reconnect.", e)
             if tries_left == 0:
                 _logger.exception("EventClient thread could not contact websocket server.")
                 self.is_closed.set()
@@ -293,7 +293,7 @@ def _subscribe_websocket(api, filters, on_event, last_log_id=None):
     try:
         client = EventClient(uri_with_token, filters, on_event, last_log_id)
     except Exception:
-        _logger.warn("Failed to connect to websockets on %s" % endpoint)
+        _logger.warning("Failed to connect to websockets on %s" % endpoint)
         raise
     else:
         return client
@@ -322,7 +322,7 @@ def subscribe(api, filters, on_event, poll_fallback=15, last_log_id=None):
         else:
             _logger.info("Using polling because ARVADOS_DISABLE_WEBSOCKETS is true")
     except Exception as e:
-        _logger.warn("Falling back to polling after websocket error: %s" % e)
+        _logger.warning("Falling back to polling after websocket error: %s" % e)
     p = PollClient(api, filters, on_event, poll_fallback, last_log_id)
     p.start()
     return p
