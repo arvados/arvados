@@ -1,5 +1,6 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from builtins import object
 import collections
 import hashlib
 import os
@@ -36,15 +37,15 @@ class StreamReader(object):
 
             s = re.match(r'^[0-9a-f]{32}\+(\d+)(\+\S+)*$', tok)
             if s:
-                blocksize = long(s.group(1))
+                blocksize = int(s.group(1))
                 self._data_locators.append(Range(tok, streamoffset, blocksize, 0))
                 streamoffset += blocksize
                 continue
 
             s = re.search(r'^(\d+):(\d+):(\S+)', tok)
             if s:
-                pos = long(s.group(1))
-                size = long(s.group(2))
+                pos = int(s.group(1))
+                size = int(s.group(2))
                 name = s.group(3).replace('\\040', ' ')
                 if name not in self._files:
                     self._files[name] = StreamFileReader(self, [Range(pos, 0, size, 0)], name)
@@ -62,7 +63,7 @@ class StreamReader(object):
         return self._files
 
     def all_files(self):
-        return self._files.values()
+        return list(self._files.values())
 
     def size(self):
         n = self._data_locators[-1]
@@ -97,5 +98,5 @@ class StreamReader(object):
             manifest_text.extend([d.locator for d in self._data_locators])
         manifest_text.extend([' '.join(["{}:{}:{}".format(seg.locator, seg.range_size, f.name.replace(' ', '\\040'))
                                         for seg in f.segments])
-                              for f in self._files.values()])
+                              for f in list(self._files.values())])
         return ' '.join(manifest_text) + '\n'

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 from __future__ import absolute_import
+from builtins import str
+from builtins import range
 import arvados
 import collections
 import httplib2
@@ -106,7 +108,7 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
         api = arvados.api('v1',
                           requestBuilder=req_builder, model=OrderedJsonModel())
         result = api.humans().get(uuid='test').execute()
-        self.assertEqual(string.hexdigits, ''.join(result.keys()))
+        self.assertEqual(string.hexdigits, ''.join(list(result.keys())))
 
 
 class RetryREST(unittest.TestCase):
@@ -167,7 +169,7 @@ class RetryREST(unittest.TestCase):
         mock_conns = {str(i): mock.MagicMock() for i in range(2)}
         self.api._http.connections = mock_conns.copy()
         self.api.users().create(body={}).execute()
-        for c in mock_conns.itervalues():
+        for c in mock_conns.values():
             self.assertEqual(c.close.call_count, expect)
 
     @mock.patch('time.sleep')

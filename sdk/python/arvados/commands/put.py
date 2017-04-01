@@ -3,6 +3,10 @@
 # TODO:
 # --md5sum - display md5 of each file as read from disk
 
+from __future__ import division
+from builtins import str
+from past.utils import old_div
+from builtins import object
 import argparse
 import arvados
 import arvados.collection
@@ -205,7 +209,7 @@ def parse_arguments(arguments):
     if len(args.paths) == 0:
         args.paths = ['-']
 
-    args.paths = map(lambda x: "-" if x == "/dev/stdin" else x, args.paths)
+    args.paths = ["-" if x == "/dev/stdin" else x for x in args.paths]
 
     if len(args.paths) != 1 or os.path.isdir(args.paths[0]):
         if args.filename:
@@ -509,7 +513,7 @@ class ArvPutUploadJob(object):
         Recursively get the total size of the collection
         """
         size = 0
-        for item in collection.values():
+        for item in list(collection.values()):
             if isinstance(item, arvados.collection.Collection) or isinstance(item, arvados.collection.Subcollection):
                 size += self._collection_size(item)
             else:
@@ -701,7 +705,7 @@ class ArvPutUploadJob(object):
     def collection_file_paths(self, col, path_prefix='.'):
         """Return a list of file paths by recursively go through the entire collection `col`"""
         file_paths = []
-        for name, item in col.items():
+        for name, item in list(col.items()):
             if isinstance(item, arvados.arvfile.ArvadosFile):
                 file_paths.append(os.path.join(path_prefix, name))
             elif isinstance(item, arvados.collection.Subcollection):
@@ -778,7 +782,7 @@ class ArvPutUploadJob(object):
                     locators.append(loc)
                 return locators
         elif isinstance(item, arvados.collection.Collection):
-            l = [self._datablocks_on_item(x) for x in item.values()]
+            l = [self._datablocks_on_item(x) for x in list(item.values())]
             # Fast list flattener method taken from:
             # http://stackoverflow.com/questions/952914/making-a-flat-list-out-of-list-of-lists-in-python
             return [loc for sublist in l for loc in sublist]
@@ -817,7 +821,7 @@ def human_progress(bytes_written, bytes_expected):
     if bytes_expected:
         return "\r{}M / {}M {:.1%} ".format(
             bytes_written >> 20, bytes_expected >> 20,
-            float(bytes_written) / bytes_expected)
+            old_div(float(bytes_written), bytes_expected))
     else:
         return "\r{} ".format(bytes_written)
 
@@ -982,7 +986,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         if not output.endswith('\n'):
             stdout.write('\n')
 
-    for sigcode, orig_handler in orig_signal_handlers.items():
+    for sigcode, orig_handler in list(orig_signal_handlers.items()):
         signal.signal(sigcode, orig_handler)
 
     if status != 0:

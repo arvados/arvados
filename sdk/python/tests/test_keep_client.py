@@ -1,4 +1,11 @@
 from __future__ import absolute_import
+from __future__ import division
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from past.utils import old_div
+from builtins import object
 import hashlib
 import mock
 import os
@@ -9,7 +16,7 @@ import socket
 import threading
 import time
 import unittest
-import urlparse
+import urllib.parse
 
 import arvados
 import arvados.retry
@@ -292,7 +299,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
     def get_service_roots(self, api_client):
         keep_client = arvados.KeepClient(api_client=api_client)
         services = keep_client.weighted_service_roots(arvados.KeepLocator('0'*32))
-        return [urlparse.urlparse(url) for url in sorted(services)]
+        return [urllib.parse.urlparse(url) for url in sorted(services)]
 
     def test_ssl_flag_respected_in_roots(self):
         for ssl_flag in [False, True]:
@@ -443,7 +450,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
                                        num_retries=3)
         self.assertEqual([403, 403], [
                 getattr(error, 'status_code', None)
-                for error in err_check.exception.request_errors().itervalues()])
+                for error in err_check.exception.request_errors().values()])
 
     def test_get_error_reflects_last_retry(self):
         self.check_errors_from_last_retry('get', arvados.errors.KeepReadError)
@@ -649,7 +656,7 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
              self.assertRaises(exc_class) as err_check:
             curl_mock.return_value.side_effect = socket.timeout
             getattr(keep_client, verb)(data)
-        urls = [urlparse.urlparse(url)
+        urls = [urllib.parse.urlparse(url)
                 for url in err_check.exception.request_errors()]
         self.assertEqual([('keep0x' + c, aport) for c in '3eab2d5fc9681074'],
                          [(url.hostname, url.port) for url in urls])
@@ -1118,35 +1125,35 @@ class AvoidOverreplication(unittest.TestCase, tutil.ApiClientMock):
 
     def test_only_write_enough_on_success(self):
         for i in range(10):
-            ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
+            ks = self.FakeKeepService(delay=old_div(i,10.0), will_succeed=True)
             self.pool.add_task(ks, None)
         self.pool.join()
         self.assertEqual(self.pool.done(), self.copies)
 
     def test_only_write_enough_on_partial_success(self):
         for i in range(5):
-            ks = self.FakeKeepService(delay=i/10.0, will_succeed=False)
+            ks = self.FakeKeepService(delay=old_div(i,10.0), will_succeed=False)
             self.pool.add_task(ks, None)
-            ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
+            ks = self.FakeKeepService(delay=old_div(i,10.0), will_succeed=True)
             self.pool.add_task(ks, None)
         self.pool.join()
         self.assertEqual(self.pool.done(), self.copies)
 
     def test_only_write_enough_when_some_crash(self):
         for i in range(5):
-            ks = self.FakeKeepService(delay=i/10.0, will_raise=Exception())
+            ks = self.FakeKeepService(delay=old_div(i,10.0), will_raise=Exception())
             self.pool.add_task(ks, None)
-            ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
+            ks = self.FakeKeepService(delay=old_div(i,10.0), will_succeed=True)
             self.pool.add_task(ks, None)
         self.pool.join()
         self.assertEqual(self.pool.done(), self.copies)
 
     def test_fail_when_too_many_crash(self):
         for i in range(self.copies+1):
-            ks = self.FakeKeepService(delay=i/10.0, will_raise=Exception())
+            ks = self.FakeKeepService(delay=old_div(i,10.0), will_raise=Exception())
             self.pool.add_task(ks, None)
         for i in range(self.copies-1):
-            ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
+            ks = self.FakeKeepService(delay=old_div(i,10.0), will_succeed=True)
             self.pool.add_task(ks, None)
         self.pool.join()
         self.assertEqual(self.pool.done(), self.copies-1)

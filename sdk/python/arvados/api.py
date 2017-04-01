@@ -1,6 +1,9 @@
 from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 import collections
-import httplib
+import http.client
 import httplib2
 import json
 import logging
@@ -68,7 +71,7 @@ def _intercept_http_request(self, uri, **kwargs):
         # High probability of failure due to connection atrophy. Make
         # sure this request [re]opens a new connection by closing and
         # forgetting all cached connections first.
-        for conn in self.connections.itervalues():
+        for conn in self.connections.values():
             conn.close()
         self.connections.clear()
 
@@ -77,7 +80,7 @@ def _intercept_http_request(self, uri, **kwargs):
         self._last_request_time = time.time()
         try:
             return self.orig_http_request(uri, **kwargs)
-        except httplib.HTTPException:
+        except http.client.HTTPException:
             _logger.debug("Retrying API request in %d s after HTTP error",
                           delay, exc_info=True)
         except socket.error:
@@ -88,7 +91,7 @@ def _intercept_http_request(self, uri, **kwargs):
             # httplib2 reopens connections when needed.
             _logger.debug("Retrying API request in %d s after socket error",
                           delay, exc_info=True)
-            for conn in self.connections.itervalues():
+            for conn in self.connections.values():
                 conn.close()
         time.sleep(delay)
         delay = delay * self._retry_delay_backoff

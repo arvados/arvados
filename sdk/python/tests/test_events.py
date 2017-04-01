@@ -1,10 +1,16 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from __future__ import division
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from builtins import object
+from past.utils import old_div
 import arvados
 import io
 import logging
 import mock
-import Queue
+import queue
 from . import run_test_server
 import threading
 import time
@@ -35,7 +41,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
 
     def _test_subscribe(self, poll_fallback, expect_type, start_time=None, expected=1):
         run_test_server.authorize_with('active')
-        events = Queue.Queue(100)
+        events = queue.Queue(100)
 
         # Create ancestor before subscribing.
         # When listening with start_time in the past, this should also be retrieved.
@@ -65,7 +71,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
             log_object_uuids.append(events.get(True, 5)['object_uuid'])
 
         if expected < 2:
-            with self.assertRaises(Queue.Empty):
+            with self.assertRaises(queue.Empty):
                 # assertEqual just serves to show us what unexpected
                 # thing comes out of the queue when the assertRaises
                 # fails; when the test passes, this assertEqual
@@ -145,16 +151,16 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         return time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(t))
 
     def localiso(self, t):
-        return time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(t)) + self.isotz(-time.timezone/60)
+        return time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(t)) + self.isotz(old_div(-time.timezone,60))
 
     def isotz(self, offset):
         """Convert minutes-east-of-UTC to RFC3339- and ISO-compatible time zone designator"""
-        return '{:+03d}:{:02d}'.format(offset/60, offset%60)
+        return '{:+03d}:{:02d}'.format(old_div(offset,60), offset%60)
 
     # Test websocket reconnection on (un)execpted close
     def _test_websocket_reconnect(self, close_unexpected):
         run_test_server.authorize_with('active')
-        events = Queue.Queue(100)
+        events = queue.Queue(100)
 
         logstream = io.BytesIO()
         rootLogger = logging.getLogger()
@@ -176,7 +182,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
 
         # expect an event
         self.assertIn(human['uuid'], events.get(True, 5)['object_uuid'])
-        with self.assertRaises(Queue.Empty):
+        with self.assertRaises(queue.Empty):
             self.assertEqual(events.get(True, 2), None)
 
         # close (im)properly
@@ -195,12 +201,12 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
                 event = events.get(True, 5)
                 if event.get('object_uuid') != None:
                     log_object_uuids.append(event['object_uuid'])
-            with self.assertRaises(Queue.Empty):
+            with self.assertRaises(queue.Empty):
                 self.assertEqual(events.get(True, 2), None)
             self.assertNotIn(human['uuid'], log_object_uuids)
             self.assertIn(human2['uuid'], log_object_uuids)
         else:
-            with self.assertRaises(Queue.Empty):
+            with self.assertRaises(queue.Empty):
                 self.assertEqual(events.get(True, 2), None)
 
         # verify log message to ensure that an (un)expected close
@@ -230,7 +236,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         rootLogger.addHandler(streamHandler)
 
         run_test_server.authorize_with('active')
-        events = Queue.Queue(100)
+        events = queue.Queue(100)
 
         filters = [['object_uuid', 'is_a', 'arvados#human']]
         self.ws = arvados.events.subscribe(

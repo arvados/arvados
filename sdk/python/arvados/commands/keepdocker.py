@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from builtins import next
 import argparse
 import collections
 import datetime
@@ -315,7 +316,7 @@ def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None)
     # and add image listings for them, retaining the API server preference
     # sorting.
     images_start_size = len(images)
-    for collection_uuid, link in hash_link_map.iteritems():
+    for collection_uuid, link in hash_link_map.items():
         if not seen_image_names[collection_uuid]:
             images.append(_new_image_listing(link, link['name']))
     if len(images) > images_start_size:

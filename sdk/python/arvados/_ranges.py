@@ -1,3 +1,6 @@
+from __future__ import division
+from past.utils import old_div
+from builtins import object
 import logging
 
 _logger = logging.getLogger('arvados.ranges')
@@ -31,7 +34,7 @@ def first_block(data_locators, range_start):
 
     hi = len(data_locators)
     lo = 0
-    i = int((hi + lo) / 2)
+    i = int(old_div((hi + lo), 2))
     block_size = data_locators[i].range_size
     block_start = data_locators[i].range_start
     block_end = block_start + block_size
@@ -47,7 +50,7 @@ def first_block(data_locators, range_start):
             lo = i
         else:
             hi = i
-        i = int((hi + lo) / 2)
+        i = int(old_div((hi + lo), 2))
         block_size = data_locators[i].range_size
         block_start = data_locators[i].range_start
         block_end = block_start + block_size

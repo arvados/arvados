@@ -1,4 +1,8 @@
 from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import object
 import arvados
 from . import config
 from . import errors
@@ -6,7 +10,7 @@ from .retry import RetryLoop
 
 import logging
 import json
-import thread
+import _thread
 import threading
 import time
 import os
@@ -116,7 +120,7 @@ class EventClient(object):
             self.on_event_cb(m)
         except Exception as e:
             _logger.exception("Unexpected exception from event callback.")
-            thread.interrupt_main()
+            _thread.interrupt_main()
 
     def on_closed(self):
         if not self.is_closed.is_set():
@@ -131,7 +135,7 @@ class EventClient(object):
             if tries_left == 0:
                 _logger.exception("EventClient thread could not contact websocket server.")
                 self.is_closed.set()
-                thread.interrupt_main()
+                _thread.interrupt_main()
                 return
 
     def run_forever(self):
@@ -226,7 +230,7 @@ class PollClient(threading.Thread):
                     _logger.exception("PollClient thread could not contact API server.")
                     with self._closing_lock:
                         self._closing.set()
-                    thread.interrupt_main()
+                    _thread.interrupt_main()
                     return
                 for i in items["items"]:
                     skip_old_events = [["id", ">", str(i["id"])]]
@@ -237,7 +241,7 @@ class PollClient(threading.Thread):
                             self.on_event(i)
                         except Exception as e:
                             _logger.exception("Unexpected exception from event callback.")
-                            thread.interrupt_main()
+                            _thread.interrupt_main()
                 if items["items_available"] > len(items["items"]):
                     moreitems = True
             if not moreitems:

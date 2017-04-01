@@ -1,4 +1,7 @@
 from __future__ import absolute_import
+from builtins import str
+from past.builtins import basestring
+from builtins import object
 import functools
 import logging
 import os
@@ -419,7 +422,7 @@ class ResumableCollectionWriter(CollectionWriter):
         return writer
 
     def check_dependencies(self):
-        for path, orig_stat in self._dependencies.items():
+        for path, orig_stat in list(self._dependencies.items()):
             if not S_ISREG(orig_stat[ST_MODE]):
                 raise errors.StaleWriterStateError("{} not file".format(path))
             try:
@@ -673,7 +676,7 @@ class RichCollectionBase(CollectionBase):
         if value == self._committed:
             return
         if value:
-            for k,v in self._items.items():
+            for k,v in list(self._items.items()):
                 v.set_committed(True)
             self._committed = True
         else:
@@ -684,7 +687,7 @@ class RichCollectionBase(CollectionBase):
     @synchronized
     def __iter__(self):
         """Iterate over names of files and collections contained in this collection."""
-        return iter(self._items.keys())
+        return iter(list(self._items.keys()))
 
     @synchronized
     def __getitem__(self, k):
@@ -716,17 +719,17 @@ class RichCollectionBase(CollectionBase):
     @synchronized
     def keys(self):
         """Get a list of names of files and collections directly contained in this collection."""
-        return self._items.keys()
+        return list(self._items.keys())
 
     @synchronized
     def values(self):
         """Get a list of files and collection objects directly contained in this collection."""
-        return self._items.values()
+        return list(self._items.values())
 
     @synchronized
     def items(self):
         """Get a list of (name, object) tuples directly contained in this collection."""
-        return self._items.items()
+        return list(self._items.items())
 
     def exists(self, path):
         """Test if there is a file or collection at `path`."""
@@ -759,7 +762,7 @@ class RichCollectionBase(CollectionBase):
             item.remove(pathcomponents[1])
 
     def _clonefrom(self, source):
-        for k,v in source.items():
+        for k,v in list(source.items()):
             self._items[k] = v.clone(self, k)
 
     def clone(self):
@@ -1117,7 +1120,7 @@ class RichCollectionBase(CollectionBase):
     @synchronized
     def flush(self):
         """Flush bufferblocks to Keep."""
-        for e in self.values():
+        for e in list(self.values()):
             e.flush()
 
 
@@ -1584,7 +1587,7 @@ class Collection(RichCollectionBase):
             if state == BLOCKS:
                 block_locator = re.match(r'[0-9a-f]{32}\+(\d+)(\+\S+)*', tok)
                 if block_locator:
-                    blocksize = long(block_locator.group(1))
+                    blocksize = int(block_locator.group(1))
                     blocks.append(Range(tok, streamoffset, blocksize, 0))
                     streamoffset += blocksize
                 else:
@@ -1593,8 +1596,8 @@ class Collection(RichCollectionBase):
             if state == SEGMENTS:
                 file_segment = re.search(r'^(\d+):(\d+):(\S+)', tok)
                 if file_segment:
-                    pos = long(file_segment.group(1))
-                    size = long(file_segment.group(2))
+                    pos = int(file_segment.group(1))
+                    size = int(file_segment.group(2))
                     name = file_segment.group(3).replace('\\040', ' ')
                     filepath = os.path.join(stream_name, name)
                     afile = self.find_or_create(filepath, FILE)

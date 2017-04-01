@@ -1,6 +1,8 @@
 from __future__ import print_function
 from __future__ import absolute_import
 
+from builtins import str
+from builtins import range
 import md5
 import mock
 import os
@@ -17,7 +19,7 @@ from . import run_test_server
 
 
 def _random(n):
-    return bytearray(random.getrandbits(8) for _ in xrange(n))
+    return bytearray(random.getrandbits(8) for _ in range(n))
 
 
 class CacheTestThread(threading.Thread):

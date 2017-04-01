@@ -1,7 +1,10 @@
 from __future__ import print_function
 from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import object
 import gflags
-import httplib
+import http.client
 import httplib2
 import logging
 import os
@@ -108,7 +111,7 @@ class JobTask(object):
     def __init__(self, parameters=dict(), runtime_constraints=dict()):
         print("init jobtask %s %s" % (parameters, runtime_constraints))
 
-class job_setup:
+class job_setup(object):
     @staticmethod
     def one_task_per_input_file(if_sequence=0, and_end_task=True, input_as_path=False, api_client=None):
         if if_sequence != current_task()['sequence']:

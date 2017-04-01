@@ -37,7 +37,7 @@ class KeepRequestError(Exception):
         self._request_errors = OrderedDict(request_errors)
         if self._request_errors:
             exc_reports = [self._format_error(*err_pair)
-                           for err_pair in self._request_errors.iteritems()]
+                           for err_pair in self._request_errors.items()]
             base_msg = "{}: {}".format(message, "; ".join(exc_reports))
         else:
             base_msg = message

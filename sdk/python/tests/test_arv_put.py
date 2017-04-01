@@ -2,6 +2,12 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import
+from __future__ import division
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import apiclient
 import io
 import mock
@@ -19,7 +25,7 @@ import threading
 import hashlib
 import random
 
-from cStringIO import StringIO
+from io import StringIO
 
 import arvados
 import arvados.commands.put as arv_put
@@ -258,7 +264,7 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         _, self.large_file_name = tempfile.mkstemp()
         fileobj = open(self.large_file_name, 'w')
         # Make sure to write just a little more than one block
-        for _ in range((arvados.config.KEEP_BLOCK_SIZE/(1024*1024))+1):
+        for _ in range((old_div(arvados.config.KEEP_BLOCK_SIZE,(1024*1024)))+1):
             data = random.choice(['x', 'y', 'z']) * 1024 * 1024 # 1 MB
             fileobj.write(data)
         fileobj.close()
@@ -525,7 +531,7 @@ class ArvadosPutReportTest(ArvadosBaseTestCase):
 
     def test_known_human_progress(self):
         for count, total in [(0, 1), (2, 4), (45, 60)]:
-            expect = '{:.1%}'.format(float(count) / total)
+            expect = '{:.1%}'.format(old_div(float(count), total))
             actual = arv_put.human_progress(count, total)
             self.assertTrue(actual.startswith('\r'))
             self.assertIn(expect, actual)

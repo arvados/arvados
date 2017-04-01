@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+from builtins import zip
+from builtins import range
+from builtins import object
 import itertools
 import unittest
 
@@ -25,7 +28,7 @@ class RetryLoopTestMixin(object):
         responses = itertools.chain(results, itertools.repeat(None))
         retrier = arv_retry.RetryLoop(num_retries, self.loop_success,
                                       **kwargs)
-        for tries_left, response in itertools.izip(retrier, responses):
+        for tries_left, response in zip(retrier, responses):
             retrier.save_result(response)
         return retrier
 
@@ -166,11 +169,11 @@ class CheckHTTPResponseSuccessTestCase(unittest.TestCase):
     check_is_not = check('assertIsNot')
 
     def test_obvious_successes(self):
-        self.check_is(True, *range(200, 207))
+        self.check_is(True, *list(range(200, 207)))
 
     def test_obvious_stops(self):
         self.check_is(False, 424, 426, 428, 431,
-                      *range(400, 408) + range(410, 420))
+                      *list(range(400, 408)) + list(range(410, 420)))
 
     def test_obvious_retries(self):
         self.check_is(None, 500, 502, 503, 504)
@@ -179,13 +182,13 @@ class CheckHTTPResponseSuccessTestCase(unittest.TestCase):
         self.check_is(None, 408, 409, 422, 423)
 
     def test_5xx_failures(self):
-        self.check_is(False, 501, *range(505, 512))
+        self.check_is(False, 501, *list(range(505, 512)))
 
     def test_1xx_not_retried(self):
         self.check_is_not(None, 100, 101)
 
     def test_redirects_not_retried(self):
-        self.check_is_not(None, *range(300, 309))
+        self.check_is_not(None, *list(range(300, 309)))
 
     def test_wacky_code_retries(self):
         self.check_is(None, 0, 99, 600, -200)

@@ -16,6 +16,12 @@
 # instances src and dst.  If either of these files is not found,
 # arv-copy will issue an error.
 
+from __future__ import division
+from future import standard_library
+standard_library.install_aliases()
+from past.builtins import basestring
+from builtins import object
+from past.utils import old_div
 import argparse
 import contextlib
 import getpass
@@ -25,7 +31,7 @@ import shutil
 import sys
 import logging
 import tempfile
-import urlparse
+import urllib.parse
 
 import arvados
 import arvados.config
@@ -152,7 +158,7 @@ def main():
         abort("cannot copy object {} of type {}".format(args.object_uuid, t))
 
     # Clean up any outstanding temp git repositories.
-    for d in local_repo_dir.values():
+    for d in list(local_repo_dir.values()):
         shutil.rmtree(d, ignore_errors=True)
 
     # If no exception was thrown and the response does not have an
@@ -344,7 +350,7 @@ def migrate_components_filters(template_components, dst_git_repo):
     be None if that is not known.
     """
     errors = []
-    for cname, cspec in template_components.iteritems():
+    for cname, cspec in template_components.items():
         def add_error(errmsg):
             errors.append("{}: {}".format(cname, errmsg))
         if not isinstance(cspec, dict):
@@ -553,7 +559,7 @@ def migrate_jobspec(jobspec, src, dst, dst_repo, args):
 #    names.  The return value is undefined.
 #
 def copy_git_repos(p, src, dst, dst_repo, args):
-    for component in p['components'].itervalues():
+    for component in p['components'].values():
         migrate_jobspec(component, src, dst, dst_repo, args)
         if 'job' in component:
             migrate_jobspec(component['job'], src, dst, dst_repo, args)
@@ -774,8 +780,8 @@ def select_git_url(api, repo_name, retries, allow_insecure_http, allow_insecure_
     git_url = None
     for url in priority:
         if url.startswith("http"):
-            u = urlparse.urlsplit(url)
-            baseurl = urlparse.urlunsplit((u.scheme, u.netloc, "", "", ""))
+            u = urllib.parse.urlsplit(url)
+            baseurl = urllib.parse.urlunsplit((u.scheme, u.netloc, "", "", ""))
             git_config = ["-c", "credential.%s/.username=none" % baseurl,
                           "-c", "credential.%s/.helper=!cred(){ cat >/dev/null; if [ \"$1\" = get ]; then echo password=$ARVADOS_API_TOKEN; fi; };cred" % baseurl]
         else:
@@ -859,7 +865,7 @@ def copy_docker_images(pipeline, src, dst, args):
     runtime_constraints field from src to dst."""
 
     logger.debug('copy_docker_images: {}'.format(pipeline['uuid']))
-    for c_name, c_info in pipeline['components'].iteritems():
+    for c_name, c_info in pipeline['components'].items():
         if ('runtime_constraints' in c_info and
             'docker_image' in c_info['runtime_constraints']):
             copy_docker_image(
@@ -948,7 +954,7 @@ def human_progress(obj_uuid, bytes_written, bytes_expected):
         return "\r{}: {}M / {}M {:.1%} ".format(
             obj_uuid,
             bytes_written >> 20, bytes_expected >> 20,
-            float(bytes_written) / bytes_expected)
+            old_div(float(bytes_written), bytes_expected))
     else:
         return "\r{}: {} ".format(obj_uuid, bytes_written)
 

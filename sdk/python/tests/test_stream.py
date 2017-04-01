@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import absolute_import
+from builtins import object
 import bz2
 import gzip
 import io

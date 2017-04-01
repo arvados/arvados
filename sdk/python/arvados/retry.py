@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from builtins import range
+from builtins import object
 import functools
 import inspect
 import pycurl
@@ -9,7 +11,7 @@ from collections import deque
 
 import arvados.errors
 
-_HTTP_SUCCESSES = set(xrange(200, 300))
+_HTTP_SUCCESSES = set(range(200, 300))
 _HTTP_CAN_RETRY = set([408, 409, 422, 423, 500, 502, 503, 504])
 
 class RetryLoop(object):
@@ -69,7 +71,7 @@ class RetryLoop(object):
     def running(self):
         return self._running and (self._success is None)
 
-    def next(self):
+    def __next__(self):
         if self._running is None:
             self._running = True
         if (self.tries_left < 1) or not self.running():

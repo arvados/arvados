@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
 from __future__ import absolute_import
+from builtins import hex
+from builtins import str
+from builtins import range
+from builtins import object
 import bz2
 import datetime
 import gzip
@@ -242,7 +246,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                              api_client=api, keep_client=keep) as c:
             writer = c.open("count.txt", "r+")
             text = "0123456789" * 100
-            for b in xrange(0, 100000):
+            for b in range(0, 100000):
                 writer.write(text)
             self.assertEqual(writer.size(), 100000000)
 
@@ -274,7 +278,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
                              keep_client=keep) as c:
             writer = c.open("count.txt", "r+")
-            for b in xrange(0, 10):
+            for b in range(0, 10):
                 writer.seek(0, os.SEEK_SET)
                 writer.write("0123456789")
 
@@ -291,7 +295,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt',
                              keep_client=keep) as c:
             writer = c.open("count.txt", "r+")
-            for b in xrange(0, 10):
+            for b in range(0, 10):
                 writer.seek(10, os.SEEK_SET)
                 writer.write("abcdefghij")
 
@@ -309,7 +313,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt',
                              keep_client=keep) as c:
             writer = c.open("count.txt", "r+")
-            for b in xrange(0, 10):
+            for b in range(0, 10):
                 writer.seek(5, os.SEEK_SET)
                 writer.write("abcdefghij")
 
@@ -334,8 +338,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
                              api_client=api, keep_client=keep) as c:
             writer = c.open("count.txt", "r+")
-            text = ''.join(["0123456789" for a in xrange(0, 100)])
-            for b in xrange(0, 100000):
+            text = ''.join(["0123456789" for a in range(0, 100)])
+            for b in range(0, 100000):
                 writer.write(text)
             writer.seek(0, os.SEEK_SET)
             writer.write("foo")

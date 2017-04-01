@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
+from __future__ import division
 
+from past.utils import old_div
 import argparse
 import sys
 
@@ -26,7 +28,7 @@ def parse_args(args):
     return parser.parse_args(args)
 
 def size_formatter(coll_file):
-    return "{:>10}".format((coll_file.size() + 1023) / 1024)
+    return "{:>10}".format(old_div((coll_file.size() + 1023), 1024))
 
 def name_formatter(coll_file):
     return "{}/{}".format(coll_file.stream_name(), coll_file.name)

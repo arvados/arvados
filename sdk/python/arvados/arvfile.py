@@ -1,4 +1,10 @@
 from __future__ import absolute_import
+from __future__ import division
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
+from past.utils import old_div
+from builtins import object
 import functools
 import os
 import zlib
@@ -6,7 +12,7 @@ import bz2
 from . import config
 import hashlib
 import threading
-import Queue
+import queue
 import copy
 import errno
 import re
@@ -508,10 +514,10 @@ class _BlockManager(object):
                 # blocks pending.  If they are full 64 MiB blocks, that means up to
                 # 256 MiB of internal buffering, which is the same size as the
                 # default download block cache in KeepClient.
-                self._put_queue = Queue.Queue(maxsize=2)
+                self._put_queue = queue.Queue(maxsize=2)
 
                 self._put_threads = []
-                for i in xrange(0, self.num_put_threads):
+                for i in range(0, self.num_put_threads):
                     thread = threading.Thread(target=self._commit_bufferblock_worker)
                     self._put_threads.append(thread)
                     thread.daemon = True
@@ -531,9 +537,9 @@ class _BlockManager(object):
     @synchronized
     def start_get_threads(self):
         if self._prefetch_threads is None:
-            self._prefetch_queue = Queue.Queue()
+            self._prefetch_queue = queue.Queue()
             self._prefetch_threads = []
-            for i in xrange(0, self.num_get_threads):
+            for i in range(0, self.num_get_threads):
                 thread = threading.Thread(target=self._block_prefetch_worker)
                 self._prefetch_threads.append(thread)
                 thread.daemon = True
@@ -579,7 +585,7 @@ class _BlockManager(object):
             # A WRITABLE block with its owner.closed() implies that it's
             # size is <= KEEP_BLOCK_SIZE/2.
             try:
-                small_blocks = [b for b in self._bufferblocks.values() if b.state() == _BufferBlock.WRITABLE and b.owner.closed()]
+                small_blocks = [b for b in list(self._bufferblocks.values()) if b.state() == _BufferBlock.WRITABLE and b.owner.closed()]
             except AttributeError:
                 # Writable blocks without owner shouldn't exist.
                 raise UnownedBlockError()
@@ -692,7 +698,7 @@ class _BlockManager(object):
         self.repack_small_blocks(force=True, sync=True)
 
         with self.lock:
-            items = self._bufferblocks.items()
+            items = list(self._bufferblocks.items())
 
         for k,v in items:
             if v.state() != _BufferBlock.COMMITTED and v.owner:
@@ -824,7 +830,7 @@ class ArvadosFile(object):
         with self.lock:
             if len(self._segments) != len(othersegs):
                 return False
-            for i in xrange(0, len(othersegs)):
+            for i in range(0, len(othersegs)):
                 seg1 = self._segments[i]
                 seg2 = othersegs[i]
                 loc1 = seg1.locator
@@ -884,7 +890,7 @@ class ArvadosFile(object):
         """
         self._writers.remove(writer)
 
-        if flush or self.size() > config.KEEP_BLOCK_SIZE / 2:
+        if flush or self.size() > old_div(config.KEEP_BLOCK_SIZE, 2):
             # File writer closed, not small enough for repacking
             self.flush()
         elif self.closed():
