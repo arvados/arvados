@@ -1,6 +1,6 @@
 from builtins import object
 import errno
-import md5
+import hashlib
 import os
 import tempfile
 import time
@@ -33,7 +33,7 @@ class SafeHTTPCache(object):
         return self._dir
 
     def _filename(self, url):
-        return os.path.join(self._dir, md5.new(url).hexdigest()+'.tmp')
+        return os.path.join(self._dir, hashlib.md5(url).hexdigest()+'.tmp')
 
     def get(self, url):
         filename = self._filename(url)
