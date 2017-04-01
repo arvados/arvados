@@ -34,10 +34,10 @@ def queue_with(items):
     given, it will be consumed to fill the queue before queue_with()
     returns.
     """
-    queue = queue.Queue()
+    q = queue.Queue()
     for val in items:
-        queue.put(val)
-    return lambda *args, **kwargs: queue.get(block=False)
+        q.put(val)
+    return lambda *args, **kwargs: q.get(block=False)
 
 # fake_httplib2_response and mock_responses
 # mock calls to httplib2.Http.request()
