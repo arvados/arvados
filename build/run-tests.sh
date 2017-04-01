@@ -464,20 +464,36 @@ fi
 # Deactivate Python 2 virtualenv
 deactivate
 
+declare -a pythonstuff
+pythonstuff=(
+    sdk/pam
+    sdk/python
+    sdk/cwl
+    services/fuse
+    services/nodemanager
+    tools/crunchstat-summary
+    )
+
+declare -a python3stuff
+python3stuff=(
+    sdk/python
+    services/dockercleaner
+)
+
 # If Python 3 is available, set up its virtualenv in $VENV3DIR.
 # Otherwise, skip dependent tests.
 PYTHON3=$(which python3)
-if [ "0" = "$?" ]; then
+if [[ ${?} = 0 ]]; then
     setup_virtualenv "$VENV3DIR" --python python3
 else
-    PYTHON3=
-    skip[services/dockercleaner]=1
     cat >&2 <<EOF
 
-Warning: python3 could not be found
-services/dockercleaner install and tests will be skipped
+Warning: python3 could not be found. The following tests will be skipped:
+
+  ${python3stuff}
 
 EOF
+    python3stuff=()
 fi
 
 # Reactivate Python 2 virtualenv
@@ -698,22 +714,15 @@ do_install services/login-sync login-sync
 # module. We can't actually *test* the Python SDK yet though, because
 # its own test suite brings up some of those other programs (like
 # keepproxy).
-declare -a pythonstuff
-pythonstuff=(
-    sdk/pam
-    sdk/python
-    sdk/cwl
-    services/fuse
-    services/nodemanager
-    tools/crunchstat-summary
-    )
 for p in "${pythonstuff[@]}"
 do
     do_install "$p" pip
 done
-if [ -n "$PYTHON3" ]; then
-    do_install services/dockercleaner pip "$VENV3DIR/bin/"
-fi
+
+for p in "${python3stuff[@]}"
+do
+    do_install "$p" pip "$VENV3DIR/bin/"
+done
 
 install_apiserver() {
     cd "$WORKSPACE/services/api" \
@@ -857,7 +866,11 @@ for p in "${pythonstuff[@]}"
 do
     do_test "$p" pip
 done
-do_test services/dockercleaner pip "$VENV3DIR/bin/"
+
+for p in "${python3stuff[@]}"
+do
+    do_test "$p" pip "$VENV3DIR/bin/"
+done
 
 for g in "${gostuff[@]}"
 do
