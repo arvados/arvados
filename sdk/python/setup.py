@@ -50,10 +50,10 @@ setup(name='arvados-python-client',
           'ciso8601',
           'httplib2',
           'pycurl >=7.19.5.1, <7.21.5',
-          'python-gflags<3.0',
+          'python-gflags >=3',
           'setuptools',
-          'ws4py<0.4',
-          'ruamel.yaml==0.13.7'
+          'ws4py <0.4',
+          'ruamel.yaml >=0.13.7'
       ],
       test_suite='tests',
       tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML'],
