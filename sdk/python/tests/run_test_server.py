@@ -4,7 +4,6 @@ from __future__ import print_function
 from __future__ import division
 from builtins import str
 from builtins import range
-from past.utils import old_div
 import argparse
 import atexit
 import errno
@@ -100,7 +99,7 @@ def kill_server_pid(pidfile, wait=10, passenger_root=False):
         # Use up to half of the +wait+ period waiting for "passenger
         # stop" to work. If the process hasn't exited by then, start
         # sending TERM signals.
-        startTERM += old_div(wait,2)
+        startTERM += wait//2
 
     server_pid = None
     while now <= deadline and server_pid is None:

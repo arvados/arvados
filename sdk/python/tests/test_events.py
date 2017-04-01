@@ -5,7 +5,6 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 from builtins import object
-from past.utils import old_div
 import arvados
 import io
 import logging
@@ -151,11 +150,11 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         return time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(t))
 
     def localiso(self, t):
-        return time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(t)) + self.isotz(old_div(-time.timezone,60))
+        return time.strftime('%Y-%m-%dT%H:%M:%S', time.localtime(t)) + self.isotz(-time.timezone//60)
 
     def isotz(self, offset):
         """Convert minutes-east-of-UTC to RFC3339- and ISO-compatible time zone designator"""
-        return '{:+03d}:{:02d}'.format(old_div(offset,60), offset%60)
+        return '{:+03d}:{:02d}'.format(offset//60, offset%60)
 
     # Test websocket reconnection on (un)execpted close
     def _test_websocket_reconnect(self, close_unexpected):

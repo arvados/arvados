@@ -21,7 +21,6 @@ from future import standard_library
 standard_library.install_aliases()
 from past.builtins import basestring
 from builtins import object
-from past.utils import old_div
 import argparse
 import contextlib
 import getpass
@@ -954,7 +953,7 @@ def human_progress(obj_uuid, bytes_written, bytes_expected):
         return "\r{}: {}M / {}M {:.1%} ".format(
             obj_uuid,
             bytes_written >> 20, bytes_expected >> 20,
-            old_div(float(bytes_written), bytes_expected))
+            float(bytes_written) / bytes_expected)
     else:
         return "\r{}: {} ".format(obj_uuid, bytes_written)
 

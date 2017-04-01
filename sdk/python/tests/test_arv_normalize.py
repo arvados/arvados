@@ -21,7 +21,7 @@ class ArvNormalizeTestCase(unittest.TestCase):
 
     def test_version_argument(self):
         returncode, out, err = self.run_arv_normalize(['--version'])
+        self.assertEqual(b'', out)
+        self.assertNotEqual(b'', err)
+        self.assertRegexpMatches(err.decode(), "^bin/arv-normalize [0-9]+\.[0-9]+\.[0-9]+$")
         self.assertEqual(0, returncode)
-        self.assertEqual('', out)
-        self.assertNotEqual('', err)
-        self.assertRegexpMatches(err, "[0-9]+\.[0-9]+\.[0-9]+")

@@ -7,7 +7,6 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import str
 from builtins import range
-from past.utils import old_div
 import apiclient
 import io
 import mock
@@ -264,8 +263,8 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         _, self.large_file_name = tempfile.mkstemp()
         fileobj = open(self.large_file_name, 'w')
         # Make sure to write just a little more than one block
-        for _ in range((old_div(arvados.config.KEEP_BLOCK_SIZE,(1024*1024)))+1):
-            data = random.choice(['x', 'y', 'z']) * 1024 * 1024 # 1 MB
+        for _ in range((arvados.config.KEEP_BLOCK_SIZE>>20)+1):
+            data = random.choice(['x', 'y', 'z']) * 1024 * 1024 # 1 MiB
             fileobj.write(data)
         fileobj.close()
         # Temp dir containing small files to be repacked
@@ -531,7 +530,7 @@ class ArvadosPutReportTest(ArvadosBaseTestCase):
 
     def test_known_human_progress(self):
         for count, total in [(0, 1), (2, 4), (45, 60)]:
-            expect = '{:.1%}'.format(old_div(float(count), total))
+            expect = '{:.1%}'.format(1.0*count/total)
             actual = arv_put.human_progress(count, total)
             self.assertTrue(actual.startswith('\r'))
             self.assertIn(expect, actual)

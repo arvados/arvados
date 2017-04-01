@@ -1,6 +1,5 @@
 from __future__ import print_function
 from __future__ import division
-from past.utils import old_div
 import argparse
 import time
 import sys
@@ -136,7 +135,7 @@ def main(arguments=None):
     logger.info("Already migrated %i images", len(already_migrated))
     logger.info("Need to migrate %i images", len(need_migrate))
     logger.info("Using tempdir %s", tempfile.gettempdir())
-    logger.info("Biggest image is about %i MiB, tempdir needs at least %i MiB free", old_div(biggest,(2**20)), old_div((biggest*2),(2**20)))
+    logger.info("Biggest image is about %i MiB, tempdir needs at least %i MiB free", biggest>>20, biggest>>19)
 
     if args.dry_run:
         return
@@ -152,7 +151,7 @@ def main(arguments=None):
         tarfile = list(oldcol.keys())[0]
 
         logger.info("[%i/%i] Migrating %s:%s (%s) (%i MiB)", count, len(need_migrate), old_image["repo"],
-                    old_image["tag"], old_image["collection"], old_div(list(oldcol.values())[0].size(),(2**20)))
+                    old_image["tag"], old_image["collection"], list(oldcol.values())[0].size()>>20)
         count += 1
         start = time.time()
 

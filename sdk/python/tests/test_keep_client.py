@@ -4,7 +4,6 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import str
 from builtins import range
-from past.utils import old_div
 from builtins import object
 import hashlib
 import mock
@@ -1125,35 +1124,35 @@ class AvoidOverreplication(unittest.TestCase, tutil.ApiClientMock):
 
     def test_only_write_enough_on_success(self):
         for i in range(10):
-            ks = self.FakeKeepService(delay=old_div(i,10.0), will_succeed=True)
+            ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
             self.pool.add_task(ks, None)
         self.pool.join()
         self.assertEqual(self.pool.done(), self.copies)
 
     def test_only_write_enough_on_partial_success(self):
         for i in range(5):
-            ks = self.FakeKeepService(delay=old_div(i,10.0), will_succeed=False)
+            ks = self.FakeKeepService(delay=i/10.0, will_succeed=False)
             self.pool.add_task(ks, None)
-            ks = self.FakeKeepService(delay=old_div(i,10.0), will_succeed=True)
+            ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
             self.pool.add_task(ks, None)
         self.pool.join()
         self.assertEqual(self.pool.done(), self.copies)
 
     def test_only_write_enough_when_some_crash(self):
         for i in range(5):
-            ks = self.FakeKeepService(delay=old_div(i,10.0), will_raise=Exception())
+            ks = self.FakeKeepService(delay=i/10.0, will_raise=Exception())
             self.pool.add_task(ks, None)
-            ks = self.FakeKeepService(delay=old_div(i,10.0), will_succeed=True)
+            ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
             self.pool.add_task(ks, None)
         self.pool.join()
         self.assertEqual(self.pool.done(), self.copies)
 
     def test_fail_when_too_many_crash(self):
         for i in range(self.copies+1):
-            ks = self.FakeKeepService(delay=old_div(i,10.0), will_raise=Exception())
+            ks = self.FakeKeepService(delay=i/10.0, will_raise=Exception())
             self.pool.add_task(ks, None)
         for i in range(self.copies-1):
-            ks = self.FakeKeepService(delay=old_div(i,10.0), will_succeed=True)
+            ks = self.FakeKeepService(delay=i/10.0, will_succeed=True)
             self.pool.add_task(ks, None)
         self.pool.join()
         self.assertEqual(self.pool.done(), self.copies-1)

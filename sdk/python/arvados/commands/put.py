@@ -5,7 +5,6 @@
 
 from __future__ import division
 from builtins import str
-from past.utils import old_div
 from builtins import object
 import argparse
 import arvados
@@ -821,7 +820,7 @@ def human_progress(bytes_written, bytes_expected):
     if bytes_expected:
         return "\r{}M / {}M {:.1%} ".format(
             bytes_written >> 20, bytes_expected >> 20,
-            old_div(float(bytes_written), bytes_expected))
+            float(bytes_written) / bytes_expected)
     else:
         return "\r{} ".format(bytes_written)
 

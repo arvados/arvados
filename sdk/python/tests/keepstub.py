@@ -2,7 +2,6 @@ from __future__ import division
 from future import standard_library
 standard_library.install_aliases()
 from builtins import str
-from past.utils import old_div
 import http.server
 import hashlib
 import os
@@ -64,7 +63,7 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
         if self.server.bandwidth == None and self.server.delays['mid_write'] == 0:
             self.wfile.write(data_to_write)
         else:
-            BYTES_PER_WRITE = int(old_div(self.server.bandwidth,4.0)) or 32768
+            BYTES_PER_WRITE = int(self.server.bandwidth/4) or 32768
             outage_happened = False
             num_bytes = len(data_to_write)
             num_sent_bytes = 0
@@ -80,7 +79,7 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
                     num_sent_bytes:num_sent_bytes+num_write_bytes])
                 num_sent_bytes += num_write_bytes
                 if self.server.bandwidth is not None:
-                    target_time += old_div(num_write_bytes, self.server.bandwidth)
+                    target_time += num_write_bytes / self.server.bandwidth
                     self.server._sleep_at_least(target_time - time.time())
         return None
 
@@ -88,7 +87,7 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
         if self.server.bandwidth == None and self.server.delays['mid_read'] == 0:
             return self.rfile.read(bytes_to_read)
         else:
-            BYTES_PER_READ = int(old_div(self.server.bandwidth,4.0)) or 32768
+            BYTES_PER_READ = int(self.server.bandwidth/4) or 32768
             data = ''
             outage_happened = False
             bytes_read = 0
@@ -103,7 +102,7 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
                 data += self.rfile.read(next_bytes_to_read)
                 bytes_read += next_bytes_to_read
                 if self.server.bandwidth is not None:
-                    target_time += old_div(next_bytes_to_read, self.server.bandwidth)
+                    target_time += next_bytes_to_read / self.server.bandwidth
                     self.server._sleep_at_least(target_time - time.time())
         return data
 

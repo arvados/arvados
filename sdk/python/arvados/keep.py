@@ -5,7 +5,6 @@ standard_library.install_aliases()
 from builtins import next
 from builtins import str
 from builtins import range
-from past.utils import old_div
 from builtins import object
 import io
 import datetime
@@ -392,7 +391,7 @@ class KeepClient(object):
                          self._result['status_code'],
                          len(self._result['body']),
                          t.msecs,
-                         old_div((old_div(len(self._result['body']),(1024.0*1024))),t.secs) if t.secs > 0 else 0)
+                         1.0*len(self._result['body'])/2**20/t.secs if t.secs > 0 else 0)
 
             if self.download_counter:
                 self.download_counter.add(len(self._result['body']))
@@ -465,7 +464,7 @@ class KeepClient(object):
                          self._result['status_code'],
                          len(body),
                          t.msecs,
-                         old_div((old_div(len(body),(1024.0*1024))),t.secs) if t.secs > 0 else 0)
+                         1.0*len(body)/2**20/t.secs if t.secs > 0 else 0)
             if self.upload_counter:
                 self.upload_counter.add(len(body))
             return True
@@ -568,7 +567,7 @@ class KeepClient(object):
             if (not max_service_replicas) or (max_service_replicas >= copies):
                 num_threads = 1
             else:
-                num_threads = int(math.ceil(old_div(float(copies), max_service_replicas)))
+                num_threads = int(math.ceil(1.0*copies/max_service_replicas))
             _logger.debug("Pool max threads is %d", num_threads)
             self.workers = []
             self.queue = KeepClient.KeepWriterQueue(copies)

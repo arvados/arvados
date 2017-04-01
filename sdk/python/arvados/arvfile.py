@@ -3,7 +3,6 @@ from __future__ import division
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
-from past.utils import old_div
 from builtins import object
 import functools
 import os
@@ -890,7 +889,7 @@ class ArvadosFile(object):
         """
         self._writers.remove(writer)
 
-        if flush or self.size() > old_div(config.KEEP_BLOCK_SIZE, 2):
+        if flush or self.size() > config.KEEP_BLOCK_SIZE // 2:
             # File writer closed, not small enough for repacking
             self.flush()
         elif self.closed():
