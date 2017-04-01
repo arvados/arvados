@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import functools
 import logging
 import os
@@ -11,15 +12,15 @@ from collections import deque
 from stat import *
 
 from .arvfile import split, _FileLikeObjectBase, ArvadosFile, ArvadosFileWriter, ArvadosFileReader, _BlockManager, synchronized, must_be_writable, NoopLock
-from keep import KeepLocator, KeepClient
+from .keep import KeepLocator, KeepClient
 from .stream import StreamReader
 from ._normalize_stream import normalize_stream
 from ._ranges import Range, LocatorAndRange
 from .safeapi import ThreadSafeApiCache
-import config
-import errors
-import util
-import events
+from . import config
+from . import errors
+from . import util
+from . import events
 from arvados.retry import retry_method
 
 _logger = logging.getLogger('arvados.collection')
@@ -1575,7 +1576,7 @@ class Collection(RichCollectionBase):
                 stream_name = tok.replace('\\040', ' ')
                 blocks = []
                 segments = []
-                streamoffset = 0L
+                streamoffset = 0
                 state = BLOCKS
                 self.find_or_create(stream_name, COLLECTION)
                 continue

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import cStringIO
 import datetime
 import hashlib
@@ -11,7 +12,7 @@ import socket
 import ssl
 import sys
 import threading
-import timer
+from . import timer
 import urlparse
 
 import arvados

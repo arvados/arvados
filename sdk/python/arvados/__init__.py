@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import gflags
 import httplib
 import httplib2
@@ -19,13 +21,13 @@ import time
 import threading
 
 from .api import api, http_cache
-from collection import CollectionReader, CollectionWriter, ResumableCollectionWriter
-from keep import *
-from stream import *
-from arvfile import StreamFileReader
-from retry import RetryLoop
-import errors
-import util
+from .collection import CollectionReader, CollectionWriter, ResumableCollectionWriter
+from .keep import *
+from .stream import *
+from .arvfile import StreamFileReader
+from .retry import RetryLoop
+from . import errors
+from . import util
 
 # Set up Arvados logging based on the user's configuration.
 # All Arvados code should log under the arvados hierarchy.
@@ -104,7 +106,7 @@ def get_task_param_mount(*args):
 
 class JobTask(object):
     def __init__(self, parameters=dict(), runtime_constraints=dict()):
-        print "init jobtask %s %s" % (parameters, runtime_constraints)
+        print("init jobtask %s %s" % (parameters, runtime_constraints))
 
 class job_setup:
     @staticmethod

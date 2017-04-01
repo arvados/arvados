@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import collections
 import hashlib
 import os
@@ -9,10 +11,10 @@ import copy
 from ._ranges import locators_and_ranges, Range
 from .arvfile import StreamFileReader
 from arvados.retry import retry_method
-from keep import *
-import config
-import errors
-from _normalize_stream import normalize_stream
+from .keep import *
+from . import config
+from . import errors
+from ._normalize_stream import normalize_stream
 
 class StreamReader(object):
     def __init__(self, tokens, keep=None, debug=False, _empty=False,
@@ -23,11 +25,11 @@ class StreamReader(object):
         self._keep = keep
         self.num_retries = num_retries
 
-        streamoffset = 0L
+        streamoffset = 0
 
         # parse stream
         for tok in tokens:
-            if debug: print 'tok', tok
+            if debug: print('tok', tok)
             if self._stream_name is None:
                 self._stream_name = tok.replace('\\040', ' ')
                 continue

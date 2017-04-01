@@ -1,3 +1,4 @@
+from __future__ import print_function
 import time
 
 class Timer(object):
@@ -13,4 +14,4 @@ class Timer(object):
         self.secs = self.end - self.start
         self.msecs = self.secs * 1000  # millisecs
         if self.verbose:
-            print 'elapsed time: %f ms' % self.msecs
+            print('elapsed time: %f ms' % self.msecs)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 import io
 import os
 import sys
@@ -8,7 +9,7 @@ import tempfile
 import unittest
 
 import arvados.commands.run as arv_run
-import arvados_testutil as tutil
+from . import arvados_testutil as tutil
 
 class ArvRunTestCase(unittest.TestCase):
     def run_arv_run(self, args):

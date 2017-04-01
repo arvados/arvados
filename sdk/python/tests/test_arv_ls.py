@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 import io
 import os
 import random
@@ -10,9 +11,9 @@ import tempfile
 
 import arvados.errors as arv_error
 import arvados.commands.ls as arv_ls
-import run_test_server
+from . import run_test_server
 
-from arvados_testutil import str_keep_locator, redirected_streams
+from .arvados_testutil import str_keep_locator, redirected_streams
 
 class ArvLsTestCase(run_test_server.TestCaseWithServers):
     FAKE_UUID = 'zzzzz-4zz18-12345abcde12345'

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import bz2
 import gzip
 import io
@@ -12,8 +13,8 @@ import arvados
 from arvados import StreamReader, StreamFileReader
 from arvados._ranges import Range
 
-import arvados_testutil as tutil
-import run_test_server
+from . import arvados_testutil as tutil
+from . import run_test_server
 
 class StreamFileReaderTestCase(unittest.TestCase):
     def make_count_reader(self):

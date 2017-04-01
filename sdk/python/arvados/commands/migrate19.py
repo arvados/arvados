@@ -1,3 +1,4 @@
+from __future__ import print_function
 import argparse
 import time
 import sys
@@ -127,7 +128,7 @@ def main(arguments=None):
     if args.print_unmigrated:
         only_migrate = set()
         for pdh in need_migrate:
-            print pdh
+            print(pdh)
         return
 
     logger.info("Already migrated %i images", len(already_migrated))

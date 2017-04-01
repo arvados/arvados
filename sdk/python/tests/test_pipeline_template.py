@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # usage example:
 #
 # ARVADOS_API_TOKEN=abc ARVADOS_API_HOST=arvados.local python -m unittest discover
@@ -5,7 +6,7 @@
 import unittest
 import arvados
 import apiclient
-import run_test_server
+from . import run_test_server
 
 class PipelineTemplateTest(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import bz2
 import datetime
 import gzip
@@ -15,8 +16,8 @@ from arvados.keep import KeepLocator
 from arvados.collection import Collection, CollectionReader
 from arvados.arvfile import ArvadosFile, ArvadosFileReader
 
-import arvados_testutil as tutil
-from test_stream import StreamFileReaderTestCase, StreamRetryTestMixin
+from . import arvados_testutil as tutil
+from .test_stream import StreamFileReaderTestCase, StreamRetryTestMixin
 
 class ArvadosFileWriterTestCase(unittest.TestCase):
     class MockKeep(object):

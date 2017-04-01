@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 # usage example:
 #
 # ARVADOS_API_TOKEN=abc ARVADOS_API_HOST=arvados.local python -m unittest discover
@@ -11,10 +12,10 @@ import re
 import tempfile
 import unittest
 
-import run_test_server
+from . import run_test_server
 from arvados._ranges import Range, LocatorAndRange
 from arvados.collection import Collection, CollectionReader
-import arvados_testutil as tutil
+from . import arvados_testutil as tutil
 
 class TestResumableWriter(arvados.ResumableCollectionWriter):
     KEEP_BLOCK_SIZE = 1024  # PUT to Keep every 1K.

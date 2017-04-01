@@ -1,10 +1,11 @@
+from __future__ import absolute_import
 import arvados
 import sys
 
-import run_test_server
-import arvados_testutil as tutil
-import manifest_examples
-from performance.performance_profiler import profiled
+from . import run_test_server
+from . import arvados_testutil as tutil
+from . import manifest_examples
+from .performance.performance_profiler import profiled
 
 class CollectionBenchmark(run_test_server.TestCaseWithServers,
                           tutil.ArvadosBaseTestCase,

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import io
 import os
 import sys
@@ -8,7 +9,7 @@ import unittest
 
 import arvados.errors as arv_error
 import arvados.commands.ws as arv_ws
-import arvados_testutil as tutil
+from . import arvados_testutil as tutil
 
 class ArvWsTestCase(unittest.TestCase):
     def run_ws(self, args):

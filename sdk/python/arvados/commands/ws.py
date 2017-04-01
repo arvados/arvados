@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import sys
 import logging
 import argparse
@@ -97,7 +98,7 @@ def main(arguments=None):
         elif 'status' in ev and ev['status'] == 200:
             pass
         else:
-            print json.dumps(ev)
+            print(json.dumps(ev))
 
     try:
         ws = subscribe(arvados.api('v1'), filters, on_message, poll_fallback=args.poll_interval, last_log_id=last_log_id)

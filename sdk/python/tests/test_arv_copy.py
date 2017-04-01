@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 import io
 import os
 import sys
@@ -8,7 +9,7 @@ import tempfile
 import unittest
 
 import arvados.commands.arv_copy as arv_copy
-import arvados_testutil as tutil
+from . import arvados_testutil as tutil
 
 class ArvCopyTestCase(unittest.TestCase):
     def run_copy(self, args):

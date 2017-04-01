@@ -1,8 +1,9 @@
+from __future__ import absolute_import
 import functools
 import os
 import zlib
 import bz2
-import config
+from . import config
 import hashlib
 import threading
 import Queue
@@ -76,7 +77,7 @@ class _FileLikeObjectBase(object):
 class ArvadosFileReaderBase(_FileLikeObjectBase):
     def __init__(self, name, mode, num_retries=None):
         super(ArvadosFileReaderBase, self).__init__(name, mode)
-        self._filepos = 0L
+        self._filepos = 0
         self.num_retries = num_retries
         self._readline_cache = (None, None)
 
@@ -96,7 +97,7 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
             pos += self._filepos
         elif whence == os.SEEK_END:
             pos += self.size()
-        self._filepos = min(max(pos, 0L), self.size())
+        self._filepos = min(max(pos, 0), self.size())
 
     def tell(self):
         return self._filepos

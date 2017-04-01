@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import hashlib
 import mock
 import os
@@ -12,9 +13,9 @@ import urlparse
 
 import arvados
 import arvados.retry
-import arvados_testutil as tutil
-import keepstub
-import run_test_server
+from . import arvados_testutil as tutil
+from . import keepstub
+from . import run_test_server
 
 class KeepTestCase(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}

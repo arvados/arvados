@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import collections
 import httplib
 import httplib2
@@ -12,10 +13,10 @@ import types
 import apiclient
 from apiclient import discovery as apiclient_discovery
 from apiclient import errors as apiclient_errors
-import config
-import errors
-import util
-import cache
+from . import config
+from . import errors
+from . import util
+from . import cache
 
 _logger = logging.getLogger('arvados.api')
 

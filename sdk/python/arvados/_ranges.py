@@ -24,7 +24,7 @@ class Range(object):
                 self.segment_offset == other.segment_offset)
 
 def first_block(data_locators, range_start):
-    block_start = 0L
+    block_start = 0
 
     # range_start/block_start is the inclusive lower bound
     # range_end/block_end is the exclusive upper bound

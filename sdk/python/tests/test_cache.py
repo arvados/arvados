@@ -1,4 +1,5 @@
 from __future__ import print_function
+from __future__ import absolute_import
 
 import md5
 import mock
@@ -10,9 +11,9 @@ import tempfile
 import threading
 import unittest
 
-import arvados.cache
 import arvados
-import run_test_server
+import arvados.cache
+from . import run_test_server
 
 
 def _random(n):

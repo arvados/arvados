@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import arvados
 import collections
 import httplib2
@@ -12,12 +13,12 @@ import string
 import unittest
 
 import mock
-import run_test_server
+from . import run_test_server
 
 from apiclient import errors as apiclient_errors
 from apiclient import http as apiclient_http
 from arvados.api import OrderedJsonModel, RETRY_DELAY_INITIAL, RETRY_DELAY_BACKOFF, RETRY_COUNT
-from arvados_testutil import fake_httplib2_response, queue_with
+from .arvados_testutil import fake_httplib2_response, queue_with
 
 if not mimetypes.inited:
     mimetypes.init()

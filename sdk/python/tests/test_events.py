@@ -1,14 +1,16 @@
+from __future__ import print_function
+from __future__ import absolute_import
 import arvados
 import io
 import logging
 import mock
 import Queue
-import run_test_server
+from . import run_test_server
 import threading
 import time
 import unittest
 
-import arvados_testutil
+from . import arvados_testutil
 
 class WebsocketTest(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
@@ -27,7 +29,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
             if self.ws:
                 self.ws.close()
         except Exception as e:
-            print("Error in teardown: ", e)
+            print(("Error in teardown: ", e))
         super(WebsocketTest, self).tearDown()
         run_test_server.reset()
 

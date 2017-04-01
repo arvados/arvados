@@ -1,5 +1,6 @@
+from __future__ import absolute_import
 import arvados
-import arvados_testutil as tutil
+from . import arvados_testutil as tutil
 
 class ManifestExamples(object):
     def make_manifest(self,

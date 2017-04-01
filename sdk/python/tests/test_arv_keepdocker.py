@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 import arvados
 import hashlib
 import io
@@ -13,8 +14,8 @@ import unittest
 import logging
 
 import arvados.commands.keepdocker as arv_keepdocker
-import arvados_testutil as tutil
-import run_test_server
+from . import arvados_testutil as tutil
+from . import run_test_server
 
 
 class StopTest(Exception):

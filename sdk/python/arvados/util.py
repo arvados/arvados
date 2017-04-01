@@ -364,10 +364,10 @@ def is_hex(s, *length_args):
 
 def list_all(fn, num_retries=0, **kwargs):
     # Default limit to (effectively) api server's MAX_LIMIT
-    kwargs.setdefault('limit', sys.maxint)
+    kwargs.setdefault('limit', sys.maxsize)
     items = []
     offset = 0
-    items_available = sys.maxint
+    items_available = sys.maxsize
     while len(items) < items_available:
         c = fn(offset=offset, **kwargs).execute(num_retries=num_retries)
         items += c['items']

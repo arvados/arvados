@@ -1,7 +1,8 @@
+from __future__ import absolute_import
 import threading
-import api
-import keep
-import config
+from . import api
+from . import keep
+from . import config
 import copy
 
 class ThreadSafeApiCache(object):

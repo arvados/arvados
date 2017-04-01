@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
+from __future__ import absolute_import
 import traceback
 import unittest
 
 import arvados.errors as arv_error
-import arvados_testutil as tutil
+from . import arvados_testutil as tutil
 
 class KeepRequestErrorTestCase(unittest.TestCase):
     REQUEST_ERRORS = [

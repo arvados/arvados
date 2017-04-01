@@ -211,7 +211,7 @@ def _fifo2stderr(label):
     except OSError as error:
         if error.errno != errno.ENOENT:
             raise
-    os.mkfifo(fifo, 0700)
+    os.mkfifo(fifo, 0o700)
     subprocess.Popen(
         ['stdbuf', '-i0', '-oL', '-eL', 'sed', '-e', 's/^/['+label+'] /', fifo],
         stdout=sys.stderr)

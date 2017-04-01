@@ -1,7 +1,8 @@
+from __future__ import absolute_import
 import arvados
-import config
-import errors
-from retry import RetryLoop
+from . import config
+from . import errors
+from .retry import RetryLoop
 
 import logging
 import json

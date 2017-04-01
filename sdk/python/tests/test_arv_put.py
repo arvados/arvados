@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import absolute_import
 import apiclient
 import io
 import mock
@@ -22,10 +23,10 @@ from cStringIO import StringIO
 
 import arvados
 import arvados.commands.put as arv_put
-import arvados_testutil as tutil
+from . import arvados_testutil as tutil
 
-from arvados_testutil import ArvadosBaseTestCase, fake_httplib2_response
-import run_test_server
+from .arvados_testutil import ArvadosBaseTestCase, fake_httplib2_response
+from . import run_test_server
 
 class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
     CACHE_ARGSET = [
