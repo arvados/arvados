@@ -213,8 +213,8 @@ class StreamFileReader(ArvadosFileReaderBase):
         if available_chunks:
             lr = available_chunks[0]
             data = self._stream.readfrom(lr.locator+lr.segment_offset,
-                                          lr.segment_size,
-                                          num_retries=num_retries)
+                                         lr.segment_size,
+                                         num_retries=num_retries)
 
         self._filepos += len(data)
         return data
