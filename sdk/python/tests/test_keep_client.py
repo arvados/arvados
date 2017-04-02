@@ -39,7 +39,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
     def test_KeepBasicRWTest(self):
         self.assertEqual(0, self.keep_client.upload_counter.get())
         foo_locator = self.keep_client.put('foo')
-        self.assertRegexpMatches(
+        self.assertRegex(
             foo_locator,
             '^acbd18db4cc2f85cedef654fccc4a4d8\+3',
             'wrong md5 hash from Keep.put("foo"): ' + foo_locator)
@@ -56,7 +56,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
     def test_KeepBinaryRWTest(self):
         blob_str = b'\xff\xfe\xf7\x00\x01\x02'
         blob_locator = self.keep_client.put(blob_str)
-        self.assertRegexpMatches(
+        self.assertRegex(
             blob_locator,
             '^7fc7c53b45e53926ba52821140fef396\+6',
             ('wrong locator from Keep.put(<binarydata>):' + blob_locator))
@@ -69,7 +69,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
         for i in range(0,23):
             blob_data = blob_data + blob_data
         blob_locator = self.keep_client.put(blob_data)
-        self.assertRegexpMatches(
+        self.assertRegex(
             blob_locator,
             '^84d90fc0d8175dd5dcfab04b999bc956\+67108864',
             ('wrong locator from Keep.put(<binarydata>): ' + blob_locator))
@@ -81,7 +81,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
     def test_KeepSingleCopyRWTest(self):
         blob_data = b'\xff\xfe\xfd\xfc\x00\x01\x02\x03'
         blob_locator = self.keep_client.put(blob_data, copies=1)
-        self.assertRegexpMatches(
+        self.assertRegex(
             blob_locator,
             '^c902006bc98a3eb4a3663b65ab4a6fab\+8',
             ('wrong locator from Keep.put(<binarydata>): ' + blob_locator))
@@ -91,7 +91,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
 
     def test_KeepEmptyCollectionTest(self):
         blob_locator = self.keep_client.put('', copies=1)
-        self.assertRegexpMatches(
+        self.assertRegex(
             blob_locator,
             '^d41d8cd98f00b204e9800998ecf8427e\+0',
             ('wrong locator from Keep.put(""): ' + blob_locator))
@@ -99,7 +99,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
     def test_unicode_must_be_ascii(self):
         # If unicode type, must only consist of valid ASCII
         foo_locator = self.keep_client.put(u'foo')
-        self.assertRegexpMatches(
+        self.assertRegex(
             foo_locator,
             '^acbd18db4cc2f85cedef654fccc4a4d8\+3',
             'wrong md5 hash from Keep.put("foo"): ' + foo_locator)
@@ -115,7 +115,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
 
     def test_KeepHeadTest(self):
         locator = self.keep_client.put('test_head')
-        self.assertRegexpMatches(
+        self.assertRegex(
             locator,
             '^b9a772c7049325feb7130fff1f8333e9\+9',
             'wrong md5 hash from Keep.put for "test_head": ' + locator)
@@ -133,7 +133,7 @@ class KeepPermissionTestCase(run_test_server.TestCaseWithServers):
         run_test_server.authorize_with('active')
         keep_client = arvados.KeepClient()
         foo_locator = keep_client.put('foo')
-        self.assertRegexpMatches(
+        self.assertRegex(
             foo_locator,
             r'^acbd18db4cc2f85cedef654fccc4a4d8\+3\+A[a-f0-9]+@[a-f0-9]+$',
             'invalid locator from Keep.put("foo"): ' + foo_locator)
@@ -144,7 +144,7 @@ class KeepPermissionTestCase(run_test_server.TestCaseWithServers):
         # GET with an unsigned locator => NotFound
         bar_locator = keep_client.put('bar')
         unsigned_bar_locator = "37b51d194a7513e45b56f6524f2d51f2+3"
-        self.assertRegexpMatches(
+        self.assertRegex(
             bar_locator,
             r'^37b51d194a7513e45b56f6524f2d51f2\+3\+A[a-f0-9]+@[a-f0-9]+$',
             'invalid locator from Keep.put("bar"): ' + bar_locator)
@@ -196,7 +196,7 @@ class KeepOptionalPermission(run_test_server.TestCaseWithServers):
 
     def _put_foo_and_check(self):
         signed_locator = self.keep_client.put('foo')
-        self.assertRegexpMatches(
+        self.assertRegex(
             signed_locator,
             r'^acbd18db4cc2f85cedef654fccc4a4d8\+3\+A[a-f0-9]+@[a-f0-9]+$',
             'invalid locator from Keep.put("foo"): ' + signed_locator)
@@ -254,7 +254,7 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers):
         keep_client = arvados.KeepClient(api_client=self.api_client,
                                          local_store='')
         baz_locator = keep_client.put('baz')
-        self.assertRegexpMatches(
+        self.assertRegex(
             baz_locator,
             '^73feffa4b7f6bb68e44cf984c85f6e88\+3',
             'wrong md5 hash from Keep.put("baz"): ' + baz_locator)
@@ -270,7 +270,7 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers):
         keep_client = arvados.KeepClient(api_client=self.api_client,
                                          proxy='', local_store='')
         baz_locator = keep_client.put('baz2')
-        self.assertRegexpMatches(
+        self.assertRegex(
             baz_locator,
             '^91f372a266fe2bf2823cb8ec7fda31ce\+4',
             'wrong md5 hash from Keep.put("baz2"): ' + baz_locator)
@@ -874,7 +874,7 @@ class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
                              mocks[i].getopt(pycurl.URL).decode())
         # Disk services are tried next.
         for i in range(gateways, gateways+disks):
-            self.assertRegexpMatches(
+            self.assertRegex(
                 mocks[i].getopt(pycurl.URL).decode(),
                 r'keep0x')
 
@@ -898,7 +898,7 @@ class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
                              mocks[i].getopt(pycurl.URL).decode())
         # Disk services are tried next.
         for i in range(gateways, gateways+disks):
-            self.assertRegexpMatches(
+            self.assertRegex(
                 mocks[i].getopt(pycurl.URL).decode(),
                 r'keep0x')
 

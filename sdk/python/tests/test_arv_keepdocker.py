@@ -83,15 +83,15 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
 
             self.assertEqual(out.getvalue(), '')
             if expect_ok:
-                self.assertNotRegexpMatches(
+                self.assertNotRegex(
                     err.getvalue(), "refusing to store",
                     msg=repr((supported, img_id)))
             else:
-                self.assertRegexpMatches(
+                self.assertRegex(
                     err.getvalue(), "refusing to store",
                     msg=repr((supported, img_id)))
             if not supported:
-                self.assertRegexpMatches(
+                self.assertRegex(
                     err.getvalue(),
                     "server does not specify supported image formats",
                     msg=repr((supported, img_id)))
@@ -112,4 +112,4 @@ class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
             api()._rootDesc = fakeDD
             self.run_arv_keepdocker(
                 ['--force', '--force-image-format', 'testimage'], err)
-        self.assertRegexpMatches(err.getvalue(), "forcing incompatible image")
+        self.assertRegex(err.getvalue(), "forcing incompatible image")

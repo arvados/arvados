@@ -90,7 +90,7 @@ class VersionChecker(object):
             # Python 2 writes version info on stderr.
             self.assertEqual(out.getvalue(), '')
             v = err.getvalue()
-        self.assertRegexpMatches(v, "[0-9]+\.[0-9]+\.[0-9]+$\n")
+        self.assertRegex(v, r"[0-9]+\.[0-9]+\.[0-9]+$\n")
 
 
 class FakeCurl(object):
@@ -261,3 +261,13 @@ class ArvadosBaseTestCase(unittest.TestCase):
         testfile.write(text)
         testfile.flush()
         return testfile
+
+if sys.version_info < (3, 0):
+    # There is no assert[Not]Regex that works in both Python 2 and 3,
+    # so we backport Python 3 style to Python 2.
+    def assertRegex(self, *args, **kwargs):
+        return self.assertRegexpMatches(*args, **kwargs)
+    def assertNotRegex(self, *args, **kwargs):
+        return self.assertNotRegexpMatches(*args, **kwargs)
+    unittest.TestCase.assertRegex = assertRegex
+    unittest.TestCase.assertNotRegex = assertNotRegex

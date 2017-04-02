@@ -773,7 +773,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         # The manifest text stored in the API server under the same
         # manifest UUID must use signed locators.
         c = arv_put.api_client.collections().get(uuid=manifest_uuid).execute()
-        self.assertRegexpMatches(
+        self.assertRegex(
             c['manifest_text'],
             r'^\. 08a008a01d498c404b0c30852b39d3b8\+44\+A[0-9a-f]+@[0-9a-f]+ 0:44:foo\n')
 
@@ -808,7 +808,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         self.assertEqual(col['uuid'], updated_col['uuid'])
         # Get the manifest and check that the new file is being included
         c = arv_put.api_client.collections().get(uuid=updated_col['uuid']).execute()
-        self.assertRegexpMatches(c['manifest_text'], r'^\. .*:44:file2\n')
+        self.assertRegex(c['manifest_text'], r'^\. .*:44:file2\n')
 
     def test_put_collection_with_high_redundancy(self):
         # Write empty data: we're not testing CollectionWriter, just
@@ -826,7 +826,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             "Test unnamed collection",
             ['--portable-data-hash', '--project-uuid', self.PROJECT_UUID])
         username = pwd.getpwuid(os.getuid()).pw_name
-        self.assertRegexpMatches(
+        self.assertRegex(
             link['name'],
             r'^Saved at .* by {}@'.format(re.escape(username)))
 

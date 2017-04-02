@@ -1048,7 +1048,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
         # c1 changed, so c2 mod will go to a conflict file
         c1.apply(d)
-        self.assertRegexpMatches(c1.portable_manifest_text(), r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1\.txt 5:10:count1\.txt~\d\d\d\d\d\d\d\d-\d\d\d\d\d\d~conflict~$")
+        self.assertRegex(
+            c1.portable_manifest_text(),
+            r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1\.txt 5:10:count1\.txt~\d\d\d\d\d\d\d\d-\d\d\d\d\d\d~conflict~$")
 
     def test_conflict_add(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
@@ -1061,7 +1063,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
         # c1 added count1.txt, so c2 add will go to a conflict file
         c1.apply(d)
-        self.assertRegexpMatches(c1.portable_manifest_text(), r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1\.txt 5:10:count1\.txt~\d\d\d\d\d\d\d\d-\d\d\d\d\d\d~conflict~$")
+        self.assertRegex(
+            c1.portable_manifest_text(),
+            r"\. 95ebc3c7b3b9f1d2c40fec14415d3cb8\+5 5348b82a029fd9e971a811ce1f71360b\+43 0:5:count1\.txt 5:10:count1\.txt~\d\d\d\d\d\d\d\d-\d\d\d\d\d\d~conflict~$")
 
     def test_conflict_del(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt')
@@ -1072,7 +1076,9 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
 
         # c1 deleted, so c2 mod will go to a conflict file
         c1.apply(d)
-        self.assertRegexpMatches(c1.portable_manifest_text(), r"\. 5348b82a029fd9e971a811ce1f71360b\+43 0:10:count1\.txt~\d\d\d\d\d\d\d\d-\d\d\d\d\d\d~conflict~$")
+        self.assertRegex(
+            c1.portable_manifest_text(),
+            r"\. 5348b82a029fd9e971a811ce1f71360b\+43 0:10:count1\.txt~\d\d\d\d\d\d\d\d-\d\d\d\d\d\d~conflict~$")
 
     def test_notify(self):
         c1 = Collection()
@@ -1154,12 +1160,16 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
     def test_create_and_save(self):
         c = self.create_count_txt()
         c.save()
-        self.assertRegexpMatches(c.manifest_text(), r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count\.txt$",)
+        self.assertRegex(
+            c.manifest_text(),
+            r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count\.txt$",)
 
     def test_create_and_save_new(self):
         c = self.create_count_txt()
         c.save_new()
-        self.assertRegexpMatches(c.manifest_text(), r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count\.txt$",)
+        self.assertRegex(
+            c.manifest_text(),
+            r"^\. 781e5e245d69b566979b86e28d23f2c7\+10\+A[a-f0-9]{40}@[a-f0-9]{8} 0:10:count\.txt$",)
 
     def test_create_diff_apply(self):
         c1 = self.create_count_txt()
@@ -1218,7 +1228,9 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         c2.save()
 
         c1.update()
-        self.assertRegexpMatches(c1.manifest_text(), r"\. e65075d550f9b5bf9992fa1d71a131be\+3\S* 7ac66c0f148de9519b8bd264312c4d64\+7\S* 0:3:count\.txt 3:7:count\.txt~\d\d\d\d\d\d\d\d-\d\d\d\d\d\d~conflict~$")
+        self.assertRegex(
+            c1.manifest_text(),
+            r"\. e65075d550f9b5bf9992fa1d71a131be\+3\S* 7ac66c0f148de9519b8bd264312c4d64\+7\S* 0:3:count\.txt 3:7:count\.txt~\d\d\d\d\d\d\d\d-\d\d\d\d\d\d~conflict~$")
 
 
 if __name__ == '__main__':
