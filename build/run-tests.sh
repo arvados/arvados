@@ -85,6 +85,7 @@ services/ws
 sdk/cli
 sdk/pam
 sdk/python
+sdk/python:py3
 sdk/ruby
 sdk/go/arvados
 sdk/go/arvadosclient
@@ -468,17 +469,13 @@ declare -a pythonstuff
 pythonstuff=(
     sdk/pam
     sdk/python
+    sdk/python:py3
     sdk/cwl
+    services/dockercleaner:py3
     services/fuse
     services/nodemanager
     tools/crunchstat-summary
     )
-
-declare -a python3stuff
-python3stuff=(
-    sdk/python
-    services/dockercleaner
-)
 
 # If Python 3 is available, set up its virtualenv in $VENV3DIR.
 # Otherwise, skip dependent tests.
@@ -486,14 +483,12 @@ PYTHON3=$(which python3)
 if [[ ${?} = 0 ]]; then
     setup_virtualenv "$VENV3DIR" --python python3
 else
+    PYTHON3=
     cat >&2 <<EOF
 
-Warning: python3 could not be found. The following tests will be skipped:
-
-  ${python3stuff}
+Warning: python3 could not be found. Python 3 tests will be skipped.
 
 EOF
-    python3stuff=()
 fi
 
 # Reactivate Python 2 virtualenv
@@ -716,12 +711,16 @@ do_install services/login-sync login-sync
 # keepproxy).
 for p in "${pythonstuff[@]}"
 do
-    do_install "$p" pip
-done
-
-for p in "${python3stuff[@]}"
-do
-    do_install "$p" pip "$VENV3DIR/bin/"
+    dir=${p%:py3}
+    if [[ ${dir} = ${p} ]]; then
+        if [[ -z ${skip[python2]} ]]; then
+            do_install ${dir} pip
+        fi
+    elif [[ -n ${PYTHON3} ]]; then
+        if [[ -z ${skip[python3]} ]]; then
+            do_install ${dir} pip "$VENV3DIR/bin/"
+        fi
+    fi
 done
 
 install_apiserver() {
@@ -864,12 +863,16 @@ do_test services/login-sync login-sync
 
 for p in "${pythonstuff[@]}"
 do
-    do_test "$p" pip
-done
-
-for p in "${python3stuff[@]}"
-do
-    do_test "$p" pip "$VENV3DIR/bin/"
+    dir=${p%:py3}
+    if [[ ${dir} = ${p} ]]; then
+        if [[ -z ${skip[python2]} ]]; then
+            do_test ${dir} pip
+        fi
+    elif [[ -n ${PYTHON3} ]]; then
+        if [[ -z ${skip[python3]} ]]; then
+            do_test ${dir} pip "$VENV3DIR/bin/"
+        fi
+    fi
 done
 
 for g in "${gostuff[@]}"
