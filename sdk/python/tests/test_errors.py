@@ -49,14 +49,14 @@ class KeepRequestErrorTestCase(unittest.TestCase):
         message = "test plain traceback string"
         test_exc = arv_error.KeepRequestError(message)
         exc_report = self.traceback_str(test_exc)
-        self.assertRegex(exc_report, r"^KeepRequestError: ")
+        self.assertRegex(exc_report, r"^(arvados\.errors\.)?KeepRequestError: ")
         self.assertIn(message, exc_report)
 
     def test_traceback_str_with_request_errors(self):
         message = "test traceback shows Keep services"
         test_exc = arv_error.KeepRequestError(message, self.REQUEST_ERRORS[:])
         exc_report = self.traceback_str(test_exc)
-        self.assertRegex(exc_report, r"^KeepRequestError: ")
+        self.assertRegex(exc_report, r"^(arvados\.errors\.)?KeepRequestError: ")
         for expect_substr in [message, "raised IOError", "raised MemoryError",
                               "test MemoryError", "second test IOError",
                               "responded with 500 Internal Server Error"]:
