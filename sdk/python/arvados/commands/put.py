@@ -460,7 +460,8 @@ class ArvPutUploadJob(object):
             #   we have a custom signal handler in place that raises SystemExit with
             #   the catched signal's code.
             if not isinstance(e, SystemExit) or e.code != -2:
-                self.logger.warning("Abnormal termination:\n{}".format(traceback.format_exc(e)))
+                self.logger.warning("Abnormal termination:\n{}".format(
+                    traceback.format_exc()))
             raise
         finally:
             if not self.dry_run:
