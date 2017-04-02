@@ -7,6 +7,7 @@ import hashlib
 import os
 import re
 import socketserver
+import sys
 import time
 
 class Server(socketserver.ThreadingMixIn, http.server.HTTPServer, object):
@@ -88,7 +89,7 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
             return self.rfile.read(bytes_to_read)
         else:
             BYTES_PER_READ = int(self.server.bandwidth/4) or 32768
-            data = ''
+            data = b''
             outage_happened = False
             bytes_read = 0
             target_time = time.time()
@@ -139,15 +140,21 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
         self.end_headers()
         self.server._do_delay('response_close')
 
-    def do_PUT(self):
+    def handle_expect_100(self):
         self.server._do_delay('request_body')
-        # The comments at https://bugs.python.org/issue1491 implies that Python
-        # 2.7 BaseHTTPRequestHandler was patched to support 100 Continue, but
-        # reading the actual code that ships in Debian it clearly is not, so we
-        # need to send the response on the socket directly.
-        self.wfile_bandwidth_write("%s %d %s\r\n\r\n" %
-                         (self.protocol_version, 100, "Continue"))
-        data = self.rfile_bandwidth_read(int(self.headers.getheader('content-length')))
+
+    def do_PUT(self):
+        if sys.version_info < (3, 0):
+            # The comments at https://bugs.python.org/issue1491
+            # implies that Python 2.7 BaseHTTPRequestHandler was
+            # patched to support 100 Continue, but reading the actual
+            # code that ships in Debian it clearly is not, so we need
+            # to send the response on the socket directly.
+            self.server._do_delay('request_body')
+            self.wfile.write("{} {} {}\r\n\r\n".format(
+                self.protocol_version, 100, "Continue"))
+        data = self.rfile_bandwidth_read(
+            int(self.headers.get('content-length')))
         datahash = hashlib.md5(data).hexdigest()
         self.server.store[datahash] = data
         self.server._do_delay('response')

@@ -220,7 +220,11 @@ class CollectionWriter(CollectionBase):
         self.do_queued_work()
 
     def write(self, newdata):
-        if hasattr(newdata, '__iter__'):
+        if isinstance(newdata, bytes):
+            pass
+        elif isinstance(newdata, str):
+            newdata = newdata.encode()
+        elif hasattr(newdata, '__iter__'):
             for s in newdata:
                 self.write(s)
             return
@@ -260,7 +264,7 @@ class CollectionWriter(CollectionBase):
         return self._last_open
 
     def flush_data(self):
-        data_buffer = ''.join(self._data_buffer)
+        data_buffer = b''.join(self._data_buffer)
         if data_buffer:
             self._current_stream_locators.append(
                 self._my_keep().put(
@@ -350,10 +354,11 @@ class CollectionWriter(CollectionBase):
         sending manifest_text() to the API server's "create
         collection" endpoint.
         """
-        return self._my_keep().put(self.manifest_text(), copies=self.replication)
+        return self._my_keep().put(self.manifest_text().encode(),
+                                   copies=self.replication)
 
     def portable_data_hash(self):
-        stripped = self.stripped_manifest()
+        stripped = self.stripped_manifest().encode()
         return hashlib.md5(stripped).hexdigest() + '+' + str(len(stripped))
 
     def manifest_text(self):
@@ -1078,7 +1083,7 @@ class RichCollectionBase(CollectionBase):
             # then return API server's PDH response.
             return self._portable_data_hash
         else:
-            stripped = self.portable_manifest_text()
+            stripped = self.portable_manifest_text().encode()
             return hashlib.md5(stripped).hexdigest() + '+' + str(len(stripped))
 
     @synchronized
@@ -1336,7 +1341,7 @@ class Collection(RichCollectionBase):
         # mode. Return an exception, or None if successful.
         try:
             self._manifest_text = self._my_keep().get(
-                self._manifest_locator, num_retries=self.num_retries)
+                self._manifest_locator, num_retries=self.num_retries).decode()
         except Exception as e:
             return e
 

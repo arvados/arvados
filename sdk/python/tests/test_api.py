@@ -32,7 +32,7 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
     def api_error_response(self, code, *errors):
         return (fake_httplib2_response(code, **self.ERROR_HEADERS),
                 json.dumps({'errors': errors,
-                            'error_token': '1234567890+12345678'}))
+                            'error_token': '1234567890+12345678'}).encode())
 
     def test_new_api_objects_with_cache(self):
         clients = [arvados.api('v1', cache=True) for index in [0, 1]]
@@ -84,7 +84,7 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
         mock_responses = {
             'arvados.humans.delete': (
                 fake_httplib2_response(500, **self.ERROR_HEADERS),
-                "")
+                b"")
             }
         req_builder = apiclient_http.RequestMockBuilder(mock_responses)
         api = arvados.api('v1', requestBuilder=req_builder)
@@ -101,9 +101,13 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
 
     def test_ordered_json_model(self):
         mock_responses = {
-            'arvados.humans.get': (None, json.dumps(collections.OrderedDict(
-                        (c, int(c, 16)) for c in string.hexdigits))),
-            }
+            'arvados.humans.get': (
+                None,
+                json.dumps(collections.OrderedDict(
+                    (c, int(c, 16)) for c in string.hexdigits
+                )).encode(),
+            ),
+        }
         req_builder = apiclient_http.RequestMockBuilder(mock_responses)
         api = arvados.api('v1',
                           requestBuilder=req_builder, model=OrderedJsonModel())

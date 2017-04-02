@@ -99,7 +99,7 @@ def docker_image_format(image_hash):
     cmd = popen_docker(['inspect', '--format={{.Id}}', image_hash],
                         stdout=subprocess.PIPE)
     try:
-        image_id = next(cmd.stdout).strip()
+        image_id = next(cmd.stdout).decode().strip()
         if image_id.startswith('sha256:'):
             return 'v2'
         elif ':' not in image_id:

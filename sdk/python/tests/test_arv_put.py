@@ -8,7 +8,6 @@ standard_library.install_aliases()
 from builtins import str
 from builtins import range
 import apiclient
-import io
 import mock
 import os
 import pwd
@@ -23,11 +22,6 @@ import yaml
 import threading
 import hashlib
 import random
-
-if sys.version_info >= (3, 0):
-    from io import StringIO
-else:
-    from cStringIO import StringIO
 
 import arvados
 import arvados.commands.put as arv_put
@@ -291,7 +285,7 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
 
     def test_writer_works_with_cache(self):
         with tempfile.NamedTemporaryFile() as f:
-            f.write('foo')
+            f.write(b'foo')
             f.flush()
             cwriter = arv_put.ArvPutUploadJob([f.name])
             cwriter.start(save_collection=False)
@@ -310,7 +304,7 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
 
     def test_progress_reporting(self):
         with tempfile.NamedTemporaryFile() as f:
-            f.write('foo')
+            f.write(b'foo')
             f.flush()
             for expect_count in (None, 8):
                 progression, reporter = self.make_progress_tester()
@@ -544,13 +538,15 @@ class ArvadosPutReportTest(ArvadosBaseTestCase):
                                       arv_put.human_progress(count, None)))
 
 
-class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
+class ArvadosPutTest(run_test_server.TestCaseWithServers,
+                     ArvadosBaseTestCase,
+                     tutil.VersionChecker):
     MAIN_SERVER = {}
     Z_UUID = 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
 
     def call_main_with_args(self, args):
-        self.main_stdout = StringIO()
-        self.main_stderr = StringIO()
+        self.main_stdout = tutil.StringIO()
+        self.main_stderr = tutil.StringIO()
         return arv_put.main(args, self.main_stdout, self.main_stderr)
 
     def call_main_on_test_file(self, args=[]):
@@ -575,13 +571,11 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
         super(ArvadosPutTest, self).tearDown()
 
     def test_version_argument(self):
-        err = io.BytesIO()
-        out = io.BytesIO()
-        with tutil.redirected_streams(stdout=out, stderr=err):
+        with tutil.redirected_streams(
+                stdout=tutil.StringIO, stderr=tutil.StringIO) as (out, err):
             with self.assertRaises(SystemExit):
                 self.call_main_with_args(['--version'])
-        self.assertEqual(out.getvalue(), '')
-        self.assertRegexpMatches(err.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
+        self.assertVersionOutput(out, err)
 
     def test_simple_file_put(self):
         self.call_main_on_test_file()
@@ -651,7 +645,7 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
     def test_api_error_handling(self):
         coll_save_mock = mock.Mock(name='arv.collection.Collection().save_new()')
         coll_save_mock.side_effect = arvados.errors.ApiError(
-            fake_httplib2_response(403), '{}')
+            fake_httplib2_response(403), b'{}')
         with mock.patch('arvados.collection.Collection.save_new',
                         new=coll_save_mock):
             with self.assertRaises(SystemExit) as exc_test:
@@ -719,7 +713,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             result = arv_put.desired_project_uuid(arv_put.api_client, BAD_UUID,
                                                   0)
         except ValueError as error:
-            self.assertIn(BAD_UUID, error.message)
+            self.assertIn(BAD_UUID, str(error))
         else:
             self.assertFalse(result, "incorrectly found nonexistent project")
 
@@ -739,7 +733,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             [sys.executable, arv_put.__file__, '--stream'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT, env=self.ENVIRON)
-        pipe.stdin.write('stdin test\n')
+        pipe.stdin.write(b'stdin test\n')
         pipe.stdin.close()
         deadline = time.time() + 5
         while (pipe.poll() is None) and (time.time() < deadline):
@@ -751,7 +745,8 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         elif returncode != 0:
             sys.stdout.write(pipe.stdout.read())
             self.fail("arv-put returned exit code {}".format(returncode))
-        self.assertIn('4a9c8b735dce4b5fa3acf221a0b13628+11', pipe.stdout.read())
+        self.assertIn('4a9c8b735dce4b5fa3acf221a0b13628+11',
+                      pipe.stdout.read().decode())
 
     def test_ArvPutSignedManifest(self):
         # ArvPutSignedManifest runs "arv-put foo" and then attempts to get
@@ -791,11 +786,12 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             [sys.executable, arv_put.__file__] + extra_args,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, env=self.ENVIRON)
-        stdout, stderr = pipe.communicate(text)
+        stdout, stderr = pipe.communicate(text.encode())
         search_key = ('portable_data_hash'
                       if '--portable-data-hash' in extra_args else 'uuid')
         collection_list = arvados.api('v1').collections().list(
-            filters=[[search_key, '=', stdout.strip()]]).execute().get('items', [])
+            filters=[[search_key, '=', stdout.decode().strip()]]
+        ).execute().get('items', [])
         self.assertEqual(1, len(collection_list))
         return collection_list[0]
 

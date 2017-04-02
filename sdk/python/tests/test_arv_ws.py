@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from __future__ import absolute_import
-import io
 import os
 import sys
 import tempfile
@@ -11,7 +10,7 @@ import arvados.errors as arv_error
 import arvados.commands.ws as arv_ws
 from . import arvados_testutil as tutil
 
-class ArvWsTestCase(unittest.TestCase):
+class ArvWsTestCase(unittest.TestCase, tutil.VersionChecker):
     def run_ws(self, args):
         return arv_ws.main(args)
 
@@ -20,10 +19,8 @@ class ArvWsTestCase(unittest.TestCase):
             self.run_ws(['-x=unknown'])
 
     def test_version_argument(self):
-        err = io.BytesIO()
-        out = io.BytesIO()
-        with tutil.redirected_streams(stdout=out, stderr=err):
+        with tutil.redirected_streams(
+                stdout=tutil.StringIO, stderr=tutil.StringIO) as (out, err):
             with self.assertRaises(SystemExit):
                 self.run_ws(['--version'])
-        self.assertEqual(out.getvalue(), '')
-        self.assertRegexpMatches(err.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
+        self.assertVersionOutput(out, err)

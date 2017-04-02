@@ -6,22 +6,28 @@ import sys
 import tempfile
 import unittest
 
+from . import arvados_testutil as tutil
 
-class ArvNormalizeTestCase(unittest.TestCase):
+
+class ArvNormalizeTestCase(unittest.TestCase, tutil.VersionChecker):
     def run_arv_normalize(self, args=[]):
         p = subprocess.Popen([sys.executable, 'bin/arv-normalize'] + args,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
-        (stdout, stderr) = p.communicate()
-        return p.returncode, stdout, stderr
+        out, err = p.communicate()
+        sys.stdout.write(out.decode())
+        sys.stderr.write(err.decode())
+        return p.returncode
 
     def test_unsupported_arg(self):
-        returncode, out, err = self.run_arv_normalize(['-x=unknown'])
+        with tutil.redirected_streams(
+                stdout=tutil.StringIO, stderr=tutil.StringIO) as (out, err):
+            returncode = self.run_arv_normalize(['-x=unknown'])
         self.assertNotEqual(0, returncode)
 
     def test_version_argument(self):
-        returncode, out, err = self.run_arv_normalize(['--version'])
-        self.assertEqual(b'', out)
-        self.assertNotEqual(b'', err)
-        self.assertRegexpMatches(err.decode(), "^bin/arv-normalize [0-9]+\.[0-9]+\.[0-9]+$")
+        with tutil.redirected_streams(
+                stdout=tutil.StringIO, stderr=tutil.StringIO) as (out, err):
+            returncode = self.run_arv_normalize(['--version'])
+        self.assertVersionOutput(out, err)
         self.assertEqual(0, returncode)

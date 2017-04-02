@@ -4,7 +4,6 @@
 from __future__ import absolute_import
 import arvados
 import hashlib
-import io
 import mock
 import os
 import subprocess
@@ -22,7 +21,7 @@ class StopTest(Exception):
     pass
 
 
-class ArvKeepdockerTestCase(unittest.TestCase):
+class ArvKeepdockerTestCase(unittest.TestCase, tutil.VersionChecker):
     def run_arv_keepdocker(self, args, err):
         sys.argv = ['arv-keepdocker'] + args
         log_handler = logging.StreamHandler(err)
@@ -37,21 +36,19 @@ class ArvKeepdockerTestCase(unittest.TestCase):
             self.run_arv_keepdocker(['-x=unknown'], sys.stderr)
 
     def test_version_argument(self):
-        err = io.BytesIO()
-        out = io.BytesIO()
-        with tutil.redirected_streams(stdout=out, stderr=err):
+        with tutil.redirected_streams(
+                stdout=tutil.StringIO, stderr=tutil.StringIO) as (out, err):
             with self.assertRaises(SystemExit):
                 self.run_arv_keepdocker(['--version'], sys.stderr)
-        self.assertEqual(out.getvalue(), '')
-        self.assertRegexpMatches(err.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
+        self.assertVersionOutput(out, err)
 
     @mock.patch('arvados.commands.keepdocker.find_image_hashes',
                 return_value=['abc123'])
     @mock.patch('arvados.commands.keepdocker.find_one_image_hash',
                 return_value='abc123')
     def test_image_format_compatibility(self, _1, _2):
-        old_id = hashlib.sha256('old').hexdigest()
-        new_id = 'sha256:'+hashlib.sha256('new').hexdigest()
+        old_id = hashlib.sha256(b'old').hexdigest()
+        new_id = 'sha256:'+hashlib.sha256(b'new').hexdigest()
         for supported, img_id, expect_ok in [
                 (['v1'], old_id, True),
                 (['v1'], new_id, False),
@@ -68,8 +65,8 @@ class ArvKeepdockerTestCase(unittest.TestCase):
             else:
                 fakeDD['dockerImageFormats'] = supported
 
-            err = io.BytesIO()
-            out = io.BytesIO()
+            err = tutil.StringIO()
+            out = tutil.StringIO()
 
             with tutil.redirected_streams(stdout=out), \
                  mock.patch('arvados.api') as api, \
@@ -101,8 +98,8 @@ class ArvKeepdockerTestCase(unittest.TestCase):
 
         fakeDD = arvados.api('v1')._rootDesc
         fakeDD['dockerImageFormats'] = ['v1']
-        err = io.BytesIO()
-        out = io.BytesIO()
+        err = tutil.StringIO()
+        out = tutil.StringIO()
         with tutil.redirected_streams(stdout=out), \
              mock.patch('arvados.api') as api, \
              mock.patch('arvados.commands.keepdocker.popen_docker',

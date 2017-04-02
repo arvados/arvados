@@ -42,13 +42,13 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         self.assertEqual(cw.current_stream_name(), '.',
                          'current_stream_name() should be "." now')
         cw.set_current_file_name('foo.txt')
-        cw.write('foo')
+        cw.write(b'foo')
         self.assertEqual(cw.current_file_name(), 'foo.txt',
                          'current_file_name() should be foo.txt now')
         cw.start_new_file('bar.txt')
-        cw.write('bar')
+        cw.write(b'bar')
         cw.start_new_stream('baz')
-        cw.write('baz')
+        cw.write(b'baz')
         cw.set_current_file_name('baz.txt')
         self.assertEqual(cw.manifest_text(),
                          ". 3858f62230ac3c915f300c664312c63f+6 0:3:foo.txt 3:3:bar.txt\n" +
@@ -58,8 +58,8 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         return cw.portable_data_hash()
 
     def test_keep_local_store(self):
-        self.assertEqual(self.keep_client.put('foo'), 'acbd18db4cc2f85cedef654fccc4a4d8+3', 'wrong md5 hash from Keep.put')
-        self.assertEqual(self.keep_client.get('acbd18db4cc2f85cedef654fccc4a4d8+3'), 'foo', 'wrong data from Keep.get')
+        self.assertEqual(self.keep_client.put(b'foo'), 'acbd18db4cc2f85cedef654fccc4a4d8+3', 'wrong md5 hash from Keep.put')
+        self.assertEqual(self.keep_client.get('acbd18db4cc2f85cedef654fccc4a4d8+3'), b'foo', 'wrong data from Keep.get')
 
     def test_local_collection_writer(self):
         self.assertEqual(self.write_foo_bar_baz(),
@@ -74,20 +74,20 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         for s in cr.all_streams():
             for f in s.all_files():
                 got += [[f.size(), f.stream_name(), f.name(), f.read(2**26)]]
-        expected = [[3, '.', 'foo.txt', 'foo'],
-                    [3, '.', 'bar.txt', 'bar'],
-                    [3, './baz', 'baz.txt', 'baz']]
+        expected = [[3, '.', 'foo.txt', b'foo'],
+                    [3, '.', 'bar.txt', b'bar'],
+                    [3, './baz', 'baz.txt', b'baz']]
         self.assertEqual(got,
                          expected)
         stream0 = cr.all_streams()[0]
         self.assertEqual(stream0.readfrom(0, 0),
-                         '',
+                         b'',
                          'reading zero bytes should have returned empty string')
         self.assertEqual(stream0.readfrom(0, 2**26),
-                         'foobar',
+                         b'foobar',
                          'reading entire stream failed')
         self.assertEqual(stream0.readfrom(2**26, 0),
-                         '',
+                         b'',
                          'reading zero bytes should have returned empty string')
 
     def _test_subset(self, collection, expected):
@@ -104,50 +104,50 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
     def test_collection_manifest_subset(self):
         foobarbaz = self.write_foo_bar_baz()
         self._test_subset(foobarbaz,
-                          [[3, '.',     'bar.txt', 'bar'],
-                           [3, '.',     'foo.txt', 'foo'],
-                           [3, './baz', 'baz.txt', 'baz']])
+                          [[3, '.',     'bar.txt', b'bar'],
+                           [3, '.',     'foo.txt', b'foo'],
+                           [3, './baz', 'baz.txt', b'baz']])
         self._test_subset((". %s %s 0:3:foo.txt 3:3:bar.txt\n" %
-                           (self.keep_client.put("foo"),
-                            self.keep_client.put("bar"))),
-                          [[3, '.', 'bar.txt', 'bar'],
-                           [3, '.', 'foo.txt', 'foo']])
+                           (self.keep_client.put(b"foo"),
+                            self.keep_client.put(b"bar"))),
+                          [[3, '.', 'bar.txt', b'bar'],
+                           [3, '.', 'foo.txt', b'foo']])
         self._test_subset((". %s %s 0:2:fo.txt 2:4:obar.txt\n" %
-                           (self.keep_client.put("foo"),
-                            self.keep_client.put("bar"))),
-                          [[2, '.', 'fo.txt', 'fo'],
-                           [4, '.', 'obar.txt', 'obar']])
+                           (self.keep_client.put(b"foo"),
+                            self.keep_client.put(b"bar"))),
+                          [[2, '.', 'fo.txt', b'fo'],
+                           [4, '.', 'obar.txt', b'obar']])
         self._test_subset((". %s %s 0:2:fo.txt 2:0:zero.txt 2:2:ob.txt 4:2:ar.txt\n" %
-                           (self.keep_client.put("foo"),
-                            self.keep_client.put("bar"))),
-                          [[2, '.', 'ar.txt', 'ar'],
-                           [2, '.', 'fo.txt', 'fo'],
-                           [2, '.', 'ob.txt', 'ob'],
-                           [0, '.', 'zero.txt', '']])
+                           (self.keep_client.put(b"foo"),
+                            self.keep_client.put(b"bar"))),
+                          [[2, '.', 'ar.txt', b'ar'],
+                           [2, '.', 'fo.txt', b'fo'],
+                           [2, '.', 'ob.txt', b'ob'],
+                           [0, '.', 'zero.txt', b'']])
 
     def test_collection_empty_file(self):
         cw = arvados.CollectionWriter(self.api_client)
         cw.start_new_file('zero.txt')
-        cw.write('')
+        cw.write(b'')
 
         self.assertEqual(cw.manifest_text(), ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:zero.txt\n")
         self.check_manifest_file_sizes(cw.manifest_text(), [0])
         cw = arvados.CollectionWriter(self.api_client)
         cw.start_new_file('zero.txt')
-        cw.write('')
+        cw.write(b'')
         cw.start_new_file('one.txt')
-        cw.write('1')
+        cw.write(b'1')
         cw.start_new_stream('foo')
         cw.start_new_file('zero.txt')
-        cw.write('')
+        cw.write(b'')
         self.check_manifest_file_sizes(cw.manifest_text(), [0,1,0])
 
     def test_no_implicit_normalize(self):
         cw = arvados.CollectionWriter(self.api_client)
         cw.start_new_file('b')
-        cw.write('b')
+        cw.write(b'b')
         cw.start_new_file('a')
-        cw.write('')
+        cw.write(b'')
         self.check_manifest_file_sizes(cw.manifest_text(), [1,0])
         self.check_manifest_file_sizes(
             arvados.CollectionReader(
@@ -313,14 +313,16 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
             return self.content[locator]
 
     def test_stream_reader(self):
-        keepblocks = {'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+10': 'abcdefghij',
-                      'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+15': 'klmnopqrstuvwxy',
-                      'cccccccccccccccccccccccccccccccc+5': 'z0123'}
+        keepblocks = {
+            'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+10': b'abcdefghij',
+            'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+15': b'klmnopqrstuvwxy',
+            'cccccccccccccccccccccccccccccccc+5': b'z0123',
+        }
         mk = self.MockKeep(keepblocks)
 
         sr = arvados.StreamReader([".", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+10", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb+15", "cccccccccccccccccccccccccccccccc+5", "0:30:foo"], mk)
 
-        content = 'abcdefghijklmnopqrstuvwxyz0123456789'
+        content = b'abcdefghijklmnopqrstuvwxyz0123456789'
 
         self.assertEqual(sr.readfrom(0, 30), content[0:30])
         self.assertEqual(sr.readfrom(2, 30), content[2:30])
@@ -334,7 +336,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         self.assertEqual(sr.readfrom(15, 5), content[15:20])
         self.assertEqual(sr.readfrom(20, 5), content[20:25])
         self.assertEqual(sr.readfrom(25, 5), content[25:30])
-        self.assertEqual(sr.readfrom(30, 5), '')
+        self.assertEqual(sr.readfrom(30, 5), b'')
 
     def test_extract_file(self):
         m1 = """. 5348b82a029fd9e971a811ce1f71360b+43 0:43:md5sum.txt
@@ -423,7 +425,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
     def test_write_multiple_files(self):
         cwriter = arvados.CollectionWriter(self.api_client)
         for letter in 'ABC':
-            with self.make_test_file(letter) as testfile:
+            with self.make_test_file(letter.encode()) as testfile:
                 cwriter.write_file(testfile.name, letter)
         self.assertEqual(
             cwriter.manifest_text(),
@@ -466,7 +468,7 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         with self.make_test_file() as testfile:
             cwriter.write_file(testfile.name, 'test')
             orig_mtime = os.fstat(testfile.fileno()).st_mtime
-            testfile.write('extra')
+            testfile.write(b'extra')
             testfile.flush()
             os.utime(testfile.name, (orig_mtime, orig_mtime))
             self.assertRaises(arvados.errors.StaleWriterStateError,
@@ -592,8 +594,8 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
         reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client,
                                           num_retries=3)
         with tutil.mock_keep_responses('foo', 500, 500, 200):
-            self.assertEqual('foo',
-                             ''.join(f.read(9) for f in reader.all_files()))
+            self.assertEqual(b'foo',
+                             b''.join(f.read(9) for f in reader.all_files()))
 
     def test_read_nonnormalized_manifest_with_collection_reader(self):
         # client should be able to use CollectionReader on a manifest without normalizing it
@@ -680,7 +682,7 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
         kwargs.setdefault('api_client', self.api_client_mock())
         writer = arvados.CollectionWriter(**kwargs)
         writer.start_new_file('foo')
-        writer.write('foo')
+        writer.write(b'foo')
         return writer
 
     def test_write_whole_collection(self):
@@ -739,7 +741,7 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
         with writer.open('out') as out_file:
             self.assertEqual('.', writer.current_stream_name())
             self.assertEqual('out', writer.current_file_name())
-            out_file.write('test data')
+            out_file.write(b'test data')
             data_loc = tutil.str_keep_locator('test data')
         self.assertTrue(out_file.closed, "writer file not closed after context")
         self.assertRaises(ValueError, out_file.write, 'extra text')
@@ -764,9 +766,9 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
         with self.mock_keep((data_loc1, 200), (data_loc2, 200)) as keep_mock:
             writer = arvados.CollectionWriter(client)
             with writer.open('flush_test') as out_file:
-                out_file.write('flush1')
+                out_file.write(b'flush1')
                 out_file.flush()
-                out_file.write('flush2')
+                out_file.write(b'flush2')
             self.assertEqual(". {} {} 0:12:flush_test\n".format(data_loc1,
                                                                 data_loc2),
                              writer.manifest_text())
@@ -775,9 +777,9 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
         client = self.api_client_mock()
         writer = arvados.CollectionWriter(client)
         with writer.open('.', '1') as out_file:
-            out_file.write('1st')
+            out_file.write(b'1st')
         with writer.open('.', '2') as out_file:
-            out_file.write('2nd')
+            out_file.write(b'2nd')
         data_loc = tutil.str_keep_locator('1st2nd')
         with self.mock_keep(data_loc, 200) as keep_mock:
             self.assertEqual(". {} 0:3:1 3:3:2\n".format(data_loc),
@@ -790,9 +792,9 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
         with self.mock_keep((data_loc1, 200), (data_loc2, 200)) as keep_mock:
             writer = arvados.CollectionWriter(client)
             with writer.open('file') as out_file:
-                out_file.write('file')
+                out_file.write(b'file')
             with writer.open('./dir', 'indir') as out_file:
-                out_file.write('indir')
+                out_file.write(b'indir')
             expected = ". {} 0:4:file\n./dir {} 0:5:indir\n".format(
                 data_loc1, data_loc2)
             self.assertEqual(expected, writer.manifest_text())
@@ -1030,7 +1032,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(d, [('del', './count1.txt', c1["count1.txt"]),
                              ('add', './count2.txt', c2["count2.txt"])])
         f = c1.open("count1.txt", "w")
-        f.write("zzzzz")
+        f.write(b"zzzzz")
 
         # c1 changed, so it should not be deleted.
         c1.apply(d)
@@ -1042,7 +1044,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         d = c1.diff(c2)
         self.assertEqual(d, [('mod', './count1.txt', c1["count1.txt"], c2["count1.txt"])])
         f = c1.open("count1.txt", "w")
-        f.write("zzzzz")
+        f.write(b"zzzzz")
 
         # c1 changed, so c2 mod will go to a conflict file
         c1.apply(d)
@@ -1055,7 +1057,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(d, [('del', './count2.txt', c1["count2.txt"]),
                              ('add', './count1.txt', c2["count1.txt"])])
         f = c1.open("count1.txt", "w")
-        f.write("zzzzz")
+        f.write(b"zzzzz")
 
         # c1 added count1.txt, so c2 add will go to a conflict file
         c1.apply(d)
@@ -1092,9 +1094,9 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
         with c.open("count.txt", "w") as f:
             # One file committed
             with c.open("foo.txt", "w") as foo:
-                foo.write("foo")
+                foo.write(b"foo")
                 foo.flush() # Force block commit
-            f.write("0123456789")
+            f.write(b"0123456789")
             # Other file not committed. Block not written to keep yet.
             self.assertEqual(
                 c._get_manifest_text(".",
@@ -1115,14 +1117,14 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
         c = Collection()
         # Write a couple of small files, 
         f = c.open("count.txt", "w")
-        f.write("0123456789")
+        f.write(b"0123456789")
         f.close(flush=False)
         foo = c.open("foo.txt", "w")
-        foo.write("foo")
+        foo.write(b"foo")
         foo.close(flush=False)
         # Then, write a big file, it shouldn't be packed with the ones above
         big = c.open("bigfile.txt", "w")
-        big.write("x" * 1024 * 1024 * 33) # 33 MB > KEEP_BLOCK_SIZE/2
+        big.write(b"x" * 1024 * 1024 * 33) # 33 MB > KEEP_BLOCK_SIZE/2
         big.close(flush=False)
         self.assertEqual(
             c.manifest_text("."),
@@ -1143,7 +1145,7 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         self.assertEqual(c.api_response()["portable_data_hash"], "d41d8cd98f00b204e9800998ecf8427e+0" )
 
         with c.open("count.txt", "w") as f:
-            f.write("0123456789")
+            f.write(b"0123456789")
 
         self.assertEqual(c.portable_manifest_text(), ". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
 
@@ -1165,7 +1167,7 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
 
         c2 = Collection(c1.manifest_locator())
         with c2.open("count.txt", "w") as f:
-            f.write("abcdefg")
+            f.write(b"abcdefg")
 
         diff = c1.diff(c2)
 
@@ -1193,7 +1195,7 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
 
         c2 = arvados.collection.Collection(c1.manifest_locator())
         with c2.open("count.txt", "w") as f:
-            f.write("abcdefg")
+            f.write(b"abcdefg")
 
         c2.save()
 
@@ -1207,11 +1209,11 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         c1.save()
 
         with c1.open("count.txt", "w") as f:
-            f.write("XYZ")
+            f.write(b"XYZ")
 
         c2 = arvados.collection.Collection(c1.manifest_locator())
         with c2.open("count.txt", "w") as f:
-            f.write("abcdefg")
+            f.write(b"abcdefg")
 
         c2.save()
 

@@ -33,7 +33,7 @@ class SafeHTTPCache(object):
         return self._dir
 
     def _filename(self, url):
-        return os.path.join(self._dir, hashlib.md5(url).hexdigest()+'.tmp')
+        return os.path.join(self._dir, hashlib.md5(url.encode('utf-8')).hexdigest()+'.tmp')
 
     def get(self, url):
         filename = self._filename(url)
@@ -50,7 +50,7 @@ class SafeHTTPCache(object):
             return None
         try:
             try:
-                f = os.fdopen(fd, 'w')
+                f = os.fdopen(fd, 'wb')
             except:
                 os.close(fd)
                 raise

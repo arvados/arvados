@@ -5,24 +5,25 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 from builtins import object
-import arvados
-import io
 import logging
 import mock
 import queue
-from . import run_test_server
+import sys
 import threading
 import time
 import unittest
 
-from . import arvados_testutil
+import arvados
+from . import arvados_testutil as tutil
+from . import run_test_server
+
 
 class WebsocketTest(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
 
     TIME_PAST = time.time()-3600
     TIME_FUTURE = time.time()+3600
-    MOCK_WS_URL = 'wss://[{}]/'.format(arvados_testutil.TEST_HOST)
+    MOCK_WS_URL = 'wss://[{}]/'.format(tutil.TEST_HOST)
 
     TEST_TIMEOUT = 10.0
 
@@ -96,10 +97,12 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         error_mock = mock.MagicMock()
         error_mock.resp.status = 0
         error_mock._get_reason.return_value = "testing"
-        api_mock.logs().list().execute.side_effect = (arvados.errors.ApiError(error_mock, ""),
-                                                      {"items": [{"id": 1}], "items_available": 1},
-                                                      arvados.errors.ApiError(error_mock, ""),
-                                                      {"items": [{"id": 1}], "items_available": 1})
+        api_mock.logs().list().execute.side_effect = (
+            arvados.errors.ApiError(error_mock, b""),
+            {"items": [{"id": 1}], "items_available": 1},
+            arvados.errors.ApiError(error_mock, b""),
+            {"items": [{"id": 1}], "items_available": 1},
+        )
         pc = arvados.events.PollClient(api_mock, [], on_ev, 15, None)
         pc.start()
         while len(n) < 2:
@@ -161,7 +164,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
         run_test_server.authorize_with('active')
         events = queue.Queue(100)
 
-        logstream = io.BytesIO()
+        logstream = tutil.StringIO()
         rootLogger = logging.getLogger()
         streamHandler = logging.StreamHandler(logstream)
         rootLogger.addHandler(streamHandler)
@@ -229,7 +232,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
     def test_websocket_reconnect_retry(self, event_client_connect):
         event_client_connect.side_effect = [None, Exception('EventClient.connect error'), None]
 
-        logstream = io.BytesIO()
+        logstream = tutil.StringIO()
         rootLogger = logging.getLogger()
         streamHandler = logging.StreamHandler(logstream)
         rootLogger.addHandler(streamHandler)

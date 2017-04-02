@@ -8,7 +8,7 @@ from collections import OrderedDict
 class ApiError(apiclient_errors.HttpError):
     def _get_reason(self):
         try:
-            return '; '.join(json.loads(self.content)['errors'])
+            return '; '.join(json.loads(self.content.decode('utf-8'))['errors'])
         except (KeyError, TypeError, ValueError):
             return super(ApiError, self)._get_reason()
 

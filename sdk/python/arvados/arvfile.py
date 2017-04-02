@@ -112,7 +112,7 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
     def readall(self, size=2**20, num_retries=None):
         while True:
             data = self.read(size, num_retries=num_retries)
-            if data == '':
+            if len(data) == 0:
                 break
             yield data
 
@@ -124,23 +124,23 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
             data = [cache_data]
             self._filepos += len(cache_data)
         else:
-            data = ['']
+            data = [b'']
         data_size = len(data[-1])
-        while (data_size < size) and ('\n' not in data[-1]):
+        while (data_size < size) and (b'\n' not in data[-1]):
             next_read = self.read(2 ** 20, num_retries=num_retries)
             if not next_read:
                 break
             data.append(next_read)
             data_size += len(next_read)
-        data = ''.join(data)
+        data = b''.join(data)
         try:
-            nextline_index = data.index('\n') + 1
+            nextline_index = data.index(b'\n') + 1
         except ValueError:
             nextline_index = len(data)
         nextline_index = min(nextline_index, size)
         self._filepos -= len(data) - nextline_index
         self._readline_cache = (self.tell(), data[nextline_index:])
-        return data[:nextline_index]
+        return data[:nextline_index].decode()
 
     @_FileLikeObjectBase._before_close
     @retry_method
@@ -175,7 +175,7 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
             data_size += len(s)
             if data_size >= sizehint:
                 break
-        return ''.join(data).splitlines(True)
+        return b''.join(data).decode().splitlines(True)
 
     def size(self):
         raise NotImplementedError()
@@ -212,9 +212,9 @@ class StreamFileReader(ArvadosFileReaderBase):
     def read(self, size, num_retries=None):
         """Read up to 'size' bytes from the stream, starting at the current file position"""
         if size == 0:
-            return ''
+            return b''
 
-        data = ''
+        data = b''
         available_chunks = locators_and_ranges(self.segments, self._filepos, size)
         if available_chunks:
             lr = available_chunks[0]
@@ -230,13 +230,13 @@ class StreamFileReader(ArvadosFileReaderBase):
     def readfrom(self, start, size, num_retries=None):
         """Read up to 'size' bytes from the stream, starting at 'start'"""
         if size == 0:
-            return ''
+            return b''
 
         data = []
         for lr in locators_and_ranges(self.segments, start, size):
             data.append(self._stream.readfrom(lr.locator+lr.segment_offset, lr.segment_size,
                                               num_retries=num_retries))
-        return ''.join(data)
+        return b''.join(data)
 
     def as_manifest(self):
         segs = []
@@ -316,6 +316,8 @@ class _BufferBlock(object):
 
         """
         if self._state == _BufferBlock.WRITABLE:
+            if not isinstance(data, bytes) and not isinstance(data, memoryview):
+                data = data.encode()
             while (self.write_pointer+len(data)) > len(self.buffer_block):
                 new_buffer_block = bytearray(len(self.buffer_block) * 2)
                 new_buffer_block[0:self.write_pointer] = self.buffer_block[0:self.write_pointer]
@@ -944,7 +946,7 @@ class ArvadosFile(object):
 
         with self.lock:
             if size == 0 or offset >= self.size():
-                return ''
+                return b''
             readsegs = locators_and_ranges(self._segments, offset, size)
             prefetch = locators_and_ranges(self._segments, offset + size, config.KEEP_BLOCK_SIZE, limit=32)
 
@@ -964,7 +966,7 @@ class ArvadosFile(object):
                 self.parent._my_block_manager().block_prefetch(lr.locator)
                 locs.add(lr.locator)
 
-        return ''.join(data)
+        return b''.join(data)
 
     def _repack_writes(self, num_retries):
         """Test if the buffer block has more data than actual segments.
@@ -1001,6 +1003,8 @@ class ArvadosFile(object):
         necessary.
 
         """
+        if not isinstance(data, bytes) and not isinstance(data, memoryview):
+            data = data.encode()
         if len(data) == 0:
             return
 
@@ -1157,7 +1161,7 @@ class ArvadosFileReader(ArvadosFileReaderBase):
                 data.append(rd)
                 self._filepos += len(rd)
                 rd = self.arvadosfile.readfrom(self._filepos, config.KEEP_BLOCK_SIZE, num_retries)
-            return ''.join(data)
+            return b''.join(data)
         else:
             data = self.arvadosfile.readfrom(self._filepos, size, num_retries, exact=True)
             self._filepos += len(data)

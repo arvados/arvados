@@ -117,6 +117,7 @@ _cast_orig = apiclient_discovery._cast
 def _cast_objects_too(value, schema_type):
     global _cast_orig
     if (type(value) != type('') and
+        type(value) != type(b'') and
         (schema_type == 'object' or schema_type == 'array')):
         return json.dumps(value)
     else:

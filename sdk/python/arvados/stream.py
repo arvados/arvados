@@ -80,13 +80,13 @@ class StreamReader(object):
     def readfrom(self, start, size, num_retries=None):
         """Read up to 'size' bytes from the stream, starting at 'start'"""
         if size == 0:
-            return ''
+            return b''
         if self._keep is None:
             self._keep = KeepClient(num_retries=self.num_retries)
         data = []
         for lr in locators_and_ranges(self._data_locators, start, size):
             data.append(self._keepget(lr.locator, num_retries=num_retries)[lr.segment_offset:lr.segment_offset+lr.segment_size])
-        return ''.join(data)
+        return b''.join(data)
 
     def manifest_text(self, strip=False):
         manifest_text = [self.name().replace(' ', '\\040')]

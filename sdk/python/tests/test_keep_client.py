@@ -12,6 +12,7 @@ import pycurl
 import random
 import re
 import socket
+import sys
 import threading
 import time
 import unittest
@@ -48,12 +49,12 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
 
         self.assertEqual(0, self.keep_client.download_counter.get())
         self.assertEqual(self.keep_client.get(foo_locator),
-                         'foo',
+                         b'foo',
                          'wrong content from Keep.get(md5("foo"))')
         self.assertEqual(3, self.keep_client.download_counter.get())
 
     def test_KeepBinaryRWTest(self):
-        blob_str = '\xff\xfe\xf7\x00\x01\x02'
+        blob_str = b'\xff\xfe\xf7\x00\x01\x02'
         blob_locator = self.keep_client.put(blob_str)
         self.assertRegexpMatches(
             blob_locator,
@@ -64,28 +65,28 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
                          'wrong content from Keep.get(md5(<binarydata>))')
 
     def test_KeepLongBinaryRWTest(self):
-        blob_str = '\xff\xfe\xfd\xfc\x00\x01\x02\x03'
+        blob_data = b'\xff\xfe\xfd\xfc\x00\x01\x02\x03'
         for i in range(0,23):
-            blob_str = blob_str + blob_str
-        blob_locator = self.keep_client.put(blob_str)
+            blob_data = blob_data + blob_data
+        blob_locator = self.keep_client.put(blob_data)
         self.assertRegexpMatches(
             blob_locator,
             '^84d90fc0d8175dd5dcfab04b999bc956\+67108864',
             ('wrong locator from Keep.put(<binarydata>): ' + blob_locator))
         self.assertEqual(self.keep_client.get(blob_locator),
-                         blob_str,
+                         blob_data,
                          'wrong content from Keep.get(md5(<binarydata>))')
 
     @unittest.skip("unreliable test - please fix and close #8752")
     def test_KeepSingleCopyRWTest(self):
-        blob_str = '\xff\xfe\xfd\xfc\x00\x01\x02\x03'
-        blob_locator = self.keep_client.put(blob_str, copies=1)
+        blob_data = b'\xff\xfe\xfd\xfc\x00\x01\x02\x03'
+        blob_locator = self.keep_client.put(blob_data, copies=1)
         self.assertRegexpMatches(
             blob_locator,
             '^c902006bc98a3eb4a3663b65ab4a6fab\+8',
             ('wrong locator from Keep.put(<binarydata>): ' + blob_locator))
         self.assertEqual(self.keep_client.get(blob_locator),
-                         blob_str,
+                         blob_data,
                          'wrong content from Keep.get(md5(<binarydata>))')
 
     def test_KeepEmptyCollectionTest(self):
@@ -103,9 +104,10 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
             '^acbd18db4cc2f85cedef654fccc4a4d8\+3',
             'wrong md5 hash from Keep.put("foo"): ' + foo_locator)
 
-        with self.assertRaises(UnicodeEncodeError):
-            # Error if it is not ASCII
-            self.keep_client.put(u'\xe2')
+        if sys.version_info < (3, 0):
+            with self.assertRaises(UnicodeEncodeError):
+                # Error if it is not ASCII
+                self.keep_client.put(u'\xe2')
 
         with self.assertRaises(AttributeError):
             # Must be bytes or have an encode() method
@@ -119,7 +121,7 @@ class KeepTestCase(run_test_server.TestCaseWithServers):
             'wrong md5 hash from Keep.put for "test_head": ' + locator)
         self.assertEqual(True, self.keep_client.head(locator))
         self.assertEqual(self.keep_client.get(locator),
-                         'test_head',
+                         b'test_head',
                          'wrong content from Keep.get for "test_head"')
 
 class KeepPermissionTestCase(run_test_server.TestCaseWithServers):
@@ -136,7 +138,7 @@ class KeepPermissionTestCase(run_test_server.TestCaseWithServers):
             r'^acbd18db4cc2f85cedef654fccc4a4d8\+3\+A[a-f0-9]+@[a-f0-9]+$',
             'invalid locator from Keep.put("foo"): ' + foo_locator)
         self.assertEqual(keep_client.get(foo_locator),
-                         'foo',
+                         b'foo',
                          'wrong content from Keep.get(md5("foo"))')
 
         # GET with an unsigned locator => NotFound
@@ -203,13 +205,13 @@ class KeepOptionalPermission(run_test_server.TestCaseWithServers):
     def test_KeepAuthenticatedSignedTest(self):
         signed_locator = self._put_foo_and_check()
         self.assertEqual(self.keep_client.get(signed_locator),
-                         'foo',
+                         b'foo',
                          'wrong content from Keep.get(md5("foo"))')
 
     def test_KeepAuthenticatedUnsignedTest(self):
         signed_locator = self._put_foo_and_check()
         self.assertEqual(self.keep_client.get("acbd18db4cc2f85cedef654fccc4a4d8"),
-                         'foo',
+                         b'foo',
                          'wrong content from Keep.get(md5("foo"))')
 
     def test_KeepUnauthenticatedSignedTest(self):
@@ -218,7 +220,7 @@ class KeepOptionalPermission(run_test_server.TestCaseWithServers):
         signed_locator = self._put_foo_and_check()
         self.keep_client.api_token = ''
         self.assertEqual(self.keep_client.get(signed_locator),
-                         'foo',
+                         b'foo',
                          'wrong content from Keep.get(md5("foo"))')
 
     def test_KeepUnauthenticatedUnsignedTest(self):
@@ -227,7 +229,7 @@ class KeepOptionalPermission(run_test_server.TestCaseWithServers):
         signed_locator = self._put_foo_and_check()
         self.keep_client.api_token = ''
         self.assertEqual(self.keep_client.get("acbd18db4cc2f85cedef654fccc4a4d8"),
-                         'foo',
+                         b'foo',
                          'wrong content from Keep.get(md5("foo"))')
 
 
@@ -257,7 +259,7 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers):
             '^73feffa4b7f6bb68e44cf984c85f6e88\+3',
             'wrong md5 hash from Keep.put("baz"): ' + baz_locator)
         self.assertEqual(keep_client.get(baz_locator),
-                         'baz',
+                         b'baz',
                          'wrong content from Keep.get(md5("baz"))')
         self.assertTrue(keep_client.using_proxy)
 
@@ -273,7 +275,7 @@ class KeepProxyTestCase(run_test_server.TestCaseWithServers):
             '^91f372a266fe2bf2823cb8ec7fda31ce\+4',
             'wrong md5 hash from Keep.put("baz2"): ' + baz_locator)
         self.assertEqual(keep_client.get(baz_locator),
-                         'baz2',
+                         b'baz2',
                          'wrong content from Keep.get(md5("baz2"))')
         self.assertTrue(keep_client.using_proxy)
 
@@ -341,7 +343,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
         with tutil.mock_keep_responses(force_timeout, 0) as mock:
             keep_client = arvados.KeepClient(api_client=api_client)
             with self.assertRaises(arvados.errors.KeepWriteError):
-                keep_client.put('foo')
+                keep_client.put(b'foo')
             self.assertEqual(
                 mock.responses[0].getopt(pycurl.CONNECTTIMEOUT_MS),
                 int(arvados.KeepClient.DEFAULT_TIMEOUT[0]*1000))
@@ -482,7 +484,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertEqual(0, len(exc_check.exception.request_errors()))
 
     def test_oddball_service_get(self):
-        body = 'oddball service get'
+        body = b'oddball service get'
         api_client = self.mock_keep_services(service_type='fancynewblobstore')
         with tutil.mock_keep_responses(body, 200):
             keep_client = arvados.KeepClient(api_client=api_client)
@@ -490,7 +492,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertEqual(body, actual)
 
     def test_oddball_service_put(self):
-        body = 'oddball service put'
+        body = b'oddball service put'
         pdh = tutil.str_keep_locator(body)
         api_client = self.mock_keep_services(service_type='fancynewblobstore')
         with tutil.mock_keep_responses(pdh, 200):
@@ -499,7 +501,7 @@ class KeepClientServiceTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.assertEqual(pdh, actual)
 
     def test_oddball_service_writer_count(self):
-        body = 'oddball service writer count'
+        body = b'oddball service writer count'
         pdh = tutil.str_keep_locator(body)
         api_client = self.mock_keep_services(service_type='fancynewblobstore',
                                              count=4)
@@ -530,7 +532,7 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
             list('9d81c02e76a3bf54'),
             ]
         self.blocks = [
-            "{:064x}".format(x)
+            "{:064x}".format(x).encode()
             for x in range(len(self.expected_order))]
         self.hashes = [
             hashlib.md5(self.blocks[x]).hexdigest()
@@ -567,7 +569,7 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
                  self.assertRaises(arvados.errors.KeepRequestError):
                 op(i)
             got_order = [
-                re.search(r'//\[?keep0x([0-9a-f]+)', resp.getopt(pycurl.URL)).group(1)
+                re.search(r'//\[?keep0x([0-9a-f]+)', resp.getopt(pycurl.URL).decode()).group(1)
                 for resp in mock.responses]
             self.assertEqual(self.expected_order[i]*2, got_order)
 
@@ -578,7 +580,7 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
                      self.assertRaises(arvados.errors.KeepWriteError):
                     self.keep_client.put(self.blocks[i], num_retries=2, copies=copies)
                 got_order = [
-                    re.search(r'//\[?keep0x([0-9a-f]+)', resp.getopt(pycurl.URL)).group(1)
+                    re.search(r'//\[?keep0x([0-9a-f]+)', resp.getopt(pycurl.URL).decode()).group(1)
                     for resp in mock.responses]
                 # With T threads racing to make requests, the position
                 # of a given server in the sequence of HTTP requests
@@ -606,7 +608,7 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
 
     def test_probe_waste_adding_one_server(self):
         hashes = [
-            hashlib.md5("{:064x}".format(x)).hexdigest() for x in range(100)]
+            hashlib.md5("{:064x}".format(x).encode()).hexdigest() for x in range(100)]
         initial_services = 12
         self.api_client = self.mock_keep_services(count=initial_services)
         self.keep_client = arvados.KeepClient(api_client=self.api_client)
@@ -644,7 +646,7 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
                     max_penalty))
 
     def check_64_zeros_error_order(self, verb, exc_class):
-        data = '0' * 64
+        data = b'0' * 64
         if verb == 'get':
             data = tutil.str_keep_locator(data)
         # Arbitrary port number:
@@ -653,7 +655,7 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
         keep_client = arvados.KeepClient(api_client=api_client)
         with mock.patch('pycurl.Curl') as curl_mock, \
              self.assertRaises(exc_class) as err_check:
-            curl_mock.return_value.side_effect = socket.timeout
+            curl_mock.return_value = tutil.FakeCurl.make(code=500, body=b'')
             getattr(keep_client, verb)(data)
         urls = [urllib.parse.urlparse(url)
                 for url in err_check.exception.request_errors()]
@@ -671,7 +673,7 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
     # BANDWIDTH_LOW_LIM must be less than len(DATA) so we can transfer
     # 1s worth of data and then trigger bandwidth errors before running
     # out of data.
-    DATA = 'x'*2**11
+    DATA = b'x'*2**11
     BANDWIDTH_LOW_LIM = 1024
     TIMEOUT_TIME = 1.0
 
@@ -847,9 +849,9 @@ class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
             code=200, body='foo', headers={'Content-Length': 3})
         self.mock_disks_and_gateways()
         locator = 'acbd18db4cc2f85cedef654fccc4a4d8+3+K@' + self.gateways[0]['uuid']
-        self.assertEqual('foo', self.keepClient.get(locator))
+        self.assertEqual(b'foo', self.keepClient.get(locator))
         self.assertEqual(self.gateway_roots[0]+locator,
-                         MockCurl.return_value.getopt(pycurl.URL))
+                         MockCurl.return_value.getopt(pycurl.URL).decode())
         self.assertEqual(True, self.keepClient.head(locator))
 
     @mock.patch('pycurl.Curl')
@@ -869,11 +871,11 @@ class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
         # Gateways are tried first, in the order given.
         for i, root in enumerate(self.gateway_roots):
             self.assertEqual(root+locator,
-                             mocks[i].getopt(pycurl.URL))
+                             mocks[i].getopt(pycurl.URL).decode())
         # Disk services are tried next.
         for i in range(gateways, gateways+disks):
             self.assertRegexpMatches(
-                mocks[i].getopt(pycurl.URL),
+                mocks[i].getopt(pycurl.URL).decode(),
                 r'keep0x')
 
     @mock.patch('pycurl.Curl')
@@ -881,7 +883,7 @@ class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
         gateways = 4
         disks = 3
         mocks = [
-            tutil.FakeCurl.make(code=404, body='')
+            tutil.FakeCurl.make(code=404, body=b'')
             for _ in range(gateways+disks)
         ]
         MockCurl.side_effect = tutil.queue_with(mocks)
@@ -893,32 +895,32 @@ class KeepClientGatewayTestCase(unittest.TestCase, tutil.ApiClientMock):
         # Gateways are tried first, in the order given.
         for i, root in enumerate(self.gateway_roots):
             self.assertEqual(root+locator,
-                             mocks[i].getopt(pycurl.URL))
+                             mocks[i].getopt(pycurl.URL).decode())
         # Disk services are tried next.
         for i in range(gateways, gateways+disks):
             self.assertRegexpMatches(
-                mocks[i].getopt(pycurl.URL),
+                mocks[i].getopt(pycurl.URL).decode(),
                 r'keep0x')
 
     @mock.patch('pycurl.Curl')
     def test_get_with_remote_proxy_hint(self, MockCurl):
         MockCurl.return_value = tutil.FakeCurl.make(
-            code=200, body='foo', headers={'Content-Length': 3})
+            code=200, body=b'foo', headers={'Content-Length': 3})
         self.mock_disks_and_gateways()
         locator = 'acbd18db4cc2f85cedef654fccc4a4d8+3+K@xyzzy'
-        self.assertEqual('foo', self.keepClient.get(locator))
+        self.assertEqual(b'foo', self.keepClient.get(locator))
         self.assertEqual('https://keep.xyzzy.arvadosapi.com/'+locator,
-                         MockCurl.return_value.getopt(pycurl.URL))
+                         MockCurl.return_value.getopt(pycurl.URL).decode())
 
     @mock.patch('pycurl.Curl')
     def test_head_with_remote_proxy_hint(self, MockCurl):
         MockCurl.return_value = tutil.FakeCurl.make(
-            code=200, body='foo', headers={'Content-Length': 3})
+            code=200, body=b'foo', headers={'Content-Length': 3})
         self.mock_disks_and_gateways()
         locator = 'acbd18db4cc2f85cedef654fccc4a4d8+3+K@xyzzy'
         self.assertEqual(True, self.keepClient.head(locator))
         self.assertEqual('https://keep.xyzzy.arvadosapi.com/'+locator,
-                         MockCurl.return_value.getopt(pycurl.URL))
+                         MockCurl.return_value.getopt(pycurl.URL).decode())
 
 
 class KeepClientRetryTestMixin(object):
@@ -937,7 +939,7 @@ class KeepClientRetryTestMixin(object):
     # out appropriate methods in the client.
 
     PROXY_ADDR = 'http://[%s]:65535/' % (tutil.TEST_HOST,)
-    TEST_DATA = 'testdata'
+    TEST_DATA = b'testdata'
     TEST_LOCATOR = 'ef654c40ab4f1747fc699915d4f70902+8'
 
     def setUp(self):

@@ -26,28 +26,28 @@ class StreamFileReaderTestCase(unittest.TestCase):
     def test_read_block_crossing_behavior(self):
         # read() calls will be aligned on block boundaries - see #3663.
         sfile = self.make_count_reader()
-        self.assertEqual('123', sfile.read(10))
+        self.assertEqual(b'123', sfile.read(10))
 
     def test_small_read(self):
         sfile = self.make_count_reader()
-        self.assertEqual('12', sfile.read(2))
+        self.assertEqual(b'12', sfile.read(2))
 
     def test_successive_reads(self):
         sfile = self.make_count_reader()
-        for expect in ['123', '456', '789', '']:
+        for expect in [b'123', b'456', b'789', b'']:
             self.assertEqual(expect, sfile.read(10))
 
     def test_readfrom_spans_blocks(self):
         sfile = self.make_count_reader()
-        self.assertEqual('6789', sfile.readfrom(5, 12))
+        self.assertEqual(b'6789', sfile.readfrom(5, 12))
 
     def test_small_readfrom_spanning_blocks(self):
         sfile = self.make_count_reader()
-        self.assertEqual('2345', sfile.readfrom(1, 4))
+        self.assertEqual(b'2345', sfile.readfrom(1, 4))
 
     def test_readall(self):
         sfile = self.make_count_reader()
-        self.assertEqual('123456789', ''.join(sfile.readall()))
+        self.assertEqual(b'123456789', b''.join(sfile.readall()))
 
     def test_one_arg_seek(self):
         self.test_absolute_seek([])
@@ -55,20 +55,20 @@ class StreamFileReaderTestCase(unittest.TestCase):
     def test_absolute_seek(self, args=[os.SEEK_SET]):
         sfile = self.make_count_reader()
         sfile.seek(6, *args)
-        self.assertEqual('78', sfile.read(2))
+        self.assertEqual(b'78', sfile.read(2))
         sfile.seek(4, *args)
-        self.assertEqual('56', sfile.read(2))
+        self.assertEqual(b'56', sfile.read(2))
 
     def test_relative_seek(self, args=[os.SEEK_CUR]):
         sfile = self.make_count_reader()
-        self.assertEqual('12', sfile.read(2))
+        self.assertEqual(b'12', sfile.read(2))
         sfile.seek(2, *args)
-        self.assertEqual('56', sfile.read(2))
+        self.assertEqual(b'56', sfile.read(2))
 
     def test_end_seek(self):
         sfile = self.make_count_reader()
         sfile.seek(-6, os.SEEK_END)
-        self.assertEqual('45', sfile.read(2))
+        self.assertEqual(b'45', sfile.read(2))
 
     def test_seek_min_zero(self):
         sfile = self.make_count_reader()
@@ -101,7 +101,7 @@ class StreamFileReaderTestCase(unittest.TestCase):
     def test_context(self):
         with self.make_count_reader() as sfile:
             self.assertFalse(sfile.closed, "reader is closed inside context")
-            self.assertEqual('12', sfile.read(2))
+            self.assertEqual(b'12', sfile.read(2))
         self.assertTrue(sfile.closed, "reader is open after context")
 
     def make_newlines_reader(self):
@@ -163,12 +163,12 @@ class StreamFileReaderTestCase(unittest.TestCase):
         self.check_decompressed_name('test.log.bz2', 'test.log')
 
     def check_decompression(self, compress_ext, compress_func):
-        test_text = 'decompression\ntest\n'
+        test_text = b'decompression\ntest\n'
         test_data = compress_func(test_text)
         stream = tutil.MockStreamReader('.', test_data)
         reader = StreamFileReader(stream, [Range(0, 0, len(test_data))],
                                   'test.' + compress_ext)
-        self.assertEqual(test_text, ''.join(reader.readall_decompressed()))
+        self.assertEqual(test_text, b''.join(reader.readall_decompressed()))
 
     @staticmethod
     def gzip_compress(data):
@@ -197,7 +197,7 @@ class StreamFileReaderTestCase(unittest.TestCase):
         reader = self.make_newlines_reader()
         data = reader.readline()
         self.assertEqual('one\n', data)
-        self.assertEqual(''.join(['two\n', '\n', 'three\n', 'four\n', '\n']), ''.join(reader.readall()))
+        self.assertEqual(b''.join([b'two\n', b'\n', b'three\n', b'four\n', b'\n']), b''.join(reader.readall()))
 
 
 class StreamRetryTestMixin(object):
@@ -216,7 +216,7 @@ class StreamRetryTestMixin(object):
     def test_success_without_retries(self):
         with tutil.mock_keep_responses('bar', 200):
             reader = self.reader_for('bar_file')
-            self.assertEqual('bar', self.read_for_test(reader, 3))
+            self.assertEqual(b'bar', self.read_for_test(reader, 3))
 
     @tutil.skip_sleep
     def test_read_no_default_retry(self):
@@ -229,13 +229,13 @@ class StreamRetryTestMixin(object):
     def test_read_with_instance_retries(self):
         with tutil.mock_keep_responses('foo', 500, 200):
             reader = self.reader_for('foo_file', num_retries=3)
-            self.assertEqual('foo', self.read_for_test(reader, 3))
+            self.assertEqual(b'foo', self.read_for_test(reader, 3))
 
     @tutil.skip_sleep
     def test_read_with_method_retries(self):
         with tutil.mock_keep_responses('foo', 500, 200):
             reader = self.reader_for('foo_file')
-            self.assertEqual('foo',
+            self.assertEqual(b'foo',
                              self.read_for_test(reader, 3, num_retries=3))
 
     @tutil.skip_sleep
@@ -291,17 +291,17 @@ class StreamFileReadFromTestCase(StreamFileReadTestCase):
 
 class StreamFileReadAllTestCase(StreamFileReadTestCase):
     def read_for_test(self, reader, byte_count, **kwargs):
-        return ''.join(reader.readall(**kwargs))
+        return b''.join(reader.readall(**kwargs))
 
 
 class StreamFileReadAllDecompressedTestCase(StreamFileReadTestCase):
     def read_for_test(self, reader, byte_count, **kwargs):
-        return ''.join(reader.readall_decompressed(**kwargs))
+        return b''.join(reader.readall_decompressed(**kwargs))
 
 
 class StreamFileReadlinesTestCase(StreamFileReadTestCase):
     def read_for_test(self, reader, byte_count, **kwargs):
-        return ''.join(reader.readlines(**kwargs))
+        return ''.join(reader.readlines(**kwargs)).encode()
 
 if __name__ == '__main__':
     unittest.main()
