@@ -164,8 +164,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     try:
         for s, f in files_in_collection(reader):
             if get_prefix and get_prefix[-1] == os.sep:
-                if 0 != string.find(os.path.join(s.stream_name(), f.name),
-                                    '.' + get_prefix):
+                if not os.path.join(s.stream_name(),
+                                    f.name).startswith('.' + get_prefix):
                     continue
                 if args.destination == "-":
                     dest_path = "-"
@@ -239,6 +239,9 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
             if outfile and (outfile.fileno() > 2) and not outfile.closed:
                 os.unlink(outfile.name)
             break
+        finally:
+            if outfile is not stdout:
+                outfile.close()
 
     if args.progress:
         stderr.write('\n')
