@@ -10,6 +10,9 @@ import socketserver
 import sys
 import time
 
+_debug = os.environ.get('ARVADOS_DEBUG', None)
+
+
 class Server(socketserver.ThreadingMixIn, http.server.HTTPServer, object):
 
     allow_reuse_address = 1
@@ -60,6 +63,9 @@ class Server(socketserver.ThreadingMixIn, http.server.HTTPServer, object):
 
 
 class Handler(http.server.BaseHTTPRequestHandler, object):
+
+    protocol_version = 'HTTP/1.1'
+
     def wfile_bandwidth_write(self, data_to_write):
         if self.server.bandwidth is None and self.server.delays['mid_write'] == 0:
             self.wfile.write(data_to_write)
@@ -72,7 +78,7 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
             while num_sent_bytes < num_bytes:
                 if num_sent_bytes > self.server.bandwidth and not outage_happened:
                     self.server._do_delay('mid_write')
-                    target_time += self.delays['mid_write']
+                    target_time += self.server.delays['mid_write']
                     outage_happened = True
                 num_write_bytes = min(BYTES_PER_WRITE,
                     num_bytes - num_sent_bytes)
@@ -96,7 +102,7 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
             while bytes_to_read > bytes_read:
                 if bytes_read > self.server.bandwidth and not outage_happened:
                     self.server._do_delay('mid_read')
-                    target_time += self.delays['mid_read']
+                    target_time += self.server.delays['mid_read']
                     outage_happened = True
                 next_bytes_to_read = min(BYTES_PER_READ,
                     bytes_to_read - bytes_read)
@@ -107,9 +113,29 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
                     self.server._sleep_at_least(target_time - time.time())
         return data
 
+    def finish(self, *args, **kwargs):
+        try:
+            return super(Handler, self).finish(*args, **kwargs)
+        except Exception as err:
+            if _debug:
+                raise
+
     def handle(self, *args, **kwargs):
+        try:
+            return super(Handler, self).handle(*args, **kwargs)
+        except:
+            if _debug:
+                raise
+
+    def handle_one_request(self, *args, **kwargs):
+        self._sent_continue = False
         self.server._do_delay('request')
-        return super(Handler, self).handle(*args, **kwargs)
+        return super(Handler, self).handle_one_request(*args, **kwargs)
+
+    def handle_expect_100(self):
+        self.server._do_delay('request_body')
+        self._sent_continue = True
+        return super(Handler, self).handle_expect_100()
 
     def do_GET(self):
         self.server._do_delay('response')
@@ -120,6 +146,7 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
         if datahash not in self.server.store:
             return self.send_response(404)
         self.send_response(200)
+        self.send_header('Connection', 'close')
         self.send_header('Content-type', 'application/octet-stream')
         self.end_headers()
         self.server._do_delay('response_body')
@@ -135,16 +162,15 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
         if datahash not in self.server.store:
             return self.send_response(404)
         self.send_response(200)
+        self.send_header('Connection', 'close')
         self.send_header('Content-type', 'application/octet-stream')
         self.send_header('Content-length', str(len(self.server.store[datahash])))
         self.end_headers()
         self.server._do_delay('response_close')
-
-    def handle_expect_100(self):
-        self.server._do_delay('request_body')
+        self.close_connection = True
 
     def do_PUT(self):
-        if sys.version_info < (3, 0):
+        if not self._sent_continue and self.headers.get('expect') == '100-continue':
             # The comments at https://bugs.python.org/issue1491
             # implies that Python 2.7 BaseHTTPRequestHandler was
             # patched to support 100 Continue, but reading the actual
@@ -152,33 +178,23 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
             # to send the response on the socket directly.
             self.server._do_delay('request_body')
             self.wfile.write("{} {} {}\r\n\r\n".format(
-                self.protocol_version, 100, "Continue"))
+                self.protocol_version, 100, "Continue").encode())
         data = self.rfile_bandwidth_read(
             int(self.headers.get('content-length')))
         datahash = hashlib.md5(data).hexdigest()
         self.server.store[datahash] = data
+        resp = '{}+{}\n'.format(datahash, len(data)).encode()
         self.server._do_delay('response')
         self.send_response(200)
+        self.send_header('Connection', 'close')
         self.send_header('Content-type', 'text/plain')
+        self.send_header('Content-length', len(resp))
         self.end_headers()
         self.server._do_delay('response_body')
-        self.wfile_bandwidth_write(datahash + '+' + str(len(data)))
+        self.wfile_bandwidth_write(resp)
         self.server._do_delay('response_close')
+        self.close_connection = True
 
     def log_request(self, *args, **kwargs):
-        if os.environ.get('ARVADOS_DEBUG', None):
+        if _debug:
             super(Handler, self).log_request(*args, **kwargs)
-
-    def finish(self, *args, **kwargs):
-        """Ignore exceptions, notably "Broken pipe" when client times out."""
-        try:
-            return super(Handler, self).finish(*args, **kwargs)
-        except:
-            pass
-
-    def handle_one_request(self, *args, **kwargs):
-        """Ignore exceptions, notably "Broken pipe" when client times out."""
-        try:
-            return super(Handler, self).handle_one_request(*args, **kwargs)
-        except:
-            pass
