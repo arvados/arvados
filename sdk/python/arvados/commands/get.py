@@ -141,6 +141,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         logger.error("failed to read collection: {}".format(error))
         return 1
 
+    # User asked to download the collection's manifest
     if not get_prefix:
         if not args.n:
             open_flags = os.O_CREAT | os.O_WRONLY
@@ -166,28 +167,39 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     todo = []
     todo_bytes = 0
     try:
-        for s, f in files_in_collection(reader):
-            if get_prefix and get_prefix[-1] == os.sep:
-                if not os.path.join(s.stream_name(),
-                                    f.name).startswith('.' + get_prefix):
-                    continue
-                if args.destination == "-":
-                    dest_path = "-"
-                else:
-                    dest_path = os.path.join(
-                        args.destination,
-                        os.path.join(s.stream_name(), f.name)[len(get_prefix)+1:])
-                    if (not (args.n or args.f or args.skip_existing) and
-                        os.path.exists(dest_path)):
-                        logger.error('Local file %s already exists.' % (dest_path,))
-                        return 1
-            else:
-                if os.path.join(s.stream_name(), f.name) != '.' + get_prefix:
-                    continue
-                dest_path = args.destination
-            todo += [(s, f, dest_path)]
-            todo_bytes += f.size()
-    except arvados.errors.NotFoundError as e:
+        if get_prefix == os.sep:
+            item = reader
+        else:
+            item = reader.find('.' + get_prefix)
+
+        if isinstance(item, arvados.collection.Subcollection) or isinstance(item, arvados.collection.CollectionReader):
+            # If the user asked for a file and we got a subcollection, error out.
+            if get_prefix[-1] != os.sep:
+                logger.error("requested file '{}' is in fact a subcollection. Append a trailing '/' to download it.".format('.' + get_prefix))
+                return 1
+            # If the user asked stdout as a destination, error out.
+            elif args.destination == '-':
+                logger.error("cannot use 'stdout' as destination when downloading multiple files.")
+                return 1
+            # User asked for a subcollection, and that's what was found. Add up total size
+            # to download.
+            for s, f in files_in_collection(item):
+                dest_path = os.path.join(
+                    args.destination,
+                    os.path.join(s.stream_name(), f.name)[len(get_prefix)+1:])
+                if (not (args.n or args.f or args.skip_existing) and
+                    os.path.exists(dest_path)):
+                    logger.error('Local file %s already exists.' % (dest_path,))
+                    return 1
+                todo += [(s, f, dest_path)]
+                todo_bytes += f.size()
+        elif isinstance(item, arvados.arvfile.ArvadosFile):
+            todo += [(item.parent, item, args.destination)]
+            todo_bytes += item.size()
+        else:
+            logger.error("'{}' not found.".format('.' + get_prefix))
+            return 1
+    except (IOError, arvados.errors.NotFoundError) as e:
         logger.error(e)
         return 1
 
@@ -244,7 +256,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 os.unlink(outfile.name)
             break
         finally:
-            if outfile is not stdout:
+            if outfile != None and outfile != stdout:
                 outfile.close()
 
     if args.progress:
