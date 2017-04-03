@@ -135,7 +135,11 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     get_prefix = r.group(2)
     if args.r and not get_prefix:
         get_prefix = os.sep
-    reader = arvados.CollectionReader(collection, num_retries=args.retries)
+    try:
+        reader = arvados.CollectionReader(collection, num_retries=args.retries)
+    except Exception as error:
+        logger.error("failed to read collection: {}".format(error))
+        return 1
 
     if not get_prefix:
         if not args.n:
