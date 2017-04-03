@@ -38,7 +38,7 @@ class Server(socketserver.ThreadingMixIn, http.server.HTTPServer, object):
     def setdelays(self, **kwargs):
         """In future requests, induce delays at the given checkpoints."""
         for (k, v) in kwargs.items():
-            self.delays.get(k) # NameError if unknown key
+            self.delays.get(k)  # NameError if unknown key
             self.delays[k] = v
 
     def setbandwidth(self, bandwidth):
@@ -61,7 +61,7 @@ class Server(socketserver.ThreadingMixIn, http.server.HTTPServer, object):
 
 class Handler(http.server.BaseHTTPRequestHandler, object):
     def wfile_bandwidth_write(self, data_to_write):
-        if self.server.bandwidth == None and self.server.delays['mid_write'] == 0:
+        if self.server.bandwidth is None and self.server.delays['mid_write'] == 0:
             self.wfile.write(data_to_write)
         else:
             BYTES_PER_WRITE = int(self.server.bandwidth/4) or 32768
@@ -85,7 +85,7 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
         return None
 
     def rfile_bandwidth_read(self, bytes_to_read):
-        if self.server.bandwidth == None and self.server.delays['mid_read'] == 0:
+        if self.server.bandwidth is None and self.server.delays['mid_read'] == 0:
             return self.rfile.read(bytes_to_read)
         else:
             BYTES_PER_READ = int(self.server.bandwidth/4) or 32768
