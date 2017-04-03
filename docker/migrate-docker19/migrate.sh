@@ -1,6 +1,25 @@
 #!/bin/bash
 
-set -e
+# This script is called by arv-migrate-docker19 to perform the actual migration
+# of a single image.  This works by running Docker-in-Docker (dnd.sh) to
+# download the image using Docker 1.9 and then upgrading to Docker 1.13 and
+# uploading the converted image.
+
+# When using bash in pid 1 and using "trap on EXIT"
+# it will sometimes go into an 100% CPU infinite loop.
+#
+# Using workaround from here:
+#
+# https://github.com/docker/docker/issues/4854
+if [ "$$" = 1 ]; then
+  $0 "$@"
+  exit $?
+fi
+
+# -x           show script
+# -e           exit on error
+# -o pipefail  use exit code from 1st failure in pipeline, not last
+set -x -e -o pipefail
 
 image_tar_keepref=$1
 image_id=$2
@@ -9,10 +28,12 @@ image_tag=$4
 project_uuid=$5
 graph_driver=$6
 
+# Print free space in /var/lib/docker
 function freespace() {
     df -B1 /var/lib/docker | tail -n1 | sed 's/  */ /g' | cut -d' ' -f4
 }
 
+# Run docker-in-docker script and then wait for it to come up
 function start_docker {
     /root/dnd.sh $graph_driver &
     for i in $(seq 1 10) ; do
@@ -24,6 +45,7 @@ function start_docker {
     false
 }
 
+# Kill docker from pid then wait for it to be down
 function kill_docker {
     if test -f /var/run/docker.pid ; then
         kill $(cat /var/run/docker.pid)
@@ -37,8 +59,8 @@ function kill_docker {
     false
 }
 
+# Ensure that we clean up docker graph and/or lingering cache files on exit
 function cleanup {
-    trap EXIT
     kill_docker
     rm -rf /var/lib/docker/*
     rm -rf /root/.cache/arvados/docker/*
