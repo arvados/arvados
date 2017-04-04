@@ -732,32 +732,11 @@ install_apiserver() {
 
     if [ -n "$CONFIGSRC" ]
     then
-        for f in database.yml application.yml
+        for f in database.yml
         do
             cp "$CONFIGSRC/$f" config/ || fatal "$f"
         done
     fi
-
-    # Fill in a random secret_token and blob_signing_key for testing
-    SECRET_TOKEN=`echo 'puts rand(2**512).to_s(36)' |ruby`
-    BLOB_SIGNING_KEY=`echo 'puts rand(2**512).to_s(36)' |ruby`
-
-    sed -i'' -e "s:SECRET_TOKEN:$SECRET_TOKEN:" config/application.yml
-    sed -i'' -e "s:BLOB_SIGNING_KEY:$BLOB_SIGNING_KEY:" config/application.yml
-
-    # Set up empty git repo (for git tests)
-    GITDIR=$(mktemp -d)
-    sed -i'' -e "s:/var/cache/git:$GITDIR:" config/application.default.yml
-
-    rm -rf $GITDIR
-    mkdir -p $GITDIR/test
-    cd $GITDIR/test \
-        && git init \
-        && git config user.email "jenkins@ci.curoverse.com" \
-        && git config user.name "Jenkins, CI" \
-        && touch tmp \
-        && git add tmp \
-        && git commit -m 'initial commit'
 
     # Clear out any lingering postgresql connections to the test
     # database, so that we can drop it. This assumes the current user
