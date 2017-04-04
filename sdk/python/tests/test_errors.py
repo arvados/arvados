@@ -57,10 +57,14 @@ class KeepRequestErrorTestCase(unittest.TestCase):
         test_exc = arv_error.KeepRequestError(message, self.REQUEST_ERRORS[:])
         exc_report = self.traceback_str(test_exc)
         self.assertRegex(exc_report, r"^(arvados\.errors\.)?KeepRequestError: ")
-        for expect_substr in [message, "raised IOError", "raised MemoryError",
-                              "test MemoryError", "second test IOError",
-                              "responded with 500 Internal Server Error"]:
-            self.assertIn(expect_substr, exc_report)
+        self.assertIn(message, exc_report)
+        for expect_re in [
+                r"raised (IOError|OSError)", # IOError in Python2, OSError in Python3
+                r"raised MemoryError",
+                r"test MemoryError",
+                r"second test IOError",
+                r"responded with 500 Internal Server Error"]:
+            self.assertRegex(exc_report, expect_re)
         # Assert the report maintains order of listed services.
         last_index = -1
         for service_key, _ in self.REQUEST_ERRORS:
