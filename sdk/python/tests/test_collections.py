@@ -933,11 +933,15 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
         c2 = Collection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
         d = c2.diff(c1)
-        self.assertEqual(d, [('del', './count2.txt', c2["count2.txt"]),
-                             ('add', './count1.txt', c1["count1.txt"])])
+        self.assertEqual(sorted(d), [
+            ('add', './count1.txt', c1["count1.txt"]),
+            ('del', './count2.txt', c2["count2.txt"]),
+        ])
         d = c1.diff(c2)
-        self.assertEqual(d, [('del', './count1.txt', c1["count1.txt"]),
-                             ('add', './count2.txt', c2["count2.txt"])])
+        self.assertEqual(sorted(d), [
+            ('add', './count2.txt', c2["count2.txt"]),
+            ('del', './count1.txt', c1["count1.txt"]),
+        ])
         self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
         c1.apply(d)
         self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
@@ -970,11 +974,15 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
         c2 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt 10:20:count2.txt\n')
         d = c2.diff(c1)
-        self.assertEqual(d, [('del', './count2.txt', c2["count2.txt"]),
-                             ('tok', './count1.txt', c2["count1.txt"], c1["count1.txt"])])
+        self.assertEqual(sorted(d), [
+            ('del', './count2.txt', c2["count2.txt"]),
+            ('tok', './count1.txt', c2["count1.txt"], c1["count1.txt"]),
+        ])
         d = c1.diff(c2)
-        self.assertEqual(d, [('add', './count2.txt', c2["count2.txt"]),
-                             ('tok', './count1.txt', c2["count1.txt"], c1["count1.txt"])])
+        self.assertEqual(sorted(d), [
+            ('add', './count2.txt', c2["count2.txt"]),
+            ('tok', './count1.txt', c2["count1.txt"], c1["count1.txt"]),
+        ])
 
         self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
         c1.apply(d)
@@ -984,12 +992,15 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
         c2 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
         d = c2.diff(c1)
-        self.assertEqual(d, [('del', './foo', c2["foo"]),
-                             ('tok', './count1.txt', c2["count1.txt"], c1["count1.txt"])])
+        self.assertEqual(sorted(d), [
+            ('del', './foo', c2["foo"]),
+            ('tok', './count1.txt', c2["count1.txt"], c1["count1.txt"]),
+        ])
         d = c1.diff(c2)
-        self.assertEqual(d, [('add', './foo', c2["foo"]),
-                             ('tok', './count1.txt', c2["count1.txt"], c1["count1.txt"])])
-
+        self.assertEqual(sorted(d), [
+            ('add', './foo', c2["foo"]),
+            ('tok', './count1.txt', c2["count1.txt"], c1["count1.txt"]),
+        ])
         self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
         c1.apply(d)
         self.assertEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
@@ -997,15 +1008,18 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
     def test_diff_del_add_in_subcollection(self):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
         c2 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:3:count3.txt\n')
-
         d = c2.diff(c1)
-        self.assertEqual(d, [('del', './foo/count3.txt', c2.find("foo/count3.txt")),
-                             ('add', './foo/count2.txt', c1.find("foo/count2.txt")),
-                             ('tok', './count1.txt', c2["count1.txt"], c1["count1.txt"])])
+        self.assertEqual(sorted(d), [
+            ('add', './foo/count2.txt', c1.find("foo/count2.txt")),
+            ('del', './foo/count3.txt', c2.find("foo/count3.txt")),
+            ('tok', './count1.txt', c2["count1.txt"], c1["count1.txt"]),
+        ])
         d = c1.diff(c2)
-        self.assertEqual(d, [('del', './foo/count2.txt', c1.find("foo/count2.txt")),
-                             ('add', './foo/count3.txt', c2.find("foo/count3.txt")),
-                             ('tok', './count1.txt', c2["count1.txt"], c1["count1.txt"])])
+        self.assertEqual(sorted(d), [
+            ('add', './foo/count3.txt', c2.find("foo/count3.txt")),
+            ('del', './foo/count2.txt', c1.find("foo/count2.txt")),
+            ('tok', './count1.txt', c2["count1.txt"], c1["count1.txt"]),
+        ])
 
         self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
         c1.apply(d)
@@ -1015,11 +1029,15 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n./foo 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
         c2 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt 0:3:foo\n')
         d = c2.diff(c1)
-        self.assertEqual(d, [('mod', './foo', c2["foo"], c1["foo"]),
-                             ('tok', './count1.txt', c2["count1.txt"], c1["count1.txt"])])
+        self.assertEqual(sorted(d), [
+            ('mod', './foo', c2["foo"], c1["foo"]),
+            ('tok', './count1.txt', c2["count1.txt"], c1["count1.txt"]),
+        ])
         d = c1.diff(c2)
-        self.assertEqual(d, [('mod', './foo', c1["foo"], c2["foo"]),
-                             ('tok', './count1.txt', c2["count1.txt"], c1["count1.txt"])])
+        self.assertEqual(sorted(d), [
+            ('mod', './foo', c1["foo"], c2["foo"]),
+            ('tok', './count1.txt', c2["count1.txt"], c1["count1.txt"]),
+        ])
 
         self.assertNotEqual(c1.portable_manifest_text(), c2.portable_manifest_text())
         c1.apply(d)
@@ -1029,8 +1047,10 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n')
         c2 = Collection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count2.txt\n')
         d = c1.diff(c2)
-        self.assertEqual(d, [('del', './count1.txt', c1["count1.txt"]),
-                             ('add', './count2.txt', c2["count2.txt"])])
+        self.assertEqual(sorted(d), [
+            ('add', './count2.txt', c2["count2.txt"]),
+            ('del', './count1.txt', c1["count1.txt"]),
+        ])
         f = c1.open("count1.txt", "w")
         f.write(b"zzzzz")
 
@@ -1056,8 +1076,10 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c1 = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count2.txt\n')
         c2 = Collection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt\n')
         d = c1.diff(c2)
-        self.assertEqual(d, [('del', './count2.txt', c1["count2.txt"]),
-                             ('add', './count1.txt', c2["count1.txt"])])
+        self.assertEqual(sorted(d), [
+            ('add', './count1.txt', c2["count1.txt"]),
+            ('del', './count2.txt', c1["count2.txt"]),
+        ])
         f = c1.open("count1.txt", "w")
         f.write(b"zzzzz")
 
