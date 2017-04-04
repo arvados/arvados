@@ -745,6 +745,8 @@ install_apiserver() {
         && test_database=$(python -c "import yaml; print yaml.load(file('config/database.yml'))['test']['database']") \
         && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.procpid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
 
+    mkdir -p "$WORKSPACE/services/api/tmp/pids"
+
     cd "$WORKSPACE/services/api" \
         && RAILS_ENV=test bundle exec rake db:drop \
         && RAILS_ENV=test bundle exec rake db:setup \
@@ -790,6 +792,8 @@ install_workbench() {
         && RAILS_ENV=test bundle_install_trylocal
 }
 do_install apps/workbench workbench
+
+unset http_proxy https_proxy no_proxy
 
 test_doclinkchecker() {
     (
