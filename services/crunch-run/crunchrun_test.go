@@ -290,6 +290,15 @@ func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename s
 	return nil, nil
 }
 
+func (client *KeepTestClient) CollectionFileReader(collection map[string]interface{}, filename string) (keepclient.Reader, error) {
+	if filename == "/file1_in_main.txt" {
+		rdr := ioutil.NopCloser(&bytes.Buffer{})
+		client.Called = true
+		return FileWrapper{rdr, 1321984}, nil
+	}
+	return nil, nil
+}
+
 func (s *TestSuite) TestLoadImage(c *C) {
 	kc := &KeepTestClient{}
 	docker := NewTestDockerClient(0)
@@ -369,6 +378,10 @@ func (KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename stri
 	return nil, errors.New("KeepError")
 }
 
+func (KeepErrorTestClient) CollectionFileReader(c map[string]interface{}, f string) (keepclient.Reader, error) {
+	return nil, errors.New("KeepError")
+}
+
 type KeepReadErrorTestClient struct{}
 
 func (KeepReadErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
@@ -394,6 +407,10 @@ func (ErrorReader) Seek(int64, int) (int64, error) {
 }
 
 func (KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.Reader, error) {
+	return ErrorReader{}, nil
+}
+
+func (KeepReadErrorTestClient) CollectionFileReader(c map[string]interface{}, f string) (keepclient.Reader, error) {
 	return ErrorReader{}, nil
 }
 
@@ -1113,6 +1130,22 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.CleanupDirs()
 		checkEmpty()
 	}
+
+	// Only mount point of kind 'collection' is allowed for stdin
+	{
+		i = 0
+		cr.ArvMountPoint = ""
+		cr.Container.Mounts = make(map[string]arvados.Mount)
+		cr.Container.Mounts = map[string]arvados.Mount{
+			"stdin": {Kind: "tmp"},
+		}
+
+		err := cr.SetupMounts()
+		c.Check(err, NotNil)
+		c.Check(err, ErrorMatches, `Unsupported mount kind 'tmp' for stdin. Only 'collection' is supported.*`)
+		cr.CleanupDirs()
+		checkEmpty()
+	}
 }
 
 func (s *TestSuite) TestStdout(c *C) {
@@ -1354,6 +1387,46 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 
 				c.Check(manifest, Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
 ./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 10:17:bar
+`)
+			}
+		}
+	}
+}
+
+func (s *TestSuite) TestStdinCollectionMountPoint(c *C) {
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {
+        "/tmp": {"kind": "tmp"},
+        "stdin": {"kind": "collection", "portable_data_hash": "b0def87f80dd594d4675809e83bd4f15+367", "path": "/file1_in_main.txt"},
+        "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"}
+    },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	extraMounts := []string{
+		"b0def87f80dd594d4675809e83bd4f15+367/file1_in_main.txt",
+	}
+
+	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	for _, v := range api.Content {
+		if v["collection"] != nil {
+			collection := v["collection"].(arvadosclient.Dict)
+			if strings.Index(collection["name"].(string), "output") == 0 {
+				manifest := collection["manifest_text"].(string)
+
+				c.Check(manifest, Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
 `)
 			}
 		}

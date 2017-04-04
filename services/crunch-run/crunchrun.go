@@ -49,6 +49,7 @@ var ErrCancelled = errors.New("Cancelled")
 type IKeepClient interface {
 	PutHB(hash string, buf []byte) (string, int, error)
 	ManifestFileReader(m manifest.Manifest, filename string) (keepclient.Reader, error)
+	CollectionFileReader(collection map[string]interface{}, filename string) (keepclient.Reader, error)
 }
 
 // NewLogWriter is a factory function to create a new log writer.
@@ -361,6 +362,13 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			}
 		}
 
+		if bind == "stdin" {
+			// Is it a "collection" mount kind?
+			if mnt.Kind != "collection" {
+				return fmt.Errorf("Unsupported mount kind '%s' for stdin. Only 'collection' is supported.", mnt.Kind)
+			}
+		}
+
 		if bind == "/etc/arvados/ca-certificates.crt" {
 			needCertMount = false
 		}
@@ -663,8 +671,32 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 
 	runner.CrunchLog.Print("Attaching container streams")
 
+	// If stdin mount is provided, attach it to the docker container
+	var stdinUsed bool
+	var stdinRdr keepclient.Reader
+	if stdinMnt, ok := runner.Container.Mounts["stdin"]; ok {
+		var stdinColl arvados.Collection
+		collId := stdinMnt.UUID
+		if collId == "" {
+			collId = stdinMnt.PortableDataHash
+		}
+		err = runner.ArvClient.Get("collections", collId, nil, &stdinColl)
+		if err != nil {
+			return fmt.Errorf("While getting stding collection: %v", err)
+		}
+
+		stdinRdr, err = runner.Kc.CollectionFileReader(map[string]interface{}{"manifest_text": stdinColl.ManifestText}, stdinMnt.Path)
+		if os.IsNotExist(err) {
+			return fmt.Errorf("stdin collection path not found: %v", stdinMnt.Path)
+		} else if err != nil {
+			return fmt.Errorf("While getting stdin collection path %v: %v", stdinMnt.Path, err)
+		}
+		stdinUsed = true
+		defer stdinRdr.Close()
+	}
+
 	response, err := runner.Docker.ContainerAttach(context.TODO(), runner.ContainerID,
-		dockertypes.ContainerAttachOptions{Stream: true, Stdout: true, Stderr: true})
+		dockertypes.ContainerAttachOptions{Stream: true, Stdin: stdinUsed, Stdout: true, Stderr: true})
 	if err != nil {
 		return fmt.Errorf("While attaching container stdout/stderr streams: %v", err)
 	}
@@ -697,6 +729,21 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 		runner.Stdout = NewThrottledLogger(runner.NewLogWriter("stdout"))
 	}
 	runner.Stderr = NewThrottledLogger(runner.NewLogWriter("stderr"))
+
+	if stdinUsed {
+		copyErrC := make(chan error)
+		go func() {
+			n, err := io.Copy(response.Conn, stdinRdr)
+			runner.CrunchLog.Printf("BYTES READ = %v", n)
+			copyErrC <- err
+			close(copyErrC)
+		}()
+
+		copyErr := <-copyErrC
+		if copyErr != nil {
+			return fmt.Errorf("While writing stdin to docker container %q", copyErr)
+		}
+	}
 
 	go runner.ProcessDockerAttach(response.Reader)
 
