@@ -787,6 +787,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, env=self.ENVIRON)
         stdout, stderr = pipe.communicate(text.encode())
+        self.assertRegex(stderr.decode(), r'INFO: Collection (updated:|saved as)')
         search_key = ('portable_data_hash'
                       if '--portable-data-hash' in extra_args else 'uuid')
         collection_list = arvados.api('v1').collections().list(
