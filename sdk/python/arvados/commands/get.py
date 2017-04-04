@@ -261,6 +261,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
 
     if args.progress:
         stderr.write('\n')
+    return 0
 
 def files_in_collection(c):
     # Sort first by file type, then alphabetically by file path.
