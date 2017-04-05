@@ -76,6 +76,14 @@ class NodeTest < ActiveSupport::TestCase
     assert Node.dns_server_update 'compute65535', '127.0.0.127'
   end
 
+  test "dns update with dir configured but no command configured" do
+    Rails.configuration.dns_server_update_command = false
+    Rails.configuration.dns_server_conf_dir = Rails.root.join 'tmp'
+    conffile = Rails.root.join 'tmp', 'compute65535.conf'
+    assert Node.dns_server_update 'compute65535', '127.0.0.127'
+    refute File.exist? conffile
+  end
+
   test "ping new node with no hostname and default config" do
     node = ping_node(:new_with_no_hostname, {})
     slot_number = node.slot_number

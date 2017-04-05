@@ -1,3 +1,5 @@
+require 'tempfile'
+
 class Node < ArvadosModel
   include HasUuid
   include KindAndEtag
@@ -174,17 +176,19 @@ class Node < ArvadosModel
       begin
         begin
           template = IO.read(Rails.configuration.dns_server_conf_template)
-        rescue => e
+        rescue IOError, SystemCallError => e
           logger.error "Reading #{Rails.configuration.dns_server_conf_template}: #{e.message}"
           raise
         end
 
         hostfile = File.join Rails.configuration.dns_server_conf_dir, "#{hostname}.conf"
-        File.open hostfile+'.tmp', 'w' do |f|
+        tmpfile = Tempfile.open(["#{hostname}", ".conf.tmp"],
+                                 Rails.configuration.dns_server_conf_dir) do |f|
           f.puts template % template_vars
+          f.path
         end
-        File.rename hostfile+'.tmp', hostfile
-      rescue => e
+        File.rename tmpfile, hostfile
+      rescue IOError, SystemCallError => e
         logger.error "Writing #{hostfile}: #{e.message}"
         ok = false
       end
@@ -205,7 +209,7 @@ class Node < ArvadosModel
           # Typically, this is used to trigger a dns server restart
           f.puts Rails.configuration.dns_server_reload_command
         end
-      rescue => e
+      rescue IOError, SystemCallError => e
         logger.error "Unable to write #{restartfile}: #{e.message}"
         ok = false
       end
