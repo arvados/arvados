@@ -37,13 +37,9 @@ def profiled(function):
         pr = profile.Profile()
         pr.enable()
         try:
-            ret = function(*args, **kwargs)
-        except Exception as e:
-            caught = e
-        pr.disable()
-        ps = pstats.Stats(pr, stream=outfile)
-        ps.sort_stats('time').print_stats()
-        if caught:
-            raise
-        return ret
+            return function(*args, **kwargs)
+        finally:
+            pr.disable()
+            ps = pstats.Stats(pr, stream=outfile)
+            ps.sort_stats('time').print_stats()
     return profiled_function
