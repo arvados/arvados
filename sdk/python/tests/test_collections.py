@@ -1,7 +1,4 @@
 from __future__ import absolute_import
-# usage example:
-#
-# ARVADOS_API_TOKEN=abc ARVADOS_API_HOST=arvados.local python -m unittest discover
 
 from builtins import object
 import arvados

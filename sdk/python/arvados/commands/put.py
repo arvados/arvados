@@ -1,8 +1,3 @@
-#!/usr/bin/env python
-
-# TODO:
-# --md5sum - display md5 of each file as read from disk
-
 from __future__ import division
 from builtins import str
 from builtins import object

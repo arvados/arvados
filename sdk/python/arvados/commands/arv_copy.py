@@ -1,5 +1,3 @@
-#! /usr/bin/env python
-
 # arv-copy [--recursive] [--no-recursive] object-uuid src dst
 #
 # Copies an object from Arvados instance src to instance dst.

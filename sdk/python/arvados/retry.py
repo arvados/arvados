@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from builtins import range
 from builtins import object
 import functools

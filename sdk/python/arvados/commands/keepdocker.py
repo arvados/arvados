@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from builtins import next
 import argparse
 import collections

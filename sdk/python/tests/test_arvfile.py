@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from __future__ import absolute_import
 from builtins import hex
 from builtins import str
