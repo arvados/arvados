@@ -621,7 +621,12 @@ class RichCollectionBase(CollectionBase):
         :path:
           path to a file in the collection
         :mode:
-          one of "r", "r+", "w", "w+", "a", "a+"
+          a string consisting of "r", "w", or "a", optionally followed
+          by "b" or "t", optionally followed by "+".
+          :"b":
+            binary mode: write() accepts bytes, read() returns bytes.
+          :"t":
+            text mode (default): write() accepts strings, read() returns strings.
           :"r":
             opens for reading
           :"r+":
@@ -633,33 +638,28 @@ class RichCollectionBase(CollectionBase):
             the end of the file.  Writing does not affect the file pointer for
             reading.
         """
-        mode = mode.replace("b", "")
-        if len(mode) == 0 or mode[0] not in ("r", "w", "a"):
-            raise errors.ArgumentError("Bad mode '%s'" % mode)
-        create = (mode != "r")
 
-        if create and not self.writable():
-            raise IOError(errno.EROFS, "Collection is read only")
+        if not re.search(r'^[rwa][bt]?\+?$', mode):
+            raise errors.ArgumentError("Invalid mode {!r}".format(mode))
 
-        if create:
-            arvfile = self.find_or_create(path, FILE)
-        else:
+        if mode[0] == 'r' and '+' not in mode:
+            fclass = ArvadosFileReader
             arvfile = self.find(path)
+        elif not self.writable():
+            raise IOError(errno.EROFS, "Collection is read only")
+        else:
+            fclass = ArvadosFileWriter
+            arvfile = self.find_or_create(path, FILE)
 
         if arvfile is None:
             raise IOError(errno.ENOENT, "File not found", path)
         if not isinstance(arvfile, ArvadosFile):
             raise IOError(errno.EISDIR, "Is a directory", path)
 
-        if mode[0] == "w":
+        if mode[0] == 'w':
             arvfile.truncate(0)
 
-        name = os.path.basename(path)
-
-        if mode == "r":
-            return ArvadosFileReader(arvfile, num_retries=self.num_retries)
-        else:
-            return ArvadosFileWriter(arvfile, mode, num_retries=self.num_retries)
+        return fclass(arvfile, mode=mode, num_retries=self.num_retries)
 
     def modified(self):
         """Determine if the collection has been modified since last commited."""

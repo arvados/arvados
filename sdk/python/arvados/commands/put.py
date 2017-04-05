@@ -558,7 +558,7 @@ class ArvPutUploadJob(object):
             self.reporter(self.bytes_written, self.bytes_expected)
 
     def _write_stdin(self, filename):
-        output = self._local_collection.open(filename, 'w')
+        output = self._local_collection.open(filename, 'wb')
         self._write(sys.stdin, output)
         output.close()
 
@@ -624,17 +624,17 @@ class ArvPutUploadJob(object):
 
     def _upload_files(self):
         for source, resume_offset, filename in self._files_to_upload:
-            with open(source, 'r') as source_fd:
+            with open(source, 'rb') as source_fd:
                 with self._state_lock:
                     self._state['files'][source]['mtime'] = os.path.getmtime(source)
                     self._state['files'][source]['size'] = os.path.getsize(source)
                 if resume_offset > 0:
                     # Start upload where we left off
-                    output = self._local_collection.open(filename, 'a')
+                    output = self._local_collection.open(filename, 'ab')
                     source_fd.seek(resume_offset)
                 else:
                     # Start from scratch
-                    output = self._local_collection.open(filename, 'w')
+                    output = self._local_collection.open(filename, 'wb')
                 self._write(source_fd, output)
                 output.close(flush=False)
 

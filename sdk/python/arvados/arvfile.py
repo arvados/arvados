@@ -4,21 +4,22 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 from builtins import object
-import functools
-import os
-import zlib
 import bz2
-from . import config
-import hashlib
-import threading
-import queue
+import collections
 import copy
 import errno
-import re
+import functools
+import hashlib
 import logging
-import collections
+import os
+import queue
+import re
+import sys
+import threading
 import uuid
+import zlib
 
+from . import config
 from .errors import KeepWriteError, AssertionError, ArgumentError
 from .keep import KeepLocator
 from ._normalize_stream import normalize_stream
@@ -82,6 +83,9 @@ class _FileLikeObjectBase(object):
 class ArvadosFileReaderBase(_FileLikeObjectBase):
     def __init__(self, name, mode, num_retries=None):
         super(ArvadosFileReaderBase, self).__init__(name, mode)
+        self._binary = 'b' in mode
+        if sys.version_info >= (3, 0) and not self._binary:
+            raise NotImplementedError("text mode {!r} is not implemented".format(mode))
         self._filepos = 0
         self.num_retries = num_retries
         self._readline_cache = (None, None)
@@ -1136,8 +1140,8 @@ class ArvadosFileReader(ArvadosFileReaderBase):
 
     """
 
-    def __init__(self, arvadosfile, num_retries=None):
-        super(ArvadosFileReader, self).__init__(arvadosfile.name, "r", num_retries=num_retries)
+    def __init__(self, arvadosfile, mode="r", num_retries=None):
+        super(ArvadosFileReader, self).__init__(arvadosfile.name, mode=mode, num_retries=num_retries)
         self.arvadosfile = arvadosfile
 
     def size(self):
@@ -1189,8 +1193,7 @@ class ArvadosFileWriter(ArvadosFileReader):
     """
 
     def __init__(self, arvadosfile, mode, num_retries=None):
-        super(ArvadosFileWriter, self).__init__(arvadosfile, num_retries=num_retries)
-        self.mode = mode
+        super(ArvadosFileWriter, self).__init__(arvadosfile, mode=mode, num_retries=num_retries)
         self.arvadosfile.add_writer(self)
 
     @_FileLikeObjectBase._before_close

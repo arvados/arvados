@@ -10,6 +10,7 @@ import mock
 import os
 import pprint
 import re
+import sys
 import tempfile
 import unittest
 
@@ -648,7 +649,7 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
     def test_open_collection_file_one_argument(self):
         client = self.api_client_mock(200)
         reader = arvados.CollectionReader(self.DEFAULT_UUID, api_client=client)
-        cfile = reader.open('./foo')
+        cfile = reader.open('./foo', 'rb')
         self.check_open_file(cfile, '.', 'foo', 3)
 
     def test_open_deep_file(self):
@@ -657,7 +658,7 @@ class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
         self.mock_get_collection(client, 200, coll_name)
         reader = arvados.CollectionReader(
             self.API_COLLECTIONS[coll_name]['uuid'], api_client=client)
-        cfile = reader.open('./subdir2/subdir3/file2_in_subdir3.txt')
+        cfile = reader.open('./subdir2/subdir3/file2_in_subdir3.txt', 'rb')
         self.check_open_file(cfile, './subdir2/subdir3', 'file2_in_subdir3.txt',
                              32)
 
@@ -804,6 +805,38 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
         writer = arvados.CollectionWriter(client)
         file1 = writer.open('one')
         self.assertRaises(arvados.errors.AssertionError, writer.open, 'two')
+
+
+class CollectionOpenModes(run_test_server.TestCaseWithServers):
+
+    def test_open_binary_modes(self):
+        c = Collection()
+        for mode in ['wb', 'wb+', 'ab', 'ab+']:
+            with c.open('foo', 'wb') as f:
+                f.write(b'foo')
+
+    def test_open_invalid_modes(self):
+        c = Collection()
+        for mode in ['+r', 'aa', '++', 'r+b', 'beer', '', None]:
+            with self.assertRaises(Exception):
+                c.open('foo', mode)
+
+    def test_open_text_modes(self):
+        c = Collection()
+        with c.open('foo', 'wb') as f:
+            f.write('foo')
+        for mode in ['r', 'rt', 'r+', 'rt+', 'w', 'wt', 'a', 'at']:
+            if sys.version_info >= (3, 0):
+                with self.assertRaises(NotImplementedError):
+                    c.open('foo', mode)
+            else:
+                with c.open('foo', mode) as f:
+                    if mode[0] == 'r' and '+' not in mode:
+                        self.assertEqual('foo', f.read(3))
+                    else:
+                        f.write('bar')
+                        f.seek(-3, os.SEEK_CUR)
+                        self.assertEqual('bar', f.read(3))
 
 
 class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
@@ -1051,7 +1084,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
             ('add', './count2.txt', c2["count2.txt"]),
             ('del', './count1.txt', c1["count1.txt"]),
         ])
-        f = c1.open("count1.txt", "w")
+        f = c1.open("count1.txt", "wb")
         f.write(b"zzzzz")
 
         # c1 changed, so it should not be deleted.
@@ -1063,7 +1096,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c2 = Collection('. 5348b82a029fd9e971a811ce1f71360b+43 0:10:count1.txt')
         d = c1.diff(c2)
         self.assertEqual(d, [('mod', './count1.txt', c1["count1.txt"], c2["count1.txt"])])
-        f = c1.open("count1.txt", "w")
+        f = c1.open("count1.txt", "wb")
         f.write(b"zzzzz")
 
         # c1 changed, so c2 mod will go to a conflict file
@@ -1080,7 +1113,7 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
             ('add', './count1.txt', c2["count1.txt"]),
             ('del', './count2.txt', c1["count2.txt"]),
         ])
-        f = c1.open("count1.txt", "w")
+        f = c1.open("count1.txt", "wb")
         f.write(b"zzzzz")
 
         # c1 added count1.txt, so c2 add will go to a conflict file
@@ -1106,22 +1139,22 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         c1 = Collection()
         events = []
         c1.subscribe(lambda event, collection, name, item: events.append((event, collection, name, item)))
-        f = c1.open("foo.txt", "w")
+        f = c1.open("foo.txt", "wb")
         self.assertEqual(events[0], (arvados.collection.ADD, c1, "foo.txt", f.arvadosfile))
 
     def test_open_w(self):
         c1 = Collection(". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt\n")
         self.assertEqual(c1["count1.txt"].size(), 10)
-        c1.open("count1.txt", "w").close()
+        c1.open("count1.txt", "wb").close()
         self.assertEqual(c1["count1.txt"].size(), 0)
 
 
 class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
     def test_get_manifest_text_only_committed(self):
         c = Collection()
-        with c.open("count.txt", "w") as f:
+        with c.open("count.txt", "wb") as f:
             # One file committed
-            with c.open("foo.txt", "w") as foo:
+            with c.open("foo.txt", "wb") as foo:
                 foo.write(b"foo")
                 foo.flush() # Force block commit
             f.write(b"0123456789")
@@ -1144,14 +1177,14 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
     def test_only_small_blocks_are_packed_together(self):
         c = Collection()
         # Write a couple of small files, 
-        f = c.open("count.txt", "w")
+        f = c.open("count.txt", "wb")
         f.write(b"0123456789")
         f.close(flush=False)
-        foo = c.open("foo.txt", "w")
+        foo = c.open("foo.txt", "wb")
         foo.write(b"foo")
         foo.close(flush=False)
         # Then, write a big file, it shouldn't be packed with the ones above
-        big = c.open("bigfile.txt", "w")
+        big = c.open("bigfile.txt", "wb")
         big.write(b"x" * 1024 * 1024 * 33) # 33 MB > KEEP_BLOCK_SIZE/2
         big.close(flush=False)
         self.assertEqual(
@@ -1172,7 +1205,7 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         self.assertEqual(c.portable_data_hash(), "d41d8cd98f00b204e9800998ecf8427e+0")
         self.assertEqual(c.api_response()["portable_data_hash"], "d41d8cd98f00b204e9800998ecf8427e+0" )
 
-        with c.open("count.txt", "w") as f:
+        with c.open("count.txt", "wb") as f:
             f.write(b"0123456789")
 
         self.assertEqual(c.portable_manifest_text(), ". 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n")
@@ -1198,7 +1231,7 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         c1.save()
 
         c2 = Collection(c1.manifest_locator())
-        with c2.open("count.txt", "w") as f:
+        with c2.open("count.txt", "wb") as f:
             f.write(b"abcdefg")
 
         diff = c1.diff(c2)
@@ -1226,7 +1259,7 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         c1.save()
 
         c2 = arvados.collection.Collection(c1.manifest_locator())
-        with c2.open("count.txt", "w") as f:
+        with c2.open("count.txt", "wb") as f:
             f.write(b"abcdefg")
 
         c2.save()
@@ -1240,11 +1273,11 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         c1 = self.create_count_txt()
         c1.save()
 
-        with c1.open("count.txt", "w") as f:
+        with c1.open("count.txt", "wb") as f:
             f.write(b"XYZ")
 
         c2 = arvados.collection.Collection(c1.manifest_locator())
-        with c2.open("count.txt", "w") as f:
+        with c2.open("count.txt", "wb") as f:
             f.write(b"abcdefg")
 
         c2.save()

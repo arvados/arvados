@@ -82,7 +82,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         })
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n',
                              api_client=api, keep_client=keep) as c:
-            writer = c.open("count.txt", "r+")
+            writer = c.open("count.txt", "rb+")
             self.assertEqual(writer.size(), 10)
             self.assertEqual(b"0123456789", writer.read(12))
 
@@ -116,7 +116,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         })
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n',
                              api_client=api, keep_client=keep) as c:
-            writer = c.open("count.txt", "r+")
+            writer = c.open("count.txt", "rb+")
             self.assertEqual(writer.size(), 10)
 
             writer.seek(5, os.SEEK_SET)
@@ -144,7 +144,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             "781e5e245d69b566979b86e28d23f2c7+10": b"0123456789",
         })
         c = Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n', keep_client=keep)
-        writer = c.open("count.txt", "a+")
+        writer = c.open("count.txt", "ab+")
         self.assertEqual(writer.read(20), b"0123456789")
         writer.seek(0, os.SEEK_SET)
 
@@ -163,7 +163,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         })
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n',
                              keep_client=keep) as c:
-            writer = c.open("count.txt", "r+")
+            writer = c.open("count.txt", "rb+")
             self.assertEqual(b"0123456789", writer.readfrom(0, 13))
             writer.seek(0, os.SEEK_SET)
             writer.write("foo")
@@ -174,14 +174,14 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
     def test_write_empty(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
         with Collection(keep_client=keep) as c:
-            writer = c.open("count.txt", "w")
+            writer = c.open("count.txt", "wb")
             self.assertEqual(writer.size(), 0)
             self.assertEqual(". d41d8cd98f00b204e9800998ecf8427e+0 0:0:count.txt\n", c.portable_manifest_text())
 
     def test_save_manifest_text(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
         with Collection(keep_client=keep) as c:
-            writer = c.open("count.txt", "w")
+            writer = c.open("count.txt", "wb")
             writer.write(b"0123456789")
             self.assertEqual('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n', c.portable_manifest_text())
             self.assertNotIn('781e5e245d69b566979b86e28d23f2c7+10', keep.blocks)
@@ -192,7 +192,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
     def test_get_manifest_text_commits(self):
          keep = ArvadosFileWriterTestCase.MockKeep({})
          with Collection(keep_client=keep) as c:
-             writer = c.open("count.txt", "w")
+             writer = c.open("count.txt", "wb")
              writer.write("0123456789")
              self.assertEqual('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n', c.portable_manifest_text())
              self.assertNotIn('781e5e245d69b566979b86e28d23f2c7+10', keep.blocks)
@@ -204,7 +204,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": b"0123456789"})
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n',
                              keep_client=keep) as c:
-            writer = c.open("count.txt", "r+")
+            writer = c.open("count.txt", "rb+")
             self.assertEqual(b"0123456789", writer.readfrom(0, 13))
             writer.seek(3, os.SEEK_SET)
             writer.write("foo")
@@ -216,7 +216,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": b"0123456789"})
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n',
                              keep_client=keep) as c:
-            writer = c.open("count.txt", "r+")
+            writer = c.open("count.txt", "rb+")
             self.assertEqual(b"0123456789", writer.readfrom(0, 13))
             writer.seek(7, os.SEEK_SET)
             writer.write("foo")
@@ -228,7 +228,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": b"0123456789"})
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt 0:10:count.txt\n',
                              keep_client=keep) as c:
-            writer = c.open("count.txt", "r+")
+            writer = c.open("count.txt", "rb+")
             self.assertEqual(b"012345678901234", writer.readfrom(0, 15))
             writer.seek(7, os.SEEK_SET)
             writer.write("foobar")
@@ -240,7 +240,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         keep = ArvadosFileWriterTestCase.MockKeep({"781e5e245d69b566979b86e28d23f2c7+10": b"0123456789"})
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:4:count.txt 0:4:count.txt 0:4:count.txt',
                              keep_client=keep) as c:
-            writer = c.open("count.txt", "r+")
+            writer = c.open("count.txt", "rb+")
             self.assertEqual(b"012301230123", writer.readfrom(0, 15))
             writer.seek(2, os.SEEK_SET)
             writer.write("abcdefg")
@@ -258,7 +258,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                                                  "portable_data_hash":"9132ca8e3f671c76103a38f5bc24328c+108"})
         with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
                              api_client=api, keep_client=keep) as c:
-            writer = c.open("count.txt", "r+")
+            writer = c.open("count.txt", "rb+")
             text = "0123456789" * 100
             for b in range(0, 100000):
                 writer.write(text)
@@ -276,7 +276,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         api = ArvadosFileWriterTestCase.MockApi({}, {})
         with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
                              api_client=api, keep_client=keep) as c:
-            writer = c.open("count.txt", "r+")
+            writer = c.open("count.txt", "rb+")
             self.assertEqual(writer.size(), 0)
 
             text = "0123456789"
@@ -291,7 +291,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         keep = ArvadosFileWriterTestCase.MockKeep({})
         with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
                              keep_client=keep) as c:
-            writer = c.open("count.txt", "r+")
+            writer = c.open("count.txt", "rb+")
             for b in range(0, 10):
                 writer.seek(0, os.SEEK_SET)
                 writer.write("0123456789")
@@ -310,7 +310,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         })
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt',
                              keep_client=keep) as c:
-            writer = c.open("count.txt", "r+")
+            writer = c.open("count.txt", "rb+")
             for b in range(0, 10):
                 writer.seek(10, os.SEEK_SET)
                 writer.write("abcdefghij")
@@ -330,7 +330,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
         })
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt',
                              keep_client=keep) as c:
-            writer = c.open("count.txt", "r+")
+            writer = c.open("count.txt", "rb+")
             for b in range(0, 10):
                 writer.seek(5, os.SEEK_SET)
                 writer.write("abcdefghij")
@@ -355,7 +355,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                                                  "portable_data_hash":"217665c6b713e1b78dfba7ebd42344db+156"})
         with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
                              api_client=api, keep_client=keep) as c:
-            writer = c.open("count.txt", "r+")
+            writer = c.open("count.txt", "rb+")
             text = b''.join([b"0123456789" for a in range(0, 100)])
             for b in range(0, 100000):
                 writer.write(text)
@@ -381,7 +381,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             "portable_data_hash":"7a461a8c58601798f690f8b368ac4423+51",
         })
         with Collection(api_client=api, keep_client=keep) as c:
-            writer = c.open("count.txt", "w+")
+            writer = c.open("count.txt", "wb+")
             self.assertEqual(writer.size(), 0)
             writer.write("01234567")
             self.assertEqual(writer.size(), 8)
@@ -405,7 +405,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                                                  "portable_data_hash":"1b02aaa62528d28a5be41651cbb9d7c7+59"})
         with Collection(api_client=api, keep_client=keep) as c:
             self.assertIsNone(c.api_response())
-            writer = c.open("foo/bar/count.txt", "w+")
+            writer = c.open("foo/bar/count.txt", "wb+")
             writer.write("01234567")
             self.assertFalse(c.committed())
             c.save_new("test_create")
@@ -422,7 +422,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                                                  "portable_data_hash":"7a461a8c58601798f690f8b368ac4423+51"})
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n',
                              api_client=api, keep_client=keep) as c:
-            writer = c.open("count.txt", "w+")
+            writer = c.open("count.txt", "wb+")
             self.assertEqual(writer.size(), 0)
             writer.write("01234567")
             self.assertEqual(writer.size(), 8)
@@ -436,12 +436,12 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
     def test_file_not_found(self):
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n') as c:
             with self.assertRaises(IOError):
-                writer = c.open("nocount.txt", "r")
+                writer = c.open("nocount.txt", "rb")
 
     def test_cannot_open_directory(self):
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count.txt\n') as c:
             with self.assertRaises(IOError):
-                writer = c.open(".", "r")
+                writer = c.open(".", "rb")
 
     def test_create_multiple(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
@@ -452,8 +452,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
                                                  "manifest_text":". 2e9ec317e197819358fbc43afca7d837+8 e8dc4081b13434b45189a720b77b6818+8 0:8:count1.txt 8:8:count2.txt\n",
                                                  "portable_data_hash":"71e7bb6c00d31fc2b4364199fd97be08+102"})
         with Collection(api_client=api, keep_client=keep) as c:
-            w1 = c.open("count1.txt", "w")
-            w2 = c.open("count2.txt", "w")
+            w1 = c.open("count1.txt", "wb")
+            w2 = c.open("count2.txt", "wb")
             w1.write("01234567")
             w2.write("abcdefgh")
             self.assertEqual(w1.size(), 8)
@@ -505,7 +505,7 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
             stream.append(Range(loc, n, len(d)))
             n += len(d)
         af = ArvadosFile(ArvadosFileReaderTestCase.MockParent(blocks, nocache), "count.txt", stream=stream, segments=[Range(1, 0, 3), Range(6, 3, 3), Range(11, 6, 3)])
-        return ArvadosFileReader(af)
+        return ArvadosFileReader(af, mode="rb")
 
     def test_read_block_crossing_behavior(self):
         # read() needs to return all the data requested if possible, even if it
@@ -533,7 +533,7 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
             "e8dc4081b13434b45189a720b77b6818+8": b"abcdefgh",
         })
         with Collection(". 2e9ec317e197819358fbc43afca7d837+8 e8dc4081b13434b45189a720b77b6818+8 0:16:count.txt\n", keep_client=keep) as c:
-            r = c.open("count.txt", "r")
+            r = c.open("count.txt", "rb")
             self.assertEqual(b"0123", r.read(4))
         self.assertIn("2e9ec317e197819358fbc43afca7d837+8", keep.requests)
         self.assertIn("e8dc4081b13434b45189a720b77b6818+8", keep.requests)
@@ -547,7 +547,7 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
     def test__eq__from_writes(self):
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt') as c1:
             with Collection() as c2:
-                f = c2.open("count1.txt", "w")
+                f = c2.open("count1.txt", "wb")
                 f.write("0123456789")
 
                 self.assertTrue(c1["count1.txt"] == c2["count1.txt"])
@@ -556,7 +556,7 @@ class ArvadosFileReaderTestCase(StreamFileReaderTestCase):
     def test__ne__(self):
         with Collection('. 781e5e245d69b566979b86e28d23f2c7+10 0:10:count1.txt') as c1:
             with Collection() as c2:
-                f = c2.open("count1.txt", "w")
+                f = c2.open("count1.txt", "wb")
                 f.write("1234567890")
 
                 self.assertTrue(c1["count1.txt"] != c2["count1.txt"])
@@ -583,6 +583,7 @@ class ArvadosFileReadTestCase(unittest.TestCase, StreamRetryTestMixin):
         af = ArvadosFile(col, "test",
                          stream=stream,
                          segments=segments)
+        kwargs.setdefault('mode', 'rb')
         return ArvadosFileReader(af, **kwargs)
 
     def read_for_test(self, reader, byte_count, **kwargs):

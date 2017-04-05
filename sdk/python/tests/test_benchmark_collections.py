@@ -47,7 +47,7 @@ class CollectionBenchmark(run_test_server.TestCaseWithServers,
         dst = arvados.collection.Collection()
         with tutil.mock_keep_responses('x'*self.TEST_BLOCK_SIZE, 200):
             for name in self.list_recursive(src):
-                with src.open(name) as srcfile, dst.open(name, 'w') as dstfile:
+                with src.open(name, 'rb') as srcfile, dst.open(name, 'wb') as dstfile:
                     dstfile.write(srcfile.read())
             dst.save_new()
 
