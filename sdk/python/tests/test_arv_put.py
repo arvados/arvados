@@ -765,9 +765,11 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         with open(os.path.join(datadir, "foo"), "w") as f:
             f.write("The quick brown fox jumped over the lazy dog")
         p = subprocess.Popen([sys.executable, arv_put.__file__, datadir],
-                             stdout=subprocess.PIPE, env=self.ENVIRON)
-        (arvout, arverr) = p.communicate()
-        self.assertEqual(arverr, None)
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             env=self.ENVIRON)
+        (out, err) = p.communicate()
+        self.assertRegex(err.decode(), r'INFO: Collection saved as ')
         self.assertEqual(p.returncode, 0)
 
         # The manifest text stored in the API server under the same
