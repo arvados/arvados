@@ -524,8 +524,8 @@ class CollectionTestMixin(tutil.ApiClientMock):
 
 @tutil.skip_sleep
 class CollectionReaderTestCase(unittest.TestCase, CollectionTestMixin):
-    def mock_get_collection(self, api_mock, code, body):
-        body = self.API_COLLECTIONS.get(body)
+    def mock_get_collection(self, api_mock, code, fixturename):
+        body = self.API_COLLECTIONS.get(fixturename)
         self._mock_api_call(api_mock.collections().get, code, body)
 
     def api_client_mock(self, status=200):
