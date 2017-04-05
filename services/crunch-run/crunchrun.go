@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -364,8 +365,8 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 
 		if bind == "stdin" {
 			// Is it a "collection" mount kind?
-			if mnt.Kind != "collection" {
-				return fmt.Errorf("Unsupported mount kind '%s' for stdin. Only 'collection' is supported.", mnt.Kind)
+			if mnt.Kind != "collection" && mnt.Kind != "json" {
+				return fmt.Errorf("Unsupported mount kind '%s' for stdin. Only 'collection' or 'json' are supported.", mnt.Kind)
 			}
 		}
 
@@ -672,29 +673,37 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 	runner.CrunchLog.Print("Attaching container streams")
 
 	// If stdin mount is provided, attach it to the docker container
-	var stdinUsed bool
 	var stdinRdr keepclient.Reader
+	var stdinJson []byte
 	if stdinMnt, ok := runner.Container.Mounts["stdin"]; ok {
-		var stdinColl arvados.Collection
-		collId := stdinMnt.UUID
-		if collId == "" {
-			collId = stdinMnt.PortableDataHash
-		}
-		err = runner.ArvClient.Get("collections", collId, nil, &stdinColl)
-		if err != nil {
-			return fmt.Errorf("While getting stding collection: %v", err)
-		}
+		if stdinMnt.Kind == "collection" {
+			var stdinColl arvados.Collection
+			collId := stdinMnt.UUID
+			if collId == "" {
+				collId = stdinMnt.PortableDataHash
+			}
+			err = runner.ArvClient.Get("collections", collId, nil, &stdinColl)
+			if err != nil {
+				return fmt.Errorf("While getting stding collection: %v", err)
+			}
 
-		stdinRdr, err = runner.Kc.CollectionFileReader(map[string]interface{}{"manifest_text": stdinColl.ManifestText}, stdinMnt.Path)
-		if os.IsNotExist(err) {
-			return fmt.Errorf("stdin collection path not found: %v", stdinMnt.Path)
-		} else if err != nil {
-			return fmt.Errorf("While getting stdin collection path %v: %v", stdinMnt.Path, err)
+			stdinRdr, err = runner.Kc.CollectionFileReader(map[string]interface{}{"manifest_text": stdinColl.ManifestText}, stdinMnt.Path)
+			if os.IsNotExist(err) {
+				return fmt.Errorf("stdin collection path not found: %v", stdinMnt.Path)
+			} else if err != nil {
+				return fmt.Errorf("While getting stdin collection path %v: %v", stdinMnt.Path, err)
+			}
+
+			defer stdinRdr.Close()
+		} else if stdinMnt.Kind == "json" {
+			stdinJson, err = json.Marshal(stdinMnt.Content)
+			if err != nil {
+				return fmt.Errorf("While encoding stdin json data: %v", err)
+			}
 		}
-		stdinUsed = true
-		defer stdinRdr.Close()
 	}
 
+	stdinUsed := stdinRdr != nil || len(stdinJson) != 0
 	response, err := runner.Docker.ContainerAttach(context.TODO(), runner.ContainerID,
 		dockertypes.ContainerAttachOptions{Stream: true, Stdin: stdinUsed, Stdout: true, Stderr: true})
 	if err != nil {
@@ -730,18 +739,30 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 	}
 	runner.Stderr = NewThrottledLogger(runner.NewLogWriter("stderr"))
 
-	if stdinUsed {
+	if stdinRdr != nil {
 		copyErrC := make(chan error)
 		go func() {
-			n, err := io.Copy(response.Conn, stdinRdr)
-			runner.CrunchLog.Printf("BYTES READ = %v", n)
+			_, err := io.Copy(response.Conn, stdinRdr)
 			copyErrC <- err
 			close(copyErrC)
 		}()
 
 		copyErr := <-copyErrC
 		if copyErr != nil {
-			return fmt.Errorf("While writing stdin to docker container %q", copyErr)
+			return fmt.Errorf("While writing stdin collection to docker container %q", copyErr)
+		}
+	} else if len(stdinJson) != 0 {
+		copyErrC := make(chan error)
+		go func() {
+			jsonRdr := bytes.NewReader(stdinJson)
+			_, err := io.Copy(response.Conn, jsonRdr)
+			copyErrC <- err
+			close(copyErrC)
+		}()
+
+		copyErr := <-copyErrC
+		if copyErr != nil {
+			return fmt.Errorf("While writing stdin json to docker container %q", copyErr)
 		}
 	}
 

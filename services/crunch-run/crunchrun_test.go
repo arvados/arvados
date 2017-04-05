@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -94,8 +95,21 @@ func NewTestDockerClient(exitCode int) *TestDockerClient {
 	return t
 }
 
+type MockConn struct {
+	net.Conn
+}
+
+func (m *MockConn) Write(b []byte) (int, error) {
+	return len(b), nil
+}
+
+func NewMockConn() *MockConn {
+	c := &MockConn{}
+	return c
+}
+
 func (t *TestDockerClient) ContainerAttach(ctx context.Context, container string, options dockertypes.ContainerAttachOptions) (dockertypes.HijackedResponse, error) {
-	return dockertypes.HijackedResponse{Reader: bufio.NewReader(t.logReader)}, nil
+	return dockertypes.HijackedResponse{Conn: NewMockConn(), Reader: bufio.NewReader(t.logReader)}, nil
 }
 
 func (t *TestDockerClient) ContainerCreate(ctx context.Context, config *dockercontainer.Config, hostConfig *dockercontainer.HostConfig, networkingConfig *dockernetwork.NetworkingConfig, containerName string) (dockercontainer.ContainerCreateCreatedBody, error) {
@@ -292,9 +306,9 @@ func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename s
 
 func (client *KeepTestClient) CollectionFileReader(collection map[string]interface{}, filename string) (keepclient.Reader, error) {
 	if filename == "/file1_in_main.txt" {
-		rdr := ioutil.NopCloser(&bytes.Buffer{})
+		rdr := ioutil.NopCloser(strings.NewReader("foo")) // ioutil.NopCloser(&bytes.Buffer{})
 		client.Called = true
-		return FileWrapper{rdr, 1321984}, nil
+		return FileWrapper{rdr, 3}, nil
 	}
 	return nil, nil
 }
@@ -1142,7 +1156,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 
 		err := cr.SetupMounts()
 		c.Check(err, NotNil)
-		c.Check(err, ErrorMatches, `Unsupported mount kind 'tmp' for stdin. Only 'collection' is supported.*`)
+		c.Check(err, ErrorMatches, `Unsupported mount kind 'tmp' for stdin.*`)
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1414,6 +1428,42 @@ func (s *TestSuite) TestStdinCollectionMountPoint(c *C) {
 	}
 
 	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	for _, v := range api.Content {
+		if v["collection"] != nil {
+			collection := v["collection"].(arvadosclient.Dict)
+			if strings.Index(collection["name"].(string), "output") == 0 {
+				manifest := collection["manifest_text"].(string)
+
+				c.Check(manifest, Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
+`)
+			}
+		}
+	}
+}
+
+func (s *TestSuite) TestStdinJsonMountPoint(c *C) {
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {
+        "/tmp": {"kind": "tmp"},
+        "stdin": {"kind": "json", "content": "foo"},
+        "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"}
+    },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	api, _, _ := FullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
 	})
