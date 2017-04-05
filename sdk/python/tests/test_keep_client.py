@@ -13,7 +13,6 @@ import random
 import re
 import socket
 import sys
-import threading
 import time
 import unittest
 import urllib.parse
@@ -669,7 +668,7 @@ class KeepClientRendezvousTestCase(unittest.TestCase, tutil.ApiClientMock):
         self.check_64_zeros_error_order('put', arvados.errors.KeepWriteError)
 
 
-class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
+class KeepClientTimeout(keepstub.StubKeepServers, unittest.TestCase):
     # BANDWIDTH_LOW_LIM must be less than len(DATA) so we can transfer
     # 1s worth of data and then trigger bandwidth errors before running
     # out of data.
@@ -702,24 +701,6 @@ class KeepClientTimeout(unittest.TestCase, tutil.ApiClientMock):
         def __exit__(self, *args, **kwargs):
             delta = round(time.time() - self.t0, 3)
             self.assertGreaterEqual(delta, self.tmin)
-
-    def setUp(self):
-        sock = socket.socket()
-        sock.bind(('0.0.0.0', 0))
-        self.port = sock.getsockname()[1]
-        sock.close()
-        self.server = keepstub.Server(('0.0.0.0', self.port), keepstub.Handler)
-        self.thread = threading.Thread(target=self.server.serve_forever)
-        self.thread.daemon = True # Exit thread if main proc exits
-        self.thread.start()
-        self.api_client = self.mock_keep_services(
-            count=1,
-            service_host='localhost',
-            service_port=self.port,
-        )
-
-    def tearDown(self):
-        self.server.shutdown()
 
     def keepClient(self, timeouts=(0.1, TIMEOUT_TIME, BANDWIDTH_LOW_LIM)):
         return arvados.KeepClient(
