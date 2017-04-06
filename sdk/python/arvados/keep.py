@@ -344,8 +344,7 @@ class KeepClient(object):
                     self._headers = {}
                     response_body = cStringIO.StringIO()
                     curl.setopt(pycurl.NOSIGNAL, 1)
-                    curl.setopt(pycurl.OPENSOCKETFUNCTION,
-                                lambda *args, **kwargs: self._socket_open(*args, **kwargs))
+                    curl.setopt(pycurl.OPENSOCKETFUNCTION, self._socket_open)
                     curl.setopt(pycurl.URL, url.encode('utf-8'))
                     curl.setopt(pycurl.HTTPHEADER, [
                         '{}: {}'.format(k,v) for k,v in self.get_headers.iteritems()])
@@ -427,8 +426,7 @@ class KeepClient(object):
                     body_reader = cStringIO.StringIO(body)
                     response_body = cStringIO.StringIO()
                     curl.setopt(pycurl.NOSIGNAL, 1)
-                    curl.setopt(pycurl.OPENSOCKETFUNCTION,
-                                lambda *args, **kwargs: self._socket_open(*args, **kwargs))
+                    curl.setopt(pycurl.OPENSOCKETFUNCTION, self._socket_open)
                     curl.setopt(pycurl.URL, url.encode('utf-8'))
                     # Using UPLOAD tells cURL to wait for a "go ahead" from the
                     # Keep server (in the form of a HTTP/1.1 "100 Continue"
