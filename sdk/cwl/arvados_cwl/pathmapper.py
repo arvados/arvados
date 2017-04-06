@@ -33,7 +33,7 @@ class ArvPathMapper(PathMapper):
         if srcobj["class"] == "File":
             if "#" in src:
                 src = src[:src.index("#")]
-            if isinstance(src, basestring) and ArvPathMapper.pdh_dirpath.match(src):
+            if isinstance(src, basestring) and ArvPathMapper.pdh_path.match(src):
                 self._pathmap[src] = MapperEnt(src, self.collection_pattern % src[5:], "File")
             if src not in self._pathmap:
                 # Local FS ref, may need to be uploaded or may be on keep
