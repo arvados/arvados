@@ -103,6 +103,10 @@ func (m *MockConn) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
+func (m *MockConn) Close() error {
+	return nil
+}
+
 func NewMockConn() *MockConn {
 	c := &MockConn{}
 	return c
@@ -300,12 +304,7 @@ func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename s
 		rdr := ioutil.NopCloser(&bytes.Buffer{})
 		client.Called = true
 		return FileWrapper{rdr, 1321984}, nil
-	}
-	return nil, nil
-}
-
-func (client *KeepTestClient) CollectionFileReader(collection map[string]interface{}, filename string) (keepclient.Reader, error) {
-	if filename == "/file1_in_main.txt" {
+	} else if filename == "/file1_in_main.txt" {
 		rdr := ioutil.NopCloser(strings.NewReader("foo"))
 		client.Called = true
 		return FileWrapper{rdr, 3}, nil
@@ -392,10 +391,6 @@ func (KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename stri
 	return nil, errors.New("KeepError")
 }
 
-func (KeepErrorTestClient) CollectionFileReader(c map[string]interface{}, f string) (keepclient.Reader, error) {
-	return nil, errors.New("KeepError")
-}
-
 type KeepReadErrorTestClient struct{}
 
 func (KeepReadErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
@@ -421,10 +416,6 @@ func (ErrorReader) Seek(int64, int) (int64, error) {
 }
 
 func (KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.Reader, error) {
-	return ErrorReader{}, nil
-}
-
-func (KeepReadErrorTestClient) CollectionFileReader(c map[string]interface{}, f string) (keepclient.Reader, error) {
 	return ErrorReader{}, nil
 }
 
