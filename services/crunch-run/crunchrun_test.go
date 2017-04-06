@@ -306,7 +306,7 @@ func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename s
 
 func (client *KeepTestClient) CollectionFileReader(collection map[string]interface{}, filename string) (keepclient.Reader, error) {
 	if filename == "/file1_in_main.txt" {
-		rdr := ioutil.NopCloser(strings.NewReader("foo")) // ioutil.NopCloser(&bytes.Buffer{})
+		rdr := ioutil.NopCloser(strings.NewReader("foo"))
 		client.Called = true
 		return FileWrapper{rdr, 3}, nil
 	}
