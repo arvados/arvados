@@ -17,7 +17,7 @@ class ArvPathMapper(PathMapper):
     """Convert container-local paths to and from Keep collection ids."""
 
     pdh_path = re.compile(r'^keep:[0-9a-f]{32}\+\d+/.+$')
-    pdh_dirpath = re.compile(r'^keep:[0-9a-f]{32}\+\d+(/.+)?$')
+    pdh_dirpath = re.compile(r'^keep:[0-9a-f]{32}\+\d+(/.*)?$')
 
     def __init__(self, arvrunner, referenced_files, input_basedir,
                  collection_pattern, file_pattern, name=None, **kwargs):
@@ -33,7 +33,7 @@ class ArvPathMapper(PathMapper):
         if srcobj["class"] == "File":
             if "#" in src:
                 src = src[:src.index("#")]
-            if isinstance(src, basestring) and ArvPathMapper.pdh_path.match(src):
+            if isinstance(src, basestring) and ArvPathMapper.pdh_dirpath.match(src):
                 self._pathmap[src] = MapperEnt(src, self.collection_pattern % src[5:], "File")
             if src not in self._pathmap:
                 # Local FS ref, may need to be uploaded or may be on keep
