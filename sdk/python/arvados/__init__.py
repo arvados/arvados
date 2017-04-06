@@ -29,12 +29,12 @@ else:
 
 from .api import api, api_from_config, http_cache
 from .collection import CollectionReader, CollectionWriter, ResumableCollectionWriter
-from .keep import *
-from .stream import *
+from arvados.keep import *
+from arvados.stream import *
 from .arvfile import StreamFileReader
 from .retry import RetryLoop
-from . import errors
-from . import util
+import arvados.errors as errors
+import arvados.util as util
 
 # Set up Arvados logging based on the user's configuration.
 # All Arvados code should log under the arvados hierarchy.
