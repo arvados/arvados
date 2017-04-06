@@ -239,8 +239,9 @@ def run(leave_running_atexit=False):
     # This will clear cached docs that belong to other processes (like
     # concurrent test suites) even if they're still running. They should
     # be able to tolerate that.
-    for fn in glob.glob(os.path.join(arvados.http_cache('discovery'),
-                                     '*,arvados,v1,rest,*')):
+    for fn in glob.glob(os.path.join(
+            str(arvados.http_cache('discovery')),
+            '*,arvados,v1,rest,*')):
         os.unlink(fn)
 
     pid_file = _pidfile('api')

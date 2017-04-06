@@ -232,7 +232,7 @@ class NodeManagerDaemonActor(actor_class):
     def try_pairing(self):
         for record in self.cloud_nodes.unpaired():
             for arv_rec in self.arvados_nodes.unpaired():
-                if record.actor.offer_arvados_pair(arv_rec.arvados_node).get():
+                if record.actor is not None and record.actor.offer_arvados_pair(arv_rec.arvados_node).get():
                     self._pair_nodes(record, arv_rec.arvados_node)
                     break
 
@@ -336,7 +336,7 @@ class NodeManagerDaemonActor(actor_class):
                 elif (nodes_wanted < 0) and self.booting:
                     self._later.stop_booting_node(size)
             except Exception as e:
-                self._logger.exception("while calculating nodes wanted for size %s", size)
+                self._logger.exception("while calculating nodes wanted for size %s", getattr(size, "id", "(id not available)"))
 
     def _check_poll_freshness(orig_func):
         """Decorator to inhibit a method when poll information is stale.
@@ -426,16 +426,25 @@ class NodeManagerDaemonActor(actor_class):
 
     @_check_poll_freshness
     def node_can_shutdown(self, node_actor):
-        if self._nodes_excess(node_actor.cloud_node.get().size) > 0:
-            self._begin_node_shutdown(node_actor, cancellable=True)
-        elif self.cloud_nodes.nodes.get(node_actor.cloud_node.get().id).arvados_node is None:
-            # Node is unpaired, which means it probably exceeded its booting
-            # grace period without a ping, so shut it down so we can boot a new
-            # node in its place.
-            self._begin_node_shutdown(node_actor, cancellable=False)
-        elif node_actor.in_state('down').get():
-            # Node is down and unlikely to come back.
-            self._begin_node_shutdown(node_actor, cancellable=False)
+        try:
+            if self._nodes_excess(node_actor.cloud_node.get().size) > 0:
+                self._begin_node_shutdown(node_actor, cancellable=True)
+            elif self.cloud_nodes.nodes.get(node_actor.cloud_node.get().id).arvados_node is None:
+                # Node is unpaired, which means it probably exceeded its booting
+                # grace period without a ping, so shut it down so we can boot a new
+                # node in its place.
+                self._begin_node_shutdown(node_actor, cancellable=False)
+            elif node_actor.in_state('down').get():
+                # Node is down and unlikely to come back.
+                self._begin_node_shutdown(node_actor, cancellable=False)
+        except pykka.ActorDeadError as e:
+            # The monitor actor sends shutdown suggestions every time the
+            # node's state is updated, and these go into the daemon actor's
+            # message queue.  It's possible that the node has already been shut
+            # down (which shuts down the node monitor actor).  In that case,
+            # this message is stale and we'll get ActorDeadError when we try to
+            # access node_actor.  Log the error.
+            self._logger.debug("ActorDeadError in node_can_shutdown: %s", e)
 
     def node_finished_shutdown(self, shutdown_actor):
         try:

@@ -13,6 +13,7 @@ admin_changes_repository2: # admin changes repository2, which is owned by active
   object_uuid: zzzzz-2x53u-382brsig8rp3667 # repository foo
   object_owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz # active user
   event_at: <%= 2.minute.ago.to_s(:db) %>
+  event_type: update
 
 admin_changes_specimen: # admin changes specimen owned_by_spectator
   id: 3
@@ -21,6 +22,7 @@ admin_changes_specimen: # admin changes specimen owned_by_spectator
   object_uuid: zzzzz-2x53u-3b0xxwzlbzxq5yr # specimen owned_by_spectator
   object_owner_uuid: zzzzz-tpzed-l1s2piq4t4mps8r # spectator user
   event_at: <%= 3.minute.ago.to_s(:db) %>
+  event_type: update
 
 system_adds_foo_file: # foo collection added, readable by active through link
   id: 4
@@ -29,6 +31,7 @@ system_adds_foo_file: # foo collection added, readable by active through link
   object_uuid: zzzzz-4zz18-znfnqtbbv4spc3w # foo file
   object_owner_uuid: zzzzz-tpzed-000000000000000 # system user
   event_at: <%= 4.minute.ago.to_s(:db) %>
+  event_type: create
 
 system_adds_baz: # baz collection added, readable by active and spectator through group 'all users' group membership
   id: 5
@@ -37,6 +40,7 @@ system_adds_baz: # baz collection added, readable by active and spectator throug
   object_uuid: zzzzz-4zz18-y9vne9npefyxh8g # baz file
   object_owner_uuid: zzzzz-tpzed-000000000000000 # system user
   event_at: <%= 5.minute.ago.to_s(:db) %>
+  event_type: create
 
 log_owned_by_active:
   id: 6

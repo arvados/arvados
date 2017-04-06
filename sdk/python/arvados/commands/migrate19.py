@@ -64,10 +64,15 @@ def main(arguments=None):
         '--print-unmigrated', action='store_true',
         default=False, help="Print list of images needing migration.")
 
+    migrate19_parser.add_argument('--tempdir', help="Set temporary directory")
+
     migrate19_parser.add_argument('infile', nargs='?', type=argparse.FileType('r'),
                                   default=None, help="List of images to be migrated")
 
     args = migrate19_parser.parse_args(arguments)
+
+    if args.tempdir:
+        tempfile.tempdir = args.tempdir
 
     only_migrate = None
     if args.infile:
@@ -105,14 +110,19 @@ def main(arguments=None):
 
     items = arvados.util.list_all(api_client.collections().list,
                                   filters=[["uuid", "in", [img["collection"] for img in old_images]]],
-                                  select=["uuid", "portable_data_hash"])
-    uuid_to_pdh = {i["uuid"]: i["portable_data_hash"] for i in items}
+                                  select=["uuid", "portable_data_hash", "manifest_text", "owner_uuid"])
+    uuid_to_collection = {i["uuid"]: i for i in items}
 
     need_migrate = {}
+    biggest = 0
     for img in old_images:
-        pdh = uuid_to_pdh[img["collection"]]
+        i = uuid_to_collection[img["collection"]]
+        pdh = i["portable_data_hash"]
         if pdh not in already_migrated and (only_migrate is None or pdh in only_migrate):
             need_migrate[pdh] = img
+            with CollectionReader(i["manifest_text"]) as c:
+                if c.values()[0].size() > biggest:
+                    biggest = c.values()[0].size()
 
     if args.print_unmigrated:
         only_migrate = set()
@@ -122,6 +132,8 @@ def main(arguments=None):
 
     logger.info("Already migrated %i images", len(already_migrated))
     logger.info("Need to migrate %i images", len(need_migrate))
+    logger.info("Using tempdir %s", tempfile.gettempdir())
+    logger.info("Biggest image is about %i MiB, tempdir needs at least %i MiB free", biggest/(2**20), (biggest*2)/(2**20))
 
     if args.dry_run:
         return
@@ -130,17 +142,19 @@ def main(arguments=None):
     failures = []
     count = 1
     for old_image in need_migrate.values():
-        if uuid_to_pdh[old_image["collection"]] in already_migrated:
+        if uuid_to_collection[old_image["collection"]]["portable_data_hash"] in already_migrated:
             continue
 
-        logger.info("[%i/%i] Migrating %s:%s (%s)", count, len(need_migrate), old_image["repo"], old_image["tag"], old_image["collection"])
+        oldcol = CollectionReader(uuid_to_collection[old_image["collection"]]["manifest_text"])
+        tarfile = oldcol.keys()[0]
+
+        logger.info("[%i/%i] Migrating %s:%s (%s) (%i MiB)", count, len(need_migrate), old_image["repo"],
+                    old_image["tag"], old_image["collection"], oldcol.values()[0].size()/(2**20))
         count += 1
         start = time.time()
 
-        oldcol = CollectionReader(old_image["collection"])
-        tarfile = oldcol.keys()[0]
-
         varlibdocker = tempfile.mkdtemp()
+        dockercache = tempfile.mkdtemp()
         try:
             with tempfile.NamedTemporaryFile() as envfile:
                 envfile.write("ARVADOS_API_HOST=%s\n" % (os.environ["ARVADOS_API_HOST"]))
@@ -154,13 +168,14 @@ def main(arguments=None):
                              "--rm",
                              "--env-file", envfile.name,
                              "--volume", "%s:/var/lib/docker" % varlibdocker,
+                             "--volume", "%s:/root/.cache/arvados/docker" % dockercache,
                              "arvados/migrate-docker19",
                              "/root/migrate.sh",
                              "%s/%s" % (old_image["collection"], tarfile),
                              tarfile[0:40],
                              old_image["repo"],
                              old_image["tag"],
-                             oldcol.api_response()["owner_uuid"]]
+                             uuid_to_collection[old_image["collection"]]["owner_uuid"]]
 
                 proc = subprocess.Popen(dockercmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 out, err = proc.communicate()
@@ -198,6 +213,7 @@ def main(arguments=None):
             failures.append(old_image["collection"])
         finally:
             shutil.rmtree(varlibdocker)
+            shutil.rmtree(dockercache)
 
     logger.info("Successfully migrated %i images", len(success))
     if failures:

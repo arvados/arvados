@@ -1,3 +1,5 @@
+require 'audit_logs'
+
 class Log < ArvadosModel
   include HasUuid
   include KindAndEtag
@@ -5,6 +7,7 @@ class Log < ArvadosModel
   serialize :properties, Hash
   before_validation :set_default_event_at
   after_save :send_notify
+  after_commit { AuditLogs.tidy_in_background }
 
   api_accessible :user, extend: :common do |t|
     t.add :id
@@ -101,5 +104,4 @@ class Log < ArvadosModel
   def send_notify
     connection.execute "NOTIFY logs, '#{self.id}'"
   end
-
 end

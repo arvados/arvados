@@ -120,6 +120,21 @@ You can work around this issue by disabling the Docker daemon's systemd integrat
 
 {% include 'notebox_end' %}
 
+h3. CrunchRunCommand: Using host networking for containers
+
+Older Linux kernels (prior to 3.18) have bugs in network namespace handling which can lead to compute node lockups.  This by is indicated by blocked kernel tasks in "Workqueue: netns cleanup_net".   If you are experiencing this problem, as a workaround you can disable use of network namespaces by Docker across the cluster.  Be aware this reduces container isolation, which may be a security risk.
+
+<notextile>
+<pre><code class="userinput">Client:
+  APIHost: <b>zzzzz.arvadosapi.com</b>
+  AuthToken: <b>zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz</b>
+CrunchRunCommand:
+- <b>crunch-run</b>
+- <b>"-container-enable-networking=always"</b>
+- <b>"-container-network-mode=host"</b>
+</code></pre>
+</notextile>
+
 h3. MinRetryPeriod: Rate-limit repeated attempts to start containers
 
 If SLURM is unable to run a container, the dispatcher will submit it again after the next PollPeriod. If PollPeriod is very short, this can be excessive. If MinRetryPeriod is set, the dispatcher will avoid submitting the same container to SLURM more than once in the given time span.

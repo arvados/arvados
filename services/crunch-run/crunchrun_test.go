@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/json"
 	"errors"
@@ -23,7 +25,10 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
-	"github.com/curoverse/dockerclient"
+
+	dockertypes "github.com/docker/docker/api/types"
+	dockercontainer "github.com/docker/docker/api/types/container"
+	dockernetwork "github.com/docker/docker/api/types/network"
 	. "gopkg.in/check.v1"
 )
 
@@ -73,55 +78,36 @@ type TestDockerClient struct {
 	logReader   io.ReadCloser
 	logWriter   io.WriteCloser
 	fn          func(t *TestDockerClient)
-	finish      chan dockerclient.WaitResult
+	finish      int
 	stop        chan bool
 	cwd         string
 	env         []string
 	api         *ArvTestClient
 }
 
-func NewTestDockerClient() *TestDockerClient {
+func NewTestDockerClient(exitCode int) *TestDockerClient {
 	t := &TestDockerClient{}
 	t.logReader, t.logWriter = io.Pipe()
-	t.finish = make(chan dockerclient.WaitResult)
+	t.finish = exitCode
 	t.stop = make(chan bool)
 	t.cwd = "/"
 	return t
 }
 
-func (t *TestDockerClient) StopContainer(id string, timeout int) error {
-	t.stop <- true
-	return nil
+func (t *TestDockerClient) ContainerAttach(ctx context.Context, container string, options dockertypes.ContainerAttachOptions) (dockertypes.HijackedResponse, error) {
+	return dockertypes.HijackedResponse{Reader: bufio.NewReader(t.logReader)}, nil
 }
 
-func (t *TestDockerClient) InspectImage(id string) (*dockerclient.ImageInfo, error) {
-	if t.imageLoaded == id {
-		return &dockerclient.ImageInfo{}, nil
-	} else {
-		return nil, errors.New("")
-	}
-}
-
-func (t *TestDockerClient) LoadImage(reader io.Reader) error {
-	_, err := io.Copy(ioutil.Discard, reader)
-	if err != nil {
-		return err
-	} else {
-		t.imageLoaded = hwImageId
-		return nil
-	}
-}
-
-func (t *TestDockerClient) CreateContainer(config *dockerclient.ContainerConfig, name string, authConfig *dockerclient.AuthConfig) (string, error) {
+func (t *TestDockerClient) ContainerCreate(ctx context.Context, config *dockercontainer.Config, hostConfig *dockercontainer.HostConfig, networkingConfig *dockernetwork.NetworkingConfig, containerName string) (dockercontainer.ContainerCreateCreatedBody, error) {
 	if config.WorkingDir != "" {
 		t.cwd = config.WorkingDir
 	}
 	t.env = config.Env
-	return "abcde", nil
+	return dockercontainer.ContainerCreateCreatedBody{ID: "abcde"}, nil
 }
 
-func (t *TestDockerClient) StartContainer(id string, config *dockerclient.HostConfig) error {
-	if id == "abcde" {
+func (t *TestDockerClient) ContainerStart(ctx context.Context, container string, options dockertypes.ContainerStartOptions) error {
+	if container == "abcde" {
 		go t.fn(t)
 		return nil
 	} else {
@@ -129,15 +115,34 @@ func (t *TestDockerClient) StartContainer(id string, config *dockerclient.HostCo
 	}
 }
 
-func (t *TestDockerClient) AttachContainer(id string, options *dockerclient.AttachOptions) (io.ReadCloser, error) {
-	return t.logReader, nil
+func (t *TestDockerClient) ContainerStop(ctx context.Context, container string, timeout *time.Duration) error {
+	t.stop <- true
+	return nil
 }
 
-func (t *TestDockerClient) Wait(id string) <-chan dockerclient.WaitResult {
-	return t.finish
+func (t *TestDockerClient) ContainerWait(ctx context.Context, container string) (int64, error) {
+	return int64(t.finish), nil
 }
 
-func (*TestDockerClient) RemoveImage(name string, force bool) ([]*dockerclient.ImageDelete, error) {
+func (t *TestDockerClient) ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error) {
+	if t.imageLoaded == image {
+		return dockertypes.ImageInspect{}, nil, nil
+	} else {
+		return dockertypes.ImageInspect{}, nil, errors.New("")
+	}
+}
+
+func (t *TestDockerClient) ImageLoad(ctx context.Context, input io.Reader, quiet bool) (dockertypes.ImageLoadResponse, error) {
+	_, err := io.Copy(ioutil.Discard, input)
+	if err != nil {
+		return dockertypes.ImageLoadResponse{}, err
+	} else {
+		t.imageLoaded = hwImageId
+		return dockertypes.ImageLoadResponse{Body: ioutil.NopCloser(input)}, nil
+	}
+}
+
+func (*TestDockerClient) ImageRemove(ctx context.Context, image string, options dockertypes.ImageRemoveOptions) ([]dockertypes.ImageDeleteResponseItem, error) {
 	return nil, nil
 }
 
@@ -287,12 +292,12 @@ func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename s
 
 func (s *TestSuite) TestLoadImage(c *C) {
 	kc := &KeepTestClient{}
-	docker := NewTestDockerClient()
+	docker := NewTestDockerClient(0)
 	cr := NewContainerRunner(&ArvTestClient{}, kc, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
-	_, err := cr.Docker.RemoveImage(hwImageId, true)
+	_, err := cr.Docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 
-	_, err = cr.Docker.InspectImage(hwImageId)
+	_, _, err = cr.Docker.ImageInspectWithRaw(nil, hwImageId)
 	c.Check(err, NotNil)
 
 	cr.Container.ContainerImage = hwPDH
@@ -305,13 +310,13 @@ func (s *TestSuite) TestLoadImage(c *C) {
 
 	c.Check(err, IsNil)
 	defer func() {
-		cr.Docker.RemoveImage(hwImageId, true)
+		cr.Docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 	}()
 
 	c.Check(kc.Called, Equals, true)
 	c.Check(cr.ContainerConfig.Image, Equals, hwImageId)
 
-	_, err = cr.Docker.InspectImage(hwImageId)
+	_, _, err = cr.Docker.ImageInspectWithRaw(nil, hwImageId)
 	c.Check(err, IsNil)
 
 	// (2) Test using image that's already loaded
@@ -403,7 +408,7 @@ func (s *TestSuite) TestLoadImageArvError(c *C) {
 
 func (s *TestSuite) TestLoadImageKeepError(c *C) {
 	// (2) Keep error
-	docker := NewTestDockerClient()
+	docker := NewTestDockerClient(0)
 	cr := NewContainerRunner(&ArvTestClient{}, KeepErrorTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.Container.ContainerImage = hwPDH
 
@@ -422,7 +427,7 @@ func (s *TestSuite) TestLoadImageCollectionError(c *C) {
 
 func (s *TestSuite) TestLoadImageKeepReadError(c *C) {
 	// (4) Collection doesn't contain image
-	docker := NewTestDockerClient()
+	docker := NewTestDockerClient(0)
 	cr := NewContainerRunner(&ArvTestClient{}, KeepReadErrorTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 	cr.Container.ContainerImage = hwPDH
 
@@ -463,11 +468,10 @@ func dockerLog(fd byte, msg string) []byte {
 }
 
 func (s *TestSuite) TestRunContainer(c *C) {
-	docker := NewTestDockerClient()
+	docker := NewTestDockerClient(0)
 	docker.fn = func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "Hello world\n"))
 		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{}
 	}
 	cr := NewContainerRunner(&ArvTestClient{}, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
 
@@ -559,14 +563,14 @@ func (s *TestSuite) TestUpdateContainerCancelled(c *C) {
 
 // Used by the TestFullRun*() test below to DRY up boilerplate setup to do full
 // dress rehearsal of the Run() function, starting from a JSON container record.
-func FullRunHelper(c *C, record string, extraMounts []string, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner, realTemp string) {
+func FullRunHelper(c *C, record string, extraMounts []string, exitCode int, fn func(t *TestDockerClient)) (api *ArvTestClient, cr *ContainerRunner, realTemp string) {
 	rec := arvados.Container{}
 	err := json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
-	docker := NewTestDockerClient()
+	docker := NewTestDockerClient(exitCode)
 	docker.fn = fn
-	docker.RemoveImage(hwImageId, true)
+	docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 
 	api = &ArvTestClient{Container: rec}
 	docker.api = api
@@ -626,10 +630,9 @@ func (s *TestSuite) TestFullRunHello(c *C) {
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
-}`, nil, func(t *TestDockerClient) {
+}`, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "hello world\n"))
 		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{}
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
@@ -648,10 +651,9 @@ func (s *TestSuite) TestCrunchstat(c *C) {
 		"output_path": "/tmp",
 		"priority": 1,
 		"runtime_constraints": {}
-	}`, nil, func(t *TestDockerClient) {
+	}`, nil, 0, func(t *TestDockerClient) {
 		time.Sleep(time.Second)
 		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{}
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
@@ -681,11 +683,11 @@ func (s *TestSuite) TestNodeInfoLog(c *C) {
 		"output_path": "/tmp",
 		"priority": 1,
 		"runtime_constraints": {}
-	}`, nil, func(t *TestDockerClient) {
-		time.Sleep(time.Second)
-		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{}
-	})
+	}`, nil, 0,
+		func(t *TestDockerClient) {
+			time.Sleep(time.Second)
+			t.logWriter.Close()
+		})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
@@ -708,11 +710,11 @@ func (s *TestSuite) TestContainerRecordLog(c *C) {
 		"output_path": "/tmp",
 		"priority": 1,
 		"runtime_constraints": {}
-	}`, nil, func(t *TestDockerClient) {
-		time.Sleep(time.Second)
-		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{}
-	})
+	}`, nil, 0,
+		func(t *TestDockerClient) {
+			time.Sleep(time.Second)
+			t.logWriter.Close()
+		})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
 	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
@@ -731,11 +733,10 @@ func (s *TestSuite) TestFullRunStderr(c *C) {
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
-}`, nil, func(t *TestDockerClient) {
+}`, nil, 1, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, "hello\n"))
 		t.logWriter.Write(dockerLog(2, "world\n"))
 		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{ExitCode: 1}
 	})
 
 	final := api.CalledWith("container.state", "Complete")
@@ -757,10 +758,9 @@ func (s *TestSuite) TestFullRunDefaultCwd(c *C) {
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
-}`, nil, func(t *TestDockerClient) {
+}`, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.cwd+"\n"))
 		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
@@ -779,10 +779,9 @@ func (s *TestSuite) TestFullRunSetCwd(c *C) {
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
-}`, nil, func(t *TestDockerClient) {
+}`, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.cwd+"\n"))
 		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
@@ -827,14 +826,13 @@ func (s *TestSuite) testStopContainer(c *C, setup func(cr *ContainerRunner)) {
 	err := json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
-	docker := NewTestDockerClient()
+	docker := NewTestDockerClient(0)
 	docker.fn = func(t *TestDockerClient) {
 		<-t.stop
 		t.logWriter.Write(dockerLog(1, "foo\n"))
 		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	}
-	docker.RemoveImage(hwImageId, true)
+	docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 
 	api := &ArvTestClient{Container: rec}
 	cr := NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
@@ -872,10 +870,9 @@ func (s *TestSuite) TestFullRunSetEnv(c *C) {
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {}
-}`, nil, func(t *TestDockerClient) {
+}`, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
@@ -1130,10 +1127,9 @@ func (s *TestSuite) TestStdout(c *C) {
 		"runtime_constraints": {}
 	}`
 
-	api, _, _ := FullRunHelper(c, helperRecord, nil, func(t *TestDockerClient) {
+	api, _, _ := FullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
@@ -1147,9 +1143,9 @@ func StdoutErrorRunHelper(c *C, record string, fn func(t *TestDockerClient)) (ap
 	err = json.Unmarshal([]byte(record), &rec)
 	c.Check(err, IsNil)
 
-	docker := NewTestDockerClient()
+	docker := NewTestDockerClient(0)
 	docker.fn = fn
-	docker.RemoveImage(hwImageId, true)
+	docker.ImageRemove(nil, hwImageId, dockertypes.ImageRemoveOptions{})
 
 	api = &ArvTestClient{Container: rec}
 	cr = NewContainerRunner(api, &KeepTestClient{}, docker, "zzzzz-zzzzz-zzzzzzzzzzzzzzz")
@@ -1202,10 +1198,9 @@ func (s *TestSuite) TestFullRunWithAPI(c *C) {
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {"API": true}
-}`, nil, func(t *TestDockerClient) {
+}`, nil, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[1][17:]+"\n"))
 		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
@@ -1226,10 +1221,9 @@ func (s *TestSuite) TestFullRunSetOutput(c *C) {
     "output_path": "/tmp",
     "priority": 1,
     "runtime_constraints": {"API": true}
-}`, nil, func(t *TestDockerClient) {
+}`, nil, 0, func(t *TestDockerClient) {
 		t.api.Container.Output = "d4ab34d3d4f8a72f5c4973051ae69fab+122"
 		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
@@ -1258,10 +1252,9 @@ func (s *TestSuite) TestStdoutWithExcludeFromOutputMountPointUnderOutputDir(c *C
 
 	extraMounts := []string{"a3e8f74c6f101eae01fa08bfb4e49b3a+54"}
 
-	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
+	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
@@ -1294,10 +1287,9 @@ func (s *TestSuite) TestStdoutWithMultipleMountPointsUnderOutputDir(c *C) {
 		"a0def87f80dd594d4675809e83bd4f15+367/subdir1/subdir2/file2_in_subdir2.txt",
 	}
 
-	api, runner, realtemp := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
+	api, runner, realtemp := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
 	c.Check(runner.Binds, DeepEquals, []string{realtemp + "/2:/tmp",
@@ -1347,10 +1339,9 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 		"b0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt",
 	}
 
-	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, func(t *TestDockerClient) {
+	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
 		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
 		t.logWriter.Close()
-		t.finish <- dockerclient.WaitResult{ExitCode: 0}
 	})
 
 	c.Check(api.CalledWith("container.exit_code", 0), NotNil)

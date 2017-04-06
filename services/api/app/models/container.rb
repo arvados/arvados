@@ -82,15 +82,102 @@ class Container < ArvadosModel
     end
   end
 
+  # Create a new container (or find an existing one) to satisfy the
+  # given container request.
+  def self.resolve(req)
+    c_attrs = {
+      command: req.command,
+      cwd: req.cwd,
+      environment: req.environment,
+      output_path: req.output_path,
+      container_image: resolve_container_image(req.container_image),
+      mounts: resolve_mounts(req.mounts),
+      runtime_constraints: resolve_runtime_constraints(req.runtime_constraints),
+      scheduling_parameters: req.scheduling_parameters,
+    }
+    act_as_system_user do
+      if req.use_existing && (reusable = find_reusable(c_attrs))
+        reusable
+      else
+        Container.create!(c_attrs)
+      end
+    end
+  end
+
+  # Return a runtime_constraints hash that complies with requested but
+  # is suitable for saving in a container record, i.e., has specific
+  # values instead of ranges.
+  #
+  # Doing this as a step separate from other resolutions, like "git
+  # revision range to commit hash", makes sense only when there is no
+  # opportunity to reuse an existing container (e.g., container reuse
+  # is not implemented yet, or we have already found that no existing
+  # containers are suitable).
+  def self.resolve_runtime_constraints(runtime_constraints)
+    rc = {}
+    defaults = {
+      'keep_cache_ram' =>
+      Rails.configuration.container_default_keep_cache_ram,
+    }
+    defaults.merge(runtime_constraints).each do |k, v|
+      if v.is_a? Array
+        rc[k] = v[0]
+      else
+        rc[k] = v
+      end
+    end
+    rc
+  end
+
+  # Return a mounts hash suitable for a Container, i.e., with every
+  # readonly collection UUID resolved to a PDH.
+  def self.resolve_mounts(mounts)
+    c_mounts = {}
+    mounts.each do |k, mount|
+      mount = mount.dup
+      c_mounts[k] = mount
+      if mount['kind'] != 'collection'
+        next
+      end
+      if (uuid = mount.delete 'uuid')
+        c = Collection.
+          readable_by(current_user).
+          where(uuid: uuid).
+          select(:portable_data_hash).
+          first
+        if !c
+          raise ArvadosModel::UnresolvableContainerError.new "cannot mount collection #{uuid.inspect}: not found"
+        end
+        if mount['portable_data_hash'].nil?
+          # PDH not supplied by client
+          mount['portable_data_hash'] = c.portable_data_hash
+        elsif mount['portable_data_hash'] != c.portable_data_hash
+          # UUID and PDH supplied by client, but they don't agree
+          raise ArgumentError.new "cannot mount collection #{uuid.inspect}: current portable_data_hash #{c.portable_data_hash.inspect} does not match #{c['portable_data_hash'].inspect} in request"
+        end
+      end
+    end
+    return c_mounts
+  end
+
+  # Return a container_image PDH suitable for a Container.
+  def self.resolve_container_image(container_image)
+    coll = Collection.for_latest_docker_image(container_image)
+    if !coll
+      raise ArvadosModel::UnresolvableContainerError.new "docker image #{container_image.inspect} not found"
+    end
+    coll.portable_data_hash
+  end
+
   def self.find_reusable(attrs)
     candidates = Container.
       where_serialized(:command, attrs[:command]).
       where('cwd = ?', attrs[:cwd]).
       where_serialized(:environment, attrs[:environment]).
       where('output_path = ?', attrs[:output_path]).
-      where('container_image = ?', attrs[:container_image]).
-      where_serialized(:mounts, attrs[:mounts]).
-      where_serialized(:runtime_constraints, attrs[:runtime_constraints])
+      where('container_image = ?', resolve_container_image(attrs[:container_image])).
+      where_serialized(:mounts, resolve_mounts(attrs[:mounts])).
+      where_serialized(:runtime_constraints, resolve_runtime_constraints(attrs[:runtime_constraints]))
 
     # Check for Completed candidates whose output and log are both readable.
     select_readable_pdh = Collection.

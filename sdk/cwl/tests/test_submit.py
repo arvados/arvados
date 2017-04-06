@@ -249,17 +249,17 @@ class TestSubmit(unittest.TestCase):
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
                 '. 5bcc9fe8f8d5992e6cf418dc7ce4dbb3+16 0:16:blub.txt\n',
-                'owner_uuid': None,
+                'replication_desired': None,
                 'name': 'submit_tool.cwl dependencies',
             }), ensure_unique_name=True),
-            mock.call().execute(),
+            mock.call().execute(num_retries=4),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
                 '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
-                'owner_uuid': None,
+                'replication_desired': None,
                 'name': 'submit_wf.cwl input',
             }), ensure_unique_name=True),
-            mock.call().execute()])
+            mock.call().execute(num_retries=4)])
 
         arvdock.assert_has_calls([
             mock.call(stubs.api, {"class": "DockerRequirement", "dockerPull": "debian:8"}, True, None),
@@ -432,17 +432,17 @@ class TestSubmit(unittest.TestCase):
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
                 '. 5bcc9fe8f8d5992e6cf418dc7ce4dbb3+16 0:16:blub.txt\n',
-                'owner_uuid': None,
+                'replication_desired': None,
                 'name': 'submit_tool.cwl dependencies',
             }), ensure_unique_name=True),
-            mock.call().execute(),
+            mock.call().execute(num_retries=4),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
                 '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
-                'owner_uuid': None,
+                'replication_desired': None,
                 'name': 'submit_wf.cwl input',
             }), ensure_unique_name=True),
-            mock.call().execute()])
+            mock.call().execute(num_retries=4)])
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(

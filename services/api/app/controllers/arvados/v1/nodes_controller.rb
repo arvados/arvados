@@ -46,10 +46,12 @@ class Arvados::V1::NodesController < ApplicationController
       @objects = model_class.where('last_ping_at >= ?', db_current_time - 1.hours)
     end
     super
-    job_uuids = @objects.map { |n| n[:job_uuid] }.compact
-    assoc_jobs = readable_job_uuids(job_uuids)
-    @objects.each do |node|
-      node.job_readable = assoc_jobs.include?(node[:job_uuid])
+    if @select.nil? or @select.include? 'job_uuid'
+      job_uuids = @objects.map { |n| n[:job_uuid] }.compact
+      assoc_jobs = readable_job_uuids(job_uuids)
+      @objects.each do |node|
+        node.job_readable = assoc_jobs.include?(node[:job_uuid])
+      end
     end
   end
 

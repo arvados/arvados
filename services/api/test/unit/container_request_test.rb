@@ -3,6 +3,7 @@ require 'helpers/docker_migration_helper'
 
 class ContainerRequestTest < ActiveSupport::TestCase
   include DockerMigrationHelper
+  include DbCurrentTime
 
   def create_minimal_req! attrs={}
     defaults = {
@@ -122,6 +123,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr.save!
 
     cr.reload
+
+    assert_equal({"vcpus" => 2, "ram" => 30}, cr.runtime_constraints)
 
     assert_not_nil cr.container_uuid
     c = Container.find_by_uuid cr.container_uuid
@@ -310,8 +313,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     lambda { |resolved| resolved["ram"] == 1234234234 }],
   ].each do |rc, okfunc|
     test "resolve runtime constraint range #{rc} to values" do
-      cr = ContainerRequest.new(runtime_constraints: rc)
-      resolved = cr.send :runtime_constraints_for_container
+      resolved = Container.resolve_runtime_constraints(rc)
       assert(okfunc.call(resolved),
              "container runtime_constraints was #{resolved.inspect}")
     end
@@ -343,10 +345,9 @@ class ContainerRequestTest < ActiveSupport::TestCase
   ].each do |mounts, okfunc|
     test "resolve mounts #{mounts.inspect} to values" do
       set_user_from_auth :active
-      cr = ContainerRequest.new(mounts: mounts)
-      resolved = cr.send :mounts_for_container
+      resolved = Container.resolve_mounts(mounts)
       assert(okfunc.call(resolved),
-             "mounts_for_container returned #{resolved.inspect}")
+             "Container.resolve_mounts returned #{resolved.inspect}")
     end
   end
 
@@ -359,9 +360,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
         "path" => "/foo",
       },
     }
-    cr = ContainerRequest.new(mounts: m)
     assert_raises(ArvadosModel::UnresolvableContainerError) do
-      cr.send :mounts_for_container
+      Container.resolve_mounts(m)
     end
   end
 
@@ -375,9 +375,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
         "path" => "/foo",
       },
     }
-    cr = ContainerRequest.new(mounts: m)
     assert_raises(ArgumentError) do
-      cr.send :mounts_for_container
+      Container.resolve_mounts(m)
     end
   end
 
@@ -385,21 +384,19 @@ class ContainerRequestTest < ActiveSupport::TestCase
    'arvados/apitestfixture',
    'd8309758b8fe2c81034ffc8a10c36460b77db7bc5e7b448c4e5b684f9d95a678',
   ].each do |tag|
-    test "container_image_for_container(#{tag.inspect})" do
+    test "Container.resolve_container_image(#{tag.inspect})" do
       set_user_from_auth :active
-      cr = ContainerRequest.new(container_image: tag)
-      resolved = cr.send :container_image_for_container
+      resolved = Container.resolve_container_image(tag)
       assert_equal resolved, collections(:docker_image).portable_data_hash
     end
   end
 
-  test "container_image_for_container(pdh)" do
+  test "Container.resolve_container_image(pdh)" do
     set_user_from_auth :active
     [[:docker_image, 'v1'], [:docker_image_1_12, 'v2']].each do |coll, ver|
       Rails.configuration.docker_image_formats = [ver]
       pdh = collections(coll).portable_data_hash
-      cr = ContainerRequest.new(container_image: pdh)
-      resolved = cr.send :container_image_for_container
+      resolved = Container.resolve_container_image(pdh)
       assert_equal resolved, pdh
     end
   end
@@ -410,9 +407,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
   ].each do |img|
     test "container_image_for_container(#{img.inspect}) => 422" do
       set_user_from_auth :active
-      cr = ContainerRequest.new(container_image: img)
       assert_raises(ArvadosModel::UnresolvableContainerError) do
-        cr.send :container_image_for_container
+        Container.resolve_container_image(img)
       end
     end
   end
@@ -426,12 +422,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
     set_user_from_auth :active
     cr = create_minimal_req!(command: ["true", "1"],
                              container_image: collections(:docker_image).portable_data_hash)
-    assert_equal(cr.send(:container_image_for_container),
+    assert_equal(Container.resolve_container_image(cr.container_image),
                  collections(:docker_image_1_12).portable_data_hash)
 
     cr = create_minimal_req!(command: ["true", "2"],
                              container_image: links(:docker_image_collection_tag).name)
-    assert_equal(cr.send(:container_image_for_container),
+    assert_equal(Container.resolve_container_image(cr.container_image),
                  collections(:docker_image_1_12).portable_data_hash)
   end
 
@@ -445,12 +441,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
     set_user_from_auth :active
     cr = create_minimal_req!(command: ["true", "1"],
                              container_image: collections(:docker_image).portable_data_hash)
-    assert_equal(cr.send(:container_image_for_container),
+    assert_equal(Container.resolve_container_image(cr.container_image),
                  collections(:docker_image).portable_data_hash)
 
     cr = create_minimal_req!(command: ["true", "2"],
                              container_image: links(:docker_image_collection_tag).name)
-    assert_equal(cr.send(:container_image_for_container),
+    assert_equal(Container.resolve_container_image(cr.container_image),
                  collections(:docker_image).portable_data_hash)
   end
 
@@ -463,7 +459,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr = create_minimal_req!(command: ["true", "1"],
                              container_image: collections(:docker_image_1_12).portable_data_hash)
     assert_raises(ArvadosModel::UnresolvableContainerError) do
-      cr.send(:container_image_for_container)
+      Container.resolve_container_image(cr.container_image)
     end
   end
 
@@ -475,12 +471,12 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr = create_minimal_req!(command: ["true", "1"],
                              container_image: collections(:docker_image).portable_data_hash)
     assert_raises(ArvadosModel::UnresolvableContainerError) do
-      cr.send(:container_image_for_container)
+      Container.resolve_container_image(cr.container_image)
     end
     cr = create_minimal_req!(command: ["true", "2"],
                              container_image: links(:docker_image_collection_tag).name)
     assert_raises(ArvadosModel::UnresolvableContainerError) do
-      cr.send(:container_image_for_container)
+      Container.resolve_container_image(cr.container_image)
     end
   end
 
@@ -502,8 +498,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
                       command: ["echo", "hello"],
                       output_path: "test",
                       runtime_constraints: {"vcpus" => 4,
-                                            "ram" => 12000000000,
-                                            "keep_cache_ram" => 268435456},
+                                            "ram" => 12000000000},
                       mounts: {"test" => {"kind" => "json"}}}
       set_user_from_auth :active
       cr1 = create_minimal_req!(common_attrs.merge({state: ContainerRequest::Committed,
@@ -585,11 +580,65 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "Output collection name setting using output_name with name collision resolution" do
     set_user_from_auth :active
-    output_name = collections(:foo_file).name
+    output_name = 'unimaginative name'
+    Collection.create!(name: output_name)
 
     cr = create_minimal_req!(priority: 1,
                              state: ContainerRequest::Committed,
                              output_name: output_name)
+    run_container(cr)
+    cr.reload
+    assert_equal ContainerRequest::Final, cr.state
+    output_coll = Collection.find_by_uuid(cr.output_uuid)
+    # Make sure the resulting output collection name include the original name
+    # plus the date
+    assert_not_equal output_name, output_coll.name,
+                     "more than one collection with the same owner and name"
+    assert output_coll.name.include?(output_name),
+           "New name should include original name"
+    assert_match /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z/, output_coll.name,
+                 "New name should include ISO8601 date"
+  end
+
+  [[0, :check_output_ttl_0],
+   [1, :check_output_ttl_1s],
+   [365*86400, :check_output_ttl_1y],
+  ].each do |ttl, checker|
+    test "output_ttl=#{ttl}" do
+      act_as_user users(:active) do
+        cr = create_minimal_req!(priority: 1,
+                                 state: ContainerRequest::Committed,
+                                 output_name: 'foo',
+                                 output_ttl: ttl)
+        run_container(cr)
+        cr.reload
+        output = Collection.find_by_uuid(cr.output_uuid)
+        send(checker, db_current_time, output.trash_at, output.delete_at)
+      end
+    end
+  end
+
+  def check_output_ttl_0(now, trash, delete)
+    assert_nil(trash)
+    assert_nil(delete)
+  end
+
+  def check_output_ttl_1s(now, trash, delete)
+    assert_not_nil(trash)
+    assert_not_nil(delete)
+    assert_in_delta(trash, now + 1.second, 10)
+    assert_in_delta(delete, now + Rails.configuration.blob_signature_ttl.second, 10)
+  end
+
+  def check_output_ttl_1y(now, trash, delete)
+    year = (86400*365).second
+    assert_not_nil(trash)
+    assert_not_nil(delete)
+    assert_in_delta(trash, now + year, 10)
+    assert_in_delta(delete, now + year, 10)
+  end
+
+  def run_container(cr)
     act_as_system_user do
       c = Container.find_by_uuid(cr.container_uuid)
       c.update_attributes!(state: Container::Locked)
@@ -598,18 +647,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
                            exit_code: 0,
                            output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
                            log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
+      c
     end
-    cr.save
-    assert_equal ContainerRequest::Final, cr.state
-    output_coll = Collection.find_by_uuid(cr.output_uuid)
-    # Make sure the resulting output collection name include the original name
-    # plus the date
-    assert_not_equal output_name, output_coll.name,
-                     "It shouldn't exist more than one collection with the same owner and name '${output_name}'"
-    assert output_coll.name.include?(output_name),
-           "New name should include original name"
-    assert_match /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z/, output_coll.name,
-                 "New name should include ISO8601 date"
   end
 
   test "Finalize committed request when reusing a finished container" do
@@ -617,15 +656,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr = create_minimal_req!(priority: 1, state: ContainerRequest::Committed)
     cr.reload
     assert_equal ContainerRequest::Committed, cr.state
-    act_as_system_user do
-      c = Container.find_by_uuid(cr.container_uuid)
-      c.update_attributes!(state: Container::Locked)
-      c.update_attributes!(state: Container::Running)
-      c.update_attributes!(state: Container::Complete,
-                           exit_code: 0,
-                           output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
-                           log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
-    end
+    run_container(cr)
     cr.reload
     assert_equal ContainerRequest::Final, cr.state
 
@@ -638,34 +669,6 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr3.update_attributes!(state: ContainerRequest::Committed)
     assert_equal cr.container_uuid, cr3.container_uuid
     assert_equal ContainerRequest::Final, cr3.state
-  end
-
-  [
-    [{"vcpus" => 1, "ram" => 123, "keep_cache_ram" => 100}, ContainerRequest::Committed, 100],
-    [{"vcpus" => 1, "ram" => 123}, ContainerRequest::Uncommitted],
-    [{"vcpus" => 1, "ram" => 123}, ContainerRequest::Committed],
-    [{"vcpus" => 1, "ram" => 123, "keep_cache_ram" => -1}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
-    [{"vcpus" => 1, "ram" => 123, "keep_cache_ram" => '123'}, ContainerRequest::Committed, ActiveRecord::RecordInvalid],
-  ].each do |rc, state, expected|
-    test "create container request with #{rc} in state #{state} and verify keep_cache_ram #{expected}" do
-      common_attrs = {cwd: "test",
-                      priority: 1,
-                      command: ["echo", "hello"],
-                      output_path: "test",
-                      runtime_constraints: rc,
-                      mounts: {"test" => {"kind" => "json"}}}
-      set_user_from_auth :active
-
-      if expected == ActiveRecord::RecordInvalid
-        assert_raises(ActiveRecord::RecordInvalid) do
-          create_minimal_req!(common_attrs.merge({state: state}))
-        end
-      else
-        cr = create_minimal_req!(common_attrs.merge({state: state}))
-        expected = Rails.configuration.container_default_keep_cache_ram if state == ContainerRequest::Committed and expected.nil?
-        assert_equal expected, cr.runtime_constraints['keep_cache_ram']
-      end
-    end
   end
 
   [
@@ -695,6 +698,50 @@ class ContainerRequestTest < ActiveSupport::TestCase
         if state == ContainerRequest::Committed
           c = Container.find_by_uuid(cr.container_uuid)
           assert_equal sp, c.scheduling_parameters
+        end
+      end
+    end
+  end
+
+  [['Committed', true, {name: "foobar", priority: 123}],
+   ['Committed', false, {container_count: 2}],
+   ['Committed', false, {container_count: 0}],
+   ['Committed', false, {container_count: nil}],
+   ['Final', false, {state: ContainerRequest::Committed, name: "foobar"}],
+   ['Final', false, {name: "foobar", priority: 123}],
+   ['Final', false, {name: "foobar", output_uuid: "zzzzz-4zz18-znfnqtbbv4spc3w"}],
+   ['Final', false, {name: "foobar", log_uuid: "zzzzz-4zz18-znfnqtbbv4spc3w"}],
+   ['Final', false, {log_uuid: "zzzzz-4zz18-znfnqtbbv4spc3w"}],
+   ['Final', false, {priority: 123}],
+   ['Final', false, {mounts: {}}],
+   ['Final', false, {container_count: 2}],
+   ['Final', true, {name: "foobar"}],
+   ['Final', true, {name: "foobar", description: "baz"}],
+  ].each do |state, permitted, updates|
+    test "state=#{state} can#{'not' if !permitted} update #{updates.inspect}" do
+      act_as_user users(:active) do
+        cr = create_minimal_req!(priority: 1,
+                                 state: "Committed",
+                                 container_count_max: 1)
+        case state
+        when 'Committed'
+          # already done
+        when 'Final'
+          act_as_system_user do
+            Container.find_by_uuid(cr.container_uuid).
+              update_attributes!(state: Container::Cancelled)
+          end
+          cr.reload
+        else
+          raise 'broken test case'
+        end
+        assert_equal state, cr.state
+        if permitted
+          assert cr.update_attributes!(updates)
+        else
+          assert_raises(ActiveRecord::RecordInvalid) do
+            cr.update_attributes!(updates)
+          end
         end
       end
     end

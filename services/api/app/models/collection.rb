@@ -163,7 +163,7 @@ class Collection < ArvadosModel
       false
     elsif portable_data_hash[0..31] != computed_pdh[0..31]
       errors.add(:portable_data_hash,
-                 "does not match computed hash #{computed_pdh}")
+                 "'#{portable_data_hash}' does not match computed hash '#{computed_pdh}'")
       false
     else
       # Ignore the client-provided size part: always store
@@ -510,14 +510,39 @@ class Collection < ArvadosModel
     true
   end
 
-  # If trash_at is updated without touching delete_at, automatically
-  # update delete_at to a sensible value.
   def default_trash_interval
     if trash_at_changed? && !delete_at_changed?
+      # If trash_at is updated without touching delete_at,
+      # automatically update delete_at to a sensible value.
       if trash_at.nil?
         self.delete_at = nil
       else
         self.delete_at = trash_at + Rails.configuration.default_trash_lifetime.seconds
+      end
+    elsif !trash_at || !delete_at || trash_at > delete_at
+      # Not trash, or bogus arguments? Just validate in
+      # validate_trash_and_delete_timing.
+    elsif delete_at_changed? && delete_at >= trash_at
+      # Fix delete_at if needed, so it's not earlier than the expiry
+      # time on any permission tokens that might have been given out.
+
+      # In any case there are no signatures expiring after now+TTL.
+      # Also, if the existing trash_at time has already passed, we
+      # know we haven't given out any signatures since then.
+      earliest_delete = [
+        @validation_timestamp,
+        trash_at_was,
+      ].compact.min + Rails.configuration.blob_signature_ttl.seconds
+
+      # The previous value of delete_at is also an upper bound on the
+      # longest-lived permission token. For example, if TTL=14,
+      # trash_at_was=now-7, delete_at_was=now+7, then it is safe to
+      # set trash_at=now+6, delete_at=now+8.
+      earliest_delete = [earliest_delete, delete_at_was].compact.min
+
+      # If delete_at is too soon, use the earliest possible time.
+      if delete_at < earliest_delete
+        self.delete_at = earliest_delete
       end
     end
   end
@@ -525,18 +550,9 @@ class Collection < ArvadosModel
   def validate_trash_and_delete_timing
     if trash_at.nil? != delete_at.nil?
       errors.add :delete_at, "must be set if trash_at is set, and must be nil otherwise"
-    end
-
-    earliest_delete = ([@validation_timestamp, trash_at_was].compact.min +
-                       Rails.configuration.blob_signature_ttl.seconds)
-    if delete_at && delete_at < earliest_delete
-      errors.add :delete_at, "#{delete_at} is too soon: earliest allowed is #{earliest_delete}"
-    end
-
-    if delete_at && delete_at < trash_at
+    elsif delete_at && delete_at < trash_at
       errors.add :delete_at, "must not be earlier than trash_at"
     end
-
     true
   end
 end
