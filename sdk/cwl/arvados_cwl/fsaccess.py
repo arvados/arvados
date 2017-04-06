@@ -80,7 +80,10 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
     def exists(self, fn):
         collection, rest = self.get_collection(fn)
         if collection:
-            return collection.exists(rest)
+            if rest:
+                return collection.exists(rest)
+            else:
+                return True
         else:
             return super(CollectionFsAccess, self).exists(fn)
 
