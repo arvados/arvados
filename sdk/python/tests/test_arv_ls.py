@@ -35,10 +35,10 @@ class ArvLsTestCase(run_test_server.TestCaseWithServers):
         api_client.collections().get().execute.return_value = coll_info
         return coll_info, api_client
 
-    def run_ls(self, args, api_client):
+    def run_ls(self, args, api_client, logger=None):
         self.stdout = io.BytesIO()
         self.stderr = io.BytesIO()
-        return arv_ls.main(args, self.stdout, self.stderr, api_client)
+        return arv_ls.main(args, self.stdout, self.stderr, api_client, logger)
 
     def test_plain_listing(self):
         collection, api_client = self.mock_api_for_manifest(
@@ -76,10 +76,13 @@ class ArvLsTestCase(run_test_server.TestCaseWithServers):
 
     def test_locator_failure(self):
         api_client = mock.MagicMock(name='mock_api_client')
+        error_mock = mock.MagicMock()
+        logger = mock.MagicMock()
+        logger.error = error_mock
         api_client.collections().get().execute.side_effect = (
             arv_error.NotFoundError)
-        self.assertNotEqual(0, self.run_ls([self.FAKE_UUID], api_client))
-        self.assertNotEqual('', self.stderr.getvalue())
+        self.assertNotEqual(0, self.run_ls([self.FAKE_UUID], api_client, logger))
+        self.assertEqual(1, error_mock.call_count)
 
     def test_version_argument(self):
         err = io.BytesIO()
