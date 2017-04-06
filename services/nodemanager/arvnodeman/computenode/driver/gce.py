@@ -136,6 +136,10 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             raise
 
     def sync_node(self, cloud_node, arvados_node):
+        # Update the cloud node record to ensure we have the correct metadata
+        # fingerprint.
+        cloud_node = self.real.ex_get_node(cloud_node.name, cloud_node.extra['zone'])
+
         # We can't store the FQDN on the name attribute or anything like it,
         # because (a) names are static throughout the node's life (so FQDN
         # isn't available because we don't know it at node creation time) and
@@ -147,12 +151,8 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             self._find_metadata(metadata_items, 'hostname')['value'] = hostname
         except KeyError:
             metadata_items.append({'key': 'hostname', 'value': hostname})
-        response = self.real.connection.async_request(
-            '/zones/{}/instances/{}/setMetadata'.format(
-                cloud_node.extra['zone'].name, cloud_node.name),
-            method='POST', data=metadata_req)
-        if not response.success():
-            raise Exception("setMetadata error: {}".format(response.error))
+
+        self.real.ex_set_node_metadata(cloud_node, metadata_items)
 
     @classmethod
     def node_fqdn(cls, node):

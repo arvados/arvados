@@ -336,7 +336,7 @@ class NodeManagerDaemonActor(actor_class):
                 elif (nodes_wanted < 0) and self.booting:
                     self._later.stop_booting_node(size)
             except Exception as e:
-                self._logger.exception("while calculating nodes wanted for size %s", size)
+                self._logger.exception("while calculating nodes wanted for size %s", getattr(size, "id", "(id not available)"))
 
     def _check_poll_freshness(orig_func):
         """Decorator to inhibit a method when poll information is stale.
