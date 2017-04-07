@@ -93,9 +93,9 @@ class ArgumentParser(argparse.ArgumentParser):
 
         unmount = self.add_mutually_exclusive_group()
         unmount.add_argument('--unmount', action='store_true', default=False,
-                             help="Forcefully unmount the specified mountpoint (if it's a fuse mount) and exit.")
+                             help="Forcefully unmount the specified mountpoint (if it's a fuse mount) and exit. If --subtype is given, unmount only if the mount has the specified subtype. WARNING: This command can affect any kind of fuse mount, not just arv-mount.")
         unmount.add_argument('--unmount-all', action='store_true', default=False,
-                             help="Forcefully unmount every fuse mount at or below the specified mountpoint and exit.")
+                             help="Forcefully unmount every fuse mount at or below the specified path and exit. If --subtype is given, unmount only mounts that have the specified subtype. Exit non-zero if any other types of mounts are found at or below the given path. WARNING: This command can affect any kind of fuse mount, not just arv-mount.")
         unmount.add_argument('--replace', action='store_true', default=False,
                              help="If a fuse mount is already present at mountpoint, forcefully unmount it before mounting")
         self.add_argument('--unmount-timeout',
@@ -159,6 +159,7 @@ class Mount(object):
     def run(self):
         if self.args.unmount or self.args.unmount_all:
             unmount(path=self.args.mountpoint,
+                    subtype=self.args.subtype,
                     timeout=self.args.unmount_timeout,
                     recursive=self.args.unmount_all)
         elif self.args.exec_args:
