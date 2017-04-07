@@ -1430,7 +1430,6 @@ func (s *TestSuite) TestStdinCollectionMountPoint(c *C) {
 			collection := v["collection"].(arvadosclient.Dict)
 			if strings.Index(collection["name"].(string), "output") == 0 {
 				manifest := collection["manifest_text"].(string)
-
 				c.Check(manifest, Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
 `)
 			}
@@ -1466,10 +1465,35 @@ func (s *TestSuite) TestStdinJsonMountPoint(c *C) {
 			collection := v["collection"].(arvadosclient.Dict)
 			if strings.Index(collection["name"].(string), "output") == 0 {
 				manifest := collection["manifest_text"].(string)
-
 				c.Check(manifest, Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
 `)
 			}
 		}
 	}
+}
+
+func (s *TestSuite) TestStderrMount(c *C) {
+	api, _, _ := FullRunHelper(c, `{
+    "command": ["/bin/sh", "-c", "echo hello;exit 1"],
+    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "cwd": ".",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"},
+               "stdout": {"kind": "file", "path": "/tmp/a/out.txt"},
+               "stderr": {"kind": "file", "path": "/tmp/b/err.txt"}},
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {}
+}`, nil, 1, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, "hello\n"))
+		t.logWriter.Write(dockerLog(2, "oops\n"))
+		t.logWriter.Close()
+	})
+
+	final := api.CalledWith("container.state", "Complete")
+	c.Assert(final, NotNil)
+	c.Check(final["container"].(arvadosclient.Dict)["exit_code"], Equals, 1)
+	c.Check(final["container"].(arvadosclient.Dict)["log"], NotNil)
+
+	c.Check(api.CalledWith("collection.manifest_text", "./a b1946ac92492d2347c6235b4d2611184+6 0:6:out.txt\n./b 38af5c54926b620264ab1501150cf189+5 0:5:err.txt\n"), NotNil)
 }

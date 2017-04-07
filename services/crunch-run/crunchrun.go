@@ -135,7 +135,7 @@ type ContainerRunner struct {
 	loggingDone   chan bool
 	CrunchLog     *ThrottledLogger
 	Stdout        io.WriteCloser
-	Stderr        *ThrottledLogger
+	Stderr        io.WriteCloser
 	LogCollection *CollectionWriter
 	LogsPDH       *string
 	RunArvMount
@@ -346,10 +346,10 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 
 	for _, bind := range binds {
 		mnt := runner.Container.Mounts[bind]
-		if bind == "stdout" {
+		if bind == "stdout" || bind == "stderr" {
 			// Is it a "file" mount kind?
 			if mnt.Kind != "file" {
-				return fmt.Errorf("Unsupported mount kind '%s' for stdout. Only 'file' is supported.", mnt.Kind)
+				return fmt.Errorf("Unsupported mount kind '%s' for %s. Only 'file' is supported.", mnt.Kind, bind)
 			}
 
 			// Does path start with OutputPath?
@@ -358,7 +358,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				prefix += "/"
 			}
 			if !strings.HasPrefix(mnt.Path, prefix) {
-				return fmt.Errorf("Stdout path does not start with OutputPath: %s, %s", mnt.Path, prefix)
+				return fmt.Errorf("%s path does not start with OutputPath: %s, %s", strings.Title(bind), mnt.Path, prefix)
 			}
 		}
 
@@ -665,8 +665,8 @@ func (runner *ContainerRunner) LogContainerRecord() (err error) {
 	return nil
 }
 
-// AttachLogs connects the docker container stdout and stderr logs to the
-// Arvados logger which logs to Keep and the API server logs table.
+// AttachStreams connects the docker container stdin, stdout and stderr logs
+// to the Arvados logger which logs to Keep and the API server logs table.
 func (runner *ContainerRunner) AttachStreams() (err error) {
 
 	runner.CrunchLog.Print("Attaching container streams")
@@ -712,31 +712,24 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 	runner.loggingDone = make(chan bool)
 
 	if stdoutMnt, ok := runner.Container.Mounts["stdout"]; ok {
-		stdoutPath := stdoutMnt.Path[len(runner.Container.OutputPath):]
-		index := strings.LastIndex(stdoutPath, "/")
-		if index > 0 {
-			subdirs := stdoutPath[:index]
-			if subdirs != "" {
-				st, err := os.Stat(runner.HostOutputDir)
-				if err != nil {
-					return fmt.Errorf("While Stat on temp dir: %v", err)
-				}
-				stdoutPath := path.Join(runner.HostOutputDir, subdirs)
-				err = os.MkdirAll(stdoutPath, st.Mode()|os.ModeSetgid|0777)
-				if err != nil {
-					return fmt.Errorf("While MkdirAll %q: %v", stdoutPath, err)
-				}
-			}
-		}
-		stdoutFile, err := os.Create(path.Join(runner.HostOutputDir, stdoutPath))
+		stdoutFile, err := runner.getStdoutFile(stdoutMnt.Path)
 		if err != nil {
-			return fmt.Errorf("While creating stdout file: %v", err)
+			return err
 		}
 		runner.Stdout = stdoutFile
 	} else {
 		runner.Stdout = NewThrottledLogger(runner.NewLogWriter("stdout"))
 	}
-	runner.Stderr = NewThrottledLogger(runner.NewLogWriter("stderr"))
+
+	if stderrMnt, ok := runner.Container.Mounts["stderr"]; ok {
+		stderrFile, err := runner.getStdoutFile(stderrMnt.Path)
+		if err != nil {
+			return err
+		}
+		runner.Stderr = stderrFile
+	} else {
+		runner.Stderr = NewThrottledLogger(runner.NewLogWriter("stderr"))
+	}
 
 	if stdinRdr != nil {
 		go func() {
@@ -761,6 +754,31 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 	go runner.ProcessDockerAttach(response.Reader)
 
 	return nil
+}
+
+func (runner *ContainerRunner) getStdoutFile(mntPath string) (*os.File, error) {
+	stdoutPath := mntPath[len(runner.Container.OutputPath):]
+	index := strings.LastIndex(stdoutPath, "/")
+	if index > 0 {
+		subdirs := stdoutPath[:index]
+		if subdirs != "" {
+			st, err := os.Stat(runner.HostOutputDir)
+			if err != nil {
+				return nil, fmt.Errorf("While Stat on temp dir: %v", err)
+			}
+			stdoutPath := path.Join(runner.HostOutputDir, subdirs)
+			err = os.MkdirAll(stdoutPath, st.Mode()|os.ModeSetgid|0777)
+			if err != nil {
+				return nil, fmt.Errorf("While MkdirAll %q: %v", stdoutPath, err)
+			}
+		}
+	}
+	stdoutFile, err := os.Create(path.Join(runner.HostOutputDir, stdoutPath))
+	if err != nil {
+		return nil, fmt.Errorf("While creating file %q: %v", stdoutPath, err)
+	}
+
+	return stdoutFile, nil
 }
 
 // CreateContainer creates the docker container.
