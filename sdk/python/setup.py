@@ -45,15 +45,13 @@ setup(name='arvados-python-client',
           ('share/doc/arvados-python-client', ['LICENSE-2.0.txt', 'README.rst']),
       ],
       install_requires=[
-          'google-api-python-client==1.4.2',
-          'oauth2client >=1.4.6, <2',
+          'google-api-python-client==1.6.2, <1.7',
           'ciso8601',
-          'httplib2',
+          'httplib2 >= 0.9.2',
           'pycurl >=7.19.5.1',
-          'python-gflags<3.0',
           'setuptools',
           'ws4py<0.4',
-          'ruamel.yaml==0.13.7'
+          'ruamel.yaml>=0.13.7'
       ],
       test_suite='tests',
       tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML'],
