@@ -41,6 +41,9 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
   test "Upload two empty files with the same name" do
     need_selenium "to make file uploads work"
     visit page_with_token 'active', sandbox_path
+
+    unlock_collection
+
     find('.nav-tabs a', text: 'Upload').click
     attach_file 'file_selector', testfile_path('empty.txt')
     assert_selector 'div', text: 'empty.txt'
@@ -55,6 +58,9 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
   test "Upload non-empty files" do
     need_selenium "to make file uploads work"
     visit page_with_token 'active', sandbox_path
+
+    unlock_collection
+
     find('.nav-tabs a', text: 'Upload').click
     attach_file 'file_selector', testfile_path('a')
     attach_file 'file_selector', testfile_path('foo.txt')
@@ -93,6 +99,9 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
                           service_port: 99999)
     end
     visit page_with_token 'active', sandbox_path
+
+    unlock_collection
+
     find('.nav-tabs a', text: 'Upload').click
     attach_file 'file_selector', testfile_path('foo.txt')
     assert_selector 'button:not([disabled])', text: 'Start'
@@ -127,5 +136,10 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
   def testfile_path filename
     # Must be an absolute path. https://github.com/jnicklas/capybara/issues/621
     File.join Dir.getwd, 'tmp', filename
+  end
+
+  def unlock_collection
+    first('.lock-collection-btn').click
+    accept_alert
   end
 end
