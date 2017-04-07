@@ -9,9 +9,11 @@ import mock
 import pykka
 
 import arvnodeman.daemon as nmdaemon
+import arvnodeman.status as status
 from arvnodeman.jobqueue import ServerCalculator
 from arvnodeman.computenode.dispatch import ComputeNodeMonitorActor
 from . import testutil
+from . import test_status
 import logging
 
 class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
@@ -355,9 +357,14 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         monitor = self.monitor_list()[0].proxy()
         self.daemon.update_server_wishlist([])
         self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
+        self.daemon.update_server_wishlist([]).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
         self.assertTrue(self.node_shutdown.start.called,
                         "daemon did not shut down booted node on offer")
+
+        with test_status.TestServer() as srv:
+            self.assertEqual(0, srv.get_status().get('nodes_unpaired', None))
+            self.assertEqual(1, srv.get_status().get('nodes_shutdown', None))
 
     def test_booted_node_lifecycle(self):
         cloud_node = testutil.cloud_node_mock(6)
