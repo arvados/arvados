@@ -1,6 +1,6 @@
 #distribution(s)|name|version|iteration|type|architecture|extra fpm arguments
 debian8,ubuntu1204,centos7|python-gflags|2.0|2|python|all
-debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|google-api-python-client|1.4.2|2|python|all
+debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|google-api-python-client|1.6.2|2|python|all
 debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|oauth2client|1.5.2|2|python|all
 debian8,ubuntu1204,ubuntu1404,centos7|pyasn1|0.1.7|2|python|all
 debian8,ubuntu1204,ubuntu1404,centos7|pyasn1-modules|0.0.5|2|python|all
