@@ -210,14 +210,14 @@ configure_version() {
   chown "$WWW_OWNER:" $RELEASE_PATH/config/environment.rb
   chown "$WWW_OWNER:" $RELEASE_PATH/config.ru
   chown "$WWW_OWNER:" $RELEASE_PATH/Gemfile.lock
-  chown -R "$WWW_OWNER:" $RELEASE_PATH/tmp
+  chown -R "$WWW_OWNER:" $RELEASE_PATH/tmp || true
   chown -R "$WWW_OWNER:" $SHARED_PATH/log
   case "$RAILSPKG_DATABASE_LOAD_TASK" in
       db:schema:load) chown "$WWW_OWNER:" $RELEASE_PATH/db/schema.rb ;;
       db:structure:load) chown "$WWW_OWNER:" $RELEASE_PATH/db/structure.sql ;;
   esac
   chmod 644 $SHARED_PATH/log/*
-  chmod -R 2775 $RELEASE_PATH/tmp
+  chmod -R 2775 $RELEASE_PATH/tmp || true
   echo "... done."
 
   if [ -n "$RAILSPKG_DATABASE_LOAD_TASK" ]; then
