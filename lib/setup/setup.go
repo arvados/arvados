@@ -9,7 +9,6 @@ import (
 
 	"git.curoverse.com/arvados.git/lib/agent"
 	"git.curoverse.com/arvados.git/sdk/go/config"
-	vaultAPI "github.com/hashicorp/vault/api"
 )
 
 func Command() *Setup {
@@ -35,7 +34,6 @@ type Setup struct {
 
 	encryptKey  string
 	masterToken string
-	vaultCfg    *vaultAPI.Config
 }
 
 func (s *Setup) ParseFlags(args []string) error {

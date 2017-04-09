@@ -19,9 +19,6 @@ func (s *Setup) installVault() error {
 	if err := s.consulInit(); err != nil {
 		return err
 	}
-	if err := s.vaultInit(); err != nil {
-		return err
-	}
 	if s.vaultCheck() == nil {
 		return nil
 	}
@@ -215,14 +212,10 @@ func (s *Setup) vaultBootstrap() error {
 	return nil
 }
 
-func (s *Setup) vaultInit() error {
-	s.vaultCfg = vaultAPI.DefaultConfig()
-	s.vaultCfg.Address = fmt.Sprintf("http://%s:%d", s.LANHost, s.Ports.VaultServer)
-	return nil
-}
-
 func (s *Setup) vaultClient() (*vaultAPI.Client, error) {
-	return vaultAPI.NewClient(s.vaultCfg)
+	cfg := vaultAPI.DefaultConfig()
+	cfg.Address = fmt.Sprintf("http://%s:%d", s.LANHost, s.Ports.VaultServer)
+	return vaultAPI.NewClient(cfg)
 }
 
 func (s *Setup) vaultCheck() error {
