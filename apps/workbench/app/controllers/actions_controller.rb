@@ -114,42 +114,7 @@ class ActionsController < ApplicationController
   end
 
   expose_action :combine_selected_files_into_collection do
-    link_uuids, coll_ids = params["selection"].partition do |sel_s|
-      ArvadosBase::resource_class_for_uuid(sel_s) == Link
-    end
-
-    unless link_uuids.empty?
-      Link.select([:head_uuid]).where(uuid: link_uuids).each do |link|
-        if ArvadosBase::resource_class_for_uuid(link.head_uuid) == Collection
-          coll_ids << link.head_uuid
-        end
-      end
-    end
-
-    uuids = []
-    pdhs = []
-    source_paths = Hash.new { |hash, key| hash[key] = [] }
-    coll_ids.each do |coll_id|
-      if m = CollectionsHelper.match(coll_id)
-        key = m[1] + m[2]
-        pdhs << key
-        source_paths[key] << m[4]
-      elsif m = CollectionsHelper.match_uuid_with_optional_filepath(coll_id)
-        key = m[1]
-        uuids << key
-        source_paths[key] << m[4]
-      end
-    end
-
-    unless pdhs.empty?
-      Collection.where(portable_data_hash: pdhs.uniq).
-          select([:uuid, :portable_data_hash]).each do |coll|
-        unless source_paths[coll.portable_data_hash].empty?
-          uuids << coll.uuid
-          source_paths[coll.uuid] = source_paths.delete(coll.portable_data_hash)
-        end
-      end
-    end
+    uuids, source_paths = selected_collection_files params
 
     new_coll = Arv::Collection.new
     Collection.where(uuid: uuids.uniq).

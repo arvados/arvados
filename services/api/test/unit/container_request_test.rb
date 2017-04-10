@@ -3,6 +3,7 @@ require 'helpers/docker_migration_helper'
 
 class ContainerRequestTest < ActiveSupport::TestCase
   include DockerMigrationHelper
+  include DbCurrentTime
 
   def create_minimal_req! attrs={}
     defaults = {
@@ -579,11 +580,65 @@ class ContainerRequestTest < ActiveSupport::TestCase
 
   test "Output collection name setting using output_name with name collision resolution" do
     set_user_from_auth :active
-    output_name = collections(:foo_file).name
+    output_name = 'unimaginative name'
+    Collection.create!(name: output_name)
 
     cr = create_minimal_req!(priority: 1,
                              state: ContainerRequest::Committed,
                              output_name: output_name)
+    run_container(cr)
+    cr.reload
+    assert_equal ContainerRequest::Final, cr.state
+    output_coll = Collection.find_by_uuid(cr.output_uuid)
+    # Make sure the resulting output collection name include the original name
+    # plus the date
+    assert_not_equal output_name, output_coll.name,
+                     "more than one collection with the same owner and name"
+    assert output_coll.name.include?(output_name),
+           "New name should include original name"
+    assert_match /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z/, output_coll.name,
+                 "New name should include ISO8601 date"
+  end
+
+  [[0, :check_output_ttl_0],
+   [1, :check_output_ttl_1s],
+   [365*86400, :check_output_ttl_1y],
+  ].each do |ttl, checker|
+    test "output_ttl=#{ttl}" do
+      act_as_user users(:active) do
+        cr = create_minimal_req!(priority: 1,
+                                 state: ContainerRequest::Committed,
+                                 output_name: 'foo',
+                                 output_ttl: ttl)
+        run_container(cr)
+        cr.reload
+        output = Collection.find_by_uuid(cr.output_uuid)
+        send(checker, db_current_time, output.trash_at, output.delete_at)
+      end
+    end
+  end
+
+  def check_output_ttl_0(now, trash, delete)
+    assert_nil(trash)
+    assert_nil(delete)
+  end
+
+  def check_output_ttl_1s(now, trash, delete)
+    assert_not_nil(trash)
+    assert_not_nil(delete)
+    assert_in_delta(trash, now + 1.second, 10)
+    assert_in_delta(delete, now + Rails.configuration.blob_signature_ttl.second, 10)
+  end
+
+  def check_output_ttl_1y(now, trash, delete)
+    year = (86400*365).second
+    assert_not_nil(trash)
+    assert_not_nil(delete)
+    assert_in_delta(trash, now + year, 10)
+    assert_in_delta(delete, now + year, 10)
+  end
+
+  def run_container(cr)
     act_as_system_user do
       c = Container.find_by_uuid(cr.container_uuid)
       c.update_attributes!(state: Container::Locked)
@@ -592,18 +647,8 @@ class ContainerRequestTest < ActiveSupport::TestCase
                            exit_code: 0,
                            output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
                            log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
+      c
     end
-    cr.save
-    assert_equal ContainerRequest::Final, cr.state
-    output_coll = Collection.find_by_uuid(cr.output_uuid)
-    # Make sure the resulting output collection name include the original name
-    # plus the date
-    assert_not_equal output_name, output_coll.name,
-                     "It shouldn't exist more than one collection with the same owner and name '${output_name}'"
-    assert output_coll.name.include?(output_name),
-           "New name should include original name"
-    assert_match /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z/, output_coll.name,
-                 "New name should include ISO8601 date"
   end
 
   test "Finalize committed request when reusing a finished container" do
@@ -611,15 +656,7 @@ class ContainerRequestTest < ActiveSupport::TestCase
     cr = create_minimal_req!(priority: 1, state: ContainerRequest::Committed)
     cr.reload
     assert_equal ContainerRequest::Committed, cr.state
-    act_as_system_user do
-      c = Container.find_by_uuid(cr.container_uuid)
-      c.update_attributes!(state: Container::Locked)
-      c.update_attributes!(state: Container::Running)
-      c.update_attributes!(state: Container::Complete,
-                           exit_code: 0,
-                           output: '1f4b0bc7583c2a7f9102c395f4ffc5e3+45',
-                           log: 'fa7aeb5140e2848d39b416daeef4ffc5+45')
-    end
+    run_container(cr)
     cr.reload
     assert_equal ContainerRequest::Final, cr.state
 
@@ -661,6 +698,50 @@ class ContainerRequestTest < ActiveSupport::TestCase
         if state == ContainerRequest::Committed
           c = Container.find_by_uuid(cr.container_uuid)
           assert_equal sp, c.scheduling_parameters
+        end
+      end
+    end
+  end
+
+  [['Committed', true, {name: "foobar", priority: 123}],
+   ['Committed', false, {container_count: 2}],
+   ['Committed', false, {container_count: 0}],
+   ['Committed', false, {container_count: nil}],
+   ['Final', false, {state: ContainerRequest::Committed, name: "foobar"}],
+   ['Final', false, {name: "foobar", priority: 123}],
+   ['Final', false, {name: "foobar", output_uuid: "zzzzz-4zz18-znfnqtbbv4spc3w"}],
+   ['Final', false, {name: "foobar", log_uuid: "zzzzz-4zz18-znfnqtbbv4spc3w"}],
+   ['Final', false, {log_uuid: "zzzzz-4zz18-znfnqtbbv4spc3w"}],
+   ['Final', false, {priority: 123}],
+   ['Final', false, {mounts: {}}],
+   ['Final', false, {container_count: 2}],
+   ['Final', true, {name: "foobar"}],
+   ['Final', true, {name: "foobar", description: "baz"}],
+  ].each do |state, permitted, updates|
+    test "state=#{state} can#{'not' if !permitted} update #{updates.inspect}" do
+      act_as_user users(:active) do
+        cr = create_minimal_req!(priority: 1,
+                                 state: "Committed",
+                                 container_count_max: 1)
+        case state
+        when 'Committed'
+          # already done
+        when 'Final'
+          act_as_system_user do
+            Container.find_by_uuid(cr.container_uuid).
+              update_attributes!(state: Container::Cancelled)
+          end
+          cr.reload
+        else
+          raise 'broken test case'
+        end
+        assert_equal state, cr.state
+        if permitted
+          assert cr.update_attributes!(updates)
+        else
+          assert_raises(ActiveRecord::RecordInvalid) do
+            cr.update_attributes!(updates)
+          end
         end
       end
     end

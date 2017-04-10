@@ -49,7 +49,7 @@ class Arvados::V1::NodesController < ApplicationController
     if @select.nil? or @select.include? 'job_uuid'
       job_uuids = @objects.map { |n| n[:job_uuid] }.compact
       assoc_jobs = readable_job_uuids(job_uuids)
-      @objects = @objects.each do |node|
+      @objects.each do |node|
         node.job_readable = assoc_jobs.include?(node[:job_uuid])
       end
     end

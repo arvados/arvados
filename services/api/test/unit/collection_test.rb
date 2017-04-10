@@ -370,21 +370,26 @@ class CollectionTest < ActiveSupport::TestCase
     end
   end
 
+  now = Time.now
   [['trash-to-delete interval negative',
     :collection_owned_by_active,
-    {trash_at: Time.now+2.weeks, delete_at: Time.now},
+    {trash_at: now+2.weeks, delete_at: now},
     {state: :invalid}],
-   ['trash-to-delete interval too short',
+   ['now-to-delete interval short',
     :collection_owned_by_active,
-    {trash_at: Time.now+3.days, delete_at: Time.now+7.days},
-    {state: :invalid}],
+    {trash_at: now+3.days, delete_at: now+7.days},
+    {state: :trash_future}],
+   ['now-to-delete interval short, trash=delete',
+    :collection_owned_by_active,
+    {trash_at: now+3.days, delete_at: now+3.days},
+    {state: :trash_future}],
    ['trash-to-delete interval ok',
     :collection_owned_by_active,
-    {trash_at: Time.now, delete_at: Time.now+15.days},
+    {trash_at: now, delete_at: now+15.days},
     {state: :trash_now}],
    ['trash-to-delete interval short, but far enough in future',
     :collection_owned_by_active,
-    {trash_at: Time.now+13.days, delete_at: Time.now+15.days},
+    {trash_at: now+13.days, delete_at: now+15.days},
     {state: :trash_future}],
    ['trash by setting is_trashed bool',
     :collection_owned_by_active,
@@ -392,11 +397,11 @@ class CollectionTest < ActiveSupport::TestCase
     {state: :trash_now}],
    ['trash in future by setting just trash_at',
     :collection_owned_by_active,
-    {trash_at: Time.now+1.week},
+    {trash_at: now+1.week},
     {state: :trash_future}],
    ['trash in future by setting trash_at and delete_at',
     :collection_owned_by_active,
-    {trash_at: Time.now+1.week, delete_at: Time.now+4.weeks},
+    {trash_at: now+1.week, delete_at: now+4.weeks},
     {state: :trash_future}],
    ['untrash by clearing is_trashed bool',
     :expired_collection,
@@ -416,7 +421,7 @@ class CollectionTest < ActiveSupport::TestCase
         end
         updates_ok = c.update_attributes(updates)
         expect_valid = expect[:state] != :invalid
-        assert_equal updates_ok, expect_valid, c.errors.full_messages.to_s
+        assert_equal expect_valid, updates_ok, c.errors.full_messages.to_s
         case expect[:state]
         when :invalid
           refute c.valid?

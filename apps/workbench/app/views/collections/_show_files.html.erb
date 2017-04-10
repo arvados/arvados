@@ -27,6 +27,15 @@
                     'data-selection-action' => 'combine-collections',
                     'data-toggle' => 'dropdown'
               %></li>
+            <% if object.editable? %>
+            <li><%= link_to "Remove selected files", '#',
+                    method: :post,
+                    'data-href' => url_for(controller: 'collections', action: :remove_selected_files),
+                    'data-selection-param-name' => 'selection[]',
+                    'data-selection-action' => 'remove-selected-files',
+                    'data-toggle' => 'dropdown'
+              %></li>
+            <% end %>
           </ul>
         </div>
         <div class="btn-group btn-group-sm">
@@ -86,8 +95,20 @@
                 } %>
             <span>&nbsp;</span>
             <% end %>
+
+            <% if object.editable? %>
+                <%= link_to({controller: 'collections', action: 'remove_selected_files', id: object.uuid, selection: [object.portable_data_hash+'/'+file_path]}, method: :post, remote: true, data: {confirm: "Remove #{file_path}?", toggle: 'tooltip', placement: 'top'}, class: 'btn btn-sm btn-default btn-nodecorate', title: "Remove #{file_path}") do %>
+                  <i class="fa fa-fw fa-trash-o"></i>
+                <% end %>
+            <% end %>
         <% if CollectionsHelper::is_image(filename) %>
-            <i class="fa fa-fw fa-bar-chart-o"></i> <%= filename %></div>
+            <i class="fa fa-fw fa-bar-chart-o"></i>
+              <% if object.editable? %>
+                <%= render_editable_attribute object, 'filename', filename, {'data-value' => file_path, 'data-toggle' => 'manual', 'selection_path' => 'rename-file-path:'+file_path}, {tiptitle: 'Edit path of this file (name or directory or both). If you use the same path as another file, it may be removed.'} %>
+              <% else %>
+                <%= filename %>
+              <% end %>
+            </div>
           <div class="collection_files_inline">
             <%= link_to(image_tag("#{url_for object}/#{file_path}"),
                         link_params.merge(disposition: 'inline'),
@@ -95,7 +116,12 @@
           </div>
          </div>
         <% else %>
-            <i class="fa fa-fw fa-file" href="<%=object.uuid%>/<%=file_path%>" ></i> <%= filename %></div>
+              <% if object.editable? %>
+                <i class="fa fa-fw fa-file"></i><%= render_editable_attribute object, 'filename', filename, {'data-value' => file_path, 'data-toggle' => 'manual', 'selection_name' => 'rename-file-path:'+file_path}, {tiptitle: 'Edit path of this file (name or directory or both). If you use the same path as another file, it may be removed.'}  %>
+              <% else %>
+                <i class="fa fa-fw fa-file" href="<%=object.uuid%>/<%=file_path%>" ></i> <%= filename %>
+              <% end %>
+            </div>
          </div>
         <% end %>
         </li>

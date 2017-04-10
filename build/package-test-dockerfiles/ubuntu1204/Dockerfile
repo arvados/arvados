@@ -3,7 +3,7 @@ MAINTAINER Peter Amstutz <peter.amstutz@curoverse.com>
 
 # Install RVM
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends curl ca-certificates && \
+    DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends curl ca-certificates g++ && \
     gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.3 && \

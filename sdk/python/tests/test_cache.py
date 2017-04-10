@@ -2,14 +2,16 @@ from __future__ import print_function
 
 import md5
 import mock
-import shutil
+import os
 import random
+import shutil
 import sys
 import tempfile
 import threading
 import unittest
 
 import arvados.cache
+import arvados
 import run_test_server
 
 
@@ -46,6 +48,17 @@ class CacheTest(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self._dir)
+
+    def test_cache_create_error(self):
+        _, filename = tempfile.mkstemp()
+        home_was = os.environ['HOME']
+        os.environ['HOME'] = filename
+        try:
+            c = arvados.http_cache('test')
+            self.assertEqual(None, c)
+        finally:
+            os.environ['HOME'] = home_was
+            os.unlink(filename)
 
     def test_cache_crud(self):
         c = arvados.cache.SafeHTTPCache(self._dir, max_age=0)

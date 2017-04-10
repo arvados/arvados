@@ -13,6 +13,7 @@ import time
 import arvados.commands._util as arv_cmd
 from arvados_fuse import crunchstat
 from arvados_fuse import *
+from arvados_fuse.unmount import unmount
 from arvados_fuse._version import __version__
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -90,6 +91,13 @@ class ArgumentParser(argparse.ArgumentParser):
 
         self.add_argument('--crunchstat-interval', type=float, help="Write stats to stderr every N seconds (default disabled)", default=0)
 
+        unmount = self.add_mutually_exclusive_group()
+        unmount.add_argument('--unmount', action='store_true', default=False,
+                             help="Forcefully unmount the specified mountpoint (if it's a fuse mount) and exit. If --subtype is given, unmount only if the mount has the specified subtype. WARNING: This command can affect any kind of fuse mount, not just arv-mount.")
+        unmount.add_argument('--unmount-all', action='store_true', default=False,
+                             help="Forcefully unmount every fuse mount at or below the specified path and exit. If --subtype is given, unmount only mounts that have the specified subtype. Exit non-zero if any other types of mounts are found at or below the given path. WARNING: This command can affect any kind of fuse mount, not just arv-mount.")
+        unmount.add_argument('--replace', action='store_true', default=False,
+                             help="If a fuse mount is already present at mountpoint, forcefully unmount it before mounting")
         self.add_argument('--unmount-timeout',
                           type=float, default=2.0,
                           help="Time to wait for graceful shutdown after --exec program exits and filesystem is unmounted")
@@ -101,6 +109,7 @@ class ArgumentParser(argparse.ArgumentParser):
 
 class Mount(object):
     def __init__(self, args, logger=logging.getLogger('arvados.arv-mount')):
+        self.daemon = False
         self.logger = logger
         self.args = args
         self.listen_for_events = False
@@ -118,7 +127,16 @@ class Mount(object):
             exit(1)
 
     def __enter__(self):
+        if self.args.replace:
+            unmount(path=self.args.mountpoint,
+                    timeout=self.args.unmount_timeout)
         llfuse.init(self.operations, self.args.mountpoint, self._fuse_options())
+        if self.daemon:
+            daemon.DaemonContext(
+                working_directory=os.path.dirname(self.args.mountpoint),
+                files_preserve=range(
+                    3, resource.getrlimit(resource.RLIMIT_NOFILE)[1])
+            ).open()
         if self.listen_for_events and not self.args.disable_event_listening:
             self.operations.listen_for_events()
         self.llfuse_thread = threading.Thread(None, lambda: self._llfuse_main())
@@ -139,7 +157,12 @@ class Mount(object):
                                 self.args.unmount_timeout)
 
     def run(self):
-        if self.args.exec_args:
+        if self.args.unmount or self.args.unmount_all:
+            unmount(path=self.args.mountpoint,
+                    subtype=self.args.subtype,
+                    timeout=self.args.unmount_timeout,
+                    recursive=self.args.unmount_all)
+        elif self.args.exec_args:
             self._run_exec()
         else:
             self._run_standalone()
@@ -338,20 +361,9 @@ From here, the following directories are available:
 
     def _run_standalone(self):
         try:
-            llfuse.init(self.operations, self.args.mountpoint, self._fuse_options())
-
-            if not self.args.foreground:
-                self.daemon_ctx = daemon.DaemonContext(
-                    working_directory=os.path.dirname(self.args.mountpoint),
-                    files_preserve=range(
-                        3, resource.getrlimit(resource.RLIMIT_NOFILE)[1]))
-                self.daemon_ctx.open()
-
-            # Subscribe to change events from API server
-            if self.listen_for_events and not self.args.disable_event_listening:
-                self.operations.listen_for_events()
-
-            self._llfuse_main()
+            self.daemon = not self.args.foreground
+            with self:
+                self.llfuse_thread.join(timeout=None)
         except Exception as e:
             self.logger.exception('arv-mount: exception during mount: %s', e)
             exit(getattr(e, 'errno', 1))

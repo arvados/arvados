@@ -295,7 +295,8 @@ CREATE TABLE container_requests (
     scheduling_parameters text,
     output_uuid character varying(255),
     log_uuid character varying(255),
-    output_name character varying(255) DEFAULT NULL::character varying
+    output_name character varying(255) DEFAULT NULL::character varying,
+    output_ttl integer DEFAULT 0 NOT NULL
 );
 
 
@@ -1686,6 +1687,13 @@ CREATE UNIQUE INDEX index_collections_on_owner_uuid_and_name ON collections USIN
 
 
 --
+-- Name: index_collections_on_portable_data_hash; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_collections_on_portable_data_hash ON collections USING btree (portable_data_hash);
+
+
+--
 -- Name: index_collections_on_trash_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -2746,3 +2754,6 @@ INSERT INTO schema_migrations (version) VALUES ('20170301225558');
 
 INSERT INTO schema_migrations (version) VALUES ('20170319063406');
 
+INSERT INTO schema_migrations (version) VALUES ('20170328215436');
+
+INSERT INTO schema_migrations (version) VALUES ('20170330012505');

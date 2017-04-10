@@ -684,17 +684,20 @@ class CrunchDispatch
     jobrecord = Job.find_by_uuid(job_done.uuid)
 
     if exit_status == EXIT_RETRY_UNLOCKED or (exit_tempfail and @job_retry_counts.include? jobrecord.uuid)
+      $stderr.puts("dispatch: job #{jobrecord.uuid} was interrupted by node failure")
       # Only this crunch-dispatch process can retry the job:
       # it's already locked, and there's no way to put it back in the
       # Queued state.  Put it in our internal todo list unless the job
       # has failed this way excessively.
       @job_retry_counts[jobrecord.uuid] += 1
       exit_tempfail = @job_retry_counts[jobrecord.uuid] <= RETRY_UNLOCKED_LIMIT
+      do_what_next = "give up now"
       if exit_tempfail
         @todo_job_retries[jobrecord.uuid] = jobrecord
-      else
-        $stderr.puts("dispatch: job #{jobrecord.uuid} exceeded node failure retry limit -- giving up")
+        do_what_next = "re-attempt"
       end
+      $stderr.puts("dispatch: job #{jobrecord.uuid} has been interrupted " +
+                   "#{@job_retry_counts[jobrecord.uuid]}x, will #{do_what_next}")
     end
 
     if !exit_tempfail

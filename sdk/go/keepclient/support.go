@@ -7,9 +7,12 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	"io"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"net"
 	"net/http"
+	"os"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -18,6 +21,13 @@ import (
 // keepclient debug messages in your application is to assign
 // log.Printf to DebugPrintf.
 var DebugPrintf = func(string, ...interface{}) {}
+
+func init() {
+	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
+	if matchTrue.MatchString(os.Getenv("ARVADOS_DEBUG")) {
+		DebugPrintf = log.Printf
+	}
+}
 
 type keepService struct {
 	Uuid     string `json:"uuid"`
