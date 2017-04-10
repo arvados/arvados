@@ -83,7 +83,9 @@ class ApplicationController < ActionController::Base
   end
 
   def index
-    @objects.uniq!(&:id) if @select.nil? or @select.include? "id"
+    if @select.nil? || @select.include?("id")
+      @objects = @objects.uniq(&:id)
+    end
     if params[:eager] and params[:eager] != '0' and params[:eager] != 0 and params[:eager] != ''
       @objects.each(&:eager_load_associations)
     end
