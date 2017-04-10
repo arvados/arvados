@@ -38,6 +38,7 @@ class Arvados::V1::SchemaController < ApplicationController
         blobSignatureTtl: Rails.application.config.blob_signature_ttl,
         maxRequestSize: Rails.application.config.max_request_size,
         dockerImageFormats: Rails.application.config.docker_image_formats,
+        websocketUrl: Rails.application.config.websocket_address,
         parameters: {
           alt: {
             type: "string",
@@ -82,12 +83,6 @@ class Arvados::V1::SchemaController < ApplicationController
         schemas: {},
         resources: {}
       }
-
-      if Rails.application.config.websocket_address
-        discovery[:websocketUrl] = Rails.application.config.websocket_address
-      elsif ENV['ARVADOS_WEBSOCKETS']
-        discovery[:websocketUrl] = root_url.sub(/^http/, 'ws') + "websocket"
-      end
 
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
         begin
