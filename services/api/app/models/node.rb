@@ -173,6 +173,7 @@ class Node < ArvadosModel
     }
 
     if Rails.configuration.dns_server_conf_dir and Rails.configuration.dns_server_conf_template
+      tmpfile = nil
       begin
         begin
           template = IO.read(Rails.configuration.dns_server_conf_template)
@@ -182,15 +183,20 @@ class Node < ArvadosModel
         end
 
         hostfile = File.join Rails.configuration.dns_server_conf_dir, "#{hostname}.conf"
-        tmpfile = Tempfile.open(["#{hostname}", ".conf.tmp"],
+        Tempfile.open(["#{hostname}", ".conf.tmp"],
                                  Rails.configuration.dns_server_conf_dir) do |f|
+          tmpfile = f.path
           f.puts template % template_vars
-          f.path
         end
         File.rename tmpfile, hostfile
       rescue IOError, SystemCallError => e
         logger.error "Writing #{hostfile}: #{e.message}"
         ok = false
+      ensure
+        if tmpfile and File.file? tmpfile
+          # Cleanup remaining temporary file.
+          File.unlink tmpfile
+        end
       end
     end
 

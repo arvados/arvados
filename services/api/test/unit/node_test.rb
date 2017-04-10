@@ -1,4 +1,6 @@
 require 'test_helper'
+require 'tmpdir'
+require 'tempfile'
 
 class NodeTest < ActiveSupport::TestCase
   def ping_node(node_name, ping_data)
@@ -76,12 +78,20 @@ class NodeTest < ActiveSupport::TestCase
     assert Node.dns_server_update 'compute65535', '127.0.0.127'
   end
 
-  test "dns update with dir configured but no command configured" do
-    Rails.configuration.dns_server_update_command = false
-    Rails.configuration.dns_server_conf_dir = Rails.root.join 'tmp'
-    conffile = Rails.root.join 'tmp', 'compute65535.conf'
-    assert Node.dns_server_update 'compute65535', '127.0.0.127'
-    refute File.exist? conffile
+  test "don't leave temp files behind if there's an error writing them" do
+    Tempfile.any_instance.stubs(:puts).raises(IOError)
+    Dir.mktmpdir do |tmpdir|
+      Rails.configuration.dns_server_conf_dir = tmpdir
+      # This works
+      assert_raises IOError do
+        Tempfile.open(['testfile.txt']) do |f|
+          f.puts "This won't get written."
+        end
+      end
+      # This fails
+      refute Node.dns_server_update 'compute65535', '127.0.0.127'
+      assert Dir.entries(tmpdir).select{|f| File.file? f}.empty?
+    end
   end
 
   test "ping new node with no hostname and default config" do
