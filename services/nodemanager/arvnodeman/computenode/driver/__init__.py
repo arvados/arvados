@@ -219,6 +219,23 @@ class BaseComputeNodeDriver(RetryMixin):
         return (isinstance(exception, cls.CLOUD_ERRORS) or
                 type(exception) is Exception)
 
+    def destroy_node(self, cloud_node):
+        try:
+            return self.real.destroy_node(cloud_node)
+        except self.CLOUD_ERRORS as destroy_error:
+            # Sometimes the destroy node request succeeds but times out and
+            # raises an exception instead of returning success.  If this
+            # happens, we get a noisy stack trace.  Check if the node is still
+            # on the node list.  If it is gone, we can declare victory.
+            try:
+                self.search_for_now(cloud_node.id, 'list_nodes')
+            except ValueError:
+                # If we catch ValueError, that means search_for_now didn't find
+                # it, which means destroy_node actually succeeded.
+                return True
+            # The node is still on the list.  Re-raise.
+            raise
+
     # Now that we've defined all our own methods, delegate generic, public
     # attributes of libcloud drivers that we haven't defined ourselves.
     def _delegate_to_real(attr_name):

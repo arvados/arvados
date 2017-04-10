@@ -123,16 +123,15 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         cloud_node = testutil.cloud_node_mock(
             2, metadata=start_metadata.copy(),
             zone=testutil.cloud_object_mock('testzone'))
+        self.driver_mock().ex_get_node.return_value = cloud_node
         driver = self.new_driver()
         driver.sync_node(cloud_node, arv_node)
-        args, kwargs = self.driver_mock().connection.async_request.call_args
-        self.assertEqual('/zones/testzone/instances/2/setMetadata', args[0])
-        for key in ['kind', 'fingerprint']:
-            self.assertEqual(start_metadata[key], kwargs['data'][key])
+        args, kwargs = self.driver_mock().ex_set_node_metadata.call_args
+        self.assertEqual(cloud_node, args[0])
         plain_metadata['hostname'] = 'compute1.zzzzz.arvadosapi.com'
         self.assertEqual(
             plain_metadata,
-            {item['key']: item['value'] for item in kwargs['data']['items']})
+            {item['key']: item['value'] for item in args[1]})
 
     def test_sync_node_updates_hostname_tag(self):
         self.check_sync_node_updates_hostname_tag(
@@ -145,9 +144,7 @@ class GCEComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         arv_node = testutil.arvados_node_mock(8)
         cloud_node = testutil.cloud_node_mock(
             9, metadata={}, zone=testutil.cloud_object_mock('failzone'))
-        mock_response = self.driver_mock().connection.async_request()
-        mock_response.success.return_value = False
-        mock_response.error = 'sync error test'
+        mock_response = self.driver_mock().ex_set_node_metadata.side_effect = (Exception('sync error test'),)
         driver = self.new_driver()
         with self.assertRaises(Exception) as err_check:
             driver.sync_node(cloud_node, arv_node)
