@@ -183,7 +183,7 @@ class Node < ArvadosModel
         end
 
         hostfile = File.join Rails.configuration.dns_server_conf_dir, "#{hostname}.conf"
-        Tempfile.open(["#{hostname}", ".conf.tmp"],
+        Tempfile.open(["#{hostname}-", ".conf.tmp"],
                                  Rails.configuration.dns_server_conf_dir) do |f|
           tmpfile = f.path
           f.puts template % template_vars

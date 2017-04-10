@@ -79,16 +79,10 @@ class NodeTest < ActiveSupport::TestCase
   end
 
   test "don't leave temp files behind if there's an error writing them" do
+    Rails.configuration.dns_server_conf_template = Rails.root.join 'config', 'unbound.template'
     Tempfile.any_instance.stubs(:puts).raises(IOError)
     Dir.mktmpdir do |tmpdir|
       Rails.configuration.dns_server_conf_dir = tmpdir
-      # This works
-      assert_raises IOError do
-        Tempfile.open(['testfile.txt']) do |f|
-          f.puts "This won't get written."
-        end
-      end
-      # This fails
       refute Node.dns_server_update 'compute65535', '127.0.0.127'
       assert Dir.entries(tmpdir).select{|f| File.file? f}.empty?
     end
