@@ -365,6 +365,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         with test_status.TestServer() as srv:
             self.assertEqual(0, srv.get_status().get('nodes_unpaired', None))
             self.assertEqual(1, srv.get_status().get('nodes_shutdown', None))
+            self.assertEqual(0, srv.get_status().get('nodes_wish', None))
 
     def test_booted_node_lifecycle(self):
         cloud_node = testutil.cloud_node_mock(6)

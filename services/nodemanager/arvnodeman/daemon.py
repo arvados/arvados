@@ -263,6 +263,7 @@ class NodeManagerDaemonActor(actor_class):
         for s in self._node_states(size=None):
             updates.setdefault('nodes_'+s, 0)
             updates['nodes_'+s] += 1
+        updates['nodes_wish'] = len(self.last_wishlist)
         status.tracker.update(updates)
 
     def _state_counts(self, size):
