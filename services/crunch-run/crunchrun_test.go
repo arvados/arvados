@@ -103,10 +103,6 @@ func (m *MockConn) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-func (m *MockConn) Close() error {
-	return nil
-}
-
 func NewMockConn() *MockConn {
 	c := &MockConn{}
 	return c

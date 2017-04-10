@@ -380,7 +380,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 		}
 
 		switch {
-		case mnt.Kind == "collection":
+		case mnt.Kind == "collection" && bind != "stdin":
 			var src string
 			if mnt.UUID != "" && mnt.PortableDataHash != "" {
 				return fmt.Errorf("Cannot specify both 'uuid' and 'portable_data_hash' for a collection mount")
@@ -692,8 +692,6 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 			} else if err != nil {
 				return fmt.Errorf("While getting stdin collection path %v: %v", stdinMnt.Path, err)
 			}
-
-			defer stdinRdr.Close()
 		} else if stdinMnt.Kind == "json" {
 			stdinJson, err = json.Marshal(stdinMnt.Content)
 			if err != nil {
@@ -738,7 +736,8 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 				runner.CrunchLog.Print("While writing stdin collection to docker container %q", err)
 				runner.stop()
 			}
-			response.Conn.Close()
+			stdinRdr.Close()
+			response.CloseWrite()
 		}()
 	} else if len(stdinJson) != 0 {
 		go func() {
@@ -747,7 +746,7 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 				runner.CrunchLog.Print("While writing stdin json to docker container %q", err)
 				runner.stop()
 			}
-			response.Conn.Close()
+			response.CloseWrite()
 		}()
 	}
 
@@ -820,6 +819,13 @@ func (runner *ContainerRunner) CreateContainer() error {
 			runner.HostConfig.NetworkMode = dockercontainer.NetworkMode("none")
 		}
 	}
+
+	_, stdinUsed := runner.Container.Mounts["stdin"]
+	runner.ContainerConfig.OpenStdin = stdinUsed
+	runner.ContainerConfig.StdinOnce = stdinUsed
+	runner.ContainerConfig.AttachStdin = stdinUsed
+	runner.ContainerConfig.AttachStdout = true
+	runner.ContainerConfig.AttachStderr = true
 
 	createdBody, err := runner.Docker.ContainerCreate(context.TODO(), &runner.ContainerConfig, &runner.HostConfig, nil, runner.Container.UUID)
 	if err != nil {
