@@ -80,7 +80,7 @@ function enable_disable_selection_actions() {
         closest('li').
         toggleClass('disabled',
                     ($checked.length < 0) ||
-                    !(collection_lock_classes && collection_lock_classes.includes("fa-unlock") && ($checked.length>0)));
+                    !($checked.length > 0 && collection_lock_classes && collection_lock_classes.indexOf("fa-unlock") !=-1));
 }
 
 $(document).

@@ -300,8 +300,14 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "remove a file from collection using checkbox and dropdown option" do
+    need_selenium 'to confirm unlock'
+
     visit page_with_token('active', '/collections/zzzzz-4zz18-a21ux3541sxa8sf')
     assert(page.has_text?('file1'), 'file not found - file1')
+
+    # unlock before removing a file
+    first('.lock-collection-btn').click
+    page.driver.browser.switch_to.alert.accept
 
     # remove first file
     input_files = page.all('input[type=checkbox]')
@@ -317,10 +323,14 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "remove a file in collection using trash icon" do
-    need_selenium 'to confirm remove'
+    need_selenium 'to confirm unlock'
 
     visit page_with_token('active', '/collections/zzzzz-4zz18-a21ux3541sxa8sf')
     assert(page.has_text?('file1'), 'file not found - file1')
+
+    # unlock before removing a file
+    first('.lock-collection-btn').click
+    page.driver.browser.switch_to.alert.accept
 
     first('.fa-trash-o').click
     page.driver.browser.switch_to.alert.accept
@@ -330,7 +340,13 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "rename a file in collection" do
+    need_selenium 'to confirm unlock'
+
     visit page_with_token('active', '/collections/zzzzz-4zz18-a21ux3541sxa8sf')
+
+    # unlock before renaming a file
+    first('.lock-collection-btn').click
+    page.driver.browser.switch_to.alert.accept
 
     within('.collection_files') do
       first('.fa-pencil').click
@@ -355,6 +371,55 @@ class CollectionsTest < ActionDispatch::IntegrationTest
       assert(page.has_text?('GNU_General_Public_License'), 'file not found - GNU_General_Public_License')
       assert_nil first('.fa-pencil')
       assert_nil first('.fa-trash-o')
+    end
+  end
+
+  test "unlock collection to modfiy files" do
+    need_selenium 'to confirm remove'
+
+    collection = api_fixture('collections')['collection_owned_by_active']
+
+    # On load, collection is locked, and upload tab, rename and remove options are disabled
+    visit page_with_token('active', "/collections/#{collection['uuid']}")
+
+    assert_selector 'a[data-toggle="disabled"]', text: 'Upload'
+
+    within('.collection_files') do
+      file_ctrls = page.all('.btn-collection-file-control')
+      assert_equal 2, file_ctrls.size
+      assert_equal true, file_ctrls[0]['class'].include?('disabled')
+      assert_equal true, file_ctrls[1]['class'].include?('disabled')
+      find('input[type=checkbox]').click
+    end
+
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_selector 'li.disabled', text: 'Remove selected files'
+      assert_selector 'li', text: 'Create new collection with selected files'
+    end
+
+    # Unlock and verify the file modification controls are enabled
+    first('.lock-collection-btn').click
+    page.driver.browser.switch_to.alert.accept
+
+    assert_no_selector 'a[data-toggle="disabled"]', text: 'Upload'
+    assert_selector 'a', text: 'Upload'
+
+    within('.collection_files') do
+      file_ctrls = page.all('.btn-collection-file-control')
+      assert_equal 2, file_ctrls.size
+      assert_equal false, file_ctrls[0]['class'].include?('disabled')
+      assert_equal false, file_ctrls[1]['class'].include?('disabled')
+      # previous checkbox selection won't result in firing a new event;
+      # undo and redo checkbox to fire the selection event again
+      find('input[type=checkbox]').click
+      find('input[type=checkbox]').click
+    end
+
+    click_button 'Selection'
+    within('.selection-action-container') do
+      assert_no_selector 'li.disabled', text: 'Remove selected files'
+      assert_selector 'li', text: 'Remove selected files'
     end
   end
 end
