@@ -48,6 +48,16 @@ h3(#aws). Amazon Web Services
 # EC2 configuration for Arvados Node Manager.
 # All times are in seconds unless specified otherwise.
 
+[Management]
+# The management server responds to http://addr:port/status.json with
+# a snapshot of internal state.
+
+# Management server listening address (default 127.0.0.1)
+#address = 0.0.0.0
+
+# Management server port number (default -1, server is disabled)
+#port = 8989
+
 [Daemon]
 # The dispatcher can customize the start and stop procedure for
 # cloud nodes.  For example, the SLURM dispatcher drains nodes
@@ -212,6 +222,16 @@ h3(#gcp). Google Cloud Platform
 <pre>
 # Google Compute Engine configuration for Arvados Node Manager.
 # All times are in seconds unless specified otherwise.
+
+[Management]
+# The management server responds to http://addr:port/status.json with
+# a snapshot of internal state.
+
+# Management server listening address (default 127.0.0.1)
+#address = 0.0.0.0
+
+# Management server port number (default -1, server is disabled)
+#port = 8989
 
 [Daemon]
 # Node Manager will ensure that there are at least this many nodes running at
@@ -379,6 +399,16 @@ h3(#azure). Microsoft Azure
 <pre>
 # Azure configuration for Arvados Node Manager.
 # All times are in seconds unless specified otherwise.
+
+[Management]
+# The management server responds to http://addr:port/status.json with
+# a snapshot of internal state.
+
+# Management server listening address (default 127.0.0.1)
+#address = 0.0.0.0
+
+# Management server port number (default -1, server is disabled)
+#port = 8989
 
 [Daemon]
 # The dispatcher can customize the start and stop procedure for

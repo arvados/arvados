@@ -8,3 +8,41 @@
     }
   tool: keep-dir-test-input.cwl
   doc: Test directory in keep
+
+- job: dir-job2.yml
+  output:
+    "outlist": {
+        "size": 20,
+        "location": "output.txt",
+        "class": "File",
+        "checksum": "sha1$13cda8661796ae241da3a18668fb552161a72592"
+    }
+  tool: keep-dir-test-input.cwl
+  doc: Test directory in keep
+
+- job: null
+  output:
+    "outlist": {
+        "size": 20,
+        "location": "output.txt",
+        "class": "File",
+        "checksum": "sha1$13cda8661796ae241da3a18668fb552161a72592"
+    }
+  tool: keep-dir-test-input2.cwl
+  doc: Test default directory in keep
+
+- job: null
+  output:
+    "outlist": {
+        "size": 20,
+        "location": "output.txt",
+        "class": "File",
+        "checksum": "sha1$13cda8661796ae241da3a18668fb552161a72592"
+    }
+  tool: keep-dir-test-input3.cwl
+  doc: Test default directory in keep
+
+- job: octo.yml
+  output: {}
+  tool: cat.cwl
+  doc: Test hashes in filenames

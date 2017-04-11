@@ -140,7 +140,7 @@ class TestArvKeepGet < Minitest::Test
       assert_arv_get false, 'e796ab2294f3e48ec709ffa8d6daf58c'
     end
     assert_equal '', out
-    assert_match /Error:/, err
+    assert_match /ERROR:/, err
   end
 
   def test_nonexistent_manifest
@@ -148,7 +148,7 @@ class TestArvKeepGet < Minitest::Test
       assert_arv_get false, 'acbd18db4cc2f85cedef654fccc4a4d8/', 'tmp/'
     end
     assert_equal '', out
-    assert_match /Error:/, err
+    assert_match /ERROR:/, err
   end
 
   def test_manifest_root_to_dir
