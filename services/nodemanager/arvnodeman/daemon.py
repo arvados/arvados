@@ -9,6 +9,7 @@ import time
 import pykka
 
 from . import computenode as cnode
+from . import status
 from .computenode import dispatch
 from .config import actor_class
 
@@ -253,6 +254,18 @@ class NodeManagerDaemonActor(actor_class):
                     states.append("shutdown")
         return states + pykka.get_all(proxy_states)
 
+    def _update_tracker(self):
+        updates = {
+            k: 0
+            for k in status.tracker.keys()
+            if k.startswith('nodes_')
+        }
+        for s in self._node_states(size=None):
+            updates.setdefault('nodes_'+s, 0)
+            updates['nodes_'+s] += 1
+        updates['nodes_wish'] = len(self.last_wishlist)
+        status.tracker.update(updates)
+
     def _state_counts(self, size):
         states = self._node_states(size)
         counts = {
@@ -337,6 +350,10 @@ class NodeManagerDaemonActor(actor_class):
                     self._later.stop_booting_node(size)
             except Exception as e:
                 self._logger.exception("while calculating nodes wanted for size %s", getattr(size, "id", "(id not available)"))
+        try:
+            self._update_tracker()
+        except:
+            self._logger.exception("while updating tracker")
 
     def _check_poll_freshness(orig_func):
         """Decorator to inhibit a method when poll information is stale.
