@@ -40,3 +40,5 @@ all|ruamel.yaml|0.13.7|2|python|amd64|--python-setup-py-arguments --single-versi
 all|cwltest|1.0.20160907111242|3|python|all|--depends 'python-futures >= 3.0.5'
 all|rdflib-jsonld|0.4.0|2|python|all
 all|futures|3.0.5|2|python|all
+all|future|0.16.0|2|python|all
+all|future|0.16.0|2|python3|all
