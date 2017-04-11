@@ -35,7 +35,7 @@ class WebsocketTest(run_test_server.TestCaseWithServers):
             if self.ws:
                 self.ws.close()
         except Exception as e:
-            print(("Error in teardown: ", e))
+            print("Error in teardown: ", e)
         super(WebsocketTest, self).tearDown()
         run_test_server.reset()
 
