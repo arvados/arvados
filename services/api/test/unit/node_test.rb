@@ -84,7 +84,7 @@ class NodeTest < ActiveSupport::TestCase
     Dir.mktmpdir do |tmpdir|
       Rails.configuration.dns_server_conf_dir = tmpdir
       refute Node.dns_server_update 'compute65535', '127.0.0.127'
-      assert Dir.entries(tmpdir).select{|f| File.file? f}.empty?
+      assert_empty Dir.entries(tmpdir).select{|f| File.file? f}
     end
   end
 
