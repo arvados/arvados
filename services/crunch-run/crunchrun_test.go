@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -94,8 +95,21 @@ func NewTestDockerClient(exitCode int) *TestDockerClient {
 	return t
 }
 
+type MockConn struct {
+	net.Conn
+}
+
+func (m *MockConn) Write(b []byte) (int, error) {
+	return len(b), nil
+}
+
+func NewMockConn() *MockConn {
+	c := &MockConn{}
+	return c
+}
+
 func (t *TestDockerClient) ContainerAttach(ctx context.Context, container string, options dockertypes.ContainerAttachOptions) (dockertypes.HijackedResponse, error) {
-	return dockertypes.HijackedResponse{Reader: bufio.NewReader(t.logReader)}, nil
+	return dockertypes.HijackedResponse{Conn: NewMockConn(), Reader: bufio.NewReader(t.logReader)}, nil
 }
 
 func (t *TestDockerClient) ContainerCreate(ctx context.Context, config *dockercontainer.Config, hostConfig *dockercontainer.HostConfig, networkingConfig *dockernetwork.NetworkingConfig, containerName string) (dockercontainer.ContainerCreateCreatedBody, error) {
@@ -286,6 +300,10 @@ func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename s
 		rdr := ioutil.NopCloser(&bytes.Buffer{})
 		client.Called = true
 		return FileWrapper{rdr, 1321984}, nil
+	} else if filename == "/file1_in_main.txt" {
+		rdr := ioutil.NopCloser(strings.NewReader("foo"))
+		client.Called = true
+		return FileWrapper{rdr, 3}, nil
 	}
 	return nil, nil
 }
@@ -1113,6 +1131,22 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		cr.CleanupDirs()
 		checkEmpty()
 	}
+
+	// Only mount point of kind 'collection' is allowed for stdin
+	{
+		i = 0
+		cr.ArvMountPoint = ""
+		cr.Container.Mounts = make(map[string]arvados.Mount)
+		cr.Container.Mounts = map[string]arvados.Mount{
+			"stdin": {Kind: "tmp"},
+		}
+
+		err := cr.SetupMounts()
+		c.Check(err, NotNil)
+		c.Check(err, ErrorMatches, `Unsupported mount kind 'tmp' for stdin.*`)
+		cr.CleanupDirs()
+		checkEmpty()
+	}
 }
 
 func (s *TestSuite) TestStdout(c *C) {
@@ -1358,4 +1392,104 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 			}
 		}
 	}
+}
+
+func (s *TestSuite) TestStdinCollectionMountPoint(c *C) {
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {
+        "/tmp": {"kind": "tmp"},
+        "stdin": {"kind": "collection", "portable_data_hash": "b0def87f80dd594d4675809e83bd4f15+367", "path": "/file1_in_main.txt"},
+        "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"}
+    },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	extraMounts := []string{
+		"b0def87f80dd594d4675809e83bd4f15+367/file1_in_main.txt",
+	}
+
+	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	for _, v := range api.Content {
+		if v["collection"] != nil {
+			collection := v["collection"].(arvadosclient.Dict)
+			if strings.Index(collection["name"].(string), "output") == 0 {
+				manifest := collection["manifest_text"].(string)
+				c.Check(manifest, Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
+`)
+			}
+		}
+	}
+}
+
+func (s *TestSuite) TestStdinJsonMountPoint(c *C) {
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {
+        "/tmp": {"kind": "tmp"},
+        "stdin": {"kind": "json", "content": "foo"},
+        "stdout": {"kind": "file", "path": "/tmp/a/b/c.out"}
+    },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	api, _, _ := FullRunHelper(c, helperRecord, nil, 0, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, t.env[0][7:]+"\n"))
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	for _, v := range api.Content {
+		if v["collection"] != nil {
+			collection := v["collection"].(arvadosclient.Dict)
+			if strings.Index(collection["name"].(string), "output") == 0 {
+				manifest := collection["manifest_text"].(string)
+				c.Check(manifest, Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
+`)
+			}
+		}
+	}
+}
+
+func (s *TestSuite) TestStderrMount(c *C) {
+	api, _, _ := FullRunHelper(c, `{
+    "command": ["/bin/sh", "-c", "echo hello;exit 1"],
+    "container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+    "cwd": ".",
+    "environment": {},
+    "mounts": {"/tmp": {"kind": "tmp"},
+               "stdout": {"kind": "file", "path": "/tmp/a/out.txt"},
+               "stderr": {"kind": "file", "path": "/tmp/b/err.txt"}},
+    "output_path": "/tmp",
+    "priority": 1,
+    "runtime_constraints": {}
+}`, nil, 1, func(t *TestDockerClient) {
+		t.logWriter.Write(dockerLog(1, "hello\n"))
+		t.logWriter.Write(dockerLog(2, "oops\n"))
+		t.logWriter.Close()
+	})
+
+	final := api.CalledWith("container.state", "Complete")
+	c.Assert(final, NotNil)
+	c.Check(final["container"].(arvadosclient.Dict)["exit_code"], Equals, 1)
+	c.Check(final["container"].(arvadosclient.Dict)["log"], NotNil)
+
+	c.Check(api.CalledWith("collection.manifest_text", "./a b1946ac92492d2347c6235b4d2611184+6 0:6:out.txt\n./b 38af5c54926b620264ab1501150cf189+5 0:5:err.txt\n"), NotNil)
 }
