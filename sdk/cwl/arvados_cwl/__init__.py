@@ -203,12 +203,6 @@ class ArvCwlRunner(object):
         if isinstance(obj, dict):
             if obj.get("writable"):
                 raise SourceLine(obj, "writable", UnsupportedRequirement).makeError("InitialWorkDir feature 'writable: true' not supported")
-            if obj.get("class") == "CommandLineTool":
-                if self.work_api == "containers":
-                    if obj.get("stdin"):
-                        raise SourceLine(obj, "stdin", UnsupportedRequirement).makeError("Stdin redirection currently not suppported with --api=containers")
-                    if obj.get("stderr"):
-                        raise SourceLine(obj, "stderr", UnsupportedRequirement).makeError("Stderr redirection currently not suppported with --api=containers")
             if obj.get("class") == "DockerRequirement":
                 if obj.get("dockerOutputDirectory"):
                     # TODO: can be supported by containers API, but not jobs API.
