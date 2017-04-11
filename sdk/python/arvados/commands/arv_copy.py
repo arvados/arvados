@@ -16,6 +16,7 @@
 
 from __future__ import division
 from future import standard_library
+from future.utils import listvalues
 standard_library.install_aliases()
 from past.builtins import basestring
 from builtins import object
@@ -155,7 +156,7 @@ def main():
         abort("cannot copy object {} of type {}".format(args.object_uuid, t))
 
     # Clean up any outstanding temp git repositories.
-    for d in list(local_repo_dir.values()):
+    for d in listvalues(local_repo_dir):
         shutil.rmtree(d, ignore_errors=True)
 
     # If no exception was thrown and the response does not have an

@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from future import standard_library
+from future.utils import listitems, listvalues
 standard_library.install_aliases()
 from builtins import range
 from builtins import object
@@ -590,7 +591,7 @@ class _BlockManager(object):
             # A WRITABLE block with its owner.closed() implies that it's
             # size is <= KEEP_BLOCK_SIZE/2.
             try:
-                small_blocks = [b for b in list(self._bufferblocks.values()) if b.state() == _BufferBlock.WRITABLE and b.owner.closed()]
+                small_blocks = [b for b in listvalues(self._bufferblocks) if b.state() == _BufferBlock.WRITABLE and b.owner.closed()]
             except AttributeError:
                 # Writable blocks without owner shouldn't exist.
                 raise UnownedBlockError()
@@ -703,7 +704,7 @@ class _BlockManager(object):
         self.repack_small_blocks(force=True, sync=True)
 
         with self.lock:
-            items = list(self._bufferblocks.items())
+            items = listitems(self._bufferblocks)
 
         for k,v in items:
             if v.state() != _BufferBlock.COMMITTED and v.owner:

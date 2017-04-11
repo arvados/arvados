@@ -1,4 +1,5 @@
 from __future__ import division
+from future.utils import listitems, listvalues
 from builtins import str
 from builtins import object
 import argparse
@@ -508,7 +509,7 @@ class ArvPutUploadJob(object):
         Recursively get the total size of the collection
         """
         size = 0
-        for item in list(collection.values()):
+        for item in listvalues(collection):
             if isinstance(item, arvados.collection.Collection) or isinstance(item, arvados.collection.Subcollection):
                 size += self._collection_size(item)
             else:
@@ -700,7 +701,7 @@ class ArvPutUploadJob(object):
     def collection_file_paths(self, col, path_prefix='.'):
         """Return a list of file paths by recursively go through the entire collection `col`"""
         file_paths = []
-        for name, item in list(col.items()):
+        for name, item in listitems(col):
             if isinstance(item, arvados.arvfile.ArvadosFile):
                 file_paths.append(os.path.join(path_prefix, name))
             elif isinstance(item, arvados.collection.Subcollection):
@@ -777,7 +778,7 @@ class ArvPutUploadJob(object):
                     locators.append(loc)
                 return locators
         elif isinstance(item, arvados.collection.Collection):
-            l = [self._datablocks_on_item(x) for x in list(item.values())]
+            l = [self._datablocks_on_item(x) for x in listvalues(item)]
             # Fast list flattener method taken from:
             # http://stackoverflow.com/questions/952914/making-a-flat-list-out-of-list-of-lists-in-python
             return [loc for sublist in l for loc in sublist]
@@ -981,7 +982,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         if not output.endswith('\n'):
             stdout.write('\n')
 
-    for sigcode, orig_handler in list(orig_signal_handlers.items()):
+    for sigcode, orig_handler in listitems(orig_signal_handlers):
         signal.signal(sigcode, orig_handler)
 
     if status != 0:
