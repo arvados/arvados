@@ -41,6 +41,11 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
   test "Upload two empty files with the same name" do
     need_selenium "to make file uploads work"
     visit page_with_token 'active', sandbox_path
+
+    # unlock before uploading files
+    first('.lock-collection-btn').click
+    page.driver.browser.switch_to.alert.accept
+
     find('.nav-tabs a', text: 'Upload').click
     attach_file 'file_selector', testfile_path('empty.txt')
     assert_selector 'div', text: 'empty.txt'
@@ -55,6 +60,11 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
   test "Upload non-empty files" do
     need_selenium "to make file uploads work"
     visit page_with_token 'active', sandbox_path
+
+    # unlock before uploading files
+    first('.lock-collection-btn').click
+    page.driver.browser.switch_to.alert.accept
+
     find('.nav-tabs a', text: 'Upload').click
     attach_file 'file_selector', testfile_path('a')
     attach_file 'file_selector', testfile_path('foo.txt')
@@ -93,6 +103,11 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
                           service_port: 99999)
     end
     visit page_with_token 'active', sandbox_path
+
+    # unlock before uploading a file
+    first('.lock-collection-btn').click
+    page.driver.browser.switch_to.alert.accept
+
     find('.nav-tabs a', text: 'Upload').click
     attach_file 'file_selector', testfile_path('foo.txt')
     assert_selector 'button:not([disabled])', text: 'Start'
