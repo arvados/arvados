@@ -9,7 +9,7 @@ $(document).
     on('click', '.lock-collection-btn', function(event) {
         classes = $(event.target).attr('class')
 
-        if(classes.includes("fa-lock")){
+        if (classes.indexOf("fa-lock") != -1) {
             // About to unlock; warn the user
             if (confirm("Adding, renaming, and deleting files changes the portalble data hash. Are you sure you want to unlock the collection?")) {
                 $(".lock-collection-btn").removeClass("fa-lock");
