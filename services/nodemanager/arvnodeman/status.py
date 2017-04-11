@@ -15,6 +15,8 @@ class Server(socketserver.ThreadingMixIn, http.server.HTTPServer, object):
         port = config.getint('Manage', 'port')
         self.enabled = port >= 0
         if not self.enabled:
+            _logger.warning("Management server disabled. "+
+                            "Use [Manage] config section to enable.")
             return
         self._config = config
         self._tracker = tracker
