@@ -307,7 +307,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
     # unlock before removing a file
     first('.lock-collection-btn').click
-    page.driver.browser.switch_to.alert.accept
+    accept_alert
 
     # remove first file
     input_files = page.all('input[type=checkbox]')
@@ -330,10 +330,10 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
     # unlock before removing a file
     first('.lock-collection-btn').click
-    page.driver.browser.switch_to.alert.accept
+    accept_alert
 
     first('.fa-trash-o').click
-    page.driver.browser.switch_to.alert.accept
+    accept_alert
 
     assert(page.has_no_text?('file1'), 'file found - file')
     assert(page.has_text?('file2'), 'file not found - file2')
@@ -346,7 +346,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
     # unlock before renaming a file
     first('.lock-collection-btn').click
-    page.driver.browser.switch_to.alert.accept
+    accept_alert
 
     within('.collection_files') do
       first('.fa-pencil').click
@@ -400,7 +400,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
     # Unlock and verify the file modification controls are enabled
     first('.lock-collection-btn').click
-    page.driver.browser.switch_to.alert.accept
+    accept_alert
 
     assert_no_selector 'a[data-toggle="disabled"]', text: 'Upload'
     assert_selector 'a', text: 'Upload'

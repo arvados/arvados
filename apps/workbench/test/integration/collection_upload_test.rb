@@ -44,7 +44,7 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
 
     # unlock before uploading files
     first('.lock-collection-btn').click
-    page.driver.browser.switch_to.alert.accept
+    accept_alert
 
     find('.nav-tabs a', text: 'Upload').click
     attach_file 'file_selector', testfile_path('empty.txt')
@@ -63,7 +63,7 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
 
     # unlock before uploading files
     first('.lock-collection-btn').click
-    page.driver.browser.switch_to.alert.accept
+    accept_alert
 
     find('.nav-tabs a', text: 'Upload').click
     attach_file 'file_selector', testfile_path('a')
@@ -106,7 +106,7 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
 
     # unlock before uploading a file
     first('.lock-collection-btn').click
-    page.driver.browser.switch_to.alert.accept
+    accept_alert
 
     find('.nav-tabs a', text: 'Upload').click
     attach_file 'file_selector', testfile_path('foo.txt')
