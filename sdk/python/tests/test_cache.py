@@ -34,17 +34,16 @@ class CacheTestThread(threading.Thread):
         for x in range(16):
             try:
                 data_in = _random(128)
-                data_in = bytes(hashlib.md5(data_in).hexdigest()) + bytes("\n") + bytes(data_in)
+                data_in = hashlib.md5(data_in).hexdigest().encode() + b"\n" + data_in
                 c.set(url, data_in)
                 data_out = c.get(url)
                 digest, _, content = data_out.partition("\n")
                 if digest != bytes(hashlib.md5(content).hexdigest()):
                     self.ok = False
-            finally:
-                pass
-            #except Exception as err:
-            #    self.ok = False
-            #    print("cache failed: {}: {}".format(type(err), err), file=sys.stderr)
+            except Exception as err:
+                self.ok = False
+                print("cache failed: {}: {}".format(type(err), err), file=sys.stderr)
+                raise
 
 
 class CacheTest(unittest.TestCase):
