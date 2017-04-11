@@ -18,8 +18,9 @@ class ContainerRequest < ArvadosModel
   before_validation :validate_scheduling_parameters
   before_validation :set_container
   validates :command, :container_image, :output_path, :cwd, :presence => true
+  validates :output_ttl, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validate :validate_state_change
-  validate :validate_change
+  validate :check_update_whitelist
   after_save :update_priority
   after_save :finalize_if_needed
   before_create :set_requesting_container_uuid
@@ -41,6 +42,7 @@ class ContainerRequest < ArvadosModel
     t.add :output_name
     t.add :output_path
     t.add :output_uuid
+    t.add :output_ttl
     t.add :priority
     t.add :properties
     t.add :requesting_container_uuid
@@ -63,6 +65,13 @@ class ContainerRequest < ArvadosModel
     Uncommitted => [Committed],
     Committed => [Final]
   }
+
+  AttrsPermittedAlways = [:owner_uuid, :state, :name, :description]
+  AttrsPermittedBeforeCommit = [:command, :container_count_max,
+  :container_image, :cwd, :environment, :filters, :mounts,
+  :output_path, :priority, :properties, :requesting_container_uuid,
+  :runtime_constraints, :state, :container_uuid, :use_existing,
+  :scheduling_parameters, :output_name, :output_ttl]
 
   def state_transitions
     State_transitions
@@ -91,41 +100,31 @@ class ContainerRequest < ArvadosModel
     ['output', 'log'].each do |out_type|
       pdh = c.send(out_type)
       next if pdh.nil?
-      if self.output_name and out_type == 'output'
-        coll_name = self.output_name
-      else
-        coll_name = "Container #{out_type} for request #{uuid}"
+      coll_name = "Container #{out_type} for request #{uuid}"
+      trash_at = nil
+      if out_type == 'output'
+        if self.output_name
+          coll_name = self.output_name
+        end
+        if self.output_ttl > 0
+          trash_at = db_current_time + self.output_ttl
+        end
       end
       manifest = Collection.unscoped do
         Collection.where(portable_data_hash: pdh).first.manifest_text
       end
-      begin
-        coll = Collection.create!(owner_uuid: owner_uuid,
-                                  manifest_text: manifest,
-                                  portable_data_hash: pdh,
-                                  name: coll_name,
-                                  properties: {
-                                    'type' => out_type,
-                                    'container_request' => uuid,
-                                  })
-      rescue ActiveRecord::RecordNotUnique => rn
-        # In case this is executed as part of a transaction: When a Postgres exception happens,
-        # the following statements on the same transaction become invalid, so a rollback is
-        # needed. One example are Unit Tests, every test is enclosed inside a transaction so
-        # that the database can be reverted before every new test starts.
-        # See: http://api.rubyonrails.org/classes/ActiveRecord/Transactions/ClassMethods.html#module-ActiveRecord::Transactions::ClassMethods-label-Exception+handling+and+rolling+back
-        ActiveRecord::Base.connection.execute 'ROLLBACK'
-        raise unless out_type == 'output' and self.output_name
-        # Postgres specific unique name check. See ApplicationController#create for
-        # a detailed explanation.
-        raise unless rn.original_exception.is_a? PG::UniqueViolation
-        err = rn.original_exception
-        detail = err.result.error_field(PG::Result::PG_DIAG_MESSAGE_DETAIL)
-        raise unless /^Key \(owner_uuid, name\)=\([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15}, .*?\) already exists\./.match detail
-        # Output collection name collision detected: append a timestamp.
-        coll_name = "#{self.output_name} #{Time.now.getgm.strftime('%FT%TZ')}"
-        retry
-      end
+
+      coll = Collection.new(owner_uuid: owner_uuid,
+                            manifest_text: manifest,
+                            portable_data_hash: pdh,
+                            name: coll_name,
+                            trash_at: trash_at,
+                            delete_at: trash_at,
+                            properties: {
+                              'type' => out_type,
+                              'container_request' => uuid,
+                            })
+      coll.save_with_unique_name!
       if out_type == 'output'
         out_coll = coll.uuid
       else
@@ -149,93 +148,7 @@ class ContainerRequest < ArvadosModel
     self.cwd ||= "."
     self.container_count_max ||= Rails.configuration.container_count_max
     self.scheduling_parameters ||= {}
-  end
-
-  # Create a new container (or find an existing one) to satisfy this
-  # request.
-  def resolve
-    c_mounts = mounts_for_container
-    c_runtime_constraints = runtime_constraints_for_container
-    c_container_image = container_image_for_container
-    c = act_as_system_user do
-      c_attrs = {command: self.command,
-                 cwd: self.cwd,
-                 environment: self.environment,
-                 output_path: self.output_path,
-                 container_image: c_container_image,
-                 mounts: c_mounts,
-                 runtime_constraints: c_runtime_constraints}
-
-      reusable = self.use_existing ? Container.find_reusable(c_attrs) : nil
-      if not reusable.nil?
-        reusable
-      else
-        c_attrs[:scheduling_parameters] = self.scheduling_parameters
-        Container.create!(c_attrs)
-      end
-    end
-    self.container_uuid = c.uuid
-  end
-
-  # Return a runtime_constraints hash that complies with
-  # self.runtime_constraints but is suitable for saving in a container
-  # record, i.e., has specific values instead of ranges.
-  #
-  # Doing this as a step separate from other resolutions, like "git
-  # revision range to commit hash", makes sense only when there is no
-  # opportunity to reuse an existing container (e.g., container reuse
-  # is not implemented yet, or we have already found that no existing
-  # containers are suitable).
-  def runtime_constraints_for_container
-    rc = {}
-    runtime_constraints.each do |k, v|
-      if v.is_a? Array
-        rc[k] = v[0]
-      else
-        rc[k] = v
-      end
-    end
-    rc
-  end
-
-  # Return a mounts hash suitable for a Container, i.e., with every
-  # readonly collection UUID resolved to a PDH.
-  def mounts_for_container
-    c_mounts = {}
-    mounts.each do |k, mount|
-      mount = mount.dup
-      c_mounts[k] = mount
-      if mount['kind'] != 'collection'
-        next
-      end
-      if (uuid = mount.delete 'uuid')
-        c = Collection.
-          readable_by(current_user).
-          where(uuid: uuid).
-          select(:portable_data_hash).
-          first
-        if !c
-          raise ArvadosModel::UnresolvableContainerError.new "cannot mount collection #{uuid.inspect}: not found"
-        end
-        if mount['portable_data_hash'].nil?
-          # PDH not supplied by client
-          mount['portable_data_hash'] = c.portable_data_hash
-        elsif mount['portable_data_hash'] != c.portable_data_hash
-          # UUID and PDH supplied by client, but they don't agree
-          raise ArgumentError.new "cannot mount collection #{uuid.inspect}: current portable_data_hash #{c.portable_data_hash.inspect} does not match #{c['portable_data_hash'].inspect} in request"
-        end
-      end
-    end
-    return c_mounts
-  end
-
-  # Return a container_image PDH suitable for a Container.
-  def container_image_for_container
-    coll = Collection.for_latest_docker_image(container_image)
-    if !coll
-      raise ArvadosModel::UnresolvableContainerError.new "docker image #{container_image.inspect} not found"
-    end
-    coll.portable_data_hash
+    self.output_ttl ||= 0
   end
 
   def set_container
@@ -246,7 +159,7 @@ class ContainerRequest < ArvadosModel
       return false
     end
     if state_changed? and state == Committed and container_uuid.nil?
-      resolve
+      self.container_uuid = Container.resolve(self).uuid
     end
     if self.container_uuid != self.container_uuid_was
       if self.container_count_changed?
@@ -261,20 +174,17 @@ class ContainerRequest < ArvadosModel
   def validate_runtime_constraints
     case self.state
     when Committed
-      ['vcpus', 'ram'].each do |k|
-        if not (runtime_constraints.include? k and
-                runtime_constraints[k].is_a? Integer and
-                runtime_constraints[k] > 0)
-          errors.add :runtime_constraints, "#{k} must be a positive integer"
+      [['vcpus', true],
+       ['ram', true],
+       ['keep_cache_ram', false]].each do |k, required|
+        if !required && !runtime_constraints.include?(k)
+          next
         end
-      end
-
-      if runtime_constraints.include? 'keep_cache_ram' and
-         (!runtime_constraints['keep_cache_ram'].is_a?(Integer) or
-          runtime_constraints['keep_cache_ram'] <= 0)
-            errors.add :runtime_constraints, "keep_cache_ram must be a positive integer"
-      elsif !runtime_constraints.include? 'keep_cache_ram'
-        runtime_constraints['keep_cache_ram'] = Rails.configuration.container_default_keep_cache_ram
+        v = runtime_constraints[k]
+        unless (v.is_a?(Integer) && v > 0)
+          errors.add(:runtime_constraints,
+                     "[#{k}]=#{v.inspect} must be a positive integer")
+        end
       end
     end
   end
@@ -290,57 +200,45 @@ class ContainerRequest < ArvadosModel
     end
   end
 
-  def validate_change
-    permitted = [:owner_uuid]
+  def check_update_whitelist
+    permitted = AttrsPermittedAlways.dup
+
+    if self.new_record? || self.state_was == Uncommitted
+      # Allow create-and-commit in a single operation.
+      permitted.push *AttrsPermittedBeforeCommit
+    end
 
     case self.state
-    when Uncommitted
-      # Permit updating most fields
-      permitted.push :command, :container_count_max,
-                     :container_image, :cwd, :description, :environment,
-                     :filters, :mounts, :name, :output_path, :priority,
-                     :properties, :requesting_container_uuid, :runtime_constraints,
-                     :state, :container_uuid, :use_existing, :scheduling_parameters,
-                     :output_name
-
     when Committed
-      if container_uuid.nil?
-        errors.add :container_uuid, "has not been resolved to a container."
+      permitted.push :priority, :container_count_max, :container_uuid
+
+      if self.container_uuid.nil?
+        self.errors.add :container_uuid, "has not been resolved to a container."
       end
 
-      if priority.nil?
-        errors.add :priority, "cannot be nil"
+      if self.priority.nil?
+        self.errors.add :priority, "cannot be nil"
       end
 
-      # Can update priority, container count, name and description
-      permitted.push :priority, :container_count, :container_count_max, :container_uuid,
-                     :name, :description
-
-      if self.state_changed?
-        # Allow create-and-commit in a single operation.
-        permitted.push :command, :container_image, :cwd, :description, :environment,
-                       :filters, :mounts, :name, :output_path, :properties,
-                       :requesting_container_uuid, :runtime_constraints,
-                       :state, :container_uuid, :use_existing, :scheduling_parameters,
-                       :output_name
+      # Allow container count to increment by 1
+      if (self.container_uuid &&
+          self.container_uuid != self.container_uuid_was &&
+          self.container_count == 1 + (self.container_count_was || 0))
+        permitted.push :container_count
       end
 
     when Final
-      if not current_user.andand.is_admin and not (self.name_changed? || self.description_changed?)
-        errors.add :state, "of container request can only be set to Final by system."
+      if self.state_changed? and not current_user.andand.is_admin
+        self.errors.add :state, "of container request can only be set to Final by system."
       end
 
-      if self.state_changed? || self.name_changed? || self.description_changed? || self.output_uuid_changed? || self.log_uuid_changed?
-          permitted.push :state, :name, :description, :output_uuid, :log_uuid
-      else
-        errors.add :state, "does not allow updates"
+      if self.state_was == Committed
+        permitted.push :output_uuid, :log_uuid
       end
 
-    else
-      errors.add :state, "invalid value"
     end
 
-    check_update_whitelist permitted
+    super(permitted)
   end
 
   def update_priority

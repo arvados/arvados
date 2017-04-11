@@ -2,6 +2,7 @@ import re
 import logging
 import uuid
 import os
+import urllib
 
 import arvados.commands.run
 import arvados.collection
@@ -17,7 +18,7 @@ class ArvPathMapper(PathMapper):
     """Convert container-local paths to and from Keep collection ids."""
 
     pdh_path = re.compile(r'^keep:[0-9a-f]{32}\+\d+/.+$')
-    pdh_dirpath = re.compile(r'^keep:[0-9a-f]{32}\+\d+(/.+)?$')
+    pdh_dirpath = re.compile(r'^keep:[0-9a-f]{32}\+\d+(/.*)?$')
 
     def __init__(self, arvrunner, referenced_files, input_basedir,
                  collection_pattern, file_pattern, name=None, **kwargs):
@@ -34,7 +35,7 @@ class ArvPathMapper(PathMapper):
             src = src[:src.index("#")]
 
         if isinstance(src, basestring) and ArvPathMapper.pdh_dirpath.match(src):
-            self._pathmap[src] = MapperEnt(src, self.collection_pattern % src[5:], srcobj["class"], True)
+            self._pathmap[src] = MapperEnt(src, self.collection_pattern % urllib.unquote(src[5:]), srcobj["class"], True)
 
         if src not in self._pathmap:
             if src.startswith("file:"):
@@ -48,7 +49,7 @@ class ArvPathMapper(PathMapper):
                     if isinstance(st, arvados.commands.run.UploadFile):
                         uploadfiles.add((src, ab, st))
                     elif isinstance(st, arvados.commands.run.ArvFile):
-                        self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % st.fn[5:], "File", True)
+                        self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % urllib.unquote(st.fn[5:]), "File", True)
                     else:
                         raise WorkflowException("Input file path '%s' is invalid" % st)
             elif src.startswith("_:"):
@@ -93,7 +94,7 @@ class ArvPathMapper(PathMapper):
             loc = k["location"]
             if loc in already_uploaded:
                 v = already_uploaded[loc]
-                self._pathmap[loc] = MapperEnt(v.resolved, self.collection_pattern % v.resolved[5:], "File", True)
+                self._pathmap[loc] = MapperEnt(v.resolved, self.collection_pattern % urllib.unquote(v.resolved[5:]), "File", True)
 
         for srcobj in referenced_files:
             self.visit(srcobj, uploadfiles)
@@ -108,7 +109,7 @@ class ArvPathMapper(PathMapper):
                                              project=self.arvrunner.project_uuid)
 
         for src, ab, st in uploadfiles:
-            self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % st.keepref,
+            self._pathmap[src] = MapperEnt(urllib.quote(st.fn, "/:+@"), self.collection_pattern % st.fn[5:],
                                            "Directory" if os.path.isdir(ab) else "File", True)
             self.arvrunner.add_uploaded(src, self._pathmap[src])
 

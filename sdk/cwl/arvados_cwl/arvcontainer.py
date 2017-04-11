@@ -1,6 +1,7 @@
 import logging
 import json
 import os
+import urllib
 
 import ruamel.yaml as yaml
 
@@ -77,7 +78,7 @@ class ArvadosContainer(object):
                     "portable_data_hash": pdh
                 }
                 if len(sp) == 2:
-                    mounts[p]["path"] = sp[1]
+                    mounts[p]["path"] = urllib.unquote(sp[1])
 
         with Perf(metrics, "generatefiles %s" % self.name):
             if self.generatefiles["listing"]:

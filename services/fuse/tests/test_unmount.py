@@ -32,9 +32,40 @@ class UnmountTest(IntegrationTest):
             self.assertNotIn(' '+self.mnt+' ', m)
 
     def _mounted(self, mounts):
-        all_mounts = subprocess.check_output(['mount', '-t', 'fuse.test'])
+        all_mounts = subprocess.check_output(['mount'])
         return [m for m in mounts
                 if ' '+m+' ' in all_mounts]
+
+    def _wait_for_mounts(self, mounts):
+        deadline = time.time() + 10
+        while self._mounted(mounts) != mounts:
+            time.sleep(0.1)
+            self.assertLess(time.time(), deadline)
+
+    def test_unmount_subtype(self):
+        mounts = []
+        for d in ['foo', 'bar']:
+            mnt = self.tmp+'/'+d
+            os.mkdir(mnt)
+            self.to_delete.insert(0, mnt)
+            mounts.append(mnt)
+            subprocess.check_call(
+                ['./bin/arv-mount', '--subtype', d, mnt])
+
+        self._wait_for_mounts(mounts)
+        self.assertEqual(mounts, self._mounted(mounts))
+        subprocess.call(['./bin/arv-mount', '--subtype', 'baz', '--unmount-all', self.tmp])
+        self.assertEqual(mounts, self._mounted(mounts))
+        subprocess.call(['./bin/arv-mount', '--subtype', 'bar', '--unmount', mounts[0]])
+        self.assertEqual(mounts, self._mounted(mounts))
+        subprocess.call(['./bin/arv-mount', '--subtype', '', '--unmount', self.tmp])
+        self.assertEqual(mounts, self._mounted(mounts))
+        subprocess.check_call(['./bin/arv-mount', '--subtype', 'foo', '--unmount', mounts[0]])
+        self.assertEqual(mounts[1:], self._mounted(mounts))
+        subprocess.check_call(['./bin/arv-mount', '--subtype', '', '--unmount-all', mounts[0]])
+        self.assertEqual(mounts[1:], self._mounted(mounts))
+        subprocess.check_call(['./bin/arv-mount', '--subtype', 'bar', '--unmount-all', self.tmp])
+        self.assertEqual([], self._mounted(mounts))
 
     def test_unmount_children(self):
         for d in ['foo', 'foo/bar', 'bar']:
@@ -48,12 +79,7 @@ class UnmountTest(IntegrationTest):
             subprocess.check_call(
                 ['./bin/arv-mount', '--subtype', 'test', mnt])
 
-        # Wait for mounts to attach
-        deadline = time.time() + 10
-        while self._mounted(mounts) != mounts:
-            time.sleep(0.1)
-            self.assertLess(time.time(), deadline)
-
+        self._wait_for_mounts(mounts)
         self.assertEqual(mounts, self._mounted(mounts))
         subprocess.check_call(['./bin/arv-mount', '--unmount', self.tmp])
         self.assertEqual(mounts, self._mounted(mounts))

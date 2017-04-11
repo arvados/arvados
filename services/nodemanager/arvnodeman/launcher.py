@@ -13,6 +13,7 @@ import pykka
 import libcloud
 
 from . import config as nmconfig
+from . import status
 from .baseactor import WatchdogActor
 from .daemon import NodeManagerDaemonActor
 from .jobqueue import JobQueueMonitorActor, ServerCalculator
@@ -111,6 +112,8 @@ def main(args=None):
         daemon.DaemonContext().open()
     for sigcode in [signal.SIGINT, signal.SIGQUIT, signal.SIGTERM]:
         signal.signal(sigcode, shutdown_signal)
+
+    status.Server(config).start()
 
     try:
         root_logger = setup_logging(config.get('Logging', 'file'), **config.log_levels())

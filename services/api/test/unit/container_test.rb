@@ -11,14 +11,22 @@ class ContainerTest < ActiveSupport::TestCase
     runtime_constraints: {"vcpus" => 1, "ram" => 1},
   }
 
-  REUSABLE_COMMON_ATTRS = {container_image: "9ae44d5792468c58bcf85ce7353c7027+124",
-                           cwd: "test",
-                           command: ["echo", "hello"],
-                           output_path: "test",
-                           runtime_constraints: {"vcpus" => 4,
-                                                 "ram" => 12000000000},
-                           mounts: {"test" => {"kind" => "json"}},
-                           environment: {"var" => 'val'}}
+  REUSABLE_COMMON_ATTRS = {
+    container_image: "9ae44d5792468c58bcf85ce7353c7027+124",
+    cwd: "test",
+    command: ["echo", "hello"],
+    output_path: "test",
+    runtime_constraints: {
+      "ram" => 12000000000,
+      "vcpus" => 4,
+    },
+    mounts: {
+      "test" => {"kind" => "json"},
+    },
+    environment: {
+      "var" => "val",
+    },
+  }
 
   def minimal_new attrs={}
     cr = ContainerRequest.new DEFAULT_ATTRS.merge(attrs)
@@ -86,7 +94,7 @@ class ContainerTest < ActiveSupport::TestCase
   test "Container serialized hash attributes sorted before save" do
     env = {"C" => 3, "B" => 2, "A" => 1}
     m = {"F" => {"kind" => 3}, "E" => {"kind" => 2}, "D" => {"kind" => 1}}
-    rc = {"vcpus" => 1, "ram" => 1}
+    rc = {"vcpus" => 1, "ram" => 1, "keep_cache_ram" => 1}
     c, _ = minimal_new(environment: env, mounts: m, runtime_constraints: rc)
     assert_equal c.environment.to_json, Container.deep_sort_hash(env).to_json
     assert_equal c.mounts.to_json, Container.deep_sort_hash(m).to_json
@@ -149,21 +157,21 @@ class ContainerTest < ActiveSupport::TestCase
       log: 'ea10d51bcf88862dbcc36eb292017dfd+45',
     }
 
-    set_user_from_auth :dispatch1
+    cr = ContainerRequest.new common_attrs
+    cr.use_existing = false
+    cr.state = ContainerRequest::Committed
+    cr.save!
+    c_output1 = Container.where(uuid: cr.container_uuid).first
 
-    c_output1 = Container.create common_attrs
-    c_output2 = Container.create common_attrs
+    cr = ContainerRequest.new common_attrs
+    cr.use_existing = false
+    cr.state = ContainerRequest::Committed
+    cr.save!
+    c_output2 = Container.where(uuid: cr.container_uuid).first
+
     assert_not_equal c_output1.uuid, c_output2.uuid
 
-    cr = ContainerRequest.new common_attrs
-    cr.state = ContainerRequest::Committed
-    cr.container_uuid = c_output1.uuid
-    cr.save!
-
-    cr = ContainerRequest.new common_attrs
-    cr.state = ContainerRequest::Committed
-    cr.container_uuid = c_output2.uuid
-    cr.save!
+    set_user_from_auth :dispatch1
 
     out1 = '1f4b0bc7583c2a7f9102c395f4ffc5e3+45'
     log1 = collections(:real_log_collection).portable_data_hash
@@ -176,9 +184,8 @@ class ContainerTest < ActiveSupport::TestCase
     c_output2.update_attributes!({state: Container::Running})
     c_output2.update_attributes!(completed_attrs.merge({log: log1, output: out2}))
 
-    reused = Container.find_reusable(common_attrs)
-    assert_not_nil reused
-    assert_equal reused.uuid, c_output1.uuid
+    reused = Container.resolve(ContainerRequest.new(common_attrs))
+    assert_equal c_output1.uuid, reused.uuid
   end
 
   test "find_reusable method should select running container by start date" do

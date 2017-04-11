@@ -50,9 +50,10 @@
           "run": {
             "baseCommand": "sleep",
             "class": "CommandLineTool",
+            "id": "#main/sleep1/subtool",
             "inputs": [
               {
-                "id": "#main/sleep1/sleeptime",
+                "id": "#main/sleep1/subtool/sleeptime",
                 "inputBinding": {
                   "position": 1
                 },
@@ -61,7 +62,7 @@
             ],
             "outputs": [
               {
-                "id": "#main/sleep1/out",
+                "id": "#main/sleep1/subtool/out",
                 "outputBinding": {
                   "outputEval": "out"
                 },

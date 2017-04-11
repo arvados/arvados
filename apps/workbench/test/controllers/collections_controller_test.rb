@@ -732,4 +732,34 @@ class CollectionsControllerTest < ActionController::TestCase
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
     assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file2 0:0:file2\n.\/dir2\/dir3 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1moved\n$/, collection['manifest_text']
   end
+
+  test "renaming file with a duplicate name in same stream not allowed" do
+    use_token :active
+
+    # rename 'file2' as 'file1' and expect error
+    post :update, {
+      id: 'zzzzz-4zz18-pyw8yp9g3pr7irn',
+      collection: {
+        'rename-file-path:file2' => 'file1'
+      },
+      format: :json
+    }, session_for(:active)
+    assert_response 422
+    assert_includes json_response['errors'], 'Duplicate file path'
+  end
+
+  test "renaming file with a duplicate name as another stream not allowed" do
+    use_token :active
+
+    # rename 'file1' as 'dir1/file1' and expect error
+    post :update, {
+      id: 'zzzzz-4zz18-pyw8yp9g3pr7irn',
+      collection: {
+        'rename-file-path:file1' => 'dir1/file1'
+      },
+      format: :json
+    }, session_for(:active)
+    assert_response 422
+    assert_includes json_response['errors'], 'Duplicate file path'
+  end
 end

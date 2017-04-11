@@ -44,6 +44,7 @@ steps:
           out: [out]
           run:
             class: CommandLineTool
+            id: subtool
             inputs:
               sleeptime:
                 type: int
