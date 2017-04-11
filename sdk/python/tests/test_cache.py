@@ -37,8 +37,8 @@ class CacheTestThread(threading.Thread):
                 data_in = hashlib.md5(data_in).hexdigest().encode() + b"\n" + data_in
                 c.set(url, data_in)
                 data_out = c.get(url)
-                digest, _, content = data_out.partition("\n")
-                if digest != bytes(hashlib.md5(content).hexdigest()):
+                digest, _, content = data_out.partition(b"\n")
+                if digest != hashlib.md5(content).hexdigest().encode():
                     self.ok = False
             except Exception as err:
                 self.ok = False
