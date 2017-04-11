@@ -40,7 +40,7 @@ class SafeHTTPCache(object):
         try:
             with open(filename, 'rb') as f:
                 return f.read()
-        except IOError as OSError:
+        except (IOError, OSError):
             return None
 
     def set(self, url, content):
