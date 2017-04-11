@@ -40,8 +40,8 @@ class StatusServerUpdates(unittest.TestCase):
                 self.assertEqual(200, r.status_code)
                 self.assertEqual('application/json', r.headers['content-type'])
                 resp = r.json()
-                self.assertEqual(1, resp['nodes_1'])
                 self.assertEqual(n, resp['nodes_'+str(n)])
+            self.assertEqual(1, resp['nodes_1'])
 
 
 class StatusServerDisabled(unittest.TestCase):
