@@ -1,4 +1,6 @@
 require 'test_helper'
+require 'tmpdir'
+require 'tempfile'
 
 class NodeTest < ActiveSupport::TestCase
   def ping_node(node_name, ping_data)
@@ -74,6 +76,16 @@ class NodeTest < ActiveSupport::TestCase
     Rails.configuration.dns_server_conf_template = 'ignored!'
     Rails.configuration.dns_server_reload_command = 'ignored!'
     assert Node.dns_server_update 'compute65535', '127.0.0.127'
+  end
+
+  test "don't leave temp files behind if there's an error writing them" do
+    Rails.configuration.dns_server_conf_template = Rails.root.join 'config', 'unbound.template'
+    Tempfile.any_instance.stubs(:puts).raises(IOError)
+    Dir.mktmpdir do |tmpdir|
+      Rails.configuration.dns_server_conf_dir = tmpdir
+      refute Node.dns_server_update 'compute65535', '127.0.0.127'
+      assert_empty Dir.entries(tmpdir).select{|f| File.file? f}
+    end
   end
 
   test "ping new node with no hostname and default config" do

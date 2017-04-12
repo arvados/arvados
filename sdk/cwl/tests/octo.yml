@@ -1,0 +1,3 @@
+inp:
+  class: File
+  location: "octothorpe/item %231.txt"

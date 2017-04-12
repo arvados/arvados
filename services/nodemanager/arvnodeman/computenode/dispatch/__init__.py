@@ -121,8 +121,14 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
                           self.cloud_size.name)
         self.cloud_node = self._cloud.create_node(self.cloud_size,
                                                   self.arvados_node)
-        if not self.cloud_node.size:
-             self.cloud_node.size = self.cloud_size
+
+        # The information included in the node size object we get from libcloud
+        # is inconsistent between cloud providers.  Replace libcloud NodeSize
+        # object with compatible CloudSizeWrapper object which merges the size
+        # info reported from the cloud with size information from the
+        # configuration file.
+        self.cloud_node.size = self.cloud_size
+
         self._logger.info("Cloud node %s created.", self.cloud_node.id)
         self._later.update_arvados_node_properties()
 

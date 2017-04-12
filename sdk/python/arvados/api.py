@@ -48,7 +48,7 @@ class OrderedJsonModel(apiclient.model.JsonModel):
         return body
 
 
-def _intercept_http_request(self, uri, **kwargs):
+def _intercept_http_request(self, uri, method="GET", **kwargs):
     if (self.max_request_size and
         kwargs.get('body') and
         self.max_request_size < len(kwargs['body'])):
@@ -62,7 +62,7 @@ def _intercept_http_request(self, uri, **kwargs):
 
     kwargs['headers']['Authorization'] = 'OAuth2 %s' % self.arvados_api_token
 
-    retryable = kwargs.get('method', 'GET') in [
+    retryable = method in [
         'DELETE', 'GET', 'HEAD', 'OPTIONS', 'PUT']
     retry_count = self._retry_count if retryable else 0
 
@@ -79,7 +79,7 @@ def _intercept_http_request(self, uri, **kwargs):
     for _ in range(retry_count):
         self._last_request_time = time.time()
         try:
-            return self.orig_http_request(uri, **kwargs)
+            return self.orig_http_request(uri, method, **kwargs)
         except http.client.HTTPException:
             _logger.debug("Retrying API request in %d s after HTTP error",
                           delay, exc_info=True)
@@ -97,7 +97,7 @@ def _intercept_http_request(self, uri, **kwargs):
         delay = delay * self._retry_delay_backoff
 
     self._last_request_time = time.time()
-    return self.orig_http_request(uri, **kwargs)
+    return self.orig_http_request(uri, method, **kwargs)
 
 def _patch_http_request(http, api_token):
     http.arvados_api_token = api_token

@@ -179,6 +179,9 @@ sanity_checks() {
     echo -n 'fuse.h: '
     find /usr/include -wholename '*fuse/fuse.h' \
         || fatal "No fuse/fuse.h. Try: apt-get install libfuse-dev"
+    echo -n 'gnutls.h: '
+    find /usr/include -wholename '*gnutls/gnutls.h' \
+        || fatal "No gnutls/gnutls.h. Try: apt-get install libgnutls28-dev"
     echo -n 'pyconfig.h: '
     find /usr/include -name pyconfig.h | egrep --max-count=1 . \
         || fatal "No pyconfig.h. Try: apt-get install python-dev"

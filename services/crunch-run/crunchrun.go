@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -134,7 +135,7 @@ type ContainerRunner struct {
 	loggingDone   chan bool
 	CrunchLog     *ThrottledLogger
 	Stdout        io.WriteCloser
-	Stderr        *ThrottledLogger
+	Stderr        io.WriteCloser
 	LogCollection *CollectionWriter
 	LogsPDH       *string
 	RunArvMount
@@ -345,10 +346,10 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 
 	for _, bind := range binds {
 		mnt := runner.Container.Mounts[bind]
-		if bind == "stdout" {
+		if bind == "stdout" || bind == "stderr" {
 			// Is it a "file" mount kind?
 			if mnt.Kind != "file" {
-				return fmt.Errorf("Unsupported mount kind '%s' for stdout. Only 'file' is supported.", mnt.Kind)
+				return fmt.Errorf("Unsupported mount kind '%s' for %s. Only 'file' is supported.", mnt.Kind, bind)
 			}
 
 			// Does path start with OutputPath?
@@ -357,7 +358,14 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 				prefix += "/"
 			}
 			if !strings.HasPrefix(mnt.Path, prefix) {
-				return fmt.Errorf("Stdout path does not start with OutputPath: %s, %s", mnt.Path, prefix)
+				return fmt.Errorf("%s path does not start with OutputPath: %s, %s", strings.Title(bind), mnt.Path, prefix)
+			}
+		}
+
+		if bind == "stdin" {
+			// Is it a "collection" mount kind?
+			if mnt.Kind != "collection" && mnt.Kind != "json" {
+				return fmt.Errorf("Unsupported mount kind '%s' for stdin. Only 'collection' or 'json' are supported.", mnt.Kind)
 			}
 		}
 
@@ -372,7 +380,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 		}
 
 		switch {
-		case mnt.Kind == "collection":
+		case mnt.Kind == "collection" && bind != "stdin":
 			var src string
 			if mnt.UUID != "" && mnt.PortableDataHash != "" {
 				return fmt.Errorf("Cannot specify both 'uuid' and 'portable_data_hash' for a collection mount")
@@ -657,14 +665,44 @@ func (runner *ContainerRunner) LogContainerRecord() (err error) {
 	return nil
 }
 
-// AttachLogs connects the docker container stdout and stderr logs to the
-// Arvados logger which logs to Keep and the API server logs table.
+// AttachStreams connects the docker container stdin, stdout and stderr logs
+// to the Arvados logger which logs to Keep and the API server logs table.
 func (runner *ContainerRunner) AttachStreams() (err error) {
 
 	runner.CrunchLog.Print("Attaching container streams")
 
+	// If stdin mount is provided, attach it to the docker container
+	var stdinRdr keepclient.Reader
+	var stdinJson []byte
+	if stdinMnt, ok := runner.Container.Mounts["stdin"]; ok {
+		if stdinMnt.Kind == "collection" {
+			var stdinColl arvados.Collection
+			collId := stdinMnt.UUID
+			if collId == "" {
+				collId = stdinMnt.PortableDataHash
+			}
+			err = runner.ArvClient.Get("collections", collId, nil, &stdinColl)
+			if err != nil {
+				return fmt.Errorf("While getting stding collection: %v", err)
+			}
+
+			stdinRdr, err = runner.Kc.ManifestFileReader(manifest.Manifest{Text: stdinColl.ManifestText}, stdinMnt.Path)
+			if os.IsNotExist(err) {
+				return fmt.Errorf("stdin collection path not found: %v", stdinMnt.Path)
+			} else if err != nil {
+				return fmt.Errorf("While getting stdin collection path %v: %v", stdinMnt.Path, err)
+			}
+		} else if stdinMnt.Kind == "json" {
+			stdinJson, err = json.Marshal(stdinMnt.Content)
+			if err != nil {
+				return fmt.Errorf("While encoding stdin json data: %v", err)
+			}
+		}
+	}
+
+	stdinUsed := stdinRdr != nil || len(stdinJson) != 0
 	response, err := runner.Docker.ContainerAttach(context.TODO(), runner.ContainerID,
-		dockertypes.ContainerAttachOptions{Stream: true, Stdout: true, Stderr: true})
+		dockertypes.ContainerAttachOptions{Stream: true, Stdin: stdinUsed, Stdout: true, Stderr: true})
 	if err != nil {
 		return fmt.Errorf("While attaching container stdout/stderr streams: %v", err)
 	}
@@ -672,35 +710,74 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 	runner.loggingDone = make(chan bool)
 
 	if stdoutMnt, ok := runner.Container.Mounts["stdout"]; ok {
-		stdoutPath := stdoutMnt.Path[len(runner.Container.OutputPath):]
-		index := strings.LastIndex(stdoutPath, "/")
-		if index > 0 {
-			subdirs := stdoutPath[:index]
-			if subdirs != "" {
-				st, err := os.Stat(runner.HostOutputDir)
-				if err != nil {
-					return fmt.Errorf("While Stat on temp dir: %v", err)
-				}
-				stdoutPath := path.Join(runner.HostOutputDir, subdirs)
-				err = os.MkdirAll(stdoutPath, st.Mode()|os.ModeSetgid|0777)
-				if err != nil {
-					return fmt.Errorf("While MkdirAll %q: %v", stdoutPath, err)
-				}
-			}
-		}
-		stdoutFile, err := os.Create(path.Join(runner.HostOutputDir, stdoutPath))
+		stdoutFile, err := runner.getStdoutFile(stdoutMnt.Path)
 		if err != nil {
-			return fmt.Errorf("While creating stdout file: %v", err)
+			return err
 		}
 		runner.Stdout = stdoutFile
 	} else {
 		runner.Stdout = NewThrottledLogger(runner.NewLogWriter("stdout"))
 	}
-	runner.Stderr = NewThrottledLogger(runner.NewLogWriter("stderr"))
+
+	if stderrMnt, ok := runner.Container.Mounts["stderr"]; ok {
+		stderrFile, err := runner.getStdoutFile(stderrMnt.Path)
+		if err != nil {
+			return err
+		}
+		runner.Stderr = stderrFile
+	} else {
+		runner.Stderr = NewThrottledLogger(runner.NewLogWriter("stderr"))
+	}
+
+	if stdinRdr != nil {
+		go func() {
+			_, err := io.Copy(response.Conn, stdinRdr)
+			if err != nil {
+				runner.CrunchLog.Print("While writing stdin collection to docker container %q", err)
+				runner.stop()
+			}
+			stdinRdr.Close()
+			response.CloseWrite()
+		}()
+	} else if len(stdinJson) != 0 {
+		go func() {
+			_, err := io.Copy(response.Conn, bytes.NewReader(stdinJson))
+			if err != nil {
+				runner.CrunchLog.Print("While writing stdin json to docker container %q", err)
+				runner.stop()
+			}
+			response.CloseWrite()
+		}()
+	}
 
 	go runner.ProcessDockerAttach(response.Reader)
 
 	return nil
+}
+
+func (runner *ContainerRunner) getStdoutFile(mntPath string) (*os.File, error) {
+	stdoutPath := mntPath[len(runner.Container.OutputPath):]
+	index := strings.LastIndex(stdoutPath, "/")
+	if index > 0 {
+		subdirs := stdoutPath[:index]
+		if subdirs != "" {
+			st, err := os.Stat(runner.HostOutputDir)
+			if err != nil {
+				return nil, fmt.Errorf("While Stat on temp dir: %v", err)
+			}
+			stdoutPath := path.Join(runner.HostOutputDir, subdirs)
+			err = os.MkdirAll(stdoutPath, st.Mode()|os.ModeSetgid|0777)
+			if err != nil {
+				return nil, fmt.Errorf("While MkdirAll %q: %v", stdoutPath, err)
+			}
+		}
+	}
+	stdoutFile, err := os.Create(path.Join(runner.HostOutputDir, stdoutPath))
+	if err != nil {
+		return nil, fmt.Errorf("While creating file %q: %v", stdoutPath, err)
+	}
+
+	return stdoutFile, nil
 }
 
 // CreateContainer creates the docker container.
@@ -742,6 +819,13 @@ func (runner *ContainerRunner) CreateContainer() error {
 			runner.HostConfig.NetworkMode = dockercontainer.NetworkMode("none")
 		}
 	}
+
+	_, stdinUsed := runner.Container.Mounts["stdin"]
+	runner.ContainerConfig.OpenStdin = stdinUsed
+	runner.ContainerConfig.StdinOnce = stdinUsed
+	runner.ContainerConfig.AttachStdin = stdinUsed
+	runner.ContainerConfig.AttachStdout = true
+	runner.ContainerConfig.AttachStderr = true
 
 	createdBody, err := runner.Docker.ContainerCreate(context.TODO(), &runner.ContainerConfig, &runner.HostConfig, nil, runner.Container.UUID)
 	if err != nil {
