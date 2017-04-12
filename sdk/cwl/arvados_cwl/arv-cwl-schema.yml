@@ -21,7 +21,7 @@ $graph:
         - "null"
         - type: enum
           name: LoadListingEnum
-          symbols: [shallow, deep]
+          symbols: [no_listing, shallow_listing, deep_listing]
 
 - name: RunInSingleContainer
   type: record
