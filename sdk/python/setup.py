@@ -57,4 +57,8 @@ setup(name='arvados-python-client',
       tests_require=['pbr<1.7.0', 'mock>=1.0', 'PyYAML'],
       zip_safe=False,
       cmdclass={'egg_info': tagger},
+      classifiers=[
+          'Programming Language :: Python :: 2',
+          'Programming Language :: Python :: 3',
+      ]
       )
