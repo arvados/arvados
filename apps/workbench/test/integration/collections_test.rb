@@ -305,9 +305,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     visit page_with_token('active', '/collections/zzzzz-4zz18-a21ux3541sxa8sf')
     assert(page.has_text?('file1'), 'file not found - file1')
 
-    # unlock before removing a file
-    first('.lock-collection-btn').click
-    accept_alert
+    unlock_collection
 
     # remove first file
     input_files = page.all('input[type=checkbox]')
@@ -328,9 +326,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     visit page_with_token('active', '/collections/zzzzz-4zz18-a21ux3541sxa8sf')
     assert(page.has_text?('file1'), 'file not found - file1')
 
-    # unlock before removing a file
-    first('.lock-collection-btn').click
-    accept_alert
+    unlock_collection
 
     first('.fa-trash-o').click
     accept_alert
@@ -344,9 +340,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
 
     visit page_with_token('active', '/collections/zzzzz-4zz18-a21ux3541sxa8sf')
 
-    # unlock before renaming a file
-    first('.lock-collection-btn').click
-    accept_alert
+    unlock_collection
 
     within('.collection_files') do
       first('.fa-pencil').click
@@ -374,7 +368,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "unlock collection to modfiy files" do
+  test "unlock collection to modify files" do
     need_selenium 'to confirm remove'
 
     collection = api_fixture('collections')['collection_owned_by_active']
@@ -398,9 +392,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
       assert_selector 'li', text: 'Create new collection with selected files'
     end
 
-    # Unlock and verify the file modification controls are enabled
-    first('.lock-collection-btn').click
-    accept_alert
+    unlock_collection
 
     assert_no_selector 'a[data-toggle="disabled"]', text: 'Upload'
     assert_selector 'a', text: 'Upload'
@@ -421,5 +413,10 @@ class CollectionsTest < ActionDispatch::IntegrationTest
       assert_no_selector 'li.disabled', text: 'Remove selected files'
       assert_selector 'li', text: 'Remove selected files'
     end
+  end
+
+  def unlock_collection
+    first('.lock-collection-btn').click
+    accept_alert
   end
 end

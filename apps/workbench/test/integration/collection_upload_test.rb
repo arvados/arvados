@@ -42,9 +42,7 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
     need_selenium "to make file uploads work"
     visit page_with_token 'active', sandbox_path
 
-    # unlock before uploading files
-    first('.lock-collection-btn').click
-    accept_alert
+    unlock_collection
 
     find('.nav-tabs a', text: 'Upload').click
     attach_file 'file_selector', testfile_path('empty.txt')
@@ -61,9 +59,7 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
     need_selenium "to make file uploads work"
     visit page_with_token 'active', sandbox_path
 
-    # unlock before uploading files
-    first('.lock-collection-btn').click
-    accept_alert
+    unlock_collection
 
     find('.nav-tabs a', text: 'Upload').click
     attach_file 'file_selector', testfile_path('a')
@@ -104,9 +100,7 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
     end
     visit page_with_token 'active', sandbox_path
 
-    # unlock before uploading a file
-    first('.lock-collection-btn').click
-    accept_alert
+    unlock_collection
 
     find('.nav-tabs a', text: 'Upload').click
     attach_file 'file_selector', testfile_path('foo.txt')
@@ -142,5 +136,10 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
   def testfile_path filename
     # Must be an absolute path. https://github.com/jnicklas/capybara/issues/621
     File.join Dir.getwd, 'tmp', filename
+  end
+
+  def unlock_collection
+    first('.lock-collection-btn').click
+    accept_alert
   end
 end
