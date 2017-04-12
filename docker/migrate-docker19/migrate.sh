@@ -28,6 +28,11 @@ image_tag=$4
 project_uuid=$5
 graph_driver=$6
 
+if [[ "$image_repo" = "<none>" ]] ; then
+  image_repo=none
+  image_tag=latest
+fi
+
 # Print free space in /var/lib/docker
 function freespace() {
     df -B1 /var/lib/docker | tail -n1 | sed 's/  */ /g' | cut -d' ' -f4
@@ -75,6 +80,7 @@ echo "Initial available space is $(freespace)"
 
 arv-get $image_tar_keepref | docker load
 
+
 docker tag $image_id $image_repo:$image_tag
 
 docker images -a
@@ -91,6 +97,11 @@ echo "Available space after image upgrade is $(freespace)"
 start_docker
 
 docker images -a
+
+if [[ "$image_repo" = "none" ]] ; then
+  image_repo=$(docker images -a --no-trunc | sed 's/  */ /g' | grep ^none | cut -d' ' -f3)
+  image_tag=""
+fi
 
 UUID=$(arv-keepdocker --force-image-format --project-uuid=$project_uuid $image_repo $image_tag)
 
