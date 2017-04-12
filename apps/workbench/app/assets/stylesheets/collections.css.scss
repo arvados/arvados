@@ -64,3 +64,9 @@ $active-bg: #39b3d7;
 .btn-group.toggle-persist .btn-info.active {
     background-color: $active-bg;
 }
+
+.lock-collection-btn {
+    display: inline-block;
+    padding: .5em 2em;
+    margin: 0 1em;
+}
