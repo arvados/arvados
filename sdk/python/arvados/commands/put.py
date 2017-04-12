@@ -681,7 +681,7 @@ class ArvPutUploadJob(object):
                 self._cache_file = open(cache_filepath, 'a+')
             else:
                 # --no-resume means start with a empty cache file.
-                self.logger.info("Creating new cache file create at {}".format(cache_filepath))
+                self.logger.info("Creating new cache file at {}".format(cache_filepath))
                 self._cache_file = open(cache_filepath, 'w+')
             self._cache_filename = self._cache_file.name
             self._lock_file(self._cache_file)
