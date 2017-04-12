@@ -822,18 +822,8 @@ class TestSubmit(unittest.TestCase):
         arvrunner.project_uuid = ""
         api.return_value = mock.MagicMock()
         arvrunner.api = api.return_value
-        arvrunner.api.links().list().execute.side_effect = ({"items": [], "items_available": 0, "offset": 0},
-                                                            {"items": [], "items_available": 0, "offset": 0},
-                                                            {"items": [], "items_available": 0, "offset": 0},
-                                                            {"items": [{"created_at": "",
-                                                                        "head_uuid": "",
-                                                                        "link_class": "docker_image_hash",
-                                                                        "name": "123456",
-                                                                        "owner_uuid": "",
-                                                                        "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0},
-                                                            {"items": [], "items_available": 0, "offset": 0},
-                                                            {"items": [{"created_at": "",
-                                                                        "head_uuid": "",
+        arvrunner.api.links().list().execute.side_effect = ({"items": [{"created_at": "",
+                                                                        "head_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
                                                                         "link_class": "docker_image_repo+tag",
                                                                         "name": "arvados/jobs:"+arvados_cwl.__version__,
                                                                         "owner_uuid": "",
@@ -843,19 +833,18 @@ class TestSubmit(unittest.TestCase):
                                                                         "link_class": "docker_image_hash",
                                                                         "name": "123456",
                                                                         "owner_uuid": "",
-                                                                        "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0}                                                            ,
+                                                                        "properties": {"image_timestamp": ""}}], "items_available": 1, "offset": 0}
         )
         find_one_image_hash.return_value = "123456"
 
-        arvrunner.api.collections().list().execute.side_effect = ({"items": [], "items_available": 0, "offset": 0},
-                                                                  {"items": [{"uuid": "",
+        arvrunner.api.collections().list().execute.side_effect = ({"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzzb",
                                                                               "owner_uuid": "",
                                                                               "manifest_text": "",
                                                                               "properties": ""
-                                                                          }], "items_available": 1, "offset": 0},
-                                                                  {"items": [{"uuid": ""}], "items_available": 1, "offset": 0})
+                                                                          }], "items_available": 1, "offset": 0},)
         arvrunner.api.collections().create().execute.return_value = {"uuid": ""}
-        self.assertEqual("arvados/jobs:"+arvados_cwl.__version__, arvados_cwl.runner.arvados_jobs_image(arvrunner, "arvados/jobs:"+arvados_cwl.__version__))
+        self.assertEqual("arvados/jobs:"+arvados_cwl.__version__,
+                         arvados_cwl.runner.arvados_jobs_image(arvrunner, "arvados/jobs:"+arvados_cwl.__version__))
 
 class TestCreateTemplate(unittest.TestCase):
     existing_template_uuid = "zzzzz-d1hrv-validworkfloyml"

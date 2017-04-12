@@ -54,7 +54,7 @@ class ArvadosContainer(object):
 
         dirs = set()
         for f in self.pathmapper.files():
-            pdh, p, tp = self.pathmapper.mapper(f)
+            pdh, p, tp, stg = self.pathmapper.mapper(f)
             if tp == "Directory" and '/' not in pdh:
                 mounts[p] = {
                     "kind": "collection",
@@ -63,7 +63,7 @@ class ArvadosContainer(object):
                 dirs.add(pdh)
 
         for f in self.pathmapper.files():
-            res, p, tp = self.pathmapper.mapper(f)
+            res, p, tp, stg = self.pathmapper.mapper(f)
             if res.startswith("keep:"):
                 res = res[5:]
             elif res.startswith("/keep/"):
