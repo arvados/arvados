@@ -115,10 +115,14 @@ class ArvadosContainer(object):
             container_request["environment"].update(self.environment)
 
         if self.stdin:
-            raise UnsupportedRequirement("Stdin redirection currently not suppported")
+            sp = self.stdin[6:].split("/", 1)
+            mounts["stdin"] = {"kind": "collection",
+                                "portable_data_hash": sp[0],
+                                "path": sp[1]}
 
         if self.stderr:
-            raise UnsupportedRequirement("Stderr redirection currently not suppported")
+            mounts["stderr"] = {"kind": "file",
+                                "path": "%s/%s" % (self.outdir, self.stderr)}
 
         if self.stdout:
             mounts["stdout"] = {"kind": "file",
