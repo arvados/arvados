@@ -20,24 +20,33 @@ from schema_salad.ref_resolver import DefaultFetcher
 
 logger = logging.getLogger('arvados.cwl-runner')
 
-class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
-    """Implement the cwltool FsAccess interface for Arvados Collections."""
-
-    def __init__(self, basedir, api_client=None, keep_client=None):
-        super(CollectionFsAccess, self).__init__(basedir)
+class CollectionCache(object):
+    def __init__(self, api_client, keep_client, num_retries):
         self.api_client = api_client
         self.keep_client = keep_client
         self.collections = {}
+
+    def get(self, pdh):
+        if pdh not in self.collections:
+            logger.debug("Creating collection reader for %s", pdh)
+            self.collections[pdh] = arvados.collection.CollectionReader(pdh, api_client=self.api_client,
+                                                                        keep_client=self.keep_client)
+        return self.collections[pdh]
+
+
+class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
+    """Implement the cwltool FsAccess interface for Arvados Collections."""
+
+    def __init__(self, basedir, collection_cache=None):
+        super(CollectionFsAccess, self).__init__(basedir)
+        self.collection_cache = collection_cache
 
     def get_collection(self, path):
         sp = path.split("/", 1)
         p = sp[0]
         if p.startswith("keep:") and arvados.util.keep_locator_pattern.match(p[5:]):
             pdh = p[5:]
-            if pdh not in self.collections:
-                self.collections[pdh] = arvados.collection.CollectionReader(pdh, api_client=self.api_client,
-                                                                            keep_client=self.keep_client)
-            return (self.collections[pdh], sp[1] if len(sp) == 2 else None)
+            return (self.collection_cache.get(pdh), sp[1] if len(sp) == 2 else None)
         else:
             return (None, path)
 
@@ -137,10 +146,10 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
             return os.path.realpath(path)
 
 class CollectionFetcher(DefaultFetcher):
-    def __init__(self, cache, session, api_client=None, keep_client=None, num_retries=4):
+    def __init__(self, cache, session, api_client=None, fs_access=None, num_retries=4):
         super(CollectionFetcher, self).__init__(cache, session)
         self.api_client = api_client
-        self.fsaccess = CollectionFsAccess("", api_client=api_client, keep_client=keep_client)
+        self.fsaccess = fs_access
         self.num_retries = num_retries
 
     def fetch_text(self, url):
