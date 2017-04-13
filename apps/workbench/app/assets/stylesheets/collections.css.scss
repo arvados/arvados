@@ -70,3 +70,11 @@ $active-bg: #39b3d7;
     padding: .5em 2em;
     margin: 0 1em;
 }
+
+.btn-collection-file-rename.disabled {
+    pointer-events: auto;
+}
+
+.btn-collection-file-remove.disabled {
+    pointer-events: auto;
+}

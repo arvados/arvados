@@ -33,7 +33,8 @@
                     'data-href' => url_for(controller: 'collections', action: :remove_selected_files),
                     'data-selection-param-name' => 'selection[]',
                     'data-selection-action' => 'remove-selected-files',
-                    'data-toggle' => 'dropdown'
+                    'data-toggle' => 'dropdown',
+                    'class' => 'btn-remove-selected-files'
               %></li>
             <% end %>
           </ul>
@@ -97,14 +98,14 @@
             <% end %>
 
             <% if object.editable? %>
-                <%= link_to({controller: 'collections', action: 'remove_selected_files', id: object.uuid, selection: [object.portable_data_hash+'/'+file_path]}, method: :post, remote: true, data: {confirm: "Remove #{file_path}?", toggle: 'tooltip', placement: 'top'}, class: 'btn btn-sm btn-default btn-nodecorate btn-collection-file-control', title: "Remove #{file_path}") do %>
+                <%= link_to({controller: 'collections', action: 'remove_selected_files', id: object.uuid, selection: [object.portable_data_hash+'/'+file_path]}, method: :post, remote: true, data: {confirm: "Remove #{file_path}?", toggle: 'tooltip', placement: 'top'}, class: 'btn btn-sm btn-default btn-nodecorate btn-collection-file-remove') do %>
                   <i class="fa fa-fw fa-trash-o"></i>
                 <% end %>
             <% end %>
         <% if CollectionsHelper::is_image(filename) %>
             <i class="fa fa-fw fa-bar-chart-o"></i>
               <% if object.editable? %>
-                <%= render_editable_attribute object, 'filename', filename, {'data-value' => file_path, 'data-toggle' => 'manual', 'selection_path' => 'rename-file-path:'+file_path}, {tiptitle: 'Edit name or directory or both for this file'} %>
+                <%= render_editable_attribute object, 'filename', filename, {'data-value' => file_path, 'data-toggle' => 'manual', 'selection_path' => 'rename-file-path:'+file_path}, {btnclass: 'collection-file-rename'} %>
               <% else %>
                 <%= filename %>
               <% end %>
@@ -117,7 +118,7 @@
          </div>
         <% else %>
               <% if object.editable? %>
-                <i class="fa fa-fw fa-file"></i><%= render_editable_attribute object, 'filename', filename, {'data-value' => file_path, 'data-toggle' => 'manual', 'selection_name' => 'rename-file-path:'+file_path}, {tiptitle: 'Edit name or directory or both for this file', btnclass: 'collection-file-control'}  %>
+                <i class="fa fa-fw fa-file"></i><%= render_editable_attribute object, 'filename', filename, {'data-value' => file_path, 'data-toggle' => 'manual', 'selection_name' => 'rename-file-path:'+file_path}, {btnclass: 'collection-file-rename'}  %>
               <% else %>
                 <i class="fa fa-fw fa-file" href="<%=object.uuid%>/<%=file_path%>" ></i> <%= filename %>
               <% end %>

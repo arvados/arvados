@@ -379,10 +379,8 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert_selector 'a[data-toggle="disabled"]', text: 'Upload'
 
     within('.collection_files') do
-      file_ctrls = page.all('.btn-collection-file-control')
-      assert_equal 2, file_ctrls.size
-      assert_equal true, file_ctrls[0]['class'].include?('disabled')
-      assert_equal true, file_ctrls[1]['class'].include?('disabled')
+      assert_equal true, page.all('.btn-collection-file-rename')[0]['class'].include?('disabled')
+      assert_equal true, page.all('.btn-collection-file-remove')[0]['class'].include?('disabled')
       find('input[type=checkbox]').click
     end
 
@@ -398,10 +396,9 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert_selector 'a', text: 'Upload'
 
     within('.collection_files') do
-      file_ctrls = page.all('.btn-collection-file-control')
-      assert_equal 2, file_ctrls.size
-      assert_equal false, file_ctrls[0]['class'].include?('disabled')
-      assert_equal false, file_ctrls[1]['class'].include?('disabled')
+      assert_equal false, page.all('.btn-collection-file-rename')[0]['class'].include?('disabled')
+      assert_equal false, page.all('.btn-collection-file-remove')[0]['class'].include?('disabled')
+
       # previous checkbox selection won't result in firing a new event;
       # undo and redo checkbox to fire the selection event again
       find('input[type=checkbox]').click
