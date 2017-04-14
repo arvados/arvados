@@ -26,6 +26,7 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers):
         shutil.rmtree(self.tempdir)
 
     def write_test_collection(self,
+                              strip_manifest=True,
                               contents = {
                                   'foo.txt' : 'foo',
                                   'bar.txt' : 'bar',
@@ -36,7 +37,9 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers):
             with c.open(path, 'w') as f:
                 f.write(data)
         c.save_new()
-        return (c.manifest_locator(), c.portable_data_hash(), c.manifest_text())
+        return (c.manifest_locator(),
+                c.portable_data_hash(),
+                c.manifest_text(strip=strip_manifest))
     
     def run_get(self, args):
         self.stdout = io.BytesIO()
@@ -75,9 +78,9 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers):
 
     def test_get_collection_manifest(self):
         # Get the collection manifest
-        r = self.run_get([self.col_loc, self.tempdir])
+        r = self.run_get([self.col_pdh, self.tempdir])
         self.assertEqual(0, r)
-        with open("{}/{}".format(self.tempdir, self.col_loc), "r") as f:
+        with open("{}/{}".format(self.tempdir, self.col_pdh), "r") as f:
             self.assertEqual(self.col_manifest, f.read())
 
     def test_invalid_collection(self):

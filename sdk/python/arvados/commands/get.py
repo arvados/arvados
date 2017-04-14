@@ -10,6 +10,7 @@ import logging
 
 import arvados
 import arvados.commands._util as arv_cmd
+import arvados.util as util
 
 from arvados._version import __version__
 
@@ -131,17 +132,20 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         api_client = arvados.api('v1')
 
     r = re.search(r'^(.*?)(/.*)?$', args.locator)
-    collection = r.group(1)
+    col_loc = r.group(1)
     get_prefix = r.group(2)
     if args.r and not get_prefix:
         get_prefix = os.sep
     try:
-        reader = arvados.CollectionReader(collection, num_retries=args.retries)
+        reader = arvados.CollectionReader(col_loc, num_retries=args.retries)
     except Exception as error:
         logger.error("failed to read collection: {}".format(error))
         return 1
 
     # User asked to download the collection's manifest
+    should_strip_manifest = False
+    if re.match(util.keep_locator_pattern, col_loc):
+        should_strip_manifest = True
     if not get_prefix:
         if not args.n:
             open_flags = os.O_CREAT | os.O_WRONLY
@@ -149,16 +153,16 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 open_flags |= os.O_EXCL
             try:
                 if args.destination == "-":
-                    stdout.write(reader.manifest_text())
+                    stdout.write(reader.manifest_text(strip=should_strip_manifest))
                 else:
                     out_fd = os.open(args.destination, open_flags)
                     with os.fdopen(out_fd, 'wb') as out_file:
-                        out_file.write(reader.manifest_text())
+                        out_file.write(reader.manifest_text(strip=should_strip_manifest))
             except (IOError, OSError) as error:
                 logger.error("can't write to '{}': {}".format(args.destination, error))
                 return 1
             except (arvados.errors.ApiError, arvados.errors.KeepReadError) as error:
-                logger.error("failed to download '{}': {}".format(collection, error))
+                logger.error("failed to download '{}': {}".format(col_loc, error))
                 return 1
         return 0
 
