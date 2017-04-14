@@ -41,7 +41,8 @@ class TestContainer(unittest.TestCase):
                 "baseCommand": "ls",
                 "arguments": [{"valueFrom": "$(runtime.outdir)"}]
             })
-            make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+            make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
+                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
             arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names,
                                                      basedir="", make_fs_access=make_fs_access, loader=Loader({}))
             arvtool.formatgraph = None
@@ -107,7 +108,8 @@ class TestContainer(unittest.TestCase):
             }],
             "baseCommand": "ls"
         })
-        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
+                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers",
                                                  avsc_names=avsc_names, make_fs_access=make_fs_access,
                                                  loader=Loader({}))
@@ -208,7 +210,8 @@ class TestContainer(unittest.TestCase):
             }],
             "baseCommand": "ls"
         })
-        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
+                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers",
                                                  avsc_names=avsc_names, make_fs_access=make_fs_access,
                                                  loader=Loader({}))
@@ -300,7 +303,8 @@ class TestContainer(unittest.TestCase):
             "stdin": "/keep/99999999999999999999999999999996+99/file.txt",
             "arguments": [{"valueFrom": "$(runtime.outdir)"}]
         })
-        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
+                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names,
                                                  basedir="", make_fs_access=make_fs_access, loader=Loader({}))
         arvtool.formatgraph = None
