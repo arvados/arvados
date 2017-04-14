@@ -4,6 +4,7 @@ import errno
 import urlparse
 import re
 import logging
+import threading
 
 import ruamel.yaml as yaml
 
@@ -25,13 +26,15 @@ class CollectionCache(object):
         self.api_client = api_client
         self.keep_client = keep_client
         self.collections = {}
+        self.lock = threading.Lock()
 
     def get(self, pdh):
-        if pdh not in self.collections:
-            logger.debug("Creating collection reader for %s", pdh)
-            self.collections[pdh] = arvados.collection.CollectionReader(pdh, api_client=self.api_client,
-                                                                        keep_client=self.keep_client)
-        return self.collections[pdh]
+        with self.lock:
+            if pdh not in self.collections:
+                logger.debug("Creating collection reader for %s", pdh)
+                self.collections[pdh] = arvados.collection.CollectionReader(pdh, api_client=self.api_client,
+                                                                            keep_client=self.keep_client)
+            return self.collections[pdh]
 
 
 class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
