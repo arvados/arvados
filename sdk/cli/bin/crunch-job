@@ -393,12 +393,12 @@ if (!defined $no_clear_tmp) {
   # Find FUSE mounts under $CRUNCH_TMP and unmount them.  Then clean
   # up work directories crunch_tmp/work, crunch_tmp/opt,
   # crunch_tmp/src*.
-  #
-  # TODO: When #5036 is done and widely deployed, we can limit mount's
-  # -t option to simply fuse.keep.
   my ($exited, $stdout, $stderr) = srun_sync(
     ["srun", "--nodelist=$nodelist", "-D", $ENV{'TMPDIR'}],
-    ['bash', '-ec', '-o', 'pipefail', 'mount -t fuse,fuse.keep | awk "(index(\$3, \"$CRUNCH_TMP\") == 1){print \$3}" | xargs -r -n 1 fusermount -u -z; sleep 1; rm -rf $JOB_WORK $CRUNCH_INSTALL $CRUNCH_TMP/task $CRUNCH_TMP/src* $CRUNCH_TMP/*.cid'],
+    ['bash', '-ec', q{
+arv-mount --unmount-timeout 10 --unmount-all ${CRUNCH_TMP}
+rm -rf ${JOB_WORK} ${CRUNCH_INSTALL} ${CRUNCH_TMP}/task ${CRUNCH_TMP}/src* ${CRUNCH_TMP}/*.cid
+    }],
     {label => "clean work dirs"});
   if ($exited != 0) {
     exit(EX_RETRY_UNLOCKED);
