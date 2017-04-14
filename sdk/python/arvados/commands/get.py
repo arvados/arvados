@@ -126,6 +126,10 @@ def parse_arguments(arguments, stdout, stderr):
 def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     global api_client
 
+    if stdout is sys.stdout and hasattr(stdout, 'buffer'):
+        # in Python 3, write to stdout as binary
+        stdout = stdout.buffer
+
     args = parse_arguments(arguments, stdout, stderr)
     if api_client is None:
         api_client = arvados.api('v1')
@@ -149,11 +153,11 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 open_flags |= os.O_EXCL
             try:
                 if args.destination == "-":
-                    stdout.write(reader.manifest_text())
+                    stdout.write(reader.manifest_text().encode())
                 else:
                     out_fd = os.open(args.destination, open_flags)
                     with os.fdopen(out_fd, 'wb') as out_file:
-                        out_file.write(reader.manifest_text())
+                        out_file.write(reader.manifest_text().encode())
             except (IOError, OSError) as error:
                 logger.error("can't write to '{}': {}".format(args.destination, error))
                 return 1
@@ -230,7 +234,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         if args.hash:
             digestor = hashlib.new(args.hash)
         try:
-            with s.open(f.name, 'r') as file_reader:
+            with s.open(f.name, 'rb') as file_reader:
                 for data in file_reader.readall():
                     if outfile:
                         outfile.write(data)

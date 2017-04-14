@@ -20,9 +20,10 @@ import tempfile
 import unittest
 
 if sys.version_info >= (3, 0):
-    from io import StringIO
+    from io import StringIO, BytesIO
 else:
     from cStringIO import StringIO
+    BytesIO = StringIO
 
 # Use this hostname when you want to make sure the traffic will be
 # instantly refused.  100::/64 is a dedicated black hole.
