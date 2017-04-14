@@ -5,7 +5,6 @@ standard_library.install_aliases()
 from builtins import object
 import bz2
 import fcntl
-import gflags
 import hashlib
 import http.client
 import httplib2
