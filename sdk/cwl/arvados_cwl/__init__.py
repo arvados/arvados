@@ -624,6 +624,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
 def add_arv_hints():
     cwltool.draft2tool.ACCEPTLIST_EN_RELAXED_RE = re.compile(r".*")
+    cwltool.draft2tool.ACCEPTLIST_RE = cwltool.draft2tool.ACCEPTLIST_EN_RELAXED_RE
     res = pkg_resources.resource_stream(__name__, 'arv-cwl-schema.yml')
     use_custom_schema("v1.0", "http://arvados.org/cwl", res.read())
     res.close()
