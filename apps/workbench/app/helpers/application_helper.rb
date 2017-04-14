@@ -607,6 +607,7 @@ module ApplicationHelper
 
   RESOURCE_CLASS_ICONS = {
     "Collection" => "fa-archive",
+    "ContainerRequest" => "fa-gears",
     "Group" => "fa-users",
     "Human" => "fa-male",  # FIXME: Use a more inclusive icon.
     "Job" => "fa-gears",
@@ -621,6 +622,7 @@ module ApplicationHelper
     "Trait" => "fa-clipboard",
     "User" => "fa-user",
     "VirtualMachine" => "fa-terminal",
+    "Workflow" => "fa-gears",
   }
   DEFAULT_ICON_CLASS = "fa-cube"
 
