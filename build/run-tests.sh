@@ -182,9 +182,12 @@ sanity_checks() {
     echo -n 'gnutls.h: '
     find /usr/include -wholename '*gnutls/gnutls.h' \
         || fatal "No gnutls/gnutls.h. Try: apt-get install libgnutls28-dev"
-    echo -n 'pyconfig.h: '
-    find /usr/include -name pyconfig.h | egrep --max-count=1 . \
-        || fatal "No pyconfig.h. Try: apt-get install python-dev"
+    echo -n 'Python2 pyconfig.h: '
+    find /usr/include -path '*/python2*/pyconfig.h' | egrep --max-count=1 . \
+        || fatal "No Python2 pyconfig.h. Try: apt-get install python2.7-dev"
+    echo -n 'Python3 pyconfig.h: '
+    find /usr/include -path '*/python3*/pyconfig.h' | egrep --max-count=1 . \
+        || fatal "No Python3 pyconfig.h. Try: apt-get install python3-dev"
     echo -n 'nginx: '
     PATH="$PATH:/sbin:/usr/sbin:/usr/local/sbin" nginx -v \
         || fatal "No nginx. Try: apt-get install nginx"
