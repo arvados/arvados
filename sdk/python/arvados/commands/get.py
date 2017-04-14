@@ -125,7 +125,7 @@ def parse_arguments(arguments, stdout, stderr):
 
 def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     global api_client
-    
+
     args = parse_arguments(arguments, stdout, stderr)
     if api_client is None:
         api_client = arvados.api('v1')

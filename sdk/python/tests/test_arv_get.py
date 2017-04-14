@@ -37,7 +37,7 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers):
                 f.write(data)
         c.save_new()
         return (c.manifest_locator(), c.portable_data_hash(), c.manifest_text())
-    
+
     def run_get(self, args):
         self.stdout = io.BytesIO()
         self.stderr = io.BytesIO()
@@ -60,7 +60,7 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers):
         # Then, try by PDH
         r = self.run_get(["{}/subdir/baz.txt".format(self.col_pdh), '-'])
         self.assertEqual(0, r)
-        self.assertEqual('baz', self.stdout.getvalue())        
+        self.assertEqual('baz', self.stdout.getvalue())
 
     def test_get_multiple_files(self):
         # Download the entire collection to the temp directory
