@@ -1,6 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
+from __future__ import absolute_import
+from future.utils import listitems
 import io
 import shutil
 import tempfile
@@ -8,9 +7,9 @@ import tempfile
 import arvados
 import arvados.collection as collection
 import arvados.commands.get as arv_get
-import run_test_server
+from . import run_test_server
 
-from arvados_testutil import redirected_streams
+from .arvados_testutil import redirected_streams
 
 class ArvadosGetTestCase(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
@@ -32,7 +31,7 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers):
                                   'subdir/baz.txt' : 'baz',
                               }):
         c = collection.Collection()
-        for path, data in contents.items():
+        for path, data in listitems(contents):
             with c.open(path, 'w') as f:
                 f.write(data)
         c.save_new()

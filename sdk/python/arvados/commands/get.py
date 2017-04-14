@@ -265,7 +265,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
 
 def files_in_collection(c):
     # Sort first by file type, then alphabetically by file path.
-    for i in sorted(c.keys(),
+    for i in sorted(list(c.keys()),
                     key=lambda k: (
                         isinstance(c[k], arvados.collection.Subcollection),
                         k.upper())):
