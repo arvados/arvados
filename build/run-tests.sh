@@ -177,10 +177,10 @@ sanity_checks() {
     gcc --version | egrep ^gcc \
         || fatal "No gcc. Try: apt-get install build-essential"
     echo -n 'fuse.h: '
-    find /usr/include -wholename '*fuse/fuse.h' \
+    find /usr/include -path '*fuse/fuse.h' | egrep --max-count=1 . \
         || fatal "No fuse/fuse.h. Try: apt-get install libfuse-dev"
     echo -n 'gnutls.h: '
-    find /usr/include -wholename '*gnutls/gnutls.h' \
+    find /usr/include -path '*gnutls/gnutls.h' | egrep --max-count=1 . \
         || fatal "No gnutls/gnutls.h. Try: apt-get install libgnutls28-dev"
     echo -n 'Python2 pyconfig.h: '
     find /usr/include -path '*/python2*/pyconfig.h' | egrep --max-count=1 . \
