@@ -18,6 +18,35 @@ var _ = check.Suite(&UnitSuite{})
 
 type UnitSuite struct{}
 
+func (s *UnitSuite) TestCORSPreflight(c *check.C) {
+	h := handler{Config: &Config{}}
+	u, _ := url.Parse("http://keep-web.example/c=" + arvadostest.FooCollection + "/foo")
+	req := &http.Request{
+		Method:     "OPTIONS",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header: http.Header{
+			"Origin":                        {"https://workbench.example"},
+			"Access-Control-Request-Method": {"POST"},
+		},
+	}
+
+	resp := httptest.NewRecorder()
+	h.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	c.Check(resp.Body.String(), check.Equals, "")
+	c.Check(resp.Header().Get("Access-Control-Allow-Origin"), check.Equals, "*")
+	c.Check(resp.Header().Get("Access-Control-Allow-Methods"), check.Equals, "GET, POST")
+	c.Check(resp.Header().Get("Access-Control-Allow-Headers"), check.Equals, "Range")
+
+	resp = httptest.NewRecorder()
+	req.Header.Set("Access-Control-Request-Method", "DELETE")
+	h.ServeHTTP(resp, req)
+	c.Check(resp.Body.String(), check.Equals, "")
+	c.Check(resp.Code, check.Equals, http.StatusMethodNotAllowed)
+}
+
 func mustParseURL(s string) *url.URL {
 	r, err := url.Parse(s)
 	if err != nil {
