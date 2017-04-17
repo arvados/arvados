@@ -402,6 +402,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
       assert_equal 2, file_ctrls.size
       assert_equal false, file_ctrls[0]['class'].include?('disabled')
       assert_equal false, file_ctrls[1]['class'].include?('disabled')
+
       # previous checkbox selection won't result in firing a new event;
       # undo and redo checkbox to fire the selection event again
       find('input[type=checkbox]').click
