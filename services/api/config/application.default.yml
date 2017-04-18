@@ -279,6 +279,8 @@ common:
   # silenced by throttling are not counted against this total.
   crunch_limit_log_bytes_per_job: 67108864
 
+  crunch_log_partial_line_throttle_period: 5
+
   # Attributes to suppress in events and audit logs.  Notably,
   # specifying ["manifest_text"] here typically makes the database
   # smaller and faster.
@@ -412,8 +414,6 @@ common:
   # Rails.root (included in vendor packages) or determined by invoking
   # "git log".
   source_version: false
-
-  crunch_log_partial_line_throttle_period: 5
 
   # Enable asynchronous permission graph rebuild.  Must run
   # script/permission-updater.rb as a separate process.  When the permission
