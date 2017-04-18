@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import io
+import os
 import shutil
 import tempfile
 
@@ -80,13 +81,18 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers):
         # Get the collection manifest by UUID
         r = self.run_get([self.col_loc, self.tempdir])
         self.assertEqual(0, r)
-        with open("{}/{}".format(self.tempdir, self.col_loc), "r") as f:
-            self.assertEqual(self.col_manifest, f.read())
+        m_from_collection = collection.Collection(self.col_manifest).manifest_text(strip=True)
+        with open(os.path.join(self.tempdir, self.col_loc), "r") as f:
+            # Strip manifest before comparison to avoid races
+            m_from_file = collection.Collection(f.read()).manifest_text(strip=True)
+            self.assertEqual(m_from_collection, m_from_file)
         # Get the collection manifest by PDH
         r = self.run_get([self.col_pdh, self.tempdir])
         self.assertEqual(0, r)
-        with open("{}/{}".format(self.tempdir, self.col_pdh), "r") as f:
-            self.assertEqual(self.col_manifest, f.read())
+        with open(os.path.join(self.tempdir, self.col_pdh), "r") as f:
+            # Strip manifest before comparison to avoid races
+            m_from_file = collection.Collection(f.read()).manifest_text(strip=True)
+            self.assertEqual(m_from_collection, m_from_file)
 
     def test_get_collection_stripped_manifest(self):
         col_loc, col_pdh, col_manifest = self.write_test_collection(strip_manifest=True)
