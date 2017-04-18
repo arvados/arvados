@@ -7,6 +7,8 @@
 # older packages.
 LICENSE_PACKAGE_TS=20151208015500
 
+RAILS_PACKAGE_ITERATION=7
+
 debug_echo () {
     echo "$@" >"$STDOUT_IF_DEBUG"
 }
