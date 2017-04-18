@@ -32,6 +32,7 @@ func (s *UnitSuite) TestCORSPreflight(c *check.C) {
 		},
 	}
 
+	// Check preflight for an allowed request
 	resp := httptest.NewRecorder()
 	h.ServeHTTP(resp, req)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
@@ -40,6 +41,7 @@ func (s *UnitSuite) TestCORSPreflight(c *check.C) {
 	c.Check(resp.Header().Get("Access-Control-Allow-Methods"), check.Equals, "GET, POST")
 	c.Check(resp.Header().Get("Access-Control-Allow-Headers"), check.Equals, "Range")
 
+	// Check preflight for a disallowed request
 	resp = httptest.NewRecorder()
 	req.Header.Set("Access-Control-Request-Method", "DELETE")
 	h.ServeHTTP(resp, req)
