@@ -96,7 +96,9 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
             pos += self._filepos
         elif whence == os.SEEK_END:
             pos += self.size()
-        self._filepos = min(max(pos, 0L), self.size())
+        if pos < 0L:
+            raise IOError(errno.EINVAL, "Tried to seek to negative file offset.")
+        self._filepos = pos
 
     def tell(self):
         return self._filepos
@@ -428,6 +430,7 @@ class _BlockManager(object):
         self.copies = copies
         self._pending_write_size = 0
         self.threads_lock = threading.Lock()
+        self.padding_block = None
 
     @synchronized
     def alloc_bufferblock(self, blockid=None, starting_capacity=2**14, owner=None):
@@ -652,6 +655,17 @@ class _BlockManager(object):
     @synchronized
     def get_bufferblock(self, locator):
         return self._bufferblocks.get(locator)
+
+    @synchronized
+    def get_padding_block(self):
+        """Get a bufferblock 64 MB in size consisting of all zeros, used as padding
+        when using truncate() to extend the size of a file."""
+
+        if self.padding_block is None:
+            self.padding_block = self._alloc_bufferblock(starting_capacity=config.KEEP_BLOCK_SIZE)
+            self.padding_block.write_pointer = config.KEEP_BLOCK_SIZE
+            self.commit_bufferblock(self.padding_block, False)
+        return self.padding_block
 
     @synchronized
     def delete_bufferblock(self, locator):
@@ -900,11 +914,11 @@ class ArvadosFile(object):
     @must_be_writable
     @synchronized
     def truncate(self, size):
-        """Shrink the size of the file.
+        """Shrink or expand the size of the file.
 
         If `size` is less than the size of the file, the file contents after
         `size` will be discarded.  If `size` is greater than the current size
-        of the file, an IOError will be raised.
+        of the file, it will be filled with zero bytes.
 
         """
         if size < self.size():
@@ -925,7 +939,17 @@ class ArvadosFile(object):
             self._segments = new_segs
             self.set_committed(False)
         elif size > self.size():
-            raise IOError(errno.EINVAL, "truncate() does not support extending the file size")
+            padding = self.parent._my_block_manager().get_padding_block()
+            diff = size - self.size()
+            while diff > config.KEEP_BLOCK_SIZE:
+                self._segments.append(Range(padding.blockid, self.size(), config.KEEP_BLOCK_SIZE, 0))
+                diff -= config.KEEP_BLOCK_SIZE
+            if diff > 0:
+                self._segments.append(Range(padding.blockid, self.size(), diff, 0))
+            self.set_committed(False)
+        else:
+            # size == self.size()
+            pass
 
     def readfrom(self, offset, size, num_retries, exact=False):
         """Read up to `size` bytes from the file starting at `offset`.
@@ -998,8 +1022,12 @@ class ArvadosFile(object):
         if len(data) == 0:
             return
 
+        print "Writing", len(data), "bytes to offset", offset, "current size is", self.size()
+
         if offset > self.size():
-            raise ArgumentError("Offset is past the end of the file")
+            print "Need to extend to", offset
+            self.truncate(offset)
+            print "Size is now", self.size()
 
         if len(data) > config.KEEP_BLOCK_SIZE:
             # Chunk it up into smaller writes
