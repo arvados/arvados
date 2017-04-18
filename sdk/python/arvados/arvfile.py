@@ -1022,12 +1022,8 @@ class ArvadosFile(object):
         if len(data) == 0:
             return
 
-        print "Writing", len(data), "bytes to offset", offset, "current size is", self.size()
-
         if offset > self.size():
-            print "Need to extend to", offset
             self.truncate(offset)
-            print "Size is now", self.size()
 
         if len(data) > config.KEEP_BLOCK_SIZE:
             # Chunk it up into smaller writes

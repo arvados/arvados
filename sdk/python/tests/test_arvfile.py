@@ -330,6 +330,23 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
 
             self.assertEqual(c.manifest_text(), ". 7f614da9329cd3aebf59b91aadc30bf0+67108864 781e5e245d69b566979b86e28d23f2c7+10 0:67108864:count.txt 0:67108864:count.txt 0:2:count.txt 67108864:10:count.txt\n")
 
+
+    def test_sparse_write3(self):
+        keep = ArvadosFileWriterTestCase.MockKeep({})
+        api = ArvadosFileWriterTestCase.MockApi({}, {})
+        for r in [[0, 1, 2, 3, 4], [4, 3, 2, 1, 0], [3, 2, 0, 4, 1]]:
+            with Collection() as c:
+                writer = c.open("count.txt", "r+")
+                self.assertEqual(writer.size(), 0)
+
+                for i in r:
+                    w = ("%s" % i) * 10
+                    writer.seek(i*10)
+                    writer.write(w)
+                writer.seek(0)
+                self.assertEqual(writer.read(), "00000000001111111111222222222233333333334444444444")
+
+
     def test_rewrite_on_empty_file(self):
         keep = ArvadosFileWriterTestCase.MockKeep({})
         with Collection('. ' + arvados.config.EMPTY_BLOCK_LOCATOR + ' 0:0:count.txt',
