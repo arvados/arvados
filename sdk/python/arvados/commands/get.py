@@ -85,6 +85,11 @@ write *anything* if any files exist that would have to be
 overwritten. This option causes even devices, sockets, and fifos to be
 skipped.
 """)
+group.add_argument('--strip-manifest', action='store_true', default=False,
+                   help="""
+When getting a collection manifest, strip its access tokens before writing 
+it.
+""")
 
 def parse_arguments(arguments, stdout, stderr):
     args = parser.parse_args(arguments)
@@ -143,9 +148,6 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         return 1
 
     # User asked to download the collection's manifest
-    should_strip_manifest = False
-    if re.match(util.keep_locator_pattern, col_loc):
-        should_strip_manifest = True
     if not get_prefix:
         if not args.n:
             open_flags = os.O_CREAT | os.O_WRONLY
@@ -153,11 +155,11 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 open_flags |= os.O_EXCL
             try:
                 if args.destination == "-":
-                    stdout.write(reader.manifest_text(strip=should_strip_manifest))
+                    stdout.write(reader.manifest_text(strip=args.strip_manifest))
                 else:
                     out_fd = os.open(args.destination, open_flags)
                     with os.fdopen(out_fd, 'wb') as out_file:
-                        out_file.write(reader.manifest_text(strip=should_strip_manifest))
+                        out_file.write(reader.manifest_text(strip=args.strip_manifest))
             except (IOError, OSError) as error:
                 logger.error("can't write to '{}': {}".format(args.destination, error))
                 return 1

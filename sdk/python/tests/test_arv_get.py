@@ -26,7 +26,7 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers):
         shutil.rmtree(self.tempdir)
 
     def write_test_collection(self,
-                              strip_manifest=True,
+                              strip_manifest=False,
                               contents = {
                                   'foo.txt' : 'foo',
                                   'bar.txt' : 'bar',
@@ -76,12 +76,30 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers):
         with open("{}/subdir/baz.txt".format(self.tempdir), "r") as f:
             self.assertEqual("baz", f.read())
 
-    def test_get_collection_manifest(self):
-        # Get the collection manifest
+    def test_get_collection_unstripped_manifest(self):
+        # Get the collection manifest by UUID
+        r = self.run_get([self.col_loc, self.tempdir])
+        self.assertEqual(0, r)
+        with open("{}/{}".format(self.tempdir, self.col_loc), "r") as f:
+            self.assertEqual(self.col_manifest, f.read())
+        # Get the collection manifest by PDH
         r = self.run_get([self.col_pdh, self.tempdir])
         self.assertEqual(0, r)
         with open("{}/{}".format(self.tempdir, self.col_pdh), "r") as f:
             self.assertEqual(self.col_manifest, f.read())
+
+    def test_get_collection_stripped_manifest(self):
+        col_loc, col_pdh, col_manifest = self.write_test_collection(strip_manifest=True)
+        # Get the collection manifest by UUID
+        r = self.run_get(['--strip-manifest', col_loc, self.tempdir])
+        self.assertEqual(0, r)
+        with open("{}/{}".format(self.tempdir, col_loc), "r") as f:
+            self.assertEqual(col_manifest, f.read())
+        # Get the collection manifest by PDH
+        r = self.run_get(['--strip-manifest', col_pdh, self.tempdir])
+        self.assertEqual(0, r)
+        with open("{}/{}".format(self.tempdir, col_pdh), "r") as f:
+            self.assertEqual(col_manifest, f.read())
 
     def test_invalid_collection(self):
         # Asking for an invalid collection should generate an error.
