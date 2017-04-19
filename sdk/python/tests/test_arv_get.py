@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import io
+import os
+import re
 import shutil
 import tempfile
 
@@ -26,7 +28,7 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers):
         shutil.rmtree(self.tempdir)
 
     def write_test_collection(self,
-                              strip_manifest=True,
+                              strip_manifest=False,
                               contents = {
                                   'foo.txt' : 'foo',
                                   'bar.txt' : 'bar',
@@ -69,19 +71,43 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers):
         # Download the entire collection to the temp directory
         r = self.run_get(["{}/".format(self.col_loc), self.tempdir])
         self.assertEqual(0, r)
-        with open("{}/foo.txt".format(self.tempdir), "r") as f:
+        with open(os.path.join(self.tempdir, "foo.txt"), "r") as f:
             self.assertEqual("foo", f.read())
-        with open("{}/bar.txt".format(self.tempdir), "r") as f:
+        with open(os.path.join(self.tempdir, "bar.txt"), "r") as f:
             self.assertEqual("bar", f.read())
-        with open("{}/subdir/baz.txt".format(self.tempdir), "r") as f:
+        with open(os.path.join(self.tempdir, "subdir", "baz.txt"), "r") as f:
             self.assertEqual("baz", f.read())
 
-    def test_get_collection_manifest(self):
-        # Get the collection manifest
+    def test_get_collection_unstripped_manifest(self):
+        dummy_token = "+Axxxxxxx"
+        # Get the collection manifest by UUID
+        r = self.run_get([self.col_loc, self.tempdir])
+        self.assertEqual(0, r)
+        m_from_collection = re.sub(r"\+A[0-9a-f@]+", dummy_token, self.col_manifest)
+        with open(os.path.join(self.tempdir, self.col_loc), "r") as f:
+            # Replace manifest tokens before comparison to avoid races
+            m_from_file = re.sub(r"\+A[0-9a-f@]+", dummy_token, f.read())
+            self.assertEqual(m_from_collection, m_from_file)
+        # Get the collection manifest by PDH
         r = self.run_get([self.col_pdh, self.tempdir])
         self.assertEqual(0, r)
-        with open("{}/{}".format(self.tempdir, self.col_pdh), "r") as f:
-            self.assertEqual(self.col_manifest, f.read())
+        with open(os.path.join(self.tempdir, self.col_pdh), "r") as f:
+            # Replace manifest tokens before comparison to avoid races
+            m_from_file = re.sub(r"\+A[0-9a-f@]+", dummy_token, f.read())
+            self.assertEqual(m_from_collection, m_from_file)
+
+    def test_get_collection_stripped_manifest(self):
+        col_loc, col_pdh, col_manifest = self.write_test_collection(strip_manifest=True)
+        # Get the collection manifest by UUID
+        r = self.run_get(['--strip-manifest', col_loc, self.tempdir])
+        self.assertEqual(0, r)
+        with open(os.path.join(self.tempdir, col_loc), "r") as f:
+            self.assertEqual(col_manifest, f.read())
+        # Get the collection manifest by PDH
+        r = self.run_get(['--strip-manifest', col_pdh, self.tempdir])
+        self.assertEqual(0, r)
+        with open(os.path.join(self.tempdir, col_pdh), "r") as f:
+            self.assertEqual(col_manifest, f.read())
 
     def test_invalid_collection(self):
         # Asking for an invalid collection should generate an error.
@@ -102,10 +128,10 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers):
     def test_preexistent_destination(self):
         # Asking to place a file with the same path as a local one should
         # generate an error and avoid overwrites.
-        with open("{}/foo.txt".format(self.tempdir), "w") as f:
+        with open(os.path.join(self.tempdir, "foo.txt"), "w") as f:
             f.write("another foo")
         r = self.run_get(["{}/foo.txt".format(self.col_loc), self.tempdir])
         self.assertNotEqual(0, r)
-        with open("{}/foo.txt".format(self.tempdir), "r") as f:
+        with open(os.path.join(self.tempdir, "foo.txt"), "r") as f:
             self.assertEqual("another foo", f.read())
 
