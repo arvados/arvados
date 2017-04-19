@@ -104,17 +104,19 @@ class Node < ArvadosModel
 
     # Assign slot_number
     if self.slot_number.nil?
-      try_slot = 1
-      begin
-        self.slot_number = try_slot
+      while true
+        n = self.class.available_slot_number
+        if n.nil?
+          raise "No available node slots"
+        end
+        self.slot_number = n
         begin
           self.save!
           break
         rescue ActiveRecord::RecordNotUnique
-          try_slot += 1
+          # try again
         end
-        raise "No available node slots" if try_slot == Rails.configuration.max_compute_nodes
-      end while true
+      end
     end
 
     # Assign hostname
@@ -135,6 +137,19 @@ class Node < ArvadosModel
   end
 
   protected
+
+  def self.available_slot_number
+    connection.exec_query('SELECT n FROM generate_series(1, $1) AS slot(n)
+                          LEFT JOIN nodes ON n=slot_number
+                          WHERE slot_number IS NULL
+                          LIMIT 1',
+                          # query label:
+                          'Node.available_slot_number',
+                          # [col_id, val] for $1 vars:
+                          [['max_compute_nodes',
+                            Rails.configuration.max_compute_nodes]],
+                         ).rows.first.andand.first
+  end
 
   def ensure_ping_secret
     self.info['ping_secret'] ||= rand(2**256).to_s(36)
