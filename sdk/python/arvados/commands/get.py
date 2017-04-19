@@ -87,7 +87,7 @@ skipped.
 """)
 group.add_argument('--strip-manifest', action='store_true', default=False,
                    help="""
-When getting a collection manifest, strip its access tokens before writing 
+When getting a collection manifest, strip its access tokens before writing
 it.
 """)
 
