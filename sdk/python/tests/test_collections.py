@@ -1167,7 +1167,7 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
 
         self.assertEqual(
             c.manifest_text(),
-            '. a8430a058b8fbf408e1931b794dbd6fb+13 0:10:count.txt 10:3:foo.txt\n')
+            '. 900150983cd24fb0d6963f7d28e17f72+3 a8430a058b8fbf408e1931b794dbd6fb+13 0:3:count.txt 6:7:count.txt 13:3:foo.txt\n')
 
 
 class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):

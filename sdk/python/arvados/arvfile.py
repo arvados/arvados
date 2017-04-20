@@ -289,6 +289,7 @@ class _BufferBlock(object):
     PENDING = 1
     COMMITTED = 2
     ERROR = 3
+    DELETED = 4
 
     def __init__(self, blockid, starting_capacity, owner):
         """
@@ -383,6 +384,7 @@ class _BufferBlock(object):
 
     @synchronized
     def clear(self):
+        self._state = _BufferBlock.DELETED
         self.owner = None
         self.buffer_block = None
         self.buffer_view = None
@@ -460,7 +462,7 @@ class _BlockManager(object):
 
     def _alloc_bufferblock(self, blockid=None, starting_capacity=2**14, owner=None):
         if blockid is None:
-            blockid = "%s" % uuid.uuid4()
+            blockid = str(uuid.uuid4())
         bufferblock = _BufferBlock(blockid, starting_capacity=starting_capacity, owner=owner)
         self._bufferblocks[bufferblock.blockid] = bufferblock
         return bufferblock
@@ -476,7 +478,7 @@ class _BlockManager(object):
           ArvadosFile that owns the new block
 
         """
-        new_blockid = "bufferblock%i" % len(self._bufferblocks)
+        new_blockid = str(uuid.uuid4())
         bufferblock = block.clone(new_blockid, owner)
         self._bufferblocks[bufferblock.blockid] = bufferblock
         return bufferblock
@@ -607,17 +609,20 @@ class _BlockManager(object):
                 return
 
             new_bb = self._alloc_bufferblock()
+            files = []
             while len(small_blocks) > 0 and (new_bb.write_pointer + small_blocks[0].size()) <= config.KEEP_BLOCK_SIZE:
                 bb = small_blocks.pop(0)
                 arvfile = bb.owner
                 self._pending_write_size -= bb.size()
                 new_bb.append(bb.buffer_view[0:bb.write_pointer].tobytes())
-                arvfile.set_segments([Range(new_bb.blockid,
-                                            0,
-                                            bb.size(),
-                                            new_bb.write_pointer - bb.size())])
-                self._delete_bufferblock(bb.blockid)
+                files.append((bb, new_bb.write_pointer - bb.size()))
+
             self.commit_bufferblock(new_bb, sync=sync)
+
+            for fn in files:
+                bb = fn[0]
+                bb.owner.set_segments([Range(new_bb.locator(), 0, bb.size(), fn[1])])
+                self._delete_bufferblock(bb.blockid)
 
     def commit_bufferblock(self, block, sync):
         """Initiate a background upload of a bufferblock.
@@ -1088,7 +1093,8 @@ class ArvadosFile(object):
         if self._current_bblock and self._current_bblock.state() != _BufferBlock.COMMITTED:
             if self._current_bblock.state() == _BufferBlock.WRITABLE:
                 self._repack_writes(num_retries)
-            self.parent._my_block_manager().commit_bufferblock(self._current_bblock, sync=sync)
+            if self._current_bblock.state() != _BufferBlock.DELETED:
+                self.parent._my_block_manager().commit_bufferblock(self._current_bblock, sync=sync)
 
         if sync:
             to_delete = set()
