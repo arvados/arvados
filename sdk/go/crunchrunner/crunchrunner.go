@@ -3,9 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/arvados"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io"
 	"io/ioutil"
 	"log"
@@ -14,6 +11,10 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
 type TaskDef struct {
@@ -34,17 +35,17 @@ type Tasks struct {
 }
 
 type Job struct {
-	Script_parameters Tasks `json:"script_parameters"`
+	ScriptParameters Tasks `json:"script_parameters"`
 }
 
 type Task struct {
-	Job_uuid                 string  `json:"job_uuid"`
-	Created_by_job_task_uuid string  `json:"created_by_job_task_uuid"`
-	Parameters               TaskDef `json:"parameters"`
-	Sequence                 int     `json:"sequence"`
-	Output                   string  `json:"output"`
-	Success                  bool    `json:"success"`
-	Progress                 float32 `json:"sequence"`
+	JobUUID              string  `json:"job_uuid"`
+	CreatedByJobTaskUUID string  `json:"created_by_job_task_uuid"`
+	Parameters           TaskDef `json:"parameters"`
+	Sequence             int     `json:"sequence"`
+	Output               string  `json:"output"`
+	Success              bool    `json:"success"`
+	Progress             float32 `json:"sequence"`
 }
 
 type IArvadosClient interface {
@@ -52,7 +53,7 @@ type IArvadosClient interface {
 	Update(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) (err error)
 }
 
-func setupDirectories(crunchtmpdir, taskUuid string, keepTmp bool) (tmpdir, outdir string, err error) {
+func setupDirectories(crunchtmpdir, taskUUID string, keepTmp bool) (tmpdir, outdir string, err error) {
 	tmpdir = crunchtmpdir + "/tmpdir"
 	err = os.Mkdir(tmpdir, 0700)
 	if err != nil {
@@ -228,7 +229,7 @@ func getKeepTmp(outdir string) (manifest string, err error) {
 
 func runner(api IArvadosClient,
 	kc IKeepClient,
-	jobUuid, taskUuid, crunchtmpdir, keepmount string,
+	jobUUID, taskUUID, crunchtmpdir, keepmount string,
 	jobStruct Job, taskStruct Task) error {
 
 	var err error
@@ -237,22 +238,23 @@ func runner(api IArvadosClient,
 	// If this is task 0 and there are multiple tasks, dispatch subtasks
 	// and exit.
 	if taskStruct.Sequence == 0 {
-		if len(jobStruct.Script_parameters.Tasks) == 1 {
-			taskp = jobStruct.Script_parameters.Tasks[0]
+		if len(jobStruct.ScriptParameters.Tasks) == 1 {
+			taskp = jobStruct.ScriptParameters.Tasks[0]
 		} else {
-			for _, task := range jobStruct.Script_parameters.Tasks {
+			for _, task := range jobStruct.ScriptParameters.Tasks {
 				err := api.Create("job_tasks",
 					map[string]interface{}{
-						"job_task": Task{Job_uuid: jobUuid,
-							Created_by_job_task_uuid: taskUuid,
-							Sequence:                 1,
-							Parameters:               task}},
+						"job_task": Task{
+							JobUUID:              jobUUID,
+							CreatedByJobTaskUUID: taskUUID,
+							Sequence:             1,
+							Parameters:           task}},
 					nil)
 				if err != nil {
 					return TempFail{err}
 				}
 			}
-			err = api.Update("job_tasks", taskUuid,
+			err = api.Update("job_tasks", taskUUID,
 				map[string]interface{}{
 					"job_task": map[string]interface{}{
 						"output":   "",
@@ -264,7 +266,7 @@ func runner(api IArvadosClient,
 	}
 
 	var tmpdir, outdir string
-	tmpdir, outdir, err = setupDirectories(crunchtmpdir, taskUuid, taskp.KeepTmpOutput)
+	tmpdir, outdir, err = setupDirectories(crunchtmpdir, taskUUID, taskp.KeepTmpOutput)
 	if err != nil {
 		return TempFail{err}
 	}
@@ -370,7 +372,7 @@ func runner(api IArvadosClient,
 	}
 
 	// Set status
-	err = api.Update("job_tasks", taskUuid,
+	err = api.Update("job_tasks", taskUUID,
 		map[string]interface{}{
 			"job_task": Task{
 				Output:   manifest,
@@ -394,19 +396,19 @@ func main() {
 		log.Fatal(err)
 	}
 
-	jobUuid := os.Getenv("JOB_UUID")
-	taskUuid := os.Getenv("TASK_UUID")
+	jobUUID := os.Getenv("JOB_UUID")
+	taskUUID := os.Getenv("TASK_UUID")
 	tmpdir := os.Getenv("TASK_WORK")
 	keepmount := os.Getenv("TASK_KEEPMOUNT")
 
 	var jobStruct Job
 	var taskStruct Task
 
-	err = api.Get("jobs", jobUuid, nil, &jobStruct)
+	err = api.Get("jobs", jobUUID, nil, &jobStruct)
 	if err != nil {
 		log.Fatal(err)
 	}
-	err = api.Get("job_tasks", taskUuid, nil, &taskStruct)
+	err = api.Get("job_tasks", taskUUID, nil, &taskStruct)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -418,7 +420,7 @@ func main() {
 	}
 
 	syscall.Umask(0022)
-	err = runner(api, kc, jobUuid, taskUuid, tmpdir, keepmount, jobStruct, taskStruct)
+	err = runner(api, kc, jobUUID, taskUUID, tmpdir, keepmount, jobStruct, taskStruct)
 
 	if err == nil {
 		os.Exit(0)
