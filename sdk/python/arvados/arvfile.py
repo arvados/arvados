@@ -659,7 +659,12 @@ class _BlockManager(object):
     @synchronized
     def get_padding_block(self):
         """Get a bufferblock 64 MB in size consisting of all zeros, used as padding
-        when using truncate() to extend the size of a file."""
+        when using truncate() to extend the size of a file.
+
+        For reference (and possible future optimization), the md5sum of the
+        padding block is: 7f614da9329cd3aebf59b91aadc30bf0+67108864
+
+        """
 
         if self.padding_block is None:
             self.padding_block = self._alloc_bufferblock(starting_capacity=config.KEEP_BLOCK_SIZE)
@@ -998,12 +1003,12 @@ class ArvadosFile(object):
         # Collect the segments that reference the buffer block.
         bufferblock_segs = [s for s in segs if s.locator == self._current_bblock.blockid]
 
-        if len(bufferblock_segs) > 1:
-            # Collect total data referenced by segments (could be smaller than
-            # bufferblock size if a portion of the file was written and
-            # then overwritten).
-            write_total = sum([s.range_size for s in bufferblock_segs])
+        # Collect total data referenced by segments (could be smaller than
+        # bufferblock size if a portion of the file was written and
+        # then overwritten).
+        write_total = sum([s.range_size for s in bufferblock_segs])
 
+        if write_total < self._current_bblock.size() or len(bufferblock_segs) > 1:
             # If there's more than one segment referencing this block, it is
             # due to out-of-order writes and will produce a fragmented
             # manifest, so try to optimize by re-packing into a new buffer.
@@ -1233,8 +1238,6 @@ class ArvadosFileWriter(ArvadosFileReader):
         if size is None:
             size = self._filepos
         self.arvadosfile.truncate(size)
-        if self._filepos > self.size():
-            self._filepos = self.size()
 
     @_FileLikeObjectBase._before_close
     def flush(self):

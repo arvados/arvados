@@ -15,9 +15,6 @@ else:
 KEEP_BLOCK_SIZE = 2**26
 EMPTY_BLOCK_LOCATOR = 'd41d8cd98f00b204e9800998ecf8427e+0'
 
-# This is the 64 MiB block consisting entirely of zeros
-PADDING_BLOCK_LOCATOR = '7f614da9329cd3aebf59b91aadc30bf0+67108864'
-
 def initialize(config_file=default_config_file):
     global _settings
     _settings = {}
