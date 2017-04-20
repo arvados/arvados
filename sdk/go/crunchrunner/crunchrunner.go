@@ -254,10 +254,10 @@ func runner(api IArvadosClient,
 			}
 			err = api.Update("job_tasks", taskUuid,
 				map[string]interface{}{
-					"job_task": Task{
-						Output:   "",
-						Success:  true,
-						Progress: 1.0}},
+					"job_task": map[string]interface{}{
+						"output":   "",
+						"success":  true,
+						"progress": 1.0}},
 				nil)
 			return nil
 		}
