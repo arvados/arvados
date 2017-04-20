@@ -1111,7 +1111,7 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
 
     def test_only_small_blocks_are_packed_together(self):
         c = Collection()
-        # Write a couple of small files, 
+        # Write a couple of small files,
         f = c.open("count.txt", "w")
         f.write("0123456789")
         f.close(flush=False)
@@ -1125,6 +1125,49 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
         self.assertEqual(
             c.manifest_text("."),
             '. 2d303c138c118af809f39319e5d507e9+34603008 a8430a058b8fbf408e1931b794dbd6fb+13 0:34603008:bigfile.txt 34603008:10:count.txt 34603018:3:foo.txt\n')
+
+    def test_flush_after_small_block_packing(self):
+        c = Collection()
+        # Write a couple of small files,
+        f = c.open("count.txt", "w")
+        f.write("0123456789")
+        f.close(flush=False)
+        foo = c.open("foo.txt", "w")
+        foo.write("foo")
+        foo.close(flush=False)
+
+        self.assertEqual(
+            c.manifest_text(),
+            '. a8430a058b8fbf408e1931b794dbd6fb+13 0:10:count.txt 10:3:foo.txt\n')
+
+        f = c.open("count.txt", "r+")
+        f.close(flush=True)
+
+        self.assertEqual(
+            c.manifest_text(),
+            '. a8430a058b8fbf408e1931b794dbd6fb+13 0:10:count.txt 10:3:foo.txt\n')
+
+    def test_write_after_small_block_packing2(self):
+        c = Collection()
+        # Write a couple of small files,
+        f = c.open("count.txt", "w")
+        f.write("0123456789")
+        f.close(flush=False)
+        foo = c.open("foo.txt", "w")
+        foo.write("foo")
+        foo.close(flush=False)
+
+        self.assertEqual(
+            c.manifest_text(),
+            '. a8430a058b8fbf408e1931b794dbd6fb+13 0:10:count.txt 10:3:foo.txt\n')
+
+        f = c.open("count.txt", "r+")
+        f.write("abc")
+        f.close(flush=False)
+
+        self.assertEqual(
+            c.manifest_text(),
+            '. a8430a058b8fbf408e1931b794dbd6fb+13 0:10:count.txt 10:3:foo.txt\n')
 
 
 class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
