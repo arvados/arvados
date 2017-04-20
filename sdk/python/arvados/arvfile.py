@@ -985,23 +985,28 @@ class ArvadosFile(object):
         return ''.join(data)
 
     def _repack_writes(self, num_retries):
-        """Test if the buffer block has more data than actual segments.
+        """Optimize buffer block by repacking segments in file sequence.
 
-        This happens when a buffered write over-writes a file range written in
-        a previous buffered write.  Re-pack the buffer block for efficiency
-        and to avoid leaking information.
+        When the client makes random writes, they appear in the buffer block in
+        the sequence they were written rather than the sequence they appear in
+        the file.  This makes for inefficient, fragmented manifests.  Attempt
+        to optimize by repacking writes in file sequence.
 
         """
         segs = self._segments
 
-        # Sum up the segments to get the total bytes of the file referencing
-        # into the buffer block.
+        # Collect the segments that reference the buffer block.
         bufferblock_segs = [s for s in segs if s.locator == self._current_bblock.blockid]
-        write_total = sum([s.range_size for s in bufferblock_segs])
 
-        if write_total < self._current_bblock.size():
-            # There is more data in the buffer block than is actually accounted for by segments, so
-            # re-pack into a new buffer by copying over to a new buffer block.
+        if len(bufferblock_segs) > 1:
+            # Collect total data referenced by segments (could be smaller than
+            # bufferblock size if a portion of the file was written and
+            # then overwritten).
+            write_total = sum([s.range_size for s in bufferblock_segs])
+
+            # If there's more than one segment referencing this block, it is
+            # due to out-of-order writes and will produce a fragmented
+            # manifest, so try to optimize by re-packing into a new buffer.
             contents = self.parent._my_block_manager().get_block_contents(self._current_bblock.blockid, num_retries)
             new_bb = self.parent._my_block_manager().alloc_bufferblock(self._current_bblock.blockid, starting_capacity=write_total, owner=self)
             for t in bufferblock_segs:
