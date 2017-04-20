@@ -99,9 +99,19 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
         if pos < 0L:
             raise IOError(errno.EINVAL, "Tried to seek to negative file offset.")
         self._filepos = pos
+        return self._filepos
 
     def tell(self):
         return self._filepos
+
+    def readable(self):
+        return True
+
+    def writable(self):
+        return False
+
+    def seekable(self):
+        return True
 
     @_FileLikeObjectBase._before_close
     @retry_method
@@ -174,13 +184,13 @@ class ArvadosFileReaderBase(_FileLikeObjectBase):
         return ''.join(data).splitlines(True)
 
     def size(self):
-        raise NotImplementedError()
+        raise IOError(errno.ENOSYS, "Not implemented")
 
     def read(self, size, num_retries=None):
-        raise NotImplementedError()
+        raise IOError(errno.ENOSYS, "Not implemented")
 
     def readfrom(self, start, size, num_retries=None):
-        raise NotImplementedError()
+        raise IOError(errno.ENOSYS, "Not implemented")
 
 
 class StreamFileReader(ArvadosFileReaderBase):
@@ -1216,6 +1226,9 @@ class ArvadosFileWriter(ArvadosFileReader):
         super(ArvadosFileWriter, self).__init__(arvadosfile, num_retries=num_retries)
         self.mode = mode
         self.arvadosfile.add_writer(self)
+
+    def writable(self):
+        return True
 
     @_FileLikeObjectBase._before_close
     @retry_method

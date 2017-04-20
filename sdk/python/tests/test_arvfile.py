@@ -142,8 +142,8 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             self.assertEqual("", writer.read(12))
 
             self.assertEqual(writer.size(), 8)
-            writer.seek(-12, os.SEEK_CUR)
-            self.assertEqual("01234567", writer.read(12))
+            self.assertEqual(2, writer.seek(-10, os.SEEK_CUR))
+            self.assertEqual("234567", writer.read(12))
 
             self.assertIsNone(c.manifest_locator())
             self.assertTrue(c.modified())
@@ -166,7 +166,7 @@ class ArvadosFileWriterTestCase(unittest.TestCase):
             writer = c.open("count.txt", "r+")
             self.assertEqual(writer.size(), 10)
 
-            writer.seek(5, os.SEEK_SET)
+            self.assertEqual(5, writer.seek(5, os.SEEK_SET))
             self.assertEqual("56789", writer.read(8))
 
             writer.seek(10, os.SEEK_SET)
