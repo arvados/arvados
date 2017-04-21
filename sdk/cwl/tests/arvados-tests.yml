@@ -46,3 +46,39 @@
   output: {}
   tool: cat.cwl
   doc: Test hashes in filenames
+
+- job: listing-job.yml
+  output: {
+    "out": {
+        "class": "File",
+        "location": "output.txt",
+        "size": 5,
+        "checksum": "sha1$724ba28f4a9a1b472057ff99511ed393a45552e1"
+    }
+  }
+  tool: wf/listing_shallow.cwl
+  doc: test shallow directory listing
+
+- job: listing-job.yml
+  output: {
+    "out": {
+        "class": "File",
+        "location": "output.txt",
+        "size": 5,
+        "checksum": "sha1$724ba28f4a9a1b472057ff99511ed393a45552e1"
+    }
+  }
+  tool: wf/listing_none.cwl
+  doc: test no directory listing
+
+- job: listing-job.yml
+  output: {
+    "out": {
+        "class": "File",
+        "location": "output.txt",
+        "size": 5,
+        "checksum": "sha1$724ba28f4a9a1b472057ff99511ed393a45552e1"
+    }
+  }
+  tool: wf/listing_deep.cwl
+  doc: test deep directory listing

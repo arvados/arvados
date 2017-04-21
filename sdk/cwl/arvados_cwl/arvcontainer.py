@@ -54,7 +54,7 @@ class ArvadosContainer(object):
 
         dirs = set()
         for f in self.pathmapper.files():
-            pdh, p, tp = self.pathmapper.mapper(f)
+            pdh, p, tp, stg = self.pathmapper.mapper(f)
             if tp == "Directory" and '/' not in pdh:
                 mounts[p] = {
                     "kind": "collection",
@@ -63,7 +63,7 @@ class ArvadosContainer(object):
                 dirs.add(pdh)
 
         for f in self.pathmapper.files():
-            res, p, tp = self.pathmapper.mapper(f)
+            res, p, tp, stg = self.pathmapper.mapper(f)
             if res.startswith("keep:"):
                 res = res[5:]
             elif res.startswith("/keep/"):
@@ -115,10 +115,14 @@ class ArvadosContainer(object):
             container_request["environment"].update(self.environment)
 
         if self.stdin:
-            raise UnsupportedRequirement("Stdin redirection currently not suppported")
+            sp = self.stdin[6:].split("/", 1)
+            mounts["stdin"] = {"kind": "collection",
+                                "portable_data_hash": sp[0],
+                                "path": sp[1]}
 
         if self.stderr:
-            raise UnsupportedRequirement("Stderr redirection currently not suppported")
+            mounts["stderr"] = {"kind": "file",
+                                "path": "%s/%s" % (self.outdir, self.stderr)}
 
         if self.stdout:
             mounts["stdout"] = {"kind": "file",

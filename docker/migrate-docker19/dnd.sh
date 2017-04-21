@@ -96,4 +96,4 @@ rm -rf /var/run/docker.pid
 
 read pid cmd state ppid pgrp session tty_nr tpgid rest < /proc/self/stat
 
-exec docker daemon --storage-driver=vfs $DOCKER_DAEMON_ARGS
+exec docker daemon --storage-driver=$1 $DOCKER_DAEMON_ARGS

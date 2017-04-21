@@ -19,6 +19,7 @@ from arvados_cwl.pathmapper import ArvPathMapper
 def upload_mock(files, api, dry_run=False, num_retries=0, project=None, fnPattern="$(file %s/%s)", name=None):
     pdh = "99999999999999999999999999999991+99"
     for c in files:
+        c.keepref = "%s/%s" % (pdh, os.path.basename(c.fn))
         c.fn = fnPattern % (pdh, os.path.basename(c.fn))
 
 class TestPathmap(unittest.TestCase):
@@ -36,23 +37,29 @@ class TestPathmap(unittest.TestCase):
             "location": "keep:99999999999999999999999999999991+99/hw.py"
         }], "", "/test/%s", "/test/%s/%s")
 
-        self.assertEqual({'keep:99999999999999999999999999999991+99/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File')},
+        self.assertEqual({'keep:99999999999999999999999999999991+99/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File', staged=True)},
                          p._pathmap)
 
     @mock.patch("arvados.commands.run.uploadfiles")
-    def test_upload(self, upl):
+    @mock.patch("arvados.commands.run.statfile")
+    def test_upload(self, statfile, upl):
         """Test pathmapper uploading files."""
 
         arvrunner = arvados_cwl.ArvCwlRunner(self.api)
 
+        def statfile_mock(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)"):
+            st = arvados.commands.run.UploadFile("", "tests/hw.py")
+            return st
+
         upl.side_effect = upload_mock
+        statfile.side_effect = statfile_mock
 
         p = ArvPathMapper(arvrunner, [{
             "class": "File",
-            "location": "tests/hw.py"
+            "location": "file:tests/hw.py"
         }], "", "/test/%s", "/test/%s/%s")
 
-        self.assertEqual({'tests/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File')},
+        self.assertEqual({'file:tests/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File', staged=True)},
                          p._pathmap)
 
     @mock.patch("arvados.commands.run.uploadfiles")
@@ -60,16 +67,16 @@ class TestPathmap(unittest.TestCase):
         """Test pathmapper handling previously uploaded files."""
 
         arvrunner = arvados_cwl.ArvCwlRunner(self.api)
-        arvrunner.add_uploaded('tests/hw.py', MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='', type='File'))
+        arvrunner.add_uploaded('file:tests/hw.py', MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='', type='File', staged=True))
 
         upl.side_effect = upload_mock
 
         p = ArvPathMapper(arvrunner, [{
             "class": "File",
-            "location": "tests/hw.py"
+            "location": "file:tests/hw.py"
         }], "", "/test/%s", "/test/%s/%s")
 
-        self.assertEqual({'tests/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File')},
+        self.assertEqual({'file:tests/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File', staged=True)},
                          p._pathmap)
 
     @mock.patch("arvados.commands.run.uploadfiles")
@@ -89,8 +96,8 @@ class TestPathmap(unittest.TestCase):
 
         p = ArvPathMapper(arvrunner, [{
             "class": "File",
-            "location": "tests/hw.py"
+            "location": "file:tests/hw.py"
         }], "", "/test/%s", "/test/%s/%s")
 
-        self.assertEqual({'tests/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File')},
+        self.assertEqual({'file:tests/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File', staged=True)},
                          p._pathmap)

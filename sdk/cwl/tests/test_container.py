@@ -41,7 +41,8 @@ class TestContainer(unittest.TestCase):
                 "baseCommand": "ls",
                 "arguments": [{"valueFrom": "$(runtime.outdir)"}]
             })
-            make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+            make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
+                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
             arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names,
                                                      basedir="", make_fs_access=make_fs_access, loader=Loader({}))
             arvtool.formatgraph = None
@@ -107,7 +108,8 @@ class TestContainer(unittest.TestCase):
             }],
             "baseCommand": "ls"
         })
-        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
+                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers",
                                                  avsc_names=avsc_names, make_fs_access=make_fs_access,
                                                  loader=Loader({}))
@@ -208,7 +210,8 @@ class TestContainer(unittest.TestCase):
             }],
             "baseCommand": "ls"
         })
-        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
+                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers",
                                                  avsc_names=avsc_names, make_fs_access=make_fs_access,
                                                  loader=Loader({}))
@@ -274,6 +277,78 @@ class TestContainer(unittest.TestCase):
         self.assertNotEqual(None, call_body)
         for key in call_body:
             self.assertEqual(call_body_expected.get(key), call_body.get(key))
+
+
+    # Test redirecting stdin/stdout/stderr
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_redirects(self, keepdocker):
+        arv_docker_clear_cache()
+
+        runner = mock.MagicMock()
+        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+        runner.ignore_docker_for_reuse = False
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+
+        tool = cmap({
+            "inputs": [],
+            "outputs": [],
+            "baseCommand": "ls",
+            "stdout": "stdout.txt",
+            "stderr": "stderr.txt",
+            "stdin": "/keep/99999999999999999999999999999996+99/file.txt",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}]
+        })
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
+                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names,
+                                                 basedir="", make_fs_access=make_fs_access, loader=Loader({}))
+        arvtool.formatgraph = None
+        for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_run_redirect",
+                             make_fs_access=make_fs_access, tmpdir="/tmp"):
+            j.run()
+            runner.api.container_requests().create.assert_called_with(
+                body=JsonDiffMatcher({
+                    'environment': {
+                        'HOME': '/var/spool/cwl',
+                        'TMPDIR': '/tmp'
+                    },
+                    'name': 'test_run_redirect',
+                    'runtime_constraints': {
+                        'vcpus': 1,
+                        'ram': 1073741824
+                    },
+                    'use_existing': True,
+                    'priority': 1,
+                    'mounts': {
+                        '/var/spool/cwl': {'kind': 'tmp'},
+                        "stderr": {
+                            "kind": "file",
+                            "path": "/var/spool/cwl/stderr.txt"
+                        },
+                        "stdin": {
+                            "kind": "collection",
+                            "path": "file.txt",
+                            "portable_data_hash": "99999999999999999999999999999996+99"
+                        },
+                        "stdout": {
+                            "kind": "file",
+                            "path": "/var/spool/cwl/stdout.txt"
+                        },
+                    },
+                    'state': 'Committed',
+                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                    'output_path': '/var/spool/cwl',
+                    'container_image': 'arvados/jobs',
+                    'command': ['ls', '/var/spool/cwl'],
+                    'cwd': '/var/spool/cwl',
+                    'scheduling_parameters': {},
+                    'properties': {},
+                }))
 
     @mock.patch("arvados.collection.Collection")
     def test_done(self, col):

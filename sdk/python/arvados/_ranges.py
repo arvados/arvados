@@ -111,7 +111,7 @@ def locators_and_ranges(data_locators, range_start, range_size, limit=None):
         block_size = dl.range_size
         block_end = block_start + block_size
         _logger.log(RANGES_SPAM,
-            "%s range_start %s block_start %s range_end %s block_end %s",
+            "L&R %s range_start %s block_start %s range_end %s block_end %s",
             dl.locator, range_start, block_start, range_end, block_end)
         if range_end <= block_start:
             # range ends before this block starts, so don't look at any more locators
@@ -167,7 +167,7 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
 
     last = data_locators[-1]
     if (last.range_start+last.range_size) == new_range_start:
-        if last.locator == new_locator:
+        if last.locator == new_locator and (last.segment_offset+last.range_size) == new_segment_offset:
             # extend last segment
             last.range_size += new_range_size
         else:
@@ -185,7 +185,7 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
         old_segment_start = dl.range_start
         old_segment_end = old_segment_start + dl.range_size
         _logger.log(RANGES_SPAM,
-            "%s range_start %s segment_start %s range_end %s segment_end %s",
+            "RR %s range_start %s segment_start %s range_end %s segment_end %s",
             dl, new_range_start, old_segment_start, new_range_end,
             old_segment_end)
         if new_range_end <= old_segment_start:

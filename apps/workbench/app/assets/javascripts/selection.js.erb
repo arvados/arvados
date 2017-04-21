@@ -53,6 +53,8 @@ function dispatch_selection_action() {
 function enable_disable_selection_actions() {
     var $container = $(this);
     var $checked = $('.persistent-selection:checkbox:checked', $container);
+    var collection_lock_classes = $('.lock-collection-btn').attr('class')
+
     $('[data-selection-action]', $container).
         closest('div.btn-group-sm').
         find('ul li').
@@ -74,6 +76,11 @@ function enable_disable_selection_actions() {
         toggleClass('disabled',
                     ($checked.filter('[value*=-4zz18-]').length < 1) ||
                     ($checked.length != $checked.filter('[value*=-4zz18-]').length));
+    $('[data-selection-action=remove-selected-files]', $container).
+        closest('li').
+        toggleClass('disabled',
+                    ($checked.length < 0) ||
+                    !($checked.length > 0 && collection_lock_classes && collection_lock_classes.indexOf("fa-unlock") !=-1));
 }
 
 $(document).

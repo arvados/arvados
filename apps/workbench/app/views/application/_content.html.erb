@@ -29,7 +29,7 @@
         end
       %>
 
-      <li class="<%= 'active' if i==0 %> <%= link_disabled %>" data-toggle="tooltip" data-placement="top" title="<%=tab_tooltip%>">
+      <li class="<%= 'active' if i==0 %> <%= link_disabled %> tab-pane-<%=pane_name%>" data-toggle="tooltip" data-placement="top" title="<%=tab_tooltip%>">
         <a href="#<%= pane_name %>"
            id="<%= pane_name %>-tab"
            data-toggle="<%= data_toggle %>"

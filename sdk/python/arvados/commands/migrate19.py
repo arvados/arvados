@@ -58,6 +58,14 @@ def main(arguments=None):
     migrate19_parser.add_argument(
         '--version', action='version', version="%s %s" % (sys.argv[0], __version__),
         help='Print version and exit.')
+    migrate19_parser.add_argument(
+        '--verbose', action="store_true", help="Print stdout/stderr even on success")
+    migrate19_parser.add_argument(
+        '--force', action="store_true", help="Try to migrate even if there isn't enough space")
+
+    migrate19_parser.add_argument(
+        '--storage-driver', type=str, default="overlay",
+        help="Docker storage driver, e.g. aufs, overlay, vfs")
 
     exgroup = migrate19_parser.add_mutually_exclusive_group()
     exgroup.add_argument(
@@ -75,6 +83,9 @@ def main(arguments=None):
 
     if args.tempdir:
         tempfile.tempdir = args.tempdir
+
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
 
     only_migrate = None
     if args.infile:
@@ -116,15 +127,26 @@ def main(arguments=None):
     uuid_to_collection = {i["uuid"]: i for i in items}
 
     need_migrate = {}
+    totalbytes = 0
     biggest = 0
+    biggest_pdh = None
     for img in old_images:
         i = uuid_to_collection[img["collection"]]
         pdh = i["portable_data_hash"]
-        if pdh not in already_migrated and (only_migrate is None or pdh in only_migrate):
+        if pdh not in already_migrated and pdh not in need_migrate and (only_migrate is None or pdh in only_migrate):
             need_migrate[pdh] = img
             with CollectionReader(i["manifest_text"]) as c:
-                if list(c.values())[0].size() > biggest:
-                    biggest = list(c.values())[0].size()
+                size = list(c.values())[0].size()
+                if size > biggest:
+                    biggest = size
+                    biggest_pdh = pdh
+                totalbytes += size
+
+
+    if args.storage_driver == "vfs":
+        will_need = (biggest*20)
+    else:
+        will_need = (biggest*2.5)
 
     if args.print_unmigrated:
         only_migrate = set()
@@ -135,7 +157,18 @@ def main(arguments=None):
     logger.info("Already migrated %i images", len(already_migrated))
     logger.info("Need to migrate %i images", len(need_migrate))
     logger.info("Using tempdir %s", tempfile.gettempdir())
-    logger.info("Biggest image is about %i MiB, tempdir needs at least %i MiB free", biggest>>20, biggest>>19)
+    logger.info("Biggest image %s is about %i MiB", biggest_pdh, biggest>>20)
+    logger.info("Total data to migrate about %i MiB", totalbytes>>20)
+
+    df_out = subprocess.check_output(["df", "-B1", tempfile.gettempdir()])
+    ln = df_out.splitlines()[1]
+    filesystem, blocks, used, available, use_pct, mounted = re.match(r"^([^ ]+) *([^ ]+) *([^ ]+) *([^ ]+) *([^ ]+) *([^ ]+)", ln).groups(1)
+    if int(available) <= will_need:
+        logger.warn("Temp filesystem mounted at %s does not have enough space for biggest image (has %i MiB, needs %i MiB)", mounted, int(available)>>20, will_need>>20)
+        if not args.force:
+            exit(1)
+        else:
+            logger.warn("--force provided, will migrate anyway")
 
     if args.dry_run:
         return
@@ -159,10 +192,10 @@ def main(arguments=None):
         dockercache = tempfile.mkdtemp()
         try:
             with tempfile.NamedTemporaryFile() as envfile:
-                envfile.write("ARVADOS_API_HOST=%s\n" % (os.environ["ARVADOS_API_HOST"]))
-                envfile.write("ARVADOS_API_TOKEN=%s\n" % (os.environ["ARVADOS_API_TOKEN"]))
-                if "ARVADOS_API_HOST_INSECURE" in os.environ:
-                    envfile.write("ARVADOS_API_HOST_INSECURE=%s\n" % (os.environ["ARVADOS_API_HOST_INSECURE"]))
+                envfile.write("ARVADOS_API_HOST=%s\n" % (arvados.config.get("ARVADOS_API_HOST")))
+                envfile.write("ARVADOS_API_TOKEN=%s\n" % (arvados.config.get("ARVADOS_API_TOKEN")))
+                if arvados.config.get("ARVADOS_API_HOST_INSECURE"):
+                    envfile.write("ARVADOS_API_HOST_INSECURE=%s\n" % (arvados.config.get("ARVADOS_API_HOST_INSECURE")))
                 envfile.flush()
 
                 dockercmd = ["docker", "run",
@@ -171,22 +204,50 @@ def main(arguments=None):
                              "--env-file", envfile.name,
                              "--volume", "%s:/var/lib/docker" % varlibdocker,
                              "--volume", "%s:/root/.cache/arvados/docker" % dockercache,
-                             "arvados/migrate-docker19",
+                             "arvados/migrate-docker19:1.0",
                              "/root/migrate.sh",
                              "%s/%s" % (old_image["collection"], tarfile),
                              tarfile[0:40],
                              old_image["repo"],
                              old_image["tag"],
-                             uuid_to_collection[old_image["collection"]]["owner_uuid"]]
+                             uuid_to_collection[old_image["collection"]]["owner_uuid"],
+                             args.storage_driver]
 
                 proc = subprocess.Popen(dockercmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 out, err = proc.communicate()
+
+                initial_space = re.search(r"Initial available space is (\d+)", out)
+                imgload_space = re.search(r"Available space after image load is (\d+)", out)
+                imgupgrade_space = re.search(r"Available space after image upgrade is (\d+)", out)
+                keepdocker_space = re.search(r"Available space after arv-keepdocker is (\d+)", out)
+                cleanup_space = re.search(r"Available space after cleanup is (\d+)", out)
+
+                if initial_space:
+                    isp = int(initial_space.group(1))
+                    logger.info("Available space initially: %i MiB", (isp)/(2**20))
+                    if imgload_space:
+                        sp = int(imgload_space.group(1))
+                        logger.debug("Used after load: %i MiB", (isp-sp)/(2**20))
+                    if imgupgrade_space:
+                        sp = int(imgupgrade_space.group(1))
+                        logger.debug("Used after upgrade: %i MiB", (isp-sp)/(2**20))
+                    if keepdocker_space:
+                        sp = int(keepdocker_space.group(1))
+                        logger.info("Used after upload: %i MiB", (isp-sp)/(2**20))
+
+                if cleanup_space:
+                    sp = int(cleanup_space.group(1))
+                    logger.debug("Available after cleanup: %i MiB", (sp)/(2**20))
 
                 if proc.returncode != 0:
                     logger.error("Failed with return code %i", proc.returncode)
                     logger.error("--- Stdout ---\n%s", out)
                     logger.error("--- Stderr ---\n%s", err)
                     raise MigrationFailed()
+
+                if args.verbose:
+                    logger.info("--- Stdout ---\n%s", out)
+                    logger.info("--- Stderr ---\n%s", err)
 
             migrated = re.search(r"Migrated uuid is ([a-z0-9]{5}-[a-z0-9]{5}-[a-z0-9]{15})", out)
             if migrated:

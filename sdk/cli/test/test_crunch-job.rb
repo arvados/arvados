@@ -99,7 +99,7 @@ class TestCrunchJob < Minitest::Test
   def test_output_collection_owner_uuid
     j = jobspec :grep_local
     out, err = capture_subprocess_io do
-      tryjobrecord j, binstubs: ['output_coll_owner']
+      tryjobrecord j, binstubs: ['arv-mount', 'output_coll_owner']
     end
     assert_match /owner_uuid: #{j['owner_uuid']}/, err
   end
@@ -120,7 +120,7 @@ class TestCrunchJob < Minitest::Test
     out, err = capture_subprocess_io do
       j = jobspec :grep_local
       j[:script_version] = bogus_version
-      tryjobrecord j
+      tryjobrecord j, binstubs: ['arv-mount']
     end
     assert_match /'#{bogus_version}' not found, giving up/, err
     assert_jobfail $?

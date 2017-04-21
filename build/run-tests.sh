@@ -445,7 +445,7 @@ export PERLLIB="$PERLINSTALLBASE/lib/perl5:${PERLLIB:+$PERLLIB}"
 
 export GOPATH
 mkdir -p "$GOPATH/src/git.curoverse.com"
-ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
+ln -sfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
     || fatal "symlink failed"
 
 setup_virtualenv "$VENVDIR" --python python2.7

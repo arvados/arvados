@@ -70,13 +70,16 @@ class StreamFileReaderTestCase(unittest.TestCase):
 
     def test_seek_min_zero(self):
         sfile = self.make_count_reader()
-        sfile.seek(-2, os.SEEK_SET)
+        self.assertEqual(0, sfile.tell())
+        with self.assertRaises(IOError):
+            sfile.seek(-2, os.SEEK_SET)
         self.assertEqual(0, sfile.tell())
 
     def test_seek_max_size(self):
         sfile = self.make_count_reader()
         sfile.seek(2, os.SEEK_END)
-        self.assertEqual(9, sfile.tell())
+        # POSIX permits seeking past end of file.
+        self.assertEqual(11, sfile.tell())
 
     def test_size(self):
         self.assertEqual(9, self.make_count_reader().size())
