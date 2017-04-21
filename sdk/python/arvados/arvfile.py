@@ -16,7 +16,7 @@ import uuid
 from .errors import KeepWriteError, AssertionError, ArgumentError
 from .keep import KeepLocator
 from ._normalize_stream import normalize_stream
-from ._ranges import locators_and_ranges, replace_range, Range
+from ._ranges import locators_and_ranges, replace_range, Range, LocatorAndRange
 from .retry import retry_method
 
 MOD = "mod"
@@ -389,6 +389,9 @@ class _BufferBlock(object):
         self.buffer_block = None
         self.buffer_view = None
 
+    def __repr__(self):
+        return "<BufferBlock %s>" % (self.blockid)
+
 
 class NoopLock(object):
     def __enter__(self):
@@ -580,23 +583,32 @@ class _BlockManager(object):
     def __exit__(self, exc_type, exc_value, traceback):
         self.stop_threads()
 
-    @synchronized
     def repack_small_blocks(self, force=False, sync=False, closed_file_size=0):
         """Packs small blocks together before uploading"""
         self._pending_write_size += closed_file_size
 
         # Check if there are enough small blocks for filling up one in full
-        if force or (self._pending_write_size >= config.KEEP_BLOCK_SIZE):
+        if not (force or (self._pending_write_size >= config.KEEP_BLOCK_SIZE)):
+            return
 
-            # Search blocks ready for getting packed together before being committed to Keep.
-            # A WRITABLE block always has an owner.
-            # A WRITABLE block with its owner.closed() implies that it's
-            # size is <= KEEP_BLOCK_SIZE/2.
-            try:
-                small_blocks = [b for b in self._bufferblocks.values() if b.state() == _BufferBlock.WRITABLE and b.owner.closed()]
-            except AttributeError:
-                # Writable blocks without owner shouldn't exist.
-                raise UnownedBlockError()
+        # Search blocks ready for getting packed together before being committed to Keep.
+        # A WRITABLE block always has an owner.
+        # A WRITABLE block with its owner.closed() implies that it's
+        # size is <= KEEP_BLOCK_SIZE/2.
+        with self.lock:
+            bufferblocks = self._bufferblocks.values()
+
+        try:
+            for b in bufferblocks:
+                if b.state() == _BufferBlock.WRITABLE and b.owner.closed():
+                    b.owner._repack_writes(0)
+        except AttributeError:
+            # Writable blocks without owner shouldn't exist.
+            raise UnownedBlockError()
+
+        with self.lock:
+            small_blocks = [b for b in self._bufferblocks.values()
+                            if b.state() == _BufferBlock.WRITABLE and b.owner.closed()]
 
             if len(small_blocks) <= 1:
                 # Not enough small blocks for repacking
@@ -618,8 +630,14 @@ class _BlockManager(object):
 
             self.commit_bufferblock(new_bb, sync=sync)
 
-            for bb, segment_offset in files:
-                bb.owner.set_segments([Range(new_bb.locator(), 0, bb.size(), segment_offset)])
+            for bb, new_bb_segment_offset in files:
+                newsegs = []
+                for s in bb.owner.segments():
+                    if s.locator == bb.blockid:
+                        newsegs.append(Range(new_bb.locator(), s.range_start, s.range_size, new_bb_segment_offset+s.segment_offset))
+                    else:
+                        newsegs.append(s)
+                bb.owner.set_segments(newsegs)
                 self._delete_bufferblock(bb.blockid)
 
     def commit_bufferblock(self, block, sync):
@@ -1030,7 +1048,7 @@ class ArvadosFile(object):
             for t in bufferblock_segs:
                 new_bb.append(contents[t.segment_offset:t.segment_offset+t.range_size])
                 t.segment_offset = new_bb.size() - t.range_size
-
+            self._current_bblock.clear()
             self._current_bblock = new_bb
 
     @must_be_writable
@@ -1141,17 +1159,17 @@ class ArvadosFile(object):
                       normalize=False, only_committed=False):
         buf = ""
         filestream = []
-        for segment in self.segments:
+        for segment in self.segments():
             loc = segment.locator
             if self.parent._my_block_manager().is_bufferblock(loc):
                 if only_committed:
                     continue
-                loc = self._bufferblocks[loc].calculate_locator()
+                loc = self.parent._my_block_manager().get_bufferblock(loc).locator()
             if portable_locators:
                 loc = KeepLocator(loc).stripped()
-            filestream.append(LocatorAndRange(loc, locator_block_size(loc),
+            filestream.append(LocatorAndRange(loc, KeepLocator(loc).size,
                                  segment.segment_offset, segment.range_size))
-        buf += ' '.join(normalize_stream(stream_name, {stream_name: filestream}))
+        buf += ' '.join(normalize_stream(stream_name, {self.name: filestream}))
         buf += "\n"
         return buf
 

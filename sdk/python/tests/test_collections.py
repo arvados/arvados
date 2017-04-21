@@ -1170,6 +1170,21 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
             '. 900150983cd24fb0d6963f7d28e17f72+3 a8430a058b8fbf408e1931b794dbd6fb+13 0:3:count.txt 6:7:count.txt 13:3:foo.txt\n')
 
 
+    def test_small_block_packing_with_overwrite(self):
+        c = Collection()
+        c.open("b1", "w").close()
+        c["b1"].writeto(0, "b1", 0)
+
+        c.open("b2", "w").close()
+        c["b2"].writeto(0, "b2", 0)
+
+        c["b1"].writeto(0, "1b", 0)
+
+        self.assertEquals(c.manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 0:2:b1 2:2:b2\n")
+        self.assertEquals(c["b1"].manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 0:2:b1\n")
+        self.assertEquals(c["b2"].manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 2:2:b2\n")
+
+
 class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
     MAIN_SERVER = {}
     KEEP_SERVER = {}
