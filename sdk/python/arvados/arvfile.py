@@ -585,17 +585,18 @@ class _BlockManager(object):
 
     def repack_small_blocks(self, force=False, sync=False, closed_file_size=0):
         """Packs small blocks together before uploading"""
-        self._pending_write_size += closed_file_size
 
-        # Check if there are enough small blocks for filling up one in full
-        if not (force or (self._pending_write_size >= config.KEEP_BLOCK_SIZE)):
-            return
-
-        # Search blocks ready for getting packed together before being committed to Keep.
-        # A WRITABLE block always has an owner.
-        # A WRITABLE block with its owner.closed() implies that it's
-        # size is <= KEEP_BLOCK_SIZE/2.
         with self.lock:
+            self._pending_write_size += closed_file_size
+
+            # Check if there are enough small blocks for filling up one in full
+            if not (force or (self._pending_write_size >= config.KEEP_BLOCK_SIZE)):
+                return
+
+            # Search blocks ready for getting packed together before being committed to Keep.
+            # A WRITABLE block always has an owner.
+            # A WRITABLE block with its owner.closed() implies that it's
+            # size is <= KEEP_BLOCK_SIZE/2.
             bufferblocks = self._bufferblocks.values()
 
         try:
