@@ -249,7 +249,16 @@ func (client *ArvTestClient) Update(resourceType string, uuid string, parameters
 	return nil
 }
 
-var discoveryMap = map[string]interface{}{"defaultTrashLifetime": float64(1209600)}
+var discoveryMap = map[string]interface{}{
+	"defaultTrashLifetime":               float64(1209600),
+	"crunchLimitLogBytesPerJob":          float64(67108864),
+	"crunchLogThrottleBytes":             float64(65536),
+	"crunchLogThrottlePeriod":            float64(60),
+	"crunchLogThrottleLines":             float64(1024),
+	"crunchLogPartialLineThrottlePeriod": float64(5),
+	"crunchLogBytesPerEvent":             float64(4096),
+	"crunchLogSecondsBetweenEvents":      float64(1),
+}
 
 func (client *ArvTestClient) Discovery(key string) (interface{}, error) {
 	return discoveryMap[key], nil

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -176,6 +178,18 @@ type ArvLogWriter struct {
 	UUID          string
 	loggingStream string
 	writeCloser   io.WriteCloser
+
+	// for rate limiting
+	bytesLogged                  int64
+	logThrottleResetTime         time.Time
+	logThrottleLinesSoFar        int64
+	logThrottleBytesSoFar        int64
+	logThrottleBytesSkipped      int64
+	logThrottleIsOpen            bool
+	logThrottlePartialLineLastAt time.Time
+	logThrottleFirstPartialLine  bool
+	stderrBufToFlush             bytes.Buffer
+	stderrFlushedAt              time.Time
 }
 
 func (arvlog *ArvLogWriter) Write(p []byte) (n int, err error) {
@@ -185,17 +199,72 @@ func (arvlog *ArvLogWriter) Write(p []byte) (n int, err error) {
 		_, err1 = arvlog.writeCloser.Write(p)
 	}
 
-	// write to API
-	lr := arvadosclient.Dict{"log": arvadosclient.Dict{
-		"object_uuid": arvlog.UUID,
-		"event_type":  arvlog.loggingStream,
-		"properties":  map[string]string{"text": string(p)}}}
-	err2 := arvlog.ArvClient.Create("logs", lr, nil)
-
-	if err1 != nil || err2 != nil {
+	// write to API after checking rate limit
+	crunchLogThrottlePeriod, err2 := arvlog.ArvClient.Discovery("crunchLogThrottlePeriod")
+	crunchLogBytesPerEvent, err2 := arvlog.ArvClient.Discovery("crunchLogBytesPerEvent")
+	crunchLogSecondsBetweenEvents, err2 := arvlog.ArvClient.Discovery("crunchLogSecondsBetweenEvents")
+	if err2 != nil {
 		return 0, fmt.Errorf("%s ; %s", err1, err2)
 	}
-	return len(p), nil
+
+	now := time.Now()
+	bytesWritten := 0
+
+	if now.After(arvlog.logThrottleResetTime) {
+		// It has been more than throttle_period seconds since the last
+		// checkpoint; so reset the throttle
+		if arvlog.logThrottleBytesSkipped > 0 {
+			arvlog.stderrBufToFlush.WriteString(fmt.Sprintf("%s Skipped %d bytes of log\n", RFC3339Timestamp(time.Now()), arvlog.logThrottleBytesSkipped))
+		}
+
+		arvlog.logThrottleResetTime = time.Now().Add(time.Duration(int(crunchLogThrottlePeriod.(float64))))
+		arvlog.logThrottleBytesSoFar = 0
+		arvlog.logThrottleLinesSoFar = 0
+		arvlog.logThrottleBytesSkipped = 0
+		arvlog.logThrottleIsOpen = true
+		arvlog.logThrottlePartialLineLastAt = time.Time{}
+		arvlog.logThrottleFirstPartialLine = true
+	}
+
+	lines := bytes.Split(p, []byte("\n"))
+
+	for _, line := range lines {
+		// Short circuit the counting code if we're just going to throw
+		// away the data anyway.
+		if !arvlog.logThrottleIsOpen {
+			arvlog.logThrottleBytesSkipped += int64(len(line))
+			continue
+		} else if len(line) == 0 {
+			continue
+		}
+
+		// check rateLimit
+		_, msg, err2 := arvlog.rateLimit(line)
+		if err2 != nil {
+			return 0, fmt.Errorf("%s ; %s", err1, err2)
+		}
+		arvlog.stderrBufToFlush.WriteString(string(msg) + "\n")
+	}
+
+	if arvlog.stderrBufToFlush.Len() > int(crunchLogBytesPerEvent.(float64)) ||
+		(time.Now().Sub(arvlog.stderrFlushedAt) >= time.Duration(int64(crunchLogSecondsBetweenEvents.(float64)))) {
+		// write to API
+		lr := arvadosclient.Dict{"log": arvadosclient.Dict{
+			"object_uuid": arvlog.UUID,
+			"event_type":  arvlog.loggingStream,
+			"properties":  map[string]string{"text": arvlog.stderrBufToFlush.String()}}}
+		err2 := arvlog.ArvClient.Create("logs", lr, nil)
+
+		bytesWritten = arvlog.stderrBufToFlush.Len()
+		arvlog.stderrBufToFlush = bytes.Buffer{}
+		arvlog.stderrFlushedAt = time.Now()
+
+		if err1 != nil || err2 != nil {
+			return 0, fmt.Errorf("%s ; %s", err1, err2)
+		}
+	}
+
+	return bytesWritten, nil
 }
 
 // Close the underlying writer
@@ -205,4 +274,76 @@ func (arvlog *ArvLogWriter) Close() (err error) {
 		arvlog.writeCloser = nil
 	}
 	return err
+}
+
+var lineRegexp = regexp.MustCompile(`^\S+ \S+ \d+ \d+ stderr (.*)`)
+
+// Test for hard cap on total output and for log throttling. Returns whether
+// the log line should go to output or not. Returns message if limit exceeded.
+func (arvlog *ArvLogWriter) rateLimit(line []byte) (bool, []byte, error) {
+	message := ""
+	lineSize := int64(len(line))
+	partialLine := false
+	skipCounts := false
+	if arvlog.logThrottleIsOpen {
+		matches := lineRegexp.FindStringSubmatch(string(line))
+
+		crunchLogPartialLineThrottlePeriod, err := arvlog.ArvClient.Discovery("crunchLogPartialLineThrottlePeriod")
+		crunchLimitLogBytesPerJob, err := arvlog.ArvClient.Discovery("crunchLimitLogBytesPerJob")
+		crunchLogThrottleBytes, err := arvlog.ArvClient.Discovery("crunchLogThrottleBytes")
+		crunchLogThrottlePeriod, err := arvlog.ArvClient.Discovery("crunchLogThrottlePeriod")
+		crunchLogThrottleLines, err := arvlog.ArvClient.Discovery("crunchLogThrottleLines")
+		if err != nil {
+			return false, []byte(""), err
+		}
+
+		if len(matches) == 2 && strings.HasPrefix(matches[1], "[...]") && strings.HasSuffix(matches[1], "[...]") {
+			partialLine = true
+
+			if time.Now().After(arvlog.logThrottlePartialLineLastAt.Add(time.Second * time.Duration(int(crunchLogPartialLineThrottlePeriod.(float64))))) {
+				arvlog.logThrottlePartialLineLastAt = time.Now()
+			} else {
+				skipCounts = true
+			}
+		}
+
+		if !skipCounts {
+			arvlog.logThrottleLinesSoFar += 1
+			arvlog.logThrottleBytesSoFar += lineSize
+			arvlog.bytesLogged += lineSize
+		}
+
+		if arvlog.bytesLogged > int64(crunchLimitLogBytesPerJob.(float64)) {
+			message = fmt.Sprintf("%s Exceeded log limit %d bytes (crunch_limit_log_bytes_per_job). Log will be truncated.", RFC3339Timestamp(time.Now()), int(crunchLimitLogBytesPerJob.(float64)))
+			arvlog.logThrottleResetTime = time.Now().Add(time.Duration(365 * 24 * time.Hour))
+			arvlog.logThrottleIsOpen = false
+		} else if arvlog.logThrottleBytesSoFar > int64(crunchLogThrottleBytes.(float64)) {
+			remainingTime := arvlog.logThrottleResetTime.Sub(time.Now())
+			message = fmt.Sprintf("%s Exceeded rate %d bytes per %d seconds (crunch_log_throttle_bytes). Logging will be silenced for the next %d seconds.", RFC3339Timestamp(time.Now()), crunchLogThrottleBytes, int(crunchLogThrottlePeriod.(float64)), remainingTime)
+			arvlog.logThrottleIsOpen = false
+		} else if arvlog.logThrottleLinesSoFar > int64(crunchLogThrottleLines.(float64)) {
+			remainingTime := arvlog.logThrottleResetTime.Sub(time.Now())
+			message = fmt.Sprintf("%s Exceeded rate %d lines per %d seconds (crunch_log_throttle_lines), logging will be silenced for the next %d seconds.", RFC3339Timestamp(time.Now()), crunchLogThrottleLines, int(crunchLogThrottlePeriod.(float64)), remainingTime)
+			arvlog.logThrottleIsOpen = false
+		} else if partialLine && arvlog.logThrottleFirstPartialLine {
+			arvlog.logThrottleFirstPartialLine = false
+			message = fmt.Sprintf("%s Rate-limiting partial segments of long lines to one every %d seconds.", RFC3339Timestamp(time.Now()), crunchLogPartialLineThrottlePeriod)
+		}
+	}
+
+	if !arvlog.logThrottleIsOpen {
+		// Don't log anything if any limit has been exceeded. Just count lossage.
+		arvlog.logThrottleBytesSkipped += lineSize
+	}
+
+	if message != "" {
+		// Yes, write to logs, but use our "rate exceeded" message
+		// instead of the log message that exceeded the limit.
+		message += " A complete log is still being written to Keep, and will be available when the job finishes.\n"
+		return true, []byte(message), nil
+	} else if partialLine {
+		return false, line, nil
+	} else {
+		return arvlog.logThrottleIsOpen, line, nil
+	}
 }
