@@ -612,16 +612,14 @@ class _BlockManager(object):
             files = []
             while len(small_blocks) > 0 and (new_bb.write_pointer + small_blocks[0].size()) <= config.KEEP_BLOCK_SIZE:
                 bb = small_blocks.pop(0)
-                arvfile = bb.owner
                 self._pending_write_size -= bb.size()
                 new_bb.append(bb.buffer_view[0:bb.write_pointer].tobytes())
                 files.append((bb, new_bb.write_pointer - bb.size()))
 
             self.commit_bufferblock(new_bb, sync=sync)
 
-            for fn in files:
-                bb = fn[0]
-                bb.owner.set_segments([Range(new_bb.locator(), 0, bb.size(), fn[1])])
+            for bb, segment_offset in files:
+                bb.owner.set_segments([Range(new_bb.locator(), 0, bb.size(), segment_offset)])
                 self._delete_bufferblock(bb.blockid)
 
     def commit_bufferblock(self, block, sync):
