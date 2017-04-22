@@ -732,6 +732,7 @@ class ArvPutUploadJob(object):
             state = json.dumps(self._state)
         try:
             new_cache = tempfile.NamedTemporaryFile(
+                mode='w+',
                 dir=os.path.dirname(self._cache_filename), delete=False)
             self._lock_file(new_cache)
             new_cache.write(state)

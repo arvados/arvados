@@ -286,12 +286,14 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
             f.flush()
             cwriter = arv_put.ArvPutUploadJob([f.name])
             cwriter.start(save_collection=False)
-            self.assertEqual(3, cwriter.bytes_written - cwriter.bytes_skipped)
+            self.assertEqual(0, cwriter.bytes_skipped)
+            self.assertEqual(3, cwriter.bytes_written)
             # Don't destroy the cache, and start another upload
             cwriter_new = arv_put.ArvPutUploadJob([f.name])
             cwriter_new.start(save_collection=False)
             cwriter_new.destroy_cache()
-            self.assertEqual(0, cwriter_new.bytes_written - cwriter_new.bytes_skipped)
+            self.assertEqual(3, cwriter_new.bytes_skipped)
+            self.assertEqual(3, cwriter_new.bytes_written)
 
     def make_progress_tester(self):
         progression = []
