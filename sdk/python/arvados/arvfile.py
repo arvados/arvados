@@ -1248,10 +1248,9 @@ class ArvadosFileWriter(ArvadosFileReader):
     @retry_method
     def write(self, data, num_retries=None):
         if self.mode[0] == "a":
-            self.arvadosfile.writeto(self.size(), data, num_retries)
-        else:
-            self.arvadosfile.writeto(self._filepos, data, num_retries)
-            self._filepos += len(data)
+            self._filepos = self.size()
+        self.arvadosfile.writeto(self._filepos, data, num_retries)
+        self._filepos += len(data)
         return len(data)
 
     @_FileLikeObjectBase._before_close
