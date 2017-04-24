@@ -104,6 +104,53 @@ module ProvenanceHelper
       gr
     end
 
+    def cr_edges cr
+      uuid = cr[:uuid]
+      gr = ""
+
+      ProvenanceHelper::find_collections cr[:mounts], 'mounts' do |col_hash, col_uuid, key|
+        if col_uuid
+          gr += describe_node(col_uuid)
+          gr += edge(col_uuid, uuid, {:label => key})
+        else
+          gr += describe_node(col_hash)
+          gr += edge(col_hash, uuid, {:label => key})
+        end
+      end
+
+      [
+        [true, :requesting_container_uuid, 'requesting_container'],
+        [true, :container_image, 'container_image'],
+        [false, :output_uuid, 'output'],
+        [false, :log_uuid, 'log']
+      ].each do |is_input, attr, label|
+        if cr[attr]
+          if attr == :container_image && cr[:container_uuid]
+            # Extract the container_image's UUID from the CR's container
+            cont = Container.find(cr[:container_uuid])
+            gr += describe_node(cont[:container_image], {label: cr[attr]})
+            # If container_image, then is_input is true
+            edge_from = cont[:container_image]
+            edge_to = uuid
+          else
+            # Default case
+            gr += describe_node(cr[attr])
+
+            if is_input
+              edge_from = cr[attr]
+              edge_to = uuid
+            else
+              edge_from = uuid
+              edge_to = cr[attr]
+            end
+          end
+          gr += edge(edge_from, edge_to, {label: label})
+        end
+      end
+
+      gr
+    end
+
     def job_edges job, edge_opts={}
       uuid = job_uuid(job)
       gr = ""
@@ -184,6 +231,13 @@ module ProvenanceHelper
         if rsc == Job
           job = @pdata[uuid]
           gr += job_edges job if job
+        elsif rsc == ContainerRequest
+          cr = @pdata[uuid]
+          gr += cr_edges cr if cr
+          gr += describe_node(uuid, {href: {controller: 'container_requests',
+                                            id: uuid},
+                                     label: @pdata[uuid][:name],
+                                     shape: 'oval'})
         end
       end
 
