@@ -32,8 +32,6 @@ DEBUG=${ARVADOS_DEBUG:-0}
 TARGET=debian8
 COMMAND=
 
-RAILS_PACKAGE_ITERATION=7
-
 PARSEDOPTS=$(getopt --name "$0" --longoptions \
     help,build-bundle-packages,debug,target:,only-build: \
     -- "" "$@")

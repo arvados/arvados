@@ -2,6 +2,8 @@ require 'test_helper'
 
 class ResourceListTest < ActiveSupport::TestCase
 
+  reset_api_fixtures :after_each_test, false
+
   test 'links_for on a resource list that does not return links' do
     use_token :active
     results = Specimen.all
@@ -91,4 +93,10 @@ class ResourceListTest < ActiveSupport::TestCase
     assert_empty c.results
   end
 
+  test 'count=none' do
+    use_token :active
+    c = Collection.with_count('none')
+    assert_nil c.items_available
+    refute_empty c.results
+  end
 end
