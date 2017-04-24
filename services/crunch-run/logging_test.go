@@ -112,39 +112,21 @@ func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 }
 
 func (s *LoggingTestSuite) TestWriteLogsWithRateLimitThrottleBytes(c *C) {
-	discoveryMap["crunchLogThrottleBytes"] = float64(50)
-	defer func() {
-		discoveryMap["crunchLogThrottleBytes"] = float64(65536)
-	}()
-
-	api := &ArvTestClient{}
-	kc := &KeepTestClient{}
-	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
-	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
-
-	cr.CrunchLog.Print("Hello world!")
-	cr.CrunchLog.Print("Goodbye")
-	cr.CrunchLog.Close()
-
-	c.Check(api.Calls, Equals, 1)
-
-	mt, err := cr.LogCollection.ManifestText()
-	c.Check(err, IsNil)
-	c.Check(mt, Equals, ". 74561df9ae65ee9f35d5661d42454264+83 0:83:crunch-run.txt\n")
-
-	logtext := "2015-12-29T15:51:45.000000001Z Hello world!\n" +
-		"2015-12-29T15:51:45.000000002Z Goodbye\n"
-
-	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["event_type"], Equals, "crunch-run")
-	stderrLog := api.Content[0]["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"]
-	c.Check(true, Equals, strings.Contains(stderrLog, "Exceeded rate 50 bytes per 60 seconds"))
-	c.Check(string(kc.Content), Equals, logtext)
+	testWriteLogsWithRateLimit(c, "crunchLogThrottleBytes", 50, 65536, "Exceeded rate 50 bytes per 60 seconds")
 }
 
 func (s *LoggingTestSuite) TestWriteLogsWithRateLimitThrottleLines(c *C) {
-	discoveryMap["crunchLogThrottleLines"] = float64(1)
+	testWriteLogsWithRateLimit(c, "crunchLogThrottleLines", 1, 1024, "Exceeded rate 1 lines per 60 seconds")
+}
+
+func (s *LoggingTestSuite) TestWriteLogsWithRateLimitThrottleBytesPerEvent(c *C) {
+	testWriteLogsWithRateLimit(c, "crunchLimitLogBytesPerJob", 50, 67108864, "Exceeded log limit 50 bytes (crunch_limit_log_bytes_per_job)")
+}
+
+func testWriteLogsWithRateLimit(c *C, throttleParam string, throttleValue int, throttleDefault int, expected string) {
+	discoveryMap[throttleParam] = float64(throttleValue)
 	defer func() {
-		discoveryMap["crunchLogThrottleLines"] = float64(1024)
+		discoveryMap[throttleParam] = float64(throttleDefault)
 	}()
 
 	api := &ArvTestClient{}
@@ -167,6 +149,6 @@ func (s *LoggingTestSuite) TestWriteLogsWithRateLimitThrottleLines(c *C) {
 
 	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["event_type"], Equals, "crunch-run")
 	stderrLog := api.Content[0]["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"]
-	c.Check(true, Equals, strings.Contains(stderrLog, "Exceeded rate 1 lines per 60 seconds"))
+	c.Check(true, Equals, strings.Contains(stderrLog, expected))
 	c.Check(string(kc.Content), Equals, logtext)
 }

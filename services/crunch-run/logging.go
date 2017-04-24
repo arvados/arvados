@@ -285,9 +285,8 @@ func (arvlog *ArvLogWriter) rateLimit(line []byte) (bool, []byte, error) {
 	lineSize := int64(len(line))
 	partialLine := false
 	skipCounts := false
-	if arvlog.logThrottleIsOpen {
-		matches := lineRegexp.FindStringSubmatch(string(line))
 
+	if arvlog.logThrottleIsOpen {
 		crunchLogPartialLineThrottlePeriod, err := arvlog.ArvClient.Discovery("crunchLogPartialLineThrottlePeriod")
 		crunchLimitLogBytesPerJob, err := arvlog.ArvClient.Discovery("crunchLimitLogBytesPerJob")
 		crunchLogThrottleBytes, err := arvlog.ArvClient.Discovery("crunchLogThrottleBytes")
@@ -296,6 +295,8 @@ func (arvlog *ArvLogWriter) rateLimit(line []byte) (bool, []byte, error) {
 		if err != nil {
 			return false, []byte(""), err
 		}
+
+		matches := lineRegexp.FindStringSubmatch(string(line))
 
 		if len(matches) == 2 && strings.HasPrefix(matches[1], "[...]") && strings.HasSuffix(matches[1], "[...]") {
 			partialLine = true
