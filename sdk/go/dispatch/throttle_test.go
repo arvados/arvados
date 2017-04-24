@@ -18,21 +18,20 @@ type ThrottleTestSuite struct{}
 
 func (*ThrottleTestSuite) TestThrottle(c *check.C) {
 	uuid := "zzzzz-zzzzz-zzzzzzzzzzzzzzz"
+	t0 := throttle{}
+	c.Check(t0.Check(uuid), check.Equals, true)
+	c.Check(t0.Check(uuid), check.Equals, true)
 
-	t := throttle{}
-	c.Check(t.Check(uuid), check.Equals, true)
-	c.Check(t.Check(uuid), check.Equals, true)
-
-	t = throttle{hold: time.Nanosecond}
-	c.Check(t.Check(uuid), check.Equals, true)
+	tNs := throttle{hold: time.Nanosecond}
+	c.Check(tNs.Check(uuid), check.Equals, true)
 	time.Sleep(time.Microsecond)
-	c.Check(t.Check(uuid), check.Equals, true)
+	c.Check(tNs.Check(uuid), check.Equals, true)
 
-	t = throttle{hold: time.Minute}
-	c.Check(t.Check(uuid), check.Equals, true)
-	c.Check(t.Check(uuid), check.Equals, false)
-	c.Check(t.Check(uuid), check.Equals, false)
-	t.seen[uuid].last = time.Now().Add(-time.Hour)
-	c.Check(t.Check(uuid), check.Equals, true)
-	c.Check(t.Check(uuid), check.Equals, false)
+	tMin := throttle{hold: time.Minute}
+	c.Check(tMin.Check(uuid), check.Equals, true)
+	c.Check(tMin.Check(uuid), check.Equals, false)
+	c.Check(tMin.Check(uuid), check.Equals, false)
+	tMin.seen[uuid].last = time.Now().Add(-time.Hour)
+	c.Check(tMin.Check(uuid), check.Equals, true)
+	c.Check(tMin.Check(uuid), check.Equals, false)
 }
