@@ -84,6 +84,8 @@ class ArvadosResourceList
     self
   end
 
+  # with_count sets the 'count' parameter to 'exact' or 'none' -- see
+  # https://doc.arvados.org/api/methods.html#index
   def with_count(count_param='exact')
     @count = count_param
     self
