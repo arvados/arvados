@@ -43,7 +43,7 @@ class Job < ArvadosBase
   end
 
   def stderr_log_query(limit=nil)
-    query = Log.where(object_uuid: self.uuid).order("created_at DESC")
+    query = Log.where(object_uuid: self.uuid).order("created_at DESC").with_count('none')
     query = query.limit(limit) if limit
     query
   end

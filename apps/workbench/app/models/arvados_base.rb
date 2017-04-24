@@ -144,6 +144,10 @@ class ArvadosBase < ActiveRecord::Base
     ArvadosResourceList.new(self).select(*args)
   end
 
+  def self.with_count(*args)
+    ArvadosResourceList.new(self).with_count(*args)
+  end
+
   def self.distinct(*args)
     ArvadosResourceList.new(self).distinct(*args)
   end

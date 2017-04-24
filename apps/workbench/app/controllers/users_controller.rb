@@ -102,6 +102,7 @@ class UsersController < ApplicationController
         filter([[:object_uuid, '=', u.uuid],
                 [:event_type, '=', 'user-storage-report']]).
         order(:created_at => :desc).
+        with_count('none').
         limit(1)
       storage_log.each do |log_entry|
         # We expect this block to only execute once since we specified limit(1)
