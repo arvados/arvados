@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	. "gopkg.in/check.v1"
+	"strings"
 	"testing"
 	"time"
 )
@@ -110,7 +111,12 @@ func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 		". c556a293010069fa79a6790a931531d5+80 0:80:stdout.txt\n")
 }
 
-func (s *LoggingTestSuite) TestWriteLogsWithRateLimit(c *C) {
+func (s *LoggingTestSuite) TestWriteLogsWithRateLimitThrottleBytes(c *C) {
+	discoveryMap["crunchLogThrottleBytes"] = float64(50)
+	defer func() {
+		discoveryMap["crunchLogThrottleBytes"] = float64(65536)
+	}()
+
 	api := &ArvTestClient{}
 	kc := &KeepTestClient{}
 	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
@@ -130,6 +136,37 @@ func (s *LoggingTestSuite) TestWriteLogsWithRateLimit(c *C) {
 		"2015-12-29T15:51:45.000000002Z Goodbye\n"
 
 	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["event_type"], Equals, "crunch-run")
-	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"], Equals, logtext)
+	stderrLog := api.Content[0]["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"]
+	c.Check(true, Equals, strings.Contains(stderrLog, "Exceeded rate 50 bytes per 60 seconds"))
+	c.Check(string(kc.Content), Equals, logtext)
+}
+
+func (s *LoggingTestSuite) TestWriteLogsWithRateLimitThrottleLines(c *C) {
+	discoveryMap["crunchLogThrottleLines"] = float64(1)
+	defer func() {
+		discoveryMap["crunchLogThrottleLines"] = float64(1024)
+	}()
+
+	api := &ArvTestClient{}
+	kc := &KeepTestClient{}
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
+
+	cr.CrunchLog.Print("Hello world!")
+	cr.CrunchLog.Print("Goodbye")
+	cr.CrunchLog.Close()
+
+	c.Check(api.Calls, Equals, 1)
+
+	mt, err := cr.LogCollection.ManifestText()
+	c.Check(err, IsNil)
+	c.Check(mt, Equals, ". 74561df9ae65ee9f35d5661d42454264+83 0:83:crunch-run.txt\n")
+
+	logtext := "2015-12-29T15:51:45.000000001Z Hello world!\n" +
+		"2015-12-29T15:51:45.000000002Z Goodbye\n"
+
+	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["event_type"], Equals, "crunch-run")
+	stderrLog := api.Content[0]["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"]
+	c.Check(true, Equals, strings.Contains(stderrLog, "Exceeded rate 1 lines per 60 seconds"))
 	c.Check(string(kc.Content), Equals, logtext)
 }
