@@ -94,6 +94,20 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		httpserver.Log(remoteAddr, statusCode, statusText, w.WroteBodyBytes(), r.Method, r.Host, r.URL.Path, r.URL.RawQuery)
 	}()
 
+	if r.Method == "OPTIONS" {
+		method := r.Header.Get("Access-Control-Request-Method")
+		if method != "GET" && method != "POST" {
+			statusCode = http.StatusMethodNotAllowed
+			return
+		}
+		w.Header().Set("Access-Control-Allow-Headers", "Range")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Max-Age", "86400")
+		statusCode = http.StatusOK
+		return
+	}
+
 	if r.Method != "GET" && r.Method != "POST" {
 		statusCode, statusText = http.StatusMethodNotAllowed, r.Method
 		return
