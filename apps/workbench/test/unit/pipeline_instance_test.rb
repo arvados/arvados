@@ -1,6 +1,9 @@
 require 'test_helper'
 
 class PipelineInstanceTest < ActiveSupport::TestCase
+
+  reset_api_fixtures :after_each_test, false
+
   def find_pi_with(token_name, pi_name)
     use_token token_name
     find_fixture(PipelineInstance, pi_name)

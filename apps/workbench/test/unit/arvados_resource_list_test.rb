@@ -2,6 +2,8 @@ require 'test_helper'
 
 class ResourceListTest < ActiveSupport::TestCase
 
+  reset_api_fixtures :after_each_test, false
+
   test 'links_for on a resource list that does not return links' do
     use_token :active
     results = Specimen.all
