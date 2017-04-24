@@ -93,4 +93,10 @@ class ResourceListTest < ActiveSupport::TestCase
     assert_empty c.results
   end
 
+  test 'count=none' do
+    use_token :active
+    c = Collection.with_count('none')
+    assert_nil c.items_available
+    refute_empty c.results
+  end
 end
