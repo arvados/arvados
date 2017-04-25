@@ -630,8 +630,13 @@ func (runner *ContainerRunner) LogNodeInfo() (err error) {
 
 // Get and save the raw JSON container record from the API server
 func (runner *ContainerRunner) LogContainerRecord() (err error) {
-	w := NewArvLogWriter(runner.ArvClient, runner.Container.UUID, "container",
-		runner.LogCollection.Open("container.json"))
+	w := &ArvLogWriter{
+		ArvClient:     runner.ArvClient,
+		UUID:          runner.Container.UUID,
+		loggingStream: "container",
+		writeCloser:   runner.LogCollection.Open("container.json"),
+	}
+
 	// Get Container record JSON from the API Server
 	reader, err := runner.ArvClient.CallRaw("GET", "containers", runner.Container.UUID, "", nil)
 	if err != nil {
@@ -1057,7 +1062,8 @@ func (runner *ContainerRunner) CommitLogs() error {
 	// point, but re-open crunch log with ArvClient in case there are any
 	// other further (such as failing to write the log to Keep!) while
 	// shutting down
-	runner.CrunchLog = NewThrottledLogger(NewArvLogWriter(runner.ArvClient, runner.Container.UUID, "crunch-run", nil))
+	runner.CrunchLog = NewThrottledLogger(&ArvLogWriter{ArvClient: runner.ArvClient,
+		UUID: runner.Container.UUID, loggingStream: "crunch-run", writeCloser: nil})
 
 	if runner.LogsPDH != nil {
 		// If we have already assigned something to LogsPDH,
@@ -1144,7 +1150,8 @@ func (runner *ContainerRunner) IsCancelled() bool {
 
 // NewArvLogWriter creates an ArvLogWriter
 func (runner *ContainerRunner) NewArvLogWriter(name string) io.WriteCloser {
-	return NewArvLogWriter(runner.ArvClient, runner.Container.UUID, name, runner.LogCollection.Open(name+".txt"))
+	return &ArvLogWriter{ArvClient: runner.ArvClient, UUID: runner.Container.UUID, loggingStream: name,
+		writeCloser: runner.LogCollection.Open(name + ".txt")}
 }
 
 // Run the full container lifecycle.
@@ -1284,6 +1291,9 @@ func NewContainerRunner(api IArvadosClient,
 	cr.Container.UUID = containerUUID
 	cr.CrunchLog = NewThrottledLogger(cr.NewLogWriter("crunch-run"))
 	cr.CrunchLog.Immediate = log.New(os.Stderr, containerUUID+" ", 0)
+
+	loadLogThrottleParams(api)
+
 	return cr
 }
 
