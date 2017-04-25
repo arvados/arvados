@@ -103,9 +103,10 @@ class PipelineInstance < ArvadosBase
 
   def stderr_log_query(limit=nil)
     query = Log.
-      where(event_type: "stderr",
-            object_uuid: stderr_log_object_uuids).
-      order("id DESC")
+            with_count('none').
+            where(event_type: "stderr",
+                  object_uuid: stderr_log_object_uuids).
+            order("created_at DESC")
     unless limit.nil?
       query = query.limit(limit)
     end

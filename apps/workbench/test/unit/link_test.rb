@@ -1,6 +1,9 @@
 require 'test_helper'
 
 class LinkTest < ActiveSupport::TestCase
+
+  reset_api_fixtures :after_each_test, false
+
   def uuid_for(fixture_name, object_name)
     api_fixture(fixture_name)[object_name]["uuid"]
   end

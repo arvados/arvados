@@ -31,36 +31,39 @@ class ArvPathMapper(PathMapper):
 
     def visit(self, srcobj, uploadfiles):
         src = srcobj["location"]
-        if srcobj["class"] == "File":
-            if "#" in src:
-                src = src[:src.index("#")]
-            if isinstance(src, basestring) and ArvPathMapper.pdh_path.match(src):
-                self._pathmap[src] = MapperEnt(src, self.collection_pattern % urllib.unquote(src[5:]), "File")
-            if src not in self._pathmap:
+        if "#" in src:
+            src = src[:src.index("#")]
+
+        if isinstance(src, basestring) and ArvPathMapper.pdh_dirpath.match(src):
+            self._pathmap[src] = MapperEnt(src, self.collection_pattern % urllib.unquote(src[5:]), srcobj["class"], True)
+
+        if src not in self._pathmap:
+            if src.startswith("file:"):
                 # Local FS ref, may need to be uploaded or may be on keep
                 # mount.
                 ab = abspath(src, self.input_basedir)
-                st = arvados.commands.run.statfile("", ab, fnPattern="keep:%s/%s")
+                st = arvados.commands.run.statfile("", ab,
+                                                   fnPattern="keep:%s/%s",
+                                                   dirPattern="keep:%s/%s")
                 with SourceLine(srcobj, "location", WorkflowException):
                     if isinstance(st, arvados.commands.run.UploadFile):
                         uploadfiles.add((src, ab, st))
                     elif isinstance(st, arvados.commands.run.ArvFile):
-                        self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % urllib.unquote(st.fn[5:]), "File")
-                    elif src.startswith("_:"):
-                        if "contents" in srcobj:
-                            pass
-                        else:
-                            raise WorkflowException("File literal '%s' is missing contents" % src)
-                    elif src.startswith("arvwf:"):
-                        self._pathmap[src] = MapperEnt(src, src, "File")
+                        self._pathmap[src] = MapperEnt(st.fn, self.collection_pattern % urllib.unquote(st.fn[5:]), "File", True)
                     else:
                         raise WorkflowException("Input file path '%s' is invalid" % st)
-            if "secondaryFiles" in srcobj:
-                for l in srcobj["secondaryFiles"]:
-                    self.visit(l, uploadfiles)
-        elif srcobj["class"] == "Directory":
-            if isinstance(src, basestring) and ArvPathMapper.pdh_dirpath.match(src):
-                self._pathmap[src] = MapperEnt(src, self.collection_pattern % urllib.unquote(src[5:]), "Directory")
+            elif src.startswith("_:"):
+                if srcobj["class"] == "File" and "contents" not in srcobj:
+                    raise WorkflowException("File literal '%s' is missing `contents`" % src)
+                if srcobj["class"] == "Directory" and "listing" not in srcobj:
+                    raise WorkflowException("Directory literal '%s' is missing `listing`" % src)
+            else:
+                self._pathmap[src] = MapperEnt(src, src, srcobj["class"], True)
+
+        with SourceLine(srcobj, "secondaryFiles", WorkflowException):
+            for l in srcobj.get("secondaryFiles", []):
+                self.visit(l, uploadfiles)
+        with SourceLine(srcobj, "listing", WorkflowException):
             for l in srcobj.get("listing", []):
                 self.visit(l, uploadfiles)
 
@@ -73,7 +76,7 @@ class ArvPathMapper(PathMapper):
             for l in obj.get("secondaryFiles", []):
                 self.addentry(l, c, path, subdirs)
         elif obj["class"] == "Directory":
-            for l in obj["listing"]:
+            for l in obj.get("listing", []):
                 self.addentry(l, c, path + "/" + obj["basename"], subdirs)
             subdirs.append((obj["location"], path + "/" + obj["basename"]))
         elif obj["location"].startswith("_:") and "contents" in obj:
@@ -91,7 +94,7 @@ class ArvPathMapper(PathMapper):
             loc = k["location"]
             if loc in already_uploaded:
                 v = already_uploaded[loc]
-                self._pathmap[loc] = MapperEnt(v.resolved, self.collection_pattern % urllib.unquote(v.resolved[5:]), "File")
+                self._pathmap[loc] = MapperEnt(v.resolved, self.collection_pattern % urllib.unquote(v.resolved[5:]), "File", True)
 
         for srcobj in referenced_files:
             self.visit(srcobj, uploadfiles)
@@ -106,17 +109,18 @@ class ArvPathMapper(PathMapper):
                                              project=self.arvrunner.project_uuid)
 
         for src, ab, st in uploadfiles:
-            self._pathmap[src] = MapperEnt(urllib.quote(st.fn, "/:+@"), self.collection_pattern % st.fn[5:], "File")
+            self._pathmap[src] = MapperEnt(urllib.quote(st.fn, "/:+@"), self.collection_pattern % st.fn[5:],
+                                           "Directory" if os.path.isdir(ab) else "File", True)
             self.arvrunner.add_uploaded(src, self._pathmap[src])
 
         for srcobj in referenced_files:
+            subdirs = []
             if srcobj["class"] == "Directory":
                 if srcobj["location"] not in self._pathmap:
                     c = arvados.collection.Collection(api_client=self.arvrunner.api,
                                                       keep_client=self.arvrunner.keep_client,
                                                       num_retries=self.arvrunner.num_retries)
-                    subdirs = []
-                    for l in srcobj["listing"]:
+                    for l in srcobj.get("listing", []):
                         self.addentry(l, c, ".", subdirs)
 
                     check = self.arvrunner.api.collections().list(filters=[["portable_data_hash", "=", c.portable_data_hash()]], limit=1).execute(num_retries=self.arvrunner.num_retries)
@@ -124,17 +128,13 @@ class ArvPathMapper(PathMapper):
                         c.save_new(owner_uuid=self.arvrunner.project_uuid)
 
                     ab = self.collection_pattern % c.portable_data_hash()
-                    self._pathmap[srcobj["location"]] = MapperEnt(ab, ab, "Directory")
-                    for loc, sub in subdirs:
-                        ab = self.file_pattern % (c.portable_data_hash(), sub[2:])
-                        self._pathmap[loc] = MapperEnt(ab, ab, "Directory")
+                    self._pathmap[srcobj["location"]] = MapperEnt("keep:"+c.portable_data_hash(), ab, "Directory", True)
             elif srcobj["class"] == "File" and (srcobj.get("secondaryFiles") or
                 (srcobj["location"].startswith("_:") and "contents" in srcobj)):
 
                 c = arvados.collection.Collection(api_client=self.arvrunner.api,
                                                   keep_client=self.arvrunner.keep_client,
                                                   num_retries=self.arvrunner.num_retries                                                  )
-                subdirs = []
                 self.addentry(srcobj, c, ".", subdirs)
 
                 check = self.arvrunner.api.collections().list(filters=[["portable_data_hash", "=", c.portable_data_hash()]], limit=1).execute(num_retries=self.arvrunner.num_retries)
@@ -142,13 +142,18 @@ class ArvPathMapper(PathMapper):
                     c.save_new(owner_uuid=self.arvrunner.project_uuid)
 
                 ab = self.file_pattern % (c.portable_data_hash(), srcobj["basename"])
-                self._pathmap[srcobj["location"]] = MapperEnt(ab, ab, "File")
+                self._pathmap[srcobj["location"]] = MapperEnt("keep:%s/%s" % (c.portable_data_hash(), srcobj["basename"]),
+                                                              ab, "File", True)
                 if srcobj.get("secondaryFiles"):
                     ab = self.collection_pattern % c.portable_data_hash()
-                    self._pathmap["_:" + unicode(uuid.uuid4())] = MapperEnt(ab, ab, "Directory")
+                    self._pathmap["_:" + unicode(uuid.uuid4())] = MapperEnt("keep:"+c.portable_data_hash(), ab, "Directory", True)
+
+            if subdirs:
                 for loc, sub in subdirs:
+                    # subdirs will all start with "./", strip it off
                     ab = self.file_pattern % (c.portable_data_hash(), sub[2:])
-                    self._pathmap[loc] = MapperEnt(ab, ab, "Directory")
+                    self._pathmap[loc] = MapperEnt("keep:%s/%s" % (c.portable_data_hash(), sub[2:]),
+                                                   ab, "Directory", True)
 
         self.keepdir = None
 
@@ -163,24 +168,24 @@ class ArvPathMapper(PathMapper):
 class StagingPathMapper(PathMapper):
     _follow_dirs = True
 
-    def visit(self, obj, stagedir, basedir, copy=False):
+    def visit(self, obj, stagedir, basedir, copy=False, staged=False):
         # type: (Dict[unicode, Any], unicode, unicode, bool) -> None
         loc = obj["location"]
         tgt = os.path.join(stagedir, obj["basename"])
         if obj["class"] == "Directory":
-            self._pathmap[loc] = MapperEnt(loc, tgt, "Directory")
+            self._pathmap[loc] = MapperEnt(loc, tgt, "Directory", staged)
             if loc.startswith("_:") or self._follow_dirs:
                 self.visitlisting(obj.get("listing", []), tgt, basedir)
         elif obj["class"] == "File":
             if loc in self._pathmap:
                 return
             if "contents" in obj and loc.startswith("_:"):
-                self._pathmap[loc] = MapperEnt(obj["contents"], tgt, "CreateFile")
+                self._pathmap[loc] = MapperEnt(obj["contents"], tgt, "CreateFile", staged)
             else:
                 if copy:
-                    self._pathmap[loc] = MapperEnt(loc, tgt, "WritableFile")
+                    self._pathmap[loc] = MapperEnt(loc, tgt, "WritableFile", staged)
                 else:
-                    self._pathmap[loc] = MapperEnt(loc, tgt, "File")
+                    self._pathmap[loc] = MapperEnt(loc, tgt, "File", staged)
                 self.visitlisting(obj.get("secondaryFiles", []), stagedir, basedir)
 
 
@@ -192,9 +197,9 @@ class VwdPathMapper(StagingPathMapper):
         # with any secondary files.
         self.visitlisting(referenced_files, self.stagedir, basedir)
 
-        for path, (ab, tgt, type) in self._pathmap.items():
+        for path, (ab, tgt, type, staged) in self._pathmap.items():
             if type in ("File", "Directory") and ab.startswith("keep:"):
-                self._pathmap[path] = MapperEnt("$(task.keep)/%s" % ab[5:], tgt, type)
+                self._pathmap[path] = MapperEnt("$(task.keep)/%s" % ab[5:], tgt, type, staged)
 
 
 class NoFollowPathMapper(StagingPathMapper):

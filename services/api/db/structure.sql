@@ -1729,6 +1729,13 @@ CREATE INDEX index_container_requests_on_owner_uuid ON container_requests USING 
 
 
 --
+-- Name: index_container_requests_on_requesting_container_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_container_requests_on_requesting_container_uuid ON container_requests USING btree (requesting_container_uuid);
+
+
+--
 -- Name: index_container_requests_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -1803,6 +1810,13 @@ CREATE UNIQUE INDEX index_humans_on_uuid ON humans USING btree (uuid);
 --
 
 CREATE INDEX index_job_tasks_on_created_at ON job_tasks USING btree (created_at);
+
+
+--
+-- Name: index_job_tasks_on_created_by_job_task_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_job_tasks_on_created_by_job_task_uuid ON job_tasks USING btree (created_by_job_task_uuid);
 
 
 --
@@ -2034,6 +2048,13 @@ CREATE INDEX index_logs_on_event_type ON logs USING btree (event_type);
 --
 
 CREATE INDEX index_logs_on_modified_at ON logs USING btree (modified_at);
+
+
+--
+-- Name: index_logs_on_object_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_logs_on_object_owner_uuid ON logs USING btree (object_owner_uuid);
 
 
 --
@@ -2757,3 +2778,10 @@ INSERT INTO schema_migrations (version) VALUES ('20170319063406');
 INSERT INTO schema_migrations (version) VALUES ('20170328215436');
 
 INSERT INTO schema_migrations (version) VALUES ('20170330012505');
+
+INSERT INTO schema_migrations (version) VALUES ('20170419173031');
+
+INSERT INTO schema_migrations (version) VALUES ('20170419173712');
+
+INSERT INTO schema_migrations (version) VALUES ('20170419175801');
+

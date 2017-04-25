@@ -41,7 +41,8 @@ class TestJob(unittest.TestCase):
                 "baseCommand": "ls",
                 "arguments": [{"valueFrom": "$(runtime.outdir)"}]
             })
-            make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+            make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
+                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
             arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names,
                                                      basedir="", make_fs_access=make_fs_access, loader=Loader({}))
             arvtool.formatgraph = None
@@ -108,7 +109,8 @@ class TestJob(unittest.TestCase):
             }],
             "baseCommand": "ls"
         }
-        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
+                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
         arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="jobs", avsc_names=avsc_names,
                                                  make_fs_access=make_fs_access, loader=Loader({}))
         arvtool.formatgraph = None
@@ -264,7 +266,8 @@ class TestWorkflow(unittest.TestCase):
 
         mockcollection().portable_data_hash.return_value = "99999999999999999999999999999999+118"
 
-        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess, api_client=runner.api)
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
+                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
         arvtool = arvados_cwl.ArvadosWorkflow(runner, tool, work_api="jobs", avsc_names=avsc_names,
                                               basedir="", make_fs_access=make_fs_access, loader=document_loader,
                                               makeTool=runner.arv_make_tool, metadata=metadata)

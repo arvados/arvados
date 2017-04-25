@@ -221,4 +221,19 @@ class ActionDispatch::IntegrationTest
     end
     Capybara.reset_sessions!
   end
+
+  def accept_alert
+    if Capybara.current_driver == :selenium
+      (0..9).each do
+        begin
+          page.driver.browser.switch_to.alert.accept
+          break
+        rescue Selenium::WebDriver::Error::NoSuchAlertError
+         sleep 0.1
+        end
+      end
+    else
+      # poltergeist returns true for confirm, so no need to accept
+    end
+  end
 end

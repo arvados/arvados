@@ -265,7 +265,7 @@ class Runner(object):
         if submit_runner_ram:
             self.submit_runner_ram = submit_runner_ram
         else:
-            self.submit_runner_ram = 1024
+            self.submit_runner_ram = 3000
 
         if self.submit_runner_ram <= 0:
             raise Exception("Value of --submit-runner-ram must be greater than zero")

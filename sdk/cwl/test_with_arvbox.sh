@@ -74,6 +74,8 @@ export ARVADOS_API_HOST=localhost:8000
 export ARVADOS_API_HOST_INSECURE=1
 export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados/superuser_token)
 
+arv-keepdocker --pull arvados/jobs latest
+
 cat >/tmp/cwltest/arv-cwl-jobs <<EOF2
 #!/bin/sh
 exec arvados-cwl-runner --api=jobs --compute-checksum \\\$@

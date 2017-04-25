@@ -19,11 +19,11 @@ import re
 import functools
 
 from arvados.api import OrderedJsonModel
-from cwltool.process import shortname, adjustFileObjs, adjustDirObjs, getListing, normalizeFilesDirs
+from cwltool.process import shortname, adjustFileObjs, adjustDirObjs, normalizeFilesDirs
 from cwltool.load_tool import load_tool
 from cwltool.errors import WorkflowException
 
-from .fsaccess import CollectionFetcher
+from .fsaccess import CollectionFetcher, CollectionFsAccess
 
 logger = logging.getLogger('arvados.cwl-runner')
 
@@ -64,7 +64,6 @@ def run():
         adjustFileObjs(job_order_object, keeppathObj)
         adjustDirObjs(job_order_object, keeppathObj)
         normalizeFilesDirs(job_order_object)
-        adjustDirObjs(job_order_object, functools.partial(getListing, arvados_cwl.fsaccess.CollectionFsAccess("", api_client=api)))
 
         output_name = None
         output_tags = None
@@ -89,10 +88,14 @@ def run():
         runner = arvados_cwl.ArvCwlRunner(api_client=arvados.api('v1', model=OrderedJsonModel()),
                                           output_name=output_name, output_tags=output_tags)
 
+        make_fs_access = functools.partial(CollectionFsAccess,
+                                 collection_cache=runner.collection_cache)
+
         t = load_tool(toolpath, runner.arv_make_tool,
                       fetcher_constructor=functools.partial(CollectionFetcher,
-                                                            api_client=api,
-                                                            keep_client=arvados.keep.KeepClient(api_client=api, num_retries=4)))
+                                                  api_client=runner.api,
+                                                  fs_access=make_fs_access(""),
+                                                  num_retries=runner.num_retries))
 
         args = argparse.Namespace()
         args.project_uuid = arvados.current_job()["owner_uuid"]
@@ -105,6 +108,8 @@ def run():
         args.basedir = os.getcwd()
         args.name = None
         args.cwl_runner_job={"uuid": arvados.current_job()["uuid"], "state": arvados.current_job()["state"]}
+        args.make_fs_access = make_fs_access
+
         runner.arv_executor(t, job_order_object, **vars(args))
     except Exception as e:
         if isinstance(e, WorkflowException):
