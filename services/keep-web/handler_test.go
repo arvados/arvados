@@ -49,6 +49,35 @@ func (s *UnitSuite) TestCORSPreflight(c *check.C) {
 	c.Check(resp.Code, check.Equals, http.StatusMethodNotAllowed)
 }
 
+func (s *UnitSuite) TestInvalidUUID(c *check.C) {
+	bogusID := strings.Replace(arvadostest.FooPdh, "+", "-", 1) + "-"
+	token := arvadostest.ActiveToken
+	for _, trial := range []string{
+		"http://keep-web/c=" + bogusID + "/foo",
+		"http://keep-web/c=" + bogusID + "/t=" + token + "/foo",
+		"http://keep-web/collections/download/" + bogusID + "/" + token + "/foo",
+		"http://keep-web/collections/" + bogusID + "/foo",
+		"http://" + bogusID + ".keep-web/" + bogusID + "/foo",
+		"http://" + bogusID + ".keep-web/t=" + token + "/" + bogusID + "/foo",
+	} {
+		c.Log(trial)
+		u, err := url.Parse(trial)
+		c.Assert(err, check.IsNil)
+		req := &http.Request{
+			Method:     "GET",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+		}
+		resp := httptest.NewRecorder()
+		h := handler{Config: &Config{
+			AnonymousTokens: []string{arvadostest.AnonymousToken},
+		}}
+		h.ServeHTTP(resp, req)
+		c.Check(resp.Code, check.Equals, http.StatusNotFound)
+	}
+}
+
 func mustParseURL(s string) *url.URL {
 	r, err := url.Parse(s)
 	if err != nil {
