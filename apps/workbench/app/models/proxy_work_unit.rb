@@ -309,6 +309,7 @@ class ProxyWorkUnit < WorkUnit
     Log.where(object_uuid: log_object_uuids).
       order("created_at DESC").
       limit(limit).
+      with_count('none').
       select { |log| log.properties[:text].is_a? String }.
       reverse.
       flat_map { |log| log.properties[:text].split("\n") }

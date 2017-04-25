@@ -32,6 +32,7 @@ class KeepDisksController < ApplicationController
     histogram_log = Log.
       filter([[:event_type, '=', 'block-age-free-space-histogram']]).
       order(:created_at => :desc).
+      with_count('none').
       limit(1)
     histogram_log.each do |log_entry|
       # We expect this block to only execute at most once since we
