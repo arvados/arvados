@@ -9,6 +9,11 @@ class ContainerRequestsController < ApplicationController
 
     nodes = {}
     nodes[cr[:uuid]] = cr
+    if cr[:container_uuid]
+      ContainerRequest.where(requesting_container_uuid: cr[:container_uuid]).each do |child|
+        nodes[child[:uuid]] = child
+      end
+    end
     @svg = ProvenanceHelper::create_provenance_graph nodes,
                                                      "provenance_svg",
                                                      {

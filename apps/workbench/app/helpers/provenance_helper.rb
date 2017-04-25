@@ -119,32 +119,12 @@ module ProvenanceHelper
       end
 
       [
-        [true, :requesting_container_uuid, 'requesting_container'],
-        [true, :container_image, 'container_image'],
-        [false, :output_uuid, 'output'],
-        [false, :log_uuid, 'log']
-      ].each do |is_input, attr, label|
+        [:output_uuid, 'output'],
+        [:log_uuid, 'log']
+      ].each do |attr, label|
         if cr[attr]
-          if attr == :container_image && cr[:container_uuid]
-            # Extract the container_image's UUID from the CR's container
-            cont = Container.find(cr[:container_uuid])
-            gr += describe_node(cont[:container_image], {label: cr[attr]})
-            # If container_image, then is_input is true
-            edge_from = cont[:container_image]
-            edge_to = uuid
-          else
-            # Default case
-            gr += describe_node(cr[attr])
-
-            if is_input
-              edge_from = cr[attr]
-              edge_to = uuid
-            else
-              edge_from = uuid
-              edge_to = cr[attr]
-            end
-          end
-          gr += edge(edge_from, edge_to, {label: label})
+          gr += describe_node(cr[attr])
+          gr += edge(uuid, cr[attr], {label: label})
         end
       end
 
@@ -233,11 +213,21 @@ module ProvenanceHelper
           gr += job_edges job if job
         elsif rsc == ContainerRequest
           cr = @pdata[uuid]
-          gr += cr_edges cr if cr
-          gr += describe_node(uuid, {href: {controller: 'container_requests',
-                                            id: uuid},
-                                     label: @pdata[uuid][:name],
-                                     shape: 'oval'})
+          if cr
+            gr += cr_edges cr
+            gr += describe_node(uuid, {href: {controller: 'container_requests',
+                                              id: uuid},
+                                       label: @pdata[uuid][:name],
+                                       shape: 'oval'})
+            # Search for child CRs
+            if cr[:container_uuid]
+              child_crs = ContainerRequest.where(requesting_container_uuid: cr[:container_uuid])
+              child_crs.each do |child|
+                gr += generate_provenance_edges(child[:uuid])
+                gr += edge(uuid, child[:uuid], {label: 'cr'})
+              end
+            end
+          end
         end
       end
 
