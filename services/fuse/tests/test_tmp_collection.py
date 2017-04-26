@@ -122,3 +122,16 @@ class TmpCollectionTest(IntegrationTest):
                     with open(path, 'w') as f:
                         f.write(content)
                 self.assertRegexpMatches(current_manifest(tmpdir), expect)
+
+    @IntegrationTest.mount(argv=mnt_args)
+    def test_tmp_rewrite(self):
+        self.pool_test(os.path.join(self.mnt, 'zzz'))
+    @staticmethod
+    def _test_tmp_rewrite(self, tmpdir):
+        with open(os.path.join(tmpdir, "b1"), 'w') as f:
+            f.write("b1")
+        with open(os.path.join(tmpdir, "b2"), 'w') as f:
+            f.write("b2")
+        with open(os.path.join(tmpdir, "b1"), 'w') as f:
+            f.write("1b")
+        self.assertRegexpMatches(current_manifest(tmpdir), "^\. ed4f3f67c70b02b29c50ce1ea26666bd\+4(\+\S+)? 0:2:b1 2:2:b2\n$")
