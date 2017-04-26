@@ -109,4 +109,16 @@ class ContainerRequestsTest < ActionDispatch::IntegrationTest
     assert_text 'This workflow does not need any further inputs'
     page.assert_selector 'a', text: 'Run'
   end
+
+  test "Provenance graph shown on committed container requests" do
+    cr = api_fixture('container_requests', 'completed')
+    visit page_with_token("active", "/container_requests/#{cr['uuid']}")
+    assert page.has_text? 'Provenance'
+    click_link 'Provenance'
+    wait_for_ajax
+    # Check for provenance graph existance
+    page.assert_selector '#provenance_svg'
+    page.assert_selector 'ellipse+text', text: cr['name'], visible: false
+    page.assert_selector 'g.node>title', text: cr['uuid'], visible: false
+  end
 end
