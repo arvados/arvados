@@ -30,7 +30,7 @@ class ContainerRequestsControllerTest < ActionController::TestCase
     assert_select 'Download the log', false
   end
 
-  test "completed container request offers re-run option" do
+  test "completed container request offers re-run options" do
     use_token 'active'
 
     uuid = api_fixture('container_requests')['completed']['uuid']
@@ -39,6 +39,7 @@ class ContainerRequestsControllerTest < ActionController::TestCase
     assert_response :success
 
    assert_includes @response.body, "href=\"/container_requests/#{uuid}/copy\""
+   assert_includes @response.body, "href=\"/container_requests/#{uuid}/copy?no_reuse=true\""
   end
 
   test "container request copy" do
