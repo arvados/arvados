@@ -157,17 +157,19 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	} else if len(pathParts) >= 3 && pathParts[0] == "collections" {
 		if len(pathParts) >= 5 && pathParts[1] == "download" {
 			// /collections/download/ID/TOKEN/PATH...
-			targetID = pathParts[2]
+			targetID = parseCollectionIDFromURL(pathParts[2])
 			tokens = []string{pathParts[3]}
 			targetPath = pathParts[4:]
 			pathToken = true
 		} else {
 			// /collections/ID/PATH...
-			targetID = pathParts[1]
+			targetID = parseCollectionIDFromURL(pathParts[1])
 			tokens = h.Config.AnonymousTokens
 			targetPath = pathParts[2:]
 		}
-	} else {
+	}
+
+	if targetID == "" {
 		statusCode = http.StatusNotFound
 		return
 	}
