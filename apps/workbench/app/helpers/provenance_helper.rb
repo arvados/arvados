@@ -108,7 +108,8 @@ module ProvenanceHelper
       uuid = cr[:uuid]
       gr = ""
 
-      input_obj = cr[:mounts].andand[:"/var/lib/cwl/cwl.input.json"].andand[:content]
+      # Search for input mounts
+      input_obj = cr[:mounts].andand[:"/var/lib/cwl/cwl.input.json"].andand[:content] || cr[:mounts] || {}
       if input_obj
         ProvenanceHelper::find_collections input_obj, 'mounts' do |col_hash, col_uuid, key|
           if col_uuid
