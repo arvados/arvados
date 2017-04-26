@@ -108,13 +108,16 @@ module ProvenanceHelper
       uuid = cr[:uuid]
       gr = ""
 
-      ProvenanceHelper::find_collections cr[:mounts], 'mounts' do |col_hash, col_uuid, key|
-        if col_uuid
-          gr += describe_node(col_uuid)
-          gr += edge(col_uuid, uuid, {:label => key})
-        else
-          gr += describe_node(col_hash)
-          gr += edge(col_hash, uuid, {:label => key})
+      input_obj = cr[:mounts].andand[:"/var/lib/cwl/cwl.input.json"].andand[:content]
+      if input_obj
+        ProvenanceHelper::find_collections input_obj, 'mounts' do |col_hash, col_uuid, key|
+          if col_uuid
+            gr += describe_node(col_uuid)
+            gr += edge(col_uuid, uuid, {:label => key})
+          else
+            gr += describe_node(col_hash)
+            gr += edge(col_hash, uuid, {:label => key})
+          end
         end
       end
 
