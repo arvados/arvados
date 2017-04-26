@@ -64,10 +64,13 @@ class ContainerRequestsController < ApplicationController
 
     @object = ContainerRequest.new
 
-    # If "no reuse" requested, pass the correct argument to arvados-cwl-runner command.
-    if params[:no_reuse] and src.command[0] == 'arvados-cwl-runner'
-      command = src.command - ['--enable-reuse']
-      command.insert(1, '--disable-reuse')
+    if params[:no_reuse]
+      @object.use_existing = false
+      # If "no reuse" requested, pass the correct argument to arvados-cwl-runner command.
+      if src.command[0] == 'arvados-cwl-runner'
+        command = src.command - ['--enable-reuse']
+        command.insert(1, '--disable-reuse')
+      end
     else
       command = src.command
     end
