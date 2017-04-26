@@ -111,7 +111,7 @@ module ProvenanceHelper
       # Search for input mounts
       input_obj = cr[:mounts].andand[:"/var/lib/cwl/cwl.input.json"].andand[:content] || cr[:mounts] || {}
       if input_obj
-        ProvenanceHelper::find_collections input_obj, 'mounts' do |col_hash, col_uuid, key|
+        ProvenanceHelper::find_collections input_obj, 'input' do |col_hash, col_uuid, key|
           if col_uuid
             gr += describe_node(col_uuid)
             gr += edge(col_uuid, uuid, {:label => key})
@@ -228,7 +228,7 @@ module ProvenanceHelper
               child_crs = ContainerRequest.where(requesting_container_uuid: cr[:container_uuid])
               child_crs.each do |child|
                 gr += generate_provenance_edges(child[:uuid])
-                gr += edge(uuid, child[:uuid], {label: 'cr'})
+                gr += edge(uuid, child[:uuid], {label: 'child'})
               end
             end
           end
