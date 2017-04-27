@@ -320,6 +320,7 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 	SetCorsHeaders(resp)
+	resp.Header().Set("Via", req.Proto+" "+viaAlias)
 
 	locator := mux.Vars(req)["locator"]
 	var err error
@@ -404,6 +405,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 	SetCorsHeaders(resp)
+	resp.Header().Set("Via", "HTTP/1.1 "+viaAlias)
 
 	kc := *h.KeepClient
 	kc.Client = &proxyClient{client: kc.Client, proto: req.Proto}

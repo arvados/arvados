@@ -113,6 +113,31 @@ func runProxy(c *C, args []string, bogusClientToken bool) *keepclient.KeepClient
 	return kc
 }
 
+func (s *ServerRequiredSuite) TestResponseViaHeader(c *C) {
+	runProxy(c, nil, false)
+	defer closeListener()
+
+	req, err := http.NewRequest("POST",
+		"http://"+listener.Addr().String()+"/",
+		strings.NewReader("TestViaHeader"))
+	req.Header.Add("Authorization", "OAuth2 "+arvadostest.ActiveToken)
+	resp, err := (&http.Client{}).Do(req)
+	c.Assert(err, Equals, nil)
+	c.Check(resp.Header.Get("Via"), Equals, "HTTP/1.1 keepproxy")
+	locator, err := ioutil.ReadAll(resp.Body)
+	c.Assert(err, Equals, nil)
+	resp.Body.Close()
+
+	req, err = http.NewRequest("GET",
+		"http://"+listener.Addr().String()+"/"+string(locator),
+		nil)
+	c.Assert(err, Equals, nil)
+	resp, err = (&http.Client{}).Do(req)
+	c.Assert(err, Equals, nil)
+	c.Check(resp.Header.Get("Via"), Equals, "HTTP/1.1 keepproxy")
+	resp.Body.Close()
+}
+
 func (s *ServerRequiredSuite) TestLoopDetection(c *C) {
 	kc := runProxy(c, nil, false)
 	defer closeListener()
@@ -178,7 +203,7 @@ func (s *ServerRequiredSuite) TestPutWrongContentLength(c *C) {
 			bytes.NewReader(content))
 		c.Assert(err, IsNil)
 		req.Header.Set("Content-Length", t.sendLength)
-		req.Header.Set("Authorization", "OAuth2 4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
+		req.Header.Set("Authorization", "OAuth2 "+arvadostest.ActiveToken)
 		req.Header.Set("Content-Type", "application/octet-stream")
 
 		resp := httptest.NewRecorder()
@@ -392,7 +417,7 @@ func (s *ServerRequiredSuite) TestPostWithoutHash(c *C) {
 		req, err := http.NewRequest("POST",
 			"http://"+listener.Addr().String()+"/",
 			strings.NewReader("qux"))
-		req.Header.Add("Authorization", "OAuth2 4axaw8zxe0qm22wa6urpp5nskcne8z88cvbupv653y1njyi05h")
+		req.Header.Add("Authorization", "OAuth2 "+arvadostest.ActiveToken)
 		req.Header.Add("Content-Type", "application/octet-stream")
 		resp, err := client.Do(req)
 		c.Check(err, Equals, nil)
