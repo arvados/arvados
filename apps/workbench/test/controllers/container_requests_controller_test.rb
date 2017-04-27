@@ -55,14 +55,20 @@ class ContainerRequestsControllerTest < ActionController::TestCase
     assert_equal "Copy of #{completed_cr['name']}", copied_cr['name']
     assert_equal completed_cr['cmd'], copied_cr['cmd']
     assert_equal completed_cr['runtime_constraints']['ram'], copied_cr['runtime_constraints'][:ram]
+    refute copied_cr[:use_existing]
   end
 
-  test "container request copy without reuse" do
+  test "container request copy with reuse enabled" do
     completed_cr = api_fixture('container_requests')['completed']
-    post(:copy, {id: completed_cr['uuid']}, session_for(:active))
+    post(:copy,
+         {
+           id: completed_cr['uuid'],
+           use_existing: true,
+         },
+         session_for(:active))
     assert_response 302
     copied_cr = assigns(:object)
     assert_not_nil copied_cr
-    refute copied_cr['use_existing']
+    assert copied_cr['use_existing']
   end
 end
