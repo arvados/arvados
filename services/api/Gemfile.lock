@@ -215,6 +215,8 @@ GEM
       rails-deprecated_sanitizer (>= 1.0.1)
     rails-html-sanitizer (1.0.3)
       loofah (~> 2.0)
+    rails-observers (0.1.2)
+      activemodel (~> 4.0)
     railties (4.2.5.2)
       actionpack (= 4.2.5.2)
       activesupport (= 4.2.5.2)
@@ -302,6 +304,7 @@ DEPENDENCIES
   protected_attributes
   puma (~> 2.0)
   rails (~> 4.0)
+  rails-observers
   responders (~> 2.0)
   ruby-prof
   rvm-capistrano

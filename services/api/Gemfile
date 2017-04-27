@@ -60,6 +60,8 @@ gem 'safe_yaml'
 gem 'lograge'
 gem 'logstash-event'
 
+gem 'rails-observers'
+
 # Install any plugin gems
 Dir.glob(File.join(File.dirname(__FILE__), 'lib', '**', "Gemfile")) do |f|
     eval(IO.read(f), binding)
