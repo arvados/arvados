@@ -433,7 +433,7 @@ class ArvPutUploadJob(object):
             else:
                 self._traversed_links.add(real_dirpath)
         return dirs
-        
+
     def start(self, save_collection):
         """
         Start supporting thread & file uploading
