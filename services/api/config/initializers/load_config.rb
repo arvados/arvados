@@ -69,4 +69,5 @@ config/application.yml:
 
 EOS
   end
+  config.secret_key_base = config.secret_token
 end

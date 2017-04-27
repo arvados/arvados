@@ -59,8 +59,8 @@ class Arvados::V1::VirtualMachinesControllerTest < ActionController::TestCase
     get :logins, id: vm.uuid
     assert_response :success
     assert_equal 1, json_response['items'].length
-    assert_equal nil, json_response['items'][0]['public_key']
-    assert_equal nil, json_response['items'][0]['authorized_key_uuid']
+    assert_nil json_response['items'][0]['public_key']
+    assert_nil json_response['items'][0]['authorized_key_uuid']
     assert_equal u.uuid, json_response['items'][0]['user_uuid']
     assert_equal 'bobblogin', json_response['items'][0]['username']
   end

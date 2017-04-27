@@ -20,11 +20,6 @@ class Link < ArvadosModel
     t.add :properties
   end
 
-  def properties
-    @properties ||= Hash.new
-    super
-  end
-
   def head_kind
     if k = ArvadosModel::resource_class_for_uuid(head_uuid)
       k.kind

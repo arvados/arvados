@@ -53,15 +53,25 @@ class ArvadosModelTest < ActiveSupport::TestCase
     {'a' => {'foo' => {:bar => 'baz'}}},
     {'a' => {'foo' => {'bar' => :baz}}},
     {'a' => {'foo' => ['bar', :baz]}},
+  ].each do |x|
+    test "prevent symbol keys in serialized db columns: #{x.inspect}" do
+      set_user_from_auth :active
+      link = Link.create!(link_class: 'test',
+                          properties: x)
+      raw = ActiveRecord::Base.connection.
+          select_value("select properties from links where uuid='#{link.uuid}'")
+      refute_match(/:[fb]/, raw)
+    end
+  end
+
+  [ {['foo'] => 'bar'},
+    {'a' => {['foo', :foo] => 'bar'}},
+    {'a' => {{'foo' => 'bar'} => 'bar'}},
     {'a' => {['foo', :foo] => ['bar', 'baz']}},
   ].each do |x|
-    test "refuse symbol keys in serialized attribute: #{x.inspect}" do
-      set_user_from_auth :admin_trustedclient
-      assert_nothing_raised do
-        Link.create!(link_class: 'test',
-                     properties: {})
-      end
-      assert_raises ActiveRecord::RecordInvalid do
+    test "refuse non-string keys in serialized db columns: #{x.inspect}" do
+      set_user_from_auth :active
+      assert_raises(ArgumentError) do
         Link.create!(link_class: 'test',
                      properties: x)
       end
@@ -81,10 +91,11 @@ class ArvadosModelTest < ActiveSupport::TestCase
 
   test "No HashWithIndifferentAccess in database" do
     set_user_from_auth :admin_trustedclient
-    assert_raises ActiveRecord::RecordInvalid do
-      Link.create!(link_class: 'test',
-                   properties: {'foo' => 'bar'}.with_indifferent_access)
-    end
+    link = Link.create!(link_class: 'test',
+                        properties: {'foo' => 'bar'}.with_indifferent_access)
+    raw = ActiveRecord::Base.connection.
+      select_value("select properties from links where uuid='#{link.uuid}'")
+    assert_equal '{"foo":"bar"}', raw
   end
 
   test "store long string" do
@@ -147,23 +158,46 @@ class ArvadosModelTest < ActiveSupport::TestCase
   end
 
   test "full text search index exists on models" do
+    indexes = {}
+    conn = ActiveRecord::Base.connection
+    conn.exec_query("SELECT i.relname as indname,
+      i.relowner as indowner,
+      idx.indrelid::regclass::text as table,
+      am.amname as indam,
+      idx.indkey,
+      ARRAY(
+            SELECT pg_get_indexdef(idx.indexrelid, k + 1, true)
+                   FROM generate_subscripts(idx.indkey, 1) as k
+                   ORDER BY k
+                   ) as keys,
+      idx.indexprs IS NOT NULL as indexprs,
+      idx.indpred IS NOT NULL as indpred
+      FROM   pg_index as idx
+      JOIN   pg_class as i
+      ON     i.oid = idx.indexrelid
+      JOIN   pg_am as am
+      ON     i.relam = am.oid
+      JOIN   pg_namespace as ns
+      ON     ns.oid = i.relnamespace
+      AND    ns.nspname = ANY(current_schemas(false))").each do |idx|
+      if idx['keys'].match(/to_tsvector/)
+        indexes[idx['table']] ||= []
+        indexes[idx['table']] << idx
+      end
+    end
     fts_tables =  ["collections", "container_requests", "groups", "jobs",
                    "pipeline_instances", "pipeline_templates", "workflows"]
     fts_tables.each do |table|
       table_class = table.classify.constantize
       if table_class.respond_to?('full_text_searchable_columns')
-        fts_index_columns = table_class.full_text_searchable_columns
-        index_columns = nil
-        indexes = ActiveRecord::Base.connection.indexes(table)
-        fts_index_by_columns = indexes.select do |index|
-          if index.columns.first.match(/to_tsvector/)
-            index_columns = index.columns.first.scan(/\((?<columns>[A-Za-z_]+)\,/).flatten!
-            index_columns.sort == fts_index_columns.sort
-          else
-            false
+        expect = table_class.full_text_searchable_columns
+        ok = false
+        indexes[table].andand.each do |idx|
+          if expect == idx['keys'].scan(/COALESCE\(([A-Za-z_]+)/).flatten
+            ok = true
           end
         end
-        assert !fts_index_by_columns.empty?, "#{table} has no FTS index with columns #{fts_index_columns}. Instead found FTS index with columns #{index_columns}"
+        assert ok, "#{table} has no full-text index\nexpect: #{expect.inspect}\nfound: #{indexes[table].inspect}"
       end
     end
   end

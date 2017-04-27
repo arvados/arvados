@@ -2,8 +2,7 @@
 /db/*.sqlite3
 
 # Ignore all logfiles and tempfiles.
-/log/*.log
-/log/*.log.gz
+/log
 /tmp
 
 # Sensitive files and local configuration

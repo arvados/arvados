@@ -102,6 +102,6 @@ class Log < ArvadosModel
   end
 
   def send_notify
-    connection.execute "NOTIFY logs, '#{self.id}'"
+    ActiveRecord::Base.connection.execute "NOTIFY logs, '#{self.id}'"
   end
 end

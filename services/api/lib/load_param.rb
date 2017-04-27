@@ -153,7 +153,7 @@ module LoadParam
       # Any ordering columns must be selected when doing select,
       # otherwise it is an SQL error, so filter out invaliding orderings.
       @orders.select! { |o|
-        col, dir = o.split
+        col, _ = o.split
         # match select column against order array entry
         @select.select { |s| col == "#{table_name}.#{s}" }.any?
       }
