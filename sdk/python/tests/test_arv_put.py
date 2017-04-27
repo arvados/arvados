@@ -287,7 +287,8 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         cwriter.destroy_cache()
 
     def test_symlinks_are_followed_only_once(self):
-        cwriter = arv_put.ArvPutUploadJob([self.tempdir_with_symlink])
+        cwriter = arv_put.ArvPutUploadJob([self.tempdir_with_symlink],
+                                          follow_links=True)
         cwriter.start(save_collection=False)
         self.assertIn('linkeddir1', cwriter.manifest_text())
         self.assertNotIn('linkeddir2', cwriter.manifest_text())
