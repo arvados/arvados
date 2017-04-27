@@ -63,6 +63,7 @@ class TestContainer(unittest.TestCase):
                         'use_existing': enable_reuse,
                         'priority': 1,
                         'mounts': {
+                            '/tmp': {'kind': 'tmp'},
                             '/var/spool/cwl': {'kind': 'tmp'}
                         },
                         'state': 'Committed',
@@ -135,6 +136,7 @@ class TestContainer(unittest.TestCase):
                 'use_existing': True,
                 'priority': 1,
                 'mounts': {
+                    '/tmp': {'kind': 'tmp'},
                     '/var/spool/cwl': {'kind': 'tmp'}
                 },
                 'state': 'Committed',
@@ -240,6 +242,7 @@ class TestContainer(unittest.TestCase):
                 'use_existing': True,
                 'priority': 1,
                 'mounts': {
+                    '/tmp': {'kind': 'tmp'},
                     '/var/spool/cwl': {'kind': 'tmp'},
                     '/var/spool/cwl/foo': {
                         'kind': 'collection',
@@ -325,6 +328,7 @@ class TestContainer(unittest.TestCase):
                     'use_existing': True,
                     'priority': 1,
                     'mounts': {
+                        '/tmp': {'kind': 'tmp'},
                         '/var/spool/cwl': {'kind': 'tmp'},
                         "stderr": {
                             "kind": "file",

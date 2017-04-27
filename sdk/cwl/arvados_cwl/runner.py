@@ -23,24 +23,22 @@ import arvados.collection
 import ruamel.yaml as yaml
 
 from .arvdocker import arv_docker_get_image
-from .pathmapper import ArvPathMapper
+from .pathmapper import ArvPathMapper, trim_listing
 from ._version import __version__
 from . import done
 
 logger = logging.getLogger('arvados.cwl-runner')
 
-def trim_listing(obj):
-    """Remove 'listing' field from Directory objects that are keep references.
+def trim_anonymous_location(obj):
+    """Remove 'location' field from File and Directory literals.
 
-    When Directory objects represent Keep references, it redundant and
-    potentially very expensive to pass fully enumerated Directory objects
-    between instances of cwl-runner (e.g. a submitting a job, or using the
-    RunInSingleContainer feature), so delete the 'listing' field when it is
-    safe to do so.
+    To make internal handling easier, literals are assigned a random id for
+    'location'.  However, when writing the record back out, this can break
+    reproducibility.  Since it is valid for literals not have a 'location'
+    field, remove it.
+
     """
 
-    if obj.get("location", "").startswith("keep:") and "listing" in obj:
-        del obj["listing"]
     if obj.get("location", "").startswith("_:"):
         del obj["location"]
 
