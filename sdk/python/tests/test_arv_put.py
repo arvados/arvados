@@ -268,12 +268,22 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
             with open(os.path.join(self.small_files_dir, str(i)), 'w') as f:
                 f.write(data + str(i))
         self.arvfile_write = getattr(arvados.arvfile.ArvadosFileWriter, 'write')
+        # Temp dir to hold a symlink to other temp dir
+        self.tempdir_with_symlink = tempfile.mkdtemp()
+        os.symlink(self.tempdir, os.path.join(self.tempdir_with_symlink, 'linkeddir'))
 
     def tearDown(self):
         super(ArvPutUploadJobTest, self).tearDown()
         shutil.rmtree(self.tempdir)
         os.unlink(self.large_file_name)
         shutil.rmtree(self.small_files_dir)
+        shutil.rmtree(self.tempdir_with_symlink)
+
+    def test_symlinks_are_followed_by_default(self):
+        cwriter = arv_put.ArvPutUploadJob([self.tempdir_with_symlink])
+        cwriter.start(save_collection=False)
+        self.assertIn('linkeddir', cwriter.manifest_text())
+        cwriter.destroy_cache()
 
     def test_writer_works_without_cache(self):
         cwriter = arv_put.ArvPutUploadJob(['/dev/null'], resume=False)
