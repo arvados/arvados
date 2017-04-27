@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	"io"
 	"io/ioutil"
 	"log"
@@ -15,6 +14,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/streamer"
 )
 
 // Function used to emit debug messages. The easiest way to enable
@@ -45,49 +46,45 @@ func Md5String(s string) string {
 
 // Set timeouts applicable when connecting to non-disk services
 // (assumed to be over the Internet).
-func (this *KeepClient) setClientSettingsNonDisk() {
-	if this.Client.Timeout == 0 {
-		// Maximum time to wait for a complete response
-		this.Client.Timeout = 300 * time.Second
+func (*KeepClient) setClientSettingsNonDisk(client *http.Client) {
+	// Maximum time to wait for a complete response
+	client.Timeout = 300 * time.Second
 
-		// TCP and TLS connection settings
-		this.Client.Transport = &http.Transport{
-			Dial: (&net.Dialer{
-				// The maximum time to wait to set up
-				// the initial TCP connection.
-				Timeout: 30 * time.Second,
+	// TCP and TLS connection settings
+	client.Transport = &http.Transport{
+		Dial: (&net.Dialer{
+			// The maximum time to wait to set up
+			// the initial TCP connection.
+			Timeout: 30 * time.Second,
 
-				// The TCP keep alive heartbeat
-				// interval.
-				KeepAlive: 120 * time.Second,
-			}).Dial,
+			// The TCP keep alive heartbeat
+			// interval.
+			KeepAlive: 120 * time.Second,
+		}).Dial,
 
-			TLSHandshakeTimeout: 10 * time.Second,
-		}
+		TLSHandshakeTimeout: 10 * time.Second,
 	}
 }
 
 // Set timeouts applicable when connecting to keepstore services directly
 // (assumed to be on the local network).
-func (this *KeepClient) setClientSettingsDisk() {
-	if this.Client.Timeout == 0 {
-		// Maximum time to wait for a complete response
-		this.Client.Timeout = 20 * time.Second
+func (*KeepClient) setClientSettingsDisk(client *http.Client) {
+	// Maximum time to wait for a complete response
+	client.Timeout = 20 * time.Second
 
-		// TCP and TLS connection timeouts
-		this.Client.Transport = &http.Transport{
-			Dial: (&net.Dialer{
-				// The maximum time to wait to set up
-				// the initial TCP connection.
-				Timeout: 2 * time.Second,
+	// TCP and TLS connection timeouts
+	client.Transport = &http.Transport{
+		Dial: (&net.Dialer{
+			// The maximum time to wait to set up
+			// the initial TCP connection.
+			Timeout: 2 * time.Second,
 
-				// The TCP keep alive heartbeat
-				// interval.
-				KeepAlive: 180 * time.Second,
-			}).Dial,
+			// The TCP keep alive heartbeat
+			// interval.
+			KeepAlive: 180 * time.Second,
+		}).Dial,
 
-			TLSHandshakeTimeout: 4 * time.Second,
-		}
+		TLSHandshakeTimeout: 4 * time.Second,
 	}
 }
 
@@ -157,6 +154,9 @@ func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Rea
 		DebugPrintf("DEBUG: [%08x] Upload %v success", requestID, url)
 		upload_status <- uploadStatus{nil, url, resp.StatusCode, rep, response}
 	} else {
+		if resp.StatusCode >= 300 && response == "" {
+			response = resp.Status
+		}
 		DebugPrintf("DEBUG: [%08x] Upload %v error: %v response: %v", requestID, url, resp.StatusCode, response)
 		upload_status <- uploadStatus{errors.New(resp.Status), url, resp.StatusCode, rep, response}
 	}
@@ -206,6 +206,8 @@ func (this *KeepClient) putReplicas(
 	retriesRemaining := 1 + this.Retries
 	var retryServers []string
 
+	lastError := make(map[string]string)
+
 	for retriesRemaining > 0 {
 		retriesRemaining -= 1
 		next_server = 0
@@ -220,7 +222,12 @@ func (this *KeepClient) putReplicas(
 					active += 1
 				} else {
 					if active == 0 && retriesRemaining == 0 {
-						return locator, replicasDone, InsufficientReplicasError
+						msg := "Could not write sufficient replicas: "
+						for _, resp := range lastError {
+							msg += resp + "; "
+						}
+						msg = msg[:len(msg)-2]
+						return locator, replicasDone, InsufficientReplicasError(errors.New(msg))
 					} else {
 						break
 					}
@@ -239,7 +246,16 @@ func (this *KeepClient) putReplicas(
 					replicasDone += status.replicas_stored
 					replicasTodo -= status.replicas_stored
 					locator = status.response
-				} else if status.statusCode == 0 || status.statusCode == 408 || status.statusCode == 429 ||
+					delete(lastError, status.url)
+				} else {
+					msg := fmt.Sprintf("[%d] %s", status.statusCode, status.response)
+					if len(msg) > 100 {
+						msg = msg[:100]
+					}
+					lastError[status.url] = msg
+				}
+
+				if status.statusCode == 0 || status.statusCode == 408 || status.statusCode == 429 ||
 					(status.statusCode >= 500 && status.statusCode != 503) {
 					// Timeout, too many requests, or other server side failure
 					// Do not retry when status code is 503, which means the keep server is full

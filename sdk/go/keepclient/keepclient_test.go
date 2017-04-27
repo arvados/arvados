@@ -2,11 +2,8 @@ package keepclient
 
 import (
 	"crypto/md5"
+	"errors"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/streamer"
-	. "gopkg.in/check.v1"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,6 +13,11 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/streamer"
+	. "gopkg.in/check.v1"
 )
 
 // Gocheck boilerplate
@@ -435,7 +437,7 @@ func (s *StandaloneSuite) TestPutWithTooManyFail(c *C) {
 
 	_, replicas, err := kc.PutB([]byte("foo"))
 
-	c.Check(err, Equals, InsufficientReplicasError)
+	c.Check(err, FitsTypeOf, InsufficientReplicasError(errors.New("")))
 	c.Check(replicas, Equals, 1)
 	c.Check(<-st.handled, Equals, ks1[0].url)
 }
@@ -921,7 +923,7 @@ func (s *StandaloneSuite) TestPutProxyInsufficientReplicas(c *C) {
 	_, replicas, err := kc.PutB([]byte("foo"))
 	<-st.handled
 
-	c.Check(err, Equals, InsufficientReplicasError)
+	c.Check(err, FitsTypeOf, InsufficientReplicasError(errors.New("")))
 	c.Check(replicas, Equals, 2)
 }
 
@@ -996,7 +998,7 @@ func (s *StandaloneSuite) TestPutBWant2ReplicasWithOnlyOneWritableLocalRoot(c *C
 
 	_, replicas, err := kc.PutB([]byte("foo"))
 
-	c.Check(err, Equals, InsufficientReplicasError)
+	c.Check(err, FitsTypeOf, InsufficientReplicasError(errors.New("")))
 	c.Check(replicas, Equals, 1)
 
 	c.Check(<-st.handled, Equals, localRoots[fmt.Sprintf("zzzzz-bi6l4-fakefakefake%03d", 0)])
@@ -1031,7 +1033,7 @@ func (s *StandaloneSuite) TestPutBWithNoWritableLocalRoots(c *C) {
 
 	_, replicas, err := kc.PutB([]byte("foo"))
 
-	c.Check(err, Equals, InsufficientReplicasError)
+	c.Check(err, FitsTypeOf, InsufficientReplicasError(errors.New("")))
 	c.Check(replicas, Equals, 0)
 }
 
@@ -1263,5 +1265,5 @@ func (s *ServerRequiredSuite) TestMakeKeepClientWithNonDiskTypeService(c *C) {
 
 	c.Assert(kc.replicasPerService, Equals, 0)
 	c.Assert(kc.foundNonDiskSvc, Equals, true)
-	c.Assert(kc.Client.Timeout, Equals, 300*time.Second)
+	c.Assert(kc.Client.(*http.Client).Timeout, Equals, 300*time.Second)
 }

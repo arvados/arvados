@@ -3,10 +3,8 @@ package main
 import (
 	"bytes"
 	"crypto/md5"
+	"errors"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -15,6 +13,10 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 
 	. "gopkg.in/check.v1"
 )
@@ -109,6 +111,24 @@ func runProxy(c *C, args []string, bogusClientToken bool) *keepclient.KeepClient
 	kc.Arvados.External = true
 
 	return kc
+}
+
+func (s *ServerRequiredSuite) TestLoopDetection(c *C) {
+	kc := runProxy(c, nil, false)
+	defer closeListener()
+
+	sr := map[string]string{
+		TestProxyUUID: "http://" + listener.Addr().String(),
+	}
+	router.(*proxyHandler).KeepClient.SetServiceRoots(sr, sr, sr)
+
+	content := []byte("TestLoopDetection")
+	_, _, err := kc.PutB(content)
+	c.Check(err, ErrorMatches, `.*loop detected.*`)
+
+	hash := fmt.Sprintf("%x", md5.Sum(content))
+	_, _, _, err = kc.Get(hash)
+	c.Check(err, ErrorMatches, `.*loop detected.*`)
 }
 
 func (s *ServerRequiredSuite) TestDesiredReplicas(c *C) {
@@ -260,7 +280,7 @@ func (s *ServerRequiredSuite) TestPutAskGetForbidden(c *C) {
 		hash2, rep, err := kc.PutB([]byte("bar"))
 		c.Check(hash2, Equals, "")
 		c.Check(rep, Equals, 0)
-		c.Check(err, Equals, keepclient.InsufficientReplicasError)
+		c.Check(err, FitsTypeOf, keepclient.InsufficientReplicasError(errors.New("")))
 		log.Print("PutB")
 	}
 
@@ -331,7 +351,7 @@ func (s *ServerRequiredSuite) TestPutDisabled(c *C) {
 	hash2, rep, err := kc.PutB([]byte("quux"))
 	c.Check(hash2, Equals, "")
 	c.Check(rep, Equals, 0)
-	c.Check(err, Equals, keepclient.InsufficientReplicasError)
+	c.Check(err, FitsTypeOf, keepclient.InsufficientReplicasError(errors.New("")))
 }
 
 func (s *ServerRequiredSuite) TestCorsHeaders(c *C) {
