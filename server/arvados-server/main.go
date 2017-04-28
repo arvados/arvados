@@ -13,6 +13,7 @@ import (
 
 var cmds = map[string]cmd.Command{
 	"agent":     agent.Command(),
+	"init":      setup.Command(),
 	"setup":     setup.Command(),
 	"configure": configure.Command(),
 }

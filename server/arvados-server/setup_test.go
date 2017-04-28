@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestSetupDebian8(t *testing.T) {
+func TestSetup(t *testing.T) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
@@ -28,8 +28,8 @@ func TestSetupDebian8(t *testing.T) {
 	log.Printf("Publishing consul webgui at %v", ln.Addr())
 	for _, cmdline := range [][]string{
 		{"go", "build"},
-		{"docker", "build", "--tag=arvados-server-debian8-test", "test-debian8"},
-		{"docker", "run", "--rm", "--publish=" + port + ":18500", "--cap-add=IPC_LOCK", "--cap-add=SYS_ADMIN", "--volume=/sys/fs/cgroup", "--volume=" + cwd + "/arvados-server:/usr/bin/arvados-server:ro", "--volume=/var/cache/arvados:/var/cache/arvados:ro", "arvados-server-debian8-test"},
+		{"docker", "build", "--tag=arvados-setup-test", "test-setup"},
+		{"docker", "run", "--rm", "--publish=" + port + ":18500", "--cap-add=IPC_LOCK", "--cap-add=SYS_ADMIN", "--volume=/sys/fs/cgroup", "--volume=" + cwd + "/arvados-server:/usr/bin/arvados-server:ro", "--volume=/var/cache/arvados:/var/cache/arvados:ro", "arvados-setup-test"},
 	} {
 		cmd := exec.Command(cmdline[0], cmdline[1:]...)
 		cmd.Stdout = os.Stderr

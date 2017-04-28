@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestSetupDockerCompose(t *testing.T) {
+func TestDockerCompose(t *testing.T) {
 	for _, cmdline := range [][]string{
 		{"go", "build"},
 		{"docker-compose", "--file", "test-docker-compose/docker-compose.yml", "-p", "arvados_setup_test", "down", "-v"},
