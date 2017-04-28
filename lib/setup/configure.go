@@ -16,8 +16,10 @@ func (s *Setup) maybeConfigure() error {
 	}
 	kv := cc.KV()
 
-	_, _, err = kv.Get("arvados/service/API/port", nil)
-	if err == nil {
+	cur, _, err := kv.Get("arvados/service/API/port", nil)
+	if err != nil {
+		return err
+	} else if cur != nil {
 		// already configured
 		return nil
 	}
@@ -48,8 +50,8 @@ func (s *Setup) Reconfigure() error {
 
 		cur, _, err := kv.Get(pair.Key, nil)
 		if err != nil {
-			log.Print(err)
-		} else if bytes.Compare(cur.Value, pair.Value) == 0 {
+			return err
+		} else if cur != nil && bytes.Compare(cur.Value, pair.Value) == 0 {
 			continue
 		}
 
