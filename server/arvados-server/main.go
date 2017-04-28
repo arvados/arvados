@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"git.curoverse.com/arvados.git/cmd"
-	"git.curoverse.com/arvados.git/lib/agent"
+	"git.curoverse.com/arvados.git/lib/cmd"
 	"git.curoverse.com/arvados.git/lib/configure"
-	"git.curoverse.com/arvados.git/lib/setup"
+	"git.curoverse.com/arvados.git/server/agent"
+	"git.curoverse.com/arvados.git/server/setup"
 )
 
 var cmds = map[string]cmd.Command{

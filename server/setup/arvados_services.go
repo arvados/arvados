@@ -221,7 +221,7 @@ func (s *Setup) installArvadosServices() error {
 		})
 	}
 	// f = append(f, func() error {
-	// 	return s.consulTemplateExec("arvados-agent", "./agent.json", tmplArvadosAgent, 0640, "arvados-admin", "agent", "-config", "./agent.json")
+	// 	return s.consulTemplateExec("arvados-agent", "./agent.json", tmplArvadosAgent, 0640, "arvados-server", "agent", "-config", "./agent.json")
 	// })
 	for _, f := range todo {
 		err := f()

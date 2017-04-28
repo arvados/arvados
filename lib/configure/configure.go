@@ -4,8 +4,8 @@ import (
 	"flag"
 	"os"
 
-	"git.curoverse.com/arvados.git/lib/setup"
 	"git.curoverse.com/arvados.git/sdk/go/config"
+	"git.curoverse.com/arvados.git/server/setup"
 )
 
 func Command() *Configure {

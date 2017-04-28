@@ -101,10 +101,10 @@ tools/crunchstat-summary
 tools/keep-exercise
 tools/keep-rsync
 tools/keep-block-check
-lib/agent
 lib/crunchstat
-lib/setup
-cmd/arvados-admin
+server/agent
+server/setup
+server/arvados-server
 
 (*) apps/workbench is shorthand for apps/workbench_units +
     apps/workbench_functionals + apps/workbench_integration
@@ -796,9 +796,7 @@ gostuff=(
     sdk/go/streamer
     sdk/go/crunchrunner
     sdk/go/stats
-    lib/agent
     lib/crunchstat
-    lib/setup
     services/arv-git-httpd
     services/crunchstat
     services/keep-web
@@ -814,7 +812,9 @@ gostuff=(
     tools/keep-block-check
     tools/keep-exercise
     tools/keep-rsync
-    cmd/arvados-admin
+    server/agent
+    server/setup
+    server/arvados-server
     )
 for g in "${gostuff[@]}"
 do

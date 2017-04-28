@@ -11,4 +11,4 @@ RUN ["bash", "-c", "echo en_US.utf8 UTF-8 | tee -a /etc/locale.gen && locale-gen
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends ca-certificates locales nginx postgresql runit
 
-CMD ["bash", "-c", "runsvdir /etc/sv & service postgresql start & arvados-admin setup -init-vault && arvados-admin setup -wait"]
+CMD ["bash", "-c", "runsvdir /etc/sv & service postgresql start & arvados-server setup -init-vault && arvados-server setup -wait"]

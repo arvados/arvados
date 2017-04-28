@@ -7,8 +7,8 @@ import (
 	"os"
 	"time"
 
-	"git.curoverse.com/arvados.git/lib/agent"
 	"git.curoverse.com/arvados.git/sdk/go/config"
+	"git.curoverse.com/arvados.git/server/agent"
 )
 
 func Command() *Setup {

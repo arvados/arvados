@@ -338,7 +338,7 @@ package_go_binary sdk/go/crunchrunner crunchrunner \
     "Crunchrunner executes a command inside a container and uploads the output"
 package_go_binary services/arv-git-httpd arvados-git-httpd \
     "Provide authenticated http access to Arvados-hosted git repositories"
-package_go_binary cmd/arvados-admin arvados-admin \
+package_go_binary server/arvados-server arvados-server \
     "Arvados cluster administration tool"
 package_go_binary services/crunch-dispatch-local crunch-dispatch-local \
     "Dispatch Crunch containers on the local system"
