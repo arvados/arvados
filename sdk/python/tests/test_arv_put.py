@@ -17,6 +17,7 @@ import yaml
 import threading
 import hashlib
 import random
+import uuid
 
 from cStringIO import StringIO
 
@@ -301,6 +302,12 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         self.assertNotIn('linkeddir1', cwriter.manifest_text())
         self.assertNotIn('linkeddir2', cwriter.manifest_text())
         cwriter.destroy_cache()
+
+    def test_passing_nonexistant_path_raise_exception(self):
+        uuid_str = str(uuid.uuid4())
+        cwriter = arv_put.ArvPutUploadJob(["/this/path/does/not/exist/{}".format(uuid_str)])
+        with self.assertRaises(arv_put.PathDoesNotExistError):
+            cwriter.start(save_collection=False)
 
     def test_writer_works_without_cache(self):
         cwriter = arv_put.ArvPutUploadJob(['/dev/null'], resume=False)

@@ -247,6 +247,10 @@ def parse_arguments(arguments):
     return args
 
 
+class PathDoesNotExistError(Exception):
+    pass
+
+
 class CollectionUpdateError(Exception):
     pass
 
@@ -447,6 +451,8 @@ class ArvPutUploadJob(object):
                     if self.dry_run:
                         raise ArvPutUploadIsPending()
                     self._write_stdin(self.filename or 'stdin')
+                elif not os.path.exists(path):
+                     raise PathDoesNotExistError("file or directory '{}' does not exist.".format(path))
                 elif os.path.isdir(path):
                     # Use absolute paths on cache index so CWD doesn't interfere
                     # with the caching logic.
@@ -1000,6 +1006,10 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     except ArvPutUploadNotPending:
         # No files pending for upload
         sys.exit(0)
+    except PathDoesNotExistError as error:
+        logger.error("\n".join([
+            "arv-put: %s" % str(error)]))
+        exit(1)
 
     if args.progress:  # Print newline to split stderr from stdout for humans.
         logger.info("\n")
