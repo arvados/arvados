@@ -68,10 +68,17 @@ func (s *Setup) Run() error {
 			return err
 		}
 	}
+	if s.Wait {
+		return s.wait()
+	} else {
+		return nil
+	}
+}
 
+func (s *Setup) wait() error {
 	checkStatus := map[string]string{}
-	wait := 2 * time.Second
-	for ok := false; s.Wait && !ok; time.Sleep(wait) {
+	sleep := 2 * time.Second
+	for {
 		cc, err := s.ConsulMaster()
 		if err != nil {
 			log.Printf("setup: consulMaster(): %s", err)
@@ -83,14 +90,14 @@ func (s *Setup) Run() error {
 			log.Printf("setup: consul.Catalog().Service(): %s", err)
 			continue
 		} else if len(apiSvcs) == 0 {
-			if wait <= 2*time.Second {
-				wait = wait * 2
+			if sleep <= 2*time.Second {
+				sleep = sleep * 2
 				log.Printf("setup: waiting for arvados-api service to appear")
 			}
 			continue
 		}
 
-		ok = true
+		ok := true
 		svcs, _, err := cc.Catalog().Services(nil)
 		if err != nil {
 			log.Printf("setup: consul.Catalog().Services(): %s", err)
@@ -115,16 +122,10 @@ func (s *Setup) Run() error {
 		}
 		if ok {
 			log.Printf("All services are passing: %+v", svcs)
-			// Wait to ensure any other "setup -wait"
-			// processes have a chance to see the
-			// all-passing state before we return (if this
-			// is a test or image-building scenario, the
-			// whole system might shut down and stop
-			// passing as soon as we return).
-			time.Sleep(2 * wait)
+			return nil
 		}
+		time.Sleep(sleep)
 	}
-	return nil
 }
 
 func (s *Setup) makeDirs() error {
