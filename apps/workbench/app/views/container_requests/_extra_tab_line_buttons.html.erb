@@ -1,10 +1,15 @@
 <% if @object.state == 'Final' %>
-  <%= link_to raw('<i class="fa fa-fw fa-play"></i> Re-run'),
+  <%= link_to raw('<i class="fa fa-fw fa-play"></i> Re-run...'),
       "#",
       {class: 'btn btn-sm btn-primary', 'data-toggle' => 'modal',
        'data-target' => '#clone-and-edit-modal-window',
        title: 'This will make a copy and take you there. You can then make any needed changes and run it'}  %>
-<% end %>
+
+<script type="application/javascript">
+  function reset_form() {
+    $('#use_existing').removeAttr('checked');
+  }
+</script>
 
 <div id="clone-and-edit-modal-window" class="modal fade" role="dialog"
      aria-labelledby="myModalLabel" aria-hidden="true">
@@ -35,3 +40,5 @@
     <% end %>
   </div>
 </div>
+
+<% end %>

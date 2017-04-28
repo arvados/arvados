@@ -64,8 +64,8 @@ class ContainerRequestsController < ApplicationController
 
     @object = ContainerRequest.new
 
-    # By default the copied CR won't be reusing jobs, unless use_existing=true param
-    # is passed.
+    # By default the copied CR won't be reusing containers, unless use_existing=true
+    # param is passed.
     command = src.command
     if params[:use_existing]
       @object.use_existing = true
