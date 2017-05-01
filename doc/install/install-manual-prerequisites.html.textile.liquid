@@ -67,21 +67,11 @@ table(table table-bordered table-condensed).
 |Debian 8 ("jessie")|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ jessie main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
 |Ubuntu 12.04 ("precise")[1]|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ precise main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
 |Ubuntu 14.04 ("trusty")[1]|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ trusty main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
-|Ubuntu 16.04 ("xenial")[1] [2]|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ xenial main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
+|Ubuntu 16.04 ("xenial")[1]|<notextile><code><span class="userinput">echo "deb http://apt.arvados.org/ xenial main" &#x7c; sudo tee /etc/apt/sources.list.d/arvados.list</span></code></notextile>|
 
 {% include 'notebox_begin' %}
 
 fn1. Arvados packages for Ubuntu may depend on third-party packages in Ubuntu's "universe" repository.  If you're installing on Ubuntu, make sure you have the universe sources uncommented in @/etc/apt/sources.list@.
-
-fn2. If you use Ubuntu 16.04 ("xenial"), you need to create @/etc/apt/preferences.d/arvados@ with these contents:
-
-<pre>
-Package: *
-Pin: origin "apt.arvados.org"
-Pin-Priority: 501
-</pre>
-
-This gives packages from apt.arvados.org a slight priority over the default Ubuntu 16.04 ("xenial") packages, so that dependencies on older versions of certain packages get installed automatically. Specificaly, this affects the python-pycurl and python-oauth2client packages provided in the Arvados apt repositories.
 
 {% include 'notebox_end' %}
 
