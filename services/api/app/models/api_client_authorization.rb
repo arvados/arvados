@@ -61,7 +61,13 @@ class ApiClientAuthorization < ArvadosModel
   end
 
   def scopes_allow_request?(request)
-    scopes_allow? [request.request_method, request.path].join(' ')
+    method = request.request_method
+    if method == 'HEAD'
+      (scopes_allow?(['HEAD', request.path].join(' ')) ||
+       scopes_allow?(['GET', request.path].join(' ')))
+    else
+      scopes_allow?([method, request.path].join(' '))
+    end
   end
 
   def logged_attributes

@@ -45,6 +45,7 @@ class Arvados::V1::SchemaController < ApplicationController
         crunchLogThrottleLines: Rails.application.config.crunch_log_throttle_lines,
         crunchLimitLogBytesPerJob: Rails.application.config.crunch_limit_log_bytes_per_job,
         crunchLogPartialLineThrottlePeriod: Rails.application.config.crunch_log_partial_line_throttle_period,
+        websocketUrl: Rails.application.config.websocket_address,
         parameters: {
           alt: {
             type: "string",
@@ -89,12 +90,6 @@ class Arvados::V1::SchemaController < ApplicationController
         schemas: {},
         resources: {}
       }
-
-      if Rails.application.config.websocket_address
-        discovery[:websocketUrl] = Rails.application.config.websocket_address
-      elsif ENV['ARVADOS_WEBSOCKETS']
-        discovery[:websocketUrl] = root_url.sub(/^http/, 'ws') + "websocket"
-      end
 
       ActiveRecord::Base.descendants.reject(&:abstract_class?).each do |k|
         begin

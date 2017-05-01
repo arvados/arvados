@@ -44,9 +44,7 @@ CREATE TABLE api_client_authorizations (
     created_at timestamp without time zone NOT NULL,
     updated_at timestamp without time zone NOT NULL,
     default_owner_uuid character varying(255),
-    scopes text DEFAULT '---
-- all
-'::text NOT NULL,
+    scopes text DEFAULT '["all"]'::text,
     uuid character varying(255) NOT NULL
 );
 
@@ -2775,6 +2773,8 @@ INSERT INTO schema_migrations (version) VALUES ('20170216170823');
 
 INSERT INTO schema_migrations (version) VALUES ('20170301225558');
 
+INSERT INTO schema_migrations (version) VALUES ('20170319063406');
+
 INSERT INTO schema_migrations (version) VALUES ('20170328215436');
 
 INSERT INTO schema_migrations (version) VALUES ('20170330012505');
@@ -2784,3 +2784,4 @@ INSERT INTO schema_migrations (version) VALUES ('20170419173031');
 INSERT INTO schema_migrations (version) VALUES ('20170419173712');
 
 INSERT INTO schema_migrations (version) VALUES ('20170419175801');
+

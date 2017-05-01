@@ -145,6 +145,7 @@ type ContainerRunner struct {
 	HostOutputDir  string
 	CleanupTempDir []string
 	Binds          []string
+	Volumes        map[string]struct{}
 	OutputPDH      *string
 	SigChan        chan os.Signal
 	ArvMountExit   chan error
@@ -336,6 +337,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 
 	collectionPaths := []string{}
 	runner.Binds = nil
+	runner.Volumes = make(map[string]struct{})
 	needCertMount := true
 
 	var binds []string
@@ -445,7 +447,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", runner.HostOutputDir, bind))
 
 		case mnt.Kind == "tmp":
-			runner.Binds = append(runner.Binds, bind)
+			runner.Volumes[bind] = struct{}{}
 
 		case mnt.Kind == "json":
 			jsondata, err := json.Marshal(mnt.Content)
@@ -793,6 +795,8 @@ func (runner *ContainerRunner) CreateContainer() error {
 	for k, v := range runner.Container.Environment {
 		runner.ContainerConfig.Env = append(runner.ContainerConfig.Env, k+"="+v)
 	}
+
+	runner.ContainerConfig.Volumes = runner.Volumes
 
 	runner.HostConfig = dockercontainer.HostConfig{
 		Binds:  runner.Binds,

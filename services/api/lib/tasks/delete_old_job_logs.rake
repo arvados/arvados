@@ -5,7 +5,7 @@
 namespace :db do
   desc "Remove old job stderr entries from the logs table"
   task delete_old_job_logs: :environment do
-    delete_sql = "DELETE FROM logs WHERE id in (SELECT logs.id FROM logs JOIN jobs ON logs.object_uuid = jobs.uuid WHERE event_type = 'stderr' AND jobs.log IS NOT NULL AND jobs.finished_at < '#{Rails.configuration.clean_job_log_rows_after.ago}')"
+    delete_sql = "DELETE FROM logs WHERE id in (SELECT logs.id FROM logs JOIN jobs ON logs.object_uuid = jobs.uuid WHERE event_type = 'stderr' AND jobs.log IS NOT NULL AND clock_timestamp() - jobs.finished_at > interval '#{Rails.configuration.clean_job_log_rows_after} seconds')"
 
     ActiveRecord::Base.connection.execute(delete_sql)
   end
