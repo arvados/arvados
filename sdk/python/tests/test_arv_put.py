@@ -271,8 +271,9 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         self.arvfile_write = getattr(arvados.arvfile.ArvadosFileWriter, 'write')
         # Temp dir to hold a symlink to other temp dir
         self.tempdir_with_symlink = tempfile.mkdtemp()
-        os.symlink(self.tempdir, os.path.join(self.tempdir_with_symlink, 'linkeddir1'))
-        os.symlink(self.tempdir, os.path.join(self.tempdir_with_symlink, 'linkeddir2'))
+        os.symlink(self.tempdir, os.path.join(self.tempdir_with_symlink, 'linkeddir'))
+        os.symlink(os.path.join(self.tempdir, '1'),
+                   os.path.join(self.tempdir_with_symlink, 'linkedfile'))
 
     def tearDown(self):
         super(ArvPutUploadJobTest, self).tearDown()
@@ -284,23 +285,15 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
     def test_symlinks_are_followed_by_default(self):
         cwriter = arv_put.ArvPutUploadJob([self.tempdir_with_symlink])
         cwriter.start(save_collection=False)
-        self.assertIn('linkeddir1', cwriter.manifest_text())
-        cwriter.destroy_cache()
-
-    def test_symlinks_are_followed_only_once(self):
-        cwriter = arv_put.ArvPutUploadJob([self.tempdir_with_symlink],
-                                          follow_links=True)
-        cwriter.start(save_collection=False)
-        self.assertIn('linkeddir1', cwriter.manifest_text())
-        self.assertNotIn('linkeddir2', cwriter.manifest_text())
+        self.assertIn('linkeddir', cwriter.manifest_text())
         cwriter.destroy_cache()
 
     def test_symlinks_are_not_followed_when_requested(self):
         cwriter = arv_put.ArvPutUploadJob([self.tempdir_with_symlink],
                                           follow_links=False)
         cwriter.start(save_collection=False)
-        self.assertNotIn('linkeddir1', cwriter.manifest_text())
-        self.assertNotIn('linkeddir2', cwriter.manifest_text())
+        self.assertNotIn('linkeddir', cwriter.manifest_text())
+        self.assertNotIn('linkedfile', cwriter.manifest_text())
         cwriter.destroy_cache()
 
     def test_passing_nonexistant_path_raise_exception(self):

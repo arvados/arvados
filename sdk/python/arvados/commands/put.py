@@ -188,12 +188,11 @@ Do not continue interrupted uploads from cached state.
 _group = run_opts.add_mutually_exclusive_group()
 _group.add_argument('--follow-links', action='store_true', default=True,
                     dest='follow_links', help="""
-Traverse directory symlinks (default).
-Multiple symlinks pointing to the same directory will only be followed once.
+Follow file and directory symlinks (default).
 """)
 _group.add_argument('--no-follow-links', action='store_false', dest='follow_links',
                     help="""
-Do not traverse directory symlinks.
+Do not follow file and directory symlinks.
 """)
 
 _group = run_opts.add_mutually_exclusive_group()
@@ -411,7 +410,6 @@ class ArvPutUploadJob(object):
         self.dry_run = dry_run
         self._checkpoint_before_quit = True
         self.follow_links = follow_links
-        self._traversed_links = set()
 
         if not self.use_cache and self.resume:
             raise ArvPutArgumentConflict('resume cannot be True when use_cache is False')
@@ -422,21 +420,6 @@ class ArvPutUploadJob(object):
 
         # Load cached data if any and if needed
         self._setup_state(update_collection)
-
-    def _check_traversed_dir_links(self, root, dirs):
-        """
-        Remove from the 'dirs' list the already traversed directory symlinks,
-        register the new dir symlinks as traversed.
-        """
-        for d in [d for d in dirs if os.path.isdir(os.path.join(root, d)) and
-                  os.path.islink(os.path.join(root, d))]:
-            real_dirpath = os.path.realpath(os.path.join(root, d))
-            if real_dirpath in self._traversed_links:
-                dirs.remove(d)
-                self.logger.warning("Skipping '{}' symlink to directory '{}' because it was already uploaded".format(os.path.join(root, d), real_dirpath))
-            else:
-                self._traversed_links.add(real_dirpath)
-        return dirs
 
     def start(self, save_collection):
         """
@@ -459,12 +442,7 @@ class ArvPutUploadJob(object):
                     prefixdir = path = os.path.abspath(path)
                     if prefixdir != '/':
                         prefixdir += '/'
-                    # If following symlinks, avoid recursive traversals
-                    if self.follow_links and os.path.islink(path):
-                        self._traversed_links.add(os.path.realpath(path))
                     for root, dirs, files in os.walk(path, followlinks=self.follow_links):
-                        if self.follow_links:
-                            dirs = self._check_traversed_dir_links(root, dirs)
                         # Make os.walk()'s dir traversing order deterministic
                         dirs.sort()
                         files.sort()
@@ -602,7 +580,12 @@ class ArvPutUploadJob(object):
         output.close()
 
     def _check_file(self, source, filename):
-        """Check if this file needs to be uploaded"""
+        """
+        Check if this file needs to be uploaded
+        """
+        # Ignore symlinks when requested
+        if (not self.follow_links) and os.path.islink(source):
+            return
         resume_offset = 0
         should_upload = False
         new_file_in_cache = False
@@ -841,24 +824,17 @@ class ArvPutUploadJob(object):
 def expected_bytes_for(pathlist, follow_links=True):
     # Walk the given directory trees and stat files, adding up file sizes,
     # so we can display progress as percent
-    linked_dirs = set()
     bytesum = 0
     for path in pathlist:
         if os.path.isdir(path):
             for root, dirs, files in os.walk(path, followlinks=follow_links):
-                if follow_links:
-                    # Skip those linked dirs that were visited more than once.
-                    for d in [x for x in dirs if os.path.islink(os.path.join(root, x))]:
-                        d_realpath = os.path.realpath(os.path.join(root, d))
-                        if d_realpath in linked_dirs:
-                            # Linked dir already visited, skip it.
-                            dirs.remove(d)
-                        else:
-                            # Will only visit this dir once
-                            linked_dirs.add(d_realpath)
                 # Sum file sizes
                 for f in files:
-                    bytesum += os.path.getsize(os.path.join(root, f))
+                    filepath = os.path.join(root, f)
+                    # Ignore symlinked files when requested
+                    if (not follow_links) and os.path.islink(filepath):
+                        continue
+                    bytesum += os.path.getsize(filepath)
         elif not os.path.isfile(path):
             return None
         else:
