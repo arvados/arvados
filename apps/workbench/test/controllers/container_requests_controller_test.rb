@@ -44,11 +44,12 @@ class ContainerRequestsControllerTest < ActionController::TestCase
   [
     ['completed', false, false],
     ['completed', true, false],
-    ['completed-acr', false, true],
-    ['completed-acr', true, true],
+    ['completed-older', false, true],
+    ['completed-older', true, true],
   ].each do |cr_fixture, reuse_enabled, uses_acr|
     test "container request #{uses_acr ? '' : 'not'} using arvados-cwl-runner copy #{reuse_enabled ? 'with' : 'without'} reuse enabled" do
       completed_cr = api_fixture('container_requests')[cr_fixture]
+      # Set up post request params
       copy_params = {id: completed_cr['uuid']}
       if reuse_enabled
         copy_params.merge!({use_existing: true})

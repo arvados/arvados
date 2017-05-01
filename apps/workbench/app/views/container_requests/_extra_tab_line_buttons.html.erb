@@ -1,15 +1,15 @@
 <% if @object.state == 'Final' %>
+<script type="application/javascript">
+  function reset_form_cr_reuse() {
+    $('#use_existing').removeAttr('checked');
+  }
+</script>
+
   <%= link_to raw('<i class="fa fa-fw fa-play"></i> Re-run...'),
       "#",
       {class: 'btn btn-sm btn-primary', 'data-toggle' => 'modal',
        'data-target' => '#clone-and-edit-modal-window',
        title: 'This will make a copy and take you there. You can then make any needed changes and run it'}  %>
-
-<script type="application/javascript">
-  function reset_form() {
-    $('#use_existing').removeAttr('checked');
-  }
-</script>
 
 <div id="clone-and-edit-modal-window" class="modal fade" role="dialog"
      aria-labelledby="myModalLabel" aria-hidden="true">
@@ -19,7 +19,7 @@
     <%= form_tag copy_container_request_path do |f| %>
 
       <div class="modal-header">
-        <button type="button" class="close" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <button type="button" class="close" onClick="reset_form_cr_reuse()" data-dismiss="modal" aria-hidden="true">&times;</button>
         <div>
           <div class="col-sm-6"> <h4 class="modal-title">Re-run container request</h4> </div>
         </div>
@@ -32,7 +32,7 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn btn-default" onClick="reset_form()" data-dismiss="modal" aria-hidden="true">Cancel</button>
+        <button class="btn btn-default" onClick="reset_form_cr_reuse()" data-dismiss="modal" aria-hidden="true">Cancel</button>
         <button type="submit" class="btn btn-primary" name="container_request[state]" value="Uncommitted">Copy and edit inputs</button>
       </div>
 
