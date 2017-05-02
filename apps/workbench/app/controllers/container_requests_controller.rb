@@ -87,7 +87,26 @@ class ContainerRequestsController < ApplicationController
 
     @object = ContainerRequest.new
 
-    @object.command = src.command
+    # By default the copied CR won't be reusing containers, unless use_existing=true
+    # param is passed.
+    command = src.command
+    if params[:use_existing]
+      @object.use_existing = true
+      # Pass the correct argument to arvados-cwl-runner command.
+      if src.command[0] == 'arvados-cwl-runner'
+        command = src.command - ['--disable-reuse']
+        command.insert(1, '--enable-reuse')
+      end
+    else
+      @object.use_existing = false
+      # Pass the correct argument to arvados-cwl-runner command.
+      if src.command[0] == 'arvados-cwl-runner'
+        command = src.command - ['--enable-reuse']
+        command.insert(1, '--disable-reuse')
+      end
+    end
+
+    @object.command = command
     @object.container_image = src.container_image
     @object.cwd = src.cwd
     @object.description = src.description
@@ -100,7 +119,6 @@ class ContainerRequestsController < ApplicationController
     @object.runtime_constraints = src.runtime_constraints
     @object.scheduling_parameters = src.scheduling_parameters
     @object.state = 'Uncommitted'
-    @object.use_existing = false
 
     # set owner_uuid to that of source, provided it is a project and writable by current user
     current_project = Group.find(src.owner_uuid) rescue nil
