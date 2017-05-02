@@ -26,7 +26,9 @@ module CreateSuperUserToken
       # need to create a token
       if !api_client_auth
         # Get (or create) trusted api client
-        apiClient =  ApiClient.find_or_create_by_url_prefix_and_is_trusted("ssh://root@localhost/", true)
+        apiClient =  ApiClient.
+          find_or_create_by(url_prefix: "ssh://root@localhost/",
+                            is_trusted: true)
 
         # Check if there is an unexpired superuser token corresponding to this api client
         api_client_auth =

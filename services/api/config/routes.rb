@@ -1,15 +1,13 @@
 Server::Application.routes.draw do
   themes_for_rails
 
-  # See http://guides.rubyonrails.org/routing.html
-
   # OPTIONS requests are not allowed at routes that use cookies.
   ['/auth/*a', '/login', '/logout'].each do |nono|
-    match nono, :to => 'user_sessions#cross_origin_forbidden', :via => 'OPTIONS'
+    match nono, to: 'user_sessions#cross_origin_forbidden', via: 'OPTIONS'
   end
   # OPTIONS at discovery and API paths get an empty response with CORS headers.
-  match '/discovery/v1/*a', :to => 'static#empty', :via => 'OPTIONS'
-  match '/arvados/v1/*a', :to => 'static#empty', :via => 'OPTIONS'
+  match '/discovery/v1/*a', to: 'static#empty', via: 'OPTIONS'
+  match '/arvados/v1/*a', to: 'static#empty', via: 'OPTIONS'
 
   namespace :arvados do
     namespace :v1 do
@@ -79,7 +77,7 @@ Server::Application.routes.draw do
         get 'logins', on: :member
         get 'get_all_logins', on: :collection
       end
-      get '/permissions/:uuid', :to => 'links#get_permissions'
+      get '/permissions/:uuid', to: 'links#get_permissions'
     end
   end
 
@@ -88,22 +86,22 @@ Server::Application.routes.draw do
   end
 
   # omniauth
-  match '/auth/:provider/callback', :to => 'user_sessions#create'
-  match '/auth/failure', :to => 'user_sessions#failure'
+  match '/auth/:provider/callback', to: 'user_sessions#create', via: [:get, :post]
+  match '/auth/failure', to: 'user_sessions#failure', via: [:get, :post]
   # not handled by omniauth provider -> 403 with no CORS headers.
-  get '/auth/*a', :to => 'user_sessions#cross_origin_forbidden'
+  get '/auth/*a', to: 'user_sessions#cross_origin_forbidden'
 
   # Custom logout
-  match '/login', :to => 'user_sessions#login'
-  match '/logout', :to => 'user_sessions#logout'
+  match '/login', to: 'user_sessions#login', via: [:get, :post]
+  match '/logout', to: 'user_sessions#logout', via: [:get, :post]
 
-  match '/discovery/v1/apis/arvados/v1/rest', :to => 'arvados/v1/schema#index'
+  match '/discovery/v1/apis/arvados/v1/rest', to: 'arvados/v1/schema#index', via: [:get, :post]
 
-  match '/static/login_failure', :to => 'static#login_failure', :as => :login_failure
+  match '/static/login_failure', to: 'static#login_failure', as: :login_failure, via: [:get, :post]
 
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
-  match '*a', :to => 'static#render_not_found'
+  match '*a', to: 'static#render_not_found', via: [:get, :post, :put, :patch, :delete, :options]
 
-  root :to => 'static#home'
+  root to: 'static#home'
 end

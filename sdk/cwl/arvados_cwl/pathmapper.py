@@ -14,6 +14,21 @@ from cwltool.workflow import WorkflowException
 
 logger = logging.getLogger('arvados.cwl-runner')
 
+def trim_listing(obj):
+    """Remove 'listing' field from Directory objects that are keep references.
+
+    When Directory objects represent Keep references, it is redundant and
+    potentially very expensive to pass fully enumerated Directory objects
+    between instances of cwl-runner (e.g. a submitting a job, or using the
+    RunInSingleContainer feature), so delete the 'listing' field when it is
+    safe to do so.
+
+    """
+
+    if obj.get("location", "").startswith("keep:") and "listing" in obj:
+        del obj["listing"]
+
+
 class ArvPathMapper(PathMapper):
     """Convert container-local paths to and from Keep collection ids."""
 
@@ -27,6 +42,7 @@ class ArvPathMapper(PathMapper):
         self.collection_pattern = collection_pattern
         self.file_pattern = file_pattern
         self.name = name
+        self.referenced_files = [r["location"] for r in referenced_files]
         super(ArvPathMapper, self).__init__(referenced_files, input_basedir, None)
 
     def visit(self, srcobj, uploadfiles):

@@ -283,12 +283,12 @@ EOS
       assert_response :success
       assert_not_nil assigns(:object)
       resp = assigns(:object)
-      assert_equal foo_collection[:portable_data_hash], resp['portable_data_hash']
-      assert_signed_manifest resp['manifest_text']
+      assert_equal foo_collection[:portable_data_hash], resp[:portable_data_hash]
+      assert_signed_manifest resp[:manifest_text]
 
       # The manifest in the response will have had permission hints added.
       # Remove any permission hints in the response before comparing it to the source.
-      stripped_manifest = resp['manifest_text'].gsub(/\+A[A-Za-z0-9@_-]+/, '')
+      stripped_manifest = resp[:manifest_text].gsub(/\+A[A-Za-z0-9@_-]+/, '')
       assert_equal foo_collection[:manifest_text], stripped_manifest
     end
   end

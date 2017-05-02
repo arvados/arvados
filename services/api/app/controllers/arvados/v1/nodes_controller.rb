@@ -6,8 +6,8 @@ class Arvados::V1::NodesController < ApplicationController
   include DbCurrentTime
 
   def update
-    if resource_attrs[:job_uuid]
-      @object.job_readable = readable_job_uuids(resource_attrs[:job_uuid]).any?
+    if resource_attrs[:job_uuid].is_a? String
+      @object.job_readable = readable_job_uuids([resource_attrs[:job_uuid]]).any?
     end
     super
   end
@@ -57,7 +57,7 @@ class Arvados::V1::NodesController < ApplicationController
 
   protected
 
-  def readable_job_uuids(*uuids)
+  def readable_job_uuids(uuids)
     Job.readable_by(*@read_users).select(:uuid).where(uuid: uuids).map(&:uuid)
   end
 end
