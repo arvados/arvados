@@ -127,7 +127,8 @@ class UserSessionsController < ApplicationController
     # Stub: automatically register all new API clients
     api_client_url_prefix = callback_url.match(%r{^.*?://[^/]+})[0] + '/'
     act_as_system_user do
-      @api_client = ApiClient.find_or_create_by_url_prefix api_client_url_prefix
+      @api_client = ApiClient.
+        find_or_create_by(url_prefix: api_client_url_prefix)
     end
 
     api_client_auth = ApiClientAuthorization.

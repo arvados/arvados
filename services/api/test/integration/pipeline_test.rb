@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class PipelineTest < ActionDispatch::IntegrationTest
+class PipelineIntegrationTest < ActionDispatch::IntegrationTest
   # These tests simulate the workflow of arv-run-pipeline-instance
   # and other pipeline-running code.
 

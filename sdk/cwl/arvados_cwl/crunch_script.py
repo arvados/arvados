@@ -52,7 +52,8 @@ def run():
                 return v
 
         def keeppathObj(v):
-            v["location"] = keeppath(v["location"])
+            if "location" in v:
+                v["location"] = keeppath(v["location"])
 
         for k,v in job_order_object.items():
             if isinstance(v, basestring) and arvados.util.keep_locator_pattern.match(v):

@@ -6,8 +6,6 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/streamer"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -15,6 +13,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/streamer"
 )
 
 // A Keep "block" is 64MB.
@@ -47,8 +48,11 @@ type ErrNotFound struct {
 	multipleResponseError
 }
 
-var InsufficientReplicasError = errors.New("Could not write sufficient replicas")
-var OversizeBlockError = errors.New("Exceeded maximum block size (" + strconv.Itoa(BLOCKSIZE) + ")")
+type InsufficientReplicasError error
+
+type OversizeBlockError error
+
+var ErrOversizeBlock = OversizeBlockError(errors.New("Exceeded maximum block size (" + strconv.Itoa(BLOCKSIZE) + ")"))
 var MissingArvadosApiHost = errors.New("Missing required environment variable ARVADOS_API_HOST")
 var MissingArvadosApiToken = errors.New("Missing required environment variable ARVADOS_API_TOKEN")
 var InvalidLocatorError = errors.New("Invalid locator")
@@ -62,6 +66,10 @@ var ErrIncompleteIndex = errors.New("Got incomplete index")
 const X_Keep_Desired_Replicas = "X-Keep-Desired-Replicas"
 const X_Keep_Replicas_Stored = "X-Keep-Replicas-Stored"
 
+type HTTPClient interface {
+	Do(*http.Request) (*http.Response, error)
+}
+
 // Information about Arvados and Keep servers.
 type KeepClient struct {
 	Arvados            *arvadosclient.ArvadosClient
@@ -70,7 +78,7 @@ type KeepClient struct {
 	writableLocalRoots *map[string]string
 	gatewayRoots       *map[string]string
 	lock               sync.RWMutex
-	Client             *http.Client
+	Client             HTTPClient
 	Retries            int
 	BlockCache         *BlockCache
 
@@ -115,14 +123,14 @@ func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 // Returns the locator for the written block, the number of replicas
 // written, and an error.
 //
-// Returns an InsufficientReplicas error if 0 <= replicas <
+// Returns an InsufficientReplicasError if 0 <= replicas <
 // kc.Wants_replicas.
 func (kc *KeepClient) PutHR(hash string, r io.Reader, dataBytes int64) (string, int, error) {
 	// Buffer for reads from 'r'
 	var bufsize int
 	if dataBytes > 0 {
 		if dataBytes > BLOCKSIZE {
-			return "", 0, OversizeBlockError
+			return "", 0, ErrOversizeBlock
 		}
 		bufsize = int(dataBytes)
 	} else {

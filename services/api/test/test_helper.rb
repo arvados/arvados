@@ -1,8 +1,14 @@
 ENV["RAILS_ENV"] = "test"
 unless ENV["NO_COVERAGE_TEST"]
   begin
-    require 'simplecov'
-    require 'simplecov-rcov'
+    verbose_orig = $VERBOSE
+    begin
+      $VERBOSE = nil
+      require 'simplecov'
+      require 'simplecov-rcov'
+    ensure
+      $VERBOSE = verbose_orig
+    end
     class SimpleCov::Formatter::MergedFormatter
       def format(result)
         SimpleCov::Formatter::HTMLFormatter.new.format(result)
@@ -23,6 +29,7 @@ end
 require File.expand_path('../../config/environment', __FILE__)
 require 'rails/test_help'
 require 'mocha'
+require 'mocha/mini_test'
 
 module ArvadosTestSupport
   def json_response
@@ -49,10 +56,6 @@ class ActiveSupport::TestCase
   include ArvadosTestSupport
   include CurrentApiClient
 
-  setup do
-    Rails.logger.warn "\n\n#{'=' * 70}\n#{self.class}\##{method_name}\n#{'-' * 70}\n\n"
-  end
-
   teardown do
     Thread.current[:api_client_ip_address] = nil
     Thread.current[:api_client_authorization] = nil
@@ -60,6 +63,15 @@ class ActiveSupport::TestCase
     Thread.current[:api_client] = nil
     Thread.current[:user] = nil
     restore_configuration
+    User.invalidate_permissions_cache
+  end
+
+  def assert_equal(expect, *args)
+    if expect.nil?
+      assert_nil(*args)
+    else
+      super
+    end
   end
 
   def assert_not_allowed
@@ -122,8 +134,6 @@ class ActiveSupport::TestCase
   def self.slow_test(name, &block)
     define_method(name, block) unless skip_slow_tests?
   end
-
-  alias_method :skip, :omit
 end
 
 class ActionController::TestCase

@@ -176,26 +176,33 @@ class JobTest < ActiveSupport::TestCase
   [
    {script_parameters: ""},
    {script_parameters: []},
-   {script_parameters: {symbols: :are_not_allowed_here}},
+   {script_parameters: {["foo"] => ["bar"]}},
    {runtime_constraints: ""},
    {runtime_constraints: []},
    {tasks_summary: ""},
    {tasks_summary: []},
-   {script_version: "no/branch/could/ever/possibly/have/this/name"},
   ].each do |invalid_attrs|
     test "validation failures set error messages: #{invalid_attrs.to_json}" do
       # Ensure valid_attrs doesn't produce errors -- otherwise we will
       # not know whether errors reported below are actually caused by
       # invalid_attrs.
-      Job.create! job_attrs
+      Job.new(job_attrs).save!
 
-      job = Job.create job_attrs(invalid_attrs)
-      assert_raises(ActiveRecord::RecordInvalid, ArgumentError,
-                    "save! did not raise the expected exception") do
-        job.save!
+      err = assert_raises(ArgumentError) do
+        Job.new(job_attrs(invalid_attrs)).save!
       end
-      assert_not_empty job.errors, "validation failure did not provide errors"
+      assert_match /parameters|constraints|summary/, err.message
     end
+  end
+
+  test "invalid script_version" do
+    invalid = {
+      script_version: "no/branch/could/ever/possibly/have/this/name",
+    }
+    err = assert_raises(ActiveRecord::RecordInvalid) do
+      Job.new(job_attrs(invalid)).save!
+    end
+    assert_match /Script version .* does not resolve to a commit/, err.message
   end
 
   [

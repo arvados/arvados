@@ -104,6 +104,37 @@ module ProvenanceHelper
       gr
     end
 
+    def cr_edges cr
+      uuid = cr[:uuid]
+      gr = ""
+
+      # Search for input mounts
+      input_obj = cr[:mounts].andand[:"/var/lib/cwl/cwl.input.json"].andand[:content] || cr[:mounts] || {}
+      if input_obj
+        ProvenanceHelper::find_collections input_obj, 'input' do |col_hash, col_uuid, key|
+          if col_uuid
+            gr += describe_node(col_uuid)
+            gr += edge(col_uuid, uuid, {:label => key})
+          else
+            gr += describe_node(col_hash)
+            gr += edge(col_hash, uuid, {:label => key})
+          end
+        end
+      end
+
+      [
+        [:output_uuid, 'output'],
+        [:log_uuid, 'log']
+      ].each do |attr, label|
+        if cr[attr]
+          gr += describe_node(cr[attr])
+          gr += edge(uuid, cr[attr], {label: label})
+        end
+      end
+
+      gr
+    end
+
     def job_edges job, edge_opts={}
       uuid = job_uuid(job)
       gr = ""
@@ -184,6 +215,23 @@ module ProvenanceHelper
         if rsc == Job
           job = @pdata[uuid]
           gr += job_edges job if job
+        elsif rsc == ContainerRequest
+          cr = @pdata[uuid]
+          if cr
+            gr += cr_edges cr
+            gr += describe_node(uuid, {href: {controller: 'container_requests',
+                                              id: uuid},
+                                       label: @pdata[uuid][:name],
+                                       shape: 'oval'})
+            # Search for child CRs
+            if cr[:container_uuid]
+              child_crs = ContainerRequest.where(requesting_container_uuid: cr[:container_uuid])
+              child_crs.each do |child|
+                gr += generate_provenance_edges(child[:uuid])
+                gr += edge(uuid, child[:uuid], {label: 'child'})
+              end
+            end
+          end
         end
       end
 

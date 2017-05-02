@@ -4,12 +4,35 @@ class ContainerRequestsController < ApplicationController
     'show' == ctrl.action_name
   }
 
+  def generate_provenance(cr)
+    return if params['tab_pane'] != "Provenance"
+
+    nodes = {}
+    nodes[cr[:uuid]] = cr
+    if cr[:container_uuid]
+      ContainerRequest.where(requesting_container_uuid: cr[:container_uuid]).each do |child|
+        nodes[child[:uuid]] = child
+      end
+    end
+    @svg = ProvenanceHelper::create_provenance_graph nodes,
+                                                     "provenance_svg",
+                                                     {
+                                                       :request => request,
+                                                       :direction => :top_down,
+                                                     }
+  end
+
   def show_pane_list
-    panes = %w(Status Log Advanced)
+    panes = %w(Status Log Provenance Advanced)
     if @object.andand.state == 'Uncommitted'
-      panes = %w(Inputs) + panes - %w(Log)
+      panes = %w(Inputs) + panes - %w(Log Provenance)
     end
     panes
+  end
+
+  def show
+    generate_provenance(@object)
+    super
   end
 
   def cancel
@@ -64,7 +87,26 @@ class ContainerRequestsController < ApplicationController
 
     @object = ContainerRequest.new
 
-    @object.command = src.command
+    # By default the copied CR won't be reusing containers, unless use_existing=true
+    # param is passed.
+    command = src.command
+    if params[:use_existing]
+      @object.use_existing = true
+      # Pass the correct argument to arvados-cwl-runner command.
+      if src.command[0] == 'arvados-cwl-runner'
+        command = src.command - ['--disable-reuse']
+        command.insert(1, '--enable-reuse')
+      end
+    else
+      @object.use_existing = false
+      # Pass the correct argument to arvados-cwl-runner command.
+      if src.command[0] == 'arvados-cwl-runner'
+        command = src.command - ['--enable-reuse']
+        command.insert(1, '--disable-reuse')
+      end
+    end
+
+    @object.command = command
     @object.container_image = src.container_image
     @object.cwd = src.cwd
     @object.description = src.description
@@ -77,7 +119,6 @@ class ContainerRequestsController < ApplicationController
     @object.runtime_constraints = src.runtime_constraints
     @object.scheduling_parameters = src.scheduling_parameters
     @object.state = 'Uncommitted'
-    @object.use_existing = false
 
     # set owner_uuid to that of source, provided it is a project and writable by current user
     current_project = Group.find(src.owner_uuid) rescue nil

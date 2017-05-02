@@ -2,13 +2,14 @@ package arvadosclient
 
 import (
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	. "gopkg.in/check.v1"
 	"net"
 	"net/http"
 	"os"
 	"testing"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	. "gopkg.in/check.v1"
 )
 
 // Gocheck boilerplate
@@ -168,7 +169,7 @@ func (s *ServerRequiredSuite) TestErrorResponse(c *C) {
 			Dict{"log": Dict{"bogus_attr": "foo"}},
 			&getback)
 		c.Assert(err, ErrorMatches, "arvados API server error: .*")
-		c.Assert(err, ErrorMatches, ".*unknown attribute: bogus_attr.*")
+		c.Assert(err, ErrorMatches, ".*unknown attribute(: | ')bogus_attr.*")
 		c.Assert(err, FitsTypeOf, APIServerError{})
 		c.Assert(err.(APIServerError).HttpStatusCode, Equals, 422)
 	}

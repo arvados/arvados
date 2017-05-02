@@ -14,7 +14,7 @@ module CanBeAnOwner
       base.has_many(t.to_sym,
                     foreign_key: :owner_uuid,
                     primary_key: :uuid,
-                    dependent: :restrict)
+                    dependent: :restrict_with_exception)
     end
     # We need custom protection for changing an owner's primary
     # key. (Apart from this restriction, admins are allowed to change

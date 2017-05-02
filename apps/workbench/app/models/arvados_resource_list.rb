@@ -84,6 +84,13 @@ class ArvadosResourceList
     self
   end
 
+  # with_count sets the 'count' parameter to 'exact' or 'none' -- see
+  # https://doc.arvados.org/api/methods.html#index
+  def with_count(count_param='exact')
+    @count = count_param
+    self
+  end
+
   def fetch_multiple_pages(f)
     @fetch_multiple_pages = f
     self
@@ -178,6 +185,7 @@ class ArvadosResourceList
     api_params = {
       _method: 'GET'
     }
+    api_params[:count] = @count if @count
     api_params[:where] = @cond if @cond
     api_params[:eager] = '1' if @eager
     api_params[:select] = @select if @select

@@ -192,7 +192,7 @@ def replace_range(data_locators, new_range_start, new_range_size, new_locator, n
             # range ends before this segment starts, so don't look at any more locators
             break
 
-        if  old_segment_start <= new_range_start and new_range_end <= old_segment_end:
+        if old_segment_start <= new_range_start and new_range_end <= old_segment_end:
             # new range starts and ends in old segment
             # split segment into up to 3 pieces
             if (new_range_start-old_segment_start) > 0:
