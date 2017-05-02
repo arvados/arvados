@@ -162,8 +162,8 @@ class UserTest < ActiveSupport::TestCase
       if auto_admin_first_user_config
         # This test requires no admin users exist (except for the system user)
         users(:admin).delete
-        @all_users = User.where("uuid not like '%-000000000000000'").where(:is_admin => true).find(:all)
-        assert_equal 0, @all_users.size, "No admin users should exist (except for the system user)"
+        @all_users = User.where("uuid not like '%-000000000000000'").where(:is_admin => true)
+        assert_equal 0, @all_users.count, "No admin users should exist (except for the system user)"
       end
 
       Rails.configuration.auto_admin_first_user = auto_admin_first_user_config
@@ -285,7 +285,7 @@ class UserTest < ActiveSupport::TestCase
   end
 
   test "find user method checks" do
-    User.find(:all).each do |user|
+    User.all.each do |user|
       assert_not_nil user.uuid, "non-null uuid expected for " + user.full_name
     end
 
@@ -313,14 +313,14 @@ class UserTest < ActiveSupport::TestCase
   test "create new user" do
     set_user_from_auth :admin
 
-    @all_users = User.find(:all)
+    @all_users = User.all.to_a
 
     user = User.new
     user.first_name = "first_name_for_newly_created_user"
     user.save
 
     # verify there is one extra user in the db now
-    assert_equal @all_users.size+1, User.find(:all).size
+    assert_equal @all_users.size+1, User.all.count
 
     user = User.find(user.id)   # get the user back
     assert_equal(user.first_name, 'first_name_for_newly_created_user')
@@ -422,7 +422,7 @@ class UserTest < ActiveSupport::TestCase
     @active_user.delete
 
     found_deleted_user = false
-    User.find(:all).each do |user|
+    User.all.each do |user|
       if user.uuid == active_user_uuid
         found_deleted_user = true
         break

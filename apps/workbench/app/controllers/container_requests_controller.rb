@@ -4,12 +4,35 @@ class ContainerRequestsController < ApplicationController
     'show' == ctrl.action_name
   }
 
+  def generate_provenance(cr)
+    return if params['tab_pane'] != "Provenance"
+
+    nodes = {}
+    nodes[cr[:uuid]] = cr
+    if cr[:container_uuid]
+      ContainerRequest.where(requesting_container_uuid: cr[:container_uuid]).each do |child|
+        nodes[child[:uuid]] = child
+      end
+    end
+    @svg = ProvenanceHelper::create_provenance_graph nodes,
+                                                     "provenance_svg",
+                                                     {
+                                                       :request => request,
+                                                       :direction => :top_down,
+                                                     }
+  end
+
   def show_pane_list
-    panes = %w(Status Log Advanced)
+    panes = %w(Status Log Provenance Advanced)
     if @object.andand.state == 'Uncommitted'
-      panes = %w(Inputs) + panes - %w(Log)
+      panes = %w(Inputs) + panes - %w(Log Provenance)
     end
     panes
+  end
+
+  def show
+    generate_provenance(@object)
+    super
   end
 
   def cancel

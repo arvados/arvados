@@ -85,4 +85,25 @@ class ContainerRequestsControllerTest < ActionController::TestCase
       end
     end
   end
+
+  [
+    ['completed', true],
+    ['running', true],
+    ['queued', true],
+    ['uncommitted', false],
+  ].each do |cr_fixture, should_show|
+    test "provenance tab should #{should_show ? '' : 'not'} be shown on #{cr_fixture} container requests" do
+      cr = api_fixture('container_requests')[cr_fixture]
+      assert_not_nil cr
+      get(:show,
+          {id: cr['uuid']},
+          session_for(:active))
+      assert_response :success
+      if should_show
+        assert_includes @response.body, "href=\"#Provenance\""
+      else
+        assert_not_includes @response.body, "href=\"#Provenance\""
+      end
+    end
+  end
 end

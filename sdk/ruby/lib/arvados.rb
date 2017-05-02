@@ -11,18 +11,7 @@ ActiveSupport::Inflector.inflections do |inflect|
   inflect.irregular 'human', 'humans'
 end
 
-module Kernel
-  def suppress_warnings
-    original_verbosity = $VERBOSE
-    $VERBOSE = nil
-    result = yield
-    $VERBOSE = original_verbosity
-    return result
-  end
-end
-
 class Arvados
-
   class TransactionFailedError < StandardError
   end
 
@@ -260,6 +249,18 @@ class Arvados
     def initialize(j)
       @attributes_to_update = {}
       @attributes = j
+    end
+  end
+
+  protected
+
+  def suppress_warnings
+    original_verbosity = $VERBOSE
+    begin
+      $VERBOSE = nil
+      yield
+    ensure
+      $VERBOSE = original_verbosity
     end
   end
 end

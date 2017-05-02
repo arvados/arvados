@@ -21,6 +21,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
@@ -52,7 +53,7 @@ func main() {
 		log.Fatal(err)
 	}
 	kc.Want_replicas = *Replicas
-	kc.Client.Timeout = 10 * time.Minute
+	kc.Client.(*http.Client).Timeout = 10 * time.Minute
 
 	overrideServices(kc)
 

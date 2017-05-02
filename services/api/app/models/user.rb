@@ -10,7 +10,7 @@ class User < ArvadosModel
   has_many :api_client_authorizations
   validates(:username,
             format: {
-              with: /^[A-Za-z][A-Za-z0-9]*$/,
+              with: /\A[A-Za-z][A-Za-z0-9]*\z/,
               message: "must begin with a letter and contain only alphanumerics",
             },
             uniqueness: true,
@@ -475,9 +475,9 @@ class User < ArvadosModel
 
   # Send admin notifications
   def send_admin_notifications
-    AdminNotifier.new_user(self).deliver
+    AdminNotifier.new_user(self).deliver_now
     if not self.is_active then
-      AdminNotifier.new_inactive_user(self).deliver
+      AdminNotifier.new_inactive_user(self).deliver_now
     end
   end
 
@@ -502,7 +502,7 @@ class User < ArvadosModel
     if self.prefs_changed?
       if self.prefs_was.andand.empty? || !self.prefs_was.andand['profile']
         profile_notification_address = Rails.configuration.user_profile_notification_address
-        ProfileNotifier.profile_created(self, profile_notification_address).deliver if profile_notification_address
+        ProfileNotifier.profile_created(self, profile_notification_address).deliver_now if profile_notification_address
       end
     end
   end

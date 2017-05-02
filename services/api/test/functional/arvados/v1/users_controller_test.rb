@@ -8,6 +8,7 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
   setup do
     @initial_link_count = Link.count
     @vm_uuid = virtual_machines(:testvm).uuid
+    ActionMailer::Base.deliveries = []
   end
 
   test "activate a user after signing UA" do

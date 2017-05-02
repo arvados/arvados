@@ -1,9 +1,20 @@
 module WhitelistUpdate
   def check_update_whitelist permitted_fields
     attribute_names.each do |field|
-      if not permitted_fields.include? field.to_sym and self.send((field.to_s + "_changed?").to_sym)
-        errors.add field, "cannot be modified in this state"
+      if !permitted_fields.include?(field.to_sym) && really_changed(field)
+        errors.add field, "cannot be modified in this state (#{send(field+"_was").inspect}, #{send(field).inspect})"
       end
+    end
+  end
+
+  def really_changed(attr)
+    return false if !send(attr+"_changed?")
+    old = send(attr+"_was")
+    new = send(attr)
+    if (old.nil? || old == [] || old == {}) && (new.nil? || new == [] || new == {})
+      false
+    else
+      old != new
     end
   end
 
