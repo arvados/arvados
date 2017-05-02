@@ -474,7 +474,10 @@ class ArvPutUploadJob(object):
             # Note: We're expecting SystemExit instead of KeyboardInterrupt because
             #   we have a custom signal handler in place that raises SystemExit with
             #   the catched signal's code.
-            if not isinstance(e, SystemExit) or e.code != -2:
+            if isinstance(e, PathDoesNotExistError):
+                # We aren't interested in the traceback for this case
+                pass
+            elif not isinstance(e, SystemExit) or e.code != -2:
                 self.logger.warning("Abnormal termination:\n{}".format(traceback.format_exc(e)))
             raise
         finally:
@@ -985,7 +988,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     except PathDoesNotExistError as error:
         logger.error("\n".join([
             "arv-put: %s" % str(error)]))
-        exit(1)
+        sys.exit(1)
 
     if args.progress:  # Print newline to split stderr from stdout for humans.
         logger.info("\n")

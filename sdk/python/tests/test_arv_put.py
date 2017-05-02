@@ -286,6 +286,7 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         cwriter = arv_put.ArvPutUploadJob([self.tempdir_with_symlink])
         cwriter.start(save_collection=False)
         self.assertIn('linkeddir', cwriter.manifest_text())
+        self.assertIn('linkedfile', cwriter.manifest_text())
         cwriter.destroy_cache()
 
     def test_symlinks_are_not_followed_when_requested(self):
