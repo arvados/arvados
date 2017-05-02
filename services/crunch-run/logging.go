@@ -211,6 +211,7 @@ type ArvLogWriter struct {
 	logThrottleFirstPartialLine  bool
 	bufToFlush                   bytes.Buffer
 	bufFlushedAt                 time.Time
+	closing                      bool
 }
 
 func (arvlog *ArvLogWriter) Write(p []byte) (n int, err error) {
@@ -257,8 +258,9 @@ func (arvlog *ArvLogWriter) Write(p []byte) (n int, err error) {
 		}
 	}
 
-	if int64(arvlog.bufToFlush.Len()) > crunchLogBytesPerEvent ||
-		(now.Sub(arvlog.bufFlushedAt) >= crunchLogSecondsBetweenEvents) {
+	if (int64(arvlog.bufToFlush.Len()) > crunchLogBytesPerEvent ||
+		(now.Sub(arvlog.bufFlushedAt) >= crunchLogSecondsBetweenEvents) ||
+		arvlog.closing) && (arvlog.bufToFlush.Len() > 0) {
 		// write to API
 		lr := arvadosclient.Dict{"log": arvadosclient.Dict{
 			"object_uuid": arvlog.UUID,
@@ -280,6 +282,8 @@ func (arvlog *ArvLogWriter) Write(p []byte) (n int, err error) {
 
 // Close the underlying writer
 func (arvlog *ArvLogWriter) Close() (err error) {
+	arvlog.closing = true
+	arvlog.Write([]byte{})
 	if arvlog.writeCloser != nil {
 		err = arvlog.writeCloser.Close()
 		arvlog.writeCloser = nil
