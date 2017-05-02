@@ -1,0 +1,12 @@
+<div class="data-table <%=name%>-table" id="<%=name%>-table" style="max-height:300px; border:1px solid; overflow-y:auto;">
+  <table>
+    <% inputs.each do |i|%>
+      <tr>
+        <td style="padding-left: 1em; padding-right: 1em">
+          <%= link_to_if_arvados_object i, friendly_name: true %>
+        </td>
+      </tr>
+    <% end %>
+  </table>
+</div>
+

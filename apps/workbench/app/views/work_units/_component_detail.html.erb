@@ -15,7 +15,7 @@
               No <%= current_obj.title %> has been submitted yet.
             <% else %>
             <table>
-              <% keys = [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :container_uuid, :priority] %>
+              <% keys = [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :container_uuid] %>
               <% keys << :log_collection if @object.uuid != current_obj.uuid %>
               <% keys << :outputs %>
               <% keys.each do |k| %>
@@ -67,8 +67,8 @@
                          object_for_dataclass(Repository, current_obj.repository, :name))
                  repo = nil unless repo.andand.http_fetch_url
                  %>
-              <% [:script, :repository, :script_version, :supplied_script_version, :nondeterministic,
-                  :command, :cwd, :environment, :mounts, :output_path].each do |k| %>
+              <% [:priority, :script, :repository, :script_version, :supplied_script_version, :nondeterministic,
+                  :runtime_constraints].each do |k| %>
                 <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
                 <% if val %>
                 <tr>
@@ -82,6 +82,8 @@
                       <%= link_to val, show_repository_blob_path(id: repo.uuid, commit: current_obj.script_version, path: 'crunch_scripts/'+current_obj.script) %>
                     <% elsif repo and k == :script_version %>
                       <%= link_to val, show_repository_commit_path(id: repo.uuid, commit: current_obj.script_version) %>
+                    <% elsif k == :runtime_constraints and val.any? %>
+                      <%= render partial: 'work_units/show_table_data', locals: {id: current_obj.uuid, name: k, data_map: val} %>
                     <% else %>
                       <%= val %>
                     <% end %>
@@ -89,6 +91,23 @@
                 </tr>
                 <% end %>
               <% end %>
+
+              <%
+                mounts = current_obj.send(:mounts) if current_obj.respond_to?(:mounts)
+                mount_wf = mounts.andand[:"/var/lib/cwl/workflow.json"]
+                mount_wf_cls = resource_class_for_uuid(mount_wf) if mount_wf
+              %>
+              <tr>
+                <% if mount_wf_cls == Collection %>
+                  <td style="padding-right: 1em">
+                    mount workflow:
+                  </td>
+                  <td>
+                    <%= link_to_if_arvados_object mount_wf, friendly_name: true %>
+                  </td>
+                <% end %>
+              </tr>
+
               <% if current_obj.runtime_constraints.andand[:docker_image] and current_obj.docker_image %>
                 <tr>
                   <td style="padding-right: 1em">
@@ -120,6 +139,52 @@
               <% end %>
             </table>
           </div>
+
+          <div class="col-md-11">
+            <table>
+              <% [:command].each do |k| %>
+                <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
+                <% if val %>
+                <tr>
+                  <td style="padding-right: 1em">
+                    <%= k.to_s %>:
+                  </td>
+                  <td>
+                    <% if k == :command %>
+                      <div style="max-height:200px; border:1px solid; overflow-y:auto; padding-left: 1em; padding-right: 1em">
+                        <%=val%>
+                      </div>
+                    <% else %>
+                      <%= val %>
+                    <% end %>
+                  </td>
+                </tr>
+                <% end %>
+              <% end %>
+
+              <%
+                mounts = current_obj.send(:mounts) if current_obj.respond_to?(:mounts)
+                input_obj =mounts.andand[:"/var/lib/cwl/cwl.input.json"].andand[:content] || mounts || {}
+                mnt_inputs = []
+                cwl_input_collections(input_obj) do |_, path|
+                  mnt_inputs << path
+                end
+                mnt_inputs = mnt_inputs.uniq.compact
+              %>
+              <tr>
+                <% if mnt_inputs.any? %>
+                  <td style="padding-right: 1em">
+                    input_mounts:
+                  </td>
+                  <td>
+                    <%= render partial: 'work_units/show_inputs',
+                                        locals: {id: current_obj.uuid, name: 'mount-inputs', inputs: mnt_inputs} %>
+                  </td>
+                <% end %>
+              </tr>
+            </table>
+          </div>
+
         </div>
 
         <% if current_obj.parameters and !current_obj.parameters.empty? %>

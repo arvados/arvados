@@ -1,0 +1,14 @@
+<div class="data-table <%=name%>-table" id="<%=name%>-table" style="max-height:200px; border:1px solid; overflow-y:auto;">
+  <table>
+    <% data_map.each do |k, v|%>
+      <tr>
+        <td style="padding-left: 1em; padding-right: 1em">
+          <%= k.to_s %>
+        </td>
+        <td style="padding-left: 1em; padding-right: 1em">
+          <%= v %>
+        </td>
+      </tr>
+    <% end %>
+  </table>
+</div>
