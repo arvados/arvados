@@ -63,8 +63,11 @@ class TestContainer(unittest.TestCase):
                         'use_existing': enable_reuse,
                         'priority': 1,
                         'mounts': {
-                            '/tmp': {'kind': 'tmp'},
-                            '/var/spool/cwl': {'kind': 'tmp'}
+                            '/tmp': {'kind': 'tmp',
+                                     "capacity": 1073741824
+                                 },
+                            '/var/spool/cwl': {'kind': 'tmp',
+                                               "capacity": 1073741824 }
                         },
                         'state': 'Committed',
                         'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
@@ -97,7 +100,8 @@ class TestContainer(unittest.TestCase):
                 "class": "ResourceRequirement",
                 "coresMin": 3,
                 "ramMin": 3000,
-                "tmpdirMin": 4000
+                "tmpdirMin": 4000,
+                "outdirMin": 5000
             }, {
                 "class": "http://arvados.org/cwl#RuntimeConstraints",
                 "keep_cache": 512
@@ -136,8 +140,10 @@ class TestContainer(unittest.TestCase):
                 'use_existing': True,
                 'priority': 1,
                 'mounts': {
-                    '/tmp': {'kind': 'tmp'},
-                    '/var/spool/cwl': {'kind': 'tmp'}
+                    '/tmp': {'kind': 'tmp',
+                             "capacity": 4194304000 },
+                    '/var/spool/cwl': {'kind': 'tmp',
+                                       "capacity": 5242880000 }
                 },
                 'state': 'Committed',
                 'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
@@ -242,8 +248,10 @@ class TestContainer(unittest.TestCase):
                 'use_existing': True,
                 'priority': 1,
                 'mounts': {
-                    '/tmp': {'kind': 'tmp'},
-                    '/var/spool/cwl': {'kind': 'tmp'},
+                    '/tmp': {'kind': 'tmp',
+                             "capacity": 1073741824 },
+                    '/var/spool/cwl': {'kind': 'tmp',
+                                       "capacity": 1073741824 },
                     '/var/spool/cwl/foo': {
                         'kind': 'collection',
                         'path': 'foo',
@@ -328,8 +336,10 @@ class TestContainer(unittest.TestCase):
                     'use_existing': True,
                     'priority': 1,
                     'mounts': {
-                        '/tmp': {'kind': 'tmp'},
-                        '/var/spool/cwl': {'kind': 'tmp'},
+                        '/tmp': {'kind': 'tmp',
+                                 "capacity": 1073741824 },
+                        '/var/spool/cwl': {'kind': 'tmp',
+                                           "capacity": 1073741824 },
                         "stderr": {
                             "kind": "file",
                             "path": "/var/spool/cwl/stderr.txt"
@@ -460,8 +470,10 @@ class TestContainer(unittest.TestCase):
                             "kind": "collection",
                             "portable_data_hash": "99999999999999999999999999999994+44"
                         },
-                        '/tmp': {'kind': 'tmp'},
-                        '/var/spool/cwl': {'kind': 'tmp'}
+                        '/tmp': {'kind': 'tmp',
+                                 "capacity": 1073741824 },
+                        '/var/spool/cwl': {'kind': 'tmp',
+                                           "capacity": 1073741824 }
                     },
                     'state': 'Committed',
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
