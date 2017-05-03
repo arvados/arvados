@@ -149,14 +149,20 @@ func checkSqueueForOrphans(dispatcher *dispatch.Dispatcher, sqCheck *SqueueCheck
 
 // sbatchCmd
 func sbatchFunc(container arvados.Container) *exec.Cmd {
-	memPerCPU := math.Ceil(float64(container.RuntimeConstraints.RAM) / (float64(container.RuntimeConstraints.VCPUs) * 1048576))
+	mem := int64(math.Ceil(float64(container.RuntimeConstraints.RAM+container.RuntimeConstraints.KeepCacheRAM) / float64(1048576)))
+
+	var disk int64
+	for _, m := range container.Mounts {
+		disk += m.Capacity
+	}
+	disk = int64(math.Ceil(float64(disk) / float64(1048576)))
 
 	var sbatchArgs []string
-	sbatchArgs = append(sbatchArgs, "--share")
 	sbatchArgs = append(sbatchArgs, theConfig.SbatchArguments...)
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--job-name=%s", container.UUID))
-	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--mem-per-cpu=%d", int(memPerCPU)))
+	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--mem=%d", mem))
 	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--cpus-per-task=%d", container.RuntimeConstraints.VCPUs))
+	sbatchArgs = append(sbatchArgs, fmt.Sprintf("--tmp=%d", disk))
 	if len(container.SchedulingParameters.Partitions) > 0 {
 		sbatchArgs = append(sbatchArgs, fmt.Sprintf("--partition=%s", strings.Join(container.SchedulingParameters.Partitions, ",")))
 	}
