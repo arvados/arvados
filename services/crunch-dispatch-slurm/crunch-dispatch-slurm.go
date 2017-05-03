@@ -153,7 +153,9 @@ func sbatchFunc(container arvados.Container) *exec.Cmd {
 
 	var disk int64
 	for _, m := range container.Mounts {
-		disk += m.Capacity
+		if m.Kind == "tmp" {
+			disk += m.Capacity
+		}
 	}
 	disk = int64(math.Ceil(float64(disk) / float64(1048576)))
 
