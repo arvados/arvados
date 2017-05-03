@@ -972,6 +972,22 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		i = 0
 		cr.ArvMountPoint = ""
 		cr.Container.Mounts = make(map[string]arvados.Mount)
+		cr.Container.Mounts["/out"] = arvados.Mount{Kind: "tmp"}
+		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
+		cr.OutputPath = "/out"
+
+		err := cr.SetupMounts()
+		c.Check(err, IsNil)
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/out", realTemp + "/3:/tmp"})
+		cr.CleanupDirs()
+		checkEmpty()
+	}
+
+	{
+		i = 0
+		cr.ArvMountPoint = ""
+		cr.Container.Mounts = make(map[string]arvados.Mount)
 		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
 		cr.OutputPath = "/tmp"
 
