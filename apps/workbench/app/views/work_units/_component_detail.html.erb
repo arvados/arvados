@@ -95,13 +95,13 @@
               <%
                 mounts = current_obj.send(:mounts) if current_obj.respond_to?(:mounts)
                 mount_wf = mounts.andand[:"/var/lib/cwl/workflow.json"]
-                mount_wf = mount_wf[5..-1] if mount_wf.andand.start_with?('keep:')
+                mount_wf = mount_wf[5..-1] if mount_wf.andand.is_a?(String) and mount_wf.start_with?('keep:')
                 mount_wf_cls = resource_class_for_uuid(mount_wf) if mount_wf
               %>
               <tr>
                 <% if mount_wf_cls == Collection %>
                   <td style="padding-right: 1em">
-                    mount workflow:
+                    mount_workflow:
                   </td>
                   <td>
                     <%= link_to_if_arvados_object mount_wf, friendly_name: true %>
@@ -178,7 +178,7 @@
                     input_mounts:
                   </td>
                   <td>
-                    <%= render partial: 'work_units/show_inputs',
+                    <%= render partial: 'work_units/show_mount_inputs',
                                         locals: {id: current_obj.uuid, name: 'mount-inputs', inputs: mnt_inputs} %>
                   </td>
                 <% end %>
