@@ -829,7 +829,7 @@ if [ ! -z "$only" ] && [ "$only" == "services/api" ]; then
   exit_cleanly
 fi
 
-start_api
+start_api || { stop_services; fatal "start_api"; }
 
 test_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
