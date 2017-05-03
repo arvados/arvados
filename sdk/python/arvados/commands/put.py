@@ -186,6 +186,16 @@ Do not continue interrupted uploads from cached state.
 """)
 
 _group = run_opts.add_mutually_exclusive_group()
+_group.add_argument('--follow-links', action='store_true', default=True,
+                    dest='follow_links', help="""
+Follow file and directory symlinks (default).
+""")
+_group.add_argument('--no-follow-links', action='store_false', dest='follow_links',
+                    help="""
+Do not follow file and directory symlinks.
+""")
+
+_group = run_opts.add_mutually_exclusive_group()
 _group.add_argument('--cache', action='store_true', dest='use_cache', default=True,
                     help="""
 Save upload state in a cache file for resuming (default).
@@ -234,6 +244,10 @@ def parse_arguments(arguments):
             args.filename = 'stdin'
 
     return args
+
+
+class PathDoesNotExistError(Exception):
+    pass
 
 
 class CollectionUpdateError(Exception):
@@ -361,7 +375,8 @@ class ArvPutUploadJob(object):
                  ensure_unique_name=False, num_retries=None,
                  put_threads=None, replication_desired=None,
                  filename=None, update_time=60.0, update_collection=None,
-                 logger=logging.getLogger('arvados.arv_put'), dry_run=False):
+                 logger=logging.getLogger('arvados.arv_put'), dry_run=False,
+                 follow_links=True):
         self.paths = paths
         self.resume = resume
         self.use_cache = use_cache
@@ -394,6 +409,7 @@ class ArvPutUploadJob(object):
         self.logger = logger
         self.dry_run = dry_run
         self._checkpoint_before_quit = True
+        self.follow_links = follow_links
 
         if not self.use_cache and self.resume:
             raise ArvPutArgumentConflict('resume cannot be True when use_cache is False')
@@ -418,13 +434,15 @@ class ArvPutUploadJob(object):
                     if self.dry_run:
                         raise ArvPutUploadIsPending()
                     self._write_stdin(self.filename or 'stdin')
+                elif not os.path.exists(path):
+                     raise PathDoesNotExistError("file or directory '{}' does not exist.".format(path))
                 elif os.path.isdir(path):
                     # Use absolute paths on cache index so CWD doesn't interfere
                     # with the caching logic.
                     prefixdir = path = os.path.abspath(path)
                     if prefixdir != '/':
                         prefixdir += '/'
-                    for root, dirs, files in os.walk(path):
+                    for root, dirs, files in os.walk(path, followlinks=self.follow_links):
                         # Make os.walk()'s dir traversing order deterministic
                         dirs.sort()
                         files.sort()
@@ -456,7 +474,10 @@ class ArvPutUploadJob(object):
             # Note: We're expecting SystemExit instead of KeyboardInterrupt because
             #   we have a custom signal handler in place that raises SystemExit with
             #   the catched signal's code.
-            if not isinstance(e, SystemExit) or e.code != -2:
+            if isinstance(e, PathDoesNotExistError):
+                # We aren't interested in the traceback for this case
+                pass
+            elif not isinstance(e, SystemExit) or e.code != -2:
                 self.logger.warning("Abnormal termination:\n{}".format(traceback.format_exc(e)))
             raise
         finally:
@@ -562,7 +583,12 @@ class ArvPutUploadJob(object):
         output.close()
 
     def _check_file(self, source, filename):
-        """Check if this file needs to be uploaded"""
+        """
+        Check if this file needs to be uploaded
+        """
+        # Ignore symlinks when requested
+        if (not self.follow_links) and os.path.islink(source):
+            return
         resume_offset = 0
         should_upload = False
         new_file_in_cache = False
@@ -798,14 +824,20 @@ class ArvPutUploadJob(object):
         return datablocks
 
 
-def expected_bytes_for(pathlist):
+def expected_bytes_for(pathlist, follow_links=True):
     # Walk the given directory trees and stat files, adding up file sizes,
     # so we can display progress as percent
     bytesum = 0
     for path in pathlist:
         if os.path.isdir(path):
-            for filename in arvados.util.listdir_recursive(path):
-                bytesum += os.path.getsize(os.path.join(path, filename))
+            for root, dirs, files in os.walk(path, followlinks=follow_links):
+                # Sum file sizes
+                for f in files:
+                    filepath = os.path.join(root, f)
+                    # Ignore symlinked files when requested
+                    if (not follow_links) and os.path.islink(filepath):
+                        continue
+                    bytesum += os.path.getsize(filepath)
         elif not os.path.isfile(path):
             return None
         else:
@@ -893,7 +925,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     # uploaded, the expected bytes calculation can take a moment.
     if args.progress and any([os.path.isdir(f) for f in args.paths]):
         logger.info("Calculating upload size, this could take some time...")
-    bytes_expected = expected_bytes_for(args.paths)
+    bytes_expected = expected_bytes_for(args.paths, follow_links=args.follow_links)
 
     try:
         writer = ArvPutUploadJob(paths = args.paths,
@@ -910,7 +942,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                                  ensure_unique_name = True,
                                  update_collection = args.update_collection,
                                  logger=logger,
-                                 dry_run=args.dry_run)
+                                 dry_run=args.dry_run,
+                                 follow_links=args.follow_links)
     except ResumeCacheConflict:
         logger.error("\n".join([
             "arv-put: Another process is already uploading this data.",
@@ -952,6 +985,10 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     except ArvPutUploadNotPending:
         # No files pending for upload
         sys.exit(0)
+    except PathDoesNotExistError as error:
+        logger.error("\n".join([
+            "arv-put: %s" % str(error)]))
+        sys.exit(1)
 
     if args.progress:  # Print newline to split stderr from stdout for humans.
         logger.info("\n")
