@@ -51,8 +51,8 @@ class DatabaseController < ApplicationController
 
         # create_fixtures() is a no-op for cached fixture sets, so
         # uncache them all.
-        ActiveRecord::Fixtures.reset_cache
-        ActiveRecord::Fixtures.
+        ActiveRecord::FixtureSet.reset_cache
+        ActiveRecord::FixtureSet.
           create_fixtures(Rails.root.join('test', 'fixtures'), fixturesets)
 
         # Dump cache of permissions etc.

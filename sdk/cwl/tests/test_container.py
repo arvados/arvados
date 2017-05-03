@@ -63,7 +63,11 @@ class TestContainer(unittest.TestCase):
                         'use_existing': enable_reuse,
                         'priority': 1,
                         'mounts': {
-                            '/var/spool/cwl': {'kind': 'tmp'}
+                            '/tmp': {'kind': 'tmp',
+                                     "capacity": 1073741824
+                                 },
+                            '/var/spool/cwl': {'kind': 'tmp',
+                                               "capacity": 1073741824 }
                         },
                         'state': 'Committed',
                         'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
@@ -96,7 +100,8 @@ class TestContainer(unittest.TestCase):
                 "class": "ResourceRequirement",
                 "coresMin": 3,
                 "ramMin": 3000,
-                "tmpdirMin": 4000
+                "tmpdirMin": 4000,
+                "outdirMin": 5000
             }, {
                 "class": "http://arvados.org/cwl#RuntimeConstraints",
                 "keep_cache": 512
@@ -135,7 +140,10 @@ class TestContainer(unittest.TestCase):
                 'use_existing': True,
                 'priority': 1,
                 'mounts': {
-                    '/var/spool/cwl': {'kind': 'tmp'}
+                    '/tmp': {'kind': 'tmp',
+                             "capacity": 4194304000 },
+                    '/var/spool/cwl': {'kind': 'tmp',
+                                       "capacity": 5242880000 }
                 },
                 'state': 'Committed',
                 'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
@@ -240,7 +248,10 @@ class TestContainer(unittest.TestCase):
                 'use_existing': True,
                 'priority': 1,
                 'mounts': {
-                    '/var/spool/cwl': {'kind': 'tmp'},
+                    '/tmp': {'kind': 'tmp',
+                             "capacity": 1073741824 },
+                    '/var/spool/cwl': {'kind': 'tmp',
+                                       "capacity": 1073741824 },
                     '/var/spool/cwl/foo': {
                         'kind': 'collection',
                         'path': 'foo',
@@ -325,7 +336,10 @@ class TestContainer(unittest.TestCase):
                     'use_existing': True,
                     'priority': 1,
                     'mounts': {
-                        '/var/spool/cwl': {'kind': 'tmp'},
+                        '/tmp': {'kind': 'tmp',
+                                 "capacity": 1073741824 },
+                        '/var/spool/cwl': {'kind': 'tmp',
+                                           "capacity": 1073741824 },
                         "stderr": {
                             "kind": "file",
                             "path": "/var/spool/cwl/stderr.txt"
@@ -388,3 +402,85 @@ class TestContainer(unittest.TestCase):
 
         arvjob.collect_outputs.assert_called_with("keep:abc+123")
         arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")
+
+    # The test passes no builder.resources
+    # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @mock.patch("arvados.commands.keepdocker.list_images_in_arv")
+    def test_mounts(self, keepdocker):
+        arv_docker_clear_cache()
+
+        runner = mock.MagicMock()
+        runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+        runner.ignore_docker_for_reuse = False
+
+        keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
+        runner.api.collections().get().execute.return_value = {
+            "portable_data_hash": "99999999999999999999999999999993+99"}
+
+        document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
+
+        tool = cmap({
+            "inputs": [
+                {"id": "p1",
+                 "type": "Directory"}
+            ],
+            "outputs": [],
+            "baseCommand": "ls",
+            "arguments": [{"valueFrom": "$(runtime.outdir)"}]
+        })
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
+                                     collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
+        arvtool = arvados_cwl.ArvadosCommandTool(runner, tool, work_api="containers", avsc_names=avsc_names,
+                                                 basedir="", make_fs_access=make_fs_access, loader=Loader({}))
+        arvtool.formatgraph = None
+        job_order = {
+            "p1": {
+                "class": "Directory",
+                "location": "keep:99999999999999999999999999999994+44",
+                "listing": [
+                    {
+                        "class": "File",
+                        "location": "keep:99999999999999999999999999999994+44/file1",
+                    },
+                    {
+                        "class": "File",
+                        "location": "keep:99999999999999999999999999999994+44/file2",
+                    }
+                ]
+            }
+        }
+        for j in arvtool.job(job_order, mock.MagicMock(), basedir="", name="test_run_mounts",
+                             make_fs_access=make_fs_access, tmpdir="/tmp"):
+            j.run()
+            runner.api.container_requests().create.assert_called_with(
+                body=JsonDiffMatcher({
+                    'environment': {
+                        'HOME': '/var/spool/cwl',
+                        'TMPDIR': '/tmp'
+                    },
+                    'name': 'test_run_mounts',
+                    'runtime_constraints': {
+                        'vcpus': 1,
+                        'ram': 1073741824
+                    },
+                    'use_existing': True,
+                    'priority': 1,
+                    'mounts': {
+                        "/keep/99999999999999999999999999999994+44": {
+                            "kind": "collection",
+                            "portable_data_hash": "99999999999999999999999999999994+44"
+                        },
+                        '/tmp': {'kind': 'tmp',
+                                 "capacity": 1073741824 },
+                        '/var/spool/cwl': {'kind': 'tmp',
+                                           "capacity": 1073741824 }
+                    },
+                    'state': 'Committed',
+                    'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                    'output_path': '/var/spool/cwl',
+                    'container_image': 'arvados/jobs',
+                    'command': ['ls', '/var/spool/cwl'],
+                    'cwd': '/var/spool/cwl',
+                    'scheduling_parameters': {},
+                    'properties': {},
+                }))

@@ -1,6 +1,6 @@
 require 'test_helper'
 
-class Arvados::V1::ReaderTokensTest < ActionController::IntegrationTest
+class ReaderTokensTest < ActionDispatch::IntegrationTest
   fixtures :all
 
   def spectator_specimen

@@ -123,7 +123,7 @@ class Arvados::V1::UsersController < ApplicationController
 
     # setup succeeded. send email to user
     if params[:send_notification_email] == true || params[:send_notification_email] == 'true'
-      UserNotifier.account_is_setup(@object).deliver
+      UserNotifier.account_is_setup(@object).deliver_now
     end
 
     send_json kind: "arvados#HashList", items: @response.as_api_response(nil)

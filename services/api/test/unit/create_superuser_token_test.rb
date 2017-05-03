@@ -90,7 +90,7 @@ class CreateSuperUserTokenTest < ActiveSupport::TestCase
     active_user_token = api_client_authorizations("admin_vm").api_token
     ApiClientAuthorization.
       where(user_id: system_user.id).
-      update_all(scopes: SafeJSON.dump(["GET /"]))
+      update_all(scopes: ["GET /"])
     fixture_tokens = ApiClientAuthorization.all.collect(&:api_token)
     new_token = create_superuser_token
     refute_includes(fixture_tokens, new_token)

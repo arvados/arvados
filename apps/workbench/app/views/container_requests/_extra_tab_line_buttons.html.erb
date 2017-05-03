@@ -1,9 +1,44 @@
 <% if @object.state == 'Final' %>
-  <%= link_to(copy_container_request_path('id' => @object.uuid),
-      class: 'btn btn-sm btn-primary',
-      data: {toggle: :tooltip, placement: :top}, title: 'This will make a copy and take you there. You can then make any needed changes and run it',
-      method: :post,
-      ) do %>
-    <i class="fa fa-fw fa-play"></i> Re-run
-  <% end %>
+<script type="application/javascript">
+  function reset_form_cr_reuse() {
+    $('#use_existing').removeAttr('checked');
+  }
+</script>
+
+  <%= link_to raw('<i class="fa fa-fw fa-play"></i> Re-run...'),
+      "#",
+      {class: 'btn btn-sm btn-primary', 'data-toggle' => 'modal',
+       'data-target' => '#clone-and-edit-modal-window',
+       title: 'This will make a copy and take you there. You can then make any needed changes and run it'}  %>
+
+<div id="clone-and-edit-modal-window" class="modal fade" role="dialog"
+     aria-labelledby="myModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+    <%= form_tag copy_container_request_path do |f| %>
+
+      <div class="modal-header">
+        <button type="button" class="close" onClick="reset_form_cr_reuse()" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <div>
+          <div class="col-sm-6"> <h4 class="modal-title">Re-run container request</h4> </div>
+        </div>
+        <br/>
+      </div>
+
+      <div class="modal-body">
+              <%= check_box_tag(:use_existing, "true", false) %>
+              <%= label_tag(:use_existing, "Enable container reuse") %>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-default" onClick="reset_form_cr_reuse()" data-dismiss="modal" aria-hidden="true">Cancel</button>
+        <button type="submit" class="btn btn-primary" name="container_request[state]" value="Uncommitted">Copy and edit inputs</button>
+      </div>
+
+    </div>
+    <% end %>
+  </div>
+</div>
+
 <% end %>

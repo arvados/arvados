@@ -1,8 +1,6 @@
 require 'test_helper'
 
 class DatabaseResetTest < ActionDispatch::IntegrationTest
-  self.use_transactional_fixtures = false
-
   slow_test "reset fails when Rails.env != 'test'" do
     rails_env_was = Rails.env
     begin

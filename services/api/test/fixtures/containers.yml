@@ -12,6 +12,13 @@ queued:
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
+  mounts:
+    /tmp:
+      kind: tmp
+      capacity: 24000000000
+    /var/spool/cwl:
+      kind: tmp
+      capacity: 24000000000
 
 running:
   uuid: zzzzz-dz642-runningcontainr

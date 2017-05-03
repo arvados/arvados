@@ -1,7 +1,7 @@
 require 'test_helper'
 require 'helpers/git_test_helper'
 
-class CrunchDispatchTest < ActionDispatch::IntegrationTest
+class CrunchDispatchIntegrationTest < ActionDispatch::IntegrationTest
   include GitTestHelper
 
   fixtures :all

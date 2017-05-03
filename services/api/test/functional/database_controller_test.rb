@@ -15,7 +15,7 @@ class DatabaseControllerTest < ActionController::TestCase
     begin
       Rails.env = 'production'
       Rails.application.reload_routes!
-      assert_raises ActionController::RoutingError do
+      assert_raises ActionController::UrlGenerationError do
         post :reset
       end
     ensure
