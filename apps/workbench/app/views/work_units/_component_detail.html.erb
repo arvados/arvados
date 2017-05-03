@@ -95,6 +95,7 @@
               <%
                 mounts = current_obj.send(:mounts) if current_obj.respond_to?(:mounts)
                 mount_wf = mounts.andand[:"/var/lib/cwl/workflow.json"]
+                mount_wf = mount_wf[5..-1] if mount_wf.andand.start_with?('keep:')
                 mount_wf_cls = resource_class_for_uuid(mount_wf) if mount_wf
               %>
               <tr>
@@ -166,7 +167,7 @@
                 mounts = current_obj.send(:mounts) if current_obj.respond_to?(:mounts)
                 input_obj =mounts.andand[:"/var/lib/cwl/cwl.input.json"].andand[:content] || mounts || {}
                 mnt_inputs = []
-                cwl_input_collections(input_obj) do |_, path|
+                cr_input_collections(input_obj) do |_, path|
                   mnt_inputs << path
                 end
                 mnt_inputs = mnt_inputs.uniq.compact

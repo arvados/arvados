@@ -584,30 +584,6 @@ module ApplicationHelper
     end
   end
 
-  # yields collection id (pdh or uuid), and full file_path
-  def cwl_input_collections(path, &b)
-    case path
-    when ArvadosBase
-      path.class.columns.each do |c|
-        cwl_input_collections(path[c.name.to_sym], &b)
-      end
-    when Hash
-      path.each do |k, v|
-        cwl_input_collections(v, &b)
-      end
-    when Array
-      path.each do |v|
-        cwl_input_collections(v, &b)
-      end
-    when String
-      if m = /[a-f0-9]{32}\+\d+/.match(path)
-        yield m[0], path.split('keep:')[-1]
-      elsif m = /[0-9a-z]{5}-4zz18-[0-9a-z]{15}/.match(path)
-        yield m[0], path.split('keep:')[-1]
-      end
-    end
-  end
-
   def render_arvados_object_list_start(list, button_text, button_href,
                                        params={}, *rest, &block)
     show_max = params.delete(:show_max) || 3
