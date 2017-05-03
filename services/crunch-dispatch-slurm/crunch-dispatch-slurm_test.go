@@ -118,10 +118,11 @@ func (s *TestSuite) TestIntegrationCancel(c *C) {
 }
 
 func (s *TestSuite) TestIntegrationMissingFromSqueue(c *C) {
-	container := s.integrationTest(c, func() *exec.Cmd { return exec.Command("echo") }, []string{"sbatch", "--share",
+	container := s.integrationTest(c, func() *exec.Cmd { return exec.Command("echo") }, []string{"sbatch",
 		fmt.Sprintf("--job-name=%s", "zzzzz-dz642-queuedcontainer"),
-		fmt.Sprintf("--mem-per-cpu=%d", 2862),
-		fmt.Sprintf("--cpus-per-task=%d", 4)},
+		fmt.Sprintf("--mem=%d", 11445),
+		fmt.Sprintf("--cpus-per-task=%d", 4),
+		fmt.Sprintf("--tmp=%d", 45777)},
 		func(dispatcher *dispatch.Dispatcher, container arvados.Container) {
 			dispatcher.UpdateState(container.UUID, dispatch.Running)
 			time.Sleep(3 * time.Second)
@@ -327,9 +328,9 @@ func testSbatchFuncWithArgs(c *C, args []string) {
 	sbatchCmd := sbatchFunc(container)
 
 	var expected []string
-	expected = append(expected, "sbatch", "--share")
+	expected = append(expected, "sbatch")
 	expected = append(expected, theConfig.SbatchArguments...)
-	expected = append(expected, "--job-name=123", "--mem-per-cpu=120", "--cpus-per-task=2")
+	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=2", "--tmp=0")
 
 	c.Check(sbatchCmd.Args, DeepEquals, expected)
 }
@@ -340,8 +341,8 @@ func (s *MockArvadosServerSuite) TestSbatchPartition(c *C) {
 	sbatchCmd := sbatchFunc(container)
 
 	var expected []string
-	expected = append(expected, "sbatch", "--share")
-	expected = append(expected, "--job-name=123", "--mem-per-cpu=239", "--cpus-per-task=1", "--partition=blurb,b2")
+	expected = append(expected, "sbatch")
+	expected = append(expected, "--job-name=123", "--mem=239", "--cpus-per-task=1", "--tmp=0", "--partition=blurb,b2")
 
 	c.Check(sbatchCmd.Args, DeepEquals, expected)
 }
