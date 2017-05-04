@@ -112,10 +112,8 @@ module ProvenanceHelper
       input_obj = cr[:mounts].andand[:"/var/lib/cwl/cwl.input.json"].andand[:content] || cr[:mounts] || {}
       if input_obj
         ProvenanceHelper::find_collections input_obj, 'input' do |col_hash, col_uuid, key|
-          if col_uuid
-            gr += describe_node(col_uuid)
-            gr += edge(col_uuid, uuid, {:label => key})
-          else
+          # Only include input PDHs
+          if col_hash
             gr += describe_node(col_hash)
             gr += edge(col_hash, uuid, {:label => key})
           end
