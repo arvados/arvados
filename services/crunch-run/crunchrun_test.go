@@ -635,7 +635,7 @@ func FullRunHelper(c *C, record string, extraMounts []string, exitCode int, fn f
 	c.Check(err, IsNil)
 	c.Check(api.WasSetRunning, Equals, true)
 
-	//c.Check(api.Content[api.Calls-1]["container"].(arvadosclient.Dict)["log"], NotNil)
+	c.Check(api.Content[api.Calls-1]["container"].(arvadosclient.Dict)["log"], NotNil)
 
 	if err != nil {
 		for k, v := range api.Logs {
