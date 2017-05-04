@@ -122,13 +122,12 @@ module ProvenanceHelper
         end
       end
 
-      [
-        [:output_uuid, 'output'],
-        [:log_uuid, 'log']
-      ].each do |attr, label|
-        if cr[attr]
-          gr += describe_node(cr[attr])
-          gr += edge(uuid, cr[attr], {label: label})
+      # Add CR outputs by PDH so they connect with the child CR's inputs.
+      if cr[:output_uuid]
+        output_pdh = Collection.find(cr[:output_uuid])[:portable_data_hash]
+        if output_pdh
+          gr += describe_node(output_pdh)
+          gr += edge(uuid, output_pdh, {label: 'output'})
         end
       end
 
