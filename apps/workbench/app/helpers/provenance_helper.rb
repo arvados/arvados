@@ -225,7 +225,7 @@ module ProvenanceHelper
               child_crs = ContainerRequest.where(requesting_container_uuid: cr[:container_uuid])
               child_crs.each do |child|
                 gr += generate_provenance_edges(child[:uuid])
-                gr += edge(uuid, child[:uuid], {label: 'child'})
+                gr += edge(child[:uuid], uuid, {label: 'child'})
               end
             end
           end
