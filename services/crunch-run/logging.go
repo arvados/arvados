@@ -34,9 +34,10 @@ type ThrottledLogger struct {
 	*log.Logger
 	buf *bytes.Buffer
 	sync.Mutex
-	writer  io.WriteCloser
-	flush   chan struct{}
-	stopped chan struct{}
+	writer   io.WriteCloser
+	flush    chan struct{}
+	stopped  chan struct{}
+	stopping chan struct{}
 	Timestamper
 	Immediate    *log.Logger
 	pendingFlush bool
@@ -97,9 +98,10 @@ func (tl *ThrottledLogger) flusher() {
 	defer ticker.Stop()
 	for stopping := false; !stopping; {
 		select {
-		case _, open := <-tl.flush:
-			// if !open, will flush tl.buf and exit the loop
-			stopping = !open
+		case <-tl.stopping:
+			// flush tl.buf and exit the loop
+			stopping = true
+		case <-tl.flush:
 		case <-ticker.C:
 		}
 
@@ -120,10 +122,10 @@ func (tl *ThrottledLogger) flusher() {
 // underlying Writer.
 func (tl *ThrottledLogger) Close() error {
 	select {
-	case <-tl.flush:
+	case <-tl.stopping:
 		// already stopped
 	default:
-		close(tl.flush)
+		close(tl.stopping)
 	}
 	<-tl.stopped
 	return tl.writer.Close()
@@ -173,8 +175,9 @@ func ReadWriteLines(in io.Reader, writer io.Writer, done chan<- bool) {
 //  at most once per "crunchLogSecondsBetweenEvents" seconds.
 func NewThrottledLogger(writer io.WriteCloser) *ThrottledLogger {
 	tl := &ThrottledLogger{}
-	tl.flush = make(chan struct{}, 1)
+	tl.flush = make(chan struct{})
 	tl.stopped = make(chan struct{})
+	tl.stopping = make(chan struct{})
 	tl.writer = writer
 	tl.Logger = log.New(tl, "", 0)
 	tl.Timestamper = RFC3339Timestamp
