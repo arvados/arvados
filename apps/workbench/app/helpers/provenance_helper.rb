@@ -104,6 +104,27 @@ module ProvenanceHelper
       gr
     end
 
+    def col_name_for_project(col_pdh, project_uuid)
+      [
+        # Search for collections within the same project first.
+        {portable_data_hash: col_pdh, owner_uuid: project_uuid},
+        # then, earch for collections in any project.
+        {portable_data_hash: col_pdh},
+      ].each do |query_args|
+        col = Collection.where(query_args).limit(1)
+        if col.results.any?
+          if col.items_available == 1
+            return col.results.first.name
+          else
+            return col.results.first.name + " + #{col.items_available - 1} more"
+          end
+        end
+      end
+
+      # No collections found with this pdh
+      col_pdh
+    end
+
     def cr_edges cr
       uuid = cr[:uuid]
       gr = ""
@@ -114,7 +135,8 @@ module ProvenanceHelper
         ProvenanceHelper::find_collections input_obj, 'input' do |col_hash, col_uuid, key|
           # Only include input PDHs
           if col_hash
-            gr += describe_node(col_hash)
+            gr += describe_node(col_hash,
+                                {label: col_name_for_project(col_hash, cr[:owner_uuid])})
             gr += edge(col_hash, uuid, {:label => key})
           end
         end
@@ -124,7 +146,8 @@ module ProvenanceHelper
       if cr[:output_uuid]
         output_pdh = Collection.find(cr[:output_uuid])[:portable_data_hash]
         if output_pdh
-          gr += describe_node(output_pdh)
+          gr += describe_node(output_pdh,
+                              {label: col_name_for_project(output_pdh, cr[:owner_uuid])})
           gr += edge(uuid, output_pdh, {label: 'output'})
         end
       end
