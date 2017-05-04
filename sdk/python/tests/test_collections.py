@@ -1191,18 +1191,18 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
     def test_flush_after_small_block_packing(self):
         c = Collection()
         # Write a couple of small files,
-        f = c.open("count.txt", "w")
-        f.write("0123456789")
+        f = c.open("count.txt", "wb")
+        f.write(b"0123456789")
         f.close(flush=False)
-        foo = c.open("foo.txt", "w")
-        foo.write("foo")
+        foo = c.open("foo.txt", "wb")
+        foo.write(b"foo")
         foo.close(flush=False)
 
         self.assertEqual(
             c.manifest_text(),
             '. a8430a058b8fbf408e1931b794dbd6fb+13 0:10:count.txt 10:3:foo.txt\n')
 
-        f = c.open("count.txt", "r+")
+        f = c.open("count.txt", "rb+")
         f.close(flush=True)
 
         self.assertEqual(
@@ -1212,19 +1212,19 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
     def test_write_after_small_block_packing2(self):
         c = Collection()
         # Write a couple of small files,
-        f = c.open("count.txt", "w")
-        f.write("0123456789")
+        f = c.open("count.txt", "wb")
+        f.write(b"0123456789")
         f.close(flush=False)
-        foo = c.open("foo.txt", "w")
-        foo.write("foo")
+        foo = c.open("foo.txt", "wb")
+        foo.write(b"foo")
         foo.close(flush=False)
 
         self.assertEqual(
             c.manifest_text(),
             '. a8430a058b8fbf408e1931b794dbd6fb+13 0:10:count.txt 10:3:foo.txt\n')
 
-        f = c.open("count.txt", "r+")
-        f.write("abc")
+        f = c.open("count.txt", "rb+")
+        f.write(b"abc")
         f.close(flush=False)
 
         self.assertEqual(
@@ -1234,13 +1234,13 @@ class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
 
     def test_small_block_packing_with_overwrite(self):
         c = Collection()
-        c.open("b1", "w").close()
-        c["b1"].writeto(0, "b1", 0)
+        c.open("b1", "wb").close()
+        c["b1"].writeto(0, b"b1", 0)
 
-        c.open("b2", "w").close()
-        c["b2"].writeto(0, "b2", 0)
+        c.open("b2", "wb").close()
+        c["b2"].writeto(0, b"b2", 0)
 
-        c["b1"].writeto(0, "1b", 0)
+        c["b1"].writeto(0, b"1b", 0)
 
         self.assertEquals(c.manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 0:2:b1 2:2:b2\n")
         self.assertEquals(c["b1"].manifest_text(), ". ed4f3f67c70b02b29c50ce1ea26666bd+4 0:2:b1\n")
