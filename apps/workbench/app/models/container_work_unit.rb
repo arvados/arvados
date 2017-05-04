@@ -81,8 +81,11 @@ class ContainerWorkUnit < ProxyWorkUnit
   def state_label
     ec = exit_code
     return "Failed" if (ec && ec != 0)
+
     state = get_combined(:state)
-    return "Ready" if ((priority == 0) and (["Queued", "Locked"].include?(state)))
+
+    return "Queued" if state == "Locked"
+    return "Cancelled" if ((priority == 0) and (state == "Queued"))
     state
   end
 
