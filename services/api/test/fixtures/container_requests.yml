@@ -294,11 +294,11 @@ completed_with_input_mounts:
         input1:
           basename: foo
           class: File
-          location: "keep:acbd18db4cc2f85cedef654fccc4a4d8+3/foo"
+          location: "keep:fa7aeb5140e2848d39b416daeef4ffc5+45/foo"
         input2:
           basename: bar
           class: File
-          location: "keep:37b51d194a7513e45b56f6524f2d51f2+3/bar"
+          location: "keep:fa7aeb5140e2848d39b416daeef4ffc5+45/bar"
     /var/lib/cwl/workflow.json: "keep:1fd08fc162a5c6413070a8bd0bffc818+150"
 
 uncommitted:

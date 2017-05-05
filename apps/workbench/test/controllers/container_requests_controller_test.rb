@@ -116,8 +116,8 @@ class ContainerRequestsControllerTest < ActionController::TestCase
     assert_response :success
 
     assert_includes @response.body, CGI.escapeHTML(cr['command'].to_s)
-    assert_includes @response.body, "href=\"\/collections/acbd18db4cc2f85cedef654fccc4a4d8+3%2Ffoo" # mount input1
-    assert_includes @response.body, "href=\"\/collections/37b51d194a7513e45b56f6524f2d51f2+3%2Fbar" # mount input2
+    assert_includes @response.body, "href=\"\/collections/fa7aeb5140e2848d39b416daeef4ffc5+45%2Ffoo" # mount input1
+    assert_includes @response.body, "href=\"\/collections/fa7aeb5140e2848d39b416daeef4ffc5+45%2Fbar" # mount input2
     assert_includes @response.body, "href=\"\/collections/1fd08fc162a5c6413070a8bd0bffc818+150" # mount workflow
     assert_includes @response.body, "href=\"#Log\""
     assert_includes @response.body, "href=\"#Provenance\""
