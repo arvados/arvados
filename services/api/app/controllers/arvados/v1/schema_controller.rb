@@ -38,6 +38,13 @@ class Arvados::V1::SchemaController < ApplicationController
         blobSignatureTtl: Rails.application.config.blob_signature_ttl,
         maxRequestSize: Rails.application.config.max_request_size,
         dockerImageFormats: Rails.application.config.docker_image_formats,
+        crunchLogBytesPerEvent: Rails.application.config.crunch_log_bytes_per_event,
+        crunchLogSecondsBetweenEvents: Rails.application.config.crunch_log_seconds_between_events,
+        crunchLogThrottlePeriod: Rails.application.config.crunch_log_throttle_period,
+        crunchLogThrottleBytes: Rails.application.config.crunch_log_throttle_bytes,
+        crunchLogThrottleLines: Rails.application.config.crunch_log_throttle_lines,
+        crunchLimitLogBytesPerJob: Rails.application.config.crunch_limit_log_bytes_per_job,
+        crunchLogPartialLineThrottlePeriod: Rails.application.config.crunch_log_partial_line_throttle_period,
         websocketUrl: Rails.application.config.websocket_address,
         parameters: {
           alt: {
