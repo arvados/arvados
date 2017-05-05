@@ -175,7 +175,7 @@ func ReadWriteLines(in io.Reader, writer io.Writer, done chan<- bool) {
 //  at most once per "crunchLogSecondsBetweenEvents" seconds.
 func NewThrottledLogger(writer io.WriteCloser) *ThrottledLogger {
 	tl := &ThrottledLogger{}
-	tl.flush = make(chan struct{})
+	tl.flush = make(chan struct{}, 1)
 	tl.stopped = make(chan struct{})
 	tl.stopping = make(chan struct{})
 	tl.writer = writer
@@ -261,7 +261,7 @@ func (arvlog *ArvLogWriter) Write(p []byte) (n int, err error) {
 		}
 	}
 
-	if (int64(arvlog.bufToFlush.Len()) > crunchLogBytesPerEvent ||
+	if (int64(arvlog.bufToFlush.Len()) >= crunchLogBytesPerEvent ||
 		(now.Sub(arvlog.bufFlushedAt) >= crunchLogSecondsBetweenEvents) ||
 		arvlog.closing) && (arvlog.bufToFlush.Len() > 0) {
 		// write to API
