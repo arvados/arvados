@@ -430,24 +430,25 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 			}
 			collectionPaths = append(collectionPaths, src)
 
-		case mnt.Kind == "tmp" && bind == runner.Container.OutputPath:
-			runner.HostOutputDir, err = runner.MkTempDir("", "")
+		case mnt.Kind == "tmp":
+			var tmpdir string
+			tmpdir, err = runner.MkTempDir("", "")
 			if err != nil {
 				return fmt.Errorf("While creating mount temp dir: %v", err)
 			}
-			st, staterr := os.Stat(runner.HostOutputDir)
+			st, staterr := os.Stat(tmpdir)
 			if staterr != nil {
 				return fmt.Errorf("While Stat on temp dir: %v", staterr)
 			}
-			err = os.Chmod(runner.HostOutputDir, st.Mode()|os.ModeSetgid|0777)
+			err = os.Chmod(tmpdir, st.Mode()|os.ModeSetgid|0777)
 			if staterr != nil {
 				return fmt.Errorf("While Chmod temp dir: %v", err)
 			}
-			runner.CleanupTempDir = append(runner.CleanupTempDir, runner.HostOutputDir)
-			runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", runner.HostOutputDir, bind))
-
-		case mnt.Kind == "tmp":
-			runner.Volumes[bind] = struct{}{}
+			runner.CleanupTempDir = append(runner.CleanupTempDir, tmpdir)
+			runner.Binds = append(runner.Binds, fmt.Sprintf("%s:%s", tmpdir, bind))
+			if bind == runner.Container.OutputPath {
+				runner.HostOutputDir = tmpdir
+			}
 
 		case mnt.Kind == "json":
 			jsondata, err := json.Marshal(mnt.Content)

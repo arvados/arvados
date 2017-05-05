@@ -27,6 +27,7 @@ type Mount struct {
 	Path              string      `json:"path"`
 	Content           interface{} `json:"content"`
 	ExcludeFromOutput bool        `json:"exclude_from_output"`
+	Capacity          int64       `json:capacity`
 }
 
 // RuntimeConstraints specify a container's compute resources (RAM,

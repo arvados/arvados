@@ -25,7 +25,9 @@ class ServerCalculator(object):
                          'extra']:
                 setattr(self, name, getattr(self.real, name))
             self.cores = kwargs.pop('cores')
-            self.scratch = self.disk
+            # libcloud disk sizes are in GB, Arvados/SLURM are in MB
+            # multiply by 1000 instead of 1024 to err on low side
+            self.scratch = self.disk * 1000
             self.ram = int(self.ram * node_mem_scaling)
             for name, override in kwargs.iteritems():
                 if not hasattr(self, name):
@@ -52,6 +54,10 @@ class ServerCalculator(object):
         self.max_price = max_price or float('inf')
         self.logger = logging.getLogger('arvnodeman.jobqueue')
         self.logged_jobs = set()
+
+        self.logger.info("Using cloud node sizes:")
+        for s in self.cloud_sizes:
+            self.logger.info(str(s.__dict__))
 
     @staticmethod
     def coerce_int(x, fallback):

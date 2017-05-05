@@ -109,7 +109,7 @@ completed-older:
   container_image: test
   cwd: test
   output_path: test
-  command: ["echo", "hello"]
+  command: ["arvados-cwl-runner", "echo", "hello"]
   container_uuid: zzzzz-dz642-compltcontainr2
   runtime_constraints:
     vcpus: 1
