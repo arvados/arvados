@@ -144,7 +144,7 @@
           </div>
 
           <div class="col-md-12">
-            <table>
+            <table style="width:100%;">
               <col width="15%" />
               <col width="85%" />
               <% [:command].each do |k| %>
@@ -172,8 +172,8 @@
                 input_obj = mounts.andand[:"/var/lib/cwl/cwl.input.json"].andand[:content]
                 mnt_inputs = JSON.pretty_generate(input_obj) if input_obj
               %>
-              <tr>
-                <% if mnt_inputs %>
+              <% if mnt_inputs %>
+                <tr>
                   <td valign="top">
                     cwl.input.json:
                   </td>
@@ -190,8 +190,8 @@
                       <% end %>
                     </div>
                   </td>
-                <% end %>
-              </tr>
+                </tr>
+              <% end %>
             </table>
           </div>
 
