@@ -184,6 +184,14 @@ class ArvadosModel < ActiveRecord::Base
     ["id", "uuid"]
   end
 
+  def self.limit_index_columns_read
+    # This method returns a list of column names.
+    # If an index request reads that column from the database,
+    # APIs that return lists will only fetch objects until reaching
+    # max_index_database_read bytes of data from those columns.
+    []
+  end
+
   # If current user can manage the object, return an array of uuids of
   # users and groups that have permission to write the object. The
   # first two elements are always [self.owner_uuid, current user's

@@ -195,12 +195,10 @@ common:
   # normally be returned in a single response).
   # Note 1: This setting never reduces the number of returned rows to
   # zero, no matter how big the first data row is.
-  # Note 2: Currently, this only limits the
-  # arvados.v1.collections.list API (GET /arvados/v1/collections), and
-  # only takes the size of manifest_text into account. Other fields
-  # (e.g., "properties" hashes) are not counted against this limit
-  # when returning collections, and the limit is not applied at all
-  # for other data types.
+  # Note 2: Currently, this is only checked against a specific set of
+  # columns that tend to get large (collections.manifest_text,
+  # containers.mounts, workflows.definition). Other fields (e.g.,
+  # "properties" hashes) are not counted against this limit.
   max_index_database_read: 134217728
 
   # Maximum number of items to return when responding to a APIs that

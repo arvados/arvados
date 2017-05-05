@@ -462,4 +462,23 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     }
     check_project_contents_response %w'arvados#pipelineInstance arvados#job'
   end
+
+  test 'get contents with low max_index_database_read' do
+    Rails.configuration.max_index_database_read = 12
+    authorize_with :active
+    get :contents, {
+          id: groups(:aproject).uuid,
+          format: :json,
+        }
+    assert_response :success
+    assert_operator(json_response['items'].count,
+                    :<, json_response['items_available'])
+    collections = 0
+    json_response['items'].each do |item|
+      if item['kind'] == 'arvados#collection'
+        collections += 1
+      end
+    end
+    assert_equal 1, collections
+  end
 end

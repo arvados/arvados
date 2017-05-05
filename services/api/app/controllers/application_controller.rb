@@ -178,18 +178,9 @@ class ApplicationController < ActionController::Base
            }.merge opts)
   end
 
-  def self.limit_index_columns_read
-    # This method returns a list of column names.
-    # If an index request reads that column from the database,
-    # find_objects_for_index will only fetch objects until it reads
-    # max_index_database_read bytes of data from those columns.
-    []
-  end
-
   def find_objects_for_index
     @objects ||= model_class.readable_by(*@read_users)
     apply_where_limit_order_params
-    limit_database_read if (action_name == "index")
   end
 
   def apply_filters model_class=nil
@@ -278,8 +269,14 @@ class ApplicationController < ActionController::Base
     @objects = @objects.uniq(@distinct) if not @distinct.nil?
   end
 
-  def limit_database_read
-    limit_columns = self.class.limit_index_columns_read
+  # limit_database_read ensures @objects (which must be an
+  # ActiveRelation) does not return too many results to fit in memory,
+  # by previewing the results and calling @objects.limit() if
+  # necessary.
+  def limit_database_read(model_class:)
+    return if @limit == 0 || @limit == 1
+    model_class ||= self.model_class
+    limit_columns = model_class.limit_index_columns_read
     limit_columns &= model_class.columns_for_attributes(@select) if @select
     return if limit_columns.empty?
     model_class.transaction do
@@ -294,12 +291,12 @@ class ApplicationController < ActionController::Base
         read_total += record.read_length.to_i
         if read_total >= Rails.configuration.max_index_database_read
           new_limit -= 1 if new_limit > 1
+          @limit = new_limit
           break
         elsif new_limit >= @limit
           break
         end
       end
-      @limit = new_limit
       @objects = @objects.limit(@limit)
       # Force @objects to run its query inside this transaction.
       @objects.each { |_| break }
@@ -461,7 +458,10 @@ class ApplicationController < ActionController::Base
   end
   accept_param_as_json :reader_tokens, Array
 
-  def object_list
+  def object_list(model_class:)
+    if @objects.respond_to?(:except)
+      limit_database_read(model_class: model_class)
+    end
     list = {
       :kind  => "arvados##{(@response_resource_name || resource_name).camelize(:lower)}List",
       :etag => "",
@@ -485,7 +485,7 @@ class ApplicationController < ActionController::Base
   end
 
   def render_list
-    send_json object_list
+    send_json object_list(model_class: self.model_class)
   end
 
   def remote_ip
