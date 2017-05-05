@@ -116,7 +116,7 @@ module ProvenanceHelper
           if col.items_available == 1
             return col.results.first.name
           else
-            return col.results.first.name + " + #{col.items_available - 1} more"
+            return "#{col.results.first.name} + #{col.items_available - 1} more"
           end
         end
       end
