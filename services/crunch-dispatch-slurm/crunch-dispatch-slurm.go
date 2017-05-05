@@ -226,13 +226,21 @@ func run(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados
 	if ctr.State == dispatch.Locked && !sqCheck.HasUUID(ctr.UUID) {
 		log.Printf("Submitting container %s to slurm", ctr.UUID)
 		if err := submit(disp, ctr, theConfig.CrunchRunCommand); err != nil {
-			log.Printf("Error submitting container %s to slurm: %s", ctr.UUID, err)
+			text := fmt.Sprintf("Error submitting container %s to slurm: %s", ctr.UUID, err)
+			log.Printf(text)
+
+			lr := arvadosclient.Dict{"log": arvadosclient.Dict{
+				"object_uuid": ctr.UUID,
+				"event_type":  "dispatch",
+				"properties":  map[string]string{"text": text}}}
+			disp.Arv.Create("logs", lr, nil)
+
 			disp.Unlock(ctr.UUID)
 			return
 		}
 	}
 
-	log.Printf("Start monitoring container %s", ctr.UUID)
+	log.Printf("Start monitoring container %v in state %q", ctr.UUID, ctr.State)
 	defer log.Printf("Done monitoring container %s", ctr.UUID)
 
 	// If the container disappears from the slurm queue, there is
