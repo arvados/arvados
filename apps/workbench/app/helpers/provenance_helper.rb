@@ -144,11 +144,11 @@ module ProvenanceHelper
 
       # Add CR outputs by PDH so they connect with the child CR's inputs.
       if cr[:output_uuid]
-        output_pdh = Collection.find(cr[:output_uuid])[:portable_data_hash]
-        if output_pdh
-          gr += describe_node(output_pdh,
-                              {label: col_name_for_project(output_pdh, cr[:owner_uuid])})
-          gr += edge(uuid, output_pdh, {label: 'output'})
+        output_col = Collection.find(cr[:output_uuid])
+        if output_col
+          gr += describe_node(output_col[:portable_data_hash],
+                              {label: output_col[:name]})
+          gr += edge(uuid, output_col[:portable_data_hash], {label: 'output'})
         end
       end
 
