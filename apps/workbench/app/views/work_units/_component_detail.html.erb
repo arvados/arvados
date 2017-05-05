@@ -103,7 +103,7 @@
               <tr>
                 <% if mount_wf_cls == Collection %>
                   <td style="padding-right: 1em">
-                    mount_workflow:
+                    workflow.json:
                   </td>
                   <td>
                     <%= link_to_if_arvados_object mount_wf, friendly_name: true %>
@@ -143,8 +143,10 @@
             </table>
           </div>
 
-          <div class="col-md-11">
+          <div class="col-md-12">
             <table>
+              <col width="15%" />
+              <col width="85%" />
               <% [:command].each do |k| %>
                 <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
                 <% if val %>
@@ -154,7 +156,7 @@
                   </td>
                   <td>
                     <% if k == :command %>
-                      <div style="max-height:200px; overflow-y:auto; padding-left: 2em">
+                      <div style="max-height:200px; overflow-y:auto;">
                         <%=val%>
                       </div>
                     <% else %>
@@ -173,18 +175,18 @@
               <tr>
                 <% if mnt_inputs %>
                   <td valign="top">
-                    input_mounts:
+                    cwl.input.json:
                   </td>
                   <td>
-                    <div style="max-height:200px; overflow:auto; padding-left: 1em">
+                    <div style="max-height:200px; overflow:auto;">
                       <% mnt_inputs.each_line do |l| %>
                         <% text_part = l %>
                           <% match = l.match /\"keep:.*?\"/ %>
                           <% if match %>
                             <% text_part = l[0..l.index("\"keep:")-1] %>
-                            <% location_part = match[0][6..-2] %>
+                            <% loc_part = match[0][6..-2] %>
                           <% end %>
-                          <span style="white-space: pre; margin: none;"><%= text_part %><%= if location_part then link_to_arvados_object_if_readable(location_part, location_part, friendly_name: true) end %> <% if location_part then %> <br/> <% end %></span>
+                          <span style="white-space: pre-wrap; margin: none;"><%= text_part %><%= if loc_part then link_to_arvados_object_if_readable(loc_part, loc_part, friendly_name: true) end %> <% if loc_part then %> <br/> <% end %></span>
                       <% end %>
                     </div>
                   </td>
