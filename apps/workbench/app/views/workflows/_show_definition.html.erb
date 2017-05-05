@@ -1,0 +1,86 @@
+<%
+  wf_def = ActiveSupport::HashWithIndifferentAccess.new YAML::load(@object.definition) if @object.definition
+  wf_def = wf_def[:"$graph"].andand[0] || wf_def if wf_def
+
+  items = {}
+  baseCommand = wf_def.andand["baseCommand"]
+  items['baseCommand'] = baseCommand if baseCommand
+
+  args = wf_def.andand["arguments"]
+  items['arguments'] = args if args
+
+  hints = wf_def.andand["hints"]
+  items['hints'] = hints if hints
+
+  inputs = wf_def.andand["inputs"]
+  items['inputs'] = inputs if inputs
+
+  outputs = wf_def.andand["outputs"]
+  items['outputs'] = outputs if outputs
+%>
+
+  <div class="col-md-12">
+    <table style="width:100%;">
+      <col width="15%" />
+      <col width="85%" />
+
+      <% items.each do |k, v| %>
+        <% if ['baseCommand', 'arguments'].include? k %>
+          <tr>
+            <td valign="top">
+              <%= k %>:
+            </td>
+            <td>
+              <div style="max-height:200px; overflow-y:auto;">
+                <%=v%>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+
+        <% if ['inputs', 'outputs'].include? k %>
+          <tr>
+            <td valign="top">
+              <%= k %>:
+            </td>
+            <td>
+              <% val = JSON.pretty_generate(v) %>
+              <div style="max-height:300px; overflow:auto;">
+                <% val.each_line do |l| %>
+                  <% text_part = l %>
+                  <% match = l.match /\"keep:.*?\"/ %>
+                  <% if match %>
+                    <% text_part = l[0..l.index("\"keep:")-1] %>
+                    <% loc_part = match[0][6..-2] %>
+                  <% end %>
+                  <span style="white-space: pre-wrap; margin: none;"><%= text_part %><%= if loc_part then link_to_arvados_object_if_readable(loc_part, loc_part, friendly_name: true) end %> <% if loc_part then %> <br/> <% end %></span>
+                <% end %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+
+        <% if k == 'hints' %>
+          <tr>
+            <td valign="top">
+              <%= k %>:
+            </td>
+            <td>
+              <% val = JSON.pretty_generate(v) %>
+              <div style="max-height:300px; overflow:auto;">
+                <% val.each_line do |l| %>
+                  <% text_part = l %>
+                  <% match = l.match /\"keep:.*?\"/ %>
+                  <% if match %>
+                    <% text_part = l[0..l.index("\"keep:")-1] %>
+                    <% loc_part = match[0][6..-2] %>
+                  <% end %>
+                  <span style="white-space: pre-wrap; margin: none;"><%= text_part %><%= if loc_part then link_to_arvados_object_if_readable(loc_part, loc_part, friendly_name: true) end %> <% if loc_part then %> <br/> <% end %></span>
+                <% end %>
+              </div>
+            </td>
+          </tr>
+        <% end %>
+      <% end %>
+    </table>
+  </div>
