@@ -53,6 +53,10 @@ class ContainerWorkUnit < ProxyWorkUnit
     get(:container_uuid)
   end
 
+  def requesting_container_uuid
+    get(:requesting_container_uuid)
+  end
+
   def priority
     @proxied.priority
   end

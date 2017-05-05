@@ -68,10 +68,10 @@
                  repo = nil unless repo.andand.http_fetch_url
                  %>
               <% [:priority, :script, :repository, :script_version, :supplied_script_version, :nondeterministic,
-                  :runtime_constraints].each do |k| %>
+                  :runtime_constraints, :requesting_container_uuid].each do |k| %>
                 <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
                 <% if val %>
-                <tr>
+                <tr valign="top">
                   <td style="padding-right: 1em">
                     <%= k.to_s %>:
                   </td>
@@ -84,6 +84,8 @@
                       <%= link_to val, show_repository_commit_path(id: repo.uuid, commit: current_obj.script_version) %>
                     <% elsif k == :runtime_constraints and val.any? %>
                       <%= render partial: 'work_units/show_table_data', locals: {id: current_obj.uuid, name: k, data_map: val} %>
+                    <% elsif k.to_s.end_with? 'uuid' %>
+                      <%= link_to_arvados_object_if_readable(val, val, friendly_name: true) %>
                     <% else %>
                       <%= val %>
                     <% end %>
@@ -147,12 +149,12 @@
                 <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
                 <% if val %>
                 <tr>
-                  <td style="padding-right: 1em">
+                  <td valign="top">
                     <%= k.to_s %>:
                   </td>
                   <td>
                     <% if k == :command %>
-                      <div style="max-height:200px; border:1px solid; overflow-y:auto; padding-left: 1em; padding-right: 1em">
+                      <div style="max-height:200px; overflow-y:auto; padding-left: 2em">
                         <%=val%>
                       </div>
                     <% else %>
@@ -165,21 +167,26 @@
 
               <%
                 mounts = current_obj.send(:mounts) if current_obj.respond_to?(:mounts)
-                input_obj =mounts.andand[:"/var/lib/cwl/cwl.input.json"].andand[:content] || mounts || {}
-                mnt_inputs = []
-                cr_input_collections(input_obj) do |_, path|
-                  mnt_inputs << path
-                end
-                mnt_inputs = mnt_inputs.uniq.compact
+                input_obj = mounts.andand[:"/var/lib/cwl/cwl.input.json"].andand[:content]
+                mnt_inputs = JSON.pretty_generate(input_obj) if input_obj
               %>
               <tr>
-                <% if mnt_inputs.any? %>
-                  <td style="padding-right: 1em">
+                <% if mnt_inputs %>
+                  <td valign="top">
                     input_mounts:
                   </td>
                   <td>
-                    <%= render partial: 'work_units/show_mount_inputs',
-                                        locals: {id: current_obj.uuid, name: 'mount-inputs', inputs: mnt_inputs} %>
+                    <div style="max-height:200px; overflow:auto; padding-left: 1em">
+                      <% mnt_inputs.each_line do |l| %>
+                        <% text_part = l %>
+                          <% match = l.match /\"keep:.*?\"/ %>
+                          <% if match %>
+                            <% text_part = l[0..l.index("\"keep:")-1] %>
+                            <% location_part = match[0][6..-2] %>
+                          <% end %>
+                          <span style="white-space: pre; margin: none;"><%= text_part %><%= if location_part then link_to_arvados_object_if_readable(location_part, location_part, friendly_name: true) end %> <% if location_part then %> <br/> <% end %></span>
+                      <% end %>
+                    </div>
                   </td>
                 <% end %>
               </tr>
