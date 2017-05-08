@@ -149,8 +149,9 @@ class Arvados::V1::GroupsController < ApplicationController
 
       if klass_object_list[:limit] < klass_limit
         # object_list() had to reduce @limit to comply with
-        # max_index_database_read. We have to stop now.
-        break
+        # max_index_database_read. From now on, we'll do all queries
+        # with limit=0 and just accumulate items_available.
+        limit_all = all_objects.count
       end
     end
 
