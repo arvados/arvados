@@ -14,8 +14,8 @@
             <% if current_obj.uuid.nil? %>
               No <%= current_obj.title %> has been submitted yet.
             <% else %>
-            <table>
-              <% keys = [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :container_uuid] %>
+            <table class="table table-condensed">
+              <% keys = [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :container_uuid, :priority] %>
               <% keys << :log_collection if @object.uuid != current_obj.uuid %>
               <% keys << :outputs %>
               <% keys.each do |k| %>
@@ -60,14 +60,14 @@
             <% end %>
           </div>
           <div class="col-md-6">
-            <table>
+            <table class="table table-condensed">
               <% # link to repo tree/file only if the repo is readable and the commit is a sha1
                  repo = (/^[0-9a-f]{40}$/ =~ current_obj.script_version and
                          current_obj.repository and
                          object_for_dataclass(Repository, current_obj.repository, :name))
                  repo = nil unless repo.andand.http_fetch_url
                  %>
-              <% [:priority, :script, :repository, :script_version, :supplied_script_version, :nondeterministic,
+              <% [:script, :repository, :script_version, :supplied_script_version, :nondeterministic,
                   :runtime_constraints, :requesting_container_uuid].each do |k| %>
                 <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
                 <% if val %>
@@ -143,8 +143,8 @@
             </table>
           </div>
 
-          <div class="col-md-12">
-            <table style="width:100%;">
+          <div class="col-md-11">
+            <table class="table table-condensed" style="table-layout:fixed;">
               <col width="15%" />
               <col width="85%" />
               <% [:command].each do |k| %>
@@ -154,7 +154,7 @@
                   <td valign="top">
                     <%= k.to_s %>:
                   </td>
-                  <td>
+                  <td style="word-wrap: break-all;">
                     <% if k == :command %>
                       <div style="max-height:200px; overflow-y:auto;">
                         <%=val%>
@@ -177,16 +177,16 @@
                   <td valign="top">
                     cwl.input.json:
                   </td>
-                  <td>
-                    <div style="max-height:200px; overflow:auto;">
+                  <td style="word-wrap: break-all;">
+                    <div style="max-height:400px; overflow:auto;">
                       <% mnt_inputs.each_line do |l| %>
                         <% text_part = l %>
                           <% match = l.match /(.*)(\"keep:.*?\")/ %>
                           <% if match and match.size == 3 %>
-                            <% text_part = match[1] %>
-                            <% loc_part = match[2][6..-2] %>
+                            <% text_part = match[1] + '"keep:' %>
+                            <% idx = match[2].rindex('"'); loc_part = match[2][6..idx-1] %>
                           <% end %>
-                          <span style="white-space: pre-wrap; margin: none;"><%= text_part %><%= if loc_part then link_to_arvados_object_if_readable(loc_part, loc_part, friendly_name: true) end %> <% if loc_part then %> <br/> <% end %></span>
+                          <span style="white-space: pre-wrap; margin: none;"><%= text_part %><%= if loc_part then link_to_arvados_object_if_readable(loc_part, loc_part, friendly_name: true) end %><% if loc_part then %><%= match[2][idx] %><br/><% end %></span>
                       <% end %>
                     </div>
                   </td>
