@@ -1,3 +1,5 @@
+from __future__ import division
+from builtins import object
 import logging
 
 _logger = logging.getLogger('arvados.ranges')
@@ -24,14 +26,14 @@ class Range(object):
                 self.segment_offset == other.segment_offset)
 
 def first_block(data_locators, range_start):
-    block_start = 0L
+    block_start = 0
 
     # range_start/block_start is the inclusive lower bound
     # range_end/block_end is the exclusive upper bound
 
     hi = len(data_locators)
     lo = 0
-    i = int((hi + lo) / 2)
+    i = (hi + lo) // 2
     block_size = data_locators[i].range_size
     block_start = data_locators[i].range_start
     block_end = block_start + block_size
@@ -47,7 +49,7 @@ def first_block(data_locators, range_start):
             lo = i
         else:
             hi = i
-        i = int((hi + lo) / 2)
+        i = (hi + lo) // 2
         block_size = data_locators[i].range_size
         block_start = data_locators[i].range_start
         block_end = block_start + block_size
