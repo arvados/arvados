@@ -181,10 +181,10 @@
                     <div style="max-height:200px; overflow:auto;">
                       <% mnt_inputs.each_line do |l| %>
                         <% text_part = l %>
-                          <% match = l.match /\"keep:.*?\"/ %>
-                          <% if match %>
-                            <% text_part = l[0..l.index("\"keep:")-1] %>
-                            <% loc_part = match[0][6..-2] %>
+                          <% match = l.match /(.*)(\"keep:.*?\")/ %>
+                          <% if match and match.size == 3 %>
+                            <% text_part = match[1] %>
+                            <% loc_part = match[2][6..-2] %>
                           <% end %>
                           <span style="white-space: pre-wrap; margin: none;"><%= text_part %><%= if loc_part then link_to_arvados_object_if_readable(loc_part, loc_part, friendly_name: true) end %> <% if loc_part then %> <br/> <% end %></span>
                       <% end %>
