@@ -116,6 +116,9 @@ func (ps *pgEventSource) Run() {
 		logger(nil).WithError(err).Error("sql.Open failed")
 		return
 	}
+	if ps.MaxOpenConns <= 0 {
+		logger(nil).Warn("no database connection limit configured -- consider setting PostgresPool>0 in arvados-ws configuration file")
+	}
 	db.SetMaxOpenConns(ps.MaxOpenConns)
 	if err = db.Ping(); err != nil {
 		logger(nil).WithError(err).Error("db.Ping failed")
