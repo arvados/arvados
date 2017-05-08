@@ -344,13 +344,13 @@ done
 
 setup_ruby_environment() {
     if [[ -s "$HOME/.rvm/scripts/rvm" ]] ; then
-      source "$HOME/.rvm/scripts/rvm"
-      using_rvm=true
+        source "$HOME/.rvm/scripts/rvm"
+        using_rvm=true
     elif [[ -s "/usr/local/rvm/scripts/rvm" ]] ; then
-      source "/usr/local/rvm/scripts/rvm"
-      using_rvm=true
+        source "/usr/local/rvm/scripts/rvm"
+        using_rvm=true
     else
-      using_rvm=false
+        using_rvm=false
     fi
 
     if [[ "$using_rvm" == true ]]; then
