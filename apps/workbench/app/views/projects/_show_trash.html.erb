@@ -1,0 +1,5 @@
+<%= render_pane 'tab_contents', to_string: true, locals: {
+    include_trash: "true",
+    filters: [['uuid', 'is_a', "arvados#collection"], ['is_trashed', '=', "true"]],
+    sortable_columns: { 'name' => 'collections.name', 'description' => 'collections.description' }
+    }.merge(local_assigns) %>

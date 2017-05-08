@@ -98,6 +98,7 @@ class ProjectsController < ApplicationController
       } if current_user
     pane_list << { :name => 'Sharing',
                    :count => @share_links.count } if @user_is_manager
+    pane_list << { :name => 'Trash' }
     pane_list << { :name => 'Advanced' }
   end
 
@@ -259,6 +260,7 @@ class ProjectsController < ApplicationController
       end
     else
       @objects = @object.contents(order: @order,
+                                  include_trash: true,
                                   limit: @limit,
                                   filters: @filters,
                                   offset: @offset)
