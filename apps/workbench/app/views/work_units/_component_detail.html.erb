@@ -10,12 +10,12 @@
 
       <div class="container">
         <div class="row">
-          <div class="col-md-5">
+          <div class="col-md-6" style="overflow-x: auto">
             <% if current_obj.uuid.nil? %>
               No <%= current_obj.title %> has been submitted yet.
             <% else %>
             <table class="table table-condensed">
-              <% keys = [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :container_uuid, :priority] %>
+              <% keys = [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :container_uuid] %>
               <% keys << :log_collection if @object.uuid != current_obj.uuid %>
               <% keys << :outputs %>
               <% keys.each do |k| %>
@@ -68,7 +68,7 @@
                  repo = nil unless repo.andand.http_fetch_url
                  %>
               <% [:script, :repository, :script_version, :supplied_script_version, :nondeterministic,
-                  :runtime_constraints, :requesting_container_uuid].each do |k| %>
+                  :priority, :runtime_constraints, :requesting_container_uuid].each do |k| %>
                 <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
                 <% if val %>
                 <tr valign="top">
@@ -143,7 +143,7 @@
             </table>
           </div>
 
-          <div class="col-md-11">
+          <div class="col-md-12">
             <table class="table table-condensed" style="table-layout:fixed;">
               <col width="15%" />
               <col width="85%" />
