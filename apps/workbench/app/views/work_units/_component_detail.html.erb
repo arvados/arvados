@@ -157,7 +157,17 @@
                   <td style="word-wrap: break-all;">
                     <% if k == :command %>
                       <div style="max-height:200px; overflow-y:auto;">
-                        <%=val%>
+                        <% val = JSON.pretty_generate(val) %>
+                        <% val.each_line do |l| %>
+                          <% l.split(' ').each do |w| %>
+                            <% match = keep_locator w %>
+                            <% if match %>
+                              <%=match[1]%><%= link_to_arvados_object_if_readable(match[2], match[2], friendly_name: true) %><%=match[3]%>
+                            <% else %>
+                              <%= w %>
+                            <% end %>
+                          <% end %>
+                        <% end %>
                       </div>
                     <% else %>
                       <%= val %>
