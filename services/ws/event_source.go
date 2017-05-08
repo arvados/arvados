@@ -29,8 +29,9 @@ func (c pgConfig) ConnectionString() string {
 }
 
 type pgEventSource struct {
-	DataSource string
-	QueueSize  int
+	DataSource   string
+	MaxOpenConns int
+	QueueSize    int
 
 	db         *sql.DB
 	pqListener *pq.Listener
@@ -115,6 +116,7 @@ func (ps *pgEventSource) Run() {
 		logger(nil).WithError(err).Error("sql.Open failed")
 		return
 	}
+	db.SetMaxOpenConns(ps.MaxOpenConns)
 	if err = db.Ping(); err != nil {
 		logger(nil).WithError(err).Error("db.Ping failed")
 		return
