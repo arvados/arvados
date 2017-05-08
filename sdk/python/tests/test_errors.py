@@ -1,10 +1,9 @@
-#!/usr/bin/env python
-
+from __future__ import absolute_import
 import traceback
 import unittest
 
 import arvados.errors as arv_error
-import arvados_testutil as tutil
+from . import arvados_testutil as tutil
 
 class KeepRequestErrorTestCase(unittest.TestCase):
     REQUEST_ERRORS = [
@@ -48,18 +47,22 @@ class KeepRequestErrorTestCase(unittest.TestCase):
         message = "test plain traceback string"
         test_exc = arv_error.KeepRequestError(message)
         exc_report = self.traceback_str(test_exc)
-        self.assertTrue(exc_report.startswith("KeepRequestError: "))
+        self.assertRegex(exc_report, r"^(arvados\.errors\.)?KeepRequestError: ")
         self.assertIn(message, exc_report)
 
     def test_traceback_str_with_request_errors(self):
         message = "test traceback shows Keep services"
         test_exc = arv_error.KeepRequestError(message, self.REQUEST_ERRORS[:])
         exc_report = self.traceback_str(test_exc)
-        self.assertTrue(exc_report.startswith("KeepRequestError: "))
-        for expect_substr in [message, "raised IOError", "raised MemoryError",
-                              "test MemoryError", "second test IOError",
-                              "responded with 500 Internal Server Error"]:
-            self.assertIn(expect_substr, exc_report)
+        self.assertRegex(exc_report, r"^(arvados\.errors\.)?KeepRequestError: ")
+        self.assertIn(message, exc_report)
+        for expect_re in [
+                r"raised (IOError|OSError)", # IOError in Python2, OSError in Python3
+                r"raised MemoryError",
+                r"test MemoryError",
+                r"second test IOError",
+                r"responded with 500 Internal Server Error"]:
+            self.assertRegex(exc_report, expect_re)
         # Assert the report maintains order of listed services.
         last_index = -1
         for service_key, _ in self.REQUEST_ERRORS:

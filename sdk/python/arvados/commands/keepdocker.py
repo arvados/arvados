@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+from builtins import next
 import argparse
 import collections
 import datetime
@@ -98,7 +97,7 @@ def docker_image_format(image_hash):
     cmd = popen_docker(['inspect', '--format={{.Id}}', image_hash],
                         stdout=subprocess.PIPE)
     try:
-        image_id = next(cmd.stdout).strip()
+        image_id = next(cmd.stdout).decode().strip()
         if image_id.startswith('sha256:'):
             return 'v2'
         elif ':' not in image_id:
@@ -111,7 +110,7 @@ def docker_image_format(image_hash):
 def docker_image_compatible(api, image_hash):
     supported = api._rootDesc.get('dockerImageFormats', [])
     if not supported:
-        logger.warn("server does not specify supported image formats (see docker_image_formats in server config).")
+        logger.warning("server does not specify supported image formats (see docker_image_formats in server config).")
         return False
 
     fmt = docker_image_format(image_hash)
@@ -315,7 +314,7 @@ def list_images_in_arv(api_client, num_retries, image_name=None, image_tag=None)
     # and add image listings for them, retaining the API server preference
     # sorting.
     images_start_size = len(images)
-    for collection_uuid, link in hash_link_map.iteritems():
+    for collection_uuid, link in hash_link_map.items():
         if not seen_image_names[collection_uuid]:
             images.append(_new_image_listing(link, link['name']))
     if len(images) > images_start_size:
@@ -368,7 +367,7 @@ def main(arguments=None, stdout=sys.stdout):
 
     if not docker_image_compatible(api, image_hash):
         if args.force_image_format:
-            logger.warn("forcing incompatible image")
+            logger.warning("forcing incompatible image")
         else:
             logger.error("refusing to store " \
                 "incompatible format (use --force-image-format to override)")

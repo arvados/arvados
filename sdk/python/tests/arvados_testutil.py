@@ -1,20 +1,29 @@
-#!/usr/bin/env python
-
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from builtins import object
 import arvados
 import contextlib
 import errno
 import hashlib
-import httplib
+import http.client
 import httplib2
 import io
 import mock
 import os
 import pycurl
-import Queue
+import queue
 import shutil
 import sys
 import tempfile
 import unittest
+
+if sys.version_info >= (3, 0):
+    from io import StringIO, BytesIO
+else:
+    from cStringIO import StringIO
+    BytesIO = StringIO
 
 # Use this hostname when you want to make sure the traffic will be
 # instantly refused.  100::/64 is a dedicated black hole.
@@ -29,46 +38,68 @@ def queue_with(items):
     given, it will be consumed to fill the queue before queue_with()
     returns.
     """
-    queue = Queue.Queue()
+    q = queue.Queue()
     for val in items:
-        queue.put(val)
-    return lambda *args, **kwargs: queue.get(block=False)
+        q.put(val)
+    return lambda *args, **kwargs: q.get(block=False)
 
 # fake_httplib2_response and mock_responses
 # mock calls to httplib2.Http.request()
 def fake_httplib2_response(code, **headers):
     headers.update(status=str(code),
-                   reason=httplib.responses.get(code, "Unknown Response"))
+                   reason=http.client.responses.get(code, "Unknown Response"))
     return httplib2.Response(headers)
 
 def mock_responses(body, *codes, **headers):
+    if not isinstance(body, bytes) and hasattr(body, 'encode'):
+        body = body.encode()
     return mock.patch('httplib2.Http.request', side_effect=queue_with((
         (fake_httplib2_response(code, **headers), body) for code in codes)))
 
 def mock_api_responses(api_client, body, codes, headers={}):
+    if not isinstance(body, bytes) and hasattr(body, 'encode'):
+        body = body.encode()
     return mock.patch.object(api_client._http, 'request', side_effect=queue_with((
         (fake_httplib2_response(code, **headers), body) for code in codes)))
 
 def str_keep_locator(s):
-    return '{}+{}'.format(hashlib.md5(s).hexdigest(), len(s))
+    return '{}+{}'.format(hashlib.md5(s if isinstance(s, bytes) else s.encode()).hexdigest(), len(s))
 
 @contextlib.contextmanager
 def redirected_streams(stdout=None, stderr=None):
+    if stdout == StringIO:
+        stdout = StringIO()
+    if stderr == StringIO:
+        stderr = StringIO()
     orig_stdout, sys.stdout = sys.stdout, stdout or sys.stdout
     orig_stderr, sys.stderr = sys.stderr, stderr or sys.stderr
     try:
-        yield
+        yield (stdout, stderr)
     finally:
         sys.stdout = orig_stdout
         sys.stderr = orig_stderr
 
 
-class FakeCurl:
+class VersionChecker(object):
+    def assertVersionOutput(self, out, err):
+        if sys.version_info >= (3, 0):
+            self.assertEqual(err.getvalue(), '')
+            v = out.getvalue()
+        else:
+            # Python 2 writes version info on stderr.
+            self.assertEqual(out.getvalue(), '')
+            v = err.getvalue()
+        self.assertRegex(v, r"[0-9]+\.[0-9]+\.[0-9]+$\n")
+
+
+class FakeCurl(object):
     @classmethod
-    def make(cls, code, body='', headers={}):
+    def make(cls, code, body=b'', headers={}):
+        if not isinstance(body, bytes) and hasattr(body, 'encode'):
+            body = body.encode()
         return mock.Mock(spec=cls, wraps=cls(code, body, headers))
 
-    def __init__(self, code=200, body='', headers={}):
+    def __init__(self, code=200, body=b'', headers={}):
         self._opt = {}
         self._got_url = None
         self._writer = None
@@ -96,7 +127,7 @@ class FakeCurl:
             raise ValueError
         if self._headerfunction:
             self._headerfunction("HTTP/1.1 {} Status".format(self._resp_code))
-            for k, v in self._resp_headers.iteritems():
+            for k, v in self._resp_headers.items():
                 self._headerfunction(k + ': ' + str(v))
         if type(self._resp_body) is not bool:
             self._writer(self._resp_body)
@@ -141,7 +172,9 @@ def mock_keep_responses(body, *codes, **headers):
 class MockStreamReader(object):
     def __init__(self, name='.', *data):
         self._name = name
-        self._data = ''.join(data)
+        self._data = b''.join([
+            b if isinstance(b, bytes) else b.encode()
+            for b in data])
         self._data_locators = [str_keep_locator(d) for d in data]
         self.num_retries = 0
 
@@ -185,7 +218,7 @@ class ApiClientMock(object):
             mock_method.return_value = body
         else:
             mock_method.side_effect = arvados.errors.ApiError(
-                fake_httplib2_response(code), "{}")
+                fake_httplib2_response(code), b"{}")
 
 
 class ArvadosBaseTestCase(unittest.TestCase):
@@ -222,8 +255,18 @@ class ArvadosBaseTestCase(unittest.TestCase):
                 tmpfile.write(leaf)
         return tree_root
 
-    def make_test_file(self, text="test"):
+    def make_test_file(self, text=b"test"):
         testfile = tempfile.NamedTemporaryFile()
         testfile.write(text)
         testfile.flush()
         return testfile
+
+if sys.version_info < (3, 0):
+    # There is no assert[Not]Regex that works in both Python 2 and 3,
+    # so we backport Python 3 style to Python 2.
+    def assertRegex(self, *args, **kwargs):
+        return self.assertRegexpMatches(*args, **kwargs)
+    def assertNotRegex(self, *args, **kwargs):
+        return self.assertNotRegexpMatches(*args, **kwargs)
+    unittest.TestCase.assertRegex = assertRegex
+    unittest.TestCase.assertNotRegex = assertNotRegex

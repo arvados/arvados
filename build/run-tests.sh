@@ -85,6 +85,7 @@ services/ws
 sdk/cli
 sdk/pam
 sdk/python
+sdk/python:py3
 sdk/ruby
 sdk/go/arvados
 sdk/go/arvadosclient
@@ -176,14 +177,17 @@ sanity_checks() {
     gcc --version | egrep ^gcc \
         || fatal "No gcc. Try: apt-get install build-essential"
     echo -n 'fuse.h: '
-    find /usr/include -wholename '*fuse/fuse.h' \
+    find /usr/include -path '*fuse/fuse.h' | egrep --max-count=1 . \
         || fatal "No fuse/fuse.h. Try: apt-get install libfuse-dev"
     echo -n 'gnutls.h: '
-    find /usr/include -wholename '*gnutls/gnutls.h' \
+    find /usr/include -path '*gnutls/gnutls.h' | egrep --max-count=1 . \
         || fatal "No gnutls/gnutls.h. Try: apt-get install libgnutls28-dev"
-    echo -n 'pyconfig.h: '
-    find /usr/include -name pyconfig.h | egrep --max-count=1 . \
-        || fatal "No pyconfig.h. Try: apt-get install python-dev"
+    echo -n 'Python2 pyconfig.h: '
+    find /usr/include -path '*/python2*/pyconfig.h' | egrep --max-count=1 . \
+        || fatal "No Python2 pyconfig.h. Try: apt-get install python2.7-dev"
+    echo -n 'Python3 pyconfig.h: '
+    find /usr/include -path '*/python3*/pyconfig.h' | egrep --max-count=1 . \
+        || fatal "No Python3 pyconfig.h. Try: apt-get install python3-dev"
     echo -n 'nginx: '
     PATH="$PATH:/sbin:/usr/sbin:/usr/local/sbin" nginx -v \
         || fatal "No nginx. Try: apt-get install nginx"
@@ -467,18 +471,28 @@ fi
 # Deactivate Python 2 virtualenv
 deactivate
 
+declare -a pythonstuff
+pythonstuff=(
+    sdk/pam
+    sdk/python
+    sdk/python:py3
+    sdk/cwl
+    services/dockercleaner:py3
+    services/fuse
+    services/nodemanager
+    tools/crunchstat-summary
+    )
+
 # If Python 3 is available, set up its virtualenv in $VENV3DIR.
 # Otherwise, skip dependent tests.
 PYTHON3=$(which python3)
-if [ "0" = "$?" ]; then
+if [[ ${?} = 0 ]]; then
     setup_virtualenv "$VENV3DIR" --python python3
 else
     PYTHON3=
-    skip[services/dockercleaner]=1
     cat >&2 <<EOF
 
-Warning: python3 could not be found
-services/dockercleaner install and tests will be skipped
+Warning: python3 could not be found. Python 3 tests will be skipped.
 
 EOF
 fi
@@ -701,22 +715,19 @@ do_install services/login-sync login-sync
 # module. We can't actually *test* the Python SDK yet though, because
 # its own test suite brings up some of those other programs (like
 # keepproxy).
-declare -a pythonstuff
-pythonstuff=(
-    sdk/pam
-    sdk/python
-    sdk/cwl
-    services/fuse
-    services/nodemanager
-    tools/crunchstat-summary
-    )
 for p in "${pythonstuff[@]}"
 do
-    do_install "$p" pip
+    dir=${p%:py3}
+    if [[ ${dir} = ${p} ]]; then
+        if [[ -z ${skip[python2]} ]]; then
+            do_install ${dir} pip
+        fi
+    elif [[ -n ${PYTHON3} ]]; then
+        if [[ -z ${skip[python3]} ]]; then
+            do_install ${dir} pip "$VENV3DIR/bin/"
+        fi
+    fi
 done
-if [ -n "$PYTHON3" ]; then
-    do_install services/dockercleaner pip "$VENV3DIR/bin/"
-fi
 
 install_apiserver() {
     cd "$WORKSPACE/services/api" \
@@ -727,32 +738,11 @@ install_apiserver() {
 
     if [ -n "$CONFIGSRC" ]
     then
-        for f in database.yml application.yml
+        for f in database.yml
         do
             cp "$CONFIGSRC/$f" config/ || fatal "$f"
         done
     fi
-
-    # Fill in a random secret_token and blob_signing_key for testing
-    SECRET_TOKEN=`echo 'puts rand(2**512).to_s(36)' |ruby`
-    BLOB_SIGNING_KEY=`echo 'puts rand(2**512).to_s(36)' |ruby`
-
-    sed -i'' -e "s:SECRET_TOKEN:$SECRET_TOKEN:" config/application.yml
-    sed -i'' -e "s:BLOB_SIGNING_KEY:$BLOB_SIGNING_KEY:" config/application.yml
-
-    # Set up empty git repo (for git tests)
-    GITDIR=$(mktemp -d)
-    sed -i'' -e "s:/var/cache/git:$GITDIR:" config/application.default.yml
-
-    rm -rf $GITDIR
-    mkdir -p $GITDIR/test
-    cd $GITDIR/test \
-        && git init \
-        && git config user.email "jenkins@ci.curoverse.com" \
-        && git config user.name "Jenkins, CI" \
-        && touch tmp \
-        && git add tmp \
-        && git commit -m 'initial commit'
 
     # Clear out any lingering postgresql connections to the test
     # database, so that we can drop it. This assumes the current user
@@ -760,6 +750,8 @@ install_apiserver() {
     cd "$WORKSPACE/services/api" \
         && test_database=$(python -c "import yaml; print yaml.load(file('config/database.yml'))['test']['database']") \
         && psql "$test_database" -c "SELECT pg_terminate_backend (pg_stat_activity.procpid::int) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$test_database';" 2>/dev/null
+
+    mkdir -p "$WORKSPACE/services/api/tmp/pids"
 
     cd "$WORKSPACE/services/api" \
         && RAILS_ENV=test bundle exec rake db:drop \
@@ -807,6 +799,8 @@ install_workbench() {
 }
 do_install apps/workbench workbench
 
+unset http_proxy https_proxy no_proxy
+
 test_doclinkchecker() {
     (
         set -e
@@ -835,7 +829,7 @@ if [ ! -z "$only" ] && [ "$only" == "services/api" ]; then
   exit_cleanly
 fi
 
-start_api
+start_api || { stop_services; fatal "start_api"; }
 
 test_ruby_sdk() {
     cd "$WORKSPACE/sdk/ruby" \
@@ -858,9 +852,17 @@ do_test services/login-sync login-sync
 
 for p in "${pythonstuff[@]}"
 do
-    do_test "$p" pip
+    dir=${p%:py3}
+    if [[ ${dir} = ${p} ]]; then
+        if [[ -z ${skip[python2]} ]]; then
+            do_test ${dir} pip
+        fi
+    elif [[ -n ${PYTHON3} ]]; then
+        if [[ -z ${skip[python3]} ]]; then
+            do_test ${dir} pip "$VENV3DIR/bin/"
+        fi
+    fi
 done
-do_test services/dockercleaner pip "$VENV3DIR/bin/"
 
 for g in "${gostuff[@]}"
 do
