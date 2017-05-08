@@ -115,7 +115,7 @@ class ContainerRequestsControllerTest < ActionController::TestCase
     get :show, {id: cr['uuid']}, session_for(:active)
     assert_response :success
 
-    assert_includes @response.body, CGI.escapeHTML(cr['command'].to_s)
+    assert_match /hello/, @response.body
     assert_includes @response.body, "href=\"\/collections/fa7aeb5140e2848d39b416daeef4ffc5+45%2Ffoo" # mount input1
     assert_includes @response.body, "href=\"\/collections/fa7aeb5140e2848d39b416daeef4ffc5+45%2Fbar" # mount input2
     assert_includes @response.body, "href=\"\/collections/1fd08fc162a5c6413070a8bd0bffc818+150" # mount workflow
