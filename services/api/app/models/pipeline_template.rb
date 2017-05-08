@@ -9,4 +9,8 @@ class PipelineTemplate < ArvadosModel
     t.add :components
     t.add :description
   end
+
+  def self.limit_index_columns_read
+    ["components"]
+  end
 end
