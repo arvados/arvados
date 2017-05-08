@@ -37,9 +37,15 @@ module ProvenanceHelper
           return "\"#{uuid}\" [label=\"(empty collection)\"];\n"
         end
 
-        href = url_for ({:controller => Collection.to_s.tableize,
-                          :action => :show,
-                          :id => uuid.to_s })
+        if describe_opts[:col_uuid]
+          href = url_for ({:controller => Collection.to_s.tableize,
+                           :action => :show,
+                           :id => describe_opts[:col_uuid].to_s })
+        else
+          href = url_for ({:controller => Collection.to_s.tableize,
+                           :action => :show,
+                           :id => uuid.to_s })
+        end
 
         return "\"#{uuid}\" [label=\"#{encode_quotes(describe_opts[:label] || (@pdata[uuid] and @pdata[uuid][:name]) || uuid)}\",shape=box,href=\"#{href}\",#{bgcolor}];\n"
       else
@@ -250,8 +256,14 @@ module ProvenanceHelper
               if cr_node[:output_uuid] and output_cols[cr_node[:output_uuid]]
                 c = output_cols[cr_node[:output_uuid]]
                 visited_pdhs << c[:portable_data_hash]
-                gr += describe_node(c[:portable_data_hash], {label: c[:name]})
-                gr += edge(cr_node[:uuid], c[:portable_data_hash], {label: 'output'})
+                gr += describe_node(c[:portable_data_hash],
+                                    {
+                                      label: c[:name],
+                                      col_uuid: c[:uuid],
+                                    })
+                gr += edge(cr_node[:uuid],
+                           c[:portable_data_hash],
+                           {label: 'output'})
               end
             end
 
