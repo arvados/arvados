@@ -181,12 +181,13 @@
                     <div style="max-height:400px; overflow:auto;">
                       <% mnt_inputs.each_line do |l| %>
                         <% text_part = l %>
-                          <% match = l.match /(.*)(\"keep:.*?\")/ %>
-                          <% if match and match.size == 3 %>
-                            <% text_part = match[1] + '"keep:' %>
-                            <% idx = match[2].rindex('"'); loc_part = match[2][6..idx-1] %>
+                          <% match = mount_input_keep_locator l %>
+                          <% if match %>
+                            <% text_part = match[1] %>
+                            <% pdh_readable = object_readable(match[2]) %>
+                            <% quote_char = '"' %>
                           <% end %>
-                          <span style="white-space: pre-wrap; margin: none;"><%= text_part %><%= if loc_part then link_to_arvados_object_if_readable(loc_part, loc_part, friendly_name: true) end %><% if loc_part then %><%= match[2][idx] %><br/><% end %></span>
+                          <span style="white-space: pre-wrap; margin: none;"><%= text_part %><%= if match then link_to_arvados_object_if_readable(match[3], match[3], friendly_name: true) end %><% if pdh_readable then %><%= link_to_arvados_object_if_readable(match[2], match[2], link_text: match[4]) %><%=quote_char + match[5]%><br/><% end %></span>
                       <% end %>
                     </div>
                   </td>

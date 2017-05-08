@@ -670,6 +670,11 @@ module ApplicationHelper
     render_runtime duration, use_words, round_to_min
   end
 
+  MOUNT_INPUT_KEEP_LOCATOR_REGEXP = /(.*)(([0-9a-f]{32}\+\d+)(.*)\"(.*))/
+  def mount_input_keep_locator str
+    MOUNT_INPUT_KEEP_LOCATOR_REGEXP.match str
+  end
+
 private
   def is_textile?( object, attr )
     is_textile = object.textile_attributes.andand.include?(attr)
