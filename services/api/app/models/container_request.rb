@@ -73,6 +73,10 @@ class ContainerRequest < ArvadosModel
   :runtime_constraints, :state, :container_uuid, :use_existing,
   :scheduling_parameters, :output_name, :output_ttl]
 
+  def self.limit_index_columns_read
+    ["mounts"]
+  end
+
   def state_transitions
     State_transitions
   end

@@ -462,4 +462,19 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     }
     check_project_contents_response %w'arvados#pipelineInstance arvados#job'
   end
+
+  test 'get contents with low max_index_database_read' do
+    # Some result will certainly have at least 12 bytes in a
+    # restricted column
+    Rails.configuration.max_index_database_read = 12
+    authorize_with :active
+    get :contents, {
+          id: groups(:aproject).uuid,
+          format: :json,
+        }
+    assert_response :success
+    assert_not_empty(json_response['items'])
+    assert_operator(json_response['items'].count,
+                    :<, json_response['items_available'])
+  end
 end
