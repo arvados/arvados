@@ -165,9 +165,6 @@ sanity_checks() {
     echo -n 'ruby: '
     ruby -v \
         || fatal "No ruby. Install >=2.1.9 (using rbenv, rvm, or source)"
-    echo -n 'bundler: '
-    bundle version \
-        || fatal "No bundler. Try: gem install bundler"
     echo -n 'go: '
     go version \
         || fatal "No go binary. See http://golang.org/doc/install"
@@ -348,13 +345,13 @@ done
 
 setup_ruby_environment() {
     if [[ -s "$HOME/.rvm/scripts/rvm" ]] ; then
-      source "$HOME/.rvm/scripts/rvm"
-      using_rvm=true
+        source "$HOME/.rvm/scripts/rvm"
+        using_rvm=true
     elif [[ -s "/usr/local/rvm/scripts/rvm" ]] ; then
-      source "/usr/local/rvm/scripts/rvm"
-      using_rvm=true
+        source "/usr/local/rvm/scripts/rvm"
+        using_rvm=true
     else
-      using_rvm=false
+        using_rvm=false
     fi
 
     if [[ "$using_rvm" == true ]]; then
@@ -403,12 +400,14 @@ setup_ruby_environment() {
 
         tmpdir_gem_home="$(env - PATH="$PATH" HOME="$GEMHOME" gem env gempath | cut -f1 -d:)"
         PATH="$tmpdir_gem_home/bin:$PATH"
-        export GEM_PATH="$tmpdir_gem_home:$(gem env gempath)"
+        export GEM_PATH="$tmpdir_gem_home"
 
         echo "Will install dependencies to $(gem env gemdir)"
         echo "Will install arvados gems to $tmpdir_gem_home"
         echo "Gem search path is GEM_PATH=$GEM_PATH"
     fi
+    bundle config || gem install bundler \
+        || fatal 'install bundler'
 }
 
 with_test_gemset() {
