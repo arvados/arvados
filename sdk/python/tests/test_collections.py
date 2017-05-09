@@ -832,7 +832,7 @@ class CollectionOpenModes(run_test_server.TestCaseWithServers):
     def test_open_binary_modes(self):
         c = Collection()
         for mode in ['wb', 'wb+', 'ab', 'ab+']:
-            with c.open('foo', 'wb') as f:
+            with c.open('foo', mode) as f:
                 f.write(b'foo')
 
     def test_open_invalid_modes(self):
