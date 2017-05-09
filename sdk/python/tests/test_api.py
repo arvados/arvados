@@ -1,5 +1,6 @@
-#!/usr/bin/env python
-
+from __future__ import absolute_import
+from builtins import str
+from builtins import range
 import arvados
 import collections
 import httplib2
@@ -12,12 +13,12 @@ import string
 import unittest
 
 import mock
-import run_test_server
+from . import run_test_server
 
 from apiclient import errors as apiclient_errors
 from apiclient import http as apiclient_http
 from arvados.api import OrderedJsonModel, RETRY_DELAY_INITIAL, RETRY_DELAY_BACKOFF, RETRY_COUNT
-from arvados_testutil import fake_httplib2_response, queue_with
+from .arvados_testutil import fake_httplib2_response, queue_with
 
 if not mimetypes.inited:
     mimetypes.init()
@@ -29,7 +30,7 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
     def api_error_response(self, code, *errors):
         return (fake_httplib2_response(code, **self.ERROR_HEADERS),
                 json.dumps({'errors': errors,
-                            'error_token': '1234567890+12345678'}))
+                            'error_token': '1234567890+12345678'}).encode())
 
     def test_new_api_objects_with_cache(self):
         clients = [arvados.api('v1', cache=True) for index in [0, 1]]
@@ -81,7 +82,7 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
         mock_responses = {
             'arvados.humans.delete': (
                 fake_httplib2_response(500, **self.ERROR_HEADERS),
-                "")
+                b"")
             }
         req_builder = apiclient_http.RequestMockBuilder(mock_responses)
         api = arvados.api('v1', requestBuilder=req_builder)
@@ -98,14 +99,18 @@ class ArvadosApiTest(run_test_server.TestCaseWithServers):
 
     def test_ordered_json_model(self):
         mock_responses = {
-            'arvados.humans.get': (None, json.dumps(collections.OrderedDict(
-                        (c, int(c, 16)) for c in string.hexdigits))),
-            }
+            'arvados.humans.get': (
+                None,
+                json.dumps(collections.OrderedDict(
+                    (c, int(c, 16)) for c in string.hexdigits
+                )).encode(),
+            ),
+        }
         req_builder = apiclient_http.RequestMockBuilder(mock_responses)
         api = arvados.api('v1',
                           requestBuilder=req_builder, model=OrderedJsonModel())
         result = api.humans().get(uuid='test').execute()
-        self.assertEqual(string.hexdigits, ''.join(result.keys()))
+        self.assertEqual(string.hexdigits, ''.join(list(result.keys())))
 
 
 class RetryREST(unittest.TestCase):
@@ -166,7 +171,7 @@ class RetryREST(unittest.TestCase):
         mock_conns = {str(i): mock.MagicMock() for i in range(2)}
         self.api._http.connections = mock_conns.copy()
         self.api.users().create(body={}).execute()
-        for c in mock_conns.itervalues():
+        for c in mock_conns.values():
             self.assertEqual(c.close.call_count, expect)
 
     @mock.patch('time.sleep')

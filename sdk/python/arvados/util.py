@@ -124,7 +124,7 @@ def tarball_extract(tarball, path):
                 raise arvados.errors.CommandFailedError(
                     "tar exited %d" % p.returncode)
         os.symlink(tarball, os.path.join(path, '.locator'))
-    tld_extracts = filter(lambda f: f != '.locator', os.listdir(path))
+    tld_extracts = [f for f in os.listdir(path) if f != '.locator']
     lockfile.close()
     if len(tld_extracts) == 1:
         return os.path.join(path, tld_extracts[0])
@@ -190,7 +190,7 @@ def zipball_extract(zipball, path):
                     "unzip exited %d" % p.returncode)
             os.unlink(zip_filename)
         os.symlink(zipball, os.path.join(path, '.locator'))
-    tld_extracts = filter(lambda f: f != '.locator', os.listdir(path))
+    tld_extracts = [f for f in os.listdir(path) if f != '.locator']
     lockfile.close()
     if len(tld_extracts) == 1:
         return os.path.join(path, tld_extracts[0])
@@ -364,10 +364,10 @@ def is_hex(s, *length_args):
 
 def list_all(fn, num_retries=0, **kwargs):
     # Default limit to (effectively) api server's MAX_LIMIT
-    kwargs.setdefault('limit', sys.maxint)
+    kwargs.setdefault('limit', sys.maxsize)
     items = []
     offset = 0
-    items_available = sys.maxint
+    items_available = sys.maxsize
     while len(items) < items_available:
         c = fn(offset=offset, **kwargs).execute(num_retries=num_retries)
         items += c['items']

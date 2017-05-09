@@ -1,8 +1,10 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
+from __future__ import absolute_import
+from __future__ import division
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
 import apiclient
-import io
 import mock
 import os
 import pwd
@@ -19,14 +21,12 @@ import hashlib
 import random
 import uuid
 
-from cStringIO import StringIO
-
 import arvados
 import arvados.commands.put as arv_put
-import arvados_testutil as tutil
+from . import arvados_testutil as tutil
 
-from arvados_testutil import ArvadosBaseTestCase, fake_httplib2_response
-import run_test_server
+from .arvados_testutil import ArvadosBaseTestCase, fake_httplib2_response
+from . import run_test_server
 
 class ArvadosPutResumeCacheTest(ArvadosBaseTestCase):
     CACHE_ARGSET = [
@@ -258,8 +258,8 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
         _, self.large_file_name = tempfile.mkstemp()
         fileobj = open(self.large_file_name, 'w')
         # Make sure to write just a little more than one block
-        for _ in range((arvados.config.KEEP_BLOCK_SIZE/(1024*1024))+1):
-            data = random.choice(['x', 'y', 'z']) * 1024 * 1024 # 1 MB
+        for _ in range((arvados.config.KEEP_BLOCK_SIZE>>20)+1):
+            data = random.choice(['x', 'y', 'z']) * 1024 * 1024 # 1 MiB
             fileobj.write(data)
         fileobj.close()
         # Temp dir containing small files to be repacked
@@ -310,16 +310,18 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
 
     def test_writer_works_with_cache(self):
         with tempfile.NamedTemporaryFile() as f:
-            f.write('foo')
+            f.write(b'foo')
             f.flush()
             cwriter = arv_put.ArvPutUploadJob([f.name])
             cwriter.start(save_collection=False)
-            self.assertEqual(3, cwriter.bytes_written - cwriter.bytes_skipped)
+            self.assertEqual(0, cwriter.bytes_skipped)
+            self.assertEqual(3, cwriter.bytes_written)
             # Don't destroy the cache, and start another upload
             cwriter_new = arv_put.ArvPutUploadJob([f.name])
             cwriter_new.start(save_collection=False)
             cwriter_new.destroy_cache()
-            self.assertEqual(0, cwriter_new.bytes_written - cwriter_new.bytes_skipped)
+            self.assertEqual(3, cwriter_new.bytes_skipped)
+            self.assertEqual(3, cwriter_new.bytes_written)
 
     def make_progress_tester(self):
         progression = []
@@ -329,7 +331,7 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
 
     def test_progress_reporting(self):
         with tempfile.NamedTemporaryFile() as f:
-            f.write('foo')
+            f.write(b'foo')
             f.flush()
             for expect_count in (None, 8):
                 progression, reporter = self.make_progress_tester()
@@ -552,7 +554,7 @@ class ArvadosPutReportTest(ArvadosBaseTestCase):
 
     def test_known_human_progress(self):
         for count, total in [(0, 1), (2, 4), (45, 60)]:
-            expect = '{:.1%}'.format(float(count) / total)
+            expect = '{:.1%}'.format(1.0*count/total)
             actual = arv_put.human_progress(count, total)
             self.assertTrue(actual.startswith('\r'))
             self.assertIn(expect, actual)
@@ -563,13 +565,15 @@ class ArvadosPutReportTest(ArvadosBaseTestCase):
                                       arv_put.human_progress(count, None)))
 
 
-class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
+class ArvadosPutTest(run_test_server.TestCaseWithServers,
+                     ArvadosBaseTestCase,
+                     tutil.VersionChecker):
     MAIN_SERVER = {}
     Z_UUID = 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
 
     def call_main_with_args(self, args):
-        self.main_stdout = StringIO()
-        self.main_stderr = StringIO()
+        self.main_stdout = tutil.StringIO()
+        self.main_stderr = tutil.StringIO()
         return arv_put.main(args, self.main_stdout, self.main_stderr)
 
     def call_main_on_test_file(self, args=[]):
@@ -594,13 +598,11 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
         super(ArvadosPutTest, self).tearDown()
 
     def test_version_argument(self):
-        err = io.BytesIO()
-        out = io.BytesIO()
-        with tutil.redirected_streams(stdout=out, stderr=err):
+        with tutil.redirected_streams(
+                stdout=tutil.StringIO, stderr=tutil.StringIO) as (out, err):
             with self.assertRaises(SystemExit):
                 self.call_main_with_args(['--version'])
-        self.assertEqual(out.getvalue(), '')
-        self.assertRegexpMatches(err.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
+        self.assertVersionOutput(out, err)
 
     def test_simple_file_put(self):
         self.call_main_on_test_file()
@@ -670,7 +672,7 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers, ArvadosBaseTestCase):
     def test_api_error_handling(self):
         coll_save_mock = mock.Mock(name='arv.collection.Collection().save_new()')
         coll_save_mock.side_effect = arvados.errors.ApiError(
-            fake_httplib2_response(403), '{}')
+            fake_httplib2_response(403), b'{}')
         with mock.patch('arvados.collection.Collection.save_new',
                         new=coll_save_mock):
             with self.assertRaises(SystemExit) as exc_test:
@@ -738,7 +740,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             result = arv_put.desired_project_uuid(arv_put.api_client, BAD_UUID,
                                                   0)
         except ValueError as error:
-            self.assertIn(BAD_UUID, error.message)
+            self.assertIn(BAD_UUID, str(error))
         else:
             self.assertFalse(result, "incorrectly found nonexistent project")
 
@@ -758,7 +760,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             [sys.executable, arv_put.__file__, '--stream'],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT, env=self.ENVIRON)
-        pipe.stdin.write('stdin test\n')
+        pipe.stdin.write(b'stdin test\n')
         pipe.stdin.close()
         deadline = time.time() + 5
         while (pipe.poll() is None) and (time.time() < deadline):
@@ -770,7 +772,8 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         elif returncode != 0:
             sys.stdout.write(pipe.stdout.read())
             self.fail("arv-put returned exit code {}".format(returncode))
-        self.assertIn('4a9c8b735dce4b5fa3acf221a0b13628+11', pipe.stdout.read())
+        self.assertIn('4a9c8b735dce4b5fa3acf221a0b13628+11',
+                      pipe.stdout.read().decode())
 
     def test_ArvPutSignedManifest(self):
         # ArvPutSignedManifest runs "arv-put foo" and then attempts to get
@@ -789,15 +792,17 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         with open(os.path.join(datadir, "foo"), "w") as f:
             f.write("The quick brown fox jumped over the lazy dog")
         p = subprocess.Popen([sys.executable, arv_put.__file__, datadir],
-                             stdout=subprocess.PIPE, env=self.ENVIRON)
-        (arvout, arverr) = p.communicate()
-        self.assertEqual(arverr, None)
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             env=self.ENVIRON)
+        (out, err) = p.communicate()
+        self.assertRegex(err.decode(), r'INFO: Collection saved as ')
         self.assertEqual(p.returncode, 0)
 
         # The manifest text stored in the API server under the same
         # manifest UUID must use signed locators.
         c = arv_put.api_client.collections().get(uuid=manifest_uuid).execute()
-        self.assertRegexpMatches(
+        self.assertRegex(
             c['manifest_text'],
             r'^\. 08a008a01d498c404b0c30852b39d3b8\+44\+A[0-9a-f]+@[0-9a-f]+ 0:44:foo\n')
 
@@ -810,11 +815,13 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             [sys.executable, arv_put.__file__] + extra_args,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE, env=self.ENVIRON)
-        stdout, stderr = pipe.communicate(text)
+        stdout, stderr = pipe.communicate(text.encode())
+        self.assertRegex(stderr.decode(), r'INFO: Collection (updated:|saved as)')
         search_key = ('portable_data_hash'
                       if '--portable-data-hash' in extra_args else 'uuid')
         collection_list = arvados.api('v1').collections().list(
-            filters=[[search_key, '=', stdout.strip()]]).execute().get('items', [])
+            filters=[[search_key, '=', stdout.decode().strip()]]
+        ).execute().get('items', [])
         self.assertEqual(1, len(collection_list))
         return collection_list[0]
 
@@ -831,7 +838,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         self.assertEqual(col['uuid'], updated_col['uuid'])
         # Get the manifest and check that the new file is being included
         c = arv_put.api_client.collections().get(uuid=updated_col['uuid']).execute()
-        self.assertRegexpMatches(c['manifest_text'], r'^\. .*:44:file2\n')
+        self.assertRegex(c['manifest_text'], r'^\. .*:44:file2\n')
 
     def test_put_collection_with_high_redundancy(self):
         # Write empty data: we're not testing CollectionWriter, just
@@ -849,7 +856,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             "Test unnamed collection",
             ['--portable-data-hash', '--project-uuid', self.PROJECT_UUID])
         username = pwd.getpwuid(os.getuid()).pw_name
-        self.assertRegexpMatches(
+        self.assertRegex(
             link['name'],
             r'^Saved at .* by {}@'.format(re.escape(username)))
 
