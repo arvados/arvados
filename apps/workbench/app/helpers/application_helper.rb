@@ -670,14 +670,9 @@ module ApplicationHelper
     render_runtime duration, use_words, round_to_min
   end
 
-  # Keep locators in input mounts are of the form \"keep:<pdh/file_path>\"
-  MOUNT_INPUT_KEEP_LOCATOR_REGEXP = /(.*)(([0-9a-f]{32}\+\d+)(.*)\"(.*))/
-  def mount_input_keep_locator str
-    MOUNT_INPUT_KEEP_LOCATOR_REGEXP.match str
-  end
-
-  KEEP_LOCATOR_REGEXP = /(.*)([0-9a-f]{32}\+\d+)(.*)/
-  def keep_locator str
+  # Keep locators are expected to be of the form \"...<pdh/file_path>\"
+  KEEP_LOCATOR_REGEXP = /(.*)(([0-9a-f]{32}\+\d+)(.*)\"(.*))/
+  def keep_locator_in_json str
     KEEP_LOCATOR_REGEXP.match str
   end
 
