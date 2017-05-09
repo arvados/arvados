@@ -804,6 +804,29 @@ class CollectionWriterTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertRaises(arvados.errors.AssertionError, writer.open, 'two')
 
 
+class CollectionMethods(run_test_server.TestCaseWithServers):
+
+    def test_keys_values_items_support_indexing(self):
+        c = Collection()
+        with c.open('foo', 'wb') as f:
+            f.write(b'foo')
+        with c.open('bar', 'wb') as f:
+            f.write(b'bar')
+        self.assertEqual(2, len(c.keys()))
+        if sys.version_info < (3, 0):
+            # keys() supports indexing only for python2 callers.
+            fn0 = c.keys()[0]
+            fn1 = c.keys()[1]
+        else:
+            fn0, fn1 = c.keys()
+        self.assertEqual(2, len(c.values()))
+        f0 = c.values()[0]
+        f1 = c.values()[1]
+        self.assertEqual(2, len(c.items()))
+        self.assertEqual(fn0, c.items()[0][0])
+        self.assertEqual(fn1, c.items()[1][0])
+
+
 class CollectionOpenModes(run_test_server.TestCaseWithServers):
 
     def test_open_binary_modes(self):
