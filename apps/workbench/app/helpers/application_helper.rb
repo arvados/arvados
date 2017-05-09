@@ -671,9 +671,9 @@ module ApplicationHelper
   end
 
   # Keep locators are expected to be of the form \"...<pdh/file_path>\"
-  KEEP_LOCATOR_REGEXP = /(.*)(([0-9a-f]{32}\+\d+)(.*)\"(.*))/
+  JSON_KEEP_LOCATOR_REGEXP = /(.*)(([0-9a-f]{32}\+\d+)(.*)\"(.*))/
   def keep_locator_in_json str
-    KEEP_LOCATOR_REGEXP.match str
+    JSON_KEEP_LOCATOR_REGEXP.match str
   end
 
 private
