@@ -162,9 +162,10 @@
                           <% l.split(' ').each do |w| %>
                             <% match = keep_locator_in_json w %>
                             <% if match %>
-                              <% pdh_readable = object_readable(match[2]) %>
+                              <% rindex = match[2].rindex('"'); match2 = match[2][0..rindex-1] %>
+                              <% pdh_readable = object_readable(match2) %>
                               <% quote_char = '"' %>
-                              <%= match[1] %><% if pdh_readable then %><%= link_to_arvados_object_if_readable(match[3], match[3], friendly_name: true) %><%= link_to_arvados_object_if_readable(match[2], match[2], link_text: match[4]) %><%=quote_char%><% else %><%= match[2]%><% end %><%=match[5]%>
+                              <%= match[1] %><% if pdh_readable then %><%= link_to_arvados_object_if_readable(match[3], match[3], friendly_name: true) %><%= link_to_arvados_object_if_readable(match2, match2, link_text: match[4]) %><% else %><%= match2%><% end %><%=quote_char+match[5]%>
                             <% else %>
                               <%= w %>
                             <% end %>
@@ -196,10 +197,11 @@
                           <% match = keep_locator_in_json l %>
                           <% if match %>
                             <% text_part = match[1] %>
-                            <% pdh_readable = object_readable(match[2]) %>
+                            <% rindex = match[2].rindex('"'); match2 = match[2][0..rindex-1] %>
+                            <% pdh_readable = object_readable(match2) %>
                             <% quote_char = '"' %>
                           <% end %>
-                          <span style="white-space: pre-wrap; margin: none;"><%= text_part %><% if match %><% if pdh_readable then %><%= link_to_arvados_object_if_readable(match[3], match[3], friendly_name: true) %><%= link_to_arvados_object_if_readable(match[2], match[2], link_text: match[4]) %><%=quote_char%><% else %><%= match[2]%><% end %><%=match[5]%><br/><% end %></span>
+                          <span style="white-space: pre-wrap; margin: none;"><%= text_part %><% if match %><% if pdh_readable then %><%= link_to_arvados_object_if_readable(match[3], match[3], friendly_name: true) %><%= link_to_arvados_object_if_readable(match2, match2, link_text: match[4]) %><% else %><%= match2%><% end %><%=quote_char+match[5]%><br/><% end %></span>
                       <% end %>
                     </div>
                   </td>
