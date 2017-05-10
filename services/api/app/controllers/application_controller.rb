@@ -283,7 +283,7 @@ class ApplicationController < ActionController::Base
       limit_query = @objects.
         except(:select, :distinct).
         select("(%s) as read_length" %
-               limit_columns.map { |s| "octet_length(#{s})" }.join(" + "))
+               limit_columns.map { |s| "octet_length(#{model_class.table_name}.#{s})" }.join(" + "))
       new_limit = 0
       read_total = 0
       limit_query.each do |record|
