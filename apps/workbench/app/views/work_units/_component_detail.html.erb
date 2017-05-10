@@ -3,9 +3,28 @@
   collections_pdhs = collections.select {|x| !CollectionsHelper.match(x).nil?}.uniq.compact
   collections_uuids = collections - collections_pdhs
   preload_collections_for_objects collections_uuids if collections_uuids.any?
-  preload_for_pdhs collections_pdhs if collections_pdhs.any?
+  preload_links_for_objects collections_uuids if collections_uuids.any?
 
   preload_objects_for_dataclass(Repository, [current_obj.repository], :name) if current_obj.repository
+
+  # if container_X, preload mounted collections
+  if @object.is_a? Container or @object.is_a? ContainerRequest
+    # get any collections in mounts
+    mounts = current_obj.send(:mounts) if current_obj.respond_to?(:mounts)
+    input_obj = mounts.andand[:"/var/lib/cwl/cwl.input.json"].andand[:content]
+    if input_obj
+      input_obj.to_s.scan(/([0-9a-f]{32}\+\d+)/).each {|cs| collections_pdhs += cs}
+    end
+
+    command = current_obj.send(:command) if current_obj.respond_to?(:command)
+    if command
+      command.to_s.scan(/([0-9a-f]{32}\+\d+)/).each {|cs| collections_pdhs += cs}
+    end
+  end
+
+  collections_pdhs.compact.uniq
+  preload_for_pdhs collections_pdhs if collections_pdhs.any?
+  preload_links_for_objects collections_pdhs if collections_pdhs.any?
 %>
 
       <div class="container">

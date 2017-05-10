@@ -1,3 +1,16 @@
+<%
+    container_uuid = if @object.is_a?(Container) then @object.uuid else @object.container_uuid end
+    if container_uuid
+      reqs = ContainerRequest.where(requesting_container_uuid: container_uuid).results
+      child_crs = reqs.map(&:uuid).uniq
+      preload_objects_for_dataclass(ContainerRequest, child_crs)
+
+      child_cs = reqs.map(&:requesting_container_uuid).uniq
+      child_cs += reqs.map(&:container_uuid).uniq
+      preload_objects_for_dataclass(Container, child_cs)
+    end
+%>
+
 <div class="arv-log-refresh-control"
      data-load-throttle="86486400000" <%# 1001 nights %>
      ></div>
