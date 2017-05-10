@@ -19,7 +19,8 @@ import re
 import functools
 
 from arvados.api import OrderedJsonModel
-from cwltool.process import shortname, adjustFileObjs, adjustDirObjs, normalizeFilesDirs
+from cwltool.process import shortname
+from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, normalizeFilesDirs
 from cwltool.load_tool import load_tool
 from cwltool.errors import WorkflowException
 
