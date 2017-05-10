@@ -259,7 +259,15 @@ func run(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados
 			}
 			return
 		case updated, ok := <-status:
-			if !ok {
+			if ctx.Err() != nil {
+				// If ctx.Done() and status are both
+				// ready/closed, the Go runtime
+				// sometimes chooses status -- but we
+				// always want to exit through the
+				// Done() case when done.
+				status = nil
+				continue
+			} else if !ok {
 				log.Printf("Dispatcher says container %s is done: cancel slurm job", ctr.UUID)
 				scancel(ctr)
 			} else if updated.Priority == 0 {
@@ -270,6 +278,16 @@ func run(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados
 	}
 }
 
+// scancel cancels the slurm job corresponding to the given ctr. If
+// this does not work -- i.e., if either the `scancel` command fails,
+// or `scancel` succeeds but then (after waiting for another "squeue"
+// poll interval) slurm reports that the job still exists -- then
+// scancel logs a message to that effect, and waits 1 second before
+// returning.
+//
+// If the job disappears from squeue during the 1-second delay, then
+// the caller (i.e., run()) will notice, and exit its loop via
+// <-ctx.Done().
 func scancel(ctr arvados.Container) {
 	sqCheck.L.Lock()
 	cmd := scancelCmd(ctr)
