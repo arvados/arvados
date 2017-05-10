@@ -1,1 +1,1 @@
-fpm_depends+=('git')
+fpm_depends+=('git g++')
