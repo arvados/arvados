@@ -17,6 +17,15 @@
 
   outputs = wf_def.andand["outputs"]
   items['outputs'] = outputs if outputs
+
+  # preload the collections
+  collections_pdhs = []
+  items.each do |k, v|
+    v.to_s.scan(/([0-9a-f]{32}\+\d+)/).each {|l| collections_pdhs += l}
+  end
+  collections_pdhs.compact.uniq
+  preload_for_pdhs collections_pdhs if collections_pdhs.any?
+  preload_links_for_objects collections_pdhs if collections_pdhs.any?
 %>
 
   <div class="col-md-12">
