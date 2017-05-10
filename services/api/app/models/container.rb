@@ -66,6 +66,10 @@ class Container < ArvadosModel
     Running => [Complete, Cancelled]
   }
 
+  def self.limit_index_columns_read
+    ["mounts"]
+  end
+
   def state_transitions
     State_transitions
   end

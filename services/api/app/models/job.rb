@@ -73,6 +73,10 @@ class Job < ArvadosModel
     @need_crunch_dispatch_trigger = false
   end
 
+  def self.limit_index_columns_read
+    ["components"]
+  end
+
   def assert_finished
     update_attributes(finished_at: finished_at || db_current_time,
                       success: success.nil? ? false : success,

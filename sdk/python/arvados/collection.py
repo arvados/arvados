@@ -725,7 +725,7 @@ class RichCollectionBase(CollectionBase):
     @synchronized
     def keys(self):
         """Get a list of names of files and collections directly contained in this collection."""
-        return viewkeys(self._items)
+        return self._items.keys()
 
     @synchronized
     def values(self):
