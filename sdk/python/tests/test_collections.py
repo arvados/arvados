@@ -55,6 +55,10 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         cw.finish()
         return cw.portable_data_hash()
 
+    def test_pdh_is_native_str(self):
+        pdh = self.write_foo_bar_baz()
+        self.assertEqual(type(''), type(pdh))
+
     def test_keep_local_store(self):
         self.assertEqual(self.keep_client.put(b'foo'), 'acbd18db4cc2f85cedef654fccc4a4d8+3', 'wrong md5 hash from Keep.put')
         self.assertEqual(self.keep_client.get('acbd18db4cc2f85cedef654fccc4a4d8+3'), b'foo', 'wrong data from Keep.get')

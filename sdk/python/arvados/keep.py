@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from __future__ import division
 from future import standard_library
+from future.utils import native_str
 standard_library.install_aliases()
 from builtins import next
 from builtins import str
@@ -73,8 +74,9 @@ class KeepLocator(object):
 
     def __str__(self):
         return '+'.join(
-            str(s) for s in [self.md5sum, self.size,
-                             self.permission_hint()] + self.hints
+            native_str(s)
+            for s in [self.md5sum, self.size,
+                      self.permission_hint()] + self.hints
             if s is not None)
 
     def stripped(self):

@@ -360,7 +360,7 @@ class CollectionWriter(CollectionBase):
 
     def portable_data_hash(self):
         stripped = self.stripped_manifest().encode()
-        return hashlib.md5(stripped).hexdigest() + '+' + str(len(stripped))
+        return '{}+{}'.format(hashlib.md5(stripped).hexdigest(), len(stripped))
 
     def manifest_text(self):
         self.finish_current_stream()
