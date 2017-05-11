@@ -227,7 +227,7 @@ func run(disp *dispatch.Dispatcher, ctr arvados.Container, status <-chan arvados
 		log.Printf("Submitting container %s to slurm", ctr.UUID)
 		if err := submit(disp, ctr, theConfig.CrunchRunCommand); err != nil {
 			text := fmt.Sprintf("Error submitting container %s to slurm: %s", ctr.UUID, err)
-			log.Printf(text)
+			log.Print(text)
 
 			lr := arvadosclient.Dict{"log": arvadosclient.Dict{
 				"object_uuid": ctr.UUID,
