@@ -63,6 +63,11 @@ class ArvadosKeepLocatorTest(unittest.TestCase):
             locator = '+'.join((base,) + loc_hints)
             self.assertEqual(locator, str(KeepLocator(locator)))
 
+    def test_str_type(self):
+        base = next(self.base_locators(1))
+        locator = KeepLocator(base)
+        self.assertEqual(type(''), type(locator.__str__()))
+
     def test_expiry_passed(self):
         base = next(self.base_locators(1))
         signature = next(self.signatures(1))
