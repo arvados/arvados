@@ -1085,7 +1085,7 @@ class RichCollectionBase(CollectionBase):
             return self._portable_data_hash
         else:
             stripped = self.portable_manifest_text().encode()
-            return hashlib.md5(stripped).hexdigest() + '+' + str(len(stripped))
+            return '{}+{}'.format(hashlib.md5(stripped).hexdigest(), len(stripped))
 
     @synchronized
     def subscribe(self, callback):
