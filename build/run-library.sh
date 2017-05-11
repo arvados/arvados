@@ -226,8 +226,12 @@ test_package_presence() {
       local complete_pkgname="$pkgname-$version-$iteration.$rpm_architecture.rpm"
     fi
 
-    if [[ -e "$complete_pkgname" ]]; then
+    # See if we can skip building the package, only if it already exists in the
+    # processed/ directory. If so, move it back to the packages directory to make
+    # sure it gets picked up by the test and/or upload steps.
+    if [[ -e "processed/$complete_pkgname" ]]; then
       echo "Package $complete_pkgname exists, not rebuilding!"
+      mv processed/$complete_pkgname .
       return 1
     else
       echo "Package $complete_pkgname not found, building"

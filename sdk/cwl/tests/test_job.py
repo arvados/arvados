@@ -134,7 +134,7 @@ class TestJob(unittest.TestCase):
                 'runtime_constraints': {
                     'docker_image': 'arvados/jobs',
                     'min_cores_per_node': 3,
-                    'min_ram_mb_per_node': 3000,
+                    'min_ram_mb_per_node': 3512,     # ramMin + keep_cache
                     'min_scratch_mb_per_node': 5024, # tmpdirSize + outdirSize
                     'keep_cache_mb_per_task': 512
                 }
