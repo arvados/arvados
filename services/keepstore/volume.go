@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"io"
+	"math/big"
 	"sync/atomic"
 	"time"
 )
@@ -241,6 +243,9 @@ type VolumeWithExamples interface {
 // A VolumeManager tells callers which volumes can read, which volumes
 // can write, and on which volume the next write should be attempted.
 type VolumeManager interface {
+	// Mounts returns all mounts (volume attachments).
+	Mounts() []*VolumeMount
+
 	// AllReadable returns all volumes.
 	AllReadable() []Volume
 
@@ -263,10 +268,35 @@ type VolumeManager interface {
 	Close()
 }
 
+// A VolumeMount is an attachment of a Volume to a VolumeManager.
+type VolumeMount struct {
+	UUID     string
+	DeviceID string
+	ReadOnly bool
+	Tier     int
+	volume   Volume
+}
+
+// Generate a UUID the way API server would for a "KeepVolumeMount"
+// object.
+func (*VolumeMount) generateUUID() string {
+	var max big.Int
+	_, ok := max.SetString("zzzzzzzzzzzzzzz", 36)
+	if !ok {
+		panic("big.Int parse failed")
+	}
+	r, err := rand.Int(rand.Reader, &max)
+	if err != nil {
+		panic(err)
+	}
+	return "zzzzz-ivpuk-" + r.Text(36)
+}
+
 // RRVolumeManager is a round-robin VolumeManager: the Nth call to
 // NextWritable returns the (N % len(writables))th writable Volume
 // (where writables are all Volumes v where v.Writable()==true).
 type RRVolumeManager struct {
+	mounts    []*VolumeMount
 	readables []Volume
 	writables []Volume
 	counter   uint32
@@ -279,13 +309,30 @@ func MakeRRVolumeManager(volumes []Volume) *RRVolumeManager {
 		iostats: make(map[Volume]*ioStats),
 	}
 	for _, v := range volumes {
+		mnt := &VolumeMount{
+			UUID:     (*VolumeMount)(nil).generateUUID(),
+			DeviceID: "",
+			ReadOnly: !v.Writable(),
+			Tier:     1,
+			volume:   v,
+		}
+		if v, ok := v.(interface {
+			DeviceID() string
+		}); ok {
+			mnt.DeviceID = v.DeviceID()
+		}
 		vm.iostats[v] = &ioStats{}
+		vm.mounts = append(vm.mounts, mnt)
 		vm.readables = append(vm.readables, v)
 		if v.Writable() {
 			vm.writables = append(vm.writables, v)
 		}
 	}
 	return vm
+}
+
+func (vm *RRVolumeManager) Mounts() []*VolumeMount {
+	return vm.mounts
 }
 
 // AllReadable returns an array of all readable volumes

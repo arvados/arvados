@@ -13,7 +13,6 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"io"
 	"net/http"
 	"os"
@@ -23,6 +22,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gorilla/mux"
 
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	log "github.com/Sirupsen/logrus"
@@ -58,6 +59,9 @@ func MakeRESTRouter() *router {
 
 	// List volumes: path, device number, bytes used/avail.
 	rest.HandleFunc(`/status.json`, rtr.StatusHandler).Methods("GET", "HEAD")
+
+	// List mounts: UUID, readonly, tier, device ID, ...
+	rest.HandleFunc(`/mounts`, rtr.Mounts).Methods("GET")
 
 	// Replace the current pull queue.
 	rest.HandleFunc(`/pull`, PullHandler).Methods("PUT")
@@ -247,6 +251,14 @@ func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 	// An empty line at EOF is the only way the client can be
 	// assured the entire index was received.
 	resp.Write([]byte{'\n'})
+}
+
+// Mounts responds to "GET /mounts" requests.
+func (rtr *router) Mounts(resp http.ResponseWriter, req *http.Request) {
+	err := json.NewEncoder(resp).Encode(KeepVM.Mounts())
+	if err != nil {
+		http.Error(resp, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 // PoolStatus struct
