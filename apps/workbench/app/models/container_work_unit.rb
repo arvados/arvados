@@ -6,7 +6,8 @@ class ContainerWorkUnit < ProxyWorkUnit
     if @proxied.is_a?(ContainerRequest)
       container_uuid = get(:container_uuid)
       if container_uuid
-        @container = Container.find(container_uuid)
+        #@container = Container.where(uuid: container_uuid).first
+        ApplicationController.helpers.object_for_dataclass Container, container_uuid
       end
     end
   end
