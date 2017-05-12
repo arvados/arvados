@@ -6,9 +6,11 @@ import copy
 import mock
 import os
 import pprint
+import random
 import re
 import sys
 import tempfile
+import time
 import unittest
 
 from . import run_test_server
@@ -1171,6 +1173,38 @@ class NewCollectionTestCase(unittest.TestCase, CollectionTestMixin):
         self.assertEqual(c1["count1.txt"].size(), 10)
         c1.open("count1.txt", "wb").close()
         self.assertEqual(c1["count1.txt"].size(), 0)
+
+
+class NewCollectionTestCaseWithServersAndTokens(run_test_server.TestCaseWithServers):
+    MAIN_SERVER = {}
+    KEEP_SERVER = {}
+
+    def setUp(self):
+        self.keep_put = getattr(arvados.keep.KeepClient, 'put')
+
+    def test_repacked_block_sumbmission_get_permission_token(self):
+        '''
+        Make sure that those blocks that are committed after repacking small ones,
+        get their permission tokens assigned on the collection manifest.
+        '''
+        def wrapped_keep_put(*args, **kwargs):
+            # Simulate slow put operations
+            time.sleep(1)
+            return self.keep_put(*args, **kwargs)
+
+        re_locator = "[0-9a-f]{32}\+\d+\+A[a-f0-9]{40}@[a-f0-9]{8}"
+
+        with mock.patch('arvados.keep.KeepClient.put', autospec=True) as mocked_put:
+            mocked_put.side_effect = wrapped_keep_put
+            c = Collection()
+            # Write 70 files ~1MiB each so we force to produce 1 big block by repacking
+            # small ones before finishing the upload.
+            for i in range(70):
+                f = c.open("file_{}.txt".format(i), 'wb')
+                f.write(random.choice('abcdefghijklmnopqrstuvwxyz') * (2**20+i))
+                f.close(flush=False)
+            # We should get 2 blocks with their tokens
+            self.assertEqual(len(re.findall(re_locator, c.manifest_text())), 2)
 
 
 class NewCollectionTestCaseWithServers(run_test_server.TestCaseWithServers):
