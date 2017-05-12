@@ -198,11 +198,12 @@ class Job < ArvadosModel
     filters
   end
 
-  # reuselog logs whatever the given block returns, if reuse logging
-  # is enabled. It accepts a block instead of a string because in some
-  # cases constructing the strings involves doing database queries,
-  # and we want to skip those queries when logging is disabled.
-  def self.reuselog
+  # log_reuse_info logs whatever the given block returns, if
+  # log_reuse_decisions is enabled. It accepts a block instead of a
+  # string because in some cases constructing the strings involves
+  # doing database queries, and we want to skip those queries when
+  # logging is disabled.
+  def self.log_reuse_info
     if Rails.configuration.log_reuse_decisions
       Rails.logger.info("find_reusable: " + yield)
     end
@@ -247,23 +248,26 @@ class Job < ArvadosModel
     end
 
     # Search for a reusable Job, and return it if found.
-    candidates = Job.readable_by(current_user).where(
+    candidates = Job.readable_by(current_user)
+    log_reuse_info { "starting with #{candidates.count} jobs readable by current user #{current_user.uuid}" }
+
+    candidates = candidates.where(
       'state = ? or (owner_uuid = ? and state in (?))',
       Job::Complete, current_user.uuid, [Job::Queued, Job::Running])
-    reuselog { "have #{candidates.count} readable jobs in a reusable state" }
+    log_reuse_info { "have #{candidates.count} candidates after filtering on job state (either state=Complete, or state=Queued/Running and submitted by current user)" }
 
     digest = Job.sorted_hash_digest(attrs[:script_parameters])
     candidates = candidates.where('script_parameters_digest = ?', digest)
-    reuselog { "have #{candidates.count} candidates after filtering on script_parameters_digest #{digest}" }
+    log_reuse_info { "have #{candidates.count} candidates after filtering on script_parameters_digest #{digest}" }
 
     candidates = candidates.where('nondeterministic is distinct from ?', true)
-    reuselog { "have #{candidates.count} candidates after filtering on !nondeterministic" }
+    log_reuse_info { "have #{candidates.count} candidates after filtering on !nondeterministic" }
 
     # prefer Running jobs over Queued
     candidates = candidates.order('state desc, created_at')
 
     candidates = apply_filters candidates, filters
-    reuselog { "have #{candidates.count} candidates after filtering on repo, script, and custom filters #{filters.inspect}" }
+    log_reuse_info { "have #{candidates.count} candidates after filtering on repo, script, and custom filters #{filters.inspect}" }
 
     chosen = nil
     incomplete_job = nil
@@ -271,52 +275,54 @@ class Job < ArvadosModel
       if j.state != Job::Complete
         if !incomplete_job
           # We'll use this if we don't find a job that has completed
-          reuselog { "job #{j.uuid} is reusable, but unfinished; continuing search for completed jobs" }
+          log_reuse_info { "job #{j.uuid} is reusable, but unfinished; continuing search for completed jobs" }
           incomplete_job = j
         else
-          reuselog { "job #{j.uuid} is reusable, but unfinished, so not better than #{incomplete_job.uuid}; ignoring" }
+          log_reuse_info { "job #{j.uuid} is unfinished and we already have #{incomplete_job.uuid}; ignoring" }
         end
       elsif chosen == false
         # Ignore: we have already decided not to reuse any completed
         # job.
-        reuselog { "job #{j.uuid} output #{j.output} ignored, see above" }
+        log_reuse_info { "job #{j.uuid} with output #{j.output} ignored, see above" }
       elsif Rails.configuration.reuse_job_if_outputs_differ
         if Collection.readable_by(current_user).find_by_portable_data_hash(j.output)
-          reuselog { "job #{j.uuid} with output #{j.output} is reusable; decision is final." }
+          log_reuse_info { "job #{j.uuid} with output #{j.output} is reusable; decision is final." }
           return j
         else
           # Ignore: keep locking for an incomplete job or one whose
           # output is readable.
-          reuselog { "job #{j.uuid} output #{j.output} unavailable to user; continuing search" }
+          log_reuse_info { "job #{j.uuid} output #{j.output} unavailable to user; continuing search" }
         end
       elsif chosen
         if chosen.output != j.output
           # If two matching jobs produced different outputs, run a new
           # job (or use one that's already running/queued) instead of
           # choosing one arbitrarily.
-          reuselog { "job #{j.uuid} output #{j.output} disagrees; forgetting about #{chosen.uuid} and ignoring any other finished jobs (see reuse_job_if_outputs_differ in application.default.yml)" }
+          log_reuse_info { "job #{j.uuid} output #{j.output} disagrees; forgetting about #{chosen.uuid} and ignoring any other finished jobs (see reuse_job_if_outputs_differ in application.default.yml)" }
           chosen = false
         else
-          reuselog { "job #{j.uuid} output #{j.output} agrees with chosen #{chosen.uuid}; continuing search in case others disagree" }
+          log_reuse_info { "job #{j.uuid} output #{j.output} agrees with chosen #{chosen.uuid}; continuing search in case other candidates have different outputs" }
         end
         # ...and that's the only thing we need to do once we've chosen
         # a job to reuse.
       elsif !Collection.readable_by(current_user).find_by_portable_data_hash(j.output)
-        # As soon as the output we will end up returning (if any) is
-        # decided, check whether it will be visible to the user; if
-        # not, any further investigation of reusable jobs is futile.
-        reuselog { "job #{j.uuid} output #{j.output} unavailable to user; now refusing to reuse any finished job" }
+        # This user cannot read the output of this job. Any other
+        # completed job will have either the same output (making it
+        # unusable) or a different output (making it unusable because
+        # reuse_job_if_outputs_different is turned off). Therefore,
+        # any further investigation of reusable jobs is futile.
+        log_reuse_info { "job #{j.uuid} output #{j.output} is unavailable to user; this means no finished job can be reused (see reuse_job_if_outputs_differ in application.default.yml)" }
         chosen = false
       else
-        reuselog { "job #{j.uuid} output #{j.output} can be reused; continuing search in case others disagree" }
+        log_reuse_info { "job #{j.uuid} with output #{j.output} can be reused; continuing search in case other candidates have different outputs" }
         chosen = j
       end
     end
     j = chosen || incomplete_job
     if j
-      reuselog { "done, #{j.uuid} was selected" }
+      log_reuse_info { "done, #{j.uuid} was selected" }
     else
-      reuselog { "done, nothing suitable" }
+      log_reuse_info { "done, nothing suitable" }
     end
     return j
   end
