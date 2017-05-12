@@ -57,6 +57,10 @@ class ArvadosCollectionsTest(run_test_server.TestCaseWithServers,
         cw.finish()
         return cw.portable_data_hash()
 
+    def test_pdh_is_native_str(self):
+        pdh = self.write_foo_bar_baz()
+        self.assertEqual(type(''), type(pdh))
+
     def test_keep_local_store(self):
         self.assertEqual(self.keep_client.put(b'foo'), 'acbd18db4cc2f85cedef654fccc4a4d8+3', 'wrong md5 hash from Keep.put')
         self.assertEqual(self.keep_client.get('acbd18db4cc2f85cedef654fccc4a4d8+3'), b'foo', 'wrong data from Keep.get')
@@ -1398,6 +1402,11 @@ class CollectionCreateUpdateTest(run_test_server.TestCaseWithServers):
         self.assertRegex(
             c1.manifest_text(),
             r"\. e65075d550f9b5bf9992fa1d71a131be\+3\S* 7ac66c0f148de9519b8bd264312c4d64\+7\S* 0:3:count\.txt 3:7:count\.txt~\d\d\d\d\d\d\d\d-\d\d\d\d\d\d~conflict~$")
+
+    def test_pdh_is_native_str(self):
+        c1 = self.create_count_txt()
+        pdh = c1.portable_data_hash()
+        self.assertEqual(type(''), type(pdh))
 
 
 if __name__ == '__main__':
