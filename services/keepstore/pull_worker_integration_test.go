@@ -3,14 +3,15 @@ package main
 import (
 	"bytes"
 	"errors"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
 var keepClient *keepclient.KeepClient
@@ -109,13 +110,12 @@ func TestPullWorkerIntegration_GetExistingLocator(t *testing.T) {
 // putting an item on the pullq so that the errors can be verified.
 func performPullWorkerIntegrationTest(testData PullWorkIntegrationTestData, pullRequest PullRequest, t *testing.T) {
 
-	// Override PutContent to mock PutBlock functionality
-	defer func(orig func([]byte, string) error) { PutContent = orig }(PutContent)
-	PutContent = func(content []byte, locator string) (err error) {
+	// Override writePulledBlock to mock PutBlock functionality
+	defer func(orig func(Volume, []byte, string)) { writePulledBlock = orig }(writePulledBlock)
+	writePulledBlock = func(v Volume, content []byte, locator string) {
 		if string(content) != testData.Content {
-			t.Errorf("PutContent invoked with unexpected data. Expected: %s; Found: %s", testData.Content, content)
+			t.Errorf("writePulledBlock invoked with unexpected data. Expected: %s; Found: %s", testData.Content, content)
 		}
-		return
 	}
 
 	// Override GetContent to mock keepclient Get functionality
@@ -131,8 +131,7 @@ func performPullWorkerIntegrationTest(testData PullWorkIntegrationTestData, pull
 		return rdr, int64(len(testData.Content)), "", nil
 	}
 
-	keepClient.Arvados.ApiToken = GenerateRandomAPIToken()
-	err := PullItemAndProcess(pullRequest, keepClient.Arvados.ApiToken, keepClient)
+	err := PullItemAndProcess(pullRequest, keepClient)
 
 	if len(testData.GetError) > 0 {
 		if (err == nil) || (!strings.Contains(err.Error(), testData.GetError)) {

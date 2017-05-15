@@ -246,6 +246,11 @@ type VolumeManager interface {
 	// Mounts returns all mounts (volume attachments).
 	Mounts() []*VolumeMount
 
+	// Lookup returns the volume under the given mount
+	// UUID. Returns nil if the mount does not exist. If
+	// write==true, returns nil if the volume is not writable.
+	Lookup(uuid string, write bool) Volume
+
 	// AllReadable returns all volumes.
 	AllReadable() []Volume
 
@@ -333,6 +338,15 @@ func MakeRRVolumeManager(volumes []Volume) *RRVolumeManager {
 
 func (vm *RRVolumeManager) Mounts() []*VolumeMount {
 	return vm.mounts
+}
+
+func (vm *RRVolumeManager) Lookup(uuid string, needWrite bool) Volume {
+	for _, mnt := range vm.mounts {
+		if mnt.UUID == uuid && (!needWrite || !mnt.ReadOnly) {
+			return mnt.volume
+		}
+	}
+	return nil
 }
 
 // AllReadable returns an array of all readable volumes

@@ -4,10 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io"
 	"io/ioutil"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -23,7 +24,7 @@ func RunPullWorker(pullq *WorkQueue, keepClient *keepclient.KeepClient) {
 	nextItem := pullq.NextItem
 	for item := range nextItem {
 		pullRequest := item.(PullRequest)
-		err := PullItemAndProcess(item.(PullRequest), GenerateRandomAPIToken(), keepClient)
+		err := PullItemAndProcess(item.(PullRequest), keepClient)
 		pullq.DoneItem <- struct{}{}
 		if err == nil {
 			log.Printf("Pull %s success", pullRequest)
@@ -40,8 +41,16 @@ func RunPullWorker(pullq *WorkQueue, keepClient *keepclient.KeepClient) {
 //		Using this token & signature, retrieve the given block.
 //		Write to storage
 //
-func PullItemAndProcess(pullRequest PullRequest, token string, keepClient *keepclient.KeepClient) (err error) {
-	keepClient.Arvados.ApiToken = token
+func PullItemAndProcess(pullRequest PullRequest, keepClient *keepclient.KeepClient) error {
+	var vol Volume
+	if uuid := pullRequest.MountUUID; uuid != "" {
+		vol = KeepVM.Lookup(pullRequest.MountUUID, true)
+		if vol == nil {
+			return fmt.Errorf("pull req has nonexistent mount: %v", pullRequest)
+		}
+	}
+
+	keepClient.Arvados.ApiToken = randomToken
 
 	serviceRoots := make(map[string]string)
 	for _, addr := range pullRequest.Servers {
@@ -51,11 +60,11 @@ func PullItemAndProcess(pullRequest PullRequest, token string, keepClient *keepc
 
 	// Generate signature with a random token
 	expiresAt := time.Now().Add(60 * time.Second)
-	signedLocator := SignLocator(pullRequest.Locator, token, expiresAt)
+	signedLocator := SignLocator(pullRequest.Locator, randomToken, expiresAt)
 
 	reader, contentLen, _, err := GetContent(signedLocator, keepClient)
 	if err != nil {
-		return
+		return err
 	}
 	if reader == nil {
 		return fmt.Errorf("No reader found for : %s", signedLocator)
@@ -71,31 +80,33 @@ func PullItemAndProcess(pullRequest PullRequest, token string, keepClient *keepc
 		return fmt.Errorf("Content not found for: %s", signedLocator)
 	}
 
-	err = PutContent(readContent, pullRequest.Locator)
-	return
+	writePulledBlock(vol, readContent, pullRequest.Locator)
+	return nil
 }
 
 // Fetch the content for the given locator using keepclient.
-var GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (
-	reader io.ReadCloser, contentLength int64, url string, err error) {
-	reader, blocklen, url, err := keepClient.Get(signedLocator)
-	return reader, blocklen, url, err
+var GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (io.ReadCloser, int64, string, error) {
+	return keepClient.Get(signedLocator)
 }
 
-const alphaNumeric = "0123456789abcdefghijklmnopqrstuvwxyz"
+var writePulledBlock = func(volume Volume, data []byte, locator string) {
+	var err error
+	if volume != nil {
+		err = volume.Put(context.Background(), locator, data)
+	} else {
+		_, err = PutBlock(context.Background(), data, locator)
+	}
+	if err != nil {
+		log.Printf("error writing pulled block %q: %s", locator, err)
+	}
+}
 
-// GenerateRandomAPIToken generates a random api token
-func GenerateRandomAPIToken() string {
+var randomToken = func() string {
+	const alphaNumeric = "0123456789abcdefghijklmnopqrstuvwxyz"
 	var bytes = make([]byte, 36)
 	rand.Read(bytes)
 	for i, b := range bytes {
 		bytes[i] = alphaNumeric[b%byte(len(alphaNumeric))]
 	}
 	return (string(bytes))
-}
-
-// Put block
-var PutContent = func(content []byte, locator string) (err error) {
-	_, err = PutBlock(context.Background(), content, locator)
-	return
-}
+}()

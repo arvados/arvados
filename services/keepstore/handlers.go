@@ -62,6 +62,8 @@ func MakeRESTRouter() *router {
 
 	// List mounts: UUID, readonly, tier, device ID, ...
 	rest.HandleFunc(`/mounts`, rtr.Mounts).Methods("GET")
+	rest.HandleFunc(`/mounts/{uuid}/blocks`, rtr.MountBlocks).Methods("GET")
+	rest.HandleFunc(`/mounts/{uuid}/blocks/{prefix:[0-9a-f]{0,32}}`, rtr.MountBlocks).Methods("GET")
 
 	// Replace the current pull queue.
 	rest.HandleFunc(`/pull`, PullHandler).Methods("PUT")
@@ -258,6 +260,24 @@ func (rtr *router) Mounts(resp http.ResponseWriter, req *http.Request) {
 	err := json.NewEncoder(resp).Encode(KeepVM.Mounts())
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// MountBlocks responds to "GET /mounts/{uuid}/blocks" requests.
+func (rtr *router) MountBlocks(resp http.ResponseWriter, req *http.Request) {
+	if !IsSystemAuth(GetAPIToken(req)) {
+		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
+		return
+	}
+
+	uuid := mux.Vars(req)["uuid"]
+	prefix := mux.Vars(req)["prefix"]
+	if v := KeepVM.Lookup(uuid, false); v == nil {
+		http.Error(resp, "mount not found", http.StatusNotFound)
+	} else if err := v.IndexTo(prefix, resp); err != nil {
+		http.Error(resp, err.Error(), http.StatusInternalServerError)
+	} else {
+		resp.Write([]byte{'\n'})
 	}
 }
 
@@ -474,6 +494,9 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 type PullRequest struct {
 	Locator string   `json:"locator"`
 	Servers []string `json:"servers"`
+
+	// Destination mount, or "" for "anywhere"
+	MountUUID string
 }
 
 // PullHandler processes "PUT /pull" requests for the data manager.
@@ -510,6 +533,9 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 type TrashRequest struct {
 	Locator    string `json:"locator"`
 	BlockMtime int64  `json:"block_mtime"`
+
+	// Target mount, or "" for "everywhere"
+	MountUUID string
 }
 
 // TrashHandler processes /trash requests.

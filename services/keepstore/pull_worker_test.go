@@ -3,12 +3,13 @@ package main
 import (
 	"bytes"
 	"errors"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
-	. "gopkg.in/check.v1"
 	"io"
 	"net/http"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
+	. "gopkg.in/check.v1"
 )
 
 var _ = Suite(&PullWorkerTestSuite{})
@@ -259,16 +260,14 @@ func performTest(testData PullWorkerTestData, c *C) {
 		return rc, int64(len(testData.readContent)), "", nil
 	}
 
-	// Override PutContent to mock PutBlock functionality
-	defer func(orig func([]byte, string) error) { PutContent = orig }(PutContent)
-	PutContent = func(content []byte, locator string) (err error) {
+	// Override writePulledBlock to mock PutBlock functionality
+	defer func(orig func(Volume, []byte, string)) { writePulledBlock = orig }(writePulledBlock)
+	writePulledBlock = func(v Volume, content []byte, locator string) {
 		if testData.putError {
-			err = errors.New("Error putting data")
-			putError = err
-			return err
+			putError = errors.New("Error putting data")
+			return
 		}
 		putContent = content
-		return nil
 	}
 
 	c.Assert(getStatusItem("PullQueue", "InProgress"), Equals, float64(0))
