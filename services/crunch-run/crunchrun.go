@@ -1190,6 +1190,10 @@ func (runner *ContainerRunner) Run() (err error) {
 			if err == nil {
 				err = e
 			}
+			if runner.finalState == "Complete" {
+				// There was an error in the finalization.
+				runner.finalState = "Cancelled"
+			}
 		}
 
 		// Log the error encountered in Run(), if any
