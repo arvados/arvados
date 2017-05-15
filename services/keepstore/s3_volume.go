@@ -239,6 +239,11 @@ func (v *S3Volume) Start() error {
 	return nil
 }
 
+// DeviceID returns a globally unique ID for the storage bucket.
+func (v *S3Volume) DeviceID() string {
+	return "s3://" + v.Endpoint + "/" + v.Bucket
+}
+
 func (v *S3Volume) getReaderWithContext(ctx context.Context, loc string) (rdr io.ReadCloser, err error) {
 	ready := make(chan bool)
 	go func() {
