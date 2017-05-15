@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -84,6 +85,7 @@ type TestDockerClient struct {
 	cwd         string
 	env         []string
 	api         *ArvTestClient
+	realTemp    string
 }
 
 func NewTestDockerClient(exitCode int) *TestDockerClient {
@@ -609,6 +611,8 @@ func FullRunHelper(c *C, record string, extraMounts []string, exitCode int, fn f
 	realTemp, err = ioutil.TempDir("", "crunchrun_test1-")
 	c.Assert(err, IsNil)
 	defer os.RemoveAll(realTemp)
+
+	docker.realTemp = realTemp
 
 	tempcount := 0
 	cr.MkTempDir = func(_ string, prefix string) (string, error) {
@@ -1413,6 +1417,47 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 
 				c.Check(manifest, Equals, `./a/b 307372fa8fd5c146b22ae7a45b49bc31+6 0:6:c.out
 ./foo 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 10:17:bar
+`)
+			}
+		}
+	}
+}
+
+func (s *TestSuite) TestOutputSymlinkToInput(c *C) {
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {
+        "/tmp": {"kind": "tmp"},
+        "/keep/foo/sub1file2": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367", "path": "/subdir1/file2_in_subdir1.txt"},
+        "/keep/foo2": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367"}
+    },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	extraMounts := []string{
+		"a0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt",
+	}
+
+	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+		log.Printf("realtemp is %v", t.realTemp)
+		os.Symlink("/keep/foo/sub1file2", t.realTemp+"/2/baz")
+		os.Symlink("/keep/foo2/subdir1/file2_in_subdir1.txt", t.realTemp+"/2/baz2")
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	for _, v := range api.Content {
+		if v["collection"] != nil {
+			collection := v["collection"].(arvadosclient.Dict)
+			if strings.Index(collection["name"].(string), "output") == 0 {
+				manifest := collection["manifest_text"].(string)
+				c.Check(manifest, Equals, `. 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 9:18:baz 9:18:baz2
 `)
 			}
 		}

@@ -953,9 +953,8 @@ func (runner *ContainerRunner) CaptureOutput() error {
 			}
 			// go through mounts and reverse map to collection reference
 			for _, bind := range binds {
-				if tgt == bind || strings.HasPrefix(tgt, bind+"/") {
-					mnt := runner.Container.Mounts[bind]
-
+				mnt := runner.Container.Mounts[bind]
+				if tgt == bind || strings.HasPrefix(tgt, bind+"/") && mnt.Kind == "collection" {
 					// get path relative to bind
 					sourceSuffix := tgt[len(bind):]
 					// get path relative to output dir
