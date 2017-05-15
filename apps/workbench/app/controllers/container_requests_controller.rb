@@ -8,12 +8,55 @@ class ContainerRequestsController < ApplicationController
     return if params['tab_pane'] != "Provenance"
 
     nodes = {cr[:uuid] => cr}
-    @svg = ProvenanceHelper::create_provenance_graph nodes,
-                                                     "provenance_svg",
-                                                     {
-                                                       :request => request,
-                                                       :direction => :top_down,
-                                                     }
+    child_crs = []
+    col_uuids = []
+    col_pdhs = []
+    col_uuids << cr[:output_uuid] if cr[:output_uuid]
+    col_pdhs += ProvenanceHelper::cr_input_pdhs(cr)
+
+    # Search for child CRs
+    if cr[:container_uuid]
+      child_crs = ContainerRequest.where(requesting_container_uuid: cr[:container_uuid])
+
+      child_crs.each do |child|
+        nodes[child[:uuid]] = child
+        col_uuids << child[:output_uuid] if child[:output_uuid]
+        col_pdhs += ProvenanceHelper::cr_input_pdhs(child)
+      end
+    end
+
+    output_cols = {} # Indexed by UUID
+    input_cols = {} # Indexed by PDH
+    output_pdhs = []
+
+    # Batch requests to get all related collections
+    # First fetch output collections by UUID.
+    Collection.filter([['uuid', 'in', col_uuids.uniq]]).each do |c|
+      output_cols[c[:uuid]] = c
+      output_pdhs << c[:portable_data_hash]
+    end
+    # Then, get only input collections by PDH. There could be more than one collection
+    # per PDH: the number of collections is used on the collection node label.
+    Collection.filter(
+      [['portable_data_hash', 'in', col_pdhs - output_pdhs]]).each do |c|
+      if input_cols[c[:portable_data_hash]]
+        input_cols[c[:portable_data_hash]] << c
+      else
+        input_cols[c[:portable_data_hash]] = [c]
+      end
+    end
+
+    @svg = ProvenanceHelper::create_provenance_graph(
+      nodes, "provenance_svg",
+      {
+        :request => request,
+        :direction => :top_down,
+        :output_collections => output_cols,
+        :input_collections => input_cols,
+        :cr_children_of => {
+          cr[:uuid] => child_crs.select{|child| child[:uuid]},
+        },
+      })
   end
 
   def show_pane_list
