@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -640,7 +639,9 @@ func FullRunHelper(c *C, record string, extraMounts []string, exitCode int, fn f
 	}
 
 	err = cr.Run()
-	c.Check(err, IsNil)
+	if api.CalledWith("container.state", "Complete") != nil {
+		c.Check(err, IsNil)
+	}
 	c.Check(api.WasSetRunning, Equals, true)
 
 	c.Check(api.Content[api.Calls-1]["container"].(arvadosclient.Dict)["log"], NotNil)
@@ -1448,7 +1449,6 @@ func (s *TestSuite) TestOutputSymlinkToInput(c *C) {
 	}
 
 	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
-		log.Printf("realtemp is %v", t.realTemp)
 		os.Symlink("/keep/foo/sub1file2", t.realTemp+"/2/baz")
 		os.Symlink("/keep/foo2/subdir1/file2_in_subdir1.txt", t.realTemp+"/2/baz2")
 		os.Symlink("/keep/foo2/subdir1", t.realTemp+"/2/baz3")
@@ -1472,6 +1472,30 @@ func (s *TestSuite) TestOutputSymlinkToInput(c *C) {
 			}
 		}
 	}
+}
+
+func (s *TestSuite) TestOutputError(c *C) {
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {
+        "/tmp": {"kind": "tmp"}
+    },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	extraMounts := []string{}
+
+	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+		os.Symlink("/does/not/exist", t.realTemp+"/2/baz")
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
 }
 
 func (s *TestSuite) TestStdinCollectionMountPoint(c *C) {
