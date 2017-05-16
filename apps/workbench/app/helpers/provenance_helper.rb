@@ -37,9 +37,15 @@ module ProvenanceHelper
           return "\"#{uuid}\" [label=\"(empty collection)\"];\n"
         end
 
-        href = url_for ({:controller => Collection.to_s.tableize,
-                          :action => :show,
-                          :id => uuid.to_s })
+        if describe_opts[:col_uuid]
+          href = url_for ({:controller => Collection.to_s.tableize,
+                           :action => :show,
+                           :id => describe_opts[:col_uuid].to_s })
+        else
+          href = url_for ({:controller => Collection.to_s.tableize,
+                           :action => :show,
+                           :id => uuid.to_s })
+        end
 
         return "\"#{uuid}\" [label=\"#{encode_quotes(describe_opts[:label] || (@pdata[uuid] and @pdata[uuid][:name]) || uuid)}\",shape=box,href=\"#{href}\",#{bgcolor}];\n"
       else
@@ -101,34 +107,6 @@ module ProvenanceHelper
           gr += edge(encv, uuid, {:label => k})
         end
       end
-      gr
-    end
-
-    def cr_edges cr
-      uuid = cr[:uuid]
-      gr = ""
-
-      # Search for input mounts
-      input_obj = cr[:mounts].andand[:"/var/lib/cwl/cwl.input.json"].andand[:content] || cr[:mounts] || {}
-      if input_obj
-        ProvenanceHelper::find_collections input_obj, 'input' do |col_hash, col_uuid, key|
-          # Only include input PDHs
-          if col_hash
-            gr += describe_node(col_hash)
-            gr += edge(col_hash, uuid, {:label => key})
-          end
-        end
-      end
-
-      # Add CR outputs by PDH so they connect with the child CR's inputs.
-      if cr[:output_uuid]
-        output_pdh = Collection.find(cr[:output_uuid])[:portable_data_hash]
-        if output_pdh
-          gr += describe_node(output_pdh)
-          gr += edge(uuid, output_pdh, {label: 'output'})
-        end
-      end
-
       gr
     end
 
@@ -215,18 +193,49 @@ module ProvenanceHelper
         elsif rsc == ContainerRequest
           cr = @pdata[uuid]
           if cr
-            gr += cr_edges cr
-            gr += describe_node(uuid, {href: {controller: 'container_requests',
-                                              id: uuid},
-                                       label: @pdata[uuid][:name],
-                                       shape: 'oval'})
-            # Search for child CRs
-            if cr[:container_uuid]
-              child_crs = ContainerRequest.where(requesting_container_uuid: cr[:container_uuid])
-              child_crs.each do |child|
-                gr += generate_provenance_edges(child[:uuid])
-                gr += edge(child[:uuid], uuid, {label: 'child'})
+            gr += describe_node(cr[:uuid], {href: {controller: 'container_requests',
+                                                   id: cr[:uuid]},
+                                            label: cr[:name],
+                                            shape: 'oval'})
+            # Connect child CRs
+            children = @opts[:cr_children_of].andand[cr[:uuid]]
+            if children
+              children.each do |child|
+                gr += edge(child[:uuid], cr[:uuid], {label: 'child'})
               end
+            end
+            # Output collection node
+            if cr[:output_uuid] and @opts[:output_collections][cr[:output_uuid]]
+              c = @opts[:output_collections][cr[:output_uuid]]
+              gr += describe_node(c[:portable_data_hash],
+                                  {
+                                    label: c[:name],
+                                    col_uuid: c[:uuid],
+                                  })
+              gr += edge(cr[:uuid],
+                         c[:portable_data_hash],
+                         {label: 'output'})
+            end
+            # Input collection nodes
+            output_pdhs = @opts[:output_collections].values.collect{|c|
+              c[:portable_data_hash]}
+            ProvenanceHelper::cr_input_pdhs(cr).each do |pdh|
+              if not output_pdhs.include?(pdh)
+                # Search for collections on the same project first
+                cols = @opts[:input_collections][pdh].andand.select{|c|
+                  c[:owner_uuid] == cr[:owner_uuid]}
+                if not cols or cols.empty?
+                  # Search for any collection with this PDH
+                  cols = @opts[:input_collections][pdh]
+                end
+                names = cols.collect{|x| x[:name]}.uniq
+                input_name = names.first
+                if names.length > 1
+                  input_name += " + #{names.length - 1} more"
+                end
+                gr += describe_node(pdh, {label: input_name})
+              end
+              gr += edge(pdh, cr[:uuid], {label: 'input'})
             end
           end
         end
@@ -373,5 +382,18 @@ edge [fontsize=10,fontname=\"Helvetica,Arial,sans-serif\"];
         yield nil, m[0], key
       end
     end
+  end
+
+  def self.cr_input_pdhs cr
+    pdhs = []
+    input_obj = cr[:mounts].andand[:"/var/lib/cwl/cwl.input.json"].andand[:content] || cr[:mounts]
+    if input_obj
+      find_collections input_obj do |col_hash, col_uuid, key|
+        if col_hash
+          pdhs << col_hash
+        end
+      end
+    end
+    pdhs
   end
 end
