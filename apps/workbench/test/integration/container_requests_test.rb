@@ -136,12 +136,12 @@ class ContainerRequestsTest < ActionDispatch::IntegrationTest
       assert_selector "a[href=\"/container_requests/#{running_owner_active['uuid']}\"]", text: running_owner_active[:name]
       assert_selector "a[href=\"/container_requests/#{anon_accessible_cr['uuid']}\"]", text: anon_accessible_cr[:name]
 
-      # both the active user (owner) and admin can delete the "running" CR
+      # both the active user (owner) and admin can delete the "running" container_request
       within(".cr-#{running_owner_active['uuid']}") do
         assert_not_nil first('.glyphicon-trash')
       end
 
-      # only admin user can delete the anonymously accessible CR
+      # only admin user can delete the anonymously accessible container_request
       within(".cr-#{anon_accessible_cr['uuid']}") do
         if token == 'admin'
           assert_not_nil first('.glyphicon-trash')

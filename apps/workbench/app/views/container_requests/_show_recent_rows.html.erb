@@ -18,7 +18,7 @@
 
   <tr data-object-uuid="<%= wu.uuid %>" class="cr-<%= wu.uuid %>">
     <td>
-      <%= render partial: 'work_units/progress', locals: {wu: wu} %>
+      <span class="label label-<%= wu.state_bootstrap_class %>"><%= wu.state_label %></span>
     </td><td>
       <%= link_to_if_arvados_object obj, friendly_name: true %>
     </td><td>
