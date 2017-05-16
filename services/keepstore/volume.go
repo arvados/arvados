@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 	"io"
 	"math/big"
 	"sync/atomic"
@@ -295,7 +296,7 @@ func (*VolumeMount) generateUUID() string {
 	if err != nil {
 		panic(err)
 	}
-	return "zzzzz-ivpuk-" + r.Text(36)
+	return fmt.Sprintf("zzzzz-ivpuk-%015s", r.Text(36))
 }
 
 // RRVolumeManager is a round-robin VolumeManager: the Nth call to
