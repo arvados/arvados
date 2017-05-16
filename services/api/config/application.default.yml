@@ -195,12 +195,10 @@ common:
   # normally be returned in a single response).
   # Note 1: This setting never reduces the number of returned rows to
   # zero, no matter how big the first data row is.
-  # Note 2: Currently, this only limits the
-  # arvados.v1.collections.list API (GET /arvados/v1/collections), and
-  # only takes the size of manifest_text into account. Other fields
-  # (e.g., "properties" hashes) are not counted against this limit
-  # when returning collections, and the limit is not applied at all
-  # for other data types.
+  # Note 2: Currently, this is only checked against a specific set of
+  # columns that tend to get large (collections.manifest_text,
+  # containers.mounts, workflows.definition). Other fields (e.g.,
+  # "properties" hashes) are not counted against this limit.
   max_index_database_read: 134217728
 
   # Maximum number of items to return when responding to a APIs that
@@ -266,6 +264,8 @@ common:
   # Maximum bytes that may be logged by a single job.  Log bytes that are
   # silenced by throttling are not counted against this total.
   crunch_limit_log_bytes_per_job: 67108864
+
+  crunch_log_partial_line_throttle_period: 5
 
   # Attributes to suppress in events and audit logs.  Notably,
   # specifying ["manifest_text"] here typically makes the database
@@ -358,6 +358,27 @@ common:
 
 
   ###
+  ### Job and container reuse logic.
+  ###
+
+  # Include details about job reuse decisions in the server log. This
+  # causes additional database queries to run, so it should not be
+  # enabled unless you expect to examine the resulting logs for
+  # troubleshooting purposes.
+  log_reuse_decisions: false
+
+  # Control job reuse behavior when two completed jobs match the
+  # search criteria and have different outputs.
+  #
+  # If true, in case of a conflict, reuse the earliest job (this is
+  # similar to container reuse behavior).
+  #
+  # If false, in case of a conflict, do not reuse any completed job,
+  # but do reuse an already-running job if available (this is the
+  # original job reuse behavior, and is still the default).
+  reuse_job_if_outputs_differ: false
+
+  ###
   ### Remaining assorted configuration options.
   ###
 
@@ -400,8 +421,6 @@ common:
   # Rails.root (included in vendor packages) or determined by invoking
   # "git log".
   source_version: false
-
-  crunch_log_partial_line_throttle_period: 5
 
   # Enable asynchronous permission graph rebuild.  Must run
   # script/permission-updater.rb as a separate process.  When the permission

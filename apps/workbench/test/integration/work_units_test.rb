@@ -278,4 +278,21 @@ class WorkUnitsTest < ActionDispatch::IntegrationTest
     assert_text "This container request was created from the workflow #{wf_name}"
     assert_match /Provide a value for .* then click the \"Run\" button to start the workflow/, page.text
   end
+
+  test 'Run workflow from show page' do
+    visit page_with_token('active', '/workflows/zzzzz-7fd4e-validwithinputs')
+
+    find('a,button', text: 'Run this workflow').click
+
+    # Choose project for the container_request being created
+    within('.modal-dialog') do
+      find('.selectable', text: 'A Project').click
+      find('button', text: 'Choose').click
+    end
+
+    # In newly created container_request page now
+    assert_text 'A Project' # CR created in "A Project"
+    assert_text "This container request was created from the workflow"
+    assert_match /Provide a value for .* then click the \"Run\" button to start the workflow/, page.text
+  end
 end

@@ -1,6 +1,9 @@
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import range
 import unittest
 
-from performance_profiler import profiled
+from .performance_profiler import profiled
 
 class PerformanceTestSample(unittest.TestCase):
     def foo(self):
@@ -12,4 +15,4 @@ class PerformanceTestSample(unittest.TestCase):
         for i in range(0,2**20):
             j += i
         self.foo()
-        print 'Hello'
+        print('Hello')

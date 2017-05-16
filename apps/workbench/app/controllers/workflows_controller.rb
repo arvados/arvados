@@ -3,4 +3,8 @@ class WorkflowsController < ApplicationController
     Rails.configuration.anonymous_user_token and
     'show' == ctrl.action_name
   }
+
+  def show_pane_list
+    %w(Definition Advanced)
+  end
 end

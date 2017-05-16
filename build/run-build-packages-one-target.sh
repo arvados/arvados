@@ -194,6 +194,14 @@ if [[ -n "$test_packages" ]]; then
 else
     echo
     echo "START: build packages on $IMAGE" >&2
+    # Move existing packages and other files into the processed/ subdirectory
+    if [[ ! -e "${WORKSPACE}/packages/${TARGET}/processed" ]]; then
+      mkdir -p "${WORKSPACE}/packages/${TARGET}/processed"
+    fi
+    set +e
+    mv -f ${WORKSPACE}/packages/${TARGET}/* ${WORKSPACE}/packages/${TARGET}/processed/ 2>/dev/null
+    set -e
+    # Build packages
     if docker run --rm \
         "${docker_volume_args[@]}" \
         --env ARVADOS_DEBUG=$ARVADOS_DEBUG \

@@ -138,13 +138,21 @@ class Arvados::V1::GroupsController < ApplicationController
 
       @objects = klass.readable_by(*@read_users).
         order(request_order).where(where_conds)
-      @limit = limit_all - all_objects.count
+      klass_limit = limit_all - all_objects.count
+      @limit = klass_limit
       apply_where_limit_order_params klass
-      klass_object_list = object_list
+      klass_object_list = object_list(model_class: klass)
       klass_items_available = klass_object_list[:items_available] || 0
       @items_available += klass_items_available
       @offset = [@offset - klass_items_available, 0].max
       all_objects += klass_object_list[:items]
+
+      if klass_object_list[:limit] < klass_limit
+        # object_list() had to reduce @limit to comply with
+        # max_index_database_read. From now on, we'll do all queries
+        # with limit=0 and just accumulate items_available.
+        limit_all = all_objects.count
+      end
     end
 
     @objects = all_objects

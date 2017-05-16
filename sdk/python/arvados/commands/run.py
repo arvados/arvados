@@ -1,5 +1,8 @@
-#!/usr/bin/env python
-
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import range
+from past.builtins import basestring
+from builtins import object
 import arvados
 import arvados.commands.ws as ws
 import argparse
@@ -7,7 +10,7 @@ import json
 import re
 import os
 import stat
-import put
+from . import put
 import time
 import subprocess
 import logging
@@ -299,7 +302,7 @@ def main(arguments=None):
     if files:
         uploadfiles(files, api, dry_run=args.dry_run, num_retries=args.retries, project=project)
 
-    for i in xrange(1, len(slots)):
+    for i in range(1, len(slots)):
         slots[i] = [("%s%s" % (c.prefix, c.fn)) if isinstance(c, ArvFile) else c for c in slots[i]]
 
     component = {
@@ -319,8 +322,8 @@ def main(arguments=None):
     group_parser.add_argument('-b', '--batch-size', type=int)
     group_parser.add_argument('args', nargs=argparse.REMAINDER)
 
-    for s in xrange(2, len(slots)):
-        for i in xrange(0, len(slots[s])):
+    for s in range(2, len(slots)):
+        for i in range(0, len(slots[s])):
             if slots[s][i] == '--':
                 inp = "input%i" % (s-2)
                 groupargs = group_parser.parse_args(slots[2][i+1:])

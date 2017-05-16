@@ -3,19 +3,38 @@
   collections_pdhs = collections.select {|x| !CollectionsHelper.match(x).nil?}.uniq.compact
   collections_uuids = collections - collections_pdhs
   preload_collections_for_objects collections_uuids if collections_uuids.any?
-  preload_for_pdhs collections_pdhs if collections_pdhs.any?
+  preload_links_for_objects collections_uuids if collections_uuids.any?
 
   preload_objects_for_dataclass(Repository, [current_obj.repository], :name) if current_obj.repository
+
+  # if container_X, preload mounted collections
+  if @object.is_a? Container or @object.is_a? ContainerRequest
+    # get any collections in mounts
+    mounts = current_obj.send(:mounts) if current_obj.respond_to?(:mounts)
+    input_obj = mounts.andand[:"/var/lib/cwl/cwl.input.json"].andand[:content]
+    if input_obj
+      input_obj.to_s.scan(/([0-9a-f]{32}\+\d+)/).each {|cs| collections_pdhs += cs}
+    end
+
+    command = current_obj.send(:command) if current_obj.respond_to?(:command)
+    if command
+      command.to_s.scan(/([0-9a-f]{32}\+\d+)/).each {|cs| collections_pdhs += cs}
+    end
+  end
+
+  collections_pdhs.compact.uniq
+  preload_for_pdhs collections_pdhs if collections_pdhs.any?
+  preload_links_for_objects collections_pdhs if collections_pdhs.any?
 %>
 
       <div class="container">
         <div class="row">
-          <div class="col-md-5">
+          <div class="col-md-6" style="overflow-x: auto">
             <% if current_obj.uuid.nil? %>
               No <%= current_obj.title %> has been submitted yet.
             <% else %>
-            <table>
-              <% keys = [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :container_uuid, :priority] %>
+            <table class="table table-condensed">
+              <% keys = [:uuid, :modified_by_user_uuid, :created_at, :started_at, :finished_at, :container_uuid] %>
               <% keys << :log_collection if @object.uuid != current_obj.uuid %>
               <% keys << :outputs %>
               <% keys.each do |k| %>
@@ -60,7 +79,7 @@
             <% end %>
           </div>
           <div class="col-md-6">
-            <table>
+            <table class="table table-condensed">
               <% # link to repo tree/file only if the repo is readable and the commit is a sha1
                  repo = (/^[0-9a-f]{40}$/ =~ current_obj.script_version and
                          current_obj.repository and
@@ -68,10 +87,10 @@
                  repo = nil unless repo.andand.http_fetch_url
                  %>
               <% [:script, :repository, :script_version, :supplied_script_version, :nondeterministic,
-                  :command, :cwd, :environment, :mounts, :output_path].each do |k| %>
+                  :priority, :runtime_constraints, :requesting_container_uuid].each do |k| %>
                 <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
                 <% if val %>
-                <tr>
+                <tr valign="top">
                   <td style="padding-right: 1em">
                     <%= k.to_s %>:
                   </td>
@@ -82,6 +101,10 @@
                       <%= link_to val, show_repository_blob_path(id: repo.uuid, commit: current_obj.script_version, path: 'crunch_scripts/'+current_obj.script) %>
                     <% elsif repo and k == :script_version %>
                       <%= link_to val, show_repository_commit_path(id: repo.uuid, commit: current_obj.script_version) %>
+                    <% elsif k == :runtime_constraints and val.any? %>
+                      <%= render partial: 'work_units/show_table_data', locals: {id: current_obj.uuid, name: k, data_map: val} %>
+                    <% elsif k.to_s.end_with? 'uuid' %>
+                      <%= link_to_arvados_object_if_readable(val, val, friendly_name: true) %>
                     <% else %>
                       <%= val %>
                     <% end %>
@@ -89,6 +112,24 @@
                 </tr>
                 <% end %>
               <% end %>
+
+              <%
+                mounts = current_obj.send(:mounts) if current_obj.respond_to?(:mounts)
+                mount_wf = mounts.andand[:"/var/lib/cwl/workflow.json"]
+                mount_wf = mount_wf[5..-1] if mount_wf.andand.is_a?(String) and mount_wf.start_with?('keep:')
+                mount_wf_cls = resource_class_for_uuid(mount_wf) if mount_wf
+              %>
+              <tr>
+                <% if mount_wf_cls == Collection %>
+                  <td style="padding-right: 1em">
+                    workflow.json:
+                  </td>
+                  <td>
+                    <%= link_to_if_arvados_object mount_wf, friendly_name: true %>
+                  </td>
+                <% end %>
+              </tr>
+
               <% if current_obj.runtime_constraints.andand[:docker_image] and current_obj.docker_image %>
                 <tr>
                   <td style="padding-right: 1em">
@@ -120,6 +161,48 @@
               <% end %>
             </table>
           </div>
+
+          <div class="col-md-12">
+            <table class="table table-condensed" style="table-layout:fixed;">
+              <col width="15%" />
+              <col width="85%" />
+              <% [:command].each do |k| %>
+                <% val = current_obj.send(k) if current_obj.respond_to?(k) %>
+                <% if val %>
+                <tr>
+                  <td valign="top">
+                    <%= k.to_s %>:
+                  </td>
+                  <td style="word-wrap: break-all;">
+                    <% if k == :command %>
+                        <% val = JSON.pretty_generate(val) %>
+                        <%= render partial: 'show_text_with_locators', locals: {data_height: 200, text_data: val} %>
+                    <% else %>
+                      <%= val %>
+                    <% end %>
+                  </td>
+                </tr>
+                <% end %>
+              <% end %>
+
+              <%
+                mounts = current_obj.send(:mounts) if current_obj.respond_to?(:mounts)
+                input_obj = mounts.andand[:"/var/lib/cwl/cwl.input.json"].andand[:content]
+                mnt_inputs = JSON.pretty_generate(input_obj) if input_obj
+              %>
+              <% if mnt_inputs %>
+                <tr>
+                  <td valign="top">
+                    cwl.input.json:
+                  </td>
+                  <td style="word-wrap: break-all;">
+                    <%= render partial: 'show_text_with_locators', locals: {data_height: 400, text_data: mnt_inputs} %>
+                  </td>
+                </tr>
+              <% end %>
+            </table>
+          </div>
+
         </div>
 
         <% if current_obj.parameters and !current_obj.parameters.empty? %>

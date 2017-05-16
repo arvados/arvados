@@ -1,8 +1,7 @@
-#!/usr/bin/env python
-
-# TODO:
-# --md5sum - display md5 of each file as read from disk
-
+from __future__ import division
+from future.utils import listitems, listvalues
+from builtins import str
+from builtins import object
 import argparse
 import arvados
 import arvados.collection
@@ -215,7 +214,7 @@ def parse_arguments(arguments):
     if len(args.paths) == 0:
         args.paths = ['-']
 
-    args.paths = map(lambda x: "-" if x == "/dev/stdin" else x, args.paths)
+    args.paths = ["-" if x == "/dev/stdin" else x for x in args.paths]
 
     if len(args.paths) != 1 or os.path.isdir(args.paths[0]):
         if args.filename:
@@ -292,13 +291,13 @@ class ResumeCache(object):
     @classmethod
     def make_path(cls, args):
         md5 = hashlib.md5()
-        md5.update(arvados.config.get('ARVADOS_API_HOST', '!nohost'))
+        md5.update(arvados.config.get('ARVADOS_API_HOST', '!nohost').encode())
         realpaths = sorted(os.path.realpath(path) for path in args.paths)
-        md5.update('\0'.join(realpaths))
+        md5.update(b'\0'.join([p.encode() for p in realpaths]))
         if any(os.path.isdir(path) for path in realpaths):
-            md5.update("-1")
+            md5.update(b'-1')
         elif args.filename:
-            md5.update(args.filename)
+            md5.update(args.filename.encode())
         return os.path.join(
             arv_cmd.make_home_conf_dir(cls.CACHE_DIR, 0o700, 'raise'),
             md5.hexdigest())
@@ -471,14 +470,16 @@ class ArvPutUploadJob(object):
         except (SystemExit, Exception) as e:
             self._checkpoint_before_quit = False
             # Log stack trace only when Ctrl-C isn't pressed (SIGINT)
-            # Note: We're expecting SystemExit instead of KeyboardInterrupt because
-            #   we have a custom signal handler in place that raises SystemExit with
-            #   the catched signal's code.
+            # Note: We're expecting SystemExit instead of
+            # KeyboardInterrupt because we have a custom signal
+            # handler in place that raises SystemExit with the catched
+            # signal's code.
             if isinstance(e, PathDoesNotExistError):
                 # We aren't interested in the traceback for this case
                 pass
             elif not isinstance(e, SystemExit) or e.code != -2:
-                self.logger.warning("Abnormal termination:\n{}".format(traceback.format_exc(e)))
+                self.logger.warning("Abnormal termination:\n{}".format(
+                    traceback.format_exc()))
             raise
         finally:
             if not self.dry_run:
@@ -530,7 +531,7 @@ class ArvPutUploadJob(object):
         Recursively get the total size of the collection
         """
         size = 0
-        for item in collection.values():
+        for item in listvalues(collection):
             if isinstance(item, arvados.collection.Collection) or isinstance(item, arvados.collection.Subcollection):
                 size += self._collection_size(item)
             else:
@@ -578,7 +579,7 @@ class ArvPutUploadJob(object):
             self.reporter(self.bytes_written, self.bytes_expected)
 
     def _write_stdin(self, filename):
-        output = self._local_collection.open(filename, 'w')
+        output = self._local_collection.open(filename, 'wb')
         self._write(sys.stdin, output)
         output.close()
 
@@ -649,17 +650,17 @@ class ArvPutUploadJob(object):
 
     def _upload_files(self):
         for source, resume_offset, filename in self._files_to_upload:
-            with open(source, 'r') as source_fd:
+            with open(source, 'rb') as source_fd:
                 with self._state_lock:
                     self._state['files'][source]['mtime'] = os.path.getmtime(source)
                     self._state['files'][source]['size'] = os.path.getsize(source)
                 if resume_offset > 0:
                     # Start upload where we left off
-                    output = self._local_collection.open(filename, 'a')
+                    output = self._local_collection.open(filename, 'ab')
                     source_fd.seek(resume_offset)
                 else:
                     # Start from scratch
-                    output = self._local_collection.open(filename, 'w')
+                    output = self._local_collection.open(filename, 'wb')
                 self._write(source_fd, output)
                 output.close(flush=False)
 
@@ -693,11 +694,11 @@ class ArvPutUploadJob(object):
         if self.use_cache:
             # Set up cache file name from input paths.
             md5 = hashlib.md5()
-            md5.update(arvados.config.get('ARVADOS_API_HOST', '!nohost'))
+            md5.update(arvados.config.get('ARVADOS_API_HOST', '!nohost').encode())
             realpaths = sorted(os.path.realpath(path) for path in self.paths)
-            md5.update('\0'.join(realpaths))
+            md5.update(b'\0'.join([p.encode() for p in realpaths]))
             if self.filename:
-                md5.update(self.filename)
+                md5.update(self.filename.encode())
             cache_filename = md5.hexdigest()
             cache_filepath = os.path.join(
                 arv_cmd.make_home_conf_dir(self.CACHE_DIR, 0o700, 'raise'),
@@ -733,7 +734,7 @@ class ArvPutUploadJob(object):
     def collection_file_paths(self, col, path_prefix='.'):
         """Return a list of file paths by recursively go through the entire collection `col`"""
         file_paths = []
-        for name, item in col.items():
+        for name, item in listitems(col):
             if isinstance(item, arvados.arvfile.ArvadosFile):
                 file_paths.append(os.path.join(path_prefix, name))
             elif isinstance(item, arvados.collection.Subcollection):
@@ -758,6 +759,7 @@ class ArvPutUploadJob(object):
             state = json.dumps(self._state)
         try:
             new_cache = tempfile.NamedTemporaryFile(
+                mode='w+',
                 dir=os.path.dirname(self._cache_filename), delete=False)
             self._lock_file(new_cache)
             new_cache.write(state)
@@ -782,8 +784,8 @@ class ArvPutUploadJob(object):
 
     def portable_data_hash(self):
         pdh = self._my_collection().portable_data_hash()
-        m = self._my_collection().stripped_manifest()
-        local_pdh = hashlib.md5(m).hexdigest() + '+' + str(len(m))
+        m = self._my_collection().stripped_manifest().encode()
+        local_pdh = '{}+{}'.format(hashlib.md5(m).hexdigest(), len(m))
         if pdh != local_pdh:
             logger.warning("\n".join([
                 "arv-put: API server provided PDH differs from local manifest.",
@@ -809,7 +811,7 @@ class ArvPutUploadJob(object):
                     locators.append(loc)
                 return locators
         elif isinstance(item, arvados.collection.Collection):
-            l = [self._datablocks_on_item(x) for x in item.values()]
+            l = [self._datablocks_on_item(x) for x in listvalues(item)]
             # Fast list flattener method taken from:
             # http://stackoverflow.com/questions/952914/making-a-flat-list-out-of-list-of-lists-in-python
             return [loc for sublist in l for loc in sublist]
@@ -1024,7 +1026,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         if not output.endswith('\n'):
             stdout.write('\n')
 
-    for sigcode, orig_handler in orig_signal_handlers.items():
+    for sigcode, orig_handler in listitems(orig_signal_handlers):
         signal.signal(sigcode, orig_handler)
 
     if status != 0:

@@ -539,7 +539,12 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
                         help="Time to wait for a Javascript expression to evaluate before giving an error, default 20s.",
                         type=float,
                         default=20)
-    parser.add_argument("--version", action="store_true", help="Print version and exit")
+
+    exgroup = parser.add_mutually_exclusive_group()
+    exgroup.add_argument("--print-dot", action="store_true",
+                         help="Print workflow visualization in graphviz format and exit")
+    exgroup.add_argument("--version", action="store_true", help="Print version and exit")
+    exgroup.add_argument("--validate", action="store_true", help="Validate CWL document only.")
 
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--verbose", action="store_true", help="Default logging")
@@ -610,6 +615,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--on-error", type=str,
                         help="Desired workflow behavior when a step fails.  One of 'stop' or 'continue'. "
                         "Default is 'continue'.", default="continue", choices=("stop", "continue"))
+
+    parser.add_argument("--enable-dev", action="store_true",
+                        help="Enable loading and running development versions "
+                             "of CWL spec.", default=False)
 
     parser.add_argument("workflow", type=str, nargs="?", default=None, help="The workflow to execute")
     parser.add_argument("job_order", nargs=argparse.REMAINDER, help="The input object to the workflow.")

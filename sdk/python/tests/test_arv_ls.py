@@ -1,7 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-import io
+from __future__ import absolute_import
+from builtins import str
+from builtins import range
 import os
 import random
 import sys
@@ -10,11 +9,12 @@ import tempfile
 
 import arvados.errors as arv_error
 import arvados.commands.ls as arv_ls
-import run_test_server
+from . import run_test_server
 
-from arvados_testutil import str_keep_locator, redirected_streams
+from . import arvados_testutil as tutil
+from .arvados_testutil import str_keep_locator, redirected_streams, StringIO
 
-class ArvLsTestCase(run_test_server.TestCaseWithServers):
+class ArvLsTestCase(run_test_server.TestCaseWithServers, tutil.VersionChecker):
     FAKE_UUID = 'zzzzz-4zz18-12345abcde12345'
 
     def newline_join(self, seq):
@@ -36,8 +36,8 @@ class ArvLsTestCase(run_test_server.TestCaseWithServers):
         return coll_info, api_client
 
     def run_ls(self, args, api_client, logger=None):
-        self.stdout = io.BytesIO()
-        self.stderr = io.BytesIO()
+        self.stdout = StringIO()
+        self.stderr = StringIO()
         return arv_ls.main(args, self.stdout, self.stderr, api_client, logger)
 
     def test_plain_listing(self):
@@ -85,10 +85,7 @@ class ArvLsTestCase(run_test_server.TestCaseWithServers):
         self.assertEqual(1, error_mock.call_count)
 
     def test_version_argument(self):
-        err = io.BytesIO()
-        out = io.BytesIO()
-        with redirected_streams(stdout=out, stderr=err):
+        with redirected_streams(stdout=StringIO, stderr=StringIO) as (out, err):
             with self.assertRaises(SystemExit):
                 self.run_ls(['--version'], None)
-        self.assertEqual(out.getvalue(), '')
-        self.assertRegexpMatches(err.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
+        self.assertVersionOutput(out, err)

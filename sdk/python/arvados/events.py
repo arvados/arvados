@@ -1,11 +1,16 @@
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import object
 import arvados
-import config
-import errors
-from retry import RetryLoop
+from . import config
+from . import errors
+from .retry import RetryLoop
 
 import logging
 import json
-import thread
+import _thread
 import threading
 import time
 import os
@@ -115,22 +120,22 @@ class EventClient(object):
             self.on_event_cb(m)
         except Exception as e:
             _logger.exception("Unexpected exception from event callback.")
-            thread.interrupt_main()
+            _thread.interrupt_main()
 
     def on_closed(self):
         if not self.is_closed.is_set():
-            _logger.warn("Unexpected close. Reconnecting.")
+            _logger.warning("Unexpected close. Reconnecting.")
             for tries_left in RetryLoop(num_retries=25, backoff_start=.1, max_wait=15):
                 try:
                     self._setup_event_client()
-                    _logger.warn("Reconnect successful.")
+                    _logger.warning("Reconnect successful.")
                     break
                 except Exception as e:
-                    _logger.warn("Error '%s' during websocket reconnect.", e)
+                    _logger.warning("Error '%s' during websocket reconnect.", e)
             if tries_left == 0:
                 _logger.exception("EventClient thread could not contact websocket server.")
                 self.is_closed.set()
-                thread.interrupt_main()
+                _thread.interrupt_main()
                 return
 
     def run_forever(self):
@@ -225,7 +230,7 @@ class PollClient(threading.Thread):
                     _logger.exception("PollClient thread could not contact API server.")
                     with self._closing_lock:
                         self._closing.set()
-                    thread.interrupt_main()
+                    _thread.interrupt_main()
                     return
                 for i in items["items"]:
                     skip_old_events = [["id", ">", str(i["id"])]]
@@ -236,7 +241,7 @@ class PollClient(threading.Thread):
                             self.on_event(i)
                         except Exception as e:
                             _logger.exception("Unexpected exception from event callback.")
-                            thread.interrupt_main()
+                            _thread.interrupt_main()
                 if items["items_available"] > len(items["items"]):
                     moreitems = True
             if not moreitems:
@@ -288,7 +293,7 @@ def _subscribe_websocket(api, filters, on_event, last_log_id=None):
     try:
         client = EventClient(uri_with_token, filters, on_event, last_log_id)
     except Exception:
-        _logger.warn("Failed to connect to websockets on %s" % endpoint)
+        _logger.warning("Failed to connect to websockets on %s" % endpoint)
         raise
     else:
         return client
@@ -317,7 +322,7 @@ def subscribe(api, filters, on_event, poll_fallback=15, last_log_id=None):
         else:
             _logger.info("Using polling because ARVADOS_DISABLE_WEBSOCKETS is true")
     except Exception as e:
-        _logger.warn("Falling back to polling after websocket error: %s" % e)
+        _logger.warning("Falling back to polling after websocket error: %s" % e)
     p = PollClient(api, filters, on_event, poll_fallback, last_log_id)
     p.start()
     return p

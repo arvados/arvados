@@ -106,4 +106,20 @@ class ContainerRequestsControllerTest < ActionController::TestCase
       end
     end
   end
+
+  test "container request display" do
+    use_token 'active'
+
+    cr = api_fixture('container_requests')['completed_with_input_mounts']
+
+    get :show, {id: cr['uuid']}, session_for(:active)
+    assert_response :success
+
+    assert_match /hello/, @response.body
+    assert_includes @response.body, "href=\"\/collections/fa7aeb5140e2848d39b416daeef4ffc5+45/foo" # mount input1
+    assert_includes @response.body, "href=\"\/collections/fa7aeb5140e2848d39b416daeef4ffc5+45/bar" # mount input2
+    assert_includes @response.body, "href=\"\/collections/1fd08fc162a5c6413070a8bd0bffc818+150" # mount workflow
+    assert_includes @response.body, "href=\"#Log\""
+    assert_includes @response.body, "href=\"#Provenance\""
+  end
 end

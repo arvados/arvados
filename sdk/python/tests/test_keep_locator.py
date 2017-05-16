@@ -1,6 +1,7 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
+from builtins import next
+from builtins import zip
+from builtins import str
+from builtins import range
 import datetime
 import itertools
 import random
@@ -14,7 +15,7 @@ class ArvadosKeepLocatorTest(unittest.TestCase):
     def numstrs(fmtstr, base, exponent):
         def genstrs(self, count=None):
             return (fmtstr.format(random.randint(0, base ** exponent))
-                    for c in xrange(count or self.DEFAULT_TEST_COUNT))
+                    for c in range(count or self.DEFAULT_TEST_COUNT))
         return genstrs
 
     checksums = numstrs('{:032x}', 16, 32)
@@ -24,17 +25,17 @@ class ArvadosKeepLocatorTest(unittest.TestCase):
 
     def base_locators(self, count=DEFAULT_TEST_COUNT):
         return ('+'.join(pair) for pair in
-                itertools.izip(self.checksums(count), self.sizes(count)))
+                zip(self.checksums(count), self.sizes(count)))
 
     def perm_hints(self, count=DEFAULT_TEST_COUNT):
-        for sig, ts in itertools.izip(self.signatures(count),
+        for sig, ts in zip(self.signatures(count),
                                       self.timestamps(count)):
             yield 'A{}@{}'.format(sig, ts)
 
     def test_good_locators_returned(self):
         for hint_gens in [(), (self.sizes(),),
                           (self.sizes(), self.perm_hints())]:
-            for loc_data in itertools.izip(self.checksums(), *hint_gens):
+            for loc_data in zip(self.checksums(), *hint_gens):
                 locator = '+'.join(loc_data)
                 self.assertEqual(locator, str(KeepLocator(locator)))
 
@@ -61,6 +62,11 @@ class ArvadosKeepLocatorTest(unittest.TestCase):
         for loc_hints in itertools.permutations(['Kab1cd', 'Kef2gh', 'Kij3kl']):
             locator = '+'.join((base,) + loc_hints)
             self.assertEqual(locator, str(KeepLocator(locator)))
+
+    def test_str_type(self):
+        base = next(self.base_locators(1))
+        locator = KeepLocator(base)
+        self.assertEqual(type(''), type(locator.__str__()))
 
     def test_expiry_passed(self):
         base = next(self.base_locators(1))
