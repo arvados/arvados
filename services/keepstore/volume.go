@@ -275,11 +275,12 @@ type VolumeManager interface {
 
 // A VolumeMount is an attachment of a Volume to a VolumeManager.
 type VolumeMount struct {
-	UUID     string
-	DeviceID string
-	ReadOnly bool
-	Tier     int
-	volume   Volume
+	UUID        string
+	DeviceID    string
+	ReadOnly    bool
+	Replication int
+	Tier        int
+	volume      Volume
 }
 
 // Generate a UUID the way API server would for a "KeepVolumeMount"
@@ -317,11 +318,12 @@ func MakeRRVolumeManager(volumes []Volume) *RRVolumeManager {
 	vm.mountMap = make(map[string]*VolumeMount)
 	for _, v := range volumes {
 		mnt := &VolumeMount{
-			UUID:     (*VolumeMount)(nil).generateUUID(),
-			DeviceID: "",
-			ReadOnly: !v.Writable(),
-			Tier:     1,
-			volume:   v,
+			UUID:        (*VolumeMount)(nil).generateUUID(),
+			DeviceID:    "",
+			ReadOnly:    !v.Writable(),
+			Replication: v.Replication(),
+			Tier:        1,
+			volume:      v,
 		}
 		if v, ok := v.(interface {
 			DeviceID() string
