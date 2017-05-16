@@ -921,8 +921,10 @@ func (runner *ContainerRunner) CaptureOutput() error {
 
 	// Pre-populate output from the configured mount points
 	var binds []string
-	for bind, _ := range runner.Container.Mounts {
-		binds = append(binds, bind)
+	for bind, mnt := range runner.Container.Mounts {
+		if mnt.Kind == "collection" {
+			binds = append(binds, bind)
+		}
 	}
 	sort.Strings(binds)
 
@@ -949,17 +951,16 @@ func (runner *ContainerRunner) CaptureOutput() error {
 				return err
 			}
 
+			// get path relative to output dir
 			outputSuffix := path[len(runner.HostOutputDir):]
 
 			if strings.HasPrefix(tgt, "/") {
 				// go through mounts and try reverse map to collection reference
 				for _, bind := range binds {
 					mnt := runner.Container.Mounts[bind]
-					if tgt == bind || strings.HasPrefix(tgt, bind+"/") && mnt.Kind == "collection" {
+					if tgt == bind || strings.HasPrefix(tgt, bind+"/") {
 						// get path relative to bind
 						targetSuffix := tgt[len(bind):]
-						// get path relative to output dir
-						outputSuffix := path[len(runner.HostOutputDir):]
 
 						// Copy mount and adjust the path to add path relative to the bind
 						adjustedMount := mnt
