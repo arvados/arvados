@@ -39,11 +39,24 @@ func (s *MountsSuite) TestMounts(c *check.C) {
 	resp := s.call("GET", "/mounts", "")
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	var mntList []struct {
-		UUID string
+		UUID        string
+		DeviceID    string
+		ReadOnly    bool
+		Replication int
+		Tier        int
 	}
 	err := json.Unmarshal(resp.Body.Bytes(), &mntList)
-	c.Check(err, check.IsNil)
-	c.Check(len(mntList), check.Equals, 2)
+	c.Assert(err, check.IsNil)
+	c.Assert(len(mntList), check.Equals, 2)
+	for _, m := range mntList {
+		c.Check(len(m.UUID), check.Equals, 27)
+		c.Check(m.UUID[:12], check.Equals, "zzzzz-ivpuk-")
+		c.Check(m.DeviceID, check.Equals, "mock-device-id")
+		c.Check(m.ReadOnly, check.Equals, false)
+		c.Check(m.Replication, check.Equals, 1)
+		c.Check(m.Tier, check.Equals, 1)
+	}
+	c.Check(mntList[0].UUID, check.Not(check.Equals), mntList[1].UUID)
 
 	// Bad auth
 	for _, tok := range []string{"", "xyzzy"} {
