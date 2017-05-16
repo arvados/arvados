@@ -942,39 +942,56 @@ func (runner *ContainerRunner) CaptureOutput() error {
 				return nil
 			}
 			// read link to get container internal path
+			// only support 1 level of symlinking here.
 			var tgt string
 			tgt, err = os.Readlink(path)
 			if err != nil {
 				return err
 			}
-			if !strings.HasPrefix(tgt, "/") {
-				// Link is relative, don't handle it
-				return nil
-			}
-			// go through mounts and reverse map to collection reference
-			for _, bind := range binds {
-				mnt := runner.Container.Mounts[bind]
-				if tgt == bind || strings.HasPrefix(tgt, bind+"/") && mnt.Kind == "collection" {
-					// get path relative to bind
-					sourceSuffix := tgt[len(bind):]
-					// get path relative to output dir
-					bindSuffix := path[len(runner.HostOutputDir):]
 
-					// Copy mount and adjust the path to add path relative to the bind
-					adjustedMount := mnt
-					adjustedMount.Path = filepath.Join(adjustedMount.Path, sourceSuffix)
+			outputSuffix := path[len(runner.HostOutputDir):]
 
-					// get manifest text
-					var m string
-					m, err = runner.getCollectionManifestForPath(adjustedMount, bindSuffix)
-					if err != nil {
-						return err
+			if strings.HasPrefix(tgt, "/") {
+				// go through mounts and try reverse map to collection reference
+				for _, bind := range binds {
+					mnt := runner.Container.Mounts[bind]
+					if tgt == bind || strings.HasPrefix(tgt, bind+"/") && mnt.Kind == "collection" {
+						// get path relative to bind
+						targetSuffix := tgt[len(bind):]
+						// get path relative to output dir
+						outputSuffix := path[len(runner.HostOutputDir):]
+
+						// Copy mount and adjust the path to add path relative to the bind
+						adjustedMount := mnt
+						adjustedMount.Path = filepath.Join(adjustedMount.Path, targetSuffix)
+
+						// get manifest text
+						var m string
+						m, err = runner.getCollectionManifestForPath(adjustedMount, outputSuffix)
+						if err != nil {
+							return err
+						}
+						manifestText = manifestText + m
+						// delete symlink so WriteTree won't try to to dereference it.
+						os.Remove(path)
+						return nil
 					}
-					manifestText = manifestText + m
-					// delete symlink so WriteTree won't try to to dereference it.
-					os.Remove(path)
-					return nil
 				}
+			}
+
+			// Not a link to a mount.  Must be dereferencible and
+			// point into the output directory.
+			tgt, err = filepath.EvalSymlinks(path)
+			if err != nil {
+				os.Remove(path)
+				return err
+			}
+
+			// Symlink target must be within the output directory otherwise it's an error.
+			if !strings.HasPrefix(tgt, runner.HostOutputDir+"/") {
+				os.Remove(path)
+				return fmt.Errorf("Output directory symlink %q points to invalid location %q, must point to mount or output directory.",
+					outputSuffix, tgt)
 			}
 			return nil
 		})

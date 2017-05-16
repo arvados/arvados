@@ -1491,7 +1491,7 @@ func (s *TestSuite) TestOutputError(c *C) {
 	extraMounts := []string{}
 
 	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
-		os.Symlink("/does/not/exist", t.realTemp+"/2/baz")
+		os.Symlink("/etc/hosts", t.realTemp+"/2/baz")
 		t.logWriter.Close()
 	})
 
