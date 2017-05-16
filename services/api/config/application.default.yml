@@ -358,6 +358,27 @@ common:
 
 
   ###
+  ### Job and container reuse logic.
+  ###
+
+  # Include details about job reuse decisions in the server log. This
+  # causes additional database queries to run, so it should not be
+  # enabled unless you expect to examine the resulting logs for
+  # troubleshooting purposes.
+  log_reuse_decisions: false
+
+  # Control job reuse behavior when two completed jobs match the
+  # search criteria and have different outputs.
+  #
+  # If true, in case of a conflict, reuse the earliest job (this is
+  # similar to container reuse behavior).
+  #
+  # If false, in case of a conflict, do not reuse any completed job,
+  # but do reuse an already-running job if available (this is the
+  # original job reuse behavior, and is still the default).
+  reuse_job_if_outputs_differ: false
+
+  ###
   ### Remaining assorted configuration options.
   ###
 
