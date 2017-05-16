@@ -302,6 +302,7 @@ func (*VolumeMount) generateUUID() string {
 // (where writables are all Volumes v where v.Writable()==true).
 type RRVolumeManager struct {
 	mounts    []*VolumeMount
+	mountMap  map[string]*VolumeMount
 	readables []Volume
 	writables []Volume
 	counter   uint32
@@ -313,6 +314,7 @@ func MakeRRVolumeManager(volumes []Volume) *RRVolumeManager {
 	vm := &RRVolumeManager{
 		iostats: make(map[Volume]*ioStats),
 	}
+	vm.mountMap = make(map[string]*VolumeMount)
 	for _, v := range volumes {
 		mnt := &VolumeMount{
 			UUID:     (*VolumeMount)(nil).generateUUID(),
@@ -328,6 +330,7 @@ func MakeRRVolumeManager(volumes []Volume) *RRVolumeManager {
 		}
 		vm.iostats[v] = &ioStats{}
 		vm.mounts = append(vm.mounts, mnt)
+		vm.mountMap[mnt.UUID] = mnt
 		vm.readables = append(vm.readables, v)
 		if v.Writable() {
 			vm.writables = append(vm.writables, v)
@@ -341,12 +344,11 @@ func (vm *RRVolumeManager) Mounts() []*VolumeMount {
 }
 
 func (vm *RRVolumeManager) Lookup(uuid string, needWrite bool) Volume {
-	for _, mnt := range vm.mounts {
-		if mnt.UUID == uuid && (!needWrite || !mnt.ReadOnly) {
-			return mnt.volume
-		}
+	if mnt, ok := vm.mountMap[uuid]; ok && (!needWrite || !mnt.ReadOnly) {
+		return mnt.volume
+	} else {
+		return nil
 	}
-	return nil
 }
 
 // AllReadable returns an array of all readable volumes
