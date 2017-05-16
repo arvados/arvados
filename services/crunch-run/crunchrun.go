@@ -769,14 +769,14 @@ func (runner *ContainerRunner) getStdoutFile(mntPath string) (*os.File, error) {
 			if err != nil {
 				return nil, fmt.Errorf("While Stat on temp dir: %v", err)
 			}
-			stdoutPath := path.Join(runner.HostOutputDir, subdirs)
+			stdoutPath := filepath.Join(runner.HostOutputDir, subdirs)
 			err = os.MkdirAll(stdoutPath, st.Mode()|os.ModeSetgid|0777)
 			if err != nil {
 				return nil, fmt.Errorf("While MkdirAll %q: %v", stdoutPath, err)
 			}
 		}
 	}
-	stdoutFile, err := os.Create(path.Join(runner.HostOutputDir, stdoutPath))
+	stdoutFile, err := os.Create(filepath.Join(runner.HostOutputDir, stdoutPath))
 	if err != nil {
 		return nil, fmt.Errorf("While creating file %q: %v", stdoutPath, err)
 	}
@@ -919,14 +919,91 @@ func (runner *ContainerRunner) CaptureOutput() error {
 		return fmt.Errorf("While checking host output path: %v", err)
 	}
 
+	// Pre-populate output from the configured mount points
+	var binds []string
+	for bind, mnt := range runner.Container.Mounts {
+		if mnt.Kind == "collection" {
+			binds = append(binds, bind)
+		}
+	}
+	sort.Strings(binds)
+
 	var manifestText string
 
 	collectionMetafile := fmt.Sprintf("%s/.arvados#collection", runner.HostOutputDir)
 	_, err = os.Stat(collectionMetafile)
 	if err != nil {
 		// Regular directory
+
+		// Find symlinks to arv-mounted files & dirs.
+		err = filepath.Walk(runner.HostOutputDir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if info.Mode()&os.ModeSymlink == 0 {
+				return nil
+			}
+			// read link to get container internal path
+			// only support 1 level of symlinking here.
+			var tgt string
+			tgt, err = os.Readlink(path)
+			if err != nil {
+				return err
+			}
+
+			// get path relative to output dir
+			outputSuffix := path[len(runner.HostOutputDir):]
+
+			if strings.HasPrefix(tgt, "/") {
+				// go through mounts and try reverse map to collection reference
+				for _, bind := range binds {
+					mnt := runner.Container.Mounts[bind]
+					if tgt == bind || strings.HasPrefix(tgt, bind+"/") {
+						// get path relative to bind
+						targetSuffix := tgt[len(bind):]
+
+						// Copy mount and adjust the path to add path relative to the bind
+						adjustedMount := mnt
+						adjustedMount.Path = filepath.Join(adjustedMount.Path, targetSuffix)
+
+						// get manifest text
+						var m string
+						m, err = runner.getCollectionManifestForPath(adjustedMount, outputSuffix)
+						if err != nil {
+							return err
+						}
+						manifestText = manifestText + m
+						// delete symlink so WriteTree won't try to to dereference it.
+						os.Remove(path)
+						return nil
+					}
+				}
+			}
+
+			// Not a link to a mount.  Must be dereferencible and
+			// point into the output directory.
+			tgt, err = filepath.EvalSymlinks(path)
+			if err != nil {
+				os.Remove(path)
+				return err
+			}
+
+			// Symlink target must be within the output directory otherwise it's an error.
+			if !strings.HasPrefix(tgt, runner.HostOutputDir+"/") {
+				os.Remove(path)
+				return fmt.Errorf("Output directory symlink %q points to invalid location %q, must point to mount or output directory.",
+					outputSuffix, tgt)
+			}
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("While checking output symlinks: %v", err)
+		}
+
 		cw := CollectionWriter{0, runner.Kc, nil, nil, sync.Mutex{}}
-		manifestText, err = cw.WriteTree(runner.HostOutputDir, runner.CrunchLog.Logger)
+		var m string
+		m, err = cw.WriteTree(runner.HostOutputDir, runner.CrunchLog.Logger)
+		manifestText = manifestText + m
 		if err != nil {
 			return fmt.Errorf("While uploading output files: %v", err)
 		}
@@ -945,13 +1022,6 @@ func (runner *ContainerRunner) CaptureOutput() error {
 		}
 		manifestText = rec.ManifestText
 	}
-
-	// Pre-populate output from the configured mount points
-	var binds []string
-	for bind, _ := range runner.Container.Mounts {
-		binds = append(binds, bind)
-	}
-	sort.Strings(binds)
 
 	for _, bind := range binds {
 		mnt := runner.Container.Mounts[bind]
@@ -1189,6 +1259,10 @@ func (runner *ContainerRunner) Run() (err error) {
 			runner.CrunchLog.Print(e)
 			if err == nil {
 				err = e
+			}
+			if runner.finalState == "Complete" {
+				// There was an error in the finalization.
+				runner.finalState = "Cancelled"
 			}
 		}
 
