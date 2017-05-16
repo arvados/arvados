@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -122,12 +123,11 @@ func performPullWorkerIntegrationTest(testData PullWorkIntegrationTestData, pull
 	defer func(orig func(string, *keepclient.KeepClient) (io.ReadCloser, int64, string, error)) {
 		GetContent = orig
 	}(GetContent)
-	GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (
-		reader io.ReadCloser, contentLength int64, url string, err error) {
+	GetContent = func(signedLocator string, keepClient *keepclient.KeepClient) (reader io.ReadCloser, contentLength int64, url string, err error) {
 		if testData.GetError != "" {
 			return nil, 0, "", errors.New(testData.GetError)
 		}
-		rdr := &ClosingBuffer{bytes.NewBufferString(testData.Content)}
+		rdr := ioutil.NopCloser(bytes.NewBufferString(testData.Content))
 		return rdr, int64(len(testData.Content)), "", nil
 	}
 

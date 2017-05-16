@@ -13,34 +13,30 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-// RunPullWorker is used by Keepstore to initiate pull worker channel goroutine.
-//	The channel will process pull list.
-//		For each (next) pull request:
-//			For each locator listed, execute Pull on the server(s) listed
-//			Skip the rest of the servers if no errors
-//		Repeat
-//
+// RunPullWorker receives PullRequests from pullq, invokes
+// PullItemAndProcess on each one. After each PR, it logs a message
+// indicating whether the pull was successful.
 func RunPullWorker(pullq *WorkQueue, keepClient *keepclient.KeepClient) {
-	nextItem := pullq.NextItem
-	for item := range nextItem {
-		pullRequest := item.(PullRequest)
-		err := PullItemAndProcess(item.(PullRequest), keepClient)
+	for item := range pullq.NextItem {
+		pr := item.(PullRequest)
+		err := PullItemAndProcess(pr, keepClient)
 		pullq.DoneItem <- struct{}{}
 		if err == nil {
-			log.Printf("Pull %s success", pullRequest)
+			log.Printf("Pull %s success", pr)
 		} else {
-			log.Printf("Pull %s error: %s", pullRequest, err)
+			log.Printf("Pull %s error: %s", pr, err)
 		}
 	}
 }
 
-// PullItemAndProcess pulls items from PullQueue and processes them.
-//	For each Pull request:
-//		Generate a random API token.
-//		Generate a permission signature using this token, timestamp ~60 seconds in the future, and desired block hash.
-//		Using this token & signature, retrieve the given block.
-//		Write to storage
+// PullItemAndProcess executes a pull request by retrieving the
+// specified block from one of the specified servers, and storing it
+// on a local volume.
 //
+// If the PR specifies a non-blank mount UUID, PullItemAndProcess will
+// only attempt to write the data to the corresponding
+// volume. Otherwise it writes to any local volume, as a PUT request
+// would.
 func PullItemAndProcess(pullRequest PullRequest, keepClient *keepclient.KeepClient) error {
 	var vol Volume
 	if uuid := pullRequest.MountUUID; uuid != "" {
