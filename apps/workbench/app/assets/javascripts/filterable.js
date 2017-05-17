@@ -55,7 +55,7 @@ function updateFilterableQueryNow($target) {
     if (newquery == null || newquery == '') {
       params.filters = [];
     } else {
-      params.filters = [['any', '@@', newquery.concat(':*')]];
+      params.filters = [['any', '@@', newquery.trim().concat(':*')]];
     }
     $target.data('infinite-content-params-filterable', params);
     $target.data('filterable-query', newquery);
