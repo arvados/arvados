@@ -165,4 +165,10 @@ class ContainerRequestsController < ApplicationController
 
     super
   end
+
+  def index
+    @limit = 20
+    super
+  end
+
 end
