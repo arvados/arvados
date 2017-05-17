@@ -226,13 +226,15 @@ class Container < ArvadosModel
     # (because it's cheaper that way) and once after getting the lock
     # (because state might have changed while acquiring the lock).
     check_lock_fail
-    begin
-      reload(lock: 'FOR UPDATE NOWAIT')
-    rescue
-      raise LockFailedError.new("cannot lock: other transaction in progress")
+    transaction do
+      begin
+        reload(lock: 'FOR UPDATE NOWAIT')
+      rescue
+        raise LockFailedError.new("cannot lock: other transaction in progress")
+      end
+      check_lock_fail
+      update_attributes!(state: Locked)
     end
-    check_lock_fail
-    update_attributes!(state: Locked)
   end
 
   def check_unlock_fail
@@ -246,9 +248,11 @@ class Container < ArvadosModel
   def unlock
     # Check invalid state transitions twice (see lock)
     check_unlock_fail
-    reload(lock: 'FOR UPDATE')
-    check_unlock_fail
-    update_attributes!(state: Queued)
+    transaction do
+      reload(lock: 'FOR UPDATE')
+      check_unlock_fail
+      update_attributes!(state: Queued)
+    end
   end
 
   def self.readable_by(*users_list)
