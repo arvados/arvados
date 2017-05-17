@@ -24,6 +24,15 @@ class Arvados::V1::ContainersController < ApplicationController
     end
   end
 
+  def find_objects_for_index
+    super
+    if action_name == 'lock' || action_name == 'unlock'
+      # Avoid loading more fields than we need
+      @objects = @objects.select(:id, :uuid, :state, :priority, :auth_uuid, :locked_by_uuid)
+      @select = %w(uuid state priority auth_uuid locked_by_uuid)
+    end
+  end
+
   def lock
     @object.lock
     show

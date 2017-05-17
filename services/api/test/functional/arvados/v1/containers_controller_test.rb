@@ -55,6 +55,14 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     uuid = containers(:queued).uuid
     post :lock, {id: uuid}
     assert_response :success
+    assert_nil json_response['mounts']
+    assert_nil json_response['command']
+    assert_not_nil json_response['auth_uuid']
+    assert_not_nil json_response['locked_by_uuid']
+    assert_equal containers(:queued).uuid, json_response['uuid']
+    assert_equal 'Locked', json_response['state']
+    assert_equal containers(:queued).priority, json_response['priority']
+
     container = Container.where(uuid: uuid).first
     assert_equal 'Locked', container.state
     assert_not_nil container.locked_by_uuid
@@ -66,10 +74,25 @@ class Arvados::V1::ContainersControllerTest < ActionController::TestCase
     uuid = containers(:locked).uuid
     post :unlock, {id: uuid}
     assert_response :success
+    assert_nil json_response['mounts']
+    assert_nil json_response['command']
+    assert_nil json_response['auth_uuid']
+    assert_nil json_response['locked_by_uuid']
+    assert_equal containers(:locked).uuid, json_response['uuid']
+    assert_equal 'Queued', json_response['state']
+    assert_equal containers(:locked).priority, json_response['priority']
+
     container = Container.where(uuid: uuid).first
     assert_equal 'Queued', container.state
     assert_nil container.locked_by_uuid
     assert_nil container.auth_uuid
+  end
+
+  test "unlock container locked by different dispatcher" do
+    authorize_with :dispatch2
+    uuid = containers(:locked).uuid
+    post :unlock, {id: uuid}
+    assert_response 422
   end
 
   [
