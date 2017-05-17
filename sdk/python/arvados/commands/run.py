@@ -144,43 +144,46 @@ def write_file(collection, pathprefix, fn):
 def uploadfiles(files, api, dry_run=False, num_retries=0,
                 project=None,
                 fnPattern="$(file %s/%s)",
-                name=None):
+                name=None,
+                collection=None):
     # Find the smallest path prefix that includes all the files that need to be uploaded.
     # This starts at the root and iteratively removes common parent directory prefixes
     # until all file paths no longer have a common parent.
-    n = True
-    pathprefix = "/"
-    while n:
-        pathstep = None
-        for c in files:
-            if pathstep is None:
-                sp = c.fn.split('/')
-                if len(sp) < 2:
-                    # no parent directories left
-                    n = False
-                    break
-                # path step takes next directory
-                pathstep = sp[0] + "/"
-            else:
-                # check if pathstep is common prefix for all files
-                if not c.fn.startswith(pathstep):
-                    n = False
-                    break
-        if n:
-            # pathstep is common parent directory for all files, so remove the prefix
-            # from each path
-            pathprefix += pathstep
+    if files:
+        n = True
+        pathprefix = "/"
+        while n:
+            pathstep = None
             for c in files:
-                c.fn = c.fn[len(pathstep):]
+                if pathstep is None:
+                    sp = c.fn.split('/')
+                    if len(sp) < 2:
+                        # no parent directories left
+                        n = False
+                        break
+                    # path step takes next directory
+                    pathstep = sp[0] + "/"
+                else:
+                    # check if pathstep is common prefix for all files
+                    if not c.fn.startswith(pathstep):
+                        n = False
+                        break
+            if n:
+                # pathstep is common parent directory for all files, so remove the prefix
+                # from each path
+                pathprefix += pathstep
+                for c in files:
+                    c.fn = c.fn[len(pathstep):]
 
-    logger.info("Upload local files: \"%s\"", '" "'.join([c.fn for c in files]))
+        logger.info("Upload local files: \"%s\"", '" "'.join([c.fn for c in files]))
 
     if dry_run:
         logger.info("$(input) is %s", pathprefix.rstrip('/'))
         pdh = "$(input)"
     else:
         files = sorted(files, key=lambda x: x.fn)
-        collection = arvados.collection.Collection(api_client=api, num_retries=num_retries)
+        if collection is None:
+            collection = arvados.collection.Collection(api_client=api, num_retries=num_retries)
         prev = ""
         for f in files:
             localpath = os.path.join(pathprefix, f.fn)
@@ -199,8 +202,9 @@ def uploadfiles(files, api, dry_run=False, num_retries=0,
                     for src in iterfiles:
                         write_file(collection, pathprefix, os.path.join(root, src))
 
-        filters=[["portable_data_hash", "=", collection.portable_data_hash()],
-                 ["name", "like", name+"%"]]
+        filters=[["portable_data_hash", "=", collection.portable_data_hash()]]
+        if name:
+            filters.append(["name", "like", name+"%"])
         if project:
             filters.append(["owner_uuid", "=", project])
 
@@ -210,7 +214,7 @@ def uploadfiles(files, api, dry_run=False, num_retries=0,
             item = exists["items"][0]
             pdh = item["portable_data_hash"]
             logger.info("Using collection %s (%s)", pdh, item["uuid"])
-        else:
+        elif len(collection) > 0:
             collection.save_new(name=name, owner_uuid=project, ensure_unique_name=True)
             pdh = collection.portable_data_hash()
             logger.info("Uploaded to %s (%s)", pdh, collection.manifest_locator())
