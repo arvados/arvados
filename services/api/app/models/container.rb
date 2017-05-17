@@ -7,6 +7,7 @@ class Container < ArvadosModel
   include CommonApiTemplate
   include WhitelistUpdate
   extend CurrentApiClient
+  extend DbCurrentTime
 
   serialize :environment, Hash
   serialize :mounts, Hash
@@ -212,23 +213,45 @@ class Container < ArvadosModel
     nil
   end
 
+  def check_lock_fail
+    if self.state != Queued
+      raise LockFailedError.new("cannot lock when #{self.state}")
+    elsif self.priority <= 0
+      raise LockFailedError.new("cannot lock when priority<=0")
+    end
+  end
+
   def lock
-    with_lock do
-      if self.state == Locked
-        raise AlreadyLockedError
+    # Check invalid state transitions once before getting the lock
+    # (because it's cheaper that way) and once after getting the lock
+    # (because state might have changed while acquiring the lock).
+    check_lock_fail
+    transaction do
+      begin
+        reload(lock: 'FOR UPDATE NOWAIT')
+      rescue
+        raise LockFailedError.new("cannot lock: other transaction in progress")
       end
-      self.state = Locked
-      self.save!
+      check_lock_fail
+      update_attributes!(state: Locked)
+    end
+  end
+
+  def check_unlock_fail
+    if self.state != Locked
+      raise InvalidStateTransitionError.new("cannot unlock when #{self.state}")
+    elsif self.locked_by_uuid != current_api_client_authorization.uuid
+      raise InvalidStateTransitionError.new("locked by a different token")
     end
   end
 
   def unlock
-    with_lock do
-      if self.state == Queued
-        raise InvalidStateTransitionError
-      end
-      self.state = Queued
-      self.save!
+    # Check invalid state transitions twice (see lock)
+    check_unlock_fail
+    transaction do
+      reload(lock: 'FOR UPDATE')
+      check_unlock_fail
+      update_attributes!(state: Queued)
     end
   end
 

@@ -139,8 +139,15 @@ func (t *TestDockerClient) ContainerStop(ctx context.Context, container string, 
 	return nil
 }
 
-func (t *TestDockerClient) ContainerWait(ctx context.Context, container string) (int64, error) {
-	return int64(t.finish), nil
+func (t *TestDockerClient) ContainerWait(ctx context.Context, container string, condition dockercontainer.WaitCondition) (<-chan dockercontainer.ContainerWaitOKBody, <-chan error) {
+	body := make(chan dockercontainer.ContainerWaitOKBody)
+	err := make(chan error)
+	go func() {
+		body <- dockercontainer.ContainerWaitOKBody{StatusCode: int64(t.finish)}
+		close(body)
+		close(err)
+	}()
+	return body, err
 }
 
 func (t *TestDockerClient) ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error) {
