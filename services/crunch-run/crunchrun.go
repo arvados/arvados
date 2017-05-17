@@ -66,7 +66,7 @@ type ThinDockerClient interface {
 		networkingConfig *dockernetwork.NetworkingConfig, containerName string) (dockercontainer.ContainerCreateCreatedBody, error)
 	ContainerStart(ctx context.Context, container string, options dockertypes.ContainerStartOptions) error
 	ContainerStop(ctx context.Context, container string, timeout *time.Duration) error
-	ContainerWait(ctx context.Context, container string) (int64, error)
+	ContainerWait(ctx context.Context, container string, condition dockercontainer.WaitCondition) (<-chan dockercontainer.ContainerWaitOKBody, <-chan error)
 	ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error)
 	ImageLoad(ctx context.Context, input io.Reader, quiet bool) (dockertypes.ImageLoadResponse, error)
 	ImageRemove(ctx context.Context, image string, options dockertypes.ImageRemoveOptions) ([]dockertypes.ImageDeleteResponseItem, error)
@@ -100,8 +100,8 @@ func (proxy ThinDockerClientProxy) ContainerStop(ctx context.Context, container 
 }
 
 // ContainerWait invokes dockerclient.Client.ContainerWait
-func (proxy ThinDockerClientProxy) ContainerWait(ctx context.Context, container string) (int64, error) {
-	return proxy.Docker.ContainerWait(ctx, container)
+func (proxy ThinDockerClientProxy) ContainerWait(ctx context.Context, container string, condition dockercontainer.WaitCondition) (<-chan dockercontainer.ContainerWaitOKBody, <-chan error) {
+	return proxy.Docker.ContainerWait(ctx, container, condition)
 }
 
 // ImageInspectWithRaw invokes dockerclient.Client.ImageInspectWithRaw
@@ -862,21 +862,28 @@ func (runner *ContainerRunner) StartContainer() error {
 
 // WaitFinish waits for the container to terminate, capture the exit code, and
 // close the stdout/stderr logging.
-func (runner *ContainerRunner) WaitFinish() error {
+func (runner *ContainerRunner) WaitFinish() (err error) {
 	runner.CrunchLog.Print("Waiting for container to finish")
 
-	waitDocker, err := runner.Docker.ContainerWait(context.TODO(), runner.ContainerID)
+	waitOk, waitErr := runner.Docker.ContainerWait(context.TODO(), runner.ContainerID, "not-running")
+
+	var waitBody dockercontainer.ContainerWaitOKBody
+	select {
+	case waitBody = <-waitOk:
+	case err = <-waitErr:
+	}
+
 	if err != nil {
 		return fmt.Errorf("container wait: %v", err)
 	}
 
-	runner.CrunchLog.Printf("Container exited with code: %v", waitDocker)
-	code := int(waitDocker)
+	runner.CrunchLog.Printf("Container exited with code: %v", waitBody.StatusCode)
+	code := int(waitBody.StatusCode)
 	runner.ExitCode = &code
 
 	waitMount := runner.ArvMountExit
 	select {
-	case err := <-waitMount:
+	case err = <-waitMount:
 		runner.CrunchLog.Printf("arv-mount exited before container finished: %v", err)
 		waitMount = nil
 		runner.stop()
