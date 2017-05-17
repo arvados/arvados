@@ -6,7 +6,7 @@ class ContainerWorkUnit < ProxyWorkUnit
     if @proxied.is_a?(ContainerRequest)
       container_uuid = get(:container_uuid)
       if container_uuid
-        @container = Container.where(uuid: container_uuid).first
+        @container = Container.find(container_uuid)
       end
     end
   end
@@ -53,6 +53,10 @@ class ContainerWorkUnit < ProxyWorkUnit
     get(:container_uuid)
   end
 
+  def requesting_container_uuid
+    get(:requesting_container_uuid)
+  end
+
   def priority
     @proxied.priority
   end
@@ -81,8 +85,11 @@ class ContainerWorkUnit < ProxyWorkUnit
   def state_label
     ec = exit_code
     return "Failed" if (ec && ec != 0)
+
     state = get_combined(:state)
-    return "Ready" if ((priority == 0) and (["Queued", "Locked"].include?(state)))
+
+    return "Queued" if state == "Locked"
+    return "Cancelled" if ((priority == 0) and (state == "Queued"))
     state
   end
 
@@ -163,6 +170,13 @@ class ContainerWorkUnit < ProxyWorkUnit
 
   protected
   def get_combined key
-    get(key, @container) || get(key, @proxied)
+    from_container = get(key, @container)
+    from_proxied = get(key, @proxied)
+
+    if from_container.is_a? Hash or from_container.is_a? Array
+      if from_container.any? then from_container else from_proxied end
+    else
+      from_container || from_proxied
+    end
   end
 end

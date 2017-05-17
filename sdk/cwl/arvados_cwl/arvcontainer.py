@@ -45,12 +45,20 @@ class ArvadosContainer(object):
             "properties": {}
         }
         runtime_constraints = {}
+
+        resources = self.builder.resources
+        if resources is not None:
+            runtime_constraints["vcpus"] = resources.get("cores", 1)
+            runtime_constraints["ram"] = resources.get("ram") * 2**20
+
         mounts = {
             self.outdir: {
-                "kind": "tmp"
+                "kind": "tmp",
+                "capacity": resources.get("outdirSize", 0) * 2**20
             },
             self.tmpdir: {
-                "kind": "tmp"
+                "kind": "tmp",
+                "capacity": resources.get("tmpdirSize", 0) * 2**20
             }
         }
         scheduling_parameters = {}
@@ -139,11 +147,6 @@ class ArvadosContainer(object):
                                                                      pull_image,
                                                                      self.arvrunner.project_uuid)
 
-        resources = self.builder.resources
-        if resources is not None:
-            runtime_constraints["vcpus"] = resources.get("cores", 1)
-            runtime_constraints["ram"] = resources.get("ram") * 2**20
-
         api_req, _ = get_feature(self, "http://arvados.org/cwl#APIRequirement")
         if api_req:
             runtime_constraints["API"] = True
@@ -152,6 +155,15 @@ class ArvadosContainer(object):
         if runtime_req:
             if "keep_cache" in runtime_req:
                 runtime_constraints["keep_cache_ram"] = runtime_req["keep_cache"] * 2**20
+            if "outputDirType" in runtime_req:
+                if runtime_req["outputDirType"] == "local_output_dir":
+                    # Currently the default behavior.
+                    pass
+                elif runtime_req["outputDirType"] == "keep_output_dir":
+                    mounts[self.outdir]= {
+                        "kind": "collection",
+                        "writable": True
+                    }
 
         partition_req, _ = get_feature(self, "http://arvados.org/cwl#PartitionRequirement")
         if partition_req:

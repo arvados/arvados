@@ -670,6 +670,12 @@ module ApplicationHelper
     render_runtime duration, use_words, round_to_min
   end
 
+  # Keep locators are expected to be of the form \"...<pdh/file_path>\"
+  JSON_KEEP_LOCATOR_REGEXP = /(.*)(([0-9a-f]{32}\+\d+)(.*)\"(.*))/
+  def keep_locator_in_json str
+    JSON_KEEP_LOCATOR_REGEXP.match str
+  end
+
 private
   def is_textile?( object, attr )
     is_textile = object.textile_attributes.andand.include?(attr)

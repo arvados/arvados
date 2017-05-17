@@ -15,7 +15,8 @@ end
 file "sdk/python/arvados/index.html" do |t|
   `which epydoc`
   if $? == 0
-    `epydoc --html --parse-only -o sdk/python/arvados ../sdk/python/arvados/`
+    STDERR.puts `epydoc --html --parse-only -o sdk/python/arvados ../sdk/python/arvados/ 2>&1`
+    raise if $? != 0
   else
     puts "Warning: epydoc not found, Python documentation will not be generated".colorize(:light_red)
   end

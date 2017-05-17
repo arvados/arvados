@@ -1,13 +1,13 @@
-#!/usr/bin/env python
-
+from __future__ import absolute_import
+from builtins import object
 import mock
 import os
 import unittest
 import hashlib
-import run_test_server
+from . import run_test_server
 import json
 import arvados
-import arvados_testutil as tutil
+from . import arvados_testutil as tutil
 from apiclient import http as apiclient_http
 
 

@@ -1,4 +1,5 @@
-import config
+from __future__ import absolute_import
+from . import config
 
 def normalize_stream(stream_name, stream):
     """Take manifest stream and return a list of tokens in normalized format.
@@ -17,7 +18,7 @@ def normalize_stream(stream_name, stream):
     sortedfiles.sort()
 
     blocks = {}
-    streamoffset = 0L
+    streamoffset = 0
     # Go through each file and add each referenced block exactly once.
     for streamfile in sortedfiles:
         for segment in stream[streamfile]:

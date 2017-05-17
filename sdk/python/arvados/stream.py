@@ -1,3 +1,7 @@
+from __future__ import print_function
+from __future__ import absolute_import
+from future.utils import listvalues
+from builtins import object
 import collections
 import hashlib
 import os
@@ -9,10 +13,10 @@ import copy
 from ._ranges import locators_and_ranges, Range
 from .arvfile import StreamFileReader
 from arvados.retry import retry_method
-from keep import *
-import config
-import errors
-from _normalize_stream import normalize_stream
+from arvados.keep import *
+from . import config
+from . import errors
+from ._normalize_stream import normalize_stream
 
 class StreamReader(object):
     def __init__(self, tokens, keep=None, debug=False, _empty=False,
@@ -23,26 +27,26 @@ class StreamReader(object):
         self._keep = keep
         self.num_retries = num_retries
 
-        streamoffset = 0L
+        streamoffset = 0
 
         # parse stream
         for tok in tokens:
-            if debug: print 'tok', tok
+            if debug: print('tok', tok)
             if self._stream_name is None:
                 self._stream_name = tok.replace('\\040', ' ')
                 continue
 
             s = re.match(r'^[0-9a-f]{32}\+(\d+)(\+\S+)*$', tok)
             if s:
-                blocksize = long(s.group(1))
+                blocksize = int(s.group(1))
                 self._data_locators.append(Range(tok, streamoffset, blocksize, 0))
                 streamoffset += blocksize
                 continue
 
             s = re.search(r'^(\d+):(\d+):(\S+)', tok)
             if s:
-                pos = long(s.group(1))
-                size = long(s.group(2))
+                pos = int(s.group(1))
+                size = int(s.group(2))
                 name = s.group(3).replace('\\040', ' ')
                 if name not in self._files:
                     self._files[name] = StreamFileReader(self, [Range(pos, 0, size, 0)], name)
@@ -60,7 +64,7 @@ class StreamReader(object):
         return self._files
 
     def all_files(self):
-        return self._files.values()
+        return listvalues(self._files)
 
     def size(self):
         n = self._data_locators[-1]
@@ -77,13 +81,13 @@ class StreamReader(object):
     def readfrom(self, start, size, num_retries=None):
         """Read up to 'size' bytes from the stream, starting at 'start'"""
         if size == 0:
-            return ''
+            return b''
         if self._keep is None:
             self._keep = KeepClient(num_retries=self.num_retries)
         data = []
         for lr in locators_and_ranges(self._data_locators, start, size):
             data.append(self._keepget(lr.locator, num_retries=num_retries)[lr.segment_offset:lr.segment_offset+lr.segment_size])
-        return ''.join(data)
+        return b''.join(data)
 
     def manifest_text(self, strip=False):
         manifest_text = [self.name().replace(' ', '\\040')]
@@ -95,5 +99,5 @@ class StreamReader(object):
             manifest_text.extend([d.locator for d in self._data_locators])
         manifest_text.extend([' '.join(["{}:{}:{}".format(seg.locator, seg.range_size, f.name.replace(' ', '\\040'))
                                         for seg in f.segments])
-                              for f in self._files.values()])
+                              for f in listvalues(self._files)])
         return ' '.join(manifest_text) + '\n'

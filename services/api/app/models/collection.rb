@@ -65,6 +65,10 @@ class Collection < ArvadosModel
     super + ["updated_at", "file_names"]
   end
 
+  def self.limit_index_columns_read
+    ["manifest_text"]
+  end
+
   FILE_TOKEN = /^[[:digit:]]+:[[:digit:]]+:/
   def check_signatures
     return false if self.manifest_text.nil?

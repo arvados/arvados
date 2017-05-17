@@ -62,7 +62,7 @@ class ServerCalculatorTestCase(unittest.TestCase):
                                   {'min_ram_mb_per_node': 256},
                                   {'min_nodes': 6},
                                   {'min_nodes': 12},
-                                  {'min_scratch_mb_per_node': 200})
+                                  {'min_scratch_mb_per_node': 300000})
         self.assertEqual(6, len(servlist))
 
     def test_ignore_too_expensive_jobs(self):

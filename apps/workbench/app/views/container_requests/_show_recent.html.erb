@@ -1,0 +1,37 @@
+<%= form_tag({}, {id: "containerRequests"}) do |f| %>
+
+<table class="table table-condensed table-fixedlayout arv-recent-container-requests">
+  <colgroup>
+    <col width="10%" />
+    <col width="15%" />
+    <col width="25%" />
+    <col width="15%" />
+    <col width="15%" />
+    <col width="15%" />
+    <col width="5%" />
+  </colgroup>
+  <thead>
+    <tr class="contain-align-left">
+      <th>
+        Status
+      </th><th>
+        Container request
+      </th><th>
+        Description
+      </th><th>
+        Workflow
+      </th><th>
+        Owner
+      </th><th>
+        Created at
+      </th><th>
+      </th>
+    </tr>
+  </thead>
+
+  <tbody data-infinite-scroller="#recent-container-requests" id="recent-container-requests"
+         data-infinite-content-href="<%= url_for partial: :recent_rows %>" >
+  </tbody>
+</table>
+
+<% end %>

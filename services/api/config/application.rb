@@ -55,6 +55,8 @@ module Server
 
     config.active_support.test_order = :sorted
 
+    config.action_dispatch.perform_deep_munge = false
+
     I18n.enforce_available_locales = false
 
     # Before using the filesystem backend for Rails.cache, check

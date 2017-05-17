@@ -7,11 +7,12 @@ import (
 )
 
 type wsConfig struct {
-	Client    arvados.Client
-	Postgres  pgConfig
-	Listen    string
-	LogLevel  string
-	LogFormat string
+	Client       arvados.Client
+	Postgres     pgConfig
+	PostgresPool int
+	Listen       string
+	LogLevel     string
+	LogFormat    string
 
 	PingTimeout      arvados.Duration
 	ClientEventQueue int
@@ -24,13 +25,15 @@ func defaultConfig() wsConfig {
 			APIHost: "localhost:443",
 		},
 		Postgres: pgConfig{
-			"dbname":          "arvados_production",
-			"user":            "arvados",
-			"password":        "xyzzy",
-			"host":            "localhost",
-			"connect_timeout": "30",
-			"sslmode":         "require",
+			"dbname":                    "arvados_production",
+			"user":                      "arvados",
+			"password":                  "xyzzy",
+			"host":                      "localhost",
+			"connect_timeout":           "30",
+			"sslmode":                   "require",
+			"fallback_application_name": "arvados-ws",
 		},
+		PostgresPool:     64,
 		LogLevel:         "info",
 		LogFormat:        "json",
 		PingTimeout:      arvados.Duration(time.Minute),

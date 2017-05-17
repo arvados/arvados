@@ -1,5 +1,9 @@
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 import collections
-import httplib
+import http.client
 import httplib2
 import json
 import logging
@@ -12,10 +16,10 @@ import types
 import apiclient
 from apiclient import discovery as apiclient_discovery
 from apiclient import errors as apiclient_errors
-import config
-import errors
-import util
-import cache
+from . import config
+from . import errors
+from . import util
+from . import cache
 
 _logger = logging.getLogger('arvados.api')
 
@@ -67,7 +71,7 @@ def _intercept_http_request(self, uri, method="GET", **kwargs):
         # High probability of failure due to connection atrophy. Make
         # sure this request [re]opens a new connection by closing and
         # forgetting all cached connections first.
-        for conn in self.connections.itervalues():
+        for conn in self.connections.values():
             conn.close()
         self.connections.clear()
 
@@ -76,7 +80,7 @@ def _intercept_http_request(self, uri, method="GET", **kwargs):
         self._last_request_time = time.time()
         try:
             return self.orig_http_request(uri, method, **kwargs)
-        except httplib.HTTPException:
+        except http.client.HTTPException:
             _logger.debug("Retrying API request in %d s after HTTP error",
                           delay, exc_info=True)
         except socket.error:
@@ -87,7 +91,7 @@ def _intercept_http_request(self, uri, method="GET", **kwargs):
             # httplib2 reopens connections when needed.
             _logger.debug("Retrying API request in %d s after socket error",
                           delay, exc_info=True)
-            for conn in self.connections.itervalues():
+            for conn in self.connections.values():
                 conn.close()
         time.sleep(delay)
         delay = delay * self._retry_delay_backoff
@@ -113,6 +117,7 @@ _cast_orig = apiclient_discovery._cast
 def _cast_objects_too(value, schema_type):
     global _cast_orig
     if (type(value) != type('') and
+        type(value) != type(b'') and
         (schema_type == 'object' or schema_type == 'array')):
         return json.dumps(value)
     else:

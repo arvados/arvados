@@ -557,7 +557,18 @@ class JobTest < ActiveSupport::TestCase
     assert_equal Job.deep_sort_hash(a).to_json, Job.deep_sort_hash(b).to_json
   end
 
-  test 'find_reusable' do
+  test 'find_reusable without logging' do
+    Rails.logger.expects(:info).never
+    try_find_reusable
+  end
+
+  test 'find_reusable with logging' do
+    Rails.configuration.log_reuse_decisions = true
+    Rails.logger.expects(:info).at_least(3)
+    try_find_reusable
+  end
+
+  def try_find_reusable
     foobar = jobs(:foobar)
     example_attrs = {
       script_version: foobar.script_version,
@@ -577,6 +588,11 @@ class JobTest < ActiveSupport::TestCase
     Job.where(uuid: jobs(:job_with_latest_version).uuid).
       update_all(output: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa+1')
     assert_nil Job.find_reusable(example_attrs, {}, [], [users(:active)])
+
+    # ...unless config says to reuse the earlier job in such cases.
+    Rails.configuration.reuse_job_if_outputs_differ = true
+    j = Job.find_reusable(example_attrs, {}, [], [users(:active)])
+    assert_equal foobar.uuid, j.uuid
   end
 
   [

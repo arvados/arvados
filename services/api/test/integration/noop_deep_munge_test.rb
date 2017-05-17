@@ -1,8 +1,21 @@
 require 'test_helper'
 
-class NoopDeepMunge < ActionDispatch::IntegrationTest
+class NoopDeepMungeTest < ActionDispatch::IntegrationTest
+  test "empty array" do
+    check({"foo" => []})
+  end
 
-  test "that empty list round trips properly" do
+  test "null in array" do
+    check({"foo" => ["foo", nil]})
+  end
+
+  test "array of nulls" do
+    check({"foo" => [nil, nil, nil]})
+  end
+
+  protected
+
+  def check(val)
     post "/arvados/v1/container_requests",
          {
            :container_request => {
@@ -14,10 +27,7 @@ class NoopDeepMunge < ActionDispatch::IntegrationTest
              :mounts => {
                :foo => {
                  :kind => "json",
-                 :content => {
-                   :a => [],
-                   :b => {}
-                 }
+                 :content => JSON.parse(SafeJSON.dump(val)),
                }
              }
            }
@@ -25,11 +35,6 @@ class NoopDeepMunge < ActionDispatch::IntegrationTest
                     'CONTENT_TYPE' => 'application/json'}
     assert_response :success
     assert_equal "arvados#containerRequest", json_response['kind']
-    content = {
-      "a" => [],
-      "b" => {}
-    }
-    assert_equal content, json_response['mounts']['foo']['content']
-
+    assert_equal val, json_response['mounts']['foo']['content']
   end
 end

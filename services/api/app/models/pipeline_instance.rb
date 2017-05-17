@@ -38,6 +38,10 @@ class PipelineInstance < ArvadosModel
      (Complete = 'Complete'),
     ]
 
+  def self.limit_index_columns_read
+    ["components"]
+  end
+
   # if all components have input, the pipeline is Ready
   def components_look_ready?
     if !self.components || self.components.empty?

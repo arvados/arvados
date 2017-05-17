@@ -1,0 +1,11 @@
+<% content_for :tab_line_buttons do %>
+  <div class="input-group">
+    <input type="text" class="form-control filterable-control recent-container-requests-filterable-control"
+           placeholder="Search container requests"
+           data-filterable-target="#recent-container-requests"
+           value="<%= params[:search] %>"
+           />
+  </div>
+<% end %>
+
+<%= render file: 'application/index.html.erb', locals: local_assigns %>

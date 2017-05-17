@@ -20,7 +20,7 @@ class MkdirDashPTest(unittest.TestCase):
     def runTest(self):
         arvados.util.mkdir_dash_p('./tmp/foo')
         with open('./tmp/bar', 'wb') as f:
-            f.write('bar')
+            f.write(b'bar')
         self.assertRaises(OSError, arvados.util.mkdir_dash_p, './tmp/bar')
 
 
@@ -28,8 +28,8 @@ class RunCommandTestCase(unittest.TestCase):
     def test_success(self):
         stdout, stderr = arvados.util.run_command(['echo', 'test'],
                                                   stderr=subprocess.PIPE)
-        self.assertEqual("test\n", stdout)
-        self.assertEqual("", stderr)
+        self.assertEqual("test\n".encode(), stdout)
+        self.assertEqual("".encode(), stderr)
 
     def test_failure(self):
         with self.assertRaises(arvados.errors.CommandFailedError):

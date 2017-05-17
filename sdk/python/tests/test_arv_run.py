@@ -1,16 +1,13 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-import io
+from __future__ import absolute_import
 import os
 import sys
 import tempfile
 import unittest
 
 import arvados.commands.run as arv_run
-import arvados_testutil as tutil
+from . import arvados_testutil as tutil
 
-class ArvRunTestCase(unittest.TestCase):
+class ArvRunTestCase(unittest.TestCase, tutil.VersionChecker):
     def run_arv_run(self, args):
         sys.argv = ['arv-run'] + args
         return arv_run.main()
@@ -20,10 +17,8 @@ class ArvRunTestCase(unittest.TestCase):
             self.run_arv_run(['-x=unknown'])
 
     def test_version_argument(self):
-        err = io.BytesIO()
-        out = io.BytesIO()
-        with tutil.redirected_streams(stdout=out, stderr=err):
+        with tutil.redirected_streams(
+                stdout=tutil.StringIO, stderr=tutil.StringIO) as (out, err):
             with self.assertRaises(SystemExit):
                 self.run_arv_run(['--version'])
-        self.assertEqual(out.getvalue(), '')
-        self.assertRegexpMatches(err.getvalue(), "[0-9]+\.[0-9]+\.[0-9]+")
+        self.assertVersionOutput(out, err)

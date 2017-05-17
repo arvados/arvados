@@ -188,6 +188,10 @@ class WorkUnit
     # container_uuid of a container_request
   end
 
+  def requesting_container_uuid
+    # requesting_container_uuid of a container_request
+  end
+
   def log_object_uuids
     # object uuids for live log
   end

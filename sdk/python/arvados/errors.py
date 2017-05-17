@@ -8,7 +8,7 @@ from collections import OrderedDict
 class ApiError(apiclient_errors.HttpError):
     def _get_reason(self):
         try:
-            return '; '.join(json.loads(self.content)['errors'])
+            return '; '.join(json.loads(self.content.decode('utf-8'))['errors'])
         except (KeyError, TypeError, ValueError):
             return super(ApiError, self)._get_reason()
 
@@ -37,7 +37,7 @@ class KeepRequestError(Exception):
         self._request_errors = OrderedDict(request_errors)
         if self._request_errors:
             exc_reports = [self._format_error(*err_pair)
-                           for err_pair in self._request_errors.iteritems()]
+                           for err_pair in self._request_errors.items()]
             base_msg = "{}: {}".format(message, "; ".join(exc_reports))
         else:
             base_msg = message

@@ -65,7 +65,11 @@ var hwImageId = "9c31ee32b3d15268a0754e8edc74d4f815ee014b693bc5109058e431dd5caea
 var otherManifest = ". 68a84f561b1d1708c6baff5e019a9ab3+46+Ae5d0af96944a3690becb1decdf60cc1c937f556d@5693216f 0:46:md5sum.txt\n"
 var otherPDH = "a3e8f74c6f101eae01fa08bfb4e49b3a+54"
 
-var normalizedManifestWithSubdirs = ". 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 0:9:file1_in_main.txt 9:18:file2_in_main.txt 0:27:zzzzz-8i9sb-bcdefghijkdhvnk.log.txt\n./subdir1 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 0:9:file1_in_subdir1.txt 9:18:file2_in_subdir1.txt\n./subdir1/subdir2 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 0:9:file1_in_subdir2.txt 9:18:file2_in_subdir2.txt\n"
+var normalizedManifestWithSubdirs = `. 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 0:9:file1_in_main.txt 9:18:file2_in_main.txt 0:27:zzzzz-8i9sb-bcdefghijkdhvnk.log.txt
+./subdir1 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 0:9:file1_in_subdir1.txt 9:18:file2_in_subdir1.txt
+./subdir1/subdir2 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 0:9:file1_in_subdir2.txt 9:18:file2_in_subdir2.txt
+`
+
 var normalizedWithSubdirsPDH = "a0def87f80dd594d4675809e83bd4f15+367"
 
 var denormalizedManifestWithSubdirs = ". 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0abcdefgh11234567890@569fa8c3 0:9:file1_in_main.txt 9:18:file2_in_main.txt 0:27:zzzzz-8i9sb-bcdefghijkdhvnk.log.txt 0:10:subdir1/file1_in_subdir1.txt 10:17:subdir1/file2_in_subdir1.txt\n"
@@ -84,6 +88,7 @@ type TestDockerClient struct {
 	cwd         string
 	env         []string
 	api         *ArvTestClient
+	realTemp    string
 }
 
 func NewTestDockerClient(exitCode int) *TestDockerClient {
@@ -134,8 +139,15 @@ func (t *TestDockerClient) ContainerStop(ctx context.Context, container string, 
 	return nil
 }
 
-func (t *TestDockerClient) ContainerWait(ctx context.Context, container string) (int64, error) {
-	return int64(t.finish), nil
+func (t *TestDockerClient) ContainerWait(ctx context.Context, container string, condition dockercontainer.WaitCondition) (<-chan dockercontainer.ContainerWaitOKBody, <-chan error) {
+	body := make(chan dockercontainer.ContainerWaitOKBody)
+	err := make(chan error)
+	go func() {
+		body <- dockercontainer.ContainerWaitOKBody{StatusCode: int64(t.finish)}
+		close(body)
+		close(err)
+	}()
+	return body, err
 }
 
 func (t *TestDockerClient) ImageInspectWithRaw(ctx context.Context, image string) (dockertypes.ImageInspect, []byte, error) {
@@ -249,7 +261,16 @@ func (client *ArvTestClient) Update(resourceType string, uuid string, parameters
 	return nil
 }
 
-var discoveryMap = map[string]interface{}{"defaultTrashLifetime": float64(1209600)}
+var discoveryMap = map[string]interface{}{
+	"defaultTrashLifetime":               float64(1209600),
+	"crunchLimitLogBytesPerJob":          float64(67108864),
+	"crunchLogThrottleBytes":             float64(65536),
+	"crunchLogThrottlePeriod":            float64(60),
+	"crunchLogThrottleLines":             float64(1024),
+	"crunchLogPartialLineThrottlePeriod": float64(5),
+	"crunchLogBytesPerEvent":             float64(4096),
+	"crunchLogSecondsBetweenEvents":      float64(1),
+}
 
 func (client *ArvTestClient) Discovery(key string) (interface{}, error) {
 	return discoveryMap[key], nil
@@ -601,6 +622,8 @@ func FullRunHelper(c *C, record string, extraMounts []string, exitCode int, fn f
 	c.Assert(err, IsNil)
 	defer os.RemoveAll(realTemp)
 
+	docker.realTemp = realTemp
+
 	tempcount := 0
 	cr.MkTempDir = func(_ string, prefix string) (string, error) {
 		tempcount++
@@ -623,7 +646,9 @@ func FullRunHelper(c *C, record string, extraMounts []string, exitCode int, fn f
 	}
 
 	err = cr.Run()
-	c.Check(err, IsNil)
+	if api.CalledWith("container.state", "Complete") != nil {
+		c.Check(err, IsNil)
+	}
 	c.Check(api.WasSetRunning, Equals, true)
 
 	c.Check(api.Content[api.Calls-1]["container"].(arvadosclient.Dict)["log"], NotNil)
@@ -964,6 +989,22 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 		c.Check(err, IsNil)
 		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
 		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/tmp"})
+		cr.CleanupDirs()
+		checkEmpty()
+	}
+
+	{
+		i = 0
+		cr.ArvMountPoint = ""
+		cr.Container.Mounts = make(map[string]arvados.Mount)
+		cr.Container.Mounts["/out"] = arvados.Mount{Kind: "tmp"}
+		cr.Container.Mounts["/tmp"] = arvados.Mount{Kind: "tmp"}
+		cr.OutputPath = "/out"
+
+		err := cr.SetupMounts()
+		c.Check(err, IsNil)
+		c.Check(am.Cmd, DeepEquals, []string{"--foreground", "--allow-other", "--read-write", "--mount-by-pdh", "by_id", realTemp + "/keep1"})
+		c.Check(cr.Binds, DeepEquals, []string{realTemp + "/2:/out", realTemp + "/3:/tmp"})
 		cr.CleanupDirs()
 		checkEmpty()
 	}
@@ -1392,6 +1433,76 @@ func (s *TestSuite) TestStdoutWithMountPointsUnderOutputDirDenormalizedManifest(
 			}
 		}
 	}
+}
+
+func (s *TestSuite) TestOutputSymlinkToInput(c *C) {
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {
+        "/tmp": {"kind": "tmp"},
+        "/keep/foo/sub1file2": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367", "path": "/subdir1/file2_in_subdir1.txt"},
+        "/keep/foo2": {"kind": "collection", "portable_data_hash": "a0def87f80dd594d4675809e83bd4f15+367"}
+    },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	extraMounts := []string{
+		"a0def87f80dd594d4675809e83bd4f15+367/subdir1/file2_in_subdir1.txt",
+	}
+
+	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+		os.Symlink("/keep/foo/sub1file2", t.realTemp+"/2/baz")
+		os.Symlink("/keep/foo2/subdir1/file2_in_subdir1.txt", t.realTemp+"/2/baz2")
+		os.Symlink("/keep/foo2/subdir1", t.realTemp+"/2/baz3")
+		os.Mkdir(t.realTemp+"/2/baz4", 0700)
+		os.Symlink("/keep/foo2/subdir1/file2_in_subdir1.txt", t.realTemp+"/2/baz4/baz5")
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.exit_code", 0), NotNil)
+	c.Check(api.CalledWith("container.state", "Complete"), NotNil)
+	for _, v := range api.Content {
+		if v["collection"] != nil {
+			collection := v["collection"].(arvadosclient.Dict)
+			if strings.Index(collection["name"].(string), "output") == 0 {
+				manifest := collection["manifest_text"].(string)
+				c.Check(manifest, Equals, `. 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 9:18:baz 9:18:baz2
+./baz3 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 0:9:file1_in_subdir1.txt 9:18:file2_in_subdir1.txt
+./baz3/subdir2 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396c73c0bcdefghijk544332211@569fa8c5 0:9:file1_in_subdir2.txt 9:18:file2_in_subdir2.txt
+./baz4 3e426d509afffb85e06c4c96a7c15e91+27+Aa124ac75e5168396cabcdefghij6419876543234@569fa8c4 9:18:baz5
+`)
+			}
+		}
+	}
+}
+
+func (s *TestSuite) TestOutputError(c *C) {
+	helperRecord := `{
+		"command": ["/bin/sh", "-c", "echo $FROBIZ"],
+		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+		"cwd": "/bin",
+		"environment": {"FROBIZ": "bilbo"},
+		"mounts": {
+        "/tmp": {"kind": "tmp"}
+    },
+		"output_path": "/tmp",
+		"priority": 1,
+		"runtime_constraints": {}
+	}`
+
+	extraMounts := []string{}
+
+	api, _, _ := FullRunHelper(c, helperRecord, extraMounts, 0, func(t *TestDockerClient) {
+		os.Symlink("/etc/hosts", t.realTemp+"/2/baz")
+		t.logWriter.Close()
+	})
+
+	c.Check(api.CalledWith("container.state", "Cancelled"), NotNil)
 }
 
 func (s *TestSuite) TestStdinCollectionMountPoint(c *C) {

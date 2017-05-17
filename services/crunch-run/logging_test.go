@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	. "gopkg.in/check.v1"
+	"strings"
 	"testing"
 	"time"
 )
@@ -108,4 +109,46 @@ func (s *LoggingTestSuite) TestWriteMultipleLogs(c *C) {
 	c.Check(mt, Equals, ""+
 		". 408672f5b5325f7d20edfbf899faee42+83 0:83:crunch-run.txt\n"+
 		". c556a293010069fa79a6790a931531d5+80 0:80:stdout.txt\n")
+}
+
+func (s *LoggingTestSuite) TestWriteLogsWithRateLimitThrottleBytes(c *C) {
+	testWriteLogsWithRateLimit(c, "crunchLogThrottleBytes", 50, 65536, "Exceeded rate 50 bytes per 60 seconds")
+}
+
+func (s *LoggingTestSuite) TestWriteLogsWithRateLimitThrottleLines(c *C) {
+	testWriteLogsWithRateLimit(c, "crunchLogThrottleLines", 1, 1024, "Exceeded rate 1 lines per 60 seconds")
+}
+
+func (s *LoggingTestSuite) TestWriteLogsWithRateLimitThrottleBytesPerEvent(c *C) {
+	testWriteLogsWithRateLimit(c, "crunchLimitLogBytesPerJob", 50, 67108864, "Exceeded log limit 50 bytes (crunch_limit_log_bytes_per_job)")
+}
+
+func testWriteLogsWithRateLimit(c *C, throttleParam string, throttleValue int, throttleDefault int, expected string) {
+	discoveryMap[throttleParam] = float64(throttleValue)
+	defer func() {
+		discoveryMap[throttleParam] = float64(throttleDefault)
+	}()
+
+	api := &ArvTestClient{}
+	kc := &KeepTestClient{}
+	cr := NewContainerRunner(api, kc, nil, "zzzzz-zzzzzzzzzzzzzzz")
+	cr.CrunchLog.Timestamper = (&TestTimestamper{}).Timestamp
+
+	cr.CrunchLog.Print("Hello world!")
+	cr.CrunchLog.Print("Goodbye")
+	cr.CrunchLog.Close()
+
+	c.Check(api.Calls, Equals, 1)
+
+	mt, err := cr.LogCollection.ManifestText()
+	c.Check(err, IsNil)
+	c.Check(mt, Equals, ". 74561df9ae65ee9f35d5661d42454264+83 0:83:crunch-run.txt\n")
+
+	logtext := "2015-12-29T15:51:45.000000001Z Hello world!\n" +
+		"2015-12-29T15:51:45.000000002Z Goodbye\n"
+
+	c.Check(api.Content[0]["log"].(arvadosclient.Dict)["event_type"], Equals, "crunch-run")
+	stderrLog := api.Content[0]["log"].(arvadosclient.Dict)["properties"].(map[string]string)["text"]
+	c.Check(true, Equals, strings.Contains(stderrLog, expected))
+	c.Check(string(kc.Content), Equals, logtext)
 }

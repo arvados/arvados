@@ -121,4 +121,32 @@ class ContainerRequestsTest < ActionDispatch::IntegrationTest
     page.assert_selector 'ellipse+text', text: cr['name'], visible: false
     page.assert_selector 'g.node>title', text: cr['uuid'], visible: false
   end
+
+  test "index page" do
+    visit page_with_token("active", "/container_requests")
+
+    running_owner_active = api_fixture("container_requests", "requester_for_running")
+    anon_accessible_cr = api_fixture("container_requests", "running_anonymous_accessible")
+
+    # both of these CRs should be accessible to the user
+    assert_selector "a[href=\"/container_requests/#{running_owner_active['uuid']}\"]", text: running_owner_active[:name]
+    assert_selector "a[href=\"/container_requests/#{anon_accessible_cr['uuid']}\"]", text: anon_accessible_cr[:name]
+
+    # user can delete the "running" container_request
+    within(".cr-#{running_owner_active['uuid']}") do
+      assert_not_nil first('.glyphicon-trash')
+    end
+
+    # user can not delete the anonymously accessible container_request
+    within(".cr-#{anon_accessible_cr['uuid']}") do
+      assert_nil first('.glyphicon-trash')
+    end
+
+    # verify the search box in the page
+    find('.recent-container-requests-filterable-control').set("anonymous")
+    sleep 0.350 # Wait for 250ms debounce timer (see filterable.js)
+    wait_for_ajax
+    assert_no_selector "a[href=\"/container_requests/#{running_owner_active['uuid']}\"]", text: running_owner_active[:name]
+    assert_selector "a[href=\"/container_requests/#{anon_accessible_cr['uuid']}\"]", text: anon_accessible_cr[:name]
+  end
 end

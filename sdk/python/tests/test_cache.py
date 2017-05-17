@@ -1,6 +1,9 @@
 from __future__ import print_function
+from __future__ import absolute_import
 
-import md5
+from builtins import str
+from builtins import range
+import hashlib
 import mock
 import os
 import random
@@ -10,13 +13,13 @@ import tempfile
 import threading
 import unittest
 
-import arvados.cache
 import arvados
-import run_test_server
+import arvados.cache
+from . import run_test_server
 
 
 def _random(n):
-    return bytearray(random.getrandbits(8) for _ in xrange(n))
+    return bytearray(random.getrandbits(8) for _ in range(n))
 
 
 class CacheTestThread(threading.Thread):
@@ -31,15 +34,16 @@ class CacheTestThread(threading.Thread):
         for x in range(16):
             try:
                 data_in = _random(128)
-                data_in = md5.new(data_in).hexdigest() + "\n" + str(data_in)
+                data_in = hashlib.md5(data_in).hexdigest().encode() + b"\n" + data_in
                 c.set(url, data_in)
                 data_out = c.get(url)
-                digest, content = data_out.split("\n", 1)
-                if digest != md5.new(content).hexdigest():
+                digest, _, content = data_out.partition(b"\n")
+                if digest != hashlib.md5(content).hexdigest().encode():
                     self.ok = False
             except Exception as err:
                 self.ok = False
-                print("cache failed: {}".format(err), file=sys.stderr)
+                print("cache failed: {}: {}".format(type(err), err), file=sys.stderr)
+                raise
 
 
 class CacheTest(unittest.TestCase):

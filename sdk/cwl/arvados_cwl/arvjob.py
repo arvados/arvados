@@ -110,6 +110,7 @@ class ArvadosJob(object):
         if runtime_req:
             if "keep_cache" in runtime_req:
                 runtime_constraints["keep_cache_mb_per_task"] = runtime_req["keep_cache"]
+                runtime_constraints["min_ram_mb_per_node"] += runtime_req["keep_cache"]
             if "outputDirType" in runtime_req:
                 if runtime_req["outputDirType"] == "local_output_dir":
                     script_parameters["task.keepTmpOutput"] = False
