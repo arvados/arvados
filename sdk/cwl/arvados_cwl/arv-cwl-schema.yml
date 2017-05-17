@@ -94,6 +94,12 @@ $graph:
   doc: |
     Select preferred compute partitions on which to run jobs.
   fields:
+    - name: class
+      type: string
+      doc: "Always 'arv:PartitionRequirement'"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
     - name: partition
       type:
         - string
