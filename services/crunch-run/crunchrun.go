@@ -800,10 +800,12 @@ func (runner *ContainerRunner) CreateContainer() error {
 	runner.ContainerConfig.Volumes = runner.Volumes
 
 	runner.HostConfig = dockercontainer.HostConfig{
-		Binds:  runner.Binds,
-		Cgroup: dockercontainer.CgroupSpec(runner.setCgroupParent),
+		Binds: runner.Binds,
 		LogConfig: dockercontainer.LogConfig{
 			Type: "none",
+		},
+		Resources: dockercontainer.Resources{
+			CgroupParent: runner.setCgroupParent,
 		},
 	}
 
