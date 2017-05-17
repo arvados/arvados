@@ -1234,8 +1234,15 @@ class ApplicationController < ActionController::Base
         @objects_for[obj.name] = obj
       end
     else
+      key_prefix = "request_#{Thread.current.object_id}_#{dataclass.to_s}_"
       dataclass.where(uuid: uuids).each do |obj|
         @objects_for[obj.uuid] = obj
+        if dataclass == Collection
+          # The collecions#index defaults to "all attributes except manifest_text"
+          # Hence, this object is not suitable for preloading the find() cache.
+        else
+          Rails.cache.write(key_prefix + obj.uuid, obj.as_json)
+        end
       end
     end
     @objects_for
