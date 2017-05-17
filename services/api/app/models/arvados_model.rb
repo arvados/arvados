@@ -46,6 +46,12 @@ class ArvadosModel < ActiveRecord::Base
     end
   end
 
+  class LockFailedError < StandardError
+    def http_status
+      422
+    end
+  end
+
   class InvalidStateTransitionError < StandardError
     def http_status
       422
@@ -96,6 +102,12 @@ class ArvadosModel < ActiveRecord::Base
 
   def initialize raw_params={}, *args
     super(self.class.permit_attribute_params(raw_params), *args)
+  end
+
+  # Reload "old attributes" for logging, too.
+  def reload(*args)
+    super
+    log_start_state
   end
 
   def self.create raw_params={}, *args
