@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -113,6 +114,82 @@ type UnixVolume struct {
 	locker sync.Locker
 
 	os osWithStats
+}
+
+// DeviceID returns a globally unique ID for the volume's root
+// directory, consisting of the filesystem's UUID and the path from
+// filesystem root to storage directory, joined by "/". For example,
+// the DeviceID for a local directory "/mnt/xvda1/keep" might be
+// "fa0b6166-3b55-4994-bd3f-92f4e00a1bb0/keep".
+func (v *UnixVolume) DeviceID() string {
+	giveup := func(f string, args ...interface{}) string {
+		log.Printf(f+"; using blank DeviceID for volume %s", append(args, v)...)
+		return ""
+	}
+	buf, err := exec.Command("findmnt", "--noheadings", "--target", v.Root).CombinedOutput()
+	if err != nil {
+		return giveup("findmnt: %s (%q)", err, buf)
+	}
+	findmnt := strings.Fields(string(buf))
+	if len(findmnt) < 2 {
+		return giveup("could not parse findmnt output: %q", buf)
+	}
+	fsRoot, dev := findmnt[0], findmnt[1]
+
+	absRoot, err := filepath.Abs(v.Root)
+	if err != nil {
+		return giveup("resolving relative path %q: %s", v.Root, err)
+	}
+	realRoot, err := filepath.EvalSymlinks(absRoot)
+	if err != nil {
+		return giveup("resolving symlinks in %q: %s", absRoot, err)
+	}
+
+	// Find path from filesystem root to realRoot
+	var fsPath string
+	if strings.HasPrefix(realRoot, fsRoot+"/") {
+		fsPath = realRoot[len(fsRoot):]
+	} else if fsRoot == "/" {
+		fsPath = realRoot
+	} else if fsRoot == realRoot {
+		fsPath = ""
+	} else {
+		return giveup("findmnt reports mount point %q which is not a prefix of volume root %q", fsRoot, realRoot)
+	}
+
+	if !strings.HasPrefix(dev, "/") {
+		return giveup("mount %q device %q is not a path", fsRoot, dev)
+	}
+
+	fi, err := os.Stat(dev)
+	if err != nil {
+		return giveup("stat %q: %s\n", dev, err)
+	}
+	ino := fi.Sys().(*syscall.Stat_t).Ino
+
+	// Find a symlink in /dev/disk/by-uuid/ whose target is (i.e.,
+	// has the same inode as) the mounted device
+	udir := "/dev/disk/by-uuid"
+	d, err := os.Open(udir)
+	if err != nil {
+		return giveup("opening %q: %s", udir, err)
+	}
+	uuids, err := d.Readdirnames(0)
+	if err != nil {
+		return giveup("reading %q: %s", udir, err)
+	}
+	for _, uuid := range uuids {
+		link := filepath.Join(udir, uuid)
+		fi, err = os.Stat(link)
+		if err != nil {
+			log.Printf("error: stat %q: %s", link, err)
+			continue
+		}
+		if fi.Sys().(*syscall.Stat_t).Ino == ino {
+			return uuid + fsPath
+		}
+	}
+	return giveup("could not find entry in %q matching %q", udir, dev)
 }
 
 // Examples implements VolumeWithExamples.

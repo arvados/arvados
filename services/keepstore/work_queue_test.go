@@ -11,7 +11,7 @@ type fatalfer interface {
 	Fatalf(string, ...interface{})
 }
 
-func makeTestWorkList(ary []int) *list.List {
+func makeTestWorkList(ary []interface{}) *list.List {
 	l := list.New()
 	for _, n := range ary {
 		l.PushBack(n)
@@ -53,7 +53,7 @@ func expectChannelClosedWithin(t fatalfer, timeout time.Duration, c <-chan inter
 	}
 }
 
-func doWorkItems(t fatalfer, q *WorkQueue, expected []int) {
+func doWorkItems(t fatalfer, q *WorkQueue, expected []interface{}) {
 	for i := range expected {
 		actual, ok := <-q.NextItem
 		if !ok {
@@ -93,7 +93,7 @@ func expectQueued(t fatalfer, b *WorkQueue, expectQueued int) {
 func TestWorkQueueDoneness(t *testing.T) {
 	b := NewWorkQueue()
 	defer b.Close()
-	b.ReplaceQueue(makeTestWorkList([]int{1, 2, 3}))
+	b.ReplaceQueue(makeTestWorkList([]interface{}{1, 2, 3}))
 	expectQueued(t, b, 3)
 	gate := make(chan struct{})
 	go func() {
@@ -105,7 +105,7 @@ func TestWorkQueueDoneness(t *testing.T) {
 		}
 	}()
 	expectEqualWithin(t, time.Second, 0, func() interface{} { return b.Status().InProgress })
-	b.ReplaceQueue(makeTestWorkList([]int{4, 5, 6}))
+	b.ReplaceQueue(makeTestWorkList([]interface{}{4, 5, 6}))
 	for i := 1; i <= 3; i++ {
 		gate <- struct{}{}
 		expectEqualWithin(t, time.Second, 3-i, func() interface{} { return b.Status().Queued })
@@ -118,7 +118,7 @@ func TestWorkQueueDoneness(t *testing.T) {
 
 // Create a WorkQueue, generate a list for it, and instantiate a worker.
 func TestWorkQueueReadWrite(t *testing.T) {
-	var input = []int{1, 1, 2, 3, 5, 8, 13, 21, 34}
+	var input = []interface{}{1, 1, 2, 3, 5, 8, 13, 21, 34}
 
 	b := NewWorkQueue()
 	expectQueued(t, b, 0)
@@ -133,7 +133,7 @@ func TestWorkQueueReadWrite(t *testing.T) {
 
 // Start a worker before the list has any input.
 func TestWorkQueueEarlyRead(t *testing.T) {
-	var input = []int{1, 1, 2, 3, 5, 8, 13, 21, 34}
+	var input = []interface{}{1, 1, 2, 3, 5, 8, 13, 21, 34}
 
 	b := NewWorkQueue()
 	defer b.Close()
@@ -161,7 +161,7 @@ func TestWorkQueueEarlyRead(t *testing.T) {
 // After Close(), NextItem closes, work finishes, then stats return zero.
 func TestWorkQueueClose(t *testing.T) {
 	b := NewWorkQueue()
-	input := []int{1, 2, 3, 4, 5, 6, 7, 8}
+	input := []interface{}{1, 2, 3, 4, 5, 6, 7, 8}
 	mark := make(chan struct{})
 	go func() {
 		<-b.NextItem
@@ -185,8 +185,8 @@ func TestWorkQueueClose(t *testing.T) {
 // available.
 func TestWorkQueueReaderBlocks(t *testing.T) {
 	var (
-		inputBeforeBlock = []int{1, 2, 3, 4, 5}
-		inputAfterBlock  = []int{6, 7, 8, 9, 10}
+		inputBeforeBlock = []interface{}{1, 2, 3, 4, 5}
+		inputAfterBlock  = []interface{}{6, 7, 8, 9, 10}
 	)
 
 	b := NewWorkQueue()
@@ -219,8 +219,8 @@ func TestWorkQueueReaderBlocks(t *testing.T) {
 
 // Replace one active work list with another.
 func TestWorkQueueReplaceQueue(t *testing.T) {
-	var firstInput = []int{1, 1, 2, 3, 5, 8, 13, 21, 34}
-	var replaceInput = []int{1, 4, 9, 16, 25, 36, 49, 64, 81}
+	var firstInput = []interface{}{1, 1, 2, 3, 5, 8, 13, 21, 34}
+	var replaceInput = []interface{}{1, 4, 9, 16, 25, 36, 49, 64, 81}
 
 	b := NewWorkQueue()
 	b.ReplaceQueue(makeTestWorkList(firstInput))

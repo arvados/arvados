@@ -136,8 +136,13 @@ class Arvados::V1::GroupsController < ApplicationController
         end
       end.compact
 
-      @objects = klass.readable_by(*@read_users).
-        order(request_order).where(where_conds)
+      if klass == Collection and params[:include_trash]
+        @objects = klass.unscoped.readable_by(*@read_users).
+          order(request_order).where(where_conds)
+      else
+        @objects = klass.readable_by(*@read_users).
+          order(request_order).where(where_conds)
+      end
       klass_limit = limit_all - all_objects.count
       @limit = klass_limit
       apply_where_limit_order_params klass

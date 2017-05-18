@@ -365,7 +365,10 @@ class ContainerTest < ActiveSupport::TestCase
     set_user_from_auth :dispatch1
     assert_equal Container::Queued, c.state
 
-    assert_raise(ActiveRecord::RecordInvalid) {c.lock} # "no priority"
+    assert_raise(ArvadosModel::LockFailedError) do
+      # "no priority"
+      c.lock
+    end
     c.reload
     assert cr.update_attributes priority: 1
 
@@ -378,7 +381,7 @@ class ContainerTest < ActiveSupport::TestCase
     assert c.locked_by_uuid
     assert c.auth_uuid
 
-    assert_raise(ArvadosModel::AlreadyLockedError) {c.lock}
+    assert_raise(ArvadosModel::LockFailedError) {c.lock}
     c.reload
 
     assert c.unlock, show_errors(c)
@@ -397,9 +400,15 @@ class ContainerTest < ActiveSupport::TestCase
 
     auth_uuid_was = c.auth_uuid
 
-    assert_raise(ActiveRecord::RecordInvalid) {c.lock} # Running to Locked is not allowed
+    assert_raise(ArvadosModel::LockFailedError) do
+      # Running to Locked is not allowed
+      c.lock
+    end
     c.reload
-    assert_raise(ActiveRecord::RecordInvalid) {c.unlock} # Running to Queued is not allowed
+    assert_raise(ArvadosModel::InvalidStateTransitionError) do
+      # Running to Queued is not allowed
+      c.unlock
+    end
     c.reload
 
     assert c.update_attributes(state: Container::Complete), show_errors(c)
