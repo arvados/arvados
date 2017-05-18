@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"fmt"
 	"io"
+	"math/big"
 	"sync/atomic"
 	"time"
 )
@@ -229,6 +232,10 @@ type Volume interface {
 	// EmptyTrash looks for trashed blocks that exceeded TrashLifetime
 	// and deletes them from the volume.
 	EmptyTrash()
+
+	// Return a globally unique ID of the underlying storage
+	// device if possible, otherwise "".
+	DeviceID() string
 }
 
 // A VolumeWithExamples provides example configs to display in the
@@ -241,6 +248,14 @@ type VolumeWithExamples interface {
 // A VolumeManager tells callers which volumes can read, which volumes
 // can write, and on which volume the next write should be attempted.
 type VolumeManager interface {
+	// Mounts returns all mounts (volume attachments).
+	Mounts() []*VolumeMount
+
+	// Lookup returns the volume under the given mount
+	// UUID. Returns nil if the mount does not exist. If
+	// write==true, returns nil if the volume is not writable.
+	Lookup(uuid string, write bool) Volume
+
 	// AllReadable returns all volumes.
 	AllReadable() []Volume
 
@@ -263,10 +278,37 @@ type VolumeManager interface {
 	Close()
 }
 
+// A VolumeMount is an attachment of a Volume to a VolumeManager.
+type VolumeMount struct {
+	UUID        string
+	DeviceID    string
+	ReadOnly    bool
+	Replication int
+	Tier        int
+	volume      Volume
+}
+
+// Generate a UUID the way API server would for a "KeepVolumeMount"
+// object.
+func (*VolumeMount) generateUUID() string {
+	var max big.Int
+	_, ok := max.SetString("zzzzzzzzzzzzzzz", 36)
+	if !ok {
+		panic("big.Int parse failed")
+	}
+	r, err := rand.Int(rand.Reader, &max)
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("zzzzz-ivpuk-%015s", r.Text(36))
+}
+
 // RRVolumeManager is a round-robin VolumeManager: the Nth call to
 // NextWritable returns the (N % len(writables))th writable Volume
 // (where writables are all Volumes v where v.Writable()==true).
 type RRVolumeManager struct {
+	mounts    []*VolumeMount
+	mountMap  map[string]*VolumeMount
 	readables []Volume
 	writables []Volume
 	counter   uint32
@@ -278,14 +320,37 @@ func MakeRRVolumeManager(volumes []Volume) *RRVolumeManager {
 	vm := &RRVolumeManager{
 		iostats: make(map[Volume]*ioStats),
 	}
+	vm.mountMap = make(map[string]*VolumeMount)
 	for _, v := range volumes {
+		mnt := &VolumeMount{
+			UUID:        (*VolumeMount)(nil).generateUUID(),
+			DeviceID:    v.DeviceID(),
+			ReadOnly:    !v.Writable(),
+			Replication: v.Replication(),
+			Tier:        1,
+			volume:      v,
+		}
 		vm.iostats[v] = &ioStats{}
+		vm.mounts = append(vm.mounts, mnt)
+		vm.mountMap[mnt.UUID] = mnt
 		vm.readables = append(vm.readables, v)
 		if v.Writable() {
 			vm.writables = append(vm.writables, v)
 		}
 	}
 	return vm
+}
+
+func (vm *RRVolumeManager) Mounts() []*VolumeMount {
+	return vm.mounts
+}
+
+func (vm *RRVolumeManager) Lookup(uuid string, needWrite bool) Volume {
+	if mnt, ok := vm.mountMap[uuid]; ok && (!needWrite || !mnt.ReadOnly) {
+		return mnt.volume
+	} else {
+		return nil
+	}
 }
 
 // AllReadable returns an array of all readable volumes

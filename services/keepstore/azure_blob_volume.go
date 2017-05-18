@@ -174,6 +174,11 @@ func (v *AzureBlobVolume) Start() error {
 	return nil
 }
 
+// DeviceID returns a globally unique ID for the storage container.
+func (v *AzureBlobVolume) DeviceID() string {
+	return "azure://" + v.StorageBaseURL + "/" + v.StorageAccountName + "/" + v.ContainerName
+}
+
 // Return true if expires_at metadata attribute is found on the block
 func (v *AzureBlobVolume) checkTrashed(loc string) (bool, map[string]string, error) {
 	metadata, err := v.bsClient.GetBlobMetadata(v.ContainerName, loc)

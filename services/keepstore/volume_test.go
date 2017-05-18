@@ -199,6 +199,10 @@ func (v *MockVolume) Trash(loc string) error {
 	return os.ErrNotExist
 }
 
+func (v *MockVolume) DeviceID() string {
+	return "mock-device-id"
+}
+
 func (v *MockVolume) Type() string {
 	return "Mock"
 }

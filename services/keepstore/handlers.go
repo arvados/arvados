@@ -13,7 +13,6 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"io"
 	"net/http"
 	"os"
@@ -23,6 +22,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gorilla/mux"
 
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	log "github.com/Sirupsen/logrus"
@@ -48,16 +49,21 @@ func MakeRESTRouter() *router {
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, DeleteHandler).Methods("DELETE")
 	// List all blocks stored here. Privileged client only.
-	rest.HandleFunc(`/index`, IndexHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/index`, rtr.IndexHandler).Methods("GET", "HEAD")
 	// List blocks stored here whose hash has the given prefix.
 	// Privileged client only.
-	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, rtr.IndexHandler).Methods("GET", "HEAD")
 
 	// Internals/debugging info (runtime.MemStats)
 	rest.HandleFunc(`/debug.json`, rtr.DebugHandler).Methods("GET", "HEAD")
 
 	// List volumes: path, device number, bytes used/avail.
 	rest.HandleFunc(`/status.json`, rtr.StatusHandler).Methods("GET", "HEAD")
+
+	// List mounts: UUID, readonly, tier, device ID, ...
+	rest.HandleFunc(`/mounts`, rtr.MountsHandler).Methods("GET")
+	rest.HandleFunc(`/mounts/{uuid}/blocks`, rtr.IndexHandler).Methods("GET")
+	rest.HandleFunc(`/mounts/{uuid}/blocks/`, rtr.IndexHandler).Methods("GET")
 
 	// Replace the current pull queue.
 	rest.HandleFunc(`/pull`, PullHandler).Methods("PUT")
@@ -222,18 +228,34 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	resp.Write([]byte(returnHash + "\n"))
 }
 
-// IndexHandler is a HandleFunc to address /index and /index/{prefix} requests.
-func IndexHandler(resp http.ResponseWriter, req *http.Request) {
-	// Reject unauthorized requests.
+// IndexHandler responds to "/index", "/index/{prefix}", and
+// "/mounts/{uuid}/blocks" requests.
+func (rtr *router) IndexHandler(resp http.ResponseWriter, req *http.Request) {
 	if !IsSystemAuth(GetAPIToken(req)) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
 		return
 	}
 
 	prefix := mux.Vars(req)["prefix"]
+	if prefix == "" {
+		req.ParseForm()
+		prefix = req.Form.Get("prefix")
+	}
 
-	for _, vol := range KeepVM.AllReadable() {
-		if err := vol.IndexTo(prefix, resp); err != nil {
+	uuid := mux.Vars(req)["uuid"]
+
+	var vols []Volume
+	if uuid == "" {
+		vols = KeepVM.AllReadable()
+	} else if v := KeepVM.Lookup(uuid, false); v == nil {
+		http.Error(resp, "mount not found", http.StatusNotFound)
+		return
+	} else {
+		vols = []Volume{v}
+	}
+
+	for _, v := range vols {
+		if err := v.IndexTo(prefix, resp); err != nil {
 			// The only errors returned by IndexTo are
 			// write errors returned by resp.Write(),
 			// which probably means the client has
@@ -247,6 +269,14 @@ func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 	// An empty line at EOF is the only way the client can be
 	// assured the entire index was received.
 	resp.Write([]byte{'\n'})
+}
+
+// MountsHandler responds to "GET /mounts" requests.
+func (rtr *router) MountsHandler(resp http.ResponseWriter, req *http.Request) {
+	err := json.NewEncoder(resp).Encode(KeepVM.Mounts())
+	if err != nil {
+		http.Error(resp, err.Error(), http.StatusInternalServerError)
+	}
 }
 
 // PoolStatus struct
@@ -462,6 +492,9 @@ func DeleteHandler(resp http.ResponseWriter, req *http.Request) {
 type PullRequest struct {
 	Locator string   `json:"locator"`
 	Servers []string `json:"servers"`
+
+	// Destination mount, or "" for "anywhere"
+	MountUUID string
 }
 
 // PullHandler processes "PUT /pull" requests for the data manager.
@@ -498,6 +531,9 @@ func PullHandler(resp http.ResponseWriter, req *http.Request) {
 type TrashRequest struct {
 	Locator    string `json:"locator"`
 	BlockMtime int64  `json:"block_mtime"`
+
+	// Target mount, or "" for "everywhere"
+	MountUUID string
 }
 
 // TrashHandler processes /trash requests.

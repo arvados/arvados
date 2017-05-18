@@ -35,7 +35,17 @@ func TrashItem(trashRequest TrashRequest) {
 		return
 	}
 
-	for _, volume := range KeepVM.AllWritable() {
+	var volumes []Volume
+	if uuid := trashRequest.MountUUID; uuid == "" {
+		volumes = KeepVM.AllWritable()
+	} else if v := KeepVM.Lookup(uuid, true); v == nil {
+		log.Printf("warning: trash request for nonexistent mount: %v", trashRequest)
+		return
+	} else {
+		volumes = []Volume{v}
+	}
+
+	for _, volume := range volumes {
 		mtime, err := volume.Mtime(trashRequest.Locator)
 		if err != nil {
 			log.Printf("%v Delete(%v): %v", volume, trashRequest.Locator, err)

@@ -22,7 +22,8 @@ type TrashWorkerTestData struct {
 	UseTrashLifeTime bool
 	DifferentMtimes  bool
 
-	DeleteLocator string
+	DeleteLocator    string
+	SpecifyMountUUID bool
 
 	ExpectLocator1 bool
 	ExpectLocator2 bool
@@ -139,6 +140,29 @@ func TestTrashWorkerIntegration_MtimeMatchesForLocator1ButNotForLocator2(t *test
 	performTrashWorkerTest(testData, t)
 }
 
+// Delete a block that exists on both volumes with matching mtimes,
+// but specify a MountUUID in the request so it only gets deleted from
+// the first volume.
+func TestTrashWorkerIntegration_SpecifyMountUUID(t *testing.T) {
+	theConfig.EnableDelete = true
+	testData := TrashWorkerTestData{
+		Locator1: TestHash,
+		Block1:   TestBlock,
+
+		Locator2: TestHash,
+		Block2:   TestBlock,
+
+		CreateData: true,
+
+		DeleteLocator:    TestHash,
+		SpecifyMountUUID: true,
+
+		ExpectLocator1: true,
+		ExpectLocator2: true,
+	}
+	performTrashWorkerTest(testData, t)
+}
+
 /* Two different locators in volume 1.
    Delete one of them.
    Expect the other unaffected.
@@ -238,6 +262,9 @@ func performTrashWorkerTest(testData TrashWorkerTestData, t *testing.T) {
 	trashRequest := TrashRequest{
 		Locator:    testData.DeleteLocator,
 		BlockMtime: oldBlockTime.UnixNano(),
+	}
+	if testData.SpecifyMountUUID {
+		trashRequest.MountUUID = KeepVM.Mounts()[0].UUID
 	}
 
 	// Run trash worker and put the trashRequest on trashq
