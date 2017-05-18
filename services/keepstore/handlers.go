@@ -49,10 +49,10 @@ func MakeRESTRouter() *router {
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, PutBlockHandler).Methods("PUT")
 	rest.HandleFunc(`/{hash:[0-9a-f]{32}}`, DeleteHandler).Methods("DELETE")
 	// List all blocks stored here. Privileged client only.
-	rest.HandleFunc(`/index`, IndexHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/index`, rtr.IndexHandler).Methods("GET", "HEAD")
 	// List blocks stored here whose hash has the given prefix.
 	// Privileged client only.
-	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, IndexHandler).Methods("GET", "HEAD")
+	rest.HandleFunc(`/index/{prefix:[0-9a-f]{0,32}}`, rtr.IndexHandler).Methods("GET", "HEAD")
 
 	// Internals/debugging info (runtime.MemStats)
 	rest.HandleFunc(`/debug.json`, rtr.DebugHandler).Methods("GET", "HEAD")
@@ -61,9 +61,9 @@ func MakeRESTRouter() *router {
 	rest.HandleFunc(`/status.json`, rtr.StatusHandler).Methods("GET", "HEAD")
 
 	// List mounts: UUID, readonly, tier, device ID, ...
-	rest.HandleFunc(`/mounts`, rtr.Mounts).Methods("GET")
-	rest.HandleFunc(`/mounts/{uuid}/blocks`, rtr.MountBlocks).Methods("GET")
-	rest.HandleFunc(`/mounts/{uuid}/blocks/{prefix:[0-9a-f]{0,32}}`, rtr.MountBlocks).Methods("GET")
+	rest.HandleFunc(`/mounts`, rtr.MountsHandler).Methods("GET")
+	rest.HandleFunc(`/mounts/{uuid}/blocks`, rtr.IndexHandler).Methods("GET")
+	rest.HandleFunc(`/mounts/{uuid}/blocks/`, rtr.IndexHandler).Methods("GET")
 
 	// Replace the current pull queue.
 	rest.HandleFunc(`/pull`, PullHandler).Methods("PUT")
@@ -228,18 +228,34 @@ func PutBlockHandler(resp http.ResponseWriter, req *http.Request) {
 	resp.Write([]byte(returnHash + "\n"))
 }
 
-// IndexHandler is a HandleFunc to address /index and /index/{prefix} requests.
-func IndexHandler(resp http.ResponseWriter, req *http.Request) {
-	// Reject unauthorized requests.
+// IndexHandler responds to "/index", "/index/{prefix}", and
+// "/mounts/{uuid}/blocks" requests.
+func (rtr *router) IndexHandler(resp http.ResponseWriter, req *http.Request) {
 	if !IsSystemAuth(GetAPIToken(req)) {
 		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
 		return
 	}
 
 	prefix := mux.Vars(req)["prefix"]
+	if prefix == "" {
+		req.ParseForm()
+		prefix = req.Form.Get("prefix")
+	}
 
-	for _, vol := range KeepVM.AllReadable() {
-		if err := vol.IndexTo(prefix, resp); err != nil {
+	uuid := mux.Vars(req)["uuid"]
+
+	var vols []Volume
+	if uuid == "" {
+		vols = KeepVM.AllReadable()
+	} else if v := KeepVM.Lookup(uuid, false); v == nil {
+		http.Error(resp, "mount not found", http.StatusNotFound)
+		return
+	} else {
+		vols = []Volume{v}
+	}
+
+	for _, v := range vols {
+		if err := v.IndexTo(prefix, resp); err != nil {
 			// The only errors returned by IndexTo are
 			// write errors returned by resp.Write(),
 			// which probably means the client has
@@ -255,29 +271,11 @@ func IndexHandler(resp http.ResponseWriter, req *http.Request) {
 	resp.Write([]byte{'\n'})
 }
 
-// Mounts responds to "GET /mounts" requests.
-func (rtr *router) Mounts(resp http.ResponseWriter, req *http.Request) {
+// MountsHandler responds to "GET /mounts" requests.
+func (rtr *router) MountsHandler(resp http.ResponseWriter, req *http.Request) {
 	err := json.NewEncoder(resp).Encode(KeepVM.Mounts())
 	if err != nil {
 		http.Error(resp, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-// MountBlocks responds to "GET /mounts/{uuid}/blocks" requests.
-func (rtr *router) MountBlocks(resp http.ResponseWriter, req *http.Request) {
-	if !IsSystemAuth(GetAPIToken(req)) {
-		http.Error(resp, UnauthorizedError.Error(), UnauthorizedError.HTTPCode)
-		return
-	}
-
-	uuid := mux.Vars(req)["uuid"]
-	prefix := mux.Vars(req)["prefix"]
-	if v := KeepVM.Lookup(uuid, false); v == nil {
-		http.Error(resp, "mount not found", http.StatusNotFound)
-	} else if err := v.IndexTo(prefix, resp); err != nil {
-		http.Error(resp, err.Error(), http.StatusInternalServerError)
-	} else {
-		resp.Write([]byte{'\n'})
 	}
 }
 

@@ -78,7 +78,7 @@ func (s *MountsSuite) TestMounts(c *check.C) {
 	c.Check(resp.Body.String(), check.Matches, TestHash+`\+[0-9]+ [0-9]+\n\n`)
 
 	// Partial index of first mount (one block matches prefix)
-	resp = s.call("GET", "/mounts/"+mntList[0].UUID+"/blocks/"+TestHash[:2], tok)
+	resp = s.call("GET", "/mounts/"+mntList[0].UUID+"/blocks?prefix="+TestHash[:2], tok)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	c.Check(resp.Body.String(), check.Matches, TestHash+`\+[0-9]+ [0-9]+\n\n`)
 
@@ -88,7 +88,7 @@ func (s *MountsSuite) TestMounts(c *check.C) {
 	c.Check(resp.Body.String(), check.Matches, TestHash2+`\+[0-9]+ [0-9]+\n\n`)
 
 	// Partial index of second mount (no blocks match prefix)
-	resp = s.call("GET", "/mounts/"+mntList[1].UUID+"/blocks/"+TestHash[:2], tok)
+	resp = s.call("GET", "/mounts/"+mntList[1].UUID+"/blocks/?prefix="+TestHash[:2], tok)
 	c.Check(resp.Code, check.Equals, http.StatusOK)
 	c.Check(resp.Body.String(), check.Equals, "\n")
 }
