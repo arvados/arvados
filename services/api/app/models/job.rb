@@ -254,7 +254,7 @@ class Job < ArvadosModel
     candidates = candidates.where(
       'state = ? or (owner_uuid = ? and state in (?))',
       Job::Complete, current_user.uuid, [Job::Queued, Job::Running])
-    log_reuse_info { "have #{candidates.count} candidates after filtering on job state (either state=Complete, or state=Queued/Running and submitted by current user)" }
+    log_reuse_info { "have #{candidates.count} candidates after filtering on job state ((state=Complete) or (state=Queued/Running and (submitted by current user)))" }
 
     digest = Job.sorted_hash_digest(attrs[:script_parameters])
     candidates = candidates.where('script_parameters_digest = ?', digest)
