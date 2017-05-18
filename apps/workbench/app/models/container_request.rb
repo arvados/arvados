@@ -11,7 +11,7 @@ class ContainerRequest < ArvadosBase
     true
   end
 
-  def work_unit(label=nil)
-    ContainerWorkUnit.new(self, label, self.uuid)
+  def work_unit(label=nil, child_objects=nil)
+    ContainerWorkUnit.new(self, label, self.uuid, child_objects=child_objects)
   end
 end
