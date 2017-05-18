@@ -179,50 +179,51 @@ class Container < ArvadosModel
   def self.find_reusable(attrs)
     log_reuse_info { "starting with #{Container.all.count} container records in database" }
     candidates = Container.where_serialized(:command, attrs[:command])
-    log_reuse_info { "have #{candidates.count} candidates after filtering on command #{attrs[:command].inspect}" }
+    log_reuse_info(candidates) { "after filtering on command #{attrs[:command].inspect}" }
 
     candidates = candidates.where('cwd = ?', attrs[:cwd])
-    log_reuse_info { "have #{candidates.count} candidates after filtering on cwd #{attrs[:cwd].inspect}" }
+    log_reuse_info(candidates) { "after filtering on cwd #{attrs[:cwd].inspect}" }
 
     candidates = candidates.where_serialized(:environment, attrs[:environment])
-    log_reuse_info { "have #{candidates.count} candidates after filtering on environment #{attrs[:environment].inspect}" }
+    log_reuse_info(candidates) { "after filtering on environment #{attrs[:environment].inspect}" }
 
     candidates = candidates.where('output_path = ?', attrs[:output_path])
-    log_reuse_info { "have #{candidates.count} candidates after filtering on output_path #{attrs[:output_path].inspect}" }
+    log_reuse_info(candidates) { "after filtering on output_path #{attrs[:output_path].inspect}" }
 
     image = resolve_container_image(attrs[:container_image])
     candidates = candidates.where('container_image = ?', image)
-    log_reuse_info { "have #{candidates.count} candidates after filtering on container_image #{image.inspect} (resolved from #{attrs[:container_image].inspect})" }
+    log_reuse_info(candidates) { "after filtering on container_image #{image.inspect} (resolved from #{attrs[:container_image].inspect})" }
 
     candidates = candidates.where_serialized(:mounts, resolve_mounts(attrs[:mounts]))
-    log_reuse_info { "have #{candidates.count} candidates after filtering on mounts #{attrs[:mounts].inspect}" }
+    log_reuse_info(candidates) { "after filtering on mounts #{attrs[:mounts].inspect}" }
 
     candidates = candidates.where_serialized(:runtime_constraints, resolve_runtime_constraints(attrs[:runtime_constraints]))
-    log_reuse_info { "have #{candidates.count} candidates after filtering on runtime_constraints #{attrs[:runtime_constraints].inspect}" }
+    log_reuse_info(candidates) { "after filtering on runtime_constraints #{attrs[:runtime_constraints].inspect}" }
 
-    # Check for Completed candidates whose output and log are both readable.
+    log_reuse_info { "checking for state=Complete with readable output and log..." }
+
     select_readable_pdh = Collection.
       readable_by(current_user).
       select(:portable_data_hash).
       to_sql
 
     usable = candidates.where(state: Complete, exit_code: 0)
-    log_reuse_info { "have #{usable.count} with state=Complete, exit_code=0" }
+    log_reuse_info(usable) { "with state=Complete, exit_code=0" }
 
     usable = usable.where("log IN (#{select_readable_pdh})")
-    log_reuse_info { "have #{usable.count} with log readable by current user #{current_user.uuid}" }
+    log_reuse_info(usable) { "with readable log" }
 
     usable = usable.where("output IN (#{select_readable_pdh})")
-    log_reuse_info { "have #{usable.count} with output readable by current user #{current_user.uuid}" }
+    log_reuse_info(usable) { "with readable output" }
 
-    usable = usable.order('finished_at ASC').
-      limit(1).first
+    usable = usable.order('finished_at ASC').limit(1).first
     if usable
-      log_reuse_info { "done, reusing completed container #{usable.uuid}" }
+      log_reuse_info { "done, reusing container #{usable.uuid} with state=Complete" }
       return usable
     end
 
     # Check for Running candidates and return the most likely to finish sooner.
+    log_reuse_info { "checking for state=Running..." }
     running = candidates.where(state: Running).
               order('progress desc, started_at asc').
               limit(1).first

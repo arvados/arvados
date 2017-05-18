@@ -245,20 +245,20 @@ class Job < ArvadosModel
     candidates = candidates.where(
       'state = ? or (owner_uuid = ? and state in (?))',
       Job::Complete, current_user.uuid, [Job::Queued, Job::Running])
-    log_reuse_info { "have #{candidates.count} candidates after filtering on job state ((state=Complete) or (state=Queued/Running and (submitted by current user)))" }
+    log_reuse_info(candidates) { "after filtering on job state ((state=Complete) or (state=Queued/Running and (submitted by current user)))" }
 
     digest = Job.sorted_hash_digest(attrs[:script_parameters])
     candidates = candidates.where('script_parameters_digest = ?', digest)
-    log_reuse_info { "have #{candidates.count} candidates after filtering on script_parameters_digest #{digest}" }
+    log_reuse_info(candidates) { "after filtering on script_parameters_digest #{digest}" }
 
     candidates = candidates.where('nondeterministic is distinct from ?', true)
-    log_reuse_info { "have #{candidates.count} candidates after filtering on !nondeterministic" }
+    log_reuse_info(candidates) { "after filtering on !nondeterministic" }
 
     # prefer Running jobs over Queued
     candidates = candidates.order('state desc, created_at')
 
     candidates = apply_filters candidates, filters
-    log_reuse_info { "have #{candidates.count} candidates after filtering on repo, script, and custom filters #{filters.inspect}" }
+    log_reuse_info(candidates) { "after filtering on repo, script, and custom filters #{filters.inspect}" }
 
     chosen = nil
     incomplete_job = nil
