@@ -22,13 +22,13 @@ class ContainerWorkUnit < ProxyWorkUnit
     items = []
     if container_uuid
       my_children = @child_proxies
-      my_children = ContainerRequest.where(requesting_container_uuid: container_uuid).results if !my_children
-
+      cols = ContainerRequest.columns.map(&:name) - %w(id updated_at mounts)
+      my_children = ContainerRequest.select(cols).where(requesting_container_uuid: container_uuid).results if !my_children
       my_child_containers = my_children.map(&:container_uuid).compact.uniq
       grandchildren = {}
-      my_child_containers.each { |c| grandchildren[c] = []} if my_child_containers
+      my_child_containers.each { |c| grandchildren[c] = []} if my_child_containers.any?
 
-      reqs = ContainerRequest.where(requesting_container_uuid: my_child_containers).results if !my_child_containers
+      reqs = ContainerRequest.select(cols).where(requesting_container_uuid: my_child_containers).results if my_child_containers.any?
       reqs.each {|cr| grandchildren[cr.request_container_uuid] << cr} if reqs
 
       my_children.each do |cr|
