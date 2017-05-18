@@ -1,3 +1,4 @@
+require 'log_reuse_info'
 require 'safe_json'
 
 class Job < ArvadosModel
@@ -5,6 +6,7 @@ class Job < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
   extend CurrentApiClient
+  extend LogReuseInfo
   serialize :components, Hash
   attr_protected :arvados_sdk_version, :docker_image_locator
   serialize :script_parameters, Hash
@@ -196,17 +198,6 @@ class Job < ArvadosModel
     end
 
     filters
-  end
-
-  # log_reuse_info logs whatever the given block returns, if
-  # log_reuse_decisions is enabled. It accepts a block instead of a
-  # string because in some cases constructing the strings involves
-  # doing database queries, and we want to skip those queries when
-  # logging is disabled.
-  def self.log_reuse_info
-    if Rails.configuration.log_reuse_decisions
-      Rails.logger.info("find_reusable: " + yield)
-    end
   end
 
   def self.find_reusable attrs, params, filters, read_users

@@ -1,3 +1,4 @@
+require 'log_reuse_info'
 require 'whitelist_update'
 require 'safe_json'
 
@@ -8,6 +9,7 @@ class Container < ArvadosModel
   include WhitelistUpdate
   extend CurrentApiClient
   extend DbCurrentTime
+  extend LogReuseInfo
 
   serialize :environment, Hash
   serialize :mounts, Hash
@@ -175,41 +177,75 @@ class Container < ArvadosModel
   end
 
   def self.find_reusable(attrs)
-    candidates = Container.
-      where_serialized(:command, attrs[:command]).
-      where('cwd = ?', attrs[:cwd]).
-      where_serialized(:environment, attrs[:environment]).
-      where('output_path = ?', attrs[:output_path]).
-      where('container_image = ?', resolve_container_image(attrs[:container_image])).
-      where_serialized(:mounts, resolve_mounts(attrs[:mounts])).
-      where_serialized(:runtime_constraints, resolve_runtime_constraints(attrs[:runtime_constraints]))
+    log_reuse_info { "starting with #{Container.all.count} container records in database" }
+    candidates = Container.where_serialized(:command, attrs[:command])
+    log_reuse_info { "have #{candidates.count} candidates after filtering on command #{attrs[:command].inspect}" }
+
+    candidates = candidates.where('cwd = ?', attrs[:cwd])
+    log_reuse_info { "have #{candidates.count} candidates after filtering on cwd #{attrs[:cwd].inspect}" }
+
+    candidates = candidates.where_serialized(:environment, attrs[:environment])
+    log_reuse_info { "have #{candidates.count} candidates after filtering on environment #{attrs[:environment].inspect}" }
+
+    candidates = candidates.where('output_path = ?', attrs[:output_path])
+    log_reuse_info { "have #{candidates.count} candidates after filtering on output_path #{attrs[:output_path].inspect}" }
+
+    image = resolve_container_image(attrs[:container_image])
+    candidates = candidates.where('container_image = ?', image)
+    log_reuse_info { "have #{candidates.count} candidates after filtering on container_image #{image.inspect} (resolved from #{attrs[:container_image].inspect})" }
+
+    candidates = candidates.where_serialized(:mounts, resolve_mounts(attrs[:mounts]))
+    log_reuse_info { "have #{candidates.count} candidates after filtering on mounts #{attrs[:mounts].inspect}" }
+
+    candidates = candidates.where_serialized(:runtime_constraints, resolve_runtime_constraints(attrs[:runtime_constraints]))
+    log_reuse_info { "have #{candidates.count} candidates after filtering on runtime_constraints #{attrs[:runtime_constraints].inspect}" }
 
     # Check for Completed candidates whose output and log are both readable.
     select_readable_pdh = Collection.
       readable_by(current_user).
       select(:portable_data_hash).
       to_sql
-    usable = candidates.
-      where(state: Complete).
-      where(exit_code: 0).
-      where("log IN (#{select_readable_pdh})").
-      where("output IN (#{select_readable_pdh})").
-      order('finished_at ASC').
-      limit(1).
-      first
-    return usable if usable
+
+    usable = candidates.where(state: Complete, exit_code: 0)
+    log_reuse_info { "have #{usable.count} with state=Complete, exit_code=0" }
+
+    usable = usable.where("log IN (#{select_readable_pdh})")
+    log_reuse_info { "have #{usable.count} with log readable by current user #{current_user.uuid}" }
+
+    usable = usable.where("output IN (#{select_readable_pdh})")
+    log_reuse_info { "have #{usable.count} with output readable by current user #{current_user.uuid}" }
+
+    usable = usable.order('finished_at ASC').
+      limit(1).first
+    if usable
+      log_reuse_info { "done, reusing completed container #{usable.uuid}" }
+      return usable
+    end
 
     # Check for Running candidates and return the most likely to finish sooner.
     running = candidates.where(state: Running).
-      order('progress desc, started_at asc').limit(1).first
-    return running if not running.nil?
+              order('progress desc, started_at asc').
+              limit(1).first
+    if running
+      log_reuse_info { "done, reusing container #{running.uuid} with state=Running" }
+      return running
+    else
+      log_reuse_info { "have no containers in Running state" }
+    end
 
     # Check for Locked or Queued ones and return the most likely to start first.
-    locked_or_queued = candidates.where("state IN (?)", [Locked, Queued]).
-      order('state asc, priority desc, created_at asc').limit(1).first
-    return locked_or_queued if not locked_or_queued.nil?
+    locked_or_queued = candidates.
+                       where("state IN (?)", [Locked, Queued]).
+                       order('state asc, priority desc, created_at asc').
+                       limit(1).first
+    if locked_or_queued
+      log_reuse_info { "done, reusing container #{locked_or_queued.uuid} with state=#{locked_or_queued.state}" }
+      return locked_or_queued
+    else
+      log_reuse_info { "have no containers in Locked or Queued state" }
+    end
 
-    # No suitable candidate found.
+    log_reuse_info { "done, no reusable container found" }
     nil
   end
 
