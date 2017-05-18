@@ -1,7 +1,8 @@
 <%
     container_uuid = if @object.is_a?(Container) then @object.uuid elsif @object.is_a?(ContainerRequest) then @object.container_uuid end
     if container_uuid
-      reqs = ContainerRequest.where(requesting_container_uuid: container_uuid).results
+      cols = ContainerRequest.columns.map(&:name) - %w(id updated_at mounts)
+      reqs = ContainerRequest.select(cols).where(requesting_container_uuid: container_uuid).results
       load_preloaded_objects(reqs)
 
       child_cs = reqs.map(&:requesting_container_uuid).uniq
