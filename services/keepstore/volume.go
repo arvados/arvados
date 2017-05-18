@@ -232,6 +232,10 @@ type Volume interface {
 	// EmptyTrash looks for trashed blocks that exceeded TrashLifetime
 	// and deletes them from the volume.
 	EmptyTrash()
+
+	// Return a globally unique ID of the underlying storage
+	// device if possible, otherwise "".
+	DeviceID() string
 }
 
 // A VolumeWithExamples provides example configs to display in the
@@ -320,16 +324,11 @@ func MakeRRVolumeManager(volumes []Volume) *RRVolumeManager {
 	for _, v := range volumes {
 		mnt := &VolumeMount{
 			UUID:        (*VolumeMount)(nil).generateUUID(),
-			DeviceID:    "",
+			DeviceID:    v.DeviceID(),
 			ReadOnly:    !v.Writable(),
 			Replication: v.Replication(),
 			Tier:        1,
 			volume:      v,
-		}
-		if v, ok := v.(interface {
-			DeviceID() string
-		}); ok {
-			mnt.DeviceID = v.DeviceID()
 		}
 		vm.iostats[v] = &ioStats{}
 		vm.mounts = append(vm.mounts, mnt)
