@@ -1,30 +1,38 @@
 class ContainerWorkUnit < ProxyWorkUnit
   attr_accessor :container
+  attr_accessor :child_proxies
 
-  def initialize proxied, label, parent
-    super
+  def initialize proxied, label, parent, child_objects=nil
+    super proxied, label, parent
     if @proxied.is_a?(ContainerRequest)
       container_uuid = get(:container_uuid)
       if container_uuid
         @container = Container.find(container_uuid)
       end
     end
+    @child_proxies = child_objects
   end
 
   def children
     return @my_children if @my_children
 
-    container_uuid = nil
-    container_uuid = if @proxied.is_a?(Container) then uuid else get(:container_uuid) end
-
     items = []
+    container_uuid = if @proxied.is_a?(Container) then uuid else get(:container_uuid) end
     if container_uuid
-      reqs = ContainerRequest.where(requesting_container_uuid: container_uuid).results
-      reqs.each do |cr|
-        items << cr.work_unit(cr.name || 'this container')
+      cols = ContainerRequest.columns.map(&:name) - %w(id updated_at mounts)
+      my_children = @child_proxies || ContainerRequest.select(cols).where(requesting_container_uuid: container_uuid).results if !my_children
+      my_child_containers = my_children.map(&:container_uuid).compact.uniq
+      grandchildren = {}
+      my_child_containers.each { |c| grandchildren[c] = []} if my_child_containers.any?
+      reqs = ContainerRequest.select(cols).where(requesting_container_uuid: my_child_containers).results if my_child_containers.any?
+      reqs.each {|cr| grandchildren[cr.requesting_container_uuid] << cr} if reqs
+
+      my_children.each do |cr|
+        items << cr.work_unit(cr.name || 'this container', child_objects=grandchildren[cr.container_uuid])
       end
     end
 
+    @child_proxies = nil #no need of this any longer
     @my_children = items
   end
 
