@@ -1,11 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"crypto/md5"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -25,6 +27,43 @@ var _ = check.Suite(&ServerSuite{})
 type ServerSuite struct {
 	IntegrationSuite
 	testServer *server
+}
+
+// Make several requests that trigger collectionreader's prefetch
+// mechanism, disable block caching between requests, and check for
+// leaked HTTP connections to keepstore servers.
+func (s *ServerSuite) TestConnectionLeak(c *check.C) {
+	_, uuid, token := makeCollection(c, 2, 1<<21, true)
+	u := mustParseURL("http://" + s.testServer.Addr + "/testdata.bin")
+	hdr := http.Header{
+		"Authorization": {"OAuth2 " + token},
+		"Range":         {"bytes=2000000-2020000"},
+	}
+
+	var client http.Client
+	for i := 0; i < 50; i++ {
+		keepclient.DefaultBlockCache = &keepclient.BlockCache{}
+		resp, err := client.Do(&http.Request{
+			Method: "GET",
+			Host:   uuid + ".example.com",
+			URL:    u,
+			Header: hdr,
+		})
+		c.Assert(err, check.IsNil)
+		c.Check(resp.StatusCode, check.Equals, http.StatusPartialContent)
+		buf, err := ioutil.ReadAll(resp.Body)
+		c.Check(err, check.IsNil)
+		c.Check(len(buf), check.Equals, 20001)
+		resp.Body.Close()
+	}
+
+	netstatCmd := fmt.Sprintf("netstat -pane | grep ' %d/' | grep -v %q | grep -w ESTABLISHED", os.Getpid(), " "+s.testServer.Addr+" ")
+	buf, err := exec.Command("bash", "-e", "-o", "pipefail", "-c", netstatCmd).CombinedOutput()
+	c.Logf("$ %s\n%s", netstatCmd, buf)
+	c.Check(err, check.IsNil)
+	conns := bytes.Count(buf, []byte{'\n'})
+	c.Logf("... ~%d connections with my pid", conns)
+	c.Check(conns < 20, check.Equals, true)
 }
 
 func (s *ServerSuite) TestNoToken(c *check.C) {
@@ -98,23 +137,27 @@ func (s *ServerSuite) Test100BlockFile(c *check.C) {
 	}
 }
 
-func make100BlockCollection(c *check.C, blocksize int) (data []byte, uuid string, token string) {
+func makeCollection(c *check.C, nblocks, blocksize int, vary bool) (data []byte, uuid string, token string) {
 	testdata := make([]byte, blocksize)
-	for i := 0; i < blocksize; i++ {
-		testdata[i] = byte(' ')
-	}
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 	arv.ApiToken = arvadostest.ActiveToken
 	kc, err := keepclient.MakeKeepClient(arv)
 	c.Assert(err, check.Equals, nil)
-	loc, _, err := kc.PutB(testdata[:])
-	c.Assert(err, check.Equals, nil)
+
 	mtext := "."
-	for i := 0; i < 100; i++ {
+	var loc string
+	for i := 0; i < nblocks; i++ {
+		if vary || i == 0 {
+			for b := 0; b < blocksize; b++ {
+				testdata[b] = byte(i + 1)
+			}
+			loc, _, err = kc.PutB(testdata[:])
+			c.Assert(err, check.Equals, nil)
+		}
 		mtext = mtext + " " + loc
 	}
-	mtext = mtext + fmt.Sprintf(" 0:%d00:testdata.bin\n", blocksize)
+	mtext = mtext + fmt.Sprintf(" 0:%d:testdata.bin\n", nblocks*blocksize)
 	coll := map[string]interface{}{}
 	err = arv.Create("collections",
 		map[string]interface{}{
@@ -128,7 +171,7 @@ func make100BlockCollection(c *check.C, blocksize int) (data []byte, uuid string
 }
 
 func (s *ServerSuite) test100BlockFile(c *check.C, blocksize int) {
-	testdata, uuid, token := make100BlockCollection(c, blocksize)
+	testdata, uuid, token := makeCollection(c, 100, blocksize, false)
 	hdr, body, size := s.runCurl(c, token, uuid+".collections.example.com", "/testdata.bin")
 	c.Check(hdr, check.Matches, `(?s)HTTP/1.1 200 OK\r\n.*`)
 	c.Check(hdr, check.Matches, `(?si).*Content-length: `+fmt.Sprintf("%d00", blocksize)+`\r\n.*`)
