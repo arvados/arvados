@@ -222,14 +222,19 @@ class ProxyWorkUnit < WorkUnit
     state_label == 'Failed'
   end
 
-  def show_runtime
-    runningtime = ApplicationController.helpers.determine_wallclock_runtime(if children.any? then children else [self] end)
-
-    walltime = 0
-    if started_at
-      walltime = if finished_at then (finished_at - started_at) else (Time.now - started_at) end
+  def all_children
+    if children.any?
+      children + children.collect{|c| c.all_children}.flatten
+    else
+      []
     end
+  end
 
+  def runningtime
+    ApplicationController.helpers.determine_wallclock_runtime(if children.any? then all_children else [self] end)
+  end
+
+  def show_runtime
     resp = '<p>'
 
     if started_at
@@ -247,7 +252,7 @@ class ProxyWorkUnit < WorkUnit
       if walltime > runningtime
         resp << ApplicationController.helpers.render_time(walltime, false)
       else
-       resp << ApplicationController.helpers.render_time(runningtime, false)
+        resp << ApplicationController.helpers.render_time(runningtime, false)
       end
 
       if finished_at
