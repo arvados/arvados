@@ -11,7 +11,7 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-func (s *IntegrationSuite) TestRanges(c *check.C) {
+func (s *ServerSuite) TestRanges(c *check.C) {
 	blocksize := 1000000
 	var uuid string
 	{

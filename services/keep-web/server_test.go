@@ -20,14 +20,14 @@ import (
 
 var testAPIHost = os.Getenv("ARVADOS_API_HOST")
 
-var _ = check.Suite(&IntegrationSuite{})
+var _ = check.Suite(&ServerSuite{})
 
-// IntegrationSuite tests need an API server and a keep-web server
-type IntegrationSuite struct {
+type ServerSuite struct {
+	IntegrationSuite
 	testServer *server
 }
 
-func (s *IntegrationSuite) TestNoToken(c *check.C) {
+func (s *ServerSuite) TestNoToken(c *check.C) {
 	for _, token := range []string{
 		"",
 		"bogustoken",
@@ -52,7 +52,7 @@ func (s *IntegrationSuite) TestNoToken(c *check.C) {
 // http client instead of forking curl. Just leave enough of an
 // integration test to assure that the documented way of invoking curl
 // really works against the server.
-func (s *IntegrationSuite) Test404(c *check.C) {
+func (s *ServerSuite) Test404(c *check.C) {
 	for _, uri := range []string{
 		// Routing errors (always 404 regardless of what's stored in Keep)
 		"/",
@@ -81,14 +81,14 @@ func (s *IntegrationSuite) Test404(c *check.C) {
 	}
 }
 
-func (s *IntegrationSuite) Test1GBFile(c *check.C) {
+func (s *ServerSuite) Test1GBFile(c *check.C) {
 	if testing.Short() {
 		c.Skip("skipping 1GB integration test in short mode")
 	}
 	s.test100BlockFile(c, 10000000)
 }
 
-func (s *IntegrationSuite) Test100BlockFile(c *check.C) {
+func (s *ServerSuite) Test100BlockFile(c *check.C) {
 	if testing.Short() {
 		// 3 MB
 		s.test100BlockFile(c, 30000)
@@ -98,7 +98,7 @@ func (s *IntegrationSuite) Test100BlockFile(c *check.C) {
 	}
 }
 
-func (s *IntegrationSuite) test100BlockFile(c *check.C, blocksize int) {
+func make100BlockCollection(c *check.C, blocksize int) (data []byte, uuid string, token string) {
 	testdata := make([]byte, blocksize)
 	for i := 0; i < blocksize; i++ {
 		testdata[i] = byte(' ')
@@ -124,9 +124,12 @@ func (s *IntegrationSuite) test100BlockFile(c *check.C, blocksize int) {
 			},
 		}, &coll)
 	c.Assert(err, check.Equals, nil)
-	uuid := coll["uuid"].(string)
+	return testdata, coll["uuid"].(string), arv.ApiToken
+}
 
-	hdr, body, size := s.runCurl(c, arv.ApiToken, uuid+".collections.example.com", "/testdata.bin")
+func (s *ServerSuite) test100BlockFile(c *check.C, blocksize int) {
+	testdata, uuid, token := make100BlockCollection(c, blocksize)
+	hdr, body, size := s.runCurl(c, token, uuid+".collections.example.com", "/testdata.bin")
 	c.Check(hdr, check.Matches, `(?s)HTTP/1.1 200 OK\r\n.*`)
 	c.Check(hdr, check.Matches, `(?si).*Content-length: `+fmt.Sprintf("%d00", blocksize)+`\r\n.*`)
 	c.Check([]byte(body)[:1234], check.DeepEquals, testdata[:1234])
@@ -140,7 +143,7 @@ type curlCase struct {
 	dataMD5 string
 }
 
-func (s *IntegrationSuite) Test200(c *check.C) {
+func (s *ServerSuite) Test200(c *check.C) {
 	s.testServer.Config.AnonymousTokens = []string{arvadostest.AnonymousToken}
 	for _, spec := range []curlCase{
 		// My collection
@@ -247,7 +250,7 @@ func (s *IntegrationSuite) Test200(c *check.C) {
 }
 
 // Return header block and body.
-func (s *IntegrationSuite) runCurl(c *check.C, token, host, uri string, args ...string) (hdr, bodyPart string, bodySize int64) {
+func (s *ServerSuite) runCurl(c *check.C, token, host, uri string, args ...string) (hdr, bodyPart string, bodySize int64) {
 	curlArgs := []string{"--silent", "--show-error", "--include"}
 	testHost, testPort, _ := net.SplitHostPort(s.testServer.Addr)
 	curlArgs = append(curlArgs, "--resolve", host+":"+testPort+":"+testHost)
@@ -290,26 +293,7 @@ func (s *IntegrationSuite) runCurl(c *check.C, token, host, uri string, args ...
 	return
 }
 
-func (s *IntegrationSuite) SetUpSuite(c *check.C) {
-	arvadostest.StartAPI()
-	arvadostest.StartKeep(2, true)
-
-	arv, err := arvadosclient.MakeArvadosClient()
-	c.Assert(err, check.Equals, nil)
-	arv.ApiToken = arvadostest.ActiveToken
-	kc, err := keepclient.MakeKeepClient(arv)
-	c.Assert(err, check.Equals, nil)
-	kc.PutB([]byte("Hello world\n"))
-	kc.PutB([]byte("foo"))
-	kc.PutB([]byte("foobar"))
-}
-
-func (s *IntegrationSuite) TearDownSuite(c *check.C) {
-	arvadostest.StopKeep(2)
-	arvadostest.StopAPI()
-}
-
-func (s *IntegrationSuite) SetUpTest(c *check.C) {
+func (s *ServerSuite) SetUpTest(c *check.C) {
 	arvadostest.ResetEnv()
 	s.testServer = &server{Config: &Config{
 		Client: arvados.Client{
@@ -322,7 +306,7 @@ func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 }
 
-func (s *IntegrationSuite) TearDownTest(c *check.C) {
+func (s *ServerSuite) TearDownTest(c *check.C) {
 	var err error
 	if s.testServer != nil {
 		err = s.testServer.Close()
