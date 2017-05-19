@@ -752,4 +752,22 @@ class ProjectsTest < ActionDispatch::IntegrationTest
       assert_text project['name']
     end
   end
+
+  test 'check trash tab' do
+    visit page_with_token 'active', '/projects'
+    find("#projects-menu").click
+    within('.dropdown-menu') do
+      first('li', text: 'Home').click
+    end
+
+    untrashed_collection = api_fixture('collections')['collection_owned_by_active']
+    trashed_collection = api_fixture('collections')['deleted_on_next_sweep']
+    assert_text untrashed_collection['name']
+    assert_no_text trashed_collection['name']
+
+    # go to Trash tab and verify contents
+    click_link 'Trash'
+    assert_text trashed_collection['name']
+    assert_no_text untrashed_collection['name']
+  end
 end

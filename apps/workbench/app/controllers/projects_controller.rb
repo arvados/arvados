@@ -259,14 +259,18 @@ class ProjectsController < ApplicationController
         @next_page_href = nil
       end
     else
-      @objects = @object.contents(order: @order,
-                                  include_trash: true,
-                                  limit: @limit,
-                                  filters: @filters,
-                                  offset: @offset)
-      @next_page_href = next_page_href(partial: :contents_rows,
-                                       filters: @filters.to_json,
-                                       order: @order.to_json)
+      contents_args = {order: @order,
+                       limit: @limit,
+                       filters: @filters,
+                       offset: @offset}
+      contents_args[:include_trash] = true if params[:include_trash]
+      @objects = @object.contents(contents_args)
+
+      next_page_args = {partial: :contents_rows,
+                        filters: @filters.to_json,
+                        order: @order.to_json}
+      next_page_args[:include_trash] = true if params[:include_trash]
+      @next_page_href = next_page_href(next_page_args)
     end
 
     preload_links_for_objects(@objects.to_a)
