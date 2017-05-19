@@ -91,4 +91,17 @@ class GroupsTest < ActionDispatch::IntegrationTest
     }, auth(:active)
     assert_response 422
   end
+
+  test "group contents with include trash collections" do
+    get "/arvados/v1/groups/contents", {
+      include_trash: "true",
+      filters: [["uuid", "is_a", "arvados#collection"]].to_json
+    }, auth(:active)
+    assert_response 200
+
+    coll_uuids = []
+    json_response['items'].each { |c| coll_uuids << c['uuid'] }
+    assert_includes coll_uuids, collections(:foo_collection_in_aproject).uuid
+    assert_includes coll_uuids, collections(:expired_collection).uuid
+  end
 end
