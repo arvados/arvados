@@ -64,6 +64,10 @@ func (c *BlockCache) Get(kc *KeepClient, locator string) ([]byte, error) {
 			var data []byte
 			if err == nil {
 				data, err = ioutil.ReadAll(rdr)
+				err2 := rdr.Close()
+				if err == nil {
+					err = err2
+				}
 			}
 			c.mtx.Lock()
 			b.data, b.err = data, err
