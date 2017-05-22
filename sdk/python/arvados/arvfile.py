@@ -680,7 +680,7 @@ class _BlockManager(object):
             new_bb.append(bb.buffer_view[0:bb.write_pointer].tobytes())
             files.append((bb, new_bb.write_pointer - bb.size()))
 
-        self.commit_bufferblock(new_bb, sync=True)
+        self.commit_bufferblock(new_bb, sync=sync)
 
         for bb, new_bb_segment_offset in files:
             newsegs = bb.owner.segments()
