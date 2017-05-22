@@ -101,3 +101,16 @@ class TestPathmap(unittest.TestCase):
 
         self.assertEqual({'file:tests/hw.py': MapperEnt(resolved='keep:99999999999999999999999999999991+99/hw.py', target='/test/99999999999999999999999999999991+99/hw.py', type='File', staged=True)},
                          p._pathmap)
+
+    @mock.patch("os.stat")
+    def test_missing_file(self, stat):
+        """Test pathmapper handling missing references."""
+        arvrunner = arvados_cwl.ArvCwlRunner(self.api)
+
+        stat.side_effect = OSError(2, "No such file or directory")
+
+        with self.assertRaises(OSError):
+            p = ArvPathMapper(arvrunner, [{
+                "class": "File",
+                "location": "file:tests/hw.py"
+            }], "", "/test/%s", "/test/%s/%s")
