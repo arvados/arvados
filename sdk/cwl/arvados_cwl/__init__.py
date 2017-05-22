@@ -74,7 +74,7 @@ class ArvCwlRunner(object):
         self.output_name = output_name
         self.output_tags = output_tags
         self.project_uuid = None
-        self.output_ttl = 0
+        self.intermediate_output_ttl = 0
         self.intermediate_output_collections = []
 
         if keep_client is not None:
@@ -345,8 +345,8 @@ class ArvCwlRunner(object):
                                                                  collection_cache=self.collection_cache)
         self.fs_access = make_fs_access(kwargs["basedir"])
 
-        self.output_ttl = kwargs["intermediate_output_ttl"]
-        if self.output_ttl and self.work_api != "containers":
+        self.intermediate_output_ttl = kwargs["intermediate_output_ttl"]
+        if self.intermediate_output_ttl and self.work_api != "containers":
             raise Exception("--intermediate-output-ttl is only supported when using the containers api.")
 
         if not kwargs.get("name"):
@@ -428,7 +428,8 @@ class ArvCwlRunner(object):
                                                 submit_runner_ram=kwargs.get("submit_runner_ram"),
                                                 name=kwargs.get("name"),
                                                 on_error=kwargs.get("on_error"),
-                                                submit_runner_image=kwargs.get("submit_runner_image"))
+                                                submit_runner_image=kwargs.get("submit_runner_image"),
+                                                intermediate_output_ttl=kwargs.get("intermediate_output_ttl"))
             elif self.work_api == "jobs":
                 runnerjob = RunnerJob(self, tool, job_order, kwargs.get("enable_reuse"),
                                       self.output_name,
@@ -532,7 +533,7 @@ class ArvCwlRunner(object):
             adjustDirObjs(self.final_output, partial(get_listing, self.fs_access))
             adjustFileObjs(self.final_output, partial(compute_checksums, self.fs_access))
 
-        if self.output_ttl and self.final_status == "success":
+        if self.intermediate_output_ttl and self.final_status == "success":
             self.trash_intermediate_output()
 
         return (self.final_output, self.final_status)

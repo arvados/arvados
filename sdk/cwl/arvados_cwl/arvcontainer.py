@@ -43,7 +43,7 @@ class ArvadosContainer(object):
             "priority": 1,
             "state": "Committed",
             "properties": {},
-            "output_ttl", self.arvrunner.output_ttl
+            "output_ttl", self.arvrunner.intermediate_output_ttl
         }
         runtime_constraints = {}
 
@@ -325,6 +325,9 @@ class RunnerContainer(Runner):
 
         if self.on_error:
             command.append("--on-error=" + self.on_error)
+
+        if self.intermediate_output_ttl:
+            command.append("--intermediate-output-ttl=%d" % self.intermediate_output_ttl)
 
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 
