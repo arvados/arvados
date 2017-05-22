@@ -209,6 +209,7 @@ class ArvadosContainer(object):
             self.output_callback({}, "permanentFail")
 
     def done(self, record):
+        outputs = {}
         try:
             if self.output_ttl:
                 self.arvrunner.add_intermediate_output(record["output_uuid"])
@@ -238,7 +239,6 @@ class ArvadosContainer(object):
                                                            num_retries=self.arvrunner.num_retries)
                 done.logtail(logc, logger, "%s error log:" % self.arvrunner.label(self))
 
-            outputs = {}
             if container["output"]:
                 outputs = done.done_outputs(self, container, "/tmp", self.outdir, "/keep")
         except WorkflowException as e:
