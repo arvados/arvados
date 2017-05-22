@@ -14,7 +14,7 @@ $namespaces:
   cwltool: "http://commonwl.org/cwltool#"
 </pre>
 
-Arvados extensions must go into the @hints@ section, for example:
+Arvados extensions should go into the @hints@ section, for example:
 
 <pre>
 hints:
@@ -27,6 +27,8 @@ hints:
   arv:APIRequirement: {}
   cwltool:LoadListingRequirement:
     loadListing: shallow_listing
+  arv:IntermediateOutput:
+    outputTTL: 3600
 </pre>
 
 h2. arv:RunInSingleContainer
@@ -56,7 +58,9 @@ table(table table-bordered table-condensed).
 
 h2. arv:APIRequirement
 
-Indicates that process wants to access to the Arvados API.  Will be granted limited network access and have @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ set in the environment.
+Indicates that process wants to access to the Arvados API.  Will be granted network access and have @ARVADOS_API_HOST@ and @ARVADOS_API_TOKEN@ set in the environment.  Tools which rely on the Arvados API being present should put @arv:APIRequirement@ in the @requirements@ section of the tool (rather than @hints@) to indicate that that it is not portable to non-Arvados CWL runners.
+
+Use @arv:APIRequirement@ in @hints@ to enable general (non-Arvados-specific) network access for a tool.
 
 h2. cwltool:LoadListingRequirement
 
@@ -71,3 +75,12 @@ table(table table-bordered table-condensed).
 *shallow_listing*: Only expand the first level of directory listing.  The @listing@ field on the toplevel Directory object will contain the directory contents, however @listing@ will not be defined on subdirectories.
 
 *deep_listing*: Recursively expand all levels of directory listing.  The @listing@ field will be provided on the toplevel object and all subdirectories.
+
+h2. arv:IntermediateOutput
+
+Specify desired handling of intermediate output collections.
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|outputTTL|int|If the value is greater than zero, consider intermediate output collections to be temporary and should be automatically trashed. Temporary collections will be trashed `outputTTL` seconds after creation, or on successful completion of workflow (whichever comes first).  A value of zero means intermediate output should be retained indefinitely (this is the default behavior).
+Note: arvados-cwl-runner currently does not take workflow dependencies into account when setting the TTL on an intermediate output collection. If the TTL is too short, it is possible for a collection to be trashed before before downstream steps that consume it are started.  The recommend minimum value for TTL is the time required to complete entire the workflow.|

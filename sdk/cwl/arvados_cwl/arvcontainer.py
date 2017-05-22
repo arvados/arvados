@@ -43,7 +43,6 @@ class ArvadosContainer(object):
             "priority": 1,
             "state": "Committed",
             "properties": {},
-            "output_ttl", self.arvrunner.intermediate_output_ttl
         }
         runtime_constraints = {}
 
@@ -170,6 +169,16 @@ class ArvadosContainer(object):
         if partition_req:
             scheduling_parameters["partitions"] = aslist(partition_req["partition"])
 
+        intermediate_output_req, _ = get_feature(self, "http://arvados.org/cwl#IntermediateOutput")
+        if intermediate_output_req:
+            self.output_ttl = intermediate_output_req["outputTTL"]
+        else:
+            self.output_ttl = self.arvrunner.intermediate_output_ttl
+
+        if self.output_ttl < 0:
+            raise WorkflowError("Invalid value %d for output_ttl, cannot be less than zero" % container_request["output_ttl"])
+
+        container_request["output_ttl"] = self.output_ttl
         container_request["mounts"] = mounts
         container_request["runtime_constraints"] = runtime_constraints
         container_request["use_existing"] = kwargs.get("enable_reuse", True)
@@ -201,7 +210,8 @@ class ArvadosContainer(object):
 
     def done(self, record):
         try:
-            self.arvrunner.add_intermediate_output(record["output_uuid"])
+            if self.output_ttl:
+                self.arvrunner.add_intermediate_output(record["output_uuid"])
 
             container = self.arvrunner.api.containers().get(
                 uuid=record["container_uuid"]

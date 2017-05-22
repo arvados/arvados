@@ -212,7 +212,7 @@ class ArvCwlRunner(object):
         logger.info("Cleaning up intermediate output collections")
         for i in self.intermediate_output_collections:
             try:
-                self.api_client.collections().delete(uuid=i).execute(num_retries=self.num_retries)
+                self.api.collections().delete(uuid=i).execute(num_retries=self.num_retries)
             except:
                 logger.warn("Failed to delete intermediate output: %s", sys.exc_info()[1], exc_info=(sys.exc_info()[1] if self.debug else False))
             if sys.exc_info()[0] is KeyboardInterrupt:
@@ -533,7 +533,7 @@ class ArvCwlRunner(object):
             adjustDirObjs(self.final_output, partial(get_listing, self.fs_access))
             adjustFileObjs(self.final_output, partial(compute_checksums, self.fs_access))
 
-        if self.intermediate_output_ttl and self.final_status == "success":
+        if self.final_status == "success":
             self.trash_intermediate_output()
 
         return (self.final_output, self.final_status)
@@ -664,7 +664,8 @@ def add_arv_hints():
         "http://arvados.org/cwl#RuntimeConstraints",
         "http://arvados.org/cwl#PartitionRequirement",
         "http://arvados.org/cwl#APIRequirement",
-        "http://commonwl.org/cwltool#LoadListingRequirement"
+        "http://commonwl.org/cwltool#LoadListingRequirement",
+        "http://arvados.org/cwl#IntermediateOutput"
     ])
 
 def main(args, stdout, stderr, api_client=None, keep_client=None):
