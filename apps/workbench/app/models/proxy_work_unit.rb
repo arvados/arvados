@@ -235,6 +235,10 @@ class ProxyWorkUnit < WorkUnit
   end
 
   def show_runtime
+    walltime = 0
+    if started_at
+      walltime = if finished_at then (finished_at - started_at) else (Time.now - started_at) end
+    end
     resp = '<p>'
 
     if started_at
