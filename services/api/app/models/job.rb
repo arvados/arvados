@@ -1,3 +1,4 @@
+require 'log_reuse_info'
 require 'safe_json'
 
 class Job < ArvadosModel
@@ -5,6 +6,7 @@ class Job < ArvadosModel
   include KindAndEtag
   include CommonApiTemplate
   extend CurrentApiClient
+  extend LogReuseInfo
   serialize :components, Hash
   attr_protected :arvados_sdk_version, :docker_image_locator
   serialize :script_parameters, Hash
@@ -198,17 +200,6 @@ class Job < ArvadosModel
     filters
   end
 
-  # log_reuse_info logs whatever the given block returns, if
-  # log_reuse_decisions is enabled. It accepts a block instead of a
-  # string because in some cases constructing the strings involves
-  # doing database queries, and we want to skip those queries when
-  # logging is disabled.
-  def self.log_reuse_info
-    if Rails.configuration.log_reuse_decisions
-      Rails.logger.info("find_reusable: " + yield)
-    end
-  end
-
   def self.find_reusable attrs, params, filters, read_users
     if filters.empty?  # Translate older creation parameters into filters.
       filters =
@@ -254,20 +245,20 @@ class Job < ArvadosModel
     candidates = candidates.where(
       'state = ? or (owner_uuid = ? and state in (?))',
       Job::Complete, current_user.uuid, [Job::Queued, Job::Running])
-    log_reuse_info { "have #{candidates.count} candidates after filtering on job state ((state=Complete) or (state=Queued/Running and (submitted by current user)))" }
+    log_reuse_info(candidates) { "after filtering on job state ((state=Complete) or (state=Queued/Running and (submitted by current user)))" }
 
     digest = Job.sorted_hash_digest(attrs[:script_parameters])
     candidates = candidates.where('script_parameters_digest = ?', digest)
-    log_reuse_info { "have #{candidates.count} candidates after filtering on script_parameters_digest #{digest}" }
+    log_reuse_info(candidates) { "after filtering on script_parameters_digest #{digest}" }
 
     candidates = candidates.where('nondeterministic is distinct from ?', true)
-    log_reuse_info { "have #{candidates.count} candidates after filtering on !nondeterministic" }
+    log_reuse_info(candidates) { "after filtering on !nondeterministic" }
 
     # prefer Running jobs over Queued
     candidates = candidates.order('state desc, created_at')
 
     candidates = apply_filters candidates, filters
-    log_reuse_info { "have #{candidates.count} candidates after filtering on repo, script, and custom filters #{filters.inspect}" }
+    log_reuse_info(candidates) { "after filtering on repo, script, and custom filters #{filters.inspect}" }
 
     chosen = nil
     incomplete_job = nil

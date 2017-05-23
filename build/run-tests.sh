@@ -446,6 +446,8 @@ export GOPATH
 mkdir -p "$GOPATH/src/git.curoverse.com"
 ln -sfT "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git" \
     || fatal "symlink failed"
+go get -v github.com/kardianos/govendor \
+    || fatal "govendor install failed"
 
 setup_virtualenv "$VENVDIR" --python python2.7
 . "$VENVDIR/bin/activate"
@@ -759,6 +761,9 @@ install_apiserver() {
 }
 do_install services/api apiserver
 
+cd "$GOPATH/src/git.curoverse.com/arvados.git" && \
+    "$GOPATH/bin/govendor" sync -v || \
+        fatal "govendor sync failed"
 declare -a gostuff
 gostuff=(
     sdk/go/arvados
@@ -785,7 +790,7 @@ gostuff=(
     tools/keep-block-check
     tools/keep-exercise
     tools/keep-rsync
-    )
+)
 for g in "${gostuff[@]}"
 do
     do_install "$g" go

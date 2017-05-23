@@ -63,8 +63,14 @@ func (this HashCheckingReader) WriteTo(dest io.Writer) (written int64, err error
 func (this HashCheckingReader) Close() (err error) {
 	_, err = io.Copy(this.Hash, this.Reader)
 
-	if closer, ok := this.Reader.(io.ReadCloser); ok {
-		err = closer.Close()
+	if closer, ok := this.Reader.(io.Closer); ok {
+		err2 := closer.Close()
+		if err2 != nil && err == nil {
+			return err2
+		}
+	}
+	if err != nil {
+		return err
 	}
 
 	sum := this.Hash.Sum(make([]byte, 0, this.Hash.Size()))
