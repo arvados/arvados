@@ -338,7 +338,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	if client, ok := kc.Client.(*http.Client); ok && client.Transport != nil {
 		// Workaround for https://dev.arvados.org/issues/9005
 		if t, ok := client.Transport.(*http.Transport); ok {
-			defer t.CloseIdleConnections()
+			t.DisableKeepAlives = true
 		}
 	}
 	rdr, err := kc.CollectionFileReader(collection, filename)

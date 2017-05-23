@@ -168,3 +168,8 @@ steps:
           out: [out]
           run: tool3.cwl
 </pre>
+
+* When migrating from crunch v1 API (--api=jobs) to the crunch v2 API (--api=containers) there are a few differences in behavior:
+** The tool is limited to accessing only collections which are explicitly listed in the input, and further limited to only the subdirectories of collections listed in input.  For example, given an explicit file input @/dir/subdir/file1.txt@, a tool will not be able to implicitly access the file @/dir/file2.txt@.  Use @secondaryFiles@ or a @Directory@ input to describe trees of files.
+** Files listed in @InitialWorkDirRequirement@ appear in the output directory as normal files (not symlinks) but cannot be moved, renamed or deleted.  These files will be added to the output collection but without any additional copies of the underlying data.
+** Tools are disallowed network access by default.  Tools which require network access must include @arv:APIRequirement: {}@ in their @requirements@ section.

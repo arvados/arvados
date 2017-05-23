@@ -340,6 +340,19 @@ class ContainerTest < ActiveSupport::TestCase
     assert_nil reused
   end
 
+  test "find_reusable with logging disabled" do
+    set_user_from_auth :active
+    Rails.logger.expects(:info).never
+    Container.find_reusable(REUSABLE_COMMON_ATTRS)
+  end
+
+  test "find_reusable with logging enabled" do
+    set_user_from_auth :active
+    Rails.configuration.log_reuse_decisions = true
+    Rails.logger.expects(:info).at_least(3)
+    Container.find_reusable(REUSABLE_COMMON_ATTRS)
+  end
+
   test "Container running" do
     c, _ = minimal_new priority: 1
 

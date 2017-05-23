@@ -162,7 +162,6 @@ func firstBlock(offsets []uint64, range_start uint64) int {
 	// assumes that all of the blocks are contiguous, so range_start is guaranteed
 	// to either fall into the range of a block or be outside the block range entirely
 	for !(range_start >= block_start && range_start < block_end) {
-		fmt.Println(i, block_start, block_end)
 		if lo == i {
 			// must be out of range, fail
 			return -1
