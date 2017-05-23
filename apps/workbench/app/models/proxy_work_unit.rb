@@ -222,20 +222,28 @@ class ProxyWorkUnit < WorkUnit
     state_label == 'Failed'
   end
 
-  def all_children
+  def runtime_contributors
+    contributors = []
     if children.any?
-      children + children.collect{|c| c.all_children}.flatten
+      children.each{|c| contributors << c.runtime_contributors}
     else
-      []
+      contributors << self
+    end
+    # Avoid counting reused containers
+    if started_at
+      contributors.flatten.reject{|c| c.started_at ? c.started_at < started_at : true}
+    else
+      contributors.flatten
     end
   end
 
   def runningtime
-    ApplicationController.helpers.determine_wallclock_runtime(if children.any? then all_children else [self] end)
+    ApplicationController.helpers.determine_wallclock_runtime(if children.any? then runtime_contributors else [self] end)
   end
 
   def show_runtime
     walltime = 0
+    running_time = runningtime
     if started_at
       walltime = if finished_at then (finished_at - started_at) else (Time.now - started_at) end
     end
@@ -253,10 +261,10 @@ class ProxyWorkUnit < WorkUnit
         resp << "has been active for "
       end
 
-      if walltime > runningtime
+      if walltime > running_time
         resp << ApplicationController.helpers.render_time(walltime, false)
       else
-        resp << ApplicationController.helpers.render_time(runningtime, false)
+        resp << ApplicationController.helpers.render_time(running_time, false)
       end
 
       if finished_at
@@ -289,10 +297,10 @@ class ProxyWorkUnit < WorkUnit
 
       cpu_time = cputime
 
-      resp << ApplicationController.helpers.render_time(runningtime, false)
-      if (walltime - runningtime) > 0
+      resp << ApplicationController.helpers.render_time(running_time, false)
+      if (walltime - running_time) > 0
         resp << "("
-        resp << ApplicationController.helpers.render_time(walltime - runningtime, false)
+        resp << ApplicationController.helpers.render_time(walltime - running_time, false)
         resp << "queued)"
       end
       if cpu_time == 0
@@ -301,7 +309,7 @@ class ProxyWorkUnit < WorkUnit
         resp << " and used "
         resp << ApplicationController.helpers.render_time(cpu_time, false)
         resp << " of node allocation time ("
-        resp << (cpu_time/runningtime).round(1).to_s
+        resp << (cpu_time/running_time).round(1).to_s
         resp << "&Cross; scaling)."
       end
     end
