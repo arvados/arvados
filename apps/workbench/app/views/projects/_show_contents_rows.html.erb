@@ -13,8 +13,14 @@
 
     <td>
       <% if @object.editable? %>
-        <%= link_to({action: 'remove_item', id: @object.uuid, item_uuid: ((name_link && name_link.uuid) || object.uuid)}, method: :delete, remote: true, data: {confirm: "Remove #{object.class_for_display.downcase} #{name_object.name rescue object.uuid} from this project?", toggle: 'tooltip', placement: 'top'}, class: 'btn btn-sm btn-default btn-nodecorate', title: 'remove') do %>
-          <i class="fa fa-fw fa-trash-o"></i>
+        <% if object.trash_at != nil %>
+          <%= link_to({action: 'untrash', id: @object.uuid, item_uuid: ((name_link && name_link.uuid) || object.uuid)}, method: :post, remote: true, data: {confirm: "Undelete #{object.class_for_display.downcase} #{name_object.name rescue object.uuid}?", toggle: 'tooltip', placement: 'top'}, class: 'btn btn-sm btn-default btn-nodecorate', title: 'un-delete') do %>
+            <i class="fa fa-fw fa-recycle"></i>
+          <% end %>
+        <% else %>
+          <%= link_to({action: 'remove_item', id: @object.uuid, item_uuid: ((name_link && name_link.uuid) || object.uuid)}, method: :delete, remote: true, data: {confirm: "Remove #{object.class_for_display.downcase} #{name_object.name rescue object.uuid} from this project?", toggle: 'tooltip', placement: 'top'}, class: 'btn btn-sm btn-default btn-nodecorate', title: 'remove') do %>
+            <i class="fa fa-fw fa-trash-o"></i>
+          <% end %>
         <% end %>
       <% else %>
         <i class="fa fa-fw"></i><%# placeholder %>

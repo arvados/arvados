@@ -98,7 +98,11 @@ class ProjectsController < ApplicationController
       } if current_user
     pane_list << { :name => 'Sharing',
                    :count => @share_links.count } if @user_is_manager
-    pane_list << { :name => 'Trash' }
+    pane_list <<
+      {
+        :name => 'Trash',
+        :filters => [%w(uuid is_a arvados#collection)] + [['is_trashed', '=', true]]
+      }
     pane_list << { :name => 'Advanced' }
   end
 
@@ -176,6 +180,14 @@ class ProjectsController < ApplicationController
         end
       end
     end
+  end
+
+  def untrash
+    updates = {}
+    updates[:trash_at] = nil
+    ArvadosBase.find(params[:item_uuid]).update_attributes updates
+    @untrashed_uuid = params[:item_uuid]
+    render template: 'projects/untrashed_item'
   end
 
   def destroy

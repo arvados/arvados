@@ -96,6 +96,7 @@ ArvadosWorkbench::Application.routes.draw do
   resources :projects do
     match 'remove/:item_uuid', on: :member, via: :delete, action: :remove_item
     match 'remove_items', on: :member, via: :delete, action: :remove_items
+    post 'untrash', :on => :member
     get 'choose', on: :collection
     post 'share_with', on: :member
     get 'tab_counts', on: :member
