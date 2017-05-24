@@ -105,7 +105,8 @@ class ArvCwlRunner(object):
         kwargs["fetcher_constructor"] = partial(CollectionFetcher,
                                                 api_client=self.api,
                                                 fs_access=CollectionFsAccess("", collection_cache=self.collection_cache),
-                                                num_retries=self.num_retries)
+                                                num_retries=self.num_retries,
+                                                overrides=kwargs.get("override_tools"))
         if "class" in toolpath_object and toolpath_object["class"] == "CommandLineTool":
             return ArvadosCommandTool(self, toolpath_object, **kwargs)
         elif "class" in toolpath_object and toolpath_object["class"] == "Workflow":
@@ -334,7 +335,8 @@ class ArvCwlRunner(object):
 
         # Upload direct dependencies of workflow steps, get back mapping of files to keep references.
         # Also uploads docker images.
-        upload_workflow_deps(self, tool)
+        override_tools = {}
+        upload_workflow_deps(self, tool, override_tools)
 
         # Reload tool object which may have been updated by
         # upload_workflow_deps
@@ -342,7 +344,8 @@ class ArvCwlRunner(object):
                                   makeTool=self.arv_make_tool,
                                   loader=tool.doc_loader,
                                   avsc_names=tool.doc_schema,
-                                  metadata=tool.metadata)
+                                  metadata=tool.metadata,
+                                  override_tools=override_tools)
 
         # Upload local file references in the job order.
         job_order = upload_job_order(self, "%s input" % kwargs["name"],

@@ -34,7 +34,6 @@ def stubs(func):
         stubs.events = events
         stubs.keepdocker = keepdocker
 
-
         def putstub(p, **kwargs):
             return "%s+%i" % (hashlib.md5(p).hexdigest(), len(p))
         keep_client1().put.side_effect = putstub
@@ -53,33 +52,32 @@ def stubs(func):
             "uuid": stubs.fake_user_uuid,
         }
         stubs.api.collections().list().execute.return_value = {"items": []}
-        stubs.api.collections().create().execute.side_effect = ({
-            "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz1",
-            "portable_data_hash": "99999999999999999999999999999991+99",
-            "manifest_text": ""
-        }, {
-            "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2",
-            "portable_data_hash": "99999999999999999999999999999992+99",
-            "manifest_text": "./tool 00000000000000000000000000000000+0 0:0:submit_tool.cwl 0:0:blub.txt"
-        },
-        {
-            "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz4",
-            "portable_data_hash": "99999999999999999999999999999994+99",
-            "manifest_text": ""
-        },
-        {
-            "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz5",
-            "portable_data_hash": "99999999999999999999999999999995+99",
-            "manifest_text": ""
-        },
-        {
-            "uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz6",
-            "portable_data_hash": "99999999999999999999999999999996+99",
-            "manifest_text": ""
-        }
-        )
-        stubs.api.collections().get().execute.return_value = {
-            "portable_data_hash": "99999999999999999999999999999993+99", "manifest_text": "./tool 00000000000000000000000000000000+0 0:0:submit_tool.cwl 0:0:blub.txt"}
+
+        class CollectionExecute(object):
+            def __init__(self, exe):
+                self.exe = exe
+            def execute(self, num_retries=None):
+                return self.exe
+
+        def collection_createstub(created_collections, body, ensure_unique_name=None):
+            mt = body["manifest_text"]
+            uuid = "zzzzz-4zz18-zzzzzzzzzzzzzz%d" % len(created_collections)
+            pdh = "%s+%i" % (hashlib.md5(mt).hexdigest(), len(mt))
+            created_collections[uuid] = {
+                "uuid": uuid,
+                "portable_data_hash": pdh,
+                "manifest_text": mt
+            }
+            return CollectionExecute(created_collections[uuid])
+
+        def collection_getstub(created_collections, uuid):
+            for v in created_collections.itervalues():
+                if uuid in (v["uuid"], v["portable_data_hash"]):
+                    return CollectionExecute(v)
+
+        created_collections = {}
+        stubs.api.collections().create.side_effect = functools.partial(collection_createstub, created_collections)
+        stubs.api.collections().get.side_effect = functools.partial(collection_getstub, created_collections)
 
         stubs.expect_job_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         stubs.api.jobs().create().execute.return_value = {
@@ -106,7 +104,7 @@ def stubs(func):
             'script_parameters': {
                 'x': {
                     'basename': 'blorp.txt',
-                    'location': 'keep:99999999999999999999999999999992+99/blorp.txt',
+                    'location': 'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt',
                     'class': 'File'
                 },
                 'y': {
@@ -123,8 +121,7 @@ def stubs(func):
                     }],
                     'class': 'Directory'
                 },
-                'cwl:tool':
-                '99999999999999999999999999999994+99/workflow.cwl#main'
+                'cwl:tool': '3fffdeaa75e018172e1b583425f4ebff+60/workflow.cwl#main'
             },
             'repository': 'arvados',
             'script_version': 'master',
@@ -141,12 +138,12 @@ def stubs(func):
                     'runtime_constraints': {'docker_image': 'arvados/jobs:'+arvados_cwl.__version__, 'min_ram_mb_per_node': 1024},
                     'script_parameters': {
                         'y': {"value": {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'}},
-                        'x': {"value": {'basename': 'blorp.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999992+99/blorp.txt'}},
+                        'x': {"value": {'basename': 'blorp.txt', 'class': 'File', 'location': 'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt'}},
                         'z': {"value": {'basename': 'anonymous', 'class': 'Directory',
                               'listing': [
                                   {'basename': 'renamed.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999998+99/file1.txt'}
                               ]}},
-                        'cwl:tool': '99999999999999999999999999999994+99/workflow.cwl#main',
+                        'cwl:tool': '3fffdeaa75e018172e1b583425f4ebff+60/workflow.cwl#main',
                         'arv:enable_reuse': True,
                         'arv:on_error': 'continue'
                     },
@@ -191,7 +188,7 @@ def stubs(func):
                     'kind': 'json',
                     'content': {
                         'y': {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'},
-                        'x': {'basename': u'blorp.txt', 'class': 'File', 'location': u'keep:99999999999999999999999999999992+99/blorp.txt'},
+                        'x': {'basename': u'blorp.txt', 'class': 'File', 'location': u'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt'},
                         'z': {'basename': 'anonymous', 'class': 'Directory', 'listing': [
                             {'basename': 'renamed.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999998+99/file1.txt'}
                         ]}
@@ -245,21 +242,24 @@ class TestSubmit(unittest.TestCase):
         self.assertEqual(exited, 0)
 
         stubs.api.collections().create.assert_has_calls([
-            mock.call(),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
                 '. 5bcc9fe8f8d5992e6cf418dc7ce4dbb3+16 0:16:blub.txt\n',
                 'replication_desired': None,
                 'name': 'submit_tool.cwl dependencies',
             }), ensure_unique_name=True),
-            mock.call().execute(num_retries=4),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
                 '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
                 'replication_desired': None,
                 'name': 'submit_wf.cwl input',
             }), ensure_unique_name=True),
-            mock.call().execute(num_retries=4)])
+            mock.call(body=JsonDiffMatcher({
+                'manifest_text':
+                '. 61df2ed9ee3eb7dd9b799e5ca35305fa+1217 0:1217:workflow.cwl\n',
+                'replication_desired': None,
+                'name': 'submit_wf.cwl',
+            }), ensure_unique_name=True)        ])
 
         arvdock.assert_has_calls([
             mock.call(stubs.api, {"class": "DockerRequirement", "dockerPull": "debian:8"}, True, None),
@@ -428,21 +428,18 @@ class TestSubmit(unittest.TestCase):
             logging.exception("")
 
         stubs.api.collections().create.assert_has_calls([
-            mock.call(),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
                 '. 5bcc9fe8f8d5992e6cf418dc7ce4dbb3+16 0:16:blub.txt\n',
                 'replication_desired': None,
                 'name': 'submit_tool.cwl dependencies',
             }), ensure_unique_name=True),
-            mock.call().execute(num_retries=4),
             mock.call(body=JsonDiffMatcher({
                 'manifest_text':
                 '. 979af1245a12a1fed634d4222473bfdc+16 0:16:blorp.txt\n',
                 'replication_desired': None,
                 'name': 'submit_wf.cwl input',
-            }), ensure_unique_name=True),
-            mock.call().execute(num_retries=4)])
+            }), ensure_unique_name=True)])
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         stubs.api.container_requests().create.assert_called_with(
@@ -854,7 +851,7 @@ class TestCreateTemplate(unittest.TestCase):
             'dataclass': 'File',
             'required': True,
             'type': 'File',
-            'value': '99999999999999999999999999999992+99/blorp.txt',
+            'value': '169f39d466a5438ac4a90e779bf750c7+53/blorp.txt',
         }
         expect_component['script_parameters']['y'] = {
             'dataclass': 'Collection',
@@ -1106,6 +1103,36 @@ class TestCreateWorkflow(unittest.TestCase):
                          self.existing_workflow_uuid + '\n')
 
 
+    @stubs
+    def test_create_collection_per_tool(self, stubs):
+        project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+
+        capture_stdout = cStringIO.StringIO()
+
+        exited = arvados_cwl.main(
+            ["--create-workflow", "--debug",
+             "--api=containers",
+             "--project-uuid", project_uuid,
+             "tests/collection_per_tool/collection_per_tool.cwl"],
+            capture_stdout, sys.stderr, api_client=stubs.api)
+        self.assertEqual(exited, 0)
+
+        expect_workflow = open("tests/collection_per_tool/collection_per_tool_packed.cwl").read()
+
+        body = {
+            "workflow": {
+                "owner_uuid": project_uuid,
+                "name": "collection_per_tool.cwl",
+                "description": "",
+                "definition": expect_workflow,
+            }
+        }
+        stubs.api.workflows().create.assert_called_with(
+            body=JsonDiffMatcher(body))
+
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_workflow_uuid + '\n')
+
 class TestTemplateInputs(unittest.TestCase):
     expect_template = {
         "components": {
@@ -1116,7 +1143,7 @@ class TestTemplateInputs(unittest.TestCase):
                 },
                 'script_parameters': {
                     'cwl:tool':
-                    '99999999999999999999999999999992+99/workflow.cwl#main',
+                    '6c5ee1cd606088106d9f28367cde1e41+60/workflow.cwl#main',
                     'optionalFloatInput': None,
                     'fileInput': {
                         'type': 'File',
@@ -1176,8 +1203,8 @@ class TestTemplateInputs(unittest.TestCase):
         expect_template = copy.deepcopy(self.expect_template)
         params = expect_template[
             "components"]["inputs_test.cwl"]["script_parameters"]
-        params["fileInput"]["value"] = '99999999999999999999999999999992+99/blorp.txt'
-        params["cwl:tool"] = '99999999999999999999999999999994+99/workflow.cwl#main'
+        params["fileInput"]["value"] = '169f39d466a5438ac4a90e779bf750c7+53/blorp.txt'
+        params["cwl:tool"] = '6c5ee1cd606088106d9f28367cde1e41+60/workflow.cwl#main'
         params["floatInput"]["value"] = 1.234
         params["boolInput"]["value"] = True
 
