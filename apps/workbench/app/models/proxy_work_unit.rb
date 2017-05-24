@@ -229,12 +229,7 @@ class ProxyWorkUnit < WorkUnit
     else
       contributors << self
     end
-    # Avoid counting reused containers
-    if started_at
-      contributors.flatten.reject{|c| c.started_at ? c.started_at < started_at : true}
-    else
-      contributors.flatten
-    end
+    contributors.flatten
   end
 
   def runningtime
@@ -261,11 +256,7 @@ class ProxyWorkUnit < WorkUnit
         resp << "has been active for "
       end
 
-      if walltime > running_time
-        resp << ApplicationController.helpers.render_time(walltime, false)
-      else
-        resp << ApplicationController.helpers.render_time(running_time, false)
-      end
+      resp << ApplicationController.helpers.render_time(walltime, false)
 
       if finished_at
         resp << " at "
