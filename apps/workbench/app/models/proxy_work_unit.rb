@@ -233,7 +233,7 @@ class ProxyWorkUnit < WorkUnit
   end
 
   def runningtime
-    ApplicationController.helpers.determine_wallclock_runtime(if children.any? then runtime_contributors else [self] end)
+    ApplicationController.helpers.determine_wallclock_runtime runtime_contributors
   end
 
   def show_runtime
@@ -278,13 +278,7 @@ class ProxyWorkUnit < WorkUnit
 
     resp << "<p>"
     if state_label
-      resp << "It "
-      if state_label == 'Running'
-        resp << "has run"
-      else
-        resp << "ran"
-      end
-      resp << " for "
+      resp << "It has runtime of "
 
       cpu_time = cputime
 
