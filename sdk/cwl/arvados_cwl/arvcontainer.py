@@ -211,8 +211,7 @@ class ArvadosContainer(object):
     def done(self, record):
         outputs = {}
         try:
-            if self.output_ttl:
-                self.arvrunner.add_intermediate_output(record["output_uuid"])
+            self.arvrunner.add_intermediate_output(record["output_uuid"])
 
             container = self.arvrunner.api.containers().get(
                 uuid=record["container_uuid"]

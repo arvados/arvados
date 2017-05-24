@@ -76,6 +76,7 @@ class ArvCwlRunner(object):
         self.project_uuid = None
         self.intermediate_output_ttl = 0
         self.intermediate_output_collections = []
+        self.trash_intermediate = False
 
         if keep_client is not None:
             self.keep_client = keep_client
@@ -346,6 +347,7 @@ class ArvCwlRunner(object):
         self.fs_access = make_fs_access(kwargs["basedir"])
 
         self.intermediate_output_ttl = kwargs["intermediate_output_ttl"]
+        self.trash_intermediate = kwargs["trash_intermediate"]
         if self.intermediate_output_ttl and self.work_api != "containers":
             raise Exception("--intermediate-output-ttl is only supported when using the containers api.")
 
@@ -533,7 +535,7 @@ class ArvCwlRunner(object):
             adjustDirObjs(self.final_output, partial(get_listing, self.fs_access))
             adjustFileObjs(self.final_output, partial(compute_checksums, self.fs_access))
 
-        if self.final_status == "success":
+        if self.trash_intermediate and self.final_status == "success":
             self.trash_intermediate_output()
 
         return (self.final_output, self.final_status)
@@ -582,10 +584,10 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     exgroup = parser.add_mutually_exclusive_group()
     exgroup.add_argument("--enable-reuse", action="store_true",
                         default=True, dest="enable_reuse",
-                        help="")
+                        help="Enable job or container reuse (default)")
     exgroup.add_argument("--disable-reuse", action="store_false",
                         default=True, dest="enable_reuse",
-                        help="")
+                        help="Disable job or container reuse")
 
     parser.add_argument("--project-uuid", type=str, metavar="UUID", help="Project that will own the workflow jobs, if not provided, will go to home project.")
     parser.add_argument("--output-name", type=str, help="Name to use for collection that stores the final output.", default=None)
@@ -618,7 +620,8 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
 
     parser.add_argument("--api", type=str,
                         default=None, dest="work_api",
-                        help="Select work submission API, one of 'jobs' or 'containers'. Default is 'jobs' if that API is available, otherwise 'containers'.")
+                        choices=("jobs", "containers"),
+                        help="Select work submission API.  Default is 'jobs' if that API is available, otherwise 'containers'.")
 
     parser.add_argument("--compute-checksum", action="store_true", default=False,
                         help="Compute checksum of contents while collecting outputs",
@@ -643,9 +646,18 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--enable-dev", action="store_true",
                         help="Enable loading and running development versions "
                              "of CWL spec.", default=False)
+
     parser.add_argument("--intermediate-output-ttl", type=int, metavar="N",
-                        help="If N > 0, intermediate output collections will be trashed N seconds after creation, or on successful completion of workflow (whichever comes first).",
+                        help="If N > 0, intermediate output collections will be trashed N seconds after creation.  Default is 0 (don't trash).",
                         default=0)
+
+    exgroup = parser.add_mutually_exclusive_group()
+    exgroup.add_argument("--trash-intermediate", action="store_true",
+                        default=False, dest="trash_intermediate",
+                         help="Immediately trash intermediate outputs on workflow success.")
+    exgroup.add_argument("--no-trash-intermediate", action="store_false",
+                        default=False, dest="trash_intermediate",
+                        help="Do not trash intermediate outputs (default).")
 
     parser.add_argument("workflow", type=str, nargs="?", default=None, help="The workflow to execute")
     parser.add_argument("job_order", nargs=argparse.REMAINDER, help="The input object to the workflow.")
