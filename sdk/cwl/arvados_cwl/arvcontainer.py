@@ -2,6 +2,9 @@ import logging
 import json
 import os
 import urllib
+import time
+import datetime
+import ciso8601
 
 import ruamel.yaml as yaml
 
@@ -211,8 +214,6 @@ class ArvadosContainer(object):
     def done(self, record):
         outputs = {}
         try:
-            self.arvrunner.add_intermediate_output(record["output_uuid"])
-
             container = self.arvrunner.api.containers().get(
                 uuid=record["container_uuid"]
             ).execute(num_retries=self.arvrunner.num_retries)
@@ -237,6 +238,17 @@ class ArvadosContainer(object):
                                                            keep_client=self.arvrunner.keep_client,
                                                            num_retries=self.arvrunner.num_retries)
                 done.logtail(logc, logger, "%s error log:" % self.arvrunner.label(self))
+
+            if record["output_uuid"]:
+                if self.arvrunner.trash_intermediate or self.arvrunner.intermediate_output_ttl:
+                    # Compute the trash time to avoid requesting the collection record.
+                    trash_at = ciso8601.parse_datetime_unaware(record["modified_at"]) + datetime.timedelta(0, self.arvrunner.intermediate_output_ttl)
+                    aftertime = " at %s" % trash_at.strftime("%Y-%m-%d %H:%M:%S UTC") if self.arvrunner.intermediate_output_ttl else ""
+                    orpart = ", or" if self.arvrunner.trash_intermediate and self.arvrunner.intermediate_output_ttl else ""
+                    oncomplete = " upon successful completion of the workflow" if self.arvrunner.trash_intermediate else ""
+                    logger.info("%s Intermediate output %s (%s) will be trashed%s%s%s." % (
+                        self.arvrunner.label(self), record["output_uuid"], container["output"], aftertime, orpart, oncomplete))
+                self.arvrunner.add_intermediate_output(record["output_uuid"])
 
             if container["output"]:
                 outputs = done.done_outputs(self, container, "/tmp", self.outdir, "/keep")
@@ -337,6 +349,9 @@ class RunnerContainer(Runner):
 
         if self.intermediate_output_ttl:
             command.append("--intermediate-output-ttl=%d" % self.intermediate_output_ttl)
+
+        if self.arvrunner.trash_intermediate:
+            command.append("--trash-intermediate")
 
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 

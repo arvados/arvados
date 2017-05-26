@@ -346,10 +346,16 @@ class ArvCwlRunner(object):
                                                                  collection_cache=self.collection_cache)
         self.fs_access = make_fs_access(kwargs["basedir"])
 
-        self.intermediate_output_ttl = kwargs["intermediate_output_ttl"]
+
         self.trash_intermediate = kwargs["trash_intermediate"]
+        if self.trash_intermediate and self.work_api != "containers":
+            raise Exception("--trash-intermediate is only supported with --api=containers.")
+
+        self.intermediate_output_ttl = kwargs["intermediate_output_ttl"]
         if self.intermediate_output_ttl and self.work_api != "containers":
-            raise Exception("--intermediate-output-ttl is only supported when using the containers api.")
+            raise Exception("--intermediate-output-ttl is only supported with --api=containers.")
+        if self.intermediate_output_ttl < 0:
+            raise Exception("Invalid value %d for --intermediate-output-ttl, cannot be less than zero" % self.intermediate_output_ttl)
 
         if not kwargs.get("name"):
             kwargs["name"] = self.name = tool.tool.get("label") or tool.metadata.get("label") or os.path.basename(tool.tool["id"])
