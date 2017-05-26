@@ -108,7 +108,7 @@ def determine_project(root, current_user):
 # ArvFile() (file already exists in a collection), UploadFile() (file needs to
 # be uploaded to a collection), or simply returns prefix+fn (which yields the
 # original parameter string).
-def statfile(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)"):
+def statfile(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)", raiseOSError=False):
     absfn = os.path.abspath(fn)
     try:
         st = os.stat(absfn)
@@ -125,7 +125,7 @@ def statfile(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)"):
             # trim leading '/' for path prefix test later
             return UploadFile(prefix, absfn[1:])
     except OSError as e:
-        if e.errno == errno.ENOENT:
+        if e.errno == errno.ENOENT and not raiseOSError:
             pass
         else:
             raise

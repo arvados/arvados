@@ -47,7 +47,7 @@ class TestPathmap(unittest.TestCase):
 
         arvrunner = arvados_cwl.ArvCwlRunner(self.api)
 
-        def statfile_mock(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)"):
+        def statfile_mock(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)", raiseOSError=False):
             st = arvados.commands.run.UploadFile("", "tests/hw.py")
             return st
 
@@ -87,7 +87,7 @@ class TestPathmap(unittest.TestCase):
 
         # An ArvFile object returned from arvados.commands.run.statfile means the file is located on a
         # keep mount, so we can construct a direct reference directly without upload.
-        def statfile_mock(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)"):
+        def statfile_mock(prefix, fn, fnPattern="$(file %s/%s)", dirPattern="$(dir %s/%s/)", raiseOSError=False):
             st = arvados.commands.run.ArvFile("", fnPattern % ("99999999999999999999999999999991+99", "hw.py"))
             return st
 
