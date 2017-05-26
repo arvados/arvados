@@ -63,7 +63,7 @@ module PipelineInstancesHelper
     timestamps << [started_at, finished_at]
   end
 
-  # Accept a list of objects with [:started_at] and [:finshed_at] keys and
+  # Accept a list of objects with [:started_at] and [:finished_at] keys and
   # merge overlapping ranges to compute the time spent running after periods of
   # overlapping execution are factored out.
   def determine_wallclock_runtime jobs
