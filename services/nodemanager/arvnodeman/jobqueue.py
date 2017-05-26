@@ -119,14 +119,15 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
 
     @staticmethod
     def coerce_to_mb(x):
-        if x.endswith("M"):
-            return int(x[:-1])
-        elif x.endswith("G"):
-            return int(x[:-1]) * 2**10
-        elif x.endswith("T"):
-            return int(x[:-1]) * 2**20
-        elif x.endswith("P"):
-            return int(x[:-1]) * 2**30
+        v, u = x[:-1], x[-1]
+        if u in ("M", "m"):
+            return int(v)
+        elif u in ("G", "g"):
+            return int(v) * 2**10
+        elif u in ("T", "t"):
+            return int(v) * 2**20
+        elif u in ("P", "p"):
+            return int(v) * 2**30
         else:
             return int(x)
 
