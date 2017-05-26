@@ -61,7 +61,8 @@ class ArvPathMapper(PathMapper):
                 ab = abspath(src, self.input_basedir)
                 st = arvados.commands.run.statfile("", ab,
                                                    fnPattern="keep:%s/%s",
-                                                   dirPattern="keep:%s/%s")
+                                                   dirPattern="keep:%s/%s",
+                                                   raiseOSError=True)
                 with SourceLine(srcobj, "location", WorkflowException):
                     if isinstance(st, arvados.commands.run.UploadFile):
                         uploadfiles.add((src, ab, st))
