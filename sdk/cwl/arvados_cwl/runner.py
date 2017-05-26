@@ -248,7 +248,8 @@ class Runner(object):
 
     def __init__(self, runner, tool, job_order, enable_reuse,
                  output_name, output_tags, submit_runner_ram=0,
-                 name=None, on_error=None, submit_runner_image=None):
+                 name=None, on_error=None, submit_runner_image=None,
+                 intermediate_output_ttl=0):
         self.arvrunner = runner
         self.tool = tool
         self.job_order = job_order
@@ -261,6 +262,7 @@ class Runner(object):
         self.name = name
         self.on_error = on_error
         self.jobs_image = submit_runner_image or "arvados/jobs:"+__version__
+        self.intermediate_output_ttl = intermediate_output_ttl
 
         if submit_runner_ram:
             self.submit_runner_ram = submit_runner_ram

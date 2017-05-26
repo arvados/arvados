@@ -2,6 +2,9 @@ import logging
 import json
 import os
 import urllib
+import time
+import datetime
+import ciso8601
 
 import ruamel.yaml as yaml
 
@@ -42,7 +45,7 @@ class ArvadosContainer(object):
             "cwd": self.outdir,
             "priority": 1,
             "state": "Committed",
-            "properties": {}
+            "properties": {},
         }
         runtime_constraints = {}
 
@@ -169,6 +172,16 @@ class ArvadosContainer(object):
         if partition_req:
             scheduling_parameters["partitions"] = aslist(partition_req["partition"])
 
+        intermediate_output_req, _ = get_feature(self, "http://arvados.org/cwl#IntermediateOutput")
+        if intermediate_output_req:
+            self.output_ttl = intermediate_output_req["outputTTL"]
+        else:
+            self.output_ttl = self.arvrunner.intermediate_output_ttl
+
+        if self.output_ttl < 0:
+            raise WorkflowError("Invalid value %d for output_ttl, cannot be less than zero" % container_request["output_ttl"])
+
+        container_request["output_ttl"] = self.output_ttl
         container_request["mounts"] = mounts
         container_request["runtime_constraints"] = runtime_constraints
         container_request["use_existing"] = kwargs.get("enable_reuse", True)
@@ -199,6 +212,7 @@ class ArvadosContainer(object):
             self.output_callback({}, "permanentFail")
 
     def done(self, record):
+        outputs = {}
         try:
             container = self.arvrunner.api.containers().get(
                 uuid=record["container_uuid"]
@@ -225,7 +239,17 @@ class ArvadosContainer(object):
                                                            num_retries=self.arvrunner.num_retries)
                 done.logtail(logc, logger, "%s error log:" % self.arvrunner.label(self))
 
-            outputs = {}
+            if record["output_uuid"]:
+                if self.arvrunner.trash_intermediate or self.arvrunner.intermediate_output_ttl:
+                    # Compute the trash time to avoid requesting the collection record.
+                    trash_at = ciso8601.parse_datetime_unaware(record["modified_at"]) + datetime.timedelta(0, self.arvrunner.intermediate_output_ttl)
+                    aftertime = " at %s" % trash_at.strftime("%Y-%m-%d %H:%M:%S UTC") if self.arvrunner.intermediate_output_ttl else ""
+                    orpart = ", or" if self.arvrunner.trash_intermediate and self.arvrunner.intermediate_output_ttl else ""
+                    oncomplete = " upon successful completion of the workflow" if self.arvrunner.trash_intermediate else ""
+                    logger.info("%s Intermediate output %s (%s) will be trashed%s%s%s." % (
+                        self.arvrunner.label(self), record["output_uuid"], container["output"], aftertime, orpart, oncomplete))
+                self.arvrunner.add_intermediate_output(record["output_uuid"])
+
             if container["output"]:
                 outputs = done.done_outputs(self, container, "/tmp", self.outdir, "/keep")
         except WorkflowException as e:
@@ -322,6 +346,12 @@ class RunnerContainer(Runner):
 
         if self.on_error:
             command.append("--on-error=" + self.on_error)
+
+        if self.intermediate_output_ttl:
+            command.append("--intermediate-output-ttl=%d" % self.intermediate_output_ttl)
+
+        if self.arvrunner.trash_intermediate:
+            command.append("--trash-intermediate")
 
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 
