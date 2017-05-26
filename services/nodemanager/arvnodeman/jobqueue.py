@@ -123,11 +123,11 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
         if u in ("M", "m"):
             return int(v)
         elif u in ("G", "g"):
-            return int(v) * 2**10
+            return float(v) * 2**10
         elif u in ("T", "t"):
-            return int(v) * 2**20
+            return float(v) * 2**20
         elif u in ("P", "p"):
-            return int(v) * 2**30
+            return float(v) * 2**30
         else:
             return int(x)
 
