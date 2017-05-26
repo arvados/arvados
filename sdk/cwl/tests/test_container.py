@@ -384,6 +384,7 @@ class TestContainer(unittest.TestCase):
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.num_retries = 0
         runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
 
         runner.api.containers().get().execute.return_value = {"state":"Complete",
                                                               "output": "abc+123",
@@ -407,7 +408,8 @@ class TestContainer(unittest.TestCase):
             "log_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz1",
             "output_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2",
             "uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
-            "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+            "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
+            "modified_at": "2017-05-26T12:01:22Z"
         })
 
         self.assertFalse(api.collections().create.called)
