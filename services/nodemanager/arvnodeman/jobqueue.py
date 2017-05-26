@@ -117,6 +117,19 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
             client, timer_actor, *args, **kwargs)
         self._calculator = server_calc
 
+    @staticmethod
+    def coerce_to_mb(x):
+        if x.endswith("M"):
+            return int(x[:-1])
+        elif x.endswith("G"):
+            return int(x[:-1]) * 2**10
+        elif x.endswith("T"):
+            return int(x[:-1]) * 2**20
+        elif x.endswith("P"):
+            return int(x[:-1]) * 2**30
+        else:
+            return int(x)
+
     def _send_request(self):
         # cpus, memory, tempory disk space, reason, job name
         squeue_out = subprocess.check_output(["squeue", "--state=PENDING", "--noheader", "--format=%c %m %d %r %j"])
@@ -128,8 +141,8 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
                     "uuid": jobname,
                     "runtime_constraints": {
                         "min_cores_per_node": cpu,
-                        "min_ram_mb_per_node": ram,
-                        "min_scratch_mb_per_node": disk
+                        "min_ram_mb_per_node": self.coerce_to_mb(ram),
+                        "min_scratch_mb_per_node": self.coerce_to_mb(disk)
                     }
                 })
 
