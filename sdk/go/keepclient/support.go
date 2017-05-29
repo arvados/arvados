@@ -8,12 +8,10 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
-	"net"
 	"net/http"
 	"os"
 	"regexp"
 	"strings"
-	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/streamer"
 )
@@ -44,50 +42,6 @@ func Md5String(s string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(s)))
 }
 
-// Set timeouts applicable when connecting to non-disk services
-// (assumed to be over the Internet).
-func (*KeepClient) setClientSettingsNonDisk(client *http.Client) {
-	// Maximum time to wait for a complete response
-	client.Timeout = 300 * time.Second
-
-	// TCP and TLS connection settings
-	client.Transport = &http.Transport{
-		Dial: (&net.Dialer{
-			// The maximum time to wait to set up
-			// the initial TCP connection.
-			Timeout: 30 * time.Second,
-
-			// The TCP keep alive heartbeat
-			// interval.
-			KeepAlive: 120 * time.Second,
-		}).Dial,
-
-		TLSHandshakeTimeout: 10 * time.Second,
-	}
-}
-
-// Set timeouts applicable when connecting to keepstore services directly
-// (assumed to be on the local network).
-func (*KeepClient) setClientSettingsDisk(client *http.Client) {
-	// Maximum time to wait for a complete response
-	client.Timeout = 20 * time.Second
-
-	// TCP and TLS connection timeouts
-	client.Transport = &http.Transport{
-		Dial: (&net.Dialer{
-			// The maximum time to wait to set up
-			// the initial TCP connection.
-			Timeout: 2 * time.Second,
-
-			// The TCP keep alive heartbeat
-			// interval.
-			KeepAlive: 180 * time.Second,
-		}).Dial,
-
-		TLSHandshakeTimeout: 4 * time.Second,
-	}
-}
-
 type svcList struct {
 	Items []keepService `json:"items"`
 }
@@ -115,8 +69,8 @@ func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Rea
 
 	req.ContentLength = expectedLength
 	if expectedLength > 0 {
-		// http.Client.Do will close the body ReadCloser when it is
-		// done with it.
+		// Do() will close the body ReadCloser when it is done
+		// with it.
 		req.Body = body
 	} else {
 		// "For client requests, a value of 0 means unknown if Body is
@@ -131,7 +85,7 @@ func (this *KeepClient) uploadToKeepServer(host string, hash string, body io.Rea
 	req.Header.Add(X_Keep_Desired_Replicas, fmt.Sprint(this.Want_replicas))
 
 	var resp *http.Response
-	if resp, err = this.Client.Do(req); err != nil {
+	if resp, err = this.httpClient().Do(req); err != nil {
 		DebugPrintf("DEBUG: [%08x] Upload failed %v error: %v", requestID, url, err.Error())
 		upload_status <- uploadStatus{err, url, 0, 0, ""}
 		return

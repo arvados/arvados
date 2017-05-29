@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"reflect"
@@ -23,9 +22,6 @@ func (this *KeepClient) DiscoverKeepServers() error {
 	if this.Arvados.KeepServiceURIs != nil {
 		this.foundNonDiskSvc = true
 		this.replicasPerService = 0
-		if c, ok := this.Client.(*http.Client); ok {
-			this.setClientSettingsNonDisk(c)
-		}
 		roots := make(map[string]string)
 		for i, uri := range this.Arvados.KeepServiceURIs {
 			roots[fmt.Sprintf("00000-bi6l4-%015d", i)] = uri
@@ -135,14 +131,6 @@ func (this *KeepClient) loadKeepServers(list svcList) error {
 		// (gateway and otherwise) merely accommodates more
 		// service configurations.
 		gatewayRoots[service.Uuid] = url
-	}
-
-	if client, ok := this.Client.(*http.Client); ok {
-		if this.foundNonDiskSvc {
-			this.setClientSettingsNonDisk(client)
-		} else {
-			this.setClientSettingsDisk(client)
-		}
 	}
 
 	this.SetServiceRoots(localRoots, writableLocalRoots, gatewayRoots)

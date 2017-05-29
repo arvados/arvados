@@ -1265,5 +1265,5 @@ func (s *ServerRequiredSuite) TestMakeKeepClientWithNonDiskTypeService(c *C) {
 
 	c.Assert(kc.replicasPerService, Equals, 0)
 	c.Assert(kc.foundNonDiskSvc, Equals, true)
-	c.Assert(kc.Client.(*http.Client).Timeout, Equals, 300*time.Second)
+	c.Assert(kc.httpClient().(*http.Client).Timeout, Equals, 300*time.Second)
 }

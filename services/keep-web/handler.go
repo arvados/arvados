@@ -335,12 +335,6 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
 		return
 	}
-	if client, ok := kc.Client.(*http.Client); ok && client.Transport != nil {
-		// Workaround for https://dev.arvados.org/issues/9005
-		if t, ok := client.Transport.(*http.Transport); ok {
-			t.DisableKeepAlives = true
-		}
-	}
 	rdr, err := kc.CollectionFileReader(collection, filename)
 	if os.IsNotExist(err) {
 		statusCode = http.StatusNotFound
