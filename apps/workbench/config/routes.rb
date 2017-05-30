@@ -108,6 +108,12 @@ ArvadosWorkbench::Application.routes.draw do
 
   resources :workflows
 
+  get "trash" => 'trash_items#index', :as => :trash
+  resources :trash_items do
+    post 'untrash_item', on: :member
+    post 'untrash_items', on: :collection
+  end
+
   post 'actions' => 'actions#post'
   get 'actions' => 'actions#show'
   get 'websockets' => 'websocket#index'

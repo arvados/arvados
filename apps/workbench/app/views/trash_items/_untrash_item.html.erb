@@ -1,0 +1,5 @@
+<% if object.editable? %>
+  <%= link_to({action: 'untrash_item', id: object.uuid}, remote: true, data: {confirm: "Un-trash #{object.class_for_display.downcase} '#{object.friendly_link_name}'?"}) do %>
+    <i class="fa fa-fw fa-recycle"></i>
+  <% end %>
+<% end %>

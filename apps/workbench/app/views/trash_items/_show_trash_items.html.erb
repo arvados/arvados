@@ -1,0 +1,29 @@
+<%= form_tag({}, {id: "trash_items"}) do |f| %>
+  <table id="trash-index" class="topalign table table-condensed table-fixedlayout">
+    <colgroup>
+      <col width="5%" />
+      <col width="15%" />
+      <col width="10%" />
+      <col width="10%" />
+      <col width="30%" />
+      <col width="25%" />
+      <col width="5%" />
+    </colgroup>
+
+    <thead>
+      <tr class="contain-align-left">
+        <th></th>
+        <th>Name</th>
+        <th>Created at</th>
+        <th>Trashed at</th>
+        <th>Contents</th>
+        <th>Tags</th>
+        <th></th>
+      </tr>
+    </thead>
+
+    <tbody data-infinite-scroller="#recent-trash-items" id="recent-trash-items"
+      data-infinite-content-href="<%= url_for partial: :trash_rows %>" >
+    </tbody>
+  </table>
+<% end %>
