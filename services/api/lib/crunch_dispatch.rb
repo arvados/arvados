@@ -892,7 +892,7 @@ class CrunchDispatch
 
   def check_orphaned_slurm_jobs
     act_as_system_user do
-      squeue_uuids = squeue_jobs.select{|uuid| uuid.match(HasUuid::UUID_REGEX)}.
+      squeue_uuids = squeue_jobs.select{|uuid| uuid.match(/^[0-9a-z]{5}-8i9sb-[0-9a-z]{15}$/)}.
                                   select{|uuid| !@running.has_key?(uuid)}
 
       return if squeue_uuids.size == 0
