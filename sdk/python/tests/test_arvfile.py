@@ -832,7 +832,7 @@ class BlockManagerTest(unittest.TestCase):
         mockkeep = mock.MagicMock()
         with arvados.arvfile._BlockManager(mockkeep) as blockmanager:
             bufferblock = blockmanager.alloc_bufferblock()
-            bufferblock.owner = mock.MagicMock()
+            bufferblock.owner = mock.MagicMock(spec=arvados.arvfile.ArvadosFile)
             def flush(sync=None):
                 blockmanager.commit_bufferblock(bufferblock, sync)
             bufferblock.owner.flush.side_effect = flush
@@ -863,7 +863,7 @@ class BlockManagerTest(unittest.TestCase):
         mockkeep.put.side_effect = arvados.errors.KeepWriteError("fail")
         with arvados.arvfile._BlockManager(mockkeep) as blockmanager:
             bufferblock = blockmanager.alloc_bufferblock()
-            bufferblock.owner = mock.MagicMock()
+            bufferblock.owner = mock.MagicMock(spec=arvados.arvfile.ArvadosFile)
             def flush(sync=None):
                 blockmanager.commit_bufferblock(bufferblock, sync)
             bufferblock.owner.flush.side_effect = flush
