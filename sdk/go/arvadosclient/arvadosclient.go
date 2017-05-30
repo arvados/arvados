@@ -163,6 +163,7 @@ func New(c *arvados.Client) (*ArvadosClient, error) {
 			TLSClientConfig: MakeTLSConfig(c.Insecure)}},
 		External:          false,
 		Retries:           2,
+		KeepServiceURIs:   c.KeepServiceURIs,
 		lastClosedIdlesAt: time.Now(),
 	}
 
@@ -175,41 +176,12 @@ func New(c *arvados.Client) (*ArvadosClient, error) {
 // ARVADOS_KEEP_SERVICES.
 func MakeArvadosClient() (ac *ArvadosClient, err error) {
 	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
-	insecure := matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
-	external := matchTrue.MatchString(os.Getenv("ARVADOS_EXTERNAL_CLIENT"))
-
-	ac = &ArvadosClient{
-		Scheme:      "https",
-		ApiServer:   os.Getenv("ARVADOS_API_HOST"),
-		ApiToken:    os.Getenv("ARVADOS_API_TOKEN"),
-		ApiInsecure: insecure,
-		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: MakeTLSConfig(insecure)}},
-		External: external,
-		Retries:  2}
-
-	for _, s := range strings.Split(os.Getenv("ARVADOS_KEEP_SERVICES"), " ") {
-		if s == "" {
-			continue
-		}
-		if u, err := url.Parse(s); err != nil {
-			return ac, fmt.Errorf("ARVADOS_KEEP_SERVICES: %q: %s", s, err)
-		} else if !u.IsAbs() {
-			return ac, fmt.Errorf("ARVADOS_KEEP_SERVICES: %q: not an absolute URI", s)
-		}
-		ac.KeepServiceURIs = append(ac.KeepServiceURIs, s)
+	ac, err = New(arvados.NewClientFromEnv())
+	if err != nil {
+		return
 	}
-
-	if ac.ApiServer == "" {
-		return ac, MissingArvadosApiHost
-	}
-	if ac.ApiToken == "" {
-		return ac, MissingArvadosApiToken
-	}
-
-	ac.lastClosedIdlesAt = time.Now()
-
-	return ac, err
+	ac.External = matchTrue.MatchString(os.Getenv("ARVADOS_EXTERNAL_CLIENT"))
+	return
 }
 
 // CallRaw is the same as Call() but returns a Reader that reads the
