@@ -28,6 +28,7 @@ class TestContainer(unittest.TestCase):
             runner = mock.MagicMock()
             runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
             runner.ignore_docker_for_reuse = False
+            runner.intermediate_output_ttl = 0
 
             keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
             runner.api.collections().get().execute.return_value = {
@@ -72,6 +73,7 @@ class TestContainer(unittest.TestCase):
                         'state': 'Committed',
                         'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                         'output_path': '/var/spool/cwl',
+                        'output_ttl': 0,
                         'container_image': 'arvados/jobs',
                         'command': ['ls', '/var/spool/cwl'],
                         'cwd': '/var/spool/cwl',
@@ -87,6 +89,7 @@ class TestContainer(unittest.TestCase):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 3600
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
@@ -110,6 +113,9 @@ class TestContainer(unittest.TestCase):
             }, {
                 "class": "http://arvados.org/cwl#PartitionRequirement",
                 "partition": "blurb"
+            }, {
+                "class": "http://arvados.org/cwl#IntermediateOutput",
+                "outputTTL": 7200
             }],
             "baseCommand": "ls"
         })
@@ -126,35 +132,36 @@ class TestContainer(unittest.TestCase):
         call_args, call_kwargs = runner.api.container_requests().create.call_args
 
         call_body_expected = {
-                'environment': {
-                    'HOME': '/var/spool/cwl',
-                    'TMPDIR': '/tmp'
-                },
-                'name': 'test_resource_requirements',
-                'runtime_constraints': {
-                    'vcpus': 3,
-                    'ram': 3145728000,
-                    'keep_cache_ram': 536870912,
-                    'API': True
-                },
-                'use_existing': True,
-                'priority': 1,
-                'mounts': {
-                    '/tmp': {'kind': 'tmp',
-                             "capacity": 4194304000 },
-                    '/var/spool/cwl': {'kind': 'tmp',
-                                       "capacity": 5242880000 }
-                },
-                'state': 'Committed',
-                'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-                'output_path': '/var/spool/cwl',
-                'container_image': 'arvados/jobs',
-                'command': ['ls'],
-                'cwd': '/var/spool/cwl',
-                'scheduling_parameters': {
-                    'partitions': ['blurb']
-                },
-                'properties': {}
+            'environment': {
+                'HOME': '/var/spool/cwl',
+                'TMPDIR': '/tmp'
+            },
+            'name': 'test_resource_requirements',
+            'runtime_constraints': {
+                'vcpus': 3,
+                'ram': 3145728000,
+                'keep_cache_ram': 536870912,
+                'API': True
+            },
+            'use_existing': True,
+            'priority': 1,
+            'mounts': {
+                '/tmp': {'kind': 'tmp',
+                         "capacity": 4194304000 },
+                '/var/spool/cwl': {'kind': 'tmp',
+                                   "capacity": 5242880000 }
+            },
+            'state': 'Committed',
+            'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+            'output_path': '/var/spool/cwl',
+            'output_ttl': 7200,
+            'container_image': 'arvados/jobs',
+            'command': ['ls'],
+            'cwd': '/var/spool/cwl',
+            'scheduling_parameters': {
+                'partitions': ['blurb']
+            },
+            'properties': {}
         }
 
         call_body = call_kwargs.get('body', None)
@@ -172,6 +179,7 @@ class TestContainer(unittest.TestCase):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
@@ -236,52 +244,53 @@ class TestContainer(unittest.TestCase):
         vwdmock.copy.assert_has_calls([mock.call('subdir', 'subdir', source_collection=sourcemock)])
 
         call_body_expected = {
-                'environment': {
-                    'HOME': '/var/spool/cwl',
-                    'TMPDIR': '/tmp'
+            'environment': {
+                'HOME': '/var/spool/cwl',
+                'TMPDIR': '/tmp'
+            },
+            'name': 'test_initial_work_dir',
+            'runtime_constraints': {
+                'vcpus': 1,
+                'ram': 1073741824
+            },
+            'use_existing': True,
+            'priority': 1,
+            'mounts': {
+                '/tmp': {'kind': 'tmp',
+                         "capacity": 1073741824 },
+                '/var/spool/cwl': {'kind': 'tmp',
+                                   "capacity": 1073741824 },
+                '/var/spool/cwl/foo': {
+                    'kind': 'collection',
+                    'path': 'foo',
+                    'portable_data_hash': '99999999999999999999999999999996+99'
                 },
-                'name': 'test_initial_work_dir',
-                'runtime_constraints': {
-                    'vcpus': 1,
-                    'ram': 1073741824
+                '/var/spool/cwl/foo2': {
+                    'kind': 'collection',
+                    'path': 'foo2',
+                    'portable_data_hash': '99999999999999999999999999999996+99'
                 },
-                'use_existing': True,
-                'priority': 1,
-                'mounts': {
-                    '/tmp': {'kind': 'tmp',
-                             "capacity": 1073741824 },
-                    '/var/spool/cwl': {'kind': 'tmp',
-                                       "capacity": 1073741824 },
-                    '/var/spool/cwl/foo': {
-                        'kind': 'collection',
-                        'path': 'foo',
-                        'portable_data_hash': '99999999999999999999999999999996+99'
-                    },
-                    '/var/spool/cwl/foo2': {
-                        'kind': 'collection',
-                        'path': 'foo2',
-                        'portable_data_hash': '99999999999999999999999999999996+99'
-                    },
-                    '/var/spool/cwl/filename': {
-                        'kind': 'collection',
-                        'path': 'filename',
-                        'portable_data_hash': '99999999999999999999999999999996+99'
-                    },
-                    '/var/spool/cwl/subdir': {
-                        'kind': 'collection',
-                        'path': 'subdir',
-                        'portable_data_hash': '99999999999999999999999999999996+99'
-                    }
+                '/var/spool/cwl/filename': {
+                    'kind': 'collection',
+                    'path': 'filename',
+                    'portable_data_hash': '99999999999999999999999999999996+99'
                 },
-                'state': 'Committed',
-                'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-                'output_path': '/var/spool/cwl',
-                'container_image': 'arvados/jobs',
-                'command': ['ls'],
-                'cwd': '/var/spool/cwl',
-                'scheduling_parameters': {
-                },
-                'properties': {}
+                '/var/spool/cwl/subdir': {
+                    'kind': 'collection',
+                    'path': 'subdir',
+                    'portable_data_hash': '99999999999999999999999999999996+99'
+                }
+            },
+            'state': 'Committed',
+            'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+            'output_path': '/var/spool/cwl',
+            'output_ttl': 0,
+            'container_image': 'arvados/jobs',
+            'command': ['ls'],
+            'cwd': '/var/spool/cwl',
+            'scheduling_parameters': {
+            },
+            'properties': {}
         }
 
         call_body = call_kwargs.get('body', None)
@@ -298,6 +307,7 @@ class TestContainer(unittest.TestCase):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -357,6 +367,7 @@ class TestContainer(unittest.TestCase):
                     'state': 'Committed',
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
+                    'output_ttl': 0,
                     'container_image': 'arvados/jobs',
                     'command': ['ls', '/var/spool/cwl'],
                     'cwd': '/var/spool/cwl',
@@ -373,6 +384,7 @@ class TestContainer(unittest.TestCase):
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.num_retries = 0
         runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
 
         runner.api.containers().get().execute.return_value = {"state":"Complete",
                                                               "output": "abc+123",
@@ -387,6 +399,7 @@ class TestContainer(unittest.TestCase):
         arvjob.collect_outputs = mock.MagicMock()
         arvjob.successCodes = [0]
         arvjob.outdir = "/var/spool/cwl"
+        arvjob.output_ttl = 3600
 
         arvjob.collect_outputs.return_value = {"out": "stuff"}
 
@@ -395,13 +408,15 @@ class TestContainer(unittest.TestCase):
             "log_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz1",
             "output_uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2",
             "uuid": "zzzzz-xvhdp-zzzzzzzzzzzzzzz",
-            "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
+            "container_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
+            "modified_at": "2017-05-26T12:01:22Z"
         })
 
         self.assertFalse(api.collections().create.called)
 
         arvjob.collect_outputs.assert_called_with("keep:abc+123")
         arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")
+        runner.add_intermediate_output.assert_called_with("zzzzz-4zz18-zzzzzzzzzzzzzz2")
 
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
@@ -412,6 +427,7 @@ class TestContainer(unittest.TestCase):
         runner = mock.MagicMock()
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
+        runner.intermediate_output_ttl = 0
 
         keepdocker.return_value = [("zzzzz-4zz18-zzzzzzzzzzzzzz3", "")]
         runner.api.collections().get().execute.return_value = {
@@ -478,6 +494,7 @@ class TestContainer(unittest.TestCase):
                     'state': 'Committed',
                     'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
                     'output_path': '/var/spool/cwl',
+                    'output_ttl': 0,
                     'container_image': 'arvados/jobs',
                     'command': ['ls', '/var/spool/cwl'],
                     'cwd': '/var/spool/cwl',

@@ -111,6 +111,8 @@ def run():
         args.name = None
         args.cwl_runner_job={"uuid": arvados.current_job()["uuid"], "state": arvados.current_job()["state"]}
         args.make_fs_access = make_fs_access
+        args.trash_intermediate = False
+        args.intermediate_output_ttl = 0
 
         runner.arv_executor(t, job_order_object, **vars(args))
     except Exception as e:

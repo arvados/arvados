@@ -9,7 +9,7 @@ $graph:
     type: File
     default:
       class: File
-      location: keep:99999999999999999999999999999991+99/blub.txt
+      location: keep:5d373e7629203ce39e7c22af98a0f881+52/blub.txt
     inputBinding:
       position: 1
   outputs: []

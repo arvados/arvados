@@ -100,7 +100,8 @@ def upload_dependencies(arvrunner, name, document_loader,
     mapper = ArvPathMapper(arvrunner, sc, "",
                            "keep:%s",
                            "keep:%s/%s",
-                           name=name)
+                           name=name,
+                           single_collection=True)
 
     def setloc(p):
         if "location" in p and (not p["location"].startswith("_:")) and (not p["location"].startswith("keep:")):
@@ -186,7 +187,7 @@ def upload_job_order(arvrunner, name, tool, job_order):
 
     return job_order
 
-def upload_workflow_deps(arvrunner, tool):
+def upload_workflow_deps(arvrunner, tool, override_tools):
     # Ensure that Docker images needed by this workflow are available
 
     upload_docker(arvrunner, tool)
@@ -203,6 +204,7 @@ def upload_workflow_deps(arvrunner, tool):
                                 False,
                                 include_primary=False)
             document_loader.idx[deptool["id"]] = deptool
+            override_tools[deptool["id"]] = json.dumps(deptool)
 
     tool.visit(upload_tool_deps)
 
@@ -246,7 +248,8 @@ class Runner(object):
 
     def __init__(self, runner, tool, job_order, enable_reuse,
                  output_name, output_tags, submit_runner_ram=0,
-                 name=None, on_error=None, submit_runner_image=None):
+                 name=None, on_error=None, submit_runner_image=None,
+                 intermediate_output_ttl=0):
         self.arvrunner = runner
         self.tool = tool
         self.job_order = job_order
@@ -259,6 +262,7 @@ class Runner(object):
         self.name = name
         self.on_error = on_error
         self.jobs_image = submit_runner_image or "arvados/jobs:"+__version__
+        self.intermediate_output_ttl = intermediate_output_ttl
 
         if submit_runner_ram:
             self.submit_runner_ram = submit_runner_ram

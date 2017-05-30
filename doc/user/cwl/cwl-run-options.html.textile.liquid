@@ -10,6 +10,7 @@ table(table table-bordered table-condensed).
 |_. Option |_. Description |
 |==--basedir== BASEDIR|     Base directory used to resolve relative references in the input, default to directory of input object file or current directory (if inputs piped/provided on command line).|
 |==--version==|             Print version and exit|
+|==--validate==|            Validate CWL document only.|
 |==--verbose==|             Default logging|
 |==--quiet==|               Only print warnings and errors.|
 |==--debug==|               Print even more logging|
@@ -30,7 +31,14 @@ table(table table-bordered table-condensed).
 |==--api== WORK_API|        Select work submission API, one of 'jobs' or 'containers'. Default is 'jobs' if that API is available, otherwise 'containers'.|
 |==--compute-checksum==|    Compute checksum of contents while collecting outputs|
 |==--submit-runner-ram== SUBMIT_RUNNER_RAM|RAM (in MiB) required for the workflow runner job (default 1024)|
+|==--submit-runner-image== SUBMIT_RUNNER_IMAGE|Docker image for workflow runner job, default arvados/jobs|
 |==--name== NAME|           Name to use for workflow execution instance.|
+|==--on-error {stop,continue}|Desired workflow behavior when a step fails. One of 'stop' or 'continue'. Default is 'continue'.|
+|==--enable-dev==|          Enable loading and running development versions of CWL spec.|
+|==--intermediate-output-ttl== N|If N > 0, intermediate output collections will be trashed N seconds after creation. Default is 0 (don't trash).|
+|==--trash-intermediate==|  Immediately trash intermediate outputs on workflow success.|
+|==--no-trash-intermediate==|Do not trash intermediate outputs (default).|
+
 
 h3. Specify workflow and output names
 
@@ -92,3 +100,15 @@ arvados-cwl-runner 1.0.20160628195002, arvados-python-client 0.1.20160616015107,
 }
 </code></pre>
 </notextile>
+
+h3. Automatically delete intermediate outputs
+
+Use the @--intermediate-output-ttl@ and @--trash-intermediate@ options to specify how long intermediate outputs should be kept (in seconds) and whether to trash them immediately upon successful workflow completion.
+
+Temporary collections will be trashed @intermediate-output-ttl@ seconds after creation.  A value of zero (default) means intermediate output should be retained indefinitely.
+
+Note: arvados-cwl-runner currently does not take workflow dependencies into account when setting the TTL on an intermediate output collection. If the TTL is too short, it is possible for a collection to be trashed before downstream steps that consume it are started.  The recommended minimum value for TTL is the expected duration for the entire the workflow.
+
+Using @--trash-intermediate@ without @--intermediate-output-ttl@ means that intermediate files will be trashed on successful completion, but will remain on workflow failure.
+
+Using @--intermediate-output-ttl@ without @--trash-intermediate@ means that intermediate files will be trashed only after the TTL expires (regardless of workflow success or failure).

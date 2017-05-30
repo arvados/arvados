@@ -94,6 +94,12 @@ $graph:
   doc: |
     Select preferred compute partitions on which to run jobs.
   fields:
+    - name: class
+      type: string
+      doc: "Always 'arv:PartitionRequirement'"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
     - name: partition
       type:
         - string
@@ -114,3 +120,32 @@ $graph:
       jsonldPredicate:
         _id: "@type"
         _type: "@vocab"
+
+- name: IntermediateOutput
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Specify desired handling of intermediate output collections.
+  fields:
+    class:
+      type: string
+      doc: "Always 'arv:IntermediateOutput'"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    outputTTL:
+      type: int
+      doc: |
+        If the value is greater than zero, consider intermediate output
+        collections to be temporary and should be automatically
+        trashed. Temporary collections will be trashed `outputTTL` seconds
+        after creation.  A value of zero means intermediate output should be
+        retained indefinitely (this is the default behavior).
+
+        Note: arvados-cwl-runner currently does not take workflow dependencies
+        into account when setting the TTL on an intermediate output
+        collection. If the TTL is too short, it is possible for a collection to
+        be trashed before downstream steps that consume it are started.  The
+        recommended minimum value for TTL is the expected duration of the
+        entire the workflow.

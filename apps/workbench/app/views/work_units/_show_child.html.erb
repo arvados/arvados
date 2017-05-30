@@ -18,10 +18,11 @@
         <% else %>
           <% walltime = current_obj.walltime %>
           <% cputime = current_obj.cputime %>
+          <% runningtime = current_obj.runningtime %>
           <div class="col-md-3">
           <% if walltime and cputime %>
-            <%= render_runtime(walltime, false) %>
-            <% if cputime > 0 %> / <%= render_runtime(cputime, false) %> (<%= (cputime/walltime).round(1) %>&Cross;)<% end %>
+            <%= render_runtime([walltime, runningtime].max, false) %>
+            <% if cputime > 0 %> / <%= render_runtime(cputime, false) %> (<%= (cputime/runningtime).round(1) %>&Cross;)<% end %>
           <% end %>
           </div>
 
