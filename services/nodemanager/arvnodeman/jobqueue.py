@@ -133,11 +133,11 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
 
     def _send_request(self):
         # cpus, memory, tempory disk space, reason, job name
-        squeue_out = subprocess.check_output(["squeue", "--state=PENDING", "--noheader", "--format=%c %m %d %r %j"])
+        squeue_out = subprocess.check_output(["squeue", "--state=PENDING", "--noheader", "--format=%c|%m|%d|%r|%j"])
         queuelist = []
         for out in squeue_out.splitlines():
-            cpu, ram, disk, reason, jobname = out.split(" ", 4)
-            if reason in ("Resources", "ReqNodeNotAvail"):
+            cpu, ram, disk, reason, jobname = out.split("|", 4)
+            if ("ReqNodeNotAvail" in reason) or ("Resources" in reason):
                 queuelist.append({
                     "uuid": jobname,
                     "runtime_constraints": {
