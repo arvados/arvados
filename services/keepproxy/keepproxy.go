@@ -248,18 +248,21 @@ type proxyHandler struct {
 // requests to the appropriate handlers.
 func MakeRESTRouter(enable_get bool, enable_put bool, kc *keepclient.KeepClient, timeout time.Duration) http.Handler {
 	rest := mux.NewRouter()
+
+	transport := *(http.DefaultTransport.(*http.Transport))
+	transport.DialContext = (&net.Dialer{
+		Timeout:   keepclient.DefaultConnectTimeout,
+		KeepAlive: keepclient.DefaultKeepAlive,
+		DualStack: true,
+	}).DialContext
+	transport.TLSClientConfig = arvadosclient.MakeTLSConfig(kc.Arvados.ApiInsecure)
+	transport.TLSHandshakeTimeout = keepclient.DefaultTLSHandshakeTimeout
+
 	h := &proxyHandler{
 		Handler:    rest,
 		KeepClient: kc,
 		timeout:    timeout,
-		transport: &http.Transport{
-			Dial: (&net.Dialer{
-				Timeout:   20 * time.Second,
-				KeepAlive: 10 * time.Second,
-			}).Dial,
-			TLSClientConfig:     arvadosclient.MakeTLSConfig(kc.Arvados.ApiInsecure),
-			TLSHandshakeTimeout: 10 * time.Second,
-		},
+		transport:  &transport,
 		ApiTokenCache: &ApiTokenCache{
 			tokens:     make(map[string]int64),
 			expireTime: 300,

@@ -23,6 +23,18 @@ import (
 // A Keep "block" is 64MB.
 const BLOCKSIZE = 64 * 1024 * 1024
 
+var (
+	DefaultRequestTimeout      = 20 * time.Second
+	DefaultConnectTimeout      = 2 * time.Second
+	DefaultTLSHandshakeTimeout = 4 * time.Second
+	DefaultKeepAlive           = 180 * time.Second
+
+	DefaultProxyRequestTimeout      = 300 * time.Second
+	DefaultProxyConnectTimeout      = 30 * time.Second
+	DefaultProxyTLSHandshakeTimeout = 10 * time.Second
+	DefaultProxyKeepAlive           = 120 * time.Second
+)
+
 // Error interface with an error and boolean indicating whether the error is temporary
 type Error interface {
 	error
@@ -452,34 +464,44 @@ func (kc *KeepClient) httpClient() HTTPClient {
 		return c
 	}
 
-	var requestTimeout, connectTimeout, keepAliveInterval, tlsTimeout time.Duration
+	var requestTimeout, connectTimeout, keepAlive, tlsTimeout time.Duration
 	if kc.foundNonDiskSvc {
 		// Use longer timeouts when connecting to a proxy,
 		// because this usually means the intervening network
 		// is slower.
-		requestTimeout = 300 * time.Second
-		connectTimeout = 30 * time.Second
-		tlsTimeout = 10 * time.Second
-		keepAliveInterval = 120 * time.Second
+		requestTimeout = DefaultProxyRequestTimeout
+		connectTimeout = DefaultProxyConnectTimeout
+		tlsTimeout = DefaultProxyTLSHandshakeTimeout
+		keepAlive = DefaultProxyKeepAlive
 	} else {
-		requestTimeout = 20 * time.Second
-		connectTimeout = 2 * time.Second
-		tlsTimeout = 4 * time.Second
-		keepAliveInterval = 180 * time.Second
+		requestTimeout = DefaultRequestTimeout
+		connectTimeout = DefaultConnectTimeout
+		tlsTimeout = DefaultTLSHandshakeTimeout
+		keepAlive = DefaultKeepAlive
 	}
-	transport := &http.Transport{
-		Dial: (&net.Dialer{
-			Timeout:   connectTimeout,
-			KeepAlive: keepAliveInterval,
-		}).Dial,
-		TLSClientConfig:     arvadosclient.MakeTLSConfig(kc.Arvados.ApiInsecure),
-		TLSHandshakeTimeout: tlsTimeout,
-	}
-	go func() {
-		for range time.NewTicker(10 * time.Minute).C {
-			transport.CloseIdleConnections()
+
+	transport, ok := http.DefaultTransport.(*http.Transport)
+	if ok {
+		copy := *transport
+		transport = &copy
+	} else {
+		// Evidently the application has replaced
+		// http.DefaultTransport with a different type, so we
+		// need to build our own from scratch using the Go 1.8
+		// defaults.
+		transport = &http.Transport{
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			ExpectContinueTimeout: time.Second,
 		}
-	}()
+	}
+	transport.DialContext = (&net.Dialer{
+		Timeout:   connectTimeout,
+		KeepAlive: keepAlive,
+		DualStack: true,
+	}).DialContext
+	transport.TLSHandshakeTimeout = tlsTimeout
+	transport.TLSClientConfig = arvadosclient.MakeTLSConfig(kc.Arvados.ApiInsecure)
 	c := &http.Client{
 		Timeout:   requestTimeout,
 		Transport: transport,
