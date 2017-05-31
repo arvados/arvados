@@ -1182,7 +1182,7 @@ class NewCollectionTestCaseWithServersAndTokens(run_test_server.TestCaseWithServ
     def setUp(self):
         self.keep_put = getattr(arvados.keep.KeepClient, 'put')
 
-    def test_repacked_block_sumbmission_get_permission_token(self):
+    def test_repacked_block_submission_get_permission_token(self):
         '''
         Make sure that those blocks that are committed after repacking small ones,
         get their permission tokens assigned on the collection manifest.
