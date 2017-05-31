@@ -185,7 +185,7 @@ func (s *ServerRequiredSuite) TestPutWrongContentLength(c *C) {
 	// fixes the invalid Content-Length header. In order to test
 	// our server behavior, we have to call the handler directly
 	// using an httptest.ResponseRecorder.
-	rtr := MakeRESTRouter(true, true, kc)
+	rtr := MakeRESTRouter(true, true, kc, 10*time.Second)
 
 	type testcase struct {
 		sendLength   string

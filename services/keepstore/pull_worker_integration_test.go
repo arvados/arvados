@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -41,7 +40,6 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 	keepClient = &keepclient.KeepClient{
 		Arvados:       arv,
 		Want_replicas: 1,
-		Client:        &http.Client{},
 	}
 
 	// discover keep services

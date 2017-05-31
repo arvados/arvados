@@ -133,7 +133,6 @@ func main() {
 	if cfg.DefaultReplicas > 0 {
 		kc.Want_replicas = cfg.DefaultReplicas
 	}
-	kc.Client.(*http.Client).Timeout = time.Duration(cfg.Timeout)
 	go kc.RefreshServices(5*time.Minute, 3*time.Second)
 
 	listener, err = net.Listen("tcp", cfg.Listen)
@@ -157,7 +156,7 @@ func main() {
 	signal.Notify(term, syscall.SIGINT)
 
 	// Start serving requests.
-	router = MakeRESTRouter(!cfg.DisableGet, !cfg.DisablePut, kc)
+	router = MakeRESTRouter(!cfg.DisableGet, !cfg.DisablePut, kc, time.Duration(cfg.Timeout))
 	http.Serve(listener, router)
 
 	log.Println("shutting down")
@@ -241,15 +240,29 @@ type proxyHandler struct {
 	http.Handler
 	*keepclient.KeepClient
 	*ApiTokenCache
+	timeout   time.Duration
+	transport *http.Transport
 }
 
 // MakeRESTRouter returns an http.Handler that passes GET and PUT
 // requests to the appropriate handlers.
-func MakeRESTRouter(enable_get bool, enable_put bool, kc *keepclient.KeepClient) http.Handler {
+func MakeRESTRouter(enable_get bool, enable_put bool, kc *keepclient.KeepClient, timeout time.Duration) http.Handler {
 	rest := mux.NewRouter()
+
+	transport := *(http.DefaultTransport.(*http.Transport))
+	transport.DialContext = (&net.Dialer{
+		Timeout:   keepclient.DefaultConnectTimeout,
+		KeepAlive: keepclient.DefaultKeepAlive,
+		DualStack: true,
+	}).DialContext
+	transport.TLSClientConfig = arvadosclient.MakeTLSConfig(kc.Arvados.ApiInsecure)
+	transport.TLSHandshakeTimeout = keepclient.DefaultTLSHandshakeTimeout
+
 	h := &proxyHandler{
 		Handler:    rest,
 		KeepClient: kc,
+		timeout:    timeout,
+		transport:  &transport,
 		ApiTokenCache: &ApiTokenCache{
 			tokens:     make(map[string]int64),
 			expireTime: 300,
@@ -335,12 +348,11 @@ func (h *proxyHandler) Get(resp http.ResponseWriter, req *http.Request) {
 		}
 	}()
 
-	kc := *h.KeepClient
-	kc.Client = &proxyClient{client: kc.Client, proto: req.Proto}
+	kc := h.makeKeepClient(req)
 
 	var pass bool
 	var tok string
-	if pass, tok = CheckAuthorizationHeader(&kc, h.ApiTokenCache, req); !pass {
+	if pass, tok = CheckAuthorizationHeader(kc, h.ApiTokenCache, req); !pass {
 		status, err = http.StatusForbidden, BadAuthorizationHeader
 		return
 	}
@@ -407,8 +419,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 	SetCorsHeaders(resp)
 	resp.Header().Set("Via", "HTTP/1.1 "+viaAlias)
 
-	kc := *h.KeepClient
-	kc.Client = &proxyClient{client: kc.Client, proto: req.Proto}
+	kc := h.makeKeepClient(req)
 
 	var err error
 	var expectLength int64
@@ -446,7 +457,7 @@ func (h *proxyHandler) Put(resp http.ResponseWriter, req *http.Request) {
 
 	var pass bool
 	var tok string
-	if pass, tok = CheckAuthorizationHeader(&kc, h.ApiTokenCache, req); !pass {
+	if pass, tok = CheckAuthorizationHeader(kc, h.ApiTokenCache, req); !pass {
 		err = BadAuthorizationHeader
 		status = http.StatusForbidden
 		return
@@ -527,9 +538,8 @@ func (h *proxyHandler) Index(resp http.ResponseWriter, req *http.Request) {
 		}
 	}()
 
-	kc := *h.KeepClient
-
-	ok, token := CheckAuthorizationHeader(&kc, h.ApiTokenCache, req)
+	kc := h.makeKeepClient(req)
+	ok, token := CheckAuthorizationHeader(kc, h.ApiTokenCache, req)
 	if !ok {
 		status, err = http.StatusForbidden, BadAuthorizationHeader
 		return
@@ -565,4 +575,16 @@ func (h *proxyHandler) Index(resp http.ResponseWriter, req *http.Request) {
 	// Got index from all the keep servers and wrote to resp
 	status = http.StatusOK
 	resp.Write([]byte("\n"))
+}
+
+func (h *proxyHandler) makeKeepClient(req *http.Request) *keepclient.KeepClient {
+	kc := *h.KeepClient
+	kc.HTTPClient = &proxyClient{
+		client: &http.Client{
+			Timeout:   h.timeout,
+			Transport: h.transport,
+		},
+		proto: req.Proto,
+	}
+	return &kc
 }

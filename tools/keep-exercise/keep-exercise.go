@@ -53,7 +53,13 @@ func main() {
 		log.Fatal(err)
 	}
 	kc.Want_replicas = *Replicas
-	kc.Client.(*http.Client).Timeout = 10 * time.Minute
+
+	transport := *(http.DefaultTransport.(*http.Transport))
+	transport.TLSClientConfig = arvadosclient.MakeTLSConfig(arv.ApiInsecure)
+	kc.HTTPClient = &http.Client{
+		Timeout:   10 * time.Minute,
+		Transport: &transport,
+	}
 
 	overrideServices(kc)
 

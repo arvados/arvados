@@ -11,11 +11,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -37,6 +39,12 @@ var ErrInvalidArgument = errors.New("Invalid argument")
 var MaxIdleConnectionDuration = 30 * time.Second
 
 var RetryDelay = 2 * time.Second
+
+var (
+	defaultInsecureHTTPClient *http.Client
+	defaultSecureHTTPClient   *http.Client
+	defaultHTTPClientMtx      sync.Mutex
+)
 
 // Indicates an error that was returned by the API server.
 type APIServerError struct {
@@ -111,26 +119,31 @@ var CertFiles = []string{
 	"/etc/pki/tls/certs/ca-bundle.crt",   // Fedora/RHEL
 }
 
-// MakeTLSConfig sets up TLS configuration for communicating with Arvados and Keep services.
+// MakeTLSConfig sets up TLS configuration for communicating with
+// Arvados and Keep services.
 func MakeTLSConfig(insecure bool) *tls.Config {
 	tlsconfig := tls.Config{InsecureSkipVerify: insecure}
 
 	if !insecure {
-		// Look for /etc/arvados/ca-certificates.crt in addition to normal system certs.
+		// Use the first entry in CertFiles that we can read
+		// certificates from. If none of those work out, use
+		// the Go defaults.
 		certs := x509.NewCertPool()
 		for _, file := range CertFiles {
 			data, err := ioutil.ReadFile(file)
-			if err == nil {
-				success := certs.AppendCertsFromPEM(data)
-				if !success {
-					fmt.Printf("Unable to load any certificates from %v", file)
-				} else {
-					tlsconfig.RootCAs = certs
-					break
+			if err != nil {
+				if !os.IsNotExist(err) {
+					log.Printf("error reading %q: %s", file, err)
 				}
+				continue
 			}
+			if !certs.AppendCertsFromPEM(data) {
+				log.Printf("unable to load any certificates from %v", file)
+				continue
+			}
+			tlsconfig.RootCAs = certs
+			break
 		}
-		// Will use system default CA roots instead.
 	}
 
 	return &tlsconfig
@@ -419,4 +432,21 @@ func (c *ArvadosClient) Discovery(parameter string) (value interface{}, err erro
 	} else {
 		return value, ErrInvalidArgument
 	}
+}
+
+func (ac *ArvadosClient) httpClient() *http.Client {
+	if ac.Client != nil {
+		return ac.Client
+	}
+	c := &defaultSecureHTTPClient
+	if ac.ApiInsecure {
+		c = &defaultInsecureHTTPClient
+	}
+	if *c == nil {
+		defaultHTTPClientMtx.Lock()
+		defer defaultHTTPClientMtx.Unlock()
+		*c = &http.Client{Transport: &http.Transport{
+			TLSClientConfig: MakeTLSConfig(ac.ApiInsecure)}}
+	}
+	return *c
 }
