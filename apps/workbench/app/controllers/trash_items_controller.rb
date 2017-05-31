@@ -72,23 +72,18 @@ class TrashItemsController < ApplicationController
     @request_url = request.url
   end
 
-  def untrash_item
-    params[:item_uuids] = [params[:item_uuid]]
-    untrash_items
-    render template: 'untrash_items'
-  end
-
   def untrash_items
     @untrashed_uuids = []
 
     updates = {trash_at: nil}
-    #updates[:trash_at] = nil
 
-    params[:item_uuids].collect { |uuid| ArvadosBase.find uuid }.each do |item|
+    params[:selection].collect { |uuid| ArvadosBase.find uuid }.each do |item|
       item.update_attributes updates
       @untrashed_uuids << item.uuid
     end
 
-    render_template :untrashed_items
+    respond_to do |format|
+      format.js
+    end
   end
 end

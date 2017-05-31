@@ -1,4 +1,3 @@
-$(document).trigger('count-change');
 <% @untrashed_uuids.each do |uuid| %>
 	$('[data-object-uuid=<%= uuid %>]').hide('slow', function() {
 	    $(this).remove();

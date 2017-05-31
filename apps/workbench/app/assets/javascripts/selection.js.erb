@@ -81,6 +81,10 @@ function enable_disable_selection_actions() {
         toggleClass('disabled',
                     ($checked.length < 0) ||
                     !($checked.length > 0 && collection_lock_classes && collection_lock_classes.indexOf("fa-unlock") !=-1));
+    $('[data-selection-action=untrash-selected-items]', $container).
+        closest('li').
+        toggleClass('disabled',
+                    ($checked.length < 1));
 }
 
 $(document).
