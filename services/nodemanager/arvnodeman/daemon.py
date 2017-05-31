@@ -517,6 +517,16 @@ class NodeManagerDaemonActor(actor_class):
     def shutdown(self):
         self._logger.info("Shutting down after signal.")
         self.poll_stale_after = -1  # Inhibit starting/stopping nodes
+
+        # Shut down pollers
+        self._server_wishlist_actor.stop()
+        self._arvados_nodes_actor.stop()
+        self._cloud_nodes_actor.stop()
+
+        # Clear cloud node list
+        self.update_cloud_nodes([])
+
+        # Stop setup actors unless they are in the middle of setup.
         setup_stops = {key: node.stop_if_no_cloud_node()
                        for key, node in self.booting.iteritems()}
         self.booting = {key: self.booting[key]

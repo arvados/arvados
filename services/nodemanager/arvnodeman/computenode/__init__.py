@@ -82,8 +82,11 @@ class RetryMixin(object):
                             raise
 
                         self._logger.warning(
-                            "Client error: %s - waiting %s seconds",
-                            error, self.retry_wait, exc_info=error)
+                            "Client error: %s - %s %s seconds",
+                            error,
+                            "scheduling retry in" if self._timer else "sleeping",
+                            self.retry_wait,
+                            exc_info=error)
 
                         if self._timer:
                             start_time = time.time()

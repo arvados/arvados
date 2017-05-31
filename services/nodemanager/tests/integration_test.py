@@ -304,6 +304,21 @@ def main():
              "34t0i-dz642-h42bg3hq4bdfpf2": "ReqNodeNotAvail",
              "34t0i-dz642-h42bg3hq4bdfpf3": "ReqNodeNotAvail",
              "34t0i-dz642-h42bg3hq4bdfpf4": "ReqNodeNotAvail"
+         }),
+        "test5": (
+            [
+                (r".*Daemon started", set_squeue),
+                (r".*Client error: nope", noop),
+                (r".*Client error: nope", noop),
+                (r".*Client error: nope", noop),
+                (r".*Client error: nope", noop),
+            ],
+            {},
+            "arvnodeman.test.fake_driver.FailingDriver",
+            {"34t0i-dz642-h42bg3hq4bdfpf1": "ReqNodeNotAvail",
+             "34t0i-dz642-h42bg3hq4bdfpf2": "ReqNodeNotAvail",
+             "34t0i-dz642-h42bg3hq4bdfpf3": "ReqNodeNotAvail",
+             "34t0i-dz642-h42bg3hq4bdfpf4": "ReqNodeNotAvail"
          })
     }
 
