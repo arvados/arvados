@@ -4,7 +4,7 @@
         <%= check_box_tag 'uuids[]', obj.uuid, false, :class => 'persistent-selection' %>
       </td>
       <td>
-        <%= link_to_if_arvados_object obj, friendly_name: true %>
+        <%= if !obj.name.blank? then obj.name else obj.uuid end %>
       <td>
         <%= obj.created_at.to_s if obj.created_at %>
       <td>
@@ -12,25 +12,15 @@
       </td>
       <td>
         <% i = 0 %>
-        <% while i < 3 and i < obj.files.length %>
+        <% while i < 5 and i < obj.files.length %>
           <% file = obj.files[i] %>
           <% file_path = "#{file[0]}/#{file[1]}" %>
-          <%= link_to file[1], {controller: 'collections', action: 'show_file', uuid: obj.uuid, file: file_path, size: file[2], disposition: 'inline'}, {title: 'View in browser'} %><br />
+          <%= file_path %><br />
           <% i += 1 %>
         <% end %>
         <% if i < obj.files.length %>
-          &vellip;
+          &hellip;
         <% end %>
-      </td>
-      <td>
-        <span class="tag-container">
-        <% if @collection_info[obj.uuid] %>
-          <% @collection_info[obj.uuid][:tag_links].each do |tag_link| %>
-            <span class="label label-info" data-tag-link-uuid="<%= tag_link.uuid %>"><%= tag_link.name %>
-            </span>&nbsp;
-          <% end %>
-        <% end %>
-        </span>
       </td>
       <td>
         <%= render partial: 'untrash_item', locals: {object:obj} %>
