@@ -64,6 +64,7 @@ func (s *DoMainTestSuite) SetUpSuite(c *C) {
 func (s *DoMainTestSuite) SetUpTest(c *C) {
 	logOutput := io.MultiWriter(&logBuffer)
 	log.SetOutput(logOutput)
+	keepclient.ClearCache()
 }
 
 func (s *DoMainTestSuite) TearDownTest(c *C) {
@@ -89,6 +90,8 @@ func setupKeepBlockCheckWithTTL(c *C, enforcePermissions bool, keepServicesJSON 
 	kc, ttl, err = setupKeepClient(config, keepServicesJSON, ttl)
 	c.Assert(ttl, Equals, blobSignatureTTL)
 	c.Check(err, IsNil)
+
+	keepclient.ClearCache()
 }
 
 // Setup test data
@@ -144,9 +147,8 @@ func setupBlockHashFile(c *C, name string, blocks []string) string {
 
 func checkErrorLog(c *C, blocks []string, prefix, suffix string) {
 	for _, hash := range blocks {
-		expected := prefix + `.*` + hash + `.*` + suffix
-		match, _ := regexp.MatchString(expected, logBuffer.String())
-		c.Assert(match, Equals, true)
+		expected := `(?ms).*` + prefix + `.*` + hash + `.*` + suffix + `.*`
+		c.Check(logBuffer.String(), Matches, expected)
 	}
 }
 

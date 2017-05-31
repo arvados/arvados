@@ -6,99 +6,165 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"reflect"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 )
 
-// DiscoverKeepServers gets list of available keep services from the
-// API server.
+// ClearCache clears the Keep service discovery cache.
+func ClearCache() {
+	svcListCacheMtx.Lock()
+	defer svcListCacheMtx.Unlock()
+	for _, ent := range svcListCache {
+		ent.clear <- struct{}{}
+	}
+}
+
+// ClearCacheOnSIGHUP installs a signal handler that calls
+// ClearCache when SIGHUP is received.
+func ClearCacheOnSIGHUP() {
+	svcListCacheMtx.Lock()
+	defer svcListCacheMtx.Unlock()
+	if svcListCacheSignal != nil {
+		return
+	}
+	svcListCacheSignal = make(chan os.Signal, 1)
+	signal.Notify(svcListCacheSignal, syscall.SIGHUP)
+	go func() {
+		for range svcListCacheSignal {
+			ClearCache()
+		}
+	}()
+}
+
+var (
+	svcListCache       = map[string]cachedSvcList{}
+	svcListCacheSignal chan os.Signal
+	svcListCacheMtx    sync.Mutex
+)
+
+type cachedSvcList struct {
+	arv    *arvadosclient.ArvadosClient
+	latest chan svcList
+	clear  chan struct{}
+}
+
+// Check for new services list every few minutes. Send the latest list
+// to the "latest" channel as needed.
+func (ent *cachedSvcList) poll() {
+	wakeup := make(chan struct{})
+
+	replace := make(chan svcList)
+	go func() {
+		wakeup <- struct{}{}
+		current := <-replace
+		for {
+			select {
+			case <-ent.clear:
+				wakeup <- struct{}{}
+				// Wait here for the next success, in
+				// order to avoid returning stale
+				// results on the "latest" channel.
+				current = <-replace
+			case current = <-replace:
+			case ent.latest <- current:
+			}
+		}
+	}()
+
+	okDelay := 5 * time.Minute
+	errDelay := 3 * time.Second
+	timer := time.NewTimer(okDelay)
+	for {
+		select {
+		case <-timer.C:
+		case <-wakeup:
+			if !timer.Stop() {
+				// Lost race stopping timer; skip extra firing
+				<-timer.C
+			}
+		}
+		var next svcList
+		err := ent.arv.Call("GET", "keep_services", "", "accessible", nil, &next)
+		if err != nil {
+			log.Printf("WARNING: Error retrieving services list: %v (retrying in %v)", err, errDelay)
+			timer.Reset(errDelay)
+			continue
+		}
+		replace <- next
+		timer.Reset(okDelay)
+	}
+}
+
+// discoverServices gets the list of available keep services from
+// the API server.
 //
 // If a list of services is provided in the arvadosclient (e.g., from
 // an environment variable or local config), that list is used
 // instead.
-func (this *KeepClient) DiscoverKeepServers() error {
-	if this.Arvados.KeepServiceURIs != nil {
-		this.foundNonDiskSvc = true
-		this.replicasPerService = 0
-		roots := make(map[string]string)
-		for i, uri := range this.Arvados.KeepServiceURIs {
-			roots[fmt.Sprintf("00000-bi6l4-%015d", i)] = uri
-		}
-		this.SetServiceRoots(roots, roots, roots)
+//
+// If an API call is made, the result is cached for 5 minutes or until
+// ClearCache() is called, and during this interval it is reused by
+// other KeepClients that use the same API server host.
+func (kc *KeepClient) discoverServices() error {
+	if kc.disableDiscovery {
 		return nil
 	}
 
-	// ArvadosClient did not provide a services list. Ask API
-	// server for a list of accessible services.
-	var list svcList
-	err := this.Arvados.Call("GET", "keep_services", "", "accessible", nil, &list)
-	if err != nil {
-		return err
+	if kc.Arvados.KeepServiceURIs != nil {
+		kc.disableDiscovery = true
+		kc.foundNonDiskSvc = true
+		kc.replicasPerService = 0
+		roots := make(map[string]string)
+		for i, uri := range kc.Arvados.KeepServiceURIs {
+			roots[fmt.Sprintf("00000-bi6l4-%015d", i)] = uri
+		}
+		kc.setServiceRoots(roots, roots, roots)
+		return nil
 	}
-	return this.loadKeepServers(list)
+
+	svcListCacheMtx.Lock()
+	cacheEnt, ok := svcListCache[kc.Arvados.ApiServer]
+	if !ok {
+		arv := *kc.Arvados
+		cacheEnt = cachedSvcList{
+			latest: make(chan svcList),
+			clear:  make(chan struct{}),
+			arv:    &arv,
+		}
+		go cacheEnt.poll()
+		svcListCache[kc.Arvados.ApiServer] = cacheEnt
+	}
+	svcListCacheMtx.Unlock()
+
+	return kc.loadKeepServers(<-cacheEnt.latest)
 }
 
-// LoadKeepServicesFromJSON gets list of available keep services from given JSON
-func (this *KeepClient) LoadKeepServicesFromJSON(services string) error {
-	var list svcList
+// LoadKeepServicesFromJSON gets list of available keep services from
+// given JSON and disables automatic service discovery.
+func (kc *KeepClient) LoadKeepServicesFromJSON(services string) error {
+	kc.disableDiscovery = true
 
-	// Load keep services from given json
+	var list svcList
 	dec := json.NewDecoder(strings.NewReader(services))
 	if err := dec.Decode(&list); err != nil {
 		return err
 	}
 
-	return this.loadKeepServers(list)
+	return kc.loadKeepServers(list)
 }
 
-// RefreshServices calls DiscoverKeepServers to refresh the keep
-// service list on SIGHUP; when the given interval has elapsed since
-// the last refresh; and (if the last refresh failed) the given
-// errInterval has elapsed.
-func (kc *KeepClient) RefreshServices(interval, errInterval time.Duration) {
-	var previousRoots = []map[string]string{}
-
-	timer := time.NewTimer(interval)
-	gotHUP := make(chan os.Signal, 1)
-	signal.Notify(gotHUP, syscall.SIGHUP)
-
-	for {
-		select {
-		case <-gotHUP:
-		case <-timer.C:
-		}
-		timer.Reset(interval)
-
-		if err := kc.DiscoverKeepServers(); err != nil {
-			log.Printf("WARNING: Error retrieving services list: %v (retrying in %v)", err, errInterval)
-			timer.Reset(errInterval)
-			continue
-		}
-		newRoots := []map[string]string{kc.LocalRoots(), kc.GatewayRoots()}
-
-		if !reflect.DeepEqual(previousRoots, newRoots) {
-			DebugPrintf("DEBUG: Updated services list: locals %v gateways %v", newRoots[0], newRoots[1])
-			previousRoots = newRoots
-		}
-
-		if len(newRoots[0]) == 0 {
-			log.Printf("WARNING: No local services (retrying in %v)", errInterval)
-			timer.Reset(errInterval)
-		}
-	}
-}
-
-// loadKeepServers
-func (this *KeepClient) loadKeepServers(list svcList) error {
+func (kc *KeepClient) loadKeepServers(list svcList) error {
 	listed := make(map[string]bool)
 	localRoots := make(map[string]string)
 	gatewayRoots := make(map[string]string)
 	writableLocalRoots := make(map[string]string)
 
 	// replicasPerService is 1 for disks; unknown or unlimited otherwise
-	this.replicasPerService = 1
+	kc.replicasPerService = 1
 
 	for _, service := range list.Items {
 		scheme := "http"
@@ -117,12 +183,12 @@ func (this *KeepClient) loadKeepServers(list svcList) error {
 		if service.ReadOnly == false {
 			writableLocalRoots[service.Uuid] = url
 			if service.SvcType != "disk" {
-				this.replicasPerService = 0
+				kc.replicasPerService = 0
 			}
 		}
 
 		if service.SvcType != "disk" {
-			this.foundNonDiskSvc = true
+			kc.foundNonDiskSvc = true
 		}
 
 		// Gateway services are only used when specified by
@@ -133,6 +199,6 @@ func (this *KeepClient) loadKeepServers(list svcList) error {
 		gatewayRoots[service.Uuid] = url
 	}
 
-	this.SetServiceRoots(localRoots, writableLocalRoots, gatewayRoots)
+	kc.setServiceRoots(localRoots, writableLocalRoots, gatewayRoots)
 	return nil
 }

@@ -29,24 +29,23 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 	// start api and keep servers
 	arvadostest.StartAPI()
 	arvadostest.StartKeep(2, false)
+	keepclient.ClearCache()
 
 	// make arvadosclient
 	arv, err := arvadosclient.MakeArvadosClient()
 	if err != nil {
-		t.Error("Error creating arv")
+		t.Fatalf("Error creating arv: %s", err)
 	}
 
 	// keep client
-	keepClient = &keepclient.KeepClient{
-		Arvados:       arv,
-		Want_replicas: 1,
+	keepClient, err = keepclient.MakeKeepClient(arv)
+	if err != nil {
+		t.Fatalf("error creating KeepClient: %s", err)
 	}
+	keepClient.Want_replicas = 1
 
 	// discover keep services
 	var servers []string
-	if err := keepClient.DiscoverKeepServers(); err != nil {
-		t.Error("Error discovering keep services")
-	}
 	for _, host := range keepClient.LocalRoots() {
 		servers = append(servers, host)
 	}

@@ -5,8 +5,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -14,6 +12,9 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
 func main() {
@@ -153,7 +154,7 @@ func setupKeepClient(config apiConfig, keepServicesJSON string, blobSignatureTTL
 		External: config.ExternalClient,
 	}
 
-	// if keepServicesJSON is provided, use it to load services; else, use DiscoverKeepServers
+	// If keepServicesJSON is provided, use it instead of service discovery
 	if keepServicesJSON == "" {
 		kc, err = keepclient.MakeKeepClient(&arv)
 		if err != nil {

@@ -58,6 +58,7 @@ func (s *ServerRequiredSuite) SetUpTest(c *C) {
 	dstKeepServicesJSON = ""
 	kcSrc = &keepclient.KeepClient{}
 	kcDst = &keepclient.KeepClient{}
+	keepclient.ClearCache()
 }
 
 func (s *ServerRequiredSuite) TearDownTest(c *C) {
@@ -65,6 +66,7 @@ func (s *ServerRequiredSuite) TearDownTest(c *C) {
 }
 
 func (s *DoMainTestSuite) SetUpTest(c *C) {
+	keepclient.ClearCache()
 	args := []string{"keep-rsync"}
 	os.Args = args
 }

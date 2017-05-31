@@ -35,6 +35,10 @@ type ServerRequiredSuite struct{}
 // Standalone tests
 type StandaloneSuite struct{}
 
+func (s *StandaloneSuite) SetUpTest(c *C) {
+	ClearCache()
+}
+
 func pythonDir() string {
 	cwd, _ := os.Getwd()
 	return fmt.Sprintf("%s/../../python/tests", cwd)
@@ -48,6 +52,10 @@ func (s *ServerRequiredSuite) SetUpSuite(c *C) {
 func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	arvadostest.StopKeep(2)
 	arvadostest.StopAPI()
+}
+
+func (s *ServerRequiredSuite) SetUpTest(c *C) {
+	ClearCache()
 }
 
 func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
@@ -1067,12 +1075,14 @@ func (s *StandaloneSuite) TestGetIndexWithNoPrefix(c *C) {
 	defer ks.listener.Close()
 
 	arv, err := arvadosclient.MakeArvadosClient()
-	kc, _ := MakeKeepClient(arv)
+	c.Assert(err, IsNil)
+	kc, err := MakeKeepClient(arv)
+	c.Assert(err, IsNil)
 	arv.ApiToken = "abc123"
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
 	r, err := kc.GetIndex("x", "")
-	c.Check(err, Equals, nil)
+	c.Check(err, IsNil)
 
 	content, err2 := ioutil.ReadAll(r)
 	c.Check(err2, Equals, nil)
@@ -1098,7 +1108,7 @@ func (s *StandaloneSuite) TestGetIndexWithPrefix(c *C) {
 	kc.SetServiceRoots(map[string]string{"x": ks.url}, nil, nil)
 
 	r, err := kc.GetIndex("x", hash[0:3])
-	c.Check(err, Equals, nil)
+	c.Assert(err, Equals, nil)
 
 	content, err2 := ioutil.ReadAll(r)
 	c.Check(err2, Equals, nil)
@@ -1237,6 +1247,7 @@ func (s *ServerRequiredSuite) TestMakeKeepClientWithNonDiskTypeService(c *C) {
 		&blobKeepService)
 	c.Assert(err, Equals, nil)
 	defer func() { arv.Delete("keep_services", blobKeepService["uuid"].(string), nil, nil) }()
+	ClearCache()
 
 	// Make a keepclient and ensure that the testblobstore is included
 	kc, err := MakeKeepClient(arv)

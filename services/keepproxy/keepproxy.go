@@ -133,7 +133,6 @@ func main() {
 	if cfg.DefaultReplicas > 0 {
 		kc.Want_replicas = cfg.DefaultReplicas
 	}
-	go kc.RefreshServices(5*time.Minute, 3*time.Second)
 
 	listener, err = net.Listen("tcp", cfg.Listen)
 	if err != nil {
