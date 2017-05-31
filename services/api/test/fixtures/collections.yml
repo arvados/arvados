@@ -297,7 +297,7 @@ unique_expired_collection:
   trash_at: 2001-01-01T00:00:00Z
   delete_at: 2038-01-01T00:00:00Z
   manifest_text: ". 29d7797f1888013986899bc9083783fa+3 0:3:expired\n"
-  name: unique_expired_collection
+  name: unique_expired_collection1
 
 unique_expired_collection2:
   uuid: zzzzz-4zz18-mto52zx1s7sn3jr
