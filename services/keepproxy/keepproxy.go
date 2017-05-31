@@ -269,12 +269,6 @@ func MakeRESTRouter(enable_get bool, enable_put bool, kc *keepclient.KeepClient,
 		},
 	}
 
-	go func(t *http.Transport) {
-		for range time.NewTicker(5 * time.Minute).C {
-			t.CloseIdleConnections()
-		}
-	}(h.transport)
-
 	if enable_get {
 		rest.HandleFunc(`/{locator:[0-9a-f]{32}\+.*}`, h.Get).Methods("GET", "HEAD")
 		rest.HandleFunc(`/{locator:[0-9a-f]{32}}`, h.Get).Methods("GET", "HEAD")
