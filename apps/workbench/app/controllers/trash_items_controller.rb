@@ -77,9 +77,9 @@ class TrashItemsController < ApplicationController
 
     updates = {trash_at: nil}
 
-    params[:selection].collect { |uuid| ArvadosBase.find uuid }.each do |item|
-      item.update_attributes updates
-      @untrashed_uuids << item.uuid
+    Collection.include_trash(1).where(uuid: params[:selection]).each do |c|
+      c.untrash
+      @untrashed_uuids << c.uuid
     end
 
     respond_to do |format|

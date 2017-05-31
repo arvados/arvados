@@ -12,7 +12,7 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def find_objects_for_index
-    if params[:include_trash] || ['destroy', 'trash'].include?(action_name)
+    if params[:include_trash] || ['destroy', 'trash', 'untrash'].include?(action_name)
       @objects = Collection.readable_by(*@read_users).unscoped
     end
     super
@@ -59,6 +59,15 @@ class Arvados::V1::CollectionsController < ApplicationController
   def trash
     if !@object.is_trashed
       @object.update_attributes!(trash_at: db_current_time)
+    end
+    show
+  end
+
+  def untrash
+    if @object.is_trashed
+      @object.update_attributes!(trash_at: nil)
+    else
+      raise InvalidStateTransitionError
     end
     show
   end

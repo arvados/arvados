@@ -98,4 +98,7 @@ class Collection < ArvadosBase
     [ 'description' ]
   end
 
+  def untrash
+    arvados_api_client.api(self.class, "/#{self.uuid}/untrash", {})
+  end
 end
