@@ -15,7 +15,6 @@ class TrashItemsController < ApplicationController
       @next_page_filters = next_page_filters('<=')
       @next_page_href = url_for(partial: :trash_rows,
                                 filters: @next_page_filters.to_json)
-      preload_links_for_objects(@objects.to_a)
     else
       @next_page_href = nil
     end
@@ -37,39 +36,13 @@ class TrashItemsController < ApplicationController
 
     if params[:search].andand.length.andand > 0
       tags = Link.where(any: ['contains', params[:search]])
-      @objects = (base_search.limit(limit).offset(offset).where(uuid: tags.collect(&:head_uuid)) |
-                      base_search.where(any: ['contains', params[:search]])).
-        uniq { |c| c.uuid }
+      base_search = base_search.limit(limit).offset(offset)
+      @objects = (base_search.where(uuid: tags.collect(&:head_uuid)) |
+                  base_search.where(any: ['contains', params[:search]])).
+                  uniq { |c| c.uuid }
     else
       @objects = base_search.limit(limit).offset(offset)
     end
-
-    @links = Link.where(head_uuid: @objects.collect(&:uuid))
-    @collection_info = {}
-    @objects.each do |c|
-      @collection_info[c.uuid] = {
-        tag_links: [],
-        wanted: false,
-        wanted_by_me: false,
-        provenance: [],
-        links: []
-      }
-    end
-    @links.each do |link|
-      @collection_info[link.head_uuid] ||= {}
-      info = @collection_info[link.head_uuid]
-      case link.link_class
-      when 'tag'
-        info[:tag_links] << link
-      when 'resources'
-        info[:wanted] = true
-        info[:wanted_by_me] ||= link.tail_uuid == current_user.uuid
-      when 'provenance'
-        info[:provenance] << link.name
-      end
-      info[:links] << link
-    end
-    @request_url = request.url
   end
 
   def untrash_items
