@@ -449,8 +449,7 @@ class ArvCwlRunner(object):
                                       name=kwargs.get("name"),
                                       on_error=kwargs.get("on_error"),
                                       submit_runner_image=kwargs.get("submit_runner_image"))
-
-        if not kwargs.get("submit") and "cwl_runner_job" not in kwargs and self.work_api == "jobs":
+        elif "cwl_runner_job" not in kwargs and self.work_api == "jobs":
             # Create pipeline for local run
             self.pipeline = self.api.pipeline_instances().create(
                 body={
