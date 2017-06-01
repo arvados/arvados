@@ -5,6 +5,7 @@ from __future__ import absolute_import, print_function
 import functools
 import logging
 import time
+import re
 
 import libcloud.common.types as cloud_types
 import pykka

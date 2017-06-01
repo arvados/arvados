@@ -29,16 +29,19 @@ class ArvadosNodeListMonitorActor(clientactor.RemotePollLoopActor):
         sinfo_out = subprocess.check_output(["sinfo", "--noheader", "--format=%n %t"])
         nodestates = {}
         for out in sinfo_out.splitlines():
-            nodename, state = out.split(" ", 2)
-            if state in ('alloc', 'alloc*',
-                         'comp',  'comp*',
-                         'mix',   'mix*',
-                         'drng',  'drng*'):
-                nodestates[nodename] = 'busy'
-            elif state == 'idle':
-                nodestates[nodename] = 'idle'
-            else:
-                nodestates[nodename] = 'down'
+            try:
+                nodename, state = out.split(" ", 2)
+                if state in ('alloc', 'alloc*',
+                             'comp',  'comp*',
+                             'mix',   'mix*',
+                             'drng',  'drng*'):
+                    nodestates[nodename] = 'busy'
+                elif state == 'idle':
+                    nodestates[nodename] = 'idle'
+                else:
+                    nodestates[nodename] = 'down'
+            except ValueError:
+                pass
 
         for n in nodelist:
             if n["slot_number"] and n["hostname"] and n["hostname"] in nodestates:

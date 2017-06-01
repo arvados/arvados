@@ -103,12 +103,19 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
     def new_cloud_client(self):
         module = importlib.import_module('arvnodeman.computenode.driver.' +
                                          self.get('Cloud', 'provider'))
+        driver_class = module.ComputeNodeDriver.DEFAULT_DRIVER
+        if self.get('Cloud', 'driver_class'):
+            d = self.get('Cloud', 'driver_class').split('.')
+            mod = '.'.join(d[:-1])
+            cls = d[-1]
+            driver_class = importlib.import_module(mod).__dict__[cls]
         auth_kwargs = self.get_section('Cloud Credentials')
         if 'timeout' in auth_kwargs:
             auth_kwargs['timeout'] = int(auth_kwargs['timeout'])
         return module.ComputeNodeDriver(auth_kwargs,
                                         self.get_section('Cloud List'),
-                                        self.get_section('Cloud Create'))
+                                        self.get_section('Cloud Create'),
+                                        driver_class=driver_class)
 
     def node_sizes(self, all_sizes):
         """Finds all acceptable NodeSizes for our installation.
