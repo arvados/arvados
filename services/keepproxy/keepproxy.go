@@ -104,6 +104,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error setting up keep client %s", err.Error())
 	}
+	keepclient.RefreshServiceDiscoveryOnSIGHUP()
 
 	if cfg.PIDFile != "" {
 		f, err := os.Create(cfg.PIDFile)
