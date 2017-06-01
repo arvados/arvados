@@ -29,7 +29,7 @@ func SetupPullWorkerIntegrationTest(t *testing.T, testData PullWorkIntegrationTe
 	// start api and keep servers
 	arvadostest.StartAPI()
 	arvadostest.StartKeep(2, false)
-	keepclient.ClearCache()
+	keepclient.RefreshServiceDiscovery()
 
 	// make arvadosclient
 	arv, err := arvadosclient.MakeArvadosClient()

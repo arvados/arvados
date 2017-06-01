@@ -99,7 +99,7 @@ func setupRsync(c *C, enforcePermissions bool, replications int) {
 
 	// Start Keep servers
 	arvadostest.StartKeep(3, enforcePermissions)
-	keepclient.ClearCache()
+	keepclient.RefreshServiceDiscovery()
 
 	// setup keepclients
 	var err error
@@ -463,7 +463,7 @@ func (s *DoMainTestSuite) Test_doMainWithSrcAndDstConfig(c *C) {
 	// actual copying to dst will happen, but that's ok.
 	arvadostest.StartKeep(2, false)
 	defer arvadostest.StopKeep(2)
-	keepclient.ClearCache()
+	keepclient.RefreshServiceDiscovery()
 
 	err := doMain()
 	c.Check(err, IsNil)

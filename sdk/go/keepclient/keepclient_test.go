@@ -36,7 +36,7 @@ type ServerRequiredSuite struct{}
 type StandaloneSuite struct{}
 
 func (s *StandaloneSuite) SetUpTest(c *C) {
-	ClearCache()
+	RefreshServiceDiscovery()
 }
 
 func pythonDir() string {
@@ -55,7 +55,7 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 }
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
-	ClearCache()
+	RefreshServiceDiscovery()
 }
 
 func (s *ServerRequiredSuite) TestMakeKeepClient(c *C) {
@@ -1247,7 +1247,7 @@ func (s *ServerRequiredSuite) TestMakeKeepClientWithNonDiskTypeService(c *C) {
 		&blobKeepService)
 	c.Assert(err, Equals, nil)
 	defer func() { arv.Delete("keep_services", blobKeepService["uuid"].(string), nil, nil) }()
-	ClearCache()
+	RefreshServiceDiscovery()
 
 	// Make a keepclient and ensure that the testblobstore is included
 	kc, err := MakeKeepClient(arv)

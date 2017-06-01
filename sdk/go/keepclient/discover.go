@@ -15,7 +15,7 @@ import (
 )
 
 // ClearCache clears the Keep service discovery cache.
-func ClearCache() {
+func RefreshServiceDiscovery() {
 	svcListCacheMtx.Lock()
 	defer svcListCacheMtx.Unlock()
 	for _, ent := range svcListCache {
@@ -25,7 +25,7 @@ func ClearCache() {
 
 // ClearCacheOnSIGHUP installs a signal handler that calls
 // ClearCache when SIGHUP is received.
-func ClearCacheOnSIGHUP() {
+func RefreshServiceDiscoveryOnSIGHUP() {
 	svcListCacheMtx.Lock()
 	defer svcListCacheMtx.Unlock()
 	if svcListCacheSignal != nil {
@@ -35,7 +35,7 @@ func ClearCacheOnSIGHUP() {
 	signal.Notify(svcListCacheSignal, syscall.SIGHUP)
 	go func() {
 		for range svcListCacheSignal {
-			ClearCache()
+			RefreshServiceDiscovery()
 		}
 	}()
 }

@@ -64,7 +64,7 @@ func (s *DoMainTestSuite) SetUpSuite(c *C) {
 func (s *DoMainTestSuite) SetUpTest(c *C) {
 	logOutput := io.MultiWriter(&logBuffer)
 	log.SetOutput(logOutput)
-	keepclient.ClearCache()
+	keepclient.RefreshServiceDiscovery()
 }
 
 func (s *DoMainTestSuite) TearDownTest(c *C) {
@@ -91,7 +91,7 @@ func setupKeepBlockCheckWithTTL(c *C, enforcePermissions bool, keepServicesJSON 
 	c.Assert(ttl, Equals, blobSignatureTTL)
 	c.Check(err, IsNil)
 
-	keepclient.ClearCache()
+	keepclient.RefreshServiceDiscovery()
 }
 
 // Setup test data

@@ -64,7 +64,7 @@ func parseCollectionIDFromURL(s string) string {
 
 func (h *handler) setup() {
 	h.clientPool = arvadosclient.MakeClientPool()
-	keepclient.ClearCacheOnSIGHUP()
+	keepclient.RefreshServiceDiscoveryOnSIGHUP()
 }
 
 // ServeHTTP implements http.Handler.
