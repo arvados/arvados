@@ -16,6 +16,14 @@ import (
 	. "gopkg.in/check.v1"
 )
 
+func resetGlobals() {
+	blobSigningKey = ""
+	srcKeepServicesJSON = ""
+	dstKeepServicesJSON = ""
+	kcSrc = nil
+	kcDst = nil
+}
+
 // Gocheck boilerplate
 func Test(t *testing.T) {
 	TestingT(t)
@@ -52,13 +60,7 @@ var srcKeepServicesJSON, dstKeepServicesJSON, blobSigningKey string
 var blobSignatureTTL = time.Duration(2*7*24) * time.Hour
 
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
-	// reset all variables between tests
-	blobSigningKey = ""
-	srcKeepServicesJSON = ""
-	dstKeepServicesJSON = ""
-	kcSrc = &keepclient.KeepClient{}
-	kcDst = &keepclient.KeepClient{}
-	keepclient.ClearCache()
+	resetGlobals()
 }
 
 func (s *ServerRequiredSuite) TearDownTest(c *C) {
@@ -99,6 +101,7 @@ func setupRsync(c *C, enforcePermissions bool, replications int) {
 
 	// Start Keep servers
 	arvadostest.StartKeep(3, enforcePermissions)
+	keepclient.ClearCache()
 
 	// setup keepclients
 	var err error
@@ -108,36 +111,20 @@ func setupRsync(c *C, enforcePermissions bool, replications int) {
 	kcDst, _, err = setupKeepClient(dstConfig, dstKeepServicesJSON, true, replications, 0)
 	c.Check(err, IsNil)
 
-	for uuid := range kcSrc.LocalRoots() {
+	srcRoots := map[string]string{}
+	dstRoots := map[string]string{}
+	for uuid, root := range kcSrc.LocalRoots() {
 		if strings.HasSuffix(uuid, "02") {
-			delete(kcSrc.LocalRoots(), uuid)
+			dstRoots[uuid] = root
+		} else {
+			srcRoots[uuid] = root
 		}
 	}
-	for uuid := range kcSrc.GatewayRoots() {
-		if strings.HasSuffix(uuid, "02") {
-			delete(kcSrc.GatewayRoots(), uuid)
-		}
+	if srcKeepServicesJSON == "" {
+		kcSrc.SetServiceRoots(srcRoots, srcRoots, srcRoots)
 	}
-	for uuid := range kcSrc.WritableLocalRoots() {
-		if strings.HasSuffix(uuid, "02") {
-			delete(kcSrc.WritableLocalRoots(), uuid)
-		}
-	}
-
-	for uuid := range kcDst.LocalRoots() {
-		if strings.HasSuffix(uuid, "00") || strings.HasSuffix(uuid, "01") {
-			delete(kcDst.LocalRoots(), uuid)
-		}
-	}
-	for uuid := range kcDst.GatewayRoots() {
-		if strings.HasSuffix(uuid, "00") || strings.HasSuffix(uuid, "01") {
-			delete(kcDst.GatewayRoots(), uuid)
-		}
-	}
-	for uuid := range kcDst.WritableLocalRoots() {
-		if strings.HasSuffix(uuid, "00") || strings.HasSuffix(uuid, "01") {
-			delete(kcDst.WritableLocalRoots(), uuid)
-		}
+	if dstKeepServicesJSON == "" {
+		kcDst.SetServiceRoots(dstRoots, dstRoots, dstRoots)
 	}
 
 	if replications == 0 {
@@ -424,7 +411,6 @@ func (s *ServerNotRequiredSuite) TestSetupKeepClient_NoBlobSignatureTTL(c *C) {
 	srcConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
 	srcConfig.APIToken = arvadostest.DataManagerToken
 	srcConfig.APIHostInsecure = matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
-	arvadostest.StartKeep(2, false)
 
 	_, ttl, err := setupKeepClient(srcConfig, srcKeepServicesJSON, false, 0, 0)
 	c.Check(err, IsNil)
@@ -490,6 +476,7 @@ func (s *DoMainTestSuite) Test_doMainWithSrcAndDstConfig(c *C) {
 	// actual copying to dst will happen, but that's ok.
 	arvadostest.StartKeep(2, false)
 	defer arvadostest.StopKeep(2)
+	keepclient.ClearCache()
 
 	err := doMain()
 	c.Check(err, IsNil)
