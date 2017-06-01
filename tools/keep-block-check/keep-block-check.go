@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 	"time"
 
@@ -100,8 +99,6 @@ func loadConfig(configFile string) (config apiConfig, blobSigningKey string, err
 	return
 }
 
-var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
-
 // Read config from file
 func readConfigFromFile(filename string) (config apiConfig, blobSigningKey string, err error) {
 	if !strings.Contains(filename, "/") {
@@ -131,9 +128,9 @@ func readConfigFromFile(filename string) (config apiConfig, blobSigningKey strin
 			case "ARVADOS_API_HOST":
 				config.APIHost = value
 			case "ARVADOS_API_HOST_INSECURE":
-				config.APIHostInsecure = matchTrue.MatchString(value)
+				config.APIHostInsecure = arvadosclient.StringBool(value)
 			case "ARVADOS_EXTERNAL_CLIENT":
-				config.ExternalClient = matchTrue.MatchString(value)
+				config.ExternalClient = arvadosclient.StringBool(value)
 			case "ARVADOS_BLOB_SIGNING_KEY":
 				blobSigningKey = value
 			}

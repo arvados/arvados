@@ -74,6 +74,13 @@ func (e APIServerError) Error() string {
 	}
 }
 
+// StringBool tests whether s is suggestive of true. It returns true
+// if s is a mixed/uppoer/lower-case variant of "1", "yes", or "true".
+func StringBool(s string) bool {
+	s = strings.ToLower(s)
+	return s == "1" || s == "yes" || s == "true"
+}
+
 // Helper type so we don't have to write out 'map[string]interface{}' every time.
 type Dict map[string]interface{}
 
@@ -175,12 +182,11 @@ func New(c *arvados.Client) (*ArvadosClient, error) {
 // ARVADOS_API_HOST_INSECURE, ARVADOS_EXTERNAL_CLIENT, and
 // ARVADOS_KEEP_SERVICES.
 func MakeArvadosClient() (ac *ArvadosClient, err error) {
-	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
 	ac, err = New(arvados.NewClientFromEnv())
 	if err != nil {
 		return
 	}
-	ac.External = matchTrue.MatchString(os.Getenv("ARVADOS_EXTERNAL_CLIENT"))
+	ac.External = StringBool(os.Getenv("ARVADOS_EXTERNAL_CLIENT"))
 	return
 }
 

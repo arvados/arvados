@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 
@@ -80,7 +81,7 @@ func setupKeepBlockCheckWithTTL(c *C, enforcePermissions bool, keepServicesJSON 
 	var config apiConfig
 	config.APIHost = os.Getenv("ARVADOS_API_HOST")
 	config.APIToken = arvadostest.DataManagerToken
-	config.APIHostInsecure = matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
+	config.APIHostInsecure = arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 
 	// Start Keep servers
 	arvadostest.StartKeep(2, enforcePermissions)
@@ -290,7 +291,7 @@ func (s *ServerRequiredSuite) TestLoadConfig(c *C) {
 
 	c.Assert(config.APIHost, Equals, os.Getenv("ARVADOS_API_HOST"))
 	c.Assert(config.APIToken, Equals, arvadostest.DataManagerToken)
-	c.Assert(config.APIHostInsecure, Equals, matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE")))
+	c.Assert(config.APIHostInsecure, Equals, arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE")))
 	c.Assert(config.ExternalClient, Equals, false)
 	c.Assert(blobSigningKey, Equals, "abcdefg")
 }
