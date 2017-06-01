@@ -1,7 +1,9 @@
 <% @objects.sort_by { |obj| obj.created_at }.reverse.each do |obj| %>
     <tr data-object-uuid="<%= obj.uuid %>" data-kind="<%= obj.kind %>" >
       <td>
-        <%= check_box_tag 'uuids[]', obj.uuid, false, :class => 'persistent-selection' %>
+        <% if obj.editable? %>
+          <%= check_box_tag 'uuids[]', obj.uuid, false, :class => 'persistent-selection' %>
+        <% end %>
       </td>
       <td>
         <%= if !obj.name.blank? then obj.name else obj.uuid end %>
@@ -11,15 +13,13 @@
         <%= obj.trash_at.to_s if obj.trash_at %>
       </td>
       <td>
-        <% i = 0 %>
-        <% while i < 5 and i < obj.files.length %>
+        <% for i in (0..[2, obj.files.length-1].min) %>
           <% file = obj.files[i] %>
           <% file_path = "#{file[0]}/#{file[1]}" %>
           <%= file_path %><br />
-          <% i += 1 %>
         <% end %>
-        <% if i < obj.files.length %>
-          &hellip;
+        <% if obj.files.length > 3 %>
+          &vellip;
         <% end %>
       </td>
       <td>
