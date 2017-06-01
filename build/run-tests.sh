@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. `dirname "$(readlink -f "$0")"`/libcloud-pin
+. `dirname "$(readlink -f "$0")"`/libcloud-pin.sh
 
 COLUMNS=80
 . `dirname "$(readlink -f "$0")"`/run-library.sh
