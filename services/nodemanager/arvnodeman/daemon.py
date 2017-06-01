@@ -122,6 +122,7 @@ class NodeManagerDaemonActor(actor_class):
         self.min_cloud_size = self.server_calculator.cheapest_size()
         self.min_nodes = min_nodes
         self.max_nodes = max_nodes
+        self.node_quota = max_nodes
         self.max_total_price = max_total_price
         self.poll_stale_after = poll_stale_after
         self.boot_fail_after = boot_fail_after
@@ -298,16 +299,17 @@ class NodeManagerDaemonActor(actor_class):
     def _nodes_wanted(self, size):
         total_node_count = self._nodes_booting(None) + len(self.cloud_nodes)
         under_min = self.min_nodes - total_node_count
-        over_max = total_node_count - self.max_nodes
+        over_max = total_node_count - self.node_quota
         total_price = self._total_price()
 
         counts = self._state_counts(size)
 
         up_count = self._nodes_up(counts)
         busy_count = counts["busy"]
+        wishlist_count = self._size_wishlist(size)
 
         self._logger.info("%s: wishlist %i, up %i (booting %i, unpaired %i, idle %i, busy %i), down %i, shutdown %i", size.name,
-                          self._size_wishlist(size),
+                          wishlist_count,
                           up_count,
                           counts["booting"],
                           counts["unpaired"],
@@ -321,7 +323,7 @@ class NodeManagerDaemonActor(actor_class):
         elif under_min > 0 and size.id == self.min_cloud_size.id:
             return under_min
 
-        wanted = self._size_wishlist(size) - (up_count - busy_count)
+        wanted = wishlist_count - (up_count - busy_count)
         if wanted > 0 and self.max_total_price and ((total_price + (size.price*wanted)) > self.max_total_price):
             can_boot = int((self.max_total_price - total_price) / size.price)
             if can_boot == 0:
@@ -392,25 +394,46 @@ class NodeManagerDaemonActor(actor_class):
         if arvados_node is not None:
             self.arvados_nodes[arvados_node['uuid']].assignment_time = (
                 time.time())
-        new_setup.subscribe(self._later.node_up)
+        new_setup.subscribe(self._later.node_setup_finished)
         if nodes_wanted > 1:
             self._later.start_node(cloud_size)
 
     def _get_actor_attrs(self, actor, *attr_names):
         return pykka.get_all([getattr(actor, name) for name in attr_names])
 
-    def node_up(self, setup_proxy):
+    def node_setup_finished(self, setup_proxy):
         # Called when a SetupActor has completed.
-        cloud_node, arvados_node = self._get_actor_attrs(
-            setup_proxy, 'cloud_node', 'arvados_node')
+        cloud_node, arvados_node, error = self._get_actor_attrs(
+            setup_proxy, 'cloud_node', 'arvados_node', 'error')
         setup_proxy.stop()
 
-        # If cloud_node is None then the node create wasn't
-        # successful and so there isn't anything to do.
-        if cloud_node is not None:
+        total_node_count = self._nodes_booting(None) + len(self.cloud_nodes)
+        if cloud_node is None:
+            # If cloud_node is None then the node create wasn't successful.
+            if error == dispatch.QuotaExceeded:
+                # We've hit a quota limit, so adjust node_quota to stop trying to
+                # boot new nodes until the node count goes down.
+                self.node_quota = min(total_node_count-1, self.max_nodes)
+                self._logger.warning("Setting node quota to %s", self.node_quota)
+        else:
             # Node creation succeeded.  Update cloud node list.
             cloud_node._nodemanager_recently_booted = True
             self._register_cloud_node(cloud_node)
+
+            # Different quota policies may in force depending on the cloud
+            # provider, account limits, and the specific mix of nodes sizes
+            # that are already created.  If we are right at the quota limit,
+            # we want to probe to see if the last quota still applies or if we
+            # are allowed to create more nodes.
+            #
+            # For example, if the quota is actually based on core count, the
+            # quota might be 20 single-core machines or 10 dual-core machines.
+            # If we previously set node_quota to 10 dual core machines, but are
+            # now booting single core machines (actual quota 20), we want to
+            # allow the quota to expand so we don't get stuck at 10 machines
+            # forever.
+            if total_node_count == self.node_quota and self.node_quota < self.max_nodes:
+                self.node_quota += 1
         del self.booting[setup_proxy.actor_ref.actor_urn]
         del self.sizes_booting[setup_proxy.actor_ref.actor_urn]
 

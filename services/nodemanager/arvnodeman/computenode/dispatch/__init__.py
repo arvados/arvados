@@ -16,6 +16,8 @@ from ...clientactor import _notify_subscribers
 from ... import config
 from .transitions import transitions
 
+QuotaExceeded = "QuotaExceeded"
+
 class ComputeNodeStateChangeBase(config.actor_class, RetryMixin):
     """Base class for actors that change a compute node's state.
 
@@ -96,6 +98,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         self.cloud_size = cloud_size
         self.arvados_node = None
         self.cloud_node = None
+        self.error = None
         if arvados_node is None:
             self._later.create_arvados_node()
         else:
@@ -119,11 +122,23 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
     def create_cloud_node(self):
         self._logger.info("Sending create_node request for node size %s.",
                           self.cloud_size.name)
-        self.cloud_node = self._cloud.create_node(self.cloud_size,
-                                                  self.arvados_node)
+        try:
+            self.cloud_node = self._cloud.create_node(self.cloud_size,
+                                                      self.arvados_node)
+        except Exception as e:
+            # The set of possible error codes / messages isn't documented for
+            # all clouds, so use a keyword heuristic to determine if the
+            # failure is likely due to a quota.
+            if re.search(r'(exceed|quota|limit)', e.message, re.I):
+                self.error = QuotaExceeded
+                self._logger.warning("Quota exceeded: %s", e)
+                self._finished()
+                return
+            else:
+                raise
 
         # The information included in the node size object we get from libcloud
-        # is inconsistent between cloud providers.  Replace libcloud NodeSize
+        # is inconsistent between cloud drivers.  Replace libcloud NodeSize
         # object with compatible CloudSizeWrapper object which merges the size
         # info reported from the cloud with size information from the
         # configuration file.
