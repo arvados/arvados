@@ -1,4 +1,4 @@
-<% @objects.sort_by { |obj| obj.created_at }.reverse.each do |obj| %>
+<% @objects.each do |obj| %>
     <tr data-object-uuid="<%= obj.uuid %>" data-kind="<%= obj.kind %>" >
       <td>
         <% if obj.editable? %>
@@ -8,9 +8,9 @@
       <td>
         <%= if !obj.name.blank? then obj.name else obj.uuid end %>
       <td>
-        <%= obj.created_at.to_s if obj.created_at %>
+        <%= render_localized_date(obj.created_at) if obj.created_at %>
       <td>
-        <%= obj.trash_at.to_s if obj.trash_at %>
+        <%= render_localized_date(obj.trash_at) if obj.trash_at %>
       </td>
       <td>
         <%= link_to_if_arvados_object obj.owner_uuid, friendly_name: true %>
@@ -22,7 +22,7 @@
           <%= file_path %><br />
         <% end %>
         <% if obj.files.length > 3 %>
-          &vellip;
+          <%= "(#{obj.files.length-3} more files)" %>
         <% end %>
       </td>
       <td>

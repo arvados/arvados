@@ -12,6 +12,7 @@ class TrashItemsController < ApplicationController
     trashed_items
 
     if @objects.any?
+      @objects = @objects.sort_by { |obj| obj.created_at }.reverse
       @next_page_filters = next_page_filters('<=')
       @next_page_href = url_for(partial: :trash_rows,
                                 filters: @next_page_filters.to_json)

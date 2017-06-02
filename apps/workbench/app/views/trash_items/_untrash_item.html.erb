@@ -1,7 +1,7 @@
 <% if object.editable? %>
-  <% msg = "Un-trash '" + if !object.name.blank? then object.name else object.uuid end + "'?" %>
+  <% msg = "Untrash '" + if !object.name.blank? then object.name else object.uuid end + "'?" %>
   <%= link_to({action: 'untrash_items', selection: [object.uuid]}, remote: true, method: :post,
-      data: {confirm: msg}) do %>
+      title: "Untrash", data: {confirm: msg}) do %>
     <i class="fa fa-fw fa-recycle"></i>
   <% end %>
 <% end %>
