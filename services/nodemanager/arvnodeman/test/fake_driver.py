@@ -27,18 +27,19 @@ class FakeDriver(NodeDriver):
                     ex_user_name=None,
                     ex_tags=None,
                     ex_network=None):
+        global all_nodes
         all_nodes.append(Node(name, name, NodeState.RUNNING, [], [], self, size=size, extra={"tags": ex_tags}))
         ping_url = re.search(r"echo '(.*)' > /var/tmp/arv-node-data/arv-ping-url", ex_customdata).groups(1)[0] + "&instance_id=" + name
-        print(ping_url)
         ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
         ctx.verify_mode = ssl.CERT_NONE
         f = urllib.urlopen(ping_url, "", context=ctx)
-        print(f.read())
         f.close()
         return all_nodes[-1]
 
     def destroy_node(self, cloud_node):
-        return None
+        global all_nodes
+        all_nodes = [n for n in all_nodes if n.id != cloud_node.id]
+        return True
 
     def get_image(self, img):
         pass

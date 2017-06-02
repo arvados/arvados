@@ -146,8 +146,8 @@ class NodeManagerDaemonActor(actor_class):
         self.last_polls[poll_key] = time.time()
 
     def _pair_nodes(self, node_record, arvados_node):
-        self._logger.info("Cloud node %s is now paired with Arvados node %s",
-                          node_record.cloud_node.name, arvados_node['uuid'])
+        self._logger.info("Cloud node %s is now paired with Arvados node %s with hostname %s",
+                          node_record.cloud_node.name, arvados_node['uuid'], arvados_node['hostname'])
         self._arvados_nodes_actor.subscribe_to(
             arvados_node['uuid'], node_record.actor.update_arvados_node)
         node_record.arvados_node = arvados_node
