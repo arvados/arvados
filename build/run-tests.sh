@@ -854,6 +854,12 @@ test_login-sync() {
 }
 do_test services/login-sync login-sync
 
+test_nodemanager-integration() {
+    cd "$WORKSPACE/services/nodemanager" \
+        && tests/integration_test.py ${testargs[services/nodemanager-integration]}
+}
+do_test services/nodemanager-integration nodemanager-integration
+
 for p in "${pythonstuff[@]}"
 do
     dir=${p%:py3}

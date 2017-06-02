@@ -49,7 +49,7 @@ poll_stale_after = 600
 # node before this long, assume that there was a cloud bootstrap failure and
 # shut it down.  Note that normal shutdown windows apply (see the Cloud
 # section), so this should be shorter than the first shutdown window value.
-boot_fail_after = 20
+boot_fail_after = 45
 
 # "Node stale time" affects two related behaviors.
 # 1. If a compute node has been running for at least this long, but it
@@ -93,6 +93,7 @@ apiclient = WARNING
 host = {host}
 token = {token}
 timeout = 15
+jobs_queue = no
 
 # Accept an untrusted SSL certificate from the API server?
 insecure = yes

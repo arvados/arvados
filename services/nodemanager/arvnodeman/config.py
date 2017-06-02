@@ -36,7 +36,10 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
         ConfigParser.SafeConfigParser.__init__(self, *args, **kwargs)
         for sec_name, settings in {
             'Arvados': {'insecure': 'no',
-                        'timeout': '15'},
+                        'timeout': '15',
+                        'jobs_queue': 'yes',
+                        'slurm_queue': 'yes'
+                    },
             'Daemon': {'min_nodes': '0',
                        'max_nodes': '1',
                        'poll_time': '60',

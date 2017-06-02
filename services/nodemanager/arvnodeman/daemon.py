@@ -407,14 +407,13 @@ class NodeManagerDaemonActor(actor_class):
             setup_proxy, 'cloud_node', 'arvados_node', 'error')
         setup_proxy.stop()
 
-        total_node_count = self._nodes_booting(None) + len(self.cloud_nodes)
         if cloud_node is None:
             # If cloud_node is None then the node create wasn't successful.
             if error == dispatch.QuotaExceeded:
                 # We've hit a quota limit, so adjust node_quota to stop trying to
                 # boot new nodes until the node count goes down.
-                self.node_quota = min(total_node_count-1, self.max_nodes)
-                self._logger.warning("Setting node quota to %s", self.node_quota)
+                self.node_quota = len(self.cloud_nodes)
+                self._logger.warning("After quota exceeded error setting node quota to %s", self.node_quota)
         else:
             # Node creation succeeded.  Update cloud node list.
             cloud_node._nodemanager_recently_booted = True
@@ -432,8 +431,11 @@ class NodeManagerDaemonActor(actor_class):
             # now booting single core machines (actual quota 20), we want to
             # allow the quota to expand so we don't get stuck at 10 machines
             # forever.
-            if total_node_count == self.node_quota and self.node_quota < self.max_nodes:
-                self.node_quota += 1
+            if len(self.cloud_nodes) >= self.node_quota:
+                self.node_quota = len(self.cloud_nodes)+1
+                self._logger.warning("After successful boot setting node quota to %s", self.node_quota)
+
+        self.node_quota = min(self.node_quota, self.max_nodes)
         del self.booting[setup_proxy.actor_ref.actor_urn]
         del self.sizes_booting[setup_proxy.actor_ref.actor_urn]
 
