@@ -3,6 +3,10 @@ class TrashItemsController < ApplicationController
     Collection
   end
 
+  def show_pane_list
+    %w(Recent)
+  end
+
   def find_objects_for_index
     # If it's not the index rows partial display, just return
     # The /index request will again be invoked to display the
@@ -12,6 +16,7 @@ class TrashItemsController < ApplicationController
     trashed_items
 
     if @objects.any?
+      @objects = @objects.sort_by { |obj| obj.created_at }.reverse
       @next_page_filters = next_page_filters('<=')
       @next_page_href = url_for(partial: :trash_rows,
                                 filters: @next_page_filters.to_json)
