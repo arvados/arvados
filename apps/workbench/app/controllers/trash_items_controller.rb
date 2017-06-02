@@ -3,6 +3,10 @@ class TrashItemsController < ApplicationController
     Collection
   end
 
+  def show_pane_list
+    %w(Recent)
+  end
+
   def find_objects_for_index
     # If it's not the index rows partial display, just return
     # The /index request will again be invoked to display the
