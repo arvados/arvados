@@ -477,4 +477,18 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_operator(json_response['items'].count,
                     :<, json_response['items_available'])
   end
+
+  test 'get contents recursive=true' do
+    authorize_with :active
+    get :contents, {
+          id: groups(:aproject).uuid,
+          recursive: true,
+          format: :json,
+        }
+    owners = json_response['items'].map do |item|
+      item['owner_uuid']
+    end
+    assert_includes(owners, groups(:aproject).uuid)
+    assert_includes(owners, groups(:asubproject).uuid)
+  end
 end
