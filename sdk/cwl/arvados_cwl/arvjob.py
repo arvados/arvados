@@ -292,9 +292,9 @@ class RunnerJob(Runner):
         ).execute(num_retries=self.arvrunner.num_retries)
 
         if self.enable_reuse:
+            # When reusing jobs, copy its output/log collection to the desired project
             reused_collections = [('Output', job['output']), ('Log', job['log'])]
             for col_type, pdh in [(n, p) for n, p in reused_collections if p]:
-                # When reusing jobs, copy its output/log collection to the desired project
                 c = arvados.collection.Collection(pdh,
                                                   api_client=self.arvrunner.api,
                                                   keep_client=self.arvrunner.keep_client,
@@ -306,6 +306,13 @@ class RunnerJob(Runner):
                 logger.info("Copied reused job's %s to collection %s",
                             col_type.lower(),
                             c.manifest_locator())
+            # Give read permission to the desired project on reused jobs
+            for job_name, job_uuid in job['components'].items():
+                self.arvrunner.api.links().create(body={
+                    'link_class': 'can_read',
+                    'tail_uuid': self.arvrunner.project_uuid,
+                    'head_uuid': job_uuid,
+                    }).execute(num_retries=self.arvrunner.num_retries)
 
         for k,v in job_spec["script_parameters"].items():
             if v is False or v is None or isinstance(v, dict):
