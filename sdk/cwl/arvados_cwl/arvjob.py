@@ -293,7 +293,8 @@ class RunnerJob(Runner):
 
         if self.enable_reuse:
             # When reusing jobs, copy its output/log collection to the desired project
-            reused_collections = [('Output', job['output']), ('Log', job['log'])]
+            reused_collections = [('Output', job.get('output', None)),
+                                  ('Log', job.get('log', None))]
             for col_type, pdh in [(n, p) for n, p in reused_collections if p]:
                 c = arvados.collection.Collection(pdh,
                                                   api_client=self.arvrunner.api,
@@ -307,7 +308,7 @@ class RunnerJob(Runner):
                             col_type.lower(),
                             c.manifest_locator())
             # Give read permission to the desired project on reused jobs
-            for job_name, job_uuid in job['components'].items():
+            for job_name, job_uuid in job.get('components', {}).items():
                 self.arvrunner.api.links().create(body={
                     'link_class': 'can_read',
                     'tail_uuid': self.arvrunner.project_uuid,
