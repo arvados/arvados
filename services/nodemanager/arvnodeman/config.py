@@ -53,7 +53,7 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
             'Manage': {'address': '127.0.0.1',
                        'port': '-1'},
             'Logging': {'file': '/dev/stderr',
-                        'level': 'WARNING'},
+                        'level': 'WARNING'}
         }.iteritems():
             if not self.has_section(sec_name):
                 self.add_section(sec_name)
@@ -107,7 +107,7 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
         module = importlib.import_module('arvnodeman.computenode.driver.' +
                                          self.get('Cloud', 'provider'))
         driver_class = module.ComputeNodeDriver.DEFAULT_DRIVER
-        if self.get('Cloud', 'driver_class'):
+        if self.has_option('Cloud', 'driver_class'):
             d = self.get('Cloud', 'driver_class').split('.')
             mod = '.'.join(d[:-1])
             cls = d[-1]
