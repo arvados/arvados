@@ -291,17 +291,21 @@ class RunnerJob(Runner):
             find_or_create=self.enable_reuse
         ).execute(num_retries=self.arvrunner.num_retries)
 
-        if self.enable_reuse and job['output']:
-            # When reusing jobs, copy its output collection to the desired project
-            c = arvados.collection.Collection(job['output'],
-                                              api_client=self.arvrunner.api,
-                                              keep_client=self.arvrunner.keep_client,
-                                              num_retries=self.arvrunner.num_retries)
-            c.save_new(name="Output of {}".format(self.name),
-                       owner_uuid=self.arvrunner.project_uuid,
-                       ensure_unique_name=True,
-                       num_retries=self.arvrunner.num_retries)
-            logger.info("Copied reused job's output to collection %s", c.manifest_locator())
+        if self.enable_reuse:
+            reused_collections = [('Output', job['output']), ('Log', job['log'])]
+            for col_type, pdh in [(n, p) for n, p in reused_collections if p]:
+                # When reusing jobs, copy its output/log collection to the desired project
+                c = arvados.collection.Collection(pdh,
+                                                  api_client=self.arvrunner.api,
+                                                  keep_client=self.arvrunner.keep_client,
+                                                  num_retries=self.arvrunner.num_retries)
+                c.save_new(name="{} of {}".format(col_type, self.name),
+                           owner_uuid=self.arvrunner.project_uuid,
+                           ensure_unique_name=True,
+                           num_retries=self.arvrunner.num_retries)
+                logger.info("Copied reused job's %s to collection %s",
+                            col_type.lower(),
+                            c.manifest_locator())
 
         for k,v in job_spec["script_parameters"].items():
             if v is False or v is None or isinstance(v, dict):
