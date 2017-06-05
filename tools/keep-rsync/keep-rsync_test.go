@@ -4,35 +4,42 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 
 	. "gopkg.in/check.v1"
 )
 
+var kcSrc, kcDst *keepclient.KeepClient
+var srcKeepServicesJSON, dstKeepServicesJSON, blobSigningKey string
+var blobSignatureTTL = time.Duration(2*7*24) * time.Hour
+
+func resetGlobals() {
+	blobSigningKey = ""
+	srcKeepServicesJSON = ""
+	dstKeepServicesJSON = ""
+	kcSrc = nil
+	kcDst = nil
+}
+
 // Gocheck boilerplate
 func Test(t *testing.T) {
 	TestingT(t)
 }
 
-// Gocheck boilerplate
 var _ = Suite(&ServerRequiredSuite{})
 var _ = Suite(&ServerNotRequiredSuite{})
 var _ = Suite(&DoMainTestSuite{})
 
-// Tests that require the Keep server running
 type ServerRequiredSuite struct{}
-type ServerNotRequiredSuite struct{}
-type DoMainTestSuite struct{}
 
 func (s *ServerRequiredSuite) SetUpSuite(c *C) {
-	// Start API server
 	arvadostest.StartAPI()
 }
 
@@ -41,36 +48,32 @@ func (s *ServerRequiredSuite) TearDownSuite(c *C) {
 	arvadostest.ResetEnv()
 }
 
-var initialArgs []string
-
-func (s *DoMainTestSuite) SetUpSuite(c *C) {
-	initialArgs = os.Args
-}
-
-var kcSrc, kcDst *keepclient.KeepClient
-var srcKeepServicesJSON, dstKeepServicesJSON, blobSigningKey string
-var blobSignatureTTL = time.Duration(2*7*24) * time.Hour
-
 func (s *ServerRequiredSuite) SetUpTest(c *C) {
-	// reset all variables between tests
-	blobSigningKey = ""
-	srcKeepServicesJSON = ""
-	dstKeepServicesJSON = ""
-	kcSrc = &keepclient.KeepClient{}
-	kcDst = &keepclient.KeepClient{}
+	resetGlobals()
 }
 
 func (s *ServerRequiredSuite) TearDownTest(c *C) {
 	arvadostest.StopKeep(3)
 }
 
+func (s *ServerNotRequiredSuite) SetUpTest(c *C) {
+	resetGlobals()
+}
+
+type ServerNotRequiredSuite struct{}
+
+type DoMainTestSuite struct {
+	initialArgs []string
+}
+
 func (s *DoMainTestSuite) SetUpTest(c *C) {
-	args := []string{"keep-rsync"}
-	os.Args = args
+	s.initialArgs = os.Args
+	os.Args = []string{"keep-rsync"}
+	resetGlobals()
 }
 
 func (s *DoMainTestSuite) TearDownTest(c *C) {
-	os.Args = initialArgs
+	os.Args = s.initialArgs
 }
 
 var testKeepServicesJSON = "{ \"kind\":\"arvados#keepServiceList\", \"etag\":\"\", \"self_link\":\"\", \"offset\":null, \"limit\":null, \"items\":[ { \"href\":\"/keep_services/zzzzz-bi6l4-123456789012340\", \"kind\":\"arvados#keepService\", \"etag\":\"641234567890enhj7hzx432e5\", \"uuid\":\"zzzzz-bi6l4-123456789012340\", \"owner_uuid\":\"zzzzz-tpzed-123456789012345\", \"service_host\":\"keep0.zzzzz.arvadosapi.com\", \"service_port\":25107, \"service_ssl_flag\":false, \"service_type\":\"disk\", \"read_only\":false }, { \"href\":\"/keep_services/zzzzz-bi6l4-123456789012341\", \"kind\":\"arvados#keepService\", \"etag\":\"641234567890enhj7hzx432e5\", \"uuid\":\"zzzzz-bi6l4-123456789012341\", \"owner_uuid\":\"zzzzz-tpzed-123456789012345\", \"service_host\":\"keep0.zzzzz.arvadosapi.com\", \"service_port\":25108, \"service_ssl_flag\":false, \"service_type\":\"disk\", \"read_only\":false } ], \"items_available\":2 }"
@@ -83,13 +86,13 @@ func setupRsync(c *C, enforcePermissions bool, replications int) {
 	var srcConfig apiConfig
 	srcConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
 	srcConfig.APIToken = arvadostest.DataManagerToken
-	srcConfig.APIHostInsecure = matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
+	srcConfig.APIHostInsecure = arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 
 	// dstConfig
 	var dstConfig apiConfig
 	dstConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
 	dstConfig.APIToken = arvadostest.DataManagerToken
-	dstConfig.APIHostInsecure = matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
+	dstConfig.APIHostInsecure = arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 
 	if enforcePermissions {
 		blobSigningKey = arvadostest.BlobSigningKey
@@ -97,45 +100,30 @@ func setupRsync(c *C, enforcePermissions bool, replications int) {
 
 	// Start Keep servers
 	arvadostest.StartKeep(3, enforcePermissions)
+	keepclient.RefreshServiceDiscovery()
 
 	// setup keepclients
 	var err error
 	kcSrc, _, err = setupKeepClient(srcConfig, srcKeepServicesJSON, false, 0, blobSignatureTTL)
-	c.Check(err, IsNil)
+	c.Assert(err, IsNil)
 
 	kcDst, _, err = setupKeepClient(dstConfig, dstKeepServicesJSON, true, replications, 0)
-	c.Check(err, IsNil)
+	c.Assert(err, IsNil)
 
-	for uuid := range kcSrc.LocalRoots() {
+	srcRoots := map[string]string{}
+	dstRoots := map[string]string{}
+	for uuid, root := range kcSrc.LocalRoots() {
 		if strings.HasSuffix(uuid, "02") {
-			delete(kcSrc.LocalRoots(), uuid)
+			dstRoots[uuid] = root
+		} else {
+			srcRoots[uuid] = root
 		}
 	}
-	for uuid := range kcSrc.GatewayRoots() {
-		if strings.HasSuffix(uuid, "02") {
-			delete(kcSrc.GatewayRoots(), uuid)
-		}
+	if srcKeepServicesJSON == "" {
+		kcSrc.SetServiceRoots(srcRoots, srcRoots, srcRoots)
 	}
-	for uuid := range kcSrc.WritableLocalRoots() {
-		if strings.HasSuffix(uuid, "02") {
-			delete(kcSrc.WritableLocalRoots(), uuid)
-		}
-	}
-
-	for uuid := range kcDst.LocalRoots() {
-		if strings.HasSuffix(uuid, "00") || strings.HasSuffix(uuid, "01") {
-			delete(kcDst.LocalRoots(), uuid)
-		}
-	}
-	for uuid := range kcDst.GatewayRoots() {
-		if strings.HasSuffix(uuid, "00") || strings.HasSuffix(uuid, "01") {
-			delete(kcDst.GatewayRoots(), uuid)
-		}
-	}
-	for uuid := range kcDst.WritableLocalRoots() {
-		if strings.HasSuffix(uuid, "00") || strings.HasSuffix(uuid, "01") {
-			delete(kcDst.WritableLocalRoots(), uuid)
-		}
+	if dstKeepServicesJSON == "" {
+		kcDst.SetServiceRoots(dstRoots, dstRoots, dstRoots)
 	}
 
 	if replications == 0 {
@@ -188,22 +176,8 @@ func (s *ServerRequiredSuite) TestRsyncInitializeWithKeepServicesJSON(c *C) {
 
 	localRoots := kcSrc.LocalRoots()
 	c.Check(localRoots, NotNil)
-
-	foundIt := false
-	for k := range localRoots {
-		if k == "zzzzz-bi6l4-123456789012340" {
-			foundIt = true
-		}
-	}
-	c.Check(foundIt, Equals, true)
-
-	foundIt = false
-	for k := range localRoots {
-		if k == "zzzzz-bi6l4-123456789012341" {
-			foundIt = true
-		}
-	}
-	c.Check(foundIt, Equals, true)
+	c.Check(localRoots["zzzzz-bi6l4-123456789012340"], Not(Equals), "")
+	c.Check(localRoots["zzzzz-bi6l4-123456789012341"], Not(Equals), "")
 }
 
 // Test keep-rsync initialization with default replications count
@@ -329,8 +303,8 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_FakeSrcKeepservers(c *C) {
 	setupRsync(c, false, 1)
 
 	err := performKeepRsync(kcSrc, kcDst, blobSignatureTTL, "", "")
-	log.Printf("Err = %v", err)
-	c.Check(strings.Contains(err.Error(), "no such host"), Equals, true)
+	c.Assert(err, NotNil)
+	c.Check(err.Error(), Matches, ".*no such host.*")
 }
 
 // Setup rsync using dstKeepServicesJSON with fake keepservers.
@@ -341,8 +315,8 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_FakeDstKeepservers(c *C) {
 	setupRsync(c, false, 1)
 
 	err := performKeepRsync(kcSrc, kcDst, blobSignatureTTL, "", "")
-	log.Printf("Err = %v", err)
-	c.Check(strings.Contains(err.Error(), "no such host"), Equals, true)
+	c.Assert(err, NotNil)
+	c.Check(err.Error(), Matches, ".*no such host.*")
 }
 
 // Test rsync with signature error during Get from src.
@@ -356,7 +330,8 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorGettingBlockFromSrc(c *C
 	blobSigningKey = "thisisfakeblobsigningkey"
 
 	err := performKeepRsync(kcSrc, kcDst, blobSignatureTTL, blobSigningKey, "")
-	c.Check(strings.Contains(err.Error(), "HTTP 403 \"Forbidden\""), Equals, true)
+	c.Assert(err, NotNil)
+	c.Check(err.Error(), Matches, ".*HTTP 403 \"Forbidden\".*")
 }
 
 // Test rsync with error during Put to src.
@@ -370,7 +345,8 @@ func (s *ServerRequiredSuite) TestErrorDuringRsync_ErrorPuttingBlockInDst(c *C) 
 	kcDst.Want_replicas = 2
 
 	err := performKeepRsync(kcSrc, kcDst, blobSignatureTTL, blobSigningKey, "")
-	c.Check(strings.Contains(err.Error(), "Could not write sufficient replicas"), Equals, true)
+	c.Assert(err, NotNil)
+	c.Check(err.Error(), Matches, ".*Could not write sufficient replicas.*")
 }
 
 // Test loadConfig func
@@ -391,7 +367,7 @@ func (s *ServerNotRequiredSuite) TestLoadConfig(c *C) {
 
 	c.Assert(srcConfig.APIHost, Equals, os.Getenv("ARVADOS_API_HOST"))
 	c.Assert(srcConfig.APIToken, Equals, arvadostest.DataManagerToken)
-	c.Assert(srcConfig.APIHostInsecure, Equals, matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE")))
+	c.Assert(srcConfig.APIHostInsecure, Equals, arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE")))
 	c.Assert(srcConfig.ExternalClient, Equals, false)
 
 	dstConfig, _, err := loadConfig(dstConfigFile)
@@ -399,7 +375,7 @@ func (s *ServerNotRequiredSuite) TestLoadConfig(c *C) {
 
 	c.Assert(dstConfig.APIHost, Equals, os.Getenv("ARVADOS_API_HOST"))
 	c.Assert(dstConfig.APIToken, Equals, arvadostest.DataManagerToken)
-	c.Assert(dstConfig.APIHostInsecure, Equals, matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE")))
+	c.Assert(dstConfig.APIHostInsecure, Equals, arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE")))
 	c.Assert(dstConfig.ExternalClient, Equals, false)
 
 	c.Assert(srcBlobSigningKey, Equals, "abcdefg")
@@ -414,15 +390,15 @@ func (s *ServerNotRequiredSuite) TestLoadConfig_MissingSrcConfig(c *C) {
 // Test loadConfig func - error reading config
 func (s *ServerNotRequiredSuite) TestLoadConfig_ErrorLoadingSrcConfig(c *C) {
 	_, _, err := loadConfig("no-such-config-file")
-	c.Assert(strings.Contains(err.Error(), "no such file or directory"), Equals, true)
+	c.Assert(err, NotNil)
+	c.Check(err.Error(), Matches, ".*no such file or directory.*")
 }
 
 func (s *ServerNotRequiredSuite) TestSetupKeepClient_NoBlobSignatureTTL(c *C) {
 	var srcConfig apiConfig
 	srcConfig.APIHost = os.Getenv("ARVADOS_API_HOST")
 	srcConfig.APIToken = arvadostest.DataManagerToken
-	srcConfig.APIHostInsecure = matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
-	arvadostest.StartKeep(2, false)
+	srcConfig.APIHostInsecure = arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 
 	_, ttl, err := setupKeepClient(srcConfig, srcKeepServicesJSON, false, 0, 0)
 	c.Check(err, IsNil)
@@ -448,7 +424,7 @@ func setupConfigFile(c *C, name string) *os.File {
 
 func (s *DoMainTestSuite) Test_doMain_NoSrcConfig(c *C) {
 	err := doMain()
-	c.Check(err, NotNil)
+	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Equals, "Error loading src configuration from file: config file not specified")
 }
 
@@ -457,7 +433,7 @@ func (s *DoMainTestSuite) Test_doMain_SrcButNoDstConfig(c *C) {
 	args := []string{"-replications", "3", "-src", srcConfig.Name()}
 	os.Args = append(os.Args, args...)
 	err := doMain()
-	c.Check(err, NotNil)
+	c.Assert(err, NotNil)
 	c.Assert(err.Error(), Equals, "Error loading dst configuration from file: config file not specified")
 }
 
@@ -465,8 +441,8 @@ func (s *DoMainTestSuite) Test_doMain_BadSrcConfig(c *C) {
 	args := []string{"-src", "abcd"}
 	os.Args = append(os.Args, args...)
 	err := doMain()
-	c.Check(err, NotNil)
-	c.Assert(strings.HasPrefix(err.Error(), "Error loading src configuration from file: Error reading config file"), Equals, true)
+	c.Assert(err, NotNil)
+	c.Assert(err.Error(), Matches, "Error loading src configuration from file: Error reading config file.*")
 }
 
 func (s *DoMainTestSuite) Test_doMain_WithReplicationsButNoSrcConfig(c *C) {
@@ -488,6 +464,7 @@ func (s *DoMainTestSuite) Test_doMainWithSrcAndDstConfig(c *C) {
 	// actual copying to dst will happen, but that's ok.
 	arvadostest.StartKeep(2, false)
 	defer arvadostest.StopKeep(2)
+	keepclient.RefreshServiceDiscovery()
 
 	err := doMain()
 	c.Check(err, IsNil)
