@@ -275,11 +275,17 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		targetPath = targetPath[1:]
 	}
 
+	forceReload := false
+	if cc := r.Header.Get("Cache-Control"); strings.Contains(cc, "no-cache") || strings.Contains(cc, "must-revalidate") {
+		forceReload = true
+	}
+
+	var collection map[string]interface{}
 	tokenResult := make(map[string]int)
-	collection := make(map[string]interface{})
 	found := false
 	for _, arv.ApiToken = range tokens {
-		err := arv.Get("collections", targetID, nil, &collection)
+		var err error
+		collection, err = h.Config.Cache.Get(arv, targetID, forceReload)
 		if err == nil {
 			// Success
 			found = true

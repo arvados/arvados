@@ -311,13 +311,13 @@ func (s *IntegrationSuite) TearDownSuite(c *check.C) {
 
 func (s *IntegrationSuite) SetUpTest(c *check.C) {
 	arvadostest.ResetEnv()
-	s.testServer = &server{Config: &Config{
-		Client: arvados.Client{
-			APIHost:  testAPIHost,
-			Insecure: true,
-		},
-		Listen: "127.0.0.1:0",
-	}}
+	cfg := DefaultConfig()
+	cfg.Client = arvados.Client{
+		APIHost:  testAPIHost,
+		Insecure: true,
+	}
+	cfg.Listen = "127.0.0.1:0"
+	s.testServer = &server{Config: cfg}
 	err := s.testServer.Start()
 	c.Assert(err, check.Equals, nil)
 }
