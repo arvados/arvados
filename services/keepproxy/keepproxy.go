@@ -104,6 +104,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error setting up keep client %s", err.Error())
 	}
+	keepclient.RefreshServiceDiscoveryOnSIGHUP()
 
 	if cfg.PIDFile != "" {
 		f, err := os.Create(cfg.PIDFile)
@@ -133,7 +134,6 @@ func main() {
 	if cfg.DefaultReplicas > 0 {
 		kc.Want_replicas = cfg.DefaultReplicas
 	}
-	go kc.RefreshServices(5*time.Minute, 3*time.Second)
 
 	listener, err = net.Listen("tcp", cfg.Listen)
 	if err != nil {

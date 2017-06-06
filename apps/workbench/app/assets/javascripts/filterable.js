@@ -57,6 +57,7 @@ function updateFilterableQueryNow($target) {
     } else {
       params.filters = [['any', '@@', newquery.trim().concat(':*')]];
     }
+    $(".modal-dialog-preview-pane").html("");
     $target.data('infinite-content-params-filterable', params);
     $target.data('filterable-query', newquery);
 }
