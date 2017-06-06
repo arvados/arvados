@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math"
 	"net/http"
 	"net/url"
@@ -63,13 +64,25 @@ var DefaultSecureClient = &http.Client{
 // ARVADOS_API_* environment variables.
 func NewClientFromEnv() *Client {
 	var svcs []string
-	if s := os.Getenv("ARVADOS_KEEP_SERVICES"); s != "" {
-		svcs = strings.Split(s, " ")
+	for _, s := range strings.Split(os.Getenv("ARVADOS_KEEP_SERVICES"), " ") {
+		if s == "" {
+			continue
+		} else if u, err := url.Parse(s); err != nil {
+			log.Printf("ARVADOS_KEEP_SERVICES: %q: %s", s, err)
+		} else if !u.IsAbs() {
+			log.Printf("ARVADOS_KEEP_SERVICES: %q: not an absolute URI", s)
+		} else {
+			svcs = append(svcs, s)
+		}
+	}
+	var insecure bool
+	if s := strings.ToLower(os.Getenv("ARVADOS_API_HOST_INSECURE")); s == "1" || s == "yes" || s == "true" {
+		insecure = true
 	}
 	return &Client{
 		APIHost:         os.Getenv("ARVADOS_API_HOST"),
 		AuthToken:       os.Getenv("ARVADOS_API_TOKEN"),
-		Insecure:        os.Getenv("ARVADOS_API_HOST_INSECURE") != "",
+		Insecure:        insecure,
 		KeepServiceURIs: svcs,
 	}
 }

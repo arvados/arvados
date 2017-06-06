@@ -8,11 +8,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/streamer"
@@ -20,6 +22,18 @@ import (
 
 // A Keep "block" is 64MB.
 const BLOCKSIZE = 64 * 1024 * 1024
+
+var (
+	DefaultRequestTimeout      = 20 * time.Second
+	DefaultConnectTimeout      = 2 * time.Second
+	DefaultTLSHandshakeTimeout = 4 * time.Second
+	DefaultKeepAlive           = 180 * time.Second
+
+	DefaultProxyRequestTimeout      = 300 * time.Second
+	DefaultProxyConnectTimeout      = 30 * time.Second
+	DefaultProxyTLSHandshakeTimeout = 10 * time.Second
+	DefaultProxyKeepAlive           = 120 * time.Second
+)
 
 // Error interface with an error and boolean indicating whether the error is temporary
 type Error interface {
@@ -74,11 +88,11 @@ type HTTPClient interface {
 type KeepClient struct {
 	Arvados            *arvadosclient.ArvadosClient
 	Want_replicas      int
-	localRoots         *map[string]string
-	writableLocalRoots *map[string]string
-	gatewayRoots       *map[string]string
+	localRoots         map[string]string
+	writableLocalRoots map[string]string
+	gatewayRoots       map[string]string
 	lock               sync.RWMutex
-	Client             HTTPClient
+	HTTPClient         HTTPClient
 	Retries            int
 	BlockCache         *BlockCache
 
@@ -87,16 +101,21 @@ type KeepClient struct {
 
 	// Any non-disk typed services found in the list of keepservers?
 	foundNonDiskSvc bool
+
+	// Disable automatic discovery of keep services
+	disableDiscovery bool
 }
 
-// MakeKeepClient creates a new KeepClient by contacting the API server to discover Keep servers.
+// MakeKeepClient creates a new KeepClient, calls
+// DiscoverKeepServices(), and returns when the client is ready to
+// use.
 func MakeKeepClient(arv *arvadosclient.ArvadosClient) (*KeepClient, error) {
 	kc := New(arv)
-	return kc, kc.DiscoverKeepServers()
+	return kc, kc.discoverServices()
 }
 
-// New func creates a new KeepClient struct.
-// This func does not discover keep servers. It is the caller's responsibility.
+// New creates a new KeepClient. Service discovery will occur on the
+// next read/write operation.
 func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 	defaultReplicationLevel := 2
 	value, err := arv.Discovery("defaultCollectionReplication")
@@ -106,15 +125,11 @@ func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 			defaultReplicationLevel = int(v)
 		}
 	}
-
-	kc := &KeepClient{
+	return &KeepClient{
 		Arvados:       arv,
 		Want_replicas: defaultReplicationLevel,
-		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: arvadosclient.MakeTLSConfig(arv.ApiInsecure)}},
-		Retries: 2,
+		Retries:       2,
 	}
-	return kc
 }
 
 // Put a block given the block hash, a reader, and the number of bytes
@@ -204,7 +219,7 @@ func (kc *KeepClient) getOrHead(method string, locator string) (io.ReadCloser, i
 				continue
 			}
 			req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", kc.Arvados.ApiToken))
-			resp, err := kc.Client.Do(req)
+			resp, err := kc.httpClient().Do(req)
 			if err != nil {
 				// Probably a network error, may be transient,
 				// can try again.
@@ -305,7 +320,7 @@ func (kc *KeepClient) GetIndex(keepServiceUUID, prefix string) (io.Reader, error
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("OAuth2 %s", kc.Arvados.ApiToken))
-	resp, err := kc.Client.Do(req)
+	resp, err := kc.httpClient().Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -336,55 +351,47 @@ func (kc *KeepClient) GetIndex(keepServiceUUID, prefix string) (io.Reader, error
 // LocalRoots() returns the map of local (i.e., disk and proxy) Keep
 // services: uuid -> baseURI.
 func (kc *KeepClient) LocalRoots() map[string]string {
+	kc.discoverServices()
 	kc.lock.RLock()
 	defer kc.lock.RUnlock()
-	return *kc.localRoots
+	return kc.localRoots
 }
 
 // GatewayRoots() returns the map of Keep remote gateway services:
 // uuid -> baseURI.
 func (kc *KeepClient) GatewayRoots() map[string]string {
+	kc.discoverServices()
 	kc.lock.RLock()
 	defer kc.lock.RUnlock()
-	return *kc.gatewayRoots
+	return kc.gatewayRoots
 }
 
 // WritableLocalRoots() returns the map of writable local Keep services:
 // uuid -> baseURI.
 func (kc *KeepClient) WritableLocalRoots() map[string]string {
+	kc.discoverServices()
 	kc.lock.RLock()
 	defer kc.lock.RUnlock()
-	return *kc.writableLocalRoots
+	return kc.writableLocalRoots
 }
 
-// SetServiceRoots updates the localRoots and gatewayRoots maps,
-// without risk of disrupting operations that are already in progress.
+// SetServiceRoots disables service discovery and updates the
+// localRoots and gatewayRoots maps, without disrupting operations
+// that are already in progress.
 //
-// The KeepClient makes its own copy of the supplied maps, so the
-// caller can reuse/modify them after SetServiceRoots returns, but
-// they should not be modified by any other goroutine while
-// SetServiceRoots is running.
-func (kc *KeepClient) SetServiceRoots(newLocals, newWritableLocals, newGateways map[string]string) {
-	locals := make(map[string]string)
-	for uuid, root := range newLocals {
-		locals[uuid] = root
-	}
+// The supplied maps must not be modified after calling
+// SetServiceRoots.
+func (kc *KeepClient) SetServiceRoots(locals, writables, gateways map[string]string) {
+	kc.disableDiscovery = true
+	kc.setServiceRoots(locals, writables, gateways)
+}
 
-	writables := make(map[string]string)
-	for uuid, root := range newWritableLocals {
-		writables[uuid] = root
-	}
-
-	gateways := make(map[string]string)
-	for uuid, root := range newGateways {
-		gateways[uuid] = root
-	}
-
+func (kc *KeepClient) setServiceRoots(locals, writables, gateways map[string]string) {
 	kc.lock.Lock()
 	defer kc.lock.Unlock()
-	kc.localRoots = &locals
-	kc.writableLocalRoots = &writables
-	kc.gatewayRoots = &gateways
+	kc.localRoots = locals
+	kc.writableLocalRoots = writables
+	kc.gatewayRoots = gateways
 }
 
 // getSortedRoots returns a list of base URIs of Keep services, in the
@@ -421,6 +428,80 @@ func (kc *KeepClient) cache() *BlockCache {
 	} else {
 		return DefaultBlockCache
 	}
+}
+
+var (
+	// There are four global http.Client objects for the four
+	// possible permutations of TLS behavior (verify/skip-verify)
+	// and timeout settings (proxy/non-proxy).
+	defaultClient = map[bool]map[bool]HTTPClient{
+		// defaultClient[false] is used for verified TLS reqs
+		false: {},
+		// defaultClient[true] is used for unverified
+		// (insecure) TLS reqs
+		true: {},
+	}
+	defaultClientMtx sync.Mutex
+)
+
+// httpClient returns the HTTPClient field if it's not nil, otherwise
+// whichever of the four global http.Client objects is suitable for
+// the current environment (i.e., TLS verification on/off, keep
+// services are/aren't proxies).
+func (kc *KeepClient) httpClient() HTTPClient {
+	if kc.HTTPClient != nil {
+		return kc.HTTPClient
+	}
+	defaultClientMtx.Lock()
+	defer defaultClientMtx.Unlock()
+	if c, ok := defaultClient[kc.Arvados.ApiInsecure][kc.foundNonDiskSvc]; ok {
+		return c
+	}
+
+	var requestTimeout, connectTimeout, keepAlive, tlsTimeout time.Duration
+	if kc.foundNonDiskSvc {
+		// Use longer timeouts when connecting to a proxy,
+		// because this usually means the intervening network
+		// is slower.
+		requestTimeout = DefaultProxyRequestTimeout
+		connectTimeout = DefaultProxyConnectTimeout
+		tlsTimeout = DefaultProxyTLSHandshakeTimeout
+		keepAlive = DefaultProxyKeepAlive
+	} else {
+		requestTimeout = DefaultRequestTimeout
+		connectTimeout = DefaultConnectTimeout
+		tlsTimeout = DefaultTLSHandshakeTimeout
+		keepAlive = DefaultKeepAlive
+	}
+
+	transport, ok := http.DefaultTransport.(*http.Transport)
+	if ok {
+		copy := *transport
+		transport = &copy
+	} else {
+		// Evidently the application has replaced
+		// http.DefaultTransport with a different type, so we
+		// need to build our own from scratch using the Go 1.8
+		// defaults.
+		transport = &http.Transport{
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			ExpectContinueTimeout: time.Second,
+		}
+	}
+	transport.DialContext = (&net.Dialer{
+		Timeout:   connectTimeout,
+		KeepAlive: keepAlive,
+		DualStack: true,
+	}).DialContext
+	transport.TLSHandshakeTimeout = tlsTimeout
+	transport.TLSClientConfig = arvadosclient.MakeTLSConfig(kc.Arvados.ApiInsecure)
+	c := &http.Client{
+		Timeout:   requestTimeout,
+		Transport: transport,
+	}
+	defaultClient[kc.Arvados.ApiInsecure][kc.foundNonDiskSvc] = c
+	return c
 }
 
 type Locator struct {

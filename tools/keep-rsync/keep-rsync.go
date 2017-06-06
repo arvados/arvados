@@ -6,15 +6,15 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 	"time"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
+	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
 
 func main() {
@@ -119,8 +119,6 @@ func loadConfig(configFile string) (config apiConfig, blobSigningKey string, err
 	return
 }
 
-var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
-
 // Read config from file
 func readConfigFromFile(filename string) (config apiConfig, blobSigningKey string, err error) {
 	if !strings.Contains(filename, "/") {
@@ -149,9 +147,9 @@ func readConfigFromFile(filename string) (config apiConfig, blobSigningKey strin
 		case "ARVADOS_API_HOST":
 			config.APIHost = value
 		case "ARVADOS_API_HOST_INSECURE":
-			config.APIHostInsecure = matchTrue.MatchString(value)
+			config.APIHostInsecure = arvadosclient.StringBool(value)
 		case "ARVADOS_EXTERNAL_CLIENT":
-			config.ExternalClient = matchTrue.MatchString(value)
+			config.ExternalClient = arvadosclient.StringBool(value)
 		case "ARVADOS_BLOB_SIGNING_KEY":
 			blobSigningKey = value
 		}
@@ -170,7 +168,7 @@ func setupKeepClient(config apiConfig, keepServicesJSON string, isDst bool, repl
 		External: config.ExternalClient,
 	}
 
-	// if keepServicesJSON is provided, use it to load services; else, use DiscoverKeepServers
+	// If keepServicesJSON is provided, use it instead of service discovery
 	if keepServicesJSON == "" {
 		kc, err = keepclient.MakeKeepClient(&arv)
 		if err != nil {

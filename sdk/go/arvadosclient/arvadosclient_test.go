@@ -41,21 +41,21 @@ func (s *ServerRequiredSuite) SetUpTest(c *C) {
 
 func (s *ServerRequiredSuite) TestMakeArvadosClientSecure(c *C) {
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "")
-	kc, err := MakeArvadosClient()
+	ac, err := MakeArvadosClient()
 	c.Assert(err, Equals, nil)
-	c.Check(kc.ApiServer, Equals, os.Getenv("ARVADOS_API_HOST"))
-	c.Check(kc.ApiToken, Equals, os.Getenv("ARVADOS_API_TOKEN"))
-	c.Check(kc.ApiInsecure, Equals, false)
+	c.Check(ac.ApiServer, Equals, os.Getenv("ARVADOS_API_HOST"))
+	c.Check(ac.ApiToken, Equals, os.Getenv("ARVADOS_API_TOKEN"))
+	c.Check(ac.ApiInsecure, Equals, false)
 }
 
 func (s *ServerRequiredSuite) TestMakeArvadosClientInsecure(c *C) {
 	os.Setenv("ARVADOS_API_HOST_INSECURE", "true")
-	kc, err := MakeArvadosClient()
+	ac, err := MakeArvadosClient()
 	c.Assert(err, Equals, nil)
-	c.Check(kc.ApiInsecure, Equals, true)
-	c.Check(kc.ApiServer, Equals, os.Getenv("ARVADOS_API_HOST"))
-	c.Check(kc.ApiToken, Equals, os.Getenv("ARVADOS_API_TOKEN"))
-	c.Check(kc.Client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify, Equals, true)
+	c.Check(ac.ApiInsecure, Equals, true)
+	c.Check(ac.ApiServer, Equals, os.Getenv("ARVADOS_API_HOST"))
+	c.Check(ac.ApiToken, Equals, os.Getenv("ARVADOS_API_TOKEN"))
+	c.Check(ac.Client.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify, Equals, true)
 }
 
 func (s *ServerRequiredSuite) TestGetInvalidUUID(c *C) {
