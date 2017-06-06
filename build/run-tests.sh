@@ -78,6 +78,7 @@ services/keepstore
 services/keep-balance
 services/login-sync
 services/nodemanager
+services/nodemanager-integration
 services/crunch-run
 services/crunch-dispatch-local
 services/crunch-dispatch-slurm
