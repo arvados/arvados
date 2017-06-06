@@ -1024,4 +1024,22 @@ EOS
       assert_operator c.delete_at, :>=, time_before_trashing + Rails.configuration.default_trash_lifetime
     end
   end
+
+  test 'untrash a trashed collection' do
+    authorize_with :active
+    post :untrash, {
+      id: collections(:expired_collection).uuid,
+    }
+    assert_response 200
+    assert_equal false, json_response['is_trashed']
+    assert_nil json_response['trash_at']
+  end
+
+  test 'untrash error on not trashed collection' do
+    authorize_with :active
+    post :untrash, {
+      id: collections(:collection_owned_by_active).uuid,
+    }
+    assert_response 422
+  end
 end

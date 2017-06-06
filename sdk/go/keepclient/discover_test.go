@@ -3,27 +3,14 @@ package keepclient
 import (
 	"crypto/md5"
 	"fmt"
-	"gopkg.in/check.v1"
 	"net/http"
 	"os"
-	"time"
+
+	"gopkg.in/check.v1"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 )
-
-func ExampleKeepClient_RefreshServices() {
-	arv, err := arvadosclient.MakeArvadosClient()
-	if err != nil {
-		panic(err)
-	}
-	kc, err := MakeKeepClient(arv)
-	if err != nil {
-		panic(err)
-	}
-	go kc.RefreshServices(5*time.Minute, 3*time.Second)
-	fmt.Printf("LocalRoots: %#v\n", kc.LocalRoots())
-}
 
 func (s *ServerRequiredSuite) TestOverrideDiscovery(c *check.C) {
 	defer os.Setenv("ARVADOS_KEEP_SERVICES", "")

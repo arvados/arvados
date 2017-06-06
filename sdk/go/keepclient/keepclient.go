@@ -88,9 +88,9 @@ type HTTPClient interface {
 type KeepClient struct {
 	Arvados            *arvadosclient.ArvadosClient
 	Want_replicas      int
-	localRoots         *map[string]string
-	writableLocalRoots *map[string]string
-	gatewayRoots       *map[string]string
+	localRoots         map[string]string
+	writableLocalRoots map[string]string
+	gatewayRoots       map[string]string
 	lock               sync.RWMutex
 	HTTPClient         HTTPClient
 	Retries            int
@@ -101,6 +101,9 @@ type KeepClient struct {
 
 	// Any non-disk typed services found in the list of keepservers?
 	foundNonDiskSvc bool
+
+	// Disable automatic discovery of keep services
+	disableDiscovery bool
 }
 
 // MakeKeepClient creates a new KeepClient, calls
@@ -108,12 +111,11 @@ type KeepClient struct {
 // use.
 func MakeKeepClient(arv *arvadosclient.ArvadosClient) (*KeepClient, error) {
 	kc := New(arv)
-	return kc, kc.DiscoverKeepServers()
+	return kc, kc.discoverServices()
 }
 
-// New creates a new KeepClient. The caller must call
-// DiscoverKeepServers() before using the returned client to read or
-// write data.
+// New creates a new KeepClient. Service discovery will occur on the
+// next read/write operation.
 func New(arv *arvadosclient.ArvadosClient) *KeepClient {
 	defaultReplicationLevel := 2
 	value, err := arv.Discovery("defaultCollectionReplication")
@@ -349,55 +351,47 @@ func (kc *KeepClient) GetIndex(keepServiceUUID, prefix string) (io.Reader, error
 // LocalRoots() returns the map of local (i.e., disk and proxy) Keep
 // services: uuid -> baseURI.
 func (kc *KeepClient) LocalRoots() map[string]string {
+	kc.discoverServices()
 	kc.lock.RLock()
 	defer kc.lock.RUnlock()
-	return *kc.localRoots
+	return kc.localRoots
 }
 
 // GatewayRoots() returns the map of Keep remote gateway services:
 // uuid -> baseURI.
 func (kc *KeepClient) GatewayRoots() map[string]string {
+	kc.discoverServices()
 	kc.lock.RLock()
 	defer kc.lock.RUnlock()
-	return *kc.gatewayRoots
+	return kc.gatewayRoots
 }
 
 // WritableLocalRoots() returns the map of writable local Keep services:
 // uuid -> baseURI.
 func (kc *KeepClient) WritableLocalRoots() map[string]string {
+	kc.discoverServices()
 	kc.lock.RLock()
 	defer kc.lock.RUnlock()
-	return *kc.writableLocalRoots
+	return kc.writableLocalRoots
 }
 
-// SetServiceRoots updates the localRoots and gatewayRoots maps,
-// without risk of disrupting operations that are already in progress.
+// SetServiceRoots disables service discovery and updates the
+// localRoots and gatewayRoots maps, without disrupting operations
+// that are already in progress.
 //
-// The KeepClient makes its own copy of the supplied maps, so the
-// caller can reuse/modify them after SetServiceRoots returns, but
-// they should not be modified by any other goroutine while
-// SetServiceRoots is running.
-func (kc *KeepClient) SetServiceRoots(newLocals, newWritableLocals, newGateways map[string]string) {
-	locals := make(map[string]string)
-	for uuid, root := range newLocals {
-		locals[uuid] = root
-	}
+// The supplied maps must not be modified after calling
+// SetServiceRoots.
+func (kc *KeepClient) SetServiceRoots(locals, writables, gateways map[string]string) {
+	kc.disableDiscovery = true
+	kc.setServiceRoots(locals, writables, gateways)
+}
 
-	writables := make(map[string]string)
-	for uuid, root := range newWritableLocals {
-		writables[uuid] = root
-	}
-
-	gateways := make(map[string]string)
-	for uuid, root := range newGateways {
-		gateways[uuid] = root
-	}
-
+func (kc *KeepClient) setServiceRoots(locals, writables, gateways map[string]string) {
 	kc.lock.Lock()
 	defer kc.lock.Unlock()
-	kc.localRoots = &locals
-	kc.writableLocalRoots = &writables
-	kc.gatewayRoots = &gateways
+	kc.localRoots = locals
+	kc.writableLocalRoots = writables
+	kc.gatewayRoots = gateways
 }
 
 // getSortedRoots returns a list of base URIs of Keep services, in the

@@ -567,7 +567,7 @@ do_test_once() {
         # mode makes Go show the wrong line numbers when reporting
         # compilation errors.
         go get -t "git.curoverse.com/arvados.git/$1" && \
-            cd "$WORKSPACE/$1" && \
+            cd "$GOPATH/src/git.curoverse.com/arvados.git/$1" && \
             [[ -z "$(gofmt -e -d . | tee /dev/stderr)" ]] && \
             if [[ -n "${testargs[$1]}" ]]
         then

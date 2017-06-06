@@ -20,9 +20,9 @@ class Arvados::V1::KeepServicesControllerTest < ActionController::TestCase
     assert_equal true, assigns(:objects).any?
   end
 
-  [:admin, :active, :inactive, :anonymous].each do |u|
-    test "accessible to #{u} user" do
-      authorize_with u
+  [:admin, :active, :inactive, :anonymous, nil].each do |u|
+    test "accessible to #{u.inspect} user" do
+      authorize_with(u) if u
       get :accessible
       assert_response :success
       assert_not_empty json_response['items']

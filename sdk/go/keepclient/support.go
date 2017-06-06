@@ -10,9 +10,9 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/streamer"
 )
 
@@ -22,8 +22,7 @@ import (
 var DebugPrintf = func(string, ...interface{}) {}
 
 func init() {
-	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
-	if matchTrue.MatchString(os.Getenv("ARVADOS_DEBUG")) {
+	if arvadosclient.StringBool(os.Getenv("ARVADOS_DEBUG")) {
 		DebugPrintf = log.Printf
 	}
 }
