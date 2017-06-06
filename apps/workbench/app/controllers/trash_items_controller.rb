@@ -3,8 +3,8 @@ class TrashItemsController < ApplicationController
     Collection
   end
 
-  def show_pane_list
-    %w(Recent)
+  def index_pane_list
+    %w(Recent_trash)
   end
 
   def find_objects_for_index
