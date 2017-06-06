@@ -8,6 +8,8 @@ import itertools
 import re
 import time
 
+from libcloud.common.exceptions import BaseHTTPError
+
 ARVADOS_TIMEFMT = '%Y-%m-%dT%H:%M:%SZ'
 ARVADOS_TIMESUBSEC_RE = re.compile(r'(\.\d+)Z$')
 
@@ -73,11 +75,24 @@ class RetryMixin(object):
                     try:
                         ret = orig_func(self, *args, **kwargs)
                     except Exception as error:
-                        if not (isinstance(error, errors) or
-                                self._cloud.is_cloud_exception(error)):
+                        should_retry = False
+
+                        if isinstance(error, BaseHTTPError):
+                            if error.headers and error.headers.get("retry-after"):
+                                try:
+                                    self.retry_wait = int(error.headers["retry-after"])
+                                    should_retry = True
+                                except ValueError:
+                                    pass
+                            if error.code == 429 or error.code >= 500:
+                                should_retry = True
+                        elif isinstance(error, errors):
+                            should_retry = True
+
+                        if not should_retry:
                             self.retry_wait = self.min_retry_wait
                             self._logger.warning(
-                                "Re-raising unknown error (no retry): %s",
+                                "Re-raising error (no retry): %s",
                                 error, exc_info=error)
                             raise
 

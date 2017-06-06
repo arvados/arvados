@@ -97,3 +97,31 @@ class FailingDriver(FakeDriver):
                     ex_tags=None,
                     ex_network=None):
         raise Exception("nope")
+
+class RetryDriver(FakeDriver):
+    def create_node(self, name=None,
+                    size=None,
+                    image=None,
+                    auth=None,
+                    ex_storage_account=None,
+                    ex_customdata=None,
+                    ex_resource_group=None,
+                    ex_user_name=None,
+                    ex_tags=None,
+                    ex_network=None):
+        global create_calls
+        create_calls += 1
+        if create_calls < 2:
+            raise BaseHTTPError(429, "Rate limit exceeded",
+                                {'retry-after': '12'})
+        else:
+            return super(RetryDriver, self).create_node(name=name,
+                    size=size,
+                    image=image,
+                    auth=auth,
+                    ex_storage_account=ex_storage_account,
+                    ex_customdata=ex_customdata,
+                    ex_resource_group=ex_resource_group,
+                    ex_user_name=ex_user_name,
+                    ex_tags=ex_tags,
+                    ex_network=ex_network)

@@ -25,7 +25,7 @@ class BaseComputeNodeDriver(RetryMixin):
     Subclasses must implement arvados_create_kwargs, sync_node,
     node_fqdn, and node_start_time.
     """
-    CLOUD_ERRORS = NETWORK_ERRORS + (cloud_types.LibcloudError, BaseHTTPError)
+    CLOUD_ERRORS = NETWORK_ERRORS + (cloud_types.LibcloudError,)
 
     @RetryMixin._retry()
     def _create_driver(self, driver_class, **auth_kwargs):
@@ -205,14 +205,6 @@ class BaseComputeNodeDriver(RetryMixin):
         # This method should return the time the node was started, in
         # seconds since the epoch UTC.
         raise NotImplementedError("BaseComputeNodeDriver.node_start_time")
-
-    @classmethod
-    def is_cloud_exception(cls, exception):
-        # libcloud compute drivers typically raise bare Exceptions to
-        # represent API errors.  Return True for any exception that is
-        # exactly an Exception, or a better-known higher-level exception.
-        return (isinstance(exception, cls.CLOUD_ERRORS) or
-                type(exception) is Exception)
 
     def destroy_node(self, cloud_node):
         try:
