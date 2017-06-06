@@ -296,6 +296,7 @@ class ComputeNodeUpdateActor(config.actor_class, RetryMixin):
         RetryMixin.__init__(self, 1, max_retry_wait,
                             None, cloud_factory(), timer_actor)
         self._cloud = cloud_factory()
+        self._later = self.actor_ref.tell_proxy()
 
     def _set_logger(self):
         self._logger = logging.getLogger("%s.%s" % (self.__class__.__name__, self.actor_urn[33:]))

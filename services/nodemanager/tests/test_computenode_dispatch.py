@@ -28,7 +28,6 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
         self.api_client.nodes().update().execute.side_effect = arvados_effect
         self.cloud_client = mock.MagicMock(name='cloud_client')
         self.cloud_client.create_node.return_value = testutil.cloud_node_mock(1)
-        self.cloud_client.is_cloud_exception = BaseComputeNodeDriver.is_cloud_exception
 
     def make_actor(self, arv_node=None):
         if not hasattr(self, 'timer'):
@@ -277,7 +276,8 @@ class ComputeNodeUpdateActorTestCase(testutil.ActorTestMixin,
 
     def make_actor(self):
         self.driver = mock.MagicMock(name='driver_mock')
-        self.updater = self.ACTOR_CLASS.start(self.driver).proxy()
+        self.timer = mock.MagicMock(name='timer_mock')
+        self.updater = self.ACTOR_CLASS.start(self.driver, self.timer).proxy()
 
     def test_node_sync(self, *args):
         self.make_actor()

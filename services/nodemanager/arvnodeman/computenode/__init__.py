@@ -8,6 +8,7 @@ import itertools
 import re
 import time
 
+from ..config import CLOUD_ERRORS
 from libcloud.common.exceptions import BaseHTTPError
 
 ARVADOS_TIMEFMT = '%Y-%m-%dT%H:%M:%SZ'
@@ -86,7 +87,7 @@ class RetryMixin(object):
                                     pass
                             if error.code == 429 or error.code >= 500:
                                 should_retry = True
-                        elif isinstance(error, errors):
+                        elif isinstance(error, CLOUD_ERRORS) or isinstance(error, errors) or type(error) is Exception:
                             should_retry = True
 
                         if not should_retry:
