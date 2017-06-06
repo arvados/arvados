@@ -144,33 +144,20 @@ class User < ArvadosModel
   # and perm_hash[:write] are true if this user can read and write
   # objects owned by group_uuid.
   def calculate_group_permissions
-    conn = ActiveRecord::Base.connection
-    self.class.transaction do
-      # Check whether the temporary view has already been created
-      # during this connection. If not, create it.
-      conn.exec_query 'SAVEPOINT check_permission_view'
-      begin
-        conn.exec_query('SELECT 1 FROM permission_view LIMIT 0')
-      rescue
-        conn.exec_query 'ROLLBACK TO SAVEPOINT check_permission_view'
-        sql = File.read(Rails.root.join('lib', 'create_permission_view.sql'))
-        conn.exec_query(sql)
-      ensure
-        conn.exec_query 'RELEASE SAVEPOINT check_permission_view'
-      end
-    end
+    install_view('permission')
 
     group_perms = {}
-    conn.exec_query('SELECT target_owner_uuid, max(perm_level)
-                    FROM permission_view
-                    WHERE user_uuid = $1
-                    AND target_owner_uuid IS NOT NULL
-                    GROUP BY target_owner_uuid',
-                    # "name" arg is a query label that appears in logs:
-                    "group_permissions for #{uuid}",
-                    # "binds" arg is an array of [col_id, value] for '$1' vars:
-                    [[nil, uuid]],
-                    ).rows.each do |group_uuid, max_p_val|
+    ActiveRecord::Base.connection.
+      exec_query('SELECT target_owner_uuid, max(perm_level)
+                  FROM permission_view
+                  WHERE user_uuid = $1
+                  AND target_owner_uuid IS NOT NULL
+                  GROUP BY target_owner_uuid',
+                  # "name" arg is a query label that appears in logs:
+                  "group_permissions for #{uuid}",
+                  # "binds" arg is an array of [col_id, value] for '$1' vars:
+                  [[nil, uuid]],
+                  ).rows.each do |group_uuid, max_p_val|
       group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
     end
     Rails.cache.write "groups_for_user_#{self.uuid}", group_perms

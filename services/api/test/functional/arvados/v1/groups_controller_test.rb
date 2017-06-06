@@ -477,4 +477,51 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_operator(json_response['items'].count,
                     :<, json_response['items_available'])
   end
+
+  test 'get contents, recursive=true' do
+    authorize_with :active
+    params = {
+      id: groups(:aproject).uuid,
+      recursive: true,
+      format: :json,
+    }
+    get :contents, params
+    owners = json_response['items'].map do |item|
+      item['owner_uuid']
+    end
+    assert_includes(owners, groups(:aproject).uuid)
+    assert_includes(owners, groups(:asubproject).uuid)
+  end
+
+  [false, nil].each do |recursive|
+    test "get contents, recursive=#{recursive.inspect}" do
+      authorize_with :active
+      params = {
+        id: groups(:aproject).uuid,
+        format: :json,
+      }
+      params[:recursive] = false if recursive == false
+      get :contents, params
+      owners = json_response['items'].map do |item|
+        item['owner_uuid']
+      end
+      assert_includes(owners, groups(:aproject).uuid)
+      refute_includes(owners, groups(:asubproject).uuid)
+    end
+  end
+
+  test 'get home project contents, recursive=true' do
+    authorize_with :active
+    get :contents, {
+          id: users(:active).uuid,
+          recursive: true,
+          format: :json,
+        }
+    owners = json_response['items'].map do |item|
+      item['owner_uuid']
+    end
+    assert_includes(owners, users(:active).uuid)
+    assert_includes(owners, groups(:aproject).uuid)
+    assert_includes(owners, groups(:asubproject).uuid)
+  end
 end
