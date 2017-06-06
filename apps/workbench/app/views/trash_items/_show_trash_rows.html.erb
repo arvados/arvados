@@ -8,9 +8,9 @@
       <td>
         <%= if !obj.name.blank? then obj.name else obj.uuid end %>
       <td>
-        <%= render_localized_date(obj.created_at) if obj.created_at %>
-      <td>
         <%= render_localized_date(obj.trash_at) if obj.trash_at %>
+      <td>
+        <%= render_localized_date(obj.created_at) if obj.created_at %>
       </td>
       <td>
         <%= link_to_if_arvados_object obj.owner_uuid, friendly_name: true %>

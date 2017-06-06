@@ -3,8 +3,8 @@ class TrashItemsController < ApplicationController
     Collection
   end
 
-  def show_pane_list
-    %w(Recent)
+  def index_pane_list
+    %w(Recent_trash)
   end
 
   def find_objects_for_index
@@ -16,7 +16,7 @@ class TrashItemsController < ApplicationController
     trashed_items
 
     if @objects.any?
-      @objects = @objects.sort_by { |obj| obj.created_at }.reverse
+      @objects = @objects.sort_by { |obj| obj.trash_at }.reverse
       @next_page_filters = next_page_filters('<=')
       @next_page_href = url_for(partial: :trash_rows,
                                 filters: @next_page_filters.to_json)
@@ -27,6 +27,27 @@ class TrashItemsController < ApplicationController
 
   def next_page_href with_params={}
     @next_page_href
+  end
+
+  def next_page_filters nextpage_operator
+    next_page_filters = @filters.reject do |attr, op, val|
+      (attr == 'trash_at' and op == nextpage_operator) or
+      (attr == 'uuid' and op == 'not in')
+    end
+
+    if @objects.any?
+      last_trash_at = @objects.last.trash_at
+
+      last_uuids = []
+      @objects.each do |obj|
+        last_uuids << obj.uuid if obj.trash_at.eql?(last_trash_at)
+      end
+
+      next_page_filters += [['trash_at', nextpage_operator, last_trash_at]]
+      next_page_filters += [['uuid', 'not in', last_uuids]]
+    end
+
+    next_page_filters
   end
 
   def trashed_items
