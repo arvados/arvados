@@ -12,11 +12,11 @@ import (
 )
 
 type cache struct {
-	TTL               arvados.Duration
-	CollectionEntries int
-	CollectionBytes   int64
-	PermissionEntries int
-	UUIDEntries       int
+	TTL                  arvados.Duration
+	MaxCollectionEntries int
+	MaxCollectionBytes   int64
+	MaxPermissionEntries int
+	MaxUUIDEntries       int
 
 	stats       cacheStats
 	pdhs        *lru.TwoQueueCache
@@ -51,15 +51,15 @@ type cachedPermission struct {
 
 func (c *cache) setup() {
 	var err error
-	c.pdhs, err = lru.New2Q(c.UUIDEntries)
+	c.pdhs, err = lru.New2Q(c.MaxUUIDEntries)
 	if err != nil {
 		panic(err)
 	}
-	c.collections, err = lru.New2Q(c.CollectionEntries)
+	c.collections, err = lru.New2Q(c.MaxCollectionEntries)
 	if err != nil {
 		panic(err)
 	}
-	c.permissions, err = lru.New2Q(c.PermissionEntries)
+	c.permissions, err = lru.New2Q(c.MaxPermissionEntries)
 	if err != nil {
 		panic(err)
 	}
@@ -175,7 +175,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		expire:     exp,
 		collection: collection,
 	})
-	if int64(len(collection["manifest_text"].(string))) > c.CollectionBytes/int64(c.CollectionEntries) {
+	if int64(len(collection["manifest_text"].(string))) > c.MaxCollectionBytes/int64(c.MaxCollectionEntries) {
 		c.pruneCollections()
 	}
 	return collection, nil
@@ -212,7 +212,7 @@ func (c *cache) pruneCollections() {
 		}
 	}
 	for i, k := range keys {
-		if size <= c.CollectionBytes {
+		if size <= c.MaxCollectionBytes {
 			break
 		}
 		if expired[i] {

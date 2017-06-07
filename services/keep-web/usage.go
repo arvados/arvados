@@ -71,19 +71,19 @@ Cache.TTL:
 
     Maximum time to cache collection data and permission checks.
 
-Cache.CollectionEntries:
+Cache.MaxCollectionEntries:
 
     Maximum number of collection cache entries.
 
-Cache.CollectionBytes:
+Cache.MaxCollectionBytes:
 
     Approximate memory limit for collection cache.
 
-Cache.PermissionEntries:
+Cache.MaxPermissionEntries:
 
     Maximum number of permission cache entries.
 
-Cache.UUIDEntries:
+Cache.MaxUUIDEntries:
 
     Maximum number of UUID cache entries.
 

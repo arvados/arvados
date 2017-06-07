@@ -37,11 +37,11 @@ func DefaultConfig() *Config {
 	return &Config{
 		Listen: ":80",
 		Cache: cache{
-			TTL:               arvados.Duration(5 * time.Minute),
-			CollectionEntries: 100,
-			CollectionBytes:   100000000,
-			PermissionEntries: 100,
-			UUIDEntries:       100,
+			TTL:                  arvados.Duration(5 * time.Minute),
+			MaxCollectionEntries: 100,
+			MaxCollectionBytes:   100000000,
+			MaxPermissionEntries: 100,
+			MaxUUIDEntries:       100,
 		},
 	}
 }
