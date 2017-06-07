@@ -26,6 +26,11 @@ class ArvadosResourceList
     self
   end
 
+  def recursive(option=nil)
+    @recursive = option
+    self
+  end
+
   def limit(max_results)
     if not max_results.nil? and not max_results.is_a? Integer
       raise ArgumentError("argument to limit() must be an Integer or nil")
