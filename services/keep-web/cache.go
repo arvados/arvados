@@ -89,7 +89,8 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 
 	permOK := false
 	permKey := arv.ApiToken + "\000" + targetID
-	if ent, cached := c.permissions.Get(permKey); cached {
+	if forceReload {
+	} else if ent, cached := c.permissions.Get(permKey); cached {
 		ent := ent.(*cachedPermission)
 		if ent.expire.Before(time.Now()) {
 			c.permissions.Remove(permKey)
@@ -102,6 +103,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 	var pdh string
 	if arvadosclient.PDHMatch(targetID) {
 		pdh = targetID
+	} else if forceReload {
 	} else if ent, cached := c.pdhs.Get(targetID); cached {
 		ent := ent.(*cachedPDH)
 		if ent.expire.Before(time.Now()) {
@@ -112,13 +114,14 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		}
 	}
 
-	collection := c.lookupCollection(pdh)
-
-	if collection != nil && permOK && !forceReload {
-		return collection, nil
+	var collection map[string]interface{}
+	if pdh != "" {
+		collection = c.lookupCollection(pdh)
 	}
 
-	if collection != nil {
+	if collection != nil && permOK {
+		return collection, nil
+	} else if collection != nil {
 		// Ask API for current PDH for this targetID. Most
 		// likely, the cached PDH is still correct; if so,
 		// _and_ the current token has permission, we can
