@@ -48,7 +48,7 @@ class SearchControllerTest < ActionController::TestCase
     }, session_for(:active)
     assert_response :success
     assert_not_empty(json_response['content'],
-                 'search results for empty project should be empty')
+                 'search results for aproject should not be empty')
     items = []
     json_response['content'].scan /<div[^>]+>/ do |div_tag|
       div_tag.scan(/\ data-object-uuid=\"(.*?)\"/).each do |uuid,|
