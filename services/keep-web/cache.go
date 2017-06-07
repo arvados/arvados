@@ -176,7 +176,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		collection: collection,
 	})
 	if int64(len(collection["manifest_text"].(string))) > c.MaxCollectionBytes/int64(c.MaxCollectionEntries) {
-		c.pruneCollections()
+		go c.pruneCollections()
 	}
 	return collection, nil
 }
