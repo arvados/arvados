@@ -1,4 +1,13 @@
 #!/usr/bin/env python
+"""Integration test framework for node manager.
+
+Runs full node manager with an API server (needs ARVADOS_API_HOST and
+ARVADOS_API_TOKEN).  Stubs out the cloud driver and slurm commands to mock
+specific behaviors.  Monitors the log output to verify an expected sequence of
+events or behaviors for each test.
+
+"""
+
 import subprocess
 import os
 import sys
@@ -92,6 +101,7 @@ def expect_count(count, checks, pattern, g):
 def run_test(name, actions, checks, driver_class, jobs):
     code = 0
 
+    # Delete any stale node records
     api = arvados.api('v1')
     for n in api.nodes().list().execute()['items']:
         api.nodes().delete(uuid=n["uuid"]).execute()
@@ -111,9 +121,11 @@ def run_test(name, actions, checks, driver_class, jobs):
     env = os.environ.copy()
     env["PATH"] = fake_slurm + ":" + env["PATH"]
 
+    # Reset fake squeue/sinfo to empty
     update_script(os.path.join(fake_slurm, "squeue"), "#!/bin/sh\n")
     update_script(os.path.join(fake_slurm, "sinfo"), "#!/bin/sh\n")
 
+    # Write configuration file for test
     with open("tests/fake.cfg.template") as f:
         with open(os.path.join(fake_slurm, "id_rsa.pub"), "w") as ssh:
             pass
@@ -123,12 +135,21 @@ def run_test(name, actions, checks, driver_class, jobs):
                                       driver_class=driver_class,
                                       ssh_key=os.path.join(fake_slurm, "id_rsa.pub")))
 
+    # Tests must complete in less than 3 minutes.
     timeout = time.time() + 180
     terminated = False
 
+    # Now start node manager
     p = subprocess.Popen(["bin/arvados-node-manager", "--foreground", "--config", os.path.join(fake_slurm, "fake.cfg")],
                          bufsize=0, stderr=subprocess.PIPE, env=env)
 
+    # Test main loop:
+    # - Read line
+    # - Apply negative checks (thinks that are not supposed to happen)
+    # - Check timeout
+    # - Check if the next action should trigger
+    # - If all actions are exhausted, terminate with test success
+    # - If it hits timeout with actions remaining, terminate with test failed
     try:
         # naive line iteration over pipes gets buffered, which isn't what we want,
         # see https://bugs.python.org/issue3907
@@ -191,7 +212,7 @@ def main():
     # Test lifecycle.
 
     tests = {
-        "test1": (
+        "test_single_node": (
             [
                 (r".*Daemon started", set_squeue),
                 (r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)", node_paired),
@@ -205,7 +226,7 @@ def main():
             },
             "arvnodeman.test.fake_driver.FakeDriver",
             {"34t0i-dz642-h42bg3hq4bdfpf9": "ReqNodeNotAvail"}),
-        "test2": (
+        "test_multiple_nodes": (
             [
                 (r".*Daemon started", set_squeue),
                 (r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)", node_paired),
@@ -229,7 +250,7 @@ def main():
              "34t0i-dz642-h42bg3hq4bdfpf3": "ReqNodeNotAvail",
              "34t0i-dz642-h42bg3hq4bdfpf4": "ReqNodeNotAvail"
          }),
-        "test3": (
+        "test_hit_quota": (
             [
                 (r".*Daemon started", set_squeue),
                 (r".*setting node quota to 3", noop),
@@ -251,7 +272,7 @@ def main():
              "34t0i-dz642-h42bg3hq4bdfpf3": "ReqNodeNotAvail",
              "34t0i-dz642-h42bg3hq4bdfpf4": "ReqNodeNotAvail"
          }),
-        "test4": (
+        "test_probe_quota": (
             [
                 (r".*Daemon started", set_squeue),
                 (r".*setting node quota to 3", noop),
