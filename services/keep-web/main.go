@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/config"
@@ -24,6 +25,8 @@ type Config struct {
 	AttachmentOnlyHost string
 	TrustAllContent    bool
 
+	Cache cache
+
 	// Hack to support old command line flag, which is a bool
 	// meaning "get actual token from environment".
 	deprecatedAllowAnonymous bool
@@ -33,6 +36,13 @@ type Config struct {
 func DefaultConfig() *Config {
 	return &Config{
 		Listen: ":80",
+		Cache: cache{
+			TTL:                  arvados.Duration(5 * time.Minute),
+			MaxCollectionEntries: 1000,
+			MaxCollectionBytes:   100000000,
+			MaxPermissionEntries: 1000,
+			MaxUUIDEntries:       1000,
+		},
 	}
 }
 

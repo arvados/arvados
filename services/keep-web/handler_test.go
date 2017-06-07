@@ -19,7 +19,7 @@ var _ = check.Suite(&UnitSuite{})
 type UnitSuite struct{}
 
 func (s *UnitSuite) TestCORSPreflight(c *check.C) {
-	h := handler{Config: &Config{}}
+	h := handler{Config: DefaultConfig()}
 	u, _ := url.Parse("http://keep-web.example/c=" + arvadostest.FooCollection + "/foo")
 	req := &http.Request{
 		Method:     "OPTIONS",
@@ -70,9 +70,9 @@ func (s *UnitSuite) TestInvalidUUID(c *check.C) {
 			RequestURI: u.RequestURI(),
 		}
 		resp := httptest.NewRecorder()
-		h := handler{Config: &Config{
-			AnonymousTokens: []string{arvadostest.AnonymousToken},
-		}}
+		cfg := DefaultConfig()
+		cfg.AnonymousTokens = []string{arvadostest.AnonymousToken}
+		h := handler{Config: cfg}
 		h.ServeHTTP(resp, req)
 		c.Check(resp.Code, check.Equals, http.StatusNotFound)
 	}
