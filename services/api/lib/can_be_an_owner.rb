@@ -22,6 +22,22 @@ module CanBeAnOwner
     base.validate :restrict_uuid_change_breaking_associations
   end
 
+  def descendant_project_uuids
+    install_view('ancestor')
+    ActiveRecord::Base.connection.
+      exec_query('SELECT ancestor_view.uuid
+                  FROM ancestor_view
+                  LEFT JOIN groups ON groups.uuid=ancestor_view.uuid
+                  WHERE ancestor_uuid = $1 AND groups.group_class = $2',
+                  # "name" arg is a query label that appears in logs:
+                  "descendant_project_uuids for #{self.uuid}",
+                  # "binds" arg is an array of [col_id, value] for '$1' vars:
+                  [[nil, self.uuid], [nil, 'project']],
+                  ).rows.map do |project_uuid,|
+      project_uuid
+    end
+  end
+
   protected
 
   def restrict_uuid_change_breaking_associations
@@ -44,4 +60,21 @@ module CanBeAnOwner
     end
   end
 
+  def install_view(type)
+    conn = ActiveRecord::Base.connection
+    self.class.transaction do
+      # Check whether the temporary view has already been created
+      # during this connection. If not, create it.
+      conn.exec_query "SAVEPOINT check_#{type}_view"
+      begin
+        conn.exec_query("SELECT 1 FROM #{type}_view LIMIT 0")
+      rescue
+        conn.exec_query "ROLLBACK TO SAVEPOINT check_#{type}_view"
+        sql = File.read(Rails.root.join("lib", "create_#{type}_view.sql"))
+        conn.exec_query(sql)
+      ensure
+        conn.exec_query "RELEASE SAVEPOINT check_#{type}_view"
+      end
+    end
+  end
 end

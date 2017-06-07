@@ -152,6 +152,14 @@ class ArvadosBase < ActiveRecord::Base
     ArvadosResourceList.new(self).distinct(*args)
   end
 
+  def self.include_trash(*args)
+    ArvadosResourceList.new(self).include_trash(*args)
+  end
+
+  def self.recursive(*args)
+    ArvadosResourceList.new(self).recursive(*args)
+  end
+
   def self.eager(*args)
     ArvadosResourceList.new(self).eager(*args)
   end

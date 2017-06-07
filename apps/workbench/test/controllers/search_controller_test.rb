@@ -39,4 +39,27 @@ class SearchControllerTest < ActionController::TestCase
     assert_empty(json_response['content'],
                  'search results for empty project should be empty')
   end
+
+  test 'search results for aproject and verify recursive contents' do
+    xhr :get, :choose, {
+      format: :json,
+      partial: true,
+      project_uuid: api_fixture('groups')['aproject']['uuid'],
+    }, session_for(:active)
+    assert_response :success
+    assert_not_empty(json_response['content'],
+                 'search results for aproject should not be empty')
+    items = []
+    json_response['content'].scan /<div[^>]+>/ do |div_tag|
+      div_tag.scan(/\ data-object-uuid=\"(.*?)\"/).each do |uuid,|
+        items << uuid
+      end
+    end
+
+    assert_includes(items, api_fixture('collections')['collection_to_move_around_in_aproject']['uuid'])
+    assert_includes(items, api_fixture('groups')['asubproject']['uuid'])
+    assert_includes(items, api_fixture('collections')['baz_collection_name_in_asubproject']['uuid'])
+    assert_includes(items,
+      api_fixture('groups')['subproject_in_asubproject_with_same_name_as_one_in_active_user_home']['uuid'])
+  end
 end

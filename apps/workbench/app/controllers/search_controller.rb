@@ -15,6 +15,7 @@ class SearchController < ApplicationController
     end
     @objects = search_what.contents(limit: @limit,
                                     offset: @offset,
+                                    recursive: true,
                                     count: 'none',
                                     last_object_class: params["last_object_class"],
                                     filters: @filters)
@@ -24,6 +25,7 @@ class SearchController < ApplicationController
   def next_page_href with_params={}
     super with_params.merge(last_object_class: @objects.last.class.to_s,
                             project_uuid: params[:project_uuid],
+                            recursive: true,
                             count: 'none',
                             filters: @filters.to_json)
   end
