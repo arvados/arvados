@@ -42,7 +42,6 @@ class TrashTest < ActionDispatch::IntegrationTest
     # Un-trash another item using the recycle button
     within('tr', text: expired1['name']) do
       first('.fa-recycle').click
-      accept_alert
     end
 
     wait_for_ajax
