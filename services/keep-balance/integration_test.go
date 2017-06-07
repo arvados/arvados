@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"log"
-	"net/http"
 	"os"
 	"strings"
 	"testing"
@@ -35,11 +34,9 @@ func (s *integrationSuite) SetUpSuite(c *check.C) {
 	arv, err := arvadosclient.MakeArvadosClient()
 	arv.ApiToken = arvadostest.DataManagerToken
 	c.Assert(err, check.IsNil)
-	s.keepClient = &keepclient.KeepClient{
-		Arvados: arv,
-		Client:  &http.Client{},
-	}
-	c.Assert(s.keepClient.DiscoverKeepServers(), check.IsNil)
+
+	s.keepClient, err = keepclient.MakeKeepClient(arv)
+	c.Assert(err, check.IsNil)
 	s.putReplicas(c, "foo", 4)
 	s.putReplicas(c, "bar", 1)
 }

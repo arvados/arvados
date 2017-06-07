@@ -208,7 +208,7 @@ class CrunchDispatchTest < ActiveSupport::TestCase
     act_as_system_user do
       dispatch = CrunchDispatch.new
 
-      squeue_resp = IO.popen("echo zzzzz-8i9sb-pshmckwoma9plh7\necho thisisnotvalidjobuuid\necho zzzzz-8i9sb-4cf0abc123e809j\n")
+      squeue_resp = IO.popen("echo zzzzz-8i9sb-pshmckwoma9plh7\necho thisisnotvalidjobuuid\necho zzzzz-8i9sb-4cf0abc123e809j\necho zzzzz-dz642-o04e3r651turtdr\n")
       scancel_resp = IO.popen("true")
 
       IO.expects(:popen).

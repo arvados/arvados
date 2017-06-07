@@ -1,10 +1,32 @@
 <%
   recent_procs = recent_processes(12)
 
+  # preload container_uuids of any container requests
+  recent_crs = recent_procs.map {|p| p if p.is_a?(ContainerRequest)}.compact.uniq
+  recent_cr_containers = recent_crs.map {|cr| cr.container_uuid}.compact.uniq
+  preload_objects_for_dataclass(Container, recent_cr_containers) if recent_cr_containers.andand.any?
+
+  # fetch children of all the active crs in one call, if there are any
+  active_crs = recent_crs.each {|cr| cr if (cr.priority > 0 and cr.state != 'Final' and cr.container_uuid)}
+  active_cr_uuids = active_crs.map(&:uuid)
+  active_cr_containers = active_crs.map {|cr| cr.container_uuid}.compact.uniq
+  cr_children = {}
+  if active_cr_containers.any?
+    active_cr_containers.each { |c| cr_children[c] = []}
+    cols = ContainerRequest.columns.map(&:name) - %w(id updated_at mounts)
+    reqs = ContainerRequest.select(cols).where(requesting_container_uuid: active_cr_containers).results
+    reqs.each {|cr| cr_children[cr.requesting_container_uuid] << cr} if reqs
+  end
+
   wus = {}
   outputs = []
   recent_procs.each do |p|
-    wu = p.work_unit
+    if p.uuid.in?(active_cr_uuids)
+      wu = p.work_unit(nil, child_objects=cr_children[p.container_uuid])
+    else
+      wu = p.work_unit
+    end
+
     wus[p] = wu
     outputs << wu.outputs
   end

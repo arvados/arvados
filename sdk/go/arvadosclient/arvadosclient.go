@@ -11,11 +11,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -37,6 +39,12 @@ var ErrInvalidArgument = errors.New("Invalid argument")
 var MaxIdleConnectionDuration = 30 * time.Second
 
 var RetryDelay = 2 * time.Second
+
+var (
+	defaultInsecureHTTPClient *http.Client
+	defaultSecureHTTPClient   *http.Client
+	defaultHTTPClientMtx      sync.Mutex
+)
 
 // Indicates an error that was returned by the API server.
 type APIServerError struct {
@@ -64,6 +72,13 @@ func (e APIServerError) Error() string {
 			e.HttpStatusMessage,
 			e.ServerAddress)
 	}
+}
+
+// StringBool tests whether s is suggestive of true. It returns true
+// if s is a mixed/uppoer/lower-case variant of "1", "yes", or "true".
+func StringBool(s string) bool {
+	s = strings.ToLower(s)
+	return s == "1" || s == "yes" || s == "true"
 }
 
 // Helper type so we don't have to write out 'map[string]interface{}' every time.
@@ -111,26 +126,31 @@ var CertFiles = []string{
 	"/etc/pki/tls/certs/ca-bundle.crt",   // Fedora/RHEL
 }
 
-// MakeTLSConfig sets up TLS configuration for communicating with Arvados and Keep services.
+// MakeTLSConfig sets up TLS configuration for communicating with
+// Arvados and Keep services.
 func MakeTLSConfig(insecure bool) *tls.Config {
 	tlsconfig := tls.Config{InsecureSkipVerify: insecure}
 
 	if !insecure {
-		// Look for /etc/arvados/ca-certificates.crt in addition to normal system certs.
+		// Use the first entry in CertFiles that we can read
+		// certificates from. If none of those work out, use
+		// the Go defaults.
 		certs := x509.NewCertPool()
 		for _, file := range CertFiles {
 			data, err := ioutil.ReadFile(file)
-			if err == nil {
-				success := certs.AppendCertsFromPEM(data)
-				if !success {
-					fmt.Printf("Unable to load any certificates from %v", file)
-				} else {
-					tlsconfig.RootCAs = certs
-					break
+			if err != nil {
+				if !os.IsNotExist(err) {
+					log.Printf("error reading %q: %s", file, err)
 				}
+				continue
 			}
+			if !certs.AppendCertsFromPEM(data) {
+				log.Printf("unable to load any certificates from %v", file)
+				continue
+			}
+			tlsconfig.RootCAs = certs
+			break
 		}
-		// Will use system default CA roots instead.
 	}
 
 	return &tlsconfig
@@ -150,6 +170,7 @@ func New(c *arvados.Client) (*ArvadosClient, error) {
 			TLSClientConfig: MakeTLSConfig(c.Insecure)}},
 		External:          false,
 		Retries:           2,
+		KeepServiceURIs:   c.KeepServiceURIs,
 		lastClosedIdlesAt: time.Now(),
 	}
 
@@ -161,42 +182,12 @@ func New(c *arvados.Client) (*ArvadosClient, error) {
 // ARVADOS_API_HOST_INSECURE, ARVADOS_EXTERNAL_CLIENT, and
 // ARVADOS_KEEP_SERVICES.
 func MakeArvadosClient() (ac *ArvadosClient, err error) {
-	var matchTrue = regexp.MustCompile("^(?i:1|yes|true)$")
-	insecure := matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
-	external := matchTrue.MatchString(os.Getenv("ARVADOS_EXTERNAL_CLIENT"))
-
-	ac = &ArvadosClient{
-		Scheme:      "https",
-		ApiServer:   os.Getenv("ARVADOS_API_HOST"),
-		ApiToken:    os.Getenv("ARVADOS_API_TOKEN"),
-		ApiInsecure: insecure,
-		Client: &http.Client{Transport: &http.Transport{
-			TLSClientConfig: MakeTLSConfig(insecure)}},
-		External: external,
-		Retries:  2}
-
-	for _, s := range strings.Split(os.Getenv("ARVADOS_KEEP_SERVICES"), " ") {
-		if s == "" {
-			continue
-		}
-		if u, err := url.Parse(s); err != nil {
-			return ac, fmt.Errorf("ARVADOS_KEEP_SERVICES: %q: %s", s, err)
-		} else if !u.IsAbs() {
-			return ac, fmt.Errorf("ARVADOS_KEEP_SERVICES: %q: not an absolute URI", s)
-		}
-		ac.KeepServiceURIs = append(ac.KeepServiceURIs, s)
+	ac, err = New(arvados.NewClientFromEnv())
+	if err != nil {
+		return
 	}
-
-	if ac.ApiServer == "" {
-		return ac, MissingArvadosApiHost
-	}
-	if ac.ApiToken == "" {
-		return ac, MissingArvadosApiToken
-	}
-
-	ac.lastClosedIdlesAt = time.Now()
-
-	return ac, err
+	ac.External = StringBool(os.Getenv("ARVADOS_EXTERNAL_CLIENT"))
+	return
 }
 
 // CallRaw is the same as Call() but returns a Reader that reads the
@@ -419,4 +410,21 @@ func (c *ArvadosClient) Discovery(parameter string) (value interface{}, err erro
 	} else {
 		return value, ErrInvalidArgument
 	}
+}
+
+func (ac *ArvadosClient) httpClient() *http.Client {
+	if ac.Client != nil {
+		return ac.Client
+	}
+	c := &defaultSecureHTTPClient
+	if ac.ApiInsecure {
+		c = &defaultInsecureHTTPClient
+	}
+	if *c == nil {
+		defaultHTTPClientMtx.Lock()
+		defer defaultHTTPClientMtx.Unlock()
+		*c = &http.Client{Transport: &http.Transport{
+			TLSClientConfig: MakeTLSConfig(ac.ApiInsecure)}}
+	}
+	return *c
 }

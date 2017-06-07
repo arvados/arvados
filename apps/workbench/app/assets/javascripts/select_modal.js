@@ -120,6 +120,7 @@ $(document).on('click', '.selectable', function() {
                   'project_uuid': project_uuid
                  };
     }
+    $(".modal-dialog-preview-pane").html("");
     // Use current selection as dropdown button label
     $(this).
         closest('.dropdown-menu').

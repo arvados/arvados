@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 
@@ -64,6 +65,7 @@ func (s *DoMainTestSuite) SetUpSuite(c *C) {
 func (s *DoMainTestSuite) SetUpTest(c *C) {
 	logOutput := io.MultiWriter(&logBuffer)
 	log.SetOutput(logOutput)
+	keepclient.RefreshServiceDiscovery()
 }
 
 func (s *DoMainTestSuite) TearDownTest(c *C) {
@@ -79,7 +81,7 @@ func setupKeepBlockCheckWithTTL(c *C, enforcePermissions bool, keepServicesJSON 
 	var config apiConfig
 	config.APIHost = os.Getenv("ARVADOS_API_HOST")
 	config.APIToken = arvadostest.DataManagerToken
-	config.APIHostInsecure = matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE"))
+	config.APIHostInsecure = arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE"))
 
 	// Start Keep servers
 	arvadostest.StartKeep(2, enforcePermissions)
@@ -89,6 +91,8 @@ func setupKeepBlockCheckWithTTL(c *C, enforcePermissions bool, keepServicesJSON 
 	kc, ttl, err = setupKeepClient(config, keepServicesJSON, ttl)
 	c.Assert(ttl, Equals, blobSignatureTTL)
 	c.Check(err, IsNil)
+
+	keepclient.RefreshServiceDiscovery()
 }
 
 // Setup test data
@@ -144,9 +148,8 @@ func setupBlockHashFile(c *C, name string, blocks []string) string {
 
 func checkErrorLog(c *C, blocks []string, prefix, suffix string) {
 	for _, hash := range blocks {
-		expected := prefix + `.*` + hash + `.*` + suffix
-		match, _ := regexp.MatchString(expected, logBuffer.String())
-		c.Assert(match, Equals, true)
+		expected := `(?ms).*` + prefix + `.*` + hash + `.*` + suffix + `.*`
+		c.Check(logBuffer.String(), Matches, expected)
 	}
 }
 
@@ -288,7 +291,7 @@ func (s *ServerRequiredSuite) TestLoadConfig(c *C) {
 
 	c.Assert(config.APIHost, Equals, os.Getenv("ARVADOS_API_HOST"))
 	c.Assert(config.APIToken, Equals, arvadostest.DataManagerToken)
-	c.Assert(config.APIHostInsecure, Equals, matchTrue.MatchString(os.Getenv("ARVADOS_API_HOST_INSECURE")))
+	c.Assert(config.APIHostInsecure, Equals, arvadosclient.StringBool(os.Getenv("ARVADOS_API_HOST_INSECURE")))
 	c.Assert(config.ExternalClient, Equals, false)
 	c.Assert(blobSigningKey, Equals, "abcdefg")
 }

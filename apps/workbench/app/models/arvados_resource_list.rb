@@ -21,6 +21,11 @@ class ArvadosResourceList
     self
   end
 
+  def include_trash(option=nil)
+    @include_trash = option
+    self
+  end
+
   def limit(max_results)
     if not max_results.nil? and not max_results.is_a? Integer
       raise ArgumentError("argument to limit() must be an Integer or nil")
@@ -192,6 +197,7 @@ class ArvadosResourceList
     api_params[:order] = @orderby_spec if @orderby_spec
     api_params[:filters] = @filters if @filters
     api_params[:distinct] = @distinct if @distinct
+    api_params[:include_trash] = @include_trash if @include_trash
     if @fetch_multiple_pages
       # Default limit to (effectively) api server's MAX_LIMIT
       api_params[:limit] = 2**(0.size*8 - 1) - 1

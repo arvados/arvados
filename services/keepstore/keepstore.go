@@ -159,7 +159,6 @@ func main() {
 	keepClient := &keepclient.KeepClient{
 		Arvados:       &arvadosclient.ArvadosClient{},
 		Want_replicas: 1,
-		Client:        &http.Client{},
 	}
 
 	// Initialize the pullq and worker

@@ -91,6 +91,15 @@ class Arvados::V1::GroupsController < ApplicationController
       end
     end
 
+    filter_by_owner = {}
+    if @object
+      if params['recursive']
+        filter_by_owner[:owner_uuid] = [@object.uuid] + @object.descendant_project_uuids
+      else
+        filter_by_owner[:owner_uuid] = @object.uuid
+      end
+    end
+
     seen_last_class = false
     klasses.each do |klass|
       @offset = 0 if seen_last_class  # reset offset for the new next type being processed
@@ -118,12 +127,11 @@ class Arvados::V1::GroupsController < ApplicationController
         klass.default_orders.join(", ")
 
       @select = nil
-      where_conds = {}
-      where_conds[:owner_uuid] = @object.uuid if @object
+      where_conds = filter_by_owner
       if klass == Collection
         @select = klass.selectable_attributes - ["manifest_text"]
       elsif klass == Group
-        where_conds[:group_class] = "project"
+        where_conds = where_conds.merge(group_class: "project")
       end
 
       @filters = request_filters.map do |col, op, val|
