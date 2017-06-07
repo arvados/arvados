@@ -26,11 +26,13 @@ type cache struct {
 }
 
 type cacheStats struct {
-	Requests       uint64
-	CollectionHits uint64
-	PDHHits        uint64
-	PermissionHits uint64
-	APICalls       uint64
+	Requests          uint64 `json:"Cache.Requests"`
+	CollectionBytes   uint64 `json:"Cache.CollectionBytes"`
+	CollectionEntries int    `json:"Cache.CollectionEntries"`
+	CollectionHits    uint64 `json:"Cache.CollectionHits"`
+	PDHHits           uint64 `json:"Cache.UUIDHits"`
+	PermissionHits    uint64 `json:"Cache.PermissionHits"`
+	APICalls          uint64 `json:"Cache.APICalls"`
 }
 
 type cachedPDH struct {
@@ -68,12 +70,15 @@ var selectPDH = map[string]interface{}{
 }
 
 func (c *cache) Stats() cacheStats {
+	c.setupOnce.Do(c.setup)
 	return cacheStats{
-		Requests:       atomic.LoadUint64(&c.stats.Requests),
-		CollectionHits: atomic.LoadUint64(&c.stats.CollectionHits),
-		PDHHits:        atomic.LoadUint64(&c.stats.PDHHits),
-		PermissionHits: atomic.LoadUint64(&c.stats.PermissionHits),
-		APICalls:       atomic.LoadUint64(&c.stats.APICalls),
+		Requests:          atomic.LoadUint64(&c.stats.Requests),
+		CollectionBytes:   c.collectionBytes(),
+		CollectionEntries: c.collections.Len(),
+		CollectionHits:    atomic.LoadUint64(&c.stats.CollectionHits),
+		PDHHits:           atomic.LoadUint64(&c.stats.PDHHits),
+		PermissionHits:    atomic.LoadUint64(&c.stats.PermissionHits),
+		APICalls:          atomic.LoadUint64(&c.stats.APICalls),
 	}
 }
 
@@ -217,6 +222,20 @@ func (c *cache) pruneCollections() {
 		c.collections.Remove(k)
 		size -= int64(entsize[i])
 	}
+}
+
+// collectionBytes returns the approximate memory size of the
+// collection cache.
+func (c *cache) collectionBytes() uint64 {
+	var size uint64
+	for _, k := range c.collections.Keys() {
+		v, ok := c.collections.Peek(k)
+		if !ok {
+			continue
+		}
+		size += uint64(len(v.(*cachedCollection).collection["manifest_text"].(string)))
+	}
+	return size
 }
 
 func (c *cache) lookupCollection(pdh string) map[string]interface{} {
