@@ -15,8 +15,8 @@ class TrashTest < ActionDispatch::IntegrationTest
 
     assert_text deleted['name']
     assert_text expired1['name']
-    assert_text expired2['name']
-    assert_no_text 'foo_file'
+    assert_no_text expired2['name']   # not readable by this user
+    assert_no_text 'foo_file'         # not trash
 
     # Un-trash one item using selection dropdown
     within('tr', text: deleted['name']) do
@@ -33,12 +33,6 @@ class TrashTest < ActionDispatch::IntegrationTest
     assert_text expired1['name']      # this should still be there
     assert_no_text deleted['name']    # this should no longer be here
 
-    # expired2 is not editable by me; checkbox and recycle button shouldn't be offered
-    within('tr', text: expired2['name']) do
-      assert_nil first('input')
-      assert_nil first('.fa-recycle')
-    end
-
     # Un-trash another item using the recycle button
     within('tr', text: expired1['name']) do
       first('.fa-recycle').click
@@ -46,7 +40,6 @@ class TrashTest < ActionDispatch::IntegrationTest
 
     wait_for_ajax
 
-    assert_text expired2['name']
     assert_no_text expired1['name']
 
     # verify that the two un-trashed items are now shown in /collections page
@@ -58,7 +51,7 @@ class TrashTest < ActionDispatch::IntegrationTest
 
   test "trash page with search" do
     deleted = api_fixture('collections')['deleted_on_next_sweep']
-    expired = api_fixture('collections')['unique_expired_collection2']
+    expired = api_fixture('collections')['unique_expired_collection']
 
     visit page_with_token('active', "/trash")
 
