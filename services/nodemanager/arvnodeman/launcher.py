@@ -89,6 +89,7 @@ def launch_pollers(config, server_calculator):
         config.new_arvados_client(), timer, server_calculator,
         config.getboolean('Arvados', 'jobs_queue'),
         config.getboolean('Arvados', 'slurm_queue'),
+        [server_calculator.find_size(sz) for sz in config.get('Testing', 'wishlist').split(",")],
         poll_time, max_poll_time
     ).tell_proxy()
     return timer, cloud_node_poller, arvados_node_poller, job_queue_poller
@@ -141,7 +142,8 @@ def main(args=None):
             config.getint('Daemon', 'boot_fail_after'),
             config.getint('Daemon', 'node_stale_after'),
             node_setup, node_shutdown, node_monitor,
-            max_total_price=config.getfloat('Daemon', 'max_total_price')).tell_proxy()
+            max_total_price=config.getfloat('Daemon', 'max_total_price'),
+            destroy_on_shutdown=config.getboolean('Daemon', 'destroy_on_shutdown')).tell_proxy()
 
         watchdog = WatchdogActor.start(config.getint('Daemon', 'watchdog'),
                             cloud_node_poller.actor_ref,

@@ -113,12 +113,13 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
     CLIENT_ERRORS = ARVADOS_ERRORS
 
     def __init__(self, client, timer_actor, server_calc,
-                 jobs_queue, slurm_queue, *args, **kwargs):
+                 jobs_queue, slurm_queue, override_wishlist, *args, **kwargs):
         super(JobQueueMonitorActor, self).__init__(
             client, timer_actor, *args, **kwargs)
         self.jobs_queue = jobs_queue
         self.slurm_queue = slurm_queue
         self._calculator = server_calc
+        self.override_wishlist = override_wishlist
 
     @staticmethod
     def coerce_to_mb(x):
@@ -161,6 +162,8 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
 
     def _got_response(self, queue):
         server_list = self._calculator.servers_for_queue(queue)
+        if self.override_wishlist:
+            server_list.extend(self.override_wishlist)
         self._logger.debug("Calculated wishlist: %s",
                            ', '.join(s.name for s in server_list) or "(empty)")
         return super(JobQueueMonitorActor, self)._got_response(server_list)

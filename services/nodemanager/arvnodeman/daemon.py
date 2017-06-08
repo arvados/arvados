@@ -106,7 +106,8 @@ class NodeManagerDaemonActor(actor_class):
                  node_setup_class=dispatch.ComputeNodeSetupActor,
                  node_shutdown_class=dispatch.ComputeNodeShutdownActor,
                  node_actor_class=dispatch.ComputeNodeMonitorActor,
-                 max_total_price=0):
+                 max_total_price=0,
+                 destroy_on_shutdown=False):
         super(NodeManagerDaemonActor, self).__init__()
         self._node_setup = node_setup_class
         self._node_shutdown = node_shutdown_class
@@ -137,6 +138,7 @@ class NodeManagerDaemonActor(actor_class):
         self.arvados_nodes = _ArvadosNodeTracker()
         self.booting = {}       # Actor IDs to ComputeNodeSetupActors
         self.sizes_booting = {} # Actor IDs to node size
+        self.destroy_on_shutdown = destroy_on_shutdown
 
     def on_start(self):
         self._logger = logging.getLogger("%s.%s" % (self.__class__.__name__, self.actor_urn[33:]))
@@ -199,6 +201,8 @@ class NodeManagerDaemonActor(actor_class):
                 except pykka.ActorDeadError:
                     pass
                 record.shutdown_actor = None
+                if hasattr(record.cloud_node, "_nodemanager_recently_booted"):
+                    del record.cloud_node._nodemanager_recently_booted
 
             # A recently booted node is a node that successfully completed the
             # setup actor but has not yet appeared in the cloud node list.
@@ -516,25 +520,35 @@ class NodeManagerDaemonActor(actor_class):
 
     def shutdown(self):
         self._logger.info("Shutting down after signal.")
-        self.poll_stale_after = -1  # Inhibit starting/stopping nodes
 
         # Shut down pollers
         self._server_wishlist_actor.stop()
         self._arvados_nodes_actor.stop()
-        self._cloud_nodes_actor.stop()
-
-        # Clear cloud node list
-        self.update_cloud_nodes([])
 
         # Stop setup actors unless they are in the middle of setup.
         setup_stops = {key: node.stop_if_no_cloud_node()
                        for key, node in self.booting.iteritems()}
         self.booting = {key: self.booting[key]
                         for key in setup_stops if not setup_stops[key].get()}
+
+        if not self.destroy_on_shutdown:
+            # Clear cloud node list
+            self._cloud_nodes_actor.stop()
+            self.update_cloud_nodes([])
+            self.poll_stale_after = -1  # Inhibit starting/stopping nodes
+
         self._later.await_shutdown()
 
     def await_shutdown(self):
-        if self.booting:
+        nodes_up = 0
+        if self.destroy_on_shutdown:
+            for node in self.cloud_nodes.nodes.itervalues():
+                # Begin shutdown of all nodes.
+                if node.actor and not node.shutdown_actor:
+                    self._begin_node_shutdown(node.actor, cancellable=False)
+            nodes_up = sum(1 for node in self.cloud_nodes.nodes.itervalues() if node.actor)
+
+        if self.booting or nodes_up:
             self._timer.schedule(time.time() + 1, self._later.await_shutdown)
         else:
             self.stop()
