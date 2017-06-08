@@ -1045,7 +1045,7 @@ EOS
 
   [:active, :admin].each do |user|
     test "get trashed collections as #{user}" do
-      authorize_with :active
+      authorize_with user
       get :index, {
         filters: [["is_trashed", "=", true]],
         include_trash: true,
