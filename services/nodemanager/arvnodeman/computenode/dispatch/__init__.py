@@ -347,7 +347,7 @@ class ComputeNodeMonitorActor(config.actor_class):
         self._timer.schedule(self.cloud_node_start_time + self.boot_fail_after, self._later.consider_shutdown)
 
     def on_stop(self):
-        status.tracker.update({"node_"+self.cloud_node.name: None})
+        status.tracker_full.update({"node_"+self.cloud_node.name: None})
 
     def subscribe(self, subscriber):
         self.subscribers.add(subscriber)
@@ -438,7 +438,7 @@ class ComputeNodeMonitorActor(config.actor_class):
             arvados_node["info"] = arvados_node["info"].copy()
             if "ping_secret" in arvados_node["info"]:
                 del arvados_node["info"]["ping_secret"]
-        status.tracker.update({"node_"+self.cloud_node.name: {
+        status.tracker_full.update({"node_"+self.cloud_node.name: {
             "id": self.cloud_node.id,
             "state": list(node_state),
             "size": self.cloud_node.size.name,

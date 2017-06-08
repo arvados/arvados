@@ -37,6 +37,11 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
             self.send_header('Content-type', 'application/json')
             self.end_headers()
             self.wfile.write(tracker.get_json())
+        elif self.path == '/status-full.json':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(tracker_full.get_json())
         else:
             self.send_response(404)
 
@@ -63,3 +68,4 @@ class Tracker(object):
 
 
 tracker = Tracker()
+tracker_full = Tracker()

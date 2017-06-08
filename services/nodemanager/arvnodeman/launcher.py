@@ -125,6 +125,7 @@ def main(args=None):
     updates['servicetype'] = "arvados_nodemanager"
     updates['version'] = __version__
     status.tracker.update(updates)
+    status.tracker_full.update(updates)
 
     try:
         root_logger = setup_logging(config.get('Logging', 'file'), **config.log_levels())

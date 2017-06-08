@@ -264,12 +264,15 @@ class NodeManagerDaemonActor(actor_class):
         updates['nodes_quota'] = self.node_quota
         updates['nodes_wish'] = len(self.last_wishlist)
         updates['status'] = "OK"
+        status.tracker.update(updates)
+        status.tracker_full.update(updates)
 
+        updates = {}
         for size in self.server_calculator.cloud_sizes:
             updates["size_"+size.name] = {"nodes_"+k: v for k,v in self._state_counts(size).items()}
             for attr in ['id', 'name', 'ram', 'disk', 'bandwidth', 'price']:
                 updates["size_"+size.name][attr] = getattr(size, attr)
-        status.tracker.update(updates)
+        status.tracker_full.update(updates)
 
     def _state_counts(self, size):
         states = self._node_states(size)
