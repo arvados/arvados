@@ -19,8 +19,19 @@ import tempfile
 import shutil
 from functools import partial
 import arvados
+import StringIO
 
-logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("logger")
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler(sys.stderr))
+
+detail = logging.getLogger("detail")
+detail.setLevel(logging.INFO)
+if os.environ.get("ANMTEST_LOGLEVEL"):
+    detail_content = sys.stderr
+else:
+    detail_content = StringIO.StringIO()
+detail.addHandler(logging.StreamHandler(detail_content))
 
 fake_slurm = None
 compute_nodes = None
@@ -31,7 +42,7 @@ def update_script(path, val):
         f.write(val)
     os.chmod(path+"_", stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
     os.rename(path+"_", path)
-    logging.info("Update script %s: %s", path, val)
+    detail.info("Update script %s: %s", path, val)
 
 def set_squeue(g):
     global all_jobs
@@ -106,11 +117,11 @@ def run_test(name, actions, checks, driver_class, jobs):
     for n in api.nodes().list().execute()['items']:
         api.nodes().delete(uuid=n["uuid"]).execute()
 
-    logging.info("Start %s", name)
+    logger.info("Start %s", name)
 
     global fake_slurm
     fake_slurm = tempfile.mkdtemp()
-    logging.info("fake_slurm is %s", fake_slurm)
+    detail.info("fake_slurm is %s", fake_slurm)
 
     global compute_nodes
     compute_nodes = {}
@@ -127,8 +138,7 @@ def run_test(name, actions, checks, driver_class, jobs):
 
     # Write configuration file for test
     with open("tests/fake.cfg.template") as f:
-        with open(os.path.join(fake_slurm, "id_rsa.pub"), "w") as ssh:
-            pass
+        open(os.path.join(fake_slurm, "id_rsa.pub"), "w").close()
         with open(os.path.join(fake_slurm, "fake.cfg"), "w") as cfg:
             cfg.write(f.read().format(host=os.environ["ARVADOS_API_HOST"],
                                       token=os.environ["ARVADOS_API_TOKEN"],
@@ -154,15 +164,15 @@ def run_test(name, actions, checks, driver_class, jobs):
         # naive line iteration over pipes gets buffered, which isn't what we want,
         # see https://bugs.python.org/issue3907
         for line in iter(p.stderr.readline, ""):
-            sys.stdout.write(line)
+            detail_content.write(line)
 
             for k,v in checks.items():
                 g = re.match(k, line)
                 if g:
-                    logging.info("Matched check %s", k)
+                    detail.info("Matched check %s", k)
                     code += v(checks, k, g)
                     if code != 0:
-                        logging.error("Check failed")
+                        detail.error("Check failed")
                         if not terminated:
                             p.terminate()
                             terminated = True
@@ -171,7 +181,7 @@ def run_test(name, actions, checks, driver_class, jobs):
                 continue
 
             if time.time() > timeout:
-                logging.error("Exceeded timeout with actions remaining: %s", actions)
+                detail.error("Exceeded timeout with actions remaining: %s", actions)
                 code += 1
                 if not terminated:
                     p.terminate()
@@ -180,11 +190,11 @@ def run_test(name, actions, checks, driver_class, jobs):
             k, v = actions[0]
             g = re.match(k, line)
             if g:
-                logging.info("Matched action %s", k)
+                detail.info("Matched action %s", k)
                 actions.pop(0)
                 code += v(g)
                 if code != 0:
-                    logging.error("Action failed")
+                    detail.error("Action failed")
                     p.terminate()
                     terminated = True
 
@@ -195,15 +205,17 @@ def run_test(name, actions, checks, driver_class, jobs):
         p.kill()
 
     if actions:
-        logging.error("Ended with remaining actions: %s", actions)
+        detail.error("Ended with remaining actions: %s", actions)
         code = 1
 
     shutil.rmtree(fake_slurm)
 
     if code == 0:
-        logging.info("%s passed", name)
+        logger.info("%s passed", name)
     else:
-        logging.info("%s failed", name)
+        if isinstance(detail_content, StringIO()):
+            sys.stderr.write(detail_content.getvalue())
+        logger.info("%s failed", name)
 
     return code
 
@@ -305,7 +317,7 @@ def main():
              "34t0i-dz642-h42bg3hq4bdfpf3": "ReqNodeNotAvail",
              "34t0i-dz642-h42bg3hq4bdfpf4": "ReqNodeNotAvail"
          }),
-        "test5": (
+        "test_no_hang_failing_node_create": (
             [
                 (r".*Daemon started", set_squeue),
                 (r".*Client error: nope", noop),
@@ -330,9 +342,9 @@ def main():
             code += run_test(t, *tests[t])
 
     if code == 0:
-        logging.info("Tests passed")
+        logger.info("Tests passed")
     else:
-        logging.info("Tests failed")
+        logger.info("Tests failed")
 
     exit(code)
 
