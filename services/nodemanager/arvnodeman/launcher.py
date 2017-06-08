@@ -143,7 +143,8 @@ def main(args=None):
             config.getint('Daemon', 'node_stale_after'),
             node_setup, node_shutdown, node_monitor,
             max_total_price=config.getfloat('Daemon', 'max_total_price'),
-            destroy_on_shutdown=config.getboolean('Daemon', 'destroy_on_shutdown')).tell_proxy()
+            destroy_on_shutdown=config.getboolean('Daemon', 'destroy_on_shutdown'),
+            assigned_hostnames=config.get('Testing', 'hostnames').split(",")).tell_proxy()
 
         watchdog = WatchdogActor.start(config.getint('Daemon', 'watchdog'),
                             cloud_node_poller.actor_ref,

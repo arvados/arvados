@@ -58,7 +58,10 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
             'Manage': {'address': '127.0.0.1',
                        'port': '-1'},
             'Logging': {'file': '/dev/stderr',
-                        'level': 'WARNING'}
+                        'level': 'WARNING'},
+            'Testing': {'wishlist': '',
+                        'hostnames': ''
+            }
         }.iteritems():
             if not self.has_section(sec_name):
                 self.add_section(sec_name)

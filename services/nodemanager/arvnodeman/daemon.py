@@ -107,7 +107,8 @@ class NodeManagerDaemonActor(actor_class):
                  node_shutdown_class=dispatch.ComputeNodeShutdownActor,
                  node_actor_class=dispatch.ComputeNodeMonitorActor,
                  max_total_price=0,
-                 destroy_on_shutdown=False):
+                 destroy_on_shutdown=False,
+                 assigned_hostnames=[]):
         super(NodeManagerDaemonActor, self).__init__()
         self._node_setup = node_setup_class
         self._node_shutdown = node_shutdown_class
@@ -129,6 +130,7 @@ class NodeManagerDaemonActor(actor_class):
         self.boot_fail_after = boot_fail_after
         self.node_stale_after = node_stale_after
         self.last_polls = {}
+        self.assigned_hostnames = assigned_hostnames
         for poll_name in ['server_wishlist', 'arvados_nodes', 'cloud_nodes']:
             poll_actor = locals()[poll_name + '_actor']
             poll_actor.subscribe(getattr(self._later, 'update_' + poll_name))
@@ -384,6 +386,11 @@ class NodeManagerDaemonActor(actor_class):
         if nodes_wanted < 1:
             return None
         arvados_node = self.arvados_nodes.find_stale_node(self.node_stale_after)
+
+        assigned_hostname = None
+        if self.assigned_hostnames:
+            assigned_hostname = self.assigned_hostnames.pop(0)
+
         self._logger.info("Want %i more %s nodes.  Booting a node.",
                           nodes_wanted, cloud_size.name)
         new_setup = self._node_setup.start(
@@ -391,7 +398,8 @@ class NodeManagerDaemonActor(actor_class):
             arvados_client=self._new_arvados(),
             arvados_node=arvados_node,
             cloud_client=self._new_cloud(),
-            cloud_size=cloud_size).proxy()
+            cloud_size=cloud_size,
+            assigned_hostname=assigned_hostname).proxy()
         self.booting[new_setup.actor_ref.actor_urn] = new_setup
         self.sizes_booting[new_setup.actor_ref.actor_urn] = cloud_size
 

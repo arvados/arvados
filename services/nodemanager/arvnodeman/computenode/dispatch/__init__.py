@@ -58,10 +58,10 @@ class ComputeNodeStateChangeBase(config.actor_class, RetryMixin):
         else:
             self.subscribers.add(subscriber)
 
-    def _clean_arvados_node(self, arvados_node, explanation):
+    def _clean_arvados_node(self, arvados_node, explanation, hostname=None):
         return self._arvados.nodes().update(
             uuid=arvados_node['uuid'],
-            body={'hostname': None,
+            body={'hostname': hostname,
                   'ip_address': None,
                   'slot_number': None,
                   'first_ping_at': None,
@@ -94,7 +94,8 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
     """
     def __init__(self, timer_actor, arvados_client, cloud_client,
                  cloud_size, arvados_node=None,
-                 retry_wait=1, max_retry_wait=180):
+                 retry_wait=1, max_retry_wait=180,
+                 assigned_hostname=None):
         super(ComputeNodeSetupActor, self).__init__(
             cloud_client, arvados_client, timer_actor,
             retry_wait, max_retry_wait)
@@ -102,6 +103,8 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         self.arvados_node = None
         self.cloud_node = None
         self.error = None
+        self.assigned_hostname = assigned_hostname
+
         if arvados_node is None:
             self._later.create_arvados_node()
         else:
@@ -110,14 +113,14 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
     @ComputeNodeStateChangeBase._finish_on_exception
     @RetryMixin._retry(config.ARVADOS_ERRORS)
     def create_arvados_node(self):
-        self.arvados_node = self._arvados.nodes().create(body={}).execute()
+        self.arvados_node = self._arvados.nodes().create(body={"hostname": self.assigned_hostname}).execute()
         self._later.create_cloud_node()
 
     @ComputeNodeStateChangeBase._finish_on_exception
     @RetryMixin._retry(config.ARVADOS_ERRORS)
     def prepare_arvados_node(self, node):
         self.arvados_node = self._clean_arvados_node(
-            node, "Prepared by Node Manager")
+            node, "Prepared by Node Manager", hostname=self.assigned_hostname)
         self._later.create_cloud_node()
 
     @ComputeNodeStateChangeBase._finish_on_exception
