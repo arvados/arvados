@@ -119,6 +119,12 @@ def main(args=None):
         signal.signal(sigcode, shutdown_signal)
 
     status.Server(config).start()
+    import socket
+    updates = {}
+    updates['hostname'] = socket.getfqdn()
+    updates['servicetype'] = "arvados_nodemanager"
+    updates['version'] = __version__
+    status.tracker.update(updates)
 
     try:
         root_logger = setup_logging(config.get('Logging', 'file'), **config.log_levels())

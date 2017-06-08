@@ -5,6 +5,7 @@ from __future__ import absolute_import, print_function
 import functools
 import logging
 import time
+import socket
 
 import pykka
 
@@ -256,15 +257,18 @@ class NodeManagerDaemonActor(actor_class):
         return states + pykka.get_all(proxy_states)
 
     def _update_tracker(self):
-        updates = {
-            k: 0
-            for k in status.tracker.keys()
-            if k.startswith('nodes_')
-        }
-        for s in self._node_states(size=None):
-            updates.setdefault('nodes_'+s, 0)
-            updates['nodes_'+s] += 1
+        updates = {"nodes_"+k: v for k,v in self._state_counts(None).items()}
+        updates['timestamp'] = time.strftime(cnode.ARVADOS_TIMEFMT, time.gmtime())
         updates['nodes_wish'] = len(self.last_wishlist)
+        updates['nodes_max'] = self.max_nodes
+        updates['nodes_quota'] = self.node_quota
+        updates['nodes_wish'] = len(self.last_wishlist)
+        updates['status'] = "OK"
+
+        for size in self.server_calculator.cloud_sizes:
+            updates["size_"+size.name] = {"nodes_"+k: v for k,v in self._state_counts(size).items()}
+            for attr in ['id', 'name', 'ram', 'disk', 'bandwidth', 'price']:
+                updates["size_"+size.name][attr] = getattr(size, attr)
         status.tracker.update(updates)
 
     def _state_counts(self, size):

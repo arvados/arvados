@@ -16,7 +16,7 @@ from .. import \
     arvados_node_fqdn, arvados_node_mtime, arvados_timestamp, timestamp_fresh, \
     arvados_node_missing, RetryMixin
 from ...clientactor import _notify_subscribers
-from ... import config
+from ... import config, status
 from .transitions import transitions
 
 QuotaExceeded = "QuotaExceeded"
@@ -346,6 +346,9 @@ class ComputeNodeMonitorActor(config.actor_class):
         self._set_logger()
         self._timer.schedule(self.cloud_node_start_time + self.boot_fail_after, self._later.consider_shutdown)
 
+    def on_stop(self):
+        status.tracker.update({"node_"+self.cloud_node.name: None})
+
     def subscribe(self, subscriber):
         self.subscribers.add(subscriber)
 
@@ -428,6 +431,20 @@ class ComputeNodeMonitorActor(config.actor_class):
         idle_grace = 'idle exceeded'
 
         node_state = (crunch_worker_state, window, boot_grace, idle_grace)
+
+        arvados_node = None
+        if self.arvados_node:
+            arvados_node = self.arvados_node.copy()
+            arvados_node["info"] = arvados_node["info"].copy()
+            if "ping_secret" in arvados_node["info"]:
+                del arvados_node["info"]["ping_secret"]
+        status.tracker.update({"node_"+self.cloud_node.name: {
+            "id": self.cloud_node.id,
+            "state": list(node_state),
+            "size": self.cloud_node.size.name,
+            "arvados": arvados_node
+        }})
+
         t = transitions[node_state]
         if t is not None:
             # yes, shutdown eligible
