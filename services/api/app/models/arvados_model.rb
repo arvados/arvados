@@ -250,7 +250,8 @@ class ArvadosModel < ActiveRecord::Base
 
     # Check if any of the users are admin.  If so, we're done.
     if users_list.select { |u| u.is_admin }.any?
-      return self
+      # Return existing relation with no new filters.
+      return where({})
     end
 
     # Collect the UUIDs of the authorized users.
