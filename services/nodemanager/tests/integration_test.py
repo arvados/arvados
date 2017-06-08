@@ -332,7 +332,7 @@ def main():
              "34t0i-dz642-h42bg3hq4bdfpf3": "ReqNodeNotAvail",
              "34t0i-dz642-h42bg3hq4bdfpf4": "ReqNodeNotAvail"
          }),
-        "test6": (
+        "test_retry_create": (
             [
                 (r".*Daemon started", set_squeue),
                 (r".*Rate limit exceeded - scheduling retry in 12 seconds", noop),
