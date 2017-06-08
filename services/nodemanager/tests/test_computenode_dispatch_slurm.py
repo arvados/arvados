@@ -23,11 +23,15 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
         for s in args:
             self.assertIn(s, slurm_cmd)
 
-    def check_success_after_reset(self, proc_mock, end_state='drain\n'):
+    def check_success_after_reset(self, proc_mock, end_state='drain\n', timer=False):
         self.make_mocks(arvados_node=testutil.arvados_node_mock(63))
+        if not timer:
+            self.timer = testutil.MockTimer(False)
         self.make_actor()
         self.check_success_flag(None, 0)
+        self.timer.deliver()
         self.check_success_flag(None, 0)
+        self.timer.deliver()
         # Order is critical here: if the mock gets called when no return value
         # or side effect is set, we may invoke a real subprocess.
         proc_mock.return_value = end_state
@@ -84,8 +88,8 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
         self.check_success_flag(False, 2)
 
     def test_issue_slurm_drain_retry(self, proc_mock):
-        proc_mock.side_effect = iter([OSError, '', OSError, 'drng\n', 'drain\n', 'drain\n'])
-        self.check_success_after_reset(proc_mock)
+        proc_mock.side_effect = iter([OSError, '', OSError, 'drng\n'])
+        self.check_success_after_reset(proc_mock, timer=False)
 
     def test_arvados_node_cleaned_after_shutdown(self, proc_mock):
         proc_mock.return_value = 'drain\n'
