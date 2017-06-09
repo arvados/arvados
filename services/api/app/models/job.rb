@@ -275,12 +275,18 @@ class Job < ArvadosModel
         # Ignore: we have already decided not to reuse any completed
         # job.
         log_reuse_info { "job #{j.uuid} with output #{j.output} ignored, see above" }
+      elsif j.output.nil?
+        log_reuse_info { "job #{j.uuid} has nil output" }
+      elsif j.log.nil?
+        log_reuse_info { "job #{j.uuid} has nil log" }
+      elsif !Collection.readable_by(current_user).find_by_portable_data_hash(j.log)
+        log_reuse_info { "job #{j.uuid} log #{j.log} unavailable to user; continuing search" }
       elsif Rails.configuration.reuse_job_if_outputs_differ
         if Collection.readable_by(current_user).find_by_portable_data_hash(j.output)
           log_reuse_info { "job #{j.uuid} with output #{j.output} is reusable; decision is final." }
           return j
         else
-          # Ignore: keep locking for an incomplete job or one whose
+          # Ignore: keep looking for an incomplete job or one whose
           # output is readable.
           log_reuse_info { "job #{j.uuid} output #{j.output} unavailable to user; continuing search" }
         end
