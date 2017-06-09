@@ -141,6 +141,7 @@ class NodeManagerDaemonActor(actor_class):
         self.booting = {}       # Actor IDs to ComputeNodeSetupActors
         self.sizes_booting = {} # Actor IDs to node size
         self.destroy_on_shutdown = destroy_on_shutdown
+        self.booted_by_this_process = []
 
     def on_start(self):
         self._logger = logging.getLogger("%s.%s" % (self.__class__.__name__, self.actor_urn[33:]))
@@ -447,6 +448,9 @@ class NodeManagerDaemonActor(actor_class):
                 self.node_quota = len(self.cloud_nodes)+1
                 self._logger.warning("After successful boot setting node quota to %s", self.node_quota)
 
+            if self.destroy_on_shutdown:
+                self.booted_by_this_process.append(cloud_node.id)
+
         self.node_quota = min(self.node_quota, self.max_nodes)
         del self.booting[setup_proxy.actor_ref.actor_urn]
         del self.sizes_booting[setup_proxy.actor_ref.actor_urn]
@@ -550,11 +554,13 @@ class NodeManagerDaemonActor(actor_class):
     def await_shutdown(self):
         nodes_up = 0
         if self.destroy_on_shutdown:
-            for node in self.cloud_nodes.nodes.itervalues():
-                # Begin shutdown of all nodes.
-                if node.actor and not node.shutdown_actor:
-                    self._begin_node_shutdown(node.actor, cancellable=False)
-            nodes_up = sum(1 for node in self.cloud_nodes.nodes.itervalues() if node.actor)
+            for nodeid in self.booted_by_this_process:
+                # Begin shutdown of nodes booted by the current process.
+                node = self.cloud_nodes.nodes[nodeid]
+                if node.actor:
+                    nodes_up += 1
+                    if not node.shutdown_actor:
+                        self._begin_node_shutdown(node.actor, cancellable=False)
 
         if self.booting or nodes_up:
             self._timer.schedule(time.time() + 1, self._later.await_shutdown)
