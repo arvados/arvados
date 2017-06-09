@@ -22,7 +22,7 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def find_objects_for_index
-    if params[:include_trash] || ['destroy', 'trash', 'untrash'].include?(action_name)
+    if params[:include_trash].andand.==(true || "true") || ['destroy', 'trash', 'untrash'].include?(action_name)
       @objects = Collection.unscoped.readable_by(*@read_users)
     end
     super

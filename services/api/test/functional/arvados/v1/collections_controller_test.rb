@@ -1065,4 +1065,14 @@ EOS
       end
     end
   end
+
+  test "get collections with bogus include_trash parameter" do
+    authorize_with :active
+    get :index, {
+      filters: [["is_trashed", "=", true]],
+      include_trash: "false",
+    }
+    assert_response :success
+    assert_operator json_response["items"].count, :==, 0
+  end
 end
