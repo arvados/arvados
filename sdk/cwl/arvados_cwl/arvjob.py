@@ -145,6 +145,14 @@ class ArvadosJob(object):
 
             if response["state"] == "Complete":
                 logger.info("%s reused job %s", self.arvrunner.label(self), response["uuid"])
+                # Give read permission to the desired project on reused jobs
+                for job_name, job_uuid in response.get('components', {}).items():
+                    self.arvrunner.api.links().create(body={
+                        'link_class': 'can_read',
+                        'tail_uuid': self.arvrunner.project_uuid,
+                        'head_uuid': job_uuid,
+                        }).execute(num_retries=self.arvrunner.num_retries)
+
                 with Perf(metrics, "done %s" % self.name):
                     self.done(response)
             else:
@@ -290,30 +298,6 @@ class RunnerJob(Runner):
             body=job_spec,
             find_or_create=self.enable_reuse
         ).execute(num_retries=self.arvrunner.num_retries)
-
-        if self.enable_reuse:
-            # When reusing jobs, copy its output/log collection to the desired project
-            reused_collections = [('Output', job.get('output', None)),
-                                  ('Log', job.get('log', None))]
-            for col_type, pdh in [(n, p) for n, p in reused_collections if p]:
-                c = arvados.collection.Collection(pdh,
-                                                  api_client=self.arvrunner.api,
-                                                  keep_client=self.arvrunner.keep_client,
-                                                  num_retries=self.arvrunner.num_retries)
-                c.save_new(name="{} of {}".format(col_type, self.name),
-                           owner_uuid=self.arvrunner.project_uuid,
-                           ensure_unique_name=True,
-                           num_retries=self.arvrunner.num_retries)
-                logger.info("Copied reused job's %s to collection %s",
-                            col_type.lower(),
-                            c.manifest_locator())
-            # Give read permission to the desired project on reused jobs
-            for job_name, job_uuid in job.get('components', {}).items():
-                self.arvrunner.api.links().create(body={
-                    'link_class': 'can_read',
-                    'tail_uuid': self.arvrunner.project_uuid,
-                    'head_uuid': job_uuid,
-                    }).execute(num_retries=self.arvrunner.num_retries)
 
         for k,v in job_spec["script_parameters"].items():
             if v is False or v is None or isinstance(v, dict):

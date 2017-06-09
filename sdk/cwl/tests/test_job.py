@@ -161,7 +161,9 @@ class TestJob(unittest.TestCase):
 2016-11-02_23:12:18 c97qk-8i9sb-cryqw2blvzy4yaj 13358 0 stderr 2016/11/02 23:12:18 crunchrunner: $(task.keep)=/keep
         """)
         api.collections().list().execute.side_effect = ({"items": []},
-                                                        {"items": [{"manifest_text": "XYZ"}]})
+                                                        {"items": [{"manifest_text": "XYZ"}]},
+                                                        {"items": []},
+                                                        {"items": [{"manifest_text": "ABC"}]})
 
         arvjob = arvados_cwl.ArvadosJob(runner)
         arvjob.name = "testjob"
@@ -179,20 +181,37 @@ class TestJob(unittest.TestCase):
 
         api.collections().list.assert_has_calls([
             mock.call(),
+            # Output collection check
             mock.call(filters=[['owner_uuid', '=', 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'],
                           ['portable_data_hash', '=', '99999999999999999999999999999993+99'],
                           ['name', '=', 'Output 9999999 of testjob']]),
             mock.call().execute(num_retries=0),
             mock.call(limit=1, filters=[['portable_data_hash', '=', '99999999999999999999999999999993+99']],
                  select=['manifest_text']),
+            mock.call().execute(num_retries=0),
+            # Log collection's turn
+            mock.call(filters=[['owner_uuid', '=', 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'],
+                          ['portable_data_hash', '=', '99999999999999999999999999999994+99'],
+                          ['name', '=', 'Log of zzzzz-8i9sb-zzzzzzzzzzzzzzz']]),
+            mock.call().execute(num_retries=0),
+            mock.call(limit=1, filters=[['portable_data_hash', '=', '99999999999999999999999999999994+99']],
+                 select=['manifest_text']),
             mock.call().execute(num_retries=0)])
 
-        api.collections().create.assert_called_with(
-            ensure_unique_name=True,
-            body={'portable_data_hash': '99999999999999999999999999999993+99',
-                  'manifest_text': 'XYZ',
-                  'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
-                  'name': 'Output 9999999 of testjob'})
+        api.collections().create.assert_has_calls([
+            mock.call(ensure_unique_name=True,
+                      body={'portable_data_hash': '99999999999999999999999999999993+99',
+                            'manifest_text': 'XYZ',
+                            'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                            'name': 'Output 9999999 of testjob'}),
+            mock.call().execute(num_retries=0),
+            mock.call(ensure_unique_name=True,
+                      body={'portable_data_hash': '99999999999999999999999999999994+99',
+                            'manifest_text': 'ABC',
+                            'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                            'name': 'Log of zzzzz-8i9sb-zzzzzzzzzzzzzzz'}),
+            mock.call().execute(num_retries=0),
+        ])
 
         arvjob.output_callback.assert_called_with({"out": "stuff"}, "success")
 
@@ -211,7 +230,10 @@ class TestJob(unittest.TestCase):
 2016-11-02_23:12:18 c97qk-8i9sb-cryqw2blvzy4yaj 13358 0 stderr 2016/11/02 23:12:18 crunchrunner: $(task.keep)=/keep
         """)
 
-        api.collections().list().execute.side_effect = ({"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2"}]},)
+        api.collections().list().execute.side_effect = (
+            {"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2"}]},
+            {"items": [{"uuid": "zzzzz-4zz18-zzzzzzzzzzzzzz2"}]},
+        )
 
         arvjob = arvados_cwl.ArvadosJob(runner)
         arvjob.name = "testjob"
@@ -229,10 +251,17 @@ class TestJob(unittest.TestCase):
 
         api.collections().list.assert_has_calls([
             mock.call(),
+            # Output collection
             mock.call(filters=[['owner_uuid', '=', 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'],
                                ['portable_data_hash', '=', '99999999999999999999999999999993+99'],
                                ['name', '=', 'Output 9999999 of testjob']]),
-            mock.call().execute(num_retries=0)])
+            mock.call().execute(num_retries=0),
+            # Log collection
+            mock.call(filters=[['owner_uuid', '=', 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'],
+                               ['portable_data_hash', '=', '99999999999999999999999999999994+99'],
+                               ['name', '=', 'Log of zzzzz-8i9sb-zzzzzzzzzzzzzzz']]),
+            mock.call().execute(num_retries=0)
+        ])
 
         self.assertFalse(api.collections().create.called)
 
