@@ -261,6 +261,7 @@ class Job < ArvadosModel
     log_reuse_info(candidates) { "after filtering on repo, script, and custom filters #{filters.inspect}" }
 
     chosen = nil
+    chosen_output = nil
     incomplete_job = nil
     candidates.each do |j|
       if j.state != Job::Complete
@@ -279,19 +280,21 @@ class Job < ArvadosModel
         log_reuse_info { "job #{j.uuid} has nil output" }
       elsif j.log.nil?
         log_reuse_info { "job #{j.uuid} has nil log" }
-      elsif !Collection.readable_by(current_user).find_by_portable_data_hash(j.log)
-        log_reuse_info { "job #{j.uuid} log #{j.log} unavailable to user; continuing search" }
       elsif Rails.configuration.reuse_job_if_outputs_differ
-        if Collection.readable_by(current_user).find_by_portable_data_hash(j.output)
-          log_reuse_info { "job #{j.uuid} with output #{j.output} is reusable; decision is final." }
-          return j
-        else
+        if !Collection.readable_by(current_user).find_by_portable_data_hash(j.output)
           # Ignore: keep looking for an incomplete job or one whose
           # output is readable.
           log_reuse_info { "job #{j.uuid} output #{j.output} unavailable to user; continuing search" }
+        elsif !Collection.readable_by(current_user).find_by_portable_data_hash(j.log)
+          # Ignore: keep looking for an incomplete job or one whose
+          # log is readable.
+          log_reuse_info { "job #{j.uuid} log #{j.log} unavailable to user; continuing search" }
+        else
+          log_reuse_info { "job #{j.uuid} with output #{j.output} is reusable; decision is final." }
+          return j
         end
-      elsif chosen
-        if chosen.output != j.output
+      elsif chosen_output
+        if chosen_output != j.output
           # If two matching jobs produced different outputs, run a new
           # job (or use one that's already running/queued) instead of
           # choosing one arbitrarily.
@@ -310,9 +313,15 @@ class Job < ArvadosModel
         # any further investigation of reusable jobs is futile.
         log_reuse_info { "job #{j.uuid} output #{j.output} is unavailable to user; this means no finished job can be reused (see reuse_job_if_outputs_differ in application.default.yml)" }
         chosen = false
+      elsif !Collection.readable_by(current_user).find_by_portable_data_hash(j.log)
+        # This user cannot read the log of this job, don't try to reuse the
+        # job but consider if the output is consistent.
+        log_reuse_info { "job #{j.uuid} log #{j.log} is unavailable to user; continuing search" }
+        chosen_output = j.output
       else
         log_reuse_info { "job #{j.uuid} with output #{j.output} can be reused; continuing search in case other candidates have different outputs" }
         chosen = j
+        chosen_output = j.output
       end
     end
     j = chosen || incomplete_job
