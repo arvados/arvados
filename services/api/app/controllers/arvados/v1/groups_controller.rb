@@ -6,6 +6,9 @@ class Arvados::V1::GroupsController < ApplicationController
               uuid: {
                 type: 'string', required: false, default: nil
               },
+              recursive: {
+                type: 'boolean', required: false, description: 'Include contents from child groups recursively.'
+              },
             })
     params.delete(:select)
     params

@@ -3,6 +3,16 @@ require "arvados/keep"
 class Arvados::V1::CollectionsController < ApplicationController
   include DbCurrentTime
 
+  def self._index_requires_parameters
+    (super rescue {}).
+      merge({
+        include_trash: {
+          type: 'boolean', required: false, description: "Include collections whose is_trashed attribute is true."
+        },
+      })
+  end
+
+
   def create
     if resource_attrs[:uuid] and (loc = Keep::Locator.parse(resource_attrs[:uuid]))
       resource_attrs[:portable_data_hash] = loc.to_s
