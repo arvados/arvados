@@ -84,3 +84,16 @@ class QuotaDriver(FakeDriver):
         if len(all_nodes) == 0:
             quota = 4
         return True
+
+class FailingDriver(FakeDriver):
+    def create_node(self, name=None,
+                    size=None,
+                    image=None,
+                    auth=None,
+                    ex_storage_account=None,
+                    ex_customdata=None,
+                    ex_resource_group=None,
+                    ex_user_name=None,
+                    ex_tags=None,
+                    ex_network=None):
+        raise Exception("nope")
