@@ -1130,10 +1130,10 @@ freeze();
 my $collated_output = save_output_collection();
 Log (undef, "finish");
 
-save_meta();
+my $final_log = save_meta();
 
 my $final_state;
-if ($collated_output && $main::success) {
+if ($collated_output && $final_log && $main::success) {
   $final_state = 'Complete';
 } else {
   $final_state = 'Failed';
@@ -1760,7 +1760,7 @@ sub log_writer_start($)
   $log_pipe_pid = open2($log_pipe_out, $log_pipe_in,
                         'arv-put',
                         '--stream',
-                        '--retries', '3',
+                        '--retries', '6',
                         '--filename', $logfilename,
                         '-');
   $log_pipe_out_buf = "";
@@ -1898,6 +1898,8 @@ sub save_meta
     });
   Log(undef, "log collection is " . $log_coll->{portable_data_hash});
   $Job->update_attributes('log' => $log_coll->{portable_data_hash});
+
+  return $log_coll->{portable_data_hash};
 }
 
 
