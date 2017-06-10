@@ -22,6 +22,7 @@ from .timedcallback import TimedCallBackActor
 from ._version import __version__
 
 node_daemon = None
+watchdog = None
 
 def abort(msg, code=1):
     print("arvados-node-manager: " + msg)
@@ -86,7 +87,10 @@ def launch_pollers(config, server_calculator):
         config.new_arvados_client(), timer, poll_time, max_poll_time).tell_proxy()
     job_queue_poller = JobQueueMonitorActor.start(
         config.new_arvados_client(), timer, server_calculator,
-        poll_time, max_poll_time).tell_proxy()
+        config.getboolean('Arvados', 'jobs_queue'),
+        config.getboolean('Arvados', 'slurm_queue'),
+        poll_time, max_poll_time
+    ).tell_proxy()
     return timer, cloud_node_poller, arvados_node_poller, job_queue_poller
 
 _caught_signals = {}
@@ -97,6 +101,7 @@ def shutdown_signal(signal_code, frame):
         pykka.ActorRegistry.stop_all()
         sys.exit(-signal_code)
     elif current_count == 0:
+        watchdog.stop()
         node_daemon.shutdown()
     elif current_count == 1:
         pykka.ActorRegistry.stop_all()
@@ -104,7 +109,7 @@ def shutdown_signal(signal_code, frame):
         sys.exit(-signal_code)
 
 def main(args=None):
-    global node_daemon
+    global node_daemon, watchdog
     args = parse_cli(args)
     config = load_config(args.config)
 
@@ -138,7 +143,7 @@ def main(args=None):
             node_setup, node_shutdown, node_monitor,
             max_total_price=config.getfloat('Daemon', 'max_total_price')).tell_proxy()
 
-        WatchdogActor.start(config.getint('Daemon', 'watchdog'),
+        watchdog = WatchdogActor.start(config.getint('Daemon', 'watchdog'),
                             cloud_node_poller.actor_ref,
                             arvados_node_poller.actor_ref,
                             job_queue_poller.actor_ref,

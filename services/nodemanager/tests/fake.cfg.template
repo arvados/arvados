@@ -34,7 +34,7 @@ max_nodes = 8
 max_total_price = 0
 
 # Poll Azure nodes and Arvados for new information every N seconds.
-poll_time = 60
+poll_time = 5
 
 # Polls have exponential backoff when services fail to respond.
 # This is the longest time to wait between polls.
@@ -49,7 +49,7 @@ poll_stale_after = 600
 # node before this long, assume that there was a cloud bootstrap failure and
 # shut it down.  Note that normal shutdown windows apply (see the Cloud
 # section), so this should be shorter than the first shutdown window value.
-boot_fail_after = 1800
+boot_fail_after = 45
 
 # "Node stale time" affects two related behaviors.
 # 1. If a compute node has been running for at least this long, but it
@@ -72,13 +72,13 @@ certs_file = /etc/ssl/certs/ca-certificates.crt
 
 [Logging]
 # Log file path
-file = /var/log/arvados/node-manager.log
+#file = node-manager.log
 
 # Log level for most Node Manager messages.
 # Choose one of DEBUG, INFO, WARNING, ERROR, or CRITICAL.
 # WARNING lets you know when polling a service fails.
 # INFO additionally lets you know when a compute node is started or stopped.
-level = INFO
+level = DEBUG
 
 # You can also set different log levels for specific libraries.
 # Pykka is the Node Manager's actor library.
@@ -90,17 +90,17 @@ pykka = WARNING
 apiclient = WARNING
 
 [Arvados]
-host = zyxwv.arvadosapi.com
-token = ARVADOS_TOKEN
+host = {host}
+token = {token}
 timeout = 15
-jobs_queue = yes   # Get work request from Arvados jobs queue (jobs API)
-slurm_queue = yes  # Get work request from squeue (containers API)
+jobs_queue = no
 
 # Accept an untrusted SSL certificate from the API server?
-insecure = no
+insecure = yes
 
 [Cloud]
 provider = azure
+driver_class = {driver_class}
 
 # Shutdown windows define periods of time when a node may and may not be shut
 # down.  These are windows in full minutes, separated by commas.  Counting from
@@ -111,7 +111,7 @@ provider = azure
 # Azure bills by the minute, so it makes sense to agressively shut down idle
 # nodes.  Specify at least two windows.  You can add as many as you need beyond
 # that.
-shutdown_windows = 20, 999999
+shutdown_windows = 1, 999999
 
 [Cloud Credentials]
 # Use "azure account list" with the azure CLI to get these values.
@@ -124,7 +124,7 @@ subscription_id = 00000000-0000-0000-0000-000000000000
 # azure config mode arm
 # azure ad app create --name "<Your Application Display Name>" --home-page "<https://YourApplicationHomePage>" --identifier-uris "<https://YouApplicationUri>" --password <Your_Password>
 # azure ad sp create "<Application_Id>"
-# azure role assignment create --objectId "<Object_Id>" -o Owner -c /subscriptions/{subscriptionId}/
+# azure role assignment create --objectId "<Object_Id>" -o Owner -c /subscriptions/<subscriptionId>/
 #
 # Use <Application_Id> for "key" and the <Your_Password> for "secret"
 #
@@ -143,7 +143,7 @@ ex_resource_group = ArvadosResourceGroup
 image = Canonical:UbuntuServer:14.04.3-LTS:14.04.201508050
 
 # Path to a local ssh key file that will be used to provision new nodes.
-ssh_key = /home/arvadosuser/.ssh/id_rsa.pub
+ssh_key = {ssh_key}
 
 # The account name for the admin user that will be provisioned on new nodes.
 ex_user_name = arvadosuser
@@ -162,7 +162,7 @@ tag_arvados-class = dynamic-compute
 tag_cluster = zyxwv
 
 # the API server to ping
-ping_host = hostname:port
+ping_host = {host}
 
 # You can define any number of Size sections to list Azure sizes you're willing
 # to use.  The Node Manager should boot the cheapest size(s) that can run jobs
