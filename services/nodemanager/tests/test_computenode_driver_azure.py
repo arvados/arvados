@@ -69,19 +69,6 @@ class AzureComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase
         node.extra = {'tags': {"hostname": name}}
         self.assertEqual(name, azure.ComputeNodeDriver.node_fqdn(node))
 
-    def test_cloud_exceptions(self):
-        for error in [Exception("test exception"),
-                      IOError("test exception"),
-                      ssl.SSLError("test exception"),
-                      cloud_types.LibcloudError("test exception")]:
-            self.assertTrue(azure.ComputeNodeDriver.is_cloud_exception(error),
-                            "{} not flagged as cloud exception".format(error))
-
-    def test_noncloud_exceptions(self):
-        self.assertFalse(
-            azure.ComputeNodeDriver.is_cloud_exception(ValueError("test error")),
-            "ValueError flagged as cloud exception")
-
     def test_sync_node(self):
         arv_node = testutil.arvados_node_mock(1)
         cloud_node = testutil.cloud_node_mock(2)

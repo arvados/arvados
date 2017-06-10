@@ -14,11 +14,15 @@ from apiclient import errors as apierror
 
 from .baseactor import BaseNodeManagerActor
 
+from libcloud.common.types import LibcloudError
+from libcloud.common.exceptions import BaseHTTPError
+
 # IOError is the base class for socket.error, ssl.SSLError, and friends.
 # It seems like it hits the sweet spot for operations we want to retry:
 # it's low-level, but unlikely to catch code bugs.
 NETWORK_ERRORS = (IOError,)
 ARVADOS_ERRORS = NETWORK_ERRORS + (apierror.Error,)
+CLOUD_ERRORS = NETWORK_ERRORS + (LibcloudError, BaseHTTPError)
 
 actor_class = BaseNodeManagerActor
 

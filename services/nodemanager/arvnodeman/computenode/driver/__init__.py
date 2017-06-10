@@ -6,10 +6,9 @@ import logging
 from operator import attrgetter
 
 import libcloud.common.types as cloud_types
-from libcloud.common.exceptions import BaseHTTPError
 from libcloud.compute.base import NodeDriver, NodeAuthSSHKey
 
-from ...config import NETWORK_ERRORS
+from ...config import CLOUD_ERRORS
 from .. import RetryMixin
 
 class BaseComputeNodeDriver(RetryMixin):
@@ -25,7 +24,7 @@ class BaseComputeNodeDriver(RetryMixin):
     Subclasses must implement arvados_create_kwargs, sync_node,
     node_fqdn, and node_start_time.
     """
-    CLOUD_ERRORS = NETWORK_ERRORS + (cloud_types.LibcloudError, BaseHTTPError)
+
 
     @RetryMixin._retry()
     def _create_driver(self, driver_class, **auth_kwargs):
@@ -169,7 +168,7 @@ class BaseComputeNodeDriver(RetryMixin):
             kwargs.update(self.arvados_create_kwargs(size, arvados_node))
             kwargs['size'] = size
             return self.real.create_node(**kwargs)
-        except self.CLOUD_ERRORS as create_error:
+        except CLOUD_ERRORS as create_error:
             # Workaround for bug #6702: sometimes the create node request
             # succeeds but times out and raises an exception instead of
             # returning a result.  If this happens, we get stuck in a retry
@@ -206,18 +205,10 @@ class BaseComputeNodeDriver(RetryMixin):
         # seconds since the epoch UTC.
         raise NotImplementedError("BaseComputeNodeDriver.node_start_time")
 
-    @classmethod
-    def is_cloud_exception(cls, exception):
-        # libcloud compute drivers typically raise bare Exceptions to
-        # represent API errors.  Return True for any exception that is
-        # exactly an Exception, or a better-known higher-level exception.
-        return (isinstance(exception, cls.CLOUD_ERRORS) or
-                type(exception) is Exception)
-
     def destroy_node(self, cloud_node):
         try:
             return self.real.destroy_node(cloud_node)
-        except self.CLOUD_ERRORS as destroy_error:
+        except CLOUD_ERRORS as destroy_error:
             # Sometimes the destroy node request succeeds but times out and
             # raises an exception instead of returning success.  If this
             # happens, we get a noisy stack trace.  Check if the node is still

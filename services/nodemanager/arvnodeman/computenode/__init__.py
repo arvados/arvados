@@ -8,6 +8,9 @@ import itertools
 import re
 import time
 
+from ..config import CLOUD_ERRORS
+from libcloud.common.exceptions import BaseHTTPError
+
 ARVADOS_TIMEFMT = '%Y-%m-%dT%H:%M:%SZ'
 ARVADOS_TIMESUBSEC_RE = re.compile(r'(\.\d+)Z$')
 
@@ -70,43 +73,66 @@ class RetryMixin(object):
             @functools.wraps(orig_func)
             def retry_wrapper(self, *args, **kwargs):
                 while True:
+                    should_retry = False
                     try:
                         ret = orig_func(self, *args, **kwargs)
+                    except BaseHTTPError as error:
+                        if error.headers and error.headers.get("retry-after"):
+                            try:
+                                self.retry_wait = int(error.headers["retry-after"])
+                                if self.retry_wait < 0 or self.retry_wait > self.max_retry_wait:
+                                    self.retry_wait = self.max_retry_wait
+                                should_retry = True
+                            except ValueError:
+                                pass
+                        if error.code == 429 or error.code >= 500:
+                            should_retry = True
+                    except CLOUD_ERRORS as error:
+                        should_retry = True
+                    except errors as error:
+                        should_retry = True
                     except Exception as error:
-                        if not (isinstance(error, errors) or
-                                self._cloud.is_cloud_exception(error)):
-                            self.retry_wait = self.min_retry_wait
-                            self._logger.warning(
-                                "Re-raising unknown error (no retry): %s",
-                                error, exc_info=error)
-                            raise
-
-                        self._logger.warning(
-                            "Client error: %s - %s %s seconds",
-                            error,
-                            "scheduling retry in" if self._timer else "sleeping",
-                            self.retry_wait,
-                            exc_info=error)
-
-                        if self._timer:
-                            start_time = time.time()
-                            # reschedule to be called again
-                            self._timer.schedule(start_time + self.retry_wait,
-                                                 getattr(self._later,
-                                                         orig_func.__name__),
-                                                 *args, **kwargs)
-                        else:
-                            # sleep on it.
-                            time.sleep(self.retry_wait)
-
-                        self.retry_wait = min(self.retry_wait * 2,
-                                              self.max_retry_wait)
-                        if self._timer:
-                            # expect to be called again by timer so don't loop
-                            return
+                        # As a libcloud workaround for drivers that don't use
+                        # typed exceptions, consider bare Exception() objects
+                        # retryable.
+                        should_retry = type(error) is Exception
                     else:
+                        # No exception,
                         self.retry_wait = self.min_retry_wait
                         return ret
+
+                    # Only got here if an exception was caught.  Now determine what to do about it.
+                    if not should_retry:
+                        self.retry_wait = self.min_retry_wait
+                        self._logger.warning(
+                            "Re-raising error (no retry): %s",
+                            error, exc_info=error)
+                        raise
+
+                    self._logger.warning(
+                        "Client error: %s - %s %s seconds",
+                        error,
+                        "scheduling retry in" if self._timer else "sleeping",
+                        self.retry_wait,
+                        exc_info=error)
+
+                    if self._timer:
+                        start_time = time.time()
+                        # reschedule to be called again
+                        self._timer.schedule(start_time + self.retry_wait,
+                                             getattr(self._later,
+                                                     orig_func.__name__),
+                                             *args, **kwargs)
+                    else:
+                        # sleep on it.
+                        time.sleep(self.retry_wait)
+
+                    self.retry_wait = min(self.retry_wait * 2,
+                                          self.max_retry_wait)
+                    if self._timer:
+                        # expect to be called again by timer so don't loop
+                        return
+
             return retry_wrapper
         return decorator
 
