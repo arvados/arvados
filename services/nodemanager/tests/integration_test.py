@@ -213,7 +213,7 @@ def run_test(name, actions, checks, driver_class, jobs):
     if code == 0:
         logger.info("%s passed", name)
     else:
-        if isinstance(detail_content, StringIO()):
+        if isinstance(detail_content, StringIO):
             sys.stderr.write(detail_content.getvalue())
         logger.info("%s failed", name)
 
