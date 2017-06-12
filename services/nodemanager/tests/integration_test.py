@@ -265,7 +265,6 @@ def main():
         "test_hit_quota": (
             [
                 (r".*Daemon started", set_squeue),
-                (r".*setting node quota to 3", noop),
                 (r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)", node_paired),
                 (r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)", node_paired),
                 (r".*ComputeNodeMonitorActor\..*\.([^[]*).*Not eligible for shut down because node state is \('busy', 'open', .*\)", node_busy),
@@ -287,7 +286,6 @@ def main():
         "test_probe_quota": (
             [
                 (r".*Daemon started", set_squeue),
-                (r".*setting node quota to 3", noop),
                 (r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)", node_paired),
                 (r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)", node_paired),
                 (r".*ComputeNodeMonitorActor\..*\.([^[]*).*Not eligible for shut down because node state is \('busy', 'open', .*\)", node_busy),
