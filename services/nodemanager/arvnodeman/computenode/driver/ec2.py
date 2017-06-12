@@ -73,6 +73,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         scratch = size.scratch / 1000
         if scratch > size.disk:
             kw["ex_blockdevicemappings"] = [{
+                "DeviceName": "/dev/xvdt",
                 "Ebs": {
                     "DeleteOnTermination": True,
                     "VolumeSize": scratch - size.disk,
