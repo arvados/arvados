@@ -590,3 +590,78 @@ h2. Running
 <pre>
 $ arvados-node-manager --config /etc/arvados-node-manager/config.ini
 </pre>
+
+h2. Booting nodes for testing
+
+When testing a compute node image or configuration, it may be useful to run a dedicated node manager process to manage the lifecycle of a single node.  This can run alongside the primary node manager of a cluster in an interactive shell; when an interrupt signal is received, any nodes created by this process will be immediately shut down.
+
+<pre>
+$ arvados-node-manager --foreground --config test-config.ini
+</pre>
+
+The relevant configuration options that enable test mode behavior are @destroy_on_shutdown@, @wishlist@, @hostnames@, @jobs_queue@ and @slurm_queue@.  The rest of the configuration should correspond to the primary node manager or the settings under test (such as a new compute node image.)
+
+<pre>
+[Daemon]
+# On ^C any nodes created by this process will be immediately shut down
+destroy_on_shutdown = yes
+
+[Testing]
+# The size wishlist to use and hostname(s) that will be assigned.
+wishlist = m3.medium
+hostnames = testing1
+
+[Arvados]
+# Disable populating the wishlist from the Arvados jobs queue
+jobs_queue = no
+
+# Disable populating the wishlist from the SLURM queue
+slurm_queue = no
+
+[Arvados]
+host =
+timeout = 20
+token =
+
+[Cloud]
+provider = ec2
+shutdown_windows = 54, 5, 1
+
+[Cloud Create]
+ex_keyname =
+image_id =
+ping_host =
+security_groups =
+subnet_id =
+
+[Cloud Credentials]
+key =
+region = us-east-1
+secret =
+timeout = 20
+
+[Cloud List]
+instance-state-name = running
+tag_arvados-class = dynamic-compute
+tag_cluster =
+
+[Daemon]
+certs_file = /etc/ssl/certs/ca-certificates.crt
+boot_fail_after = 1200
+dispatcher = slurm
+max_nodes = 4
+poll_time = 10
+
+[Logging]
+apiclient = WARNING
+googleapiclient = WARNING
+level = DEBUG
+
+[Size c3.large]
+cores = 2
+scratch = 32000
+
+[Size c3.xlarge]
+cores = 4
+scratch = 80000
+</pre>
