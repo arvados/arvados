@@ -7,7 +7,7 @@ class Arvados::V1::GroupsController < ApplicationController
                 type: 'string', required: false, default: nil
               },
               recursive: {
-                type: 'boolean', required: false, description: 'Include contents from child groups recursively.'
+                type: 'boolean', required: false, default: false, description: 'Include contents from child groups recursively.'
               },
             })
     params.delete(:select)

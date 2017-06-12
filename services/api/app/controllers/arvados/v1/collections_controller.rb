@@ -7,7 +7,7 @@ class Arvados::V1::CollectionsController < ApplicationController
     (super rescue {}).
       merge({
         include_trash: {
-          type: 'boolean', required: false, description: "Include collections whose is_trashed attribute is true."
+          type: 'boolean', required: false, default: false, description: "Include collections whose is_trashed attribute is true."
         },
       })
   end
@@ -22,7 +22,7 @@ class Arvados::V1::CollectionsController < ApplicationController
   end
 
   def find_objects_for_index
-    if params[:include_trash].andand.==(true || "true") || ['destroy', 'trash', 'untrash'].include?(action_name)
+    if params[:include_trash] || ['destroy', 'trash', 'untrash'].include?(action_name)
       @objects = Collection.unscoped.readable_by(*@read_users)
     end
     super
