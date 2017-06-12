@@ -340,7 +340,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	} else if stat.IsDir() && !strings.HasSuffix(r.URL.Path, "/") {
 		h.seeOtherWithCookie(w, r, basename+"/", credentialsOK)
 	} else if stat.IsDir() {
-		h.serveDirectory(w, r, &coll, fs, openPath)
+		h.serveDirectory(w, r, &coll, fs, openPath, stripParts)
 	} else {
 		http.ServeContent(w, r, basename, stat.ModTime(), f)
 		if int64(w.WroteBodyBytes()) != stat.Size() {
@@ -352,7 +352,27 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 }
 
 var dirListingTemplate = `<!DOCTYPE HTML>
-<HTML><HEAD><TITLE>{{ .Collection.Name }}</TITLE></HEAD>
+<HTML><HEAD>
+  <META name="robots" content="NOINDEX">
+  <TITLE>{{ .Collection.Name }}</TITLE>
+  <STYLE type="text/css">
+    body {
+      margin: 1.5em;
+    }
+    pre {
+      background-color: #D9EDF7;
+      border-radius: .25em;
+      padding: .75em;
+      overflow: auto;
+    }
+    .footer p {
+      font-size: 82%;
+    }
+    ul li {
+      font-family: monospace;
+    }
+  </STYLE>
+</HEAD>
 <BODY>
 <H1>{{ .Collection.Name }}</H1>
 
@@ -360,7 +380,7 @@ var dirListingTemplate = `<!DOCTYPE HTML>
 Arvados.  You can download individual files listed below.  To download
 the entire collection with wget, try:</P>
 
-<PRE>$ wget --mirror --no-parent --no-host --cut-dirs=3 {{ .Request.URL }}</PRE>
+<PRE>$ wget --mirror --no-parent --no-host --cut-dirs={{ .StripParts }} https://{{ .Request.Host }}{{ .Request.URL }}</PRE>
 
 <H2>File Listing</H2>
 
@@ -368,9 +388,10 @@ the entire collection with wget, try:</P>
 {{range .Files}}  <LI><A href="{{.}}">{{.}}</A></LI>{{end}}
 </UL>
 
+<HR noshade>
 <DIV class="footer">
-  <H2>About Arvados</H2>
   <P>
+    About Arvados:
     Arvados is a free and open source software bioinformatics platform.
     To learn more, visit arvados.org.
     Arvados is not responsible for the files listed on this page.
@@ -380,7 +401,7 @@ the entire collection with wget, try:</P>
 </BODY>
 `
 
-func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collection *arvados.Collection, fs http.FileSystem, base string) {
+func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collection *arvados.Collection, fs http.FileSystem, base string, stripParts int) {
 	var files []string
 	var walk func(string) error
 	if !strings.HasSuffix(base, "/") {
@@ -426,6 +447,7 @@ func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collect
 		"Collection": collection,
 		"Files":      files,
 		"Request":    r,
+		"StripParts": stripParts,
 	})
 }
 
