@@ -9,7 +9,7 @@ fi
 reset_container=1
 leave_running=0
 config=dev
-tag=""
+tag="latest"
 
 while test -n "$1" ; do
     arg="$1"
@@ -73,6 +73,12 @@ git pull
 export ARVADOS_API_HOST=localhost:8000
 export ARVADOS_API_HOST_INSECURE=1
 export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados/superuser_token)
+
+arv-keepdocker --pull arvados/jobs $tag
+if test "$tag" != "latest" ; then
+  docker tag arvados/jobs:$tag arvados/jobs:latest
+  arv-keepdocker arvados/jobs latest
+fi
 
 cat >/tmp/cwltest/arv-cwl-jobs <<EOF2
 #!/bin/sh
