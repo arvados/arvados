@@ -4,6 +4,7 @@ from __future__ import absolute_import, print_function
 
 import logging
 import time
+from . import status
 
 import pykka
 
@@ -94,12 +95,14 @@ class RemotePollLoopActor(actor_class):
             scheduled_start = start_time
         try:
             response = self._send_request()
+            status.tracker.report_ok(self._logger.name)
         except Exception as error:
             errmsg = self._got_error(error)
             if self.is_common_error(error):
                 self._logger.warning(errmsg)
             else:
                 self._logger.exception(errmsg)
+            status.tracker.report_error(self._logger.name)
             next_poll = start_time + self.poll_wait
         else:
             self._got_response(response)

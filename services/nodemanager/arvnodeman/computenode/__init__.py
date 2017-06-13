@@ -9,9 +9,9 @@ import re
 import time
 
 from ..config import CLOUD_ERRORS
+from .. import ARVADOS_TIMEFMT
 from libcloud.common.exceptions import BaseHTTPError
 
-ARVADOS_TIMEFMT = '%Y-%m-%dT%H:%M:%SZ'
 ARVADOS_TIMESUBSEC_RE = re.compile(r'(\.\d+)Z$')
 
 def arvados_node_fqdn(arvados_node, default_hostname='dynamic.compute'):

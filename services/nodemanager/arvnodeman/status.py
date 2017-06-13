@@ -6,6 +6,9 @@ import json
 import logging
 import socketserver
 import threading
+import time
+
+from . import ARVADOS_TIMEFMT
 
 _logger = logging.getLogger('status.Handler')
 
@@ -52,7 +55,7 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
 class Tracker(object):
     def __init__(self):
         self._mtx = threading.Lock()
-        self._latest = {}
+        self._latest = {"error_count": 0}
 
     def get_json(self):
         with self._mtx:
@@ -64,7 +67,32 @@ class Tracker(object):
 
     def update(self, updates):
         with self._mtx:
+            self._latest['timestamp'] = time.strftime(ARVADOS_TIMEFMT, time.gmtime())
             self._latest.update(updates)
+            st = "OK"
+            for k,v in self._latest.iteritems():
+                if k.startswith("status_") and v != "OK":
+                    st = v
+                    break
+            self._latest["status"] = st
+
+    def report_ok(self, name):
+        self.update({
+            "status_"+name: "OK",
+            "exception_"+name: None
+        })
+
+    def report_error(self, name, type=None, value=None, tb=None):
+        if type is not None:
+            msg = "\n".join(traceback.format_exception(type, value, tb))
+        else:
+            msg = traceback.format_exc()
+        with self._mtx:
+            self._latest["error_count"] += 1
+        self.update({
+            "status_"+name: "WARNING",
+            "exception_"+name: msg
+        })
 
 
 tracker = Tracker()

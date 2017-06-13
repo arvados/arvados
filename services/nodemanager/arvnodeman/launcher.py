@@ -13,7 +13,7 @@ import pykka
 import libcloud
 
 from . import config as nmconfig
-from . import status
+from . import status, ARVADOS_TIMEFMT
 from .baseactor import WatchdogActor
 from .daemon import NodeManagerDaemonActor
 from .jobqueue import JobQueueMonitorActor, ServerCalculator
@@ -124,6 +124,7 @@ def main(args=None):
     updates['hostname'] = socket.getfqdn()
     updates['servicetype'] = "arvados_nodemanager"
     updates['version'] = __version__
+    updates['started_at'] = time.strftime(ARVADOS_TIMEFMT, time.gmtime())
     status.tracker.update(updates)
     status.tracker_full.update(updates)
 

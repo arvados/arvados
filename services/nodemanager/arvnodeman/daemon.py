@@ -257,21 +257,30 @@ class NodeManagerDaemonActor(actor_class):
         return states + pykka.get_all(proxy_states)
 
     def _update_tracker(self):
-        updates = {"nodes_"+k: v for k,v in self._state_counts(None).items()}
-        updates['timestamp'] = time.strftime(cnode.ARVADOS_TIMEFMT, time.gmtime())
-        updates['nodes_wish'] = len(self.last_wishlist)
-        updates['nodes_max'] = self.max_nodes
-        updates['nodes_quota'] = self.node_quota
-        updates['nodes_wish'] = len(self.last_wishlist)
-        updates['status'] = "OK"
-        status.tracker.update(updates)
-        status.tracker_full.update(updates)
-
         updates = {}
-        for size in self.server_calculator.cloud_sizes:
-            updates["size_"+size.name] = {"nodes_"+k: v for k,v in self._state_counts(size).items()}
-            for attr in ['id', 'name', 'ram', 'disk', 'bandwidth', 'price']:
-                updates["size_"+size.name][attr] = getattr(size, attr)
+        try:
+            updates['nodes_wish'] = len(self.last_wishlist)
+            updates['nodes_max'] = self.max_nodes
+            updates['nodes_quota'] = self.node_quota
+            updates['nodes_wish'] = len(self.last_wishlist)
+            updates.update({"nodes_"+k: v for k,v in self._state_counts(None).items()})
+            status.tracker.report_ok(self._logger.name)
+        except:
+            self._logger.exception("while updating tracker")
+            status.tracker.report_error(self._logger.name)
+
+        status.tracker.update(updates)
+
+        try:
+            for size in self.server_calculator.cloud_sizes:
+                updates["size_"+size.name] = {"nodes_"+k: v for k,v in self._state_counts(size).items()}
+                for attr in ['id', 'name', 'ram', 'disk', 'bandwidth', 'price']:
+                    updates["size_"+size.name][attr] = getattr(size, attr)
+                status.tracker_full.report_ok(self._logger.name)
+        except:
+            self._logger.exception("while updating tracker")
+            status.tracker_full.report_error(self._logger.name)
+
         status.tracker_full.update(updates)
 
     def _state_counts(self, size):
@@ -359,10 +368,8 @@ class NodeManagerDaemonActor(actor_class):
                     self._later.stop_booting_node(size)
             except Exception as e:
                 self._logger.exception("while calculating nodes wanted for size %s", getattr(size, "id", "(id not available)"))
-        try:
-            self._update_tracker()
-        except:
-            self._logger.exception("while updating tracker")
+
+        self._update_tracker()
 
     def _check_poll_freshness(orig_func):
         """Decorator to inhibit a method when poll information is stale.

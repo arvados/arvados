@@ -7,3 +7,4 @@ import logging
 
 logger = logging.getLogger('arvnodeman')
 logger.addHandler(logging.NullHandler())
+ARVADOS_TIMEFMT = '%Y-%m-%dT%H:%M:%SZ'

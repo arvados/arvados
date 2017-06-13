@@ -7,6 +7,7 @@ import signal
 import time
 import threading
 import traceback
+from . import ARVADOS_TIMEFMT
 
 import pykka
 
@@ -85,6 +86,8 @@ class BaseNodeManagerActor(pykka.ThreadingActor):
             exception_type is OSError and exception_value.errno == errno.ENOMEM):
             lg.critical("Unhandled exception is a fatal error, killing Node Manager")
             os.kill(os.getpid(), signal.SIGKILL)
+        status.tracker.report_error(getattr(lg, "name", "unknown"),
+                                    exception_type, exception_value, tb)
 
     def ping(self):
         return True

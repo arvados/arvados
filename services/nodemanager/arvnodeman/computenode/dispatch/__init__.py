@@ -79,6 +79,7 @@ class ComputeNodeStateChangeBase(config.actor_class, RetryMixin):
                 return orig_func(self, *args, **kwargs)
             except Exception as error:
                 self._logger.error("Actor error %s", error)
+                status.tracker_full.report_error(self._logger.name)
                 self._finished()
         return finish_wrapper
 
@@ -470,6 +471,7 @@ class ComputeNodeMonitorActor(config.actor_class):
                     self.last_shutdown_opening = next_opening
         except Exception:
             self._logger.exception("Unexpected exception")
+            status.tracker_full.report_error(self._logger.name)
 
     def offer_arvados_pair(self, arvados_node):
         first_ping_s = arvados_node.get('first_ping_at')
