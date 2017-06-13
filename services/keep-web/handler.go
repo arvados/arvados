@@ -368,8 +368,12 @@ var dirListingTemplate = `<!DOCTYPE HTML>
     .footer p {
       font-size: 82%;
     }
+    ul {
+      padding: 0;
+    }
     ul li {
       font-family: monospace;
+      list-style: none;
     }
   </STYLE>
 </HEAD>
@@ -385,7 +389,7 @@ the entire collection with wget, try:</P>
 <H2>File Listing</H2>
 
 <UL>
-{{range .Files}}  <LI><A href="{{.}}">{{.}}</A></LI>{{end}}
+{{range .Files}}  <LI>{{.Size | printf "%15d  " | nbsp}}<A href="{{.Name}}">{{.Name}}</A></LI>{{end}}
 </UL>
 
 <HR noshade>
@@ -401,8 +405,13 @@ the entire collection with wget, try:</P>
 </BODY>
 `
 
+type fileListEnt struct {
+	Name string
+	Size int64
+}
+
 func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collection *arvados.Collection, fs http.FileSystem, base string, stripParts int) {
-	var files []string
+	var files []fileListEnt
 	var walk func(string) error
 	if !strings.HasSuffix(base, "/") {
 		base = base + "/"
@@ -427,7 +436,10 @@ func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collect
 					return err
 				}
 			} else {
-				files = append(files, path+ent.Name())
+				files = append(files, fileListEnt{
+					Name: path + ent.Name(),
+					Size: ent.Size(),
+				})
 			}
 		}
 		return nil
@@ -436,12 +448,20 @@ func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collect
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tmpl, err := template.New("dir").Parse(dirListingTemplate)
+
+	funcs := template.FuncMap{
+		"nbsp": func(s string) template.HTML {
+			return template.HTML(strings.Replace(s, " ", "&nbsp;", -1))
+		},
+	}
+	tmpl, err := template.New("dir").Funcs(funcs).Parse(dirListingTemplate)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sort.Strings(files)
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].Name < files[j].Name
+	})
 	w.WriteHeader(http.StatusOK)
 	tmpl.Execute(w, map[string]interface{}{
 		"Collection": collection,
