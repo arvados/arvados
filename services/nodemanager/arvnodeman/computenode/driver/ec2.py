@@ -67,8 +67,18 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
     create_cloud_name = staticmethod(arvados_node_fqdn)
 
     def arvados_create_kwargs(self, size, arvados_node):
-        return {'name': self.create_cloud_name(arvados_node),
+        kw = {'name': self.create_cloud_name(arvados_node),
                 'ex_userdata': self._make_ping_url(arvados_node)}
+        # libcloud/ec2 disk sizes are in GB, Arvados/SLURM "scratch" value is in MB
+        scratch = size.scratch / 1000
+        if scratch > size.disk:
+            kw["ex_blockdevicemappings"] = [{
+                "Ebs": {
+                    "DeleteOnTermination": True,
+                    "VolumeSize": scratch - size.disk,
+                    "VolumeType": "gp2"
+                }}]
+        return kw
 
     def post_create_node(self, cloud_node):
         self.real.ex_create_tags(cloud_node, self.tags)
