@@ -20,9 +20,7 @@ class User < ArvadosModel
   before_update :verify_repositories_empty, :if => Proc.new { |user|
     user.username.nil? and user.username_changed?
   }
-  before_update :setup_on_activate, :if => Proc.new { |user|
-    ![system_user_uuid, anonymous_user_uuid].include?(user.uuid)
-  }
+  before_update :setup_on_activate
   before_create :check_auto_admin
   before_create :set_initial_username, :if => Proc.new { |user|
     user.username.nil? and user.email
