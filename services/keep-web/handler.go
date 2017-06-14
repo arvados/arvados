@@ -251,15 +251,13 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		forceReload = true
 	}
 
-	var collection map[string]interface{}
+	var collection *arvados.Collection
 	tokenResult := make(map[string]int)
-	found := false
 	for _, arv.ApiToken = range tokens {
 		var err error
 		collection, err = h.Config.Cache.Get(arv, targetID, forceReload)
 		if err == nil {
 			// Success
-			found = true
 			break
 		}
 		if srvErr, ok := err.(arvadosclient.APIServerError); ok {
@@ -275,7 +273,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
 		return
 	}
-	if !found {
+	if collection == nil {
 		if pathToken || !credentialsOK {
 			// Either the URL is a "secret sharing link"
 			// that didn't work out (and asking the client
@@ -316,16 +314,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	basename := targetPath[len(targetPath)-1]
 	applyContentDispositionHdr(w, r, basename, attachment)
 
-	j, err := json.Marshal(collection)
-	if err != nil {
-		panic(err)
-	}
-	var coll arvados.Collection
-	err = json.Unmarshal(j, &coll)
-	if err != nil {
-		panic(err)
-	}
-	fs := coll.FileSystem(&arvados.Client{
+	fs := collection.FileSystem(&arvados.Client{
 		APIHost:   arv.ApiServer,
 		AuthToken: arv.ApiToken,
 		Insecure:  arv.ApiInsecure,
@@ -340,7 +329,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	} else if stat.IsDir() && !strings.HasSuffix(r.URL.Path, "/") {
 		h.seeOtherWithCookie(w, r, basename+"/", credentialsOK)
 	} else if stat.IsDir() {
-		h.serveDirectory(w, r, &coll, fs, openPath, stripParts)
+		h.serveDirectory(w, r, collection, fs, openPath, stripParts)
 	} else {
 		http.ServeContent(w, r, basename, stat.ModTime(), f)
 		if int64(w.WroteBodyBytes()) != stat.Size() {
