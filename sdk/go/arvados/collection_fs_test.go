@@ -45,15 +45,22 @@ func (s *CollectionFSSuite) TestReaddirFull(c *check.C) {
 func (s *CollectionFSSuite) TestReaddirLimited(c *check.C) {
 	f, err := s.fs.Open("./dir1")
 	c.Assert(err, check.IsNil)
-	for i := 0; i < 2; i++ {
-		fis, err := f.Readdir(1)
-		c.Check(err, check.IsNil)
-		c.Check(len(fis), check.Equals, 1)
-		if len(fis) > 0 {
-			c.Check(fis[0].Size(), check.Equals, int64(3))
-		}
-	}
+
 	fis, err := f.Readdir(1)
+	c.Check(err, check.IsNil)
+	c.Check(len(fis), check.Equals, 1)
+	if len(fis) > 0 {
+		c.Check(fis[0].Size(), check.Equals, int64(3))
+	}
+
+	fis, err = f.Readdir(1)
+	c.Check(err, check.Equals, io.EOF)
+	c.Check(len(fis), check.Equals, 1)
+	if len(fis) > 0 {
+		c.Check(fis[0].Size(), check.Equals, int64(3))
+	}
+
+	fis, err = f.Readdir(1)
 	c.Check(len(fis), check.Equals, 0)
 	c.Check(err, check.NotNil)
 	c.Check(err, check.Equals, io.EOF)
@@ -65,7 +72,7 @@ func (s *CollectionFSSuite) TestReaddirLimited(c *check.C) {
 	c.Assert(err, check.IsNil)
 	fis, err = f.Readdir(2)
 	c.Check(len(fis), check.Equals, 1)
-	c.Assert(err, check.IsNil)
+	c.Assert(err, check.Equals, io.EOF)
 	fis, err = f.Readdir(2)
 	c.Check(len(fis), check.Equals, 0)
 	c.Assert(err, check.Equals, io.EOF)

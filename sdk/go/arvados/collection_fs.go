@@ -61,11 +61,13 @@ func (cd *collectionDir) Readdir(count int) ([]os.FileInfo, error) {
 	} else if len(ret) == 0 {
 		return nil, io.EOF
 	}
-	if count > len(ret) {
+	var err error
+	if count >= len(ret) {
 		count = len(ret)
+		err = io.EOF
 	}
 	cd.dirents = cd.dirents[count:]
-	return ret[:count], nil
+	return ret[:count], err
 }
 
 // Stat implements os.File.
