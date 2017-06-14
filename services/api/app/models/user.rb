@@ -20,6 +20,9 @@ class User < ArvadosModel
   before_update :verify_repositories_empty, :if => Proc.new { |user|
     user.username.nil? and user.username_changed?
   }
+  before_update :setup_on_activate, :if => Proc.new { |user|
+    ![system_user_uuid, anonymous_user_uuid].include?(user.uuid)
+  }
   before_create :check_auto_admin
   before_create :set_initial_username, :if => Proc.new { |user|
     user.username.nil? and user.email
@@ -458,6 +461,14 @@ class User < ArvadosModel
     AdminNotifier.new_user(self).deliver_now
     if not self.is_active then
       AdminNotifier.new_inactive_user(self).deliver_now
+    end
+  end
+
+  # Automatically setup if is_active flag turns on
+  def setup_on_activate
+    return if [system_user_uuid, anonymous_user_uuid].include?(self.uuid)
+    if is_active && (new_record? || is_active_changed?)
+      setup(openid_prefix: Rails.configuration.default_openid_prefix)
     end
   end
 
