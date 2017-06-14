@@ -182,15 +182,11 @@ class User < ArvadosModel
     r
   end
 
-  def self.setup(user, openid_prefix, repo_name=nil, vm_uuid=nil)
-    return user.setup_repo_vm_links(repo_name, vm_uuid, openid_prefix)
-  end
-
   # create links
-  def setup_repo_vm_links(repo_name, vm_uuid, openid_prefix)
+  def setup(openid_prefix:, repo_name: nil, vm_uuid: nil)
     oid_login_perm = create_oid_login_perm openid_prefix
     repo_perm = create_user_repo_link repo_name
-    vm_login_perm = create_vm_login_permission_link vm_uuid, username
+    vm_login_perm = create_vm_login_permission_link(vm_uuid, username) if vm_uuid
     group_perm = create_user_group_link
 
     return [oid_login_perm, repo_perm, vm_login_perm, group_perm, self].compact
@@ -364,13 +360,12 @@ class User < ArvadosModel
     merged
   end
 
-  def create_oid_login_perm (openid_prefix)
-    login_perm_props = { "identity_url_prefix" => openid_prefix}
-
+  def create_oid_login_perm(openid_prefix)
     # Check oid_login_perm
     oid_login_perms = Link.where(tail_uuid: self.email,
-                                   link_class: 'permission',
-                                   name: 'can_login').where("head_uuid = ?", self.uuid)
+                                 head_uuid: self.uuid,
+                                 link_class: 'permission',
+                                 name: 'can_login')
 
     if !oid_login_perms.any?
       # create openid login permission
@@ -378,8 +373,9 @@ class User < ArvadosModel
                                    name: 'can_login',
                                    tail_uuid: self.email,
                                    head_uuid: self.uuid,
-                                   properties: login_perm_props
-                                  )
+                                   properties: {
+                                     "identity_url_prefix" => openid_prefix,
+                                   })
       logger.info { "openid login permission: " + oid_login_perm[:uuid] }
     else
       oid_login_perm = oid_login_perms.first
@@ -407,15 +403,12 @@ class User < ArvadosModel
   # create login permission for the given vm_uuid, if it does not already exist
   def create_vm_login_permission_link(vm_uuid, repo_name)
     # vm uuid is optional
-    if vm_uuid
-      vm = VirtualMachine.where(uuid: vm_uuid).first
+    return if !vm_uuid
 
-      if not vm
-        logger.warn "Could not find virtual machine for #{vm_uuid.inspect}"
-        raise "No vm found for #{vm_uuid}"
-      end
-    else
-      return
+    vm = VirtualMachine.where(uuid: vm_uuid).first
+    if !vm
+      logger.warn "Could not find virtual machine for #{vm_uuid.inspect}"
+      raise "No vm found for #{vm_uuid}"
     end
 
     logger.info { "vm uuid: " + vm[:uuid] }
@@ -470,7 +463,7 @@ class User < ArvadosModel
 
   # Automatically setup new user during creation
   def auto_setup_new_user
-    setup_repo_vm_links(nil, nil, Rails.configuration.default_openid_prefix)
+    setup(openid_prefix: Rails.configuration.default_openid_prefix)
     if username
       create_vm_login_permission_link(Rails.configuration.auto_setup_new_users_with_vm_uuid,
                                       username)
