@@ -146,8 +146,7 @@ class Node < ArvadosModel
                           # query label:
                           'Node.available_slot_number',
                           # [col_id, val] for $1 vars:
-                          [['max_compute_nodes',
-                            Rails.configuration.max_compute_nodes]],
+                          [[nil, Rails.configuration.max_compute_nodes]],
                          ).rows.first.andand.first
   end
 
