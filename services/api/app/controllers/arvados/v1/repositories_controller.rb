@@ -4,15 +4,13 @@ class Arvados::V1::RepositoriesController < ApplicationController
   before_filter :admin_required, :only => :get_all_permissions
 
   def get_all_permissions
-    # users is a map of {user_uuid => User object}
-    users = {}
     # user_aks is a map of {user_uuid => array of public keys}
     user_aks = {}
     # admins is an array of user_uuids
     admins = []
-    User.eager_load(:authorized_keys).find_each do |u|
-      next unless u.is_active or u.uuid == anonymous_user_uuid
-      users[u.uuid] = u
+    User.
+      where('users.is_active = ? or users.uuid = ?', true, anonymous_user_uuid).
+      eager_load(:authorized_keys).find_each do |u|
       user_aks[u.uuid] = u.authorized_keys.collect do |ak|
         {
           public_key: ak.public_key,
@@ -21,6 +19,7 @@ class Arvados::V1::RepositoriesController < ApplicationController
       end
       admins << u.uuid if u.is_admin
     end
+    all_group_permissions = User.all_group_permissions
     @repo_info = {}
     Repository.eager_load(:permissions).find_each do |repo|
       @repo_info[repo.uuid] = {
@@ -42,8 +41,8 @@ class Arvados::V1::RepositoriesController < ApplicationController
           # A group has permission. Each user who has access to this
           # group also has access to the repository. Access level is
           # min(group-to-repo permission, user-to-group permission).
-          users.each do |user_uuid, user|
-            perm_mask = user.group_permissions[perm.tail_uuid]
+          user_aks.each do |user_uuid, _|
+            perm_mask = all_group_permissions[user_uuid][perm.tail_uuid]
             if not perm_mask
               next
             elsif perm_mask[:manage] and perm.name == 'can_manage'
@@ -54,7 +53,7 @@ class Arvados::V1::RepositoriesController < ApplicationController
               evidence << {name: 'can_read', user_uuid: user_uuid}
             end
           end
-        elsif users[perm.tail_uuid]
+        elsif user_aks.has_key?(perm.tail_uuid)
           # A user has permission; the user exists; and either the
           # user is active, or it's the special case of the anonymous
           # user which is never "active" but is allowed to read
@@ -66,7 +65,7 @@ class Arvados::V1::RepositoriesController < ApplicationController
       ([repo.owner_uuid] | admins).each do |user_uuid|
         # Except: no permissions for inactive users, even if they own
         # repositories.
-        next unless users[user_uuid]
+        next unless user_aks.has_key?(user_uuid)
         evidence << {name: 'can_manage', user_uuid: user_uuid}
       end
       # Distill all the evidence about permissions on this repository

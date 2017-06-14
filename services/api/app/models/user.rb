@@ -140,11 +140,29 @@ class User < ArvadosModel
     end
   end
 
+  # Return a hash of {user_uuid: group_perms}
+  def self.all_group_permissions
+    install_view('permission')
+    all_perms = {}
+    ActiveRecord::Base.connection.
+      exec_query('SELECT user_uuid, target_owner_uuid, max(perm_level)
+                  FROM permission_view
+                  WHERE target_owner_uuid IS NOT NULL
+                  GROUP BY user_uuid, target_owner_uuid',
+                  # "name" arg is a query label that appears in logs:
+                  "all_group_permissions",
+                  ).rows.each do |user_uuid, group_uuid, max_p_val|
+      all_perms[user_uuid] ||= {}
+      all_perms[user_uuid][group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
+    end
+    all_perms
+  end
+
   # Return a hash of {group_uuid: perm_hash} where perm_hash[:read]
   # and perm_hash[:write] are true if this user can read and write
   # objects owned by group_uuid.
   def calculate_group_permissions
-    install_view('permission')
+    self.class.install_view('permission')
 
     group_perms = {}
     ActiveRecord::Base.connection.
