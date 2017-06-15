@@ -188,8 +188,6 @@ func (c *collectionFS) Open(name string) (http.File, error) {
 	// entries below it.
 	children := map[string]collectionDirent{}
 	for fnm, size := range filesizes {
-		if fnm == name {
-		}
 		if !strings.HasPrefix(fnm, name+"/") {
 			continue
 		}
