@@ -33,7 +33,15 @@ class TestJob(unittest.TestCase):
             document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
             list_images_in_arv.return_value = [["zzzzz-4zz18-zzzzzzzzzzzzzzz"]]
-            runner.api.collections().get().execute.return_vaulue = {"portable_data_hash": "99999999999999999999999999999993+99"}
+            runner.api.collections().get().execute.return_value = {"portable_data_hash": "99999999999999999999999999999993+99"}
+            # Simulate reused job from another project so that we can check is a can_read
+            # link is added.
+            runner.api.jobs().create().execute.return_value = {
+                'state': 'Complete' if enable_reuse else 'Queued',
+                'owner_uuid': 'zzzzz-tpzed-yyyyyyyyyyyyyyy' if enable_reuse else 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
+                'uuid': 'zzzzz-819sb-yyyyyyyyyyyyyyy',
+                'output': None,
+            }
 
             tool = cmap({
                 "inputs": [],
@@ -75,6 +83,16 @@ class TestJob(unittest.TestCase):
                              ['script_version', 'in git', 'a3f2cb186e437bfce0031b024b2157b73ed2717d'],
                              ['docker_image_locator', 'in docker', 'arvados/jobs']]
                 )
+                if enable_reuse:
+                    runner.api.links().create.assert_called_with(
+                        body=JsonDiffMatcher({
+                            'link_class': 'can_read',
+                            "tail_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
+                            "head_uuid": "zzzzz-819sb-yyyyyyyyyyyyyyy",
+                        })
+                    )
+                else:
+                    assert not runner.api.links().create.called
 
     # The test passes some fields in builder.resources
     # For the remaining fields, the defaults will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}

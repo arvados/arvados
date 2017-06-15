@@ -146,11 +146,11 @@ class ArvadosJob(object):
             if response["state"] == "Complete":
                 logger.info("%s reused job %s", self.arvrunner.label(self), response["uuid"])
                 # Give read permission to the desired project on reused jobs
-                for job_name, job_uuid in response.get('components', {}).items():
+                if response["owner_uuid"] != self.arvrunner.project_uuid:
                     self.arvrunner.api.links().create(body={
                         'link_class': 'can_read',
                         'tail_uuid': self.arvrunner.project_uuid,
-                        'head_uuid': job_uuid,
+                        'head_uuid': response["uuid"],
                         }).execute(num_retries=self.arvrunner.num_retries)
 
                 with Perf(metrics, "done %s" % self.name):
