@@ -389,9 +389,13 @@ the entire collection with wget, try:</P>
 
 <H2>File Listing</H2>
 
+{{if .Files}}
 <UL>
 {{range .Files}}  <LI>{{.Size | printf "%15d  " | nbsp}}<A href="{{.Name}}">{{.Name}}</A></LI>{{end}}
 </UL>
+{{else}}
+<P>(No files; this collection is empty.)</P>
+{{end}}
 
 <HR noshade>
 <DIV class="footer">
