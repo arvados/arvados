@@ -165,7 +165,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		h.serveStatus(w, r)
 		return
 	} else if len(pathParts) >= 1 && strings.HasPrefix(pathParts[0], "c=") {
-		// /c=ID/PATH...
+		// /c=ID[/PATH...]
 		targetID = parseCollectionIDFromURL(pathParts[0][2:])
 		stripParts = 1
 	} else if len(pathParts) >= 2 && pathParts[0] == "collections" {
@@ -321,18 +321,30 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}, kc)
 	openPath := "/" + strings.Join(targetPath, "/")
 	if f, err := fs.Open(openPath); os.IsNotExist(err) {
+		// Requested non-existent path
 		statusCode = http.StatusNotFound
 	} else if err != nil {
+		// Some other (unexpected) error
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
 	} else if stat, err := f.Stat(); err != nil {
+		// Can't get Size/IsDir (shouldn't happen with a collectionFS!)
 		statusCode, statusText = http.StatusInternalServerError, err.Error()
 	} else if stat.IsDir() && !strings.HasSuffix(r.URL.Path, "/") {
+		// If client requests ".../dirname", redirect to
+		// ".../dirname/". This way, relative links in the
+		// listing for "dirname" can always be "fnm", never
+		// "dirname/fnm".
 		h.seeOtherWithCookie(w, r, basename+"/", credentialsOK)
 	} else if stat.IsDir() {
 		h.serveDirectory(w, r, collection.Name, fs, openPath, stripParts)
 	} else {
 		http.ServeContent(w, r, basename, stat.ModTime(), f)
-		if int64(w.WroteBodyBytes()) != stat.Size() {
+		if r.Header.Get("Range") == "" && int64(w.WroteBodyBytes()) != stat.Size() {
+			// If we wrote fewer bytes than expected, it's
+			// too late to change the real response code
+			// or send an error message to the client, but
+			// at least we can try to put some useful
+			// debugging info in the logs.
 			n, err := f.Read(make([]byte, 1024))
 			statusCode, statusText = http.StatusInternalServerError, fmt.Sprintf("f.Size()==%d but only wrote %d bytes; read(1024) returns %d, %s", stat.Size(), w.WroteBodyBytes(), n, err)
 
