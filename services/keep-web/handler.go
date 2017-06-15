@@ -329,7 +329,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	} else if stat.IsDir() && !strings.HasSuffix(r.URL.Path, "/") {
 		h.seeOtherWithCookie(w, r, basename+"/", credentialsOK)
 	} else if stat.IsDir() {
-		h.serveDirectory(w, r, collection, fs, openPath, stripParts)
+		h.serveDirectory(w, r, collection.Name, fs, openPath, stripParts)
 	} else {
 		http.ServeContent(w, r, basename, stat.ModTime(), f)
 		if int64(w.WroteBodyBytes()) != stat.Size() {
@@ -367,7 +367,7 @@ var dirListingTemplate = `<!DOCTYPE HTML>
   </STYLE>
 </HEAD>
 <BODY>
-<H1>{{ .Collection.Name }}</H1>
+<H1>{{ .CollectionName }}</H1>
 
 <P>This collection of data files is being shared with you through
 Arvados.  You can download individual files listed below.  To download
@@ -399,7 +399,7 @@ type fileListEnt struct {
 	Size int64
 }
 
-func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collection *arvados.Collection, fs http.FileSystem, base string, stripParts int) {
+func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collectionName string, fs http.FileSystem, base string, stripParts int) {
 	var files []fileListEnt
 	var walk func(string) error
 	if !strings.HasSuffix(base, "/") {
@@ -453,10 +453,10 @@ func (h *handler) serveDirectory(w http.ResponseWriter, r *http.Request, collect
 	})
 	w.WriteHeader(http.StatusOK)
 	tmpl.Execute(w, map[string]interface{}{
-		"Collection": collection,
-		"Files":      files,
-		"Request":    r,
-		"StripParts": stripParts,
+		"CollectionName": collectionName,
+		"Files":          files,
+		"Request":        r,
+		"StripParts":     stripParts,
 	})
 }
 
