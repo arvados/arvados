@@ -447,7 +447,9 @@ class UserTest < ActiveSupport::TestCase
 
     vm = VirtualMachine.create
 
-    response = User.setup user, openid_prefix, 'foo/testrepo', vm.uuid
+    response = user.setup(openid_prefix: openid_prefix,
+                          repo_name: 'foo/testrepo',
+                          vm_uuid: vm.uuid)
 
     resp_user = find_obj_in_resp response, 'User'
     verify_user resp_user, email
@@ -490,7 +492,9 @@ class UserTest < ActiveSupport::TestCase
 
     verify_link resp_link, 'permission', 'can_login', email, bad_uuid
 
-    response = User.setup user, openid_prefix, 'foo/testrepo', vm.uuid
+    response = user.setup(openid_prefix: openid_prefix,
+                          repo_name: 'foo/testrepo',
+                          vm_uuid: vm.uuid)
 
     resp_user = find_obj_in_resp response, 'User'
     verify_user resp_user, email
@@ -522,7 +526,7 @@ class UserTest < ActiveSupport::TestCase
 
     user = User.create ({uuid: 'zzzzz-tpzed-abcdefghijklmno', email: email})
 
-    response = User.setup user, openid_prefix
+    response = user.setup(openid_prefix: openid_prefix)
 
     resp_user = find_obj_in_resp response, 'User'
     verify_user resp_user, email
@@ -537,7 +541,8 @@ class UserTest < ActiveSupport::TestCase
     verify_link group_perm, 'permission', 'can_read', resp_user[:uuid], nil
 
     # invoke setup again with repo_name
-    response = User.setup user, openid_prefix, 'foo/testrepo'
+    response = user.setup(openid_prefix: openid_prefix,
+                          repo_name: 'foo/testrepo')
     resp_user = find_obj_in_resp response, 'User', nil
     verify_user resp_user, email
     assert_equal user.uuid, resp_user[:uuid], 'expected uuid not found'
@@ -551,7 +556,9 @@ class UserTest < ActiveSupport::TestCase
     # invoke setup again with a vm_uuid
     vm = VirtualMachine.create
 
-    response = User.setup user, openid_prefix, 'foo/testrepo', vm.uuid
+    response = user.setup(openid_prefix: openid_prefix,
+                          repo_name: 'foo/testrepo',
+                          vm_uuid: vm.uuid)
 
     resp_user = find_obj_in_resp response, 'User', nil
     verify_user resp_user, email
