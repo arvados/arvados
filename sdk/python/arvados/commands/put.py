@@ -10,6 +10,7 @@ import copy
 import datetime
 import errno
 import fcntl
+import fnmatch
 import hashlib
 import json
 import logging
@@ -154,6 +155,12 @@ run_opts.add_argument('--name', help="""
 Save the collection with the specified name.
 """)
 
+run_opts.add_argument('--exclude', metavar='PATTERN', default=[],
+                      action='append', help="""
+Exclude files and directories whose names match the given pattern. You
+can specify multiple patterns by using this argument more than once.
+""")
+
 _group = run_opts.add_mutually_exclusive_group()
 _group.add_argument('--progress', action='store_true',
                     help="""
@@ -241,6 +248,10 @@ def parse_arguments(arguments):
         args.use_cache = False
         if not args.filename:
             args.filename = 'stdin'
+
+    # Remove possible duplicated patterns
+    if len(args.exclude) > 0:
+        args.exclude = list(set(args.exclude))
 
     return args
 
@@ -375,7 +386,7 @@ class ArvPutUploadJob(object):
                  put_threads=None, replication_desired=None,
                  filename=None, update_time=60.0, update_collection=None,
                  logger=logging.getLogger('arvados.arv_put'), dry_run=False,
-                 follow_links=True):
+                 follow_links=True, exclude={}):
         self.paths = paths
         self.resume = resume
         self.use_cache = use_cache
@@ -409,6 +420,7 @@ class ArvPutUploadJob(object):
         self.dry_run = dry_run
         self._checkpoint_before_quit = True
         self.follow_links = follow_links
+        self.exclude = exclude
 
         if not self.use_cache and self.resume:
             raise ArvPutArgumentConflict('resume cannot be True when use_cache is False')
@@ -424,6 +436,8 @@ class ArvPutUploadJob(object):
         """
         Start supporting thread & file uploading
         """
+        exclude_paths = self.exclude.get('paths', None)
+        exclude_names = self.exclude.get('names', None)
         if not self.dry_run:
             self._checkpointer.start()
         try:
@@ -442,6 +456,23 @@ class ArvPutUploadJob(object):
                     if prefixdir != '/':
                         prefixdir += '/'
                     for root, dirs, files in os.walk(path, followlinks=self.follow_links):
+                        root_relpath = os.path.relpath(root, path)
+                        # Exclude files/dirs by full path matching pattern
+                        if exclude_paths is not None:
+                            dirs[:] = filter(
+                                lambda d: not any([pathname_match(os.path.join(root_relpath, d),
+                                                                  pat)
+                                                   for pat in exclude_paths]),
+                                dirs)
+                            files = filter(
+                                lambda f: not any([pathname_match(os.path.join(root_relpath, f),
+                                                                  pat)
+                                                   for pat in exclude_paths]),
+                                files)
+                        # Exclude files/dirs by name matching pattern
+                        if exclude_names is not None:
+                            dirs[:] = filter(lambda d: not exclude_names.match(d), dirs)
+                            files = filter(lambda f: not exclude_names.match(f), files)
                         # Make os.walk()'s dir traversing order deterministic
                         dirs.sort()
                         files.sort()
@@ -825,14 +856,32 @@ class ArvPutUploadJob(object):
             datablocks = self._datablocks_on_item(self._my_collection())
         return datablocks
 
-
-def expected_bytes_for(pathlist, follow_links=True):
+def expected_bytes_for(pathlist, follow_links=True, exclude={}):
     # Walk the given directory trees and stat files, adding up file sizes,
     # so we can display progress as percent
     bytesum = 0
+    exclude_paths = exclude.get('paths', None)
+    exclude_names = exclude.get('names', None)
     for path in pathlist:
         if os.path.isdir(path):
             for root, dirs, files in os.walk(path, followlinks=follow_links):
+                root_relpath = os.path.relpath(root, path)
+                # Exclude files/dirs by full path matching pattern
+                if exclude_paths is not None:
+                    dirs[:] = filter(
+                        lambda d: not any([pathname_match(os.path.join(root_relpath, d),
+                                                          pat)
+                                           for pat in exclude_paths]),
+                        dirs)
+                    files = filter(
+                        lambda f: not any([pathname_match(os.path.join(root_relpath, f),
+                                                          pat)
+                                           for pat in exclude_paths]),
+                        files)
+                # Exclude files/dirs by name matching pattern
+                if exclude_names is not None:
+                    dirs[:] = filter(lambda d: not exclude_names.match(d), dirs)
+                    files = filter(lambda f: not exclude_names.match(f), files)
                 # Sum file sizes
                 for f in files:
                     filepath = os.path.join(root, f)
@@ -848,6 +897,21 @@ def expected_bytes_for(pathlist, follow_links=True):
 
 _machine_format = "{} {}: {{}} written {{}} total\n".format(sys.argv[0],
                                                             os.getpid())
+
+# Simulate glob.glob() matching behavior without the need to scan the filesystem
+# Note: fnmatch() doesn't work correctly when used with pathnames. For example the
+# pattern 'tests/*.py' will match 'tests/run_test.py' and also 'tests/subdir/run_test.py',
+# so instead we're using it on every path component.
+def pathname_match(pathname, pattern):
+    name = pathname.split(os.sep)
+    pat = pattern.split(os.sep)
+    if len(name) != len(pat):
+        return False
+    for i in range(len(name)):
+        if not fnmatch.fnmatch(name[i], pat[i]):
+            return False
+    return True
+
 def machine_progress(bytes_written, bytes_expected):
     return _machine_format.format(
         bytes_written, -1 if (bytes_expected is None) else bytes_expected)
@@ -923,11 +987,47 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     else:
         reporter = None
 
+    # Setup exclude regex from all the --exclude arguments provided
+    if len(args.exclude) > 0:
+        # We're supporting 2 kinds of exclusion patterns:
+        # 1) --exclude '*.jpg'      (file/dir name patterns, will only match the name)
+        # 2) --exclude 'foo/bar'    (file/dir path patterns, will match the entire path,
+        #                            and should be relative to any input dir argument)
+        name_patterns = []
+        path_patterns = []
+        for p in args.exclude:
+            # Only relative paths patterns allowed
+            if p.startswith(os.sep):
+                logger.error("Cannot use absolute paths with --exclude")
+                sys.exit(1)
+            if os.path.dirname(p):
+                # Path search pattern
+                path_patterns.append(p)
+            else:
+                # Name-only search pattern
+                name_patterns.append(p)
+        exclude_paths = path_patterns if len(path_patterns) > 0 else None
+        # For name only matching, we can combine all patterns into a single regexp,
+        # for better performance.
+        exclude_names = re.compile('|'.join(
+            [fnmatch.translate(p) for p in name_patterns]
+        )) if len(name_patterns) > 0 else None
+        # Show the user the patterns to be used, just in case they weren't specified inside
+        # quotes and got changed by the shell expansion.
+        logger.info("Exclude patterns: {}".format(args.exclude))
+    else:
+        exclude_paths = None
+        exclude_names = None
+
     # If this is used by a human, and there's at least one directory to be
     # uploaded, the expected bytes calculation can take a moment.
     if args.progress and any([os.path.isdir(f) for f in args.paths]):
         logger.info("Calculating upload size, this could take some time...")
-    bytes_expected = expected_bytes_for(args.paths, follow_links=args.follow_links)
+    bytes_expected = expected_bytes_for(args.paths,
+                                        follow_links=args.follow_links,
+                                        exclude={'paths': exclude_paths,
+                                                 'names': exclude_names})
+
 
     try:
         writer = ArvPutUploadJob(paths = args.paths,
@@ -945,7 +1045,9 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                                  update_collection = args.update_collection,
                                  logger=logger,
                                  dry_run=args.dry_run,
-                                 follow_links=args.follow_links)
+                                 follow_links=args.follow_links,
+                                 exclude={'paths': exclude_paths,
+                                          'names': exclude_names})
     except ResumeCacheConflict:
         logger.error("\n".join([
             "arv-put: Another process is already uploading this data.",
