@@ -86,7 +86,8 @@ class TestJob(unittest.TestCase):
                 if enable_reuse:
                     runner.api.links().create.assert_called_with(
                         body=JsonDiffMatcher({
-                            'link_class': 'can_read',
+                            'link_class': 'permission',
+                            'name': 'can_read',
                             "tail_uuid": "zzzzz-8i9sb-zzzzzzzzzzzzzzz",
                             "head_uuid": "zzzzz-819sb-yyyyyyyyyyyyyyy",
                         })
