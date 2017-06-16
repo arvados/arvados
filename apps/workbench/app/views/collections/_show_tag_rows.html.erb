@@ -1,0 +1,26 @@
+<%
+  tags = object.properties[:tags]
+%>
+
+        <% tags.andand.each do |k, v| %>
+          <tr class="collection-tag-<%=k%>">
+            <td>
+              <i class="glyphicon glyphicon-remove collection-tag-remove hide" style="cursor: pointer;"></i>
+            </td>
+            <td class="collection-tag-field">
+              <%= k %>
+            </td>
+            <td class="collection-tag-field">
+              <%= v %>
+            </td>
+          </tr>
+        <% end %>
+
+        <!-- A hidden row to add new tag -->
+        <tr class="collection-tag-hidden hide">
+          <td>
+            <i class="glyphicon glyphicon-remove collection-tag-remove hide" style="cursor: pointer"></i>
+          </td>
+          <td class="collection-tag-field"></td>
+          <td class="collection-tag-field"></td>
+        </tr>

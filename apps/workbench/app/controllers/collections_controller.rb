@@ -20,7 +20,7 @@ class CollectionsController < ApplicationController
   RELATION_LIMIT = 5
 
   def show_pane_list
-    panes = %w(Files Upload Provenance_graph Used_by Advanced)
+    panes = %w(Files Upload Tags Provenance_graph Used_by Advanced)
     panes = panes - %w(Upload) unless (@object.editable? rescue false)
     panes
   end
@@ -342,6 +342,15 @@ class CollectionsController < ApplicationController
     else
       # Not a file rename; use default
       super
+    end
+  end
+
+  def save_tags
+    props = @object.properties
+    props[:tags] = params['tag_data']
+    if @object.update_attributes properties: props
+    else
+      self.render_error status: 422
     end
   end
 
