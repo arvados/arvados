@@ -139,6 +139,9 @@ class Node < ArvadosModel
   protected
 
   def self.available_slot_number
+    # Join the sequence 1..max with the nodes table. Return the first
+    # (i.e., smallest) value that doesn't match the slot_number of any
+    # existing node.
     connection.exec_query('SELECT n FROM generate_series(1, $1) AS slot(n)
                           LEFT JOIN nodes ON n=slot_number
                           WHERE slot_number IS NULL
