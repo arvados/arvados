@@ -28,6 +28,7 @@ $(document).
                 $("#Upload-tab").attr("data-toggle", "tab");
 
                 $('.edit-collection-tags').removeClass('disabled');
+                $('#edit-collection-tags').attr('title', '');
             } else {
                 // User clicked "no" and so do not unlock
             }
@@ -46,6 +47,7 @@ $(document).
 
             $('.edit-collection-tags').removeClass('hide');
             $('.edit-collection-tags').addClass('disabled');
+            $('#edit-collection-tags').attr('title', 'Unlock collection to edit tags');
             $('.collection-tag-add').addClass('hide');
             $('.collection-tag-remove').addClass('hide');
             $('.collection-tag-save').addClass('hide');
