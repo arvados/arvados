@@ -26,6 +26,8 @@ $(document).
                 $(".tab-pane-Upload").removeClass("disabled");
                 $(".tab-pane-Upload").attr("data-original-title", "");
                 $("#Upload-tab").attr("data-toggle", "tab");
+
+                $('.edit-collection-tags').removeClass('disabled');
             } else {
                 // User clicked "no" and so do not unlock
             }
@@ -41,5 +43,41 @@ $(document).
             $(".tab-pane-Upload").addClass("disabled");
             $(".tab-pane-Upload").attr("data-original-title", "Unlock collection to upload files");
             $("#Upload-tab").attr("data-toggle", "disabled");
+
+            $('.edit-collection-tags').removeClass('hide');
+            $('.edit-collection-tags').addClass('disabled');
+            $('.collection-tag-add').addClass('hide');
+            $('.collection-tag-remove').addClass('hide');
+            $('.collection-tag-save').addClass('hide');
+            $('.collection-tag-cancel').addClass('hide');
+            $('.collection-tag-field').prop("contenteditable", false);
         }
+    }).
+    on('click', '.collection-tag-save, .collection-tag-cancel', function(event) {
+        $('.edit-collection-tags').removeClass('hide');
+        $('.collection-tag-add').addClass('hide');
+        $('.collection-tag-remove').addClass('hide');
+        $('.collection-tag-save').addClass('hide');
+        $('.collection-tag-cancel').addClass('hide');
+        $('.collection-tag-field').prop("contenteditable", false);
+    }).
+    on('click', '.edit-collection-tags', function(event) {
+        $('.edit-collection-tags').addClass('hide');
+        $('.collection-tag-add').removeClass('hide');
+        $('.collection-tag-remove').removeClass('hide');
+        $('.collection-tag-save').removeClass('hide');
+        $('.collection-tag-cancel').removeClass('hide');
+        $('.collection-tag-field').prop("contenteditable", true);
     });
+
+jQuery(function($){
+  $(document).on('click', '.collection-tag-remove', function(e) {
+    $(this).parents('tr').detach();
+  });
+
+  $(document).on('click', '.collection-tag-add', function(e) {
+    var $collection_tags = $(this).closest('.collection-tags-container');
+    var $clone = $collection_tags.find('tr.hide').clone(true).removeClass('hide');
+    $collection_tags.find('table').append($clone);
+  });
+});

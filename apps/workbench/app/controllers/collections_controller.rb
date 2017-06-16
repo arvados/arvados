@@ -20,7 +20,7 @@ class CollectionsController < ApplicationController
   RELATION_LIMIT = 5
 
   def show_pane_list
-    panes = %w(Files Upload Provenance_graph Used_by Advanced)
+    panes = %w(Files Upload Tags Provenance_graph Used_by Advanced)
     panes = panes - %w(Upload) unless (@object.editable? rescue false)
     panes
   end
