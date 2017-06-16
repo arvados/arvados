@@ -14,7 +14,7 @@ import arvados_cwl
 import arvados_cwl.runner
 import arvados.keep
 
-from .matcher import JsonDiffMatcher
+from .matcher import JsonDiffMatcher, StripYAMLComments
 from .mock_discovery import get_rootDesc
 
 import ruamel.yaml as yaml
@@ -1017,7 +1017,8 @@ class TestCreateTemplate(unittest.TestCase):
 
 class TestCreateWorkflow(unittest.TestCase):
     existing_workflow_uuid = "zzzzz-7fd4e-validworkfloyml"
-    expect_workflow = open("tests/wf/expect_packed.cwl").read()
+    expect_workflow = StripYAMLComments(
+        open("tests/wf/expect_packed.cwl").read())
 
     @stubs
     def test_create(self, stubs):
@@ -1164,7 +1165,8 @@ class TestCreateWorkflow(unittest.TestCase):
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
 
-        expect_workflow = open("tests/collection_per_tool/collection_per_tool_packed.cwl").read()
+        toolfile = "tests/collection_per_tool/collection_per_tool_packed.cwl"
+        expect_workflow = StripYAMLComments(open(toolfile).read())
 
         body = {
             "workflow": {

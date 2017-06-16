@@ -14,7 +14,7 @@ from arvados.errors import ApiError
 from schema_salad.ref_resolver import Loader
 from schema_salad.sourceline import cmap
 from .mock_discovery import get_rootDesc
-from .matcher import JsonDiffMatcher
+from .matcher import JsonDiffMatcher, StripYAMLComments
 
 if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
@@ -333,7 +333,7 @@ class TestWorkflow(unittest.TestCase):
         it.next().run()
 
         with open("tests/wf/scatter2_subwf.cwl") as f:
-            subwf = f.read()
+            subwf = StripYAMLComments(f.read())
 
         runner.api.jobs().create.assert_called_with(
             body=JsonDiffMatcher({

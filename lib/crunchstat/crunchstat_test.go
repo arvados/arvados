@@ -56,7 +56,7 @@ func TestReadAllOrWarnSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatalf("got error %s", err)
 	}
-	if matched, err := regexp.MatchString("^package crunchstat\n", string(data)); err != nil || !matched {
+	if matched, err := regexp.MatchString("\npackage crunchstat\n", string(data)); err != nil || !matched {
 		t.Fatalf("data failed regexp: err %v, matched %v", err, matched)
 	}
 }
