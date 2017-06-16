@@ -142,7 +142,7 @@ class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
     def test_subscribers_get_server_lists(self, mock_squeue):
         mock_squeue.return_value = ""
 
-        self.build_monitor([{'items': [1, 2]}], self.MockCalculator())
+        self.build_monitor([{'items': [1, 2]}], self.MockCalculator(), True, True)
         self.monitor.subscribe(self.subscriber).get(self.TIMEOUT)
         self.stop_proxy(self.monitor)
         self.subscriber.assert_called_with([testutil.MockSize(1),
@@ -155,7 +155,8 @@ class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
 """
 
         super(JobQueueMonitorActorTestCase, self).build_monitor(jobqueue.ServerCalculator(
-            [(testutil.MockSize(n), {'cores': n, 'ram': n*1024, 'scratch': n}) for n in range(1, 3)]))
+            [(testutil.MockSize(n), {'cores': n, 'ram': n*1024, 'scratch': n}) for n in range(1, 3)]),
+                                                                True, True)
         self.monitor.subscribe(self.subscriber).get(self.TIMEOUT)
         self.stop_proxy(self.monitor)
         self.subscriber.assert_called_with([testutil.MockSize(1),
@@ -168,7 +169,8 @@ class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
 """
 
         super(JobQueueMonitorActorTestCase, self).build_monitor(jobqueue.ServerCalculator(
-            [(testutil.MockSize(n), {'cores': n, 'ram': n*1024, 'scratch': n}) for n in range(1, 3)]))
+            [(testutil.MockSize(n), {'cores': n, 'ram': n*1024, 'scratch': n}) for n in range(1, 3)]),
+                                                                True, True)
         self.monitor.subscribe(self.subscriber).get(self.TIMEOUT)
         self.stop_proxy(self.monitor)
         self.subscriber.assert_called_with([testutil.MockSize(1),

@@ -14,11 +14,15 @@ from apiclient import errors as apierror
 
 from .baseactor import BaseNodeManagerActor
 
+from libcloud.common.types import LibcloudError
+from libcloud.common.exceptions import BaseHTTPError
+
 # IOError is the base class for socket.error, ssl.SSLError, and friends.
 # It seems like it hits the sweet spot for operations we want to retry:
 # it's low-level, but unlikely to catch code bugs.
 NETWORK_ERRORS = (IOError,)
 ARVADOS_ERRORS = NETWORK_ERRORS + (apierror.Error,)
+CLOUD_ERRORS = NETWORK_ERRORS + (LibcloudError, BaseHTTPError)
 
 actor_class = BaseNodeManagerActor
 
@@ -36,7 +40,10 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
         ConfigParser.SafeConfigParser.__init__(self, *args, **kwargs)
         for sec_name, settings in {
             'Arvados': {'insecure': 'no',
-                        'timeout': '15'},
+                        'timeout': '15',
+                        'jobs_queue': 'yes',
+                        'slurm_queue': 'yes'
+                    },
             'Daemon': {'min_nodes': '0',
                        'max_nodes': '1',
                        'poll_time': '60',
@@ -50,7 +57,7 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
             'Manage': {'address': '127.0.0.1',
                        'port': '-1'},
             'Logging': {'file': '/dev/stderr',
-                        'level': 'WARNING'},
+                        'level': 'WARNING'}
         }.iteritems():
             if not self.has_section(sec_name):
                 self.add_section(sec_name)
@@ -103,12 +110,19 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
     def new_cloud_client(self):
         module = importlib.import_module('arvnodeman.computenode.driver.' +
                                          self.get('Cloud', 'provider'))
+        driver_class = module.ComputeNodeDriver.DEFAULT_DRIVER
+        if self.has_option('Cloud', 'driver_class'):
+            d = self.get('Cloud', 'driver_class').split('.')
+            mod = '.'.join(d[:-1])
+            cls = d[-1]
+            driver_class = importlib.import_module(mod).__dict__[cls]
         auth_kwargs = self.get_section('Cloud Credentials')
         if 'timeout' in auth_kwargs:
             auth_kwargs['timeout'] = int(auth_kwargs['timeout'])
         return module.ComputeNodeDriver(auth_kwargs,
                                         self.get_section('Cloud List'),
-                                        self.get_section('Cloud Create'))
+                                        self.get_section('Cloud Create'),
+                                        driver_class=driver_class)
 
     def node_sizes(self, all_sizes):
         """Finds all acceptable NodeSizes for our installation.

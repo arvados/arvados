@@ -29,9 +29,9 @@ class TimedCallBackActor(actor_class):
 
     def deliver(self):
         if not self.messages:
-            return None
+            return
         til_next = self.messages[0][0] - time.time()
-        if til_next < 0:
+        if til_next <= 0:
             t, receiver, args, kwargs = heapq.heappop(self.messages)
             try:
                 receiver(*args, **kwargs)

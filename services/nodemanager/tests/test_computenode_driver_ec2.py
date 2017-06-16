@@ -96,16 +96,3 @@ class EC2ComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         node = testutil.cloud_node_mock()
         node.name = name
         self.assertEqual(name, ec2.ComputeNodeDriver.node_fqdn(node))
-
-    def test_cloud_exceptions(self):
-        for error in [Exception("test exception"),
-                      IOError("test exception"),
-                      ssl.SSLError("test exception"),
-                      cloud_types.LibcloudError("test exception")]:
-            self.assertTrue(ec2.ComputeNodeDriver.is_cloud_exception(error),
-                            "{} not flagged as cloud exception".format(error))
-
-    def test_noncloud_exceptions(self):
-        self.assertFalse(
-            ec2.ComputeNodeDriver.is_cloud_exception(ValueError("test error")),
-            "ValueError flagged as cloud exception")

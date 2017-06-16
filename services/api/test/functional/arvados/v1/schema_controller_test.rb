@@ -61,4 +61,38 @@ class Arvados::V1::SchemaControllerTest < ActionController::TestCase
       refute_includes(discovery_doc['resources'][r]['methods'].keys(), 'create')
     end
   end
+
+  test "groups contents parameters" do
+    get :index
+    assert_response :success
+
+    discovery_doc = JSON.parse(@response.body)
+
+    group_index_params = discovery_doc['resources']['groups']['methods']['index']['parameters']
+    group_contents_params = discovery_doc['resources']['groups']['methods']['contents']['parameters']
+
+    assert_equal group_contents_params.keys.sort, (group_index_params.keys - ['select'] + ['uuid', 'recursive']).sort
+
+    recursive_param = group_contents_params['recursive']
+    assert_equal 'boolean', recursive_param['type']
+    assert_equal false, recursive_param['required']
+    assert_equal 'query', recursive_param['location']
+  end
+
+  test "collections index parameters" do
+    get :index
+    assert_response :success
+
+    discovery_doc = JSON.parse(@response.body)
+
+    specimens_index_params = discovery_doc['resources']['specimens']['methods']['index']['parameters']  # no changes from super
+    coll_index_params = discovery_doc['resources']['collections']['methods']['index']['parameters']
+
+    assert_equal coll_index_params.keys.sort, (specimens_index_params.keys + ['include_trash']).sort
+
+    include_trash_param = coll_index_params['include_trash']
+    assert_equal 'boolean', include_trash_param['type']
+    assert_equal false, include_trash_param['required']
+    assert_equal 'query', include_trash_param['location']
+  end
 end

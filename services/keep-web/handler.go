@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html"
 	"io"
@@ -65,6 +66,15 @@ func parseCollectionIDFromURL(s string) string {
 func (h *handler) setup() {
 	h.clientPool = arvadosclient.MakeClientPool()
 	keepclient.RefreshServiceDiscoveryOnSIGHUP()
+}
+
+func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
+	status := struct {
+		cacheStats
+	}{
+		cacheStats: h.Config.Cache.Stats(),
+	}
+	json.NewEncoder(w).Encode(status)
 }
 
 // ServeHTTP implements http.Handler.
@@ -151,6 +161,9 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// http://ID.collections.example/PATH...
 		credentialsOK = true
 		targetPath = pathParts
+	} else if r.URL.Path == "/status.json" {
+		h.serveStatus(w, r)
+		return
 	} else if len(pathParts) >= 2 && strings.HasPrefix(pathParts[0], "c=") {
 		// /c=ID/PATH...
 		targetID = parseCollectionIDFromURL(pathParts[0][2:])
@@ -275,11 +288,17 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		targetPath = targetPath[1:]
 	}
 
+	forceReload := false
+	if cc := r.Header.Get("Cache-Control"); strings.Contains(cc, "no-cache") || strings.Contains(cc, "must-revalidate") {
+		forceReload = true
+	}
+
+	var collection map[string]interface{}
 	tokenResult := make(map[string]int)
-	collection := make(map[string]interface{})
 	found := false
 	for _, arv.ApiToken = range tokens {
-		err := arv.Get("collections", targetID, nil, &collection)
+		var err error
+		collection, err = h.Config.Cache.Get(arv, targetID, forceReload)
 		if err == nil {
 			// Success
 			found = true

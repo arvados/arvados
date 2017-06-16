@@ -67,5 +67,25 @@ TrustAllContent:
     Serve non-public content from a single origin. Dangerous: read
     docs before using!
 
+Cache.TTL:
+
+    Maximum time to cache collection data and permission checks.
+
+Cache.MaxCollectionEntries:
+
+    Maximum number of collection cache entries.
+
+Cache.MaxCollectionBytes:
+
+    Approximate memory limit for collection cache.
+
+Cache.MaxPermissionEntries:
+
+    Maximum number of permission cache entries.
+
+Cache.MaxUUIDEntries:
+
+    Maximum number of UUID cache entries.
+
 `, exampleConfigFile)
 }

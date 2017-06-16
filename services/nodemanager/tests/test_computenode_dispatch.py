@@ -28,7 +28,6 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
         self.api_client.nodes().update().execute.side_effect = arvados_effect
         self.cloud_client = mock.MagicMock(name='cloud_client')
         self.cloud_client.create_node.return_value = testutil.cloud_node_mock(1)
-        self.cloud_client.is_cloud_exception = BaseComputeNodeDriver.is_cloud_exception
 
     def make_actor(self, arv_node=None):
         if not hasattr(self, 'timer'):
@@ -90,27 +89,27 @@ class ComputeNodeSetupActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
         self.make_actor()
         self.wait_for_assignment(self.setup_actor, 'cloud_node')
 
-    def test_unknown_basehttperror_not_retried(self):
+    def test_basehttperror_retried(self):
         self.make_mocks()
         self.cloud_client.create_node.side_effect = [
-            BaseHTTPError(400, "Unknown"),
+            BaseHTTPError(500, "Try again"),
             self.cloud_client.create_node.return_value,
             ]
         self.make_actor()
-        finished = threading.Event()
-        self.setup_actor.subscribe(lambda _: finished.set())
-        assert(finished.wait(self.TIMEOUT))
-        self.assertEqual(0, self.cloud_client.post_create_node.call_count)
+        self.wait_for_assignment(self.setup_actor, 'cloud_node')
+        self.assertEqual(1, self.cloud_client.post_create_node.call_count)
 
-    def test_known_basehttperror_retried(self):
+    def test_instance_exceeded_not_retried(self):
         self.make_mocks()
         self.cloud_client.create_node.side_effect = [
             BaseHTTPError(400, "InstanceLimitExceeded"),
             self.cloud_client.create_node.return_value,
             ]
         self.make_actor()
-        self.wait_for_assignment(self.setup_actor, 'cloud_node')
-        self.assertEqual(1, self.cloud_client.post_create_node.call_count)
+        done = self.FUTURE_CLASS()
+        self.setup_actor.subscribe(done.set)
+        done.get(self.TIMEOUT)
+        self.assertEqual(0, self.cloud_client.post_create_node.call_count)
 
     def test_failed_post_create_retried(self):
         self.make_mocks()
@@ -277,7 +276,8 @@ class ComputeNodeUpdateActorTestCase(testutil.ActorTestMixin,
 
     def make_actor(self):
         self.driver = mock.MagicMock(name='driver_mock')
-        self.updater = self.ACTOR_CLASS.start(self.driver).proxy()
+        self.timer = mock.MagicMock(name='timer_mock')
+        self.updater = self.ACTOR_CLASS.start(self.driver, self.timer).proxy()
 
     def test_node_sync(self, *args):
         self.make_actor()

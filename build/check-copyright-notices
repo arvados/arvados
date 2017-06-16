@@ -1,0 +1,201 @@
+#!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+set -e
+
+fix=false
+while [[ "${@}" != "" ]]
+do
+    arg=${1}
+    shift
+    case ${arg} in
+        --help)
+            cat <<EOF
+Usage: $0 [--fix] [-- git-ls-args...]
+
+Options:
+
+--fix   Insert missing copyright notices where possible.
+
+Git arguments:
+
+Arguments after "--" are passed to \`git ls-files\`; this can be used to
+restrict the set of files to check.
+
+EOF
+            exit 2
+            ;;
+        --fix)
+            fix=true
+            ;;
+        --)
+            break
+            ;;
+        *)
+            echo >&2 "Unrecognized argument '${arg}'. Try $0 --help"
+            exit 2
+            ;;
+    esac
+done
+
+fixer() {
+    want="${want}" perl -pi~ -e 'if ($. == 1) { s{^(\#\!.*\n)?}{${1}$ENV{want}\n\n} }' "${1}"
+}
+
+IFS=$'\n' read -a ignores -r -d $'\000' <.licenseignore || true
+result=0
+git ls-files -z ${@} | \
+    while read -rd $'\000' fnm
+    do
+        grepAfter=2
+        grepBefore=0
+        cs=
+        cc=
+        ce=
+        fixer=
+        if [[ ! -f ${fnm} ]] || [[ -L ${fnm} ]] || [[ ! -s ${fnm} ]]
+        then
+            continue
+        fi
+
+        ignore=
+        for pattern in "${ignores[@]}"
+        do
+            if [[ ${fnm} == ${pattern} ]]
+            then
+                ignore=1
+            fi
+        done
+        if [[ ${ignore} = 1 ]]; then continue; fi
+
+        case ${fnm} in
+            Makefile | */Makefile \
+                | *.dockerfile | */Dockerfile.* | */Dockerfile | *.dockerignore \
+                | */MANIFEST.in | */fuse.conf | */gitolite.rc \
+                | *.pl | *.pm | *.PL \
+                | *.rb | *.rb.example | *.rake | *.ru \
+                | *.gemspec | */Gemfile | */Rakefile \
+                | services/login-sync/bin/* \
+                | sdk/cli/bin/* \
+                | *.py \
+                | sdk/python/bin/arv-* \
+                | sdk/cwl/bin/* \
+                | services/nodemanager/bin/* \
+                | services/fuse/bin/* \
+                | tools/crunchstat-summary/bin/* \
+                | crunch_scripts/* \
+                | *.yaml | *.yml | *.yml.example | *.cwl \
+                | *.sh | *.service \
+                | */run | */run-service | */restart-dns-server \
+                | */nodemanager/doc/*.cfg \
+                | */nginx.conf \
+                | build/build.list)
+                fixer=fixer
+                cc="#"
+                ;;
+            *.md)
+                fixer=fixer
+                cc="[//]: #"
+                ;;
+            *.rst)
+                fixer=fixer
+                cc=".."
+                ;;
+            *.erb)
+                fixer=fixer
+                cs="<%#"
+                cc=""
+                ce=" %>"
+                ;;
+            *.liquid)
+                fixer=fixer
+                cs=$'{% comment %}\n'
+                cc=
+                ce=$'\n%{% endcomment %}'
+                grepAfter=3
+                grepBefore=1
+                ;;
+            *.textile)
+                fixer=fixer
+                cs="###."
+                cc="...."
+                ce=
+                ;;
+            *.css)
+                fixer=fixer
+                cs="/*"
+                cc=""
+                ce=" */"
+                ;;
+            *.go | *.scss | *.java | *.js | *.coffee)
+                fixer=fixer
+                cc="//"
+                ;;
+            *.sql)
+                fixer=fixer
+                cc="--"
+                ;;
+            *.html | *.svg)
+                fixer=fixer
+                cs="<!-- "
+                cc=
+                ce=" -->"
+                ;;
+            *)
+                cc="#"
+                hashbang=$(head -n1 ${fnm})
+                if [[ ${hashbang} = "#!/bin/sh" ]] ||  [[ ${hashbang} = "#!/bin/bash" ]]
+                then
+                    fixer=fixer
+                fi
+                ;;
+        esac
+        wantGPL="${cs:-${cc}} Copyright (C) The Arvados Authors. All rights reserved.
+${cc}
+${cc}${cc:+ }SPDX-License-Identifier: AGPL-3.0${ce}"
+        wantApache="${cs:-${cc}} Copyright (C) The Arvados Authors. All rights reserved.
+${cc}
+${cc}${cc:+ }SPDX-License-Identifier: Apache-2.0${ce}"
+        wantBYSA="${cs:-${cc}} Copyright (C) The Arvados Authors. All rights reserved.
+${cc}
+${cc}${cc:+ }SPDX-License-Identifier: CC-BY-SA-3.0${ce}"
+        found=$(head "$fnm" | egrep -A${grepAfter} -B${grepBefore} 'Copyright.*Arvados' || true)
+        case ${fnm} in
+            Makefile | build/* | lib/* | tools/* | apps/* | services/*)
+                want=${wantGPL}
+                ;;
+            crunch_scripts/* | backports/* | docker/* | sdk/*)
+                want=${wantApache}
+                ;;
+            README.md | doc/*)
+                want=${wantBYSA}
+                ;;
+            *)
+                want=
+                ;;
+        esac
+        case "$found" in
+            "$wantGPL")
+                ;;
+            "$wantApache")
+                ;;
+            "$wantBYSA")
+                ;;
+            "")
+                if [[ -z ${found} ]] && [[ -n ${want} ]] && [[ $fix = true ]] && [[ $fixer != "" ]]
+                then
+                    ${fixer} ${fnm}
+                else
+                    echo "missing copyright notice: $fnm"
+                    result=1
+                fi
+                ;;
+            *)
+                echo "nonstandard copyright notice: $fnm '${found}'"
+                result=1
+                ;;
+        esac
+    done
+exit $result

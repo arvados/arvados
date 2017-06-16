@@ -1042,4 +1042,27 @@ EOS
     }
     assert_response 422
   end
+
+  [:active, :admin].each do |user|
+    test "get trashed collections as #{user}" do
+      authorize_with user
+      get :index, {
+        filters: [["is_trashed", "=", true]],
+        include_trash: true,
+      }
+      assert_response :success
+
+      items = []
+      json_response["items"].each do |coll|
+        items << coll['uuid']
+      end
+
+      assert_includes(items, collections('unique_expired_collection')['uuid'])
+      if user == :admin
+        assert_includes(items, collections('unique_expired_collection2')['uuid'])
+      else
+        assert_not_includes(items, collections('unique_expired_collection2')['uuid'])
+      end
+    end
+  end
 end
