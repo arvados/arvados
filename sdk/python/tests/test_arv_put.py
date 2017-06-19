@@ -791,7 +791,8 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         datadir = self.make_tmpdir()
         with open(os.path.join(datadir, "foo"), "w") as f:
             f.write("The quick brown fox jumped over the lazy dog")
-        p = subprocess.Popen([sys.executable, arv_put.__file__, datadir],
+        p = subprocess.Popen([sys.executable, arv_put.__file__,
+                              os.path.join(datadir, 'foo')],
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
                              env=self.ENVIRON)
@@ -838,7 +839,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         self.assertEqual(col['uuid'], updated_col['uuid'])
         # Get the manifest and check that the new file is being included
         c = arv_put.api_client.collections().get(uuid=updated_col['uuid']).execute()
-        self.assertRegex(c['manifest_text'], r'^\. .*:44:file2\n')
+        self.assertRegex(c['manifest_text'], r'^\..* .*:44:file2\n')
 
     def test_put_collection_with_high_redundancy(self):
         # Write empty data: we're not testing CollectionWriter, just

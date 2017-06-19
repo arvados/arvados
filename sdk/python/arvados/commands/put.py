@@ -439,8 +439,11 @@ class ArvPutUploadJob(object):
                     # Use absolute paths on cache index so CWD doesn't interfere
                     # with the caching logic.
                     prefixdir = path = os.path.abspath(path)
-                    if prefixdir != '/':
-                        prefixdir += '/'
+
+                    if prefixdir[-1:] == '/':
+                        prefixdir = prefixdir[:-1]
+                    prefixdir = os.path.dirname(prefixdir) + '/'
+
                     for root, dirs, files in os.walk(path, followlinks=self.follow_links):
                         # Make os.walk()'s dir traversing order deterministic
                         dirs.sort()
