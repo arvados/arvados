@@ -102,7 +102,6 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 	var pdh string
 	if arvadosclient.PDHMatch(targetID) {
 		pdh = targetID
-	} else if forceReload {
 	} else if ent, cached := c.pdhs.Get(targetID); cached {
 		ent := ent.(*cachedPDH)
 		if ent.expire.Before(time.Now()) {

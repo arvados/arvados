@@ -5,8 +5,11 @@ from __future__ import absolute_import, print_function
 import functools
 import logging
 import time
+import re
 
 import libcloud.common.types as cloud_types
+from libcloud.common.exceptions import BaseHTTPError
+
 import pykka
 
 from .. import \
@@ -15,6 +18,8 @@ from .. import \
 from ...clientactor import _notify_subscribers
 from ... import config
 from .transitions import transitions
+
+QuotaExceeded = "QuotaExceeded"
 
 class ComputeNodeStateChangeBase(config.actor_class, RetryMixin):
     """Base class for actors that change a compute node's state.
@@ -96,6 +101,7 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
         self.cloud_size = cloud_size
         self.arvados_node = None
         self.cloud_node = None
+        self.error = None
         if arvados_node is None:
             self._later.create_arvados_node()
         else:
@@ -119,11 +125,31 @@ class ComputeNodeSetupActor(ComputeNodeStateChangeBase):
     def create_cloud_node(self):
         self._logger.info("Sending create_node request for node size %s.",
                           self.cloud_size.name)
-        self.cloud_node = self._cloud.create_node(self.cloud_size,
-                                                  self.arvados_node)
+        try:
+            self.cloud_node = self._cloud.create_node(self.cloud_size,
+                                                      self.arvados_node)
+        except BaseHTTPError as e:
+            if e.code == 429 or "RequestLimitExceeded" in e.message:
+                # Don't consider API rate limits to be quota errors.
+                # re-raise so the Retry logic applies.
+                raise
+
+            # The set of possible error codes / messages isn't documented for
+            # all clouds, so use a keyword heuristic to determine if the
+            # failure is likely due to a quota.
+            if re.search(r'(exceed|quota|limit)', e.message, re.I):
+                self.error = QuotaExceeded
+                self._logger.warning("Quota exceeded: %s", e)
+                self._finished()
+                return
+            else:
+                # Something else happened, re-raise so the Retry logic applies.
+                raise
+        except Exception as e:
+            raise
 
         # The information included in the node size object we get from libcloud
-        # is inconsistent between cloud providers.  Replace libcloud NodeSize
+        # is inconsistent between cloud drivers.  Replace libcloud NodeSize
         # object with compatible CloudSizeWrapper object which merges the size
         # info reported from the cloud with size information from the
         # configuration file.
@@ -256,7 +282,7 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         self._finished(success_flag=True)
 
 
-class ComputeNodeUpdateActor(config.actor_class):
+class ComputeNodeUpdateActor(config.actor_class, RetryMixin):
     """Actor to dispatch one-off cloud management requests.
 
     This actor receives requests for small cloud updates, and
@@ -265,12 +291,12 @@ class ComputeNodeUpdateActor(config.actor_class):
     dedicated actor for this gives us the opportunity to control the
     flow of requests; e.g., by backing off when errors occur.
     """
-    def __init__(self, cloud_factory, max_retry_wait=180):
+    def __init__(self, cloud_factory, timer_actor, max_retry_wait=180):
         super(ComputeNodeUpdateActor, self).__init__()
+        RetryMixin.__init__(self, 1, max_retry_wait,
+                            None, cloud_factory(), timer_actor)
         self._cloud = cloud_factory()
-        self.max_retry_wait = max_retry_wait
-        self.error_streak = 0
-        self.next_request_time = time.time()
+        self._later = self.actor_ref.tell_proxy()
 
     def _set_logger(self):
         self._logger = logging.getLogger("%s.%s" % (self.__class__.__name__, self.actor_urn[33:]))
@@ -278,28 +304,7 @@ class ComputeNodeUpdateActor(config.actor_class):
     def on_start(self):
         self._set_logger()
 
-    def _throttle_errors(orig_func):
-        @functools.wraps(orig_func)
-        def throttle_wrapper(self, *args, **kwargs):
-            throttle_time = self.next_request_time - time.time()
-            if throttle_time > 0:
-                time.sleep(throttle_time)
-            self.next_request_time = time.time()
-            try:
-                result = orig_func(self, *args, **kwargs)
-            except Exception as error:
-                if self._cloud.is_cloud_exception(error):
-                    self.error_streak += 1
-                    self.next_request_time += min(2 ** self.error_streak,
-                                                  self.max_retry_wait)
-                self._logger.warn(
-                    "Unhandled exception: %s", error, exc_info=error)
-            else:
-                self.error_streak = 0
-                return result
-        return throttle_wrapper
-
-    @_throttle_errors
+    @RetryMixin._retry()
     def sync_node(self, cloud_node, arvados_node):
         return self._cloud.sync_node(cloud_node, arvados_node)
 

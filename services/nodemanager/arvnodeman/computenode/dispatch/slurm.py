@@ -39,7 +39,7 @@ class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
             self._logger.info("Draining SLURM node %s", self._nodename)
             self._later.issue_slurm_drain()
 
-    @RetryMixin._retry((subprocess.CalledProcessError,))
+    @RetryMixin._retry((subprocess.CalledProcessError, OSError))
     def cancel_shutdown(self, reason, try_resume=True):
         if self._nodename:
             if try_resume and self._get_slurm_state(self._nodename) in self.SLURM_DRAIN_STATES:
@@ -51,7 +51,7 @@ class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
                 pass
         return super(ComputeNodeShutdownActor, self).cancel_shutdown(reason)
 
-    @RetryMixin._retry((subprocess.CalledProcessError,))
+    @RetryMixin._retry((subprocess.CalledProcessError, OSError))
     def issue_slurm_drain(self):
         if self.cancel_reason is not None:
             return
@@ -62,7 +62,7 @@ class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
         else:
             self._later.shutdown_node()
 
-    @RetryMixin._retry((subprocess.CalledProcessError,))
+    @RetryMixin._retry((subprocess.CalledProcessError, OSError))
     def await_slurm_drain(self):
         if self.cancel_reason is not None:
             return

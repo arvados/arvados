@@ -97,8 +97,8 @@ func (s *UnitSuite) TestCacheForceReloadByUUID(c *check.C) {
 	}
 
 	c.Check(cache.Stats().Requests, check.Equals, uint64(4))
-	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(1))
+	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(3))
 	c.Check(cache.Stats().PermissionHits, check.Equals, uint64(1))
-	c.Check(cache.Stats().PDHHits, check.Equals, uint64(1))
+	c.Check(cache.Stats().PDHHits, check.Equals, uint64(3))
 	c.Check(cache.Stats().APICalls, check.Equals, uint64(3))
 }

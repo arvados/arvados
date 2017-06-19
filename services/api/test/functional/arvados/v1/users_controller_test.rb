@@ -660,6 +660,24 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert (setup_email.body.to_s.include? "#{Rails.configuration.workbench_address}users/#{created['uuid']}/virtual_machines"), 'Expected virtual machines url in email body'
   end
 
+  test "setup inactive user by changing is_active to true" do
+    authorize_with :admin
+    active_user = users(:active)
+
+    # invoke setup with a repository
+    put :update, {
+          id: active_user['uuid'],
+          user: {
+            is_active: true,
+          }
+        }
+    assert_response :success
+    assert_equal active_user['uuid'], json_response['uuid']
+    updated = User.where(uuid: active_user['uuid']).first
+    assert_equal(true, updated.is_active)
+    assert_equal({read: true}, updated.group_permissions[all_users_group_uuid])
+  end
+
   test "non-admin user can get basic information about readable users" do
     authorize_with :spectator
     get(:index)

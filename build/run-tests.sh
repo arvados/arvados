@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. `dirname "$(readlink -f "$0")"`/libcloud-pin
+. `dirname "$(readlink -f "$0")"`/libcloud-pin.sh
 
 COLUMNS=80
 . `dirname "$(readlink -f "$0")"`/run-library.sh
@@ -78,6 +78,7 @@ services/keepstore
 services/keep-balance
 services/login-sync
 services/nodemanager
+services/nodemanager-integration
 services/crunch-run
 services/crunch-dispatch-local
 services/crunch-dispatch-slurm
@@ -853,6 +854,12 @@ test_login-sync() {
         && bundle exec rake test TESTOPTS=-v ${testargs[services/login-sync]}
 }
 do_test services/login-sync login-sync
+
+test_nodemanager-integration() {
+    cd "$WORKSPACE/services/nodemanager" \
+        && tests/integration_test.py ${testargs[services/nodemanager-integration]}
+}
+do_test services/nodemanager-integration nodemanager-integration
 
 for p in "${pythonstuff[@]}"
 do
