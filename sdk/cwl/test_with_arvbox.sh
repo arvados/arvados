@@ -74,9 +74,13 @@ export ARVADOS_API_HOST=localhost:8000
 export ARVADOS_API_HOST_INSECURE=1
 export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados/superuser_token)
 
-arv-keepdocker --pull arvados/jobs $tag
-if test "$tag" != "latest" ; then
-  docker tag arvados/jobs:$tag arvados/jobs:latest
+
+if test "$tag" = "latest" ; then
+  arv-keepdocker --pull arvados/jobs $tag
+else
+  jobsimg=$(curl http://versions.arvados.org/v1/commit/$tag | python -c "import json; import sys; sys.stdout.write(json.load(sys.stdin)['Versions']['Docker']['arvados/jobs'])")
+  arv-keepdocker --pull arvados/jobs $jobsimg
+  docker tag -f arvados/jobs:$jobsimg arvados/jobs:latest
   arv-keepdocker arvados/jobs latest
 fi
 
