@@ -3,39 +3,43 @@ from cwltool.errors import WorkflowException
 from collections import deque
 
 def done(self, record, tmpdir, outdir, keepdir):
-    colname = "Output %s of %s" % (record["output"][0:7], self.name)
+    cols = [
+        ("output", "Output %s of %s" % (record["output"][0:7], self.name), record["output"]),
+        ("log", "Log of %s" % (record["uuid"]), record["log"])
+    ]
 
-    # check if collection already exists with same owner, name and content
-    collection_exists = self.arvrunner.api.collections().list(
-        filters=[["owner_uuid", "=", self.arvrunner.project_uuid],
-                 ['portable_data_hash', '=', record["output"]],
-                 ["name", "=", colname]]
-    ).execute(num_retries=self.arvrunner.num_retries)
-
-    if not collection_exists["items"]:
-        # Create a collection located in the same project as the
-        # pipeline with the contents of the output.
-        # First, get output record.
-        collections = self.arvrunner.api.collections().list(
-            limit=1,
-            filters=[['portable_data_hash', '=', record["output"]]],
-            select=["manifest_text"]
+    for coltype, colname, colpdh in cols:
+        # check if collection already exists with same owner, name and content
+        collection_exists = self.arvrunner.api.collections().list(
+            filters=[["owner_uuid", "=", self.arvrunner.project_uuid],
+                     ['portable_data_hash', '=', colpdh],
+                     ["name", "=", colname]]
         ).execute(num_retries=self.arvrunner.num_retries)
 
-        if not collections["items"]:
-            raise WorkflowException(
-                "[job %s] output '%s' cannot be found on API server" % (
-                    self.name, record["output"]))
+        if not collection_exists["items"]:
+            # Create a collection located in the same project as the
+            # pipeline with the contents of the output/log.
+            # First, get output/log record.
+            collections = self.arvrunner.api.collections().list(
+                limit=1,
+                filters=[['portable_data_hash', '=', colpdh]],
+                select=["manifest_text"]
+            ).execute(num_retries=self.arvrunner.num_retries)
 
-        # Create new collection in the parent project
-        # with the output contents.
-        self.arvrunner.api.collections().create(body={
-            "owner_uuid": self.arvrunner.project_uuid,
-            "name": colname,
-            "portable_data_hash": record["output"],
-            "manifest_text": collections["items"][0]["manifest_text"]
-        }, ensure_unique_name=True).execute(
-            num_retries=self.arvrunner.num_retries)
+            if not collections["items"]:
+                raise WorkflowException(
+                    "[job %s] %s '%s' cannot be found on API server" % (
+                        self.name, coltype, colpdh))
+
+            # Create new collection in the parent project
+            # with the output/log contents.
+            self.arvrunner.api.collections().create(body={
+                "owner_uuid": self.arvrunner.project_uuid,
+                "name": colname,
+                "portable_data_hash": colpdh,
+                "manifest_text": collections["items"][0]["manifest_text"]
+            }, ensure_unique_name=True).execute(
+                num_retries=self.arvrunner.num_retries)
 
     return done_outputs(self, record, tmpdir, outdir, keepdir)
 

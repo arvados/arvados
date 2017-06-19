@@ -113,16 +113,12 @@ class Arvados::V1::UsersController < ApplicationController
       full_repo_name = "#{@object.username}/#{params[:repo_name]}"
     end
 
-    if object_found
-      @response = @object.setup_repo_vm_links full_repo_name,
-                    params[:vm_uuid], params[:openid_prefix]
-    else
-      @response = User.setup @object, params[:openid_prefix],
-                    full_repo_name, params[:vm_uuid]
-    end
+    @response = @object.setup(repo_name: full_repo_name,
+                              vm_uuid: params[:vm_uuid],
+                              openid_prefix: params[:openid_prefix])
 
     # setup succeeded. send email to user
-    if params[:send_notification_email] == true || params[:send_notification_email] == 'true'
+    if params[:send_notification_email]
       UserNotifier.account_is_setup(@object).deliver_now
     end
 
