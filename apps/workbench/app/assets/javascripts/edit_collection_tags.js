@@ -3,6 +3,7 @@
 $(document).
     on('click', '.collection-tag-save, .collection-tag-cancel', function(event) {
         $('.edit-collection-tags').removeClass('disabled');
+        $('#edit-collection-tags').attr("title", "Edit tags");
         $('.collection-tag-add').addClass('hide');
         $('.collection-tag-remove').addClass('hide');
         $('.collection-tag-save').addClass('hide');
@@ -11,6 +12,7 @@ $(document).
     }).
     on('click', '.edit-collection-tags', function(event) {
         $('.edit-collection-tags').addClass('disabled');
+        $('#edit-collection-tags').attr("title", "");
         $('.collection-tag-add').removeClass('hide');
         $('.collection-tag-remove').removeClass('hide');
         $('.collection-tag-save').removeClass('hide');
@@ -36,6 +38,11 @@ $(document).
         $('.collection-tags-status').append('<div class="collection-tags-status-label alert alert-success"><p class="contain-align-left">Saved successfully.</p></div>');
       }).fail(function(jqxhr, status, error) {
         $('.collection-tags-status').append('<div class="collection-tags-status-label alert alert-danger"><p class="contain-align-left">We are sorry. There was an error saving tags. Please try again.</p></div>');
+      });
+    }).
+    on('click', '.collection-tag-cancel', function(e){
+      $.ajax($(location).attr('pathname')+'/tags', {
+          type: 'POST'
       });
     });
 

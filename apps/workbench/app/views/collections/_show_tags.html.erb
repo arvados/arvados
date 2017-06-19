@@ -34,10 +34,12 @@
           <button class="btn btn-primary btn-sm collection-tag-add hide"><i class="glyphicon glyphicon-plus"></i> Add new tag </button>
         </div>
         <div class="pull-right">
-          <%= link_to(save_tags_collection_path, {class: 'btn btn-primary collection-tag-save hide', :remote => true, method: 'post', return_to: request.url}) do %>
+          <%= link_to(save_tags_collection_path, {class: 'btn btn-sm btn-primary collection-tag-save hide', :remote => true, method: 'post', return_to: request.url}) do %>
             Save
           <% end %>
-          <button type="button" class="btn btn-sm btn-primary collection-tag-cancel hide">Cancel</button>
+          <%= link_to(tags_collection_path, {class: 'btn btn-sm btn-primary collection-tag-cancel hide', :remote => true, method: 'post', return_to: request.url}) do %>
+            Cancel
+          <% end %>
         </div>
 
         <div><div class="collection-tags-status"/></div></div>

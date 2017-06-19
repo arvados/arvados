@@ -345,12 +345,19 @@ class CollectionsController < ApplicationController
     end
   end
 
+  def tags
+    render
+  end
+
   def save_tags
-    props = @object.properties
-    props[:tags] = params['tag_data']
-    if @object.update_attributes properties: props
-    else
-      self.render_error status: 422
+    if params['tag_data']
+      props = @object.properties
+      props[:tags] = params['tag_data']
+
+      if @object.update_attributes properties: props
+      else
+        self.render_error status: 422
+      end
     end
   end
 
