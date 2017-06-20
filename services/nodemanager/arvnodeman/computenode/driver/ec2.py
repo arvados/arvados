@@ -70,13 +70,18 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         kw = {'name': self.create_cloud_name(arvados_node),
                 'ex_userdata': self._make_ping_url(arvados_node)}
         # libcloud/ec2 disk sizes are in GB, Arvados/SLURM "scratch" value is in MB
-        scratch = size.scratch / 1000
+        scratch = int(size.scratch / 1000) + 1
         if scratch > size.disk:
+            volsize = scratch - size.disk
+            if volsize < 1:
+                volsize = 1
+            if volsize > 16384:
+                volsize = 16384
             kw["ex_blockdevicemappings"] = [{
                 "DeviceName": "/dev/xvdt",
                 "Ebs": {
                     "DeleteOnTermination": True,
-                    "VolumeSize": scratch - size.disk,
+                    "VolumeSize": volsize,
                     "VolumeType": "gp2"
                 }}]
         return kw
