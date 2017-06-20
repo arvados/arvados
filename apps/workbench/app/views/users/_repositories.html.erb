@@ -19,10 +19,6 @@
     <p>
       In order to clone git repositories using SSH, <%= link_to ssh_keys_user_path(current_user) do%> add an SSH key to your account<%end%> and clone the git@ URLs.
     </p>
-    <p>
-      For more information see <%= link_to raw('Writing a pipeline'),
-      "#{Rails.configuration.arvados_docsite}/user/tutorials/tutorial-firstscript.html", target: "_blank"%>.
-    </p>
 
     <% if !@my_repositories.any? %>
       You do not seem to have access to any repositories. If you would like to request access, please contact your system admin.
@@ -57,7 +53,7 @@
               </td>
               <td>
                 <% if repo.editable? %>
-                    <%= link_to(repository_path(id: repo.uuid), method: :delete, class: 'btn btn-sm', data: {confirm: "Really delete repositories?"}) do %>
+                    <%= link_to(repository_path(id: repo.uuid), method: :delete, class: 'btn btn-sm', data: {confirm: "Really delete '#{repo.name || repo.uuid}'?"}) do %>
                         <i class="fa fa-fw fa-trash-o"></i>
                     <% end %>
                 <% end %>

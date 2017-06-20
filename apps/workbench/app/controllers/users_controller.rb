@@ -258,7 +258,7 @@ class UsersController < ApplicationController
 
   def repositories
     # all repositories accessible by current user
-    all_repositories = Hash[Repository.all.order(:name).collect {|repo| [repo.uuid, repo]}]
+    all_repositories = Hash[Repository.all.order('name asc').collect {|repo| [repo.uuid, repo]}]
 
     @my_repositories = [] # we want them ordered as owned and the rest
     @repo_writable = {}
