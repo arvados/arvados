@@ -79,7 +79,8 @@ class MockSize(object):
         self.id = 'z{}.test'.format(factor)
         self.name = self.id
         self.ram = 128 * factor
-        self.disk = 100 * factor
+        self.disk = factor   # GB
+        self.scratch = 1000 * factor # MB
         self.bandwidth = 16 * factor
         self.price = float(factor)
         self.extra = {}

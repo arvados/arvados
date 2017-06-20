@@ -39,7 +39,9 @@ upload_opts.add_argument('--version', action='version',
                          help='Print version and exit.')
 upload_opts.add_argument('paths', metavar='path', type=str, nargs='*',
                          help="""
-Local file or directory. Default: read from standard input.
+Local file or directory. If path is a directory reference with a trailing
+slash, then just upload the directory's contents; otherwise upload the
+directory itself. Default: read from standard input.
 """)
 
 _group = upload_opts.add_mutually_exclusive_group()
@@ -438,9 +440,17 @@ class ArvPutUploadJob(object):
                 elif os.path.isdir(path):
                     # Use absolute paths on cache index so CWD doesn't interfere
                     # with the caching logic.
-                    prefixdir = path = os.path.abspath(path)
-                    if prefixdir != '/':
-                        prefixdir += '/'
+                    orig_path = path
+                    path = os.path.abspath(path)
+                    if orig_path[-1:] == os.sep:
+                        # When passing a directory reference with a trailing slash,
+                        # its contents should be uploaded directly to the collection's root.
+                        prefixdir = path
+                    else:
+                        # When passing a directory reference with no trailing slash,
+                        # upload the directory to the collection's root.
+                        prefixdir = os.path.dirname(path)
+                    prefixdir += os.sep
                     for root, dirs, files in os.walk(path, followlinks=self.follow_links):
                         # Make os.walk()'s dir traversing order deterministic
                         dirs.sort()

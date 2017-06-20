@@ -128,9 +128,8 @@ class NodeTest < ActiveSupport::TestCase
   test "ping two nodes one with no hostname and one with hostname and check hostnames" do
     # ping node with no hostname and expect it set with config format
     node = ping_node(:new_with_no_hostname, {})
-    slot_number = node.slot_number
     refute_nil node.slot_number
-    assert_equal "compute#{slot_number}", node.hostname
+    assert_equal "compute#{node.slot_number}", node.hostname
 
     # ping node with a hostname and expect it to be unchanged
     node2 = ping_node(:new_with_custom_hostname, {})
@@ -189,6 +188,24 @@ class NodeTest < ActiveSupport::TestCase
       n2.reload
       assert_nil n2.ip_address
       assert_equal '10.5.5.5', n1.ip_address
+    end
+  end
+
+  test 'run out of slots' do
+    Rails.configuration.max_compute_nodes = 3
+    act_as_system_user do
+      Node.destroy_all
+      (1..4).each do |i|
+        n = Node.create!
+        args = { ip: "10.0.0.#{i}", ping_secret: n.info['ping_secret'] }
+        if i <= Rails.configuration.max_compute_nodes
+          n.ping(args)
+        else
+          assert_raises do
+            n.ping(args)
+          end
+        end
+      end
     end
   end
 end

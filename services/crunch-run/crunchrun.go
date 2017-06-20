@@ -49,7 +49,7 @@ var ErrCancelled = errors.New("Cancelled")
 // IKeepClient is the minimal Keep API methods used by crunch-run.
 type IKeepClient interface {
 	PutHB(hash string, buf []byte) (string, int, error)
-	ManifestFileReader(m manifest.Manifest, filename string) (keepclient.Reader, error)
+	ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error)
 }
 
 // NewLogWriter is a factory function to create a new log writer.
@@ -676,7 +676,7 @@ func (runner *ContainerRunner) AttachStreams() (err error) {
 	runner.CrunchLog.Print("Attaching container streams")
 
 	// If stdin mount is provided, attach it to the docker container
-	var stdinRdr keepclient.Reader
+	var stdinRdr arvados.File
 	var stdinJson []byte
 	if stdinMnt, ok := runner.Container.Mounts["stdin"]; ok {
 		if stdinMnt.Kind == "collection" {

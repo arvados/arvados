@@ -57,8 +57,15 @@ class UsersTest < ActionDispatch::IntegrationTest
         email: "foo@example.com"
       }
     }, auth(:admin)
+    assert_response 422         # cannot create another user with same UUID
 
-    assert_response :success
+    # invoke setup on the same user
+    post "/arvados/v1/users/setup", {
+      repo_name: repo_name,
+      vm_uuid: virtual_machines(:testvm).uuid,
+      openid_prefix: 'https://www.google.com/accounts/o8/id',
+      uuid: 'zzzzz-tpzed-abcdefghijklmno',
+    }, auth(:admin)
 
     response_items = json_response['items']
 
