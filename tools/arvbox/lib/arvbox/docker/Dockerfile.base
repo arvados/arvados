@@ -17,7 +17,7 @@ RUN apt-get update && \
     libgnutls28-dev python3-dev && \
     apt-get clean
 
-ENV GOVERSION 1.7.5
+ENV GOVERSION 1.8.3
 
 # Install golang binary
 RUN curl -f http://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | \

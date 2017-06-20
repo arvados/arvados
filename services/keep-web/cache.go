@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -42,7 +41,7 @@ type cachedPDH struct {
 
 type cachedCollection struct {
 	expire     time.Time
-	collection map[string]interface{}
+	collection *arvados.Collection
 }
 
 type cachedPermission struct {
@@ -82,7 +81,7 @@ func (c *cache) Stats() cacheStats {
 	}
 }
 
-func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceReload bool) (map[string]interface{}, error) {
+func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceReload bool) (*arvados.Collection, error) {
 	c.setupOnce.Do(c.setup)
 
 	atomic.AddUint64(&c.stats.Requests, 1)
@@ -113,7 +112,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		}
 	}
 
-	var collection map[string]interface{}
+	var collection *arvados.Collection
 	if pdh != "" {
 		collection = c.lookupCollection(pdh)
 	}
@@ -126,14 +125,12 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		// _and_ the current token has permission, we can
 		// use our cached manifest.
 		atomic.AddUint64(&c.stats.APICalls, 1)
-		var current map[string]interface{}
+		var current arvados.Collection
 		err := arv.Get("collections", targetID, selectPDH, &current)
 		if err != nil {
 			return nil, err
 		}
-		if checkPDH, ok := current["portable_data_hash"].(string); !ok {
-			return nil, fmt.Errorf("API response for %q had no PDH", targetID)
-		} else if checkPDH == pdh {
+		if current.PortableDataHash == pdh {
 			exp := time.Now().Add(time.Duration(c.TTL))
 			c.permissions.Add(permKey, &cachedPermission{
 				expire: exp,
@@ -149,7 +146,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 			// PDH changed, but now we know we have
 			// permission -- and maybe we already have the
 			// new PDH in the cache.
-			if coll := c.lookupCollection(checkPDH); coll != nil {
+			if coll := c.lookupCollection(current.PortableDataHash); coll != nil {
 				return coll, nil
 			}
 		}
@@ -161,23 +158,19 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 	if err != nil {
 		return nil, err
 	}
-	pdh, ok := collection["portable_data_hash"].(string)
-	if !ok {
-		return nil, fmt.Errorf("API response for %q had no PDH", targetID)
-	}
 	exp := time.Now().Add(time.Duration(c.TTL))
 	c.permissions.Add(permKey, &cachedPermission{
 		expire: exp,
 	})
 	c.pdhs.Add(targetID, &cachedPDH{
 		expire: exp,
-		pdh:    pdh,
+		pdh:    collection.PortableDataHash,
 	})
-	c.collections.Add(pdh, &cachedCollection{
+	c.collections.Add(collection.PortableDataHash, &cachedCollection{
 		expire:     exp,
 		collection: collection,
 	})
-	if int64(len(collection["manifest_text"].(string))) > c.MaxCollectionBytes/int64(c.MaxCollectionEntries) {
+	if int64(len(collection.ManifestText)) > c.MaxCollectionBytes/int64(c.MaxCollectionEntries) {
 		go c.pruneCollections()
 	}
 	return collection, nil
@@ -202,7 +195,7 @@ func (c *cache) pruneCollections() {
 			continue
 		}
 		ent := v.(*cachedCollection)
-		n := len(ent.collection["manifest_text"].(string))
+		n := len(ent.collection.ManifestText)
 		size += int64(n)
 		entsize[i] = n
 		expired[i] = ent.expire.Before(now)
@@ -235,12 +228,12 @@ func (c *cache) collectionBytes() uint64 {
 		if !ok {
 			continue
 		}
-		size += uint64(len(v.(*cachedCollection).collection["manifest_text"].(string)))
+		size += uint64(len(v.(*cachedCollection).collection.ManifestText))
 	}
 	return size
 }
 
-func (c *cache) lookupCollection(pdh string) map[string]interface{} {
+func (c *cache) lookupCollection(pdh string) *arvados.Collection {
 	if pdh == "" {
 		return nil
 	} else if ent, cached := c.collections.Get(pdh); !cached {

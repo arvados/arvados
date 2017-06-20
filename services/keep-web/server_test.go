@@ -77,7 +77,9 @@ func (s *IntegrationSuite) Test404(c *check.C) {
 	} {
 		hdr, body, _ := s.runCurl(c, arvadostest.ActiveToken, "collections.example.com", uri)
 		c.Check(hdr, check.Matches, "(?s)HTTP/1.1 404 Not Found\r\n.*")
-		c.Check(body, check.Equals, "")
+		if len(body) > 0 {
+			c.Check(body, check.Equals, "404 page not found\n")
+		}
 	}
 }
 
