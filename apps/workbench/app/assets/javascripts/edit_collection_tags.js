@@ -48,7 +48,7 @@ $(document).
     }).
     on('click', '.collection-tag-cancel', function(e){
       $.ajax($(location).attr('pathname')+'/tags', {
-          type: 'POST'
+          type: 'GET'
       });
     });
 
