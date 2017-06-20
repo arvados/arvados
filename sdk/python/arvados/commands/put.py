@@ -386,7 +386,7 @@ class ArvPutUploadJob(object):
                  put_threads=None, replication_desired=None,
                  filename=None, update_time=60.0, update_collection=None,
                  logger=logging.getLogger('arvados.arv_put'), dry_run=False,
-                 follow_links=True, exclude={}):
+                 follow_links=True, exclude_paths=[], exclude_names=None):
         self.paths = paths
         self.resume = resume
         self.use_cache = use_cache
@@ -420,7 +420,8 @@ class ArvPutUploadJob(object):
         self.dry_run = dry_run
         self._checkpoint_before_quit = True
         self.follow_links = follow_links
-        self.exclude = exclude
+        self.exclude_paths = exclude_paths
+        self.exclude_names = exclude_names
 
         if not self.use_cache and self.resume:
             raise ArvPutArgumentConflict('resume cannot be True when use_cache is False')
@@ -436,8 +437,6 @@ class ArvPutUploadJob(object):
         """
         Start supporting thread & file uploading
         """
-        exclude_paths = self.exclude.get('paths', None)
-        exclude_names = self.exclude.get('names', None)
         if not self.dry_run:
             self._checkpointer.start()
         try:
@@ -458,21 +457,21 @@ class ArvPutUploadJob(object):
                     for root, dirs, files in os.walk(path, followlinks=self.follow_links):
                         root_relpath = os.path.relpath(root, path)
                         # Exclude files/dirs by full path matching pattern
-                        if exclude_paths is not None:
+                        if self.exclude_paths:
                             dirs[:] = filter(
                                 lambda d: not any([pathname_match(os.path.join(root_relpath, d),
                                                                   pat)
-                                                   for pat in exclude_paths]),
+                                                   for pat in self.exclude_paths]),
                                 dirs)
                             files = filter(
                                 lambda f: not any([pathname_match(os.path.join(root_relpath, f),
                                                                   pat)
-                                                   for pat in exclude_paths]),
+                                                   for pat in self.exclude_paths]),
                                 files)
                         # Exclude files/dirs by name matching pattern
-                        if exclude_names is not None:
-                            dirs[:] = filter(lambda d: not exclude_names.match(d), dirs)
-                            files = filter(lambda f: not exclude_names.match(f), files)
+                        if self.exclude_names is not None:
+                            dirs[:] = filter(lambda d: not self.exclude_names.match(d), dirs)
+                            files = filter(lambda f: not self.exclude_names.match(f), files)
                         # Make os.walk()'s dir traversing order deterministic
                         dirs.sort()
                         files.sort()
@@ -988,13 +987,14 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         reporter = None
 
     # Setup exclude regex from all the --exclude arguments provided
+    name_patterns = []
+    exclude_paths = []
+    exclude_names = None
     if len(args.exclude) > 0:
         # We're supporting 2 kinds of exclusion patterns:
         # 1) --exclude '*.jpg'      (file/dir name patterns, will only match the name)
         # 2) --exclude 'foo/bar'    (file/dir path patterns, will match the entire path,
         #                            and should be relative to any input dir argument)
-        name_patterns = []
-        path_patterns = []
         for p in args.exclude:
             # Only relative paths patterns allowed
             if p.startswith(os.sep):
@@ -1002,11 +1002,10 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 sys.exit(1)
             if os.path.dirname(p):
                 # Path search pattern
-                path_patterns.append(p)
+                exclude_paths.append(p)
             else:
                 # Name-only search pattern
                 name_patterns.append(p)
-        exclude_paths = path_patterns if len(path_patterns) > 0 else None
         # For name only matching, we can combine all patterns into a single regexp,
         # for better performance.
         exclude_names = re.compile('|'.join(
@@ -1015,9 +1014,6 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
         # Show the user the patterns to be used, just in case they weren't specified inside
         # quotes and got changed by the shell expansion.
         logger.info("Exclude patterns: {}".format(args.exclude))
-    else:
-        exclude_paths = None
-        exclude_names = None
 
     # If this is used by a human, and there's at least one directory to be
     # uploaded, the expected bytes calculation can take a moment.
@@ -1046,8 +1042,8 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                                  logger=logger,
                                  dry_run=args.dry_run,
                                  follow_links=args.follow_links,
-                                 exclude={'paths': exclude_paths,
-                                          'names': exclude_names})
+                                 exclude_paths=exclude_paths,
+                                 exclude_names=exclude_names)
     except ResumeCacheConflict:
         logger.error("\n".join([
             "arv-put: Another process is already uploading this data.",
