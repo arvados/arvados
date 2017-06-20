@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"html"
 	"io/ioutil"
 	"net/http"
@@ -478,4 +479,109 @@ func (s *IntegrationSuite) testVhostRedirectTokenToCookie(c *check.C, method, ho
 	s.testServer.Handler.ServeHTTP(resp, req)
 	c.Check(resp.Header().Get("Location"), check.Equals, "")
 	return resp
+}
+
+func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
+	s.testServer.Config.AttachmentOnlyHost = "download.example.com"
+	authHeader := http.Header{
+		"Authorization": {"OAuth2 " + arvadostest.ActiveToken},
+	}
+	for _, trial := range []struct {
+		uri     string
+		header  http.Header
+		expect  []string
+		cutDirs int
+	}{
+		{
+			uri:     strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + ".example.com/",
+			header:  authHeader,
+			expect:  []string{"dir1/foo", "dir1/bar"},
+			cutDirs: 0,
+		},
+		{
+			uri:     strings.Replace(arvadostest.FooAndBarFilesInDirPDH, "+", "-", -1) + ".example.com/dir1/",
+			header:  authHeader,
+			expect:  []string{"foo", "bar"},
+			cutDirs: 0,
+		},
+		{
+			uri:     "download.example.com/collections/" + arvadostest.FooAndBarFilesInDirUUID + "/",
+			header:  authHeader,
+			expect:  []string{"dir1/foo", "dir1/bar"},
+			cutDirs: 2,
+		},
+		{
+			uri:     "collections.example.com/collections/download/" + arvadostest.FooAndBarFilesInDirUUID + "/" + arvadostest.ActiveToken + "/",
+			header:  nil,
+			expect:  []string{"dir1/foo", "dir1/bar"},
+			cutDirs: 4,
+		},
+		{
+			uri:     "collections.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/t=" + arvadostest.ActiveToken + "/",
+			header:  nil,
+			expect:  []string{"dir1/foo", "dir1/bar"},
+			cutDirs: 2,
+		},
+		{
+			uri:     "download.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/dir1/",
+			header:  authHeader,
+			expect:  []string{"foo", "bar"},
+			cutDirs: 1,
+		},
+		{
+			uri:     "download.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/_/dir1/",
+			header:  authHeader,
+			expect:  []string{"foo", "bar"},
+			cutDirs: 2,
+		},
+		{
+			uri:     arvadostest.FooAndBarFilesInDirUUID + ".example.com/dir1?api_token=" + arvadostest.ActiveToken,
+			header:  authHeader,
+			expect:  []string{"foo", "bar"},
+			cutDirs: 0,
+		},
+		{
+			uri:    "collections.example.com/c=" + arvadostest.FooAndBarFilesInDirUUID + "/theperthcountyconspiracydoesnotexist/",
+			header: authHeader,
+			expect: nil,
+		},
+	} {
+		c.Logf("%q => %q", trial.uri, trial.expect)
+		resp := httptest.NewRecorder()
+		u := mustParseURL("//" + trial.uri)
+		req := &http.Request{
+			Method:     "GET",
+			Host:       u.Host,
+			URL:        u,
+			RequestURI: u.RequestURI(),
+			Header:     trial.header,
+		}
+		s.testServer.Handler.ServeHTTP(resp, req)
+		var cookies []*http.Cookie
+		for resp.Code == http.StatusSeeOther {
+			u, _ := req.URL.Parse(resp.Header().Get("Location"))
+			req = &http.Request{
+				Method:     "GET",
+				Host:       u.Host,
+				URL:        u,
+				RequestURI: u.RequestURI(),
+				Header:     http.Header{},
+			}
+			cookies = append(cookies, (&http.Response{Header: resp.Header()}).Cookies()...)
+			for _, c := range cookies {
+				req.AddCookie(c)
+			}
+			resp = httptest.NewRecorder()
+			s.testServer.Handler.ServeHTTP(resp, req)
+		}
+		if trial.expect == nil {
+			c.Check(resp.Code, check.Equals, http.StatusNotFound)
+		} else {
+			c.Check(resp.Code, check.Equals, http.StatusOK)
+			for _, e := range trial.expect {
+				c.Check(resp.Body.String(), check.Matches, `(?ms).*href="`+e+`".*`)
+			}
+			c.Check(resp.Body.String(), check.Matches, `(?ms).*--cut-dirs=`+fmt.Sprintf("%d", trial.cutDirs)+` .*`)
+		}
+	}
 }
