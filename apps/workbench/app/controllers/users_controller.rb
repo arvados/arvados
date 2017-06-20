@@ -257,28 +257,24 @@ class UsersController < ApplicationController
   end
 
   def repositories
-    repo_links = Link.
-      filter([['head_uuid', 'is_a', 'arvados#repository'],
-              ['tail_uuid', '=', current_user.uuid],
-              ['link_class', '=', 'permission'],
-             ])
+    # all repositories accessible by current user
+    all_repositories = Hash[Repository.all.order('name asc').collect {|repo| [repo.uuid, repo]}]
 
-    owned_repositories = Repository.where(owner_uuid: @object.uuid)
-
-    @my_repositories = (Repository.where(uuid: repo_links.collect(&:head_uuid)) |
-                        owned_repositories).
-                       uniq { |repo| repo.uuid }
-
-
+    @my_repositories = [] # we want them ordered as owned and the rest
     @repo_writable = {}
-    repo_links.each do |link|
-      if link.name.in? ['can_write', 'can_manage']
-        @repo_writable[link.head_uuid] = link.name
+
+    # owned repos
+    all_repositories.each do |_, repo|
+      if repo.owner_uuid == current_user.uuid
+        @repo_writable[repo.uuid] = 'can_write'
+        @my_repositories << repo
       end
     end
 
-    owned_repositories.each do |repo|
-      @repo_writable[repo.uuid] = 'can_manage'
+    # rest of the repos
+    handled = @my_repositories.map(&:uuid)
+    all_repositories.each do |_, repo|
+      @my_repositories << repo if !repo.uuid.in?(handled)
     end
   end
 
