@@ -350,9 +350,16 @@ class CollectionsController < ApplicationController
   end
 
   def save_tags
+    tags = nil
     if params['tag_data']
+      tags = params['tag_data']
+    elsif params['empty']
+      tags = {}
+    end
+
+    if tags
       props = @object.properties
-      props[:tags] = params['tag_data']
+      props[:tags] = tags
 
       if @object.update_attributes properties: props
       else

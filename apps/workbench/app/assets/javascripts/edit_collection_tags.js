@@ -31,9 +31,15 @@ $(document).
         }
       });
 
+      if(jQuery.isEmptyObject(tag_data)){
+        tag_data["empty"]=true
+      } else {
+        tag_data = {tag_data}
+      }
+
       $.ajax($(location).attr('pathname')+'/save_tags', {
           type: 'POST',
-          data: {tag_data}
+          data: tag_data
       }).success(function(data, status, jqxhr) {
         $('.collection-tags-status').append('<div class="collection-tags-status-label alert alert-success"><p class="contain-align-left">Saved successfully.</p></div>');
       }).fail(function(jqxhr, status, error) {
@@ -42,7 +48,7 @@ $(document).
     }).
     on('click', '.collection-tag-cancel', function(e){
       $.ajax($(location).attr('pathname')+'/tags', {
-          type: 'POST'
+          type: 'GET'
       });
     });
 
