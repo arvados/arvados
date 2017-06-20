@@ -24,7 +24,6 @@ import (
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
-	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
 
 	dockertypes "github.com/docker/docker/api/types"
@@ -305,10 +304,10 @@ func (client *KeepTestClient) PutHB(hash string, buf []byte) (string, int, error
 
 type FileWrapper struct {
 	io.ReadCloser
-	len uint64
+	len int64
 }
 
-func (fw FileWrapper) Len() uint64 {
+func (fw FileWrapper) Size() int64 {
 	return fw.len
 }
 
@@ -316,7 +315,7 @@ func (fw FileWrapper) Seek(int64, int) (int64, error) {
 	return 0, errors.New("not implemented")
 }
 
-func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.Reader, error) {
+func (client *KeepTestClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
 	if filename == hwImageId+".tar" {
 		rdr := ioutil.NopCloser(&bytes.Buffer{})
 		client.Called = true
@@ -404,7 +403,7 @@ func (KeepErrorTestClient) PutHB(hash string, buf []byte) (string, int, error) {
 	return "", 0, errors.New("KeepError")
 }
 
-func (KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.Reader, error) {
+func (KeepErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
 	return nil, errors.New("KeepError")
 }
 
@@ -424,7 +423,7 @@ func (ErrorReader) Close() error {
 	return nil
 }
 
-func (ErrorReader) Len() uint64 {
+func (ErrorReader) Size() int64 {
 	return 0
 }
 
@@ -432,7 +431,7 @@ func (ErrorReader) Seek(int64, int) (int64, error) {
 	return 0, errors.New("ErrorReader")
 }
 
-func (KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (keepclient.Reader, error) {
+func (KeepReadErrorTestClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
 	return ErrorReader{}, nil
 }
 

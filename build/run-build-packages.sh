@@ -1,7 +1,7 @@
 #!/bin/bash
 
 . `dirname "$(readlink -f "$0")"`/run-library.sh
-. `dirname "$(readlink -f "$0")"`/libcloud-pin
+. `dirname "$(readlink -f "$0")"`/libcloud-pin.sh
 
 read -rd "\000" helpmessage <<EOF
 $(basename $0): Build Arvados packages

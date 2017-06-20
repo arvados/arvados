@@ -214,26 +214,6 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
         @vm_uuid, resp_obj['uuid'], 'arvados#virtualMachine', false, 'VirtualMachine'
   end
 
-  test "invoke setup with existing uuid in user, verify response" do
-    authorize_with :admin
-    inactive_user = users(:inactive)
-
-    post :setup, {
-      user: {uuid: inactive_user['uuid']},
-      openid_prefix: 'https://www.google.com/accounts/o8/id'
-    }
-
-    assert_response :success
-
-    response_items = JSON.parse(@response.body)['items']
-    resp_obj = find_obj_in_resp response_items, 'User', nil
-
-    assert_not_nil resp_obj['uuid'], 'expected uuid for the new user'
-    assert_equal inactive_user['uuid'], resp_obj['uuid']
-    assert_equal inactive_user['email'], resp_obj['email'],
-        'expecting inactive user email'
-  end
-
   test "invoke setup with existing uuid but different email, expect original email" do
     authorize_with :admin
     inactive_user = users(:inactive)
@@ -658,6 +638,24 @@ class Arvados::V1::UsersControllerTest < ActionController::TestCase
     assert (setup_email.body.to_s.include? 'Your Arvados shell account has been set up'),
         'Expected Your Arvados shell account has been set up in email body'
     assert (setup_email.body.to_s.include? "#{Rails.configuration.workbench_address}users/#{created['uuid']}/virtual_machines"), 'Expected virtual machines url in email body'
+  end
+
+  test "setup inactive user by changing is_active to true" do
+    authorize_with :admin
+    active_user = users(:active)
+
+    # invoke setup with a repository
+    put :update, {
+          id: active_user['uuid'],
+          user: {
+            is_active: true,
+          }
+        }
+    assert_response :success
+    assert_equal active_user['uuid'], json_response['uuid']
+    updated = User.where(uuid: active_user['uuid']).first
+    assert_equal(true, updated.is_active)
+    assert_equal({read: true}, updated.group_permissions[all_users_group_uuid])
   end
 
   test "non-admin user can get basic information about readable users" do

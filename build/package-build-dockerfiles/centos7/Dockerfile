@@ -5,7 +5,7 @@ MAINTAINER Brett Smith <brett@curoverse.com>
 RUN yum -q -y install make automake gcc gcc-c++ libyaml-devel patch readline-devel zlib-devel libffi-devel openssl-devel bzip2 libtool bison sqlite-devel rpm-build git perl-ExtUtils-MakeMaker libattr-devel nss-devel libcurl-devel which tar unzip scl-utils centos-release-scl postgresql-devel python-devel python-setuptools fuse-devel xz-libs git
 
 # Install golang binary
-ADD generated/go1.7.5.linux-amd64.tar.gz /usr/local/
+ADD generated/go1.8.3.linux-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 
 # Install RVM

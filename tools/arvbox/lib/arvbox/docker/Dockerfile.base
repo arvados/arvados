@@ -2,8 +2,7 @@ FROM debian:8
 
 ENV DEBIAN_FRONTEND noninteractive
 
-RUN apt-get clean && \
-    apt-get update && \
+RUN apt-get update && \
     apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
     postgresql-9.4 git build-essential runit curl libpq-dev \
     libcurl4-openssl-dev libssl-dev zlib1g-dev libpcre3-dev \
@@ -18,7 +17,7 @@ RUN apt-get clean && \
     libgnutls28-dev python3-dev && \
     apt-get clean
 
-ENV GOVERSION 1.7.5
+ENV GOVERSION 1.8.3
 
 # Install golang binary
 RUN curl -f http://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | \

@@ -1,6 +1,9 @@
 import re
 import urllib
 import ssl
+import time
+
+from arvnodeman.computenode import ARVADOS_TIMEFMT
 
 from libcloud.compute.base import NodeSize, Node, NodeDriver, NodeState
 from libcloud.common.exceptions import BaseHTTPError
@@ -29,12 +32,16 @@ class FakeDriver(NodeDriver):
                     ex_resource_group=None,
                     ex_user_name=None,
                     ex_tags=None,
-                    ex_network=None):
+                    ex_network=None,
+                    ex_userdata=None):
         global all_nodes, create_calls
         create_calls += 1
         n = Node(name, name, NodeState.RUNNING, [], [], self, size=size, extra={"tags": ex_tags})
         all_nodes.append(n)
-        ping_url = re.search(r"echo '(.*)' > /var/tmp/arv-node-data/arv-ping-url", ex_customdata).groups(1)[0] + "&instance_id=" + name
+        if ex_customdata:
+            ping_url = re.search(r"echo '(.*)' > /var/tmp/arv-node-data/arv-ping-url", ex_customdata).groups(1)[0] + "&instance_id=" + name
+        if ex_userdata:
+            ping_url = ex_userdata
         ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
         ctx.verify_mode = ssl.CERT_NONE
         f = urllib.urlopen(ping_url, "", context=ctx)
@@ -125,3 +132,24 @@ class RetryDriver(FakeDriver):
                     ex_user_name=ex_user_name,
                     ex_tags=ex_tags,
                     ex_network=ex_network)
+
+class FakeAwsDriver(FakeDriver):
+
+    def create_node(self, name=None,
+                    size=None,
+                    image=None,
+                    auth=None,
+                    ex_userdata=None,
+                    ex_blockdevicemappings=None):
+        n = super(FakeAwsDriver, self).create_node(name=name,
+                                                      size=size,
+                                                      image=image,
+                                                      auth=auth,
+                                                      ex_userdata=ex_userdata)
+        n.extra = {"launch_time": time.strftime(ARVADOS_TIMEFMT, time.gmtime())[:-1]}
+        return n
+
+    def list_sizes(self, **kwargs):
+        return [NodeSize("m3.xlarge", "Extra Large Instance", 3500, 80, 0, 0, self),
+                NodeSize("m4.xlarge", "Extra Large Instance", 3500, 0, 0, 0, self),
+                NodeSize("m4.2xlarge", "Double Extra Large Instance", 7000, 0, 0, 0, self)]

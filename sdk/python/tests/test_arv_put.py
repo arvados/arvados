@@ -791,7 +791,8 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         datadir = self.make_tmpdir()
         with open(os.path.join(datadir, "foo"), "w") as f:
             f.write("The quick brown fox jumped over the lazy dog")
-        p = subprocess.Popen([sys.executable, arv_put.__file__, datadir],
+        p = subprocess.Popen([sys.executable, arv_put.__file__,
+                              os.path.join(datadir, 'foo')],
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
                              env=self.ENVIRON)
@@ -838,7 +839,40 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         self.assertEqual(col['uuid'], updated_col['uuid'])
         # Get the manifest and check that the new file is being included
         c = arv_put.api_client.collections().get(uuid=updated_col['uuid']).execute()
-        self.assertRegex(c['manifest_text'], r'^\. .*:44:file2\n')
+        self.assertRegex(c['manifest_text'], r'^\..* .*:44:file2\n')
+
+    def test_upload_directory_reference_without_trailing_slash(self):
+        tmpdir1 = self.make_tmpdir()
+        tmpdir2 = self.make_tmpdir()
+        with open(os.path.join(tmpdir1, 'foo'), 'w') as f:
+            f.write('This is foo')
+        with open(os.path.join(tmpdir2, 'bar'), 'w') as f:
+            f.write('This is not foo')
+        # Upload one directory and one file
+        col = self.run_and_find_collection("", ['--no-progress',
+                                                tmpdir1,
+                                                os.path.join(tmpdir2, 'bar')])
+        self.assertNotEqual(None, col['uuid'])
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        # Check that 'foo' was written inside a subcollection
+        # OTOH, 'bar' should have been directly uploaded on the root collection
+        self.assertRegex(c['manifest_text'], r'^\. .*:15:bar\n\./.+ .*:11:foo\n')
+
+    def test_upload_directory_reference_with_trailing_slash(self):
+        tmpdir1 = self.make_tmpdir()
+        tmpdir2 = self.make_tmpdir()
+        with open(os.path.join(tmpdir1, 'foo'), 'w') as f:
+            f.write('This is foo')
+        with open(os.path.join(tmpdir2, 'bar'), 'w') as f:
+            f.write('This is not foo')
+        # Upload one directory (with trailing slash) and one file
+        col = self.run_and_find_collection("", ['--no-progress',
+                                                tmpdir1 + os.sep,
+                                                os.path.join(tmpdir2, 'bar')])
+        self.assertNotEqual(None, col['uuid'])
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        # Check that 'foo' and 'bar' were written at the same level
+        self.assertRegex(c['manifest_text'], r'^\. .*:15:bar .*:11:foo\n')
 
     def test_put_collection_with_high_redundancy(self):
         # Write empty data: we're not testing CollectionWriter, just
