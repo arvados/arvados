@@ -776,4 +776,67 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_response 422
     assert_includes json_response['errors'], 'Duplicate file path'
   end
+
+  [
+    [:active, true],
+    [:spectator, false],
+  ].each do |user, editable|
+    test "tags tab #{editable ? 'shows' : 'does not show'} edit button to #{user}" do
+      use_token user
+
+      get :tags, {
+        id: api_fixture('collections')['collection_with_tags_owned_by_active']['uuid'],
+        format: :js,
+      }, session_for(user)
+
+      assert_response :success
+
+      found = 0
+      response.body.scan /<i[^>]+>/ do |remove_icon|
+        remove_icon.scan(/\ collection-tag-remove(.*?)\"/).each do |i,|
+          found += 1
+        end
+      end
+
+      if editable
+        assert_equal(3, found)  # two from the tags + 1 from the hidden "add tag" row
+      else
+        assert_equal(0, found)
+      end
+    end
+  end
+
+  test "save_tags and verify that 'other' properties are retained" do
+    use_token :active
+
+    collection = api_fixture('collections')['collection_with_tags_owned_by_active']
+
+    new_tags = {"new_tag1" => "new_tag1_value",
+                "new_tag2" => "new_tag2_value"}
+
+    post :save_tags, {
+      id: collection['uuid'],
+      tag_data: new_tags,
+      format: :js,
+    }, session_for(:active)
+
+    assert_response :success
+    assert_equal true, response.body.include?("new_tag1")
+    assert_equal true, response.body.include?("new_tag1_value")
+    assert_equal true, response.body.include?("new_tag2")
+    assert_equal true, response.body.include?("new_tag2_value")
+    assert_equal false, response.body.include?("existing tag 1")
+    assert_equal false, response.body.include?("value for existing tag 1")
+
+    updated_properties = Collection.find(collection['uuid']).properties
+    updated_tags = updated_properties[:tags]
+    assert_equal true, updated_tags.keys.include?(:'new_tag1')
+    assert_equal new_tags['new_tag1'], updated_tags[:'new_tag1']
+    assert_equal true, updated_tags.keys.include?(:'new_tag2')
+    assert_equal new_tags['new_tag2'], updated_tags[:'new_tag2']
+    assert_equal false, updated_tags.keys.include?(:'existing tag 1')
+    assert_equal false, updated_tags.keys.include?(:'existing tag 2')
+    assert_equal true, updated_properties.keys.include?(:'some other property')
+    assert_equal 'value for the other property', updated_properties[:'some other property']
+  end
 end
