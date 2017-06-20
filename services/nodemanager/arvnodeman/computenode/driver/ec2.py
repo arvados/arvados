@@ -73,9 +73,10 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         scratch = int(size.scratch / 1000) + 1
         if scratch > size.disk:
             volsize = scratch - size.disk
-            if volsize < 1:
-                volsize = 1
             if volsize > 16384:
+                # Must be 1-16384 for General Purpose SSD (gp2) devices
+                # https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_EbsBlockDevice.html
+                self._logger.warning("Requested EBS volume size %d is too large, capping size request to 16384 GB", volsize)
                 volsize = 16384
             kw["ex_blockdevicemappings"] = [{
                 "DeviceName": "/dev/xvdt",

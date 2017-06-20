@@ -127,3 +127,22 @@ class EC2ComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         create_method = self.driver_mock().create_node
         self.assertTrue(create_method.called)
         self.assertIsNone(create_method.call_args[1].get('ex_blockdevicemappings'))
+
+    def test_ebs_volume_too_big(self):
+        arv_node = testutil.arvados_node_mock()
+        driver = self.new_driver()
+        # libcloud/ec2 "disk" sizes are in GB, Arvados/SLURM "scratch" value is in MB
+        size = testutil.MockSize(1)
+        size.disk=80
+        size.scratch=20000000
+        driver.create_node(size, arv_node)
+        create_method = self.driver_mock().create_node
+        self.assertTrue(create_method.called)
+        self.assertEqual([{
+            "DeviceName": "/dev/xvdt",
+            "Ebs": {
+                "DeleteOnTermination": True,
+                "VolumeSize": 16384,
+                "VolumeType": "gp2"
+            }}],
+                         create_method.call_args[1].get('ex_blockdevicemappings'))
