@@ -1,8 +1,8 @@
 <%
   tags = object.properties[:tags]
 %>
-
-        <% tags.andand.each do |k, v| %>
+        <% if tags.andand.is_a?(Hash) %>
+        <% tags.each do |k, v| %>
           <tr class="collection-tag-<%=k%>">
             <td>
               <i class="glyphicon glyphicon-remove collection-tag-remove hide" style="cursor: pointer;"></i>
@@ -14,6 +14,7 @@
               <%= v %>
             </td>
           </tr>
+        <% end %>
         <% end %>
 
         <!-- A hidden row to add new tag -->

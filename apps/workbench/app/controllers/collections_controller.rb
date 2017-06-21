@@ -350,11 +350,13 @@ class CollectionsController < ApplicationController
   end
 
   def save_tags
-    tags = nil
-    if params['tag_data']
-      tags = params['tag_data']
-    elsif params['empty']
-      tags = {}
+    tags_param = params['tag_data']
+    if tags_param
+      if tags_param.is_a?(String) && tags_param == "empty"
+        tags = {}
+      else
+        tags = tags_param
+      end
     end
 
     if tags
