@@ -4,7 +4,7 @@ navsection: userguide
 title: "Keep collection lifecycle"
 ...
 
-During it's lifetime, a keep collection can be in various states. These states are "persisted", "expiring", "trashed"  and "permanently deleted".
+During it's lifetime, a keep collection can be in various states. These states are *persisted*, *expiring*, *trashed*  and *permanently deleted*.
 
 A collection is *expiring* when it has a *trash_at* time in the future. An expiring collection can be accessed as normal, but is scheduled to be trashed automatically at the *trash_at* time.
 
@@ -22,7 +22,7 @@ As listed above the attributes that are used to manage a collection lifecycle ar
 
 table(table table-bordered table-condensed).
 |_. collection state|_. is_trashed|_. trash_at|_. delete_at|_. get|_. index|_. index?include_trash=true|_. can be modified|
-|normal collection|false |null |null |yes |yes |yes |yes |
+|persisted collection|false |null |null |yes |yes |yes |yes |
 |expiring collection|false |future |future |yes  |yes |yes |yes |
 |trashed collection|true |past |future |no |no |yes |only is_trashed, trash_at and delete_at attribtues|
 |deleted collection|true|past |past |no |no |no |no |
