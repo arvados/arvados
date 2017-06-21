@@ -299,9 +299,8 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
 
     def test_passing_nonexistant_path_raise_exception(self):
         uuid_str = str(uuid.uuid4())
-        cwriter = arv_put.ArvPutUploadJob(["/this/path/does/not/exist/{}".format(uuid_str)])
         with self.assertRaises(arv_put.PathDoesNotExistError):
-            cwriter.start(save_collection=False)
+            cwriter = arv_put.ArvPutUploadJob(["/this/path/does/not/exist/{}".format(uuid_str)])
 
     def test_writer_works_without_cache(self):
         cwriter = arv_put.ArvPutUploadJob(['/dev/null'], resume=False)
@@ -336,7 +335,8 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
             for expect_count in (None, 8):
                 progression, reporter = self.make_progress_tester()
                 cwriter = arv_put.ArvPutUploadJob([f.name],
-                    reporter=reporter, bytes_expected=expect_count)
+                                                  reporter=reporter)
+                cwriter.bytes_expected = expect_count
                 cwriter.start(save_collection=False)
                 cwriter.destroy_cache()
                 self.assertIn((3, expect_count), progression)
@@ -492,23 +492,20 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
             self.assertGreater(writer.bytes_written, 0)
             self.assertLess(writer.bytes_written,
                             os.path.getsize(self.large_file_name))
-        # Retry the upload using dry_run to check if there is a pending upload
-        writer2 = arv_put.ArvPutUploadJob([self.large_file_name],
-                                          replication_desired=1,
-                                          dry_run=True)
         with self.assertRaises(arv_put.ArvPutUploadIsPending):
-            writer2.start(save_collection=False)
+            # Retry the upload using dry_run to check if there is a pending upload
+            writer2 = arv_put.ArvPutUploadJob([self.large_file_name],
+                                              replication_desired=1,
+                                              dry_run=True)
         # Complete the pending upload
         writer3 = arv_put.ArvPutUploadJob([self.large_file_name],
                                           replication_desired=1)
         writer3.start(save_collection=False)
-        # Confirm there's no pending upload with dry_run=True
-        writer4 = arv_put.ArvPutUploadJob([self.large_file_name],
-                                          replication_desired=1,
-                                          dry_run=True)
         with self.assertRaises(arv_put.ArvPutUploadNotPending):
-            writer4.start(save_collection=False)
-        writer4.destroy_cache()
+            # Confirm there's no pending upload with dry_run=True
+            writer4 = arv_put.ArvPutUploadJob([self.large_file_name],
+                                              replication_desired=1,
+                                              dry_run=True)
         # Test obvious cases
         with self.assertRaises(arv_put.ArvPutUploadIsPending):
             arv_put.ArvPutUploadJob([self.large_file_name],
@@ -527,21 +524,27 @@ class ArvadosExpectedBytesTest(ArvadosBaseTestCase):
     TEST_SIZE = os.path.getsize(__file__)
 
     def test_expected_bytes_for_file(self):
+        writer = arv_put.ArvPutUploadJob([__file__])
         self.assertEqual(self.TEST_SIZE,
-                          arv_put.expected_bytes_for([__file__]))
+                         writer.bytes_expected)
 
     def test_expected_bytes_for_tree(self):
         tree = self.make_tmpdir()
         shutil.copyfile(__file__, os.path.join(tree, 'one'))
         shutil.copyfile(__file__, os.path.join(tree, 'two'))
+
+        writer = arv_put.ArvPutUploadJob([tree])
         self.assertEqual(self.TEST_SIZE * 2,
-                          arv_put.expected_bytes_for([tree]))
+                         writer.bytes_expected)
+        writer = arv_put.ArvPutUploadJob([tree, __file__])
         self.assertEqual(self.TEST_SIZE * 3,
-                          arv_put.expected_bytes_for([tree, __file__]))
+                         writer.bytes_expected)
 
     def test_expected_bytes_for_device(self):
-        self.assertIsNone(arv_put.expected_bytes_for(['/dev/null']))
-        self.assertIsNone(arv_put.expected_bytes_for([__file__, '/dev/null']))
+        writer = arv_put.ArvPutUploadJob(['/dev/null'])
+        self.assertIsNone(writer.bytes_expected)
+        writer = arv_put.ArvPutUploadJob([__file__, '/dev/null'])
+        self.assertIsNone(writer.bytes_expected)
 
 
 class ArvadosPutReportTest(ArvadosBaseTestCase):
