@@ -1,11 +1,13 @@
 <%
   tags = object.properties[:tags]
 %>
-        <% if tags.andand.is_a?(Hash) %>
+      <% if tags.andand.is_a?(Hash) %>
         <% tags.each do |k, v| %>
           <tr class="collection-tag-<%=k%>">
             <td>
-              <i class="glyphicon glyphicon-remove collection-tag-remove hide" style="cursor: pointer;"></i>
+              <% if object.editable? %>
+                <i class="glyphicon glyphicon-remove collection-tag-remove hide" style="cursor: pointer;"></i>
+              <% end %>
             </td>
             <td class="collection-tag-field collection-tag-field-key">
               <%= k %>
@@ -15,8 +17,9 @@
             </td>
           </tr>
         <% end %>
-        <% end %>
+      <% end %>
 
+      <% if @object.editable? %>
         <!-- A hidden row to add new tag -->
         <tr class="collection-tag-hidden hide">
           <td>
@@ -25,3 +28,4 @@
           <td class="collection-tag-field collection-tag-field-key"></td>
           <td class="collection-tag-field collection-tag-field-value"></td>
         </tr>
+      <% end %>
