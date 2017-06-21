@@ -283,7 +283,12 @@ class CollectionsController < ApplicationController
   helper_method :download_link
 
   def download_link
-    collections_url + "/download/#{@object.uuid}/#{@search_sharing.first.api_token}/"
+    token = @search_sharing.first.api_token
+    if Rails.configuration.keep_web_url || Rails.configuration.keep_web_download_url
+      keep_web_url(@object.uuid, nil, {query_token: token})
+    else
+      collections_url + "/download/#{@object.uuid}/#{token}/"
+    end
   end
 
   def share
