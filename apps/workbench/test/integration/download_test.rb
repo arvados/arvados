@@ -4,6 +4,8 @@ require 'helpers/download_helper'
 class DownloadTest < ActionDispatch::IntegrationTest
   include KeepWebConfig
 
+  @@wrote_test_data = false
+
   setup do
     use_keep_web_config
 
@@ -13,10 +15,13 @@ class DownloadTest < ActionDispatch::IntegrationTest
 
     # Keep data isn't populated by fixtures, so we have to write any
     # data we expect to read.
-    ['foo', 'w a z', "Hello world\n"].each do |data|
-      md5 = `echo -n #{data.shellescape} | arv-put --no-progress --raw -`
-      assert_match /^#{Digest::MD5.hexdigest(data)}/, md5
-      assert $?.success?, $?
+    if !@@wrote_test_data
+      ['foo', 'w a z', "Hello world\n"].each do |data|
+        md5 = `echo -n #{data.shellescape} | arv-put --no-progress --raw -`
+        assert_match /^#{Digest::MD5.hexdigest(data)}/, md5
+        assert $?.success?, $?
+      end
+      @@wrote_test_data = true
     end
   end
 
