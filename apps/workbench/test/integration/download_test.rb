@@ -25,7 +25,7 @@ class DownloadTest < ActionDispatch::IntegrationTest
       uuid_or_pdh = api_fixture('collections')['foo_file'][id_type]
       token = api_fixture('api_client_authorizations')['active_all_collections']['api_token']
       visit "/collections/download/#{uuid_or_pdh}/#{token}/"
-      within "#collection_files" do
+      within 'ul' do
         click_link 'foo'
       end
       assert_no_selector 'a'

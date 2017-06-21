@@ -111,6 +111,10 @@ class CollectionsController < ApplicationController
   end
 
   def show_file_links
+    if Rails.configuration.keep_web_url || Rails.configuration.keep_web_download_url
+      # show_file will redirect to keep-web's directory listing
+      return show_file
+    end
     Thread.current[:reader_tokens] = [params[:reader_token]]
     return if false.equal?(find_object_by_uuid)
     render layout: false
@@ -416,7 +420,7 @@ class CollectionsController < ApplicationController
       uri.path += 't=' + opts[:path_token] + '/'
     end
     uri.path += '_/'
-    uri.path += URI.escape(file)
+    uri.path += URI.escape(file) if file
 
     query = Hash[URI.decode_www_form(uri.query || '')]
     { query_token: 'api_token',
