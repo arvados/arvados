@@ -124,7 +124,7 @@ run() {
         fi
     fi
 
-    if test ! -z "$TAG"
+    if test -n "$TAG"
     then
         if test $(echo $TAG | cut -c1-1) != '-' ; then
 	    TAG=":$TAG"

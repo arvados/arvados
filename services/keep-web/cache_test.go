@@ -20,8 +20,8 @@ func (s *UnitSuite) TestCache(c *check.C) {
 		coll, err := cache.Get(arv, arvadostest.FooCollection, false)
 		c.Check(err, check.Equals, nil)
 		c.Assert(coll, check.NotNil)
-		c.Check(coll["portable_data_hash"], check.Equals, arvadostest.FooPdh)
-		c.Check(coll["manifest_text"].(string)[:2], check.Equals, ". ")
+		c.Check(coll.PortableDataHash, check.Equals, arvadostest.FooPdh)
+		c.Check(coll.ManifestText[:2], check.Equals, ". ")
 	}
 	c.Check(cache.Stats().Requests, check.Equals, uint64(5))
 	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(4))
@@ -38,8 +38,8 @@ func (s *UnitSuite) TestCache(c *check.C) {
 		coll, err := cache.Get(arv, arvadostest.FooPdh, false)
 		c.Check(err, check.Equals, nil)
 		c.Assert(coll, check.NotNil)
-		c.Check(coll["portable_data_hash"], check.Equals, arvadostest.FooPdh)
-		c.Check(coll["manifest_text"].(string)[:2], check.Equals, ". ")
+		c.Check(coll.PortableDataHash, check.Equals, arvadostest.FooPdh)
+		c.Check(coll.ManifestText[:2], check.Equals, ". ")
 	}
 	c.Check(cache.Stats().Requests, check.Equals, uint64(5+2))
 	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(4+2))
@@ -97,8 +97,8 @@ func (s *UnitSuite) TestCacheForceReloadByUUID(c *check.C) {
 	}
 
 	c.Check(cache.Stats().Requests, check.Equals, uint64(4))
-	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(1))
+	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(3))
 	c.Check(cache.Stats().PermissionHits, check.Equals, uint64(1))
-	c.Check(cache.Stats().PDHHits, check.Equals, uint64(1))
+	c.Check(cache.Stats().PDHHits, check.Equals, uint64(3))
 	c.Check(cache.Stats().APICalls, check.Equals, uint64(3))
 }

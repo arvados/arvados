@@ -64,36 +64,19 @@ class Arvados::V1::UsersController < ApplicationController
 
   # create user object and all the needed links
   def setup
-    @object = nil
     if params[:uuid]
-      @object = User.find_by_uuid params[:uuid]
+      @object = User.find_by_uuid(params[:uuid])
       if !@object
         return render_404_if_no_object
       end
-      object_found = true
+    elsif !params[:user]
+      raise ArgumentError.new "Required uuid or user"
+    elsif !params[:user]['email']
+      raise ArgumentError.new "Require user email"
+    elsif !params[:openid_prefix]
+      raise ArgumentError.new "Required openid_prefix parameter is missing."
     else
-      if !params[:user]
-        raise ArgumentError.new "Required uuid or user"
-      else
-        if params[:user]['uuid']
-          @object = User.find_by_uuid params[:user]['uuid']
-          if @object
-            object_found = true
-          end
-        end
-
-        if !@object
-          if !params[:user]['email']
-            raise ArgumentError.new "Require user email"
-          end
-
-          if !params[:openid_prefix]
-            raise ArgumentError.new "Required openid_prefix parameter is missing."
-          end
-
-          @object = model_class.create! resource_attrs
-        end
-      end
+      @object = model_class.create! resource_attrs
     end
 
     # It's not always possible for the client to know the user's
@@ -106,23 +89,18 @@ class Arvados::V1::UsersController < ApplicationController
     elsif @object.username.nil?
       raise ArgumentError.
         new("cannot setup a repository because user has no username")
-    elsif object_found and
-        params[:repo_name].start_with?("#{@object.username}/")
+    elsif params[:repo_name].index("/")
       full_repo_name = params[:repo_name]
     else
       full_repo_name = "#{@object.username}/#{params[:repo_name]}"
     end
 
-    if object_found
-      @response = @object.setup_repo_vm_links full_repo_name,
-                    params[:vm_uuid], params[:openid_prefix]
-    else
-      @response = User.setup @object, params[:openid_prefix],
-                    full_repo_name, params[:vm_uuid]
-    end
+    @response = @object.setup(repo_name: full_repo_name,
+                              vm_uuid: params[:vm_uuid],
+                              openid_prefix: params[:openid_prefix])
 
     # setup succeeded. send email to user
-    if params[:send_notification_email] == true || params[:send_notification_email] == 'true'
+    if params[:send_notification_email]
       UserNotifier.account_is_setup(@object).deliver_now
     end
 

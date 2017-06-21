@@ -18,6 +18,9 @@ const (
 	FooPdh                  = "1f4b0bc7583c2a7f9102c395f4ffc5e3+45"
 	HelloWorldPdh           = "55713e6a34081eb03609e7ad5fcad129+62"
 
+	FooAndBarFilesInDirUUID = "zzzzz-4zz18-foonbarfilesdir"
+	FooAndBarFilesInDirPDH  = "6bbac24198d09a93975f60098caf0bdf+62"
+
 	Dispatch1Token    = "kwi8oowusvbutahacwk2geulqewy5oaqmpalczfna4b6bb0hfw"
 	Dispatch1AuthUUID = "zzzzz-gj3su-k9dvestay1plssr"
 

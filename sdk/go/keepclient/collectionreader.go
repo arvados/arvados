@@ -6,18 +6,9 @@ import (
 	"io"
 	"os"
 
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/manifest"
 )
-
-// A Reader implements, io.Reader, io.Seeker, and io.Closer, and has a
-// Len() method that returns the total number of bytes available to
-// read.
-type Reader interface {
-	io.Reader
-	io.Seeker
-	io.Closer
-	Len() uint64
-}
 
 const (
 	// After reading a data block from Keep, cfReader slices it up
@@ -38,7 +29,7 @@ var ErrNoManifest = errors.New("Collection has no manifest")
 // CollectionFileReader returns a Reader that reads content from a single file
 // in the collection. The filename must be relative to the root of the
 // collection.  A leading prefix of "/" or "./" in the filename is ignored.
-func (kc *KeepClient) CollectionFileReader(collection map[string]interface{}, filename string) (Reader, error) {
+func (kc *KeepClient) CollectionFileReader(collection map[string]interface{}, filename string) (arvados.File, error) {
 	mText, ok := collection["manifest_text"].(string)
 	if !ok {
 		return nil, ErrNoManifest
@@ -47,7 +38,7 @@ func (kc *KeepClient) CollectionFileReader(collection map[string]interface{}, fi
 	return kc.ManifestFileReader(m, filename)
 }
 
-func (kc *KeepClient) ManifestFileReader(m manifest.Manifest, filename string) (Reader, error) {
+func (kc *KeepClient) ManifestFileReader(m manifest.Manifest, filename string) (arvados.File, error) {
 	f := &file{
 		kc: kc,
 	}
@@ -164,9 +155,9 @@ func (f *file) Seek(offset int64, whence int) (int64, error) {
 	return f.offset, nil
 }
 
-// Len returns the file size in bytes.
-func (f *file) Len() uint64 {
-	return uint64(f.size)
+// Size returns the file size in bytes.
+func (f *file) Size() int64 {
+	return f.size
 }
 
 func (f *file) load(m manifest.Manifest, path string) error {

@@ -9,7 +9,7 @@ fi
 reset_container=1
 leave_running=0
 config=dev
-tag=""
+tag="latest"
 
 while test -n "$1" ; do
     arg="$1"
@@ -74,22 +74,30 @@ export ARVADOS_API_HOST=localhost:8000
 export ARVADOS_API_HOST_INSECURE=1
 export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados/superuser_token)
 
-arv-keepdocker --pull arvados/jobs latest
+
+if test "$tag" = "latest" ; then
+  arv-keepdocker --pull arvados/jobs $tag
+else
+  jobsimg=$(curl http://versions.arvados.org/v1/commit/$tag | python -c "import json; import sys; sys.stdout.write(json.load(sys.stdin)['Versions']['Docker']['arvados/jobs'])")
+  arv-keepdocker --pull arvados/jobs $jobsimg
+  docker tag -f arvados/jobs:$jobsimg arvados/jobs:latest
+  arv-keepdocker arvados/jobs latest
+fi
 
 cat >/tmp/cwltest/arv-cwl-jobs <<EOF2
 #!/bin/sh
-exec arvados-cwl-runner --api=jobs --compute-checksum \\\$@
+exec arvados-cwl-runner --api=jobs \\\$@
 EOF2
 chmod +x /tmp/cwltest/arv-cwl-jobs
 
 cat >/tmp/cwltest/arv-cwl-containers <<EOF2
 #!/bin/sh
-exec arvados-cwl-runner --api=containers --compute-checksum \\\$@
+exec arvados-cwl-runner --api=containers \\\$@
 EOF2
 chmod +x /tmp/cwltest/arv-cwl-containers
 
 env
-exec ./run_test.sh $@
+exec ./run_test.sh EXTRA=--compute-checksum $@
 EOF
 
 CODE=$?
