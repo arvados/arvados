@@ -493,14 +493,15 @@ def run_keep(blob_signing_key=None, enforce_permissions=False, num_servers=2):
             'keep_disk': {'keep_service_uuid': svc['uuid'] }
         }).execute()
 
-    # If keepproxy is running, send SIGHUP to make it discover the new
-    # keepstore services.
-    proxypidfile = _pidfile('keepproxy')
-    if os.path.exists(proxypidfile):
-        try:
-            os.kill(int(open(proxypidfile).read()), signal.SIGHUP)
-        except OSError:
-            os.remove(proxypidfile)
+    # If keepproxy and/or keep-web is running, send SIGHUP to make
+    # them discover the new keepstore services.
+    for svc in ('keepproxy', 'keep-web'):
+        pidfile = _pidfile('keepproxy')
+        if os.path.exists(pidfile):
+            try:
+                os.kill(int(open(pidfile).read()), signal.SIGHUP)
+            except OSError:
+                os.remove(pidfile)
 
 def _stop_keep(n):
     kill_server_pid(_pidfile('keep{}'.format(n)))
