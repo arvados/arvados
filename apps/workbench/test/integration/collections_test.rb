@@ -427,6 +427,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     visit page_with_token('active', '/collections/zzzzz-4zz18-bv31uwvy3neko21')
 
     click_link 'Tags'
+    wait_for_ajax
 
     # verify initial state
     assert_selector 'a', text: 'Edit'
@@ -459,6 +460,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     editable_val_fields[1].set('value 2')
 
     click_on 'Save'
+    wait_for_ajax
 
     # added tags; verify
     assert_text 'key 1'
@@ -473,6 +475,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert_not_nil first('.glyphicon-remove')
     first('.glyphicon-remove').click
     click_on 'Save'
+    wait_for_ajax
 
     assert_text 'key 2'
     assert_text 'value 2'
@@ -488,6 +491,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     first('.collection-tag-field-value').set('this value wont stick')
 
     click_on 'Cancel'
+    wait_for_ajax
 
     assert_text 'key 2'
     assert_text 'value 2'
@@ -498,6 +502,8 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     first('.edit-collection-tags').click
     first('.glyphicon-remove').click
     click_on 'Save'
+    wait_for_ajax
+
     assert_selector 'a', text: 'Edit'
     assert_no_text 'key 2'
     assert_no_text 'value 2'

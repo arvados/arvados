@@ -797,7 +797,8 @@ class CollectionsControllerTest < ActionController::TestCase
 
     collection = api_fixture('collections')['collection_with_tags_owned_by_active']
 
-    new_tags = {"new_tag1": "new_tag1_value", "new_tag2": "new_tag2_value"}
+    new_tags = {"new_tag1" => "new_tag1_value",
+                "new_tag2" => "new_tag2_value"}
 
     post :save_tags, {
       id: collection['uuid'],
@@ -814,10 +815,13 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_equal false, response.body.include?("value for existing tag 1")
 
     updated_properties = Collection.find(collection['uuid']).properties
-    assert_equal true, new_tags.keys.include?(:'new_tag1')
-    assert_equal true, new_tags.keys.include?(:'new_tag2')
-    assert_equal false, new_tags.keys.include?(:'existing tag 1')
-    assert_equal false, new_tags.keys.include?(:'existing tag 2')
+    updated_tags = updated_properties[:tags]
+    assert_equal true, updated_tags.keys.include?(:'new_tag1')
+    assert_equal new_tags['new_tag1'], updated_tags[:'new_tag1']
+    assert_equal true, updated_tags.keys.include?(:'new_tag2')
+    assert_equal new_tags['new_tag2'], updated_tags[:'new_tag2']
+    assert_equal false, updated_tags.keys.include?(:'existing tag 1')
+    assert_equal false, updated_tags.keys.include?(:'existing tag 2')
     assert_equal true, updated_properties.keys.include?(:'some other property')
     assert_equal 'value for the other property', updated_properties[:'some other property']
   end
