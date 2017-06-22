@@ -686,7 +686,7 @@ class CollectionsControllerTest < ActionController::TestCase
     use_token :active
 
     # create a new collection to test
-    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n./dir1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:dir1file1 0:0:dir1file2\n"
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n./dir1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:dir1file1 0:0:dir1file2 0:0:dir1imagefile.png\n"
 
     collection = Collection.create(manifest_text: manifest_text)
     assert_includes(collection['manifest_text'], "0:0:file1")
@@ -702,7 +702,7 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_response :success
 
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
-    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed 0:0:file2\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2\n$/, collection['manifest_text']
+    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed 0:0:file2\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2 0:0:dir1imagefile.png\n$/, collection['manifest_text']
 
     # now rename 'file2' such that it is moved into 'dir1'
     @test_counter = 0
@@ -716,7 +716,7 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_response :success
 
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
-    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2 0:0:file2\n$/, collection['manifest_text']
+    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2 0:0:dir1imagefile.png 0:0:file2\n$/, collection['manifest_text']
 
     # now rename 'dir1/dir1file1' such that it is moved into a new subdir
     @test_counter = 0
@@ -730,7 +730,21 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_response :success
 
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
-    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file2 0:0:file2\n.\/dir2\/dir3 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1moved\n$/, collection['manifest_text']
+    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file2 0:0:dir1imagefile.png 0:0:file2\n.\/dir2\/dir3 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1moved\n$/, collection['manifest_text']
+
+    # now rename the image file 'dir1/dir1imagefile.png'
+    @test_counter = 0
+    post :update, {
+      id: collection['uuid'],
+      collection: {
+        'rename-file-path:dir1/dir1imagefile.png' => 'dir1/dir1imagefilerenamed.png'
+      },
+      format: :json
+    }, session_for(:active)
+    assert_response :success
+
+    collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
+    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file2 0:0:dir1imagefilerenamed.png 0:0:file2\n.\/dir2\/dir3 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1moved\n$/, collection['manifest_text']
   end
 
   test "renaming file with a duplicate name in same stream not allowed" do
