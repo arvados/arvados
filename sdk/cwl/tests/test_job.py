@@ -10,6 +10,7 @@ import StringIO
 import arvados
 import arvados_cwl
 import cwltool.process
+from arvados.errors import ApiError
 from schema_salad.ref_resolver import Loader
 from schema_salad.sourceline import cmap
 from .mock_discovery import get_rootDesc
@@ -92,6 +93,13 @@ class TestJob(unittest.TestCase):
                             "head_uuid": "zzzzz-819sb-yyyyyyyyyyyyyyy",
                         })
                     )
+                    # Simulate an API excepction when trying to create a
+                    # sharing link on the job
+                    runner.api.links().create.side_effect = ApiError(
+                        mock.MagicMock(return_value={'status': 403}),
+                        'Permission denied')
+                    j.run(enable_reuse=enable_reuse)
+                    j.output_callback.assert_called_with({}, 'success')
                 else:
                     assert not runner.api.links().create.called
 
