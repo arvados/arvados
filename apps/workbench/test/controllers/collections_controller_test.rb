@@ -744,7 +744,6 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_response :success
 
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
-    collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
     assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file2 0:0:dir1imagefilerenamed.png 0:0:file2\n.\/dir2\/dir3 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1moved\n$/, collection['manifest_text']
   end
 
