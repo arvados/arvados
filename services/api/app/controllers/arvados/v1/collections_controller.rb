@@ -75,7 +75,13 @@ class Arvados::V1::CollectionsController < ApplicationController
 
   def untrash
     if @object.is_trashed
-      @object.update_attributes!(trash_at: nil)
+      @object.trash_at = nil
+
+      if params[:ensure_unique_name]
+        @object.save_with_unique_name!
+      else
+        @object.save!
+      end
     else
       raise InvalidStateTransitionError
     end
