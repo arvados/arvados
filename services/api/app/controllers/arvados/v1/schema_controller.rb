@@ -189,14 +189,14 @@ class Arvados::V1::SchemaController < ApplicationController
                        "https://api.curoverse.com/auth/arvados.readonly"
                       ]
             },
-            list: {
-              id: "arvados.#{k.to_s.underscore.pluralize}.list",
+            index: {
+              id: "arvados.#{k.to_s.underscore.pluralize}.index",
               path: k.to_s.underscore.pluralize,
               httpMethod: "GET",
               description:
-                 %|List #{k.to_s.pluralize}.
+                 %|Index #{k.to_s.pluralize}.
 
-                   The <code>list</code> method returns a
+                   The <code>index</code> method returns a
                    <a href="/api/resources.html">resource list</a> of
                    matching #{k.to_s.pluralize}. For example:
 
@@ -216,53 +216,6 @@ class Arvados::V1::SchemaController < ApplicationController
                     }
                     </pre>|,
               parameters: {
-                limit: {
-                  type: "integer",
-                  description: "Maximum number of #{k.to_s.underscore.pluralize} to return.",
-                  default: "100",
-                  format: "int32",
-                  minimum: "0",
-                  location: "query",
-                },
-                offset: {
-                  type: "integer",
-                  description: "Number of #{k.to_s.underscore.pluralize} to skip before first returned record.",
-                  default: "0",
-                  format: "int32",
-                  minimum: "0",
-                  location: "query",
-                  },
-                filters: {
-                  type: "array",
-                  description: "Conditions for filtering #{k.to_s.underscore.pluralize}.",
-                  location: "query"
-                },
-                where: {
-                  type: "object",
-                  description: "Conditions for filtering #{k.to_s.underscore.pluralize}. (Deprecated. Use filters instead.)",
-                  location: "query"
-                },
-                order: {
-                  type: "string",
-                  description: "Order in which to return matching #{k.to_s.underscore.pluralize}.",
-                  location: "query"
-                },
-                select: {
-                  type: "array",
-                  description: "Select which fields to return.",
-                  location: "query"
-                },
-                distinct: {
-                  type: "boolean",
-                  description: "Return each distinct object.",
-                  location: "query"
-                },
-                count: {
-                  type: "string",
-                  description: "Type of count to return in items_available ('none' or 'exact').",
-                  default: "exact",
-                  location: "query"
-                }
               },
               response: {
                 "$ref" => "#{k.to_s}List"
@@ -405,6 +358,14 @@ class Arvados::V1::SchemaController < ApplicationController
               end
             end
             d_methods[action.to_sym] = method
+
+            if action == 'index'
+              list_method = method.dup
+              list_method[:id].sub!('index', 'list')
+              list_method[:description].sub!('Index', 'List')
+              list_method[:description].sub!('index', 'list')
+              d_methods[:list] = list_method
+            end
           end
         end
       end
