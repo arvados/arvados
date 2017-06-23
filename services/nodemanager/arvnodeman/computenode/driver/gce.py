@@ -67,6 +67,10 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
 
     def arvados_create_kwargs(self, size, arvados_node):
         name = self.create_cloud_name(arvados_node)
+
+        if size.scratch > 375000:
+            self._logger.warning("Requested %d MB scratch space, but GCE driver currently only supports attaching a single 375 GB disk.", size.scratch)
+
         disks = [
             {'autoDelete': True,
              'boot': True,
