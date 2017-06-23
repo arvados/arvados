@@ -61,5 +61,8 @@ jQuery(function($){
       var $collection_tags = $(this).closest('.collection-tags-container');
       var $clone = $collection_tags.find('tr.hide').clone(true).removeClass('hide');
       $collection_tags.find('table').append($clone);
+    }).
+    on('keypress', '.collection-tag-field', function(event){
+      return event.which != 13;
     });
 });

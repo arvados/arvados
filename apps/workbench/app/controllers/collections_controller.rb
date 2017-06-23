@@ -364,6 +364,8 @@ class CollectionsController < ApplicationController
       props[:tags] = tags
 
       if @object.update_attributes properties: props
+        @saved_tags = true
+        render
       else
         self.render_error status: 422
       end
