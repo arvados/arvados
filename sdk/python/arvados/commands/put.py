@@ -159,8 +159,12 @@ Save the collection with the specified name.
 
 run_opts.add_argument('--exclude', metavar='PATTERN', default=[],
                       action='append', help="""
-Exclude files and directories whose names match the given pattern. You
-can specify multiple patterns by using this argument more than once.
+Exclude files and directories whose names match the given glob pattern. When
+using a path-like pattern like 'subdir/*.txt', all text files inside 'subdir'
+directory, relative to the provided input dirs will be excluded.
+When using a filename pattern like '*.txt', any text file will be excluded
+no matter where is placed.
+You can specify multiple patterns by using this argument more than once.
 """)
 
 _group = run_opts.add_mutually_exclusive_group()
@@ -467,26 +471,32 @@ class ArvPutUploadJob(object):
                 path = os.path.abspath(path)
                 if orig_path[-1:] == os.sep:
                     # When passing a directory reference with a trailing slash,
-                    # its contents should be uploaded directly to the collection's root.
+                    # its contents should be uploaded directly to the
+                    # collection's root.
                     prefixdir = path
                 else:
                     # When passing a directory reference with no trailing slash,
                     # upload the directory to the collection's root.
                     prefixdir = os.path.dirname(path)
                 prefixdir += os.sep
-                for root, dirs, files in os.walk(path, followlinks=self.follow_links):
+                for root, dirs, files in os.walk(path,
+                                                 followlinks=self.follow_links):
                     root_relpath = os.path.relpath(root, path)
+                    if root_relpath == '.':
+                        root_relpath = ''
                     # Exclude files/dirs by full path matching pattern
                     if self.exclude_paths:
                         dirs[:] = filter(
-                            lambda d: not any([pathname_match(os.path.join(root_relpath, d),
-                                                              pat)
-                                               for pat in self.exclude_paths]),
+                            lambda d: not any(
+                                [pathname_match(os.path.join(root_relpath, d),
+                                                pat)
+                                 for pat in self.exclude_paths]),
                             dirs)
                         files = filter(
-                            lambda f: not any([pathname_match(os.path.join(root_relpath, f),
-                                                              pat)
-                                               for pat in self.exclude_paths]),
+                            lambda f: not any(
+                                [pathname_match(os.path.join(root_relpath, f),
+                                                pat)
+                                 for pat in self.exclude_paths]),
                             files)
                     # Exclude files/dirs by name matching pattern
                     if self.exclude_names is not None:
@@ -1012,7 +1022,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
                 p_parts = p.split(os.sep)
                 if '.' in p_parts or '..' in p_parts:
                     logger.error(
-                        "Cannot use path patterns that include '.' or '..")
+                        "Cannot use path patterns that include '.' or '..'")
                     sys.exit(1)
                 # Path search pattern
                 exclude_paths.append(p)
