@@ -25,11 +25,13 @@ func init() {
 var _ = check.Suite(&v0Suite{})
 
 type v0Suite struct {
-	token    string
-	toDelete []string
+	serverSuite serverSuite
+	token       string
+	toDelete    []string
 }
 
 func (s *v0Suite) SetUpTest(c *check.C) {
+	s.serverSuite.SetUpTest(c)
 	s.token = arvadostest.ActiveToken
 }
 
@@ -227,7 +229,9 @@ func (s *v0Suite) expectLog(c *check.C, r *json.Decoder) *arvados.Log {
 }
 
 func (s *v0Suite) testClient() (*server, *websocket.Conn, *json.Decoder, *json.Encoder) {
-	srv := newTestServer()
+	go s.serverSuite.srv.Run()
+	s.serverSuite.srv.WaitReady()
+	srv := s.serverSuite.srv
 	conn, err := websocket.Dial("ws://"+srv.listener.Addr().String()+"/websocket?api_token="+s.token, "", "http://"+srv.listener.Addr().String())
 	if err != nil {
 		panic(err)

@@ -55,6 +55,8 @@ func (rtr *router) setup() {
 	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(newSessionV1))
 	rtr.mux.HandleFunc("/debug.json", jsonHandler(rtr.DebugStatus))
 	rtr.mux.HandleFunc("/status.json", jsonHandler(rtr.Status))
+	rtr.mux.HandleFunc("/_health/ping", jsonHandler(rtr.HealthFunc(func() error { return nil })))
+	rtr.mux.HandleFunc("/_health/db", jsonHandler(rtr.HealthFunc(rtr.eventSource.DBHealth)))
 }
 
 func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
@@ -100,6 +102,21 @@ func (rtr *router) DebugStatus() interface{} {
 		s["EventSource"] = es.DebugStatus()
 	}
 	return s
+}
+
+var pingResponseOK = map[string]string{"health": "OK"}
+
+func (rtr *router) HealthFunc(f func() error) func() interface{} {
+	return func() interface{} {
+		err := f()
+		if err == nil {
+			return pingResponseOK
+		}
+		return map[string]string{
+			"health": "ERROR",
+			"error":  err.Error(),
+		}
+	}
 }
 
 func (rtr *router) Status() interface{} {
