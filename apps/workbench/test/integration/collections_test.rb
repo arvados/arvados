@@ -89,11 +89,11 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert(page.has_text?(foo_collection['uuid']), "Collection page did not include foo file")
     assert(page.has_text?(bar_collection['uuid']), "Collection page did not include bar file")
 
-    within('tr', text: foo_collection['uuid']) do
+    within "tr[data-object-uuid=\"#{foo_collection['uuid']}\"]" do
       find('input[type=checkbox]').click
     end
 
-    within('tr', text: bar_collection['uuid']) do
+    within "tr[data-object-uuid=\"#{bar_collection['uuid']}\"]" do
       find('input[type=checkbox]').click
     end
 
