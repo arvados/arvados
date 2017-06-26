@@ -1,0 +1,48 @@
+<%
+  object = @object unless object
+%>
+
+  <div class="collection-tags-container" style="padding-left:2em;padding-right:2em;">
+    <% if object.editable? %>
+      <p title="Edit tags" id="edit-collection-tags">
+        <a type="button" class="btn btn-primary edit-collection-tags">Edit</a>
+      </p>
+    <% end %>
+
+    <table class="table table-condensed table-fixedlayout collection-tags-table" border="1">
+      <colgroup>
+        <col width="5%" />
+        <col width="25%" />
+        <col width="70%" />
+      </colgroup>
+
+      <thead>
+        <tr>
+          <th></th>
+          <th>Key</th>
+          <th>Value</th>
+        </tr>
+      </thead>
+
+      <tbody class="collection-tag-rows">
+        <%= render partial: 'show_tag_rows', locals: {object: object} %>
+      </tbody>
+    </table>
+    <div>
+      <% if object.editable? %>
+        <div class="pull-left">
+          <a class="btn btn-primary btn-sm collection-tag-add hide"><i class="glyphicon glyphicon-plus"></i> Add new tag </a>
+        </div>
+        <div class="pull-right">
+          <%= link_to(save_tags_collection_path, {class: 'btn btn-sm btn-primary collection-tag-save hide', :remote => true, method: 'post', return_to: request.url}) do %>
+            Save
+          <% end %>
+          <%= link_to(tags_collection_path, {class: 'btn btn-sm btn-primary collection-tag-cancel hide', :remote => true, method: 'get', return_to: request.url}) do %>
+            Cancel
+          <% end %>
+        </div>
+
+        <div><div class="collection-tags-status"/></div></div>
+      <% end %>
+    </div>
+  </div>

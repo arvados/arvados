@@ -657,6 +657,23 @@ collection_to_remove_and_rename_files:
   manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n"
   name: collection to remove and rename files
 
+collection_with_tags_owned_by_active:
+  uuid: zzzzz-4zz18-taggedcolletion
+  portable_data_hash: fa7aeb5140e2848d39b416daeef4ffc5+45
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  created_at: 2014-02-03T17:22:54Z
+  modified_by_client_uuid: zzzzz-ozdt8-brczlopd8u8d0jr
+  modified_by_user_uuid: zzzzz-tpzed-d9tiejq69daie8f
+  modified_at: 2014-02-03T17:22:54Z
+  updated_at: 2014-02-03T17:22:54Z
+  manifest_text: ". 37b51d194a7513e45b56f6524f2d51f2+3 0:3:bar\n"
+  name: collection with tags
+  properties:
+    tags:
+      existing tag 1: value for existing tag 1
+      existing tag 2: value for existing tag 2
+    some other property: value for the other property
+
 trashed_collection_to_test_name_conflict_on_untrash:
   uuid: zzzzz-4zz18-trashedcolnamec
   portable_data_hash: 80cf6dd2cf079dd13f272ec4245cb4a8+48
@@ -683,6 +700,7 @@ same_name_as_trashed_coll_to_test_name_conflict_on_untrash:
   updated_at: 2014-02-03T17:22:54Z
   manifest_text: ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n"
   name: same name for trashed and persisted collections
+
 
 # Test Helper trims the rest of the file
 

@@ -15,6 +15,8 @@ cd /usr/src/arvados/sdk/cli
 run_bundler --binstubs=$PWD/binstubs
 ln -sf /usr/src/arvados/sdk/cli/binstubs/arv /usr/local/bin/arv
 
+pip_install wheel
+
 cd /usr/src/arvados/sdk/python
 python setup.py sdist
 pip_install $(ls dist/arvados-python-client-*.tar.gz | tail -n1)
