@@ -360,10 +360,7 @@ class CollectionsController < ApplicationController
     end
 
     if tags
-      props = @object.properties
-      props[:tags] = tags
-
-      if @object.update_attributes properties: props
+      if @object.update_attributes properties: tags
         @saved_tags = true
         render
       else
