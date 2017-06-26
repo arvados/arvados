@@ -263,6 +263,7 @@ func (ps *pgEventSource) DebugStatus() interface{} {
 		"QueueDelay":   stats.Duration(ps.lastQDelay),
 		"Sinks":        len(ps.sinks),
 		"SinksBlocked": blocked,
+		"DBStats":      ps.db.Stats(),
 	}
 }
 
