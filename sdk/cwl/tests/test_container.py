@@ -116,6 +116,9 @@ class TestContainer(unittest.TestCase):
             }, {
                 "class": "http://arvados.org/cwl#IntermediateOutput",
                 "outputTTL": 7200
+            }, {
+                "class": "http://arvados.org/cwl#ReuseRequirement",
+                "enableReuse": False
             }],
             "baseCommand": "ls"
         })
@@ -127,7 +130,7 @@ class TestContainer(unittest.TestCase):
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir="", name="test_resource_requirements",
                              make_fs_access=make_fs_access, tmpdir="/tmp"):
-            j.run()
+            j.run(enable_reuse=True)
 
         call_args, call_kwargs = runner.api.container_requests().create.call_args
 
@@ -143,7 +146,7 @@ class TestContainer(unittest.TestCase):
                 'keep_cache_ram': 536870912,
                 'API': True
             },
-            'use_existing': True,
+            'use_existing': False,
             'priority': 1,
             'mounts': {
                 '/tmp': {'kind': 'tmp',

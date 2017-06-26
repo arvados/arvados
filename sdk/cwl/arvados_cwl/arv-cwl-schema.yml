@@ -149,3 +149,19 @@ $graph:
         be trashed before downstream steps that consume it are started.  The
         recommended minimum value for TTL is the expected duration of the
         entire the workflow.
+
+- name: ReuseRequirement
+  type: record
+  extends: cwl:ProcessRequirement
+  inVocab: false
+  doc: |
+    Enable/disable work reuse for current process.  Default true (work reuse enabled).
+  fields:
+    - name: class
+      type: string
+      doc: "Always 'arv:ReuseRequirement'"
+      jsonldPredicate:
+        _id: "@type"
+        _type: "@vocab"
+    - name: enableReuse
+      type: boolean

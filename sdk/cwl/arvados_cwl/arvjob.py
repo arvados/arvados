@@ -124,6 +124,12 @@ class ArvadosJob(object):
         if not self.arvrunner.ignore_docker_for_reuse:
             filters.append(["docker_image_locator", "in docker", runtime_constraints["docker_image"]])
 
+        enable_reuse = kwargs.get("enable_reuse", True)
+        if enable_reuse:
+            reuse_req, _ = get_feature(self, "http://arvados.org/cwl#ReuseRequirement")
+            if reuse_req:
+                enable_reuse = reuse_req["enableReuse"]
+
         try:
             with Perf(metrics, "create %s" % self.name):
                 response = self.arvrunner.api.jobs().create(
@@ -137,7 +143,7 @@ class ArvadosJob(object):
                         "runtime_constraints": runtime_constraints
                     },
                     filters=filters,
-                    find_or_create=kwargs.get("enable_reuse", True)
+                    find_or_create=enable_reuse
                 ).execute(num_retries=self.arvrunner.num_retries)
 
             self.arvrunner.processes[response["uuid"]] = self

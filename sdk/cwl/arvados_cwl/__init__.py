@@ -685,7 +685,8 @@ def add_arv_hints():
         "http://arvados.org/cwl#PartitionRequirement",
         "http://arvados.org/cwl#APIRequirement",
         "http://commonwl.org/cwltool#LoadListingRequirement",
-        "http://arvados.org/cwl#IntermediateOutput"
+        "http://arvados.org/cwl#IntermediateOutput",
+        "http://arvados.org/cwl#ReuseRequirement"
     ])
 
 def main(args, stdout, stderr, api_client=None, keep_client=None):

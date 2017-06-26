@@ -82,3 +82,8 @@
   }
   tool: wf/listing_deep.cwl
   doc: test deep directory listing
+
+- job: null
+  output: {}
+  tool: noreuse.cwl
+  doc: "Test arv:ReuseRequirement"
