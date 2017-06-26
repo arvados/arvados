@@ -53,10 +53,13 @@ func (rtr *router) setup() {
 	rtr.mux = http.NewServeMux()
 	rtr.mux.Handle("/websocket", rtr.makeServer(newSessionV0))
 	rtr.mux.Handle("/arvados/v1/events.ws", rtr.makeServer(newSessionV1))
-	rtr.mux.HandleFunc("/debug.json", jsonHandler(rtr.DebugStatus))
-	rtr.mux.HandleFunc("/status.json", jsonHandler(rtr.Status))
-	rtr.mux.HandleFunc("/_health/ping", jsonHandler(rtr.HealthFunc(func() error { return nil })))
-	rtr.mux.HandleFunc("/_health/db", jsonHandler(rtr.HealthFunc(rtr.eventSource.DBHealth)))
+	rtr.mux.Handle("/debug.json", rtr.jsonHandler(rtr.DebugStatus))
+	rtr.mux.Handle("/status.json", rtr.jsonHandler(rtr.Status))
+
+	health := http.NewServeMux()
+	rtr.mux.Handle("/_health/", rtr.mgmtAuth(health))
+	health.Handle("/_health/ping", rtr.jsonHandler(rtr.HealthFunc(func() error { return nil })))
+	health.Handle("/_health/db", rtr.jsonHandler(rtr.HealthFunc(rtr.eventSource.DBHealth)))
 }
 
 func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
@@ -142,16 +145,30 @@ func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	rtr.mux.ServeHTTP(resp, req)
 }
 
-func jsonHandler(fn func() interface{}) http.HandlerFunc {
-	return func(resp http.ResponseWriter, req *http.Request) {
-		logger := logger(req.Context())
-		resp.Header().Set("Content-Type", "application/json")
-		enc := json.NewEncoder(resp)
+func (rtr *router) mgmtAuth(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if rtr.Config.ManagementToken == "" {
+			http.Error(w, "disabled", http.StatusNotFound)
+		} else if ah := r.Header.Get("Authorization"); ah == "" {
+			http.Error(w, "authorization required", http.StatusUnauthorized)
+		} else if ah != "Bearer "+rtr.Config.ManagementToken {
+			http.Error(w, "authorization error", http.StatusForbidden)
+		} else {
+			h.ServeHTTP(w, r)
+		}
+	})
+}
+
+func (rtr *router) jsonHandler(fn func() interface{}) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logger := logger(r.Context())
+		w.Header().Set("Content-Type", "application/json")
+		enc := json.NewEncoder(w)
 		err := enc.Encode(fn())
 		if err != nil {
 			msg := "encode failed"
 			logger.WithError(err).Error(msg)
-			http.Error(resp, msg, http.StatusInternalServerError)
+			http.Error(w, msg, http.StatusInternalServerError)
 		}
-	}
+	})
 }
