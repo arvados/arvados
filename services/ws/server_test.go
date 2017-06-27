@@ -65,6 +65,7 @@ func (s *serverSuite) TestBadDB(c *check.C) {
 
 func (s *serverSuite) TestHealth(c *check.C) {
 	go s.srv.Run()
+	defer s.srv.Close()
 	s.srv.WaitReady()
 	for _, token := range []string{"", "foo", s.cfg.ManagementToken} {
 		req, err := http.NewRequest("GET", "http://"+s.srv.listener.Addr().String()+"/_health/ping", nil)
@@ -83,4 +84,19 @@ func (s *serverSuite) TestHealth(c *check.C) {
 			c.Check(resp.StatusCode, check.Not(check.Equals), http.StatusOK)
 		}
 	}
+}
+
+func (s *serverSuite) TestHealthDisabled(c *check.C) {
+	s.cfg.ManagementToken = ""
+
+	go s.srv.Run()
+	defer s.srv.Close()
+	s.srv.WaitReady()
+
+	req, err := http.NewRequest("GET", "http://"+s.srv.listener.Addr().String()+"/_health/ping", nil)
+	c.Assert(err, check.IsNil)
+	req.Header.Add("Authorization", "Bearer "+arvadostest.ManagementToken)
+	resp, err := http.DefaultClient.Do(req)
+	c.Check(err, check.IsNil)
+	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
 }
