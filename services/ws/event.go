@@ -17,6 +17,7 @@ type eventSink interface {
 type eventSource interface {
 	NewSink() eventSink
 	DB() *sql.DB
+	DBHealth() error
 }
 
 type event struct {

@@ -17,6 +17,8 @@ type wsConfig struct {
 	PingTimeout      arvados.Duration
 	ClientEventQueue int
 	ServerEventQueue int
+
+	ManagementToken string
 }
 
 func defaultConfig() wsConfig {

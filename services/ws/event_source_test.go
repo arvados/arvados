@@ -105,4 +105,6 @@ func (*eventSourceSuite) TestEventSource(c *check.C) {
 	case <-time.After(10 * time.Second):
 		c.Fatal("timed out")
 	}
+
+	c.Check(pges.DBHealth(), check.IsNil)
 }

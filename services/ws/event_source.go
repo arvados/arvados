@@ -242,6 +242,12 @@ func (ps *pgEventSource) DB() *sql.DB {
 	return ps.db
 }
 
+func (ps *pgEventSource) DBHealth() error {
+	ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
+	var i int
+	return ps.db.QueryRowContext(ctx, "SELECT 1").Scan(&i)
+}
+
 func (ps *pgEventSource) DebugStatus() interface{} {
 	ps.mtx.Lock()
 	defer ps.mtx.Unlock()
@@ -257,6 +263,7 @@ func (ps *pgEventSource) DebugStatus() interface{} {
 		"QueueDelay":   stats.Duration(ps.lastQDelay),
 		"Sinks":        len(ps.sinks),
 		"SinksBlocked": blocked,
+		"DBStats":      ps.db.Stats(),
 	}
 }
 
