@@ -93,10 +93,12 @@ func (s *serverSuite) TestHealthDisabled(c *check.C) {
 	defer s.srv.Close()
 	s.srv.WaitReady()
 
-	req, err := http.NewRequest("GET", "http://"+s.srv.listener.Addr().String()+"/_health/ping", nil)
-	c.Assert(err, check.IsNil)
-	req.Header.Add("Authorization", "Bearer "+arvadostest.ManagementToken)
-	resp, err := http.DefaultClient.Do(req)
-	c.Check(err, check.IsNil)
-	c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
+	for _, token := range []string{"", "foo", arvadostest.ManagementToken} {
+		req, err := http.NewRequest("GET", "http://"+s.srv.listener.Addr().String()+"/_health/ping", nil)
+		c.Assert(err, check.IsNil)
+		req.Header.Add("Authorization", "Bearer "+token)
+		resp, err := http.DefaultClient.Do(req)
+		c.Check(err, check.IsNil)
+		c.Check(resp.StatusCode, check.Equals, http.StatusNotFound)
+	}
 }
