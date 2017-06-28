@@ -1,0 +1,32 @@
+<%= render partial: "add_repository_modal" %>
+
+<div class="container" style="width: 100%">
+  <div class="pull-right">
+    <%= link_to raw('<i class="fa fa-plus"></i> Add new repository'), "#",
+                    {class: 'btn btn-xs btn-primary', 'data-toggle' => "modal",
+                     'data-target' => '#add-repository-modal'}  %>
+  </div>
+
+  <div>
+    <table class="table table-condensed table-fixedlayout repositories-table">
+      <colgroup>
+        <col style="width: 5%" />
+        <col style="width: 30%" />
+        <col style="width: 60%" />
+        <col style="width: 5%" />
+      </colgroup>
+      <thead>
+        <tr>
+          <th></th>
+          <th> Name </th>
+          <th> URL </th>
+          <th></th>
+        </tr>
+      </thead>
+
+      <tbody data-infinite-scroller="#repositories-rows" id="repositories-rows"
+        data-infinite-content-href="<%= url_for partial: :repositories_rows %>" >
+      </tbody>
+    </table>
+  </div>
+</div>
