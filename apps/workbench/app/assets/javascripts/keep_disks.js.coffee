@@ -1,6 +1,6 @@
-// Copyright (C) The Arvados Authors. All rights reserved.
-//
-// SPDX-License-Identifier: AGPL-3.0
+### Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: AGPL-3.0 ###
 
 cache_age_in_days = (milliseconds_age) ->
   ONE_DAY = 1000 * 60 * 60 * 24

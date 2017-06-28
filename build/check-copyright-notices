@@ -133,7 +133,13 @@ git ls-files -z ${@} | \
                 cc=""
                 ce=" */"
                 ;;
-            *.go | *.scss | *.java | *.js | *.coffee)
+            *.coffee)
+                fixer=fixer
+                cs="### "
+                cc=""
+                ce=" ###"
+                ;;
+            *.go | *.scss | *.java | *.js)
                 fixer=fixer
                 cc="//"
                 ;;
