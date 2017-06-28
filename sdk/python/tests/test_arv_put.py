@@ -672,6 +672,13 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
                           self.call_main_with_args,
                           ['--project-uuid', self.Z_UUID, '--stream'])
 
+    def test_error_when_excluding_absolute_path(self):
+        tmpdir = self.make_tmpdir()
+        self.assertRaises(SystemExit,
+                          self.call_main_with_args,
+                          ['--exclude', '/some/absolute/path/*',
+                           tmpdir])
+
     def test_api_error_handling(self):
         coll_save_mock = mock.Mock(name='arv.collection.Collection().save_new()')
         coll_save_mock.side_effect = arvados.errors.ApiError(
@@ -913,6 +920,48 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                                        '--name', link_name,
                                        '--project-uuid', self.PROJECT_UUID])
         self.assertEqual(link_name, collection['name'])
+
+    def test_exclude_filename_pattern(self):
+        tmpdir = self.make_tmpdir()
+        tmpsubdir = os.path.join(tmpdir, 'subdir')
+        os.mkdir(tmpsubdir)
+        for fname in ['file1', 'file2', 'file3']:
+            with open(os.path.join(tmpdir, "%s.txt" % fname), 'w') as f:
+                f.write("This is %s" % fname)
+            with open(os.path.join(tmpsubdir, "%s.txt" % fname), 'w') as f:
+                f.write("This is %s" % fname)
+        col = self.run_and_find_collection("", ['--no-progress',
+                                                '--exclude', '*2.txt',
+                                                '--exclude', 'file3.*',
+                                                 tmpdir])
+        self.assertNotEqual(None, col['uuid'])
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        # None of the file2.txt & file3.txt should have been uploaded
+        self.assertRegex(c['manifest_text'], r'^.*:file1.txt')
+        self.assertNotRegex(c['manifest_text'], r'^.*:file2.txt')
+        self.assertNotRegex(c['manifest_text'], r'^.*:file3.txt')
+
+    def test_exclude_filepath_pattern(self):
+        tmpdir = self.make_tmpdir()
+        tmpsubdir = os.path.join(tmpdir, 'subdir')
+        os.mkdir(tmpsubdir)
+        for fname in ['file1', 'file2', 'file3']:
+            with open(os.path.join(tmpdir, "%s.txt" % fname), 'w') as f:
+                f.write("This is %s" % fname)
+            with open(os.path.join(tmpsubdir, "%s.txt" % fname), 'w') as f:
+                f.write("This is %s" % fname)
+        col = self.run_and_find_collection("", ['--no-progress',
+                                                '--exclude', 'subdir/*2.txt',
+                                                 tmpdir])
+        self.assertNotEqual(None, col['uuid'])
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        # Only tmpdir/file2.txt should have been uploaded
+        self.assertRegex(c['manifest_text'], r'^.*:file1.txt')
+        self.assertRegex(c['manifest_text'],
+                         r'^\./%s.*:file2.txt' % os.path.basename(tmpdir))
+        self.assertNotRegex(c['manifest_text'],
+                            r'^\./%s/subdir.*:file2.txt' % os.path.basename(tmpdir))
+        self.assertRegex(c['manifest_text'], r'^.*:file3.txt')
 
 
 if __name__ == '__main__':
