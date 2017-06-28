@@ -133,6 +133,10 @@ class TestJob(unittest.TestCase):
                 "outputDirType": "keep_output_dir"
             }, {
                 "class": "http://arvados.org/cwl#APIRequirement",
+            },
+            {
+                "class": "http://arvados.org/cwl#ReuseRequirement",
+                "enableReuse": False
             }],
             "baseCommand": "ls"
         }
@@ -142,7 +146,7 @@ class TestJob(unittest.TestCase):
                                                  make_fs_access=make_fs_access, loader=Loader({}))
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access):
-            j.run()
+            j.run(enable_reuse=True)
         runner.api.jobs().create.assert_called_with(
             body=JsonDiffMatcher({
                 'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
@@ -166,7 +170,7 @@ class TestJob(unittest.TestCase):
                     'keep_cache_mb_per_task': 512
                 }
             }),
-            find_or_create=True,
+            find_or_create=False,
             filters=[['repository', '=', 'arvados'],
                      ['script', '=', 'crunchrunner'],
                      ['script_version', 'in git', 'a3f2cb186e437bfce0031b024b2157b73ed2717d'],
