@@ -41,7 +41,10 @@ EOF
 done
 
 fixer() {
-    want="${want}" perl -pi~ -e 'if ($. == 1) { s{^(\#\!.*\n)?}{${1}$ENV{want}\n\n} }' "${1}"
+    want="${want}" perl -pi~ - "${1}" <<'EOF'
+BEGIN { undef $/ }
+s{^(\#\!.*?\n|\n*---\n.*?\n\.\.\.\n\n?)?}{${1}$ENV{want}\n\n}ms
+EOF
 }
 
 IFS=$'\n' read -a ignores -r -d $'\000' <.licenseignore || true
@@ -113,7 +116,7 @@ git ls-files -z ${@} | \
                 fixer=fixer
                 cs=$'{% comment %}\n'
                 cc=
-                ce=$'\n%{% endcomment %}'
+                ce=$'\n{% endcomment %}'
                 grepAfter=3
                 grepBefore=1
                 ;;
