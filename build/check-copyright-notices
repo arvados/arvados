@@ -43,7 +43,7 @@ done
 fixer() {
     want="${want}" perl -pi~ - "${1}" <<'EOF'
 BEGIN { undef $/ }
-s{^((\#\!.*?\n|\n*---\n.*?\n\.\.\.\n)\n?)?}{${2}$ENV{want}\n\n}ms
+s{^((\#\!.*?\n|\n*---\n.*?\n\.\.\.\n|<\?xml.*?>\n)\n?)?}{${2}$ENV{want}\n\n}ms
 EOF
 }
 
