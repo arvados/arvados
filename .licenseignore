@@ -1,5 +1,7 @@
 *agpl-3.0.txt
 apps/workbench/app/assets/javascripts/list.js
+*bootstrap.css
+*bootstrap-theme.css
 build/package-test-dockerfiles/centos7/localrepo.repo
 build/package-test-dockerfiles/ubuntu1604/etc-apt-preferences.d-arvados
 *by-sa-3.0.txt
@@ -7,6 +9,7 @@ build/package-test-dockerfiles/ubuntu1604/etc-apt-preferences.d-arvados
 doc/fonts/*
 */docker_image
 docker/jobs/apt.arvados.org.list
+*font-awesome.css
 *.gif
 .gitignore
 */.gitignore
@@ -17,10 +20,12 @@ docker/jobs/apt.arvados.org.list
 *.ico
 *.jpg
 *.json
+.licenseignore
 *LICENSE*.txt
 *.lock
 *.log
 *.map
+*.min.js
 *.png
 */proc_stat
 */README

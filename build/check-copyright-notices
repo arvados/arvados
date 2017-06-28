@@ -93,6 +93,7 @@ git ls-files -z ${@} | \
                 | *.sh | *.service \
                 | */run | */run-service | */restart-dns-server \
                 | */nodemanager/doc/*.cfg \
+                | */nodemanager/tests/fake.cfg.template \
                 | */nginx.conf \
                 | build/build.list)
                 fixer=fixer
