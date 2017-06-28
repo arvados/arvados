@@ -486,22 +486,22 @@ class ArvPutUploadJob(object):
                         root_relpath = ''
                     # Exclude files/dirs by full path matching pattern
                     if self.exclude_paths:
-                        dirs[:] = filter(
+                        dirs[:] = list(filter(
                             lambda d: not any(
                                 [pathname_match(os.path.join(root_relpath, d),
                                                 pat)
                                  for pat in self.exclude_paths]),
-                            dirs)
-                        files = filter(
+                            dirs))
+                        files = list(filter(
                             lambda f: not any(
                                 [pathname_match(os.path.join(root_relpath, f),
                                                 pat)
                                  for pat in self.exclude_paths]),
-                            files)
+                            files))
                     # Exclude files/dirs by name matching pattern
                     if self.exclude_names is not None:
-                        dirs[:] = filter(lambda d: not self.exclude_names.match(d), dirs)
-                        files = filter(lambda f: not self.exclude_names.match(f), files)
+                        dirs[:] = list(filter(lambda d: not self.exclude_names.match(d), dirs))
+                        files = list(filter(lambda f: not self.exclude_names.match(f), files))
                     # Make os.walk()'s dir traversing order deterministic
                     dirs.sort()
                     files.sort()
