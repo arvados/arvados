@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 module ShareObjectHelper
   def show_object_using(auth_key, type, key, expect)
     obj_uuid = api_fixture(type)[key]['uuid']

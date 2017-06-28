@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
 
 read -rd "\000" helpmessage <<EOF
 Build an arvados/jobs Docker image from local git tree.

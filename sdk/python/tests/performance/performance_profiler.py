@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Use the "profiled" decorator on a test to get profiling data.
 #
 # Usage:

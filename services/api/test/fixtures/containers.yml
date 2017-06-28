@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 queued:
   uuid: zzzzz-dz642-queuedcontainer
   owner_uuid: zzzzz-tpzed-000000000000000

@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class SearchIndex < ActiveRecord::Migration
   def tables_with_searchable_columns
     {

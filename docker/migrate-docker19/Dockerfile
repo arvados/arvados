@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 FROM debian:8
 
 ENV DEBIAN_FRONTEND noninteractive

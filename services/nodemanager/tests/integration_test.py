@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 """Integration test framework for node manager.
 
 Runs full node manager with an API server (needs ARVADOS_API_HOST and

@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 all: centos7/generated debian8/generated ubuntu1204/generated ubuntu1404/generated ubuntu1604/generated
 
 centos7/generated: common-generated-all

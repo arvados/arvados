@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class UserSessionsController < ApplicationController
   before_filter :require_auth_scope, :only => [ :destroy ]
 

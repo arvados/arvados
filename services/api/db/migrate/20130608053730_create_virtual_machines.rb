@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class CreateVirtualMachines < ActiveRecord::Migration
   def change
     create_table :virtual_machines do |t|

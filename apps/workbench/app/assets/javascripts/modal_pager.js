@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 // Usage:
 //
 // 1. Add some buttons to your modal, one with class="pager-next" and

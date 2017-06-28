@@ -1,3 +1,7 @@
+<%# Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: AGPL-3.0 %>
+
 <% @objects.sort_by { |ob| ob.created_at }.reverse.each do |ob| %>
     <tr data-object-uuid="<%= ob.uuid %>" data-kind="<%= ob.kind %>" >
       <td>

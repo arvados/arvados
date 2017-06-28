@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 module URI
   if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('2.2')
     # Rack uses the standard library method URI.decode_www_form_component to

@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """These tests assume we are running (in a docker container) with
 arvados_pam configured and a test API server running.
 """

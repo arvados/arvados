@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 noop: # nothing happened ...to the 'spectator' user
   id: 1
   uuid: zzzzz-xxxxx-pshmckwoma9plh7

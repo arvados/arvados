@@ -1,4 +1,7 @@
 #!/usr/bin/env ruby
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
 
 ENV["RAILS_ENV"] = ARGV[0] || ENV["RAILS_ENV"] || "development"
 require File.dirname(__FILE__) + '/../config/boot'

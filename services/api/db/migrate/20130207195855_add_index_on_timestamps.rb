@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class AddIndexOnTimestamps < ActiveRecord::Migration
   def tables
     %w{api_clients collections jobs job_steps links logs nodes pipeline_invocations pipelines projects specimens users}

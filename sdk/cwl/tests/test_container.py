@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import arvados_cwl
 from arvados_cwl.arvdocker import arv_docker_clear_cache
 import logging

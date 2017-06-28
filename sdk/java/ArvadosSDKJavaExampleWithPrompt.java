@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: Apache-2.0
+
 /**
  * This Sample test program is useful in getting started with using Arvados Java SDK.
  * This program creates an Arvados instance using the configured environment variables.

@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 module Keep
   class Locator
     # A Locator is used to parse and manipulate Keep locator strings.

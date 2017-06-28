@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class Arvados::V1::SchemaController < ApplicationController
   skip_before_filter :catch_redirect_hint
   skip_before_filter :find_objects_for_index

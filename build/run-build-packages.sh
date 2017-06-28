@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
 
 . `dirname "$(readlink -f "$0")"`/run-library.sh
 . `dirname "$(readlink -f "$0")"`/libcloud-pin.sh

@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 // infinite_scroll.js displays a tab's content using automatic scrolling
 // when the user scrolls to the bottom of the page and there is more data.
 //

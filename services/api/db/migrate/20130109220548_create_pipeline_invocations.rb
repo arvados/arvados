@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class CreatePipelineInvocations < ActiveRecord::Migration
   def up
     create_table :pipeline_invocations do |t|

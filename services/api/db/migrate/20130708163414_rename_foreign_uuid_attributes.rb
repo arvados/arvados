@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class RenameForeignUuidAttributes < ActiveRecord::Migration
   def change
     rename_column :api_client_authorizations, :default_owner, :default_owner_uuid

@@ -1,3 +1,7 @@
+<%# Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: AGPL-3.0 %>
+
 <% if @pipelines.count > 1 %>
   <div style="text-align: center; padding-top: 0.5em">
     <span class="pipeline_color_legend" style="background: #aaffaa"><%= link_to_if_arvados_object @pipelines[0], friendly_name: true %></span>

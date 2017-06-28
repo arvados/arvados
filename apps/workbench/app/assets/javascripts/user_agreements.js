@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 function enable_okbutton() {
     var $div = $('#open_user_agreement');
     var allchecked = $('input[name="checked[]"]', $div).not(':checked').length == 0;

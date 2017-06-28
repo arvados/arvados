@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 // filterable.js shows/hides content when the user operates
 // search/select widgets. For "infinite scroll" content, it passes the
 // filters to the server and retrieves new content. For other content,

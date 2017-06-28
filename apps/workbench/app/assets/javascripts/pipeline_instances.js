@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 function run_pipeline_button_state() {
     var a = $('a.editable.required.editable-empty,input.form-control.required[value=""]');
     if ((a.length > 0) || ($('.unreadable-inputs-present').length)) {

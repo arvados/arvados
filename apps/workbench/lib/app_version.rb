@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 # If you change this file, you'll probably also want to make the same
 # changes in services/api/lib/app_version.rb.
 

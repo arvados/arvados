@@ -1,4 +1,7 @@
 #! /usr/bin/env python
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: CC-BY-SA-3.0
 
 # gen_api_method_docs.py
 #

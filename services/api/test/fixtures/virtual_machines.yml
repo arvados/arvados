@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 testvm:
   uuid: zzzzz-2x53u-382brsig8rp3064
   owner_uuid: zzzzz-tpzed-d9tiejq69daie8f

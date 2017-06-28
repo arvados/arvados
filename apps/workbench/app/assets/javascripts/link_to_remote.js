@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 $.rails.href = function(element) {
     if (element.is('a')) {
         // data-remote=true links must put their remote targets in

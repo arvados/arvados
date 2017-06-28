@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Test case for arvados-cwl-runner
 #
 # Used to test whether scanning a tool file for dependencies (e.g. default

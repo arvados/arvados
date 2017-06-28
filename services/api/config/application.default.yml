@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 # Do not use this file for site configuration. Create application.yml
 # instead (see application.yml.example).
 #

@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 module UsersTestHelper
   def verify_link(response_items, link_object_name, expect_link, link_class,
         link_name, head_uuid, tail_uuid, head_kind, fetch_object, class_name)

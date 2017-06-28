@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
 
 read -rd "\000" helpmessage <<EOF
 $(basename $0): Orchestrate run-build-packages.sh for one target
