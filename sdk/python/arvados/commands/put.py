@@ -456,8 +456,8 @@ class ArvPutUploadJob(object):
         """
         # If there aren't special files to be read, reset total bytes count to zero
         # to start counting.
-        if not any(filter(lambda p: not (os.path.isfile(p) or os.path.isdir(p)),
-                          self.paths)):
+        if not any([p for p in self.paths
+                    if not (os.path.isfile(p) or os.path.isdir(p))]):
             self.bytes_expected = 0
 
         for path in self.paths:
@@ -490,22 +490,20 @@ class ArvPutUploadJob(object):
                         root_relpath = ''
                     # Exclude files/dirs by full path matching pattern
                     if self.exclude_paths:
-                        dirs[:] = list(filter(
-                            lambda d: not any(
-                                [pathname_match(os.path.join(root_relpath, d),
-                                                pat)
-                                 for pat in self.exclude_paths]),
-                            dirs))
-                        files = list(filter(
-                            lambda f: not any(
-                                [pathname_match(os.path.join(root_relpath, f),
-                                                pat)
-                                 for pat in self.exclude_paths]),
-                            files))
+                        dirs[:] = [d for d in dirs
+                                   if not any(pathname_match(
+                                           os.path.join(root_relpath, d), pat)
+                                              for pat in self.exclude_paths)]
+                        files = [f for f in files
+                                 if not any(pathname_match(
+                                         os.path.join(root_relpath, f), pat)
+                                            for pat in self.exclude_paths)]
                     # Exclude files/dirs by name matching pattern
                     if self.exclude_names is not None:
-                        dirs[:] = list(filter(lambda d: not self.exclude_names.match(d), dirs))
-                        files = list(filter(lambda f: not self.exclude_names.match(f), files))
+                        dirs[:] = [d for d in dirs
+                                   if not self.exclude_names.match(d)]
+                        files = [f for f in files
+                                 if not self.exclude_names.match(f)]
                     # Make os.walk()'s dir traversing order deterministic
                     dirs.sort()
                     files.sort()
