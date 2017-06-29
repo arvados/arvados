@@ -110,7 +110,7 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
   end
 
   test "verify repositories for active user" do
-    visit page_with_token('active',"/users/#{api_fixture('users')['active']['uuid']}/repositories")
+    visit page_with_token('active',"/repositories")
 
     repos = [[api_fixture('repositories')['foo'], true],
              [api_fixture('repositories')['repository3'], false],
@@ -122,9 +122,9 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
         assert_text repo['name']
         assert_selector 'a', text:'Show'
         if owned
-          assert_not_nil first('.fa-trash-o')
+          assert_not_nil first('.glyphicon-trash')
         else
-          assert_nil first('.fa-trash-o')
+          assert_nil first('.glyphicon-trash')
         end
       end
     end
@@ -189,12 +189,12 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
 
   [
     ['virtual_machines', nil, 'Host name', 'testvm2.shell'],
-    ['repositories', 'Add new repository', 'It may take a minute or two before you can clone your new repository.', 'active/foo'],
+    ['/repositories', 'Add new repository', 'It may take a minute or two before you can clone your new repository.', 'active/foo'],
     ['/current_token', nil, 'HISTIGNORE=$HISTIGNORE', 'ARVADOS_API_TOKEN=3kg6k6lzmp9kj5'],
     ['ssh_keys', 'Add new SSH key', 'Click here to learn about SSH keys in Arvados.', 'active'],
   ].each do |page_name, button_name, look_for, content|
     test "test user settings menu for page #{page_name}" do
-      if page_name == '/current_token'
+      if page_name == '/current_token' || page_name == '/repositories'
         visit page_with_token('active', page_name)
       else
         visit page_with_token('active', "/users/#{api_fixture('users')['active']['uuid']}/#{page_name}")
@@ -212,7 +212,7 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
 
   [
     ['virtual_machines', 'You do not have access to any virtual machines.'],
-    ['/repositories', api_fixture('repositories')['arvados']['uuid']],
+    ['/repositories', api_fixture('repositories')['arvados']['name']],
     ['/current_token', 'HISTIGNORE=$HISTIGNORE'],
     ['ssh_keys', 'You have not yet set up an SSH public key for use with Arvados.'],
   ].each do |page_name, look_for|

@@ -52,7 +52,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
 
             assert_selector "a[href=\"/projects/#{user['uuid']}\"]", text: 'Home project'
             assert_selector "a[href=\"/users/#{user['uuid']}/virtual_machines\"]", text: 'Virtual machines'
-            assert_selector "a[href=\"/users/#{user['uuid']}/repositories\"]", text: 'Repositories'
+            assert_selector "a[href=\"/repositories\"]", text: 'Repositories'
             assert_selector "a[href=\"/current_token\"]", text: 'Current token'
             assert_selector "a[href=\"/users/#{user['uuid']}/ssh_keys\"]", text: 'SSH keys'
 
@@ -210,7 +210,7 @@ class ApplicationLayoutTest < ActionDispatch::IntegrationTest
   end
 
    [
-    ['Repositories', nil, 's0uqq'],
+    ['Repositories', nil, 'active/crunchdispatchtest'],
     ['Virtual machines', nil, 'testvm.shell'],
     ['SSH keys', nil, 'public_key'],
     ['Links', nil, 'link_class'],
