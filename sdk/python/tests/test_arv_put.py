@@ -956,15 +956,17 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                 f.write("This is %s" % fname)
         col = self.run_and_find_collection("", ['--no-progress',
                                                 '--exclude', 'subdir/*2.txt',
+                                                '--exclude', './file1.*',
                                                  tmpdir])
         self.assertNotEqual(None, col['uuid'])
         c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
-        # Only tmpdir/file2.txt should have been uploaded
-        self.assertRegex(c['manifest_text'], r'^.*:file1.txt')
-        self.assertRegex(c['manifest_text'],
-                         r'^\./%s.*:file2.txt' % os.path.basename(tmpdir))
+        # Only tmpdir/file1.txt & tmpdir/subdir/file2.txt should have been excluded
+        self.assertNotRegex(c['manifest_text'],
+                            r'^\./%s.*:file1.txt' % os.path.basename(tmpdir))
         self.assertNotRegex(c['manifest_text'],
                             r'^\./%s/subdir.*:file2.txt' % os.path.basename(tmpdir))
+        self.assertRegex(c['manifest_text'],
+                         r'^\./%s.*:file2.txt' % os.path.basename(tmpdir))
         self.assertRegex(c['manifest_text'], r'^.*:file3.txt')
 
 

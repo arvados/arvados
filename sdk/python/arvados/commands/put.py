@@ -168,6 +168,8 @@ using a path-like pattern like 'subdir/*.txt', all text files inside 'subdir'
 directory, relative to the provided input dirs will be excluded.
 When using a filename pattern like '*.txt', any text file will be excluded
 no matter where is placed.
+For the special case of needing to exclude only files or dirs directly below
+the given input directory, you can use a pattern like './exclude_this.gif'.
 You can specify multiple patterns by using this argument more than once.
 """)
 
@@ -920,7 +922,7 @@ _machine_format = "{} {}: {{}} written {{}} total\n".format(sys.argv[0],
 def pathname_match(pathname, pattern):
     name = pathname.split(os.sep)
     # Fix patterns like 'some/subdir/' or 'some//subdir'
-    pat = [x for x in pattern.split(os.sep) if x != '']
+    pat = [x for x in pattern.split(os.sep) if x != '' and x != '.']
     if len(name) != len(pat):
         return False
     for i in range(len(name)):
@@ -1009,35 +1011,37 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     exclude_names = None
     if len(args.exclude) > 0:
         # We're supporting 2 kinds of exclusion patterns:
-        # 1) --exclude '*.jpg'      (file/dir name patterns, will only match
-        #                            the name)
-        # 2) --exclude 'foo/bar'    (file/dir path patterns, will match the
+        # 1)   --exclude '*.jpg'    (file/dir name patterns, will only match
+        #                            the name, wherever the file is on the tree)
+        # 2.1) --exclude 'foo/bar'  (file/dir path patterns, will match the
         #                            entire path, and should be relative to
         #                            any input dir argument)
+        # 2.2) --exclude './*.jpg'  (Special case for excluding files/dirs
+        #                            placed directly underneath the input dir)
         for p in args.exclude:
             # Only relative paths patterns allowed
             if p.startswith(os.sep):
                 logger.error("Cannot use absolute paths with --exclude")
                 sys.exit(1)
             if os.path.dirname(p):
-                # We don't support of path patterns with '.' or '..'
+                # We don't support of path patterns with '..'
                 p_parts = p.split(os.sep)
-                if '.' in p_parts or '..' in p_parts:
+                if '..' in p_parts:
                     logger.error(
-                        "Cannot use path patterns that include '.' or '..'")
+                        "Cannot use path patterns that include or '..'")
                     sys.exit(1)
                 # Path search pattern
                 exclude_paths.append(p)
             else:
                 # Name-only search pattern
                 name_patterns.append(p)
-        # For name only matching, we can combine all patterns into a single regexp,
-        # for better performance.
+        # For name only matching, we can combine all patterns into a single
+        # regexp, for better performance.
         exclude_names = re.compile('|'.join(
             [fnmatch.translate(p) for p in name_patterns]
         )) if len(name_patterns) > 0 else None
-        # Show the user the patterns to be used, just in case they weren't specified inside
-        # quotes and got changed by the shell expansion.
+        # Show the user the patterns to be used, just in case they weren't
+        # specified inside quotes and got changed by the shell expansion.
         logger.info("Exclude patterns: {}".format(args.exclude))
 
     # If this is used by a human, and there's at least one directory to be
