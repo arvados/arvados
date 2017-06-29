@@ -771,6 +771,7 @@ class ProjectDirectory(Directory):
         self._poll_time = poll_time
         self._updating_lock = threading.Lock()
         self._current_user = None
+        self._extra = set()
 
     def want_event_subscribe(self):
         return True
@@ -835,8 +836,19 @@ class ProjectDirectory(Directory):
                     self.project_object = self.api.users().get(
                         uuid=self.project_uuid).execute(num_retries=self.num_retries)
 
-                contents = arvados.util.list_all(self.api.groups().contents,
-                                                 self.num_retries, uuid=self.project_uuid)
+                contents = self.api.groups().list(filters=[["owner_uuid", "=", self.project_uuid],
+                                                           ["group_class", "=", "project"]],
+                                                  limit=1000, order=["modified_at desc"]).execute(num_retries=self.num_retries)["items"]
+                contents.extend(self.api.collections().list(filters=[["owner_uuid", "=", self.project_uuid]],
+                                                            limit=1000, order=["modified_at desc"]).execute(num_retries=self.num_retries)["items"])
+                if self._extra:
+                    contents.extend(self.api.groups().list(filters=[["owner_uuid", "=", self.project_uuid],
+                                                                    ["group_class", "=", "project"],
+                                                                    ["uuid", "in", list(self._extra)]],
+                                                      limit=1000).execute(num_retries=self.num_retries)["items"])
+                    contents.extend(self.api.collections().list(filters=[["owner_uuid", "=", self.project_uuid],
+                                                                         ["uuid", "in", list(self._extra)]],
+                                                                limit=1000).execute(num_retries=self.num_retries)["items"])
 
             # end with llfuse.lock_released, re-acquire lock
 
@@ -859,7 +871,24 @@ class ProjectDirectory(Directory):
         if k == '.arvados#project':
             return True
         else:
-            return super(ProjectDirectory, self).__contains__(k)
+            if super(ProjectDirectory, self).__contains__(k):
+                return True
+            else:
+                with llfuse.lock_released:
+                    contents = self.api.collections().list(filters=[["owner_uuid", "=", self.project_uuid],
+                                                                    ["name", "=", k]],
+                                                           limit=1).execute(num_retries=self.num_retries)["items"]
+                    if not contents:
+                        contents = self.api.groups().list(filters=[["owner_uuid", "=", self.project_uuid],
+                                                                   ["group_class", "=", "project"],
+                                                                   ["name", "=", k]],
+                                                          limit=1).execute(num_retries=self.num_retries)["items"]
+                if contents:
+                    self._extra.add(contents[0]["uuid"])
+                    self.invalidate()
+                    return True
+                else:
+                    return False
 
     @use_counter
     @check_update
