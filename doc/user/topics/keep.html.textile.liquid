@@ -3,6 +3,11 @@ layout: default
 navsection: userguide
 title: "How Keep works"
 ...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
 
 The Arvados distributed file system is called *Keep*.  Keep is a content-addressable file system.  This means that files are managed using special unique identifiers derived from the _contents_ of the file (specifically, the MD5 hash), rather than human-assigned file names.  This has a number of advantages:
 * Files can be stored and replicated across a cluster of servers without requiring a central name server.

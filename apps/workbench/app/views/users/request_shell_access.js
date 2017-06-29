@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 var timestamp = new Date();
 localStorage.setItem("request_shell_access",
                      "A request for shell access was sent on " +

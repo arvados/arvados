@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class CreateCommits < ActiveRecord::Migration
   def change
     create_table :commits do |t|

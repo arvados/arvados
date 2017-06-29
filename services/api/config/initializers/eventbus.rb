@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 if ENV['ARVADOS_WEBSOCKETS']
   Server::Application.configure do
     Rails.logger.error "Built-in websocket server is disabled. See note (2017-03-23, e8cc0d7) at https://dev.arvados.org/projects/arvados/wiki/Upgrading_to_master"

@@ -1,5 +1,10 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import difflib
 import json
+import re
 
 
 class JsonDiffMatcher(object):
@@ -21,3 +26,7 @@ class JsonDiffMatcher(object):
                 actual_json.splitlines(1),
                 fromfile="Expected", tofile="Actual")))
         return True
+
+
+def StripYAMLComments(yml):
+    return re.sub(r'(?ms)^(#.*?\n)*\n*', '', yml)

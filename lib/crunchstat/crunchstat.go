@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 // Package crunchstat reports resource usage (CPU, memory, disk,
 // network) for a cgroup.
 package crunchstat

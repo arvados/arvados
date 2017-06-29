@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 module LogReuseInfo
   # log_reuse_info logs whatever the given block returns, if
   # log_reuse_decisions is enabled. It accepts a block instead of a

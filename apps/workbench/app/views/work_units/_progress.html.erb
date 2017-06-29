@@ -1,3 +1,7 @@
+<%# Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: AGPL-3.0 %>
+
 <% if wu.is_running? %>
   <% if @object.andand.uuid == wu.uuid and wu.progress == 0.0 %>
     <span class="label label-<%= wu.state_bootstrap_class %>"> Active </span>

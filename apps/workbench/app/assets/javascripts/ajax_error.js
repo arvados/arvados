@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 $(document).on('ajax:error', function(e, xhr, status, error) {
     var errorMessage = '' + status + ': ' + error;
     // $btn is the element (button/link) that initiated the failed request.

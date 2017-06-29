@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: Apache-2.0
+
 /* Deals with parsing Manifest Text. */
 
 // Inspired by the Manifest class in arvados/sdk/ruby/lib/arvados/keep.rb

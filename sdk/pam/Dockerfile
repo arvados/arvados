@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # These tests assume you have a real API server running on the docker host.
 #
 # Build the test container:

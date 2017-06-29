@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class CreateCommitAncestors < ActiveRecord::Migration
   def change
     create_table :commit_ancestors do |t|

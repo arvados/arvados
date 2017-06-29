@@ -3,6 +3,11 @@ layout: default
 navsection: api
 title: Storage in Keep
 ...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
 
 Keep clients are applications such as @arv-get@, @arv-put@ and @arv-mount@ which store and retrieve data from Keep.  In doing so, these programs interact with both the API server (which stores file metadata in form of Collection objects) and individual Keep servers (which store the actual data blocks).
 

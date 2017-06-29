@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 module RepositoryStubHelper
   # Supply some fake git content.
   def stub_repo_content opts={}

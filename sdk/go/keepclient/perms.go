@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: Apache-2.0
+
 // Generate and verify permission signatures for Keep locators.
 //
 // See https://dev.arvados.org/projects/arvados/wiki/Keep_locator_format

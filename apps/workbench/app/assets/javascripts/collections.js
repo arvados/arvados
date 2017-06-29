@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 jQuery(function($){
     $(document).on('click', '.toggle-persist button', function() {
         var toggle_group = $(this).parents('[data-remote-href]').first();

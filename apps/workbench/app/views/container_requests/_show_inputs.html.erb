@@ -1,3 +1,7 @@
+<%# Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: AGPL-3.0 %>
+
 <%
 n_inputs = if @object.mounts[:"/var/lib/cwl/workflow.json"] && @object.mounts[:"/var/lib/cwl/cwl.input.json"]
              cwl_inputs_required(@object, get_cwl_inputs(@object.mounts[:"/var/lib/cwl/workflow.json"][:content]), [:mounts, :"/var/lib/cwl/cwl.input.json", :content])

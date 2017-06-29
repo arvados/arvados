@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 # http://guides.rubyonrails.org/v3.2.13/performance_testing.html
 
 require 'test_helper'

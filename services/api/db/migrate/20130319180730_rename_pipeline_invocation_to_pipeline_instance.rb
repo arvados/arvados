@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class RenamePipelineInvocationToPipelineInstance < ActiveRecord::Migration
   def up
     rename_table :pipeline_invocations, :pipeline_instances

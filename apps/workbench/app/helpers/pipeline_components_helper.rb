@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 module PipelineComponentsHelper
   def render_pipeline_components(template_suffix, fallback=nil, locals={})
     begin

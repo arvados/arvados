@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 # Install the supplied string (or a randomly generated token, if none
 # is given) as an API token that authenticates to the system user account.
 

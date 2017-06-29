@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class ProjectsController < ApplicationController
   before_filter :set_share_links, if: -> { defined? @object and @object}
   skip_around_filter :require_thread_api_token, if: proc { |ctrl|

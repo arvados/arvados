@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 // Testing tool for Keep services.
 //
 // keepexercise helps measure throughput and test reliability under

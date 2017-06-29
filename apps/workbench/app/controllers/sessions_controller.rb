@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class SessionsController < ApplicationController
   skip_around_filter :require_thread_api_token, :only => [:destroy, :index]
   skip_around_filter :set_thread_api_token, :only => [:destroy, :index]

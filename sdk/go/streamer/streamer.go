@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: Apache-2.0
+
 /* AsyncStream pulls data in from a io.Reader source (such as a file or network
 socket) and fans out to any number of StreamReader sinks.
 

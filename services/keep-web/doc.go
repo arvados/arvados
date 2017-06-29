@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 // Keep-web provides read-only HTTP access to files stored in Keep. It
 // serves public data to anonymous and unauthenticated clients, and
 // serves private data to clients that supply Arvados API tokens. It

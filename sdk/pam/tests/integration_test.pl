@@ -1,4 +1,7 @@
 #!/usr/bin/env perl
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
 
 $ENV{ARVADOS_API_HOST_INSECURE} = 1;
 use Authen::PAM qw(:constants);

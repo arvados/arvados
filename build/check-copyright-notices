@@ -41,7 +41,10 @@ EOF
 done
 
 fixer() {
-    want="${want}" perl -pi~ -e 'if ($. == 1) { s{^(\#\!.*\n)?}{${1}$ENV{want}\n\n} }' "${1}"
+    want="${want}" perl -pi~ - "${1}" <<'EOF'
+BEGIN { undef $/ }
+s{^((\#\!.*?\n|\n*---\n.*?\n\.\.\.\n|<\?xml.*?>\n)\n?)?}{${2}$ENV{want}\n\n}ms
+EOF
 }
 
 IFS=$'\n' read -a ignores -r -d $'\000' <.licenseignore || true
@@ -90,6 +93,7 @@ git ls-files -z ${@} | \
                 | *.sh | *.service \
                 | */run | */run-service | */restart-dns-server \
                 | */nodemanager/doc/*.cfg \
+                | */nodemanager/tests/fake*.cfg.template \
                 | */nginx.conf \
                 | build/build.list)
                 fixer=fixer
@@ -105,31 +109,37 @@ git ls-files -z ${@} | \
                 ;;
             *.erb)
                 fixer=fixer
-                cs="<%#"
+                cs="<%# "
                 cc=""
                 ce=" %>"
                 ;;
             *.liquid)
                 fixer=fixer
                 cs=$'{% comment %}\n'
-                cc=
-                ce=$'\n%{% endcomment %}'
+                cc=""
+                ce=$'\n{% endcomment %}'
                 grepAfter=3
                 grepBefore=1
                 ;;
             *.textile)
                 fixer=fixer
-                cs="###."
+                cs="###. "
                 cc="...."
                 ce=
                 ;;
             *.css)
                 fixer=fixer
-                cs="/*"
+                cs="/* "
                 cc=""
                 ce=" */"
                 ;;
-            *.go | *.scss | *.java | *.js | *.coffee)
+            *.coffee)
+                fixer=fixer
+                cs="### "
+                cc=""
+                ce=" ###"
+                ;;
+            *.go | *.scss | *.java | *.js)
                 fixer=fixer
                 cc="//"
                 ;;
@@ -140,7 +150,7 @@ git ls-files -z ${@} | \
             *.html | *.svg)
                 fixer=fixer
                 cs="<!-- "
-                cc=
+                cc=""
                 ce=" -->"
                 ;;
             *)
@@ -152,16 +162,16 @@ git ls-files -z ${@} | \
                 fi
                 ;;
         esac
-        wantGPL="${cs:-${cc}} Copyright (C) The Arvados Authors. All rights reserved.
+        wantGPL="${cs:-${cc}${cc:+ }}Copyright (C) The Arvados Authors. All rights reserved.
 ${cc}
 ${cc}${cc:+ }SPDX-License-Identifier: AGPL-3.0${ce}"
-        wantApache="${cs:-${cc}} Copyright (C) The Arvados Authors. All rights reserved.
+        wantApache="${cs:-${cc}${cc:+ }}Copyright (C) The Arvados Authors. All rights reserved.
 ${cc}
 ${cc}${cc:+ }SPDX-License-Identifier: Apache-2.0${ce}"
-        wantBYSA="${cs:-${cc}} Copyright (C) The Arvados Authors. All rights reserved.
+        wantBYSA="${cs:-${cc}${cc:+ }}Copyright (C) The Arvados Authors. All rights reserved.
 ${cc}
 ${cc}${cc:+ }SPDX-License-Identifier: CC-BY-SA-3.0${ce}"
-        found=$(head "$fnm" | egrep -A${grepAfter} -B${grepBefore} 'Copyright.*Arvados' || true)
+        found=$(head -n20 "$fnm" | egrep -A${grepAfter} -B${grepBefore} 'Copyright.*Arvados' || true)
         case ${fnm} in
             Makefile | build/* | lib/* | tools/* | apps/* | services/*)
                 want=${wantGPL}

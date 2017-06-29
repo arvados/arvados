@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 namespace :config do
   desc 'Ensure site configuration has all required settings'
   task check: :environment do

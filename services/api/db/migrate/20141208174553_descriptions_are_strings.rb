@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class DescriptionsAreStrings < ActiveRecord::Migration
   def tables_with_description_column
     %w{collections groups jobs pipeline_instances pipeline_templates}
