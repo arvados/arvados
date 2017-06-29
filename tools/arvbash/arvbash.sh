@@ -1,4 +1,8 @@
 #!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 # bash functions for managing Arvados tokens and other conveniences.
 
 read -rd "\000" helpmessage <<EOF

@@ -1,4 +1,8 @@
 #!/usr/bin/env ruby
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 #
 # Prior to April 2015, Arvados Gitolite integration stored repositories by
 # name.  To improve user repository management, we switched to storing

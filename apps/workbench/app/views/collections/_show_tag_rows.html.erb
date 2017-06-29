@@ -1,0 +1,35 @@
+<%# Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: AGPL-3.0 %>
+
+<%
+  tags = object.properties
+%>
+      <% if tags.andand.is_a?(Hash) %>
+        <% tags.each do |k, v| %>
+          <tr class="collection-tag-<%=k%>">
+            <td>
+              <% if object.editable? %>
+                <i class="glyphicon glyphicon-remove collection-tag-remove hide" style="cursor: pointer;"></i>
+              <% end %>
+            </td>
+            <td class="collection-tag-field collection-tag-field-key">
+              <%= k %>
+            </td>
+            <td class="collection-tag-field collection-tag-field-value">
+              <%= v %>
+            </td>
+          </tr>
+        <% end %>
+      <% end %>
+
+      <% if @object.editable? %>
+        <!-- A hidden row to add new tag -->
+        <tr class="collection-tag-hidden hide">
+          <td>
+            <i class="glyphicon glyphicon-remove collection-tag-remove hide" style="cursor: pointer"></i>
+          </td>
+          <td class="collection-tag-field collection-tag-field-key"></td>
+          <td class="collection-tag-field collection-tag-field-value"></td>
+        </tr>
+      <% end %>

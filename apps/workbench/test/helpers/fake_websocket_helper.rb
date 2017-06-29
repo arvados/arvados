@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 module FakeWebsocketHelper
   def use_fake_websocket_driver
     Capybara.current_driver = :poltergeist_with_fake_websocket

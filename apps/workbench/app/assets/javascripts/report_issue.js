@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 $(document).
   on('click', "#report-issue-submit", function(e){
     $(this).html('Sending');

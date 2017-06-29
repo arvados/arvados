@@ -3,6 +3,11 @@ layout: default
 navsection: installguide
 title: Install Keepproxy server
 ...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
 
 The Keepproxy server is a gateway into your Keep storage. Unlike the Keepstore servers, which are only accessible on the local LAN, Keepproxy is suitable for clients located elsewhere on the internet. Specifically, in contrast to Keepstore:
 * A client writing through Keepproxy generates less network traffic: the client sends a single copy of a data block, and Keepproxy sends copies to the appropriate Keepstore servers.

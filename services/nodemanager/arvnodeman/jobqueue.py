@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
 
 from __future__ import absolute_import, print_function
 
@@ -27,6 +30,8 @@ class ServerCalculator(object):
             self.cores = kwargs.pop('cores')
             # libcloud disk sizes are in GB, Arvados/SLURM are in MB
             # multiply by 1000 instead of 1024 to err on low side
+            if self.disk is None:
+                self.disk = 0
             self.scratch = self.disk * 1000
             self.ram = int(self.ram * node_mem_scaling)
             for name, override in kwargs.iteritems():

@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 // Compile any new HTML content that was loaded via jQuery.ajax().
 // Currently this only works for tabs, and only because they emit an
 // arv:pane:loaded event after updating the DOM.

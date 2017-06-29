@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 $(document).
   on('click', '.component-detail-panel', function(event) {
     var href = $($(event.target).attr('href'));

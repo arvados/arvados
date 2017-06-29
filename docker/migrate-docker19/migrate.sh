@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
 
 # This script is called by arv-migrate-docker19 to perform the actual migration
 # of a single image.  This works by running Docker-in-Docker (dnd.sh) to

@@ -3,6 +3,11 @@ layout: default
 navsection: userguide
 title: Arvados CWL Extensions
 ...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
 
 Arvados provides several extensions to CWL for workflow optimization, site-specific configuration, and to enable access the Arvados API.
 
@@ -14,7 +19,7 @@ $namespaces:
   cwltool: "http://commonwl.org/cwltool#"
 </pre>
 
-Arvados extensions should go into the @hints@ section, for example:
+For portability, Arvados extensions should go into the @hints@ section of your CWL file, for example:
 
 <pre>
 hints:
@@ -29,7 +34,11 @@ hints:
     loadListing: shallow_listing
   arv:IntermediateOutput:
     outputTTL: 3600
+  arv:ReuseRequirement:
+    enableReuse: false
 </pre>
+
+The one exception to this is @arv:APIRequirement@, see note below.
 
 h2. arv:RunInSingleContainer
 
@@ -84,3 +93,11 @@ table(table table-bordered table-condensed).
 |_. Field |_. Type |_. Description |
 |outputTTL|int|If the value is greater than zero, consider intermediate output collections to be temporary and should be automatically trashed. Temporary collections will be trashed @outputTTL@ seconds after creation.  A value of zero means intermediate output should be retained indefinitely (this is the default behavior).
 Note: arvados-cwl-runner currently does not take workflow dependencies into account when setting the TTL on an intermediate output collection. If the TTL is too short, it is possible for a collection to be trashed before downstream steps that consume it are started.  The recommended minimum value for TTL is the expected duration of the entire the workflow.|
+
+h2. arv:ReuseRequirement
+
+Enable/disable work reuse for current process.  Default true (work reuse enabled).
+
+table(table table-bordered table-condensed).
+|_. Field |_. Type |_. Description |
+|enableReuse|boolean|Enable/disable work reuse for current process.  Default true (work reuse enabled).|

@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 require 'test_helper'
 
 class Arvados::V1::CollectionsControllerTest < ActionController::TestCase
@@ -1064,5 +1068,26 @@ EOS
         assert_not_includes(items, collections('unique_expired_collection2')['uuid'])
       end
     end
+  end
+
+  test 'untrash collection with same name as another with no ensure unique name' do
+    authorize_with :active
+    post :untrash, {
+      id: collections(:trashed_collection_to_test_name_conflict_on_untrash).uuid,
+    }
+    assert_response 422
+  end
+
+  test 'untrash collection with same name as another with ensure unique name' do
+    authorize_with :active
+    post :untrash, {
+      id: collections(:trashed_collection_to_test_name_conflict_on_untrash).uuid,
+      ensure_unique_name: true
+    }
+    assert_response 200
+    assert_equal false, json_response['is_trashed']
+    assert_nil json_response['trash_at']
+    assert_nil json_response['delete_at']
+    assert_match /^same name for trashed and persisted collections \(\d{4}-\d\d-\d\d.*?Z\)$/, json_response['name']
   end
 end

@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class JobWorkUnit < ProxyWorkUnit
   def children
     return @my_children if @my_children

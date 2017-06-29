@@ -3,6 +3,11 @@ layout: default
 navsection: installguide
 title: Prerequisites
 ...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
 
 h2. Hardware (or virtual machines)
 
@@ -39,18 +44,18 @@ On any host where you install Arvados software, you'll need to set up an Arvados
 
 h3. CentOS
 
-Packages are available for CentOS 7.  First, register the Curoverse signing key in RPM's database:
-
-{% include 'install_redhat_key' %}
-
-Then save this configuration block in @/etc/yum.repos.d/arvados.repo@:
+Packages are available for CentOS 7. To install them with yum, save this configuration block in @/etc/yum.repos.d/arvados.repo@:
 
 <notextile>
 <pre><code>[arvados]
 name=Arvados
 baseurl=http://rpm.arvados.org/CentOS/$releasever/os/$basearch/
+gpgcheck=1
+gpgkey=http://rpm.arvados.org/CentOS/RPM-GPG-KEY-curoverse
 </code></pre>
 </notextile>
+
+{% include 'install_redhat_key' %}
 
 h3. Debian and Ubuntu
 

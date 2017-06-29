@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 ArvadosWorkbench::Application.routes.draw do
   themes_for_rails
 
@@ -88,6 +92,8 @@ ArvadosWorkbench::Application.routes.draw do
     post 'unshare', :on => :member
     get 'choose', on: :collection
     post 'remove_selected_files', on: :member
+    get 'tags', on: :member
+    post 'save_tags', on: :member
   end
   get('/collections/download/:uuid/:reader_token/*file' => 'collections#show_file',
       format: false)

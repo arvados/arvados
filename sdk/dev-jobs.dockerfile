@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Dockerfile for building an arvados/jobs Docker image from local git tree.
 #
 # Intended for use by developers working on arvados-python-client or

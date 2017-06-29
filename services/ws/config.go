@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 package main
 
 import (
@@ -17,6 +21,8 @@ type wsConfig struct {
 	PingTimeout      arvados.Duration
 	ClientEventQueue int
 	ServerEventQueue int
+
+	ManagementToken string
 }
 
 func defaultConfig() wsConfig {

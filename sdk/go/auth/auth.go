@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package auth
 
 import (
@@ -41,7 +45,7 @@ func (a *Credentials) LoadTokensFromHTTPRequest(r *http.Request) {
 
 	// Load base64-encoded token from "Authorization: Basic ..."
 	// header (typically used by git via credential helper)
-	if _, password, ok := BasicAuth(r); ok {
+	if _, password, ok := r.BasicAuth(); ok {
 		a.Tokens = append(a.Tokens, password)
 	}
 

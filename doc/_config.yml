@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: CC-BY-SA-3.0
+
 # baseurl is the location of the generated site from the browser's
 # perspective (e.g., http://doc.arvados.org or
 # file:///tmp/arvados/doc/.site). To make docs show up inside
@@ -40,6 +44,7 @@ navbar:
     - Working with data sets:
       - user/tutorials/tutorial-keep.html.textile.liquid
       - user/tutorials/tutorial-keep-get.html.textile.liquid
+      - user/tutorials/tutorial-keep-collection-lifecycle.html.textile.liquid
       - user/tutorials/tutorial-keep-mount.html.textile.liquid
       - user/topics/keep.html.textile.liquid
       - user/topics/arv-copy.html.textile.liquid

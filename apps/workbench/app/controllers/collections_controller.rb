@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 require "arvados/keep"
 require "arvados/collection"
 require "uri"
@@ -20,7 +24,7 @@ class CollectionsController < ApplicationController
   RELATION_LIMIT = 5
 
   def show_pane_list
-    panes = %w(Files Upload Provenance_graph Used_by Advanced)
+    panes = %w(Files Upload Tags Provenance_graph Used_by Advanced)
     panes = panes - %w(Upload) unless (@object.editable? rescue false)
     panes
   end
@@ -342,6 +346,30 @@ class CollectionsController < ApplicationController
     else
       # Not a file rename; use default
       super
+    end
+  end
+
+  def tags
+    render
+  end
+
+  def save_tags
+    tags_param = params['tag_data']
+    if tags_param
+      if tags_param.is_a?(String) && tags_param == "empty"
+        tags = {}
+      else
+        tags = tags_param
+      end
+    end
+
+    if tags
+      if @object.update_attributes properties: tags
+        @saved_tags = true
+        render
+      else
+        self.render_error status: 422
+      end
     end
   end
 

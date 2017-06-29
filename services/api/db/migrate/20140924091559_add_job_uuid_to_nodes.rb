@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class AddJobUuidToNodes < ActiveRecord::Migration
   def up
     change_table :nodes do |t|

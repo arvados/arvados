@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 # See http://aaronvb.com/articles/37-rails-caching-and-undefined-class-module
 
 # Config must be done before we load model class files; otherwise they

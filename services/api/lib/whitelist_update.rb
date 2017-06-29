@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 module WhitelistUpdate
   def check_update_whitelist permitted_fields
     attribute_names.each do |field|

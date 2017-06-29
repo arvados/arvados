@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class RenameMetadataAttributes < ActiveRecord::Migration
   def up
     rename_column :metadata, :target_kind, :tail_kind

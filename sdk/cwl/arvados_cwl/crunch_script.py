@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Crunch script integration for running arvados-cwl-runner (importing
 # arvados_cwl module) inside a crunch job.
 #

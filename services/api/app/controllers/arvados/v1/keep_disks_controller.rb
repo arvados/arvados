@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class Arvados::V1::KeepDisksController < ApplicationController
   skip_before_filter :require_auth_scope, only: :ping
   skip_before_filter :render_404_if_no_object, only: :ping

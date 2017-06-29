@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 jQuery(function($){
 $(document).on('ajax:complete arv:pane:loaded ready', function() {
     $('[data-utc-date]').each(function(i, elm) {

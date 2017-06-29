@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 #distribution(s)|name|version|iteration|type|architecture|extra fpm arguments
 debian8,ubuntu1204,centos7|python-gflags|2.0|2|python|all
 debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|google-api-python-client|1.6.2|2|python|all

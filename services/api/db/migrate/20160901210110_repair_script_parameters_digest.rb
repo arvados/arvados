@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class RepairScriptParametersDigest < ActiveRecord::Migration
   def up
     Job.find_each do |j|

@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 require 'test_helper'
 
 class CollectionsControllerTest < ActionController::TestCase
@@ -686,7 +690,7 @@ class CollectionsControllerTest < ActionController::TestCase
     use_token :active
 
     # create a new collection to test
-    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n./dir1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:dir1file1 0:0:dir1file2\n"
+    manifest_text = ". d41d8cd98f00b204e9800998ecf8427e+0 0:0:file1 0:0:file2\n./dir1 d41d8cd98f00b204e9800998ecf8427e+0 0:0:dir1file1 0:0:dir1file2 0:0:dir1imagefile.png\n"
 
     collection = Collection.create(manifest_text: manifest_text)
     assert_includes(collection['manifest_text'], "0:0:file1")
@@ -702,7 +706,7 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_response :success
 
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
-    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed 0:0:file2\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2\n$/, collection['manifest_text']
+    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed 0:0:file2\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2 0:0:dir1imagefile.png\n$/, collection['manifest_text']
 
     # now rename 'file2' such that it is moved into 'dir1'
     @test_counter = 0
@@ -716,7 +720,7 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_response :success
 
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
-    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2 0:0:file2\n$/, collection['manifest_text']
+    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1 0:0:dir1file2 0:0:dir1imagefile.png 0:0:file2\n$/, collection['manifest_text']
 
     # now rename 'dir1/dir1file1' such that it is moved into a new subdir
     @test_counter = 0
@@ -730,7 +734,21 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_response :success
 
     collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
-    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file2 0:0:file2\n.\/dir2\/dir3 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1moved\n$/, collection['manifest_text']
+    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file2 0:0:dir1imagefile.png 0:0:file2\n.\/dir2\/dir3 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1moved\n$/, collection['manifest_text']
+
+    # now rename the image file 'dir1/dir1imagefile.png'
+    @test_counter = 0
+    post :update, {
+      id: collection['uuid'],
+      collection: {
+        'rename-file-path:dir1/dir1imagefile.png' => 'dir1/dir1imagefilerenamed.png'
+      },
+      format: :json
+    }, session_for(:active)
+    assert_response :success
+
+    collection = Collection.select([:uuid, :manifest_text]).where(uuid: collection['uuid']).first
+    assert_match /. d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:file1renamed\n.\/dir1 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file2 0:0:dir1imagefilerenamed.png 0:0:file2\n.\/dir2\/dir3 d41d8cd98f00b204e9800998ecf8427e\+0\+A(.*) 0:0:dir1file1moved\n$/, collection['manifest_text']
   end
 
   test "renaming file with a duplicate name in same stream not allowed" do
@@ -761,5 +779,65 @@ class CollectionsControllerTest < ActionController::TestCase
     }, session_for(:active)
     assert_response 422
     assert_includes json_response['errors'], 'Duplicate file path'
+  end
+
+  [
+    [:active, true],
+    [:spectator, false],
+  ].each do |user, editable|
+    test "tags tab #{editable ? 'shows' : 'does not show'} edit button to #{user}" do
+      use_token user
+
+      get :tags, {
+        id: api_fixture('collections')['collection_with_tags_owned_by_active']['uuid'],
+        format: :js,
+      }, session_for(user)
+
+      assert_response :success
+
+      found = 0
+      response.body.scan /<i[^>]+>/ do |remove_icon|
+        remove_icon.scan(/\ collection-tag-remove(.*?)\"/).each do |i,|
+          found += 1
+        end
+      end
+
+      if editable
+        assert_equal(3, found)  # two from the tags + 1 from the hidden "add tag" row
+      else
+        assert_equal(0, found)
+      end
+    end
+  end
+
+  test "save_tags and verify that 'other' properties are retained" do
+    use_token :active
+
+    collection = api_fixture('collections')['collection_with_tags_owned_by_active']
+
+    new_tags = {"new_tag1" => "new_tag1_value",
+                "new_tag2" => "new_tag2_value"}
+
+    post :save_tags, {
+      id: collection['uuid'],
+      tag_data: new_tags,
+      format: :js,
+    }, session_for(:active)
+
+    assert_response :success
+    assert_equal true, response.body.include?("new_tag1")
+    assert_equal true, response.body.include?("new_tag1_value")
+    assert_equal true, response.body.include?("new_tag2")
+    assert_equal true, response.body.include?("new_tag2_value")
+    assert_equal false, response.body.include?("existing tag 1")
+    assert_equal false, response.body.include?("value for existing tag 1")
+
+    updated_tags = Collection.find(collection['uuid']).properties
+    assert_equal true, updated_tags.keys.include?(:'new_tag1')
+    assert_equal new_tags['new_tag1'], updated_tags[:'new_tag1']
+    assert_equal true, updated_tags.keys.include?(:'new_tag2')
+    assert_equal new_tags['new_tag2'], updated_tags[:'new_tag2']
+    assert_equal false, updated_tags.keys.include?(:'existing tag 1')
+    assert_equal false, updated_tags.keys.include?(:'existing tag 2')
   end
 end

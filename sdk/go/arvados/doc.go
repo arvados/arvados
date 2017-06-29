@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: Apache-2.0
+
 // Package arvados is a client library for Arvados.
 //
 // The API is not stable: it should be considered experimental

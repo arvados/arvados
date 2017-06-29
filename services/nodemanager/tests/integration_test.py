@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 """Integration test framework for node manager.
 
 Runs full node manager with an API server (needs ARVADOS_API_HOST and
@@ -109,7 +113,7 @@ def expect_count(count, checks, pattern, g):
         checks[pattern] = partial(expect_count, count-1)
         return 0
 
-def run_test(name, actions, checks, driver_class, jobs):
+def run_test(name, actions, checks, driver_class, jobs, provider):
     code = 0
 
     # Delete any stale node records
@@ -137,7 +141,7 @@ def run_test(name, actions, checks, driver_class, jobs):
     update_script(os.path.join(fake_slurm, "sinfo"), "#!/bin/sh\n")
 
     # Write configuration file for test
-    with open("tests/fake.cfg.template") as f:
+    with open("tests/fake_%s.cfg.template" % provider) as f:
         open(os.path.join(fake_slurm, "id_rsa.pub"), "w").close()
         with open(os.path.join(fake_slurm, "fake.cfg"), "w") as cfg:
             cfg.write(f.read().format(host=os.environ["ARVADOS_API_HOST"],
@@ -224,7 +228,7 @@ def main():
     # Test lifecycle.
 
     tests = {
-        "test_single_node": (
+        "test_single_node_azure": (
             [
                 (r".*Daemon started", set_squeue),
                 (r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)", node_paired),
@@ -237,7 +241,8 @@ def main():
                 r".*Setting node quota.*": fail,
             },
             "arvnodeman.test.fake_driver.FakeDriver",
-            {"34t0i-dz642-h42bg3hq4bdfpf9": "ReqNodeNotAvail"}),
+            {"34t0i-dz642-h42bg3hq4bdfpf9": "ReqNodeNotAvail"},
+            "azure"),
         "test_multiple_nodes": (
             [
                 (r".*Daemon started", set_squeue),
@@ -261,7 +266,7 @@ def main():
              "34t0i-dz642-h42bg3hq4bdfpf2": "ReqNodeNotAvail",
              "34t0i-dz642-h42bg3hq4bdfpf3": "ReqNodeNotAvail",
              "34t0i-dz642-h42bg3hq4bdfpf4": "ReqNodeNotAvail"
-         }),
+         }, "azure"),
         "test_hit_quota": (
             [
                 (r".*Daemon started", set_squeue),
@@ -282,7 +287,7 @@ def main():
              "34t0i-dz642-h42bg3hq4bdfpf2": "ReqNodeNotAvail",
              "34t0i-dz642-h42bg3hq4bdfpf3": "ReqNodeNotAvail",
              "34t0i-dz642-h42bg3hq4bdfpf4": "ReqNodeNotAvail"
-         }),
+         }, "azure"),
         "test_probe_quota": (
             [
                 (r".*Daemon started", set_squeue),
@@ -314,7 +319,7 @@ def main():
              "34t0i-dz642-h42bg3hq4bdfpf2": "ReqNodeNotAvail",
              "34t0i-dz642-h42bg3hq4bdfpf3": "ReqNodeNotAvail",
              "34t0i-dz642-h42bg3hq4bdfpf4": "ReqNodeNotAvail"
-         }),
+         }, "azure"),
         "test_no_hang_failing_node_create": (
             [
                 (r".*Daemon started", set_squeue),
@@ -329,7 +334,7 @@ def main():
              "34t0i-dz642-h42bg3hq4bdfpf2": "ReqNodeNotAvail",
              "34t0i-dz642-h42bg3hq4bdfpf3": "ReqNodeNotAvail",
              "34t0i-dz642-h42bg3hq4bdfpf4": "ReqNodeNotAvail"
-         }),
+         }, "azure"),
         "test_retry_create": (
             [
                 (r".*Daemon started", set_squeue),
@@ -339,7 +344,37 @@ def main():
             {},
             "arvnodeman.test.fake_driver.RetryDriver",
             {"34t0i-dz642-h42bg3hq4bdfpf1": "ReqNodeNotAvail"
-         })
+         }, "azure"),
+        "test_single_node_aws": (
+            [
+                (r".*Daemon started", set_squeue),
+                (r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)", node_paired),
+                (r".*ComputeNodeMonitorActor\..*\.([^[]*).*Not eligible for shut down because node state is \('busy', 'open', .*\)", node_busy),
+                (r".*ComputeNodeMonitorActor\..*\.([^[]*).*Suggesting shutdown because node state is \('idle', 'open', .*\)", noop),
+                (r".*ComputeNodeShutdownActor\..*\.([^[]*).*Shutdown success", node_shutdown),
+            ], {
+                r".*Suggesting shutdown because node state is \('down', .*\)": fail,
+                r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)": partial(expect_count, 1),
+                r".*Setting node quota.*": fail,
+            },
+            "arvnodeman.test.fake_driver.FakeAwsDriver",
+            {"34t0i-dz642-h42bg3hq4bdfpf9": "ReqNodeNotAvail"},
+            "ec2"),
+        "test_single_node_gce": (
+            [
+                (r".*Daemon started", set_squeue),
+                (r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)", node_paired),
+                (r".*ComputeNodeMonitorActor\..*\.([^[]*).*Not eligible for shut down because node state is \('busy', 'open', .*\)", node_busy),
+                (r".*ComputeNodeMonitorActor\..*\.([^[]*).*Suggesting shutdown because node state is \('idle', 'open', .*\)", noop),
+                (r".*ComputeNodeShutdownActor\..*\.([^[]*).*Shutdown success", node_shutdown),
+            ], {
+                r".*Suggesting shutdown because node state is \('down', .*\)": fail,
+                r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)": partial(expect_count, 1),
+                r".*Setting node quota.*": fail,
+            },
+            "arvnodeman.test.fake_driver.FakeGceDriver",
+            {"34t0i-dz642-h42bg3hq4bdfpf9": "ReqNodeNotAvail"},
+            "gce")
     }
 
     code = 0

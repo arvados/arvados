@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import logging
 import json
 import os
@@ -184,8 +188,14 @@ class ArvadosContainer(object):
         container_request["output_ttl"] = self.output_ttl
         container_request["mounts"] = mounts
         container_request["runtime_constraints"] = runtime_constraints
-        container_request["use_existing"] = kwargs.get("enable_reuse", True)
         container_request["scheduling_parameters"] = scheduling_parameters
+
+        enable_reuse = kwargs.get("enable_reuse", True)
+        if enable_reuse:
+            reuse_req, _ = get_feature(self, "http://arvados.org/cwl#ReuseRequirement")
+            if reuse_req:
+                enable_reuse = reuse_req["enableReuse"]
+        container_request["use_existing"] = enable_reuse
 
         if kwargs.get("runnerjob", "").startswith("arvwf:"):
             wfuuid = kwargs["runnerjob"][6:kwargs["runnerjob"].index("#")]

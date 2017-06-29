@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 require 'integration_helper'
 require_relative 'integration_test_utils'
 
@@ -89,11 +93,11 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert(page.has_text?(foo_collection['uuid']), "Collection page did not include foo file")
     assert(page.has_text?(bar_collection['uuid']), "Collection page did not include bar file")
 
-    within('tr', text: foo_collection['uuid']) do
+    within "tr[data-object-uuid=\"#{foo_collection['uuid']}\"]" do
       find('input[type=checkbox]').click
     end
 
-    within('tr', text: bar_collection['uuid']) do
+    within "tr[data-object-uuid=\"#{bar_collection['uuid']}\"]" do
       find('input[type=checkbox]').click
     end
 
@@ -419,5 +423,93 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   def unlock_collection
     first('.lock-collection-btn').click
     accept_alert
+  end
+
+  test "collection tags tab" do
+    need_selenium
+
+    visit page_with_token('active', '/collections/zzzzz-4zz18-bv31uwvy3neko21')
+
+    click_link 'Tags'
+    wait_for_ajax
+
+    # verify initial state
+    assert_selector 'a', text: 'Edit'
+    assert_no_selector 'a', text: 'Add new tag'
+    assert_no_selector 'a', text: 'Save'
+    assert_no_selector 'a', text: 'Cancel'
+
+    # Verify controls in edit mode
+    first('.edit-collection-tags').click
+    assert_selector 'a.disabled', text: 'Edit'
+    assert_selector 'a', text: 'Add new tag'
+    assert_selector 'a', text: 'Save'
+    assert_selector 'a', text: 'Cancel'
+
+    # add two tags
+    first('.edit-collection-tags').click
+
+    first('.glyphicon-plus').click
+    first('.collection-tag-field-key').click
+    first('.collection-tag-field-key').set('key 1')
+    first('.collection-tag-field-value').click
+    first('.collection-tag-field-value').set('value 1')
+
+    first('.glyphicon-plus').click
+    editable_key_fields = page.all('.collection-tag-field-key')
+    editable_key_fields[1].click
+    editable_key_fields[1].set('key 2')
+    editable_val_fields = page.all('.collection-tag-field-value')
+    editable_val_fields[1].click
+    editable_val_fields[1].set('value 2')
+
+    click_on 'Save'
+    wait_for_ajax
+
+    # added tags; verify
+    assert_text 'key 1'
+    assert_text 'value 1'
+    assert_text 'key 2'
+    assert_text 'value 2'
+    assert_selector 'a', text: 'Edit'
+    assert_no_selector 'a', text: 'Save'
+
+    # remove first tag
+    first('.edit-collection-tags').click
+    assert_not_nil first('.glyphicon-remove')
+    first('.glyphicon-remove').click
+    click_on 'Save'
+    wait_for_ajax
+
+    assert_text 'key 2'
+    assert_text 'value 2'
+    assert_no_text 'key 1'
+    assert_no_text 'value 1'
+    assert_selector 'a', text: 'Edit'
+
+    # Click on cancel and verify
+    first('.edit-collection-tags').click
+    first('.collection-tag-field-key').click
+    first('.collection-tag-field-key').set('this key wont stick')
+    first('.collection-tag-field-value').click
+    first('.collection-tag-field-value').set('this value wont stick')
+
+    click_on 'Cancel'
+    wait_for_ajax
+
+    assert_text 'key 2'
+    assert_text 'value 2'
+    assert_no_text 'this key wont stick'
+    assert_no_text 'this value wont stick'
+
+    # remove all tags
+    first('.edit-collection-tags').click
+    first('.glyphicon-remove').click
+    click_on 'Save'
+    wait_for_ajax
+
+    assert_selector 'a', text: 'Edit'
+    assert_no_text 'key 2'
+    assert_no_text 'value 2'
   end
 end

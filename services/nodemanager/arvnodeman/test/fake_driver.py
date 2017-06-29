@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 import re
 import urllib
 import ssl
@@ -5,7 +9,8 @@ import time
 
 from arvnodeman.computenode import ARVADOS_TIMEFMT
 
-from libcloud.compute.base import NodeSize, Node, NodeDriver, NodeState
+from libcloud.compute.base import NodeSize, Node, NodeDriver, NodeState, NodeImage
+from libcloud.compute.drivers.gce import GCEDiskType
 from libcloud.common.exceptions import BaseHTTPError
 
 all_nodes = []
@@ -32,16 +37,21 @@ class FakeDriver(NodeDriver):
                     ex_resource_group=None,
                     ex_user_name=None,
                     ex_tags=None,
+                    ex_metadata=None,
                     ex_network=None,
                     ex_userdata=None):
         global all_nodes, create_calls
         create_calls += 1
-        n = Node(name, name, NodeState.RUNNING, [], [], self, size=size, extra={"tags": ex_tags})
+        nodeid = "node%i" % create_calls
+        n = Node(nodeid, nodeid, NodeState.RUNNING, [], [], self, size=size, extra={"tags": ex_tags})
         all_nodes.append(n)
         if ex_customdata:
-            ping_url = re.search(r"echo '(.*)' > /var/tmp/arv-node-data/arv-ping-url", ex_customdata).groups(1)[0] + "&instance_id=" + name
+            ping_url = re.search(r"echo '(.*)' > /var/tmp/arv-node-data/arv-ping-url", ex_customdata).groups(1)[0]
         if ex_userdata:
             ping_url = ex_userdata
+        if ex_metadata:
+            ping_url = ex_metadata["arv-ping-url"]
+        ping_url += "&instance_id=" + nodeid
         ctx = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
         ctx.verify_mode = ssl.CERT_NONE
         f = urllib.urlopen(ping_url, "", context=ctx)
@@ -153,3 +163,50 @@ class FakeAwsDriver(FakeDriver):
         return [NodeSize("m3.xlarge", "Extra Large Instance", 3500, 80, 0, 0, self),
                 NodeSize("m4.xlarge", "Extra Large Instance", 3500, 0, 0, 0, self),
                 NodeSize("m4.2xlarge", "Double Extra Large Instance", 7000, 0, 0, 0, self)]
+
+
+class FakeGceDriver(FakeDriver):
+
+    def create_node(self, name=None,
+                    size=None,
+                    image=None,
+                    auth=None,
+                    external_ip=None,
+                    ex_metadata=None,
+                    ex_tags=None,
+                    ex_disks_gce_struct=None):
+        n = super(FakeGceDriver, self).create_node(name=name,
+                                                   size=size,
+                                                   image=image,
+                                                   auth=auth,
+                                                   ex_metadata=ex_metadata)
+        n.extra = {
+            "metadata": {
+                "items": [{"key": k, "value": v} for k,v in ex_metadata.iteritems()]
+            },
+            "zone": "fake"
+        }
+        return n
+
+    def list_images(self, ex_project=None):
+        return [NodeImage("fake_image_id", "fake_image_id", self)]
+
+    def list_sizes(self, **kwargs):
+        return [NodeSize("n1-standard-1", "Standard", 3750, None, 0, 0, self),
+                NodeSize("n1-standard-2", "Double standard", 7500, None, 0, 0, self)]
+
+    def ex_list_disktypes(self, zone=None):
+        return [GCEDiskType("pd-standard", "pd-standard", zone, self,
+                            extra={"selfLink": "pd-standard"}),
+                GCEDiskType("local-ssd", "local-ssd", zone, self,
+                            extra={"selfLink": "local-ssd"})]
+
+    def ex_get_node(self, name, zone=None):
+        global all_nodes
+        for n in all_nodes:
+            if n.id == name:
+                return n
+        return None
+
+    def ex_set_node_metadata(self, n, items):
+        n.extra["metadata"]["items"] = items

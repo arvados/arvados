@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class RenameCreatedByToOwner < ActiveRecord::Migration
   def tables
     %w{api_clients collections logs metadata nodes pipelines pipeline_invocations projects specimens users}

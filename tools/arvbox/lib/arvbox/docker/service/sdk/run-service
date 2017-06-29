@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
 
 exec 2>&1
 set -eux -o pipefail
@@ -14,6 +17,8 @@ EOF
 cd /usr/src/arvados/sdk/cli
 run_bundler --binstubs=$PWD/binstubs
 ln -sf /usr/src/arvados/sdk/cli/binstubs/arv /usr/local/bin/arv
+
+pip_install wheel
 
 cd /usr/src/arvados/sdk/python
 python setup.py sdist

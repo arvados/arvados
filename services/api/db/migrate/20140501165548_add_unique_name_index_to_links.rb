@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class AddUniqueNameIndexToLinks < ActiveRecord::Migration
   def change
     # Make sure PgPower is here. Otherwise the "where" will be ignored

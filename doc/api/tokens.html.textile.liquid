@@ -3,6 +3,11 @@ layout: default
 navsection: api
 title: API Authorization
 ...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
 
 All requests to the API server must have an API token.  API tokens can be issued by going though the login flow, or created via the API.  At this time, only browser based applications can perform login from email/password.  Command line applications and services must use an API token provided via the @ARVADOS_API_TOKEN@ environment variable or configuration file.
 

@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
 
 from __future__ import absolute_import, print_function
 
@@ -64,7 +67,7 @@ class CloudNodeListMonitorActor(clientactor.RemotePollLoopActor):
         self._calculator = server_calc
 
     def is_common_error(self, exception):
-        return self._client.is_cloud_exception(exception)
+        return isinstance(exception, config.CLOUD_ERRORS)
 
     def _item_key(self, node):
         return node.id

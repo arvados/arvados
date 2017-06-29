@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 require 'integration_helper'
 
 class UserSettingsMenuTest < ActionDispatch::IntegrationTest
@@ -111,23 +115,20 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
 
   test "verify repositories for active user" do
     visit page_with_token('active',"/users/#{api_fixture('users')['active']['uuid']}/repositories")
-    repos = [[api_fixture('repositories')['foo'], true, true],
-             [api_fixture('repositories')['repository3'], false, false],
-             [api_fixture('repositories')['repository4'], true, false]]
 
-    repos.each do |(repo, writable, sharable)|
+    repos = [[api_fixture('repositories')['foo'], true],
+             [api_fixture('repositories')['repository3'], false],
+             [api_fixture('repositories')['repository4'], false],
+             [api_fixture('repositories')['arvados'], false]]
+
+    repos.each do |(repo, owned)|
       within('tr', text: repo['name']+'.git') do
-        if sharable
-          assert_selector 'a', text:'Share'
-          assert_text 'writable'
+        assert_text repo['name']
+        assert_selector 'a', text:'Show'
+        if owned
+          assert_not_nil first('.fa-trash-o')
         else
-          assert_text repo['name']
-          assert_no_selector 'a', text:'Share'
-          if writable
-            assert_text 'writable'
-          else
-            assert_text 'read-only'
-          end
+          assert_nil first('.fa-trash-o')
         end
       end
     end
@@ -215,18 +216,21 @@ class UserSettingsMenuTest < ActionDispatch::IntegrationTest
 
   [
     ['virtual_machines', 'You do not have access to any virtual machines.'],
-    ['repositories', 'You do not seem to have access to any repositories.'],
+    ['/repositories', api_fixture('repositories')['arvados']['uuid']],
     ['/current_token', 'HISTIGNORE=$HISTIGNORE'],
     ['ssh_keys', 'You have not yet set up an SSH public key for use with Arvados.'],
   ].each do |page_name, look_for|
     test "test user settings menu for page #{page_name} when page is empty" do
-      if page_name == '/current_token'
+      if page_name == '/current_token' || page_name == '/repositories'
         visit page_with_token('user1_with_load', page_name)
       else
         visit page_with_token('admin', "/users/#{api_fixture('users')['user1_with_load']['uuid']}/#{page_name}")
       end
 
-     assert page.has_text? look_for
+      assert page.has_text? look_for
+      if page_name == '/repositories'
+        assert_equal 1, page.all('a[data-original-title="show repository"]').count
+      end
     end
   end
 end

@@ -1,4 +1,7 @@
 #!/usr/bin/env ruby
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
 
 # Get or Create an anonymous user token.
 # If get option is used, an existing anonymous user token is returned. If none exist, one is created.

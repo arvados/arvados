@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 require 'test_helper'
 
 class UsersControllerTest < ActionController::TestCase
@@ -47,10 +51,11 @@ class UsersControllerTest < ActionController::TestCase
     assert_response :success
     repos = assigns(:my_repositories)
     assert repos
-    repo_writables = assigns(:repo_writable)
-    assert_not_empty repo_writables, "repo_writables should not be empty"
-    assert_includes repo_writables, api_fixture('repositories')['repository4']['uuid']  # writable by active
-    assert_includes repo_writables, api_fixture('repositories')['repository2']['uuid']  # owned by active
+    assert_not_empty repos, "my_repositories should not be empty"
+    repo_uuids = repos.map(&:uuid)
+    assert_includes repo_uuids, api_fixture('repositories')['repository2']['uuid']  # owned by active
+    assert_includes repo_uuids, api_fixture('repositories')['repository4']['uuid']  # shared with active
+    assert_includes repo_uuids, api_fixture('repositories')['arvados']['uuid']      # shared with all_users
   end
 
   test "request shell access" do

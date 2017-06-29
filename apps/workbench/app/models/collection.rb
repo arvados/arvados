@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 require "arvados/keep"
 
 class Collection < ArvadosBase
@@ -99,6 +103,6 @@ class Collection < ArvadosBase
   end
 
   def untrash
-    arvados_api_client.api(self.class, "/#{self.uuid}/untrash", {})
+    arvados_api_client.api(self.class, "/#{self.uuid}/untrash", {"ensure_unique_name" => true})
   end
 end

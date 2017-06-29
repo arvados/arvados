@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 package main
 
 import (
@@ -157,6 +161,7 @@ func (sub *v0subscribe) sendOldEvents(sess *v0session) {
 		sess.log.WithError(err).Error("db.Query failed")
 		return
 	}
+	defer rows.Close()
 	for rows.Next() {
 		var id uint64
 		err := rows.Scan(&id)

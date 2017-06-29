@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class RenameReplicationAttributes < ActiveRecord::Migration
   RENAME = [[:redundancy, :replication_desired],
             [:redundancy_confirmed_as, :replication_confirmed],

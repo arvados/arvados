@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class FixContainersIndex < ActiveRecord::Migration
   def up
     execute "CREATE INDEX container_requests_full_text_search_idx ON container_requests USING gin(#{ContainerRequest.full_text_tsvector});"

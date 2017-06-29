@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class RenameAuthorizedKeyAuthorizedUserToAuthorizedUserUuid < ActiveRecord::Migration
   def up
     remove_index :authorized_keys, [:authorized_user, :expires_at]

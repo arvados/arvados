@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 require 'test_helper'
 
 class Arvados::V1::GroupsControllerTest < ActionController::TestCase
@@ -116,6 +120,7 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     authorize_with :active
     get :contents, {
       format: :json,
+      limit: 200,
       id: users(:active).uuid
     }
     assert_response :success

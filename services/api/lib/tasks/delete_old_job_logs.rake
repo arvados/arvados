@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 # This task finds jobs that have been finished for at least as long as
 # the duration specified in the `clean_job_log_rows_after`
 # configuration setting, and deletes their stderr logs from the logs table.

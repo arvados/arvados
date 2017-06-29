@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 $.fn.editable.defaults.ajaxOptions = {type: 'post', dataType: 'json'};
 $.fn.editable.defaults.send = 'always';
 

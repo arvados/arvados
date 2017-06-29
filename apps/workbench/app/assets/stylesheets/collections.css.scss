@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 /* Style for _show_files tree view. */
 
 ul#collection_files {
@@ -69,4 +73,8 @@ $active-bg: #39b3d7;
     display: inline-block;
     padding: .5em 2em;
     margin: 0 1em;
+}
+
+.collection-tag-field * {
+  display: inline-block;
 }

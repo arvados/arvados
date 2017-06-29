@@ -1,0 +1,71 @@
+---
+layout: default
+navsection: userguide
+title: "Keep collection lifecycle"
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+During it's lifetime, a keep collection can be in various states. These states are *persisted*, *expiring*, *trashed*  and *permanently deleted*.
+
+A collection is *expiring* when it has a *trash_at* time in the future. An expiring collection can be accessed as normal, but is scheduled to be trashed automatically at the *trash_at* time.
+
+A collection is *trashed* when it has a *trash_at* time in the past. The *is_trashed* attribute will also be "true". The delete operation immediately puts the collection in the trash by setting the *trash_at* time to "now". Once trashed, the collection is no longer readable through normal data access APIs. The collection will have *delete_at* set to some time in the future. The trashed collection is recoverable until the delete_at time passes, at which point the collection is permanently deleted.
+
+# "*Collection lifecycle attributes*":#collection_attributes
+# "*Deleting / trashing collections*":#delete-collection
+# "*Recovering trashed collections*":#trash-recovery
+
+{% include 'tutorial_expectations' %}
+
+h2(#collection_attributes). Collection lifecycle attributes
+
+As listed above the attributes that are used to manage a collection lifecycle are it's *is_trashed*, *trash_at*, and *delete_at*. The table below lists the values of these attributes and how they influence the state of a collection and it's accessibility.
+
+table(table table-bordered table-condensed).
+|_. collection state|_. is_trashed|_. trash_at|_. delete_at|_. get|_. list|_. list?include_trash=true|_. can be modified|
+|persisted collection|false |null |null |yes |yes |yes |yes |
+|expiring collection|false |future |future |yes  |yes |yes |yes |
+|trashed collection|true |past |future |no |no |yes |only is_trashed, trash_at and delete_at attribtues|
+|deleted collection|true|past |past |no |no |no |no |
+
+h2(#delete-collection). Deleting / trashing collections
+
+A collection can be deleted using either the arv command line tool or the workbench.
+
+h3. Trashing a collection using arv command line tool
+
+<pre>
+arv collection delete --uuid=qr1hi-4zz18-xxxxxxxxxxxxxxx
+</pre>
+
+h3. Trashing a collection using workbench
+
+To trash a collection using workbench, go to the Data collections tab in the project, and use the trash icon for this collection row.
+
+h2(#trash-recovery). Recovering trashed collections
+
+A collection can be un-trashed / recovered using either the arv command line tool or the workbench.
+
+h3. Un-trashing a collection using arv command line tool
+
+You can list the trashed collections using the list command.
+
+<pre>
+arv collection list --include-trash=true --filters '[["is_trashed", "=", "true"]]'
+</pre>
+
+You can then untrash a particular collection using arv using it's uuid.
+
+<pre>
+arv collection untrash --uuid=qr1hi-4zz18-xxxxxxxxxxxxxxx
+</pre>
+
+h3. Un-trashing a collection using workbench
+
+To untrash a collection using workbench, go to trash page on workbench by clicking on the "Trash" icon in the top navigation in workbench and use the recycle icon or selection dropdown option.
+
+!{display: block;margin-left: 25px;margin-right: auto;border:1px solid lightgray;}{{ site.baseurl }}/images/trash-button-topnav.png!

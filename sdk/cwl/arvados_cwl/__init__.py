@@ -1,4 +1,7 @@
 #!/usr/bin/env python
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
 
 # Implement cwl-runner interface for submitting and running work on Arvados, using
 # either the Crunch jobs API or Crunch containers API.
@@ -685,7 +688,8 @@ def add_arv_hints():
         "http://arvados.org/cwl#PartitionRequirement",
         "http://arvados.org/cwl#APIRequirement",
         "http://commonwl.org/cwltool#LoadListingRequirement",
-        "http://arvados.org/cwl#IntermediateOutput"
+        "http://arvados.org/cwl#IntermediateOutput",
+        "http://arvados.org/cwl#ReuseRequirement"
     ])
 
 def main(args, stdout, stderr, api_client=None, keep_client=None):

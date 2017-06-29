@@ -1,3 +1,7 @@
+<%# Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: AGPL-3.0 %>
+
 <%
   preview_selectable_container = ''
   preview_selectable = ''
@@ -108,7 +112,7 @@
             <i class="fa fa-fw fa-bar-chart-o"></i>
               <% if object.editable? %>
                 <span class="btn-collection-rename-file-span">
-                <%= render_editable_attribute object, 'filename', filename, {'data-value' => file_path, 'data-toggle' => 'manual', 'selection_path' => 'rename-file-path:'+file_path}, {tiptitle: 'Edit name or directory or both for this file', btnclass: 'collection-file-control'} %>
+                <%= render_editable_attribute object, 'filename', filename, {'data-value' => file_path, 'data-toggle' => 'manual', 'selection_name' => 'rename-file-path:'+file_path}, {tiptitle: 'Edit name or directory or both for this file', btnclass: 'collection-file-control'} %>
                 </span>
               <% else %>
                 <%= filename %>

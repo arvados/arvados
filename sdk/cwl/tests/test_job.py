@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 import functools
 import json
 import logging
@@ -10,10 +14,11 @@ import StringIO
 import arvados
 import arvados_cwl
 import cwltool.process
+from arvados.errors import ApiError
 from schema_salad.ref_resolver import Loader
 from schema_salad.sourceline import cmap
 from .mock_discovery import get_rootDesc
-from .matcher import JsonDiffMatcher
+from .matcher import JsonDiffMatcher, StripYAMLComments
 
 if not os.getenv('ARVADOS_DEBUG'):
     logging.getLogger('arvados.cwl-runner').setLevel(logging.WARN)
@@ -92,6 +97,13 @@ class TestJob(unittest.TestCase):
                             "head_uuid": "zzzzz-819sb-yyyyyyyyyyyyyyy",
                         })
                     )
+                    # Simulate an API excepction when trying to create a
+                    # sharing link on the job
+                    runner.api.links().create.side_effect = ApiError(
+                        mock.MagicMock(return_value={'status': 403}),
+                        'Permission denied')
+                    j.run(enable_reuse=enable_reuse)
+                    j.output_callback.assert_called_with({}, 'success')
                 else:
                     assert not runner.api.links().create.called
 
@@ -125,6 +137,10 @@ class TestJob(unittest.TestCase):
                 "outputDirType": "keep_output_dir"
             }, {
                 "class": "http://arvados.org/cwl#APIRequirement",
+            },
+            {
+                "class": "http://arvados.org/cwl#ReuseRequirement",
+                "enableReuse": False
             }],
             "baseCommand": "ls"
         }
@@ -134,7 +150,7 @@ class TestJob(unittest.TestCase):
                                                  make_fs_access=make_fs_access, loader=Loader({}))
         arvtool.formatgraph = None
         for j in arvtool.job({}, mock.MagicMock(), basedir="", make_fs_access=make_fs_access):
-            j.run()
+            j.run(enable_reuse=True)
         runner.api.jobs().create.assert_called_with(
             body=JsonDiffMatcher({
                 'owner_uuid': 'zzzzz-8i9sb-zzzzzzzzzzzzzzz',
@@ -158,7 +174,7 @@ class TestJob(unittest.TestCase):
                     'keep_cache_mb_per_task': 512
                 }
             }),
-            find_or_create=True,
+            find_or_create=False,
             filters=[['repository', '=', 'arvados'],
                      ['script', '=', 'crunchrunner'],
                      ['script_version', 'in git', 'a3f2cb186e437bfce0031b024b2157b73ed2717d'],
@@ -325,7 +341,7 @@ class TestWorkflow(unittest.TestCase):
         it.next().run()
 
         with open("tests/wf/scatter2_subwf.cwl") as f:
-            subwf = f.read()
+            subwf = StripYAMLComments(f.read())
 
         runner.api.jobs().create.assert_called_with(
             body=JsonDiffMatcher({
