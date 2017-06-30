@@ -771,7 +771,7 @@ class ProjectDirectory(Directory):
         self._poll_time = poll_time
         self._updating_lock = threading.Lock()
         self._current_user = None
-        self._extra = set()
+        self._full_listing = False
 
     def want_event_subscribe(self):
         return True
@@ -794,27 +794,35 @@ class ProjectDirectory(Directory):
     def uuid(self):
         return self.project_uuid
 
+    def items(self):
+        self._full_listing = True
+        return super(ProjectDirectory, self).items()
+
+    def namefn(self, i):
+        if 'name' in i:
+            if i['name'] is None or len(i['name']) == 0:
+                return None
+            elif collection_uuid_pattern.match(i['uuid']) or group_uuid_pattern.match(i['uuid']):
+                # collection or subproject
+                return i['name']
+            elif link_uuid_pattern.match(i['uuid']) and i['head_kind'] == 'arvados#collection':
+                # name link
+                return i['name']
+            elif 'kind' in i and i['kind'].startswith('arvados#'):
+                # something else
+                return "{}.{}".format(i['name'], i['kind'][8:])
+        else:
+            return None
+
+
     @use_counter
     def update(self):
         if self.project_object_file == None:
             self.project_object_file = ObjectFile(self.inode, self.project_object)
             self.inodes.add_entry(self.project_object_file)
 
-        def namefn(i):
-            if 'name' in i:
-                if i['name'] is None or len(i['name']) == 0:
-                    return None
-                elif collection_uuid_pattern.match(i['uuid']) or group_uuid_pattern.match(i['uuid']):
-                    # collection or subproject
-                    return i['name']
-                elif link_uuid_pattern.match(i['uuid']) and i['head_kind'] == 'arvados#collection':
-                    # name link
-                    return i['name']
-                elif 'kind' in i and i['kind'].startswith('arvados#'):
-                    # something else
-                    return "{}.{}".format(i['name'], i['kind'][8:])
-            else:
-                return None
+        if not self._full_listing:
+            return
 
         def samefn(a, i):
             if isinstance(a, CollectionDirectory) or isinstance(a, ProjectDirectory):
@@ -836,27 +844,24 @@ class ProjectDirectory(Directory):
                     self.project_object = self.api.users().get(
                         uuid=self.project_uuid).execute(num_retries=self.num_retries)
 
-                contents = self.api.groups().list(filters=[["owner_uuid", "=", self.project_uuid],
-                                                           ["group_class", "=", "project"]],
-                                                  limit=1000, order="modified_at desc").execute(num_retries=self.num_retries)["items"]
-                contents.extend(self.api.collections().list(filters=[["owner_uuid", "=", self.project_uuid]],
-                                                            limit=1000, order="modified_at desc").execute(num_retries=self.num_retries)["items"])
-                if self._extra:
-                    contents.extend(self.api.groups().list(filters=[["owner_uuid", "=", self.project_uuid],
-                                                                    ["group_class", "=", "project"],
-                                                                    ["uuid", "in", list(self._extra)]],
-                                                      limit=1000).execute(num_retries=self.num_retries)["items"])
-                    contents.extend(self.api.collections().list(filters=[["owner_uuid", "=", self.project_uuid],
-                                                                         ["uuid", "in", list(self._extra)]],
-                                                                limit=1000).execute(num_retries=self.num_retries)["items"])
+                contents = arvados.util.list_all(self.api.groups().list,
+                                                 self.num_retries,
+                                                 filters=[["owner_uuid", "=", self.project_uuid],
+                                                          ["group_class", "=", "project"]],
+                                                 limit=1000, order="modified_at desc")
+                contents.extend(arvados.util.list_all(self.api.collections().list,
+                                                      self.num_retries,
+                                                      filters=[["owner_uuid", "=", self.project_uuid]],
+                                                      limit=1000, order="modified_at desc"))
 
             # end with llfuse.lock_released, re-acquire lock
 
             self.merge(contents,
-                       namefn,
+                       self.namefn,
                        samefn,
                        self.createDirectory)
         finally:
+            self._full_listing = False
             self._updating_lock.release()
 
     @use_counter
@@ -873,22 +878,23 @@ class ProjectDirectory(Directory):
         else:
             if super(ProjectDirectory, self).__contains__(k):
                 return True
-            else:
+            elif not self._full_listing:
                 with llfuse.lock_released:
-                    contents = self.api.collections().list(filters=[["owner_uuid", "=", self.project_uuid],
-                                                                    ["name", "=", k]],
-                                                           limit=1).execute(num_retries=self.num_retries)["items"]
+                    contents = self.api.groups().list(filters=[["owner_uuid", "=", self.project_uuid],
+                                                               ["group_class", "=", "project"],
+                                                               ["name", "=", k]],
+                                                      limit=1).execute(num_retries=self.num_retries)["items"]
                     if not contents:
-                        contents = self.api.groups().list(filters=[["owner_uuid", "=", self.project_uuid],
-                                                                   ["group_class", "=", "project"],
-                                                                   ["name", "=", k]],
-                                                          limit=1).execute(num_retries=self.num_retries)["items"]
+                        contents = self.api.collections().list(filters=[["owner_uuid", "=", self.project_uuid],
+                                                                        ["name", "=", k]],
+                                                               limit=1).execute(num_retries=self.num_retries)["items"]
                 if contents:
-                    self._extra.add(contents[0]["uuid"])
-                    self.invalidate()
+                    i = contents[0]
+                    name = sanitize_filename(self.namefn(i))
+                    ent = self.createDirectory(i)
+                    self._entries[name] = self.inodes.add_entry(ent)
                     return True
-                else:
-                    return False
+        return False
 
     @use_counter
     @check_update
