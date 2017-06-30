@@ -83,7 +83,15 @@ func (s *v0Suite) TestLastLogID(c *check.C) {
 	}), check.IsNil)
 	s.expectStatus(c, r, 200)
 
+	avoidRace := make(chan struct{}, cap(uuidChan))
 	go func() {
+		// When last_log_id is given, although v0session sends
+		// old events in order, and sends new events in order,
+		// it doesn't necessarily finish sending all old
+		// events before sending any new events. To avoid
+		// hitting this bug in the test, we wait for the old
+		// events to arrive before emitting any new events.
+		<-avoidRace
 		s.emitEvents(uuidChan)
 		close(uuidChan)
 	}()
@@ -97,6 +105,7 @@ func (s *v0Suite) TestLastLogID(c *check.C) {
 				}
 				c.Check(lg.EventType, check.Equals, etype)
 			}
+			avoidRace <- struct{}{}
 		}
 	}()
 }
