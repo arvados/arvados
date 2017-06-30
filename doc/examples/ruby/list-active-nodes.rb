@@ -1,4 +1,7 @@
 #!/usr/bin/env ruby
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: CC-BY-SA-3.0
 
 abort 'Error: Ruby >= 1.9.3 required.' if RUBY_VERSION < '1.9.3'
 

@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from __future__ import absolute_import
 from __future__ import division
 from future import standard_library
@@ -299,9 +303,8 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
 
     def test_passing_nonexistant_path_raise_exception(self):
         uuid_str = str(uuid.uuid4())
-        cwriter = arv_put.ArvPutUploadJob(["/this/path/does/not/exist/{}".format(uuid_str)])
         with self.assertRaises(arv_put.PathDoesNotExistError):
-            cwriter.start(save_collection=False)
+            cwriter = arv_put.ArvPutUploadJob(["/this/path/does/not/exist/{}".format(uuid_str)])
 
     def test_writer_works_without_cache(self):
         cwriter = arv_put.ArvPutUploadJob(['/dev/null'], resume=False)
@@ -336,7 +339,8 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
             for expect_count in (None, 8):
                 progression, reporter = self.make_progress_tester()
                 cwriter = arv_put.ArvPutUploadJob([f.name],
-                    reporter=reporter, bytes_expected=expect_count)
+                                                  reporter=reporter)
+                cwriter.bytes_expected = expect_count
                 cwriter.start(save_collection=False)
                 cwriter.destroy_cache()
                 self.assertIn((3, expect_count), progression)
@@ -492,23 +496,20 @@ class ArvPutUploadJobTest(run_test_server.TestCaseWithServers,
             self.assertGreater(writer.bytes_written, 0)
             self.assertLess(writer.bytes_written,
                             os.path.getsize(self.large_file_name))
-        # Retry the upload using dry_run to check if there is a pending upload
-        writer2 = arv_put.ArvPutUploadJob([self.large_file_name],
-                                          replication_desired=1,
-                                          dry_run=True)
         with self.assertRaises(arv_put.ArvPutUploadIsPending):
-            writer2.start(save_collection=False)
+            # Retry the upload using dry_run to check if there is a pending upload
+            writer2 = arv_put.ArvPutUploadJob([self.large_file_name],
+                                              replication_desired=1,
+                                              dry_run=True)
         # Complete the pending upload
         writer3 = arv_put.ArvPutUploadJob([self.large_file_name],
                                           replication_desired=1)
         writer3.start(save_collection=False)
-        # Confirm there's no pending upload with dry_run=True
-        writer4 = arv_put.ArvPutUploadJob([self.large_file_name],
-                                          replication_desired=1,
-                                          dry_run=True)
         with self.assertRaises(arv_put.ArvPutUploadNotPending):
-            writer4.start(save_collection=False)
-        writer4.destroy_cache()
+            # Confirm there's no pending upload with dry_run=True
+            writer4 = arv_put.ArvPutUploadJob([self.large_file_name],
+                                              replication_desired=1,
+                                              dry_run=True)
         # Test obvious cases
         with self.assertRaises(arv_put.ArvPutUploadIsPending):
             arv_put.ArvPutUploadJob([self.large_file_name],
@@ -527,21 +528,27 @@ class ArvadosExpectedBytesTest(ArvadosBaseTestCase):
     TEST_SIZE = os.path.getsize(__file__)
 
     def test_expected_bytes_for_file(self):
+        writer = arv_put.ArvPutUploadJob([__file__])
         self.assertEqual(self.TEST_SIZE,
-                          arv_put.expected_bytes_for([__file__]))
+                         writer.bytes_expected)
 
     def test_expected_bytes_for_tree(self):
         tree = self.make_tmpdir()
         shutil.copyfile(__file__, os.path.join(tree, 'one'))
         shutil.copyfile(__file__, os.path.join(tree, 'two'))
+
+        writer = arv_put.ArvPutUploadJob([tree])
         self.assertEqual(self.TEST_SIZE * 2,
-                          arv_put.expected_bytes_for([tree]))
+                         writer.bytes_expected)
+        writer = arv_put.ArvPutUploadJob([tree, __file__])
         self.assertEqual(self.TEST_SIZE * 3,
-                          arv_put.expected_bytes_for([tree, __file__]))
+                         writer.bytes_expected)
 
     def test_expected_bytes_for_device(self):
-        self.assertIsNone(arv_put.expected_bytes_for(['/dev/null']))
-        self.assertIsNone(arv_put.expected_bytes_for([__file__, '/dev/null']))
+        writer = arv_put.ArvPutUploadJob(['/dev/null'])
+        self.assertIsNone(writer.bytes_expected)
+        writer = arv_put.ArvPutUploadJob([__file__, '/dev/null'])
+        self.assertIsNone(writer.bytes_expected)
 
 
 class ArvadosPutReportTest(ArvadosBaseTestCase):
@@ -668,6 +675,13 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
         self.assertRaises(SystemExit,
                           self.call_main_with_args,
                           ['--project-uuid', self.Z_UUID, '--stream'])
+
+    def test_error_when_excluding_absolute_path(self):
+        tmpdir = self.make_tmpdir()
+        self.assertRaises(SystemExit,
+                          self.call_main_with_args,
+                          ['--exclude', '/some/absolute/path/*',
+                           tmpdir])
 
     def test_api_error_handling(self):
         coll_save_mock = mock.Mock(name='arv.collection.Collection().save_new()')
@@ -910,6 +924,50 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                                        '--name', link_name,
                                        '--project-uuid', self.PROJECT_UUID])
         self.assertEqual(link_name, collection['name'])
+
+    def test_exclude_filename_pattern(self):
+        tmpdir = self.make_tmpdir()
+        tmpsubdir = os.path.join(tmpdir, 'subdir')
+        os.mkdir(tmpsubdir)
+        for fname in ['file1', 'file2', 'file3']:
+            with open(os.path.join(tmpdir, "%s.txt" % fname), 'w') as f:
+                f.write("This is %s" % fname)
+            with open(os.path.join(tmpsubdir, "%s.txt" % fname), 'w') as f:
+                f.write("This is %s" % fname)
+        col = self.run_and_find_collection("", ['--no-progress',
+                                                '--exclude', '*2.txt',
+                                                '--exclude', 'file3.*',
+                                                 tmpdir])
+        self.assertNotEqual(None, col['uuid'])
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        # None of the file2.txt & file3.txt should have been uploaded
+        self.assertRegex(c['manifest_text'], r'^.*:file1.txt')
+        self.assertNotRegex(c['manifest_text'], r'^.*:file2.txt')
+        self.assertNotRegex(c['manifest_text'], r'^.*:file3.txt')
+
+    def test_exclude_filepath_pattern(self):
+        tmpdir = self.make_tmpdir()
+        tmpsubdir = os.path.join(tmpdir, 'subdir')
+        os.mkdir(tmpsubdir)
+        for fname in ['file1', 'file2', 'file3']:
+            with open(os.path.join(tmpdir, "%s.txt" % fname), 'w') as f:
+                f.write("This is %s" % fname)
+            with open(os.path.join(tmpsubdir, "%s.txt" % fname), 'w') as f:
+                f.write("This is %s" % fname)
+        col = self.run_and_find_collection("", ['--no-progress',
+                                                '--exclude', 'subdir/*2.txt',
+                                                '--exclude', './file1.*',
+                                                 tmpdir])
+        self.assertNotEqual(None, col['uuid'])
+        c = arv_put.api_client.collections().get(uuid=col['uuid']).execute()
+        # Only tmpdir/file1.txt & tmpdir/subdir/file2.txt should have been excluded
+        self.assertNotRegex(c['manifest_text'],
+                            r'^\./%s.*:file1.txt' % os.path.basename(tmpdir))
+        self.assertNotRegex(c['manifest_text'],
+                            r'^\./%s/subdir.*:file2.txt' % os.path.basename(tmpdir))
+        self.assertRegex(c['manifest_text'],
+                         r'^\./%s.*:file2.txt' % os.path.basename(tmpdir))
+        self.assertRegex(c['manifest_text'], r'^.*:file3.txt')
 
 
 if __name__ == '__main__':

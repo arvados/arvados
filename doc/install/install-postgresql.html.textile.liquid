@@ -3,6 +3,11 @@ layout: default
 navsection: installguide
 title: Set up PostgreSQL databases
 ...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
 
 Two Arvados Rails servers store data in a PostgreSQL database: the SSO server, and the API server.  The API server requires at least version 9.1 of PostgreSQL.  Beyond that, you have the flexibility to deploy PostgreSQL any way that the Rails servers will be able to connect to it.  Our recommended deployment strategy is:
 

@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 // Load tab panes on demand. See app/views/application/_content.html.erb
 
 // Fire when a tab is selected/clicked.

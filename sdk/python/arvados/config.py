@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # config.py - configuration settings and global variables for Arvados clients
 #
 # Arvados configuration settings are taken from $HOME/.config/arvados.

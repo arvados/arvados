@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 ENV["RAILS_ENV"] = "test"
 unless ENV["NO_COVERAGE_TEST"]
   begin

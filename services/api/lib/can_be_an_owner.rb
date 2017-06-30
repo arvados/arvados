@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 # Protect referential integrity of owner_uuid columns in other tables
 # that can refer to the uuid column in this table.
 

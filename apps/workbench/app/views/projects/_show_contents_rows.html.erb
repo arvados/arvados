@@ -1,3 +1,7 @@
+<%# Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: AGPL-3.0 %>
+
 <% get_objects_and_names.each do |object, name_link| %>
   <% name_object = (object.respond_to?(:name) || !name_link) ? object : name_link %>
   <tr class="filterable"

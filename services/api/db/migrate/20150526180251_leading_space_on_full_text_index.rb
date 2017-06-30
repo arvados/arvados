@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 require "./db/migrate/20150123142953_full_text_search.rb"
 
 class LeadingSpaceOnFullTextIndex < ActiveRecord::Migration

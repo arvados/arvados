@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 # Mixin module providing a method to convert filters into a list of SQL
 # fragments suitable to be fed to ActiveRecord #where.
 #

@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 # The v1 API uses token scopes to control access to the REST API at the path
 # level.  This is enforced in the base ApplicationController, making it a
 # functional test that we can run against many different controllers.

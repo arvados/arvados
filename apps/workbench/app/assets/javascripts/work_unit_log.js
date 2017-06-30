@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 $(document).on('arv-log-event', '.arv-log-event-handler-append-logs', function(event, eventData){
     var wasatbottom, txt;
     if (this != event.target) {

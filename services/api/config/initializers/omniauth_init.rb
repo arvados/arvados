@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 # This file is called omniauth_init.rb instead of omniauth.rb because
 # older versions had site configuration in omniauth.rb.
 #

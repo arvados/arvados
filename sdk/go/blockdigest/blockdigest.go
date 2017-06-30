@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: Apache-2.0
+
 // Stores a Block Locator Digest compactly. Can be used as a map key.
 package blockdigest
 

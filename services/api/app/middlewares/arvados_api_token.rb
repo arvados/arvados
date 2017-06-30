@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 # Perform api_token checking very early in the request process.  We want to do
 # this in the Rack stack instead of in ApplicationController because
 # websockets needs access to authentication but doesn't use any of the rails

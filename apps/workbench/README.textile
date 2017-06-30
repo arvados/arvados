@@ -1,3 +1,7 @@
+###. Copyright (C) The Arvados Authors. All rights reserved.
+....
+.... SPDX-License-Identifier: AGPL-3.0
+
 h1. Developing Workbench
 
 This document includes information to help developers who would like to contribute to Workbench.  If you just want to install it, please refer to our "Workbench installation guide":http://doc.arvados.org/install/install-workbench-app.html.

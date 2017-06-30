@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 # At the time we introduced scopes everywhere, VirtualMachinesController
 # recognized scopes that gave the URL for a VM to grant access to that VM's
 # login list.  This migration converts those VM-specific scopes to the new

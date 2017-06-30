@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 $base: "http://arvados.org/cwl#"
 $namespaces:
   cwl: "https://w3id.org/cwl/cwl#"

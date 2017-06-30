@@ -1,3 +1,7 @@
+<%# Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: AGPL-3.0 %>
+
 <% if current_user.andand.is_active %>
   <% content_for :tab_line_buttons do %>
     <%= link_to(choose_projects_path(id: "run-workflow-button",

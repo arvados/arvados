@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class IssueReporter < ActionMailer::Base
   default from: Rails.configuration.issue_reporter_email_from
   default to: Rails.configuration.issue_reporter_email_to

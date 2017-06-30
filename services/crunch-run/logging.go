@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 package main
 
 import (
@@ -369,7 +373,7 @@ func (arvlog *ArvLogWriter) rateLimit(line []byte, now time.Time) (bool, []byte)
 	}
 }
 
-// load the rate limit discovery config paramters
+// load the rate limit discovery config parameters
 func loadLogThrottleParams(clnt IArvadosClient) {
 	param, err := clnt.Discovery("crunchLimitLogBytesPerJob")
 	if err == nil {

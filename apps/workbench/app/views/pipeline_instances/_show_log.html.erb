@@ -1,3 +1,7 @@
+<%# Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: AGPL-3.0 %>
+
 <% log_ids = @object.job_log_ids
    job_ids = @object.job_ids
    still_logging, done_logging = log_ids.keys.partition { |k| log_ids[k].nil? }

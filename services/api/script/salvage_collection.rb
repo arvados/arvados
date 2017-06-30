@@ -1,4 +1,7 @@
 #!/usr/bin/env ruby
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
 
 # Take two input parameters: a collection uuid and reason
 # Get "src_collection" with the given uuid

@@ -1,3 +1,7 @@
+[//]: # Copyright (C) The Arvados Authors. All rights reserved.
+[//]: #
+[//]: # SPDX-License-Identifier: CC-BY-SA-3.0
+
 [Arvados](https://arvados.org) is a free software distributed computing platform
 for bioinformatics, data science, and high throughput analysis of massive data
 sets.  Arvados supports a variety of cloud, cluster and HPC environments.

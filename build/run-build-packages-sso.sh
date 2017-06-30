@@ -1,4 +1,7 @@
 #!/bin/bash
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
 
 JENKINS_DIR=$(dirname $(readlink -e "$0"))
 . "$JENKINS_DIR/run-library.sh"

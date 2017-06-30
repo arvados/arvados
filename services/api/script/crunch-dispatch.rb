@@ -1,4 +1,7 @@
 #!/usr/bin/env ruby
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
 
 dispatch_argv = []
 ARGV.reject! do |arg|

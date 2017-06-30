@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: CC-BY-SA-3.0
+
 # baseurl is the location of the generated site from the browser's
 # perspective (e.g., http://doc.arvados.org or
 # file:///tmp/arvados/doc/.site). To make docs show up inside

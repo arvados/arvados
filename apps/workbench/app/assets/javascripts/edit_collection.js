@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 // On loading of a collection, enable the "lock" button and
 // disable all file modification controls (upload, rename, delete)
 $(document).

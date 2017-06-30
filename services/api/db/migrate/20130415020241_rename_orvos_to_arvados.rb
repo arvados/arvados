@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class RenameOrvosToArvados < ActiveRecord::Migration
   def up
     Link.update_all("head_kind=replace(head_kind,'orvos','arvados')")

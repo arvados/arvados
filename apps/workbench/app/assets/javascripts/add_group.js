@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 $(document).on('shown.bs.modal', '#add-group-modal', function(event) {
     // Disable the submit button on modal loading
     $submit = $('#add-group-submit');

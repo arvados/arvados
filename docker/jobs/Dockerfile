@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Based on Debian Jessie
 FROM debian:jessie
 MAINTAINER Ward Vandewege <ward@curoverse.com>

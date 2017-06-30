@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 begin
   # If secret_token.rb exists here, we need to load it first.
   require_relative 'secret_token.rb'

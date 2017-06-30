@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class PipelineInstancesController < ApplicationController
   skip_before_filter :find_object_by_uuid, only: :compare
   before_filter :find_objects_by_uuid, only: :compare

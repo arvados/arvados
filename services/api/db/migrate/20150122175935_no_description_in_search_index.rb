@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 # If the database reflects an obsolete version of the 20141208185217
 # migration (i.e., before commit:5c1db683), revert it and reapply the
 # current version. (The down-migration is the same in both versions.)

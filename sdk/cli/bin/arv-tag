@@ -1,4 +1,7 @@
 #! /usr/bin/env ruby
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
 
 # arv tag usage:
 #   arv tag add tag1 [tag2 ...] --object obj_uuid1 [--object obj_uuid2 ...]

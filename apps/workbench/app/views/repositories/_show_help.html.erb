@@ -1,3 +1,7 @@
+<%# Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: AGPL-3.0 %>
+
 <%
     filters = @filters + [["owner_uuid", "=", current_user.uuid]]
     example = Repository.all.order("name ASC").filter(filters).limit(1).results.first

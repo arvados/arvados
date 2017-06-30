@@ -1,3 +1,7 @@
+[//]: # Copyright (C) The Arvados Authors. All rights reserved.
+[//]: #
+[//]: # SPDX-License-Identifier: AGPL-3.0
+
 When run-build-packages.sh builds a Rails package, it generates the package's pre/post-inst/rm scripts by concatenating:
 
 1. package_name.sh, which defines variables about where package files live and some human-readable names about them.

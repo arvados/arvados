@@ -1,3 +1,7 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class UsersController < ApplicationController
   skip_around_filter :require_thread_api_token, only: :welcome
   skip_before_filter :check_user_agreements, only: [:welcome, :inactive]

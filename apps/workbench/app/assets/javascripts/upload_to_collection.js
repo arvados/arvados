@@ -1,3 +1,7 @@
+// Copyright (C) The Arvados Authors. All rights reserved.
+//
+// SPDX-License-Identifier: AGPL-3.0
+
 var app = angular.module('Workbench', ['Arvados']);
 app.controller('UploadToCollection', UploadToCollection);
 app.directive('arvUuid', arvUuid);
