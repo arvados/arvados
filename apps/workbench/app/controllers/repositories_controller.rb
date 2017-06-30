@@ -34,8 +34,8 @@ class RepositoriesController < ApplicationController
   end
 
   def all_repos
-    limit = if params[:limit] then params[:limit].to_i else 100 end
-    offset = if params[:offset] then params[:offset].to_i else 0 end
+    limit = params[:limit].andand.to_i || 100
+    offset = params[:offset].andand.to_i || 0
     @filters = params[:filters] || []
 
     if @filters.any?
