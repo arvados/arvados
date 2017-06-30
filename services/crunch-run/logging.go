@@ -373,7 +373,7 @@ func (arvlog *ArvLogWriter) rateLimit(line []byte, now time.Time) (bool, []byte)
 	}
 }
 
-// load the rate limit discovery config paramters
+// load the rate limit discovery config parameters
 func loadLogThrottleParams(clnt IArvadosClient) {
 	param, err := clnt.Discovery("crunchLimitLogBytesPerJob")
 	if err == nil {
