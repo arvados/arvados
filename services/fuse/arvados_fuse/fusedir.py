@@ -848,11 +848,11 @@ class ProjectDirectory(Directory):
                                                  self.num_retries,
                                                  filters=[["owner_uuid", "=", self.project_uuid],
                                                           ["group_class", "=", "project"]],
-                                                 limit=1000, order="modified_at desc")
+                                                 limit=1000)
                 contents.extend(arvados.util.list_all(self.api.collections().list,
                                                       self.num_retries,
                                                       filters=[["owner_uuid", "=", self.project_uuid]],
-                                                      limit=1000, order="modified_at desc"))
+                                                      limit=1000))
 
             # end with llfuse.lock_released, re-acquire lock
 
