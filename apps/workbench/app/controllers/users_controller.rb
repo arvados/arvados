@@ -260,28 +260,6 @@ class UsersController < ApplicationController
     end
   end
 
-  def repositories
-    # all repositories accessible by current user
-    all_repositories = Hash[Repository.all.order('name asc').collect {|repo| [repo.uuid, repo]}]
-
-    @my_repositories = [] # we want them ordered as owned and the rest
-    @repo_writable = {}
-
-    # owned repos
-    all_repositories.each do |_, repo|
-      if repo.owner_uuid == current_user.uuid
-        @repo_writable[repo.uuid] = 'can_write'
-        @my_repositories << repo
-      end
-    end
-
-    # rest of the repos
-    handled = @my_repositories.map(&:uuid)
-    all_repositories.each do |_, repo|
-      @my_repositories << repo if !repo.uuid.in?(handled)
-    end
-  end
-
   def virtual_machines
     @my_vm_logins = {}
     Link.where(tail_uuid: @object.uuid,

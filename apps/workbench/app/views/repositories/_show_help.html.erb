@@ -2,7 +2,13 @@
 
 SPDX-License-Identifier: AGPL-3.0 %>
 
-<% if (example = @objects.select(&:push_url).first) %>
+<%
+    filters = @filters + [["owner_uuid", "=", current_user.uuid]]
+    example = Repository.all.order("name ASC").filter(filters).limit(1).results.first
+    example = Repository.all.order("name ASC").limit(1).results.first if !example
+%>
+
+<% if example %>
 
 <p>
 Sample git quick start:

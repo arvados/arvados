@@ -35,29 +35,6 @@ class UsersControllerTest < ActionController::TestCase
     assert_match /\/users\/welcome/, @response.redirect_url
   end
 
-  test "show repositories with read, write, or manage permission" do
-    get :repositories, {id: api_fixture("users")['active']['uuid']}, session_for(:active)
-    assert_response :success
-    repos = assigns(:my_repositories)
-    assert repos
-    assert_not_empty repos, "my_repositories should not be empty"
-    editables = repos.collect { |r| !!assigns(:repo_writable)[r.uuid] }
-    assert_includes editables, true, "should have a writable repository"
-    assert_includes editables, false, "should have a readonly repository"
-  end
-
-  test "show repositories lists linked as well as owned repositories" do
-    get :repositories, {id: api_fixture("users")['active']['uuid']}, session_for(:active)
-    assert_response :success
-    repos = assigns(:my_repositories)
-    assert repos
-    assert_not_empty repos, "my_repositories should not be empty"
-    repo_uuids = repos.map(&:uuid)
-    assert_includes repo_uuids, api_fixture('repositories')['repository2']['uuid']  # owned by active
-    assert_includes repo_uuids, api_fixture('repositories')['repository4']['uuid']  # shared with active
-    assert_includes repo_uuids, api_fixture('repositories')['arvados']['uuid']      # shared with all_users
-  end
-
   test "request shell access" do
     user = api_fixture('users')['spectator']
 

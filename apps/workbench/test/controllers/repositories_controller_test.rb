@@ -125,4 +125,20 @@ class RepositoriesControllerTest < ActionController::TestCase
       assert_select 'tr td', 'COPYING'
     end
   end
+
+  test "get repositories lists linked as well as owned repositories" do
+    params = {
+      partial: :repositories_rows,
+      format: :json,
+    }
+    get :index, params, session_for(:active)
+    assert_response :success
+    repos = assigns(:objects)
+    assert repos
+    assert_not_empty repos, "my_repositories should not be empty"
+    repo_uuids = repos.map(&:uuid)
+    assert_includes repo_uuids, api_fixture('repositories')['repository2']['uuid']  # owned by active
+    assert_includes repo_uuids, api_fixture('repositories')['repository4']['uuid']  # shared with active
+    assert_includes repo_uuids, api_fixture('repositories')['arvados']['uuid']      # shared with all_users
+  end
 end
