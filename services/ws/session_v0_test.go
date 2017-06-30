@@ -83,28 +83,31 @@ func (s *v0Suite) TestLastLogID(c *check.C) {
 	}), check.IsNil)
 	s.expectStatus(c, r, 200)
 
+	avoidRace := make(chan struct{}, cap(uuidChan))
 	go func() {
+		// When last_log_id is given, although v0session sends
+		// old events in order, and sends new events in order,
+		// it doesn't necessarily finish sending all old
+		// events before sending any new events. To avoid
+		// hitting this bug in the test, we wait for the old
+		// events to arrive before emitting any new events.
+		<-avoidRace
 		s.emitEvents(uuidChan)
 		close(uuidChan)
 	}()
 
-	done := make(chan bool)
 	go func() {
 		for uuid := range uuidChan {
 			for _, etype := range []string{"create", "blip", "update"} {
 				lg := s.expectLog(c, r)
-				c.Check(lg.ObjectUUID, check.Equals, uuid)
+				for lg.ObjectUUID != uuid {
+					lg = s.expectLog(c, r)
+				}
 				c.Check(lg.EventType, check.Equals, etype)
 			}
+			avoidRace <- struct{}{}
 		}
-		close(done)
 	}()
-
-	select {
-	case <-time.After(10 * time.Second):
-		c.Fatal("timeout")
-	case <-done:
-	}
 }
 
 func (s *v0Suite) TestPermission(c *check.C) {
@@ -117,16 +120,21 @@ func (s *v0Suite) TestPermission(c *check.C) {
 	}), check.IsNil)
 	s.expectStatus(c, r, 200)
 
-	uuidChan := make(chan string, 1)
+	uuidChan := make(chan string, 2)
 	go func() {
 		s.token = arvadostest.AdminToken
-		s.emitEvents(nil)
+		s.emitEvents(uuidChan)
 		s.token = arvadostest.ActiveToken
 		s.emitEvents(uuidChan)
 	}()
 
+	wrongUUID := <-uuidChan
+	rightUUID := <-uuidChan
 	lg := s.expectLog(c, r)
-	c.Check(lg.ObjectUUID, check.Equals, <-uuidChan)
+	for lg.ObjectUUID != rightUUID {
+		c.Check(lg.ObjectUUID, check.Not(check.Equals), wrongUUID)
+		lg = s.expectLog(c, r)
+	}
 }
 
 func (s *v0Suite) TestSendBadJSON(c *check.C) {
@@ -170,7 +178,9 @@ func (s *v0Suite) TestSubscribe(c *check.C) {
 
 	for _, etype := range []string{"create", "blip", "update"} {
 		lg := s.expectLog(c, r)
-		c.Check(lg.ObjectUUID, check.Equals, uuid)
+		for lg.ObjectUUID != uuid {
+			lg = s.expectLog(c, r)
+		}
 		c.Check(lg.EventType, check.Equals, etype)
 	}
 }
@@ -228,8 +238,17 @@ func (s *v0Suite) expectStatus(c *check.C, r *json.Decoder, status int) {
 
 func (s *v0Suite) expectLog(c *check.C, r *json.Decoder) *arvados.Log {
 	lg := &arvados.Log{}
-	c.Check(r.Decode(lg), check.IsNil)
-	return lg
+	ok := make(chan struct{})
+	go func() {
+		c.Check(r.Decode(lg), check.IsNil)
+		close(ok)
+	}()
+	select {
+	case <-time.After(10 * time.Second):
+		panic("timed out")
+	case <-ok:
+		return lg
+	}
 }
 
 func (s *v0Suite) testClient() (*server, *websocket.Conn, *json.Decoder, *json.Encoder) {
