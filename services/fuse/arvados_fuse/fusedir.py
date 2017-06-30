@@ -511,6 +511,8 @@ class CollectionDirectory(CollectionDirectoryBase):
             self.collection.stop_threads()
 
     def clear(self):
+        if self.collection is not None:
+            self.collection.stop_threads()
         super(CollectionDirectory, self).clear()
         self._manifest_size = 0
 
