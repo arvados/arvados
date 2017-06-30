@@ -838,9 +838,9 @@ class ProjectDirectory(Directory):
 
                 contents = self.api.groups().list(filters=[["owner_uuid", "=", self.project_uuid],
                                                            ["group_class", "=", "project"]],
-                                                  limit=1000, order=["modified_at desc"]).execute(num_retries=self.num_retries)["items"]
+                                                  limit=1000, order="modified_at desc").execute(num_retries=self.num_retries)["items"]
                 contents.extend(self.api.collections().list(filters=[["owner_uuid", "=", self.project_uuid]],
-                                                            limit=1000, order=["modified_at desc"]).execute(num_retries=self.num_retries)["items"])
+                                                            limit=1000, order="modified_at desc").execute(num_retries=self.num_retries)["items"])
                 if self._extra:
                     contents.extend(self.api.groups().list(filters=[["owner_uuid", "=", self.project_uuid],
                                                                     ["group_class", "=", "project"],
