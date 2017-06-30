@@ -1,7 +1,7 @@
 <%
     filters = @filters + [["owner_uuid", "=", current_user.uuid]]
     example = Repository.all.order("name ASC").filter(filters).limit(1).results.first
-    example = Repository.all.order("name ASC").results.limit(1).first if !example
+    example = Repository.all.order("name ASC").limit(1).results.first if !example
 %>
 
 <% if example %>
