@@ -847,12 +847,10 @@ class ProjectDirectory(Directory):
                 contents = arvados.util.list_all(self.api.groups().list,
                                                  self.num_retries,
                                                  filters=[["owner_uuid", "=", self.project_uuid],
-                                                          ["group_class", "=", "project"]],
-                                                 limit=1000)
+                                                          ["group_class", "=", "project"]])
                 contents.extend(arvados.util.list_all(self.api.collections().list,
                                                       self.num_retries,
-                                                      filters=[["owner_uuid", "=", self.project_uuid]],
-                                                      limit=1000))
+                                                      filters=[["owner_uuid", "=", self.project_uuid]]))
 
             # end with llfuse.lock_released, re-acquire lock
 
@@ -861,39 +859,43 @@ class ProjectDirectory(Directory):
                        samefn,
                        self.createDirectory)
         finally:
-            self._full_listing = False
             self._updating_lock.release()
 
     @use_counter
     @check_update
-    def __getitem__(self, item):
-        if item == '.arvados#project':
+    def __getitem__(self, k):
+        if k == '.arvados#project':
             return self.project_object_file
-        else:
-            return super(ProjectDirectory, self).__getitem__(item)
+        elif self._full_listing or super(ProjectDirectory, self).__contains__(k):
+            return super(ProjectDirectory, self).__getitem__(k)
+        with llfuse.lock_released:
+            contents = self.api.groups().list(filters=[["owner_uuid", "=", self.project_uuid],
+                                                       ["group_class", "=", "project"],
+                                                       ["name", "=", k]],
+                                              limit=1).execute(num_retries=self.num_retries)["items"]
+            if not contents:
+                contents = self.api.collections().list(filters=[["owner_uuid", "=", self.project_uuid],
+                                                                ["name", "=", k]],
+                                                       limit=1).execute(num_retries=self.num_retries)["items"]
+        if contents:
+            i = contents[0]
+            name = sanitize_filename(self.namefn(i))
+            if name != k:
+                raise KeyError(k)
+            ent = self.createDirectory(i)
+            self._entries[name] = self.inodes.add_entry(ent)
+            return self._entries[name]
+        # Didn't find item
+        raise KeyError(k)
 
     def __contains__(self, k):
         if k == '.arvados#project':
             return True
-        else:
-            if super(ProjectDirectory, self).__contains__(k):
-                return True
-            elif not self._full_listing:
-                with llfuse.lock_released:
-                    contents = self.api.groups().list(filters=[["owner_uuid", "=", self.project_uuid],
-                                                               ["group_class", "=", "project"],
-                                                               ["name", "=", k]],
-                                                      limit=1).execute(num_retries=self.num_retries)["items"]
-                    if not contents:
-                        contents = self.api.collections().list(filters=[["owner_uuid", "=", self.project_uuid],
-                                                                        ["name", "=", k]],
-                                                               limit=1).execute(num_retries=self.num_retries)["items"]
-                if contents:
-                    i = contents[0]
-                    name = sanitize_filename(self.namefn(i))
-                    ent = self.createDirectory(i)
-                    self._entries[name] = self.inodes.add_entry(ent)
-                    return True
+        try:
+            self[k]
+            return True
+        except KeyError:
+            pass
         return False
 
     @use_counter

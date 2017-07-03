@@ -369,17 +369,17 @@ def is_hex(s, *length_args):
 def list_all(fn, num_retries=0, **kwargs):
     # Default limit to (effectively) api server's MAX_LIMIT
     kwargs.setdefault('limit', sys.maxsize)
-    kwargs.setdefault('order', 'created_at asc')
+    kwargs.setdefault('order', 'uuid asc')
     kwargs.setdefault('count', 'none')
+    addfilters = kwargs.get("filters", [])
     items = []
-    offset = 0
     while True:
-        c = fn(offset=offset, **kwargs).execute(num_retries=num_retries)
+        c = fn(**kwargs).execute(num_retries=num_retries)
         items.extend(c['items'])
         if len(c['items']) < c['limit']:
             # Didn't return a full page, so we're done.
             break
-        offset = c['offset'] + len(c['items'])
+        kwargs["filters"] = addfilters + [["uuid", ">", c['items'][-1]['uuid']]]
     return items
 
 def ca_certs_path(fallback=httplib2.CA_CERTS):
