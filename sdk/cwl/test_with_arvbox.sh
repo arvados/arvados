@@ -48,6 +48,8 @@ if test -z "$ARVBOX_CONTAINER" ; then
 fi
 
 if test $reset_container = 1 ; then
+    arvbox stop
+    docker rm $ARVBOX_CONTAINER
     arvbox reset -f
 fi
 
@@ -81,7 +83,7 @@ export ARVADOS_API_TOKEN=\$(cat /var/lib/arvados/superuser_token)
 if test "$tag" = "latest" ; then
   arv-keepdocker --pull arvados/jobs $tag
 else
-  jobsimg=$(curl http://versions.arvados.org/v1/commit/$tag | python -c "import json; import sys; sys.stdout.write(json.load(sys.stdin)['Versions']['Docker']['arvados/jobs'])")
+  jobsimg=\$(curl http://versions.arvados.org/v1/commit/$tag | python -c "import json; import sys; sys.stdout.write(json.load(sys.stdin)['Versions']['Docker']['arvados/jobs'])")
   arv-keepdocker --pull arvados/jobs $jobsimg
   docker tag -f arvados/jobs:$jobsimg arvados/jobs:latest
   arv-keepdocker arvados/jobs latest
