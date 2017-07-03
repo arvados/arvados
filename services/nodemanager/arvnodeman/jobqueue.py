@@ -11,6 +11,7 @@ import subprocess
 from . import clientactor
 from .config import ARVADOS_ERRORS
 
+
 class ServerCalculator(object):
     """Generate cloud server wishlists from an Arvados job queue.
 
@@ -58,7 +59,6 @@ class ServerCalculator(object):
         self.max_nodes = max_nodes or float('inf')
         self.max_price = max_price or float('inf')
         self.logger = logging.getLogger('arvnodeman.jobqueue')
-        self.logged_jobs = set()
 
         self.logger.info("Using cloud node sizes:")
         for s in self.cloud_sizes:
@@ -83,20 +83,20 @@ class ServerCalculator(object):
 
     def servers_for_queue(self, queue):
         servers = []
-        seen_jobs = set()
+        unsatisfiable_jobs = {}
         for job in queue:
-            seen_jobs.add(job['uuid'])
             constraints = job['runtime_constraints']
             want_count = max(1, self.coerce_int(constraints.get('min_nodes'), 1))
             cloud_size = self.cloud_size_for_constraints(constraints)
             if cloud_size is None:
-                if job['uuid'] not in self.logged_jobs:
-                    self.logged_jobs.add(job['uuid'])
-                    self.logger.debug("job %s not satisfiable", job['uuid'])
-            elif (want_count <= self.max_nodes) and (want_count*cloud_size.price <= self.max_price):
+                unsatisfiable_jobs[job['uuid']] = 'Requirements for a single node exceed the available cloud node size'
+            elif (want_count > self.max_nodes):
+                unsatisfiable_jobs[job['uuid']] = "Job's min_nodes constraint is greater than the configured max_nodes (%d)" % self.max_nodes
+            elif (want_count*cloud_size.price <= self.max_price):
                 servers.extend([cloud_size.real] * want_count)
-        self.logged_jobs.intersection_update(seen_jobs)
-        return servers
+            else:
+                unsatisfiable_jobs[job['uuid']] = "Job's price (%d) is above system's max_price limit (%d)" % (want_count*cloud_size.price, self.max_price)
+        return (servers, unsatisfiable_jobs)
 
     def cheapest_size(self):
         return self.cloud_sizes[0]
@@ -106,6 +106,7 @@ class ServerCalculator(object):
             if s.id == sizeid:
                 return s
         return None
+
 
 class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
     """Actor to generate server wishlists from the job queue.
@@ -165,7 +166,17 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
         return queuelist
 
     def _got_response(self, queue):
-        server_list = self._calculator.servers_for_queue(queue)
+        server_list, unsatisfiable_jobs = self._calculator.servers_for_queue(queue)
+        # Cancel any job with unsatisfiable requirements, emitting a log
+        # explaining why.
+        for job_uuid, reason in unsatisfiable_jobs.iteritems():
+            self._client.logs().create(body={
+                'object_uuid': job_uuid,
+                'event_type': 'stderr',
+                'properties': {'text': reason},
+            }).execute()
+            self._client.jobs().cancel(uuid=job['uuid']).execute()
+            self._logger.debug("Unsatisfiable job '%s' cancelled", job_uuid)
         self._logger.debug("Calculated wishlist: %s",
                            ', '.join(s.name for s in server_list) or "(empty)")
         return super(JobQueueMonitorActor, self)._got_response(server_list)

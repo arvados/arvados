@@ -17,14 +17,15 @@ class ServerCalculatorTestCase(unittest.TestCase):
             [(testutil.MockSize(n), {'cores': n}) for n in factors], **kwargs)
 
     def calculate(self, servcalc, *constraints):
-        return servcalc.servers_for_queue(
+        servlist, _ = servcalc.servers_for_queue(
             [{'uuid': 'zzzzz-jjjjj-{:015x}'.format(index),
               'runtime_constraints': cdict}
              for index, cdict in enumerate(constraints)])
+        return servlist
 
     def test_empty_queue_needs_no_servers(self):
         servcalc = self.make_calculator([1])
-        self.assertEqual([], servcalc.servers_for_queue([]))
+        self.assertEqual(([], {}), servcalc.servers_for_queue([]))
 
     def test_easy_server_count(self):
         servcalc = self.make_calculator([1])
@@ -134,7 +135,7 @@ class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
     class MockCalculator(object):
         @staticmethod
         def servers_for_queue(queue):
-            return [testutil.MockSize(n) for n in queue]
+            return ([testutil.MockSize(n) for n in queue], {})
 
 
     def build_monitor(self, side_effect, *args, **kwargs):
