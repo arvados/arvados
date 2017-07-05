@@ -677,6 +677,7 @@ class TagsDirectory(Directory):
         self.num_retries = num_retries
         self._poll = True
         self._poll_time = poll_time
+        self._extra = set()
 
     def want_event_subscribe(self):
         return True
@@ -685,14 +686,40 @@ class TagsDirectory(Directory):
     def update(self):
         with llfuse.lock_released:
             tags = self.api.links().list(
-                filters=[['link_class', '=', 'tag']],
-                select=['name'], distinct=True
+                filters=[['link_class', '=', 'tag'], ["name", "!=", ""]],
+                select=['name'], distinct=True, limit=1000
                 ).execute(num_retries=self.num_retries)
         if "items" in tags:
-            self.merge(tags['items'],
+            self.merge(tags['items']+[{"name": n} for n in self._extra],
                        lambda i: i['name'],
                        lambda a, i: a.tag == i['name'],
                        lambda i: TagDirectory(self.inode, self.inodes, self.api, self.num_retries, i['name'], poll=self._poll, poll_time=self._poll_time))
+
+    @use_counter
+    @check_update
+    def __getitem__(self, item):
+        if super(TagsDirectory, self).__contains__(item):
+            return super(TagsDirectory, self).__getitem__(item)
+        with llfuse.lock_released:
+            tags = self.api.links().list(
+                filters=[['link_class', '=', 'tag'], ['name', '=', item]], limit=1
+            ).execute(num_retries=self.num_retries)
+        if tags["items"]:
+            self._extra.add(item)
+            self.update()
+        return super(TagsDirectory, self).__getitem__(item)
+
+    @use_counter
+    @check_update
+    def __contains__(self, k):
+        if super(TagsDirectory, self).__contains__(k):
+            return True
+        try:
+            self[k]
+            return True
+        except KeyError:
+            pass
+        return False
 
 
 class TagDirectory(Directory):
