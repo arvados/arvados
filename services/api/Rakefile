@@ -43,7 +43,7 @@ namespace :db do
         origfile = File.new origfnm
         origfile.each_line do |line|
           if !copyright_done
-            if !/Copyright .* Arvados/
+            if !/Copyright .* Arvados/.match(line)
                tmpfile.write "-- Copyright (C) The Arvados Authors. All rights reserved.\n--\n-- SPDX-License-Identifier: AGPL-3.0\n\n"
             end
             copyright_done = true
