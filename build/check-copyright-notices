@@ -173,7 +173,7 @@ ${cc}
 ${cc}${cc:+ }SPDX-License-Identifier: CC-BY-SA-3.0${ce}"
         found=$(head -n20 "$fnm" | egrep -A${grepAfter} -B${grepBefore} 'Copyright.*Arvados' || true)
         case ${fnm} in
-            Makefile | build/* | lib/* | tools/* | apps/* | services/*)
+            Makefile | build/* | lib/* | tools/* | apps/* | services/* | sdk/cli/bin/crunch-job)
                 want=${wantGPL}
                 ;;
             crunch_scripts/* | backports/* | docker/* | sdk/*)
