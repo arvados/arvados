@@ -396,7 +396,10 @@ class WhRunPipelineInstance
       end
     end
     if !errors.empty?
-      abort "\n#{Time.now} -- pipeline_template #{@template[:uuid]}\nErrors:\n#{errors.collect { |c,p,e| "#{c}::#{p} - #{e}\n" }.join ""}"
+      all_errors = errors.collect do |c,p,e|
+        "#{c}::#{p} - #{e}\n"
+      end.join("")
+      abort "\n#{Time.now} -- pipeline_template #{@template[:uuid]}\nErrors:\n#{all_errors}"
     end
     debuglog "options=" + @options.pretty_inspect
     self
@@ -657,7 +660,7 @@ class WhRunPipelineInstance
         @instance[:state] = 'Complete'
      else
         @instance[:state] = 'Paused'
-      end
+     end
     else
       if ended == @components.length or failed > 0
         @instance[:state] = success ? 'Complete' : 'Failed'
