@@ -96,11 +96,11 @@ class CollectionUploadTest < ActionDispatch::IntegrationTest
   test "Report network error" do
     need_selenium "to make file uploads work"
     use_token :admin do
-      # Even if you somehow do port>2^16, surely nx.example.net won't
+      # Even if port 0 is a thing, surely nx.example.net won't
       # respond
       KeepService.where(service_type: 'proxy').first.
         update_attributes(service_host: 'nx.example.net',
-                          service_port: 99999)
+                          service_port: 0)
     end
     visit page_with_token 'active', sandbox_path
 
