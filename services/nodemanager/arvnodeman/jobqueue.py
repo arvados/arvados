@@ -89,13 +89,19 @@ class ServerCalculator(object):
             want_count = max(1, self.coerce_int(constraints.get('min_nodes'), 1))
             cloud_size = self.cloud_size_for_constraints(constraints)
             if cloud_size is None:
-                unsatisfiable_jobs[job['uuid']] = 'Requirements for a single node exceed the available cloud node size'
+                unsatisfiable_jobs[job['uuid']] = (
+                    'Requirements for a single node exceed the available '
+                    'cloud node size')
             elif (want_count > self.max_nodes):
-                unsatisfiable_jobs[job['uuid']] = "Job's min_nodes constraint is greater than the configured max_nodes (%d)" % self.max_nodes
+                unsatisfiable_jobs[job['uuid']] = (
+                    "Job's min_nodes constraint is greater than the configured "
+                    "max_nodes (%d)" % self.max_nodes)
             elif (want_count*cloud_size.price <= self.max_price):
                 servers.extend([cloud_size.real] * want_count)
             else:
-                unsatisfiable_jobs[job['uuid']] = "Job's price (%d) is above system's max_price limit (%d)" % (want_count*cloud_size.price, self.max_price)
+                unsatisfiable_jobs[job['uuid']] = (
+                    "Job's price (%d) is above system's max_price "
+                    "limit (%d)" % (want_count*cloud_size.price, self.max_price))
         return (servers, unsatisfiable_jobs)
 
     def cheapest_size(self):
@@ -170,13 +176,18 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
         # Cancel any job with unsatisfiable requirements, emitting a log
         # explaining why.
         for job_uuid, reason in unsatisfiable_jobs.iteritems():
-            self._client.logs().create(body={
-                'object_uuid': job_uuid,
-                'event_type': 'stderr',
-                'properties': {'text': reason},
-            }).execute()
-            self._client.jobs().cancel(uuid=job['uuid']).execute()
-            self._logger.debug("Unsatisfiable job '%s' cancelled", job_uuid)
+            self._logger.debug("Cancelling unsatisfiable job '%s'", job_uuid)
+            try:
+                self._client.logs().create(body={
+                    'object_uuid': job_uuid,
+                    'event_type': 'stderr',
+                    'properties': {'text': reason},
+                }).execute()
+                self._client.jobs().cancel(uuid=job_uuid).execute()
+            except Exception as error:
+                self._logger.error("Trying to cancel job '%s': %s",
+                                   job_uuid,
+                                   error)
         self._logger.debug("Calculated wishlist: %s",
                            ', '.join(s.name for s in server_list) or "(empty)")
         return super(JobQueueMonitorActor, self)._got_response(server_list)

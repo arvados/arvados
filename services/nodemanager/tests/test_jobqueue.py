@@ -17,11 +17,10 @@ class ServerCalculatorTestCase(unittest.TestCase):
             [(testutil.MockSize(n), {'cores': n}) for n in factors], **kwargs)
 
     def calculate(self, servcalc, *constraints):
-        servlist, _ = servcalc.servers_for_queue(
+        return servcalc.servers_for_queue(
             [{'uuid': 'zzzzz-jjjjj-{:015x}'.format(index),
               'runtime_constraints': cdict}
              for index, cdict in enumerate(constraints)])
-        return servlist
 
     def test_empty_queue_needs_no_servers(self):
         servcalc = self.make_calculator([1])
@@ -29,59 +28,65 @@ class ServerCalculatorTestCase(unittest.TestCase):
 
     def test_easy_server_count(self):
         servcalc = self.make_calculator([1])
-        servlist = self.calculate(servcalc, {'min_nodes': 3})
+        servlist, _ = self.calculate(servcalc, {'min_nodes': 3})
         self.assertEqual(3, len(servlist))
 
     def test_default_5pct_ram_value_decrease(self):
         servcalc = self.make_calculator([1])
-        servlist = self.calculate(servcalc, {'min_ram_mb_per_node': 128})
+        servlist, _ = self.calculate(servcalc, {'min_ram_mb_per_node': 128})
         self.assertEqual(0, len(servlist))
-        servlist = self.calculate(servcalc, {'min_ram_mb_per_node': 121})
+        servlist, _ = self.calculate(servcalc, {'min_ram_mb_per_node': 121})
         self.assertEqual(1, len(servlist))
 
     def test_custom_node_mem_scaling_factor(self):
         # Simulate a custom 'node_mem_scaling' config parameter by passing
         # the value to ServerCalculator
         servcalc = self.make_calculator([1], node_mem_scaling=0.5)
-        servlist = self.calculate(servcalc, {'min_ram_mb_per_node': 128})
+        servlist, _ = self.calculate(servcalc, {'min_ram_mb_per_node': 128})
         self.assertEqual(0, len(servlist))
-        servlist = self.calculate(servcalc, {'min_ram_mb_per_node': 64})
+        servlist, _ = self.calculate(servcalc, {'min_ram_mb_per_node': 64})
         self.assertEqual(1, len(servlist))
 
     def test_implicit_server_count(self):
         servcalc = self.make_calculator([1])
-        servlist = self.calculate(servcalc, {}, {'min_nodes': 3})
+        servlist, _ = self.calculate(servcalc, {}, {'min_nodes': 3})
         self.assertEqual(4, len(servlist))
 
     def test_bad_min_nodes_override(self):
         servcalc = self.make_calculator([1])
-        servlist = self.calculate(servcalc,
-                                  {'min_nodes': -2}, {'min_nodes': 'foo'})
+        servlist, _ = self.calculate(servcalc,
+                                     {'min_nodes': -2}, {'min_nodes': 'foo'})
         self.assertEqual(2, len(servlist))
 
-    def test_ignore_unsatisfiable_jobs(self):
+    def test_ignore_and_return_unsatisfiable_jobs(self):
         servcalc = self.make_calculator([1], max_nodes=9)
-        servlist = self.calculate(servcalc,
-                                  {'min_cores_per_node': 2},
-                                  {'min_ram_mb_per_node': 256},
-                                  {'min_nodes': 6},
-                                  {'min_nodes': 12},
-                                  {'min_scratch_mb_per_node': 300000})
+        servlist, u_jobs = self.calculate(servcalc,
+                                          {'min_cores_per_node': 2},
+                                          {'min_ram_mb_per_node': 256},
+                                          {'min_nodes': 6},
+                                          {'min_nodes': 12},
+                                          {'min_scratch_mb_per_node': 300000})
         self.assertEqual(6, len(servlist))
+        # Only unsatisfiable jobs are returned on u_jobs
+        self.assertIn('zzzzz-jjjjj-000000000000000', u_jobs.keys())
+        self.assertIn('zzzzz-jjjjj-000000000000001', u_jobs.keys())
+        self.assertNotIn('zzzzz-jjjjj-000000000000002', u_jobs.keys())
+        self.assertIn('zzzzz-jjjjj-000000000000003', u_jobs.keys())
+        self.assertIn('zzzzz-jjjjj-000000000000004', u_jobs.keys())
 
     def test_ignore_too_expensive_jobs(self):
         servcalc = self.make_calculator([1, 2], max_nodes=12, max_price=6)
-        servlist = self.calculate(servcalc,
-                                  {'min_cores_per_node': 1, 'min_nodes': 6})
+        servlist, _ = self.calculate(servcalc,
+                                     {'min_cores_per_node': 1, 'min_nodes': 6})
         self.assertEqual(6, len(servlist))
 
-        servlist = self.calculate(servcalc,
-                                  {'min_cores_per_node': 2, 'min_nodes': 6})
+        servlist, _ = self.calculate(servcalc,
+                                     {'min_cores_per_node': 2, 'min_nodes': 6})
         self.assertEqual(0, len(servlist))
 
     def test_job_requesting_max_nodes_accepted(self):
         servcalc = self.make_calculator([1], max_nodes=4)
-        servlist = self.calculate(servcalc, {'min_nodes': 4})
+        servlist, _ = self.calculate(servcalc, {'min_nodes': 4})
         self.assertEqual(4, len(servlist))
 
     def test_cheapest_size(self):
@@ -90,37 +95,37 @@ class ServerCalculatorTestCase(unittest.TestCase):
 
     def test_next_biggest(self):
         servcalc = self.make_calculator([1, 2, 4, 8])
-        servlist = self.calculate(servcalc,
-                                  {'min_cores_per_node': 3},
-                                  {'min_cores_per_node': 6})
+        servlist, _ = self.calculate(servcalc,
+                                     {'min_cores_per_node': 3},
+                                     {'min_cores_per_node': 6})
         self.assertEqual([servcalc.cloud_sizes[2].id,
                           servcalc.cloud_sizes[3].id],
                          [s.id for s in servlist])
 
     def test_multiple_sizes(self):
         servcalc = self.make_calculator([1, 2])
-        servlist = self.calculate(servcalc,
-                                  {'min_cores_per_node': 2},
-                                  {'min_cores_per_node': 1},
-                                  {'min_cores_per_node': 1})
+        servlist, _ = self.calculate(servcalc,
+                                     {'min_cores_per_node': 2},
+                                     {'min_cores_per_node': 1},
+                                     {'min_cores_per_node': 1})
         self.assertEqual([servcalc.cloud_sizes[1].id,
                           servcalc.cloud_sizes[0].id,
                           servcalc.cloud_sizes[0].id],
                          [s.id for s in servlist])
 
-        servlist = self.calculate(servcalc,
-                                  {'min_cores_per_node': 1},
-                                  {'min_cores_per_node': 2},
-                                  {'min_cores_per_node': 1})
+        servlist, _ = self.calculate(servcalc,
+                                     {'min_cores_per_node': 1},
+                                     {'min_cores_per_node': 2},
+                                     {'min_cores_per_node': 1})
         self.assertEqual([servcalc.cloud_sizes[0].id,
                           servcalc.cloud_sizes[1].id,
                           servcalc.cloud_sizes[0].id],
                          [s.id for s in servlist])
 
-        servlist = self.calculate(servcalc,
-                                  {'min_cores_per_node': 1},
-                                  {'min_cores_per_node': 1},
-                                  {'min_cores_per_node': 2})
+        servlist, _ = self.calculate(servcalc,
+                                     {'min_cores_per_node': 1},
+                                     {'min_cores_per_node': 1},
+                                     {'min_cores_per_node': 2})
         self.assertEqual([servcalc.cloud_sizes[0].id,
                           servcalc.cloud_sizes[0].id,
                           servcalc.cloud_sizes[1].id],
@@ -132,15 +137,32 @@ class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
                                    unittest.TestCase):
     TEST_CLASS = jobqueue.JobQueueMonitorActor
 
+
     class MockCalculator(object):
         @staticmethod
         def servers_for_queue(queue):
             return ([testutil.MockSize(n) for n in queue], {})
 
 
+    class MockCalculatorUnsatisfiableJobs(object):
+        @staticmethod
+        def servers_for_queue(queue):
+            return ([], {k: "Unsatisfiable job mock" for k in queue})
+
+
     def build_monitor(self, side_effect, *args, **kwargs):
         super(JobQueueMonitorActorTestCase, self).build_monitor(*args, **kwargs)
         self.client.jobs().queue().execute.side_effect = side_effect
+
+    @mock.patch("subprocess.check_output")
+    def test_unsatisfiable_jobs(self, mock_squeue):
+        mock_squeue.return_value = ""
+
+        self.build_monitor([{'items': ['job1']}],
+                           self.MockCalculatorUnsatisfiableJobs(), True, True)
+        self.monitor.subscribe(self.subscriber).get(self.TIMEOUT)
+        self.stop_proxy(self.monitor)
+        self.client.jobs().cancel.assert_called_with(uuid='job1')
 
     @mock.patch("subprocess.check_output")
     def test_subscribers_get_server_lists(self, mock_squeue):
