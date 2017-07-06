@@ -357,13 +357,14 @@ class ArvadosModel < ActiveRecord::Base
 
   def self.full_text_searchable_columns
     self.columns.select do |col|
-      col.type == :string or col.type == :text
+      [:string, :text, :jsonb].include?(col.type)
     end.map(&:name)
   end
 
   def self.full_text_tsvector
     parts = full_text_searchable_columns.collect do |column|
-      "coalesce(#{column},'')"
+      cast = serialized_attributes[column] ? '::text' : ''
+      "coalesce(#{column}#{cast},'')"
     end
     "to_tsvector('english', #{parts.join(" || ' ' || ")})"
   end
