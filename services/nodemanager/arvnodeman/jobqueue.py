@@ -8,6 +8,8 @@ from __future__ import absolute_import, print_function
 import logging
 import subprocess
 
+import arvados.util
+
 from . import clientactor
 from .config import ARVADOS_ERRORS
 
@@ -173,8 +175,8 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
 
     def _got_response(self, queue):
         server_list, unsatisfiable_jobs = self._calculator.servers_for_queue(queue)
-        # Cancel any job with unsatisfiable requirements, emitting a log
-        # explaining why.
+        # Cancel any job/container with unsatisfiable requirements, emitting
+        # a log explaining why.
         for job_uuid, reason in unsatisfiable_jobs.iteritems():
             self._logger.debug("Cancelling unsatisfiable job '%s'", job_uuid)
             try:
@@ -183,7 +185,13 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
                     'event_type': 'stderr',
                     'properties': {'text': reason},
                 }).execute()
-                self._client.jobs().cancel(uuid=job_uuid).execute()
+                # Cancel the job depending on it type
+                if arvados.util.container_uuid_pattern.match(job_uuid):
+                    subprocess.check_call(['scancel', '--name='+job_uuid])
+                elif arvados.util.job_uuid_pattern.match(job_uuid):
+                    self._client.jobs().cancel(uuid=job_uuid).execute()
+                else:
+                    raise Exception('Unknown job type')
             except Exception as error:
                 self._logger.error("Trying to cancel job '%s': %s",
                                    job_uuid,

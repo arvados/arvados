@@ -147,22 +147,27 @@ class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
     class MockCalculatorUnsatisfiableJobs(object):
         @staticmethod
         def servers_for_queue(queue):
-            return ([], {k: "Unsatisfiable job mock" for k in queue})
+            return ([], {k["uuid"]: "Unsatisfiable job mock" for k in queue})
 
 
     def build_monitor(self, side_effect, *args, **kwargs):
         super(JobQueueMonitorActorTestCase, self).build_monitor(*args, **kwargs)
         self.client.jobs().queue().execute.side_effect = side_effect
 
+    @mock.patch("subprocess.check_call")
     @mock.patch("subprocess.check_output")
-    def test_unsatisfiable_jobs(self, mock_squeue):
-        mock_squeue.return_value = ""
+    def test_unsatisfiable_jobs(self, mock_squeue, mock_scancel):
+        #mock_scancel.return_value = ""
+        job_uuid = 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'
+        container_uuid = 'yyyyy-dz642-yyyyyyyyyyyyyyy'
+        mock_squeue.return_value = "1|1024|0|Resources|" + container_uuid + "\n"
 
-        self.build_monitor([{'items': ['job1']}],
+        self.build_monitor([{'items': [{'uuid': job_uuid}]}],
                            self.MockCalculatorUnsatisfiableJobs(), True, True)
         self.monitor.subscribe(self.subscriber).get(self.TIMEOUT)
         self.stop_proxy(self.monitor)
-        self.client.jobs().cancel.assert_called_with(uuid='job1')
+        self.client.jobs().cancel.assert_called_with(uuid=job_uuid)
+        mock_scancel.assert_called_with(['scancel', '--name='+container_uuid])
 
     @mock.patch("subprocess.check_output")
     def test_subscribers_get_server_lists(self, mock_squeue):
