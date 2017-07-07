@@ -216,3 +216,20 @@ running_container_with_logs:
   runtime_constraints:
     ram: 12000000000
     vcpus: 4
+
+running_to_be_deleted:
+  uuid: zzzzz-dz642-runnincntrtodel
+  owner_uuid: zzzzz-tpzed-000000000000000
+  state: Running
+  priority: 1
+  created_at: <%= 1.minute.ago.to_s(:db) %>
+  updated_at: <%= 1.minute.ago.to_s(:db) %>
+  started_at: <%= 1.minute.ago.to_s(:db) %>
+  container_image: test
+  cwd: test
+  output_path: test
+  command: ["echo", "hello"]
+  runtime_constraints:
+    ram: 12000000000
+    vcpus: 4
+  auth_uuid: zzzzz-gj3su-077z32aux8dg2s2
