@@ -118,7 +118,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 
 	var collection *arvados.Collection
 	if pdh != "" {
-		collection = c.lookupCollection(pdh)
+		collection = c.lookupCollection(arv.ApiToken + "\000" + pdh)
 	}
 
 	if collection != nil && permOK {
@@ -150,7 +150,7 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 			// PDH changed, but now we know we have
 			// permission -- and maybe we already have the
 			// new PDH in the cache.
-			if coll := c.lookupCollection(current.PortableDataHash); coll != nil {
+			if coll := c.lookupCollection(arv.ApiToken + "\000" + current.PortableDataHash); coll != nil {
 				return coll, nil
 			}
 		}
@@ -170,14 +170,13 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		expire: exp,
 		pdh:    collection.PortableDataHash,
 	})
-	// Disabled, see #11945
-	// c.collections.Add(collection.PortableDataHash, &cachedCollection{
-	// 	expire:     exp,
-	// 	collection: collection,
-	// })
-	// if int64(len(collection.ManifestText)) > c.MaxCollectionBytes/int64(c.MaxCollectionEntries) {
-	// 	go c.pruneCollections()
-	// }
+	c.collections.Add(arv.ApiToken+"\000"+collection.PortableDataHash, &cachedCollection{
+		expire:     exp,
+		collection: collection,
+	})
+	if int64(len(collection.ManifestText)) > c.MaxCollectionBytes/int64(c.MaxCollectionEntries) {
+		go c.pruneCollections()
+	}
 	return collection, nil
 }
 
@@ -238,15 +237,13 @@ func (c *cache) collectionBytes() uint64 {
 	return size
 }
 
-func (c *cache) lookupCollection(pdh string) *arvados.Collection {
-	if pdh == "" {
-		return nil
-	} else if ent, cached := c.collections.Get(pdh); !cached {
+func (c *cache) lookupCollection(key string) *arvados.Collection {
+	if ent, cached := c.collections.Get(key); !cached {
 		return nil
 	} else {
 		ent := ent.(*cachedCollection)
 		if ent.expire.Before(time.Now()) {
-			c.collections.Remove(pdh)
+			c.collections.Remove(key)
 			return nil
 		} else {
 			atomic.AddUint64(&c.stats.CollectionHits, 1)
