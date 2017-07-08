@@ -15,7 +15,7 @@ class ArvadosCommandTool(CommandLineTool):
         self.arvrunner = arvrunner
         self.work_api = kwargs["work_api"]
 
-    def makeJobRunner(self):
+    def makeJobRunner(self, use_container=True):
         if self.work_api == "containers":
             return ArvadosContainer(self.arvrunner)
         elif self.work_api == "jobs":
