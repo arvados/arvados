@@ -36,7 +36,7 @@ func (s *GitSuite) TestReadonly(c *check.C) {
 	err := s.RunGit(c, spectatorToken, "fetch", "active/foo.git")
 	c.Assert(err, check.Equals, nil)
 	err = s.RunGit(c, spectatorToken, "push", "active/foo.git", "master:newbranchfail")
-	c.Assert(err, check.ErrorMatches, `.*HTTP code = 403.*`)
+	c.Assert(err, check.ErrorMatches, `.*HTTP (code = )?403.*`)
 	_, err = os.Stat(s.tmpRepoRoot + "/zzzzz-s0uqq-382brsig8rp3666.git/refs/heads/newbranchfail")
 	c.Assert(err, check.FitsTypeOf, &os.PathError{})
 }
