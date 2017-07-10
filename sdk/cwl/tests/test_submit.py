@@ -319,7 +319,7 @@ class TestSubmit(unittest.TestCase):
     def test_submit_runner_ram(self, stubs, tm):
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--debug", "--submit-runner-ram=2048",
+            ["--submit", "--no-wait", "--api=jobs", "--debug", "--submit-runner-ram=2048",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
@@ -338,7 +338,7 @@ class TestSubmit(unittest.TestCase):
     def test_submit_invalid_runner_ram(self, stubs, tm):
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--debug", "--submit-runner-ram=-2048",
+            ["--submit", "--no-wait", "--api=jobs", "--debug", "--submit-runner-ram=-2048",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 1)
@@ -350,7 +350,7 @@ class TestSubmit(unittest.TestCase):
 
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--debug", "--output-name", output_name,
+            ["--submit", "--no-wait", "--api=jobs", "--debug", "--output-name", output_name,
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
@@ -369,7 +369,7 @@ class TestSubmit(unittest.TestCase):
     def test_submit_pipeline_name(self, stubs, tm):
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--debug", "--name=hello job 123",
+            ["--submit", "--no-wait", "--api=jobs", "--debug", "--name=hello job 123",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
@@ -389,7 +389,7 @@ class TestSubmit(unittest.TestCase):
 
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--debug", "--output-tags", output_tags,
+            ["--submit", "--no-wait", "--api=jobs", "--debug", "--output-tags", output_tags,
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
@@ -408,7 +408,7 @@ class TestSubmit(unittest.TestCase):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait",
+            ["--submit", "--no-wait", "--api=jobs",
              "--project-uuid", project_uuid,
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             sys.stdout, sys.stderr, api_client=stubs.api)
@@ -424,7 +424,7 @@ class TestSubmit(unittest.TestCase):
         capture_stdout = cStringIO.StringIO()
         try:
             exited = arvados_cwl.main(
-                ["--submit", "--no-wait", "--api=containers", "--debug",
+                ["--submit", "--no-wait", "--debug",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
                 capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
@@ -895,7 +895,7 @@ class TestSubmit(unittest.TestCase):
                          arvados_cwl.runner.arvados_jobs_image(arvrunner, "arvados/jobs:"+arvados_cwl.__version__))
 
 class TestCreateTemplate(unittest.TestCase):
-    existing_template_uuid = "zzzzz-d1hrv-validworkfloyml"
+    existing_template_uuid = "zzzzz-p5p6p-validworkfloyml"
 
     def _adjust_script_params(self, expect_component):
         expect_component['script_parameters']['x'] = {
@@ -1237,7 +1237,7 @@ class TestTemplateInputs(unittest.TestCase):
     @stubs
     def test_inputs_empty(self, stubs):
         exited = arvados_cwl.main(
-            ["--create-template",
+            ["--create-template", "--api=jobs",
              "tests/wf/inputs_test.cwl", "tests/order/empty_order.json"],
             cStringIO.StringIO(), sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
@@ -1248,7 +1248,7 @@ class TestTemplateInputs(unittest.TestCase):
     @stubs
     def test_inputs(self, stubs):
         exited = arvados_cwl.main(
-            ["--create-template",
+            ["--create-template", "--api=jobs",
              "tests/wf/inputs_test.cwl", "tests/order/inputs_test_order.json"],
             cStringIO.StringIO(), sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)

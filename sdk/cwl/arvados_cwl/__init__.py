@@ -89,7 +89,7 @@ class ArvCwlRunner(object):
         self.collection_cache = CollectionCache(self.api, self.keep_client, self.num_retries)
 
         self.work_api = None
-        expected_api = ["jobs", "containers"]
+        expected_api = ["containers", "jobs"]
         for api in expected_api:
             try:
                 methods = self.api._rootDesc.get('resources')[api]['methods']
