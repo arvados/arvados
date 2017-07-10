@@ -424,7 +424,7 @@ class ArvCwlRunner(object):
         if kwargs.get("submit"):
             # Submit a runner job to run the workflow for us.
             if self.work_api == "containers":
-                if tool.tool["class"] == "CommandLineTool":
+                if tool.tool["class"] == "CommandLineTool" and kwargs.get("wait"):
                     kwargs["runnerjob"] = tool.tool["id"]
                     upload_dependencies(self,
                                         kwargs["name"],

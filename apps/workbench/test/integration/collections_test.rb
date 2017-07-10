@@ -426,8 +426,6 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "collection tags tab" do
-    need_selenium
-
     visit page_with_token('active', '/collections/zzzzz-4zz18-bv31uwvy3neko21')
 
     click_link 'Tags'
@@ -447,8 +445,6 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     assert_selector 'a', text: 'Cancel'
 
     # add two tags
-    first('.edit-collection-tags').click
-
     first('.glyphicon-plus').click
     first('.collection-tag-field-key').click
     first('.collection-tag-field-key').set('key 1')

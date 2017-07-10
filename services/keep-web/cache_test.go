@@ -11,6 +11,8 @@ import (
 )
 
 func (s *UnitSuite) TestCache(c *check.C) {
+	c.Skip("see #11945")
+
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 
@@ -72,6 +74,8 @@ func (s *UnitSuite) TestCache(c *check.C) {
 }
 
 func (s *UnitSuite) TestCacheForceReloadByPDH(c *check.C) {
+	c.Skip("see #11945")
+
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 
@@ -90,6 +94,8 @@ func (s *UnitSuite) TestCacheForceReloadByPDH(c *check.C) {
 }
 
 func (s *UnitSuite) TestCacheForceReloadByUUID(c *check.C) {
+	c.Skip("see #11945")
+
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 

@@ -1,15 +1,19 @@
-Server-side components of Arvados contained in the apps/ and services/
-directories, including the API Server, Workbench, and Crunch, are licensed
-under the GNU Affero General Public License version 3 (see agpl-3.0.txt).
+Unless indicated otherwise in the header of the file, the files in this
+repository are distributed under one of three different licenses: AGPL-3.0,
+Apache-2.0 or CC-BY-SA-3.0.
 
-The files and directories under the build/, lib/ and tools/ directories are
-licensed under the GNU Affero General Public License version 3 (see
-agpl-3.0.txt).
+Individual files contain an SPDX tag that indicates the license for the file.
+These are the three tags in use:
 
-The Arvados client Software Development Kits contained in the sdk/ directory,
-example scripts in the crunch_scripts/ directory, the files and directories
-under backports/ and docker/, and code samples in the Aravados documentation
-are licensed under the Apache License, Version 2.0 (see LICENSE-2.0.txt).
+    SPDX-License-Identifier: AGPL-3.0
+    SPDX-License-Identifier: Apache-2.0
+    SPDX-License-Identifier: CC-BY-SA-3.0
 
-The Arvados Documentation located in the doc/ directory is licensed under the
-Creative Commons Attribution-Share Alike 3.0 United States (see by-sa-3.0.txt).
+This enables machine processing of license information based on the SPDX
+License Identifiers that are available here: http://spdx.org/licenses/
+
+The full license text for each license is available in this directory:
+
+  AGPL-3.0:     agpl-3.0.txt
+  Apache-2.0:   apache-2.0.txt
+  CC-BY-SA-3.0: cc-by-sa-3.0.txt

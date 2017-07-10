@@ -170,13 +170,14 @@ func (c *cache) Get(arv *arvadosclient.ArvadosClient, targetID string, forceRelo
 		expire: exp,
 		pdh:    collection.PortableDataHash,
 	})
-	c.collections.Add(collection.PortableDataHash, &cachedCollection{
-		expire:     exp,
-		collection: collection,
-	})
-	if int64(len(collection.ManifestText)) > c.MaxCollectionBytes/int64(c.MaxCollectionEntries) {
-		go c.pruneCollections()
-	}
+	// Disabled, see #11945
+	// c.collections.Add(collection.PortableDataHash, &cachedCollection{
+	// 	expire:     exp,
+	// 	collection: collection,
+	// })
+	// if int64(len(collection.ManifestText)) > c.MaxCollectionBytes/int64(c.MaxCollectionEntries) {
+	// 	go c.pruneCollections()
+	// }
 	return collection, nil
 }
 
