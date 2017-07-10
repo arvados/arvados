@@ -24,7 +24,10 @@ class BogusActor(arvnodeman.baseactor.BaseNodeManagerActor):
         self.exp = e
 
     def doStuff(self):
-        raise self.exp
+        if self.exp:
+            raise self.exp
+        while True:
+            time.sleep(1)
 
     def ping(self):
         # Called by WatchdogActorTest, this delay is longer than the test timeout
@@ -51,8 +54,8 @@ class ActorUnhandledExceptionTest(testutil.ActorTestMixin, unittest.TestCase):
 class WatchdogActorTest(testutil.ActorTestMixin, unittest.TestCase):
     @mock.patch('os.kill')
     def test_time_timout(self, kill_mock):
-        act = BogusActor.start(OSError(errno.ENOENT, ""))
+        act = BogusActor.start(None)
         watch = arvnodeman.baseactor.WatchdogActor.start(1, act)
         watch.stop(block=True)
         act.stop(block=True)
-        self.assertTrue(kill_mock.called)
+        kill_mock.assert_called()
