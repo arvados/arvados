@@ -315,7 +315,7 @@ class TestWorkflow(unittest.TestCase):
         api._rootDesc = get_rootDesc()
 
         runner = arvados_cwl.ArvCwlRunner(api)
-        self.assertEqual(runner.work_api, 'jobs')
+        runner.work_api = 'jobs'
 
         list_images_in_arv.return_value = [["zzzzz-4zz18-zzzzzzzzzzzzzzz"]]
         runner.api.collections().get().execute.return_vaulue = {"portable_data_hash": "99999999999999999999999999999993+99"}
