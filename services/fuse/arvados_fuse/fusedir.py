@@ -802,7 +802,7 @@ class ProjectDirectory(Directory):
         if 'name' in i:
             if i['name'] is None or len(i['name']) == 0:
                 return None
-            elif collection_uuid_pattern.match(i['uuid']) or group_uuid_pattern.match(i['uuid']):
+            elif "uuid" in i and (collection_uuid_pattern.match(i['uuid']) or group_uuid_pattern.match(i['uuid'])):
                 # collection or subproject
                 return i['name']
             elif link_uuid_pattern.match(i['uuid']) and i['head_kind'] == 'arvados#collection':
@@ -861,6 +861,11 @@ class ProjectDirectory(Directory):
         finally:
             self._updating_lock.release()
 
+    def _add_entry(self, i, name):
+        ent = self.createDirectory(i)
+        self._entries[name] = self.inodes.add_entry(ent)
+        return self._entries[name]
+
     @use_counter
     @check_update
     def __getitem__(self, k):
@@ -878,13 +883,11 @@ class ProjectDirectory(Directory):
                                                                 ["name", "=", k]],
                                                        limit=1).execute(num_retries=self.num_retries)["items"]
         if contents:
-            i = contents[0]
-            name = sanitize_filename(self.namefn(i))
+            name = sanitize_filename(self.namefn(contents[0]))
             if name != k:
                 raise KeyError(k)
-            ent = self.createDirectory(i)
-            self._entries[name] = self.inodes.add_entry(ent)
-            return self._entries[name]
+            return self._add_entry(contents[0], name)
+
         # Didn't find item
         raise KeyError(k)
 
@@ -961,6 +964,49 @@ class ProjectDirectory(Directory):
         del src._entries[name_old]
         self._entries[name_new] = ent
         self.inodes.invalidate_entry(src.inode, name_old.encode(self.inodes.encoding))
+
+    @use_counter
+    def child_event(self, ev):
+        properties = ev.get("properties") or {}
+        old_attrs = properties.get("old_attributes") or {}
+        new_attrs = properties.get("new_attributes") or {}
+        old_attrs["uuid"] = ev["object_uuid"]
+        new_attrs["uuid"] = ev["object_uuid"]
+        old_name = sanitize_filename(self.namefn(old_attrs))
+        new_name = sanitize_filename(self.namefn(new_attrs))
+
+        # create events will have a new name, but not an old name
+        # delete events will have an old name, but not a new name
+        # update events will have an old and new name, and they may be same or different
+        # if they are the same, an unrelated field changed and there is nothing to do.
+
+        if old_attrs.get("owner_uuid") != self.project_uuid:
+            # Was moved from somewhere else, so don't try to remove entry.
+            old_name = None
+        if ev.get("object_owner_uuid") != self.project_uuid:
+            # Was moved to somewhere else, so don't try to add entry
+            new_name = None
+
+        if ev.get("object_kind") == "arvados#collection" and old_attrs == new_attrs:
+            with llfuse.lock_released:
+                cr = self.api.collections().list(filters=[["uuid", "=", ev["object_uuid"]]], include_trash=True).execute(num_retries=self.num_retries)
+                if cr['items'] and cr['items'][0]['is_trashed']:
+                    new_name = None
+
+        if new_name != old_name:
+            ent = None
+            if old_name in self._entries:
+                ent = self._entries[old_name]
+                del self._entries[old_name]
+            self.inodes.invalidate_entry(self.inode, old_name.encode(self.inodes.encoding))
+
+            if new_name:
+                if ent:
+                    self._entries[new_name] = ent
+                else:
+                    self._add_entry(new_attrs, new_name)
+            elif ent:
+                self.inodes.del_entry(ent)
 
 
 class SharedDirectory(Directory):
