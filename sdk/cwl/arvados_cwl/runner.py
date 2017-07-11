@@ -50,7 +50,7 @@ def find_defaults(d, op):
     if isinstance(d, list):
         for i in d:
             find_defaults(i, op)
-    if isinstance(d, dict):
+    elif isinstance(d, dict):
         if "default" in d:
             op(d)
         else:
