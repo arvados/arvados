@@ -426,12 +426,6 @@ class ArvCwlRunner(object):
             if self.work_api == "containers":
                 if tool.tool["class"] == "CommandLineTool" and kwargs.get("wait"):
                     kwargs["runnerjob"] = tool.tool["id"]
-                    upload_dependencies(self,
-                                        kwargs["name"],
-                                        tool.doc_loader,
-                                        tool.tool,
-                                        tool.tool["id"],
-                                        False)
                     runnerjob = tool.job(job_order,
                                          self.output_callback,
                                          **kwargs).next()

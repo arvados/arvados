@@ -18,7 +18,7 @@ from cwltool.draft2tool import CommandLineTool
 import cwltool.workflow
 from cwltool.process import get_feature, scandeps, UnsupportedRequirement, normalizeFilesDirs, shortname
 from cwltool.load_tool import fetch_document
-from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
+from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
 from cwltool.utils import aslist
 from cwltool.builder import substitute
 from cwltool.pack import pack
@@ -45,6 +45,17 @@ def trim_anonymous_location(obj):
 
     if obj.get("location", "").startswith("_:"):
         del obj["location"]
+
+def find_defaults(d, op):
+    if isinstance(d, list):
+        for i in d:
+            find_defaults(i, op)
+    if isinstance(d, dict):
+        if "default" in d:
+            op(d)
+        else:
+            for i in d.itervalues():
+                find_defaults(i, op)
 
 def upload_dependencies(arvrunner, name, document_loader,
                         workflowobj, uri, loadref_run, include_primary=True):
@@ -100,6 +111,28 @@ def upload_dependencies(arvrunner, name, document_loader,
     if "$schemas" in workflowobj:
         for s in workflowobj["$schemas"]:
             sc.append({"class": "File", "location": s})
+
+    def capture_default(obj):
+        remove = [False]
+        def add_default(f):
+            if "location" not in f and "path" in f:
+                f["location"] = f["path"]
+                del f["path"]
+            if not arvrunner.fs_access.exists(f["location"]):
+                # Remove from sc
+                i = 0
+                while i < len(sc):
+                    if sc[i]["location"] == f["location"]:
+                        del sc[i]
+                    else:
+                        i += 1
+                # Delete "default" from workflowobj
+                remove[0] = True
+        visit_class(obj["default"], ("File", "Directory"), add_default)
+        if remove[0]:
+            del obj["default"]
+
+    find_defaults(workflowobj, capture_default)
 
     mapper = ArvPathMapper(arvrunner, sc, "",
                            "keep:%s",
