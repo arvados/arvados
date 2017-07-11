@@ -79,7 +79,12 @@ def stubs(func):
                 if uuid in (v["uuid"], v["portable_data_hash"]):
                     return CollectionExecute(v)
 
-        created_collections = {}
+        created_collections = {
+            "99999999999999999999999999999998+99": {
+                "uuid": "",
+                "portable_data_hash": "99999999999999999999999999999998+99",
+                "manifest_text": ". 99999999999999999999999999999998+99 0:0:file1.txt"
+            }}
         stubs.api.collections().create.side_effect = functools.partial(collection_createstub, created_collections)
         stubs.api.collections().get.side_effect = functools.partial(collection_getstub, created_collections)
 
@@ -142,10 +147,22 @@ def stubs(func):
                     'runtime_constraints': {'docker_image': 'arvados/jobs:'+arvados_cwl.__version__, 'min_ram_mb_per_node': 1024},
                     'script_parameters': {
                         'y': {"value": {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'}},
-                        'x': {"value": {'basename': 'blorp.txt', 'class': 'File', 'location': 'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt'}},
+                        'x': {"value": {
+                            'basename': 'blorp.txt',
+                            'class': 'File',
+                            'location': 'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt',
+                            "nameext": ".txt",
+                            "nameroot": "blorp"
+                        }},
                         'z': {"value": {'basename': 'anonymous', 'class': 'Directory',
                               'listing': [
-                                  {'basename': 'renamed.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999998+99/file1.txt'}
+                                  {
+                                      'basename': 'renamed.txt',
+                                      'class': 'File', 'location':
+                                      'keep:99999999999999999999999999999998+99/file1.txt',
+                                      "nameext": ".txt",
+                                      "nameroot": "renamed"
+                                  }
                               ]}},
                         'cwl:tool': '3fffdeaa75e018172e1b583425f4ebff+60/workflow.cwl#main',
                         'arv:enable_reuse': True,
@@ -191,10 +208,24 @@ def stubs(func):
                 '/var/lib/cwl/cwl.input.json': {
                     'kind': 'json',
                     'content': {
-                        'y': {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'},
-                        'x': {'basename': u'blorp.txt', 'class': 'File', 'location': u'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt'},
+                        'y': {
+                            'basename': '99999999999999999999999999999998+99',
+                            'location': 'keep:99999999999999999999999999999998+99',
+                            'class': 'Directory'},
+                        'x': {
+                            'basename': u'blorp.txt',
+                            'class': 'File',
+                            'location': u'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt',
+                            "nameext": ".txt",
+                            "nameroot": "blorp"
+                        },
                         'z': {'basename': 'anonymous', 'class': 'Directory', 'listing': [
-                            {'basename': 'renamed.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999998+99/file1.txt'}
+                            {'basename': 'renamed.txt',
+                             'class': 'File',
+                             'location': 'keep:99999999999999999999999999999998+99/file1.txt',
+                             "nameext": ".txt",
+                             "nameroot": "renamed"
+                            }
                         ]}
                     },
                     'kind': 'json'

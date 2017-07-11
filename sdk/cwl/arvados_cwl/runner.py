@@ -118,14 +118,9 @@ def upload_dependencies(arvrunner, name, document_loader,
             if "location" not in f and "path" in f:
                 f["location"] = f["path"]
                 del f["path"]
-            if not arvrunner.fs_access.exists(f["location"]):
+            if "location" in f and not arvrunner.fs_access.exists(f["location"]):
                 # Remove from sc
-                i = 0
-                while i < len(sc):
-                    if sc[i]["location"] == f["location"]:
-                        del sc[i]
-                    else:
-                        i += 1
+                sc[:] = [x for x in sc if x["location"] != f["location"]]
                 # Delete "default" from workflowobj
                 remove[0] = True
         visit_class(obj["default"], ("File", "Directory"), add_default)
