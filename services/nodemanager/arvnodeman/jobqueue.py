@@ -178,20 +178,20 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
         # Cancel any job/container with unsatisfiable requirements, emitting
         # a log explaining why.
         for job_uuid, reason in unsatisfiable_jobs.iteritems():
-            self._logger.debug("Cancelling unsatisfiable job '%s'", job_uuid)
             try:
                 self._client.logs().create(body={
                     'object_uuid': job_uuid,
                     'event_type': 'stderr',
                     'properties': {'text': reason},
                 }).execute()
-                # Cancel the job depending on it type
+                # Cancel the job depending on its type
                 if arvados.util.container_uuid_pattern.match(job_uuid):
                     subprocess.check_call(['scancel', '--name='+job_uuid])
                 elif arvados.util.job_uuid_pattern.match(job_uuid):
                     self._client.jobs().cancel(uuid=job_uuid).execute()
                 else:
                     raise Exception('Unknown job type')
+                self._logger.debug("Cancelled unsatisfiable job '%s'", job_uuid)
             except Exception as error:
                 self._logger.error("Trying to cancel job '%s': %s",
                                    job_uuid,

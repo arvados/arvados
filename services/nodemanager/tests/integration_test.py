@@ -40,6 +40,7 @@ detail.addHandler(logging.StreamHandler(detail_content))
 fake_slurm = None
 compute_nodes = None
 all_jobs = None
+unsatisfiable_job_scancelled = os.path.join(tempfile.mkdtemp(), "scancel_called")
 
 def update_script(path, val):
     with open(path+"_", "w") as f:
@@ -54,6 +55,33 @@ def set_squeue(g):
                   "\n".join("echo '1|100|100|%s|%s'" % (v, k) for k,v in all_jobs.items()))
     return 0
 
+def set_queue_unsatisfiable(g):
+    global all_jobs, unsatisfiable_job_scancelled
+    # Simulate a job requesting a 99 core node.
+    update_script(os.path.join(fake_slurm, "squeue"), "#!/bin/sh\n" +
+                  "\n".join("echo '99|100|100|%s|%s'" % (v, k) for k,v in all_jobs.items()))
+    update_script(os.path.join(fake_slurm, "scancel"), "#!/bin/sh\n" +
+                  "\ntouch %s" % unsatisfiable_job_scancelled)
+    return 0
+
+def job_cancelled(g):
+    global unsatisfiable_job_scancelled
+    cancelled_job = g.group(1)
+    api = arvados.api('v1')
+    # Check that 'scancel' was called
+    if not os.path.isfile(unsatisfiable_job_scancelled):
+        return 1
+    # Check for the log entry
+    log_entry = api.logs().list(
+        filters=[
+            ['object_uuid', '=', cancelled_job],
+            ['event_type', '=', 'stderr'],
+        ]).execute()['items'][0]
+    if not re.match(
+            r"Requirements for a single node exceed the available cloud node size",
+            log_entry['properties']['text']):
+        return 1
+    return 0
 
 def node_paired(g):
     global compute_nodes
@@ -159,7 +187,7 @@ def run_test(name, actions, checks, driver_class, jobs, provider):
 
     # Test main loop:
     # - Read line
-    # - Apply negative checks (thinks that are not supposed to happen)
+    # - Apply negative checks (things that are not supposed to happen)
     # - Check timeout
     # - Check if the next action should trigger
     # - If all actions are exhausted, terminate with test success
@@ -213,6 +241,7 @@ def run_test(name, actions, checks, driver_class, jobs, provider):
         code = 1
 
     shutil.rmtree(fake_slurm)
+    shutil.rmtree(os.path.dirname(unsatisfiable_job_scancelled))
 
     if code == 0:
         logger.info("%s passed", name)
@@ -228,6 +257,23 @@ def main():
     # Test lifecycle.
 
     tests = {
+        "test_unsatisfiable_jobs" : (
+            # Actions (pattern -> action)
+            [
+                (r".*Daemon started", set_queue_unsatisfiable),
+                (r".*Cancelled unsatisfiable job '(\S+)'", job_cancelled),
+            ],
+            # Checks (things that shouldn't happen)
+            {
+                r".*Cloud node (\S+) is now paired with Arvados node (\S+) with hostname (\S+)": fail,
+                r".*Trying to cancel job '(\S+)'": fail,
+            },
+            # Driver class
+            "arvnodeman.test.fake_driver.FakeDriver",
+            # Jobs
+            {"34t0i-dz642-h42bg3hq4bdfpf9": "ReqNodeNotAvail"},
+            # Provider
+            "azure"),
         "test_single_node_azure": (
             [
                 (r".*Daemon started", set_squeue),
