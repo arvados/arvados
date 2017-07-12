@@ -969,6 +969,36 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                          r'^\./%s.*:file2.txt' % os.path.basename(tmpdir))
         self.assertRegex(c['manifest_text'], r'^.*:file3.txt')
 
+    def test_silent_mode(self):
+        self.authorize_with('active')
+        tmpdir = self.make_tmpdir()
+        with open(os.path.join(tmpdir, 'test.txt'), 'w') as f:
+            f.write('hello world')
+        pipe = subprocess.Popen(
+            [sys.executable, arv_put.__file__] + ['--silent', tmpdir],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, env=self.ENVIRON)
+        stdout, stderr = pipe.communicate()
+        # No output should occur on normal operations
+        self.assertNotRegex(stderr.decode(),
+                            r'.+')
+        self.assertNotRegex(stdout.decode(),
+                            r'.+')
+
+    def test_silent_mode_does_not_avoid_error_messages(self):
+        self.authorize_with('active')
+        pipe = subprocess.Popen(
+            [sys.executable, arv_put.__file__] + ['--silent',
+                                                  '/path/not/existant'],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, env=self.ENVIRON)
+        stdout, stderr = pipe.communicate()
+        # Error message should be displayed when errors happen
+        self.assertRegex(stderr.decode(),
+                            r'.*ERROR:.*')
+        self.assertNotRegex(stdout.decode(),
+                            r'.+')
+
 
 if __name__ == '__main__':
     unittest.main()

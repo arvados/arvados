@@ -193,6 +193,11 @@ Display machine-readable progress on stderr (bytes and, if known,
 total data size).
 """)
 
+_group.add_argument('--silent', action='store_true',
+                    help="""
+Don't produce any output unless an error happens.
+""")
+
 _group = run_opts.add_mutually_exclusive_group()
 _group.add_argument('--resume', action='store_true', default=True,
                     help="""
@@ -243,7 +248,7 @@ def parse_arguments(arguments):
     """)
 
     # Turn on --progress by default if stderr is a tty.
-    if (not (args.batch_progress or args.no_progress)
+    if (not (args.batch_progress or args.no_progress or args.silent)
         and os.isatty(sys.stderr.fileno())):
         args.progress = True
 
@@ -964,9 +969,12 @@ def desired_project_uuid(api_client, project_uuid, num_retries):
 def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     global api_client
 
-    logger = logging.getLogger('arvados.arv_put')
-    logger.setLevel(logging.INFO)
     args = parse_arguments(arguments)
+    logger = logging.getLogger('arvados.arv_put')
+    if args.silent:
+        logger.setLevel(logging.WARNING)
+    else:
+        logger.setLevel(logging.INFO)
     status = 0
     if api_client is None:
         api_client = arvados.api('v1')
@@ -1135,7 +1143,7 @@ def main(arguments=None, stdout=sys.stdout, stderr=sys.stderr):
     # Print the locator (uuid) of the new collection.
     if output is None:
         status = status or 1
-    else:
+    elif not args.silent:
         stdout.write(output)
         if not output.endswith('\n'):
             stdout.write('\n')
