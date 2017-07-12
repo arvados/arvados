@@ -20,7 +20,16 @@ var (
 	errQueueFull   = errors.New("client queue full")
 	errFrameTooBig = errors.New("frame too big")
 
-	sendObjectAttributes = []string{"state", "name", "owner_uuid", "portable_data_hash"}
+	// Send clients only these keys from the
+	// log.properties.old_attributes and
+	// log.properties.new_attributes hashes.
+	sendObjectAttributes = []string{
+		"is_trashed",
+		"name",
+		"owner_uuid",
+		"portable_data_hash",
+		"state",
+	}
 
 	v0subscribeOK   = []byte(`{"status":200}`)
 	v0subscribeFail = []byte(`{"status":400}`)
