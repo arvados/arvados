@@ -980,10 +980,8 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             stderr=subprocess.PIPE, env=self.ENVIRON)
         stdout, stderr = pipe.communicate()
         # No output should occur on normal operations
-        self.assertNotRegex(stderr.decode(),
-                            r'.+')
-        self.assertNotRegex(stdout.decode(),
-                            r'.+')
+        self.assertNotRegex(stderr.decode(), r'.+')
+        self.assertNotRegex(stdout.decode(), r'.+')
 
     def test_silent_mode_does_not_avoid_error_messages(self):
         self.authorize_with('active')
@@ -994,10 +992,8 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             stderr=subprocess.PIPE, env=self.ENVIRON)
         stdout, stderr = pipe.communicate()
         # Error message should be displayed when errors happen
-        self.assertRegex(stderr.decode(),
-                            r'.*ERROR:.*')
-        self.assertNotRegex(stdout.decode(),
-                            r'.+')
+        self.assertRegex(stderr.decode(), r'.*ERROR:.*')
+        self.assertNotRegex(stdout.decode(), r'.+')
 
 
 if __name__ == '__main__':
