@@ -99,7 +99,17 @@ func (sess *v0session) EventMessage(e *event) ([]byte, error) {
 		return nil, nil
 	}
 
-	ok, err := sess.permChecker.Check(detail.ObjectUUID)
+	var permTarget string
+	if detail.EventType == "delete" {
+		// It's pointless to check permission by reading
+		// ObjectUUID if it has just been deleted, but if the
+		// client has permission on the parent project then
+		// it's OK to send the event.
+		permTarget = detail.ObjectOwnerUUID
+	} else {
+		permTarget = detail.ObjectUUID
+	}
+	ok, err := sess.permChecker.Check(permTarget)
 	if err != nil || !ok {
 		return nil, err
 	}
