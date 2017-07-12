@@ -632,7 +632,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--api", type=str,
                         default=None, dest="work_api",
                         choices=("jobs", "containers"),
-                        help="Select work submission API.  Default is 'jobs' if that API is available, otherwise 'containers'.")
+                        help="Select work submission API.  Default is 'containers' if that API is available, otherwise 'jobs'.")
 
     parser.add_argument("--compute-checksum", action="store_true", default=False,
                         help="Compute checksum of contents while collecting outputs",
