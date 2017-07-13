@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"sync"
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
@@ -32,6 +33,7 @@ type v0Suite struct {
 	serverSuite serverSuite
 	token       string
 	toDelete    []string
+	wg          sync.WaitGroup
 }
 
 func (s *v0Suite) SetUpTest(c *check.C) {
@@ -39,9 +41,14 @@ func (s *v0Suite) SetUpTest(c *check.C) {
 	s.token = arvadostest.ActiveToken
 }
 
+func (s *v0Suite) TearDownTest(c *check.C) {
+	s.wg.Wait()
+}
+
 func (s *v0Suite) TearDownSuite(c *check.C) {
 	s.deleteTestObjects(c)
 }
+
 func (s *v0Suite) deleteTestObjects(c *check.C) {
 	ac := arvados.NewClientFromEnv()
 	ac.AuthToken = arvadostest.AdminToken
@@ -214,6 +221,9 @@ func (s *v0Suite) TestSubscribe(c *check.C) {
 // created workflow. If uuidChan is not nil, send the new workflow
 // UUID to uuidChan as soon as it's known.
 func (s *v0Suite) emitEvents(uuidChan chan<- string) {
+	s.wg.Add(1)
+	defer s.wg.Done()
+
 	ac := arvados.NewClientFromEnv()
 	ac.AuthToken = s.token
 	wf := &arvados.Workflow{
