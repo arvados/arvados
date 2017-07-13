@@ -426,12 +426,6 @@ class ArvCwlRunner(object):
             if self.work_api == "containers":
                 if tool.tool["class"] == "CommandLineTool" and kwargs.get("wait"):
                     kwargs["runnerjob"] = tool.tool["id"]
-                    upload_dependencies(self,
-                                        kwargs["name"],
-                                        tool.doc_loader,
-                                        tool.tool,
-                                        tool.tool["id"],
-                                        False)
                     runnerjob = tool.job(job_order,
                                          self.output_callback,
                                          **kwargs).next()
@@ -756,6 +750,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
     arvargs.use_container = True
     arvargs.relax_path_checks = True
     arvargs.validate = None
+    arvargs.print_supported_versions = False
 
     make_fs_access = partial(CollectionFsAccess,
                            collection_cache=runner.collection_cache)
