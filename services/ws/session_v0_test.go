@@ -38,11 +38,15 @@ type v0Suite struct {
 
 func (s *v0Suite) SetUpTest(c *check.C) {
 	s.serverSuite.SetUpTest(c)
+	go s.serverSuite.srv.Run()
+	s.serverSuite.srv.WaitReady()
+
 	s.token = arvadostest.ActiveToken
 }
 
 func (s *v0Suite) TearDownTest(c *check.C) {
 	s.wg.Wait()
+	s.serverSuite.srv.Close()
 }
 
 func (s *v0Suite) TearDownSuite(c *check.C) {
@@ -62,8 +66,7 @@ func (s *v0Suite) deleteTestObjects(c *check.C) {
 }
 
 func (s *v0Suite) TestFilters(c *check.C) {
-	srv, conn, r, w := s.testClient()
-	defer srv.Close()
+	conn, r, w := s.testClient()
 	defer conn.Close()
 
 	c.Check(w.Encode(map[string]interface{}{
@@ -81,8 +84,7 @@ func (s *v0Suite) TestLastLogID(c *check.C) {
 	var lastID uint64
 	c.Assert(testDB().QueryRow(`SELECT MAX(id) FROM logs`).Scan(&lastID), check.IsNil)
 
-	srv, conn, r, w := s.testClient()
-	defer srv.Close()
+	conn, r, w := s.testClient()
 	defer conn.Close()
 
 	uuidChan := make(chan string, 2)
@@ -122,8 +124,7 @@ func (s *v0Suite) TestLastLogID(c *check.C) {
 }
 
 func (s *v0Suite) TestPermission(c *check.C) {
-	srv, conn, r, w := s.testClient()
-	defer srv.Close()
+	conn, r, w := s.testClient()
 	defer conn.Close()
 
 	c.Check(w.Encode(map[string]interface{}{
@@ -148,26 +149,41 @@ func (s *v0Suite) TestPermission(c *check.C) {
 	}
 }
 
+// Two users create private objects; admin deletes both objects; each
+// user receives a "delete" event for their own object (not for the
+// other user's object).
 func (s *v0Suite) TestEventTypeDelete(c *check.C) {
-	uuidChan := make(chan string, 1)
-	s.emitEvents(uuidChan)
-	uuid := <-uuidChan
+	clients := []struct {
+		token string
+		uuid  string
+		conn  *websocket.Conn
+		r     *json.Decoder
+		w     *json.Encoder
+	}{{token: arvadostest.ActiveToken}, {token: arvadostest.SpectatorToken}}
+	for i := range clients {
+		uuidChan := make(chan string, 1)
+		s.token = clients[i].token
+		s.emitEvents(uuidChan)
+		clients[i].uuid = <-uuidChan
+		clients[i].conn, clients[i].r, clients[i].w = s.testClient()
 
-	srv, conn, r, w := s.testClient()
-	defer srv.Close()
-	defer conn.Close()
-
-	c.Check(w.Encode(map[string]interface{}{
-		"method": "subscribe",
-	}), check.IsNil)
-	s.expectStatus(c, r, 200)
+		c.Check(clients[i].w.Encode(map[string]interface{}{
+			"method": "subscribe",
+		}), check.IsNil)
+		s.expectStatus(c, clients[i].r, 200)
+	}
 
 	s.deleteTestObjects(c)
-	lg := s.expectLog(c, r)
-	c.Check(lg.ObjectUUID, check.Equals, uuid)
-	c.Check(lg.EventType, check.Equals, "delete")
+
+	for _, client := range clients {
+		lg := s.expectLog(c, client.r)
+		c.Check(lg.ObjectUUID, check.Equals, client.uuid)
+		c.Check(lg.EventType, check.Equals, "delete")
+	}
 }
 
+// Trashing/deleting a collection produces an "update" event with
+// properties["new_attributes"]["is_trashed"] == true.
 func (s *v0Suite) TestTrashedCollection(c *check.C) {
 	ac := arvados.NewClientFromEnv()
 	ac.AuthToken = s.token
@@ -176,8 +192,7 @@ func (s *v0Suite) TestTrashedCollection(c *check.C) {
 	err := ac.RequestAndDecode(coll, "POST", "arvados/v1/collections", s.jsonBody("collection", coll), map[string]interface{}{"ensure_unique_name": true})
 	c.Assert(err, check.IsNil)
 
-	srv, conn, r, w := s.testClient()
-	defer srv.Close()
+	conn, r, w := s.testClient()
 	defer conn.Close()
 
 	c.Check(w.Encode(map[string]interface{}{
@@ -191,12 +206,12 @@ func (s *v0Suite) TestTrashedCollection(c *check.C) {
 	lg := s.expectLog(c, r)
 	c.Check(lg.ObjectUUID, check.Equals, coll.UUID)
 	c.Check(lg.EventType, check.Equals, "update")
+	c.Check(lg.Properties["old_attributes"].(map[string]interface{})["is_trashed"], check.Equals, false)
 	c.Check(lg.Properties["new_attributes"].(map[string]interface{})["is_trashed"], check.Equals, true)
 }
 
 func (s *v0Suite) TestSendBadJSON(c *check.C) {
-	srv, conn, r, w := s.testClient()
-	defer srv.Close()
+	conn, r, w := s.testClient()
 	defer conn.Close()
 
 	c.Check(w.Encode(map[string]interface{}{
@@ -215,8 +230,7 @@ func (s *v0Suite) TestSendBadJSON(c *check.C) {
 }
 
 func (s *v0Suite) TestSubscribe(c *check.C) {
-	srv, conn, r, w := s.testClient()
-	defer srv.Close()
+	conn, r, w := s.testClient()
 	defer conn.Close()
 
 	s.emitEvents(nil)
@@ -311,9 +325,7 @@ func (s *v0Suite) expectLog(c *check.C, r *json.Decoder) *arvados.Log {
 	}
 }
 
-func (s *v0Suite) testClient() (*server, *websocket.Conn, *json.Decoder, *json.Encoder) {
-	go s.serverSuite.srv.Run()
-	s.serverSuite.srv.WaitReady()
+func (s *v0Suite) testClient() (*websocket.Conn, *json.Decoder, *json.Encoder) {
 	srv := s.serverSuite.srv
 	conn, err := websocket.Dial("ws://"+srv.listener.Addr().String()+"/websocket?api_token="+s.token, "", "http://"+srv.listener.Addr().String())
 	if err != nil {
@@ -321,5 +333,5 @@ func (s *v0Suite) testClient() (*server, *websocket.Conn, *json.Decoder, *json.E
 	}
 	w := json.NewEncoder(conn)
 	r := json.NewDecoder(conn)
-	return srv, conn, r, w
+	return conn, r, w
 }
