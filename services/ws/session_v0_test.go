@@ -40,6 +40,9 @@ func (s *v0Suite) SetUpTest(c *check.C) {
 }
 
 func (s *v0Suite) TearDownSuite(c *check.C) {
+	s.deleteTestObjects(c)
+}
+func (s *v0Suite) deleteTestObjects(c *check.C) {
 	ac := arvados.NewClientFromEnv()
 	ac.AuthToken = arvadostest.AdminToken
 	for _, path := range s.toDelete {
@@ -48,6 +51,7 @@ func (s *v0Suite) TearDownSuite(c *check.C) {
 			panic(err)
 		}
 	}
+	s.toDelete = nil
 }
 
 func (s *v0Suite) TestFilters(c *check.C) {
@@ -135,6 +139,26 @@ func (s *v0Suite) TestPermission(c *check.C) {
 		c.Check(lg.ObjectUUID, check.Not(check.Equals), wrongUUID)
 		lg = s.expectLog(c, r)
 	}
+}
+
+func (s *v0Suite) TestEventTypeDelete(c *check.C) {
+	uuidChan := make(chan string, 1)
+	s.emitEvents(uuidChan)
+	uuid := <-uuidChan
+
+	srv, conn, r, w := s.testClient()
+	defer srv.Close()
+	defer conn.Close()
+
+	c.Check(w.Encode(map[string]interface{}{
+		"method": "subscribe",
+	}), check.IsNil)
+	s.expectStatus(c, r, 200)
+
+	s.deleteTestObjects(c)
+	lg := s.expectLog(c, r)
+	c.Check(lg.ObjectUUID, check.Equals, uuid)
+	c.Check(lg.EventType, check.Equals, "delete")
 }
 
 func (s *v0Suite) TestSendBadJSON(c *check.C) {
