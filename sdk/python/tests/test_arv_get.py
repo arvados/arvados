@@ -5,6 +5,7 @@
 from __future__ import absolute_import
 from future.utils import listitems
 import io
+import mock
 import os
 import re
 import shutil
@@ -16,9 +17,11 @@ import arvados.commands.get as arv_get
 from . import run_test_server
 
 from . import arvados_testutil as tutil
+from .arvados_testutil import ArvadosBaseTestCase
 
 class ArvadosGetTestCase(run_test_server.TestCaseWithServers,
-                         tutil.VersionChecker):
+                         tutil.VersionChecker,
+                         ArvadosBaseTestCase):
     MAIN_SERVER = {}
     KEEP_SERVER = {}
 
@@ -100,7 +103,8 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers,
             self.assertEqual(m_from_collection, m_from_file)
 
     def test_get_collection_stripped_manifest(self):
-        col_loc, col_pdh, col_manifest = self.write_test_collection(strip_manifest=True)
+        col_loc, col_pdh, col_manifest = self.write_test_collection(
+            strip_manifest=True)
         # Get the collection manifest by UUID
         r = self.run_get(['--strip-manifest', col_loc, self.tempdir])
         self.assertEqual(0, r)
@@ -138,3 +142,35 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers,
         with open(os.path.join(self.tempdir, "foo.txt"), "r") as f:
             self.assertEqual("another foo", f.read())
 
+    def test_no_progress_when_stderr_not_a_tty(self):
+        # Create a collection with a big file (>64MB) to force the progress
+        # to be printed
+        c = collection.Collection()
+        with c.open('bigfile.txt', 'wb') as f:
+            for _ in range(65):
+                f.write("x" * 1024 * 1024)
+        c.save_new()
+        tmpdir = self.make_tmpdir()
+        # Simulate a TTY stderr
+        stderr = mock.MagicMock()
+        stderr.isatty.return_value = True
+        stdout = tutil.BytesIO()
+        # Confirm that progress is written to stderr when is a tty
+        r = arv_get.main(['{}/bigfile.txt'.format(c.manifest_locator()),
+                          '{}/bigfile.txt'.format(tmpdir)],
+                         stdout, stderr)
+        self.assertEqual(0, r)
+        self.assertEqual(b'', stdout.getvalue())
+        self.assertTrue(stderr.write.called)
+        # Clean up and reset stderr mock
+        os.remove('{}/bigfile.txt'.format(tmpdir))
+        stderr = mock.MagicMock()
+        stderr.isatty.return_value = False
+        stdout = tutil.BytesIO()
+        # Confirm that progress is not written to stderr when isn't a tty
+        r = arv_get.main(['{}/bigfile.txt'.format(c.manifest_locator()),
+                          '{}/bigfile.txt'.format(tmpdir)],
+                         stdout, stderr)
+        self.assertEqual(0, r)
+        self.assertEqual(b'', stdout.getvalue())
+        self.assertFalse(stderr.write.called)
