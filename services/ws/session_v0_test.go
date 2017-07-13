@@ -34,6 +34,7 @@ type v0Suite struct {
 	token       string
 	toDelete    []string
 	wg          sync.WaitGroup
+	ignoreLogID uint64
 }
 
 func (s *v0Suite) SetUpTest(c *check.C) {
@@ -42,6 +43,7 @@ func (s *v0Suite) SetUpTest(c *check.C) {
 	s.serverSuite.srv.WaitReady()
 
 	s.token = arvadostest.ActiveToken
+	s.ignoreLogID = s.lastLogID(c)
 }
 
 func (s *v0Suite) TearDownTest(c *check.C) {
@@ -81,14 +83,40 @@ func (s *v0Suite) TestFilters(c *check.C) {
 }
 
 func (s *v0Suite) TestLastLogID(c *check.C) {
-	var lastID uint64
-	c.Assert(testDB().QueryRow(`SELECT MAX(id) FROM logs`).Scan(&lastID), check.IsNil)
+	lastID := s.lastLogID(c)
 
+	checkLogs := func(r *json.Decoder, uuid string) {
+		for _, etype := range []string{"create", "blip", "update"} {
+			lg := s.expectLog(c, r)
+			for lg.ObjectUUID != uuid {
+				lg = s.expectLog(c, r)
+			}
+			c.Check(lg.EventType, check.Equals, etype)
+		}
+	}
+
+	// Connecting connEarly (before sending the early events) lets
+	// us confirm all of the "early" events have already passed
+	// through the server.
+	connEarly, rEarly, wEarly := s.testClient()
+	defer connEarly.Close()
+	c.Check(wEarly.Encode(map[string]interface{}{
+		"method": "subscribe",
+	}), check.IsNil)
+	s.expectStatus(c, rEarly, 200)
+
+	// Send the early events.
+	uuidChan := make(chan string, 1)
+	s.emitEvents(uuidChan)
+	uuidEarly := <-uuidChan
+
+	// Wait for the early events to pass through.
+	checkLogs(rEarly, uuidEarly)
+
+	// Connect the client that wants to get old events via
+	// last_log_id.
 	conn, r, w := s.testClient()
 	defer conn.Close()
-
-	uuidChan := make(chan string, 2)
-	s.emitEvents(uuidChan)
 
 	c.Check(w.Encode(map[string]interface{}{
 		"method":      "subscribe",
@@ -96,31 +124,9 @@ func (s *v0Suite) TestLastLogID(c *check.C) {
 	}), check.IsNil)
 	s.expectStatus(c, r, 200)
 
-	avoidRace := make(chan struct{}, cap(uuidChan))
-	go func() {
-		// When last_log_id is given, although v0session sends
-		// old events in order, and sends new events in order,
-		// it doesn't necessarily finish sending all old
-		// events before sending any new events. To avoid
-		// hitting this bug in the test, we wait for the old
-		// events to arrive before emitting any new events.
-		<-avoidRace
-		s.emitEvents(uuidChan)
-		close(uuidChan)
-	}()
-
-	go func() {
-		for uuid := range uuidChan {
-			for _, etype := range []string{"create", "blip", "update"} {
-				lg := s.expectLog(c, r)
-				for lg.ObjectUUID != uuid {
-					lg = s.expectLog(c, r)
-				}
-				c.Check(lg.EventType, check.Equals, etype)
-			}
-			avoidRace <- struct{}{}
-		}
-	}()
+	checkLogs(r, uuidEarly)
+	s.emitEvents(uuidChan)
+	checkLogs(r, <-uuidChan)
 }
 
 func (s *v0Suite) TestPermission(c *check.C) {
@@ -173,6 +179,7 @@ func (s *v0Suite) TestEventTypeDelete(c *check.C) {
 		s.expectStatus(c, clients[i].r, 200)
 	}
 
+	s.ignoreLogID = s.lastLogID(c)
 	s.deleteTestObjects(c)
 
 	for _, client := range clients {
@@ -191,6 +198,7 @@ func (s *v0Suite) TestTrashedCollection(c *check.C) {
 	coll := &arvados.Collection{ManifestText: ""}
 	err := ac.RequestAndDecode(coll, "POST", "arvados/v1/collections", s.jsonBody("collection", coll), map[string]interface{}{"ensure_unique_name": true})
 	c.Assert(err, check.IsNil)
+	s.ignoreLogID = s.lastLogID(c)
 
 	conn, r, w := s.testClient()
 	defer conn.Close()
@@ -314,7 +322,9 @@ func (s *v0Suite) expectLog(c *check.C, r *json.Decoder) *arvados.Log {
 	lg := &arvados.Log{}
 	ok := make(chan struct{})
 	go func() {
-		c.Check(r.Decode(lg), check.IsNil)
+		for lg.ID <= s.ignoreLogID {
+			c.Check(r.Decode(lg), check.IsNil)
+		}
 		close(ok)
 	}()
 	select {
@@ -334,4 +344,10 @@ func (s *v0Suite) testClient() (*websocket.Conn, *json.Decoder, *json.Encoder) {
 	w := json.NewEncoder(conn)
 	r := json.NewDecoder(conn)
 	return conn, r, w
+}
+
+func (s *v0Suite) lastLogID(c *check.C) uint64 {
+	var lastID uint64
+	c.Assert(testDB().QueryRow(`SELECT MAX(id) FROM logs`).Scan(&lastID), check.IsNil)
+	return lastID
 }
