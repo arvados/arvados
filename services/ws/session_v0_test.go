@@ -168,6 +168,32 @@ func (s *v0Suite) TestEventTypeDelete(c *check.C) {
 	c.Check(lg.EventType, check.Equals, "delete")
 }
 
+func (s *v0Suite) TestTrashedCollection(c *check.C) {
+	ac := arvados.NewClientFromEnv()
+	ac.AuthToken = s.token
+
+	coll := &arvados.Collection{ManifestText: ""}
+	err := ac.RequestAndDecode(coll, "POST", "arvados/v1/collections", s.jsonBody("collection", coll), map[string]interface{}{"ensure_unique_name": true})
+	c.Assert(err, check.IsNil)
+
+	srv, conn, r, w := s.testClient()
+	defer srv.Close()
+	defer conn.Close()
+
+	c.Check(w.Encode(map[string]interface{}{
+		"method": "subscribe",
+	}), check.IsNil)
+	s.expectStatus(c, r, 200)
+
+	err = ac.RequestAndDecode(nil, "DELETE", "arvados/v1/collections/"+coll.UUID, nil, nil)
+	c.Assert(err, check.IsNil)
+
+	lg := s.expectLog(c, r)
+	c.Check(lg.ObjectUUID, check.Equals, coll.UUID)
+	c.Check(lg.EventType, check.Equals, "update")
+	c.Check(lg.Properties["new_attributes"].(map[string]interface{})["is_trashed"], check.Equals, true)
+}
+
 func (s *v0Suite) TestSendBadJSON(c *check.C) {
 	srv, conn, r, w := s.testClient()
 	defer srv.Close()
