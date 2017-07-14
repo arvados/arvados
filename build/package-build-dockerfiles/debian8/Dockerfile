@@ -20,5 +20,8 @@ RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
 ADD generated/go1.8.3.linux-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 
+# Old versions of setuptools cannot build a schema-salad package.
+RUN pip install --upgrade setuptools
+
 ENV WORKSPACE /arvados
 CMD ["/usr/local/rvm/bin/rvm-exec", "default", "bash", "/jenkins/run-build-packages.sh", "--target", "debian8"]

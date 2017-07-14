@@ -25,5 +25,8 @@ RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
 RUN touch /var/lib/rpm/* && yum -q -y install python33
 RUN scl enable python33 "easy_install-3.3 pip" && easy_install-2.7 pip
 
+# Old versions of setuptools cannot build a schema-salad package.
+RUN pip install --upgrade setuptools
+
 ENV WORKSPACE /arvados
 CMD ["scl", "enable", "python33", "/usr/local/rvm/bin/rvm-exec default bash /jenkins/run-build-packages.sh --target centos7"]
