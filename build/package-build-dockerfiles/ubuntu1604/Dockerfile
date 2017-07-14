@@ -5,7 +5,9 @@
 FROM ubuntu:xenial
 MAINTAINER Ward Vandewege <ward@curoverse.com>
 
-# Install dependencies and set up system.
+ENV DEBIAN_FRONTEND noninteractive
+
+# Install dependencies.
 RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev libgnutls-dev curl git libattr1-dev libfuse-dev libpq-dev python-pip unzip tzdata
 
 # Install RVM

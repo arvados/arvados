@@ -5,7 +5,9 @@
 FROM debian:jessie
 MAINTAINER Ward Vandewege <ward@curoverse.com>
 
-# Install dependencies and set up system.
+ENV DEBIAN_FRONTEND noninteractive
+
+# Install dependencies.
 RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev curl git procps libattr1-dev libfuse-dev libgnutls28-dev libpq-dev python-pip unzip
 
 # Install RVM
