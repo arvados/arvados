@@ -40,6 +40,8 @@ type Config struct {
 	blobSigningKey  []byte
 	systemAuthToken string
 	debugLogf       func(string, ...interface{})
+
+	ManagementToken string
 }
 
 var theConfig = DefaultConfig()

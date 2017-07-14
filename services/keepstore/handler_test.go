@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 )
 
 // A RequestTester represents the parameters for an HTTP request to
@@ -827,6 +828,18 @@ func IssueRequest(rt *RequestTester) *httptest.ResponseRecorder {
 	return response
 }
 
+func IssueHealthCheckRequest(rt *RequestTester) *httptest.ResponseRecorder {
+	response := httptest.NewRecorder()
+	body := bytes.NewReader(rt.requestBody)
+	req, _ := http.NewRequest(rt.method, rt.uri, body)
+	if rt.apiToken != "" {
+		req.Header.Set("Authorization", "Bearer "+rt.apiToken)
+	}
+	loggingRouter := MakeRESTRouter()
+	loggingRouter.ServeHTTP(response, req)
+	return response
+}
+
 // ExpectStatusCode checks whether a response has the specified status code,
 // and reports a test failure if not.
 func ExpectStatusCode(
@@ -1139,4 +1152,62 @@ func TestUntrashHandlerWithNoWritableVolumes(t *testing.T) {
 		"No writable volumes",
 		http.StatusNotFound,
 		response)
+}
+
+func TestHealthCheckPing(t *testing.T) {
+	defer teardown()
+
+	KeepVM = MakeTestVolumeManager(2)
+	defer KeepVM.Close()
+
+	// ping when disabled
+	theConfig.ManagementToken = ""
+	pingReq := &RequestTester{
+		method: "GET",
+		uri:    "/_health/ping",
+	}
+	response := IssueHealthCheckRequest(pingReq)
+	ExpectStatusCode(t,
+		"disabled",
+		http.StatusNotFound,
+		response)
+
+	// ping with no token
+	theConfig.ManagementToken = arvadostest.ManagementToken
+	pingReq = &RequestTester{
+		method: "GET",
+		uri:    "/_health/ping",
+	}
+	response = IssueHealthCheckRequest(pingReq)
+	ExpectStatusCode(t,
+		"authorization required",
+		http.StatusUnauthorized,
+		response)
+
+	// ping with wrong token
+	pingReq = &RequestTester{
+		method:   "GET",
+		uri:      "/_health/ping",
+		apiToken: "youarenotwelcomehere",
+	}
+	response = IssueHealthCheckRequest(pingReq)
+	ExpectStatusCode(t,
+		"authorization error",
+		http.StatusForbidden,
+		response)
+
+	// ping with management token
+	pingReq = &RequestTester{
+		method:   "GET",
+		uri:      "/_health/ping",
+		apiToken: arvadostest.ManagementToken,
+	}
+	response = IssueHealthCheckRequest(pingReq)
+	ExpectStatusCode(t,
+		"",
+		http.StatusOK,
+		response)
+	if !strings.Contains(response.Body.String(), `{"health":"OK"}`) {
+		t.Errorf("expected response to include %s: got %s", `{"health":"OK"}`, response.Body.String())
+	}
 }
