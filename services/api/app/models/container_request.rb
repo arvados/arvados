@@ -264,7 +264,7 @@ class ContainerRequest < ArvadosModel
   end
 
   def set_priority_zero
-    self.update_attributes!(priority: 0)
+    self.update_attributes!(priority: 0) if self.state != Final
   end
 
   def set_requesting_container_uuid
