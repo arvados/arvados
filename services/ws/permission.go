@@ -74,7 +74,8 @@ func (pc *cachingPermChecker) Check(uuid string) (bool, error) {
 
 	pc.nMisses++
 	err = pc.RequestAndDecode(&buf, "GET", path, nil, url.Values{
-		"select": {`["uuid"]`},
+		"include_trash": {"true"},
+		"select":        {`["uuid"]`},
 	})
 
 	var allowed bool
