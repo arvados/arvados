@@ -409,7 +409,7 @@ fi
 saladversion=$(cat "$WORKSPACE/sdk/cwl/setup.py" | grep schema-salad== | sed "s/.*==\(.*\)'.*/\1/")
 test_package_presence python-schema-salad "$saladversion" python
 if [[ "$?" == "0" ]]; then
-  fpm_build schema_salad "" "" python $saladversion --depends "${PYTHON2_PKG_PREFIX}-lockfile >= 1:0.12.2-2"
+  fpm_build schema_salad "" "" python $saladversion --depends "${PYTHON2_PKG_PREFIX}-lockfile >= 1:0.12.2-2" --depends "${PYTHON2_PKG_PREFIX}-avro == 1.8.1-2"
 fi
 
 # And for cwltool we have the same problem as for schema_salad. Ward, 2016-03-17
