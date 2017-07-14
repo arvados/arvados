@@ -78,6 +78,9 @@ func MakeRESTRouter() *router {
 	// Untrash moves blocks from trash back into store
 	rest.HandleFunc(`/untrash/{hash:[0-9a-f]{32}}`, UntrashHandler).Methods("PUT")
 
+	// Health check ping
+	rest.HandleFunc(`/_health/ping`, HealthCheckPingHandler).Methods("GET")
+
 	// Any request which does not match any of these routes gets
 	// 400 Bad Request.
 	rest.NotFoundHandler = http.HandlerFunc(BadRequestHandler)
@@ -615,6 +618,39 @@ func UntrashHandler(resp http.ResponseWriter, req *http.Request) {
 		}
 		resp.Write([]byte(respBody))
 	}
+}
+
+var pingResponseOK = map[string]string{"health": "OK"}
+
+// HealthCheckPingHandler processes "GET /_health/ping" requests
+func HealthCheckPingHandler(resp http.ResponseWriter, req *http.Request) {
+	healthCheckDo(resp, req, pingResponseOK)
+}
+
+func healthCheckDo(resp http.ResponseWriter, req *http.Request, v interface{}) {
+	msg, code := healthCheckAuth(resp, req)
+	if msg != "" {
+		http.Error(resp, msg, code)
+		return
+	}
+
+	ok, err := json.Marshal(v)
+	if err != nil {
+		http.Error(resp, err.Error(), 500)
+	}
+
+	resp.Write(ok)
+}
+
+func healthCheckAuth(resp http.ResponseWriter, req *http.Request) (string, int) {
+	if theConfig.ManagementToken == "" {
+		return "disabled", http.StatusNotFound
+	} else if h := req.Header.Get("Authorization"); h == "" {
+		return "authorization required", http.StatusUnauthorized
+	} else if h != "Bearer "+theConfig.ManagementToken {
+		return "authorization error", http.StatusForbidden
+	}
+	return "", 0
 }
 
 // GetBlock and PutBlock implement lower-level code for handling
