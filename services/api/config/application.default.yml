@@ -442,6 +442,10 @@ common:
   # Default value for keep_cache_ram of a container's runtime_constraints.
   container_default_keep_cache_ram: 268435456
 
+  # Token to be included in all healthcheck requests. Disabled by default.
+  # Server expects request header of the format "Authorization: Bearer xxx"
+  management_token: false
+
 development:
   force_ssl: false
   cache_classes: false
