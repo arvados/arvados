@@ -625,6 +625,7 @@ func HealthCheckPingHandler(resp http.ResponseWriter, req *http.Request) {
 	fn := func() interface{} {
 		return map[string]string{"health": "OK"}
 	}
+
 	healthCheckDo(resp, req, fn)
 }
 
@@ -641,6 +642,7 @@ func healthCheckDo(resp http.ResponseWriter, req *http.Request, fn healthCheckFu
 	ok, err := json.Marshal(fn())
 	if err != nil {
 		http.Error(resp, err.Error(), 500)
+		return
 	}
 
 	resp.Write(ok)
