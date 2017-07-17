@@ -620,23 +620,29 @@ func UntrashHandler(resp http.ResponseWriter, req *http.Request) {
 	}
 }
 
-var pingResponseOK = map[string]string{"health": "OK"}
-
 // HealthCheckPingHandler processes "GET /_health/ping" requests
 func HealthCheckPingHandler(resp http.ResponseWriter, req *http.Request) {
-	healthCheckDo(resp, req, pingResponseOK)
+	fn := func() interface{} {
+		return map[string]string{"health": "OK"}
+	}
+
+	healthCheckDo(resp, req, fn)
 }
 
-func healthCheckDo(resp http.ResponseWriter, req *http.Request, v interface{}) {
+// Any health check handlers can pass this "func" which returns json to healthCheckDo
+type healthCheckFunc func() interface{}
+
+func healthCheckDo(resp http.ResponseWriter, req *http.Request, fn healthCheckFunc) {
 	msg, code := healthCheckAuth(resp, req)
 	if msg != "" {
 		http.Error(resp, msg, code)
 		return
 	}
 
-	ok, err := json.Marshal(v)
+	ok, err := json.Marshal(fn())
 	if err != nil {
 		http.Error(resp, err.Error(), 500)
+		return
 	}
 
 	resp.Write(ok)
