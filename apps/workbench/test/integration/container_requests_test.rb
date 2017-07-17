@@ -129,6 +129,11 @@ class ContainerRequestsTest < ActionDispatch::IntegrationTest
   test "index page" do
     visit page_with_token("active", "/container_requests")
 
+    within(".arv-recent-container-requests") do
+      page.execute_script "window.scrollBy(0,999000)"
+      wait_for_ajax
+    end
+
     running_owner_active = api_fixture("container_requests", "requester_for_running")
     anon_accessible_cr = api_fixture("container_requests", "running_anonymous_accessible")
 
