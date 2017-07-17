@@ -750,4 +750,28 @@ class ContainerRequestTest < ActiveSupport::TestCase
       end
     end
   end
+
+  test "delete container_request and check its container's priority" do
+    act_as_user users(:active) do
+      cr = ContainerRequest.find_by_uuid container_requests(:running_to_be_deleted).uuid
+
+      # initially the cr's container has priority > 0
+      c = Container.find_by_uuid(cr.container_uuid)
+      assert_equal 1, c.priority
+
+      # destroy the cr
+      assert_nothing_raised {cr.destroy}
+
+      # the cr's container now has priority of 0
+      c = Container.find_by_uuid(cr.container_uuid)
+      assert_equal 0, c.priority
+    end
+  end
+
+  test "delete container_request in final state and expect no error due to before_destroy callback" do
+    act_as_user users(:active) do
+      cr = ContainerRequest.find_by_uuid container_requests(:completed).uuid
+      assert_nothing_raised {cr.destroy}
+    end
+  end
 end
