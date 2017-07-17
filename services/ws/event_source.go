@@ -243,6 +243,7 @@ func (ps *pgEventSource) NewSink() eventSink {
 }
 
 func (ps *pgEventSource) DB() *sql.DB {
+	ps.WaitReady()
 	return ps.db
 }
 

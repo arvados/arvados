@@ -3,11 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 FROM ubuntu:trusty
-MAINTAINER Peter Amstutz <peter.amstutz@curoverse.com>
+MAINTAINER Ward Vandewege <ward@curoverse.com>
+
+ENV DEBIAN_FRONTEND noninteractive
 
 # Install RVM
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends curl ca-certificates && \
+    apt-get -y install --no-install-recommends curl ca-certificates && \
     gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
     curl -L https://get.rvm.io | bash -s stable && \
     /usr/local/rvm/bin/rvm install 2.3 && \

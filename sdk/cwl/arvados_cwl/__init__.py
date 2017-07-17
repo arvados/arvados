@@ -89,7 +89,7 @@ class ArvCwlRunner(object):
         self.collection_cache = CollectionCache(self.api, self.keep_client, self.num_retries)
 
         self.work_api = None
-        expected_api = ["containers", "jobs"]
+        expected_api = ["jobs", "containers"]
         for api in expected_api:
             try:
                 methods = self.api._rootDesc.get('resources')[api]['methods']
@@ -426,12 +426,6 @@ class ArvCwlRunner(object):
             if self.work_api == "containers":
                 if tool.tool["class"] == "CommandLineTool" and kwargs.get("wait"):
                     kwargs["runnerjob"] = tool.tool["id"]
-                    upload_dependencies(self,
-                                        kwargs["name"],
-                                        tool.doc_loader,
-                                        tool.tool,
-                                        tool.tool["id"],
-                                        False)
                     runnerjob = tool.job(job_order,
                                          self.output_callback,
                                          **kwargs).next()
@@ -632,7 +626,7 @@ def arg_parser():  # type: () -> argparse.ArgumentParser
     parser.add_argument("--api", type=str,
                         default=None, dest="work_api",
                         choices=("jobs", "containers"),
-                        help="Select work submission API.  Default is 'containers' if that API is available, otherwise 'jobs'.")
+                        help="Select work submission API.  Default is 'jobs' if that API is available, otherwise 'containers'.")
 
     parser.add_argument("--compute-checksum", action="store_true", default=False,
                         help="Compute checksum of contents while collecting outputs",
@@ -756,6 +750,7 @@ def main(args, stdout, stderr, api_client=None, keep_client=None):
     arvargs.use_container = True
     arvargs.relax_path_checks = True
     arvargs.validate = None
+    arvargs.print_supported_versions = False
 
     make_fs_access = partial(CollectionFsAccess,
                            collection_cache=runner.collection_cache)

@@ -3,9 +3,11 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 FROM ubuntu:trusty
-MAINTAINER Brett Smith <brett@curoverse.com>
+MAINTAINER Ward Vandewege <ward@curoverse.com>
 
-# Install dependencies and set up system.
+ENV DEBIAN_FRONTEND noninteractive
+
+# Install dependencies.
 RUN /usr/bin/apt-get update && /usr/bin/apt-get install -q -y python2.7-dev python3 python-setuptools python3-setuptools libcurl4-gnutls-dev curl git libattr1-dev libfuse-dev libpq-dev python-pip unzip
 
 # Install RVM
@@ -19,6 +21,9 @@ RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
 # Install golang binary
 ADD generated/go1.8.3.linux-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
+
+# Old versions of setuptools cannot build a schema-salad package.
+RUN pip install --upgrade setuptools
 
 ENV WORKSPACE /arvados
 CMD ["/usr/local/rvm/bin/rvm-exec", "default", "bash", "/jenkins/run-build-packages.sh", "--target", "ubuntu1404"]

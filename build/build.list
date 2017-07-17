@@ -24,7 +24,7 @@ debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|rdflib|4.2.2|2|python|all
 debian8,ubuntu1204,ubuntu1404,centos7|shellescape|3.4.1|2|python|all
 debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|mistune|0.7.3|2|python|all
 debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|typing|3.5.3.0|2|python|all
-debian8,ubuntu1204,ubuntu1404,centos7|avro|1.8.1|2|python|all
+debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|avro|1.8.1|2|python|all
 debian8,ubuntu1204,ubuntu1404,centos7|ruamel.ordereddict|0.4.9|2|python|amd64
 debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|cachecontrol|0.11.7|2|python|all
 debian8,ubuntu1204,ubuntu1404,ubuntu1604,centos7|pathlib2|2.1.0|2|python|all

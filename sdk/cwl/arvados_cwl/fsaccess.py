@@ -95,7 +95,7 @@ class CollectionFsAccess(cwltool.stdfsaccess.StdFsAccess):
 
     def exists(self, fn):
         collection, rest = self.get_collection(fn)
-        if collection:
+        if collection is not None:
             if rest:
                 return collection.exists(rest)
             else:

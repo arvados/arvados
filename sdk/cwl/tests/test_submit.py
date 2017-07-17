@@ -79,7 +79,12 @@ def stubs(func):
                 if uuid in (v["uuid"], v["portable_data_hash"]):
                     return CollectionExecute(v)
 
-        created_collections = {}
+        created_collections = {
+            "99999999999999999999999999999998+99": {
+                "uuid": "",
+                "portable_data_hash": "99999999999999999999999999999998+99",
+                "manifest_text": ". 99999999999999999999999999999998+99 0:0:file1.txt"
+            }}
         stubs.api.collections().create.side_effect = functools.partial(collection_createstub, created_collections)
         stubs.api.collections().get.side_effect = functools.partial(collection_getstub, created_collections)
 
@@ -142,10 +147,22 @@ def stubs(func):
                     'runtime_constraints': {'docker_image': 'arvados/jobs:'+arvados_cwl.__version__, 'min_ram_mb_per_node': 1024},
                     'script_parameters': {
                         'y': {"value": {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'}},
-                        'x': {"value": {'basename': 'blorp.txt', 'class': 'File', 'location': 'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt'}},
+                        'x': {"value": {
+                            'basename': 'blorp.txt',
+                            'class': 'File',
+                            'location': 'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt',
+                            "nameext": ".txt",
+                            "nameroot": "blorp"
+                        }},
                         'z': {"value": {'basename': 'anonymous', 'class': 'Directory',
                               'listing': [
-                                  {'basename': 'renamed.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999998+99/file1.txt'}
+                                  {
+                                      'basename': 'renamed.txt',
+                                      'class': 'File', 'location':
+                                      'keep:99999999999999999999999999999998+99/file1.txt',
+                                      "nameext": ".txt",
+                                      "nameroot": "renamed"
+                                  }
                               ]}},
                         'cwl:tool': '3fffdeaa75e018172e1b583425f4ebff+60/workflow.cwl#main',
                         'arv:enable_reuse': True,
@@ -191,10 +208,24 @@ def stubs(func):
                 '/var/lib/cwl/cwl.input.json': {
                     'kind': 'json',
                     'content': {
-                        'y': {'basename': '99999999999999999999999999999998+99', 'location': 'keep:99999999999999999999999999999998+99', 'class': 'Directory'},
-                        'x': {'basename': u'blorp.txt', 'class': 'File', 'location': u'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt'},
+                        'y': {
+                            'basename': '99999999999999999999999999999998+99',
+                            'location': 'keep:99999999999999999999999999999998+99',
+                            'class': 'Directory'},
+                        'x': {
+                            'basename': u'blorp.txt',
+                            'class': 'File',
+                            'location': u'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt',
+                            "nameext": ".txt",
+                            "nameroot": "blorp"
+                        },
                         'z': {'basename': 'anonymous', 'class': 'Directory', 'listing': [
-                            {'basename': 'renamed.txt', 'class': 'File', 'location': 'keep:99999999999999999999999999999998+99/file1.txt'}
+                            {'basename': 'renamed.txt',
+                             'class': 'File',
+                             'location': 'keep:99999999999999999999999999999998+99/file1.txt',
+                             "nameext": ".txt",
+                             "nameroot": "renamed"
+                            }
                         ]}
                     },
                     'kind': 'json'
@@ -319,7 +350,7 @@ class TestSubmit(unittest.TestCase):
     def test_submit_runner_ram(self, stubs, tm):
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=jobs", "--debug", "--submit-runner-ram=2048",
+            ["--submit", "--no-wait", "--debug", "--submit-runner-ram=2048",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
@@ -338,7 +369,7 @@ class TestSubmit(unittest.TestCase):
     def test_submit_invalid_runner_ram(self, stubs, tm):
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=jobs", "--debug", "--submit-runner-ram=-2048",
+            ["--submit", "--no-wait", "--debug", "--submit-runner-ram=-2048",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 1)
@@ -350,7 +381,7 @@ class TestSubmit(unittest.TestCase):
 
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=jobs", "--debug", "--output-name", output_name,
+            ["--submit", "--no-wait", "--debug", "--output-name", output_name,
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
@@ -369,7 +400,7 @@ class TestSubmit(unittest.TestCase):
     def test_submit_pipeline_name(self, stubs, tm):
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=jobs", "--debug", "--name=hello job 123",
+            ["--submit", "--no-wait", "--debug", "--name=hello job 123",
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
@@ -389,7 +420,7 @@ class TestSubmit(unittest.TestCase):
 
         capture_stdout = cStringIO.StringIO()
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=jobs", "--debug", "--output-tags", output_tags,
+            ["--submit", "--no-wait", "--debug", "--output-tags", output_tags,
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             capture_stdout, sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
@@ -408,7 +439,7 @@ class TestSubmit(unittest.TestCase):
         project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
 
         exited = arvados_cwl.main(
-            ["--submit", "--no-wait", "--api=jobs",
+            ["--submit", "--no-wait",
              "--project-uuid", project_uuid,
              "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
             sys.stdout, sys.stderr, api_client=stubs.api)
@@ -424,7 +455,7 @@ class TestSubmit(unittest.TestCase):
         capture_stdout = cStringIO.StringIO()
         try:
             exited = arvados_cwl.main(
-                ["--submit", "--no-wait", "--debug",
+                ["--submit", "--no-wait", "--api=containers", "--debug",
                  "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
                 capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
             self.assertEqual(exited, 0)
@@ -895,7 +926,7 @@ class TestSubmit(unittest.TestCase):
                          arvados_cwl.runner.arvados_jobs_image(arvrunner, "arvados/jobs:"+arvados_cwl.__version__))
 
 class TestCreateTemplate(unittest.TestCase):
-    existing_template_uuid = "zzzzz-p5p6p-validworkfloyml"
+    existing_template_uuid = "zzzzz-d1hrv-validworkfloyml"
 
     def _adjust_script_params(self, expect_component):
         expect_component['script_parameters']['x'] = {
@@ -1237,7 +1268,7 @@ class TestTemplateInputs(unittest.TestCase):
     @stubs
     def test_inputs_empty(self, stubs):
         exited = arvados_cwl.main(
-            ["--create-template", "--api=jobs",
+            ["--create-template",
              "tests/wf/inputs_test.cwl", "tests/order/empty_order.json"],
             cStringIO.StringIO(), sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
@@ -1248,7 +1279,7 @@ class TestTemplateInputs(unittest.TestCase):
     @stubs
     def test_inputs(self, stubs):
         exited = arvados_cwl.main(
-            ["--create-template", "--api=jobs",
+            ["--create-template",
              "tests/wf/inputs_test.cwl", "tests/order/inputs_test_order.json"],
             cStringIO.StringIO(), sys.stderr, api_client=stubs.api)
         self.assertEqual(exited, 0)
