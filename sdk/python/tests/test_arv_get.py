@@ -153,21 +153,24 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers,
         tmpdir = self.make_tmpdir()
         # Simulate a TTY stderr
         stderr = mock.MagicMock()
-        stderr.isatty.return_value = True
         stdout = tutil.BytesIO()
+
         # Confirm that progress is written to stderr when is a tty
+        stderr.isatty.return_value = True
         r = arv_get.main(['{}/bigfile.txt'.format(c.manifest_locator()),
                           '{}/bigfile.txt'.format(tmpdir)],
                          stdout, stderr)
         self.assertEqual(0, r)
         self.assertEqual(b'', stdout.getvalue())
         self.assertTrue(stderr.write.called)
+
         # Clean up and reset stderr mock
         os.remove('{}/bigfile.txt'.format(tmpdir))
         stderr = mock.MagicMock()
-        stderr.isatty.return_value = False
         stdout = tutil.BytesIO()
+
         # Confirm that progress is not written to stderr when isn't a tty
+        stderr.isatty.return_value = False
         r = arv_get.main(['{}/bigfile.txt'.format(c.manifest_locator()),
                           '{}/bigfile.txt'.format(tmpdir)],
                          stdout, stderr)

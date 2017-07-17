@@ -195,7 +195,7 @@ total data size).
 
 _group.add_argument('--silent', action='store_true',
                     help="""
-Do not produce any output unless an error happens.
+Do not print any debug messages to console. (Any error messages will still be displayed.)
 """)
 
 _group = run_opts.add_mutually_exclusive_group()
