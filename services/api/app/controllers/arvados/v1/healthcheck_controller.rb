@@ -17,16 +17,14 @@ class Arvados::V1::HealthcheckController < ApplicationController
 
   def check_auth_header
     mgmt_token = Rails.configuration.management_token
+    auth_header = request.headers['Authorization']
 
     if !mgmt_token
       send_error("disabled", status: 404)
-    else
-      auth_header = request.headers['Authorization']
-      if !auth_header
-        send_error("authorization required", status: 401)
-      elsif auth_header != 'Bearer '+mgmt_token
-        send_error("authorization error", status: 403)
-      end
+    elsif !auth_header
+      send_error("authorization required", status: 401)
+    elsif auth_header != 'Bearer '+mgmt_token
+      send_error("authorization error", status: 403)
     end
   end
 
