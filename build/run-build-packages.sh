@@ -107,6 +107,9 @@ case "$TARGET" in
     debian8)
         FORMAT=deb
         ;;
+    debian9)
+        FORMAT=deb
+        ;;
     ubuntu1204)
         FORMAT=deb
         ;;
@@ -217,7 +220,7 @@ if [[ -z "$ONLY_BUILD" ]] || [[ "libarvados-perl" = "$ONLY_BUILD" ]] ; then
         make install INSTALLDIRS=perl >"$STDOUT_IF_DEBUG" && \
         fpm_build install/lib/=/usr/share libarvados-perl \
         "Curoverse, Inc." dir "$(version_from_git)" install/man/=/usr/share/man \
-        "$WORKSPACE/LICENSE-2.0.txt=/usr/share/doc/libarvados-perl/LICENSE-2.0.txt" && \
+        "$WORKSPACE/apache-2.0.txt=/usr/share/doc/libarvados-perl/apache-2.0.txt" && \
         mv --no-clobber libarvados-perl*.$FORMAT "$WORKSPACE/packages/$TARGET/"
   fi
 fi
