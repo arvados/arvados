@@ -4,7 +4,7 @@
 
 window.onload = function() {
     var charts = {};
-    sections.forEach(function(section, section_idx) {
+    chartdata.forEach(function(section, section_idx) {
         var h1 = document.createElement('h1');
         h1.appendChild(document.createTextNode(section.label));
         document.body.appendChild(h1);
