@@ -29,7 +29,7 @@ class Arvados::V1::HealthcheckController < ApplicationController
   end
 
   def ping
-    resp = {"health": "OK"}
+    resp = {"health" => "OK"}
     send_json resp
   end
 end
