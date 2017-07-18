@@ -295,3 +295,7 @@ common:
   # to suppress these properties
   show_recent_collections_on_dashboard: true
   show_user_notifications: true
+
+  # Token to be included in all healthcheck requests. Disabled by default.
+  # Workbench expects request header of the format "Authorization: Bearer xxx"
+  management_token: false

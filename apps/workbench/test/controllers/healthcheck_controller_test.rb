@@ -4,7 +4,7 @@
 
 require 'test_helper'
 
-class Arvados::V1::HealthcheckControllerTest < ActionController::TestCase
+class HealthcheckControllerTest < ActionController::TestCase
   [
     [false, nil, 404, 'disabled'],
     [true, nil, 401, 'authorization required'],
@@ -23,7 +23,7 @@ class Arvados::V1::HealthcheckControllerTest < ActionController::TestCase
       if error_code == 200
         assert_equal(JSON.load('{"health":"OK"}'), resp)
       else
-        assert_equal(error_msg, resp['errors'])
+        assert_equal(resp['errors'], error_msg)
       end
     end
   end
