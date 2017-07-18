@@ -20,11 +20,11 @@ class Arvados::V1::HealthcheckController < ApplicationController
     auth_header = request.headers['Authorization']
 
     if !mgmt_token
-      send_error("disabled", status: 404)
+      send_json ({"errors" => "disabled"}), status: 404
     elsif !auth_header
-      send_error("authorization required", status: 401)
+      send_json ({"errors" => "authorization required"}), status: 401
     elsif auth_header != 'Bearer '+mgmt_token
-      send_error("authorization error", status: 403)
+      send_json ({"errors" => "authorization error"}), status: 403
     end
   end
 
