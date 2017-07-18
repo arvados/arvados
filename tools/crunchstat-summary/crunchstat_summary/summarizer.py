@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import arvados
 import collections
-import crunchstat_summary.chartjs
+import crunchstat_summary.dygraphs
 import crunchstat_summary.reader
 import datetime
 import functools
@@ -31,7 +31,7 @@ AVAILABLE_RAM_RATIO = 0.95
 datetime.datetime.strptime('1999-12-31_23:59:59', '%Y-%m-%d_%H:%M:%S')
 
 
-WEBCHART_CLASS = crunchstat_summary.chartjs.ChartJS
+WEBCHART_CLASS = crunchstat_summary.dygraphs.DygraphsChart
 
 
 class Task(object):
