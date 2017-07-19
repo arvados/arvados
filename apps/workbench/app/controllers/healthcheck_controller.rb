@@ -17,7 +17,7 @@ class HealthcheckController < ApplicationController
 
   def check_auth_header
     mgmt_token = Rails.configuration.management_token
-      auth_header = request.headers['Authorization']
+    auth_header = request.headers['Authorization']
 
     if !mgmt_token
       render :json => {:errors => "disabled"}, :status => 404
