@@ -85,6 +85,8 @@ else:
     # llfuse >= 0.42
     llfuse._notify_queue = Queue.Queue()
 
+LLFUSE_VERSION_0 = llfuse.__version__.startswith('0')
+
 from fusedir import sanitize_filename, Directory, CollectionDirectory, TmpCollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
 from fusefile import StringFile, FuseArvadosFile
 
@@ -371,7 +373,9 @@ class Operations(llfuse.Operations):
             self.events.close()
             self.events = None
 
-        if llfuse.lock.acquire():
+        # Different versions of llfuse require and forbid us to
+        # acquire the lock here. See #8345#note-37, #10805#note-9.
+        if LLFUSE_VERSION_0 and llfuse.lock.acquire():
             # llfuse < 0.42
             self.inodes.clear()
             llfuse.lock.release()
