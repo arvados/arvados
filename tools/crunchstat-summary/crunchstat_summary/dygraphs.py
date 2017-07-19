@@ -6,8 +6,8 @@ import crunchstat_summary.webchart
 
 
 class DygraphsChart(crunchstat_summary.webchart.WebChart):
-    CSS = 'http://dygraphs.com/2.0.0/dygraph.css'
-    JSLIB = 'http://dygraphs.com/2.0.0/dygraph.min.js'
+    CSS = 'https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.0.0/dygraph.min.css'
+    JSLIB = 'https://cdnjs.cloudflare.com/ajax/libs/dygraph/2.0.0/dygraph.min.js'
     JSASSET = 'dygraphs.js'
 
     def headHTML(self):
