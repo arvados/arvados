@@ -52,38 +52,6 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test "can download an entire collection with a reader token" do
-    Capybara.current_driver = :rack_test
-    CollectionsController.any_instance.
-      stubs(:file_enumerator).returns(["foo\n", "file\n"])
-    uuid = api_fixture('collections')['foo_file']['uuid']
-    token = api_fixture('api_client_authorizations')['active_all_collections']['api_token']
-    url_head = "/collections/download/#{uuid}/#{token}/"
-    visit url_head
-    # It seems that Capybara can't inspect tags outside the body, so this is
-    # a very blunt approach.
-    assert_no_match(/<\s*meta[^>]+\bnofollow\b/i, page.html,
-                    "wget prohibited from recursing the collection page")
-    # Look at all the links that wget would recurse through using our
-    # recommended options, and check that it's exactly the file list.
-    hrefs = page.all('a').map do |anchor|
-      link = anchor[:href] || ''
-      if link.start_with? url_head
-        link[url_head.size .. -1]
-      elsif link.start_with? '/'
-        nil
-      else
-        link
-      end
-    end
-    assert_equal(['foo'], hrefs.compact.sort,
-                 "download page did provide strictly file links")
-    within "#collection_files" do
-      click_link "foo"
-      assert_equal("foo\nfile\n", page.html)
-    end
-  end
-
   test "combine selected collections into new collection" do
     foo_collection = api_fixture('collections')['foo_file']
     bar_collection = api_fixture('collections')['bar_file']

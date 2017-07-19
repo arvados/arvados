@@ -39,39 +39,6 @@ class JobsTest < ActionDispatch::IntegrationTest
     assert_selector 'a[href="/"]', text: 'Go to dashboard'
   end
 
-  test "view job log" do
-    job = api_fixture('jobs')['job_with_real_log']
-
-    IO.expects(:popen).returns(fakepipe_with_log_data)
-
-    visit page_with_token("active", "/jobs/#{job['uuid']}")
-    assert page.has_text? job['script_version']
-
-    find(:xpath, "//a[@href='#Log']").click
-    wait_for_ajax
-    assert page.has_text? 'Started at'
-    assert page.has_text? 'Finished at'
-    assert page.has_text? 'log message 1'
-    assert page.has_text? 'log message 2'
-    assert page.has_text? 'log message 3'
-    assert page.has_no_text? 'Showing only 100 bytes of this log'
-  end
-
-  test 'view partial job log' do
-    # This config will be restored during teardown by ../test_helper.rb:
-    Rails.configuration.log_viewer_max_bytes = 100
-
-    IO.expects(:popen).returns(fakepipe_with_log_data)
-    job = api_fixture('jobs')['job_with_real_log']
-
-    visit page_with_token("active", "/jobs/#{job['uuid']}")
-    assert page.has_text? job['script_version']
-
-    find(:xpath, "//a[@href='#Log']").click
-    wait_for_ajax
-    assert page.has_text? 'Showing only 100 bytes of this log'
-  end
-
   test 'view log via keep-web redirect' do
     use_keep_web_config
 

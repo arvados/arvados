@@ -116,16 +116,6 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     end
   end
 
-  test 'view file' do
-    magic = rand(2**512).to_s 36
-    CollectionsController.any_instance.stubs(:file_enumerator).returns([magic])
-    collection = api_fixture('collections')['public_text_file']
-    visit '/collections/' + collection['uuid']
-    find('tr,li', text: 'Hello world.txt').
-      find('a[title~=View]').click
-    assert_text magic
-  end
-
   [
     'running anonymously accessible cr',
     'pipelineInstance'
