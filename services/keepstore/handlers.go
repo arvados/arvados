@@ -29,6 +29,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	log "github.com/Sirupsen/logrus"
 )
@@ -78,8 +79,10 @@ func MakeRESTRouter() *router {
 	// Untrash moves blocks from trash back into store
 	rest.HandleFunc(`/untrash/{hash:[0-9a-f]{32}}`, UntrashHandler).Methods("PUT")
 
-	// Health check ping
-	rest.HandleFunc(`/_health/ping`, HealthCheckPingHandler).Methods("GET")
+	rest.Handle("/_health/{check}", &health.Handler{
+		Token:  theConfig.ManagementToken,
+		Prefix: "/_health/",
+	}).Methods("GET")
 
 	// Any request which does not match any of these routes gets
 	// 400 Bad Request.
@@ -618,45 +621,6 @@ func UntrashHandler(resp http.ResponseWriter, req *http.Request) {
 		}
 		resp.Write([]byte(respBody))
 	}
-}
-
-// HealthCheckPingHandler processes "GET /_health/ping" requests
-func HealthCheckPingHandler(resp http.ResponseWriter, req *http.Request) {
-	fn := func() interface{} {
-		return map[string]string{"health": "OK"}
-	}
-
-	healthCheckDo(resp, req, fn)
-}
-
-// Any health check handlers can pass this "func" which returns json to healthCheckDo
-type healthCheckFunc func() interface{}
-
-func healthCheckDo(resp http.ResponseWriter, req *http.Request, fn healthCheckFunc) {
-	msg, code := healthCheckAuth(resp, req)
-	if msg != "" {
-		http.Error(resp, msg, code)
-		return
-	}
-
-	ok, err := json.Marshal(fn())
-	if err != nil {
-		http.Error(resp, err.Error(), 500)
-		return
-	}
-
-	resp.Write(ok)
-}
-
-func healthCheckAuth(resp http.ResponseWriter, req *http.Request) (string, int) {
-	if theConfig.ManagementToken == "" {
-		return "disabled", http.StatusNotFound
-	} else if h := req.Header.Get("Authorization"); h == "" {
-		return "authorization required", http.StatusUnauthorized
-	} else if h != "Bearer "+theConfig.ManagementToken {
-		return "authorization error", http.StatusForbidden
-	}
-	return "", 0
 }
 
 // GetBlock and PutBlock implement lower-level code for handling
