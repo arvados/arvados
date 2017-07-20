@@ -64,7 +64,11 @@ module CollectionsHelper
   def preview_allowed_for file_name
     file_type = MIME::Types.type_for(file_name).first
     if file_type.nil?
-      false
+      if file_name.downcase.end_with?('.cwl') # unknown mime type, but we support preview
+        true
+      else
+        false
+      end
     elsif (file_type.raw_media_type == "text") || (file_type.raw_media_type == "image")
       true
     elsif (file_type.raw_media_type == "application") &&
