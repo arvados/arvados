@@ -29,6 +29,9 @@ class CollectionsHelperTest < ActionView::TestCase
     ["filename.xml", true],
     ["filename.xsl", true],
     ["filename.yml", true],
+    ["filename.yaml", true],
+    ["filename.bed", true],
+    ["filename.cwl", true],
 
     ["filename.bam", false],
     ["filename.tar", false],
