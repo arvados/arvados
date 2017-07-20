@@ -46,7 +46,7 @@ setup(name='arvados-cwl-runner',
       package_data={'arvados_cwl': ['arv-cwl-schema.yml']},
       scripts=[
           'bin/cwl-runner',
-          'bin/arvados-cwl-runner'
+          'bin/arvados-cwl-runner',
       ],
       # Note that arvados/build/run-build-packages.sh looks at this
       # file to determine what version of cwltool and schema-salad to build.
@@ -57,7 +57,7 @@ setup(name='arvados-cwl-runner',
           'ruamel.yaml==0.13.7',
           'arvados-python-client>=0.1.20170526013812',
           'setuptools',
-          'ciso8601'
+          'ciso8601',
       ],
       data_files=[
           ('share/doc/arvados-cwl-runner', ['LICENSE-2.0.txt', 'README.rst']),
