@@ -62,11 +62,13 @@ module CollectionsHelper
   # Check if collection preview is allowed for the given filename with extension
   #
   def preview_allowed_for file_name
-    return true if file_name.downcase.end_with?('.cwl') # unknown mime type, but we want to offer preview
-
     file_type = MIME::Types.type_for(file_name).first
     if file_type.nil?
-      false
+      if file_name.downcase.end_with?('.cwl') # unknown mime type, but we support preview
+        true
+      else
+        false
+      end
     elsif (file_type.raw_media_type == "text") || (file_type.raw_media_type == "image")
       true
     elsif (file_type.raw_media_type == "application") &&
