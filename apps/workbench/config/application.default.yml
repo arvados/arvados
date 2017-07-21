@@ -99,6 +99,7 @@ test:
   profiling_enabled: true
   secret_token: <%= rand(2**256).to_s(36) %>
   secret_key_base: <%= rand(2**256).to_s(36) %>
+  keep_web_url: http://example/c=%{uuid_or_pdh}
 
   # When you run the Workbench's integration tests, it starts the API
   # server as a dependency.  These settings should match the API
@@ -243,8 +244,8 @@ common:
   shell_in_a_box_url: false
 
   # Format of preview links. If false, use keep_web_download_url
-  # instead, and disable inline preview. If both are false, use
-  # Workbench's built-in file download/preview mechanism.
+  # instead, and disable inline preview.
+  # If both are false, Workbench won't start, this is a mandatory configuration.
   #
   # Examples:
   # keep_web_url: https://%{uuid_or_pdh}.collections.uuid_prefix.arvadosapi.com

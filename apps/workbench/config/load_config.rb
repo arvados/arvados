@@ -56,4 +56,15 @@ config/application.yml:
 
 EOS
   end
+  # Refuse to start if keep-web isn't configured
+  if not (config.keep_web_url or config.keep_web_download_url)
+    raise <<EOS
+Refusing to start in #{::Rails.env.to_s} mode with missing configuration.
+
+Keep-web service must be configured in config/application.yml:
+* keep_web_url
+* keep_web_download_url
+
+EOS
+  end
 end
