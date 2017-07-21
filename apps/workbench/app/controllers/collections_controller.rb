@@ -125,10 +125,6 @@ class CollectionsController < ApplicationController
   end
 
   def show_file
-    # We pipe from arv-get to send the file to the user.  Before we start it,
-    # we ask the API server if the file actually exists.  This serves two
-    # purposes: it lets us return a useful status code for common errors, and
-    # helps us figure out which token to provide to arv-get.
     # The order of searched tokens is important: because the anonymous user
     # token is passed along with every API request, we have to check it first.
     # Otherwise, it's impossible to know whether any other request succeeded
