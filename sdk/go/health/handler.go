@@ -37,7 +37,7 @@ type Handler struct {
 
 	// Map of URI paths to health-check Func. The prefix is
 	// omitted: Routes["foo"] is the health check invoked by a
-	// request to "/_health/foo".
+	// request to "{Prefix}/foo".
 	//
 	// If "ping" is not listed here, it will be added
 	// automatically and will always return a "healthy" response.
