@@ -58,6 +58,18 @@ func (s *Suite) TestPassFailRefuse(c *check.C) {
 	resp = httptest.NewRecorder()
 	h.ServeHTTP(resp, s.request("/_health/miracle", ""))
 	c.Check(resp.Code, check.Equals, http.StatusUnauthorized)
+
+	resp = httptest.NewRecorder()
+	h.ServeHTTP(resp, s.request("/_health/theperthcountyconspiracy", ""))
+	c.Check(resp.Code, check.Equals, http.StatusNotFound)
+
+	resp = httptest.NewRecorder()
+	h.ServeHTTP(resp, s.request("/x/miracle", ""))
+	c.Check(resp.Code, check.Equals, http.StatusNotFound)
+
+	resp = httptest.NewRecorder()
+	h.ServeHTTP(resp, s.request("/miracle", ""))
+	c.Check(resp.Code, check.Equals, http.StatusNotFound)
 }
 
 func (s *Suite) TestPingOverride(c *check.C) {
