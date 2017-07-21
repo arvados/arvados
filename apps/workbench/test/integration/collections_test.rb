@@ -44,7 +44,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   test "creating and uncreating a sharing link" do
     coll_uuid = api_fixture("collections", "collection_owned_by_active", "uuid")
     download_link_re =
-      Regexp.new(Regexp.escape("/collections/download/#{coll_uuid}/"))
+      Regexp.new(Regexp.escape("/c=#{coll_uuid}/"))
     visit page_with_token("active_trustedclient", "/collections/#{coll_uuid}")
     within "#sharing-button" do
       check_sharing(:on, download_link_re)
