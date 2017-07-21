@@ -125,8 +125,7 @@ class CollectionsControllerTest < ActionController::TestCase
     params[:reader_token] = api_fixture("api_client_authorizations",
                                         "active_all_collections", "api_token")
     get(:show_file_links, params)
-    assert_response :success
-    assert_equal([['.', 'foo', 3]], assigns(:object).files)
+    assert_response :redirect
     assert_no_session
   end
 
