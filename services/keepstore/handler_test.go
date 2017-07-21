@@ -1155,59 +1155,19 @@ func TestUntrashHandlerWithNoWritableVolumes(t *testing.T) {
 }
 
 func TestHealthCheckPing(t *testing.T) {
-	defer teardown()
-
-	KeepVM = MakeTestVolumeManager(2)
-	defer KeepVM.Close()
-
-	// ping when disabled
-	theConfig.ManagementToken = ""
-	pingReq := &RequestTester{
-		method: "GET",
-		uri:    "/_health/ping",
-	}
-	response := IssueHealthCheckRequest(pingReq)
-	ExpectStatusCode(t,
-		"disabled",
-		http.StatusNotFound,
-		response)
-
-	// ping with no token
 	theConfig.ManagementToken = arvadostest.ManagementToken
-	pingReq = &RequestTester{
-		method: "GET",
-		uri:    "/_health/ping",
-	}
-	response = IssueHealthCheckRequest(pingReq)
-	ExpectStatusCode(t,
-		"authorization required",
-		http.StatusUnauthorized,
-		response)
-
-	// ping with wrong token
-	pingReq = &RequestTester{
-		method:   "GET",
-		uri:      "/_health/ping",
-		apiToken: "youarenotwelcomehere",
-	}
-	response = IssueHealthCheckRequest(pingReq)
-	ExpectStatusCode(t,
-		"authorization error",
-		http.StatusForbidden,
-		response)
-
-	// ping with management token
-	pingReq = &RequestTester{
+	pingReq := &RequestTester{
 		method:   "GET",
 		uri:      "/_health/ping",
 		apiToken: arvadostest.ManagementToken,
 	}
-	response = IssueHealthCheckRequest(pingReq)
+	response := IssueHealthCheckRequest(pingReq)
 	ExpectStatusCode(t,
 		"",
 		http.StatusOK,
 		response)
-	if !strings.Contains(response.Body.String(), `{"health":"OK"}`) {
-		t.Errorf("expected response to include %s: got %s", `{"health":"OK"}`, response.Body.String())
+	want := `{"health":"OK"}`
+	if !strings.Contains(response.Body.String(), want) {
+		t.Errorf("expected response to include %s: got %s", want, response.Body.String())
 	}
 }
