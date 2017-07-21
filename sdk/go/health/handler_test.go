@@ -96,9 +96,13 @@ func (s *Suite) TestPingOverride(c *check.C) {
 	s.checkUnhealthy(c, resp)
 }
 
-func (s *Suite) TestZeroValue(c *check.C) {
+func (s *Suite) TestZeroValueIsDisabled(c *check.C) {
 	resp := httptest.NewRecorder()
 	(&Handler{}).ServeHTTP(resp, s.request("/ping", goodToken))
+	c.Check(resp.Code, check.Equals, http.StatusNotFound)
+
+	resp = httptest.NewRecorder()
+	(&Handler{}).ServeHTTP(resp, s.request("/ping", ""))
 	c.Check(resp.Code, check.Equals, http.StatusNotFound)
 }
 
