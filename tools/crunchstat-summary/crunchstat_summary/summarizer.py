@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import arvados
 import collections
-import crunchstat_summary.chartjs
+import crunchstat_summary.dygraphs
 import crunchstat_summary.reader
 import datetime
 import functools
@@ -29,6 +29,9 @@ AVAILABLE_RAM_RATIO = 0.95
 # Workaround datetime.datetime.strptime() thread-safety bug by calling
 # it once before starting threads.  https://bugs.python.org/issue7980
 datetime.datetime.strptime('1999-12-31_23:59:59', '%Y-%m-%d_%H:%M:%S')
+
+
+WEBCHART_CLASS = crunchstat_summary.dygraphs.DygraphsChart
 
 
 class Task(object):
@@ -217,7 +220,7 @@ class Summarizer(object):
             self._recommend_gen())) + "\n"
 
     def html_report(self):
-        return crunchstat_summary.chartjs.ChartJS(self.label, [self]).html()
+        return WEBCHART_CLASS(self.label, [self]).html()
 
     def _text_report_gen(self):
         yield "\t".join(['category', 'metric', 'task_max', 'task_max_rate', 'job_total'])
@@ -446,5 +449,4 @@ class PipelineSummarizer(object):
         return txt
 
     def html_report(self):
-        return crunchstat_summary.chartjs.ChartJS(
-            self.label, self.summarizers.itervalues()).html()
+        return WEBCHART_CLASS(self.label, self.summarizers.itervalues()).html()

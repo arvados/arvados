@@ -3,4 +3,5 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 include agpl-3.0.txt
+include crunchstat_summary/dygraphs.js
 include crunchstat_summary/chartjs.js

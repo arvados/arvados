@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 )
 
 // A RequestTester represents the parameters for an HTTP request to
@@ -827,6 +828,18 @@ func IssueRequest(rt *RequestTester) *httptest.ResponseRecorder {
 	return response
 }
 
+func IssueHealthCheckRequest(rt *RequestTester) *httptest.ResponseRecorder {
+	response := httptest.NewRecorder()
+	body := bytes.NewReader(rt.requestBody)
+	req, _ := http.NewRequest(rt.method, rt.uri, body)
+	if rt.apiToken != "" {
+		req.Header.Set("Authorization", "Bearer "+rt.apiToken)
+	}
+	loggingRouter := MakeRESTRouter()
+	loggingRouter.ServeHTTP(response, req)
+	return response
+}
+
 // ExpectStatusCode checks whether a response has the specified status code,
 // and reports a test failure if not.
 func ExpectStatusCode(
@@ -1139,4 +1152,22 @@ func TestUntrashHandlerWithNoWritableVolumes(t *testing.T) {
 		"No writable volumes",
 		http.StatusNotFound,
 		response)
+}
+
+func TestHealthCheckPing(t *testing.T) {
+	theConfig.ManagementToken = arvadostest.ManagementToken
+	pingReq := &RequestTester{
+		method:   "GET",
+		uri:      "/_health/ping",
+		apiToken: arvadostest.ManagementToken,
+	}
+	response := IssueHealthCheckRequest(pingReq)
+	ExpectStatusCode(t,
+		"",
+		http.StatusOK,
+		response)
+	want := `{"health":"OK"}`
+	if !strings.Contains(response.Body.String(), want) {
+		t.Errorf("expected response to include %s: got %s", want, response.Body.String())
+	}
 }

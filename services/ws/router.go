@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"git.curoverse.com/arvados.git/sdk/go/ctxlog"
+	"git.curoverse.com/arvados.git/sdk/go/health"
 	"github.com/Sirupsen/logrus"
 	"golang.org/x/net/websocket"
 )
@@ -60,10 +61,18 @@ func (rtr *router) setup() {
 	rtr.mux.Handle("/debug.json", rtr.jsonHandler(rtr.DebugStatus))
 	rtr.mux.Handle("/status.json", rtr.jsonHandler(rtr.Status))
 
-	health := http.NewServeMux()
-	rtr.mux.Handle("/_health/", rtr.mgmtAuth(health))
-	health.Handle("/_health/ping", rtr.jsonHandler(rtr.HealthFunc(func() error { return nil })))
-	health.Handle("/_health/db", rtr.jsonHandler(rtr.HealthFunc(rtr.eventSource.DBHealth)))
+	rtr.mux.Handle("/_health/", &health.Handler{
+		Token:  rtr.Config.ManagementToken,
+		Prefix: "/_health/",
+		Routes: health.Routes{
+			"db": rtr.eventSource.DBHealth,
+		},
+		Log: func(r *http.Request, err error) {
+			if err != nil {
+				logger(r.Context()).WithError(err).Error("error")
+			}
+		},
+	})
 }
 
 func (rtr *router) makeServer(newSession sessionFactory) *websocket.Server {
@@ -111,21 +120,6 @@ func (rtr *router) DebugStatus() interface{} {
 	return s
 }
 
-var pingResponseOK = map[string]string{"health": "OK"}
-
-func (rtr *router) HealthFunc(f func() error) func() interface{} {
-	return func() interface{} {
-		err := f()
-		if err == nil {
-			return pingResponseOK
-		}
-		return map[string]string{
-			"health": "ERROR",
-			"error":  err.Error(),
-		}
-	}
-}
-
 func (rtr *router) Status() interface{} {
 	return map[string]interface{}{
 		"Clients": atomic.LoadInt64(&rtr.status.ReqsActive),
@@ -147,20 +141,6 @@ func (rtr *router) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		"reqForwardedFor": req.Header.Get("X-Forwarded-For"),
 	}).Info("accept request")
 	rtr.mux.ServeHTTP(resp, req)
-}
-
-func (rtr *router) mgmtAuth(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if rtr.Config.ManagementToken == "" {
-			http.Error(w, "disabled", http.StatusNotFound)
-		} else if ah := r.Header.Get("Authorization"); ah == "" {
-			http.Error(w, "authorization required", http.StatusUnauthorized)
-		} else if ah != "Bearer "+rtr.Config.ManagementToken {
-			http.Error(w, "authorization error", http.StatusForbidden)
-		} else {
-			h.ServeHTTP(w, r)
-		}
-	})
 }
 
 func (rtr *router) jsonHandler(fn func() interface{}) http.Handler {

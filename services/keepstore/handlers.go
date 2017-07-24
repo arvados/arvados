@@ -29,6 +29,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	log "github.com/Sirupsen/logrus"
 )
@@ -77,6 +78,11 @@ func MakeRESTRouter() *router {
 
 	// Untrash moves blocks from trash back into store
 	rest.HandleFunc(`/untrash/{hash:[0-9a-f]{32}}`, UntrashHandler).Methods("PUT")
+
+	rest.Handle("/_health/{check}", &health.Handler{
+		Token:  theConfig.ManagementToken,
+		Prefix: "/_health/",
+	}).Methods("GET")
 
 	// Any request which does not match any of these routes gets
 	// 400 Bad Request.
