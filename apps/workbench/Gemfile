@@ -4,7 +4,8 @@
 
 source 'https://rubygems.org'
 
-gem 'rails', '~> 4.1'
+# Tableless implementation in ArvadosBase breaks in Rails 4.2
+gem 'rails', '~> 4.1.0'
 gem 'arvados', '>= 0.1.20150511150219'
 
 gem 'activerecord-nulldb-adapter'
