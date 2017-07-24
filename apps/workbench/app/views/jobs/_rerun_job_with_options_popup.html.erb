@@ -22,10 +22,17 @@ SPDX-License-Identifier: AGPL-3.0 %>
         </div>
 
         <div class="modal-body">
-          <p> If this job is part of a pipeline, that pipeline would not know about the new job you are running.
-              If you want to update your pipeline results, please re-run the pipeline instead.
-          <p> The inputs and parameters will be the same as the current job.
-              Thus, the new job will not reflect any changes made to the pipeline that initiated this job. </p>
+          <p>
+            If this job is part of a pipeline, that pipeline would not
+            know about the new job you are running.  If you want to
+            update your pipeline results, please re-run the pipeline
+            instead.
+          </p>
+          <p>
+            The inputs and parameters will be the same as the current
+            job.  Thus, the new job will not reflect any changes made
+            to the pipeline that initiated this job.
+          </p>
           <div style="padding-left: 1em">
             <% if (@job.supplied_script_version.blank? or
                    (@job.supplied_script_version == @job.script_version)) %>
