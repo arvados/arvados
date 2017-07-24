@@ -123,11 +123,11 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
 
     magic = rand(2**512).to_s 36
     token = api_fixture('api_client_authorizations')['admin']['api_token']
-    logblock = `echo -n #{magic.shellescape} | ARVADOS_API_TOKEN=#{token.shellescape} arv-put --no-progress --raw -`.strip
+    datablock = `echo -n #{magic.shellescape} | ARVADOS_API_TOKEN=#{token.shellescape} arv-put --no-progress --raw -`.strip
     assert $?.success?, $?
     col = nil
     use_token 'admin' do
-      mtxt = ". #{logblock} 0:#{magic.length}:Hello\\040world.txt\n"
+      mtxt = ". #{datablock} 0:#{magic.length}:Hello\\040world.txt\n"
       col = Collection.create(
         manifest_text: mtxt,
         owner_uuid: api_fixture('groups')['anonymously_accessible_project']['uuid'])

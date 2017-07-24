@@ -6,6 +6,8 @@ require 'integration_helper'
 require_relative 'integration_test_utils'
 
 class CollectionsTest < ActionDispatch::IntegrationTest
+  include KeepWebConfig
+
   setup do
     need_javascript
   end
@@ -50,6 +52,46 @@ class CollectionsTest < ActionDispatch::IntegrationTest
       check_sharing(:on, download_link_re)
       check_sharing(:off, download_link_re)
     end
+  end
+
+  test "can download an entire collection with a reader token" do
+    use_keep_web_config
+
+    token = api_fixture('api_client_authorizations')['active']['api_token']
+    data = "foo\nfile\n"
+    datablock = `echo -n #{data.shellescape} | ARVADOS_API_TOKEN=#{token.shellescape} arv-put --no-progress --raw -`.strip
+    assert $?.success?, $?
+
+    col = nil
+    use_token 'active' do
+      mtxt = ". #{datablock} 0:#{data.length}:foo\n"
+      col = Collection.create(manifest_text: mtxt)
+    end
+
+    uuid = col.uuid
+    token = api_fixture('api_client_authorizations')['active_all_collections']['api_token']
+    url_head = "/collections/download/#{uuid}/#{token}/"
+    visit url_head
+    # It seems that Capybara can't inspect tags outside the body, so this is
+    # a very blunt approach.
+    assert_no_match(/<\s*meta[^>]+\bnofollow\b/i, page.html,
+                    "wget prohibited from recursing the collection page")
+    # Look at all the links that wget would recurse through using our
+    # recommended options, and check that it's exactly the file list.
+    hrefs = page.all('a').map do |anchor|
+      link = anchor[:href] || ''
+      if link.start_with? url_head
+        link[url_head.size .. -1]
+      elsif link.start_with? '/'
+        nil
+      else
+        link
+      end
+    end
+    assert_equal(['foo'], hrefs.compact.sort,
+                 "download page did provide strictly file links")
+    click_link "foo"
+    assert_text "foo\nfile\n"
   end
 
   test "combine selected collections into new collection" do
