@@ -141,23 +141,18 @@ class CollectionsController < ApplicationController
       return
     end
 
-    # If we are configured to use a keep-web server, just redirect to
-    # the appropriate URL.
-    if Rails.configuration.keep_web_url or
-        Rails.configuration.keep_web_download_url
-      opts = {}
-      if usable_token == params[:reader_token]
-        opts[:path_token] = usable_token
-      elsif usable_token == Rails.configuration.anonymous_user_token
-        # Don't pass a token at all
-      else
-        # We pass the current user's real token only if it's necessary
-        # to read the collection.
-        opts[:query_token] = usable_token
-      end
-      opts[:disposition] = params[:disposition] if params[:disposition]
-      return redirect_to keep_web_url(params[:uuid], params[:file], opts)
+    opts = {}
+    if usable_token == params[:reader_token]
+      opts[:path_token] = usable_token
+    elsif usable_token == Rails.configuration.anonymous_user_token
+      # Don't pass a token at all
+    else
+      # We pass the current user's real token only if it's necessary
+      # to read the collection.
+      opts[:query_token] = usable_token
     end
+    opts[:disposition] = params[:disposition] if params[:disposition]
+    return redirect_to keep_web_url(params[:uuid], params[:file], opts)
   end
 
   def sharing_scopes
