@@ -5,6 +5,8 @@
 require 'integration_helper'
 
 class AnonymousAccessTest < ActionDispatch::IntegrationTest
+  include KeepWebConfig
+
   # These tests don't do state-changing API calls. Save some time by
   # skipping the database reset.
   reset_api_fixtures :after_each_test, false
@@ -114,6 +116,27 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
       find 'a[title~=View]'
       find 'a[title~=Download]'
     end
+  end
+
+  test 'view file' do
+    use_keep_web_config
+
+    magic = rand(2**512).to_s 36
+    token = api_fixture('api_client_authorizations')['admin']['api_token']
+    logblock = `echo -n #{magic.shellescape} | ARVADOS_API_TOKEN=#{token.shellescape} arv-put --no-progress --raw -`.strip
+    assert $?.success?, $?
+    col = nil
+    use_token 'admin' do
+      mtxt = ". #{logblock} 0:#{magic.length}:Hello\\040world.txt\n"
+      col = Collection.create(
+        manifest_text: mtxt,
+        owner_uuid: api_fixture('groups')['anonymously_accessible_project']['uuid'])
+    end
+
+    visit '/collections/' + col.uuid
+    find('tr,li', text: 'Hello world.txt').
+      find('a[title~=View]').click
+    assert_text magic
   end
 
   [
