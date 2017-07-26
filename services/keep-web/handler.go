@@ -21,6 +21,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/auth"
+	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/httpserver"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 )
@@ -29,6 +30,7 @@ type handler struct {
 	Config     *Config
 	clientPool *arvadosclient.ClientPool
 	setupOnce  sync.Once
+	hmux       *http.ServeMux
 }
 
 // parseCollectionIDFromDNSName returns a UUID or PDH if s begins with
@@ -70,7 +72,14 @@ func parseCollectionIDFromURL(s string) string {
 
 func (h *handler) setup() {
 	h.clientPool = arvadosclient.MakeClientPool()
+
 	keepclient.RefreshServiceDiscoveryOnSIGHUP()
+
+	h.hmux = http.NewServeMux()
+	h.hmux.Handle("/_health/", &health.Handler{
+		Token:  h.Config.ManagementToken,
+		Prefix: "/_health/",
+	})
 }
 
 func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
@@ -80,6 +89,10 @@ func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
 		cacheStats: h.Config.Cache.Stats(),
 	}
 	json.NewEncoder(w).Encode(status)
+}
+
+func (h *handler) healthCheck(w http.ResponseWriter, r *http.Request) {
+	h.hmux.ServeHTTP(w, r)
 }
 
 // ServeHTTP implements http.Handler.
@@ -109,6 +122,11 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		}
 		httpserver.Log(remoteAddr, statusCode, statusText, w.WroteBodyBytes(), r.Method, r.Host, r.URL.Path, r.URL.RawQuery)
 	}()
+
+	if strings.HasPrefix(r.URL.Path, "/_health/") && r.Method == "GET" {
+		h.healthCheck(w, r)
+		return
+	}
 
 	if r.Method == "OPTIONS" {
 		method := r.Header.Get("Access-Control-Request-Method")
