@@ -39,6 +39,30 @@ class JobsTest < ActionDispatch::IntegrationTest
     assert_selector 'a[href="/"]', text: 'Go to dashboard'
   end
 
+  test 'view partial job log' do
+    use_keep_web_config
+
+    # This config will be restored during teardown by ../test_helper.rb:
+    Rails.configuration.log_viewer_max_bytes = 100
+
+    token = api_fixture('api_client_authorizations')['active']['api_token']
+    logdata = fakepipe_with_log_data.read
+    logblock = `echo -n #{logdata.shellescape} | ARVADOS_API_TOKEN=#{token.shellescape} arv-put --no-progress --raw -`.strip
+    assert $?.success?, $?
+
+    job = nil
+    use_token 'active' do
+      job = Job.find api_fixture('jobs')['running']['uuid']
+      mtxt = ". #{logblock} 0:#{logdata.length}:#{job.uuid}.log.txt\n"
+      logcollection = Collection.create(manifest_text: mtxt)
+      job.update_attributes log: logcollection.portable_data_hash
+    end
+    visit page_with_token 'active', '/jobs/'+job.uuid
+    find('a[href="#Log"]').click
+    wait_for_ajax
+    assert_text 'Showing only 100 bytes of this log'
+  end
+
   test 'view log via keep-web redirect' do
     use_keep_web_config
 
