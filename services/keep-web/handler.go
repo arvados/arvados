@@ -27,10 +27,10 @@ import (
 )
 
 type handler struct {
-	Config     *Config
-	clientPool *arvadosclient.ClientPool
-	setupOnce  sync.Once
-	hmux       *http.ServeMux
+	Config        *Config
+	clientPool    *arvadosclient.ClientPool
+	setupOnce     sync.Once
+	healthHandler http.Handler
 }
 
 // parseCollectionIDFromDNSName returns a UUID or PDH if s begins with
@@ -75,11 +75,10 @@ func (h *handler) setup() {
 
 	keepclient.RefreshServiceDiscoveryOnSIGHUP()
 
-	h.hmux = http.NewServeMux()
-	h.hmux.Handle("/_health/", &health.Handler{
+	h.healthHandler = &health.Handler{
 		Token:  h.Config.ManagementToken,
 		Prefix: "/_health/",
-	})
+	}
 }
 
 func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
@@ -89,10 +88,6 @@ func (h *handler) serveStatus(w http.ResponseWriter, r *http.Request) {
 		cacheStats: h.Config.Cache.Stats(),
 	}
 	json.NewEncoder(w).Encode(status)
-}
-
-func (h *handler) healthCheck(w http.ResponseWriter, r *http.Request) {
-	h.hmux.ServeHTTP(w, r)
 }
 
 // ServeHTTP implements http.Handler.
@@ -124,7 +119,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 	}()
 
 	if strings.HasPrefix(r.URL.Path, "/_health/") && r.Method == "GET" {
-		h.healthCheck(w, r)
+		h.healthHandler.ServeHTTP(w, r)
 		return
 	}
 
