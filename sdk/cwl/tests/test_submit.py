@@ -84,7 +84,13 @@ def stubs(func):
                 "uuid": "",
                 "portable_data_hash": "99999999999999999999999999999998+99",
                 "manifest_text": ". 99999999999999999999999999999998+99 0:0:file1.txt"
-            }}
+            },
+            "99999999999999999999999999999994+99": {
+                "uuid": "",
+                "portable_data_hash": "99999999999999999999999999999994+99",
+                "manifest_text": ". 99999999999999999999999999999994+99 0:0:expect_arvworkflow.cwl"
+            }
+        }
         stubs.api.collections().create.side_effect = functools.partial(collection_createstub, created_collections)
         stubs.api.collections().get.side_effect = functools.partial(collection_getstub, created_collections)
 
@@ -152,7 +158,8 @@ def stubs(func):
                             'class': 'File',
                             'location': 'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt',
                             "nameext": ".txt",
-                            "nameroot": "blorp"
+                            "nameroot": "blorp",
+                            "size": 16
                         }},
                         'z': {"value": {'basename': 'anonymous', 'class': 'Directory',
                               'listing': [
@@ -217,7 +224,8 @@ def stubs(func):
                             'class': 'File',
                             'location': u'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt',
                             "nameext": ".txt",
-                            "nameroot": "blorp"
+                            "nameroot": "blorp",
+                            "size": 16
                         },
                         'z': {'basename': 'anonymous', 'class': 'Directory', 'listing': [
                             {'basename': 'renamed.txt',
