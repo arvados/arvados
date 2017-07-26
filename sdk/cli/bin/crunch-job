@@ -189,7 +189,7 @@ if (($Job || $local_job)->{docker_image_locator}) {
   $cmd = [$docker_bin, 'ps', '-q'];
 }
 Log(undef, "Sanity check is `@$cmd`");
-my ($exited, $stdout, $stderr) = srun_sync(
+my ($exited, $stdout, $stderr, $tempfail) = srun_sync(
   ["srun", "--nodes=\Q$ENV{SLURM_NNODES}\E", "--ntasks-per-node=1"],
   $cmd,
   {label => "sanity check"});
@@ -397,7 +397,7 @@ if (!defined $no_clear_tmp) {
   # Find FUSE mounts under $CRUNCH_TMP and unmount them.  Then clean
   # up work directories crunch_tmp/work, crunch_tmp/opt,
   # crunch_tmp/src*.
-  my ($exited, $stdout, $stderr) = srun_sync(
+  my ($exited, $stdout, $stderr, $tempfail) = srun_sync(
     ["srun", "--nodelist=$nodelist", "-D", $ENV{'TMPDIR'}],
     ['bash', '-ec', q{
 arv-mount --unmount-timeout 10 --unmount-all ${CRUNCH_TMP}
@@ -405,7 +405,7 @@ rm -rf ${JOB_WORK} ${CRUNCH_INSTALL} ${CRUNCH_TMP}/task ${CRUNCH_TMP}/src* ${CRU
     }],
     {label => "clean work dirs"});
   if ($exited != 0) {
-    exit(EX_RETRY_UNLOCKED);
+    exit_retry_unlocked();
   }
 }
 
@@ -439,20 +439,23 @@ fi
 echo >&2 "image loaded successfully"
 };
 
-  my ($exited, $stdout, $stderr) = srun_sync(
+  my ($exited, $stdout, $stderr, $tempfail) = srun_sync(
     ["srun", "--nodelist=" . join(',', @node)],
     ["/bin/bash", "-o", "pipefail", "-ec", $docker_install_script],
     {label => "load docker image"});
   if ($exited != 0)
   {
-    exit(EX_RETRY_UNLOCKED);
+    exit_retry_unlocked();
   }
 
   # Determine whether this version of Docker supports memory+swap limits.
-  ($exited, $stdout, $stderr) = srun_sync(
+  ($exited, $stdout, $stderr, $tempfail) = srun_sync(
     ["srun", "--nodes=1"],
     [$docker_bin, 'run', '--help'],
     {label => "check --memory-swap feature"});
+  if ($tempfail) {
+    exit_retry_unlocked();
+  }
   $docker_limitmem = ($stdout =~ /--memory-swap/);
 
   # Find a non-root Docker user to use.
@@ -472,7 +475,7 @@ echo >&2 "image loaded successfully"
       $label = "check whether user '$try_user' is UID 0";
       $try_user_arg = "--user=$try_user";
     }
-    my ($exited, $stdout, $stderr) = srun_sync(
+    my ($exited, $stdout, $stderr, $tempfail) = srun_sync(
       ["srun", "--nodes=1"],
       ["/bin/sh", "-ec",
        "$docker_bin run $docker_run_args $try_user_arg $docker_hash id --user"],
@@ -486,6 +489,8 @@ echo >&2 "image loaded successfully"
         Log(undef, "Container will run with $dockeruserarg");
       }
       last;
+    } elsif ($tempfail) {
+      exit_retry_unlocked();
     }
   }
 
@@ -678,11 +683,14 @@ else {
                     "mkdir -p $ENV{CRUNCH_INSTALL} && cd $ENV{CRUNCH_TMP} && perl -");
 
     $ENV{"CRUNCH_GIT_ARCHIVE_HASH"} = md5_hex($git_archive);
-    my ($stdout, $stderr);
-    ($exited, $stdout, $stderr) = srun_sync(
+    my ($stdout, $stderr, $tempfail);
+    ($exited, $stdout, $stderr, $tempfail) = srun_sync(
       \@srunargs, \@execargs,
       {label => "run install script on all workers"},
-      $build_script . $git_archive);
+        $build_script . $git_archive);
+    if ($tempfail) {
+      exit_retry_unlocked();
+    }
 
     my $stderr_anything_from_script = 0;
     for my $line (split(/\n/, $stderr)) {
@@ -1117,7 +1125,7 @@ if (!defined $main::success)
   } elsif ($working_slot_count < 1) {
     save_output_collection();
     save_meta();
-    exit(EX_RETRY_UNLOCKED);
+    exit_retry_unlocked();
   } elsif ($thisround_succeeded == 0 &&
            ($thisround_failed == 0 || $thisround_failed > 4)) {
     my $message = "stop because $thisround_failed tasks failed and none succeeded";
@@ -2044,7 +2052,7 @@ sub srun_sync
   if ($main::please_freeze || $j->{tempfail}) {
     $exited ||= 255;
   }
-  return ($exited, $j->{stdout_captured}, $j->{stderr_captured});
+  return ($exited, $j->{stdout_captured}, $j->{stderr_captured}, $j->{tempfail});
 }
 
 
@@ -2130,6 +2138,11 @@ sub find_docker_image {
   } else {
     return (undef, undef);
   }
+}
+
+sub exit_retry_unlocked {
+  Log(undef, "Transient failure with lock acquired; asking for re-dispatch by exiting ".EX_RETRY_UNLOCKED);
+  exit(EX_RETRY_UNLOCKED);
 }
 
 sub retry_count {
