@@ -589,3 +589,24 @@ func (s *IntegrationSuite) TestDirectoryListing(c *check.C) {
 		}
 	}
 }
+
+func (s *IntegrationSuite) TestHealthCheckPing(c *check.C) {
+	s.testServer.Config.ManagementToken = arvadostest.ManagementToken
+	authHeader := http.Header{
+		"Authorization": {"Bearer " + arvadostest.ManagementToken},
+	}
+
+	resp := httptest.NewRecorder()
+	u := mustParseURL("http://download.example.com/_health/ping")
+	req := &http.Request{
+		Method:     "GET",
+		Host:       u.Host,
+		URL:        u,
+		RequestURI: u.RequestURI(),
+		Header:     authHeader,
+	}
+	s.testServer.Handler.ServeHTTP(resp, req)
+
+	c.Check(resp.Code, check.Equals, http.StatusOK)
+	c.Check(resp.Body.String(), check.Matches, `{"health":"OK"}\n`)
+}
