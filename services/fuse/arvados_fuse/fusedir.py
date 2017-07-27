@@ -987,25 +987,27 @@ class ProjectDirectory(Directory):
             # Was moved to somewhere else, so don't try to add entry
             new_name = None
 
-        if ev.get("object_kind") == "arvados#collection" and old_attrs == new_attrs:
-            with llfuse.lock_released:
-                cr = self.api.collections().list(filters=[["uuid", "=", ev["object_uuid"]]], include_trash=True).execute(num_retries=self.num_retries)
-                if cr['items'] and cr['items'][0]['is_trashed']:
-                    new_name = None
+        if ev.get("object_kind") == "arvados#collection":
+            if old_attrs.get("is_trashed"):
+                # Was previously deleted
+                old_name = None
+            if new_attrs.get("is_trashed"):
+                # Has been deleted
+                new_name = None
 
         if new_name != old_name:
             ent = None
             if old_name in self._entries:
                 ent = self._entries[old_name]
                 del self._entries[old_name]
-            self.inodes.invalidate_entry(self.inode, old_name.encode(self.inodes.encoding))
+                self.inodes.invalidate_entry(self.inode, old_name.encode(self.inodes.encoding))
 
             if new_name:
-                if ent:
+                if ent is not None:
                     self._entries[new_name] = ent
                 else:
                     self._add_entry(new_attrs, new_name)
-            elif ent:
+            elif ent is not None:
                 self.inodes.del_entry(ent)
 
 

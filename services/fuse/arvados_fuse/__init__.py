@@ -409,7 +409,10 @@ class Operations(llfuse.Operations):
                     # subsecond precision (see #6347) so use event_at
                     # which should always be the same.
                     stamp = ev.get("event_at")
-                    if stamp and pdh and item.writable() and item.collection is not None and item.collection.modified():
+                    if (stamp and pdh and item.writable() and
+                        item.collection is not None and
+                        item.collection.modified() and
+                        new_attrs.get("is_trashed") is not True):
                         item.update(to_record_version=(stamp, pdh))
 
             oldowner = old_attrs.get("owner_uuid")
