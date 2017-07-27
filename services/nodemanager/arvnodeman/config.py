@@ -58,7 +58,8 @@ class NodeManagerConfig(ConfigParser.SafeConfigParser):
                        'watchdog': '600',
                        'node_mem_scaling': '0.95'},
             'Manage': {'address': '127.0.0.1',
-                       'port': '-1'},
+                       'port': '-1',
+                       'management_token': ''},
             'Logging': {'file': '/dev/stderr',
                         'level': 'WARNING'}
         }.iteritems():
