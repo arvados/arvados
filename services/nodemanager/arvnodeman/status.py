@@ -59,7 +59,7 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
         _logger.info(fmt, *args, **kwargs)
 
     def check_auth(self):
-        mgmt_token = self.server._config.get('Manage', 'management_token')
+        mgmt_token = self.server._config.get('Manage', 'ManagementToken')
         auth_header = self.headers.get('Authorization', None)
 
         if mgmt_token == '':

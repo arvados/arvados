@@ -23,7 +23,7 @@ class TestServer(object):
         cfg.set('Manage', 'port', '0')
         cfg.set('Manage', 'address', '127.0.0.1')
         if self.mgmt_token != None:
-            cfg.set('Manage', 'management_token', self.mgmt_token)
+            cfg.set('Manage', 'ManagementToken', self.mgmt_token)
         self.srv = status.Server(cfg)
         self.srv.start()
         addr, port = self.srv.server_address
