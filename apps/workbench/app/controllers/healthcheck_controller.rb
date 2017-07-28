@@ -16,7 +16,7 @@ class HealthcheckController < ApplicationController
   before_filter :check_auth_header
 
   def check_auth_header
-    mgmt_token = Rails.configuration.management_token
+    mgmt_token = Rails.configuration.ManagementToken
     auth_header = request.headers['Authorization']
 
     if !mgmt_token
