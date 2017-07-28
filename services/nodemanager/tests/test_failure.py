@@ -29,7 +29,7 @@ class BogusActor(arvnodeman.baseactor.BaseNodeManagerActor):
     def ping(self):
         # Called by WatchdogActorTest, this delay is longer than the test timeout
         # of 1 second, which should cause the watchdog ping to fail.
-        time.sleep(4)
+        time.sleep(2)
         return True
 
 class ActorUnhandledExceptionTest(testutil.ActorTestMixin, unittest.TestCase):
@@ -53,6 +53,7 @@ class WatchdogActorTest(testutil.ActorTestMixin, unittest.TestCase):
     def test_time_timout(self, kill_mock):
         act = BogusActor.start(OSError(errno.ENOENT, ""))
         watch = arvnodeman.baseactor.WatchdogActor.start(1, act)
+        time.sleep(1)
         watch.stop(block=True)
         act.stop(block=True)
         self.assertTrue(kill_mock.called)
