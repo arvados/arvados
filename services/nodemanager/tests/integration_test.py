@@ -40,7 +40,7 @@ detail.addHandler(logging.StreamHandler(detail_content))
 fake_slurm = None
 compute_nodes = None
 all_jobs = None
-unsatisfiable_job_scancelled = os.path.join(tempfile.mkdtemp(), "scancel_called")
+unsatisfiable_job_scancelled = None
 
 def update_script(path, val):
     with open(path+"_", "w") as f:
@@ -143,6 +143,9 @@ def expect_count(count, checks, pattern, g):
 
 def run_test(name, actions, checks, driver_class, jobs, provider):
     code = 0
+    global unsatisfiable_job_scancelled
+    unsatisfiable_job_scancelled = os.path.join(tempfile.mkdtemp(),
+                                                "scancel_called")
 
     # Delete any stale node records
     api = arvados.api('v1')
