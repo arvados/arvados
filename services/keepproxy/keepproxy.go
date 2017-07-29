@@ -24,6 +24,7 @@ import (
 	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/config"
+	"git.curoverse.com/arvados.git/sdk/go/health"
 	"git.curoverse.com/arvados.git/sdk/go/keepclient"
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/ghodss/yaml"
@@ -39,6 +40,7 @@ type Config struct {
 	Timeout         arvados.Duration
 	PIDFile         string
 	Debug           bool
+	ManagementToken string
 }
 
 func DefaultConfig() *Config {
@@ -66,6 +68,7 @@ func main() {
 	flagset.IntVar(&cfg.DefaultReplicas, "default-replicas", cfg.DefaultReplicas, "Default number of replicas to write if not specified by the client. If 0, use site default."+deprecated)
 	flagset.StringVar(&cfg.PIDFile, "pid", cfg.PIDFile, "Path to write pid file."+deprecated)
 	timeoutSeconds := flagset.Int("timeout", int(time.Duration(cfg.Timeout)/time.Second), "Timeout (in seconds) on requests to internal Keep services."+deprecated)
+	flagset.StringVar(&cfg.ManagementToken, "management-token", cfg.ManagementToken, "Authorization token to be included in all health check requests.")
 
 	var cfgPath string
 	const defaultCfgPath = "/etc/arvados/keepproxy/keepproxy.yml"
@@ -160,7 +163,7 @@ func main() {
 	signal.Notify(term, syscall.SIGINT)
 
 	// Start serving requests.
-	router = MakeRESTRouter(!cfg.DisableGet, !cfg.DisablePut, kc, time.Duration(cfg.Timeout))
+	router = MakeRESTRouter(!cfg.DisableGet, !cfg.DisablePut, kc, time.Duration(cfg.Timeout), cfg.ManagementToken)
 	http.Serve(listener, router)
 
 	log.Println("shutting down")
@@ -250,7 +253,7 @@ type proxyHandler struct {
 
 // MakeRESTRouter returns an http.Handler that passes GET and PUT
 // requests to the appropriate handlers.
-func MakeRESTRouter(enable_get bool, enable_put bool, kc *keepclient.KeepClient, timeout time.Duration) http.Handler {
+func MakeRESTRouter(enable_get bool, enable_put bool, kc *keepclient.KeepClient, timeout time.Duration, mgmtToken string) http.Handler {
 	rest := mux.NewRouter()
 
 	transport := *(http.DefaultTransport.(*http.Transport))
@@ -291,6 +294,11 @@ func MakeRESTRouter(enable_get bool, enable_put bool, kc *keepclient.KeepClient,
 		rest.HandleFunc(`/{any}`, h.Options).Methods("OPTIONS")
 		rest.HandleFunc(`/`, h.Options).Methods("OPTIONS")
 	}
+
+	rest.Handle("/_health/{check}", &health.Handler{
+		Token:  mgmtToken,
+		Prefix: "/_health/",
+	}).Methods("GET")
 
 	rest.NotFoundHandler = InvalidPathHandler{}
 	return h

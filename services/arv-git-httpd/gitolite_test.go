@@ -107,5 +107,5 @@ func (s *GitoliteSuite) TestPush(c *check.C) {
 
 func (s *GitoliteSuite) TestPushUnwritable(c *check.C) {
 	err := s.RunGit(c, spectatorToken, "push", "active/foo.git", "master:gitolite-push-fail")
-	c.Check(err, check.ErrorMatches, `.*HTTP code = 403.*`)
+	c.Check(err, check.ErrorMatches, `.*HTTP (code = )?403.*`)
 }

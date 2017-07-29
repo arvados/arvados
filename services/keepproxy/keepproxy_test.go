@@ -189,7 +189,7 @@ func (s *ServerRequiredSuite) TestPutWrongContentLength(c *C) {
 	// fixes the invalid Content-Length header. In order to test
 	// our server behavior, we have to call the handler directly
 	// using an httptest.ResponseRecorder.
-	rtr := MakeRESTRouter(true, true, kc, 10*time.Second)
+	rtr := MakeRESTRouter(true, true, kc, 10*time.Second, "")
 
 	type testcase struct {
 		sendLength   string
@@ -596,4 +596,22 @@ func (s *NoKeepServerSuite) TestAskGetNoKeepServerError(c *C) {
 		c.Check(errNotFound.Temporary(), Equals, true)
 		c.Check(err, ErrorMatches, `.*HTTP 502.*`)
 	}
+}
+
+func (s *ServerRequiredSuite) TestPing(c *C) {
+	kc := runProxy(c, nil, false)
+	defer closeListener()
+
+	rtr := MakeRESTRouter(true, true, kc, 10*time.Second, arvadostest.ManagementToken)
+
+	req, err := http.NewRequest("GET",
+		"http://"+listener.Addr().String()+"/_health/ping",
+		nil)
+	c.Assert(err, IsNil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ManagementToken)
+
+	resp := httptest.NewRecorder()
+	rtr.ServeHTTP(resp, req)
+	c.Check(resp.Code, Equals, 200)
+	c.Assert(strings.Contains(resp.Body.String(), `{"health":"OK"}`), Equals, true)
 }

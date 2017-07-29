@@ -10,6 +10,11 @@ class User < ArvadosModel
   include CommonApiTemplate
   include CanBeAnOwner
 
+  # To avoid upgrade bugs, when changing the permission cache value
+  # format, change PERM_CACHE_PREFIX too:
+  PERM_CACHE_PREFIX = "perm_v20170725_"
+  PERM_CACHE_TTL = 172800
+
   serialize :prefs, Hash
   has_many :api_client_authorizations
   validates(:username,
@@ -141,7 +146,7 @@ class User < ArvadosModel
       timestamp = DbCurrentTime::db_current_time.to_i if timestamp.nil?
       connection.execute "NOTIFY invalidate_permissions_cache, '#{timestamp}'"
     else
-      Rails.cache.delete_matched(/^groups_for_user_/)
+      Rails.cache.delete_matched(/^#{PERM_CACHE_PREFIX}/)
     end
   end
 
@@ -183,7 +188,7 @@ class User < ArvadosModel
                   ).rows.each do |group_uuid, max_p_val|
       group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
     end
-    Rails.cache.write "groups_for_user_#{self.uuid}", group_perms
+    Rails.cache.write "#{PERM_CACHE_PREFIX}#{self.uuid}", group_perms, expires_in: PERM_CACHE_TTL
     group_perms
   end
 
@@ -191,12 +196,12 @@ class User < ArvadosModel
   # and perm_hash[:write] are true if this user can read and write
   # objects owned by group_uuid.
   def group_permissions
-    r = Rails.cache.read "groups_for_user_#{self.uuid}"
+    r = Rails.cache.read "#{PERM_CACHE_PREFIX}#{self.uuid}"
     if r.nil?
       if Rails.configuration.async_permissions_update
         while r.nil?
           sleep(0.1)
-          r = Rails.cache.read "groups_for_user_#{self.uuid}"
+          r = Rails.cache.read "#{PERM_CACHE_PREFIX}#{self.uuid}"
         end
       else
         r = calculate_group_permissions

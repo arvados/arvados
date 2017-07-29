@@ -139,3 +139,6 @@ class FreshBase(object):
 
     def finalize(self):
         pass
+
+    def child_event(self, ev):
+        pass

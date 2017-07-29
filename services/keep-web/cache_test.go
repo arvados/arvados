@@ -5,14 +5,13 @@
 package main
 
 import (
+	"git.curoverse.com/arvados.git/sdk/go/arvados"
 	"git.curoverse.com/arvados.git/sdk/go/arvadosclient"
 	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 	"gopkg.in/check.v1"
 )
 
 func (s *UnitSuite) TestCache(c *check.C) {
-	c.Skip("see #11945")
-
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 
@@ -22,8 +21,9 @@ func (s *UnitSuite) TestCache(c *check.C) {
 	// the first req should cause an API call; the next 4 should
 	// hit all caches.
 	arv.ApiToken = arvadostest.AdminToken
+	var coll *arvados.Collection
 	for i := 0; i < 5; i++ {
-		coll, err := cache.Get(arv, arvadostest.FooCollection, false)
+		coll, err = cache.Get(arv, arvadostest.FooCollection, false)
 		c.Check(err, check.Equals, nil)
 		c.Assert(coll, check.NotNil)
 		c.Check(coll.PortableDataHash, check.Equals, arvadostest.FooPdh)
@@ -37,18 +37,32 @@ func (s *UnitSuite) TestCache(c *check.C) {
 
 	// Hit the same collection 2 more times, this time requesting
 	// it by PDH and using a different token. The first req should
-	// miss the permission cache. Both reqs should hit the
-	// Collection cache and skip the API lookup.
+	// miss the permission cache and fetch the new manifest; the
+	// second should hit the Collection cache and skip the API
+	// lookup.
 	arv.ApiToken = arvadostest.ActiveToken
-	for i := 0; i < 2; i++ {
-		coll, err := cache.Get(arv, arvadostest.FooPdh, false)
-		c.Check(err, check.Equals, nil)
-		c.Assert(coll, check.NotNil)
-		c.Check(coll.PortableDataHash, check.Equals, arvadostest.FooPdh)
-		c.Check(coll.ManifestText[:2], check.Equals, ". ")
-	}
+
+	coll2, err := cache.Get(arv, arvadostest.FooPdh, false)
+	c.Check(err, check.Equals, nil)
+	c.Assert(coll2, check.NotNil)
+	c.Check(coll2.PortableDataHash, check.Equals, arvadostest.FooPdh)
+	c.Check(coll2.ManifestText[:2], check.Equals, ". ")
+	c.Check(coll2.ManifestText, check.Not(check.Equals), coll.ManifestText)
+
+	c.Check(cache.Stats().Requests, check.Equals, uint64(5+1))
+	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(4+0))
+	c.Check(cache.Stats().PermissionHits, check.Equals, uint64(4+0))
+	c.Check(cache.Stats().PDHHits, check.Equals, uint64(4+0))
+	c.Check(cache.Stats().APICalls, check.Equals, uint64(1+1))
+
+	coll2, err = cache.Get(arv, arvadostest.FooPdh, false)
+	c.Check(err, check.Equals, nil)
+	c.Assert(coll2, check.NotNil)
+	c.Check(coll2.PortableDataHash, check.Equals, arvadostest.FooPdh)
+	c.Check(coll2.ManifestText[:2], check.Equals, ". ")
+
 	c.Check(cache.Stats().Requests, check.Equals, uint64(5+2))
-	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(4+2))
+	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(4+1))
 	c.Check(cache.Stats().PermissionHits, check.Equals, uint64(4+1))
 	c.Check(cache.Stats().PDHHits, check.Equals, uint64(4+0))
 	c.Check(cache.Stats().APICalls, check.Equals, uint64(1+1))
@@ -67,15 +81,13 @@ func (s *UnitSuite) TestCache(c *check.C) {
 		c.Check(err, check.Equals, nil)
 	}
 	c.Check(cache.Stats().Requests, check.Equals, uint64(5+2+20))
-	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(4+2+18))
+	c.Check(cache.Stats().CollectionHits, check.Equals, uint64(4+1+18))
 	c.Check(cache.Stats().PermissionHits, check.Equals, uint64(4+1+18))
 	c.Check(cache.Stats().PDHHits, check.Equals, uint64(4+0+18))
 	c.Check(cache.Stats().APICalls, check.Equals, uint64(1+1+2))
 }
 
 func (s *UnitSuite) TestCacheForceReloadByPDH(c *check.C) {
-	c.Skip("see #11945")
-
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 
@@ -94,8 +106,6 @@ func (s *UnitSuite) TestCacheForceReloadByPDH(c *check.C) {
 }
 
 func (s *UnitSuite) TestCacheForceReloadByUUID(c *check.C) {
-	c.Skip("see #11945")
-
 	arv, err := arvadosclient.MakeArvadosClient()
 	c.Assert(err, check.Equals, nil)
 

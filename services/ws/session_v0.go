@@ -20,7 +20,16 @@ var (
 	errQueueFull   = errors.New("client queue full")
 	errFrameTooBig = errors.New("frame too big")
 
-	sendObjectAttributes = []string{"state", "name", "owner_uuid", "portable_data_hash"}
+	// Send clients only these keys from the
+	// log.properties.old_attributes and
+	// log.properties.new_attributes hashes.
+	sendObjectAttributes = []string{
+		"is_trashed",
+		"name",
+		"owner_uuid",
+		"portable_data_hash",
+		"state",
+	}
 
 	v0subscribeOK   = []byte(`{"status":200}`)
 	v0subscribeFail = []byte(`{"status":400}`)
@@ -90,7 +99,17 @@ func (sess *v0session) EventMessage(e *event) ([]byte, error) {
 		return nil, nil
 	}
 
-	ok, err := sess.permChecker.Check(detail.ObjectUUID)
+	var permTarget string
+	if detail.EventType == "delete" {
+		// It's pointless to check permission by reading
+		// ObjectUUID if it has just been deleted, but if the
+		// client has permission on the parent project then
+		// it's OK to send the event.
+		permTarget = detail.ObjectOwnerUUID
+	} else {
+		permTarget = detail.ObjectUUID
+	}
+	ok, err := sess.permChecker.Check(permTarget)
 	if err != nil || !ok {
 		return nil, err
 	}
@@ -143,7 +162,7 @@ func (sub *v0subscribe) sendOldEvents(sess *v0session) {
 	if sub.LastLogID == 0 {
 		return
 	}
-	sess.log.WithField("LastLogID", sub.LastLogID).Debug("getOldEvents")
+	sess.log.WithField("LastLogID", sub.LastLogID).Debug("sendOldEvents")
 	// Here we do a "select id" query and queue an event for every
 	// log since the given ID, then use (*event)Detail() to
 	// retrieve the whole row and decide whether to send it. This
@@ -158,17 +177,26 @@ func (sub *v0subscribe) sendOldEvents(sess *v0session) {
 		sub.LastLogID,
 		time.Now().UTC().Add(-10*time.Minute).Format(time.RFC3339Nano))
 	if err != nil {
-		sess.log.WithError(err).Error("db.Query failed")
+		sess.log.WithError(err).Error("sendOldEvents db.Query failed")
 		return
 	}
-	defer rows.Close()
+
+	var ids []uint64
 	for rows.Next() {
 		var id uint64
 		err := rows.Scan(&id)
 		if err != nil {
-			sess.log.WithError(err).Error("row Scan failed")
+			sess.log.WithError(err).Error("sendOldEvents row Scan failed")
 			continue
 		}
+		ids = append(ids, id)
+	}
+	if err := rows.Err(); err != nil {
+		sess.log.WithError(err).Error("sendOldEvents db.Query failed")
+	}
+	rows.Close()
+
+	for _, id := range ids {
 		for len(sess.sendq)*2 > cap(sess.sendq) {
 			// Ugly... but if we fill up the whole client
 			// queue with a backlog of old events, a
@@ -192,9 +220,6 @@ func (sub *v0subscribe) sendOldEvents(sess *v0session) {
 				return
 			}
 		}
-	}
-	if err := rows.Err(); err != nil {
-		sess.log.WithError(err).Error("db.Query failed")
 	}
 }
 

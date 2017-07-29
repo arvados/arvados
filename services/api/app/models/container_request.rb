@@ -28,6 +28,7 @@ class ContainerRequest < ArvadosModel
   after_save :update_priority
   after_save :finalize_if_needed
   before_create :set_requesting_container_uuid
+  before_destroy :set_priority_zero
 
   api_accessible :user, extend: :common do |t|
     t.add :command
@@ -260,6 +261,10 @@ class ContainerRequest < ArvadosModel
           map(&:update_priority!)
       end
     end
+  end
+
+  def set_priority_zero
+    self.update_attributes!(priority: 0) if self.state != Final
   end
 
   def set_requesting_container_uuid

@@ -34,6 +34,9 @@ type Config struct {
 	// Hack to support old command line flag, which is a bool
 	// meaning "get actual token from environment".
 	deprecatedAllowAnonymous bool
+
+	//Authorization token to be included in all health check requests.
+	ManagementToken string
 }
 
 // DefaultConfig returns the default configuration.
@@ -76,6 +79,9 @@ func main() {
 		"Only serve attachments at the given `host:port`"+deprecated)
 	flag.BoolVar(&cfg.TrustAllContent, "trust-all-content", false,
 		"Serve non-public content from a single origin. Dangerous: read docs before using!"+deprecated)
+	flag.StringVar(&cfg.ManagementToken, "management-token", "",
+		"Authorization token to be included in all health check requests.")
+
 	dumpConfig := flag.Bool("dump-config", false,
 		"write current configuration to stdout and exit")
 	flag.Usage = usage

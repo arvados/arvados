@@ -5,8 +5,12 @@
 package main
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
+
+	"git.curoverse.com/arvados.git/sdk/go/arvadostest"
 
 	check "gopkg.in/check.v1"
 )
@@ -36,7 +40,7 @@ func (s *GitSuite) TestReadonly(c *check.C) {
 	err := s.RunGit(c, spectatorToken, "fetch", "active/foo.git")
 	c.Assert(err, check.Equals, nil)
 	err = s.RunGit(c, spectatorToken, "push", "active/foo.git", "master:newbranchfail")
-	c.Assert(err, check.ErrorMatches, `.*HTTP code = 403.*`)
+	c.Assert(err, check.ErrorMatches, `.*HTTP (code = )?403.*`)
 	_, err = os.Stat(s.tmpRepoRoot + "/zzzzz-s0uqq-382brsig8rp3666.git/refs/heads/newbranchfail")
 	c.Assert(err, check.FitsTypeOf, &os.PathError{})
 }
@@ -103,4 +107,17 @@ func (s *GitSuite) makeArvadosRepo(c *check.C) {
 	msg, err = exec.Command("git", "--git-dir", s.tmpRepoRoot+"/zzzzz-s0uqq-arvadosrepo0123.git", "fetch", "../../.git", "HEAD:master").CombinedOutput()
 	c.Log(string(msg))
 	c.Assert(err, check.Equals, nil)
+}
+
+func (s *GitSuite) TestHealthCheckPing(c *check.C) {
+	req, err := http.NewRequest("GET",
+		"http://"+s.testServer.Addr+"/_health/ping",
+		nil)
+	c.Assert(err, check.Equals, nil)
+	req.Header.Set("Authorization", "Bearer "+arvadostest.ManagementToken)
+
+	resp := httptest.NewRecorder()
+	s.testServer.Handler.ServeHTTP(resp, req)
+	c.Check(resp.Code, check.Equals, 200)
+	c.Check(resp.Body.String(), check.Matches, `{"health":"OK"}\n`)
 }

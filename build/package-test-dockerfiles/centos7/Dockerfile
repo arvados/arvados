@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 FROM centos:7
-MAINTAINER Brett Smith <brett@curoverse.com>
+MAINTAINER Ward Vandewege <ward@curoverse.com>
 
 RUN yum -q -y install scl-utils centos-release-scl which tar
 

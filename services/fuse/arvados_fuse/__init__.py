@@ -85,6 +85,8 @@ else:
     # llfuse >= 0.42
     llfuse._notify_queue = Queue.Queue()
 
+LLFUSE_VERSION_0 = llfuse.__version__.startswith('0')
+
 from fusedir import sanitize_filename, Directory, CollectionDirectory, TmpCollectionDirectory, MagicDirectory, TagsDirectory, ProjectDirectory, SharedDirectory, CollectionDirectoryBase
 from fusefile import StringFile, FuseArvadosFile
 
@@ -371,7 +373,9 @@ class Operations(llfuse.Operations):
             self.events.close()
             self.events = None
 
-        if llfuse.lock.acquire():
+        # Different versions of llfuse require and forbid us to
+        # acquire the lock here. See #8345#note-37, #10805#note-9.
+        if LLFUSE_VERSION_0 and llfuse.lock.acquire():
             # llfuse < 0.42
             self.inodes.clear()
             llfuse.lock.release()
@@ -390,30 +394,33 @@ class Operations(llfuse.Operations):
 
     @catch_exceptions
     def on_event(self, ev):
-        if 'event_type' not in ev:
+        if 'event_type' not in ev or ev["event_type"] not in ("create", "update", "delete"):
             return
         with llfuse.lock:
-            new_attrs = (ev.get("properties") or {}).get("new_attributes") or {}
-            pdh = new_attrs.get("portable_data_hash")
-            # new_attributes.modified_at currently lacks
-            # subsecond precision (see #6347) so use event_at
-            # which should always be the same.
-            stamp = ev.get("event_at")
+            properties = ev.get("properties") or {}
+            old_attrs = properties.get("old_attributes") or {}
+            new_attrs = properties.get("new_attributes") or {}
 
             for item in self.inodes.inode_cache.find_by_uuid(ev["object_uuid"]):
                 item.invalidate()
-                if stamp and pdh and ev.get("object_kind") == "arvados#collection":
-                    item.update(to_record_version=(stamp, pdh))
-                else:
-                    item.update()
+                if ev.get("object_kind") == "arvados#collection":
+                    pdh = new_attrs.get("portable_data_hash")
+                    # new_attributes.modified_at currently lacks
+                    # subsecond precision (see #6347) so use event_at
+                    # which should always be the same.
+                    stamp = ev.get("event_at")
+                    if (stamp and pdh and item.writable() and
+                        item.collection is not None and
+                        item.collection.modified() and
+                        new_attrs.get("is_trashed") is not True):
+                        item.update(to_record_version=(stamp, pdh))
 
-            oldowner = ((ev.get("properties") or {}).get("old_attributes") or {}).get("owner_uuid")
+            oldowner = old_attrs.get("owner_uuid")
             newowner = ev.get("object_owner_uuid")
             for parent in (
                     self.inodes.inode_cache.find_by_uuid(oldowner) +
                     self.inodes.inode_cache.find_by_uuid(newowner)):
-                parent.invalidate()
-                parent.update()
+                parent.child_event(ev)
 
     @catch_exceptions
     def getattr(self, inode, ctx=None):
