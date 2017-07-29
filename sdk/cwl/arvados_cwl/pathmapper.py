@@ -205,10 +205,20 @@ class ArvPathMapper(PathMapper):
 class StagingPathMapper(PathMapper):
     _follow_dirs = True
 
+    def __init__(self, referenced_files, basedir, stagedir, separateDirs=True):
+        self.targets = set()
+        super(StagingPathMapper, self).__init__(referenced_files, basedir, stagedir, separateDirs)
+
     def visit(self, obj, stagedir, basedir, copy=False, staged=False):
         # type: (Dict[unicode, Any], unicode, unicode, bool) -> None
         loc = obj["location"]
         tgt = os.path.join(stagedir, obj["basename"])
+        basetgt, baseext = os.path.splitext(tgt)
+        n = 1
+        while tgt in self.targets:
+            n += 1
+            tgt = "%s_%i%s" % (basetgt, n, baseext)
+        self.targets.add(tgt)
         if obj["class"] == "Directory":
             self._pathmap[loc] = MapperEnt(loc, tgt, "Directory", staged)
             if loc.startswith("_:") or self._follow_dirs:

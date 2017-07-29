@@ -227,6 +227,9 @@ workflow_uuid_pattern = re.compile(r'[a-z0-9]{5}-7fd4e-[a-z0-9]{15}')
 pipeline_template_uuid_pattern = re.compile(r'[a-z0-9]{5}-p5p6p-[a-z0-9]{15}')
 
 def collectionResolver(api_client, document_loader, uri, num_retries=4):
+    if uri.startswith("keep:") or uri.startswith("arvwf:"):
+        return uri
+
     if workflow_uuid_pattern.match(uri):
         return "arvwf:%s#main" % (uri)
 
