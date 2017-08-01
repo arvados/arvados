@@ -156,7 +156,7 @@ class JobQueueMonitorActor(clientactor.RemotePollLoopActor):
             for out in squeue_out.splitlines():
                 try:
                     cpu, ram, disk, reason, jobname = out.split("|", 4)
-                    if ("ReqNodeNotAvail" in reason) or ("Resources" in reason):
+                    if ("ReqNodeNotAvail" in reason) or ("Resources" in reason) or ("Priority" in reason):
                         queuelist.append({
                             "uuid": jobname,
                             "runtime_constraints": {
