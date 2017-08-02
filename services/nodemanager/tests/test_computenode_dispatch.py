@@ -207,7 +207,7 @@ class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
         self.make_mocks(shutdown_open=True, arvados_node=testutil.arvados_node_mock(crunch_worker_state="busy"))
         self.cloud_client.destroy_node.return_value = True
         self.make_actor(cancellable=True)
-        self.check_success_flag(False)
+        self.check_success_flag(False, 2)
         self.assertFalse(self.cloud_client.destroy_node.called)
 
     def test_uncancellable_shutdown(self, *mocks):
@@ -241,6 +241,7 @@ class ComputeNodeShutdownActorMixin(testutil.ActorTestMixin):
         self.cloud_client.destroy_node.return_value = False
         self.make_actor(cancellable=True)
         self.shutdown_actor.cancel_shutdown("test")
+        self.shutdown_actor.ping()
         self.check_success_flag(False, 2)
         self.assertFalse(self.arvados_client.nodes().update.called)
 
