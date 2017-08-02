@@ -122,7 +122,7 @@ package_go_binary() {
             version=$(version_from_git)
             timestamp="$ts"
         fi
-    fi
+    done
 
     cd $WORKSPACE/packages/$TARGET
     test_package_presence $prog $version go
