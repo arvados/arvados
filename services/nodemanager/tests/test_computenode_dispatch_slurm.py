@@ -80,7 +80,7 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
             self.make_mocks(arvados_node=testutil.arvados_node_mock(job_uuid=True))
             self.timer = testutil.MockTimer(False)
             self.make_actor()
-            self.shutdown_actor.ping()
+            self.shutdown_actor.ping().get(self.TIMEOUT)
             self.busywait(lambda: proc_mock.call_args is not None)
             self.shutdown_actor.cancel_shutdown("test")
             self.check_success_flag(False, 2)
