@@ -39,3 +39,6 @@
 
 # Generated git-commit.version file
 /git-commit.version
+
+# npm-rails
+/node_modules

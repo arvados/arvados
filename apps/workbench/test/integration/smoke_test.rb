@@ -47,4 +47,10 @@ class SmokeTest < ActionDispatch::IntegrationTest
       # urls += all_links_in('body')
     end
   end
+
+  test "mithril test page" do
+    visit page_with_token('active_trustedclient', '/tests/mithril')
+    assert_visit_success
+    assert_selector 'p', text: 'mithril is working'
+  end
 end

@@ -31,6 +31,7 @@
 //= require raphael
 //= require morris
 //= require jquery.number.min
+//= require npm-dependencies
 //= require_tree .
 
 jQuery(function($){

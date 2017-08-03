@@ -621,6 +621,7 @@ if [[ "$?" == "0" ]] ; then
       \cp config/environments/production.rb.example config/environments/production.rb -f
       sed -i 's/secret_token: ~/secret_token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/' config/application.yml
 
+      RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake npm:install >/dev/null
       RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile >/dev/null
 
       # Remove generated configuration files so they don't go in the package.
