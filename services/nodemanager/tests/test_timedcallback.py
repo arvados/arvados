@@ -26,27 +26,29 @@ class TimedCallBackActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
 
     def test_delayed_turnaround(self):
         receiver = mock.Mock()
-        with mock.patch('time.time', return_value=0) as mock_now:
-            deliverer = timedcallback.TimedCallBackActor.start().proxy()
-            deliverer.schedule(1, receiver, 'delayed')
-            deliverer.schedule(3, receiver, 'failure').get(self.TIMEOUT)
-            self.assertFalse(receiver.called)
-            mock_now.return_value = 2
-            deliverer.schedule(3, receiver, 'failure').get(self.TIMEOUT)
-            self.stop_proxy(deliverer)
+        mock_now = mock.Mock()
+        mock_now.return_value = 0
+        deliverer = timedcallback.TimedCallBackActor.start(timefunc=mock_now).proxy()
+        deliverer.schedule(1, receiver, 'delayed')
+        deliverer.schedule(3, receiver, 'failure').get(self.TIMEOUT)
+        self.assertFalse(receiver.called)
+        mock_now.return_value = 2
+        deliverer.schedule(3, receiver, 'failure').get(self.TIMEOUT)
+        self.stop_proxy(deliverer)
         receiver.assert_called_with('delayed')
 
     def test_out_of_order_scheduling(self):
         receiver = mock.Mock()
-        with mock.patch('time.time', return_value=1.5) as mock_now:
-            deliverer = timedcallback.TimedCallBackActor.start().proxy()
-            deliverer.schedule(2, receiver, 'second')
-            deliverer.schedule(1, receiver, 'first')
-            deliverer.schedule(3, receiver, 'failure').get(self.TIMEOUT)
-            receiver.assert_called_with('first')
-            mock_now.return_value = 2.5
-            deliverer.schedule(3, receiver, 'failure').get(self.TIMEOUT)
-            self.stop_proxy(deliverer)
+        mock_now = mock.Mock()
+        mock_now.return_value = 1.5
+        deliverer = timedcallback.TimedCallBackActor.start(timefunc=mock_now).proxy()
+        deliverer.schedule(2, receiver, 'second')
+        deliverer.schedule(1, receiver, 'first')
+        deliverer.schedule(3, receiver, 'failure').get(self.TIMEOUT)
+        receiver.assert_called_with('first')
+        mock_now.return_value = 2.5
+        deliverer.schedule(3, receiver, 'failure').get(self.TIMEOUT)
+        self.stop_proxy(deliverer)
         receiver.assert_called_with('second')
 
     def test_dead_actors_ignored(self):
@@ -61,4 +63,3 @@ class TimedCallBackActorTestCase(testutil.ActorTestMixin, unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

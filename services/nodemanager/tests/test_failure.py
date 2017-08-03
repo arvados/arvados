@@ -49,10 +49,11 @@ class ActorUnhandledExceptionTest(testutil.ActorTestMixin, unittest.TestCase):
         self.assertFalse(kill_mock.called)
 
 class WatchdogActorTest(testutil.ActorTestMixin, unittest.TestCase):
-    @mock.patch('os.kill')
-    def test_time_timout(self, kill_mock):
+
+    def test_time_timout(self):
+        kill_mock = mock.Mock('os.kill')
         act = BogusActor.start(OSError(errno.ENOENT, ""))
-        watch = arvnodeman.baseactor.WatchdogActor.start(1, act)
+        watch = arvnodeman.baseactor.WatchdogActor.start(1, act, killfunc=kill_mock)
         time.sleep(1)
         watch.stop(block=True)
         act.stop(block=True)

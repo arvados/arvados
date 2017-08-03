@@ -136,11 +136,13 @@ class ActorTestMixin(object):
             if result is not unassigned:
                 return result
 
-    def busywait(self, f):
+    def busywait(self, f, finalize=None):
         n = 0
-        while not f() and n < 10:
+        while not f() and n < 20:
             time.sleep(.1)
             n += 1
+        if finalize is not None:
+            finalize()
         self.assertTrue(f())
 
 
