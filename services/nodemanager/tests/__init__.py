@@ -7,7 +7,6 @@ import logging
 import os
 
 # Set the ANMTEST_LOGLEVEL environment variable to enable logging at that level.
-#loglevel = os.environ.get('ANMTEST_LOGLEVEL', 'DEBUG')
 loglevel = os.environ.get('ANMTEST_LOGLEVEL', 'CRITICAL')
 logging.basicConfig(level=getattr(logging, loglevel.upper()))
 
