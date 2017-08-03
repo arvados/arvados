@@ -169,7 +169,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.update_arvados_nodes([arv_node]).get(self.TIMEOUT)
         self.check_monitors_arvados_nodes(arv_node)
         self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
-        self.assertEqual(0, self.alive_monitor_count())
+        self.busywait(lambda: 0 == self.alive_monitor_count())
         self.daemon.update_cloud_nodes([testutil.cloud_node_mock(3)])
         self.busywait(lambda: 1 == self.alive_monitor_count(),
                       lambda: self.stop_proxy(self.daemon))
@@ -204,8 +204,8 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                                             2,
                                             last_ping_at='1970-01-01T01:02:03.04050607Z')],
                          want_sizes=[size, size])
-        self.busywait(lambda: self.node_setup.start.called,
-                      lambda: self.stop_proxy(self.daemon))
+        time.sleep(2)
+        self.busywait(lambda: self.node_setup.start.called)
 
     def test_missing_counts_towards_max(self):
         size = testutil.MockSize(1)
@@ -525,6 +525,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         arv_nodes = [testutil.arvados_node_mock(3, job_uuid=True),
                      testutil.arvados_node_mock(4, job_uuid=None)]
         self.make_daemon(cloud_nodes, arv_nodes, [size])
+        self.daemon.ping().get(self.TIMEOUT)
         self.assertEqual(2, self.alive_monitor_count())
         for mon_ref in self.monitor_list():
             monitor = mon_ref.proxy()
@@ -697,10 +698,10 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         booting = self.daemon.booting.get()
         cloud_nodes = self.daemon.cloud_nodes.get()
 
-        self.stop_proxy(self.daemon)
-
         self.busywait(lambda: 1 == self.node_setup.start.call_count)
         self.busywait(lambda: 1 == self.node_shutdown.start.call_count)
+
+        self.stop_proxy(self.daemon)
 
         # booting a new big node
         sizecounts = {a[0].id: 0 for a in avail_sizes}

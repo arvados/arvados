@@ -123,7 +123,10 @@ class ActorTestMixin(object):
         pykka.ActorRegistry.stop_all()
 
     def stop_proxy(self, proxy):
-        return proxy.actor_ref.stop(timeout=self.TIMEOUT)
+        th = proxy.get_thread().get()
+        t = proxy.actor_ref.stop(timeout=self.TIMEOUT)
+        th.join()
+        return t
 
     def wait_for_assignment(self, proxy, attr_name, unassigned=None,
                             timeout=TIMEOUT):

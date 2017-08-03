@@ -82,17 +82,20 @@ class BaseNodeManagerActor(pykka.ThreadingActor):
     def __init__(self, *args, **kwargs):
          super(pykka.ThreadingActor, self).__init__(*args, **kwargs)
          self.actor_ref = TellableActorRef(self)
+         self._killfunc = kwargs.get("killfunc", os.kill)
 
     def on_failure(self, exception_type, exception_value, tb):
         lg = getattr(self, "_logger", logging)
         if (exception_type in (threading.ThreadError, MemoryError) or
             exception_type is OSError and exception_value.errno == errno.ENOMEM):
             lg.critical("Unhandled exception is a fatal error, killing Node Manager")
-            os.kill(os.getpid(), signal.SIGKILL)
+            self._killfunc(os.getpid(), signal.SIGKILL)
 
     def ping(self):
         return True
 
+    def get_thread(self):
+        return threading.current_thread()
 
 class WatchdogActor(pykka.ThreadingActor):
     def __init__(self, timeout, *args, **kwargs):
