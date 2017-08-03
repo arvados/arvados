@@ -103,6 +103,7 @@ package_go_binary() {
 
     mkdir -p "$GOPATH/src/git.curoverse.com"
     ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
+    (cd "$GOPATH/src/git.curoverse.com/arvados.git" && "$GOPATH/bin/govendor" sync -v)
 
     cd "$GOPATH/src/git.curoverse.com/arvados.git/$src_path"
     local version="$(version_from_git)"
