@@ -22,14 +22,12 @@ import logging
 class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                                      unittest.TestCase):
 
-    def busywait(self, f, finalize=None):
+    def busywait(self, f):
         n = 0
-        while not f() and n < 20:
+        while not f() and n < 200:
             time.sleep(.1)
             self.daemon.ping().get(self.TIMEOUT)
             n += 1
-        if finalize is not None:
-            finalize()
         self.assertTrue(f())
 
     def mock_node_start(self, **kwargs):
@@ -113,20 +111,25 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
             self.daemon.update_server_wishlist(want_sizes).get(self.TIMEOUT)
 
     def monitor_list(self):
-        return pykka.ActorRegistry.get_by_class(ComputeNodeMonitorActor)
+        return [c.actor.actor_ref for c in self.daemon.cloud_nodes.get(self.TIMEOUT).nodes.values() if c.actor]
 
-    def monitored_arvados_nodes(self):
+    def monitored_arvados_nodes(self, include_unpaired=True):
         pairings = []
         for future in [actor.proxy().arvados_node
                        for actor in self.monitor_list()]:
             try:
-                pairings.append(future.get(self.TIMEOUT))
+                g = future.get(self.TIMEOUT)
+                if g or include_unpaired:
+                    pairings.append(g)
             except pykka.ActorDeadError:
                 pass
         return pairings
 
     def alive_monitor_count(self):
         return len(self.monitored_arvados_nodes())
+
+    def paired_monitor_count(self):
+        return len(self.monitored_arvados_nodes(False))
 
     def assertShutdownCancellable(self, expected=True):
         self.assertTrue(self.node_shutdown.start.called)
@@ -137,18 +140,16 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
     def test_easy_node_creation(self):
         size = testutil.MockSize(1)
         self.make_daemon(want_sizes=[size])
-        self.busywait(lambda: self.node_setup.start.called,
-                      lambda: self.stop_proxy(self.daemon))
+        self.busywait(lambda: self.node_setup.start.called)
 
     def check_monitors_arvados_nodes(self, *arv_nodes):
+        self.busywait(lambda: len(arv_nodes) == len(self.monitored_arvados_nodes()))
         self.assertItemsEqual(arv_nodes, self.monitored_arvados_nodes())
 
     def test_node_pairing(self):
         cloud_node = testutil.cloud_node_mock(1)
         arv_node = testutil.arvados_node_mock(1)
         self.make_daemon([cloud_node], [arv_node])
-        self.busywait(lambda: 1 == self.alive_monitor_count(),
-                      lambda: self.stop_proxy(self.daemon))
         self.check_monitors_arvados_nodes(arv_node)
 
     def test_node_pairing_after_arvados_update(self):
@@ -157,7 +158,6 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                          [testutil.arvados_node_mock(1, ip_address=None)])
         arv_node = testutil.arvados_node_mock(2)
         self.daemon.update_arvados_nodes([arv_node]).get(self.TIMEOUT)
-        self.stop_proxy(self.daemon)
         self.check_monitors_arvados_nodes(arv_node)
 
     def test_arvados_node_un_and_re_paired(self):
@@ -171,8 +171,6 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
         self.busywait(lambda: 0 == self.alive_monitor_count())
         self.daemon.update_cloud_nodes([testutil.cloud_node_mock(3)])
-        self.busywait(lambda: 1 == self.alive_monitor_count(),
-                      lambda: self.stop_proxy(self.daemon))
         self.check_monitors_arvados_nodes(arv_node)
 
     def test_old_arvados_node_not_double_assigned(self):
@@ -192,8 +190,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
     def test_node_count_satisfied(self):
         self.make_daemon(cloud_nodes=[testutil.cloud_node_mock(1)],
                          want_sizes=[testutil.MockSize(1)])
-        self.busywait(lambda: not self.node_setup.start.called,
-                      lambda: self.stop_proxy(self.daemon))
+        self.busywait(lambda: not self.node_setup.start.called)
 
     def test_dont_count_missing_as_busy(self):
         size = testutil.MockSize(1)
@@ -204,7 +201,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                                             2,
                                             last_ping_at='1970-01-01T01:02:03.04050607Z')],
                          want_sizes=[size, size])
-        time.sleep(2)
+        self.busywait(lambda: 2 == self.alive_monitor_count())
         self.busywait(lambda: self.node_setup.start.called)
 
     def test_missing_counts_towards_max(self):
@@ -215,8 +212,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                                         testutil.arvados_node_mock(2, last_ping_at='1970-01-01T01:02:03.04050607Z')],
                          want_sizes=[size, size],
                          max_nodes=2)
-        self.busywait(lambda: not self.node_setup.start.called,
-                      lambda: self.stop_proxy(self.daemon))
+        self.busywait(lambda: not self.node_setup.start.called)
 
     def test_excess_counts_missing(self):
         size = testutil.MockSize(1)
@@ -225,7 +221,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
                          arvados_nodes=[testutil.arvados_node_mock(1),
                                         testutil.arvados_node_mock(2, last_ping_at='1970-01-01T01:02:03.04050607Z')],
                          want_sizes=[size])
-        self.assertEqual(2, self.alive_monitor_count())
+        self.busywait(lambda: 2 == self.paired_monitor_count())
         for mon_ref in self.monitor_list():
             self.daemon.node_can_shutdown(mon_ref.proxy()).get(self.TIMEOUT)
         self.assertEqual(1, self.node_shutdown.start.call_count)
@@ -246,7 +242,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
 
         self.daemon.cloud_nodes.get()[cloud_nodes[1].id].shutdown_actor = mock_shutdown.proxy()
 
-        self.assertEqual(2, self.alive_monitor_count())
+        self.busywait(lambda: 2 == self.alive_monitor_count())
         for mon_ref in self.monitor_list():
             self.daemon.node_can_shutdown(mon_ref.proxy()).get(self.TIMEOUT)
         self.busywait(lambda: 1 == self.node_shutdown.start.call_count)
@@ -259,16 +255,15 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon.max_nodes.get(self.TIMEOUT)
         self.assertTrue(self.node_setup.start.called)
         self.daemon.update_server_wishlist(server_wishlist).get(self.TIMEOUT)
-        self.busywait(lambda: 1 == self.node_setup.start.call_count,
-                      lambda: self.stop_proxy(self.daemon))
+        self.busywait(lambda: 1 == self.node_setup.start.call_count)
 
     def test_boot_new_node_when_all_nodes_busy(self):
         size = testutil.MockSize(2)
         arv_node = testutil.arvados_node_mock(2, job_uuid=True)
         self.make_daemon([testutil.cloud_node_mock(2, size=size)], [arv_node],
                          [size], avail_sizes=[(size, {"cores":1})])
-        self.busywait(lambda: self.node_setup.start.called,
-                      lambda: self.stop_proxy(self.daemon))
+        self.busywait(lambda: 1 == self.paired_monitor_count())
+        self.busywait(lambda: self.node_setup.start.called)
 
     def test_boot_new_node_below_min_nodes(self):
         min_size = testutil.MockSize(1)
@@ -413,8 +408,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.assertFalse(self.node_shutdown.start.called)
         now = time.time()
         self.monitor_list()[0].tell_proxy().consider_shutdown()
-        self.busywait(lambda: self.node_shutdown.start.called,
-                      lambda: self.stop_proxy(self.daemon))
+        self.busywait(lambda: self.node_shutdown.start.called)
         self.assertShutdownCancellable(False)
 
     def test_booted_node_shut_down_when_never_paired(self):
@@ -425,8 +419,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.assertEqual(1, self.alive_monitor_count())
         self.daemon.update_cloud_nodes([cloud_node])
         self.monitor_list()[0].tell_proxy().consider_shutdown()
-        self.busywait(lambda: self.node_shutdown.start.called,
-                      lambda: self.stop_proxy(self.daemon))
+        self.busywait(lambda: self.node_shutdown.start.called)
         self.assertShutdownCancellable(False)
 
     def test_booted_node_shut_down_when_never_working(self):
@@ -438,8 +431,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.assertEqual(1, self.alive_monitor_count())
         self.monitor_list()[0].proxy().cloud_node_start_time = time.time()-3601
         self.daemon.update_cloud_nodes([cloud_node])
-        self.busywait(lambda: self.node_shutdown.start.called,
-                      lambda: self.stop_proxy(self.daemon))
+        self.busywait(lambda: self.node_shutdown.start.called)
         self.assertShutdownCancellable(False)
 
     def test_node_that_pairs_not_considered_failed_boot(self):
@@ -469,8 +461,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
     def test_booting_nodes_shut_down(self):
         self.make_daemon(want_sizes=[testutil.MockSize(1)])
         self.daemon.update_server_wishlist([]).get(self.TIMEOUT)
-        self.busywait(lambda: self.last_setup.stop_if_no_cloud_node.called,
-                      lambda: self.stop_proxy(self.daemon))
+        self.busywait(lambda: self.last_setup.stop_if_no_cloud_node.called)
 
     def test_all_booting_nodes_tried_to_shut_down(self):
         size = testutil.MockSize(2)
@@ -505,7 +496,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         cloud_node = testutil.cloud_node_mock(1)
         arv_node = testutil.arvados_node_mock(1)
         self.make_daemon(cloud_nodes=[cloud_node], arvados_nodes=[arv_node], min_nodes=1)
-        self.assertEqual(1, self.alive_monitor_count())
+        self.busywait(lambda: 1 == self.paired_monitor_count())
         monitor = self.monitor_list()[0].proxy()
         self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
         self.stop_proxy(self.daemon)
@@ -516,8 +507,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.assertEqual(1, self.alive_monitor_count())
         monitor = self.monitor_list()[0].proxy()
         self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
-        self.busywait(lambda: self.node_shutdown.start.called,
-                      lambda: self.stop_proxy(self.daemon))
+        self.busywait(lambda: self.node_shutdown.start.called)
 
     def test_shutdown_declined_when_idle_and_job_queued(self):
         size = testutil.MockSize(1)
@@ -564,8 +554,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.assertTrue(self.node_shutdown.start.called)
         self.daemon.update_server_wishlist(
             [testutil.MockSize(6)]).get(self.TIMEOUT)
-        self.busywait(lambda: self.node_setup.start.called,
-                      lambda: self.stop_proxy(self.daemon))
+        self.busywait(lambda: self.node_setup.start.called)
 
     def test_nodes_shutting_down_not_replaced_at_max_nodes(self):
         cloud_node = testutil.cloud_node_mock(7)
@@ -577,8 +566,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.assertTrue(self.node_shutdown.start.called)
         self.daemon.update_server_wishlist(
             [testutil.MockSize(7)]).get(self.TIMEOUT)
-        self.busywait(lambda: not self.node_setup.start.called,
-                      lambda: self.stop_proxy(self.daemon))
+        self.busywait(lambda: not self.node_setup.start.called)
 
     def test_nodes_shutting_down_count_against_excess(self):
         size = testutil.MockSize(8)
@@ -586,7 +574,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         arv_nodes = [testutil.arvados_node_mock(n, size=size) for n in [8, 9]]
         self.make_daemon(cloud_nodes, arv_nodes, [size],
                          avail_sizes=[(size, {"cores":1})])
-        self.busywait(lambda: 2 == self.alive_monitor_count())
+        self.busywait(lambda: 2 == self.paired_monitor_count())
         for mon_ref in self.monitor_list():
             self.daemon.node_can_shutdown(mon_ref.proxy()).get(self.TIMEOUT)
         self.assertEqual(1, self.node_shutdown.start.call_count)
@@ -611,8 +599,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         size = testutil.MockSize(2)
         self.daemon.update_server_wishlist([size] * 2).get(self.TIMEOUT)
         self.timer.deliver()
-        self.busywait(lambda: 1 == self.node_setup.start.call_count,
-                      lambda: self.stop_proxy(self.daemon))
+        self.busywait(lambda: 1 == self.node_setup.start.call_count)
 
     def test_shutdown_actor_stopped_when_cloud_node_delisted(self):
         self.make_daemon(cloud_nodes=[testutil.cloud_node_mock()])
@@ -620,8 +607,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         monitor = self.monitor_list()[0].proxy()
         self.daemon.node_can_shutdown(monitor).get(self.TIMEOUT)
         self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
-        self.busywait(lambda: 1 == self.last_shutdown.stop.call_count,
-                      lambda: self.stop_proxy(self.daemon))
+        self.busywait(lambda: 1 == self.last_shutdown.stop.call_count)
 
     def test_shutdown_actor_cleanup_copes_with_dead_actors(self):
         self.make_daemon(cloud_nodes=[testutil.cloud_node_mock()])
@@ -632,8 +618,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         # the ActorDeadError.
         self.last_shutdown.stop.side_effect = pykka.ActorDeadError
         self.daemon.update_cloud_nodes([]).get(self.TIMEOUT)
-        self.busywait(lambda: 1 == self.last_shutdown.stop.call_count,
-                      lambda: self.stop_proxy(self.daemon))
+        self.busywait(lambda: 1 == self.last_shutdown.stop.call_count)
 
     def test_node_create_two_sizes(self):
         small = testutil.MockSize(1)
