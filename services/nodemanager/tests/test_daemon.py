@@ -147,7 +147,8 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         cloud_node = testutil.cloud_node_mock(1)
         arv_node = testutil.arvados_node_mock(1)
         self.make_daemon([cloud_node], [arv_node])
-        self.busywait(lambda: 1 == self.alive_monitor_count())
+        self.busywait(lambda: 1 == self.alive_monitor_count(),
+                      lambda: self.stop_proxy(self.daemon))
         self.check_monitors_arvados_nodes(arv_node)
 
     def test_node_pairing_after_arvados_update(self):
