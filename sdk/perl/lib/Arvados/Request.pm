@@ -46,9 +46,12 @@ sub process_request
     $self->{'req'} = new HTTP::Request (%req);
     $self->{'req'}->header('Authorization' => ('OAuth2 ' . $self->{'authToken'})) if $self->{'authToken'};
     $self->{'req'}->header('Accept' => 'application/json');
+
+    # allow_nonref lets us encode JSON::true and JSON::false, see #12078
+    my $json = JSON->new->allow_nonref;
     my ($p, $v);
     while (($p, $v) = each %{$self->{'queryParams'}}) {
-        $content{$p} = (ref($v) eq "") ? $v : JSON::encode_json($v);
+        $content{$p} = (ref($v) eq "") ? $v : $json->encode($v);
     }
     my $content;
     while (($p, $v) = each %content) {
