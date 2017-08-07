@@ -36,7 +36,7 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
     with SourceLine(dockerRequirement, "dockerImageId", WorkflowException):
         sp = dockerRequirement["dockerImageId"].split(":")
         image_name = sp[0]
-        image_tag = sp[1] if len(sp) > 1 else None
+        image_tag = sp[1] if len(sp) > 1 else "latest"
 
         images = arvados.commands.keepdocker.list_images_in_arv(api_client, 3,
                                                                 image_name=image_name,
@@ -51,9 +51,8 @@ def arv_docker_get_image(api_client, dockerRequirement, pull_image, project_uuid
             if project_uuid:
                 args.append("--project-uuid="+project_uuid)
             args.append(image_name)
-            if image_tag:
-                args.append(image_tag)
-            logger.info("Uploading Docker image %s", ":".join(args[1:]))
+            args.append(image_tag)
+            logger.info("Uploading Docker image %s:%s", image_name, image_tag)
             try:
                 arvados.commands.keepdocker.main(args, stdout=sys.stderr)
             except SystemExit as e:

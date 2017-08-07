@@ -103,19 +103,27 @@ package_go_binary() {
 
     mkdir -p "$GOPATH/src/git.curoverse.com"
     ln -sfn "$WORKSPACE" "$GOPATH/src/git.curoverse.com/arvados.git"
+    (cd "$GOPATH/src/git.curoverse.com/arvados.git" && "$GOPATH/bin/govendor" sync -v)
 
     cd "$GOPATH/src/git.curoverse.com/arvados.git/$src_path"
     local version="$(version_from_git)"
     local timestamp="$(timestamp_from_git)"
 
-    # If the command imports anything from the Arvados SDK, bump the
-    # version number and build a new package whenever the SDK changes.
+    # Update the version number and build a new package if the vendor
+    # bundle has changed, or the command imports anything from the
+    # Arvados SDK and the SDK has changed.
+    declare -a checkdirs=(vendor)
     if grep -qr git.curoverse.com/arvados .; then
-        cd "$GOPATH/src/git.curoverse.com/arvados.git/sdk/go"
-        if [[ $(timestamp_from_git) -gt "$timestamp" ]]; then
-            version=$(version_from_git)
-        fi
+        checkdirs+=(sdk/go)
     fi
+    for dir in ${checkdirs[@]}; do
+        cd "$GOPATH/src/git.curoverse.com/arvados.git/$dir"
+        ts="$(timestamp_from_git)"
+        if [[ "$ts" -gt "$timestamp" ]]; then
+            version=$(version_from_git)
+            timestamp="$ts"
+        fi
+    done
 
     cd $WORKSPACE/packages/$TARGET
     test_package_presence $prog $version go

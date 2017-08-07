@@ -113,6 +113,7 @@ class ArvCwlRunner(object):
                                                 fs_access=CollectionFsAccess("", collection_cache=self.collection_cache),
                                                 num_retries=self.num_retries,
                                                 overrides=kwargs.get("override_tools"))
+        kwargs["resolver"] = partial(collectionResolver, self.api, num_retries=self.num_retries)
         if "class" in toolpath_object and toolpath_object["class"] == "CommandLineTool":
             return ArvadosCommandTool(self, toolpath_object, **kwargs)
         elif "class" in toolpath_object and toolpath_object["class"] == "Workflow":

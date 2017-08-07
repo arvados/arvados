@@ -340,6 +340,7 @@ fi
 # Go binaries
 cd $WORKSPACE/packages/$TARGET
 export GOPATH=$(mktemp -d)
+go get -v github.com/kardianos/govendor
 package_go_binary sdk/go/crunchrunner crunchrunner \
     "Crunchrunner executes a command inside a container and uploads the output"
 package_go_binary services/arv-git-httpd arvados-git-httpd \

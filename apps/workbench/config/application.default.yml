@@ -301,4 +301,4 @@ common:
 
   # Token to be included in all healthcheck requests. Disabled by default.
   # Workbench expects request header of the format "Authorization: Bearer xxx"
-  management_token: false
+  ManagementToken: false

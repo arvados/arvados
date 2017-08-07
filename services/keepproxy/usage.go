@@ -82,5 +82,9 @@ Debug:
 
     Enable debug logging.
 
+ManagementToken:
+
+    Authorization token to be included in all health check requests.
+
 `, exampleConfigFile)
 }

@@ -18,11 +18,12 @@ import (
 
 // Server configuration
 type Config struct {
-	Client       arvados.Client
-	Listen       string
-	GitCommand   string
-	RepoRoot     string
-	GitoliteHome string
+	Client          arvados.Client
+	Listen          string
+	GitCommand      string
+	RepoRoot        string
+	GitoliteHome    string
+	ManagementToken string
 }
 
 var theConfig = defaultConfig()
@@ -49,6 +50,10 @@ func main() {
 
 	cfgPath := flag.String("config", defaultCfgPath, "Configuration file `path`.")
 	dumpConfig := flag.Bool("dump-config", false, "write current configuration to stdout and exit (useful for migrating from command line flags to config file)")
+
+	flag.StringVar(&theConfig.ManagementToken, "management-token", theConfig.ManagementToken,
+		"Authorization token to be included in all health check requests.")
+
 	flag.Usage = usage
 	flag.Parse()
 
