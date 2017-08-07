@@ -115,13 +115,7 @@ class CollectionsController < ApplicationController
   end
 
   def show_file_links
-    if Rails.configuration.keep_web_url || Rails.configuration.keep_web_download_url
-      # show_file will redirect to keep-web's directory listing
-      return show_file
-    end
-    Thread.current[:reader_tokens] = [params[:reader_token]]
-    return if false.equal?(find_object_by_uuid)
-    render layout: false
+    return show_file
   end
 
   def show_file
