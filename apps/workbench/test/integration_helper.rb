@@ -240,3 +240,19 @@ class ActionDispatch::IntegrationTest
     end
   end
 end
+
+def upload_data_and_get_collection(data, user, filename, owner_uuid=nil)
+  token = api_fixture('api_client_authorizations')[user]['api_token']
+  datablock = `echo -n #{data.shellescape} | ARVADOS_API_TOKEN=#{token.shellescape} arv-put --no-progress --raw -`.strip
+  assert $?.success?, $?
+  col = nil
+  use_token user do
+    mtxt = ". #{datablock} 0:#{data.length}:#{filename}\n"
+    if owner_uuid
+      col = Collection.create(manifest_text: mtxt, owner_uuid: owner_uuid)
+    else
+      col = Collection.create(manifest_text: mtxt)
+    end
+  end
+  return col
+end
