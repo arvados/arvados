@@ -45,16 +45,12 @@ class JobsTest < ActionDispatch::IntegrationTest
     # This config will be restored during teardown by ../test_helper.rb:
     Rails.configuration.log_viewer_max_bytes = 100
 
-    token = api_fixture('api_client_authorizations')['active']['api_token']
     logdata = fakepipe_with_log_data.read
-    logblock = `echo -n #{logdata.shellescape} | ARVADOS_API_TOKEN=#{token.shellescape} arv-put --no-progress --raw -`.strip
-    assert $?.success?, $?
-
+    job_uuid = api_fixture('jobs')['running']['uuid']
+    logcollection = upload_data_and_get_collection(logdata, 'active', "#{job_uuid}.log.txt")
     job = nil
     use_token 'active' do
-      job = Job.find api_fixture('jobs')['running']['uuid']
-      mtxt = ". #{logblock} 0:#{logdata.length}:#{job.uuid}.log.txt\n"
-      logcollection = Collection.create(manifest_text: mtxt)
+      job = Job.find job_uuid
       job.update_attributes log: logcollection.portable_data_hash
     end
     visit page_with_token 'active', '/jobs/'+job.uuid

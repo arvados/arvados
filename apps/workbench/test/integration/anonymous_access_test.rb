@@ -122,17 +122,8 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
     use_keep_web_config
 
     magic = rand(2**512).to_s 36
-    token = api_fixture('api_client_authorizations')['admin']['api_token']
-    datablock = `echo -n #{magic.shellescape} | ARVADOS_API_TOKEN=#{token.shellescape} arv-put --no-progress --raw -`.strip
-    assert $?.success?, $?
-    col = nil
-    use_token 'admin' do
-      mtxt = ". #{datablock} 0:#{magic.length}:Hello\\040world.txt\n"
-      col = Collection.create(
-        manifest_text: mtxt,
-        owner_uuid: api_fixture('groups')['anonymously_accessible_project']['uuid'])
-    end
-
+    owner = api_fixture('groups')['anonymously_accessible_project']['uuid']
+    col = upload_data_and_get_collection(magic, 'admin', "Hello\\040world.txt", owner)
     visit '/collections/' + col.uuid
     find('tr,li', text: 'Hello world.txt').
       find('a[title~=View]').click
