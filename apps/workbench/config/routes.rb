@@ -47,8 +47,9 @@ ArvadosWorkbench::Application.routes.draw do
   get '/repositories/:id/tree/:commit/*path' => 'repositories#show_tree', as: :show_repository_tree, format: false
   get '/repositories/:id/blob/:commit/*path' => 'repositories#show_blob', as: :show_repository_blob, format: false
   get '/repositories/:id/commit/:commit' => 'repositories#show_commit', as: :show_repository_commit
+  resources :sessions
   match '/logout' => 'sessions#destroy', via: [:get, :post]
-  get '/logged_out' => 'sessions#index'
+  get '/logged_out' => 'sessions#logged_out'
   resources :users do
     get 'choose', :on => :collection
     get 'home', :on => :member

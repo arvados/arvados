@@ -2,9 +2,6 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-// rails_npm does "window.Mithril = require('mithril')" for us.
-var m = window.Mithril
-
 $(document).on('ready arv:pane:loaded', function() {
     $('[data-mount-mithril]').each(function() {
         m.mount(this, window.components[$(this).data('mount-mithril')])

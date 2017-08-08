@@ -42,3 +42,4 @@
 
 # npm-rails
 /node_modules
+/npm-debug.log

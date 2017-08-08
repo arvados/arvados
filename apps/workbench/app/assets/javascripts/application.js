@@ -32,7 +32,10 @@
 //= require morris
 //= require jquery.number.min
 //= require npm-dependencies
+//= require mithril/stream/stream
 //= require_tree .
+
+window.m = Object.assign(window.Mithril, {stream: window.m.stream})
 
 jQuery(function($){
     $(document).ajaxStart(function(){
@@ -155,7 +158,9 @@ jQuery(function($){
             // Need this to trigger input validation/synchronization callbacks because some browsers
             // auto-fill form fields (e.g., when navigating "back" to a page where some text
             // had been entered in a search box) without triggering a change or input event.
-            $('input').trigger('input');
+            $('input').each(function(el) {
+                $(el).trigger($.Event('input', {currentTarget: el}));
+            });
         });
 
     HeaderRowFixer = function(selector) {
