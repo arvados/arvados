@@ -40,6 +40,7 @@ class JobsTest < ActionDispatch::IntegrationTest
   end
 
   test 'view partial job log' do
+    need_selenium 'to be able to see the CORS response headers (PhantomJS 1.9.8 does not)'
     use_keep_web_config
 
     # This config will be restored during teardown by ../test_helper.rb:
