@@ -76,7 +76,7 @@ func (h *handler) Handle(ws wsConn, eventSource eventSource, newSession func(wsC
 				err = errFrameTooBig
 			}
 			if err != nil {
-				if err != io.EOF {
+				if err != io.EOF && ctx.Err() == nil {
 					log.WithError(err).Info("read error")
 				}
 				return
@@ -134,7 +134,9 @@ func (h *handler) Handle(ws wsConn, eventSource eventSource, newSession func(wsC
 			t0 := time.Now()
 			_, err = ws.Write(buf)
 			if err != nil {
-				log.WithError(err).Error("write failed")
+				if ctx.Err() == nil {
+					log.WithError(err).Error("write failed")
+				}
 				return
 			}
 			log.Debug("sent")
