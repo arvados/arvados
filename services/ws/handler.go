@@ -179,7 +179,6 @@ func (h *handler) Handle(ws wsConn, eventSource eventSource, newSession func(wsC
 					default:
 					}
 				}
-				continue
 			case e, ok := <-incoming.Channel():
 				if !ok {
 					return
