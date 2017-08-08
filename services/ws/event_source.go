@@ -248,7 +248,8 @@ func (ps *pgEventSource) DB() *sql.DB {
 }
 
 func (ps *pgEventSource) DBHealth() error {
-	ctx, _ := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
+	defer cancel()
 	var i int
 	return ps.db.QueryRowContext(ctx, "SELECT 1").Scan(&i)
 }
