@@ -13,7 +13,7 @@ window.components.collection_table_narrow = {
                         m('td', [
                             m('a', {href: vnode.attrs.session.baseURL.replace('://', '://workbench.')+'/collections/'+item.uuid}, item.name || '(unnamed)'),
                             m('br'),
-                            item.modified_at,
+                            m(window.components.datetime, {parse: item.modified_at}),
                         ]),
                     ])
                 }),
@@ -39,6 +39,7 @@ window.components.collection_search = {
                 vnode.state.sessionDB.request(sessions[key], 'arvados/v1/collections', {
                     data: {
                         filters: JSON.stringify(!q ? [] : [['any', '@@', q+':*']]),
+                        count: 'none',
                     },
                 }).then(function(resp) {
                     if (cookie !== vnode.state.cookie)
