@@ -35,6 +35,7 @@ window.components.collection_search = {
             Object.keys(sessions).map(function(key) {
                 if (!vnode.state.items[key])
                     vnode.state.items[key] = m.stream([])
+                vnode.state.items[key].dirty = true
                 vnode.state.sessionDB.request(sessions[key], 'arvados/v1/collections', {
                     data: {
                         filters: JSON.stringify(!q ? [] : [['any', '@@', q+':*']]),
@@ -44,6 +45,7 @@ window.components.collection_search = {
                         // a newer query is in progress; ignore this result.
                         return
                     vnode.state.items[key](resp.items)
+                    vnode.state.items[key].dirty = false
                 })
             })
         })
@@ -79,8 +81,13 @@ window.components.collection_search = {
                 ]),
             ]),
             m('.row', Object.keys(items).sort().map(function(key) {
-                return m('.col-md-3', {key: key}, [
-                    m(window.components.collection_table_narrow, {key: key, items: items[key]}),
+                return m('.col-md-3', {key: key, style: {
+                    opacity: items[key].dirty ? 0.5 : 1,
+                }}, [
+                    m(window.components.collection_table_narrow, {
+                        key: key,
+                        items: items[key],
+                    }),
                 ])
             })),
         ])
