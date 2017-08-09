@@ -157,7 +157,6 @@ class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
     @mock.patch("subprocess.check_call")
     @mock.patch("subprocess.check_output")
     def test_unsatisfiable_jobs(self, mock_squeue, mock_scancel):
-        #mock_scancel.return_value = ""
         job_uuid = 'zzzzz-8i9sb-zzzzzzzzzzzzzzz'
         container_uuid = 'yyyyy-dz642-yyyyyyyyyyyyyyy'
         mock_squeue.return_value = "1|1024|0|Resources|" + container_uuid + "\n"
@@ -165,6 +164,7 @@ class JobQueueMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
         self.build_monitor([{'items': [{'uuid': job_uuid}]}],
                            self.MockCalculatorUnsatisfiableJobs(), True, True)
         self.monitor.subscribe(self.subscriber).get(self.TIMEOUT)
+        self.monitor.ping().get(self.TIMEOUT)
         self.stop_proxy(self.monitor)
         self.client.jobs().cancel.assert_called_with(uuid=job_uuid)
         mock_scancel.assert_called_with(['scancel', '--name='+container_uuid])
