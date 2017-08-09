@@ -95,6 +95,7 @@ ArvadosWorkbench::Application.routes.draw do
     post 'remove_selected_files', on: :member
     get 'tags', on: :member
     post 'save_tags', on: :member
+    get 'multisite', on: :collection
   end
   get('/collections/download/:uuid/:reader_token/*file' => 'collections#show_file',
       format: false)
