@@ -11,7 +11,7 @@ window.components.collection_table_narrow = {
                 vnode.attrs.items().map(function(item) {
                     return m('tr', [
                         m('td', [
-                            m('a', {href: '/collections/'+item.uuid}, item.name || '(unnamed)'),
+                            m('a', {href: vnode.attrs.session.baseURL.replace('://', '://workbench.')+'/collections/'+item.uuid}, item.name || '(unnamed)'),
                             m('br'),
                             item.modified_at,
                         ]),
@@ -52,6 +52,7 @@ window.components.collection_search = {
     },
     view: function(vnode) {
         var items = vnode.state.items
+        var sessions = vnode.state.sessionDB.loadAll()
         return m('form', {
             onsubmit: function() {
                 vnode.state.searchStart(vnode.state.searchEntered())
@@ -86,6 +87,7 @@ window.components.collection_search = {
                 }}, [
                     m(window.components.collection_table_narrow, {
                         key: key,
+                        session: sessions[key],
                         items: items[key],
                     }),
                 ])
