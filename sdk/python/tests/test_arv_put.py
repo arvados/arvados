@@ -9,21 +9,22 @@ standard_library.install_aliases()
 from builtins import str
 from builtins import range
 import apiclient
+import hashlib
+import json
 import mock
 import os
 import pwd
+import random
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
-import yaml
-import threading
-import hashlib
-import random
 import uuid
+import yaml
 
 import arvados
 import arvados.commands.put as arv_put
@@ -839,6 +840,43 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         ).execute().get('items', [])
         self.assertEqual(1, len(collection_list))
         return collection_list[0]
+
+    def test_invalid_token_invalidates_cache(self):
+        self.authorize_with('active')
+        tmpdir = self.make_tmpdir()
+        with open(os.path.join(tmpdir, 'somefile.txt'), 'w') as f:
+            f.write('foo')
+        # Upload a directory and get the cache file name
+        p = subprocess.Popen([sys.executable, arv_put.__file__, tmpdir],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             env=self.ENVIRON)
+        (out, err) = p.communicate()
+        self.assertRegex(err.decode(), r'INFO: Creating new cache file at ')
+        self.assertEqual(p.returncode, 0)
+        cache_filepath = re.search(r'INFO: Creating new cache file at (.*)',
+                                   err.decode()).groups()[0]
+        self.assertTrue(os.path.isfile(cache_filepath))
+        # Load the cache file contents and modify the manifest to simulate
+        # an invalid access token
+        with open(cache_filepath, 'r') as c:
+            cache = json.load(c)
+        self.assertRegex(cache['manifest'], r'\+A\S+\@')
+        cache['manifest'] = re.sub(r'\+A\S+\@',
+                                   '+Athistokendoesnotwork@',
+                                   cache['manifest'])
+        with open(cache_filepath, 'w') as c:
+            c.write(json.dumps(cache))
+        # Re-run the upload and expect to get an invalid cache message
+        p = subprocess.Popen([sys.executable, arv_put.__file__, tmpdir],
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,
+                             env=self.ENVIRON)
+        (out, err) = p.communicate()
+        self.assertRegex(
+            err.decode(),
+            r'INFO: Cache file (.*) is not valid, starting from scratch')
+        self.assertEqual(p.returncode, 0)
 
     def test_put_collection_with_later_update(self):
         tmpdir = self.make_tmpdir()
