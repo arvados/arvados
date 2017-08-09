@@ -363,6 +363,9 @@ class RunnerContainer(Runner):
         if self.arvrunner.trash_intermediate:
             command.append("--trash-intermediate")
 
+        if self.arvrunner.project_uuid:
+            command.append("--project-uuid="+self.arvrunner.project_uuid)
+
         command.extend([workflowpath, "/var/lib/cwl/cwl.input.json"])
 
         container_req["command"] = command

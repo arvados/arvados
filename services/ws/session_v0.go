@@ -205,6 +205,10 @@ func (sub *v0subscribe) sendOldEvents(sess *v0session) {
 			// client will probably reconnect and do the
 			// same thing all over again.
 			time.Sleep(100 * time.Millisecond)
+			if sess.ws.Request().Context().Err() != nil {
+				// Session terminated while we were sleeping
+				return
+			}
 		}
 		now := time.Now()
 		e := &event{
