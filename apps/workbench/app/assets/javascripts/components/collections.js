@@ -6,15 +6,19 @@ window.components = window.components || {}
 window.components.collection_table_narrow = {
     view: function(vnode) {
         return m('table.table.table-condensed', [
-            m('thead', m('tr', m('th', vnode.attrs.key))),
+            m('thead', m('tr', [
+                m('th'),
+                m('th', 'uuid'),
+                m('th', 'name'),
+                m('th', 'last modified'),
+            ])),
             m('tbody', [
-                vnode.attrs.items().map(function(item) {
+                vnode.attrs.items.map(function(item) {
                     return m('tr', [
-                        m('td', [
-                            m('a', {href: vnode.attrs.session.baseURL.replace('://', '://workbench.')+'/collections/'+item.uuid}, item.name || '(unnamed)'),
-                            m('br'),
-                            m(window.components.datetime, {parse: item.modified_at}),
-                        ]),
+                        m('td', m('a.btn.btn-xs.btn-default', {href: item.session.baseURL.replace('://', '://workbench.')+'/collections/'+item.uuid}, 'Show')),
+                        m('td', item.uuid),
+                        m('td', item.name || '(unnamed)'),
+                        m('td', m(window.components.datetime, {parse: item.modified_at})),
                     ])
                 }),
             ]),
@@ -22,37 +26,74 @@ window.components.collection_table_narrow = {
     },
 }
 
+function Pager(loadFunc) {
+    // loadFunc(filters) returns a promise for a page of results.
+    var pager = this
+    Object.assign(pager, {
+        done: false,
+        items: m.stream(),
+        lastModifiedAt: null,
+        loadNextPage: function() {
+            // Get the next page, if there are any more items to get.
+            if (pager.done)
+                return
+            var filters = pager.lastModifiedAt ? [["modified_at", "<=", pager.lastModifiedAt]] : []
+            loadFunc(filters).then(function(resp) {
+                var items = pager.items() || []
+                Array.prototype.push.apply(items, resp.items)
+                if (resp.items.length == 0)
+                    pager.done = true
+                else
+                    pager.lastModifiedAt = resp.items[resp.items.length-1].modified_at
+                pager.items(items)
+            })
+        },
+    })
+}
+
 window.components.collection_search = {
     oninit: function(vnode) {
         vnode.state.sessionDB = new window.models.SessionDB()
         vnode.state.searchEntered = m.stream('')
         vnode.state.searchStart = m.stream('')
-        vnode.state.items = {}
+        // items ready to display
+        vnode.state.displayItems = m.stream([])
+        // {sessionKey -> Pager}
+        vnode.state.pagers = {}
         vnode.state.searchStart.map(function(q) {
             var sessions = vnode.state.sessionDB.loadAll()
             var cookie = (new Date()).getTime()
-            vnode.state.cookie = cookie
-            Object.keys(sessions).map(function(key) {
-                if (!vnode.state.items[key])
-                    vnode.state.items[key] = m.stream([])
-                vnode.state.items[key].dirty = true
-                vnode.state.sessionDB.request(sessions[key], 'arvados/v1/collections', {
-                    data: {
-                        filters: JSON.stringify(!q ? [] : [['any', '@@', q+':*']]),
-                        count: 'none',
-                    },
-                }).then(function(resp) {
-                    if (cookie !== vnode.state.cookie)
-                        // a newer query is in progress; ignore this result.
-                        return
-                    vnode.state.items[key](resp.items)
-                    vnode.state.items[key].dirty = false
+            var displayItems = m.stream([])
+            vnode.state.displayItems = displayItems
+            m.stream.merge(Object.keys(sessions).map(function(key) {
+                var pager = new Pager(function(filters) {
+                    if (q)
+                        filters.push(['any', '@@', q+':*'])
+                    return vnode.state.sessionDB.request(sessions[key], 'arvados/v1/collections', {
+                        data: {
+                            filters: JSON.stringify(filters),
+                            count: 'none',
+                        },
+                    })
                 })
+                vnode.state.pagers[key] = pager
+                pager.loadNextPage()
+                return pager.items.map(function() { return key })
+            })).map(function(keys) {
+                var combined = []
+                keys.forEach(function(key) {
+                    vnode.state.pagers[key].items().forEach(function(item) {
+                        item.session = sessions[key]
+                        combined.push(item)
+                    })
+                })
+                displayItems(combined.sort(function(a, b) {
+                    return a.modified_at < b.modified_at ? 1 : -1
+                }))
             })
         })
     },
     view: function(vnode) {
-        var items = vnode.state.items
         var sessions = vnode.state.sessionDB.loadAll()
         return m('form', {
             onsubmit: function() {
@@ -64,7 +105,7 @@ window.components.collection_search = {
                 m('.col-md-6', [
                     m('.input-group', [
                         m('input#search.form-control[placeholder=Search]', {
-                            oninput: m.withAttr('value', debounce(200, vnode.state.searchEntered)),
+                            oninput: m.withAttr('value', vnode.state.searchEntered),
                         }),
                         m('.input-group-btn', [
                             m('input.btn.btn-primary[type=submit][value="Search"]'),
@@ -73,45 +114,20 @@ window.components.collection_search = {
                 ]),
                 m('.col-md-6', [
                     'Searching sites: ',
-                    Object.keys(items).length == 0
+                    Object.keys(sessions).length == 0
                         ? m('span.label.label-xs.label-danger', 'none')
-                        : Object.keys(items).sort().map(function(key) {
-                            return [m('span.label.label-xs.label-info', key), ' ']
+                        : Object.keys(sessions).sort().map(function(key) {
+                            return [m('span.label.label-xs', {
+                                className: vnode.state.pagers[key].items() ? 'label-info' : 'label-default',
+                            }, key), ' ']
                         }),
                     ' ',
                     m('a[href="/sessions"]', 'Add/remove sites'),
                 ]),
             ]),
-            m('.row', Object.keys(items).sort().map(function(key) {
-                return m('.col-md-3', {key: key, style: {
-                    opacity: items[key].dirty ? 0.5 : 1,
-                }}, [
-                    m(window.components.collection_table_narrow, {
-                        key: key,
-                        session: sessions[key],
-                        items: items[key],
-                    }),
-                ])
-            })),
+            m(window.components.collection_table_narrow, {
+                items: vnode.state.displayItems(),
+            }),
         ])
     },
-}
-
-function debounce(t, f) {
-    // Return a new function that waits until t milliseconds have
-    // passed since it was last called, then calls f with its most
-    // recent arguments.
-    var this_was = this
-    var pending
-    return function() {
-        var args = arguments
-        if (pending) {
-            console.log("debounce!")
-            window.clearTimeout(pending)
-        }
-        pending = window.setTimeout(function() {
-            pending = undefined
-            f.apply(this_was, args)
-        }, t)
-    }
 }
