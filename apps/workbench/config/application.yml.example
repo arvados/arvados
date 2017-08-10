@@ -23,6 +23,10 @@ development:
   arvados_v1_base: https://arvados.local:3030/arvados/v1
   arvados_insecure_https: true
 
+  # You need to configure at least one of these:
+  keep_web_url: false
+  keep_web_download_url: false
+
 production:
   # At minimum, you need a nice long randomly generated secret_token here.
   secret_token: ~
@@ -31,3 +35,7 @@ production:
   arvados_login_base: https://arvados.local:3030/login
   arvados_v1_base: https://arvados.local:3030/arvados/v1
   arvados_insecure_https: false
+
+  # You need to configure at least one of these:
+  keep_web_url: false
+  keep_web_download_url: false
