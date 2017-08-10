@@ -7,6 +7,8 @@ require "arvados/collection"
 require "uri"
 
 class CollectionsController < ApplicationController
+  include ActionController::Live
+
   skip_around_filter :require_thread_api_token, if: proc { |ctrl|
     Rails.configuration.anonymous_user_token and
     'show' == ctrl.action_name
