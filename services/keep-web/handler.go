@@ -149,6 +149,7 @@ func (h *handler) ServeHTTP(wOrig http.ResponseWriter, r *http.Request) {
 		// SSL certificates. See
 		// http://www.w3.org/TR/cors/#user-credentials).
 		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Expose-Headers", "Content-Range")
 	}
 
 	arv := h.clientPool.Get()

@@ -6,6 +6,8 @@ require 'integration_helper'
 require_relative 'integration_test_utils'
 
 class CollectionsTest < ActionDispatch::IntegrationTest
+  include KeepWebConfig
+
   setup do
     need_javascript
   end
@@ -44,7 +46,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   test "creating and uncreating a sharing link" do
     coll_uuid = api_fixture("collections", "collection_owned_by_active", "uuid")
     download_link_re =
-      Regexp.new(Regexp.escape("/collections/download/#{coll_uuid}/"))
+      Regexp.new(Regexp.escape("/c=#{coll_uuid}/"))
     visit page_with_token("active_trustedclient", "/collections/#{coll_uuid}")
     within "#sharing-button" do
       check_sharing(:on, download_link_re)
@@ -53,10 +55,20 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "can download an entire collection with a reader token" do
-    Capybara.current_driver = :rack_test
-    CollectionsController.any_instance.
-      stubs(:file_enumerator).returns(["foo\n", "file\n"])
-    uuid = api_fixture('collections')['foo_file']['uuid']
+    use_keep_web_config
+
+    token = api_fixture('api_client_authorizations')['active']['api_token']
+    data = "foo\nfile\n"
+    datablock = `echo -n #{data.shellescape} | ARVADOS_API_TOKEN=#{token.shellescape} arv-put --no-progress --raw -`.strip
+    assert $?.success?, $?
+
+    col = nil
+    use_token 'active' do
+      mtxt = ". #{datablock} 0:#{data.length}:foo\n"
+      col = Collection.create(manifest_text: mtxt)
+    end
+
+    uuid = col.uuid
     token = api_fixture('api_client_authorizations')['active_all_collections']['api_token']
     url_head = "/collections/download/#{uuid}/#{token}/"
     visit url_head
@@ -78,10 +90,8 @@ class CollectionsTest < ActionDispatch::IntegrationTest
     end
     assert_equal(['foo'], hrefs.compact.sort,
                  "download page did provide strictly file links")
-    within "#collection_files" do
-      click_link "foo"
-      assert_equal("foo\nfile\n", page.html)
-    end
+    click_link "foo"
+    assert_text "foo\nfile\n"
   end
 
   test "combine selected collections into new collection" do

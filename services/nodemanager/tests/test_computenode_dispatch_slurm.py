@@ -32,13 +32,20 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
             self.timer = testutil.MockTimer(False)
         self.make_actor()
         self.check_success_flag(None, 0)
+        # At this point, 1st try should have happened.
+
         self.timer.deliver()
         self.check_success_flag(None, 0)
-        self.timer.deliver()
+        # At this point, 2nd try should have happened.
+
         # Order is critical here: if the mock gets called when no return value
         # or side effect is set, we may invoke a real subprocess.
         proc_mock.return_value = end_state
         proc_mock.side_effect = None
+
+        # 3rd try
+        self.timer.deliver()
+
         self.check_success_flag(True, 3)
         self.check_slurm_got_args(proc_mock, 'NodeName=compute63')
 
@@ -67,20 +74,18 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
         self.check_success_flag(True)
         self.assertFalse(proc_mock.called)
 
-    def test_node_undrained_when_shutdown_cancelled(self, proc_mock):
+    def test_node_resumed_when_shutdown_cancelled(self, proc_mock):
         try:
             proc_mock.side_effect = iter(['', 'drng\n', 'drng\n', ''])
             self.make_mocks(arvados_node=testutil.arvados_node_mock(job_uuid=True))
             self.timer = testutil.MockTimer(False)
             self.make_actor()
             self.busywait(lambda: proc_mock.call_args is not None)
-            self.shutdown_actor.cancel_shutdown("test").get(self.TIMEOUT)
+            self.shutdown_actor.cancel_shutdown("test")
             self.check_success_flag(False, 2)
-            self.assertEqual(proc_mock.call_args_list,
-                             [mock.call(['scontrol', 'update', 'NodeName=compute99', 'State=DRAIN', 'Reason=Node Manager shutdown']),
-                              mock.call(['sinfo', '--noheader', '-o', '%t', '-n', 'compute99']),
-                              mock.call(['sinfo', '--noheader', '-o', '%t', '-n', 'compute99']),
-                              mock.call(['scontrol', 'update', 'NodeName=compute99', 'State=RESUME'])])
+            self.assertEqual(proc_mock.call_args_list[0], mock.call(['scontrol', 'update', 'NodeName=compute99', 'State=DRAIN', 'Reason=Node Manager shutdown']))
+            self.assertEqual(proc_mock.call_args_list[-1], mock.call(['scontrol', 'update', 'NodeName=compute99', 'State=RESUME']))
+
         finally:
             self.shutdown_actor.actor_ref.stop()
 
@@ -88,10 +93,10 @@ class SLURMComputeNodeShutdownActorTestCase(ComputeNodeShutdownActorMixin,
         proc_mock.side_effect = iter([OSError, 'drain\n', OSError, 'idle\n', 'idle\n'])
         self.make_mocks(arvados_node=testutil.arvados_node_mock(job_uuid=True))
         self.make_actor()
-        self.check_success_flag(False, 2)
+        self.check_success_flag(False, 5)
 
     def test_issue_slurm_drain_retry(self, proc_mock):
-        proc_mock.side_effect = iter([OSError, '', OSError, 'drng\n'])
+        proc_mock.side_effect = iter([OSError, OSError, 'drng\n', 'drain\n'])
         self.check_success_after_reset(proc_mock, timer=False)
 
     def test_arvados_node_cleaned_after_shutdown(self, proc_mock):

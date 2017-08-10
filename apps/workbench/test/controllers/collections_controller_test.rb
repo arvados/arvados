@@ -23,15 +23,6 @@ class CollectionsControllerTest < ActionController::TestCase
       end
   end
 
-  def stub_file_content
-    # For the duration of the current test case, stub file download
-    # content with a randomized (but recognizable) string. Return the
-    # string, the test case can use it in assertions.
-    txt = 'the quick brown fox ' + rand(2**32).to_s
-    @controller.stubs(:file_enumerator).returns([txt])
-    txt
-  end
-
   def collection_params(collection_name, file_name=nil)
     uuid = api_fixture('collections')[collection_name.to_s]['uuid']
     params = {uuid: uuid, id: uuid}
@@ -75,17 +66,14 @@ class CollectionsControllerTest < ActionController::TestCase
   end
 
   test "download a file with spaces in filename" do
+    setup_for_keep_web
     collection = api_fixture('collections')['w_a_z_file']
-    fakepipe = IO.popen(['echo', '-n', 'w a z'], 'rb')
-    IO.expects(:popen).with { |cmd, mode|
-      cmd.include? "#{collection['uuid']}/w a z"
-    }.returns(fakepipe)
     get :show_file, {
       uuid: collection['uuid'],
       file: 'w a z'
     }, session_for(:active)
-    assert_response :success
-    assert_equal 'w a z', response.body
+    assert_response :redirect
+    assert_match /w%20a%20z/, response.redirect_url
   end
 
   test "viewing a collection fetches related projects" do
@@ -137,20 +125,18 @@ class CollectionsControllerTest < ActionController::TestCase
     params[:reader_token] = api_fixture("api_client_authorizations",
                                         "active_all_collections", "api_token")
     get(:show_file_links, params)
-    assert_response :success
-    assert_equal([['.', 'foo', 3]], assigns(:object).files)
+    assert_response :redirect
     assert_no_session
   end
 
   test "fetching collection file with reader token" do
-    expected = stub_file_content
+    setup_for_keep_web
     params = collection_params(:foo_file, "foo")
     params[:reader_token] = api_fixture("api_client_authorizations",
                                         "active_all_collections", "api_token")
     get(:show_file, params)
-    assert_response :success
-    assert_equal(expected, @response.body,
-                 "failed to fetch a Collection file with a reader token")
+    assert_response :redirect
+    assert_match /foo/, response.redirect_url
     assert_no_session
   end
 
@@ -163,24 +149,23 @@ class CollectionsControllerTest < ActionController::TestCase
   end
 
   test "getting a file from Keep" do
+    setup_for_keep_web
     params = collection_params(:foo_file, 'foo')
     sess = session_for(:active)
-    expect_content = stub_file_content
     get(:show_file, params, sess)
-    assert_response :success
-    assert_equal(expect_content, @response.body,
-                 "failed to get a correct file from Keep")
+    assert_response :redirect
+    assert_match /foo/, response.redirect_url
   end
 
   test 'anonymous download' do
+    setup_for_keep_web
     config_anonymous true
-    expect_content = stub_file_content
     get :show_file, {
       uuid: api_fixture('collections')['user_agreement_in_anonymously_accessible_project']['uuid'],
       file: 'GNU_General_Public_License,_version_3.pdf',
     }
-    assert_response :success
-    assert_equal expect_content, response.body
+    assert_response :redirect
+    assert_match /GNU_General_Public_License/, response.redirect_url
   end
 
   test "can't get a file from Keep without permission" do
@@ -190,22 +175,14 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_response 404
   end
 
-  test "trying to get a nonexistent file from Keep returns a 404" do
-    params = collection_params(:foo_file, 'gone')
-    sess = session_for(:admin)
-    get(:show_file, params, sess)
-    assert_response 404
-  end
-
   test "getting a file from Keep with a good reader token" do
+    setup_for_keep_web
     params = collection_params(:foo_file, 'foo')
     read_token = api_fixture('api_client_authorizations')['active']['api_token']
     params[:reader_token] = read_token
-    expect_content = stub_file_content
     get(:show_file, params)
-    assert_response :success
-    assert_equal(expect_content, @response.body,
-                 "failed to get a correct file from Keep using a reader token")
+    assert_response :redirect
+    assert_match /foo/, response.redirect_url
     assert_not_equal(read_token, session[:arvados_api_token],
                      "using a reader token set the session's API token")
   end
@@ -229,25 +206,22 @@ class CollectionsControllerTest < ActionController::TestCase
   end
 
   test "can get a file with an unpermissioned auth but in-scope reader token" do
+    setup_for_keep_web
     params = collection_params(:foo_file, 'foo')
     sess = session_for(:expired)
     read_token = api_fixture('api_client_authorizations')['active']['api_token']
     params[:reader_token] = read_token
-    expect_content = stub_file_content
     get(:show_file, params, sess)
-    assert_response :success
-    assert_equal(expect_content, @response.body,
-                 "failed to get a correct file from Keep using a reader token")
+    assert_response :redirect
     assert_not_equal(read_token, session[:arvados_api_token],
                      "using a reader token set the session's API token")
   end
 
   test "inactive user can retrieve user agreement" do
+    setup_for_keep_web
     ua_collection = api_fixture('collections')['user_agreement']
     # Here we don't test whether the agreement can be retrieved from
-    # Keep. We only test that show_file decides to send file content,
-    # so we use the file content stub.
-    stub_file_content
+    # Keep. We only test that show_file decides to send file content.
     get :show_file, {
       uuid: ua_collection['uuid'],
       file: ua_collection['manifest_text'].match(/ \d+:\d+:(\S+)/)[1]
@@ -255,7 +229,7 @@ class CollectionsControllerTest < ActionController::TestCase
     assert_nil(assigns(:unsigned_user_agreements),
                "Did not skip check_user_agreements filter " +
                "when showing the user agreement.")
-    assert_response :success
+    assert_response :redirect
   end
 
   test "requesting nonexistent Collection returns 404" do
@@ -263,37 +237,12 @@ class CollectionsControllerTest < ActionController::TestCase
                     :active, 404)
   end
 
-  test "use a reasonable read buffer even if client requests a huge range" do
-    fakefiledata = mock
-    IO.expects(:popen).returns(fakefiledata)
-    fakefiledata.expects(:read).twice.with() do |length|
-      # Fail the test if read() is called with length>1MiB:
-      length < 2**20
-      ## Force the ActionController::Live thread to lose the race to
-      ## verify that @response.body.length actually waits for the
-      ## response (see below):
-      # sleep 3
-    end.returns("foo\n", nil)
-    fakefiledata.expects(:close)
-    foo_file = api_fixture('collections')['foo_file']
-    @request.headers['Range'] = 'bytes=0-4294967296/*'
-    get :show_file, {
-      uuid: foo_file['uuid'],
-      file: foo_file['manifest_text'].match(/ \d+:\d+:(\S+)/)[1]
-    }, session_for(:active)
-    # Wait for the whole response to arrive before deciding whether
-    # mocks' expectations were met. Otherwise, Mocha will fail the
-    # test depending on how slowly the ActionController::Live thread
-    # runs.
-    @response.body.length
-  end
-
   test "show file in a subdirectory of a collection" do
+    setup_for_keep_web
     params = collection_params(:collection_with_files_in_subdir, 'subdir2/subdir3/subdir4/file1_in_subdir4.txt')
-    expect_content = stub_file_content
     get(:show_file, params, session_for(:user1_with_load))
-    assert_response :success
-    assert_equal(expect_content, @response.body, "failed to get a correct file from Keep")
+    assert_response :redirect
+    assert_match /subdir2\/subdir3\/subdir4\/file1_in_subdir4\.txt/, response.redirect_url
   end
 
   test 'provenance graph' do
@@ -521,7 +470,6 @@ class CollectionsControllerTest < ActionController::TestCase
   def setup_for_keep_web cfg='https://%{uuid_or_pdh}.example', dl_cfg=false
     Rails.configuration.keep_web_url = cfg
     Rails.configuration.keep_web_download_url = dl_cfg
-    @controller.expects(:file_enumerator).never
   end
 
   %w(uuid portable_data_hash).each do |id_type|

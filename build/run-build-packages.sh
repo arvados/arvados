@@ -620,6 +620,7 @@ if [[ "$?" == "0" ]] ; then
       \cp config/application.yml.example config/application.yml -f
       \cp config/environments/production.rb.example config/environments/production.rb -f
       sed -i 's/secret_token: ~/secret_token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/' config/application.yml
+      sed -i 's/keep_web_url: false/keep_web_url: exampledotcom/' config/application.yml
 
       RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile >/dev/null
 
