@@ -832,21 +832,27 @@ class ArvPutUploadJob(object):
             self._local_collection = arvados.collection.Collection(self._state['manifest'], replication_desired=self.replication_desired, put_threads=self.put_threads)
 
     def _cache_is_valid(self, filepath):
-        try:
-            with open(filepath, 'r') as cache_file:
+        with open(filepath, 'r') as cache_file:
+            try:
                 manifest = json.load(cache_file)['manifest']
-            kc = arvados.keep.KeepClient(api_client=api_client)
-            # Check that the first block's token (oldest) is valid
-            for line in manifest.split('\n'):
-                match = arvados.util.signed_locator_pattern.search(line)
-                if match is not None:
-                    loc = match.group(0)
-                    return kc.head(loc, num_retries=self.num_retries)
-            # No signed locator found, all ok.
+            except ValueError:
+                # Cache file is empty, all ok.
+                return True
+        if manifest is None:
+            # No cached manifest, all ok.
             return True
-        except Exception as e:
-            self.logger.info("Something wrong happened when checking cache file: {}".format(e))
-            return False
+        # Check that the first block's token (oldest) is valid
+        match = arvados.util.signed_locator_pattern.search(manifest)
+        if match is not None:
+            loc = match.group(0)
+            try:
+                kc = arvados.keep.KeepClient(api_client=api_client)
+                return kc.head(loc, num_retries=self.num_retries)
+            except arvados.errors.KeepRequestError as e:
+                self.logger.info("Cache validation: {}".format(e))
+                return False
+        # No signed locator found, all ok.
+        return True
 
     def collection_file_paths(self, col, path_prefix='.'):
         """Return a list of file paths by recursively go through the entire collection `col`"""

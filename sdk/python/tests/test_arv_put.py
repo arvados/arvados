@@ -863,7 +863,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
             cache = json.load(c)
         self.assertRegex(cache['manifest'], r'\+A\S+\@')
         cache['manifest'] = re.sub(r'\+A\S+\@',
-                                   '+Athistokendoesnotwork@',
+                                   '+Adeadbeefdeadbeefdeadbeefdeadbeefdeadbeef@',
                                    cache['manifest'])
         with open(cache_filepath, 'w') as c:
             c.write(json.dumps(cache))
