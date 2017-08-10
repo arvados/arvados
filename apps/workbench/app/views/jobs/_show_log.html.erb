@@ -74,7 +74,7 @@ var makeFilter = function() {
     $("#log-viewer-download-pane").show();
     var headers = {};
     if (log_size > log_maxbytes) {
-      headers['Range'] = 'bytes=0-' + log_maxbytes;
+      headers['Range'] = 'bytes=0-' + (log_maxbytes - 1);
     }
     var ajax_opts = { dataType: 'text', headers: headers };
     load_log();
