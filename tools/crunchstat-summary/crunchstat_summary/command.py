@@ -16,9 +16,11 @@ class ArgumentParser(argparse.ArgumentParser):
             description='Summarize resource usage of an Arvados Crunch job')
         src = self.add_mutually_exclusive_group()
         src.add_argument(
-            '--job', type=str, metavar='UUID',
-            help='Look up the specified job and read its log data from Keep'
-            ' (or from the Arvados event log, if the job is still running)')
+            '--job', '--container', '--container-request',
+            type=str, metavar='UUID',
+            help='Look up the specified job, container, or container request '
+            'and read its log data from Keep (or from the Arvados event log, '
+            'if the job is still running)')
         src.add_argument(
             '--pipeline-instance', type=str, metavar='UUID',
             help='Summarize each component of the given pipeline instance')
@@ -46,9 +48,9 @@ class Command(object):
             'skip_child_jobs': self.args.skip_child_jobs,
         }
         if self.args.pipeline_instance:
-            self.summer = summarizer.PipelineSummarizer(self.args.pipeline_instance, **kwargs)
+            self.summer = summarizer.NewSummarizer(self.args.pipeline_instance, **kwargs)
         elif self.args.job:
-            self.summer = summarizer.JobSummarizer(self.args.job, **kwargs)
+            self.summer = summarizer.NewSummarizer(self.args.job, **kwargs)
         elif self.args.log_file:
             if self.args.log_file.endswith('.gz'):
                 fh = gzip.open(self.args.log_file)

@@ -96,7 +96,7 @@ class Summarizer(object):
                                    self.label, uuid)
                     continue
                 logger.debug('%s: follow %s', self.label, uuid)
-                child_summarizer = JobSummarizer(uuid)
+                child_summarizer = ProcessSummarizer(uuid)
                 child_summarizer.stats_max = self.stats_max
                 child_summarizer.task_stats = self.task_stats
                 child_summarizer.tasks = self.tasks
@@ -386,35 +386,68 @@ class CollectionSummarizer(Summarizer):
         self.label = collection_id
 
 
-class JobSummarizer(Summarizer):
-    def __init__(self, job, **kwargs):
-        arv = arvados.api('v1')
-        if isinstance(job, basestring):
-            self.job = arv.jobs().get(uuid=job).execute()
-        else:
-            self.job = job
+def NewSummarizer(process, **kwargs):
+    """Construct with the appropriate subclass for this uuid/object."""
+
+    if not isinstance(process, dict):
+        uuid = process
+        process = None
+        arv = arvados.api('v1', model=OrderedJsonModel())
+
+    if re.search('-dz642-', uuid):
+        if process is None:
+            process = arv.containers().get(uuid=uuid).execute()
+        return ContainerSummarizer(process, **kwargs)
+    elif re.search('-xvhdp-', uuid):
+        if process is None:
+            ctrReq = arv.container_requests().get(uuid=uuid).execute()
+            ctrUUID = ctrReq['container_uuid']
+            process = arv.containers().get(uuid=ctrUUID).execute()
+        return ContainerSummarizer(process, **kwargs)
+    elif re.search('-8i9sb-', uuid):
+        if process is None:
+            process = arv.jobs().get(uuid=uuid).execute()
+        return JobSummarizer(process, **kwargs)
+    elif re.search('-d1hrv-', uuid):
+        if process is None:
+            process = arv.pipeline_instances().get(uuid=uuid).execute()
+        return PipelineSummarizer(process, **kwargs)
+    else:
+        raise ArgumentError("Unrecognized uuid %s", uuid)
+
+
+class ProcessSummarizer(Summarizer):
+    """Process is a job, pipeline, container, or container request."""
+
+    def __init__(self, process, **kwargs):
         rdr = None
-        if self.job.get('log'):
+        self.process = process
+        if self.process.get('log'):
             try:
-                rdr = crunchstat_summary.reader.CollectionReader(self.job['log'])
+                rdr = crunchstat_summary.reader.CollectionReader(self.process['log'])
             except arvados.errors.NotFoundError as e:
                 logger.warning("Trying event logs after failing to read "
-                               "log collection %s: %s", self.job['log'], e)
+                               "log collection %s: %s", self.process['log'], e)
             else:
-                label = self.job['uuid']
+                label = self.process['uuid']
         if rdr is None:
-            rdr = crunchstat_summary.reader.LiveLogReader(self.job['uuid'])
-            label = self.job['uuid'] + ' (partial)'
-        super(JobSummarizer, self).__init__(rdr, **kwargs)
+            rdr = crunchstat_summary.reader.LiveLogReader(self.process['uuid'])
+            label = self.process['uuid'] + ' (partial)'
+        super(ProcessSummarizer, self).__init__(rdr, **kwargs)
         self.label = label
-        self.existing_constraints = self.job.get('runtime_constraints', {})
+        self.existing_constraints = self.process.get('runtime_constraints', {})
+
+
+class JobSummarizer(ProcessSummarizer):
+    pass
+
+
+class ContainerSummarizer(ProcessSummarizer):
+    pass
 
 
 class PipelineSummarizer(object):
-    def __init__(self, pipeline_instance_uuid, **kwargs):
-        arv = arvados.api('v1', model=OrderedJsonModel())
-        instance = arv.pipeline_instances().get(
-            uuid=pipeline_instance_uuid).execute()
+    def __init__(self, instance, **kwargs):
         self.summarizers = collections.OrderedDict()
         for cname, component in instance['components'].iteritems():
             if 'job' not in component:
@@ -427,7 +460,7 @@ class PipelineSummarizer(object):
                 summarizer.label = '{} {}'.format(
                     cname, component['job']['uuid'])
                 self.summarizers[cname] = summarizer
-        self.label = pipeline_instance_uuid
+        self.label = instance['uuid']
 
     def run(self):
         threads = []
@@ -443,7 +476,7 @@ class PipelineSummarizer(object):
         txt = ''
         for cname, summarizer in self.summarizers.iteritems():
             txt += '### Summary for {} ({})\n'.format(
-                cname, summarizer.job['uuid'])
+                cname, summarizer.process['uuid'])
             txt += summarizer.text_report()
             txt += '\n'
         return txt
