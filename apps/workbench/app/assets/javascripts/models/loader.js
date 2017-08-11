@@ -65,7 +65,7 @@ window.models.MultisiteLoader = function(config) {
         // displayed).
         lowWaterMark: 23,
     })
-    var sessions = loader.sessionDB.loadAll()
+    var sessions = loader.sessionDB.loadActive()
     m.stream.merge(Object.keys(sessions).map(function(key) {
         var pager = new window.models.Pager(loader.loadFunc.bind(null, sessions[key]))
         loader.pagers[key] = pager

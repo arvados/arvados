@@ -119,7 +119,9 @@ window.components.collection_search = {
                         ? m('span.label.label-xs.label-danger', 'none')
                         : Object.keys(sessions).sort().map(function(key) {
                             return [m('span.label.label-xs', {
-                                className: vnode.state.loader.pagers[key].items() ? 'label-info' : 'label-default',
+                                className: !vnode.state.loader.pagers[key] ? 'label-default' :
+                                    vnode.state.loader.pagers[key].items() ? 'label-success' :
+                                    'label-warning',
                             }, key), ' ']
                         }),
                     ' ',

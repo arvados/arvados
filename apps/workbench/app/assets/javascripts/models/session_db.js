@@ -20,6 +20,14 @@ window.models.SessionDB = function() {
             }
             return all
         },
+        loadActive: function() {
+            var sessions = db.loadAll()
+            Object.keys(sessions).forEach(function(key) {
+                if (!sessions[key].token)
+                    delete sessions[key]
+            })
+            return sessions
+        },
         save: function(k, v) {
             var sessions = db.loadAll()
             sessions[k] = v
@@ -49,6 +57,14 @@ window.models.SessionDB = function() {
                 baseURL = baseURL + '/'
             document.location = baseURL + 'login?return_to=' + encodeURIComponent(document.location.href.replace(/\?.*/, '')+'?baseURL='+encodeURIComponent(baseURL))
             return false
+        },
+        logout: function(k) {
+            // Forget the token, but leave the other info in the db so
+            // the user can log in again without providing the login
+            // host again.
+            var sessions = db.loadAll()
+            delete sessions[k].token
+            db.save(k, sessions[k])
         },
         checkForNewToken: function() {
             // If there's a token and baseURL in the location bar (i.e.,
