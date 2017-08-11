@@ -46,7 +46,7 @@ window.components.collection_table = {
             m('tbody', [
                 vnode.attrs.loader.displayable.map(function(item) {
                     return m('tr', [
-                        m('td', m('a.btn.btn-xs.btn-default', {href: item.session.baseURL.replace('://', '://workbench.')+'/collections/'+item.uuid}, 'Show')),
+                        m('td', m('a.btn.btn-xs.btn-default', {href: item.session.baseURL.replace('://', '://workbench.')+'collections/'+item.uuid}, 'Show')),
                         m('td.arvados-uuid', item.uuid),
                         m('td', item.name || '(unnamed)'),
                         m('td', m(window.components.datetime, {parse: item.modified_at})),
