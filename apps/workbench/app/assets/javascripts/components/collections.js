@@ -4,6 +4,31 @@
 
 window.components = window.components || {}
 window.components.collection_table = {
+    oncreate: function(vnode) {
+        vnode.state.autoload = function() {
+            if (!vnode.attrs.loader.loadMore)
+                // Can't load more content anyway: no point in
+                // checking anything else.
+                return
+            var contentRect = vnode.dom.getBoundingClientRect()
+            var scroller = window // TODO: use vnode.dom's nearest ancestor with scrollbars
+            if (contentRect.bottom < 2 * scroller.innerHeight) {
+                // We have less than 1 page worth of content available
+                // below the visible area. Load more.
+                vnode.attrs.loader.loadMore()
+                // Indicate loading is in progress.
+                window.requestAnimationFrame(m.redraw)
+            }
+        }
+        window.addEventListener('scroll', vnode.state.autoload)
+        window.addEventListener('resize', vnode.state.autoload)
+        vnode.state.autoloadTimer = window.setInterval(vnode.state.autoload, 200)
+    },
+    onremove: function(vnode) {
+        window.clearInterval(vnode.state.autoloadTimer)
+        window.removeEventListener('scroll', vnode.state.autoload)
+        window.removeEventListener('resize', vnode.state.autoload)
+    },
     view: function(vnode) {
         return m('table.table.table-condensed', [
             m('thead', m('tr', [
