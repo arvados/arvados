@@ -29,6 +29,11 @@ SPDX-License-Identifier: AGPL-3.0 %>
           <% if current_user %>
             <% if current_user.is_active %>
             <li>
+              <%= link_to(controller: 'collections', action: 'multisite') do %>
+                Multisite search (beta)
+              <% end %>
+            </li>
+            <li>
               <form class="navbar-form" role="search"
                          data-search-modal=
                          "<%= url_for(
