@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 class SessionsController < ApplicationController
-  skip_around_filter :require_thread_api_token, :only => [:destroy, :index]
-  skip_around_filter :set_thread_api_token, :only => [:destroy, :index]
-  skip_before_filter :find_object_by_uuid, :only => [:destroy, :index]
+  skip_around_filter :require_thread_api_token, :only => [:destroy, :logged_out]
+  skip_around_filter :set_thread_api_token, :only => [:destroy, :logged_out]
+  skip_before_filter :find_object_by_uuid
   skip_before_filter :find_objects_for_index
   skip_before_filter :ensure_arvados_api_exists
 

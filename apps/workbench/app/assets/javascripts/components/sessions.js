@@ -23,7 +23,7 @@ window.components.sessions = {
                     var session = sessions[uuidPrefix]
                     return m('tr', [
                         session.token && session.user ? [
-                            m('td', m('a.btn.btn-xs.btn-default', {
+                            m('td', session.isFromRails ? null : m('a.btn.btn-xs.btn-default', {
                                 uuidPrefix: uuidPrefix,
                                 onclick: m.withAttr('uuidPrefix', db.logout),
                             }, 'log out')),
@@ -41,7 +41,7 @@ window.components.sessions = {
                             m('td'),
                             m('td'),
                         ],
-                        m('td', m('a.glyphicon.glyphicon-trash', {
+                        m('td', session.isFromRails ? null : m('a.glyphicon.glyphicon-trash', {
                             uuidPrefix: uuidPrefix,
                             onclick: m.withAttr('uuidPrefix', db.trash),
                         })),

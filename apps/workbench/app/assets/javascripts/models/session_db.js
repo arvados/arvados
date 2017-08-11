@@ -6,15 +6,27 @@ window.models = window.models || {}
 window.models.SessionDB = function() {
     var db = this
     Object.assign(db, {
-        loadAll: function() {
+        loadFromLocalStorage: function() {
             try {
                 return JSON.parse(window.localStorage.getItem('sessions')) || {}
             } catch(e) {}
             return {}
         },
+        loadAll: function() {
+            var all = db.loadFromLocalStorage()
+            if (window.defaultSession) {
+                window.defaultSession.isFromRails = true
+                all[window.defaultSession.user.uuid.slice(0, 5)] = window.defaultSession
+            }
+            return all
+        },
         save: function(k, v) {
             var sessions = db.loadAll()
             sessions[k] = v
+            Object.keys(sessions).forEach(function(key) {
+                if (sessions[key].isFromRails)
+                    delete sessions[key]
+            })
             window.localStorage.setItem('sessions', JSON.stringify(sessions))
         },
         trash: function(k) {
