@@ -32,7 +32,7 @@ debian8,debian9,ubuntu1204,ubuntu1404,ubuntu1604,centos7|docker-py|1.7.2|2|pytho
 debian8,debian9,ubuntu1204,centos7|six|1.10.0|2|python3|all
 debian8,debian9,ubuntu1204,ubuntu1404,centos7|requests|2.12.4|2|python3|all
 debian8,debian9,ubuntu1204,ubuntu1404,ubuntu1604,centos7|websocket-client|0.37.0|2|python3|all
-ubuntu1204|requests|2.12.4|2|python|all
+ubuntu1204,ubuntu1404|requests|2.4.3|2|python|all
 ubuntu1204,centos7|contextlib2|0.5.4|2|python|all
 ubuntu1204,centos7|isodate|0.5.4|2|python|all
 centos7|daemon|2.1.1|2|python|all
