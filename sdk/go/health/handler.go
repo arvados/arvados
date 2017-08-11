@@ -44,7 +44,7 @@ type Handler struct {
 	Routes Routes
 
 	// If non-nil, Log is called after handling each request. The
-	// error argument is nil if the request was succesfully
+	// error argument is nil if the request was successfully
 	// authenticated and served, even if the health check itself
 	// failed.
 	Log func(*http.Request, error)
