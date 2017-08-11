@@ -47,7 +47,7 @@ window.models.SessionDB = function() {
                 baseURL = 'https://' + baseURL
             if (!baseURL.endsWith('/'))
                 baseURL = baseURL + '/'
-            document.location = baseURL + 'login?return_to=' + encodeURIComponent(document.location.href+'?baseURL='+encodeURIComponent(baseURL))
+            document.location = baseURL + 'login?return_to=' + encodeURIComponent(document.location.href.replace(/\?.*/, '')+'?baseURL='+encodeURIComponent(baseURL))
             return false
         },
         checkForNewToken: function() {
