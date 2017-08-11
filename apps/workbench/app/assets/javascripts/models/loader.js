@@ -10,7 +10,7 @@ window.models.Pager = function(loadFunc) {
         done: false,
         items: m.stream(),
         thresholdItem: null,
-        loadNextPage: function() {
+        loadMore: function() {
             // Get the next page, if there are any more items to get.
             if (pager.done)
                 return
@@ -53,6 +53,7 @@ window.models.MultisiteLoader = function(config) {
     Object.assign(loader, config, {
         // Sorted items ready to display, merged from all pagers.
         displayable: [],
+        done: false,
         pagers: {},
         loadMore: false,
         // Number of undisplayed items to keep on hand for each result
@@ -68,7 +69,7 @@ window.models.MultisiteLoader = function(config) {
     m.stream.merge(Object.keys(sessions).map(function(key) {
         var pager = new window.models.Pager(loader.loadFunc.bind(null, sessions[key]))
         loader.pagers[key] = pager
-        pager.loadNextPage()
+        pager.loadMore()
         // Resolve the stream with the session key when the results
         // arrive.
         return pager.items.map(function() { return key })
@@ -112,14 +113,15 @@ window.models.MultisiteLoader = function(config) {
             if (!loader.pagers[key].done)
                 loadable.push(loader.pagers[key])
         })
-        if (loadable.length == 0)
+        if (loadable.length == 0) {
+            loader.done = true
             loader.loadMore = false
-        else
+        } else
             loader.loadMore = function() {
                 loader.loadMore = false
                 loadable.map(function(pager) {
                     if (pager.items().length - pager.itemsDisplayed < loader.lowWaterMark)
-                        pager.loadNextPage()
+                        pager.loadMore()
                 })
             }
     })
