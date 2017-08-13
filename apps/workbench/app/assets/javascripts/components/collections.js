@@ -6,8 +6,8 @@ window.components = window.components || {}
 window.components.collection_table = {
     maybeLoadMore: function(dom) {
         var loader = this.loader
-        if (loader.done || !loader.loadMore)
-            // Can't load more content anyway: no point in
+        if (loader.done || loader.loading)
+            // Can't start getting more items anyway: no point in
             // checking anything else.
             return
         var contentRect = dom.getBoundingClientRect()
@@ -45,7 +45,7 @@ window.components.collection_table = {
                 m('th', 'last modified'),
             ])),
             m('tbody', [
-                vnode.attrs.loader.displayable.map(function(item) {
+                vnode.attrs.loader.items() && vnode.attrs.loader.items().map(function(item) {
                     return m('tr', [
                         m('td', m('a.btn.btn-xs.btn-default', {href: item.session.baseURL.replace('://', '://workbench.')+'collections/'+item.uuid}, 'Show')),
                         m('td.arvados-uuid', item.uuid),
@@ -56,19 +56,19 @@ window.components.collection_table = {
             ]),
             m('tfoot', m('tr', [
                 vnode.attrs.loader.done ? null : m('th[colspan=4]', m('button.btn.btn-xs', {
-                    className: vnode.attrs.loader.loadMore ? 'btn-primary' : 'btn-default',
+                    className: vnode.attrs.loader.loading ? 'btn-default' : 'btn-primary',
                     style: {
                         display: 'block',
                         width: '12em',
                         marginLeft: 'auto',
                         marginRight: 'auto',
                     },
-                    disabled: !vnode.attrs.loader.loadMore,
+                    disabled: vnode.attrs.loader.loading,
                     onclick: function() {
                         vnode.attrs.loader.loadMore()
                         return false
                     },
-                }, vnode.attrs.loader.loadMore ? 'Load more' : '(loading)')),
+                }, vnode.attrs.loader.loading ? '(loading)' : 'Load more')),
             ])),
         ])
     },
@@ -134,8 +134,8 @@ window.components.collection_search = {
                             ? m('span.label.label-xs.label-danger', 'none')
                             : Object.keys(sessions).sort().map(function(key) {
                                 return [m('span.label.label-xs', {
-                                    className: !vnode.state.loader.pagers[key] ? 'label-default' :
-                                        vnode.state.loader.pagers[key].items() ? 'label-success' :
+                                    className: !vnode.state.loader.children[key] ? 'label-default' :
+                                        vnode.state.loader.children[key].items() ? 'label-success' :
                                         'label-warning',
                                 }, key), ' ']
                             }),
