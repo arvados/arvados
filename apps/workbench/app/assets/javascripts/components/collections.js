@@ -25,6 +25,7 @@ window.components.collection_table = {
         window.addEventListener('scroll', vnode.state.maybeLoadMore)
         window.addEventListener('resize', vnode.state.maybeLoadMore)
         vnode.state.timer = window.setInterval(vnode.state.maybeLoadMore, 200)
+        vnode.state.loader = vnode.attrs.loader
         vnode.state.onupdate(vnode)
     },
     onupdate: function(vnode) {
@@ -76,9 +77,14 @@ window.components.collection_table = {
 window.components.collection_search = {
     oninit: function(vnode) {
         vnode.state.sessionDB = new window.models.SessionDB()
-        vnode.state.searchEntered = m.stream('')
-        vnode.state.searchStart = m.stream('')
-        vnode.state.searchStart.map(function(q) {
+        vnode.state.searchEntered = m.stream()
+        vnode.state.searchActive = m.stream()
+        // When searchActive changes (e.g., when restoring state
+        // after navigation), update the text field too.
+        vnode.state.searchActive.map(vnode.state.searchEntered)
+        // When searchActive changes, create a new loader that filters
+        // with the given search term.
+        vnode.state.searchActive.map(function(q) {
             vnode.state.loader = new window.models.MultisiteLoader({
                 loadFunc: function(session, filters) {
                     if (q)
@@ -98,39 +104,49 @@ window.components.collection_search = {
         var sessions = vnode.state.sessionDB.loadAll()
         return m('form', {
             onsubmit: function() {
-                vnode.state.searchStart(vnode.state.searchEntered())
+                vnode.state.searchActive(vnode.state.searchEntered())
+                vnode.state.forgetSavedState = true
                 return false
             },
         }, [
-            m('.row', [
-                m('.col-md-6', [
-                    m('.input-group', [
-                        m('input#search.form-control[placeholder=Search]', {
-                            oninput: m.withAttr('value', vnode.state.searchEntered),
-                        }),
-                        m('.input-group-btn', [
-                            m('input.btn.btn-primary[type=submit][value="Search"]'),
+            m(window.components.save_state, {
+                defaultState: '',
+                currentState: vnode.state.searchActive,
+                forgetSavedState: vnode.state.forgetSavedState,
+                saveBodyHeight: true,
+            }),
+            vnode.state.loader && [
+                m('.row', [
+                    m('.col-md-6', [
+                        m('.input-group', [
+                            m('input#search.form-control[placeholder=Search]', {
+                                oninput: m.withAttr('value', vnode.state.searchEntered),
+                                value: vnode.state.searchEntered(),
+                            }),
+                            m('.input-group-btn', [
+                                m('input.btn.btn-primary[type=submit][value="Search"]'),
+                            ]),
                         ]),
                     ]),
+                    m('.col-md-6', [
+                        'Searching sites: ',
+                        Object.keys(sessions).length == 0
+                            ? m('span.label.label-xs.label-danger', 'none')
+                            : Object.keys(sessions).sort().map(function(key) {
+                                return [m('span.label.label-xs', {
+                                    className: !vnode.state.loader.pagers[key] ? 'label-default' :
+                                        vnode.state.loader.pagers[key].items() ? 'label-success' :
+                                        'label-warning',
+                                }, key), ' ']
+                            }),
+                        ' ',
+                        m('a[href="/sessions"]', 'Add/remove sites'),
+                    ]),
                 ]),
-                m('.col-md-6', [
-                    'Searching sites: ',
-                    Object.keys(sessions).length == 0
-                        ? m('span.label.label-xs.label-danger', 'none')
-                        : Object.keys(sessions).sort().map(function(key) {
-                            return [m('span.label.label-xs', {
-                                className: !vnode.state.loader.pagers[key] ? 'label-default' :
-                                    vnode.state.loader.pagers[key].items() ? 'label-success' :
-                                    'label-warning',
-                            }, key), ' ']
-                        }),
-                    ' ',
-                    m('a[href="/sessions"]', 'Add/remove sites'),
-                ]),
-            ]),
-            m(window.components.collection_table, {
-                loader: vnode.state.loader,
-            }),
+                m(window.components.collection_table, {
+                    loader: vnode.state.loader,
+                }),
+            ],
         ])
     },
 }
