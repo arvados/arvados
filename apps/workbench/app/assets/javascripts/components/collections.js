@@ -85,18 +85,28 @@ window.components.collection_search = {
         // When searchActive changes, create a new loader that filters
         // with the given search term.
         vnode.state.searchActive.map(function(q) {
-            vnode.state.loader = new window.models.MultisiteLoader({
-                loadFunc: function(session, filters) {
-                    if (q)
-                        filters.push(['any', '@@', q+':*'])
-                    return vnode.state.sessionDB.request(session, 'arvados/v1/collections', {
-                        data: {
-                            filters: JSON.stringify(filters),
-                            count: 'none',
+            var sessions = vnode.state.sessionDB.loadActive()
+            vnode.state.loader = new window.models.MergingLoader({
+                children: Object.keys(sessions).map(function(key) {
+                    var session = sessions[key]
+                    return new window.models.MultipageLoader({
+                        loadFunc: function(filters) {
+                            if (q)
+                                filters.push(['any', '@@', q+':*'])
+                            return vnode.state.sessionDB.request(session, 'arvados/v1/collections', {
+                                data: {
+                                    filters: JSON.stringify(filters),
+                                    count: 'none',
+                                },
+                            }).then(function(resp) {
+                                resp.items.map(function(item) {
+                                    item.session = session
+                                })
+                                return resp
+                            })
                         },
                     })
-                },
-                sessionDB: vnode.state.sessionDB,
+                })
             })
         })
     },

@@ -51,48 +51,34 @@ window.models.MultipageLoader = function(config) {
     loader.loadMore()
 }
 
-// MultisiteLoader loads pages of results from multiple API sessions
-// and merges them into a single result set.
+// MergingLoader merges results from multiple loaders (given in the
+// config.children array) into a single result set.
 //
-// The constructor implicitly starts an initial page load for each
-// session.
+// new MergingLoader({children: [loader, loader, ...]})
 //
-// new MultisiteLoader({loadFunc: function(session, filters){...},
-// sessionDB: new window.models.SessionDB()}
-//
-// loadFunc() must retrieve results in "modified_at desc" order.
-//
-// (TODO? This could split into two parts: "make a loader for each
-// session, attaching session to each returned item", and "merge items
-// from N loaders".)
+// The children must retrieve results in "modified_at desc" order.
 window.models = window.models || {}
-window.models.MultisiteLoader = function(config) {
+window.models.MergingLoader = function(config) {
     var loader = this
-    if (!(config.loadFunc && config.sessionDB))
-        throw new Error("MultisiteLoader constructor requires loadFunc and sessionDB")
     Object.assign(loader, config, {
-        sessions: config.sessionDB.loadActive(),
         // Sorted items ready to display, merged from all children.
         items: m.stream(),
         done: false,
-        children: {},
         loading: false,
         loadable: function() {
             // Return an array of children that we could call
             // loadMore() on. Update loader.done and loader.loading.
             loader.done = true
             loader.loading = false
-            return Object.keys(loader.children)
-                .map(function(key) { return loader.children[key] })
-                .filter(function(child) {
-                    if (child.done)
-                        return false
-                    loader.done = false
-                    if (!child.loading)
-                        return true
-                    loader.loading = true
+            return loader.children.filter(function(child) {
+                if (child.done)
                     return false
-                })
+                loader.done = false
+                if (!child.loading)
+                    return true
+                loader.loading = true
+                return false
+            })
         },
         loadMore: function() {
             // Call loadMore() on children that have reached
@@ -105,12 +91,10 @@ window.models.MultisiteLoader = function(config) {
             })
         },
         mergeItems: function() {
-            var keys = Object.keys(loader.sessions)
             // cutoff is the topmost (recent) of {bottom (oldest) entry of
             // any child that still has more pages left to fetch}
             var cutoff
-            keys.forEach(function(key) {
-                var child = loader.children[key]
+            loader.children.forEach(function(child) {
                 var items = child.items()
                 if (items.length == 0 || child.done)
                     return
@@ -119,8 +103,7 @@ window.models.MultisiteLoader = function(config) {
                     cutoff = last
             })
             var combined = []
-            keys.forEach(function(key) {
-                var child = loader.children[key]
+            loader.children.forEach(function(child) {
                 child.itemsDisplayed = 0
                 child.items().every(function(item) {
                     if (cutoff && item.modified_at < cutoff)
@@ -128,7 +111,6 @@ window.models.MultisiteLoader = function(config) {
                         // point, so don't display this item or anything
                         // after it.
                         return false
-                    item.session = loader.sessions[key]
                     combined.push(item)
                     child.itemsDisplayed++
                     return true // continue
@@ -146,16 +128,9 @@ window.models.MultisiteLoader = function(config) {
         // event (except for the case where all items are displayed).
         lowWaterMark: 23,
     })
-    var childrenItems = Object.keys(loader.sessions).map(function(key) {
-        var child = new window.models.MultipageLoader({
-            loadFunc: loader.loadFunc.bind(null, loader.sessions[key]),
-        })
-        loader.children[key] = child
-        // Resolve with the session key whenever results arrive for
-        // that session.
+    var childrenReady = m.stream.merge(loader.children.map(function(child) {
         return child.items
-    })
-    var childrenReady = m.stream.merge(childrenItems)
+    }))
     childrenReady.map(loader.loadable)
     childrenReady.map(loader.mergeItems)
 }
