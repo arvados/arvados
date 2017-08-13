@@ -17,7 +17,7 @@ window.components.sessions = {
     view: function(vnode) {
         var db = vnode.state.db
         var sessions = db.loadAll()
-        return m('container', [
+        return m('.container', [
             m('table.table.table-condensed.table-hover', [
                 m('thead', m('tr', [
                     m('th', 'status'),
