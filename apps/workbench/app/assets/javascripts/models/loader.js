@@ -17,8 +17,7 @@
 // items is a stream that resolves to an array of all items retrieved so far.
 //
 // loadMore() loads the next page, if any.
-window.models = window.models || {}
-window.models.MultipageLoader = function(config) {
+window.MultipageLoader = function(config) {
     var loader = this
     Object.assign(loader, config, {
         done: false,
@@ -57,8 +56,7 @@ window.models.MultipageLoader = function(config) {
 // new MergingLoader({children: [loader, loader, ...]})
 //
 // The children must retrieve results in "modified_at desc" order.
-window.models = window.models || {}
-window.models.MergingLoader = function(config) {
+window.MergingLoader = function(config) {
     var loader = this
     Object.assign(loader, config, {
         // Sorted items ready to display, merged from all children.

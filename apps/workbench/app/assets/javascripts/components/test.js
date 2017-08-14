@@ -2,8 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-window.components = window.components || {}
-window.components.test = {
+window.TestComponent = {
     view: function(vnode) {
         return m('div.mithril-test-component', [
             m('p', {

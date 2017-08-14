@@ -2,8 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-window.models = window.models || {}
-window.models.SessionDB = function() {
+window.SessionDB = function() {
     var db = this
     Object.assign(db, {
         loadFromLocalStorage: function() {

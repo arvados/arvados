@@ -3,15 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0
 
 $(document).on('ready', function() {
-    var db = new window.models.SessionDB()
+    var db = new SessionDB()
     db.checkForNewToken()
     db.fillMissingUUIDs()
 })
 
-window.components = window.components || {}
-window.components.sessions = {
+window.SessionsTable = {
     oninit: function(vnode) {
-        vnode.state.db = new window.models.SessionDB()
+        vnode.state.db = new SessionDB()
         vnode.state.hostToAdd = m.stream('')
     },
     view: function(vnode) {

@@ -2,8 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-window.components = window.components || {}
-window.components.collection_table = {
+window.CollectionsTable = {
     maybeLoadMore: function(dom) {
         var loader = this.loader
         if (loader.done || loader.loading)
@@ -50,7 +49,7 @@ window.components.collection_table = {
                         m('td', m('a.btn.btn-xs.btn-default', {href: item.session.baseURL.replace('://', '://workbench.')+'collections/'+item.uuid}, 'Show')),
                         m('td.arvados-uuid', item.uuid),
                         m('td', item.name || '(unnamed)'),
-                        m('td', m(window.components.datetime, {parse: item.modified_at})),
+                        m('td', m(LocalizedDateTime, {parse: item.modified_at})),
                     ])
                 }),
             ]),
@@ -74,9 +73,9 @@ window.components.collection_table = {
     },
 }
 
-window.components.collection_search = {
+window.CollectionsSearch = {
     oninit: function(vnode) {
-        vnode.state.sessionDB = new window.models.SessionDB()
+        vnode.state.sessionDB = new SessionDB()
         vnode.state.searchEntered = m.stream()
         vnode.state.searchActive = m.stream()
         // When searchActive changes (e.g., when restoring state
@@ -86,10 +85,10 @@ window.components.collection_search = {
         // with the given search term.
         vnode.state.searchActive.map(function(q) {
             var sessions = vnode.state.sessionDB.loadActive()
-            vnode.state.loader = new window.models.MergingLoader({
+            vnode.state.loader = new MergingLoader({
                 children: Object.keys(sessions).map(function(key) {
                     var session = sessions[key]
-                    return new window.models.MultipageLoader({
+                    return new MultipageLoader({
                         loadFunc: function(filters) {
                             if (q)
                                 filters.push(['any', '@@', q+':*'])
@@ -119,7 +118,7 @@ window.components.collection_search = {
                 return false
             },
         }, [
-            m(window.components.save_state, {
+            m(SaveUIState, {
                 defaultState: '',
                 currentState: vnode.state.searchActive,
                 forgetSavedState: vnode.state.forgetSavedState,
@@ -153,7 +152,7 @@ window.components.collection_search = {
                         m('a[href="/sessions"]', 'Add/remove sites'),
                     ]),
                 ]),
-                m(window.components.collection_table, {
+                m(CollectionsTable, {
                     loader: vnode.state.loader,
                 }),
             ],

@@ -2,8 +2,7 @@
 //
 // SPDX-License-Identifier: AGPL-3.0
 
-window.components = window.components || {}
-window.components.save_state = {
+window.SaveUIState = {
     saveState: function() {
         var state = history.state || {}
         state.bodyHeight = window.getComputedStyle(document.body)['height']
