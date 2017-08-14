@@ -105,9 +105,19 @@ class Summarizer(object):
                 logger.debug('%s: done %s', self.label, uuid)
                 continue
 
-            m = re.search(r'^(?P<timestamp>[^\s.]+)(\.\d+)? (?P<job_uuid>\S+) \d+ (?P<seq>\d+) stderr crunchstat: (?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n', line)
-            if not m:
-                continue
+            m = re.search(r'^(?P<timestamp>[^\s.]+)(\.\d+)? (?P<job_uuid>\S+) \d+ (?P<seq>\d+) stderr crunchstat: (?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n$', line)
+            if m:
+                # crunch1 job
+                task_id = self.seq_to_uuid[int(m.group('seq'))]
+            else:
+                m = re.search(r'^(?P<timestamp>\S+) (?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n$', line)
+                if m:
+                    # crunch2 container (seq/task don't apply)
+                    task_id = 'container'
+                else:
+                    # not a crunchstat log
+                    continue
+            task = self.tasks[task_id]
 
             try:
                 if self.label is None:
@@ -122,13 +132,20 @@ class Summarizer(object):
                     # "stderr crunchstat: read /proc/1234/net/dev: ..."
                     # (crunchstat formatting fixed, but old logs still say this)
                     continue
-                task_id = self.seq_to_uuid[int(m.group('seq'))]
-                task = self.tasks[task_id]
 
                 # Use the first and last crunchstat timestamps as
                 # approximations of starttime and finishtime.
-                timestamp = datetime.datetime.strptime(
-                    m.group('timestamp'), '%Y-%m-%d_%H:%M:%S')
+                timestamp = m.group('timestamp')
+                if timestamp[10:11] == '_':
+                    timestamp = datetime.datetime.strptime(
+                        timestamp, '%Y-%m-%d_%H:%M:%S')
+                elif timestamp[10:11] == 'T':
+                    timestamp = datetime.datetime.strptime(
+                        timestamp[:19], '%Y-%m-%dT%H:%M:%S')
+                else:
+                    raise ValueError("Cannot parse timestamp {!r}".format(
+                        timestamp))
+
                 if not task.starttime:
                     task.starttime = timestamp
                     logger.debug('%s: task %s starttime %s',
