@@ -1,0 +1,65 @@
+---
+layout: default
+navsection: sdk
+navmenu: Python
+title: Code cookbook
+...
+{% comment %}
+Copyright (C) The Arvados Authors. All rights reserved.
+
+SPDX-License-Identifier: CC-BY-SA-3.0
+{% endcomment %}
+
+h2. Cancel a container request
+
+<code>
+import arvados
+arvados.api().container_requests().update(uuid=container_request_uuid, body={"priority": 0}).execute()
+</code>
+
+h2. Cancel all container requests
+
+<code>
+import arvados
+api = arvados.api()
+result = api.container_requests().list(filters=[["state", "=", "Committed"], ["priority", ">", "0"]]).execute()["items"]
+for container_request in result:
+    api.container_requests().update(uuid=container_request["uuid"], body={"priority": 0}).execute()
+</code>
+
+h2. List completed container requests
+
+<code>
+import arvados
+api = arvados.api()
+result = api.container_requests().list(filters=[["name", "like", name], ["state", "=", "Final"]]).execute()["items"]
+container_uuids = [cr["container_uuid"] for cr in result]
+containers = api.containers().list(filters=[["uuid", "in", container_uuids]]).execute()["items"]
+container_dict = {c["uuid"]: c for c in containers}
+
+for container_request in result:
+    container = container_dict[container_request["container_uuid"]]
+    print("%s, %s, %s" % (container_request["uuid"], container_request["name"], "Success" if container["exit_code"] == 0 else "Failed"))
+</code>
+
+h2. Get input of a CWL workflow
+
+<code>
+import arvados
+api = arvados.api()
+container_request = arvados.api().container_requests().get(uuid=container_request_uuid).execute()
+print(container_request["mounts"]["/var/lib/cwl/cwl.input.json"])
+</code>
+
+h2. Get output of a CWL workflow
+
+<code>
+import arvados
+import arvados.collection
+api = arvados.api()
+container_request = arvados.api().container_requests().get(uuid=container_request_uuid).execute()
+collection = arvados.collection.CollectionReader(container_request["output_uuid"])
+print(collection.open("cwl.output.json").read())
+</code>
+
+h2. Run a CWL workflow from a workflow record
