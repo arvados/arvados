@@ -89,6 +89,7 @@ window.CollectionsSearch = {
                 children: Object.keys(sessions).map(function(key) {
                     var session = sessions[key]
                     return new MultipageLoader({
+                        sessionKey: key,
                         loadFunc: function(filters) {
                             if (q)
                                 filters.push(['any', '@@', q+':*'])
@@ -139,14 +140,12 @@ window.CollectionsSearch = {
                     ]),
                     m('.col-md-6', [
                         'Searching sites: ',
-                        Object.keys(sessions).length == 0
+                        vnode.state.loader.children.length == 0
                             ? m('span.label.label-xs.label-danger', 'none')
-                            : Object.keys(sessions).sort().map(function(key) {
+                            : vnode.state.loader.children.map(function(child) {
                                 return [m('span.label.label-xs', {
-                                    className: !vnode.state.loader.children[key] ? 'label-default' :
-                                        vnode.state.loader.children[key].items() ? 'label-success' :
-                                        'label-warning',
-                                }, key), ' ']
+                                    className: child.items() ? 'label-success' : 'label-warning',
+                                }, child.sessionKey), ' ']
                             }),
                         ' ',
                         m('a[href="/sessions"]', 'Add/remove sites'),
