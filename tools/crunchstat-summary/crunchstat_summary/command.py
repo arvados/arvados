@@ -34,6 +34,9 @@ class ArgumentParser(argparse.ArgumentParser):
             '--format', type=str, choices=('html', 'text'), default='text',
             help='Report format')
         self.add_argument(
+            '--threads', type=int, default=8,
+            help='Maximum worker threads to run')
+        self.add_argument(
             '--verbose', '-v', action='count', default=0,
             help='Log more information (once for progress, twice for debug)')
 
@@ -46,6 +49,7 @@ class Command(object):
     def run(self):
         kwargs = {
             'skip_child_jobs': self.args.skip_child_jobs,
+            'threads': self.args.threads,
         }
         if self.args.pipeline_instance:
             self.summer = summarizer.NewSummarizer(self.args.pipeline_instance, **kwargs)
