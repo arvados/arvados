@@ -9,6 +9,7 @@ standard_library.install_aliases()
 from builtins import str
 from builtins import range
 import apiclient
+import datetime
 import hashlib
 import json
 import mock
@@ -728,6 +729,9 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         cls.ENVIRON = os.environ.copy()
         cls.ENVIRON['PYTHONPATH'] = ':'.join(sys.path)
 
+    def datetime_to_hex(self, dt):
+        return hex(int(time.mktime(dt.timetuple())))[2:]
+
     def setUp(self):
         super(ArvPutIntegrationTest, self).setUp()
         arv_put.api_client = None
@@ -841,7 +845,7 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         self.assertEqual(1, len(collection_list))
         return collection_list[0]
 
-    def test_invalid_token_invalidates_cache(self):
+    def test_expired_token_invalidates_cache(self):
         self.authorize_with('active')
         tmpdir = self.make_tmpdir()
         with open(os.path.join(tmpdir, 'somefile.txt'), 'w') as f:
@@ -858,13 +862,15 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
                                    err.decode()).groups()[0]
         self.assertTrue(os.path.isfile(cache_filepath))
         # Load the cache file contents and modify the manifest to simulate
-        # an invalid access token
+        # an expired access token
         with open(cache_filepath, 'r') as c:
             cache = json.load(c)
         self.assertRegex(cache['manifest'], r'\+A\S+\@')
-        cache['manifest'] = re.sub(r'\+A\S+\@',
-                                   '+Adeadbeefdeadbeefdeadbeefdeadbeefdeadbeef@',
-                                   cache['manifest'])
+        a_month_ago = datetime.datetime.now() - datetime.timedelta(days=30)
+        cache['manifest'] = re.sub(
+            r'\@.*? ',
+            "@{} ".format(self.datetime_to_hex(a_month_ago)),
+            cache['manifest'])
         with open(cache_filepath, 'w') as c:
             c.write(json.dumps(cache))
         # Re-run the upload and expect to get an invalid cache message
@@ -875,8 +881,12 @@ class ArvPutIntegrationTest(run_test_server.TestCaseWithServers,
         (out, err) = p.communicate()
         self.assertRegex(
             err.decode(),
-            r'INFO: Cache file (.*) is not valid, starting from scratch')
+            r'WARNING: Uploaded file .* access token expired, will re-upload it from scratch')
         self.assertEqual(p.returncode, 0)
+        # Confirm that the resulting cache is different from the last run.
+        with open(cache_filepath, 'r') as c2:
+            new_cache = json.load(c2)
+        self.assertNotEqual(cache['manifest'], new_cache['manifest'])
 
     def test_put_collection_with_later_update(self):
         tmpdir = self.make_tmpdir()

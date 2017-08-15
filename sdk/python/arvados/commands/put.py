@@ -710,6 +710,7 @@ class ArvPutUploadJob(object):
             elif file_in_local_collection.permission_expired():
                 # Permission token expired, re-upload file. This will change whenever
                 # we have a API for refreshing tokens.
+                self.logger.warning("Uploaded file '{}' access token expired, will re-upload it from scratch".format(filename))
                 should_upload = True
                 self._local_collection.remove(filename)
             elif cached_file_data['size'] == file_in_local_collection.size():
@@ -796,16 +797,8 @@ class ArvPutUploadJob(object):
                 arv_cmd.make_home_conf_dir(self.CACHE_DIR, 0o700, 'raise'),
                 cache_filename)
             if self.resume and os.path.exists(cache_filepath):
-                if self._cache_is_valid(cache_filepath):
-                    self.logger.info(
-                        "Resuming upload from cache file {}".format(
-                            cache_filepath))
-                    self._cache_file = open(cache_filepath, 'a+')
-                else:
-                    self.logger.info(
-                        "Cache file {} is not valid, starting from scratch".format(
-                            cache_filepath))
-                    self._cache_file = open(cache_filepath, 'w+')
+                self.logger.info("Resuming upload from cache file {}".format(cache_filepath))
+                self._cache_file = open(cache_filepath, 'a+')
             else:
                 # --no-resume means start with a empty cache file.
                 self.logger.info("Creating new cache file at {}".format(cache_filepath))
@@ -830,29 +823,6 @@ class ArvPutUploadJob(object):
                 self._state = copy.deepcopy(self.EMPTY_STATE)
             # Load the previous manifest so we can check if files were modified remotely.
             self._local_collection = arvados.collection.Collection(self._state['manifest'], replication_desired=self.replication_desired, put_threads=self.put_threads)
-
-    def _cache_is_valid(self, filepath):
-        with open(filepath, 'r') as cache_file:
-            try:
-                manifest = json.load(cache_file)['manifest']
-            except ValueError:
-                # Cache file is empty, all ok.
-                return True
-        if manifest is None:
-            # No cached manifest, all ok.
-            return True
-        # Check that the first block's token (oldest) is valid
-        match = arvados.util.signed_locator_pattern.search(manifest)
-        if match is not None:
-            loc = match.group(0)
-            try:
-                kc = arvados.keep.KeepClient(api_client=api_client)
-                return kc.head(loc, num_retries=self.num_retries)
-            except arvados.errors.KeepRequestError as e:
-                self.logger.info("Cache validation: {}".format(e))
-                return False
-        # No signed locator found, all ok.
-        return True
 
     def collection_file_paths(self, col, path_prefix='.'):
         """Return a list of file paths by recursively go through the entire collection `col`"""
