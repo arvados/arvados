@@ -555,7 +555,7 @@ class ContainerTreeSummarizer(MultiSummarizer):
                 for cr in items:
                     if cr['container_uuid']:
                         logger.debug('%s: container req %s', current['uuid'], cr['uuid'])
-                        cr['name'] = label + ' / ' + (cr.get('name') or cr['uuid'])
+                        cr['name'] = cr.get('name') or cr['uuid']
                         todo.append(cr)
         super(ContainerTreeSummarizer, self).__init__(
             children=children,
