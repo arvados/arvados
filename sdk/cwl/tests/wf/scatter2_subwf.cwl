@@ -6,6 +6,7 @@
   "$graph": [
     {
       "class": "Workflow",
+      "cwlVersion": "v1.0",
       "hints": [],
       "id": "#main",
       "inputs": [
