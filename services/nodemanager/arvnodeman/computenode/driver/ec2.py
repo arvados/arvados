@@ -53,8 +53,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                      for key, value in list_kwargs.iteritems()
                      if key.startswith('tag:')}
         # Tags are assigned at instance creation time
-        if not 'ex_metadata' in create_kwargs:
-            create_kwargs['ex_metadata'] = {}
+        create_kwargs.setdefault('ex_metadata', {})
         create_kwargs['ex_metadata'].update(self.tags)
         super(ComputeNodeDriver, self).__init__(
             auth_kwargs, {'ex_filters': list_kwargs}, create_kwargs,
