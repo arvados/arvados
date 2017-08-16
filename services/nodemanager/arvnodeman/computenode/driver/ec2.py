@@ -52,6 +52,10 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         self.tags = {key[4:]: value
                      for key, value in list_kwargs.iteritems()
                      if key.startswith('tag:')}
+        # Tags are assigned at instance creation time
+        if not 'ex_metadata' in create_kwargs:
+            create_kwargs['ex_metadata'] = {}
+        create_kwargs['ex_metadata'].update(self.tags)
         super(ComputeNodeDriver, self).__init__(
             auth_kwargs, {'ex_filters': list_kwargs}, create_kwargs,
             driver_class)
@@ -89,9 +93,6 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                     "VolumeType": "gp2"
                 }}]
         return kw
-
-    def post_create_node(self, cloud_node):
-        self.real.ex_create_tags(cloud_node, self.tags)
 
     def sync_node(self, cloud_node, arvados_node):
         self.real.ex_create_tags(cloud_node,
