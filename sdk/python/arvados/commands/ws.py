@@ -88,7 +88,8 @@ def main(arguments=None):
                 sys.stdout.write(ev["properties"]["text"])
             elif ev["event_type"] in ("create", "update"):
                 if ev["object_kind"] == "arvados#pipelineInstance":
-                    update_subscribed_components(ev["properties"]["new_attributes"]["components"])
+                    c = api.pipeline_instances().get(uuid=ev["object_uuid"]).execute()
+                    update_subscribed_components(c["components"])
 
                 if ev["object_kind"] == "arvados#pipelineInstance" and args.pipeline:
                     if ev["properties"]["new_attributes"]["state"] in ("Complete", "Failed", "Paused"):
