@@ -128,6 +128,8 @@ timer_reset
 # clean up the docker build environment
 cd "$WORKSPACE"
 
+title "Starting arvbox build localdemo"
+
 tools/arvbox/bin/arvbox build localdemo
 ECODE=$?
 
@@ -135,6 +137,8 @@ if [[ "$ECODE" != "0" ]]; then
     title "!!!!!! docker BUILD FAILED !!!!!!"
     EXITCODE=$(($EXITCODE + $ECODE))
 fi
+
+title "Starting arvbox build dev"
 
 tools/arvbox/bin/arvbox build dev
 
