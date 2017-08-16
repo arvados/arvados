@@ -1022,7 +1022,7 @@ for (my $todo_ptr = 0; $todo_ptr <= $#jobstep_todo; $todo_ptr ++)
   delete $Jobstep->{tempfail};
 
   $Jobstep->{'arvados_task'}->{started_at} = strftime "%Y-%m-%dT%H:%M:%SZ", gmtime($Jobstep->{starttime});
-  $Jobstep->{'arvados_task'}->save;
+  retry_op(sub { $Jobstep->{'arvados_task'}->save; }, "job_tasks.update API");
 
   splice @jobstep_todo, $todo_ptr, 1;
   --$todo_ptr;
@@ -1205,7 +1205,7 @@ sub reapchildren
             "ERROR: Task process exited %s, but never updated its task record to indicate success and record its output.",
             exit_status_s($childstatus)));
       $Jobstep->{'arvados_task'}->{success} = 0;
-      $Jobstep->{'arvados_task'}->save;
+      retry_op(sub { $Jobstep->{'arvados_task'}->save; }, "job_tasks.update API");
       $task_success = 0;
     }
 
@@ -1258,7 +1258,7 @@ sub reapchildren
     $Jobstep->{exitcode} = $childstatus;
     $Jobstep->{finishtime} = time;
     $Jobstep->{'arvados_task'}->{finished_at} = strftime "%Y-%m-%dT%H:%M:%SZ", gmtime($Jobstep->{finishtime});
-    $Jobstep->{'arvados_task'}->save;
+    retry_op(sub { $Jobstep->{'arvados_task'}->save; }, "job_tasks.update API");
     process_stderr_final ($jobstepidx);
     Log ($jobstepidx, sprintf("task output (%d bytes): %s",
                               length($Jobstep->{'arvados_task'}->{output}),
@@ -2177,8 +2177,22 @@ sub retry_op {
   # that can be retried, the second function will be called with
   # the current try count (0-based), next try time, and error message.
   my $operation = shift;
-  my $retry_callback = shift;
+  my $op_text = shift;
   my $retries = retry_count();
+  my $retry_callback = sub {
+    my ($try_count, $next_try_at, $errmsg) = @_;
+    $errmsg =~ s/\s*\bat \Q$0\E line \d+\.?\s*//;
+    $errmsg =~ s/\s/ /g;
+    $errmsg =~ s/\s+$//;
+    my $retry_msg;
+    if ($next_try_at < time) {
+      $retry_msg = "Retrying.";
+    } else {
+      my $next_try_fmt = strftime "%Y-%m-%dT%H:%M:%SZ", gmtime($next_try_at);
+      $retry_msg = "Retrying at $next_try_fmt.";
+    }
+    Log(undef, "$op_text failed: $errmsg. $retry_msg");
+  };
   foreach my $try_count (0..$retries) {
     my $next_try = time + (2 ** $try_count);
     my $result = eval { $operation->(@_); };
@@ -2201,25 +2215,11 @@ sub api_call {
   # This function will call that method, retrying as needed until
   # the current retry_count is exhausted, with a log on the first failure.
   my $method_name = shift;
-  my $log_api_retry = sub {
-    my ($try_count, $next_try_at, $errmsg) = @_;
-    $errmsg =~ s/\s*\bat \Q$0\E line \d+\.?\s*//;
-    $errmsg =~ s/\s/ /g;
-    $errmsg =~ s/\s+$//;
-    my $retry_msg;
-    if ($next_try_at < time) {
-      $retry_msg = "Retrying.";
-    } else {
-      my $next_try_fmt = strftime "%Y-%m-%dT%H:%M:%SZ", gmtime($next_try_at);
-      $retry_msg = "Retrying at $next_try_fmt.";
-    }
-    Log(undef, "API method $method_name failed: $errmsg. $retry_msg");
-  };
   my $method = $arv;
   foreach my $key (split(/\//, $method_name)) {
     $method = $method->{$key};
   }
-  return retry_op(sub { $method->execute(@_); }, $log_api_retry, @_);
+  return retry_op(sub { $method->execute(@_); }, "API method $method_name", @_);
 }
 
 sub exit_status_s {
