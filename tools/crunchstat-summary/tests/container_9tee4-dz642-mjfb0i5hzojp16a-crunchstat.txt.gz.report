@@ -19,5 +19,5 @@ net:eth0	tx+rx	537004	1177.76	537004
 # Max network speed in a single interval: 0.00MB/s
 # Keep cache miss rate 0.00%
 # Keep cache utilization 0.00%
-#!! container max CPU usage was 30% -- try runtime_constraints "min_cores_per_node":1
-#!! container max RSS was 63 MiB -- try runtime_constraints "min_ram_mb_per_node":972
+#!! container max CPU usage was 30% -- try runtime_constraints "vcpus":1
+#!! container max RSS was 63 MiB -- try runtime_constraints "ram":1020054732

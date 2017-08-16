@@ -70,12 +70,12 @@ class Summarizer(object):
 
     def run(self):
         logger.debug("%s: parsing logdata %s", self.label, self._logdata)
-        detected_crunch1 = False
+        self.detected_crunch1 = False
         for line in self._logdata:
-            if not detected_crunch1 and '-8i9sb-' in line:
-                detected_crunch1 = True
+            if not self.detected_crunch1 and '-8i9sb-' in line:
+                self.detected_crunch1 = True
 
-            if detected_crunch1:
+            if self.detected_crunch1:
                 m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) job_task (?P<task_uuid>\S+)$', line)
                 if m:
                     seq = int(m.group('seq'))
@@ -135,7 +135,7 @@ class Summarizer(object):
                 # (old logs are less careful with unprefixed error messages)
                 continue
 
-            if detected_crunch1:
+            if self.detected_crunch1:
                 task_id = self.seq_to_uuid[int(m.group('seq'))]
             else:
                 task_id = 'container'
@@ -307,19 +307,21 @@ class Summarizer(object):
     def _recommend_cpu(self):
         """Recommend asking for 4 cores if max CPU usage was 333%"""
 
+        constraint_key = self._map_runtime_constraint('vcpus')
         cpu_max_rate = self.stats_max['cpu']['user+sys__rate']
         if cpu_max_rate == float('-Inf'):
             logger.warning('%s: no CPU usage data', self.label)
             return
         used_cores = max(1, int(math.ceil(cpu_max_rate)))
-        asked_cores = self.existing_constraints.get('min_cores_per_node')
+        asked_cores = self.existing_constraints.get(constraint_key)
         if asked_cores is None or used_cores < asked_cores:
             yield (
                 '#!! {} max CPU usage was {}% -- '
-                'try runtime_constraints "min_cores_per_node":{}'
+                'try runtime_constraints "{}":{}'
             ).format(
                 self.label,
                 int(math.ceil(cpu_max_rate*100)),
+                constraint_key,
                 int(used_cores))
 
     def _recommend_ram(self):
@@ -356,40 +358,44 @@ class Summarizer(object):
         the memory we want -- even if that happens to be 8192 MiB.
         """
 
+        constraint_key = self._map_runtime_constraint('ram')
         used_bytes = self.stats_max['mem']['rss']
         if used_bytes == float('-Inf'):
             logger.warning('%s: no memory usage data', self.label)
             return
         used_mib = math.ceil(float(used_bytes) / 1048576)
-        asked_mib = self.existing_constraints.get('min_ram_mb_per_node')
+        asked_mib = self.existing_constraints.get(constraint_key)
 
         nearlygibs = lambda mebibytes: mebibytes/AVAILABLE_RAM_RATIO/1024
         if asked_mib is None or (
                 math.ceil(nearlygibs(used_mib)) < nearlygibs(asked_mib)):
             yield (
                 '#!! {} max RSS was {} MiB -- '
-                'try runtime_constraints "min_ram_mb_per_node":{}'
+                'try runtime_constraints "{}":{}'
             ).format(
                 self.label,
                 int(used_mib),
-                int(math.ceil(nearlygibs(used_mib))*AVAILABLE_RAM_RATIO*1024))
+                constraint_key,
+                int(math.ceil(nearlygibs(used_mib))*AVAILABLE_RAM_RATIO*1024*(2**20)/self._runtime_constraint_mem_unit()))
 
     def _recommend_keep_cache(self):
         """Recommend increasing keep cache if utilization < 80%"""
+        constraint_key = self._map_runtime_constraint('keep_cache_ram')
         if self.job_tot['net:keep0']['rx'] == 0:
             return
         utilization = (float(self.job_tot['blkio:0:0']['read']) /
                        float(self.job_tot['net:keep0']['rx']))
-        asked_mib = self.existing_constraints.get('keep_cache_mb_per_task', 256)
+        asked_mib = self.existing_constraints.get(constraint_key, 256)
 
         if utilization < 0.8:
             yield (
                 '#!! {} Keep cache utilization was {:.2f}% -- '
-                'try runtime_constraints "keep_cache_mb_per_task":{} (or more)'
+                'try runtime_constraints "{}":{} (or more)'
             ).format(
                 self.label,
                 utilization * 100.0,
-                asked_mib*2)
+                constraint_key,
+                asked_mib*2*(2**20)/self._runtime_constraint_mem_unit())
 
 
     def _format(self, val):
@@ -400,6 +406,22 @@ class Summarizer(object):
             return '{:.2f}'.format(val)
         else:
             return '{}'.format(val)
+
+    def _runtime_constraint_mem_unit(self):
+        if hasattr(self, 'runtime_constraint_mem_unit'):
+            return self.runtime_constraint_mem_unit
+        elif self.detected_crunch1:
+            return JobSummarizer.runtime_constraint_mem_unit
+        else:
+            return ContainerSummarizer.runtime_constraint_mem_unit
+
+    def _map_runtime_constraint(self, key):
+        if hasattr(self, 'map_runtime_constraint'):
+            return self.map_runtime_constraint[key]
+        elif self.detected_crunch1:
+            return JobSummarizer.map_runtime_constraint[key]
+        else:
+            return key
 
 
 class CollectionSummarizer(Summarizer):
@@ -462,11 +484,16 @@ class ProcessSummarizer(Summarizer):
 
 
 class JobSummarizer(ProcessSummarizer):
-    pass
+    runtime_constraint_mem_unit = 1048576
+    map_runtime_constraint = {
+        'keep_cache_ram': 'keep_cache_mb_per_task',
+        'ram': 'min_ram_mb_per_node',
+        'vcpus': 'min_cores_per_node',
+    }
 
 
 class ContainerSummarizer(ProcessSummarizer):
-    pass
+    runtime_constraint_mem_unit = 1
 
 
 class MultiSummarizer(object):
