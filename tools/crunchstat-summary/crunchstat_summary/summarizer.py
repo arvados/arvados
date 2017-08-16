@@ -565,10 +565,14 @@ class ContainerTreeSummarizer(MultiSummarizer):
         while len(todo) > 0:
             current = todo.popleft()
             label = current['name']
+            sort_key = current['created_at']
             if current['uuid'].find('-xvhdp-') > 0:
                 current = arv.containers().get(uuid=current['container_uuid']).execute()
-            children[current['uuid']] = ContainerSummarizer(
-                current, label=label, **kwargs)
+
+            summer = ContainerSummarizer(current, label=label, **kwargs)
+            summer.sort_key = sort_key
+            children[current['uuid']] = summer
+
             page_filters = []
             while True:
                 items = arv.container_requests().index(
@@ -584,7 +588,10 @@ class ContainerTreeSummarizer(MultiSummarizer):
                         logger.debug('%s: container req %s', current['uuid'], cr['uuid'])
                         cr['name'] = cr.get('name') or cr['uuid']
                         todo.append(cr)
+        sorted_children = collections.OrderedDict()
+        for uuid in sorted(children.keys(), key=lambda uuid: children[uuid].sort_key):
+            sorted_children[uuid] = children[uuid]
         super(ContainerTreeSummarizer, self).__init__(
-            children=children,
+            children=sorted_children,
             label=root['name'],
             **kwargs)
