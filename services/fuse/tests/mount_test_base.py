@@ -43,10 +43,6 @@ class MountTestBase(unittest.TestCase):
         self.api = api if api else arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
         self.llfuse_thread = None
 
-        # Workaround for llfuse deadlock bug. See #10805, #8345,
-        # https://bitbucket.org/nikratio/python-llfuse/issues/108
-        llfuse.close = lambda *args: None
-
     # This is a copy of Mount's method.  TODO: Refactor MountTestBase
     # to use a Mount instead of copying its code.
     def _llfuse_main(self):

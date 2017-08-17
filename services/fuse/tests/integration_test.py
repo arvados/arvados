@@ -8,7 +8,6 @@ import arvados_fuse.command
 import atexit
 import functools
 import inspect
-import llfuse
 import logging
 import multiprocessing
 import os
@@ -77,10 +76,6 @@ class IntegrationTest(unittest.TestCase):
         def decorator(func):
             @functools.wraps(func)
             def wrapper(self, *args, **kwargs):
-                # Workaround for llfuse deadlock bug. See #10805, #8345,
-                # https://bitbucket.org/nikratio/python-llfuse/issues/108
-                llfuse.close = lambda *args: None
-
                 self.mount = None
                 try:
                     with arvados_fuse.command.Mount(
