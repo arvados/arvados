@@ -81,7 +81,7 @@ services/keepstore
 services/keep-balance
 services/login-sync
 services/nodemanager
-services/nodemanager-integration
+services/nodemanager_integration
 services/crunch-run
 services/crunch-dispatch-local
 services/crunch-dispatch-slurm
@@ -547,6 +547,9 @@ do_test() {
         apps/workbench_units | apps/workbench_functionals | apps/workbench_integration)
             suite=apps/workbench
             ;;
+        services/nodemanager | services/nodemanager_integration)
+            suite=services/nodemanager_suite
+            ;;
         *)
             suite="${1}"
             ;;
@@ -863,11 +866,11 @@ test_login-sync() {
 }
 do_test services/login-sync login-sync
 
-test_nodemanager-integration() {
+test_nodemanager_integration() {
     cd "$WORKSPACE/services/nodemanager" \
-        && tests/integration_test.py ${testargs[services/nodemanager-integration]}
+        && tests/integration_test.py ${testargs[services/nodemanager_integration]}
 }
-do_test services/nodemanager-integration nodemanager-integration
+do_test services/nodemanager_integration nodemanager_integration
 
 for p in "${pythonstuff[@]}"
 do

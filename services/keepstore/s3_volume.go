@@ -133,7 +133,7 @@ func init() {
 		&s3UnsafeDelete,
 		"s3-unsafe-delete",
 		false,
-		"EXPERIMENTAL. Enable deletion (garbage collection), even though there are known race conditions that can cause data loss.")
+		"EXPERIMENTAL. Enable deletion (garbage collection) even when trash lifetime is zero, even though there are known race conditions that can cause data loss.")
 }
 
 // S3Volume implements Volume using an S3 bucket.

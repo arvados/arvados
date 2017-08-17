@@ -73,7 +73,7 @@ class ComputeNodeShutdownActor(SlurmMixin, ShutdownActorBase):
         if output in ("drng\n", "alloc\n", "drng*\n", "alloc*\n"):
             self._timer.schedule(time.time() + 10,
                                  self._later.await_slurm_drain)
-        elif output in ("idle\n"):
+        elif output in ("idle\n",):
             # Not in "drng" but idle, don't shut down
             self.cancel_shutdown("slurm state is %s" % output.strip(), try_resume=False)
         else:
