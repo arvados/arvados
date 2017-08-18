@@ -26,7 +26,7 @@ window.MultipageLoader = function(config) {
         LOADING: 'loading',
         READY: 'ready',
 
-        items: m.stream(),
+        items: m.stream([]),
         thresholdItem: null,
         loadMore: function() {
             if (loader.state == loader.DONE || loader.state == loader.LOADING)
@@ -37,7 +37,7 @@ window.MultipageLoader = function(config) {
             ] : []
             loader.state = loader.LOADING
             loader.loadFunc(filters).then(function(resp) {
-                var items = loader.items() || []
+                var items = loader.items()
                 Array.prototype.push.apply(items, resp.items)
                 if (resp.items.length == 0) {
                     loader.state = loader.DONE
@@ -65,7 +65,7 @@ window.MergingLoader = function(config) {
     var loader = this
     Object.assign(loader, config, {
         // Sorted items ready to display, merged from all children.
-        items: m.stream(),
+        items: m.stream([]),
         state: 'ready',
         DONE: 'done',
         LOADING: 'loading',
@@ -100,14 +100,22 @@ window.MergingLoader = function(config) {
             // cutoff is the topmost (recent) of {bottom (oldest) entry of
             // any child that still has more pages left to fetch}
             var cutoff
+            var cutoffUnknown = false
             loader.children.forEach(function(child) {
-                var items = child.items()
-                if (items.length == 0 || child.state == child.DONE)
+                if (child.state == child.DONE)
                     return
+                var items = child.items()
+                if (items.length == 0) {
+                    // No idea what's coming in the next page.
+                    cutoffUnknown = true
+                    return
+                }
                 var last = items[items.length-1].modified_at
                 if (!cutoff || cutoff < last)
                     cutoff = last
             })
+            if (cutoffUnknown)
+                return
             var combined = []
             loader.children.forEach(function(child) {
                 child.itemsDisplayed = 0

@@ -45,7 +45,7 @@ window.CollectionsTable = {
                 m('th', 'last modified'),
             ])),
             m('tbody', [
-                loader.items() && loader.items().map(function(item) {
+                loader.items().map(function(item) {
                     return m('tr', [
                         m('td', m('a.btn.btn-xs.btn-default', {href: item.session.baseURL.replace('://', '://workbench.')+'collections/'+item.uuid}, 'Show')),
                         m('td.arvados-uuid', item.uuid),
@@ -145,7 +145,7 @@ window.CollectionsSearch = {
                             ? m('span.label.label-xs.label-danger', 'none')
                             : vnode.state.loader.children.map(function(child) {
                                 return [m('span.label.label-xs', {
-                                    className: child.items() ? 'label-success' : 'label-warning',
+                                    className: child.state == child.LOADING ? 'label-warning' : 'label-success',
                                 }, child.sessionKey), ' ']
                             }),
                         ' ',
