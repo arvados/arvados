@@ -5,7 +5,7 @@
 window.CollectionsTable = {
     maybeLoadMore: function(dom) {
         var loader = this.loader
-        if (loader.done || loader.loading)
+        if (loader.state != loader.READY)
             // Can't start getting more items anyway: no point in
             // checking anything else.
             return
@@ -36,6 +36,7 @@ window.CollectionsTable = {
         window.removeEventListener('resize', vnode.state.maybeLoadMore)
     },
     view: function(vnode) {
+        var loader = vnode.attrs.loader
         return m('table.table.table-condensed', [
             m('thead', m('tr', [
                 m('th'),
@@ -44,7 +45,7 @@ window.CollectionsTable = {
                 m('th', 'last modified'),
             ])),
             m('tbody', [
-                vnode.attrs.loader.items() && vnode.attrs.loader.items().map(function(item) {
+                loader.items() && loader.items().map(function(item) {
                     return m('tr', [
                         m('td', m('a.btn.btn-xs.btn-default', {href: item.session.baseURL.replace('://', '://workbench.')+'collections/'+item.uuid}, 'Show')),
                         m('td.arvados-uuid', item.uuid),
@@ -53,21 +54,21 @@ window.CollectionsTable = {
                     ])
                 }),
             ]),
-            m('tfoot', m('tr', [
-                vnode.attrs.loader.done ? null : m('th[colspan=4]', m('button.btn.btn-xs', {
-                    className: vnode.attrs.loader.loading ? 'btn-default' : 'btn-primary',
+            loader.state == loader.DONE ? null : m('tfoot', m('tr', [
+                m('th[colspan=4]', m('button.btn.btn-xs', {
+                    className: loader.state == loader.LOADING ? 'btn-default' : 'btn-primary',
                     style: {
                         display: 'block',
                         width: '12em',
                         marginLeft: 'auto',
                         marginRight: 'auto',
                     },
-                    disabled: vnode.attrs.loader.loading,
+                    disabled: loader.state == loader.LOADING,
                     onclick: function() {
-                        vnode.attrs.loader.loadMore()
+                        loader.loadMore()
                         return false
                     },
-                }, vnode.attrs.loader.loading ? '(loading)' : 'Load more')),
+                }, loader.state == loader.LOADING ? '(loading)' : 'Load more')),
             ])),
         ])
     },

@@ -10,9 +10,10 @@
 // response. loadFunc() must retrieve results in "modified_at desc"
 // order.
 //
-// done is true if there are no more pages to load.
-//
-// loading is true if a network request is in progress.
+// state is:
+// * 'loading' if a network request is in progress;
+// * 'done' if there are no more items to load;
+// * 'ready' otherwise.
 //
 // items is a stream that resolves to an array of all items retrieved so far.
 //
@@ -20,30 +21,34 @@
 window.MultipageLoader = function(config) {
     var loader = this
     Object.assign(loader, config, {
-        done: false,
-        loading: false,
+        state: 'ready',
+        DONE: 'done',
+        LOADING: 'loading',
+        READY: 'ready',
+
         items: m.stream(),
         thresholdItem: null,
         loadMore: function() {
-            if (loader.done || loader.loading)
+            if (loader.state == loader.DONE || loader.state == loader.LOADING)
                 return
             var filters = loader.thresholdItem ? [
                 ["modified_at", "<=", loader.thresholdItem.modified_at],
                 ["uuid", "!=", loader.thresholdItem.uuid],
             ] : []
-            loader.loading = true
+            loader.state = loader.LOADING
             loader.loadFunc(filters).then(function(resp) {
                 var items = loader.items() || []
                 Array.prototype.push.apply(items, resp.items)
-                if (resp.items.length == 0)
-                    loader.done = true
-                else
+                if (resp.items.length == 0) {
+                    loader.state = loader.DONE
+                } else {
                     loader.thresholdItem = resp.items[resp.items.length-1]
-                loader.loading = false
+                    loader.state = loader.READY
+                }
                 loader.items(items)
             }).catch(function(err) {
                 loader.err = err
-                loader.loading = false
+                loader.state = loader.READY
             })
         },
     })
@@ -61,21 +66,24 @@ window.MergingLoader = function(config) {
     Object.assign(loader, config, {
         // Sorted items ready to display, merged from all children.
         items: m.stream(),
-        done: false,
-        loading: false,
+        state: 'ready',
+        DONE: 'done',
+        LOADING: 'loading',
+        READY: 'ready',
         loadable: function() {
             // Return an array of children that we could call
-            // loadMore() on. Update loader.done and loader.loading.
-            loader.done = true
-            loader.loading = false
+            // loadMore() on. Update loader.state.
+            loader.state = loader.DONE
             return loader.children.filter(function(child) {
-                if (child.done)
+                if (child.state == child.DONE)
                     return false
-                loader.done = false
-                if (!child.loading)
-                    return true
-                loader.loading = true
-                return false
+                if (child.state == child.LOADING) {
+                    loader.state = loader.LOADING
+                    return false
+                }
+                if (loader.state == loader.DONE)
+                    loader.state = loader.READY
+                return true
             })
         },
         loadMore: function() {
@@ -83,7 +91,7 @@ window.MergingLoader = function(config) {
             // lowWaterMark.
             loader.loadable().map(function(child) {
                 if (child.items().length - child.itemsDisplayed < loader.lowWaterMark) {
-                    loader.loading = true
+                    loader.state = loader.LOADING
                     child.loadMore()
                 }
             })
@@ -94,7 +102,7 @@ window.MergingLoader = function(config) {
             var cutoff
             loader.children.forEach(function(child) {
                 var items = child.items()
-                if (items.length == 0 || child.done)
+                if (items.length == 0 || child.state == child.DONE)
                     return
                 var last = items[items.length-1].modified_at
                 if (!cutoff || cutoff < last)
