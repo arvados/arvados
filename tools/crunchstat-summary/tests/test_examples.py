@@ -62,11 +62,13 @@ class SummarizeEdgeCases(unittest.TestCase):
 class SummarizeContainer(ReportDiff):
     fake_container = {
         'uuid': '9tee4-dz642-mjfb0i5hzojp16a',
+        'created_at': '2017-08-18T14:27:25.371388141',
         'log': '9tee4-4zz18-ihyzym9tcwjwg4r',
     }
     fake_request = {
         'uuid': '9tee4-xvhdp-uper95jktm10d3w',
         'name': 'container',
+        'created_at': '2017-08-18T14:27:25.242339223Z',
         'container_uuid': fake_container['uuid'],
     }
     logfile = os.path.join(
