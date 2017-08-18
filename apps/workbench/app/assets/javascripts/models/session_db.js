@@ -104,7 +104,6 @@ window.SessionDB = function() {
                     db.trash(key)
                 })
             })
-            // m.request(session.baseURL + 'discovery/v1/apis/arvados/v1/rest').then(function(dd) {})
         },
         request: function(session, path, opts) {
             opts = opts || {}
