@@ -93,7 +93,7 @@ func (r *Reporter) Stop() {
 func (r *Reporter) readAllOrWarn(in io.Reader) ([]byte, error) {
 	content, err := ioutil.ReadAll(in)
 	if err != nil {
-		r.Logger.Print(err)
+		r.Logger.Printf("warning: %v", err)
 	}
 	return content, err
 }
@@ -169,7 +169,7 @@ func (r *Reporter) getContainerNetStats() (io.Reader, error) {
 		statsFilename := fmt.Sprintf("/proc/%s/net/dev", taskPid)
 		stats, err := ioutil.ReadFile(statsFilename)
 		if err != nil {
-			r.Logger.Print(err)
+			r.Logger.Printf("notice: %v", err)
 			continue
 		}
 		return strings.NewReader(string(stats)), nil
@@ -416,7 +416,7 @@ func (r *Reporter) waitForCIDFile() bool {
 		select {
 		case <-ticker.C:
 		case <-r.done:
-			r.Logger.Printf("CID never appeared in %+q: %v", r.CIDFile, err)
+			r.Logger.Printf("warning: CID never appeared in %+q: %v", r.CIDFile, err)
 			return false
 		}
 	}
@@ -439,9 +439,9 @@ func (r *Reporter) waitForCgroup() bool {
 		select {
 		case <-ticker.C:
 		case <-warningTimer:
-			r.Logger.Printf("cgroup stats files have not appeared after %v (config error?) -- still waiting...", r.PollPeriod)
+			r.Logger.Printf("warning: cgroup stats files have not appeared after %v (config error?) -- still waiting...", r.PollPeriod)
 		case <-r.done:
-			r.Logger.Printf("cgroup stats files never appeared for %v", r.CID)
+			r.Logger.Printf("warning: cgroup stats files never appeared for %v", r.CID)
 			return false
 		}
 	}

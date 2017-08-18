@@ -17,12 +17,12 @@ class CollectionReader(object):
         logger.debug('load collection %s', collection_id)
         collection = arvados.collection.CollectionReader(collection_id)
         filenames = [filename for filename in collection]
-        if len(filenames) != 1:
-            raise ValueError(
-                "collection {} has {} files; need exactly one".format(
-                    collection_id, len(filenames)))
-        self._reader = collection.open(filenames[0])
-        self._label = "{}/{}".format(collection_id, filenames[0])
+        if len(filenames) == 1:
+            filename = filenames[0]
+        else:
+            filename = 'crunchstat.txt'
+        self._reader = collection.open(filename)
+        self._label = "{}/{}".format(collection_id, filename)
 
     def __str__(self):
         return self._label
