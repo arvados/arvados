@@ -50,9 +50,10 @@ def main(arguments=None):
             if "job" in components[c]:
                 pipeline_jobs.add(components[c]["job"]["uuid"])
         if known_component_jobs != pipeline_jobs:
+            new_filters = [['object_uuid', 'in', [args.pipeline] + list(pipeline_jobs)]]
+            ws.subscribe(new_filters)
             ws.unsubscribe(filters)
-            filters = [['object_uuid', 'in', [args.pipeline] + list(pipeline_jobs)]]
-            ws.subscribe([['object_uuid', 'in', [args.pipeline] + list(pipeline_jobs)]])
+            filters = new_filters
             known_component_jobs = pipeline_jobs
 
     api = arvados.api('v1')
