@@ -17,12 +17,8 @@ import sys
 import tempfile
 import unittest
 
-_pool = None
-
-
 @atexit.register
 def _pool_cleanup():
-    global _pool
     if _pool is None:
         return
     _pool.close()
@@ -36,6 +32,17 @@ def wrap_static_test_method(modName, clsName, funcName, args, kwargs):
     Test().runTest(*args, **kwargs)
 
 
+# To avoid Python's threading+multiprocessing=deadlock problems, we
+# use a single global pool with maxtasksperchild=None for the entire
+# test suite.
+_pool = None
+def workerPool():
+    global _pool
+    if _pool is None:
+        _pool = multiprocessing.Pool(processes=1, maxtasksperchild=None)
+    return _pool
+
+
 class IntegrationTest(unittest.TestCase):
     def pool_test(self, *args, **kwargs):
         """Run a static method as a unit test, in a different process.
@@ -43,13 +50,10 @@ class IntegrationTest(unittest.TestCase):
         If called by method 'foobar', the static method '_foobar' of
         the same class will be called in the other process.
         """
-        global _pool
-        if _pool is None:
-            _pool = multiprocessing.Pool(1, maxtasksperchild=1)
         modName = inspect.getmodule(self).__name__
         clsName = self.__class__.__name__
         funcName = inspect.currentframe().f_back.f_code.co_name
-        _pool.apply(
+        workerPool().apply(
             wrap_static_test_method,
             (modName, clsName, '_'+funcName, args, kwargs))
 
