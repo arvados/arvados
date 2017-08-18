@@ -97,8 +97,18 @@ window.MergingLoader = function(config) {
             })
         },
         mergeItems: function() {
-            // cutoff is the topmost (recent) of {bottom (oldest) entry of
-            // any child that still has more pages left to fetch}
+            // We want to avoid moving items around on the screen once
+            // they're displayed.
+            //
+            // To this end, here we find the last safely displayable
+            // item ("cutoff") by getting the last item from each
+            // unfinished child, and taking the topmost (most recent)
+            // one of those.
+            //
+            // (If we were to display an item below that cutoff, the
+            // next page of results from an unfinished child could
+            // include items that get inserted above the cutoff,
+            // causing the cutoff item to move down.)
             var cutoff
             var cutoffUnknown = false
             loader.children.forEach(function(child) {
@@ -121,9 +131,8 @@ window.MergingLoader = function(config) {
                 child.itemsDisplayed = 0
                 child.items().every(function(item) {
                     if (cutoff && item.modified_at < cutoff)
-                        // Some other children haven't caught up to this
-                        // point, so don't display this item or anything
-                        // after it.
+                        // Don't display this item or anything after
+                        // it (see "cutoff" comment above).
                         return false
                     combined.push(item)
                     child.itemsDisplayed++
