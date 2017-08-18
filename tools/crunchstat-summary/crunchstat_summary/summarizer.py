@@ -41,9 +41,10 @@ class Task(object):
 
 
 class Summarizer(object):
-    def __init__(self, logdata, label=None, skip_child_jobs=False):
+    def __init__(self, logdata, label=None, skip_child_jobs=False, uuid=None, **kwargs):
         self._logdata = logdata
 
+        self.uuid = uuid
         self.label = label
         self.starttime = None
         self.finishtime = None
@@ -69,122 +70,144 @@ class Summarizer(object):
 
     def run(self):
         logger.debug("%s: parsing logdata %s", self.label, self._logdata)
+        self.detected_crunch1 = False
         for line in self._logdata:
-            m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) job_task (?P<task_uuid>\S+)$', line)
-            if m:
-                seq = int(m.group('seq'))
-                uuid = m.group('task_uuid')
-                self.seq_to_uuid[seq] = uuid
-                logger.debug('%s: seq %d is task %s', self.label, seq, uuid)
-                continue
+            if not self.detected_crunch1 and '-8i9sb-' in line:
+                self.detected_crunch1 = True
 
-            m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) (success in|failure \(#., permanent\) after) (?P<elapsed>\d+) seconds', line)
-            if m:
-                task_id = self.seq_to_uuid[int(m.group('seq'))]
-                elapsed = int(m.group('elapsed'))
-                self.task_stats[task_id]['time'] = {'elapsed': elapsed}
-                if elapsed > self.stats_max['time']['elapsed']:
-                    self.stats_max['time']['elapsed'] = elapsed
-                continue
-
-            m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) stderr Queued job (?P<uuid>\S+)$', line)
-            if m:
-                uuid = m.group('uuid')
-                if self._skip_child_jobs:
-                    logger.warning('%s: omitting stats from child job %s'
-                                   ' because --skip-child-jobs flag is on',
-                                   self.label, uuid)
+            if self.detected_crunch1:
+                m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) job_task (?P<task_uuid>\S+)$', line)
+                if m:
+                    seq = int(m.group('seq'))
+                    uuid = m.group('task_uuid')
+                    self.seq_to_uuid[seq] = uuid
+                    logger.debug('%s: seq %d is task %s', self.label, seq, uuid)
                     continue
-                logger.debug('%s: follow %s', self.label, uuid)
-                child_summarizer = JobSummarizer(uuid)
-                child_summarizer.stats_max = self.stats_max
-                child_summarizer.task_stats = self.task_stats
-                child_summarizer.tasks = self.tasks
-                child_summarizer.starttime = self.starttime
-                child_summarizer.run()
-                logger.debug('%s: done %s', self.label, uuid)
-                continue
 
-            m = re.search(r'^(?P<timestamp>[^\s.]+)(\.\d+)? (?P<job_uuid>\S+) \d+ (?P<seq>\d+) stderr crunchstat: (?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n', line)
-            if not m:
-                continue
-
-            try:
-                if self.label is None:
-                    self.label = m.group('job_uuid')
-                    logger.debug('%s: using job uuid as label', self.label)
-                if m.group('category').endswith(':'):
-                    # "stderr crunchstat: notice: ..."
+                m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) (success in|failure \(#., permanent\) after) (?P<elapsed>\d+) seconds', line)
+                if m:
+                    task_id = self.seq_to_uuid[int(m.group('seq'))]
+                    elapsed = int(m.group('elapsed'))
+                    self.task_stats[task_id]['time'] = {'elapsed': elapsed}
+                    if elapsed > self.stats_max['time']['elapsed']:
+                        self.stats_max['time']['elapsed'] = elapsed
                     continue
-                elif m.group('category') in ('error', 'caught'):
-                    continue
-                elif m.group('category') == 'read':
-                    # "stderr crunchstat: read /proc/1234/net/dev: ..."
-                    # (crunchstat formatting fixed, but old logs still say this)
-                    continue
-                task_id = self.seq_to_uuid[int(m.group('seq'))]
-                task = self.tasks[task_id]
 
-                # Use the first and last crunchstat timestamps as
-                # approximations of starttime and finishtime.
-                timestamp = datetime.datetime.strptime(
-                    m.group('timestamp'), '%Y-%m-%d_%H:%M:%S')
-                if not task.starttime:
-                    task.starttime = timestamp
-                    logger.debug('%s: task %s starttime %s',
-                                 self.label, task_id, timestamp)
-                task.finishtime = timestamp
-
-                if not self.starttime:
-                    self.starttime = timestamp
-                self.finishtime = timestamp
-
-                this_interval_s = None
-                for group in ['current', 'interval']:
-                    if not m.group(group):
+                m = re.search(r'^\S+ \S+ \d+ (?P<seq>\d+) stderr Queued job (?P<uuid>\S+)$', line)
+                if m:
+                    uuid = m.group('uuid')
+                    if self._skip_child_jobs:
+                        logger.warning('%s: omitting stats from child job %s'
+                                       ' because --skip-child-jobs flag is on',
+                                       self.label, uuid)
                         continue
-                    category = m.group('category')
-                    words = m.group(group).split(' ')
-                    stats = {}
+                    logger.debug('%s: follow %s', self.label, uuid)
+                    child_summarizer = ProcessSummarizer(uuid)
+                    child_summarizer.stats_max = self.stats_max
+                    child_summarizer.task_stats = self.task_stats
+                    child_summarizer.tasks = self.tasks
+                    child_summarizer.starttime = self.starttime
+                    child_summarizer.run()
+                    logger.debug('%s: done %s', self.label, uuid)
+                    continue
+
+                m = re.search(r'^(?P<timestamp>[^\s.]+)(\.\d+)? (?P<job_uuid>\S+) \d+ (?P<seq>\d+) stderr crunchstat: (?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n$', line)
+                if not m:
+                    continue
+            else:
+                # crunch2
+                m = re.search(r'^(?P<timestamp>\S+) (?P<category>\S+) (?P<current>.*?)( -- interval (?P<interval>.*))?\n$', line)
+                if not m:
+                    continue
+
+            if self.label is None:
+                try:
+                    self.label = m.group('job_uuid')
+                except IndexError:
+                    self.label = 'container'
+            if m.group('category').endswith(':'):
+                # "stderr crunchstat: notice: ..."
+                continue
+            elif m.group('category') in ('error', 'caught'):
+                continue
+            elif m.group('category') in ['read', 'open', 'cgroup', 'CID']:
+                # "stderr crunchstat: read /proc/1234/net/dev: ..."
+                # (old logs are less careful with unprefixed error messages)
+                continue
+
+            if self.detected_crunch1:
+                task_id = self.seq_to_uuid[int(m.group('seq'))]
+            else:
+                task_id = 'container'
+            task = self.tasks[task_id]
+
+            # Use the first and last crunchstat timestamps as
+            # approximations of starttime and finishtime.
+            timestamp = m.group('timestamp')
+            if timestamp[10:11] == '_':
+                timestamp = datetime.datetime.strptime(
+                    timestamp, '%Y-%m-%d_%H:%M:%S')
+            elif timestamp[10:11] == 'T':
+                timestamp = datetime.datetime.strptime(
+                    timestamp[:19], '%Y-%m-%dT%H:%M:%S')
+            else:
+                raise ValueError("Cannot parse timestamp {!r}".format(
+                    timestamp))
+
+            if not task.starttime:
+                task.starttime = timestamp
+                logger.debug('%s: task %s starttime %s',
+                             self.label, task_id, timestamp)
+            task.finishtime = timestamp
+
+            if not self.starttime:
+                self.starttime = timestamp
+            self.finishtime = timestamp
+
+            this_interval_s = None
+            for group in ['current', 'interval']:
+                if not m.group(group):
+                    continue
+                category = m.group('category')
+                words = m.group(group).split(' ')
+                stats = {}
+                try:
                     for val, stat in zip(words[::2], words[1::2]):
-                        try:
-                            if '.' in val:
-                                stats[stat] = float(val)
-                            else:
-                                stats[stat] = int(val)
-                        except ValueError as e:
-                            raise ValueError(
-                                'Error parsing {} stat: {!r}'.format(
-                                    stat, e))
-                    if 'user' in stats or 'sys' in stats:
-                        stats['user+sys'] = stats.get('user', 0) + stats.get('sys', 0)
-                    if 'tx' in stats or 'rx' in stats:
-                        stats['tx+rx'] = stats.get('tx', 0) + stats.get('rx', 0)
-                    for stat, val in stats.iteritems():
-                        if group == 'interval':
-                            if stat == 'seconds':
-                                this_interval_s = val
-                                continue
-                            elif not (this_interval_s > 0):
-                                logger.error(
-                                    "BUG? interval stat given with duration {!r}".
-                                    format(this_interval_s))
-                                continue
-                            else:
-                                stat = stat + '__rate'
-                                val = val / this_interval_s
-                                if stat in ['user+sys__rate', 'tx+rx__rate']:
-                                    task.series[category, stat].append(
-                                        (timestamp - self.starttime, val))
+                        if '.' in val:
+                            stats[stat] = float(val)
                         else:
-                            if stat in ['rss']:
+                            stats[stat] = int(val)
+                except ValueError as e:
+                    logger.warning('Error parsing {} stat: {!r}'.format(
+                        stat, e))
+                    continue
+                if 'user' in stats or 'sys' in stats:
+                    stats['user+sys'] = stats.get('user', 0) + stats.get('sys', 0)
+                if 'tx' in stats or 'rx' in stats:
+                    stats['tx+rx'] = stats.get('tx', 0) + stats.get('rx', 0)
+                for stat, val in stats.iteritems():
+                    if group == 'interval':
+                        if stat == 'seconds':
+                            this_interval_s = val
+                            continue
+                        elif not (this_interval_s > 0):
+                            logger.error(
+                                "BUG? interval stat given with duration {!r}".
+                                format(this_interval_s))
+                            continue
+                        else:
+                            stat = stat + '__rate'
+                            val = val / this_interval_s
+                            if stat in ['user+sys__rate', 'tx+rx__rate']:
                                 task.series[category, stat].append(
                                     (timestamp - self.starttime, val))
-                            self.task_stats[task_id][category][stat] = val
-                        if val > self.stats_max[category][stat]:
-                            self.stats_max[category][stat] = val
-            except Exception as e:
-                logger.info('Skipping malformed line: {}Error was: {}\n'.format(line, e))
+                    else:
+                        if stat in ['rss']:
+                            task.series[category, stat].append(
+                                (timestamp - self.starttime, val))
+                        self.task_stats[task_id][category][stat] = val
+                    if val > self.stats_max[category][stat]:
+                        self.stats_max[category][stat] = val
         logger.debug('%s: done parsing', self.label)
 
         self.job_tot = collections.defaultdict(
@@ -284,19 +307,21 @@ class Summarizer(object):
     def _recommend_cpu(self):
         """Recommend asking for 4 cores if max CPU usage was 333%"""
 
+        constraint_key = self._map_runtime_constraint('vcpus')
         cpu_max_rate = self.stats_max['cpu']['user+sys__rate']
         if cpu_max_rate == float('-Inf'):
             logger.warning('%s: no CPU usage data', self.label)
             return
         used_cores = max(1, int(math.ceil(cpu_max_rate)))
-        asked_cores = self.existing_constraints.get('min_cores_per_node')
+        asked_cores = self.existing_constraints.get(constraint_key)
         if asked_cores is None or used_cores < asked_cores:
             yield (
                 '#!! {} max CPU usage was {}% -- '
-                'try runtime_constraints "min_cores_per_node":{}'
+                'try runtime_constraints "{}":{}'
             ).format(
                 self.label,
                 int(math.ceil(cpu_max_rate*100)),
+                constraint_key,
                 int(used_cores))
 
     def _recommend_ram(self):
@@ -333,40 +358,44 @@ class Summarizer(object):
         the memory we want -- even if that happens to be 8192 MiB.
         """
 
+        constraint_key = self._map_runtime_constraint('ram')
         used_bytes = self.stats_max['mem']['rss']
         if used_bytes == float('-Inf'):
             logger.warning('%s: no memory usage data', self.label)
             return
         used_mib = math.ceil(float(used_bytes) / 1048576)
-        asked_mib = self.existing_constraints.get('min_ram_mb_per_node')
+        asked_mib = self.existing_constraints.get(constraint_key)
 
         nearlygibs = lambda mebibytes: mebibytes/AVAILABLE_RAM_RATIO/1024
         if asked_mib is None or (
                 math.ceil(nearlygibs(used_mib)) < nearlygibs(asked_mib)):
             yield (
                 '#!! {} max RSS was {} MiB -- '
-                'try runtime_constraints "min_ram_mb_per_node":{}'
+                'try runtime_constraints "{}":{}'
             ).format(
                 self.label,
                 int(used_mib),
-                int(math.ceil(nearlygibs(used_mib))*AVAILABLE_RAM_RATIO*1024))
+                constraint_key,
+                int(math.ceil(nearlygibs(used_mib))*AVAILABLE_RAM_RATIO*1024*(2**20)/self._runtime_constraint_mem_unit()))
 
     def _recommend_keep_cache(self):
         """Recommend increasing keep cache if utilization < 80%"""
+        constraint_key = self._map_runtime_constraint('keep_cache_ram')
         if self.job_tot['net:keep0']['rx'] == 0:
             return
         utilization = (float(self.job_tot['blkio:0:0']['read']) /
                        float(self.job_tot['net:keep0']['rx']))
-        asked_mib = self.existing_constraints.get('keep_cache_mb_per_task', 256)
+        asked_mib = self.existing_constraints.get(constraint_key, 256)
 
         if utilization < 0.8:
             yield (
                 '#!! {} Keep cache utilization was {:.2f}% -- '
-                'try runtime_constraints "keep_cache_mb_per_task":{} (or more)'
+                'try runtime_constraints "{}":{} (or more)'
             ).format(
                 self.label,
                 utilization * 100.0,
-                asked_mib*2)
+                constraint_key,
+                asked_mib*2*(2**20)/self._runtime_constraint_mem_unit())
 
 
     def _format(self, val):
@@ -378,6 +407,22 @@ class Summarizer(object):
         else:
             return '{}'.format(val)
 
+    def _runtime_constraint_mem_unit(self):
+        if hasattr(self, 'runtime_constraint_mem_unit'):
+            return self.runtime_constraint_mem_unit
+        elif self.detected_crunch1:
+            return JobSummarizer.runtime_constraint_mem_unit
+        else:
+            return ContainerSummarizer.runtime_constraint_mem_unit
+
+    def _map_runtime_constraint(self, key):
+        if hasattr(self, 'map_runtime_constraint'):
+            return self.map_runtime_constraint[key]
+        elif self.detected_crunch1:
+            return JobSummarizer.map_runtime_constraint[key]
+        else:
+            return key
+
 
 class CollectionSummarizer(Summarizer):
     def __init__(self, collection_id, **kwargs):
@@ -386,36 +431,114 @@ class CollectionSummarizer(Summarizer):
         self.label = collection_id
 
 
-class JobSummarizer(Summarizer):
-    def __init__(self, job, **kwargs):
-        arv = arvados.api('v1')
-        if isinstance(job, basestring):
-            self.job = arv.jobs().get(uuid=job).execute()
-        else:
-            self.job = job
+def NewSummarizer(process_or_uuid, **kwargs):
+    """Construct with the appropriate subclass for this uuid/object."""
+
+    if isinstance(process_or_uuid, dict):
+        process = process_or_uuid
+        uuid = process['uuid']
+    else:
+        uuid = process_or_uuid
+        process = None
+        arv = arvados.api('v1', model=OrderedJsonModel())
+
+    if '-dz642-' in uuid:
+        if process is None:
+            process = arv.containers().get(uuid=uuid).execute()
+        klass = ContainerTreeSummarizer
+    elif '-xvhdp-' in uuid:
+        if process is None:
+            process = arv.container_requests().get(uuid=uuid).execute()
+        klass = ContainerTreeSummarizer
+    elif '-8i9sb-' in uuid:
+        if process is None:
+            process = arv.jobs().get(uuid=uuid).execute()
+        klass = JobSummarizer
+    elif '-d1hrv-' in uuid:
+        if process is None:
+            process = arv.pipeline_instances().get(uuid=uuid).execute()
+        klass = PipelineSummarizer
+    elif '-4zz18-' in uuid:
+        return CollectionSummarizer(collection_id=uuid)
+    else:
+        raise ArgumentError("Unrecognized uuid %s", uuid)
+    return klass(process, uuid=uuid, **kwargs)
+
+
+class ProcessSummarizer(Summarizer):
+    """Process is a job, pipeline, container, or container request."""
+
+    def __init__(self, process, label=None, **kwargs):
         rdr = None
-        if self.job.get('log'):
+        self.process = process
+        if label is None:
+            label = self.process.get('name', self.process['uuid'])
+        if self.process.get('log'):
             try:
-                rdr = crunchstat_summary.reader.CollectionReader(self.job['log'])
+                rdr = crunchstat_summary.reader.CollectionReader(self.process['log'])
             except arvados.errors.NotFoundError as e:
                 logger.warning("Trying event logs after failing to read "
-                               "log collection %s: %s", self.job['log'], e)
-            else:
-                label = self.job['uuid']
+                               "log collection %s: %s", self.process['log'], e)
         if rdr is None:
-            rdr = crunchstat_summary.reader.LiveLogReader(self.job['uuid'])
-            label = self.job['uuid'] + ' (partial)'
-        super(JobSummarizer, self).__init__(rdr, **kwargs)
+            rdr = crunchstat_summary.reader.LiveLogReader(self.process['uuid'])
+            label = label + ' (partial)'
+        super(ProcessSummarizer, self).__init__(rdr, label=label, **kwargs)
+        self.existing_constraints = self.process.get('runtime_constraints', {})
+
+
+class JobSummarizer(ProcessSummarizer):
+    runtime_constraint_mem_unit = 1048576
+    map_runtime_constraint = {
+        'keep_cache_ram': 'keep_cache_mb_per_task',
+        'ram': 'min_ram_mb_per_node',
+        'vcpus': 'min_cores_per_node',
+    }
+
+
+class ContainerSummarizer(ProcessSummarizer):
+    runtime_constraint_mem_unit = 1
+
+
+class MultiSummarizer(object):
+    def __init__(self, children={}, label=None, threads=1, **kwargs):
+        self.throttle = threading.Semaphore(threads)
+        self.children = children
         self.label = label
-        self.existing_constraints = self.job.get('runtime_constraints', {})
+
+    def run_and_release(self, target, *args, **kwargs):
+        try:
+            return target(*args, **kwargs)
+        finally:
+            self.throttle.release()
+
+    def run(self):
+        threads = []
+        for child in self.children.itervalues():
+            self.throttle.acquire()
+            t = threading.Thread(target=self.run_and_release, args=(child.run, ))
+            t.daemon = True
+            t.start()
+            threads.append(t)
+        for t in threads:
+            t.join()
+
+    def text_report(self):
+        txt = ''
+        for cname, child in self.children.iteritems():
+            if len(self.children) > 1:
+                txt += '### Summary for {} ({})\n'.format(
+                    cname, child.process['uuid'])
+            txt += child.text_report()
+            txt += '\n'
+        return txt
+
+    def html_report(self):
+        return WEBCHART_CLASS(self.label, self.children.itervalues()).html()
 
 
-class PipelineSummarizer(object):
-    def __init__(self, pipeline_instance_uuid, **kwargs):
-        arv = arvados.api('v1', model=OrderedJsonModel())
-        instance = arv.pipeline_instances().get(
-            uuid=pipeline_instance_uuid).execute()
-        self.summarizers = collections.OrderedDict()
+class PipelineSummarizer(MultiSummarizer):
+    def __init__(self, instance, **kwargs):
+        children = collections.OrderedDict()
         for cname, component in instance['components'].iteritems():
             if 'job' not in component:
                 logger.warning(
@@ -426,27 +549,52 @@ class PipelineSummarizer(object):
                 summarizer = JobSummarizer(component['job'], **kwargs)
                 summarizer.label = '{} {}'.format(
                     cname, component['job']['uuid'])
-                self.summarizers[cname] = summarizer
-        self.label = pipeline_instance_uuid
+                children[cname] = summarizer
+        super(PipelineSummarizer, self).__init__(
+            children=children,
+            label=instance['uuid'],
+            **kwargs)
 
-    def run(self):
-        threads = []
-        for summarizer in self.summarizers.itervalues():
-            t = threading.Thread(target=summarizer.run)
-            t.daemon = True
-            t.start()
-            threads.append(t)
-        for t in threads:
-            t.join()
 
-    def text_report(self):
-        txt = ''
-        for cname, summarizer in self.summarizers.iteritems():
-            txt += '### Summary for {} ({})\n'.format(
-                cname, summarizer.job['uuid'])
-            txt += summarizer.text_report()
-            txt += '\n'
-        return txt
+class ContainerTreeSummarizer(MultiSummarizer):
+    def __init__(self, root, **kwargs):
+        arv = arvados.api('v1', model=OrderedJsonModel())
 
-    def html_report(self):
-        return WEBCHART_CLASS(self.label, self.summarizers.itervalues()).html()
+        label = kwargs.pop('label', None) or root.get('name') or root['uuid']
+        root['name'] = label
+
+        children = collections.OrderedDict()
+        todo = collections.deque((root, ))
+        while len(todo) > 0:
+            current = todo.popleft()
+            label = current['name']
+            sort_key = current['created_at']
+            if current['uuid'].find('-xvhdp-') > 0:
+                current = arv.containers().get(uuid=current['container_uuid']).execute()
+
+            summer = ContainerSummarizer(current, label=label, **kwargs)
+            summer.sort_key = sort_key
+            children[current['uuid']] = summer
+
+            page_filters = []
+            while True:
+                items = arv.container_requests().index(
+                    order=['uuid asc'],
+                    filters=page_filters+[
+                        ['requesting_container_uuid', '=', current['uuid']]],
+                ).execute()['items']
+                if not items:
+                    break
+                page_filters = [['uuid', '>', items[-1]['uuid']]]
+                for cr in items:
+                    if cr['container_uuid']:
+                        logger.debug('%s: container req %s', current['uuid'], cr['uuid'])
+                        cr['name'] = cr.get('name') or cr['uuid']
+                        todo.append(cr)
+        sorted_children = collections.OrderedDict()
+        for uuid in sorted(children.keys(), key=lambda uuid: children[uuid].sort_key):
+            sorted_children[uuid] = children[uuid]
+        super(ContainerTreeSummarizer, self).__init__(
+            children=sorted_children,
+            label=root['name'],
+            **kwargs)

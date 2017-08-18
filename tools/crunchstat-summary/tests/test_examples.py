@@ -59,6 +59,38 @@ class SummarizeEdgeCases(unittest.TestCase):
         s.run()
 
 
+class SummarizeContainer(ReportDiff):
+    fake_container = {
+        'uuid': '9tee4-dz642-mjfb0i5hzojp16a',
+        'created_at': '2017-08-18T14:27:25.371388141',
+        'log': '9tee4-4zz18-ihyzym9tcwjwg4r',
+    }
+    fake_request = {
+        'uuid': '9tee4-xvhdp-uper95jktm10d3w',
+        'name': 'container',
+        'created_at': '2017-08-18T14:27:25.242339223Z',
+        'container_uuid': fake_container['uuid'],
+    }
+    logfile = os.path.join(
+        TESTS_DIR, 'container_9tee4-dz642-mjfb0i5hzojp16a-crunchstat.txt.gz')
+
+    @mock.patch('arvados.collection.CollectionReader')
+    @mock.patch('arvados.api')
+    def test_container(self, mock_api, mock_cr):
+        mock_api().container_requests().index().execute.return_value = {'items':[]}
+        mock_api().container_requests().get().execute.return_value = self.fake_request
+        mock_api().containers().get().execute.return_value = self.fake_container
+        mock_cr().__iter__.return_value = [
+            'crunch-run.txt', 'stderr.txt', 'node-info.txt',
+            'container.json', 'crunchstat.txt']
+        mock_cr().open.return_value = gzip.open(self.logfile)
+        args = crunchstat_summary.command.ArgumentParser().parse_args(
+            ['--job', self.fake_request['uuid']])
+        cmd = crunchstat_summary.command.Command(args)
+        cmd.run()
+        self.diff_known_report(self.logfile, cmd)
+
+
 class SummarizeJob(ReportDiff):
     fake_job_uuid = '4xphq-8i9sb-jq0ekny1xou3zoh'
     fake_log_id = 'fake-log-collection-id'
