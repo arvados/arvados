@@ -431,11 +431,14 @@ class CollectionSummarizer(Summarizer):
         self.label = collection_id
 
 
-def NewSummarizer(process, **kwargs):
+def NewSummarizer(process_or_uuid, **kwargs):
     """Construct with the appropriate subclass for this uuid/object."""
 
-    if not isinstance(process, dict):
-        uuid = process
+    if isinstance(process_or_uuid, dict):
+        process = process_or_uuid
+        uuid = process['uuid']
+    else:
+        uuid = process_or_uuid
         process = None
         arv = arvados.api('v1', model=OrderedJsonModel())
 
