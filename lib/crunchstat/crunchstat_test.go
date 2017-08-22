@@ -44,7 +44,7 @@ func TestReadAllOrWarnFail(t *testing.T) {
 	<-done
 	if err != nil {
 		t.Fatal(err)
-	} else if matched, err := regexp.MatchString("^read /proc/self/mem: .*", string(msg)); err != nil || !matched {
+	} else if matched, err := regexp.MatchString("^warning: read /proc/self/mem: .*", string(msg)); err != nil || !matched {
 		t.Fatalf("Expected error message about unreadable file, got \"%s\"", msg)
 	}
 }
