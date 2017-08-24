@@ -3,12 +3,15 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'can_be_an_owner'
+require 'trashable'
 
 class Group < ArvadosModel
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
   include CanBeAnOwner
+  include Trashable
+
   after_create :invalidate_permissions_cache
   after_update :maybe_invalidate_permissions_cache
   before_create :assign_name
@@ -18,6 +21,9 @@ class Group < ArvadosModel
     t.add :group_class
     t.add :description
     t.add :writable_by
+    t.add :delete_at
+    t.add :trash_at
+    t.add :is_trashed
   end
 
   def maybe_invalidate_permissions_cache

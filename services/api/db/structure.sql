@@ -391,7 +391,10 @@ CREATE TABLE groups (
     name character varying(255) NOT NULL,
     description character varying(524288),
     updated_at timestamp without time zone NOT NULL,
-    group_class character varying(255)
+    group_class character varying(255),
+    trash_at timestamp without time zone,
+    delete_at timestamp without time zone,
+    is_trashed boolean DEFAULT false NOT NULL
 );
 
 
@@ -2790,4 +2793,6 @@ INSERT INTO schema_migrations (version) VALUES ('20170419173712');
 INSERT INTO schema_migrations (version) VALUES ('20170419175801');
 
 INSERT INTO schema_migrations (version) VALUES ('20170628185847');
+
+INSERT INTO schema_migrations (version) VALUES ('20170824202826');
 

@@ -37,7 +37,7 @@ perm_edges (tail_uuid, head_uuid, val, follow, trashed) AS (
               LEFT JOIN groups ON pv.val<3 AND groups.uuid = links.head_uuid
               WHERE links.link_class = 'permission'
        UNION ALL
-       SELECT owner_uuid, uuid, 3, true, 0::smallint FROM groups
+       SELECT owner_uuid, uuid, 3, true, CASE is_trashed WHEN true THEN 1 ELSE 0 END FROM groups
        ),
 perm (val, follow, user_uuid, target_uuid, trashed, startnode) AS (
      SELECT 3::smallint             AS val,

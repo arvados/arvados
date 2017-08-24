@@ -60,4 +60,44 @@ class GroupTest < ActiveSupport::TestCase
     assert g_foo.errors.messages[:owner_uuid].join(" ").match(/ownership cycle/)
   end
 
+  test "delete group hides contents" do
+    set_user_from_auth :active_trustedclient
+
+    g_foo = Group.create!(name: "foo")
+    col = Collection.create!(owner_uuid: g_foo.uuid)
+
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).any?
+    g_foo.update! is_trashed: true
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).empty?
+    g_foo.update! is_trashed: false
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).any?
+  end
+
+
+  test "delete group propagates to subgroups" do
+    set_user_from_auth :active_trustedclient
+
+    g_foo = Group.create!(name: "foo")
+    g_bar = Group.create!(name: "bar", owner_uuid: g_foo.uuid)
+    col = Collection.create!(owner_uuid: g_bar.uuid)
+
+    assert Group.readable_by(users(:active)).where(uuid: g_foo.uuid).any?
+    assert Group.readable_by(users(:active)).where(uuid: g_bar.uuid).any?
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).any?
+
+    g_foo.update! is_trashed: true
+    assert Group.readable_by(users(:active)).where(uuid: g_foo.uuid).empty?
+    assert Group.readable_by(users(:active)).where(uuid: g_bar.uuid).empty?
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).empty?
+
+    assert Group.readable_by(users(:active), {:include_trashed => true}).where(uuid: g_foo.uuid).any?
+    assert Group.readable_by(users(:active), {:include_trashed => true}).where(uuid: g_bar.uuid).any?
+    assert Collection.readable_by(users(:active), {:include_trashed => true}).where(uuid: col.uuid).any?
+
+    g_foo.update! is_trashed: false
+    assert Group.readable_by(users(:active)).where(uuid: g_foo.uuid).any?
+    assert Group.readable_by(users(:active)).where(uuid: g_bar.uuid).any?
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).any?
+  end
+
 end
