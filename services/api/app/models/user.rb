@@ -155,14 +155,14 @@ class User < ArvadosModel
     install_view('permission')
     all_perms = {}
     ActiveRecord::Base.connection.
-      exec_query('SELECT user_uuid, target_owner_uuid, max(perm_level)
+      exec_query('SELECT user_uuid, target_owner_uuid, max(perm_level), max(trashed)
                   FROM permission_view
                   WHERE target_owner_uuid IS NOT NULL
                   GROUP BY user_uuid, target_owner_uuid',
                   # "name" arg is a query label that appears in logs:
                   "all_group_permissions",
-                  ).rows.each do |user_uuid, group_uuid, max_p_val|
-      all_perms[user_uuid] ||= {}
+                  ).rows.each do |user_uuid, group_uuid, max_p_val, trashed|
+      all_perms[user_uuid] ||= {user_uuid => {:read => true, :write => true, :manage => true}}
       all_perms[user_uuid][group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
     end
     all_perms
@@ -174,9 +174,9 @@ class User < ArvadosModel
   def calculate_group_permissions
     self.class.install_view('permission')
 
-    group_perms = {}
+    group_perms = {self.uuid => {:read => true, :write => true, :manage => true}}
     ActiveRecord::Base.connection.
-      exec_query('SELECT target_owner_uuid, max(perm_level)
+      exec_query('SELECT target_owner_uuid, max(perm_level), max(trashed)
                   FROM permission_view
                   WHERE user_uuid = $1
                   AND target_owner_uuid IS NOT NULL
@@ -185,7 +185,7 @@ class User < ArvadosModel
                   "group_permissions for #{uuid}",
                   # "binds" arg is an array of [col_id, value] for '$1' vars:
                   [[nil, uuid]],
-                  ).rows.each do |group_uuid, max_p_val|
+                ).rows.each do |group_uuid, max_p_val, trashed|
       group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
     end
     Rails.cache.write "#{PERM_CACHE_PREFIX}#{self.uuid}", group_perms, expires_in: PERM_CACHE_TTL
