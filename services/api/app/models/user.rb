@@ -155,10 +155,9 @@ class User < ArvadosModel
     install_view('permission')
     all_perms = {}
     ActiveRecord::Base.connection.
-      exec_query('SELECT user_uuid, target_owner_uuid, max(perm_level), max(trashed)
+      exec_query('SELECT user_uuid, target_owner_uuid, perm_level, trashed
                   FROM permission_view
-                  WHERE target_owner_uuid IS NOT NULL
-                  GROUP BY user_uuid, target_owner_uuid',
+                  WHERE target_owner_uuid IS NOT NULL',
                   # "name" arg is a query label that appears in logs:
                   "all_group_permissions",
                   ).rows.each do |user_uuid, group_uuid, max_p_val, trashed|
@@ -176,11 +175,10 @@ class User < ArvadosModel
 
     group_perms = {self.uuid => {:read => true, :write => true, :manage => true}}
     ActiveRecord::Base.connection.
-      exec_query('SELECT target_owner_uuid, max(perm_level), max(trashed)
+      exec_query('SELECT target_owner_uuid, perm_level, trashed
                   FROM permission_view
                   WHERE user_uuid = $1
-                  AND target_owner_uuid IS NOT NULL
-                  GROUP BY target_owner_uuid',
+                  AND target_owner_uuid IS NOT NULL',
                   # "name" arg is a query label that appears in logs:
                   "group_permissions for #{uuid}",
                   # "binds" arg is an array of [col_id, value] for '$1' vars:

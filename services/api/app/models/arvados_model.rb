@@ -254,7 +254,7 @@ class ArvadosModel < ActiveRecord::Base
 
     # Collect the UUIDs of the authorized users.
     sql_table = kwargs.fetch(:table_name, table_name)
-    include_trashed = kwargs.fetch(:include_trashed, 0)
+    include_trashed = kwargs.fetch(:include_trashed, false)
 
     sql_conds = []
     user_uuids = users_list.map { |u| u.uuid }
@@ -263,57 +263,56 @@ class ArvadosModel < ActiveRecord::Base
 
     # Check if any of the users are admin.
     if users_list.select { |u| u.is_admin }.any?
-      # For admins, only filter on "trashed"
-      # sql_conds += ["#{sql_table}.uuid in (SELECT target_uuid
-      #             FROM permission_view
-      #             WHERE trashed in (:include_trashed)
-      #             GROUP BY user_uuid, target_uuid)"]
-
-      # if self.column_names.include? 'owner_uuid'
-      #   sql_conds[0] += "AND #{sql_table}.owner_uuid in (SELECT target_uuid
-      #             FROM permission_view
-      #             WHERE trashed in (:include_trashed)
-      #             GROUP BY user_uuid, target_uuid)"
-      # end
-      return where({})
+      if !include_trashed
+        # exclude rows that are trashed.
+        if self.column_names.include? "owner_uuid"
+          sql_conds += ["NOT EXISTS(SELECT target_uuid
+                  FROM permission_view pv
+                  WHERE trashed = 1 AND
+                  (#{sql_table}.uuid = pv.target_uuid OR #{sql_table}.owner_uuid = pv.target_uuid))"]
+        else
+          sql_conds += ["NOT EXISTS(SELECT target_uuid
+                  FROM permission_view pv
+                  WHERE trashed = 1 AND
+                  (#{sql_table}.uuid = pv.target_uuid))"]
+        end
+      end
     else
+      # Match objects which appear in the permission view
+      trash_clause = if !include_trashed then "trashed = 0 AND" else "" end
+
       # Match any object (evidently a group or user) whose UUID is
       # listed explicitly in user_uuids.
-      sql_conds += ["#{sql_table}.uuid in (:user_uuids)"]
+      sql_conds += ["#{sql_table}.uuid IN (:user_uuids)"]
 
-      # Match any object whose owner is listed explicitly in
-      # user_uuids.
-      sql_conds += ["#{sql_table}.owner_uuid IN (:user_uuids)"]
-
-      # At least read permission from user_uuid to target_uuid of object
-      sql_conds += ["#{sql_table}.uuid in (SELECT target_uuid
-                  FROM permission_view
-                  WHERE user_uuid in (:user_uuids) and perm_level >= 1 and trashed = (:include_trashed)
-                  GROUP BY user_uuid, target_uuid)"]
-
-      if self.column_names.include? 'owner_uuid'
-        # At least read permission from user_uuid to target_uuid that owns object
-        sql_conds += ["#{sql_table}.owner_uuid in (SELECT target_uuid
-                  FROM permission_view
-                  WHERE user_uuid in (:user_uuids) and
-                    target_owner_uuid IS NOT NULL and
-                    perm_level >= 1 and trashed = (:include_trashed)
-                  GROUP BY user_uuid, target_uuid)"]
+      if self.column_names.include? "owner_uuid"
+        sql_conds += ["EXISTS(SELECT target_uuid
+                  FROM permission_view pv
+                  WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 AND #{trash_clause}
+                  (#{sql_table}.uuid = pv.target_uuid OR
+                  (#{sql_table}.owner_uuid = pv.target_uuid AND pv.target_owner_uuid is NOT NULL)))"]
+        # Match any object whose owner is listed explicitly in
+        # user_uuids.
+        sql_conds += ["#{sql_table}.owner_uuid IN (:user_uuids)"]
+      else
+        sql_conds += ["EXISTS(SELECT target_uuid
+                  FROM permission_view pv
+                  WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 AND #{trash_clause}
+                  (#{sql_table}.uuid = pv.target_uuid))"]
       end
 
       if sql_table == "links"
         # Match any permission link that gives one of the authorized
         # users some permission _or_ gives anyone else permission to
         # view one of the authorized users.
-        sql_conds += ["(#{sql_table}.link_class in (:permission_link_classes) AND "+
+        sql_conds += ["(#{sql_table}.link_class IN (:permission_link_classes) AND "+
                       "(#{sql_table}.head_uuid IN (:user_uuids) OR #{sql_table}.tail_uuid IN (:user_uuids)))"]
       end
     end
 
     where(sql_conds.join(' OR '),
           user_uuids: user_uuids,
-          permission_link_classes: ['permission', 'resources'],
-          include_trashed: include_trashed)
+          permission_link_classes: ['permission', 'resources'])
   end
 
   def save_with_unique_name!

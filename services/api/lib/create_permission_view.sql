@@ -60,7 +60,8 @@ perm (val, follow, user_uuid, target_uuid, trashed, startnode) AS (
 )
 SELECT user_uuid,
        target_uuid,
-       val AS perm_level,
+       MAX(val) AS perm_level,
        CASE follow WHEN true THEN target_uuid ELSE NULL END AS target_owner_uuid,
-       trashed
-       FROM perm;
+       MAX(trashed) AS trashed
+       FROM perm
+       GROUP BY user_uuid, target_uuid, target_owner_uuid;
