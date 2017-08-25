@@ -298,3 +298,21 @@ starred_and_shared_active_user_project:
   name: Starred and shared active user project
   description: Starred and shared active user project
   group_class: project
+
+trashed_project:
+  uuid: zzzzz-j7d0g-trashedproject1
+  owner_uuid: zzzzz-tpzed-xurymjxw79nv3jz
+  name: trashed project
+  group_class: project
+  trash_at: 2001-01-01T00:00:00Z
+  delete_at: 2038-03-01T00:00:00Z
+  is_trashed: true
+
+trashed_subproject:
+  uuid: zzzzz-j7d0g-trashedproject2
+  owner_uuid:
+  name: trashed subproject
+  group_class: project
+  trash_at: 2001-01-01T00:00:00Z
+  delete_at: 2038-03-01T00:00:00Z
+  is_trashed: true
