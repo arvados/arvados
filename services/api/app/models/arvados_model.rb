@@ -293,7 +293,14 @@ class ArvadosModel < ActiveRecord::Base
                   (#{sql_table}.owner_uuid = pv.target_uuid AND pv.target_owner_uuid is NOT NULL)))"]
         # Match any object whose owner is listed explicitly in
         # user_uuids.
-        sql_conds += ["#{sql_table}.owner_uuid IN (:user_uuids)"]
+        trash_clause = if !include_trashed
+                         "1 NOT IN (SELECT trashed
+                             FROM permission_view pv
+                             WHERE #{sql_table}.uuid = pv.target_uuid) AND"
+                       else
+                         ""
+                       end
+        sql_conds += ["(#{trash_clause} #{sql_table}.owner_uuid IN (:user_uuids))"]
       else
         sql_conds += ["EXISTS(SELECT target_uuid
                   FROM permission_view pv

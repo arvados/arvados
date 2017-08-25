@@ -90,10 +90,12 @@ class GroupTest < ActiveSupport::TestCase
     assert Group.readable_by(users(:active)).where(uuid: g_bar.uuid).empty?
     assert Collection.readable_by(users(:active)).where(uuid: col.uuid).empty?
 
-    assert Group.readable_by(users(:active), {:include_trashed => true}).where(uuid: g_foo.uuid).any?
-    assert Group.readable_by(users(:active), {:include_trashed => true}).where(uuid: g_bar.uuid).any?
-    assert Collection.readable_by(users(:active), {:include_trashed => true}).where(uuid: col.uuid).any?
+    set_user_from_auth :admin
+    assert Group.readable_by(users(:active)).where(uuid: g_foo.uuid).empty?
+    assert Group.readable_by(users(:active)).where(uuid: g_bar.uuid).empty?
+    assert Collection.readable_by(users(:active)).where(uuid: col.uuid).empty?
 
+    set_user_from_auth :active_trustedclient
     g_foo.update! is_trashed: false
     assert Group.readable_by(users(:active)).where(uuid: g_foo.uuid).any?
     assert Group.readable_by(users(:active)).where(uuid: g_bar.uuid).any?
