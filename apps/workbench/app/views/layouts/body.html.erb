@@ -29,9 +29,11 @@ SPDX-License-Identifier: AGPL-3.0 %>
           <% if current_user %>
             <% if current_user.is_active %>
             <li>
-              <%= link_to(controller: 'collections', action: 'multisite') do %>
-                Multisite search (beta)
-              <% end %>
+              <form class="navbar-form">
+                <%= link_to({controller: 'collections', action: 'multisite'}, {class: 'btn btn-default'}) do %>
+                  Multi-site search
+                <% end %>
+              </form>
             </li>
             <li>
               <form class="navbar-form" role="search"
@@ -46,7 +48,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
                           action_data: {selection_param: 'uuid', success: 'redirect-to-created-object'}.to_json)
                          %>">
                 <div class="input-group" style="width: 220px">
-                  <input type="text" class="form-control" placeholder="search">
+                  <input type="text" class="form-control" placeholder="search this site">
                   <a class="input-group-addon"><span class="glyphicon glyphicon-search"></span></a>
                 </div>
               </form>
