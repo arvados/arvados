@@ -41,19 +41,34 @@ window.SessionDB = function() {
             delete sessions[k]
             window.localStorage.setItem('sessions', JSON.stringify(sessions))
         },
-        login: function(host) {
-            // Initiate login procedure with given API host (which can
-            // optionally include scheme://).
+        findAPI: function(url) {
+            // Given a Workbench or API host or URL, return a promise
+            // for the corresponding API server's base URL.  Typical
+            // use:
+            // sessionDB.findAPI('https://workbench.example/foo').then(sessionDB.login)
+            if (url.indexOf('://') < 0)
+                url = 'https://' + url
+            url = new URL(url)
+            return m.request(url.origin + '/discovery/v1/apis/arvados/v1/rest').then(function() {
+                return url.origin + '/'
+            }).catch(function(err) {
+                // If url is a Workbench site (and isn't too old),
+                // /status.json will tell us its API host.
+                return m.request(url.origin + '/status.json').then(function(resp) {
+                    if (!resp.apiBaseURL)
+                        throw 'no apiBaseURL in status response'
+                    return resp.apiBaseURL
+                })
+            })
+        },
+        login: function(baseURL) {
+            // Initiate login procedure with given API base URL (e.g.,
+            // "http://api.example/").
             //
             // Any page that has a button that invokes login() must
             // also call checkForNewToken() on (at least) its first
             // render. Otherwise, the login procedure can't be
             // completed.
-            var baseURL = host
-            if (baseURL.indexOf('://') < 0)
-                baseURL = 'https://' + baseURL
-            if (!baseURL.endsWith('/'))
-                baseURL = baseURL + '/'
             document.location = baseURL + 'login?return_to=' + encodeURIComponent(document.location.href.replace(/\?.*/, '')+'?baseURL='+encodeURIComponent(baseURL))
             return false
         },

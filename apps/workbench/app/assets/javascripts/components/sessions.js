@@ -12,6 +12,8 @@ window.SessionsTable = {
     oninit: function(vnode) {
         vnode.state.db = new SessionDB()
         vnode.state.hostToAdd = m.stream('')
+        vnode.state.error = m.stream()
+        vnode.state.checking = m.stream()
     },
     view: function(vnode) {
         var db = vnode.state.db
@@ -60,12 +62,22 @@ window.SessionsTable = {
             m('.row', m('.col-md-6', [
                 m('form', {
                     onsubmit: function() {
-                        db.login(vnode.state.hostToAdd())
+                        vnode.state.error(null)
+                        vnode.state.checking(true)
+                        db.findAPI(vnode.state.hostToAdd())
+                            .then(db.login)
+                            .catch(function() {
+                                vnode.state.error(true)
+                            })
+                            .then(vnode.state.checking.bind(null, null))
                         return false
                     },
                 }, [
-                    m('.input-group', [
-                        m('input.form-control[type=text][name=apiHost][placeholder="API host"]', {
+                    m('p', [
+                        'To add a remote Arvados site, paste the remote site\'s host here (see "ARVADOS_API_HOST" on the "current token" page).',
+                    ]),
+                    m('.input-group', { className: vnode.state.error() && 'has-error' }, [
+                        m('input.form-control[type=text][name=apiHost][placeholder="zzzzz.arvadosapi.com"]', {
                             oninput: m.withAttr('value', vnode.state.hostToAdd),
                         }),
                         m('.input-group-btn', [
@@ -75,6 +87,9 @@ window.SessionsTable = {
                         ]),
                     ]),
                 ]),
+                m('p'),
+                vnode.state.error() && m('p.alert.alert-danger', 'Request failed. Make sure this is a working API server address.'),
+                vnode.state.checking() && m('p.alert.alert-info', 'Checking...'),
             ])),
         ])
     },

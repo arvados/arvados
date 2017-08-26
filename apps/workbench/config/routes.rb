@@ -132,6 +132,8 @@ ArvadosWorkbench::Application.routes.draw do
 
   get '/tests/mithril', to: 'tests#mithril'
 
+  get '/status', to: 'status#status'
+
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)
   match '*a', to: 'links#render_not_found', via: [:get, :post]
