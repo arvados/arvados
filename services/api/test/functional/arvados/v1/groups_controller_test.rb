@@ -529,4 +529,115 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
     assert_includes(owners, groups(:aproject).uuid)
     assert_includes(owners, groups(:asubproject).uuid)
   end
+
+  ### trashed project tests ###
+
+  [:active, :admin].each do |auth|
+    test "trashed project is hidden in contents (#{auth})" do
+      authorize_with auth
+      get :contents, {
+            id: users(:active).uuid,
+            format: :json,
+          }
+      item_uuids = json_response['items'].map do |item|
+        item['uuid']
+      end
+      assert_not_includes(item_uuids, groups(:trashed_project).uuid)
+    end
+
+    test "untrashed project is visible in contents (#{auth})" do
+      authorize_with auth
+      Group.find_by_uuid(groups(:trashed_project).uuid).update! is_trashed: false
+      get :contents, {
+            id: users(:active).uuid,
+            format: :json,
+          }
+      item_uuids = json_response['items'].map do |item|
+        item['uuid']
+      end
+      assert_includes(item_uuids, groups(:trashed_project).uuid)
+    end
+
+    test "trashed project is hidden in index (#{auth})" do
+      authorize_with :active
+      get :index, {
+            format: :json,
+          }
+      item_uuids = json_response['items'].map do |item|
+        item['uuid']
+      end
+      assert_not_includes(item_uuids, groups(:trashed_project).uuid)
+      assert_not_includes(item_uuids, groups(:trashed_subproject).uuid)
+    end
+
+    test "untrashed project is visible in index (#{auth})" do
+      authorize_with :active
+      Group.find_by_uuid(groups(:trashed_project).uuid).update! is_trashed: false
+      get :index, {
+            format: :json,
+          }
+      item_uuids = json_response['items'].map do |item|
+        item['uuid']
+      end
+      assert_includes(item_uuids, groups(:trashed_project).uuid)
+      assert_includes(item_uuids, groups(:trashed_subproject).uuid)
+    end
+
+    test "cannot get contents of trashed project (#{auth})" do
+      authorize_with :active
+      get :contents, {
+            id: groups(:trashed_project).uuid,
+            format: :json,
+          }
+      assert_response 404
+    end
+
+    test "cannot get contents of trashed subproject (#{auth})" do
+      authorize_with :active
+      get :contents, {
+            id: groups(:trashed_subproject).uuid,
+            format: :json,
+          }
+      assert_response 404
+    end
+
+    test "can get contents of untrashed project (#{auth})" do
+      authorize_with :active
+      Group.find_by_uuid(groups(:trashed_project).uuid).update! is_trashed: false
+      get :contents, {
+            id: groups(:trashed_project).uuid,
+            format: :json,
+          }
+      assert_response 200
+    end
+
+    test "can get contents of untrashed subproject (#{auth})" do
+      authorize_with :active
+      Group.find_by_uuid(groups(:trashed_project).uuid).update! is_trashed: false
+      get :contents, {
+            id: groups(:trashed_subproject).uuid,
+            format: :json,
+          }
+      assert_response 200
+    end
+
+    test "cannot show trashed project (#{auth})" do
+      authorize_with :active
+      get :show, {
+            id: groups(:trashed_project).uuid,
+            format: :json,
+          }
+      assert_response 404
+    end
+
+    test "cannot show trashed subproject (#{auth})" do
+      authorize_with :active
+      get :show, {
+            id: groups(:trashed_subproject).uuid,
+            format: :json,
+          }
+      assert_response 404
+    end
+  end
+
 end

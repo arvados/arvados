@@ -310,7 +310,7 @@ trashed_project:
 
 trashed_subproject:
   uuid: zzzzz-j7d0g-trashedproject2
-  owner_uuid:
+  owner_uuid: zzzzz-j7d0g-trashedproject1
   name: trashed subproject
   group_class: project
   trash_at: 2001-01-01T00:00:00Z
