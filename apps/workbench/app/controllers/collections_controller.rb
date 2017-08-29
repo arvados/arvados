@@ -115,20 +115,10 @@ class CollectionsController < ApplicationController
   end
 
   def show_file_links
-    if Rails.configuration.keep_web_url || Rails.configuration.keep_web_download_url
-      # show_file will redirect to keep-web's directory listing
-      return show_file
-    end
-    Thread.current[:reader_tokens] = [params[:reader_token]]
-    return if false.equal?(find_object_by_uuid)
-    render layout: false
+    return show_file
   end
 
   def show_file
-    # We pipe from arv-get to send the file to the user.  Before we start it,
-    # we ask the API server if the file actually exists.  This serves two
-    # purposes: it lets us return a useful status code for common errors, and
-    # helps us figure out which token to provide to arv-get.
     # The order of searched tokens is important: because the anonymous user
     # token is passed along with every API request, we have to check it first.
     # Otherwise, it's impossible to know whether any other request succeeded
@@ -145,62 +135,18 @@ class CollectionsController < ApplicationController
       return
     end
 
-    # If we are configured to use a keep-web server, just redirect to
-    # the appropriate URL.
-    if Rails.configuration.keep_web_url or
-        Rails.configuration.keep_web_download_url
-      opts = {}
-      if usable_token == params[:reader_token]
-        opts[:path_token] = usable_token
-      elsif usable_token == Rails.configuration.anonymous_user_token
-        # Don't pass a token at all
-      else
-        # We pass the current user's real token only if it's necessary
-        # to read the collection.
-        opts[:query_token] = usable_token
-      end
-      opts[:disposition] = params[:disposition] if params[:disposition]
-      return redirect_to keep_web_url(params[:uuid], params[:file], opts)
+    opts = {}
+    if usable_token == params[:reader_token]
+      opts[:path_token] = usable_token
+    elsif usable_token == Rails.configuration.anonymous_user_token
+      # Don't pass a token at all
+    else
+      # We pass the current user's real token only if it's necessary
+      # to read the collection.
+      opts[:query_token] = usable_token
     end
-
-    # No keep-web server available. Get the file data with arv-get,
-    # and serve it through Rails.
-
-    file_name = params[:file].andand.sub(/^(\.\/|\/|)/, './')
-    if file_name.nil? or not coll.manifest.has_file?(file_name)
-      return render_not_found
-    end
-
-    opts = params.merge(arvados_api_token: usable_token)
-
-    # Handle Range requests. Currently we support only 'bytes=0-....'
-    if request.headers.include? 'HTTP_RANGE'
-      if m = /^bytes=0-(\d+)/.match(request.headers['HTTP_RANGE'])
-        opts[:maxbytes] = m[1]
-        size = params[:size] || '*'
-        self.response.status = 206
-        self.response.headers['Content-Range'] = "bytes 0-#{m[1]}/#{size}"
-      end
-    end
-
-    ext = File.extname(params[:file])
-    self.response.headers['Content-Type'] =
-      Rack::Mime::MIME_TYPES[ext] || 'application/octet-stream'
-    if params[:size]
-      size = params[:size].to_i
-      if opts[:maxbytes]
-        size = [size, opts[:maxbytes].to_i].min
-      end
-      self.response.headers['Content-Length'] = size.to_s
-    end
-    self.response.headers['Content-Disposition'] = params[:disposition] if params[:disposition]
-    begin
-      file_enumerator(opts).each do |bytes|
-        response.stream.write bytes
-      end
-    ensure
-      response.stream.close
-    end
+    opts[:disposition] = params[:disposition] if params[:disposition]
+    return redirect_to keep_web_url(params[:uuid], params[:file], opts)
   end
 
   def sharing_scopes
@@ -288,11 +234,7 @@ class CollectionsController < ApplicationController
 
   def download_link
     token = @search_sharing.first.api_token
-    if Rails.configuration.keep_web_url || Rails.configuration.keep_web_download_url
-      keep_web_url(@object.uuid, nil, {path_token: token})
-    else
-      collections_url + "/download/#{@object.uuid}/#{token}/"
-    end
+    keep_web_url(@object.uuid, nil, {path_token: token})
   end
 
   def share
@@ -467,44 +409,5 @@ class CollectionsController < ApplicationController
     end
 
     uri.to_s
-  end
-
-  # Note: several controller and integration tests rely on stubbing
-  # file_enumerator to return fake file content.
-  def file_enumerator opts
-    FileStreamer.new opts
-  end
-
-  class FileStreamer
-    include ArvadosApiClientHelper
-    def initialize(opts={})
-      @opts = opts
-    end
-    def each
-      return unless @opts[:uuid] && @opts[:file]
-
-      env = Hash[ENV].dup
-
-      require 'uri'
-      u = URI.parse(arvados_api_client.arvados_v1_base)
-      env['ARVADOS_API_HOST'] = "#{u.host}:#{u.port}"
-      env['ARVADOS_API_TOKEN'] = @opts[:arvados_api_token]
-      env['ARVADOS_API_HOST_INSECURE'] = "true" if Rails.configuration.arvados_insecure_https
-
-      bytesleft = @opts[:maxbytes].andand.to_i || 2**16
-      io = IO.popen([env, 'arv-get', "#{@opts[:uuid]}/#{@opts[:file]}"], 'rb')
-      while bytesleft > 0 && (buf = io.read([bytesleft, 2**16].min)) != nil
-        # shrink the bytesleft count, if we were given a maximum byte
-        # count to read
-        if @opts.include? :maxbytes
-          bytesleft = bytesleft - buf.length
-        end
-        yield buf
-      end
-      io.close
-      # "If ios is opened by IO.popen, close sets $?."
-      # http://www.ruby-doc.org/core-2.1.3/IO.html#method-i-close
-      Rails.logger.warn("#{@opts[:uuid]}/#{@opts[:file]}: #{$?}") if $? != 0
-    end
   end
 end

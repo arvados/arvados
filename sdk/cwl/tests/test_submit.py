@@ -84,7 +84,13 @@ def stubs(func):
                 "uuid": "",
                 "portable_data_hash": "99999999999999999999999999999998+99",
                 "manifest_text": ". 99999999999999999999999999999998+99 0:0:file1.txt"
-            }}
+            },
+            "99999999999999999999999999999994+99": {
+                "uuid": "",
+                "portable_data_hash": "99999999999999999999999999999994+99",
+                "manifest_text": ". 99999999999999999999999999999994+99 0:0:expect_arvworkflow.cwl"
+            }
+        }
         stubs.api.collections().create.side_effect = functools.partial(collection_createstub, created_collections)
         stubs.api.collections().get.side_effect = functools.partial(collection_getstub, created_collections)
 
@@ -152,7 +158,8 @@ def stubs(func):
                             'class': 'File',
                             'location': 'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt',
                             "nameext": ".txt",
-                            "nameroot": "blorp"
+                            "nameroot": "blorp",
+                            "size": 16
                         }},
                         'z': {"value": {'basename': 'anonymous', 'class': 'Directory',
                               'listing': [
@@ -217,7 +224,8 @@ def stubs(func):
                             'class': 'File',
                             'location': u'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt',
                             "nameext": ".txt",
-                            "nameroot": "blorp"
+                            "nameroot": "blorp",
+                            "size": 16
                         },
                         'z': {'basename': 'anonymous', 'class': 'Directory', 'listing': [
                             {'basename': 'renamed.txt',
@@ -845,6 +853,31 @@ class TestSubmit(unittest.TestCase):
 
         expect_container = copy.deepcopy(stubs.expect_container_spec)
         expect_container["name"] = "hello container 123"
+
+        stubs.api.container_requests().create.assert_called_with(
+            body=JsonDiffMatcher(expect_container))
+        self.assertEqual(capture_stdout.getvalue(),
+                         stubs.expect_container_request_uuid + '\n')
+
+
+    @stubs
+    def test_submit_container_project(self, stubs):
+        project_uuid = 'zzzzz-j7d0g-zzzzzzzzzzzzzzz'
+        capture_stdout = cStringIO.StringIO()
+        try:
+            exited = arvados_cwl.main(
+                ["--submit", "--no-wait", "--api=containers", "--debug", "--project-uuid="+project_uuid,
+                 "tests/wf/submit_wf.cwl", "tests/submit_test_job.json"],
+                capture_stdout, sys.stderr, api_client=stubs.api, keep_client=stubs.keep_client)
+            self.assertEqual(exited, 0)
+        except:
+            logging.exception("")
+
+        expect_container = copy.deepcopy(stubs.expect_container_spec)
+        expect_container["owner_uuid"] = project_uuid
+        expect_container["command"] = ['arvados-cwl-runner', '--local', '--api=containers', '--no-log-timestamps',
+                                       '--enable-reuse', '--on-error=continue', '--project-uuid='+project_uuid,
+                                       '/var/lib/cwl/workflow.json#main', '/var/lib/cwl/cwl.input.json']
 
         stubs.api.container_requests().create.assert_called_with(
             body=JsonDiffMatcher(expect_container))

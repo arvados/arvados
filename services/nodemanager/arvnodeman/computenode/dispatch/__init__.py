@@ -240,6 +240,9 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
         return super(ComputeNodeShutdownActor, self)._finished()
 
     def cancel_shutdown(self, reason, **kwargs):
+        if self.cancel_reason is not None:
+            # already cancelled
+            return
         self.cancel_reason = reason
         self._logger.info("Shutdown cancelled: %s.", reason)
         self._finished(success_flag=False)
@@ -257,6 +260,9 @@ class ComputeNodeShutdownActor(ComputeNodeStateChangeBase):
 
     @_cancel_on_exception
     def shutdown_node(self):
+        if self.cancel_reason is not None:
+            # already cancelled
+            return
         if self.cancellable:
             self._logger.info("Checking that node is still eligible for shutdown")
             eligible, reason = self._monitor.shutdown_eligible().get()

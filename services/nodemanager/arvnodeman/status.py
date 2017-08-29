@@ -41,12 +41,34 @@ class Handler(http.server.BaseHTTPRequestHandler, object):
             self.send_header('Content-type', 'application/json')
             self.end_headers()
             self.wfile.write(tracker.get_json())
+        elif self.path == '/_health/ping':
+            code, msg = self.check_auth()
+
+            if code != 200:
+              self.send_response(code)
+              self.wfile.write(msg)
+            else:
+              self.send_response(200)
+              self.send_header('Content-type', 'application/json')
+              self.end_headers()
+              self.wfile.write(json.dumps({"health":"OK"}))
         else:
             self.send_response(404)
 
     def log_message(self, fmt, *args, **kwargs):
         _logger.info(fmt, *args, **kwargs)
 
+    def check_auth(self):
+        mgmt_token = self.server._config.get('Manage', 'ManagementToken')
+        auth_header = self.headers.get('Authorization', None)
+
+        if mgmt_token == '':
+          return 404, "disabled"
+        elif auth_header == None:
+          return 401, "authorization required"
+        elif auth_header != 'Bearer '+mgmt_token:
+          return 403, "authorization error"
+        return 200, ""
 
 class Tracker(object):
     def __init__(self):

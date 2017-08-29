@@ -13,7 +13,7 @@ class HealthcheckControllerTest < ActionController::TestCase
     [true, 'Bearer configuredmanagementtoken', 200, '{"health":"OK"}'],
   ].each do |enabled, header, error_code, error_msg|
     test "ping when #{if enabled then 'enabled' else 'disabled' end} with header '#{header}'" do
-      Rails.configuration.management_token = 'configuredmanagementtoken' if enabled
+      Rails.configuration.ManagementToken = 'configuredmanagementtoken' if enabled
 
       @request.headers['Authorization'] = header
       get :ping

@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"reflect"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -86,6 +87,24 @@ func (sess *v0session) Receive(buf []byte) error {
 		sess.mtx.Unlock()
 		sub.sendOldEvents(sess)
 		return nil
+	} else if sub.Method == "unsubscribe" {
+		sess.mtx.Lock()
+		found := false
+		for i, s := range sess.subscriptions {
+			if !reflect.DeepEqual(s.Filters, sub.Filters) {
+				continue
+			}
+			copy(sess.subscriptions[i:], sess.subscriptions[i+1:])
+			sess.subscriptions = sess.subscriptions[:len(sess.subscriptions)-1]
+			found = true
+			break
+		}
+		sess.mtx.Unlock()
+		sess.log.WithField("sub", sub).WithField("found", found).Debug("unsubscribe")
+		if found {
+			sess.sendq <- v0subscribeOK
+			return nil
+		}
 	} else {
 		sess.log.WithField("Method", sub.Method).Info("unknown method")
 	}
@@ -205,6 +224,10 @@ func (sub *v0subscribe) sendOldEvents(sess *v0session) {
 			// client will probably reconnect and do the
 			// same thing all over again.
 			time.Sleep(100 * time.Millisecond)
+			if sess.ws.Request().Context().Err() != nil {
+				// Session terminated while we were sleeping
+				return
+			}
 		}
 		now := time.Now()
 		e := &event{

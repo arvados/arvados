@@ -71,15 +71,28 @@ func (s *v0Suite) TestFilters(c *check.C) {
 	conn, r, w := s.testClient()
 	defer conn.Close()
 
-	c.Check(w.Encode(map[string]interface{}{
-		"method":  "subscribe",
-		"filters": [][]interface{}{{"event_type", "in", []string{"update"}}},
-	}), check.IsNil)
-	s.expectStatus(c, r, 200)
+	cmd := func(method, eventType string, status int) {
+		c.Check(w.Encode(map[string]interface{}{
+			"method":  method,
+			"filters": [][]interface{}{{"event_type", "in", []string{eventType}}},
+		}), check.IsNil)
+		s.expectStatus(c, r, status)
+	}
+	cmd("subscribe", "update", 200)
+	cmd("subscribe", "update", 200)
+	cmd("subscribe", "create", 200)
+	cmd("subscribe", "update", 200)
+	cmd("unsubscribe", "blip", 400)
+	cmd("unsubscribe", "create", 200)
+	cmd("unsubscribe", "update", 200)
 
 	go s.emitEvents(nil)
 	lg := s.expectLog(c, r)
 	c.Check(lg.EventType, check.Equals, "update")
+
+	cmd("unsubscribe", "update", 200)
+	cmd("unsubscribe", "update", 200)
+	cmd("unsubscribe", "update", 400)
 }
 
 func (s *v0Suite) TestLastLogID(c *check.C) {

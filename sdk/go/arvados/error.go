@@ -21,7 +21,7 @@ type TransactionError struct {
 }
 
 func (e TransactionError) Error() (s string) {
-	s = fmt.Sprintf("request failed: %s", e.URL)
+	s = fmt.Sprintf("request failed: %s", e.URL.String())
 	if e.Status != "" {
 		s = s + ": " + e.Status
 	}
