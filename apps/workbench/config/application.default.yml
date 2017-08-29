@@ -302,3 +302,10 @@ common:
   # Token to be included in all healthcheck requests. Disabled by default.
   # Workbench expects request header of the format "Authorization: Bearer xxx"
   ManagementToken: false
+
+  # Enable/disable "multi-site search" in top nav (true/false), or
+  # link it to the multi-site search on a remote Workbench site.
+  #
+  # Example:
+  # multi_site_search: https://workbench.qr1hi.arvadosapi.com/collections/multisite
+  multi_site_search: true
