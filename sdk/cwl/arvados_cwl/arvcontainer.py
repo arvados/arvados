@@ -14,14 +14,14 @@ import ruamel.yaml as yaml
 
 from cwltool.errors import WorkflowException
 from cwltool.process import get_feature, UnsupportedRequirement, shortname
-from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
+from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
 from cwltool.utils import aslist
 
 import arvados.collection
 
 from .arvdocker import arv_docker_get_image
 from . import done
-from .runner import Runner, arvados_jobs_image, packed_workflow, trim_anonymous_location
+from .runner import Runner, arvados_jobs_image, packed_workflow, trim_anonymous_location, remove_redundant_fields
 from .fsaccess import CollectionFetcher
 from .pathmapper import NoFollowPathMapper, trim_listing
 from .perf import Perf
@@ -286,8 +286,8 @@ class RunnerContainer(Runner):
         """
 
         adjustDirObjs(self.job_order, trim_listing)
-        adjustFileObjs(self.job_order, trim_anonymous_location)
-        adjustDirObjs(self.job_order, trim_anonymous_location)
+        visit_class(self.job_order, ("File", "Directory"), trim_anonymous_location)
+        visit_class(self.job_order, ("File", "Directory"), remove_redundant_fields)
 
         container_req = {
             "owner_uuid": self.arvrunner.project_uuid,

@@ -13,7 +13,7 @@ from cwltool.errors import WorkflowException
 from cwltool.draft2tool import revmap_file, CommandLineTool
 from cwltool.load_tool import fetch_document
 from cwltool.builder import Builder
-from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
+from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
 
 from schema_salad.sourceline import SourceLine
 
@@ -23,7 +23,7 @@ import arvados.collection
 from arvados.errors import ApiError
 
 from .arvdocker import arv_docker_get_image
-from .runner import Runner, arvados_jobs_image, packed_workflow, upload_workflow_collection, trim_anonymous_location
+from .runner import Runner, arvados_jobs_image, packed_workflow, upload_workflow_collection, trim_anonymous_location, remove_redundant_fields
 from .pathmapper import VwdPathMapper, trim_listing
 from .perf import Perf
 from . import done
@@ -282,8 +282,8 @@ class RunnerJob(Runner):
             self.job_order["cwl:tool"] = "%s/workflow.cwl#main" % wf_pdh
 
         adjustDirObjs(self.job_order, trim_listing)
-        adjustFileObjs(self.job_order, trim_anonymous_location)
-        adjustDirObjs(self.job_order, trim_anonymous_location)
+        visit_class(self.job_order, ("File", "Directory"), trim_anonymous_location)
+        visit_class(self.job_order, ("File", "Directory"), remove_redundant_fields)
 
         if self.output_name:
             self.job_order["arv:output_name"] = self.output_name
