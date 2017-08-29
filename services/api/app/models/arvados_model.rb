@@ -254,7 +254,8 @@ class ArvadosModel < ActiveRecord::Base
 
     # Collect the UUIDs of the authorized users.
     sql_table = kwargs.fetch(:table_name, table_name)
-    include_trashed = kwargs.fetch(:include_trashed, false)
+    include_trash = kwargs.fetch(:include_trash, false)
+    query_on = kwargs.fetch(:query_on, self)
 
     sql_conds = []
     user_uuids = users_list.map { |u| u.uuid }
@@ -263,49 +264,53 @@ class ArvadosModel < ActiveRecord::Base
 
     # Check if any of the users are admin.
     if users_list.select { |u| u.is_admin }.any?
-      if !include_trashed
+      if !include_trash
         # exclude rows that are trashed.
         if self.column_names.include? "owner_uuid"
           sql_conds += ["NOT EXISTS(SELECT target_uuid
-                  FROM permission_view pv
+                  FROM permission_view
                   WHERE trashed = 1 AND
-                  (#{sql_table}.uuid = pv.target_uuid OR #{sql_table}.owner_uuid = pv.target_uuid))"]
+                  (#{sql_table}.uuid = target_uuid OR #{sql_table}.owner_uuid = target_uuid))"]
         else
           sql_conds += ["NOT EXISTS(SELECT target_uuid
-                  FROM permission_view pv
+                  FROM permission_view
                   WHERE trashed = 1 AND
-                  (#{sql_table}.uuid = pv.target_uuid))"]
+                  (#{sql_table}.uuid = target_uuid))"]
         end
       end
     else
-      # Match objects which appear in the permission view
-      trash_clause = if !include_trashed then "trashed = 0 AND" else "" end
+      trash_clause = if !include_trash then "trashed = 0 AND" else "" end
 
-      # Match any object (evidently a group or user) whose UUID is
-      # listed explicitly in user_uuids.
+      # Can read object (evidently a group or user) whose UUID is listed
+      # explicitly in user_uuids.
       sql_conds += ["#{sql_table}.uuid IN (:user_uuids)"]
 
-      if self.column_names.include? "owner_uuid"
-        sql_conds += ["EXISTS(SELECT target_uuid
-                  FROM permission_view pv
+      direct_permission_check = "EXISTS(SELECT 1 FROM permission_view
                   WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 AND #{trash_clause}
-                  (#{sql_table}.uuid = pv.target_uuid OR
-                  (#{sql_table}.owner_uuid = pv.target_uuid AND pv.target_owner_uuid is NOT NULL)))"]
-        # Match any object whose owner is listed explicitly in
-        # user_uuids.
-        trash_clause = if !include_trashed
+                  (#{sql_table}.uuid = target_uuid))"
+
+      if self.column_names.include? "owner_uuid"
+        # if an explicit permission row exists for the uuid in question, apply
+        # the "direct_permission_check"
+        # if not, check for permission to read the owner instead
+        sql_conds += ["CASE
+                  WHEN EXISTS(select 1 FROM permission_view where target_uuid = #{sql_table}.uuid)
+                  THEN #{direct_permission_check}
+                  ELSE EXISTS(SELECT 1 FROM permission_view
+                  WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 AND #{trash_clause}
+                  (#{sql_table}.owner_uuid = target_uuid AND target_owner_uuid is NOT NULL))
+                  END"]
+        # Can also read if one of the users is the owner of the object.
+        trash_clause = if !include_trash
                          "1 NOT IN (SELECT trashed
-                             FROM permission_view pv
-                             WHERE #{sql_table}.uuid = pv.target_uuid) AND"
+                             FROM permission_view
+                             WHERE #{sql_table}.uuid = target_uuid) AND"
                        else
                          ""
                        end
         sql_conds += ["(#{trash_clause} #{sql_table}.owner_uuid IN (:user_uuids))"]
       else
-        sql_conds += ["EXISTS(SELECT target_uuid
-                  FROM permission_view pv
-                  WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 AND #{trash_clause}
-                  (#{sql_table}.uuid = pv.target_uuid))"]
+        sql_conds += [direct_permission_check]
       end
 
       if sql_table == "links"
@@ -317,9 +322,9 @@ class ArvadosModel < ActiveRecord::Base
       end
     end
 
-    where(sql_conds.join(' OR '),
-          user_uuids: user_uuids,
-          permission_link_classes: ['permission', 'resources'])
+    query_on.where(sql_conds.join(' OR '),
+                    user_uuids: user_uuids,
+                    permission_link_classes: ['permission', 'resources'])
   end
 
   def save_with_unique_name!

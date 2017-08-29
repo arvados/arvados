@@ -30,6 +30,8 @@ Server::Application.routes.draw do
       resources :groups do
         get 'contents', on: :collection
         get 'contents', on: :member
+        post 'trash', on: :member
+        post 'untrash', on: :member
       end
       resources :humans
       resources :job_tasks

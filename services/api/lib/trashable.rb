@@ -89,3 +89,40 @@ module Trashable
     true
   end
 end
+
+module TrashableController
+  def destroy
+    if !@object.is_trashed
+      @object.update_attributes!(trash_at: db_current_time)
+    end
+    earliest_delete = (@object.trash_at +
+                       Rails.configuration.blob_signature_ttl.seconds)
+    if @object.delete_at > earliest_delete
+      @object.update_attributes!(delete_at: earliest_delete)
+    end
+    show
+  end
+
+  def trash
+    if !@object.is_trashed
+      @object.update_attributes!(trash_at: db_current_time)
+    end
+    show
+  end
+
+  def untrash
+    if @object.is_trashed
+      @object.trash_at = nil
+
+      if params[:ensure_unique_name]
+        @object.save_with_unique_name!
+      else
+        @object.save!
+      end
+    else
+      raise InvalidStateTransitionError
+    end
+    show
+  end
+
+end

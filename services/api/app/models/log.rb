@@ -60,6 +60,9 @@ class Log < ArvadosModel
   end
 
   def self.readable_by(*users_list)
+    if users_list.last.is_a? Hash
+      users_list.pop
+    end
     if users_list.select { |u| u.is_admin }.any?
       return self
     end
