@@ -62,4 +62,18 @@ collection = arvados.collection.CollectionReader(container_request["output_uuid"
 print(collection.open("cwl.output.json").read())
 </code>
 
+h2. Create a collection sharing link
+
+<code>
+import arvados
+api = arvados.api()
+download="https://your.download.server"
+collection_uuid="your-4zz18-collectionuuid"
+token = api.api_client_authorizations().create(body={"api_client_authorization":{"scopes": [
+    "GET /arvados/v1/collections/%s" % collection_uuid,
+    "GET /arvados/v1/collections/%s/" % collection_uuid,
+    "GET /arvados/v1/keep_services/accessible"]}}).execute()
+print("%s/c=%s/t=%s/_/" % (download, collection_uuid, token["api_token"]))
+</code>
+
 h2. Run a CWL workflow from a workflow record
