@@ -152,8 +152,8 @@ class User < ArvadosModel
 
   # Return a hash of {user_uuid: group_perms}
   def self.all_group_permissions
-    install_view('permission')
     all_perms = {}
+    User.install_view('permission')
     ActiveRecord::Base.connection.
       exec_query('SELECT user_uuid, target_owner_uuid, perm_level, trashed
                   FROM permission_view
@@ -171,9 +171,8 @@ class User < ArvadosModel
   # and perm_hash[:write] are true if this user can read and write
   # objects owned by group_uuid.
   def calculate_group_permissions
-    self.class.install_view('permission')
-
     group_perms = {self.uuid => {:read => true, :write => true, :manage => true}}
+    User.install_view('permission')
     ActiveRecord::Base.connection.
       exec_query('SELECT target_owner_uuid, perm_level, trashed
                   FROM permission_view

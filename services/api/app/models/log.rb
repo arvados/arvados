@@ -67,17 +67,14 @@ class Log < ArvadosModel
       return self
     end
     user_uuids = users_list.map { |u| u.uuid }
-    uuid_list = user_uuids + users_list.flat_map { |u| u.groups_i_can(:read) }
-    uuid_list.uniq!
-    permitted = "(SELECT head_uuid FROM links WHERE link_class='permission' AND tail_uuid IN (:uuids))"
+
+    User.install_view('permission')
+
     joins("LEFT JOIN container_requests ON container_requests.container_uuid=logs.object_uuid").
-      where("logs.object_uuid IN #{permitted} OR "+
-            "container_requests.uuid IN (:uuids) OR "+
-            "container_requests.owner_uuid IN (:uuids) OR "+
-            "logs.object_uuid IN (:uuids) OR "+
-            "logs.owner_uuid IN (:uuids) OR "+
-            "logs.object_owner_uuid IN (:uuids)",
-            uuids: uuid_list)
+      where("EXISTS(SELECT target_uuid FROM permission_view "+
+            "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 AND "+
+            "target_uuid IN (container_requests.uuid, container_requests.owner_uuid, logs.object_uuid, logs.owner_uuid, logs.object_owner_uuid))",
+            user_uuids: user_uuids)
   end
 
   protected
