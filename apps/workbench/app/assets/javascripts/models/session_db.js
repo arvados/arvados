@@ -84,7 +84,7 @@ window.SessionDB = function() {
             // If there's a token and baseURL in the location bar (i.e.,
             // we just landed here after a successful login), save it and
             // scrub the location bar.
-            if (!document.location.search.startsWith('?'))
+            if (document.location.search[0] != '?')
                 return
             var params = {}
             document.location.search.slice(1).split('&').map(function(kv) {
