@@ -52,10 +52,9 @@ module RecordFilters
 
         # Skip the generic per-column operator loop below
         attrs = []
-        # Use to_tsquery since plainto_tsquery does not support prefix
-        # search. And, split operand and join the words with ' & '
-        cond_out << model_class.full_text_tsvector+" @@ to_tsquery(?)"
-        param_out << operand.split.join(' & ')
+        # plainto_tsquery() interprets "foo:bar baz" as "'foo:bar' & 'baz'".
+        cond_out << model_class.full_text_tsvector+" @@ plainto_tsquery(?)"
+        param_out << operand
       end
       attrs.each do |attr|
         if !model_class.searchable_columns(operator).index attr.to_s
