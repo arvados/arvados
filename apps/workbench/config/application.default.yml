@@ -308,4 +308,4 @@ common:
   #
   # Example:
   # multi_site_search: https://workbench.qr1hi.arvadosapi.com/collections/multisite
-  multi_site_search: true
+  multi_site_search: false
