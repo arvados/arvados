@@ -2,4 +2,4 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-LIBCLOUD_PIN=0.20.2.dev4
+LIBCLOUD_PIN=2.2.0.dev1
