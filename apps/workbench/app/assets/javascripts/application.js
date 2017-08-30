@@ -35,6 +35,7 @@
 //= require mithril/stream/stream
 //= require_tree .
 
+Es6ObjectAssign.polyfill()
 window.m = Object.assign(window.Mithril, {stream: window.m.stream})
 
 jQuery(function($){

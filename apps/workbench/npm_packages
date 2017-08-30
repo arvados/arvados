@@ -8,3 +8,4 @@
 npm 'browserify', require: false, development: true
 
 npm 'mithril'
+npm 'es6-object-assign'
