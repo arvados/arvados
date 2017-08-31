@@ -43,7 +43,7 @@ class Arvados::V1::FiltersTest < ActionController::TestCase
     @controller = Arvados::V1::CollectionsController.new
     authorize_with :active
     get :index, {
-      filters: [['any', '@@', 'a|b"c']],
+      filters: [['any', '@@', 'a|b::"c:']],
     }
     assert_response :success
     # (Doesn't matter so much which results are returned.)
