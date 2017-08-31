@@ -128,7 +128,7 @@ class Summarizer(object):
             if m.group('category').endswith(':'):
                 # "stderr crunchstat: notice: ..."
                 continue
-            elif m.group('category') in ('error', 'caught'):
+            elif m.group('category') in ('error', 'caught', 'Running'):
                 continue
             elif m.group('category') in ['read', 'open', 'cgroup', 'CID']:
                 # "stderr crunchstat: read /proc/1234/net/dev: ..."
