@@ -689,5 +689,21 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       assert_response :success
       assert_match /^trashed subproject 3 \(\d{4}-\d\d-\d\d.*?Z\)$/, json_response['name']
     end
+
+    test "move trashed subproject to new owner #{auth}" do
+      authorize_with auth
+      put :update, {
+            id: groups(:trashed_subproject).uuid,
+            group: {
+              owner_uuid: users(:active).uuid
+            },
+            include_trashed: true,
+            format: :json,
+          }
+      # Currently fails but might want to change it in the future
+      # so leave the test here.
+      assert_response 404
+    end
+
   end
 end

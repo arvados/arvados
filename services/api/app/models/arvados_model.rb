@@ -282,29 +282,37 @@ class ArvadosModel < ActiveRecord::Base
       # Can read object (evidently a group or user) whose UUID is listed
       # explicitly in user_uuids.
       sql_conds += ["#{sql_table}.uuid IN (:user_uuids)"]
-      trashed_check = if include_trash then "EXISTS" else "0 IN " end
+      if include_trash
+        not_trashed = ""
+        not_null = "IS NOT NULL"
+      else
+        not_trashed = "0 IN"
+        not_null = ""
+      end
+
       perm_check = "perm_level >= 1"
 
       if self.column_names.include? "owner_uuid"
         # to be readable:
         #   row(s) exists granting readable permission to uuid or owner, and none are trashed
-        sql_conds += ["#{trashed_check}(SELECT MAX(trashed) FROM permission_view "+
+        sql_conds += ["#{not_trashed} (SELECT MAX(trashed) FROM permission_view "+
                       "WHERE user_uuid IN (:user_uuids) AND #{perm_check} AND "+
-                      "(#{sql_table}.uuid = target_uuid OR (#{sql_table}.owner_uuid = target_uuid AND target_owner_uuid is NOT NULL)))"]
+                      "(#{sql_table}.uuid = target_uuid OR (#{sql_table}.owner_uuid = target_uuid "+
+                      "AND target_owner_uuid IS NOT NULL))) #{not_null}"]
         #   reader is owner, and item is not trashed
-        not_trashed_check = if include_trash then
+        not_trashed_clause = if include_trash then
                               ""
                             else
                               "AND 1 NOT IN (SELECT MAX(trashed) FROM permission_view "+
                                 "WHERE #{sql_table}.uuid = target_uuid OR #{sql_table}.owner_uuid = target_uuid)"
                             end
-        sql_conds += ["(#{sql_table}.owner_uuid IN (:user_uuids) #{not_trashed_check})"]
+        sql_conds += ["(#{sql_table}.owner_uuid IN (:user_uuids) #{not_trashed_clause})"]
       else
         # to be readable:
         #  * a non-trash row exists with readable permission uuid
-        sql_conds += ["#{trashed_check}(SELECT MAX(trashed) FROM permission_view "+
+        sql_conds += ["#{not_trashed} (SELECT MAX(trashed) FROM permission_view "+
                                 "WHERE user_uuid IN (:user_uuids) AND #{perm_check} AND "+
-                                "#{sql_table}.uuid = target_uuid) "]
+                                "#{sql_table}.uuid = target_uuid) #{not_null}"]
       end
 
       if sql_table == "links"
