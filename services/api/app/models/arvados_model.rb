@@ -265,52 +265,46 @@ class ArvadosModel < ActiveRecord::Base
     # Check if any of the users are admin.
     if users_list.select { |u| u.is_admin }.any?
       if !include_trash
-        # exclude rows that are trashed.
+        # exclude rows that are explicitly trashed.
         if self.column_names.include? "owner_uuid"
-          sql_conds += ["NOT EXISTS(SELECT target_uuid
+          sql_conds += ["NOT EXISTS(SELECT 1
                   FROM permission_view
                   WHERE trashed = 1 AND
                   (#{sql_table}.uuid = target_uuid OR #{sql_table}.owner_uuid = target_uuid))"]
         else
-          sql_conds += ["NOT EXISTS(SELECT target_uuid
+          sql_conds += ["NOT EXISTS(SELECT 1
                   FROM permission_view
                   WHERE trashed = 1 AND
                   (#{sql_table}.uuid = target_uuid))"]
         end
       end
     else
-      trash_clause = if !include_trash then "trashed = 0 AND" else "" end
-
       # Can read object (evidently a group or user) whose UUID is listed
       # explicitly in user_uuids.
       sql_conds += ["#{sql_table}.uuid IN (:user_uuids)"]
-
-      direct_permission_check = "EXISTS(SELECT 1 FROM permission_view
-                  WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 AND #{trash_clause}
-                  (#{sql_table}.uuid = target_uuid))"
+      trashed_check = if include_trash then "EXISTS" else "0 IN " end
+      perm_check = "perm_level >= 1"
 
       if self.column_names.include? "owner_uuid"
-        # if an explicit permission row exists for the uuid in question, apply
-        # the "direct_permission_check"
-        # if not, check for permission to read the owner instead
-        sql_conds += ["CASE
-                  WHEN EXISTS(select 1 FROM permission_view where target_uuid = #{sql_table}.uuid)
-                  THEN #{direct_permission_check}
-                  ELSE EXISTS(SELECT 1 FROM permission_view
-                  WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 AND #{trash_clause}
-                  (#{sql_table}.owner_uuid = target_uuid AND target_owner_uuid is NOT NULL))
-                  END"]
-        # Can also read if one of the users is the owner of the object.
-        trash_clause = if !include_trash
-                         "1 NOT IN (SELECT trashed
-                             FROM permission_view
-                             WHERE #{sql_table}.uuid = target_uuid) AND"
-                       else
-                         ""
-                       end
-        sql_conds += ["(#{trash_clause} #{sql_table}.owner_uuid IN (:user_uuids))"]
+        # to be readable:
+        #   row(s) exists granting readable permission to uuid or owner, and none are trashed
+        sql_conds += ["#{trashed_check}(SELECT MAX(trashed) FROM permission_view "+
+                      "WHERE user_uuid IN (:user_uuids) AND #{perm_check} AND "+
+                      "(#{sql_table}.uuid = target_uuid OR (#{sql_table}.owner_uuid = target_uuid AND target_owner_uuid is NOT NULL)))"]
+        #   reader is owner, and item is not trashed
+        not_trashed_check = if include_trash then
+                              ""
+                            else
+                              "AND 1 NOT IN (SELECT MAX(trashed) FROM permission_view "+
+                                "WHERE #{sql_table}.uuid = target_uuid OR #{sql_table}.owner_uuid = target_uuid)"
+                            end
+        sql_conds += ["(#{sql_table}.owner_uuid IN (:user_uuids) #{not_trashed_check})"]
       else
-        sql_conds += [direct_permission_check]
+        # to be readable:
+        #  * a non-trash row exists with readable permission uuid
+        sql_conds += ["#{trashed_check}(SELECT MAX(trashed) FROM permission_view "+
+                                "WHERE user_uuid IN (:user_uuids) AND #{perm_check} AND "+
+                                "#{sql_table}.uuid = target_uuid) "]
       end
 
       if sql_table == "links"
