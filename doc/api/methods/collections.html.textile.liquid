@@ -32,6 +32,9 @@ table(table table-bordered table-condensed).
 |replication_desired|number|Minimum storage replication level desired for each data block referenced by this collection. A value of @null@ signifies that the site default replication level (typically 2) is desired.|@2@|
 |replication_confirmed|number|Replication level most recently confirmed by the storage system. This field is null when a collection is first created, and is reset to null when the manifest_text changes in a way that introduces a new data block. An integer value indicates the replication level of the _least replicated_ data block in the collection.|@2@, null|
 |replication_confirmed_at|datetime|When replication_confirmed was confirmed. If replication_confirmed is null, this field is also null.||
+|trash_at|datetime|If @trash_at@ is non-null and in the past, this collection will be hidden from API calls.  May be untrashed.||
+|delete_at|datetime|If @delete_at@ is non-null and in the past, the collection may be permanently deleted.||
+|is_trashed|datetime|True if @trash_at@ is in the past, false if not.||
 
 h3. Conditions of creating a Collection
 
@@ -61,7 +64,7 @@ table(table table-bordered table-condensed).
 
 h3. delete
 
-Delete an existing Collection.
+Put a Collection in the trash.  This sets the @trash_at@ field to @now@ and @delete_at@ field to @now@ + token TTL.  A trashed group is invisible to most API calls unless the @include_trash@ parameter is true.
 
 Arguments:
 
@@ -97,3 +100,14 @@ table(table table-bordered table-condensed).
 |_. Argument |_. Type |_. Description |_. Location |_. Example |
 {background:#ccffcc}.|uuid|string|The UUID of the Collection in question.|path||
 |collection|object||query||
+
+h3. untrash
+
+Remove a Collection from the trash.  This sets the @trash_at@ and @delete_at@ fields to @null@.
+
+Arguments:
+
+table(table table-bordered table-condensed).
+|_. Argument |_. Type |_. Description |_. Location |_. Example |
+{background:#ccffcc}.|uuid|string|The UUID of the Collection to untrash.|path||
+|ensure_unique_name|boolean (default false)|Rename collection uniquely if untrashing it would fail with a unique name conflict.|query||

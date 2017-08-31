@@ -393,8 +393,8 @@ CREATE TABLE groups (
     updated_at timestamp without time zone NOT NULL,
     group_class character varying(255),
     trash_at timestamp without time zone,
-    delete_at timestamp without time zone,
-    is_trashed boolean DEFAULT false NOT NULL
+    is_trashed boolean DEFAULT false NOT NULL,
+    delete_at timestamp without time zone
 );
 
 
@@ -1547,13 +1547,6 @@ CREATE INDEX groups_full_text_search_idx ON groups USING gin (to_tsvector('engli
 
 
 --
--- Name: groups_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE UNIQUE INDEX groups_owner_uuid_name_unique ON groups USING btree (owner_uuid, name);
-
-
---
 -- Name: groups_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -1771,10 +1764,24 @@ CREATE INDEX index_groups_on_created_at ON groups USING btree (created_at);
 
 
 --
+-- Name: index_groups_on_delete_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_groups_on_delete_at ON groups USING btree (delete_at);
+
+
+--
 -- Name: index_groups_on_group_class; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE INDEX index_groups_on_group_class ON groups USING btree (group_class);
+
+
+--
+-- Name: index_groups_on_is_trashed; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_groups_on_is_trashed ON groups USING btree (is_trashed);
 
 
 --
@@ -1789,6 +1796,20 @@ CREATE INDEX index_groups_on_modified_at ON groups USING btree (modified_at);
 --
 
 CREATE INDEX index_groups_on_owner_uuid ON groups USING btree (owner_uuid);
+
+
+--
+-- Name: index_groups_on_owner_uuid_and_name; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE UNIQUE INDEX index_groups_on_owner_uuid_and_name ON groups USING btree (owner_uuid, name) WHERE (is_trashed = false);
+
+
+--
+-- Name: index_groups_on_trash_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_groups_on_trash_at ON groups USING btree (trash_at);
 
 
 --

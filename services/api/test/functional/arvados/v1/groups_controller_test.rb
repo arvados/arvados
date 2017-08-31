@@ -673,5 +673,21 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
       assert !Group.find_by_uuid(groups(:trashed_project).uuid).is_trashed
     end
 
+    test "untrash project with name conflict #{auth}" do
+      authorize_with auth
+      [:trashed_project].each do |pr|
+        Group.find_by_uuid(groups(pr).uuid).update! is_trashed: false
+      end
+      gc = Group.create!({owner_uuid: "zzzzz-j7d0g-trashedproject1",
+                         name: "trashed subproject 3",
+                         group_class: "project"})
+      post :untrash, {
+            id: groups(:trashed_subproject3).uuid,
+            format: :json,
+            ensure_unique_name: true
+           }
+      assert_response :success
+      assert_match /^trashed subproject 3 \(\d{4}-\d\d-\d\d.*?Z\)$/, json_response['name']
+    end
   end
 end
