@@ -32,7 +32,7 @@ setup(name='arvados-node-manager',
           ('share/doc/arvados-node-manager', ['agpl-3.0.txt', 'README.rst']),
       ],
       install_requires=[
-          'apache-libcloud==2.2.0.dev1',
+          'apache-libcloud>=2.2',
           'arvados-python-client>=0.1.20170731145219',
           'future',
           'pykka',
@@ -40,14 +40,14 @@ setup(name='arvados-node-manager',
           'setuptools'
       ],
       dependency_links=[
-          "https://github.com/curoverse/libcloud/archive/apache-libcloud-2.2.0.dev1.zip"
+          "https://github.com/curoverse/libcloud/archive/apache-libcloud-2.2.1.dev1.zip"
       ],
       test_suite='tests',
       tests_require=[
           'requests',
           'pbr<1.7.0',
           'mock>=1.0',
-          'apache-libcloud==2.2.0.dev1',
+          'apache-libcloud==2.2.1.dev1',
       ],
       zip_safe=False,
       cmdclass={'egg_info': tagger},
