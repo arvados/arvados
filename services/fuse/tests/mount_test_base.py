@@ -21,6 +21,8 @@ import unittest
 
 logger = logging.getLogger('arvados.arv-mount')
 
+from .integration_test import workerPool
+
 class MountTestBase(unittest.TestCase):
     def setUp(self, api=None, local_store=True):
         # The underlying C implementation of open() makes a fstat() syscall
@@ -30,8 +32,8 @@ class MountTestBase(unittest.TestCase):
         # deadlocks.  The workaround is to run some of our test code in a
         # separate process.  Forturnately the multiprocessing module makes this
         # relatively easy.
-        self.pool = multiprocessing.Pool(1)
 
+        self.pool = workerPool()
         if local_store:
             self.keeptmp = tempfile.mkdtemp()
             os.environ['KEEP_LOCAL_STORE'] = self.keeptmp
@@ -42,10 +44,6 @@ class MountTestBase(unittest.TestCase):
         run_test_server.authorize_with("admin")
         self.api = api if api else arvados.safeapi.ThreadSafeApiCache(arvados.config.settings())
         self.llfuse_thread = None
-
-        # Workaround for llfuse deadlock bug. See #10805, #8345,
-        # https://bitbucket.org/nikratio/python-llfuse/issues/108
-        llfuse.close = lambda *args: None
 
     # This is a copy of Mount's method.  TODO: Refactor MountTestBase
     # to use a Mount instead of copying its code.
@@ -93,8 +91,6 @@ class MountTestBase(unittest.TestCase):
             shutil.rmtree(self.keeptmp)
             os.environ.pop('KEEP_LOCAL_STORE')
         run_test_server.reset()
-        self.pool.close()
-        self.pool.join()
 
     def assertDirContents(self, subdir, expect_content):
         path = self.mounttmp
