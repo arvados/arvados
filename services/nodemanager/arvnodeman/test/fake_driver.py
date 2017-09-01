@@ -150,11 +150,13 @@ class FakeAwsDriver(FakeDriver):
                     image=None,
                     auth=None,
                     ex_userdata=None,
+                    ex_metadata=None,
                     ex_blockdevicemappings=None):
         n = super(FakeAwsDriver, self).create_node(name=name,
                                                       size=size,
                                                       image=image,
                                                       auth=auth,
+                                                      ex_metadata=ex_metadata,
                                                       ex_userdata=ex_userdata)
         n.extra = {"launch_time": time.strftime(ARVADOS_TIMEFMT, time.gmtime())[:-1]}
         return n
