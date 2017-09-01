@@ -60,7 +60,7 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
             driver_class)
 
     def _init_image_id(self, image_id):
-        return 'image', self.search_for(image_id, 'list_images')
+        return 'image', self.search_for(image_id, 'list_images', ex_owner='self')
 
     def _init_security_groups(self, group_names):
         return 'ex_security_groups', [
