@@ -455,7 +455,11 @@ func (v *TestableS3Volume) Start() error {
 func (v *TestableS3Volume) PutRaw(loc string, block []byte) {
 	err := v.bucket.Put(loc, block, "application/octet-stream", s3ACL, s3.Options{})
 	if err != nil {
-		log.Printf("PutRaw: %+v", err)
+		log.Printf("PutRaw: %s: %+v", loc, err)
+	}
+	err = v.bucket.Put("recent/"+loc, nil, "application/octet-stream", s3ACL, s3.Options{})
+	if err != nil {
+		log.Printf("PutRaw: recent/%s: %+v", loc, err)
 	}
 }
 
