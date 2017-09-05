@@ -130,7 +130,7 @@ class Summarizer(object):
                 continue
             elif m.group('category') in ('error', 'caught'):
                 continue
-            elif m.group('category') in ['read', 'open', 'cgroup', 'CID']:
+            elif m.group('category') in ['read', 'open', 'cgroup', 'CID', 'Running']:
                 # "stderr crunchstat: read /proc/1234/net/dev: ..."
                 # (old logs are less careful with unprefixed error messages)
                 continue
@@ -178,8 +178,9 @@ class Summarizer(object):
                         else:
                             stats[stat] = int(val)
                 except ValueError as e:
-                    logger.warning('Error parsing {} stat: {!r}'.format(
-                        stat, e))
+                    logger.warning('Error parsing value "{}" for stat "{}" in category "{}": {!r}'.format(
+                        val, stat, category, e))
+                    logger.warning(line)
                     continue
                 if 'user' in stats or 'sys' in stats:
                     stats['user+sys'] = stats.get('user', 0) + stats.get('sys', 0)
