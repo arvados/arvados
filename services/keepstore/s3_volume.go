@@ -340,6 +340,40 @@ func (v *S3Volume) Get(ctx context.Context, loc string, buf []byte) (int, error)
 
 // Compare the given data with the stored data.
 func (v *S3Volume) Compare(ctx context.Context, loc string, expect []byte) error {
+	errChan := make(chan error, 1)
+	go func() {
+		_, err := v.bucket.Head("recent/"+loc, nil)
+		errChan <- err
+	}()
+	var err error
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err = <-errChan:
+	}
+	if err != nil {
+		// Checking for "loc" itself here would interfere with
+		// future GET requests.
+		//
+		// On AWS, if X doesn't exist, a HEAD or GET request
+		// for X causes X's non-existence to be cached. Thus,
+		// if we test for X, then create X and return a
+		// signature to our client, the client might still get
+		// 404 from all keepstores when trying to read it.
+		//
+		// To avoid this, we avoid doing HEAD X or GET X until
+		// we know X has been written.
+		//
+		// Note that X might exist even though recent/X
+		// doesn't: for example, the response to HEAD recent/X
+		// might itself come from a stale cache. In such
+		// cases, we will return a false negative and
+		// PutHandler might needlessly create another replica
+		// on a different volume. That's not ideal, but it's
+		// better than passing the eventually-consistent
+		// problem on to our clients.
+		return v.translateError(err)
+	}
 	rdr, err := v.getReaderWithContext(ctx, loc)
 	if err != nil {
 		return err
