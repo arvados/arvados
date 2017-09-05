@@ -50,6 +50,17 @@ class EC2ComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
                       create_method.call_args[1].get('ex_userdata',
                                                      'arg missing'))
 
+    def test_create_includes_metadata(self):
+        arv_node = testutil.arvados_node_mock()
+        driver = self.new_driver(list_kwargs={'tag_test': 'testvalue'})
+        driver.create_node(testutil.MockSize(1), arv_node)
+        create_method = self.driver_mock().create_node
+        self.assertTrue(create_method.called)
+        self.assertEqual(
+            {'test':'testvalue'},
+            create_method.call_args[1].get('ex_metadata', {'arg': 'missing'})
+        )
+
     def test_hostname_from_arvados_node(self):
         arv_node = testutil.arvados_node_mock(8)
         driver = self.new_driver()
@@ -67,16 +78,6 @@ class EC2ComputeNodeDriverTestCase(testutil.DriverTestMixin, unittest.TestCase):
         self.assertTrue(tag_mock.called)
         self.assertIs(cloud_node, tag_mock.call_args[0][0])
         self.assertEqual(expected_tags, tag_mock.call_args[0][1])
-
-    def test_post_create_node_tags_from_list_kwargs(self):
-        expect_tags = {'key1': 'test value 1', 'key2': 'test value 2'}
-        list_kwargs = {('tag_' + key): value
-                       for key, value in expect_tags.iteritems()}
-        list_kwargs['instance-state-name'] = 'running'
-        cloud_node = testutil.cloud_node_mock()
-        driver = self.new_driver(list_kwargs=list_kwargs)
-        driver.post_create_node(cloud_node)
-        self.check_node_tagged(cloud_node, expect_tags)
 
     def test_sync_node(self):
         arv_node = testutil.arvados_node_mock(1)
