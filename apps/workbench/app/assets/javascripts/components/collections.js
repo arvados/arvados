@@ -47,7 +47,16 @@ window.CollectionsTable = {
             m('tbody', [
                 loader.items().map(function(item) {
                     return m('tr', [
-                        m('td', m('a.btn.btn-xs.btn-default', {href: item.session.baseURL.replace('://', '://workbench.')+'collections/'+item.uuid}, 'Show')),
+                        m('td', [
+                            // Guess workbench.{apihostport} is a
+                            // Workbench... unless the host part of
+                            // apihostport is an IPv4 or [IPv6]
+                            // address.
+                            item.session.baseURL.match('://(\\[|\\d+\\.\\d+\\.\\d+\\.\\d+[:/])') ? null :
+                                m('a.btn.btn-xs.btn-default', {
+                                    href: item.session.baseURL.replace('://', '://workbench.')+'collections/'+item.uuid,
+                                }, 'Show'),
+                        ]),
                         m('td.arvados-uuid', item.uuid),
                         m('td', item.name || '(unnamed)'),
                         m('td', m(LocalizedDateTime, {parse: item.modified_at})),
