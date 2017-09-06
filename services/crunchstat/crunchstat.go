@@ -117,7 +117,7 @@ func runCommand(argv []string, logger *log.Logger) error {
 
 func sendSignalOnDeadPPID(intvl time.Duration, signum, ppidOrig int, cmd *exec.Cmd, logger *log.Logger) {
 	ticker := time.NewTicker(intvl)
-	for _ = range ticker.C {
+	for range ticker.C {
 		ppid := os.Getppid()
 		if ppid == ppidOrig {
 			continue

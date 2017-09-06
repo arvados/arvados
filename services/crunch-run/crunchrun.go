@@ -345,7 +345,7 @@ func (runner *ContainerRunner) SetupMounts() (err error) {
 	needCertMount := true
 
 	var binds []string
-	for bind, _ := range runner.Container.Mounts {
+	for bind := range runner.Container.Mounts {
 		binds = append(binds, bind)
 	}
 	sort.Strings(binds)
@@ -592,23 +592,23 @@ func (runner *ContainerRunner) LogNodeInfo() (err error) {
 	logger := log.New(w, "node-info", 0)
 
 	commands := []infoCommand{
-		infoCommand{
+		{
 			label: "Host Information",
 			cmd:   []string{"uname", "-a"},
 		},
-		infoCommand{
+		{
 			label: "CPU Information",
 			cmd:   []string{"cat", "/proc/cpuinfo"},
 		},
-		infoCommand{
+		{
 			label: "Memory Information",
 			cmd:   []string{"cat", "/proc/meminfo"},
 		},
-		infoCommand{
+		{
 			label: "Disk Space",
 			cmd:   []string{"df", "-m", "/", os.TempDir()},
 		},
-		infoCommand{
+		{
 			label: "Disk INodes",
 			cmd:   []string{"df", "-i", "/", os.TempDir()},
 		},
