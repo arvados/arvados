@@ -15,8 +15,8 @@ class SearchBoxTest < ActionDispatch::IntegrationTest
       aproject_uuid = api_fixture('groups')['aproject']['uuid']
       # let's search for aproject by uuid
       within('.navbar-fixed-top') do
-        page.has_field?('search')
-        page.find_field('search').set aproject_uuid
+        page.has_field?('search this site')
+        page.find_field('search this site').set aproject_uuid
         page.find('.glyphicon-search').click
       end
 
@@ -29,7 +29,7 @@ class SearchBoxTest < ActionDispatch::IntegrationTest
       within('.navbar-fixed-top') do
         search_for = String.new user['uuid']
         search_for[0]='1'
-        page.find_field('search').set search_for
+        page.find_field('search this site').set search_for
         page.find('.glyphicon-search').click
       end
 
@@ -65,7 +65,7 @@ class SearchBoxTest < ActionDispatch::IntegrationTest
 
       within('.navbar-fixed-top') do
         # search again for the anonymously accessible project
-        page.find_field('search').set publicly_accessible_project['name'][0,10]
+        page.find_field('search this site').set publicly_accessible_project['name'][0,10]
         page.find('.glyphicon-search').click
       end
 
@@ -84,7 +84,7 @@ class SearchBoxTest < ActionDispatch::IntegrationTest
       assert page.has_text?(publicly_accessible_project['description']), 'No text - publicly accessible project description'
     else
       within('.navbar-fixed-top') do
-        page.has_no_field?('search')
+        page.has_no_field?('search this site')
       end
     end
   end
