@@ -292,7 +292,7 @@ class ArvadosModel < ActiveRecord::Base
       perm_check = "perm_level >= 1"
 
       if self.column_names.include? "owner_uuid" and sql_table != "groups"
-        owner_check = "OR target_uuid = #{sql_table}.owner_uuid"
+        owner_check = "OR #{sql_table}.owner_uuid IN (:user_uuids) OR (target_uuid = #{sql_table}.owner_uuid AND target_owner_uuid IS NOT NULL)"
       else
         owner_check = ""
       end
