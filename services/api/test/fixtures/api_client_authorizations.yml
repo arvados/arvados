@@ -309,3 +309,10 @@ not_running_container_auth:
   user: active
   api_token: 4kg6k6lzmp9kj6bpkcoxie963cmvjahbt2fod9zru30k1jqdmj
   expires_at: 2038-01-01 00:00:00
+
+permission_perftest:
+  uuid: zzzzz-gj3su-077z32anoj93boo
+  api_client: untrusted
+  user: permission_perftest
+  api_token: 3kg6k6lzmp9kjabonentustoecn5bahbt2fod9zru30k1jqdmi
+  expires_at: 2038-01-01 00:00:00
