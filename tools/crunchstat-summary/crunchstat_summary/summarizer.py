@@ -70,8 +70,12 @@ class Summarizer(object):
 
     def run(self):
         logger.debug("%s: parsing logdata %s", self.label, self._logdata)
+        with self._logdata as logdata:
+            self._run(logdata)
+
+    def _run(self, logdata):
         self.detected_crunch1 = False
-        for line in self._logdata:
+        for line in logdata:
             if not self.detected_crunch1 and '-8i9sb-' in line:
                 self.detected_crunch1 = True
 
