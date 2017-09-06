@@ -622,6 +622,7 @@ if [[ "$?" == "0" ]] ; then
       sed -i 's/secret_token: ~/secret_token: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx/' config/application.yml
       sed -i 's/keep_web_url: false/keep_web_url: exampledotcom/' config/application.yml
 
+      RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake npm:install >/dev/null
       RAILS_ENV=production RAILS_GROUPS=assets bundle exec rake assets:precompile >/dev/null
 
       # Remove generated configuration files so they don't go in the package.

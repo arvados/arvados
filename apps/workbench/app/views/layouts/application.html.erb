@@ -18,6 +18,11 @@ SPDX-License-Identifier: AGPL-3.0 %>
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
   <meta name="description" content="">
   <meta name="author" content="">
+  <% if current_user %>
+    <% content_for :js do %>
+      window.defaultSession = <%=raw({baseURL: Rails.configuration.arvados_v1_base.sub(/\/arvados\/v1$/, '/'), token: Thread.current[:arvados_api_token], user: current_user}.to_json)%>
+    <% end %>
+  <% end %>
   <% if current_user and $arvados_api_client.discovery[:websocketUrl] %>
   <meta name="arv-websocket-url" content="<%=$arvados_api_client.discovery[:websocketUrl]%>?api_token=<%=Thread.current[:arvados_api_token]%>">
   <% end %>

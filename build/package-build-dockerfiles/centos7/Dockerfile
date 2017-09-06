@@ -20,6 +20,10 @@ RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
 ADD generated/go1.8.3.linux-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 
+# Install nodejs and npm
+ADD generated/node-v6.11.2-linux-x64.tar.xz /usr/local/
+RUN ln -s /usr/local/node-v6.11.2-linux-x64/bin/* /usr/local/bin/
+
 # Need to "touch" RPM database to workaround bug in interaction between
 # overlayfs and yum (https://bugzilla.redhat.com/show_bug.cgi?id=1213602)
 RUN touch /var/lib/rpm/* && yum -q -y install python33

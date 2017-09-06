@@ -1,0 +1,11 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
+# Run "rake npm:install"
+
+# Browserify is required.
+npm 'browserify', require: false, development: true
+
+npm 'mithril'
+npm 'es6-object-assign'

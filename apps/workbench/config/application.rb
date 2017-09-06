@@ -52,6 +52,11 @@ module ArvadosWorkbench
 
     # Version of your assets, change this if you want to expire all your assets
     config.assets.version = '1.0'
+
+    # npm-rails loads top-level modules like window.Mithril, but we
+    # also pull in some code from node_modules in application.js, like
+    # mithril/stream/stream.
+    config.assets.paths << Rails.root.join('node_modules')
   end
 end
 

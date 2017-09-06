@@ -204,6 +204,8 @@ sanity_checks() {
     echo -n 'gitolite: '
     which gitolite \
         || fatal "No gitolite. Try: apt-get install gitolite3"
+    which npm \
+          || fatal "No npm. Try: wget -O- https://nodejs.org/dist/v6.11.2/node-v6.11.2-linux-x64.tar.xz | sudo tar -C /usr/local xJf - && sudo ln -s ../node-v6.11.2-linux-x64/bin/{node,npm} /usr/local/bin/"
 }
 
 rotate_logfile() {
@@ -818,7 +820,8 @@ done
 install_workbench() {
     cd "$WORKSPACE/apps/workbench" \
         && mkdir -p tmp/cache \
-        && RAILS_ENV=test bundle_install_trylocal
+        && RAILS_ENV=test bundle_install_trylocal \
+        && RAILS_ENV=test RAILS_GROUPS=assets bundle exec rake npm:install
 }
 do_install apps/workbench workbench
 
