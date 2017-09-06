@@ -180,7 +180,7 @@ class SummarizePipeline(ReportDiff):
             job_report + ['\n'] +
             ['### Summary for bar (zzzzz-8i9sb-000000000000001)\n'] +
             job_report + ['\n'] +
-            ['### Summary for unfinished-job (zzzzz-8i9sb-xxxxxxxxxxxxxxx)\n',
+            ['### Summary for unfinished-job (partial) (zzzzz-8i9sb-xxxxxxxxxxxxxxx)\n',
              '(no report generated)\n',
              '\n'] +
             ['### Summary for baz (zzzzz-8i9sb-000000000000002)\n'] +
