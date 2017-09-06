@@ -457,7 +457,7 @@ def NewSummarizer(process_or_uuid, **kwargs):
     elif '-8i9sb-' in uuid:
         if process is None:
             process = arv.jobs().get(uuid=uuid).execute()
-        klass = JobSummarizer
+        klass = JobTreeSummarizer
     elif '-d1hrv-' in uuid:
         if process is None:
             process = arv.pipeline_instances().get(uuid=uuid).execute()
@@ -528,7 +528,7 @@ class MultiSummarizer(object):
 
     def text_report(self):
         txt = ''
-        for cname, child in self.children.iteritems():
+        for cname, child in self._descendants():
             if len(self.children) > 1:
                 txt += '### Summary for {} ({})\n'.format(
                     cname, child.process['uuid'])
@@ -536,8 +536,50 @@ class MultiSummarizer(object):
             txt += '\n'
         return txt
 
+    def _descendants(self):
+        """Dict of self and all descendants.
+
+        Wrappers with nothing of their own to report are omitted.
+        """
+        d = collections.OrderedDict()
+        for cname, child in self.children.iteritems():
+            if isinstance(child, Summarizer):
+                d[cname] = child
+            if isinstance(child, MultiSummarizer):
+                d.update(child._descendants())
+        return d
+
     def html_report(self):
-        return WEBCHART_CLASS(self.label, self.children.itervalues()).html()
+        return WEBCHART_CLASS(self.label, self._descendants().itervalues()).html()
+
+
+class JobTreeSummarizer(MultiSummarizer):
+    """Summarizes a job and all children listed in its components field."""
+    def __init__(self, job, label=None, **kwargs):
+        arv = arvados.api('v1', model=OrderedJsonModel())
+        label = label or job.get('name', None)
+        if label is None:
+            label = job['uuid']
+        else:
+            label = ' '.join([label, job['uuid']])
+        children = collections.OrderedDict()
+        children[job['uuid']] = JobSummarizer(job, label=label, **kwargs)
+        if job['components']:
+            preloaded = {}
+            for j in arv.jobs().index(
+                    limit=len(job['components']),
+                    filters=[['uuid','in',job['components'].values()]]).execute()['items']:
+                preloaded[j['uuid']] = j
+            for cname in sorted(job['components'].keys()):
+                child_uuid = job['components'][cname]
+                j = (preloaded.get(child_uuid) or
+                     arv.jobs().get(uuid=child_uuid).execute())
+                children[child_uuid] = JobTreeSummarizer(job=j, label=cname, **kwargs)
+
+        super(JobTreeSummarizer, self).__init__(
+            children=children,
+            label=label,
+            **kwargs)
 
 
 class PipelineSummarizer(MultiSummarizer):
@@ -550,7 +592,7 @@ class PipelineSummarizer(MultiSummarizer):
             else:
                 logger.info(
                     "%s: job %s", cname, component['job']['uuid'])
-                summarizer = JobSummarizer(component['job'], **kwargs)
+                summarizer = JobTreeSummarizer(component['job'], **kwargs)
                 summarizer.label = '{} {}'.format(
                     cname, component['job']['uuid'])
                 children[cname] = summarizer
