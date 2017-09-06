@@ -7,6 +7,9 @@
 //
 // It does not display any content itself: do not pass any children.
 //
+// Use of multiple SaveUIState components on the same page is not
+// (yet) supported.
+//
 // The problem being solved:
 //
 // Page 1 loads some content dynamically (e.g., via infinite scroll)
