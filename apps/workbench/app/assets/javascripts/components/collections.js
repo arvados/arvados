@@ -125,14 +125,14 @@ window.CollectionsSearch = {
         return m('form', {
             onsubmit: function() {
                 vnode.state.searchActive(vnode.state.searchEntered())
-                vnode.state.forgetSavedState = true
+                vnode.state.forgetSavedHeight = true
                 return false
             },
         }, [
             m(SaveUIState, {
                 defaultState: '',
                 currentState: vnode.state.searchActive,
-                forgetSavedState: vnode.state.forgetSavedState,
+                forgetSavedHeight: vnode.state.forgetSavedHeight,
                 saveBodyHeight: true,
             }),
             vnode.state.loader && [
