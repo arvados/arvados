@@ -33,7 +33,7 @@ class BrowsingTest < WorkbenchPerformanceTest
     assert_selector '.navbar-fixed-top'
     assert_triggers_dom_event 'shown.bs.modal' do
       within '.navbar-fixed-top' do
-        find_field('search').set 'hash'
+        find_field('search this site').set 'hash'
         find('.glyphicon-search').click
       end
     end
