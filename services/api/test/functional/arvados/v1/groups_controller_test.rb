@@ -692,17 +692,17 @@ class Arvados::V1::GroupsControllerTest < ActionController::TestCase
 
     test "move trashed subproject to new owner #{auth}" do
       authorize_with auth
+      assert_nil Group.readable_by(users(auth)).where(uuid: groups(:trashed_subproject).uuid).first
       put :update, {
             id: groups(:trashed_subproject).uuid,
             group: {
               owner_uuid: users(:active).uuid
             },
-            include_trashed: true,
+            include_trash: true,
             format: :json,
           }
-      # Currently fails but might want to change it in the future
-      # so leave the test here.
-      assert_response 404
+      assert_response :success
+      assert_not_nil Group.readable_by(users(auth)).where(uuid: groups(:trashed_subproject).uuid).first
     end
 
   end

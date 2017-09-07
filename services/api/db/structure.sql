@@ -33,6 +33,74 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
+-- Name: groups; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE groups (
+    id integer NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255),
+    created_at timestamp without time zone NOT NULL,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    modified_at timestamp without time zone,
+    name character varying(255) NOT NULL,
+    description character varying(524288),
+    updated_at timestamp without time zone NOT NULL,
+    group_class character varying(255),
+    trash_at timestamp without time zone,
+    is_trashed boolean DEFAULT false NOT NULL,
+    delete_at timestamp without time zone
+);
+
+
+--
+-- Name: links; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE links (
+    id integer NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255),
+    created_at timestamp without time zone NOT NULL,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    modified_at timestamp without time zone,
+    tail_uuid character varying(255),
+    link_class character varying(255),
+    name character varying(255),
+    head_uuid character varying(255),
+    properties text,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE TABLE users (
+    id integer NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255) NOT NULL,
+    created_at timestamp without time zone NOT NULL,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    modified_at timestamp without time zone,
+    email character varying(255),
+    first_name character varying(255),
+    last_name character varying(255),
+    identity_url character varying(255),
+    is_admin boolean,
+    prefs text,
+    updated_at timestamp without time zone NOT NULL,
+    default_owner_uuid character varying(255),
+    is_active boolean DEFAULT false,
+    username character varying(255)
+);
+
+
+--
 -- Name: api_client_authorizations; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -377,28 +445,6 @@ ALTER SEQUENCE containers_id_seq OWNED BY containers.id;
 
 
 --
--- Name: groups; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE groups (
-    id integer NOT NULL,
-    uuid character varying(255),
-    owner_uuid character varying(255),
-    created_at timestamp without time zone NOT NULL,
-    modified_by_client_uuid character varying(255),
-    modified_by_user_uuid character varying(255),
-    modified_at timestamp without time zone,
-    name character varying(255) NOT NULL,
-    description character varying(524288),
-    updated_at timestamp without time zone NOT NULL,
-    group_class character varying(255),
-    trash_at timestamp without time zone,
-    is_trashed boolean DEFAULT false NOT NULL,
-    delete_at timestamp without time zone
-);
-
-
---
 -- Name: groups_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -665,27 +711,6 @@ ALTER SEQUENCE keep_services_id_seq OWNED BY keep_services.id;
 
 
 --
--- Name: links; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE links (
-    id integer NOT NULL,
-    uuid character varying(255),
-    owner_uuid character varying(255),
-    created_at timestamp without time zone NOT NULL,
-    modified_by_client_uuid character varying(255),
-    modified_by_user_uuid character varying(255),
-    modified_at timestamp without time zone,
-    tail_uuid character varying(255),
-    link_class character varying(255),
-    name character varying(255),
-    head_uuid character varying(255),
-    properties text,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
 -- Name: links_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -705,11 +730,23 @@ ALTER SEQUENCE links_id_seq OWNED BY links.id;
 
 
 --
+-- Name: logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE logs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
 -- Name: logs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
 CREATE TABLE logs (
-    id integer NOT NULL,
+    id integer DEFAULT nextval('logs_id_seq'::regclass) NOT NULL,
     uuid character varying(255),
     owner_uuid character varying(255),
     modified_by_client_uuid character varying(255),
@@ -724,25 +761,6 @@ CREATE TABLE logs (
     modified_at timestamp without time zone,
     object_owner_uuid character varying(255)
 );
-
-
---
--- Name: logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE logs_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE logs_id_seq OWNED BY logs.id;
 
 
 --
@@ -1089,31 +1107,6 @@ ALTER SEQUENCE traits_id_seq OWNED BY traits.id;
 
 
 --
--- Name: users; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE users (
-    id integer NOT NULL,
-    uuid character varying(255),
-    owner_uuid character varying(255) NOT NULL,
-    created_at timestamp without time zone NOT NULL,
-    modified_by_client_uuid character varying(255),
-    modified_by_user_uuid character varying(255),
-    modified_at timestamp without time zone,
-    email character varying(255),
-    first_name character varying(255),
-    last_name character varying(255),
-    identity_url character varying(255),
-    is_admin boolean,
-    prefs text,
-    updated_at timestamp without time zone NOT NULL,
-    default_owner_uuid character varying(255),
-    is_active boolean DEFAULT false,
-    username character varying(255)
-);
-
-
---
 -- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -1309,13 +1302,6 @@ ALTER TABLE ONLY keep_services ALTER COLUMN id SET DEFAULT nextval('keep_service
 --
 
 ALTER TABLE ONLY links ALTER COLUMN id SET DEFAULT nextval('links_id_seq'::regclass);
-
-
---
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
---
-
-ALTER TABLE ONLY logs ALTER COLUMN id SET DEFAULT nextval('logs_id_seq'::regclass);
 
 
 --
