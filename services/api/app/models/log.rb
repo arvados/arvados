@@ -68,7 +68,7 @@ class Log < ArvadosModel
     end
     user_uuids = users_list.map { |u| u.uuid }
 
-    User.install_view('permission')
+    User.fresh_permission_view
 
     joins("LEFT JOIN container_requests ON container_requests.container_uuid=logs.object_uuid").
       where("EXISTS(SELECT target_uuid FROM permission_view "+

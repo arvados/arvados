@@ -260,55 +260,52 @@ class ArvadosModel < ActiveRecord::Base
     sql_conds = []
     user_uuids = users_list.map { |u| u.uuid }
 
-    User.install_view('permission')
-
-    # Check if any of the users are admin.
     if users_list.select { |u| u.is_admin }.any?
       if !include_trash
         # exclude rows that are explicitly trashed.
         if self.column_names.include? "owner_uuid"
-          sql_conds += ["NOT EXISTS(SELECT 1
+          sql_conds.push "NOT EXISTS(SELECT 1
                   FROM permission_view
                   WHERE trashed = 1 AND
-                  (#{sql_table}.uuid = target_uuid OR #{sql_table}.owner_uuid = target_uuid))"]
+                  (#{sql_table}.uuid = target_uuid OR #{sql_table}.owner_uuid = target_uuid))"
         else
-          sql_conds += ["NOT EXISTS(SELECT 1
+          sql_conds.push "NOT EXISTS(SELECT 1
                   FROM permission_view
                   WHERE trashed = 1 AND
-                  (#{sql_table}.uuid = target_uuid))"]
+                  (#{sql_table}.uuid = target_uuid))"
         end
       end
     else
       # Can read object (evidently a group or user) whose UUID is listed
       # explicitly in user_uuids.
-      sql_conds += ["#{sql_table}.uuid IN (:user_uuids)"]
+      sql_conds.push "#{sql_table}.uuid IN (:user_uuids)"
 
       if include_trash
-        trashed_check = ""
+        trashed_check = "true"
       else
-        trashed_check = "trashed = 0 AND"
+        trashed_check = "trashed = 0"
       end
 
-      perm_check = "perm_level >= 1"
-
       if self.column_names.include? "owner_uuid" and sql_table != "groups"
-        owner_check = "OR #{sql_table}.owner_uuid IN (:user_uuids) OR (target_uuid = #{sql_table}.owner_uuid AND target_owner_uuid IS NOT NULL)"
+        owner_check = "OR (target_uuid = #{sql_table}.owner_uuid AND target_owner_uuid IS NOT NULL)"
+        sql_conds.push "#{sql_table}.owner_uuid IN (:user_uuids)"
       else
         owner_check = ""
       end
 
-      sql_conds += ["EXISTS(SELECT 1 FROM permission_view "+
-                    "WHERE user_uuid IN (:user_uuids) AND #{trashed_check} #{perm_check} AND (target_uuid = #{sql_table}.uuid #{owner_check}))"]
+      sql_conds.push "EXISTS(SELECT 1 FROM permission_view "+
+                     "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 AND #{trashed_check} AND (target_uuid = #{sql_table}.uuid #{owner_check}))"
 
       if sql_table == "links"
         # Match any permission link that gives one of the authorized
         # users some permission _or_ gives anyone else permission to
         # view one of the authorized users.
-        sql_conds += ["(#{sql_table}.link_class IN (:permission_link_classes) AND "+
-                      "(#{sql_table}.head_uuid IN (:user_uuids) OR #{sql_table}.tail_uuid IN (:user_uuids)))"]
+        sql_conds.push "(#{sql_table}.link_class IN (:permission_link_classes) AND "+
+                       "(#{sql_table}.head_uuid IN (:user_uuids) OR #{sql_table}.tail_uuid IN (:user_uuids)))"
       end
     end
 
+    User.fresh_permission_view
     query_on.where(sql_conds.join(' OR '),
                     user_uuids: user_uuids,
                     permission_link_classes: ['permission', 'resources'])

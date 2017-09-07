@@ -27,7 +27,7 @@ class Group < ArvadosModel
   end
 
   def maybe_invalidate_permissions_cache
-    if uuid_changed? or owner_uuid_changed?
+    if uuid_changed? or owner_uuid_changed? or is_trashed_changed?
       # This can change users' permissions on other groups as well as
       # this one.
       invalidate_permissions_cache

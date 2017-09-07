@@ -790,6 +790,68 @@ ALTER SEQUENCE nodes_id_seq OWNED BY nodes.id;
 
 
 --
+-- Name: permission_view; Type: MATERIALIZED VIEW; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE MATERIALIZED VIEW permission_view AS
+ WITH RECURSIVE perm_value(name, val) AS (
+         VALUES ('can_read'::text,(1)::smallint), ('can_login'::text,1), ('can_write'::text,2), ('can_manage'::text,3)
+        ), perm_edges(tail_uuid, head_uuid, val, follow, trashed) AS (
+         SELECT links.tail_uuid,
+            links.head_uuid,
+            pv.val,
+            ((pv.val = 3) OR (groups.uuid IS NOT NULL)) AS follow,
+            (0)::smallint AS trashed
+           FROM ((links
+             LEFT JOIN perm_value pv ON ((pv.name = (links.name)::text)))
+             LEFT JOIN groups ON (((pv.val < 3) AND ((groups.uuid)::text = (links.head_uuid)::text))))
+          WHERE ((links.link_class)::text = 'permission'::text)
+        UNION ALL
+         SELECT groups.owner_uuid,
+            groups.uuid,
+            3,
+            true AS bool,
+                CASE
+                    WHEN ((groups.trash_at IS NOT NULL) AND (groups.trash_at < clock_timestamp())) THEN 1
+                    ELSE 0
+                END AS "case"
+           FROM groups
+        ), perm(val, follow, user_uuid, target_uuid, trashed, startnode) AS (
+         SELECT (3)::smallint AS val,
+            false AS follow,
+            (users.uuid)::character varying(32) AS user_uuid,
+            (users.uuid)::character varying(32) AS target_uuid,
+            (0)::smallint AS trashed,
+            true AS startnode
+           FROM users
+        UNION
+         SELECT (LEAST((perm_1.val)::integer, edges.val))::smallint AS val,
+            edges.follow,
+            perm_1.user_uuid,
+            (edges.head_uuid)::character varying(32) AS target_uuid,
+            (GREATEST((perm_1.trashed)::integer, edges.trashed))::smallint AS trashed,
+            false AS startnode
+           FROM (perm perm_1
+             JOIN perm_edges edges ON (((perm_1.startnode OR perm_1.follow) AND ((edges.tail_uuid)::text = (perm_1.target_uuid)::text))))
+        )
+ SELECT perm.user_uuid,
+    perm.target_uuid,
+    max(perm.val) AS perm_level,
+        CASE perm.follow
+            WHEN true THEN perm.target_uuid
+            ELSE NULL::character varying
+        END AS target_owner_uuid,
+    max(perm.trashed) AS trashed
+   FROM perm
+  GROUP BY perm.user_uuid, perm.target_uuid,
+        CASE perm.follow
+            WHEN true THEN perm.target_uuid
+            ELSE NULL::character varying
+        END
+  WITH NO DATA;
+
+
+--
 -- Name: pipeline_instances; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -872,6 +934,30 @@ ALTER SEQUENCE pipeline_templates_id_seq OWNED BY pipeline_templates.id;
 
 
 --
+-- Name: read_permissions; Type: VIEW; Schema: public; Owner: -
+--
+
+CREATE VIEW read_permissions AS
+ WITH RECURSIVE read_permissions(follow, user_uuid, readable_uuid) AS (
+         SELECT true AS bool,
+            users.uuid,
+            users.uuid
+           FROM users
+        UNION
+         SELECT (((links.name)::text = 'can_manage'::text) OR ((links.head_uuid)::text ~~ 'su92l-j7d0g-%'::text)) AS follow,
+            rp.user_uuid,
+            links.head_uuid
+           FROM read_permissions rp,
+            links
+          WHERE (rp.follow AND ((links.tail_uuid)::text = (rp.readable_uuid)::text))
+        )
+ SELECT read_permissions.follow,
+    read_permissions.user_uuid,
+    read_permissions.readable_uuid
+   FROM read_permissions;
+
+
+--
 -- Name: repositories; Type: TABLE; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -905,6 +991,18 @@ CREATE SEQUENCE repositories_id_seq
 --
 
 ALTER SEQUENCE repositories_id_seq OWNED BY repositories.id;
+
+
+--
+-- Name: rp_cache; Type: MATERIALIZED VIEW; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE MATERIALIZED VIEW rp_cache AS
+ SELECT read_permissions.follow,
+    read_permissions.user_uuid,
+    read_permissions.readable_uuid
+   FROM read_permissions
+  WITH NO DATA;
 
 
 --
@@ -1673,6 +1771,13 @@ CREATE INDEX index_collections_on_modified_at ON collections USING btree (modifi
 
 
 --
+-- Name: index_collections_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_collections_on_modified_at_uuid ON collections USING btree (modified_at DESC, uuid);
+
+
+--
 -- Name: index_collections_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -1719,6 +1824,13 @@ CREATE UNIQUE INDEX index_commit_ancestors_on_descendant_and_ancestor ON commit_
 --
 
 CREATE UNIQUE INDEX index_commits_on_repository_name_and_sha1 ON commits USING btree (repository_name, sha1);
+
+
+--
+-- Name: index_container_requests_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_container_requests_on_modified_at_uuid ON container_requests USING btree (modified_at DESC, uuid);
 
 
 --
@@ -1789,6 +1901,13 @@ CREATE INDEX index_groups_on_is_trashed ON groups USING btree (is_trashed);
 --
 
 CREATE INDEX index_groups_on_modified_at ON groups USING btree (modified_at);
+
+
+--
+-- Name: index_groups_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_groups_on_modified_at_uuid ON groups USING btree (modified_at DESC, uuid);
 
 
 --
@@ -1911,6 +2030,13 @@ CREATE INDEX index_jobs_on_modified_at ON jobs USING btree (modified_at);
 
 
 --
+-- Name: index_jobs_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_jobs_on_modified_at_uuid ON jobs USING btree (modified_at DESC, uuid);
+
+
+--
 -- Name: index_jobs_on_output; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -2027,6 +2153,13 @@ CREATE INDEX index_links_on_head_uuid ON links USING btree (head_uuid);
 --
 
 CREATE INDEX index_links_on_modified_at ON links USING btree (modified_at);
+
+
+--
+-- Name: index_links_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_links_on_modified_at_uuid ON links USING btree (modified_at DESC, uuid);
 
 
 --
@@ -2170,6 +2303,13 @@ CREATE INDEX index_pipeline_instances_on_modified_at ON pipeline_instances USING
 
 
 --
+-- Name: index_pipeline_instances_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_pipeline_instances_on_modified_at_uuid ON pipeline_instances USING btree (modified_at DESC, uuid);
+
+
+--
 -- Name: index_pipeline_instances_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -2198,6 +2338,13 @@ CREATE INDEX index_pipeline_templates_on_modified_at ON pipeline_templates USING
 
 
 --
+-- Name: index_pipeline_templates_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_pipeline_templates_on_modified_at_uuid ON pipeline_templates USING btree (modified_at DESC, uuid);
+
+
+--
 -- Name: index_pipeline_templates_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -2209,6 +2356,13 @@ CREATE INDEX index_pipeline_templates_on_owner_uuid ON pipeline_templates USING 
 --
 
 CREATE UNIQUE INDEX index_pipeline_templates_on_uuid ON pipeline_templates USING btree (uuid);
+
+
+--
+-- Name: index_repositories_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_repositories_on_modified_at_uuid ON repositories USING btree (modified_at DESC, uuid);
 
 
 --
@@ -2296,6 +2450,13 @@ CREATE INDEX index_users_on_modified_at ON users USING btree (modified_at);
 
 
 --
+-- Name: index_users_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_users_on_modified_at_uuid ON users USING btree (modified_at DESC, uuid);
+
+
+--
 -- Name: index_users_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -2324,6 +2485,13 @@ CREATE INDEX index_virtual_machines_on_hostname ON virtual_machines USING btree 
 
 
 --
+-- Name: index_virtual_machines_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_virtual_machines_on_modified_at_uuid ON virtual_machines USING btree (modified_at DESC, uuid);
+
+
+--
 -- Name: index_virtual_machines_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -2335,6 +2503,13 @@ CREATE INDEX index_virtual_machines_on_owner_uuid ON virtual_machines USING btre
 --
 
 CREATE UNIQUE INDEX index_virtual_machines_on_uuid ON virtual_machines USING btree (uuid);
+
+
+--
+-- Name: index_workflows_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX index_workflows_on_modified_at_uuid ON workflows USING btree (modified_at DESC, uuid);
 
 
 --
@@ -2415,6 +2590,20 @@ CREATE INDEX nodes_search_index ON nodes USING btree (uuid, owner_uuid, modified
 
 
 --
+-- Name: permission_target_trashed; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX permission_target_trashed ON permission_view USING btree (trashed, target_uuid);
+
+
+--
+-- Name: permission_target_user_trashed_level; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX permission_target_user_trashed_level ON permission_view USING btree (user_uuid, trashed, perm_level);
+
+
+--
 -- Name: pipeline_instances_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
 --
 
@@ -2461,6 +2650,13 @@ CREATE INDEX repositories_search_index ON repositories USING btree (uuid, owner_
 --
 
 CREATE INDEX specimens_search_index ON specimens USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, material);
+
+
+--
+-- Name: test_1; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+--
+
+CREATE INDEX test_1 ON collections USING btree (id) WHERE (delete_at IS NULL);
 
 
 --
@@ -2816,4 +3012,6 @@ INSERT INTO schema_migrations (version) VALUES ('20170419175801');
 INSERT INTO schema_migrations (version) VALUES ('20170628185847');
 
 INSERT INTO schema_migrations (version) VALUES ('20170824202826');
+
+INSERT INTO schema_migrations (version) VALUES ('20170906224040');
 

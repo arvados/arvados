@@ -35,6 +35,7 @@ class User < ArvadosModel
     user.username.nil? and user.email
   }
   after_create :add_system_group_permission_link
+  after_create :invalidate_permissions_cache
   after_create :auto_setup_new_user, :if => Proc.new { |user|
     Rails.configuration.auto_setup_new_users and
     (user.uuid != system_user_uuid) and
@@ -150,10 +151,13 @@ class User < ArvadosModel
     end
   end
 
+  def invalidate_permissions_cache(timestamp=nil)
+    User.invalidate_permissions_cache
+  end
+
   # Return a hash of {user_uuid: group_perms}
   def self.all_group_permissions
     all_perms = {}
-    User.install_view('permission')
     ActiveRecord::Base.connection.
       exec_query('SELECT user_uuid, target_owner_uuid, perm_level, trashed
                   FROM permission_view
@@ -172,7 +176,7 @@ class User < ArvadosModel
   # objects owned by group_uuid.
   def calculate_group_permissions
     group_perms = {self.uuid => {:read => true, :write => true, :manage => true}}
-    User.install_view('permission')
+    User.fresh_permission_view
     ActiveRecord::Base.connection.
       exec_query('SELECT target_owner_uuid, perm_level, trashed
                   FROM permission_view
@@ -205,6 +209,14 @@ class User < ArvadosModel
       end
     end
     r
+  end
+
+  def self.fresh_permission_view
+    r = Rails.cache.read "#{PERM_CACHE_PREFIX}_fresh"
+    if r.nil?
+      ActiveRecord::Base.connection.exec_query('REFRESH MATERIALIZED VIEW permission_view')
+      Rails.cache.write "#{PERM_CACHE_PREFIX}_fresh", 1, expires_in: PERM_CACHE_TTL
+    end
   end
 
   # create links
