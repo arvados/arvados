@@ -1,10 +1,38 @@
+# Copyright (C) The Arvados Authors. All rights reserved.
+#
+# SPDX-License-Identifier: AGPL-3.0
+
 class MaterializedPermissionView < ActiveRecord::Migration
 
   @@idxtables = [:collections, :container_requests, :groups, :jobs, :links, :pipeline_instances, :pipeline_templates, :repositories, :users, :virtual_machines, :workflows]
 
   def up
+
+    #
+    # Construct a materialized view for permissions.  This is a view which is
+    # derived from querying other tables, but is saved to a static table itself
+    # so that it can be indexed and queried efficiently without rerunning the
+    # query.  The view is updated using "REFRESH MATERIALIZED VIEW" which is
+    # executed after an operation invalidates the permission graph.
+    #
+
     ActiveRecord::Base.connection.execute(
-    "CREATE MATERIALIZED VIEW permission_view AS
+"-- constructing perm_edges
+--   1. get the list of all permission links,
+--   2. any can_manage link or permission link to a group means permission should "follow through"
+--      (as a special case, can_manage links to a user grant access to everything owned by the user,
+--       unlike can_read or can_write which only grant access to the user record)
+--   3. add all owner->owned relationships between groups as can_manage edges
+--
+-- constructing permissions
+--   1. base case: start with set of all users as the working set
+--   2. recursive case:
+--      join with edges where the tail is in the working set and "follow" is true
+--      produce a new working set with the head (target) of each edge
+--      set permission to the least permission encountered on the path
+--      propagate trashed flag down
+
+CREATE MATERIALIZED VIEW permission_view AS
 WITH RECURSIVE
 perm_value (name, val) AS (
      VALUES
@@ -58,6 +86,19 @@ SELECT user_uuid,
     add_index :permission_view, [:trashed, :target_uuid], name: 'permission_target_trashed'
     add_index :permission_view, [:user_uuid, :trashed, :perm_level], name: 'permission_target_user_trashed_level'
 
+    # Indexes on the other tables are essential to for the query planner to
+    # construct an efficient join with permission_view.
+    #
+    # Our default query uses "ORDER BY modified_by desc, uuid"
+    #
+    # It turns out the existing simple index on modified_by can't be used
+    # because of the additional ordering on "uuid".
+    #
+    # To be able to utilize the index, the index ordering has to match the
+    # ORDER BY clause.  For more detail see:
+    #
+    # https://www.postgresql.org/docs/9.3/static/indexes-ordering.html
+    #
     @@idxtables.each do |table|
       ActiveRecord::Base.connection.execute("CREATE INDEX index_#{table.to_s}_on_modified_at_uuid ON #{table.to_s} USING btree (modified_at desc, uuid asc)")
     end

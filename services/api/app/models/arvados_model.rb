@@ -263,16 +263,11 @@ class ArvadosModel < ActiveRecord::Base
     if users_list.select { |u| u.is_admin }.any?
       if !include_trash
         # exclude rows that are explicitly trashed.
-        if self.column_names.include? "owner_uuid"
+        if sql_table != "api_client_authorizations"
           sql_conds.push "NOT EXISTS(SELECT 1
                   FROM permission_view
                   WHERE trashed = 1 AND
                   (#{sql_table}.uuid = target_uuid OR #{sql_table}.owner_uuid = target_uuid))"
-        else
-          sql_conds.push "NOT EXISTS(SELECT 1
-                  FROM permission_view
-                  WHERE trashed = 1 AND
-                  (#{sql_table}.uuid = target_uuid))"
         end
       end
     else
@@ -286,7 +281,7 @@ class ArvadosModel < ActiveRecord::Base
         trashed_check = "trashed = 0"
       end
 
-      if self.column_names.include? "owner_uuid" and sql_table != "groups"
+      if sql_table != "api_client_authorizations" and sql_table != "groups"
         owner_check = "OR (target_uuid = #{sql_table}.owner_uuid AND target_owner_uuid IS NOT NULL)"
         sql_conds.push "#{sql_table}.owner_uuid IN (:user_uuids)"
       else
