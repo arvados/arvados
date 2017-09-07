@@ -5,7 +5,7 @@
 # Run "rake npm:install"
 
 # Browserify is required.
-npm 'browserify', require: false, development: true
+npm 'browserify', require: false
 
 npm 'mithril'
 npm 'es6-object-assign'
