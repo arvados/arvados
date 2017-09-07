@@ -352,7 +352,7 @@ func (m *Manifest) segment() (*segmentedManifest, error) {
 
 func (stream segmentedStream) normalizedText(name string) string {
 	var sortedfiles []string
-	for k, _ := range stream {
+	for k := range stream {
 		sortedfiles = append(sortedfiles, k)
 	}
 	sort.Strings(sortedfiles)
@@ -446,7 +446,7 @@ func (m segmentedManifest) manifestTextForPath(srcpath, relocate string) string 
 	}
 
 	var sortedstreams []string
-	for k, _ := range m {
+	for k := range m {
 		sortedstreams = append(sortedstreams, k)
 	}
 	sort.Strings(sortedstreams)

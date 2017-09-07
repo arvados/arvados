@@ -288,7 +288,7 @@ func (sink *pgEventSink) Stop() {
 		// Ensure this sink cannot fill up and block the
 		// server-side queue (which otherwise could in turn
 		// block our mtx.Lock() here)
-		for _ = range sink.channel {
+		for range sink.channel {
 		}
 	}()
 	sink.source.mtx.Lock()

@@ -47,8 +47,9 @@ ArvadosWorkbench::Application.routes.draw do
   get '/repositories/:id/tree/:commit/*path' => 'repositories#show_tree', as: :show_repository_tree, format: false
   get '/repositories/:id/blob/:commit/*path' => 'repositories#show_blob', as: :show_repository_blob, format: false
   get '/repositories/:id/commit/:commit' => 'repositories#show_commit', as: :show_repository_commit
+  resources :sessions
   match '/logout' => 'sessions#destroy', via: [:get, :post]
-  get '/logged_out' => 'sessions#index'
+  get '/logged_out' => 'sessions#logged_out'
   resources :users do
     get 'choose', :on => :collection
     get 'home', :on => :member
@@ -94,6 +95,7 @@ ArvadosWorkbench::Application.routes.draw do
     post 'remove_selected_files', on: :member
     get 'tags', on: :member
     post 'save_tags', on: :member
+    get 'multisite', on: :collection
   end
   get('/collections/download/:uuid/:reader_token/*file' => 'collections#show_file',
       format: false)
@@ -127,6 +129,10 @@ ArvadosWorkbench::Application.routes.draw do
   root :to => 'projects#index'
 
   match '/_health/ping', to: 'healthcheck#ping', via: [:get]
+
+  get '/tests/mithril', to: 'tests#mithril'
+
+  get '/status', to: 'status#status'
 
   # Send unroutable requests to an arbitrary controller
   # (ends up at ApplicationController#render_not_found)

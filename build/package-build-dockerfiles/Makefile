@@ -29,11 +29,15 @@ ubuntu1604/generated: common-generated-all
 	cp -rlt ubuntu1604/generated common-generated/*
 
 GOTARBALL=go1.8.3.linux-amd64.tar.gz
+NODETARBALL=node-v6.11.2-linux-x64.tar.xz
 
-common-generated-all: common-generated/$(GOTARBALL)
+common-generated-all: common-generated/$(GOTARBALL) common-generated/$(NODETARBALL)
 
 common-generated/$(GOTARBALL): common-generated
 	wget -cqO common-generated/$(GOTARBALL) http://storage.googleapis.com/golang/$(GOTARBALL)
+
+common-generated/$(NODETARBALL): common-generated
+	wget -cqO common-generated/$(NODETARBALL) https://nodejs.org/dist/v6.11.2/$(NODETARBALL)
 
 common-generated:
 	mkdir common-generated

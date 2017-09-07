@@ -22,6 +22,10 @@ RUN gpg --keyserver pool.sks-keyservers.net --recv-keys D39DC0E3 && \
 ADD generated/go1.8.3.linux-amd64.tar.gz /usr/local/
 RUN ln -s /usr/local/go/bin/go /usr/local/bin/
 
+# Install nodejs and npm
+ADD generated/node-v6.11.2-linux-x64.tar.xz /usr/local/
+RUN ln -s /usr/local/node-v6.11.2-linux-x64/bin/* /usr/local/bin/
+
 # Old versions of setuptools cannot build a schema-salad package.
 RUN pip install --upgrade setuptools
 

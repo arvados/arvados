@@ -159,8 +159,8 @@ func (s *TestSuite) TestSbatchFail(c *C) {
 
 	var ll arvados.LogList
 	err = arv.List("logs", arvadosclient.Dict{"filters": [][]string{
-		[]string{"object_uuid", "=", container.UUID},
-		[]string{"event_type", "=", "dispatch"},
+		{"object_uuid", "=", container.UUID},
+		{"event_type", "=", "dispatch"},
 	}}, &ll)
 	c.Assert(len(ll.Items), Equals, 1)
 }

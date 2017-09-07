@@ -204,6 +204,8 @@ sanity_checks() {
     echo -n 'gitolite: '
     which gitolite \
         || fatal "No gitolite. Try: apt-get install gitolite3"
+    which npm \
+          || fatal "No npm. Try: wget -O- https://nodejs.org/dist/v6.11.2/node-v6.11.2-linux-x64.tar.xz | sudo tar -C /usr/local xJf - && sudo ln -s ../node-v6.11.2-linux-x64/bin/{node,npm} /usr/local/bin/"
 }
 
 rotate_logfile() {
@@ -468,11 +470,21 @@ pip freeze 2>/dev/null | egrep ^apache-libcloud==$LIBCLOUD_PIN \
     || pip install --pre --ignore-installed https://github.com/curoverse/libcloud/archive/apache-libcloud-$LIBCLOUD_PIN.zip >/dev/null \
     || fatal "pip install apache-libcloud failed"
 
-# Uninstall old llfuse (<1.0), because services/fuse "pip install"
-# won't upgrade it by default.
-if pip freeze | egrep '^llfuse==0'; then
-    yes | pip uninstall 'llfuse<1.0'
-fi
+# We need an unreleased (as of 2017-08-17) llfuse bugfix, otherwise our fuse test suite deadlocks.
+pip freeze | grep -x llfuse==1.2.0 || (
+    set -e
+    yes | pip uninstall llfuse || true
+    cython --version || fatal "no cython; try sudo apt-get install cython"
+    cd "$temp"
+    (cd python-llfuse || git clone https://github.com/curoverse/python-llfuse)
+    cd python-llfuse
+    git checkout 620722fd990ea642ddb8e7412676af482c090c0c
+    git checkout setup.py
+    sed -i -e "s:'1\\.2':'1.2.0':" setup.py
+    python setup.py build_cython
+    python setup.py install --force
+) || fatal "llfuse fork failed"
+pip freeze | grep -x llfuse==1.2.0 || fatal "error: installed llfuse 1.2.0 but '$(pip freeze | grep llfuse)' ???"
 
 # Deactivate Python 2 virtualenv
 deactivate
@@ -808,7 +820,8 @@ done
 install_workbench() {
     cd "$WORKSPACE/apps/workbench" \
         && mkdir -p tmp/cache \
-        && RAILS_ENV=test bundle_install_trylocal
+        && RAILS_ENV=test bundle_install_trylocal \
+        && RAILS_ENV=test RAILS_GROUPS=assets bundle exec rake npm:install
 }
 do_install apps/workbench workbench
 

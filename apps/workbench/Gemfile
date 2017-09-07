@@ -102,3 +102,5 @@ gem 'lograge'
 gem 'logstash-event'
 
 gem 'safe_yaml'
+
+gem 'npm-rails'

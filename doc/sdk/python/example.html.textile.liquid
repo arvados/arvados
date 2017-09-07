@@ -22,7 +22,7 @@ api = arvados.api("v1")
 h2. create
 
 <pre>
-result = api.collection().create(body={"collection": {"name": "create example"}}).execute()
+result = api.collections().create(body={"collection": {"name": "create example"}}).execute()
 </pre>
 
 h2. delete

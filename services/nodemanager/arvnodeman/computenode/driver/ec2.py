@@ -52,12 +52,15 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
         self.tags = {key[4:]: value
                      for key, value in list_kwargs.iteritems()
                      if key.startswith('tag:')}
+        # Tags are assigned at instance creation time
+        create_kwargs.setdefault('ex_metadata', {})
+        create_kwargs['ex_metadata'].update(self.tags)
         super(ComputeNodeDriver, self).__init__(
             auth_kwargs, {'ex_filters': list_kwargs}, create_kwargs,
             driver_class)
 
     def _init_image_id(self, image_id):
-        return 'image', self.search_for(image_id, 'list_images')
+        return 'image', self.search_for(image_id, 'list_images', ex_owner='self')
 
     def _init_security_groups(self, group_names):
         return 'ex_security_groups', [
@@ -89,9 +92,6 @@ class ComputeNodeDriver(BaseComputeNodeDriver):
                     "VolumeType": "gp2"
                 }}]
         return kw
-
-    def post_create_node(self, cloud_node):
-        self.real.ex_create_tags(cloud_node, self.tags)
 
     def sync_node(self, cloud_node, arvados_node):
         self.real.ex_create_tags(cloud_node,

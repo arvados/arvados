@@ -19,7 +19,7 @@ class PipelineTest < DiagnosticsTest
       # Search for tutorial template
       find '.navbar-fixed-top'
       within('.navbar-fixed-top') do
-        page.find_field('search').set pipeline_config['template_uuid']
+        page.find_field('search this site').set pipeline_config['template_uuid']
         page.find('.glyphicon-search').click
       end
 
