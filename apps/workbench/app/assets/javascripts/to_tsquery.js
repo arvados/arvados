@@ -15,6 +15,7 @@
 // " oo|ba " => "oo:*&ba:*"
 // "// "     => null
 // ""        => null
+// null      => null
 window.to_tsquery = function(q) {
     q = (q || '').replace(/\W+/g, ' ').trim().replace(/ /g, ':*&')
     if (q == '')
