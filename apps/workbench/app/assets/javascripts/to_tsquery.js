@@ -16,7 +16,7 @@
 // "// "     => null
 // ""        => null
 window.to_tsquery = function(q) {
-    q = q.replace(/\W+/g, ' ').trim().replace(/ /g, ':*&')
+    q = (q || '').replace(/\W+/g, ' ').trim().replace(/ /g, ':*&')
     if (q == '')
         return null
     return q + ':*'
