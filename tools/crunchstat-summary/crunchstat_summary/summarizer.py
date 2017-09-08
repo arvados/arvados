@@ -182,9 +182,10 @@ class Summarizer(object):
                         else:
                             stats[stat] = int(val)
                 except ValueError as e:
-                    logger.warning('Error parsing value "{}" for stat "{}" in category "{}": {!r}'.format(
-                        val, stat, category, e))
-                    logger.warning(line)
+                    logger.warning(
+                        'Error parsing value %r (stat %r, category %r): %r',
+                        val, stat, category, e)
+                    logger.warning('%s', line)
                     continue
                 if 'user' in stats or 'sys' in stats:
                     stats['user+sys'] = stats.get('user', 0) + stats.get('sys', 0)
