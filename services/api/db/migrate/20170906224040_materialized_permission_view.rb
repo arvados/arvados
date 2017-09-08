@@ -19,7 +19,7 @@ class MaterializedPermissionView < ActiveRecord::Migration
     ActiveRecord::Base.connection.execute(
 "-- constructing perm_edges
 --   1. get the list of all permission links,
---   2. any can_manage link or permission link to a group means permission should "follow through"
+--   2. any can_manage link or permission link to a group means permission should 'follow through'
 --      (as a special case, can_manage links to a user grant access to everything owned by the user,
 --       unlike can_read or can_write which only grant access to the user record)
 --   3. add all owner->owned relationships between groups as can_manage edges
@@ -27,12 +27,12 @@ class MaterializedPermissionView < ActiveRecord::Migration
 -- constructing permissions
 --   1. base case: start with set of all users as the working set
 --   2. recursive case:
---      join with edges where the tail is in the working set and "follow" is true
+--      join with edges where the tail is in the working set and 'follow' is true
 --      produce a new working set with the head (target) of each edge
 --      set permission to the least permission encountered on the path
 --      propagate trashed flag down
 
-CREATE MATERIALIZED VIEW permission_view AS
+CREATE MATERIALIZED VIEW materialized_permission_view AS
 WITH RECURSIVE
 perm_value (name, val) AS (
      VALUES
@@ -83,8 +83,8 @@ SELECT user_uuid,
        FROM perm
        GROUP BY user_uuid, target_uuid, target_owner_uuid;
 ")
-    add_index :permission_view, [:trashed, :target_uuid], name: 'permission_target_trashed'
-    add_index :permission_view, [:user_uuid, :trashed, :perm_level], name: 'permission_target_user_trashed_level'
+    add_index :materialized_permission_view, [:trashed, :target_uuid], name: 'permission_target_trashed'
+    add_index :materialized_permission_view, [:user_uuid, :trashed, :perm_level], name: 'permission_target_user_trashed_level'
 
     # Indexes on the other tables are essential to for the query planner to
     # construct an efficient join with permission_view.
@@ -110,6 +110,6 @@ SELECT user_uuid,
     @@idxtables.each do |table|
       ActiveRecord::Base.connection.execute("DROP INDEX index_#{table.to_s}_on_modified_at_uuid")
     end
-    ActiveRecord::Base.connection.execute("DROP MATERIALIZED VIEW IF EXISTS permission_view")
+    ActiveRecord::Base.connection.execute("DROP MATERIALIZED VIEW IF EXISTS materialized_permission_view")
   end
 end

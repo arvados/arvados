@@ -68,10 +68,8 @@ class Log < ArvadosModel
     end
     user_uuids = users_list.map { |u| u.uuid }
 
-    User.fresh_permission_view
-
     joins("LEFT JOIN container_requests ON container_requests.container_uuid=logs.object_uuid").
-      where("EXISTS(SELECT target_uuid FROM permission_view "+
+      where("EXISTS(SELECT target_uuid FROM #{PERMISSION_VIEW} "+
             "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 AND "+
             "target_uuid IN (container_requests.uuid, container_requests.owner_uuid, logs.object_uuid, logs.owner_uuid, logs.object_owner_uuid))",
             user_uuids: user_uuids)

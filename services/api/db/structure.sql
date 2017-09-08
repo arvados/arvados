@@ -6,11 +6,16 @@
 -- PostgreSQL database dump
 --
 
+-- Dumped from database version 9.6.4
+-- Dumped by pg_dump version 9.6.4
+
 SET statement_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;
 SET client_min_messages = warning;
+SET row_security = off;
 
 --
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: -
@@ -33,75 +38,7 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
--- Name: groups; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE groups (
-    id integer NOT NULL,
-    uuid character varying(255),
-    owner_uuid character varying(255),
-    created_at timestamp without time zone NOT NULL,
-    modified_by_client_uuid character varying(255),
-    modified_by_user_uuid character varying(255),
-    modified_at timestamp without time zone,
-    name character varying(255) NOT NULL,
-    description character varying(524288),
-    updated_at timestamp without time zone NOT NULL,
-    group_class character varying(255),
-    trash_at timestamp without time zone,
-    is_trashed boolean DEFAULT false NOT NULL,
-    delete_at timestamp without time zone
-);
-
-
---
--- Name: links; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE links (
-    id integer NOT NULL,
-    uuid character varying(255),
-    owner_uuid character varying(255),
-    created_at timestamp without time zone NOT NULL,
-    modified_by_client_uuid character varying(255),
-    modified_by_user_uuid character varying(255),
-    modified_at timestamp without time zone,
-    tail_uuid character varying(255),
-    link_class character varying(255),
-    name character varying(255),
-    head_uuid character varying(255),
-    properties text,
-    updated_at timestamp without time zone NOT NULL
-);
-
-
---
--- Name: users; Type: TABLE; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE TABLE users (
-    id integer NOT NULL,
-    uuid character varying(255),
-    owner_uuid character varying(255) NOT NULL,
-    created_at timestamp without time zone NOT NULL,
-    modified_by_client_uuid character varying(255),
-    modified_by_user_uuid character varying(255),
-    modified_at timestamp without time zone,
-    email character varying(255),
-    first_name character varying(255),
-    last_name character varying(255),
-    identity_url character varying(255),
-    is_admin boolean,
-    prefs text,
-    updated_at timestamp without time zone NOT NULL,
-    default_owner_uuid character varying(255),
-    is_active boolean DEFAULT false,
-    username character varying(255)
-);
-
-
---
--- Name: api_client_authorizations; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: api_client_authorizations; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE api_client_authorizations (
@@ -141,7 +78,7 @@ ALTER SEQUENCE api_client_authorizations_id_seq OWNED BY api_client_authorizatio
 
 
 --
--- Name: api_clients; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: api_clients; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE api_clients (
@@ -179,7 +116,7 @@ ALTER SEQUENCE api_clients_id_seq OWNED BY api_clients.id;
 
 
 --
--- Name: authorized_keys; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: authorized_keys; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE authorized_keys (
@@ -219,7 +156,7 @@ ALTER SEQUENCE authorized_keys_id_seq OWNED BY authorized_keys.id;
 
 
 --
--- Name: collections; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: collections; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE collections (
@@ -266,7 +203,7 @@ ALTER SEQUENCE collections_id_seq OWNED BY collections.id;
 
 
 --
--- Name: commit_ancestors; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: commit_ancestors; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE commit_ancestors (
@@ -300,7 +237,7 @@ ALTER SEQUENCE commit_ancestors_id_seq OWNED BY commit_ancestors.id;
 
 
 --
--- Name: commits; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: commits; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE commits (
@@ -333,7 +270,7 @@ ALTER SEQUENCE commits_id_seq OWNED BY commits.id;
 
 
 --
--- Name: container_requests; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: container_requests; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE container_requests (
@@ -392,7 +329,7 @@ ALTER SEQUENCE container_requests_id_seq OWNED BY container_requests.id;
 
 
 --
--- Name: containers; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: containers; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE containers (
@@ -445,6 +382,28 @@ ALTER SEQUENCE containers_id_seq OWNED BY containers.id;
 
 
 --
+-- Name: groups; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE groups (
+    id integer NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255),
+    created_at timestamp without time zone NOT NULL,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    modified_at timestamp without time zone,
+    name character varying(255) NOT NULL,
+    description character varying(524288),
+    updated_at timestamp without time zone NOT NULL,
+    group_class character varying(255),
+    trash_at timestamp without time zone,
+    is_trashed boolean DEFAULT false NOT NULL,
+    delete_at timestamp without time zone
+);
+
+
+--
 -- Name: groups_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -464,7 +423,7 @@ ALTER SEQUENCE groups_id_seq OWNED BY groups.id;
 
 
 --
--- Name: humans; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: humans; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE humans (
@@ -500,7 +459,7 @@ ALTER SEQUENCE humans_id_seq OWNED BY humans.id;
 
 
 --
--- Name: job_tasks; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: job_tasks; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE job_tasks (
@@ -564,7 +523,7 @@ ALTER SEQUENCE job_tasks_qsequence_seq OWNED BY job_tasks.qsequence;
 
 
 --
--- Name: jobs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: jobs; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE jobs (
@@ -625,7 +584,7 @@ ALTER SEQUENCE jobs_id_seq OWNED BY jobs.id;
 
 
 --
--- Name: keep_disks; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: keep_disks; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE keep_disks (
@@ -671,7 +630,7 @@ ALTER SEQUENCE keep_disks_id_seq OWNED BY keep_disks.id;
 
 
 --
--- Name: keep_services; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: keep_services; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE keep_services (
@@ -711,6 +670,27 @@ ALTER SEQUENCE keep_services_id_seq OWNED BY keep_services.id;
 
 
 --
+-- Name: links; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE links (
+    id integer NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255),
+    created_at timestamp without time zone NOT NULL,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    modified_at timestamp without time zone,
+    tail_uuid character varying(255),
+    link_class character varying(255),
+    name character varying(255),
+    head_uuid character varying(255),
+    properties text,
+    updated_at timestamp without time zone NOT NULL
+);
+
+
+--
 -- Name: links_id_seq; Type: SEQUENCE; Schema: public; Owner: -
 --
 
@@ -742,7 +722,7 @@ CREATE SEQUENCE logs_id_seq
 
 
 --
--- Name: logs; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: logs; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE logs (
@@ -764,54 +744,35 @@ CREATE TABLE logs (
 
 
 --
--- Name: nodes; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: users; Type: TABLE; Schema: public; Owner: -
 --
 
-CREATE TABLE nodes (
+CREATE TABLE users (
     id integer NOT NULL,
     uuid character varying(255),
-    owner_uuid character varying(255),
+    owner_uuid character varying(255) NOT NULL,
     created_at timestamp without time zone NOT NULL,
     modified_by_client_uuid character varying(255),
     modified_by_user_uuid character varying(255),
     modified_at timestamp without time zone,
-    slot_number integer,
-    hostname character varying(255),
-    domain character varying(255),
-    ip_address character varying(255),
-    first_ping_at timestamp without time zone,
-    last_ping_at timestamp without time zone,
-    info text,
+    email character varying(255),
+    first_name character varying(255),
+    last_name character varying(255),
+    identity_url character varying(255),
+    is_admin boolean,
+    prefs text,
     updated_at timestamp without time zone NOT NULL,
-    properties text,
-    job_uuid character varying(255)
+    default_owner_uuid character varying(255),
+    is_active boolean DEFAULT false,
+    username character varying(255)
 );
 
 
 --
--- Name: nodes_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+-- Name: materialized_permission_view; Type: MATERIALIZED VIEW; Schema: public; Owner: -
 --
 
-CREATE SEQUENCE nodes_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
--- Name: nodes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
---
-
-ALTER SEQUENCE nodes_id_seq OWNED BY nodes.id;
-
-
---
--- Name: permission_view; Type: MATERIALIZED VIEW; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE MATERIALIZED VIEW permission_view AS
+CREATE MATERIALIZED VIEW materialized_permission_view AS
  WITH RECURSIVE perm_value(name, val) AS (
          VALUES ('can_read'::text,(1)::smallint), ('can_login'::text,1), ('can_write'::text,2), ('can_manage'::text,3)
         ), perm_edges(tail_uuid, head_uuid, val, follow, trashed) AS (
@@ -870,7 +831,51 @@ CREATE MATERIALIZED VIEW permission_view AS
 
 
 --
--- Name: pipeline_instances; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: nodes; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE nodes (
+    id integer NOT NULL,
+    uuid character varying(255),
+    owner_uuid character varying(255),
+    created_at timestamp without time zone NOT NULL,
+    modified_by_client_uuid character varying(255),
+    modified_by_user_uuid character varying(255),
+    modified_at timestamp without time zone,
+    slot_number integer,
+    hostname character varying(255),
+    domain character varying(255),
+    ip_address character varying(255),
+    first_ping_at timestamp without time zone,
+    last_ping_at timestamp without time zone,
+    info text,
+    updated_at timestamp without time zone NOT NULL,
+    properties text,
+    job_uuid character varying(255)
+);
+
+
+--
+-- Name: nodes_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE nodes_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: nodes_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE nodes_id_seq OWNED BY nodes.id;
+
+
+--
+-- Name: pipeline_instances; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE pipeline_instances (
@@ -914,7 +919,7 @@ ALTER SEQUENCE pipeline_instances_id_seq OWNED BY pipeline_instances.id;
 
 
 --
--- Name: pipeline_templates; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: pipeline_templates; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE pipeline_templates (
@@ -976,7 +981,7 @@ CREATE VIEW read_permissions AS
 
 
 --
--- Name: repositories; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: repositories; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE repositories (
@@ -1012,7 +1017,7 @@ ALTER SEQUENCE repositories_id_seq OWNED BY repositories.id;
 
 
 --
--- Name: rp_cache; Type: MATERIALIZED VIEW; Schema: public; Owner: -; Tablespace: 
+-- Name: rp_cache; Type: MATERIALIZED VIEW; Schema: public; Owner: -
 --
 
 CREATE MATERIALIZED VIEW rp_cache AS
@@ -1024,7 +1029,7 @@ CREATE MATERIALIZED VIEW rp_cache AS
 
 
 --
--- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: schema_migrations; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE schema_migrations (
@@ -1033,7 +1038,7 @@ CREATE TABLE schema_migrations (
 
 
 --
--- Name: specimens; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: specimens; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE specimens (
@@ -1070,7 +1075,7 @@ ALTER SEQUENCE specimens_id_seq OWNED BY specimens.id;
 
 
 --
--- Name: traits; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: traits; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE traits (
@@ -1126,7 +1131,7 @@ ALTER SEQUENCE users_id_seq OWNED BY users.id;
 
 
 --
--- Name: virtual_machines; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: virtual_machines; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE virtual_machines (
@@ -1162,7 +1167,7 @@ ALTER SEQUENCE virtual_machines_id_seq OWNED BY virtual_machines.id;
 
 
 --
--- Name: workflows; Type: TABLE; Schema: public; Owner: -; Tablespace: 
+-- Name: workflows; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE workflows (
@@ -1200,175 +1205,175 @@ ALTER SEQUENCE workflows_id_seq OWNED BY workflows.id;
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: api_client_authorizations id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY api_client_authorizations ALTER COLUMN id SET DEFAULT nextval('api_client_authorizations_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: api_clients id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY api_clients ALTER COLUMN id SET DEFAULT nextval('api_clients_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: authorized_keys id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY authorized_keys ALTER COLUMN id SET DEFAULT nextval('authorized_keys_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: collections id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY collections ALTER COLUMN id SET DEFAULT nextval('collections_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: commit_ancestors id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY commit_ancestors ALTER COLUMN id SET DEFAULT nextval('commit_ancestors_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: commits id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY commits ALTER COLUMN id SET DEFAULT nextval('commits_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: container_requests id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY container_requests ALTER COLUMN id SET DEFAULT nextval('container_requests_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: containers id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY containers ALTER COLUMN id SET DEFAULT nextval('containers_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: groups id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY groups ALTER COLUMN id SET DEFAULT nextval('groups_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: humans id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY humans ALTER COLUMN id SET DEFAULT nextval('humans_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: job_tasks id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY job_tasks ALTER COLUMN id SET DEFAULT nextval('job_tasks_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: jobs id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY jobs ALTER COLUMN id SET DEFAULT nextval('jobs_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: keep_disks id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY keep_disks ALTER COLUMN id SET DEFAULT nextval('keep_disks_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: keep_services id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY keep_services ALTER COLUMN id SET DEFAULT nextval('keep_services_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: links id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY links ALTER COLUMN id SET DEFAULT nextval('links_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: nodes id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY nodes ALTER COLUMN id SET DEFAULT nextval('nodes_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: pipeline_instances id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY pipeline_instances ALTER COLUMN id SET DEFAULT nextval('pipeline_instances_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: pipeline_templates id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY pipeline_templates ALTER COLUMN id SET DEFAULT nextval('pipeline_templates_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: repositories id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY repositories ALTER COLUMN id SET DEFAULT nextval('repositories_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: specimens id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY specimens ALTER COLUMN id SET DEFAULT nextval('specimens_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: traits id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY traits ALTER COLUMN id SET DEFAULT nextval('traits_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: users id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY users ALTER COLUMN id SET DEFAULT nextval('users_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: virtual_machines id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY virtual_machines ALTER COLUMN id SET DEFAULT nextval('virtual_machines_id_seq'::regclass);
 
 
 --
--- Name: id; Type: DEFAULT; Schema: public; Owner: -
+-- Name: workflows id; Type: DEFAULT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY workflows ALTER COLUMN id SET DEFAULT nextval('workflows_id_seq'::regclass);
 
 
 --
--- Name: api_client_authorizations_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: api_client_authorizations api_client_authorizations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY api_client_authorizations
@@ -1376,7 +1381,7 @@ ALTER TABLE ONLY api_client_authorizations
 
 
 --
--- Name: api_clients_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: api_clients api_clients_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY api_clients
@@ -1384,7 +1389,7 @@ ALTER TABLE ONLY api_clients
 
 
 --
--- Name: authorized_keys_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: authorized_keys authorized_keys_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY authorized_keys
@@ -1392,7 +1397,7 @@ ALTER TABLE ONLY authorized_keys
 
 
 --
--- Name: collections_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: collections collections_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY collections
@@ -1400,7 +1405,7 @@ ALTER TABLE ONLY collections
 
 
 --
--- Name: commit_ancestors_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: commit_ancestors commit_ancestors_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY commit_ancestors
@@ -1408,7 +1413,7 @@ ALTER TABLE ONLY commit_ancestors
 
 
 --
--- Name: commits_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: commits commits_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY commits
@@ -1416,7 +1421,7 @@ ALTER TABLE ONLY commits
 
 
 --
--- Name: container_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: container_requests container_requests_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY container_requests
@@ -1424,7 +1429,7 @@ ALTER TABLE ONLY container_requests
 
 
 --
--- Name: containers_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: containers containers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY containers
@@ -1432,7 +1437,7 @@ ALTER TABLE ONLY containers
 
 
 --
--- Name: groups_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: groups groups_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY groups
@@ -1440,7 +1445,7 @@ ALTER TABLE ONLY groups
 
 
 --
--- Name: humans_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: humans humans_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY humans
@@ -1448,7 +1453,7 @@ ALTER TABLE ONLY humans
 
 
 --
--- Name: job_tasks_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: job_tasks job_tasks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY job_tasks
@@ -1456,7 +1461,7 @@ ALTER TABLE ONLY job_tasks
 
 
 --
--- Name: jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: jobs jobs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY jobs
@@ -1464,7 +1469,7 @@ ALTER TABLE ONLY jobs
 
 
 --
--- Name: keep_disks_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: keep_disks keep_disks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY keep_disks
@@ -1472,7 +1477,7 @@ ALTER TABLE ONLY keep_disks
 
 
 --
--- Name: keep_services_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: keep_services keep_services_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY keep_services
@@ -1480,7 +1485,7 @@ ALTER TABLE ONLY keep_services
 
 
 --
--- Name: links_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: links links_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY links
@@ -1488,7 +1493,7 @@ ALTER TABLE ONLY links
 
 
 --
--- Name: logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: logs logs_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY logs
@@ -1496,7 +1501,7 @@ ALTER TABLE ONLY logs
 
 
 --
--- Name: nodes_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: nodes nodes_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY nodes
@@ -1504,7 +1509,7 @@ ALTER TABLE ONLY nodes
 
 
 --
--- Name: pipeline_instances_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: pipeline_instances pipeline_instances_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY pipeline_instances
@@ -1512,7 +1517,7 @@ ALTER TABLE ONLY pipeline_instances
 
 
 --
--- Name: pipeline_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: pipeline_templates pipeline_templates_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY pipeline_templates
@@ -1520,7 +1525,7 @@ ALTER TABLE ONLY pipeline_templates
 
 
 --
--- Name: repositories_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: repositories repositories_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY repositories
@@ -1528,7 +1533,7 @@ ALTER TABLE ONLY repositories
 
 
 --
--- Name: specimens_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: specimens specimens_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY specimens
@@ -1536,7 +1541,7 @@ ALTER TABLE ONLY specimens
 
 
 --
--- Name: traits_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: traits traits_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY traits
@@ -1544,7 +1549,7 @@ ALTER TABLE ONLY traits
 
 
 --
--- Name: users_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY users
@@ -1552,7 +1557,7 @@ ALTER TABLE ONLY users
 
 
 --
--- Name: virtual_machines_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: virtual_machines virtual_machines_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY virtual_machines
@@ -1560,7 +1565,7 @@ ALTER TABLE ONLY virtual_machines
 
 
 --
--- Name: workflows_pkey; Type: CONSTRAINT; Schema: public; Owner: -; Tablespace: 
+-- Name: workflows workflows_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY workflows
@@ -1568,1120 +1573,1120 @@ ALTER TABLE ONLY workflows
 
 
 --
--- Name: api_client_authorizations_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: api_client_authorizations_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX api_client_authorizations_search_index ON api_client_authorizations USING btree (api_token, created_by_ip_address, last_used_by_ip_address, default_owner_uuid, uuid);
 
 
 --
--- Name: api_clients_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: api_clients_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX api_clients_search_index ON api_clients USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, url_prefix);
 
 
 --
--- Name: authorized_keys_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: authorized_keys_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX authorized_keys_search_index ON authorized_keys USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, key_type, authorized_user_uuid);
 
 
 --
--- Name: collections_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: collections_full_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX collections_full_text_search_idx ON collections USING gin (to_tsvector('english'::regconfig, (((((((((((((((((COALESCE(owner_uuid, ''::character varying))::text || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(portable_data_hash, ''::character varying))::text) || ' '::text) || (COALESCE(uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || COALESCE(properties, ''::text)) || ' '::text) || (COALESCE(file_names, ''::character varying))::text)));
 
 
 --
--- Name: collections_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: collections_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX collections_search_index ON collections USING btree (owner_uuid, modified_by_client_uuid, modified_by_user_uuid, portable_data_hash, uuid, name);
 
 
 --
--- Name: container_requests_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: container_requests_full_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX container_requests_full_text_search_idx ON container_requests USING gin (to_tsvector('english'::regconfig, (((((((((((((((((((((((((((((((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(description, ''::text)) || ' '::text) || COALESCE(properties, ''::text)) || ' '::text) || (COALESCE(state, ''::character varying))::text) || ' '::text) || (COALESCE(requesting_container_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(container_uuid, ''::character varying))::text) || ' '::text) || COALESCE(runtime_constraints, ''::text)) || ' '::text) || (COALESCE(container_image, ''::character varying))::text) || ' '::text) || COALESCE(environment, ''::text)) || ' '::text) || (COALESCE(cwd, ''::character varying))::text) || ' '::text) || COALESCE(command, ''::text)) || ' '::text) || (COALESCE(output_path, ''::character varying))::text) || ' '::text) || COALESCE(filters, ''::text)) || ' '::text) || COALESCE(scheduling_parameters, ''::text)) || ' '::text) || (COALESCE(output_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(log_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(output_name, ''::character varying))::text)));
 
 
 --
--- Name: container_requests_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: container_requests_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX container_requests_search_index ON container_requests USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, state, requesting_container_uuid, container_uuid, container_image, cwd, output_path, output_uuid, log_uuid, output_name);
 
 
 --
--- Name: containers_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: containers_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX containers_search_index ON containers USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, state, log, cwd, output_path, output, container_image, auth_uuid, locked_by_uuid);
 
 
 --
--- Name: groups_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: groups_full_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX groups_full_text_search_idx ON groups USING gin (to_tsvector('english'::regconfig, (((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || (COALESCE(group_class, ''::character varying))::text)));
 
 
 --
--- Name: groups_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: groups_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX groups_search_index ON groups USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name, group_class);
 
 
 --
--- Name: humans_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: humans_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX humans_search_index ON humans USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid);
 
 
 --
--- Name: index_api_client_authorizations_on_api_client_id; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_api_client_authorizations_on_api_client_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_api_client_authorizations_on_api_client_id ON api_client_authorizations USING btree (api_client_id);
 
 
 --
--- Name: index_api_client_authorizations_on_api_token; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_api_client_authorizations_on_api_token; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_api_client_authorizations_on_api_token ON api_client_authorizations USING btree (api_token);
 
 
 --
--- Name: index_api_client_authorizations_on_expires_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_api_client_authorizations_on_expires_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_api_client_authorizations_on_expires_at ON api_client_authorizations USING btree (expires_at);
 
 
 --
--- Name: index_api_client_authorizations_on_user_id; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_api_client_authorizations_on_user_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_api_client_authorizations_on_user_id ON api_client_authorizations USING btree (user_id);
 
 
 --
--- Name: index_api_client_authorizations_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_api_client_authorizations_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_api_client_authorizations_on_uuid ON api_client_authorizations USING btree (uuid);
 
 
 --
--- Name: index_api_clients_on_created_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_api_clients_on_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_api_clients_on_created_at ON api_clients USING btree (created_at);
 
 
 --
--- Name: index_api_clients_on_modified_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_api_clients_on_modified_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_api_clients_on_modified_at ON api_clients USING btree (modified_at);
 
 
 --
--- Name: index_api_clients_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_api_clients_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_api_clients_on_owner_uuid ON api_clients USING btree (owner_uuid);
 
 
 --
--- Name: index_api_clients_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_api_clients_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_api_clients_on_uuid ON api_clients USING btree (uuid);
 
 
 --
--- Name: index_authkeys_on_user_and_expires_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_authkeys_on_user_and_expires_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_authkeys_on_user_and_expires_at ON authorized_keys USING btree (authorized_user_uuid, expires_at);
 
 
 --
--- Name: index_authorized_keys_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_authorized_keys_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_authorized_keys_on_owner_uuid ON authorized_keys USING btree (owner_uuid);
 
 
 --
--- Name: index_authorized_keys_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_authorized_keys_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_authorized_keys_on_uuid ON authorized_keys USING btree (uuid);
 
 
 --
--- Name: index_collections_on_created_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_collections_on_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_collections_on_created_at ON collections USING btree (created_at);
 
 
 --
--- Name: index_collections_on_delete_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_collections_on_delete_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_collections_on_delete_at ON collections USING btree (delete_at);
 
 
 --
--- Name: index_collections_on_is_trashed; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_collections_on_is_trashed; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_collections_on_is_trashed ON collections USING btree (is_trashed);
 
 
 --
--- Name: index_collections_on_modified_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_collections_on_modified_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_collections_on_modified_at ON collections USING btree (modified_at);
 
 
 --
--- Name: index_collections_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_collections_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_collections_on_modified_at_uuid ON collections USING btree (modified_at DESC, uuid);
 
 
 --
--- Name: index_collections_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_collections_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_collections_on_owner_uuid ON collections USING btree (owner_uuid);
 
 
 --
--- Name: index_collections_on_owner_uuid_and_name; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_collections_on_owner_uuid_and_name; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_collections_on_owner_uuid_and_name ON collections USING btree (owner_uuid, name) WHERE (is_trashed = false);
 
 
 --
--- Name: index_collections_on_portable_data_hash; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_collections_on_portable_data_hash; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_collections_on_portable_data_hash ON collections USING btree (portable_data_hash);
 
 
 --
--- Name: index_collections_on_trash_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_collections_on_trash_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_collections_on_trash_at ON collections USING btree (trash_at);
 
 
 --
--- Name: index_collections_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_collections_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_collections_on_uuid ON collections USING btree (uuid);
 
 
 --
--- Name: index_commit_ancestors_on_descendant_and_ancestor; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_commit_ancestors_on_descendant_and_ancestor; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_commit_ancestors_on_descendant_and_ancestor ON commit_ancestors USING btree (descendant, ancestor);
 
 
 --
--- Name: index_commits_on_repository_name_and_sha1; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_commits_on_repository_name_and_sha1; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_commits_on_repository_name_and_sha1 ON commits USING btree (repository_name, sha1);
 
 
 --
--- Name: index_container_requests_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_container_requests_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_container_requests_on_modified_at_uuid ON container_requests USING btree (modified_at DESC, uuid);
 
 
 --
--- Name: index_container_requests_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_container_requests_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_container_requests_on_owner_uuid ON container_requests USING btree (owner_uuid);
 
 
 --
--- Name: index_container_requests_on_requesting_container_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_container_requests_on_requesting_container_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_container_requests_on_requesting_container_uuid ON container_requests USING btree (requesting_container_uuid);
 
 
 --
--- Name: index_container_requests_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_container_requests_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_container_requests_on_uuid ON container_requests USING btree (uuid);
 
 
 --
--- Name: index_containers_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_containers_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_containers_on_owner_uuid ON containers USING btree (owner_uuid);
 
 
 --
--- Name: index_containers_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_containers_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_containers_on_uuid ON containers USING btree (uuid);
 
 
 --
--- Name: index_groups_on_created_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_groups_on_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_groups_on_created_at ON groups USING btree (created_at);
 
 
 --
--- Name: index_groups_on_delete_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_groups_on_delete_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_groups_on_delete_at ON groups USING btree (delete_at);
 
 
 --
--- Name: index_groups_on_group_class; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_groups_on_group_class; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_groups_on_group_class ON groups USING btree (group_class);
 
 
 --
--- Name: index_groups_on_is_trashed; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_groups_on_is_trashed; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_groups_on_is_trashed ON groups USING btree (is_trashed);
 
 
 --
--- Name: index_groups_on_modified_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_groups_on_modified_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_groups_on_modified_at ON groups USING btree (modified_at);
 
 
 --
--- Name: index_groups_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_groups_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_groups_on_modified_at_uuid ON groups USING btree (modified_at DESC, uuid);
 
 
 --
--- Name: index_groups_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_groups_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_groups_on_owner_uuid ON groups USING btree (owner_uuid);
 
 
 --
--- Name: index_groups_on_owner_uuid_and_name; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_groups_on_owner_uuid_and_name; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_groups_on_owner_uuid_and_name ON groups USING btree (owner_uuid, name) WHERE (is_trashed = false);
 
 
 --
--- Name: index_groups_on_trash_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_groups_on_trash_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_groups_on_trash_at ON groups USING btree (trash_at);
 
 
 --
--- Name: index_groups_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_groups_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_groups_on_uuid ON groups USING btree (uuid);
 
 
 --
--- Name: index_humans_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_humans_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_humans_on_owner_uuid ON humans USING btree (owner_uuid);
 
 
 --
--- Name: index_humans_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_humans_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_humans_on_uuid ON humans USING btree (uuid);
 
 
 --
--- Name: index_job_tasks_on_created_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_job_tasks_on_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_job_tasks_on_created_at ON job_tasks USING btree (created_at);
 
 
 --
--- Name: index_job_tasks_on_created_by_job_task_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_job_tasks_on_created_by_job_task_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_job_tasks_on_created_by_job_task_uuid ON job_tasks USING btree (created_by_job_task_uuid);
 
 
 --
--- Name: index_job_tasks_on_job_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_job_tasks_on_job_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_job_tasks_on_job_uuid ON job_tasks USING btree (job_uuid);
 
 
 --
--- Name: index_job_tasks_on_modified_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_job_tasks_on_modified_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_job_tasks_on_modified_at ON job_tasks USING btree (modified_at);
 
 
 --
--- Name: index_job_tasks_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_job_tasks_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_job_tasks_on_owner_uuid ON job_tasks USING btree (owner_uuid);
 
 
 --
--- Name: index_job_tasks_on_sequence; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_job_tasks_on_sequence; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_job_tasks_on_sequence ON job_tasks USING btree (sequence);
 
 
 --
--- Name: index_job_tasks_on_success; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_job_tasks_on_success; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_job_tasks_on_success ON job_tasks USING btree (success);
 
 
 --
--- Name: index_job_tasks_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_job_tasks_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_job_tasks_on_uuid ON job_tasks USING btree (uuid);
 
 
 --
--- Name: index_jobs_on_created_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_jobs_on_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_jobs_on_created_at ON jobs USING btree (created_at);
 
 
 --
--- Name: index_jobs_on_finished_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_jobs_on_finished_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_jobs_on_finished_at ON jobs USING btree (finished_at);
 
 
 --
--- Name: index_jobs_on_modified_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_jobs_on_modified_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_jobs_on_modified_at ON jobs USING btree (modified_at);
 
 
 --
--- Name: index_jobs_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_jobs_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_jobs_on_modified_at_uuid ON jobs USING btree (modified_at DESC, uuid);
 
 
 --
--- Name: index_jobs_on_output; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_jobs_on_output; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_jobs_on_output ON jobs USING btree (output);
 
 
 --
--- Name: index_jobs_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_jobs_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_jobs_on_owner_uuid ON jobs USING btree (owner_uuid);
 
 
 --
--- Name: index_jobs_on_script; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_jobs_on_script; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_jobs_on_script ON jobs USING btree (script);
 
 
 --
--- Name: index_jobs_on_script_parameters_digest; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_jobs_on_script_parameters_digest; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_jobs_on_script_parameters_digest ON jobs USING btree (script_parameters_digest);
 
 
 --
--- Name: index_jobs_on_started_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_jobs_on_started_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_jobs_on_started_at ON jobs USING btree (started_at);
 
 
 --
--- Name: index_jobs_on_submit_id; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_jobs_on_submit_id; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_jobs_on_submit_id ON jobs USING btree (submit_id);
 
 
 --
--- Name: index_jobs_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_jobs_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_jobs_on_uuid ON jobs USING btree (uuid);
 
 
 --
--- Name: index_keep_disks_on_filesystem_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_keep_disks_on_filesystem_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_keep_disks_on_filesystem_uuid ON keep_disks USING btree (filesystem_uuid);
 
 
 --
--- Name: index_keep_disks_on_last_ping_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_keep_disks_on_last_ping_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_keep_disks_on_last_ping_at ON keep_disks USING btree (last_ping_at);
 
 
 --
--- Name: index_keep_disks_on_node_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_keep_disks_on_node_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_keep_disks_on_node_uuid ON keep_disks USING btree (node_uuid);
 
 
 --
--- Name: index_keep_disks_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_keep_disks_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_keep_disks_on_owner_uuid ON keep_disks USING btree (owner_uuid);
 
 
 --
--- Name: index_keep_disks_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_keep_disks_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_keep_disks_on_uuid ON keep_disks USING btree (uuid);
 
 
 --
--- Name: index_keep_services_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_keep_services_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_keep_services_on_owner_uuid ON keep_services USING btree (owner_uuid);
 
 
 --
--- Name: index_keep_services_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_keep_services_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_keep_services_on_uuid ON keep_services USING btree (uuid);
 
 
 --
--- Name: index_links_on_created_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_links_on_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_links_on_created_at ON links USING btree (created_at);
 
 
 --
--- Name: index_links_on_head_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_links_on_head_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_links_on_head_uuid ON links USING btree (head_uuid);
 
 
 --
--- Name: index_links_on_modified_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_links_on_modified_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_links_on_modified_at ON links USING btree (modified_at);
 
 
 --
--- Name: index_links_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_links_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_links_on_modified_at_uuid ON links USING btree (modified_at DESC, uuid);
 
 
 --
--- Name: index_links_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_links_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_links_on_owner_uuid ON links USING btree (owner_uuid);
 
 
 --
--- Name: index_links_on_tail_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_links_on_tail_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_links_on_tail_uuid ON links USING btree (tail_uuid);
 
 
 --
--- Name: index_links_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_links_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_links_on_uuid ON links USING btree (uuid);
 
 
 --
--- Name: index_logs_on_created_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_logs_on_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_logs_on_created_at ON logs USING btree (created_at);
 
 
 --
--- Name: index_logs_on_event_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_logs_on_event_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_logs_on_event_at ON logs USING btree (event_at);
 
 
 --
--- Name: index_logs_on_event_type; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_logs_on_event_type; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_logs_on_event_type ON logs USING btree (event_type);
 
 
 --
--- Name: index_logs_on_modified_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_logs_on_modified_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_logs_on_modified_at ON logs USING btree (modified_at);
 
 
 --
--- Name: index_logs_on_object_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_logs_on_object_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_logs_on_object_owner_uuid ON logs USING btree (object_owner_uuid);
 
 
 --
--- Name: index_logs_on_object_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_logs_on_object_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_logs_on_object_uuid ON logs USING btree (object_uuid);
 
 
 --
--- Name: index_logs_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_logs_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_logs_on_owner_uuid ON logs USING btree (owner_uuid);
 
 
 --
--- Name: index_logs_on_summary; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_logs_on_summary; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_logs_on_summary ON logs USING btree (summary);
 
 
 --
--- Name: index_logs_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_logs_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_logs_on_uuid ON logs USING btree (uuid);
 
 
 --
--- Name: index_nodes_on_created_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_nodes_on_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_nodes_on_created_at ON nodes USING btree (created_at);
 
 
 --
--- Name: index_nodes_on_hostname; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_nodes_on_hostname; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_nodes_on_hostname ON nodes USING btree (hostname);
 
 
 --
--- Name: index_nodes_on_modified_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_nodes_on_modified_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_nodes_on_modified_at ON nodes USING btree (modified_at);
 
 
 --
--- Name: index_nodes_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_nodes_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_nodes_on_owner_uuid ON nodes USING btree (owner_uuid);
 
 
 --
--- Name: index_nodes_on_slot_number; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_nodes_on_slot_number; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_nodes_on_slot_number ON nodes USING btree (slot_number);
 
 
 --
--- Name: index_nodes_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_nodes_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_nodes_on_uuid ON nodes USING btree (uuid);
 
 
 --
--- Name: index_pipeline_instances_on_created_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_pipeline_instances_on_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_pipeline_instances_on_created_at ON pipeline_instances USING btree (created_at);
 
 
 --
--- Name: index_pipeline_instances_on_modified_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_pipeline_instances_on_modified_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_pipeline_instances_on_modified_at ON pipeline_instances USING btree (modified_at);
 
 
 --
--- Name: index_pipeline_instances_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_pipeline_instances_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_pipeline_instances_on_modified_at_uuid ON pipeline_instances USING btree (modified_at DESC, uuid);
 
 
 --
--- Name: index_pipeline_instances_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_pipeline_instances_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_pipeline_instances_on_owner_uuid ON pipeline_instances USING btree (owner_uuid);
 
 
 --
--- Name: index_pipeline_instances_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_pipeline_instances_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_pipeline_instances_on_uuid ON pipeline_instances USING btree (uuid);
 
 
 --
--- Name: index_pipeline_templates_on_created_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_pipeline_templates_on_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_pipeline_templates_on_created_at ON pipeline_templates USING btree (created_at);
 
 
 --
--- Name: index_pipeline_templates_on_modified_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_pipeline_templates_on_modified_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_pipeline_templates_on_modified_at ON pipeline_templates USING btree (modified_at);
 
 
 --
--- Name: index_pipeline_templates_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_pipeline_templates_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_pipeline_templates_on_modified_at_uuid ON pipeline_templates USING btree (modified_at DESC, uuid);
 
 
 --
--- Name: index_pipeline_templates_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_pipeline_templates_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_pipeline_templates_on_owner_uuid ON pipeline_templates USING btree (owner_uuid);
 
 
 --
--- Name: index_pipeline_templates_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_pipeline_templates_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_pipeline_templates_on_uuid ON pipeline_templates USING btree (uuid);
 
 
 --
--- Name: index_repositories_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_repositories_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_repositories_on_modified_at_uuid ON repositories USING btree (modified_at DESC, uuid);
 
 
 --
--- Name: index_repositories_on_name; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_repositories_on_name; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_repositories_on_name ON repositories USING btree (name);
 
 
 --
--- Name: index_repositories_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_repositories_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_repositories_on_owner_uuid ON repositories USING btree (owner_uuid);
 
 
 --
--- Name: index_repositories_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_repositories_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_repositories_on_uuid ON repositories USING btree (uuid);
 
 
 --
--- Name: index_specimens_on_created_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_specimens_on_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_specimens_on_created_at ON specimens USING btree (created_at);
 
 
 --
--- Name: index_specimens_on_modified_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_specimens_on_modified_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_specimens_on_modified_at ON specimens USING btree (modified_at);
 
 
 --
--- Name: index_specimens_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_specimens_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_specimens_on_owner_uuid ON specimens USING btree (owner_uuid);
 
 
 --
--- Name: index_specimens_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_specimens_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_specimens_on_uuid ON specimens USING btree (uuid);
 
 
 --
--- Name: index_traits_on_name; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_traits_on_name; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_traits_on_name ON traits USING btree (name);
 
 
 --
--- Name: index_traits_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_traits_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_traits_on_owner_uuid ON traits USING btree (owner_uuid);
 
 
 --
--- Name: index_traits_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_traits_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_traits_on_uuid ON traits USING btree (uuid);
 
 
 --
--- Name: index_users_on_created_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_users_on_created_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_users_on_created_at ON users USING btree (created_at);
 
 
 --
--- Name: index_users_on_modified_at; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_users_on_modified_at; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_users_on_modified_at ON users USING btree (modified_at);
 
 
 --
--- Name: index_users_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_users_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_users_on_modified_at_uuid ON users USING btree (modified_at DESC, uuid);
 
 
 --
--- Name: index_users_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_users_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_users_on_owner_uuid ON users USING btree (owner_uuid);
 
 
 --
--- Name: index_users_on_username; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_users_on_username; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_users_on_username ON users USING btree (username);
 
 
 --
--- Name: index_users_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_users_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_users_on_uuid ON users USING btree (uuid);
 
 
 --
--- Name: index_virtual_machines_on_hostname; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_virtual_machines_on_hostname; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_virtual_machines_on_hostname ON virtual_machines USING btree (hostname);
 
 
 --
--- Name: index_virtual_machines_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_virtual_machines_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_virtual_machines_on_modified_at_uuid ON virtual_machines USING btree (modified_at DESC, uuid);
 
 
 --
--- Name: index_virtual_machines_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_virtual_machines_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_virtual_machines_on_owner_uuid ON virtual_machines USING btree (owner_uuid);
 
 
 --
--- Name: index_virtual_machines_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_virtual_machines_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_virtual_machines_on_uuid ON virtual_machines USING btree (uuid);
 
 
 --
--- Name: index_workflows_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_workflows_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_workflows_on_modified_at_uuid ON workflows USING btree (modified_at DESC, uuid);
 
 
 --
--- Name: index_workflows_on_owner_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_workflows_on_owner_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX index_workflows_on_owner_uuid ON workflows USING btree (owner_uuid);
 
 
 --
--- Name: index_workflows_on_uuid; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: index_workflows_on_uuid; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX index_workflows_on_uuid ON workflows USING btree (uuid);
 
 
 --
--- Name: job_tasks_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: job_tasks_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX job_tasks_search_index ON job_tasks USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, job_uuid, created_by_job_task_uuid);
 
 
 --
--- Name: jobs_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: jobs_full_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX jobs_full_text_search_idx ON jobs USING gin (to_tsvector('english'::regconfig, (((((((((((((((((((((((((((((((((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(submit_id, ''::character varying))::text) || ' '::text) || (COALESCE(script, ''::character varying))::text) || ' '::text) || (COALESCE(script_version, ''::character varying))::text) || ' '::text) || COALESCE(script_parameters, ''::text)) || ' '::text) || (COALESCE(cancelled_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(cancelled_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(output, ''::character varying))::text) || ' '::text) || (COALESCE(is_locked_by_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(log, ''::character varying))::text) || ' '::text) || COALESCE(tasks_summary, ''::text)) || ' '::text) || COALESCE(runtime_constraints, ''::text)) || ' '::text) || (COALESCE(repository, ''::character varying))::text) || ' '::text) || (COALESCE(supplied_script_version, ''::character varying))::text) || ' '::text) || (COALESCE(docker_image_locator, ''::character varying))::text) || ' '::text) || (COALESCE(description, ''::character varying))::text) || ' '::text) || (COALESCE(state, ''::character varying))::text) || ' '::text) || (COALESCE(arvados_sdk_version, ''::character varying))::text) || ' '::text) || COALESCE(components, ''::text))));
 
 
 --
--- Name: jobs_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: jobs_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX jobs_search_index ON jobs USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, submit_id, script, script_version, cancelled_by_client_uuid, cancelled_by_user_uuid, output, is_locked_by_uuid, log, repository, supplied_script_version, docker_image_locator, state, arvados_sdk_version);
 
 
 --
--- Name: keep_disks_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: keep_disks_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX keep_disks_search_index ON keep_disks USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, ping_secret, node_uuid, filesystem_uuid, keep_service_uuid);
 
 
 --
--- Name: keep_services_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: keep_services_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX keep_services_search_index ON keep_services USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, service_host, service_type);
 
 
 --
--- Name: links_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: links_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX links_search_index ON links USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, tail_uuid, link_class, name, head_uuid);
 
 
 --
--- Name: links_tail_name_unique_if_link_class_name; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: links_tail_name_unique_if_link_class_name; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX links_tail_name_unique_if_link_class_name ON links USING btree (tail_uuid, name) WHERE ((link_class)::text = 'name'::text);
 
 
 --
--- Name: logs_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: logs_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX logs_search_index ON logs USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, object_uuid, event_type, object_owner_uuid);
 
 
 --
--- Name: nodes_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: nodes_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX nodes_search_index ON nodes USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, hostname, domain, ip_address, job_uuid);
 
 
 --
--- Name: permission_target_trashed; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: permission_target_trashed; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE INDEX permission_target_trashed ON permission_view USING btree (trashed, target_uuid);
-
-
---
--- Name: permission_target_user_trashed_level; Type: INDEX; Schema: public; Owner: -; Tablespace: 
---
-
-CREATE INDEX permission_target_user_trashed_level ON permission_view USING btree (user_uuid, trashed, perm_level);
+CREATE INDEX permission_target_trashed ON materialized_permission_view USING btree (trashed, target_uuid);
 
 
 --
--- Name: pipeline_instances_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: permission_target_user_trashed_level; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX permission_target_user_trashed_level ON materialized_permission_view USING btree (user_uuid, trashed, perm_level);
+
+
+--
+-- Name: pipeline_instances_full_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX pipeline_instances_full_text_search_idx ON pipeline_instances USING gin (to_tsvector('english'::regconfig, (((((((((((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(pipeline_template_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(components, ''::text)) || ' '::text) || COALESCE(properties, ''::text)) || ' '::text) || (COALESCE(state, ''::character varying))::text) || ' '::text) || COALESCE(components_summary, ''::text)) || ' '::text) || (COALESCE(description, ''::character varying))::text)));
 
 
 --
--- Name: pipeline_instances_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: pipeline_instances_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX pipeline_instances_search_index ON pipeline_instances USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, pipeline_template_uuid, name, state);
 
 
 --
--- Name: pipeline_template_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: pipeline_template_owner_uuid_name_unique; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX pipeline_template_owner_uuid_name_unique ON pipeline_templates USING btree (owner_uuid, name);
 
 
 --
--- Name: pipeline_templates_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: pipeline_templates_full_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX pipeline_templates_full_text_search_idx ON pipeline_templates USING gin (to_tsvector('english'::regconfig, (((((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(components, ''::text)) || ' '::text) || (COALESCE(description, ''::character varying))::text)));
 
 
 --
--- Name: pipeline_templates_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: pipeline_templates_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX pipeline_templates_search_index ON pipeline_templates USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name);
 
 
 --
--- Name: repositories_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: repositories_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX repositories_search_index ON repositories USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name);
 
 
 --
--- Name: specimens_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: specimens_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX specimens_search_index ON specimens USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, material);
 
 
 --
--- Name: test_1; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: test_1; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX test_1 ON collections USING btree (id) WHERE (delete_at IS NULL);
 
 
 --
--- Name: traits_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: traits_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX traits_search_index ON traits USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name);
 
 
 --
--- Name: unique_schema_migrations; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: unique_schema_migrations; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE UNIQUE INDEX unique_schema_migrations ON schema_migrations USING btree (version);
 
 
 --
--- Name: users_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: users_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX users_search_index ON users USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, email, first_name, last_name, identity_url, default_owner_uuid, username);
 
 
 --
--- Name: virtual_machines_search_index; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: virtual_machines_search_index; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX virtual_machines_search_index ON virtual_machines USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, hostname);
 
 
 --
--- Name: workflows_full_text_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: workflows_full_text_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX workflows_full_text_search_idx ON workflows USING gin (to_tsvector('english'::regconfig, (((((((((((COALESCE(uuid, ''::character varying))::text || ' '::text) || (COALESCE(owner_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_client_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(modified_by_user_uuid, ''::character varying))::text) || ' '::text) || (COALESCE(name, ''::character varying))::text) || ' '::text) || COALESCE(description, ''::text))));
 
 
 --
--- Name: workflows_search_idx; Type: INDEX; Schema: public; Owner: -; Tablespace: 
+-- Name: workflows_search_idx; Type: INDEX; Schema: public; Owner: -
 --
 
 CREATE INDEX workflows_search_idx ON workflows USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, name);
@@ -2691,7 +2696,7 @@ CREATE INDEX workflows_search_idx ON workflows USING btree (uuid, owner_uuid, mo
 -- PostgreSQL database dump complete
 --
 
-SET search_path TO "$user",public;
+SET search_path TO "$user", public;
 
 INSERT INTO schema_migrations (version) VALUES ('20121016005009');
 

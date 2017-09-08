@@ -3,17 +3,13 @@
 # SPDX-License-Identifier: AGPL-3.0
 
 require 'can_be_an_owner'
+require 'refresh_permission_view'
 
 class User < ArvadosModel
   include HasUuid
   include KindAndEtag
   include CommonApiTemplate
   include CanBeAnOwner
-
-  # To avoid upgrade bugs, when changing the permission cache value
-  # format, change PERM_CACHE_PREFIX too:
-  PERM_CACHE_PREFIX = "perm_v20170725_"
-  PERM_CACHE_TTL = 172800
 
   serialize :prefs, Hash
   has_many :api_client_authorizations
@@ -147,7 +143,7 @@ class User < ArvadosModel
       timestamp = DbCurrentTime::db_current_time.to_i if timestamp.nil?
       connection.execute "NOTIFY invalidate_permissions_cache, '#{timestamp}'"
     else
-      Rails.cache.delete_matched(/^#{PERM_CACHE_PREFIX}/)
+      refresh_permission_view
     end
   end
 
@@ -159,9 +155,9 @@ class User < ArvadosModel
   def self.all_group_permissions
     all_perms = {}
     ActiveRecord::Base.connection.
-      exec_query('SELECT user_uuid, target_owner_uuid, perm_level, trashed
-                  FROM permission_view
-                  WHERE target_owner_uuid IS NOT NULL',
+      exec_query("SELECT user_uuid, target_owner_uuid, perm_level, trashed
+                  FROM #{PERMISSION_VIEW}
+                  WHERE target_owner_uuid IS NOT NULL",
                   # "name" arg is a query label that appears in logs:
                   "all_group_permissions",
                   ).rows.each do |user_uuid, group_uuid, max_p_val, trashed|
@@ -174,14 +170,13 @@ class User < ArvadosModel
   # Return a hash of {group_uuid: perm_hash} where perm_hash[:read]
   # and perm_hash[:write] are true if this user can read and write
   # objects owned by group_uuid.
-  def calculate_group_permissions
+  def group_permissions
     group_perms = {self.uuid => {:read => true, :write => true, :manage => true}}
-    User.fresh_permission_view
     ActiveRecord::Base.connection.
-      exec_query('SELECT target_owner_uuid, perm_level, trashed
-                  FROM permission_view
+      exec_query("SELECT target_owner_uuid, perm_level, trashed
+                  FROM #{PERMISSION_VIEW}
                   WHERE user_uuid = $1
-                  AND target_owner_uuid IS NOT NULL',
+                  AND target_owner_uuid IS NOT NULL",
                   # "name" arg is a query label that appears in logs:
                   "group_permissions for #{uuid}",
                   # "binds" arg is an array of [col_id, value] for '$1' vars:
@@ -189,34 +184,7 @@ class User < ArvadosModel
                 ).rows.each do |group_uuid, max_p_val, trashed|
       group_perms[group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
     end
-    Rails.cache.write "#{PERM_CACHE_PREFIX}#{self.uuid}", group_perms, expires_in: PERM_CACHE_TTL
     group_perms
-  end
-
-  # Return a hash of {group_uuid: perm_hash} where perm_hash[:read]
-  # and perm_hash[:write] are true if this user can read and write
-  # objects owned by group_uuid.
-  def group_permissions
-    r = Rails.cache.read "#{PERM_CACHE_PREFIX}#{self.uuid}"
-    if r.nil?
-      if Rails.configuration.async_permissions_update
-        while r.nil?
-          sleep(0.1)
-          r = Rails.cache.read "#{PERM_CACHE_PREFIX}#{self.uuid}"
-        end
-      else
-        r = calculate_group_permissions
-      end
-    end
-    r
-  end
-
-  def self.fresh_permission_view
-    r = Rails.cache.read "#{PERM_CACHE_PREFIX}_fresh"
-    if r.nil?
-      ActiveRecord::Base.connection.exec_query('REFRESH MATERIALIZED VIEW permission_view')
-      Rails.cache.write "#{PERM_CACHE_PREFIX}_fresh", 1, expires_in: PERM_CACHE_TTL
-    end
   end
 
   # create links

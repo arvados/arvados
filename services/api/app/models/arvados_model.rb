@@ -265,7 +265,7 @@ class ArvadosModel < ActiveRecord::Base
         # exclude rows that are explicitly trashed.
         if sql_table != "api_client_authorizations"
           sql_conds.push "NOT EXISTS(SELECT 1
-                  FROM permission_view
+                  FROM #{PERMISSION_VIEW}
                   WHERE trashed = 1 AND
                   (#{sql_table}.uuid = target_uuid OR #{sql_table}.owner_uuid = target_uuid))"
         end
@@ -288,7 +288,7 @@ class ArvadosModel < ActiveRecord::Base
         owner_check = ""
       end
 
-      sql_conds.push "EXISTS(SELECT 1 FROM permission_view "+
+      sql_conds.push "EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} "+
                      "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 AND #{trashed_check} AND (target_uuid = #{sql_table}.uuid #{owner_check}))"
 
       if sql_table == "links"
@@ -300,7 +300,6 @@ class ArvadosModel < ActiveRecord::Base
       end
     end
 
-    User.fresh_permission_view
     query_on.where(sql_conds.join(' OR '),
                     user_uuids: user_uuids,
                     permission_link_classes: ['permission', 'resources'])
