@@ -2,14 +2,14 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-FROM debian:8
+FROM debian:9
 
 ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update && \
     apt-get -yq --no-install-recommends -o Acquire::Retries=6 install \
-    postgresql-9.4 git build-essential runit curl libpq-dev \
-    libcurl4-openssl-dev libssl-dev zlib1g-dev libpcre3-dev \
+    postgresql-9.6 git build-essential runit curl libpq-dev \
+    libcurl4-openssl-dev libssl1.0-dev zlib1g-dev libpcre3-dev \
     openssh-server python-setuptools netcat-traditional \
     python-epydoc graphviz bzip2 less sudo virtualenv \
     libpython-dev fuse libfuse-dev python-pip python-yaml \
@@ -18,19 +18,11 @@ RUN apt-get update && \
     libjson-perl nginx gitolite3 lsof libreadline-dev \
     apt-transport-https ca-certificates slurm-wlm \
     linkchecker python3-virtualenv python-virtualenv xvfb iceweasel \
-    libgnutls28-dev python3-dev && \
+    libgnutls28-dev python3-dev vim cython gnupg dirmngr && \
     apt-get clean
 
-ENV GOVERSION 1.8.3
-
-# Install golang binary
-RUN curl -f http://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | \
-    tar -C /usr/local -xzf -
-
-ENV PATH ${PATH}:/usr/local/go/bin
-
 ENV RUBYVERSION_MINOR 2.3
-ENV RUBYVERSION 2.3.3
+ENV RUBYVERSION 2.3.4
 
 # Install Ruby from source
 RUN cd /tmp && \
@@ -46,6 +38,14 @@ ENV GEM_HOME /var/lib/gems
 ENV GEM_PATH /var/lib/gems
 ENV PATH $PATH:/var/lib/gems/bin
 
+ENV GOVERSION 1.8.3
+
+# Install golang binary
+RUN curl -f http://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | \
+    tar -C /usr/local -xzf -
+
+ENV PATH ${PATH}:/usr/local/go/bin
+
 VOLUME /var/lib/docker
 VOLUME /var/log/nginx
 VOLUME /etc/ssl/private
@@ -54,9 +54,9 @@ RUN apt-key adv --keyserver hkp://pool.sks-keyservers.net:80 --recv-keys 58118E8
     apt-key adv --keyserver hkp://pgp.mit.edu:80 --recv-keys 58118E89F3A912897C070ADBF76221572C52609D
 
 RUN mkdir -p /etc/apt/sources.list.d && \
-    echo deb https://apt.dockerproject.org/repo debian-jessie main > /etc/apt/sources.list.d/docker.list && \
+    echo deb https://apt.dockerproject.org/repo debian-stretch main > /etc/apt/sources.list.d/docker.list && \
     apt-get update && \
-    apt-get -yq install docker-engine=1.9.1-0~jessie && \
+    apt-get -yq --no-install-recommends install docker-engine=17.05.0~ce-0~debian-stretch && \
     apt-get clean
 
 RUN rm -rf /var/lib/postgresql && mkdir -p /var/lib/postgresql
