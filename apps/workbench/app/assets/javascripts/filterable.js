@@ -57,7 +57,7 @@ function updateFilterableQueryNow($target) {
     var newquery = $target.data('filterable-query-new');
     var params = $target.data('infinite-content-params-filterable') || {};
     var tsquery = to_tsquery(newquery);
-    if (newquery == null) {
+    if (tsquery == null) {
         params.filters = [];
     } else {
         params.filters = [['any', '@@', tsquery]];
