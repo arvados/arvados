@@ -180,11 +180,90 @@ class SummarizePipeline(ReportDiff):
             job_report + ['\n'] +
             ['### Summary for bar (zzzzz-8i9sb-000000000000001)\n'] +
             job_report + ['\n'] +
-            ['### Summary for unfinished-job (zzzzz-8i9sb-xxxxxxxxxxxxxxx)\n',
+            ['### Summary for unfinished-job (partial) (zzzzz-8i9sb-xxxxxxxxxxxxxxx)\n',
              '(no report generated)\n',
              '\n'] +
             ['### Summary for baz (zzzzz-8i9sb-000000000000002)\n'] +
             job_report)
+        self.diff_report(cmd, expect)
+        mock_cr.assert_has_calls(
+            [
+                mock.call('fake-log-pdh-0'),
+                mock.call('fake-log-pdh-1'),
+                mock.call('fake-log-pdh-2'),
+            ], any_order=True)
+        mock_cr().open.assert_called_with('fake-logfile.txt')
+
+
+class SummarizeACRJob(ReportDiff):
+    fake_job = {
+        'uuid': 'zzzzz-8i9sb-i3e77t9z5y8j9cc',
+        'owner_uuid': 'zzzzz-tpzed-xurymjxw79nv3jz',
+        'components': {
+            'foo': 'zzzzz-8i9sb-000000000000000',
+            'bar': 'zzzzz-8i9sb-000000000000001',
+            'unfinished-job': 'zzzzz-8i9sb-xxxxxxxxxxxxxxx',
+            'baz': 'zzzzz-8i9sb-000000000000002',
+        }
+    }
+    fake_jobs_index = { 'items': [
+        {
+            'uuid': 'zzzzz-8i9sb-000000000000000',
+            'log': 'fake-log-pdh-0',
+            'runtime_constraints': {
+                'min_ram_mb_per_node': 900,
+                'min_cores_per_node': 1,
+            },
+        },
+        {
+            'uuid': 'zzzzz-8i9sb-000000000000001',
+            'log': 'fake-log-pdh-1',
+            'runtime_constraints': {
+                'min_ram_mb_per_node': 900,
+                'min_cores_per_node': 1,
+            },
+        },
+        {
+            'uuid': 'zzzzz-8i9sb-xxxxxxxxxxxxxxx',
+        },
+        {
+            'uuid': 'zzzzz-8i9sb-000000000000002',
+            'log': 'fake-log-pdh-2',
+            'runtime_constraints': {
+                'min_ram_mb_per_node': 900,
+                'min_cores_per_node': 1,
+            },
+        },
+    ]}
+    @mock.patch('arvados.collection.CollectionReader')
+    @mock.patch('arvados.api')
+    def test_acr_job(self, mock_api, mock_cr):
+        logfile = os.path.join(TESTS_DIR, 'logfile_20151204190335.txt.gz')
+        mock_api().jobs().index().execute.return_value = self.fake_jobs_index
+        mock_api().jobs().get().execute.return_value = self.fake_job
+        mock_cr().__iter__.return_value = ['fake-logfile.txt']
+        mock_cr().open.side_effect = [gzip.open(logfile) for _ in range(3)]
+        args = crunchstat_summary.command.ArgumentParser().parse_args(
+            ['--job', self.fake_job['uuid']])
+        cmd = crunchstat_summary.command.Command(args)
+        cmd.run()
+
+        job_report = [
+            line for line in open(logfile+'.report').readlines()
+            if not line.startswith('#!! ')]
+        expect = (
+            ['### Summary for zzzzz-8i9sb-i3e77t9z5y8j9cc (partial) (zzzzz-8i9sb-i3e77t9z5y8j9cc)\n',
+             '(no report generated)\n',
+             '\n'] +
+            ['### Summary for bar (zzzzz-8i9sb-000000000000001)\n'] +
+            job_report + ['\n'] +
+            ['### Summary for baz (zzzzz-8i9sb-000000000000002)\n'] +
+            job_report + ['\n'] +
+            ['### Summary for foo (zzzzz-8i9sb-000000000000000)\n'] +
+            job_report + ['\n'] +
+            ['### Summary for unfinished-job (partial) (zzzzz-8i9sb-xxxxxxxxxxxxxxx)\n',
+             '(no report generated)\n']
+        )
         self.diff_report(cmd, expect)
         mock_cr.assert_has_calls(
             [
