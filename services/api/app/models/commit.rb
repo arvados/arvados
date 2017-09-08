@@ -129,8 +129,8 @@ class Commit < ActiveRecord::Base
   end
 
   # Given a repository (url, or name of hosted repo) and commit sha1,
-  # copy the commit into the internal git repo and tag it with the
-  # given tag (typically a job UUID).
+  # copy the commit into the internal git repo (if necessary), and tag
+  # it with the given tag (typically a job UUID).
   #
   # The repo can be a remote url, but in this case sha1 must already
   # be present in our local cache for that repo: e.g., sha1 was just
@@ -147,11 +147,19 @@ class Commit < ActiveRecord::Base
       raise ArgumentError.new "no local repository for #{repo_name}"
     end
     dst_gitdir = Rails.configuration.git_internal_dir
-    must_pipe("echo #{sha1.shellescape}",
-              "git --git-dir #{src_gitdir.shellescape} pack-objects -q --revs --stdout",
-              "git --git-dir #{dst_gitdir.shellescape} unpack-objects -q")
-    must_git(dst_gitdir,
-             "tag --force #{tag.shellescape} #{sha1.shellescape}")
+
+    begin
+      commit_in_dst = must_git(dst_gitdir, "rev-parse --verify #{sha1.shellescape}^{commit}").strip
+    rescue GitError
+      commit_in_dst = false
+    end
+
+    if commit_in_dst == sha1
+      must_git(dst_gitdir, "tag --force #{tag.shellescape} #{sha1.shellescape}")
+    else
+      refspec = "#{sha1}:refs/tags/#{tag}"
+      must_git(dst_gitdir, "fetch --no-tags file://#{src_gitdir.shellescape} #{refspec.shellescape}")
+    end
   end
 
   protected
@@ -213,14 +221,16 @@ class Commit < ActiveRecord::Base
     # Clear token in case a git helper tries to use it as a password.
     orig_token = ENV['ARVADOS_API_TOKEN']
     ENV['ARVADOS_API_TOKEN'] = ''
+    last_output = ''
     begin
       git = "git --git-dir #{gitdir.shellescape}"
       cmds.each do |cmd|
-        must_pipe git+" "+cmd
+        last_output = must_pipe git+" "+cmd
       end
     ensure
       ENV['ARVADOS_API_TOKEN'] = orig_token
     end
+    return last_output
   end
 
   def self.must_pipe *cmds
@@ -229,5 +239,6 @@ class Commit < ActiveRecord::Base
     if not $?.success?
       raise GitError.new "#{cmd}: #{$?}: #{out}"
     end
+    return out
   end
 end
