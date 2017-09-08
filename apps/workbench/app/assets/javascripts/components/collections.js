@@ -102,8 +102,10 @@ window.CollectionsSearch = {
                         sessionKey: key,
                         loadFunc: function(filters) {
                             var tsquery = to_tsquery(q)
-                            if (tsquery)
+                            if (tsquery) {
+                                filters = filters.slice(0)
                                 filters.push(['any', '@@', tsquery])
+                            }
                             return vnode.state.sessionDB.request(session, 'arvados/v1/collections', {
                                 data: {
                                     filters: JSON.stringify(filters),
