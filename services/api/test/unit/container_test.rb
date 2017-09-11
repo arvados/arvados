@@ -443,6 +443,10 @@ class ContainerTest < ActiveSupport::TestCase
     check_no_change_from_cancelled c
   end
 
+  test "Container queued count" do
+    assert_equal 1, Container.readable_by(users(:active)).where(state: "Queued").count
+  end
+
   test "Container locked cancel" do
     c, _ = minimal_new
     set_user_from_auth :dispatch1

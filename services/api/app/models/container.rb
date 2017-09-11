@@ -303,9 +303,7 @@ class Container < ArvadosModel
     else
       kwargs = {}
     end
-    kwargs[:query_on] = joins(:container_requests)
-    users_list.push kwargs
-    ContainerRequest.readable_by(*users_list)
+    Container.where(ContainerRequest.readable_by(*users_list).where("containers.uuid = container_requests.container_uuid").exists)
   end
 
   def final?
