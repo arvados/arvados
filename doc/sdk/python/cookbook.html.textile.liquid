@@ -12,25 +12,22 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2. Cancel a container request
 
-<code>
-import arvados
+<pre><code>import arvados
 arvados.api().container_requests().update(uuid=container_request_uuid, body={"priority": 0}).execute()
-</code>
+</code></pre>
 
 h2. Cancel all container requests
 
-<code>
-import arvados
+<pre><code>import arvados
 api = arvados.api()
 result = api.container_requests().list(filters=[["state", "=", "Committed"], ["priority", ">", "0"]]).execute()["items"]
 for container_request in result:
     api.container_requests().update(uuid=container_request["uuid"], body={"priority": 0}).execute()
-</code>
+</code></pre>
 
 h2. List completed container requests
 
-<code>
-import arvados
+<pre><code>import arvados
 api = arvados.api()
 result = api.container_requests().list(filters=[["name", "like", name], ["state", "=", "Final"]]).execute()["items"]
 container_uuids = [cr["container_uuid"] for cr in result]
@@ -40,32 +37,29 @@ container_dict = {c["uuid"]: c for c in containers}
 for container_request in result:
     container = container_dict[container_request["container_uuid"]]
     print("%s, %s, %s" % (container_request["uuid"], container_request["name"], "Success" if container["exit_code"] == 0 else "Failed"))
-</code>
+</code></pre>
 
 h2. Get input of a CWL workflow
 
-<code>
-import arvados
+<pre><code>import arvados
 api = arvados.api()
 container_request = arvados.api().container_requests().get(uuid=container_request_uuid).execute()
 print(container_request["mounts"]["/var/lib/cwl/cwl.input.json"])
-</code>
+</code></pre>
 
 h2. Get output of a CWL workflow
 
-<code>
-import arvados
+<pre><code>import arvados
 import arvados.collection
 api = arvados.api()
 container_request = arvados.api().container_requests().get(uuid=container_request_uuid).execute()
 collection = arvados.collection.CollectionReader(container_request["output_uuid"])
 print(collection.open("cwl.output.json").read())
-</code>
+</code></pre>
 
 h2. List input of child requests
 
-<code>
-import arvados
+<pre><code>import arvados
 api = arvados.api()
 parent_request_uuid = "qr1hi-xvhdp-zzzzzzzzzzzzzzz"
 namefilter = "bwa%"
@@ -79,12 +73,11 @@ for c in child_requests["items"]:
     for m in c["mounts"].values():
         if "portable_data_hash" in m:
             print("  %s" % m["portable_data_hash"])
-</code>
+</code></pre>
 
 h2. List output of child requests
 
-<code>
-import arvados
+<pre><code>import arvados
 api = arvados.api()
 parent_request_uuid = "qr1hi-xvhdp-61y7cjymnhyp7yu"
 namefilter = "bwa%"
@@ -98,12 +91,11 @@ collections = arvados.api().collections().list(filters=[["uuid", "in", output_uu
 uuid_to_pdh = {c["uuid"]: c["portable_data_hash"] for c in collections["items"]}
 for c in child_requests["items"]:
     print("%s -> %s" % (c["name"], uuid_to_pdh[c["output_uuid"]]))
-</code>
+</code></pre>
 
 h2. List failed child requests
 
-<code>
-import arvados
+<pre><code>import arvados
 api = arvados.api()
 parent_request_uuid = "qr1hi-xvhdp-3d8f1zatx1xio36"
 container_request = arvados.api().container_requests().get(uuid=parent_request_uuid).execute()
@@ -116,12 +108,11 @@ cancelled_child_containers = arvados.api().containers().list(filters=[
     ["uuid", "in", child_containers.keys()]], limit=1000).execute()
 for c in cancelled_child_containers["items"]:
     print("%s (%s)" % (child_containers[c["uuid"]]["name"], child_containers[c["uuid"]]["uuid"]))
-</code>
+</code></pre>
 
 h2. Get log of a child request
 
-<code>
-import arvados
+<pre><code>import arvados
 import arvados.collection
 api = arvados.api()
 container_request_uuid = "qr1hi-xvhdp-3d8f1zatx1xio36"
@@ -129,12 +120,11 @@ container_request = arvados.api().container_requests().get(uuid=container_reques
 collection = arvados.collection.CollectionReader(container_request["log_uuid"])
 for c in collection:
     print(collection.open(c).read())
-</code>
+</code></pre>
 
 h2. Create a collection sharing link
 
-<code>
-import arvados
+<pre><code>import arvados
 api = arvados.api()
 download="https://your.download.server"
 collection_uuid="your-4zz18-collectionuuid"
@@ -143,4 +133,4 @@ token = api.api_client_authorizations().create(body={"api_client_authorization":
     "GET /arvados/v1/collections/%s/" % collection_uuid,
     "GET /arvados/v1/keep_services/accessible"]}}).execute()
 print("%s/c=%s/t=%s/_/" % (download, collection_uuid, token["api_token"]))
-</code>
+</code></pre>

@@ -70,6 +70,7 @@ navbar:
     - Develop a web service:
       - user/topics/arv-web.html.textile.liquid
     - Reference:
+      - user/reference/cookbook.html.textile.liquid
       - user/topics/run-command.html.textile.liquid
       - user/reference/job-pipeline-ref.html.textile.liquid
       - user/examples/crunch-examples.html.textile.liquid
@@ -89,6 +90,7 @@ navbar:
       - sdk/python/python.html.textile.liquid
       - sdk/python/crunch-utility-libraries.html.textile.liquid
       - sdk/python/events.html.textile.liquid
+      - sdk/python/cookbook.html.textile.liquid
     - CLI:
       - sdk/cli/install.html.textile.liquid
       - sdk/cli/index.html.textile.liquid
