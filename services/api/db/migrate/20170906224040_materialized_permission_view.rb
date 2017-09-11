@@ -105,8 +105,8 @@ SELECT user_uuid,
   end
 
   def down
-    remove_index :permission_view, name: 'permission_target_trashed'
-    remove_index :permission_view, name: 'permission_target_user_trashed_level'
+    remove_index :materialized_permission_view, name: 'permission_target_trashed'
+    remove_index :materialized_permission_view, name: 'permission_target_user_trashed_level'
     @@idxtables.each do |table|
       ActiveRecord::Base.connection.execute("DROP INDEX index_#{table.to_s}_on_modified_at_uuid")
     end
