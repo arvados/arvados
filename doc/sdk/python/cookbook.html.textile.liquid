@@ -134,3 +134,20 @@ token = api.api_client_authorizations().create(body={"api_client_authorization":
     "GET /arvados/v1/keep_services/accessible"]}}).execute()
 print("%s/c=%s/t=%s/_/" % (download, collection_uuid, token["api_token"]))
 </code></pre>
+
+h2. Combine two or more collections
+
+Note, if two collections have files of the same name, the contents will be concatenated in the resulting manifest.
+
+<pre><code>import arvados
+import arvados.collection
+api = arvados.api()
+project_uuid = "qr1hi-tpzed-zzzzzzzzzzzzzzz"
+collection_uuids = ["qr1hi-4zz18-aaaaaaaaaaaaaaa", "qr1hi-4zz18-bbbbbbbbbbbbbbb"]
+combined_manifest = ""
+for u in collection_uuids:
+    c = api.collections().get(uuid=u).execute()
+    combined_manifest += c["manifest_text"]
+newcol = arvados.collection.Collection(combined_manifest)
+newcol.save_new(name="My combined collection", owner_uuid=project_uuid)
+</code></pre>
