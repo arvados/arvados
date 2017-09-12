@@ -14,12 +14,10 @@ h2. Initialize SDK
 
 Set up an API client user agent:
 
-<notextile>
-<pre><code class="userinput">
+{% codeblock as perl %}
 use Arvados;
 my $arv = Arvados->new('apiVersion' => 'v1');
-</code></pre>
-</notextile>
+{% endcodeblock %}
 
 The SDK retrieves the list of API methods from the server at run time. Therefore, the set of available methods is determined by the server version rather than the SDK version.
 
@@ -27,60 +25,53 @@ h2. create
 
 Create an object:
 
-<notextile>
-<pre><code class="userinput">my $test_link = $arv->{'links'}->{'create'}->execute('link' => { 'link_class' => 'test', 'name' => 'test' });
-</code></pre>
-</notextile>
+{% codeblock as perl %}
+my $test_link = $arv->{'links'}->{'create'}->execute('link' => { 'link_class' => 'test', 'name' => 'test' });
+{% endcodeblock %}
 
 h2. delete
 
-<notextile>
-<pre><code class="userinput">my $some_user = $arv->{'collections'}->{'get'}->execute('uuid' => $collection_uuid);
-</code></pre>
-</notextile>
+{% codeblock as perl %}
+my $some_user = $arv->{'collections'}->{'get'}->execute('uuid' => $collection_uuid);
+{% endcodeblock %}
 
 h2. get
 
 Retrieve an object by ID:
 
-<notextile>
-<pre><code class="userinput">my $some_user = $arv->{'users'}->{'get'}->execute('uuid' => $current_user_uuid);
-</code></pre>
-</notextile>
+{% codeblock as perl %}
+my $some_user = $arv->{'users'}->{'get'}->execute('uuid' => $current_user_uuid);
+{% endcodeblock %}
 
 Get the UUID of an object that was retrieved using the SDK:
 
-<notextile>
-<pre><code class="userinput">my $current_user_uuid = $current_user->{'uuid'}
-</code></pre>
-</notextile>
+{% codeblock as perl %}
+my $current_user_uuid = $current_user->{'uuid'}
+{% endcodeblock %}
 
 h2. list
 
 Get a list of objects:
 
-<notextile>
-<pre><code class="userinput">my $repos = $arv->{'repositories'}->{'list'}->execute;
+{% codeblock as perl %}
+my $repos = $arv->{'repositories'}->{'list'}->execute;
 print ("UUID of first repo returned is ", $repos->{'items'}->[0], "\n");
-</code></pre>
-</notextile>
+{% endcodeblock %}
 
 h2. update
 
 Update an object:
 
-<notextile>
-<pre><code class="userinput">my $test_link = $arv->{'links'}->{'update'}->execute(
+{% codeblock as perl %}
+my $test_link = $arv->{'links'}->{'update'}->execute(
         'uuid' => $test_link->{'uuid'},
         'link' => { 'properties' => { 'foo' => 'bar' } });
-</code></pre>
-</notextile>
+{% endcodeblock %}
 
 h2. Get current user
 
 Get the User object for the current user:
 
-<notextile>
-<pre><code class="userinput">my $current_user = $arv->{'users'}->{'current'}->execute;
-</code></pre>
-</notextile>
+{% codeblock as perl %}
+my $current_user = $arv->{'users'}->{'current'}->execute;
+{% endcodeblock %}
