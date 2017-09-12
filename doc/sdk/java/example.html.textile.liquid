@@ -12,47 +12,47 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2. Initialize SDK
 
-<pre>
+{% codeblock as java %}
 import org.arvados.sdk.Arvados;
-</pre>
+{% endcodeblock %}
 
-<pre>
+{% codeblock as java %}
     String apiName = "arvados";
     String apiVersion = "v1";
 
     Arvados arv = new Arvados(apiName, apiVersion);
-</pre>
+{% endcodeblock %}
 
 h2. create
 
-<pre>
+{% codeblock as java %}
     Map<String, String> collection = new HashMap<String, String>();
     collection.put("name", "create example");
 
     Map<String, Object> params = new HashMap<String, Object>();
     params.put("collection", collection);
     Map response = arv.call("collections", "create", params);
-</pre>
+{% endcodeblock %}
 
 h2. delete
 
-<pre>
+{% codeblock as java %}
     Map<String, Object> params = new HashMap<String, Object>();
     params.put("uuid", uuid);
     Map response = arv.call("collections", "delete", params);
-</pre>
+{% endcodeblock %}
 
 h2. get
 
-<pre>
+{% codeblock as java %}
     params = new HashMap<String, Object>();
     params.put("uuid", userUuid);
     Map response = arv.call("users", "get", params);
-</pre>
+{% endcodeblock %}
 
 h2. list
 
-<pre>
+{% codeblock as java %}
     Map<String, Object> params = new HashMap<String, Object>();
     Map response = arv.call("users", "list", params);
 
@@ -61,11 +61,11 @@ h2. list
 
     Map firstUser = (Map)items.get(0);
     String userUuid = (String)firstUser.get("uuid");
-</pre>
+{% endcodeblock %}
 
 h2. update
 
-<pre>
+{% codeblock as java %}
     Map<String, String> collection = new HashMap<String, String>();
     collection.put("name", "update example");
 
@@ -73,11 +73,11 @@ h2. update
     params.put("uuid", uuid);
     params.put("collection", collection);
     Map response = arv.call("collections", "update", params);
-</pre>
+{% endcodeblock %}
 
 h2. Get current user
 
-<pre>
+{% codeblock as java %}
     Map<String, Object> params = new HashMap<String, Object>();
     Map response = arv.call("users", "current", params);
-</pre>
+{% endcodeblock %}

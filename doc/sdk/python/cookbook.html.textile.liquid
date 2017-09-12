@@ -12,22 +12,25 @@ SPDX-License-Identifier: CC-BY-SA-3.0
 
 h2. Cancel a container request
 
-<pre><code>import arvados
+{% codeblock as python %}
+import arvados
 arvados.api().container_requests().update(uuid=container_request_uuid, body={"priority": 0}).execute()
-</code></pre>
+{% endcodeblock %}
 
 h2. Cancel all container requests
 
-<pre><code>import arvados
+{% codeblock as python %}
+import arvados
 api = arvados.api()
 result = api.container_requests().list(filters=[["state", "=", "Committed"], ["priority", ">", "0"]]).execute()["items"]
 for container_request in result:
     api.container_requests().update(uuid=container_request["uuid"], body={"priority": 0}).execute()
-</code></pre>
+{% endcodeblock %}
 
 h2. List completed container requests
 
-<pre><code>import arvados
+{% codeblock as python %}
+import arvados
 api = arvados.api()
 result = api.container_requests().list(filters=[["name", "like", name], ["state", "=", "Final"]]).execute()["items"]
 container_uuids = [cr["container_uuid"] for cr in result]
@@ -37,32 +40,37 @@ container_dict = {c["uuid"]: c for c in containers}
 for container_request in result:
     container = container_dict[container_request["container_uuid"]]
     print("%s, %s, %s" % (container_request["uuid"], container_request["name"], "Success" if container["exit_code"] == 0 else "Failed"))
-</code></pre>
+{% endcodeblock %}
 
 h2. Get input of a CWL workflow
 
-<pre><code>import arvados
+{% codeblock as python %}
+import arvados
 api = arvados.api()
+container_request_uuid="qr1hi-xvhdp-zzzzzzzzzzzzzzz"
 container_request = arvados.api().container_requests().get(uuid=container_request_uuid).execute()
 print(container_request["mounts"]["/var/lib/cwl/cwl.input.json"])
-</code></pre>
+{% endcodeblock %}
 
 h2. Get output of a CWL workflow
 
-<pre><code>import arvados
+{% codeblock as python %}
+import arvados
 import arvados.collection
 api = arvados.api()
+container_request_uuid="qr1hi-xvhdp-zzzzzzzzzzzzzzz"
 container_request = arvados.api().container_requests().get(uuid=container_request_uuid).execute()
 collection = arvados.collection.CollectionReader(container_request["output_uuid"])
 print(collection.open("cwl.output.json").read())
-</code></pre>
+{% endcodeblock %}
 
 h2. List input of child requests
 
-<pre><code>import arvados
+{% codeblock as python %}
+import arvados
 api = arvados.api()
 parent_request_uuid = "qr1hi-xvhdp-zzzzzzzzzzzzzzz"
-namefilter = "bwa%"
+namefilter = "bwa%"  # the "like" filter uses SQL pattern match syntax
 container_request = arvados.api().container_requests().get(uuid=parent_request_uuid).execute()
 parent_container_uuid = container_request["container_uuid"]
 child_requests = arvados.api().container_requests().list(filters=[
@@ -73,14 +81,15 @@ for c in child_requests["items"]:
     for m in c["mounts"].values():
         if "portable_data_hash" in m:
             print("  %s" % m["portable_data_hash"])
-</code></pre>
+{% endcodeblock %}
 
 h2. List output of child requests
 
-<pre><code>import arvados
+{% codeblock as python %}
+import arvados
 api = arvados.api()
-parent_request_uuid = "qr1hi-xvhdp-61y7cjymnhyp7yu"
-namefilter = "bwa%"
+parent_request_uuid = "qr1hi-xvhdp-zzzzzzzzzzzzzzz"
+namefilter = "bwa%"  # the "like" filter uses SQL pattern match syntax
 container_request = arvados.api().container_requests().get(uuid=parent_request_uuid).execute()
 parent_container_uuid = container_request["container_uuid"]
 child_requests = arvados.api().container_requests().list(filters=[
@@ -91,13 +100,14 @@ collections = arvados.api().collections().list(filters=[["uuid", "in", output_uu
 uuid_to_pdh = {c["uuid"]: c["portable_data_hash"] for c in collections["items"]}
 for c in child_requests["items"]:
     print("%s -> %s" % (c["name"], uuid_to_pdh[c["output_uuid"]]))
-</code></pre>
+{% endcodeblock %}
 
 h2. List failed child requests
 
-<pre><code>import arvados
+{% codeblock as python %}
+import arvados
 api = arvados.api()
-parent_request_uuid = "qr1hi-xvhdp-3d8f1zatx1xio36"
+parent_request_uuid = "qr1hi-xvhdp-zzzzzzzzzzzzzzz"
 container_request = arvados.api().container_requests().get(uuid=parent_request_uuid).execute()
 parent_container_uuid = container_request["container_uuid"]
 child_requests = arvados.api().container_requests().list(filters=[
@@ -108,38 +118,41 @@ cancelled_child_containers = arvados.api().containers().list(filters=[
     ["uuid", "in", child_containers.keys()]], limit=1000).execute()
 for c in cancelled_child_containers["items"]:
     print("%s (%s)" % (child_containers[c["uuid"]]["name"], child_containers[c["uuid"]]["uuid"]))
-</code></pre>
+{% endcodeblock %}
 
 h2. Get log of a child request
 
-<pre><code>import arvados
+{% codeblock as python %}
+import arvados
 import arvados.collection
 api = arvados.api()
-container_request_uuid = "qr1hi-xvhdp-3d8f1zatx1xio36"
+container_request_uuid = "qr1hi-xvhdp-zzzzzzzzzzzzzzz"
 container_request = arvados.api().container_requests().get(uuid=container_request_uuid).execute()
 collection = arvados.collection.CollectionReader(container_request["log_uuid"])
 for c in collection:
     print(collection.open(c).read())
-</code></pre>
+{% endcodeblock %}
 
 h2. Create a collection sharing link
 
-<pre><code>import arvados
+{% codeblock as python %}
+import arvados
 api = arvados.api()
 download="https://your.download.server"
-collection_uuid="your-4zz18-collectionuuid"
+collection_uuid="qr1hi-4zz18-zzzzzzzzzzzzzzz"
 token = api.api_client_authorizations().create(body={"api_client_authorization":{"scopes": [
     "GET /arvados/v1/collections/%s" % collection_uuid,
     "GET /arvados/v1/collections/%s/" % collection_uuid,
     "GET /arvados/v1/keep_services/accessible"]}}).execute()
 print("%s/c=%s/t=%s/_/" % (download, collection_uuid, token["api_token"]))
-</code></pre>
+{% endcodeblock %}
 
 h2. Combine two or more collections
 
 Note, if two collections have files of the same name, the contents will be concatenated in the resulting manifest.
 
-<pre><code>import arvados
+{% codeblock as python %}
+import arvados
 import arvados.collection
 api = arvados.api()
 project_uuid = "qr1hi-tpzed-zzzzzzzzzzzzzzz"
@@ -150,4 +163,4 @@ for u in collection_uuids:
     combined_manifest += c["manifest_text"]
 newcol = arvados.collection.Collection(combined_manifest)
 newcol.save_new(name="My combined collection", owner_uuid=project_uuid)
-</code></pre>
+{% endcodeblock %}

@@ -14,10 +14,10 @@ h2.  Initialize SDK
 
 Import the module and set up an API client user agent:
 
-<pre>
+{% codeblock as ruby %}
 require 'arvados'
 arv = Arvados.new(apiVersion: 'v1')
-</pre>
+{% endcodeblock %}
 
 The SDK retrieves the list of API methods from the server at run time. Therefore, the set of available methods is determined by the server version rather than the SDK version.
 
@@ -25,56 +25,57 @@ h2. create
 
 Create an object:
 
-<pre>
+{% codeblock as ruby %}
 new_link = arv.link.create(link: {link_class: 'test', name: 'test'})
-</pre>
+{% endcodeblock %}
 
 h2. delete
 
 Delete an object:
 
-<pre>
+{% codeblock as ruby %}
 arv.link.delete(uuid: new_link[:uuid])
-</pre>
+{% endcodeblock %}
 
 h2. get
 
 Retrieve an object by ID:
 
-<pre>
+{% codeblock as ruby %}
 some_user = arv.user.get(uuid: current_user_uuid)
-</pre>
+{% endcodeblock %}
 
 h2. list
 
 Get a list of objects:
 
-<pre>
+{% codeblock as ruby %}
 repos = arv.repository.list
 first_repo = repos[:items][0]
 puts "UUID of first repo returned is #{first_repo[:uuid]}"</code>
+{% endcodeblock %}
+
 UUID of first repo returned is qr1hi-s0uqq-b1bnybpx3u5temz
-</pre>
 
 h2. update
 
 Update an object:
 
-<pre>
+{% codeblock as ruby %}
 updated_link = arv.link.update(uuid: new_link[:uuid],
                                link: {properties: {foo: 'bar'}})
-</pre>
+{% endcodeblock %}
 
 h2. Get current user
 
 Get the User object for the current user:
 
-<pre>
+{% codeblock as ruby %}
 current_user = arv.user.current
-</pre>
+{% endcodeblock %}
 
 Get the UUID of an object that was retrieved using the SDK:
 
-<pre>
+{% codeblock as ruby %}
 current_user_uuid = current_user[:uuid]
-</pre>
+{% endcodeblock %}
