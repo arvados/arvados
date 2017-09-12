@@ -306,9 +306,10 @@ class TestJob(unittest.TestCase):
 class TestWorkflow(unittest.TestCase):
     # The test passes no builder.resources
     # Hence the default resources will apply: {'cores': 1, 'ram': 1024, 'outdirSize': 1024, 'tmpdirSize': 1024}
+    @mock.patch("arvados.collection.CollectionReader")
     @mock.patch("arvados.collection.Collection")
     @mock.patch('arvados.commands.keepdocker.list_images_in_arv')
-    def test_run(self, list_images_in_arv, mockcollection):
+    def test_run(self, list_images_in_arv, mockcollection, mockcollectionreader):
         arvados_cwl.add_arv_hints()
 
         api = mock.MagicMock()
@@ -319,19 +320,25 @@ class TestWorkflow(unittest.TestCase):
 
         list_images_in_arv.return_value = [["zzzzz-4zz18-zzzzzzzzzzzzzzz"]]
         runner.api.collections().get().execute.return_vaulue = {"portable_data_hash": "99999999999999999999999999999993+99"}
+        runner.api.collections().list().execute.return_vaulue = {"items": [{"portable_data_hash": "99999999999999999999999999999993+99"}]}
 
         runner.project_uuid = "zzzzz-8i9sb-zzzzzzzzzzzzzzz"
         runner.ignore_docker_for_reuse = False
         runner.num_retries = 0
         document_loader, avsc_names, schema_metadata, metaschema_loader = cwltool.process.get_schema("v1.0")
 
+        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
+                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
+        document_loader.fetcher_constructor = functools.partial(arvados_cwl.CollectionFetcher, api_client=api, fs_access=make_fs_access(""))
+        document_loader.fetcher = document_loader.fetcher_constructor(document_loader.cache, document_loader.session)
+        document_loader.fetch_text = document_loader.fetcher.fetch_text
+        document_loader.check_exists = document_loader.fetcher.check_exists
+
         tool, metadata = document_loader.resolve_ref("tests/wf/scatter2.cwl")
         metadata["cwlVersion"] = tool["cwlVersion"]
 
         mockcollection().portable_data_hash.return_value = "99999999999999999999999999999999+118"
 
-        make_fs_access=functools.partial(arvados_cwl.CollectionFsAccess,
-                                         collection_cache=arvados_cwl.CollectionCache(runner.api, None, 0))
         arvtool = arvados_cwl.ArvadosWorkflow(runner, tool, work_api="jobs", avsc_names=avsc_names,
                                               basedir="", make_fs_access=make_fs_access, loader=document_loader,
                                               makeTool=runner.arv_make_tool, metadata=metadata)
@@ -375,6 +382,11 @@ class TestWorkflow(unittest.TestCase):
         mockcollection().open().__enter__().write.assert_has_calls([mock.call(subwf)])
         mockcollection().open().__enter__().write.assert_has_calls([mock.call(
 '''{
+  "fileblub": {
+    "basename": "token.txt",
+    "class": "File",
+    "location": "/keep/99999999999999999999999999999999+118/token.txt"
+  },
   "sleeptime": 5
 }''')])
 

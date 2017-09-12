@@ -10,6 +10,11 @@ inputs:
   sleeptime:
     type: int[]
     default: [5]
+  fileblub:
+    type: File
+    default:
+      class: File
+      location: keep:99999999999999999999999999999999+118/token.txt
 outputs:
   out:
     type: string[]
@@ -23,6 +28,7 @@ steps:
   scatterstep:
     in:
       sleeptime: sleeptime
+      fileblub: fileblub
     out: [out]
     scatter: sleeptime
     hints:
@@ -32,6 +38,7 @@ steps:
       id: mysub
       inputs:
         sleeptime: int
+        fileblub: File
       outputs:
         out:
           type: string

@@ -157,8 +157,6 @@ def stubs(func):
                             'basename': 'blorp.txt',
                             'class': 'File',
                             'location': 'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt',
-                            "nameext": ".txt",
-                            "nameroot": "blorp",
                             "size": 16
                         }},
                         'z': {"value": {'basename': 'anonymous', 'class': 'Directory',
@@ -166,9 +164,7 @@ def stubs(func):
                                   {
                                       'basename': 'renamed.txt',
                                       'class': 'File', 'location':
-                                      'keep:99999999999999999999999999999998+99/file1.txt',
-                                      "nameext": ".txt",
-                                      "nameroot": "renamed"
+                                      'keep:99999999999999999999999999999998+99/file1.txt'
                                   }
                               ]}},
                         'cwl:tool': '3fffdeaa75e018172e1b583425f4ebff+60/workflow.cwl#main',
@@ -223,16 +219,12 @@ def stubs(func):
                             'basename': u'blorp.txt',
                             'class': 'File',
                             'location': u'keep:169f39d466a5438ac4a90e779bf750c7+53/blorp.txt',
-                            "nameext": ".txt",
-                            "nameroot": "blorp",
                             "size": 16
                         },
                         'z': {'basename': 'anonymous', 'class': 'Directory', 'listing': [
                             {'basename': 'renamed.txt',
                              'class': 'File',
-                             'location': 'keep:99999999999999999999999999999998+99/file1.txt',
-                             "nameext": ".txt",
-                             "nameroot": "renamed"
+                             'location': 'keep:99999999999999999999999999999998+99/file1.txt'
                             }
                         ]}
                     },

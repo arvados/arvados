@@ -13,11 +13,11 @@ from cwltool.pack import pack
 from cwltool.load_tool import fetch_document
 from cwltool.process import shortname
 from cwltool.workflow import Workflow, WorkflowException
-from cwltool.pathmapper import adjustFileObjs, adjustDirObjs
+from cwltool.pathmapper import adjustFileObjs, adjustDirObjs, visit_class
 
 import ruamel.yaml as yaml
 
-from .runner import upload_dependencies, packed_workflow, upload_workflow_collection, trim_anonymous_location
+from .runner import upload_dependencies, packed_workflow, upload_workflow_collection, trim_anonymous_location, remove_redundant_fields
 from .pathmapper import trim_listing
 from .arvtool import ArvadosCommandTool
 from .perf import Perf
@@ -113,6 +113,7 @@ class ArvadosWorkflow(Workflow):
                 joborder_keepmount = copy.deepcopy(joborder)
 
                 def keepmount(obj):
+                    remove_redundant_fields(obj)
                     with SourceLine(obj, None, WorkflowException):
                         if "location" not in obj:
                             raise WorkflowException("%s object is missing required 'location' field: %s" % (obj["class"], obj))
@@ -126,8 +127,7 @@ class ArvadosWorkflow(Workflow):
                         else:
                             raise WorkflowException("Location is not a keep reference or a literal: '%s'" % obj["location"])
 
-                adjustFileObjs(joborder_keepmount, keepmount)
-                adjustDirObjs(joborder_keepmount, keepmount)
+                visit_class(joborder_keepmount, ("File", "Directory"), keepmount)
 
                 if self.wf_pdh is None:
                     adjustFileObjs(packed, keepmount)
