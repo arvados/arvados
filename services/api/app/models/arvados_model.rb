@@ -271,25 +271,20 @@ class ArvadosModel < ActiveRecord::Base
         end
       end
     else
-      # Can read object (evidently a group or user) whose UUID is listed
-      # explicitly in user_uuids.
-      sql_conds.push "#{sql_table}.uuid IN (:user_uuids)"
-
       if include_trash
-        trashed_check = "true"
+        trashed_check = ""
       else
-        trashed_check = "trashed = 0"
+        trashed_check = "AND trashed = 0"
       end
 
       if sql_table != "api_client_authorizations" and sql_table != "groups"
         owner_check = "OR (target_uuid = #{sql_table}.owner_uuid AND target_owner_uuid IS NOT NULL)"
-        sql_conds.push "#{sql_table}.owner_uuid IN (:user_uuids)"
       else
         owner_check = ""
       end
 
       sql_conds.push "EXISTS(SELECT 1 FROM #{PERMISSION_VIEW} "+
-                     "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 AND #{trashed_check} AND (target_uuid = #{sql_table}.uuid #{owner_check}))"
+                     "WHERE user_uuid IN (:user_uuids) AND perm_level >= 1 #{trashed_check} AND (target_uuid = #{sql_table}.uuid #{owner_check}))"
 
       if sql_table == "links"
         # Match any permission link that gives one of the authorized
