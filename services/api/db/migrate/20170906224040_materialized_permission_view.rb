@@ -100,6 +100,8 @@ SELECT user_uuid,
     @@idxtables.each do |table|
       ActiveRecord::Base.connection.execute("CREATE INDEX index_#{table.to_s}_on_modified_at_uuid ON #{table.to_s} USING btree (modified_at desc, uuid asc)")
     end
+
+    ActiveRecord::Base.connection.exec_query("REFRESH MATERIALIZED VIEW #{PERMISSION_VIEW}")
   end
 
   def down
