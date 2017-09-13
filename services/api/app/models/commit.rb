@@ -154,11 +154,31 @@ class Commit < ActiveRecord::Base
       commit_in_dst = false
     end
 
+    tag_cmd = "tag --force #{tag.shellescape} #{sha1.shellescape}^{commit}"
     if commit_in_dst == sha1
-      must_git(dst_gitdir, "tag --force #{tag.shellescape} #{sha1.shellescape}")
+      must_git(dst_gitdir, tag_cmd)
     else
-      refspec = "#{sha1}:refs/tags/#{tag}"
-      must_git(dst_gitdir, "fetch --no-tags file://#{src_gitdir.shellescape} #{refspec.shellescape}")
+      # git-fetch is faster than pack-objects|unpack-objects, but
+      # git-fetch can't fetch by sha1. So we first try to fetch a
+      # branch that has the desired commit, and if that fails (there
+      # is no such branch, or the branch we choose changes under us in
+      # race), we fall back to pack|unpack.
+      begin
+        branches = must_git("branch --contains #{sha1.shellescape}^{commit}")
+        m = branches.match(/^. (\w+)\n/)
+        if !m
+          raise GitError.new "commit is not on any branch"
+        end
+        branch = m[1]
+        must_git(dst_gitdir,
+                 "fetch file://#{src_gitdir.shellescape} #{branch.shellescape}")
+        must_git(dst_gitdir, tag_cmd)
+      rescue GitError
+        must_pipe("echo #{sha1.shellescape}",
+                  "git --git-dir #{src_gitdir.shellescape} pack-objects -q --revs --stdout",
+                  "git --git-dir #{dst_gitdir.shellescape} unpack-objects -q")
+        must_git(dst_gitdir, tag_cmd)
+      end
     end
   end
 
