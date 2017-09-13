@@ -2,8 +2,6 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-require 'refresh_permission_view'
-
 class DatabaseSeeds
   extend CurrentApiClient
   def self.install
@@ -14,6 +12,5 @@ class DatabaseSeeds
     anonymous_group_read_permission
     anonymous_user
     empty_collection
-    refresh_permission_view
   end
 end
