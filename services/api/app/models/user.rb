@@ -161,7 +161,7 @@ class User < ArvadosModel
                   # "name" arg is a query label that appears in logs:
                   "all_group_permissions",
                   ).rows.each do |user_uuid, group_uuid, max_p_val, trashed|
-      all_perms[user_uuid] ||= {user_uuid => {:read => true, :write => true, :manage => true}}
+      all_perms[user_uuid] ||= {}
       all_perms[user_uuid][group_uuid] = PERMS_FOR_VAL[max_p_val.to_i]
     end
     all_perms
