@@ -56,24 +56,22 @@ perm_edges (tail_uuid, head_uuid, val, follow, trashed) AS (
               CASE WHEN trash_at IS NOT NULL and trash_at < clock_timestamp() THEN 1 ELSE 0 END
               FROM groups
        ),
-perm (val, follow, user_uuid, target_uuid, trashed, startnode) AS (
+perm (val, follow, user_uuid, target_uuid, trashed) AS (
      SELECT 3::smallint             AS val,
-            false                   AS follow,
+            true                    AS follow,
             users.uuid::varchar(32) AS user_uuid,
             users.uuid::varchar(32) AS target_uuid,
-            0::smallint             AS trashed,
-            true                    AS startnode
+            0::smallint             AS trashed
             FROM users
      UNION
      SELECT LEAST(perm.val, edges.val)::smallint  AS val,
             edges.follow                          AS follow,
             perm.user_uuid::varchar(32)           AS user_uuid,
             edges.head_uuid::varchar(32)          AS target_uuid,
-            GREATEST(perm.trashed, edges.trashed)::smallint AS trashed,
-            false                                 AS startnode
+            GREATEST(perm.trashed, edges.trashed)::smallint AS trashed
             FROM perm
             INNER JOIN perm_edges edges
-            ON (perm.startnode or perm.follow) AND edges.tail_uuid = perm.target_uuid
+            ON perm.follow AND edges.tail_uuid = perm.target_uuid
 )
 SELECT user_uuid,
        target_uuid,

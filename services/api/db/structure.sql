@@ -802,23 +802,21 @@ CREATE MATERIALIZED VIEW materialized_permission_view AS
                     ELSE 0
                 END AS "case"
            FROM groups
-        ), perm(val, follow, user_uuid, target_uuid, trashed, startnode) AS (
+        ), perm(val, follow, user_uuid, target_uuid, trashed) AS (
          SELECT (3)::smallint AS val,
-            false AS follow,
+            true AS follow,
             (users.uuid)::character varying(32) AS user_uuid,
             (users.uuid)::character varying(32) AS target_uuid,
-            (0)::smallint AS trashed,
-            true AS startnode
+            (0)::smallint AS trashed
            FROM users
         UNION
          SELECT (LEAST((perm_1.val)::integer, edges.val))::smallint AS val,
             edges.follow,
             perm_1.user_uuid,
             (edges.head_uuid)::character varying(32) AS target_uuid,
-            (GREATEST((perm_1.trashed)::integer, edges.trashed))::smallint AS trashed,
-            false AS startnode
+            (GREATEST((perm_1.trashed)::integer, edges.trashed))::smallint AS trashed
            FROM (perm perm_1
-             JOIN perm_edges edges ON (((perm_1.startnode OR perm_1.follow) AND ((edges.tail_uuid)::text = (perm_1.target_uuid)::text))))
+             JOIN perm_edges edges ON ((perm_1.follow AND ((edges.tail_uuid)::text = (perm_1.target_uuid)::text))))
         )
  SELECT perm.user_uuid,
     perm.target_uuid,
