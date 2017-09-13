@@ -101,8 +101,11 @@ window.CollectionsSearch = {
                     return new MultipageLoader({
                         sessionKey: key,
                         loadFunc: function(filters) {
-                            if (q)
-                                filters.push(['any', '@@', q+':*'])
+                            var tsquery = to_tsquery(q)
+                            if (tsquery) {
+                                filters = filters.slice(0)
+                                filters.push(['any', '@@', tsquery])
+                            }
                             return vnode.state.sessionDB.request(session, 'arvados/v1/collections', {
                                 data: {
                                     filters: JSON.stringify(filters),
