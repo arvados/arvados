@@ -710,23 +710,11 @@ ALTER SEQUENCE links_id_seq OWNED BY links.id;
 
 
 --
--- Name: logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
---
-
-CREATE SEQUENCE logs_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1;
-
-
---
 -- Name: logs; Type: TABLE; Schema: public; Owner: -
 --
 
 CREATE TABLE logs (
-    id integer DEFAULT nextval('logs_id_seq'::regclass) NOT NULL,
+    id integer NOT NULL,
     uuid character varying(255),
     owner_uuid character varying(255),
     modified_by_client_uuid character varying(255),
@@ -741,6 +729,25 @@ CREATE TABLE logs (
     modified_at timestamp without time zone,
     object_owner_uuid character varying(255)
 );
+
+
+--
+-- Name: logs_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE logs_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: logs_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE logs_id_seq OWNED BY logs.id;
 
 
 --
@@ -957,30 +964,6 @@ ALTER SEQUENCE pipeline_templates_id_seq OWNED BY pipeline_templates.id;
 
 
 --
--- Name: read_permissions; Type: VIEW; Schema: public; Owner: -
---
-
-CREATE VIEW read_permissions AS
- WITH RECURSIVE read_permissions(follow, user_uuid, readable_uuid) AS (
-         SELECT true AS bool,
-            users.uuid,
-            users.uuid
-           FROM users
-        UNION
-         SELECT (((links.name)::text = 'can_manage'::text) OR ((links.head_uuid)::text ~~ 'su92l-j7d0g-%'::text)) AS follow,
-            rp.user_uuid,
-            links.head_uuid
-           FROM read_permissions rp,
-            links
-          WHERE (rp.follow AND ((links.tail_uuid)::text = (rp.readable_uuid)::text))
-        )
- SELECT read_permissions.follow,
-    read_permissions.user_uuid,
-    read_permissions.readable_uuid
-   FROM read_permissions;
-
-
---
 -- Name: repositories; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1014,18 +997,6 @@ CREATE SEQUENCE repositories_id_seq
 --
 
 ALTER SEQUENCE repositories_id_seq OWNED BY repositories.id;
-
-
---
--- Name: rp_cache; Type: MATERIALIZED VIEW; Schema: public; Owner: -
---
-
-CREATE MATERIALIZED VIEW rp_cache AS
- SELECT read_permissions.follow,
-    read_permissions.user_uuid,
-    read_permissions.readable_uuid
-   FROM read_permissions
-  WITH NO DATA;
 
 
 --
@@ -1307,6 +1278,13 @@ ALTER TABLE ONLY keep_services ALTER COLUMN id SET DEFAULT nextval('keep_service
 --
 
 ALTER TABLE ONLY links ALTER COLUMN id SET DEFAULT nextval('links_id_seq'::regclass);
+
+
+--
+-- Name: logs id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY logs ALTER COLUMN id SET DEFAULT nextval('logs_id_seq'::regclass);
 
 
 --
@@ -2641,13 +2619,6 @@ CREATE INDEX repositories_search_index ON repositories USING btree (uuid, owner_
 --
 
 CREATE INDEX specimens_search_index ON specimens USING btree (uuid, owner_uuid, modified_by_client_uuid, modified_by_user_uuid, material);
-
-
---
--- Name: test_1; Type: INDEX; Schema: public; Owner: -
---
-
-CREATE INDEX test_1 ON collections USING btree (id) WHERE (delete_at IS NULL);
 
 
 --
