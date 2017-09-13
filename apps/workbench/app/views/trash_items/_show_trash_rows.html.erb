@@ -11,8 +11,10 @@ SPDX-License-Identifier: AGPL-3.0 %>
       </td>
       <td>
         <%= if !obj.name.blank? then obj.name else obj.uuid end %>
+      </td>
       <td>
         <%= render_localized_date(obj.trash_at) if obj.trash_at %>
+      </td>
       <td>
         <%= render_localized_date(obj.delete_at) if obj.delete_at %>
       </td>
