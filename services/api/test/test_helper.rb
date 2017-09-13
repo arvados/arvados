@@ -67,7 +67,6 @@ class ActiveSupport::TestCase
     Thread.current[:api_client] = nil
     Thread.current[:user] = nil
     restore_configuration
-    User.invalidate_permissions_cache
   end
 
   def assert_equal(expect, *args)
@@ -145,10 +144,6 @@ class ActionController::TestCase
     @test_counter = 0
   end
 
-  teardown do
-    User.invalidate_permissions_cache
-  end
-
   def check_counter action
     @test_counter += 1
     if @test_counter == 2
@@ -186,7 +181,6 @@ class ActionDispatch::IntegrationTest
     Thread.current[:api_client_uuid] = nil
     Thread.current[:api_client] = nil
     Thread.current[:user] = nil
-    User.invalidate_permissions_cache
   end
 end
 
