@@ -5,5 +5,8 @@
 PERMISSION_VIEW = "materialized_permission_view"
 
 def refresh_permission_view
-  ActiveRecord::Base.connection.exec_query("REFRESH MATERIALIZED VIEW #{PERMISSION_VIEW}")
+  ActiveRecord::Base.transaction do
+    ActiveRecord::Base.connection.execute("LOCK TABLE permission_refresh_lock")
+    ActiveRecord::Base.connection.execute("REFRESH MATERIALIZED VIEW #{PERMISSION_VIEW}")
+  end
 end

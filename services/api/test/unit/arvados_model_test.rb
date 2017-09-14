@@ -139,6 +139,7 @@ class ArvadosModelTest < ActiveSupport::TestCase
   test "search index exists on models that go into projects" do
     all_tables =  ActiveRecord::Base.connection.tables
     all_tables.delete 'schema_migrations'
+    all_tables.delete 'permission_refresh_lock'
 
     all_tables.each do |table|
       table_class = table.classify.constantize

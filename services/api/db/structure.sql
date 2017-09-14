@@ -880,6 +880,34 @@ ALTER SEQUENCE nodes_id_seq OWNED BY nodes.id;
 
 
 --
+-- Name: permission_refresh_lock; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE permission_refresh_lock (
+    id integer NOT NULL
+);
+
+
+--
+-- Name: permission_refresh_lock_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE permission_refresh_lock_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: permission_refresh_lock_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE permission_refresh_lock_id_seq OWNED BY permission_refresh_lock.id;
+
+
+--
 -- Name: pipeline_instances; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -1293,6 +1321,13 @@ ALTER TABLE ONLY nodes ALTER COLUMN id SET DEFAULT nextval('nodes_id_seq'::regcl
 
 
 --
+-- Name: permission_refresh_lock id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY permission_refresh_lock ALTER COLUMN id SET DEFAULT nextval('permission_refresh_lock_id_seq'::regclass);
+
+
+--
 -- Name: pipeline_instances id; Type: DEFAULT; Schema: public; Owner: -
 --
 
@@ -1482,6 +1517,14 @@ ALTER TABLE ONLY logs
 
 ALTER TABLE ONLY nodes
     ADD CONSTRAINT nodes_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: permission_refresh_lock permission_refresh_lock_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY permission_refresh_lock
+    ADD CONSTRAINT permission_refresh_lock_pkey PRIMARY KEY (id);
 
 
 --
@@ -2176,6 +2219,13 @@ CREATE INDEX index_logs_on_event_type ON logs USING btree (event_type);
 --
 
 CREATE INDEX index_logs_on_modified_at ON logs USING btree (modified_at);
+
+
+--
+-- Name: index_logs_on_modified_at_uuid; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX index_logs_on_modified_at_uuid ON logs USING btree (modified_at DESC, uuid);
 
 
 --

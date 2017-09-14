@@ -4,7 +4,7 @@
 
 class MaterializedPermissionView < ActiveRecord::Migration
 
-  @@idxtables = [:collections, :container_requests, :groups, :jobs, :links, :pipeline_instances, :pipeline_templates, :repositories, :users, :virtual_machines, :workflows]
+  @@idxtables = [:collections, :container_requests, :groups, :jobs, :links, :pipeline_instances, :pipeline_templates, :repositories, :users, :virtual_machines, :workflows, :logs]
 
   def up
 
@@ -101,14 +101,16 @@ SELECT user_uuid,
       ActiveRecord::Base.connection.execute("CREATE INDEX index_#{table.to_s}_on_modified_at_uuid ON #{table.to_s} USING btree (modified_at desc, uuid asc)")
     end
 
-    ActiveRecord::Base.connection.exec_query("REFRESH MATERIALIZED VIEW #{PERMISSION_VIEW}")
+    create_table :permission_refresh_lock
+    ActiveRecord::Base.connection.execute("REFRESH MATERIALIZED VIEW materialized_permission_view")
   end
 
   def down
+    drop_table :permission_refresh_lock
     remove_index :materialized_permission_view, name: 'permission_target_trashed'
     remove_index :materialized_permission_view, name: 'permission_target_user_trashed_level'
     @@idxtables.each do |table|
-      ActiveRecord::Base.connection.execute("DROP INDEX index_#{table.to_s}_on_modified_at_uuid")
+      ActiveRecord::Base.connection.execute("DROP INDEX IF EXISTS index_#{table.to_s}_on_modified_at_uuid")
     end
     ActiveRecord::Base.connection.execute("DROP MATERIALIZED VIEW IF EXISTS materialized_permission_view")
   end
