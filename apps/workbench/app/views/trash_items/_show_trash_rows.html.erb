@@ -14,11 +14,11 @@ SPDX-License-Identifier: AGPL-3.0 %>
       </td>
       <td>
         <% if obj.trash_at %>
-          trash: <%= render_localized_date(obj.trash_at)  %>
-          <br />
+          <%= render_localized_date(obj.trash_at)  %>
         <% end %>
+        <br />
         <% if obj.delete_at %>
-          delete: <%= render_localized_date(obj.delete_at) %>
+          <%= render_localized_date(obj.delete_at) %>
         <% end %>
       </td>
       <td>
