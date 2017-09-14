@@ -195,12 +195,16 @@ class ArvPathMapper(PathMapper):
         self.keepdir = None
 
     def reversemap(self, target):
-        if target.startswith("keep:"):
+        p = super(ArvPathMapper, self).reversemap(target)
+        if p:
+            return p
+        elif target.startswith("keep:"):
             return (target, target)
         elif self.keepdir and target.startswith(self.keepdir):
-            return (target, "keep:" + target[len(self.keepdir)+1:])
+            kp = "keep:" + target[len(self.keepdir)+1:]
+            return (kp, kp)
         else:
-            return super(ArvPathMapper, self).reversemap(target)
+            return None
 
 class StagingPathMapper(PathMapper):
     _follow_dirs = True
