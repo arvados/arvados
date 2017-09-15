@@ -4,16 +4,38 @@ SPDX-License-Identifier: AGPL-3.0 %>
 
 <%
    if (controller.andand.action_name == 'show') and params[:uuid]
+     check_trash = controller.model_class.include_trash(true).where(uuid: params[:uuid], is_trashed: true)
      class_name = controller.model_class.to_s.underscore
      class_name_h = class_name.humanize(capitalize: false)
      req_item = safe_join([class_name_h, " with UUID ",
-                           raw("<code>"), params[:uuid], raw("</code>")], "")
+                             raw("<code>"), params[:uuid], raw("</code>")], "")
      req_item_plain_text = safe_join([class_name_h, " with UUID ", params[:uuid]])
    else
      req_item = "page you requested"
      req_item_plain_text = "page you requested"
    end
 %>
+
+  <% if check_trash.any? %>
+    <h2>Trashed</h2>
+
+    <p>The <%= req_item %> is in the trash.
+
+    <% object = check_trash.first %>
+    <% if object.editable? %>
+      <% msg = "Untrash '" + if !object.name.blank? then object.name else object.uuid end + "'?" %>
+      <%= link_to({action: 'untrash_items', selection: [object.uuid], controller: :trash_items}, remote: true, method: :post,
+        title: "Untrash", style: 'cursor: pointer;') do %>
+
+      <% end %>
+
+      <%= form_tag url_for({action: 'untrash_items', controller: :trash_items}), {method: :post} %>
+      <%= hidden_field_tag :selection, [object.uuid] %>
+      <button type="submit">Click here to untrash this item <i class="fa fa-fw fa-recycle"></i></button>
+    <% end %>
+    </p>
+
+  <% else %>
 
 <h2>Not Found</h2>
 
@@ -36,6 +58,8 @@ SPDX-License-Identifier: AGPL-3.0 %>
     #{class_name_h.pluralize}", action: :index, controller:
     class_name.tableize) %>?
   </p>
+
+<% end %>
 
 <% end %>
 

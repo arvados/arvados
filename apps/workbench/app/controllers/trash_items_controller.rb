@@ -86,15 +86,24 @@ class TrashItemsController < ApplicationController
 
     updates = {trash_at: nil}
 
-    klass = resource_class_for_uuid(params[:selection][0])
+    if params[:selection].is_a? Array
+      klass = resource_class_for_uuid(params[:selection][0])
+    else
+      klass = resource_class_for_uuid(params[:selection])
+    end
 
+    first = nil
     klass.include_trash(1).where(uuid: params[:selection]).each do |c|
+      first = c
       c.untrash
       @untrashed_uuids << c.uuid
     end
 
     respond_to do |format|
       format.js
+      format.html do
+        redirect_to first
+      end
     end
   end
 end
