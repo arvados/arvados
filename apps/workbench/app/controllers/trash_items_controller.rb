@@ -22,7 +22,7 @@ class TrashItemsController < ApplicationController
     if @objects.any?
       @objects = @objects.sort_by { |obj| obj.trash_at }.reverse
       @next_page_filters = next_page_filters('<=')
-      @next_page_href = url_for(partial: :trash_rows,
+      @next_page_href = url_for(partial: params[:partial],
                                 filters: @next_page_filters.to_json)
     else
       @next_page_href = nil
@@ -55,13 +55,19 @@ class TrashItemsController < ApplicationController
   end
 
   def trashed_items
+    if params[:partial] == "trashed_collection_rows"
+      query_on = Collection
+    elsif params[:partial] == "trashed_project_rows"
+      query_on = Group
+    end
+
     # API server index doesn't return manifest_text by default, but our
     # callers want it unless otherwise specified.
-    @select ||= Collection.columns.map(&:name)
+    @select ||= query_on.columns.map(&:name) - %w(id updated_at)
     limit = if params[:limit] then params[:limit].to_i else 100 end
     offset = if params[:offset] then params[:offset].to_i else 0 end
 
-    base_search = Collection.select(@select).include_trash(true).where(is_trashed: true)
+    base_search = query_on.select(@select).include_trash(true).where(is_trashed: true)
     base_search = base_search.filter(params[:filters]) if params[:filters]
 
     if params[:search].andand.length.andand > 0
@@ -80,7 +86,9 @@ class TrashItemsController < ApplicationController
 
     updates = {trash_at: nil}
 
-    Collection.include_trash(1).where(uuid: params[:selection]).each do |c|
+    klass = resource_class_for_uuid(params[:selection][0])
+
+    klass.include_trash(1).where(uuid: params[:selection]).each do |c|
       c.untrash
       @untrashed_uuids << c.uuid
     end

@@ -22,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
   <div class="col-md-4 pull-right">
     <input type="text" class="form-control filterable-control recent-trash-items"
            placeholder="Search trash"
-           data-filterable-target="#recent-trash-items"
+           data-filterable-target="#recent-project-trash-items"
            value="<%= params[:search] %>" />
   </div>
 
@@ -45,13 +45,13 @@ SPDX-License-Identifier: AGPL-3.0 %>
           <th>Trashed at</th>
           <th title="After this time, no longer available to be recovered from Trash">Permanently<br/>Deleted At</th>
           <th>Owner</th>
-          <th>Contents</th>
+          <th></th>
           <th></th>
         </tr>
       </thead>
 
-      <tbody data-infinite-scroller="#recent-trash-items" id="recent-trash-items"
-        data-infinite-content-href="<%= url_for partial: :trash_rows %>" >
+      <tbody data-infinite-scroller="#recent-project-trash-items" id="recent-project-trash-items"
+        data-infinite-content-href="<%= url_for partial: :trashed_project_rows %>" >
       </tbody>
     </table>
   </div>

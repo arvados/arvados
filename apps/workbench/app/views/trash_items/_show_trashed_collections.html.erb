@@ -22,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
   <div class="col-md-4 pull-right">
     <input type="text" class="form-control filterable-control recent-trash-items"
            placeholder="Search trash"
-           data-filterable-target="#recent-trash-items"
+           data-filterable-target="#recent-collection-trash-items"
            value="<%= params[:search] %>" />
   </div>
 
@@ -50,8 +50,8 @@ SPDX-License-Identifier: AGPL-3.0 %>
         </tr>
       </thead>
 
-      <tbody data-infinite-scroller="#recent-trash-items" id="recent-trash-items"
-        data-infinite-content-href="<%= url_for partial: :trash_rows %>" >
+      <tbody data-infinite-scroller="#recent-collection-trash-items" id="recent-collection-trash-items"
+        data-infinite-content-href="<%= url_for partial: :trashed_collection_rows %>" >
       </tbody>
     </table>
   </div>
