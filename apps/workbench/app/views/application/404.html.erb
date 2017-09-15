@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0 %>
    end
 %>
 
-  <% if check_trash.any? %>
+  <% if check_trash.andand.any? %>
     <h2>Trashed</h2>
 
     <p>The <%= req_item %> is in the trash.
