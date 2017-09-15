@@ -9,7 +9,7 @@ set -eux -o pipefail
 PGVERSION=9.6
 
 if ! test -d /var/lib/postgresql/$PGVERSION/main ; then
-    /usr/lib/postgresql/$PGVERSION/bin/initdb -D /var/lib/postgresql/$PGVERSION/main
+    /usr/lib/postgresql/$PGVERSION/bin/initdb --locale=en_US.UTF-8 -D /var/lib/postgresql/$PGVERSION/main
     sh -c "while ! (psql postgres -c'\du' | grep '^ arvbox ') >/dev/null ; do createuser -s arvbox ; sleep 1 ; done" &
 fi
 mkdir -p /var/run/postgresql/$PGVERSION-main.pg_stat_tmp

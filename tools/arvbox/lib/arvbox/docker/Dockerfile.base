@@ -79,6 +79,8 @@ ENV NODEVERSION v6.11.2
 RUN curl -L -f https://nodejs.org/dist/${NODEVERSION}/node-${NODEVERSION}-linux-x64.tar.xz | tar -C /usr/local -xJf - && \
     ln -s ../node-${NODEVERSION}-linux-x64/bin/node ../node-${NODEVERSION}-linux-x64/bin/npm /usr/local/bin
 
+RUN echo en_US.UTF-8 UTF-8 > /etc/locale.gen && locale-gen
+
 ARG arvados_version
 RUN echo arvados_version is git commit $arvados_version
 
