@@ -18,6 +18,8 @@ class TrashTest < ActionDispatch::IntegrationTest
     visit page_with_token('active', "/trash")
 
     assert_text deleted['name']
+    assert_text deleted['uuid']
+    assert_text deleted['portable_data_hash']
     assert_text expired1['name']
     assert_no_text expired2['name']   # not readable by this user
     assert_no_text 'foo_file'         # not trash
@@ -60,12 +62,21 @@ class TrashTest < ActionDispatch::IntegrationTest
     visit page_with_token('active', "/trash")
 
     assert_text deleted['name']
+    assert_text deleted['uuid']
+    assert_text deleted['portable_data_hash']
     assert_text expired['name']
 
     page.find_field('Search trash').set 'expired'
 
-    assert_text expired['name']
     assert_no_text deleted['name']
+    assert_text expired['name']
+
+    page.find_field('Search trash').set deleted['portable_data_hash'][0..9]
+
+    assert_no_text expired['name']
+    assert_text deleted['name']
+    assert_text deleted['uuid']
+    assert_text deleted['portable_data_hash']
 
     click_button 'Selection...'
     within('.selection-action-container') do
