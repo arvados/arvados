@@ -6,6 +6,8 @@
 export PATH=${PATH}:/usr/local/go/bin:/var/lib/gems/bin
 export GEM_HOME=/var/lib/gems
 export GEM_PATH=/var/lib/gems
+export npm_config_cache=/var/lib/npm
+export npm_config_cache_min=Infinity
 
 if test -s /var/run/localip_override ; then
     localip=$(cat /var/run/localip_override)
