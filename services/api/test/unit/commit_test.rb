@@ -26,6 +26,14 @@ class CommitTest < ActiveSupport::TestCase
     end
   end
 
+  def must_pipe(cmd)
+    begin
+      return IO.read("|#{cmd}")
+    ensure
+      assert $?.success?
+    end
+  end
+
   [
    'https://github.com/curoverse/arvados.git',
    'http://github.com/curoverse/arvados.git',
@@ -76,6 +84,47 @@ class CommitTest < ActiveSupport::TestCase
     refute $?.success?
     Commit.tag_in_internal_repository 'active/foo', '31ce37fe365b3dc204300a3e4c396ad333ed0556', 'testtag'
     assert_match(/^commit 31ce37f/, IO.read("|#{gitint} show testtag"))
+    assert $?.success?
+  end
+
+  def with_foo_repository
+    Dir.chdir("#{Rails.configuration.git_repositories_dir}/#{repositories(:foo).uuid}") do
+      must_pipe("git checkout master 2>&1")
+      yield
+    end
+  end
+
+  test 'tag_in_internal_repository, new non-tip sha1 in local repo' do
+    tag = "tag#{rand(10**10)}"
+    sha1 = nil
+    with_foo_repository do
+      must_pipe("git checkout -b branch-#{rand(10**10)} 2>&1")
+      must_pipe("echo -n #{tag.shellescape} >bar")
+      must_pipe("git add bar")
+      must_pipe("git commit -m -")
+      sha1 = must_pipe("git log -n1 --format=%H").strip
+      must_pipe("git rm bar")
+      must_pipe("git commit -m -")
+    end
+    Commit.tag_in_internal_repository 'active/foo', sha1, tag
+    gitint = "git --git-dir #{Rails.configuration.git_internal_dir.shellescape}"
+    assert_match(/^commit /, IO.read("|#{gitint} show #{tag.shellescape}"))
+    assert $?.success?
+  end
+
+  test 'tag_in_internal_repository, new unreferenced sha1 in local repo' do
+    tag = "tag#{rand(10**10)}"
+    sha1 = nil
+    with_foo_repository do
+      must_pipe("echo -n #{tag.shellescape} >bar")
+      must_pipe("git add bar")
+      must_pipe("git commit -m -")
+      sha1 = must_pipe("git log -n1 --format=%H").strip
+      must_pipe("git reset --hard HEAD^")
+    end
+    Commit.tag_in_internal_repository 'active/foo', sha1, tag
+    gitint = "git --git-dir #{Rails.configuration.git_internal_dir.shellescape}"
+    assert_match(/^commit /, IO.read("|#{gitint} show #{tag.shellescape}"))
     assert $?.success?
   end
 
