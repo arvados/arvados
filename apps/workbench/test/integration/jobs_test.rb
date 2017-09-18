@@ -61,6 +61,7 @@ class JobsTest < ActionDispatch::IntegrationTest
   end
 
   test 'view log via keep-web redirect' do
+    need_selenium 'for keep-web to work'
     use_keep_web_config
 
     token = api_fixture('api_client_authorizations')['active']['api_token']

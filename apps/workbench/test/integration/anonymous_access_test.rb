@@ -119,6 +119,7 @@ class AnonymousAccessTest < ActionDispatch::IntegrationTest
   end
 
   test 'view file' do
+    need_selenium 'for keep-web to work'
     use_keep_web_config
 
     magic = rand(2**512).to_s 36

@@ -55,6 +55,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
   end
 
   test "can download an entire collection with a reader token" do
+    need_selenium 'for keep-web to work'
     use_keep_web_config
 
     token = api_fixture('api_client_authorizations')['active']['api_token']
@@ -88,7 +89,7 @@ class CollectionsTest < ActionDispatch::IntegrationTest
         link
       end
     end
-    assert_equal(['foo'], hrefs.compact.sort,
+    assert_equal([Rails.configuration.keep_web_url % {:uuid_or_pdh => "#{uuid}/t=#{token}/_/foo"}], hrefs.compact.sort,
                  "download page did provide strictly file links")
     click_link "foo"
     assert_text "foo\nfile\n"
