@@ -65,10 +65,13 @@ RUN cd /root && \
     GOPATH=$PWD go get github.com/curoverse/runsvinit && \
     install bin/runsvinit /usr/local/bin
 
-ENV PJSVERSION=1.9.7
+ENV PJSVERSION=1.9.8
+# bitbucket is the origin, but downloads fail sometimes, so use our own mirror instead.
+#ENV PJSURL=https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-${PJSVERSION}-linux-x86_64.tar.bz2
+ENV PJSURL=http://cache.arvados.org/phantomjs-${PJSVERSION}-linux-x86_64.tar.bz2
 
 RUN set -e && \
- curl -L -f http://cache.arvados.org/phantomjs-${PJSVERSION}-linux-x86_64.tar.bz2 | tar -C /usr/local -xjf - && \
+ curl -L -f ${PJSURL} | tar -C /usr/local -xjf - && \
  ln -s ../phantomjs-${PJSVERSION}-linux-x86_64/bin/phantomjs /usr/local/bin
 
 RUN pip install -U setuptools
