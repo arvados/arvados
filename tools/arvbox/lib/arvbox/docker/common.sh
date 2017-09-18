@@ -67,7 +67,7 @@ pip_install() {
     done
     popd
 
-    if ! pip install --no-index --find-links /var/lib/pip --system $1 ; then
-        pip install --system $1
+    if ! pip install --no-index --find-links /var/lib/pip $1 ; then
+        pip install $1
     fi
 }
