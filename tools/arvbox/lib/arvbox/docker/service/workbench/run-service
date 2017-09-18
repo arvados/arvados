@@ -13,6 +13,7 @@ export RAILS_ENV=development
 
 run_bundler --without=development
 bundle exec passenger start --runtime-check-only --runtime-dir=/var/lib/passenger
+mkdir -p /usr/src/arvados/apps/workbench/tmp
 RAILS_GROUPS=assets bundle exec rake npm:install
 
 if test "$1" = "--only-deps" ; then

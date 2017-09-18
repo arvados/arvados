@@ -85,7 +85,7 @@ if test "$tag" = "latest" ; then
 else
   jobsimg=\$(curl http://versions.arvados.org/v1/commit/$tag | python -c "import json; import sys; sys.stdout.write(json.load(sys.stdin)['Versions']['Docker']['arvados/jobs'])")
   arv-keepdocker --pull arvados/jobs $jobsimg
-  docker tag -f arvados/jobs:$jobsimg arvados/jobs:latest
+  docker tag arvados/jobs:$jobsimg arvados/jobs:latest
   arv-keepdocker arvados/jobs latest
 fi
 

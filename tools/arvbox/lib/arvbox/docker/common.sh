@@ -6,6 +6,8 @@
 export PATH=${PATH}:/usr/local/go/bin:/var/lib/gems/bin
 export GEM_HOME=/var/lib/gems
 export GEM_PATH=/var/lib/gems
+export npm_config_cache=/var/lib/npm
+export npm_config_cache_min=Infinity
 
 if test -s /var/run/localip_override ; then
     localip=$(cat /var/run/localip_override)
@@ -65,7 +67,7 @@ pip_install() {
     done
     popd
 
-    if ! pip install --no-index --find-links /var/lib/pip $1 ; then
-        pip install $1
+    if ! pip install --no-index --find-links /var/lib/pip --system $1 ; then
+        pip install --system $1
     fi
 }

@@ -46,6 +46,11 @@ def trim_anonymous_location(obj):
     if obj.get("location", "").startswith("_:"):
         del obj["location"]
 
+def remove_redundant_fields(obj):
+    for field in ("path", "nameext", "nameroot", "dirname"):
+        if field in obj:
+            del obj[field]
+
 def find_defaults(d, op):
     if isinstance(d, list):
         for i in d:

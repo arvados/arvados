@@ -51,6 +51,7 @@ VAR_DATA="$ARVBOX_DATA/var"
 PASSENGER="$ARVBOX_DATA/passenger"
 GEMS="$ARVBOX_DATA/gems"
 PIPCACHE="$ARVBOX_DATA/pip"
+NPMCACHE="$ARVBOX_DATA/npm"
 GOSTUFF="$ARVBOX_DATA/gopath"
 
 getip() {
@@ -183,7 +184,7 @@ run() {
         updateconf
         wait_for_arvbox
     else
-        mkdir -p "$PG_DATA" "$VAR_DATA" "$PASSENGER" "$GEMS" "$PIPCACHE" "$GOSTUFF"
+        mkdir -p "$PG_DATA" "$VAR_DATA" "$PASSENGER" "$GEMS" "$PIPCACHE" "$NPMCACHE" "$GOSTUFF"
 
 
         if ! test -d "$ARVADOS_ROOT" ; then
@@ -209,6 +210,7 @@ run() {
                        "--volume=$PASSENGER:/var/lib/passenger:rw" \
                        "--volume=$GEMS:/var/lib/gems:rw" \
                        "--volume=$PIPCACHE:/var/lib/pip:rw" \
+                       "--volume=$NPMCACHE:/var/lib/npm:rw" \
                        "--volume=$GOSTUFF:/var/lib/gopath:rw" \
                        arvados/arvbox-dev$TAG \
                        /usr/local/bin/runsvinit -svdir=/etc/test-service
@@ -249,6 +251,7 @@ run() {
                    "--volume=$PASSENGER:/var/lib/passenger:rw" \
                    "--volume=$GEMS:/var/lib/gems:rw" \
                    "--volume=$PIPCACHE:/var/lib/pip:rw" \
+                   "--volume=$NPMCACHE:/var/lib/npm:rw" \
                    "--volume=$GOSTUFF:/var/lib/gopath:rw" \
                    $PUBLIC \
                    arvados/arvbox-dev$TAG

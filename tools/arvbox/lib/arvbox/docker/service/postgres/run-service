@@ -6,12 +6,14 @@
 exec 2>&1
 set -eux -o pipefail
 
-if ! test -d /var/lib/postgresql/9.4/main ; then
-    /usr/lib/postgresql/9.4/bin/initdb -D /var/lib/postgresql/9.4/main
+PGVERSION=9.6
+
+if ! test -d /var/lib/postgresql/$PGVERSION/main ; then
+    /usr/lib/postgresql/$PGVERSION/bin/initdb -D /var/lib/postgresql/$PGVERSION/main
     sh -c "while ! (psql postgres -c'\du' | grep '^ arvbox ') >/dev/null ; do createuser -s arvbox ; sleep 1 ; done" &
 fi
-mkdir -p /var/run/postgresql/9.4-main.pg_stat_tmp
+mkdir -p /var/run/postgresql/$PGVERSION-main.pg_stat_tmp
 
-rm -f /var/lib/postgresql/9.4/main/postmaster.pid
+rm -f /var/lib/postgresql/$PGVERSION/main/postmaster.pid
 
-exec /usr/lib/postgresql/9.4/bin/postgres -D /var/lib/postgresql/9.4/main -c config_file=/etc/postgresql/9.4/main/postgresql.conf
+exec /usr/lib/postgresql/$PGVERSION/bin/postgres -D /var/lib/postgresql/$PGVERSION/main -c config_file=/etc/postgresql/$PGVERSION/main/postgresql.conf

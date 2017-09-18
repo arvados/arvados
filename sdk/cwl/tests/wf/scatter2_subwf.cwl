@@ -11,6 +11,10 @@
       "id": "#main",
       "inputs": [
         {
+          "id": "#main/fileblub",
+          "type": "File"
+        },
+        {
           "id": "#main/sleeptime",
           "type": "int"
         }
