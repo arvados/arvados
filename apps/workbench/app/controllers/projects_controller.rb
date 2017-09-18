@@ -134,8 +134,31 @@ class ProjectsController < ApplicationController
     @removed_uuids = []
     links = []
     params[:item_uuids].collect { |uuid| ArvadosBase.find uuid }.each do |item|
-      item.destroy
-      @removed_uuids << item.uuid
+      if item.class == Collection or item.class == Group
+        # Use delete API on collections and projects/groups
+        item.destroy
+        @removed_uuids << item.uuid
+      elsif item.owner_uuid == @object.uuid
+        # Object is owned by this project. Remove it from the project by
+        # changing owner to the current user.
+        begin
+          item.update_attributes owner_uuid: current_user.uuid
+          @removed_uuids << item.uuid
+        rescue ArvadosApiClient::ApiErrorResponseException => e
+          if e.message.include? '_owner_uuid_'
+            rename_to = item.name + ' removed from ' +
+                        (@object.name ? @object.name : @object.uuid) +
+                        ' at ' + Time.now.to_s
+            updates = {}
+            updates[:name] = rename_to
+            updates[:owner_uuid] = current_user.uuid
+            item.update_attributes updates
+            @removed_uuids << item.uuid
+          else
+            raise
+          end
+        end
+      end
     end
   end
 
