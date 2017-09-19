@@ -164,7 +164,8 @@ class Commit < ActiveRecord::Base
       # is no such branch, or the branch we choose changes under us in
       # race), we fall back to pack|unpack.
       begin
-        branches = must_git("branch --contains #{sha1.shellescape}^{commit}")
+        branches = must_git(src_gitdir,
+                            "branch --contains #{sha1.shellescape}")
         m = branches.match(/^. (\w+)\n/)
         if !m
           raise GitError.new "commit is not on any branch"
