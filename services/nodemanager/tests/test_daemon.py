@@ -77,14 +77,16 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
 
         self.arv_factory = mock.MagicMock(name='arvados_mock')
         api_client = mock.MagicMock(name='api_client')
-        api_client.nodes().create().execute.side_effect = [testutil.arvados_node_mock(1),
-                                                           testutil.arvados_node_mock(2)]
+        api_client.nodes().create().execute.side_effect = \
+            [testutil.arvados_node_mock(1),
+             testutil.arvados_node_mock(2)]
         self.arv_factory.return_value = api_client
 
         self.cloud_factory = mock.MagicMock(name='cloud_mock')
         self.cloud_factory().node_start_time.return_value = time.time()
         self.cloud_updates = mock.MagicMock(name='updates_mock')
         self.timer = testutil.MockTimer(deliver_immediately=False)
+        self.node_record_cleaner = mock.MagicMock(name='node_cleaner_mock')
         self.cloud_factory().node_id.side_effect = lambda node: node.id
         self.cloud_factory().broken.return_value = False
 
@@ -98,6 +100,7 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.daemon = nmdaemon.NodeManagerDaemonActor.start(
             self.server_wishlist_poller, self.arvados_nodes_poller,
             self.cloud_nodes_poller, self.cloud_updates, self.timer,
+            self.node_record_cleaner,
             self.arv_factory, self.cloud_factory,
             shutdown_windows, ServerCalculator(avail_sizes),
             min_nodes, max_nodes, 600, 1800, 3600,

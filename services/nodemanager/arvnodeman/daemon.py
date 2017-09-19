@@ -13,7 +13,7 @@ import pykka
 
 from . import computenode as cnode
 from . import status
-from .computenode import dispatch
+from .computenode import dispatch, arvados_node_missing
 from .config import actor_class
 
 class _ComputeNodeRecord(object):
@@ -100,6 +100,7 @@ class NodeManagerDaemonActor(actor_class):
     """
     def __init__(self, server_wishlist_actor, arvados_nodes_actor,
                  cloud_nodes_actor, cloud_update_actor, timer_actor,
+                 arvados_node_cleaner_actor,
                  arvados_factory, cloud_factory,
                  shutdown_windows, server_calculator,
                  min_nodes, max_nodes,
@@ -116,6 +117,7 @@ class NodeManagerDaemonActor(actor_class):
         self._node_actor = node_actor_class
         self._cloud_updater = cloud_update_actor
         self._timer = timer_actor
+        self._arvados_node_cleaner = arvados_node_cleaner_actor
         self._new_arvados = arvados_factory
         self._new_cloud = cloud_factory
         self._cloud_driver = self._new_cloud()
@@ -230,6 +232,18 @@ class NodeManagerDaemonActor(actor_class):
 
     def update_arvados_nodes(self, nodelist):
         self._update_poll_time('arvados_nodes')
+        # Check for stale node records
+        for node in nodelist:
+            if node['crunch_worker_state'] == 'down' and \
+               node['slot_number'] and \
+               arvados_node_missing(node, self.node_stale_after):
+                self._logger.info(
+                    "Requesting cleanup for stale Arvados node record %s, "
+                    "slot number %s",
+                    node['uuid'], node['slot_number'])
+                self._arvados_node_cleaner.clean_node(
+                    node['uuid'],
+                    cleanup_reason='Stale record cleaned up by Node Manager')
         for key, node in self.arvados_nodes.update_from(nodelist):
             self._register_arvados_node(key, node)
         self.try_pairing()
@@ -525,6 +539,9 @@ class NodeManagerDaemonActor(actor_class):
         self._server_wishlist_actor.stop()
         self._arvados_nodes_actor.stop()
         self._cloud_nodes_actor.stop()
+
+        # Shut down stale node record cleaner
+        self._arvados_node_cleaner.stop()
 
         # Clear cloud node list
         self.update_cloud_nodes([])

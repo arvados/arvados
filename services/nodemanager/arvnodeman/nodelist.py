@@ -12,6 +12,41 @@ from . import config
 
 import arvados.util
 
+
+class ArvadosNodeCleanupActor(config.actor_class):
+    """Actor to dispatch Arvados nodes records cleanup requests.
+
+    This actor receives requests from the NodeManagerDaemonActor,
+    and dispatches API Server updates to reset stale node records without
+    a cloud node assigned but occupying a slot.
+    """
+    def __init__(self, api_client):
+        super(ArvadosNodeCleanupActor, self).__init__()
+        self._client = api_client
+
+    def clean_node(self, node_uuid, cleanup_reason=''):
+        try:
+            self._client.nodes().update(
+                uuid=node_uuid,
+                body={
+                    'hostname': None,
+                    'ip_address': None,
+                    'slot_number': None,
+                    'first_ping_at': None,
+                    'last_ping_at': None,
+                    'properties': {},
+                    'info': {
+                        'ec2_instance_id': None,
+                        'last_action': cleanup_reason
+                    }
+                },
+            ).execute()
+        except Exception as error:
+            self._logger.error("Trying to clean node record '%s': %s",
+                               node_uuid,
+                               error)
+
+
 class ArvadosNodeListMonitorActor(clientactor.RemotePollLoopActor):
     """Actor to poll the Arvados node list.
 
