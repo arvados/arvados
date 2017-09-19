@@ -101,10 +101,10 @@ class CommitTest < ActiveSupport::TestCase
       must_pipe("git checkout -b branch-#{rand(10**10)} 2>&1")
       must_pipe("echo -n #{tag.shellescape} >bar")
       must_pipe("git add bar")
-      must_pipe("git commit -m -")
+      must_pipe("git -c user.email=x@x -c user.name=X commit -m -")
       sha1 = must_pipe("git log -n1 --format=%H").strip
       must_pipe("git rm bar")
-      must_pipe("git commit -m -")
+      must_pipe("git -c user.email=x@x -c user.name=X commit -m -")
     end
     Commit.tag_in_internal_repository 'active/foo', sha1, tag
     gitint = "git --git-dir #{Rails.configuration.git_internal_dir.shellescape}"
@@ -118,7 +118,7 @@ class CommitTest < ActiveSupport::TestCase
     with_foo_repository do
       must_pipe("echo -n #{tag.shellescape} >bar")
       must_pipe("git add bar")
-      must_pipe("git commit -m -")
+      must_pipe("git -c user.email=x@x -c user.name=X commit -m -")
       sha1 = must_pipe("git log -n1 --format=%H").strip
       must_pipe("git reset --hard HEAD^")
     end
