@@ -43,8 +43,9 @@ func (this HashCheckingReader) Read(p []byte) (n int, err error) {
 	return n, err
 }
 
-// WriteTo writes the entire contents of this.Reader to dest.  Returns
-// BadChecksum if the checksum doesn't match.
+// WriteTo writes the entire contents of this.Reader to dest. Returns
+// BadChecksum if writing is successful but the checksum doesn't
+// match.
 func (this HashCheckingReader) WriteTo(dest io.Writer) (written int64, err error) {
 	if writeto, ok := this.Reader.(io.WriterTo); ok {
 		written, err = writeto.WriteTo(io.MultiWriter(dest, this.Hash))
@@ -52,13 +53,16 @@ func (this HashCheckingReader) WriteTo(dest io.Writer) (written int64, err error
 		written, err = io.Copy(io.MultiWriter(dest, this.Hash), this.Reader)
 	}
 
-	sum := this.Hash.Sum(make([]byte, 0, this.Hash.Size()))
-
-	if fmt.Sprintf("%x", sum) != this.Check {
-		err = BadChecksum
+	if err != nil {
+		return written, err
 	}
 
-	return written, err
+	sum := this.Hash.Sum(make([]byte, 0, this.Hash.Size()))
+	if fmt.Sprintf("%x", sum) != this.Check {
+		return written, BadChecksum
+	}
+
+	return written, nil
 }
 
 // Close reads all remaining data from the underlying Reader and
