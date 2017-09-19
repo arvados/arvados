@@ -149,7 +149,7 @@ class Commit < ActiveRecord::Base
     dst_gitdir = Rails.configuration.git_internal_dir
 
     begin
-      commit_in_dst = must_git(dst_gitdir, "rev-parse --verify #{sha1.shellescape}^{commit}").strip
+      commit_in_dst = must_git(dst_gitdir, "log -n1 --format=%H #{sha1.shellescape}^{commit}").strip
     rescue GitError
       commit_in_dst = false
     end
