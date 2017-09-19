@@ -35,7 +35,7 @@ func (this HashCheckingReader) Read(p []byte) (n int, err error) {
 		this.Hash.Write(p[:n])
 	}
 	if err == io.EOF {
-		sum := this.Hash.Sum(make([]byte, 0, this.Hash.Size()))
+		sum := this.Hash.Sum(nil)
 		if fmt.Sprintf("%x", sum) != this.Check {
 			err = BadChecksum
 		}
@@ -57,7 +57,7 @@ func (this HashCheckingReader) WriteTo(dest io.Writer) (written int64, err error
 		return written, err
 	}
 
-	sum := this.Hash.Sum(make([]byte, 0, this.Hash.Size()))
+	sum := this.Hash.Sum(nil)
 	if fmt.Sprintf("%x", sum) != this.Check {
 		return written, BadChecksum
 	}
@@ -81,7 +81,7 @@ func (this HashCheckingReader) Close() (err error) {
 		return err
 	}
 
-	sum := this.Hash.Sum(make([]byte, 0, this.Hash.Size()))
+	sum := this.Hash.Sum(nil)
 	if fmt.Sprintf("%x", sum) != this.Check {
 		err = BadChecksum
 	}
