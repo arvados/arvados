@@ -429,8 +429,11 @@ class CrunchDispatch
         i, o, e, t = Open3.popen3(*cmd_args)
       rescue
         $stderr.puts "dispatch: popen3: #{$!}"
-        sleep 1
-        next
+        # This is a dispatch problem like "Too many open files";
+        # retrying another job right away would be futile. Just return
+        # and hope things are better next time, after (at least) a
+        # did_recently() delay.
+        return
       end
 
       $stderr.puts "dispatch: job #{job.uuid}"
@@ -633,31 +636,11 @@ class CrunchDispatch
     pid_done = nil
     j_done = nil
 
-    if false
-      begin
-        pid_done = waitpid(-1, Process::WNOHANG | Process::WUNTRACED)
-        if pid_done
-          j_done = @running.values.
-            select { |j| j[:wait_thr].pid == pid_done }.
-            first
-        end
-      rescue SystemCallError
-        # I have @running processes but system reports I have no
-        # children. This is likely to happen repeatedly if it happens at
-        # all; I will log this no more than once per child process I
-        # start.
-        if 0 < @running.select { |uuid,j| j[:warned_waitpid_error].nil? }.size
-          children = @running.values.collect { |j| j[:wait_thr].pid }.join ' '
-          $stderr.puts "dispatch: IPC bug: waitpid() error (#{$!}), but I have children #{children}"
-        end
-        @running.each do |uuid,j| j[:warned_waitpid_error] = true end
-      end
-    else
-      @running.each do |uuid, j|
-        if j[:wait_thr].status == false
-          pid_done = j[:wait_thr].pid
-          j_done = j
-        end
+    @running.each do |uuid, j|
+      if !j[:wait_thr].status
+        pid_done = j[:wait_thr].pid
+        j_done = j
+        break
       end
     end
 
