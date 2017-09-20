@@ -89,5 +89,38 @@ class CloudNodeListMonitorActorTestCase(testutil.RemotePollLoopActorTestMixin,
         self.subscriber.assert_called_with(node)
         self.assertEqual(testutil.MockSize(2), node.size)
 
+
+class ArvadosNodeCleanupActorTestCase(testutil.ActorTestMixin,
+                                      unittest.TestCase):
+    ACTOR_CLASS = nodelist.ArvadosNodeCleanupActor
+
+    def make_actor(self):
+        self.client = mock.MagicMock(name='client_mock')
+        self.cleaner = self.ACTOR_CLASS.start(self.client).proxy()
+
+    def test_api_update_request(self):
+        """
+        When clean_node() is called, an api record update should be
+        done to reset the requested node record.
+        """
+        node_uuid = 'node-record-uuid'
+        self.make_actor()
+        self.cleaner.clean_node(node_uuid).get(self.TIMEOUT)
+        self.client.nodes().update.assert_called_with(
+            uuid=node_uuid,
+            body={
+                'hostname': None,
+                'ip_address': None,
+                'slot_number': None,
+                'first_ping_at': None,
+                'last_ping_at': None,
+                'properties': {},
+                'info': {
+                    'ec2_instance_id': None,
+                    'last_action': ''
+                }
+            }
+        )
+
 if __name__ == '__main__':
     unittest.main()

@@ -149,6 +149,36 @@ class NodeManagerDaemonActorTestCase(testutil.ActorTestMixin,
         self.busywait(lambda: len(arv_nodes) == len(self.monitored_arvados_nodes()))
         self.assertItemsEqual(arv_nodes, self.monitored_arvados_nodes())
 
+    def test_stale_arvados_node_cleanup(self):
+        """
+        When a node record is down, with a slot assigned, and also
+        stale, it should be cleaned.
+        """
+        cloud_node = testutil.cloud_node_mock(1)
+        arv_node = testutil.arvados_node_mock(
+            node_num=1,
+            age=3601, # > node_stale_after
+            crunch_worker_state='down',
+            slot_number=1
+        )
+        self.make_daemon([cloud_node], [arv_node])
+        self.assertTrue(self.node_record_cleaner.clean_node.called)
+
+    def test_fresh_arvados_node_cleanup(self):
+        """
+        When a node record is down, with a slot assigned, but not yet
+        stale, it shouldn't be cleaned
+        """
+        cloud_node = testutil.cloud_node_mock(1)
+        arv_node = testutil.arvados_node_mock(
+            node_num=1,
+            age=31, # < node_stale_after
+            crunch_worker_state='down',
+            slot_number=1
+        )
+        self.make_daemon([cloud_node], [arv_node])
+        self.assertFalse(self.node_record_cleaner.clean_node.called)
+
     def test_node_pairing(self):
         cloud_node = testutil.cloud_node_mock(1)
         arv_node = testutil.arvados_node_mock(1)
