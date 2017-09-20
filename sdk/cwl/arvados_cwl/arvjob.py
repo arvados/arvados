@@ -222,12 +222,13 @@ class ArvadosJob(object):
                                                                    keep_client=self.arvrunner.keep_client,
                                                                    num_retries=self.arvrunner.num_retries)
                         log = logc.open(logc.keys()[0])
-                        dirs = {}
-                        tmpdir = None
-                        outdir = None
-                        keepdir = None
+                        dirs = {
+                            "tmpdir": "/tmpdir",
+                            "outdir": "/outdir",
+                            "keep": "/keep"
+                        }
                         for l in log:
-                            # Determine the tmpdir, outdir and keepdir paths from
+                            # Determine the tmpdir, outdir and keep paths from
                             # the job run.  Unfortunately, we can't take the first
                             # values we find (which are expected to be near the
                             # top) and stop scanning because if the node fails and
