@@ -173,6 +173,11 @@ class Commit < ActiveRecord::Base
         branch = m[1]
         must_git(dst_gitdir,
                  "fetch file://#{src_gitdir.shellescape} #{branch.shellescape}")
+        # Even if all of the above steps succeeded, we might still not
+        # have the right commit due to a race, in which case tag_cmd
+        # will fail, and we'll need to fall back to pack|unpack. So
+        # don't be tempted to condense this tag_cmd and the one in the
+        # rescue block into a single attempt.
         must_git(dst_gitdir, tag_cmd)
       rescue GitError
         must_pipe("echo #{sha1.shellescape}",
