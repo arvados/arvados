@@ -12,7 +12,7 @@ import re
 import time
 
 from ..config import CLOUD_ERRORS
-from libcloud.common.exceptions import BaseHTTPError
+from libcloud.common.exceptions import BaseHTTPError, RateLimitReachedError
 
 ARVADOS_TIMEFMT = '%Y-%m-%dT%H:%M:%SZ'
 ARVADOS_TIMESUBSEC_RE = re.compile(r'(\.\d+)Z$')
@@ -79,12 +79,14 @@ class RetryMixin(object):
                     should_retry = False
                     try:
                         ret = orig_func(self, *args, **kwargs)
+                    except RateLimitReachedError as error:
+                        self.retry_wait = error.retry_after
+                        should_retry = True
                     except BaseHTTPError as error:
                         if error.headers and error.headers.get("retry-after"):
                             try:
-                                self.retry_wait = int(error.headers["retry-after"])
-                                if self.retry_wait < 0 or self.retry_wait > self.max_retry_wait:
-                                    self.retry_wait = self.max_retry_wait
+                                self.retry_wait = \
+                                    int(error.headers["retry-after"])
                                 should_retry = True
                             except ValueError:
                                 pass
@@ -103,6 +105,9 @@ class RetryMixin(object):
                         # No exception,
                         self.retry_wait = self.min_retry_wait
                         return ret
+
+                    if self.retry_wait < 0 or self.retry_wait > self.max_retry_wait:
+                        self.retry_wait = self.max_retry_wait
 
                     # Only got here if an exception was caught.  Now determine what to do about it.
                     if not should_retry:
