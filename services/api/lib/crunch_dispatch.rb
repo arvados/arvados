@@ -429,8 +429,11 @@ class CrunchDispatch
         i, o, e, t = Open3.popen3(*cmd_args)
       rescue
         $stderr.puts "dispatch: popen3: #{$!}"
-        sleep 1
-        next
+        # This is a dispatch problem like "Too many open files";
+        # retrying another job right away would be futile. Just return
+        # and hope things are better next time, after (at least) a
+        # did_recently() delay.
+        return
       end
 
       $stderr.puts "dispatch: job #{job.uuid}"
