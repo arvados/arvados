@@ -8,9 +8,10 @@ import (
 	"bytes"
 	"crypto/md5"
 	"fmt"
-	. "gopkg.in/check.v1"
 	"io"
 	"io/ioutil"
+
+	. "gopkg.in/check.v1"
 )
 
 type HashcheckSuiteSuite struct{}
@@ -85,5 +86,18 @@ func (h *HashcheckSuiteSuite) TestWriteTo(c *C) {
 		c.Check(n, Equals, int64(3))
 		c.Check(err, Equals, BadChecksum)
 		<-done
+	}
+
+	// If WriteTo stops early due to a write error, return the
+	// write error (not "bad checksum").
+	{
+		input := bytes.NewBuffer(make([]byte, 1<<26))
+		hcr := HashCheckingReader{input, md5.New(), hash}
+		r, w := io.Pipe()
+		r.Close()
+		n, err := hcr.WriteTo(w)
+		c.Check(n, Equals, int64(0))
+		c.Check(err, NotNil)
+		c.Check(err, Not(Equals), BadChecksum)
 	}
 }
