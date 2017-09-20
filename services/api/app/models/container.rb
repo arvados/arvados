@@ -389,7 +389,7 @@ class Container < ArvadosModel
       when Running
         permitted.push :finished_at, :output, :log
       when Queued, Locked
-        permitted.push :finished_at
+        permitted.push :finished_at, :log
       end
 
     else
