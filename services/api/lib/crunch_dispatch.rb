@@ -654,9 +654,10 @@ class CrunchDispatch
       end
     else
       @running.each do |uuid, j|
-        if j[:wait_thr].status == false
+        if !j[:wait_thr].status
           pid_done = j[:wait_thr].pid
           j_done = j
+          break
         end
       end
     end
