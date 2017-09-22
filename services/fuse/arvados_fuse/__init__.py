@@ -159,8 +159,8 @@ class InodeCache(object):
             if obj.in_use():
                 _logger.debug("InodeCache cannot clear inode %i, in use", obj.inode)
                 return
+            obj.kernel_invalidate()
             if obj.has_ref(True):
-                obj.kernel_invalidate()
                 _logger.debug("InodeCache sent kernel invalidate inode %i", obj.inode)
                 return
             obj.clear()
@@ -266,17 +266,22 @@ class Inodes(object):
             del self._entries[entry.inode]
             with llfuse.lock_released:
                 entry.finalize()
-            self.invalidate_inode(entry.inode)
             entry.inode = None
         else:
             entry.dead = True
             _logger.debug("del_entry on inode %i with refcount %i", entry.inode, entry.ref_count)
 
-    def invalidate_inode(self, inode):
-        llfuse.invalidate_inode(inode)
+    def invalidate_inode(self, entry):
+        if entry.has_ref(False):
+            # Only necessary if the kernel has previously done a lookup on this
+            # inode and hasn't yet forgotten about it.
+            llfuse.invalidate_inode(entry.inode)
 
-    def invalidate_entry(self, inode, name):
-        llfuse.invalidate_entry(inode, name.encode(self.encoding))
+    def invalidate_entry(self, entry, name):
+        if entry.has_ref(False):
+            # Only necessary if the kernel has previously done a lookup on this
+            # inode and hasn't yet forgotten about it.
+            llfuse.invalidate_entry(entry.inode, name.encode(self.encoding))
 
     def clear(self):
         self.inode_cache.clear()
@@ -432,8 +437,7 @@ class Operations(llfuse.Operations):
         entry = llfuse.EntryAttributes()
         entry.st_ino = inode
         entry.generation = 0
-        entry.entry_timeout = 60 if e.allow_dirent_cache else 0
-        entry.attr_timeout = 60 if e.allow_attr_cache else 0
+        entry.attr_timeout = e.time_to_next_poll() if e.allow_attr_cache else 0
 
         entry.st_mode = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
         if isinstance(e, Directory):
