@@ -437,6 +437,7 @@ class Operations(llfuse.Operations):
         entry = llfuse.EntryAttributes()
         entry.st_ino = inode
         entry.generation = 0
+        entry.entry_timeout = 0
         entry.attr_timeout = e.time_to_next_poll() if e.allow_attr_cache else 0
 
         entry.st_mode = stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH
