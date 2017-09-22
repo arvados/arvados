@@ -407,6 +407,7 @@ Listen: :{}
 LogLevel: {}
 Postgres:
   host: {}
+  port: {}
   dbname: {}
   user: {}
   password: {}
@@ -415,6 +416,7 @@ Postgres:
                    port,
                    ('info' if os.environ.get('ARVADOS_DEBUG', '') in ['','0'] else 'debug'),
                    _dbconfig('host'),
+                   _dbconfig('port', 5432),
                    _dbconfig('database'),
                    _dbconfig('username'),
                    _dbconfig('password')))
@@ -670,12 +672,12 @@ def _getport(program):
     except IOError:
         return 9
 
-def _dbconfig(key):
+def _dbconfig(key, *args):
     global _cached_db_config
     if not _cached_db_config:
         _cached_db_config = yaml.load(open(os.path.join(
             SERVICES_SRC_DIR, 'api', 'config', 'database.yml')))
-    return _cached_db_config['test'][key]
+    return _cached_db_config['test'].get(key, *args)
 
 def _apiconfig(key):
     global _cached_config
