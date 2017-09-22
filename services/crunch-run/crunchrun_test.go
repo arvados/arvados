@@ -220,17 +220,22 @@ func (client *ArvTestClient) Call(method, resourceType, uuid, action string, par
 
 func (client *ArvTestClient) CallRaw(method, resourceType, uuid, action string,
 	parameters arvadosclient.Dict) (reader io.ReadCloser, err error) {
-	j := []byte(`{
-		"command": ["sleep", "1"],
-		"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
-		"cwd": ".",
-		"environment": {},
-		"mounts": {"/tmp": {"kind": "tmp"} },
-		"output_path": "/tmp",
-		"priority": 1,
-		"runtime_constraints": {}
-	}`)
-	return ioutil.NopCloser(bytes.NewReader(j)), nil
+	var j []byte
+	if method == "GET" && resourceType == "containers" && action == "" {
+		j, err = json.Marshal(client.Container)
+	} else {
+		j = []byte(`{
+			"command": ["sleep", "1"],
+			"container_image": "d4ab34d3d4f8a72f5c4973051ae69fab+122",
+			"cwd": ".",
+			"environment": {},
+			"mounts": {"/tmp": {"kind": "tmp"}, "/json": {"kind": "json", "content": {"number": 123456789123456789}}},
+			"output_path": "/tmp",
+			"priority": 1,
+			"runtime_constraints": {}
+		}`)
+	}
+	return ioutil.NopCloser(bytes.NewReader(j)), err
 }
 
 func (client *ArvTestClient) Get(resourceType string, uuid string, parameters arvadosclient.Dict, output interface{}) error {
@@ -1101,7 +1106,7 @@ func (s *TestSuite) TestSetupMounts(c *C) {
 	}{
 		{in: "foo", out: `"foo"`},
 		{in: nil, out: `null`},
-		{in: map[string]int{"foo": 123}, out: `{"foo":123}`},
+		{in: map[string]int64{"foo": 123456789123456789}, out: `{"foo":123456789123456789}`},
 	} {
 		i = 0
 		cr.ArvMountPoint = ""

@@ -1304,9 +1304,8 @@ func (runner *ContainerRunner) Run() (err error) {
 		runner.CrunchLog.Close()
 	}()
 
-	err = runner.ArvClient.Get("containers", runner.Container.UUID, nil, &runner.Container)
+	err = runner.fetchContainerRecord()
 	if err != nil {
-		err = fmt.Errorf("While getting container record: %v", err)
 		return
 	}
 
@@ -1367,6 +1366,24 @@ func (runner *ContainerRunner) Run() (err error) {
 		runner.finalState = "Complete"
 	}
 	return
+}
+
+// Fetch the current container record (uuid = runner.Container.UUID)
+// into runner.Container.
+func (runner *ContainerRunner) fetchContainerRecord() error {
+	reader, err := runner.ArvClient.CallRaw("GET", "containers", runner.Container.UUID, "", nil)
+	if err != nil {
+		return fmt.Errorf("error fetching container record: %v", err)
+	}
+	defer reader.Close()
+
+	dec := json.NewDecoder(reader)
+	dec.UseNumber()
+	err = dec.Decode(&runner.Container)
+	if err != nil {
+		return fmt.Errorf("error decoding container record: %v", err)
+	}
+	return nil
 }
 
 // NewContainerRunner creates a new container runner.
