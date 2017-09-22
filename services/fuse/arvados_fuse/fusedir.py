@@ -194,7 +194,6 @@ class Directory(FreshBase):
         # Calling the public items() method might trigger a refresh,
         # which we definitely don't want, so read the internal dict directly.
         for k,v in parent._entries.items():
-            _logger.debug("looking at %s %s, self is %s", k, v, self)
             if v is self:
                 self.inodes.invalidate_entry(parent, k)
                 break
