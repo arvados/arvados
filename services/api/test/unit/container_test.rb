@@ -451,6 +451,17 @@ class ContainerTest < ActiveSupport::TestCase
     check_no_change_from_cancelled c
   end
 
+  test "Container locked cancel with log" do
+    c, _ = minimal_new
+    set_user_from_auth :dispatch1
+    assert c.lock, show_errors(c)
+    assert c.update_attributes(
+             state: Container::Cancelled,
+             log: collections(:real_log_collection).portable_data_hash,
+           ), show_errors(c)
+    check_no_change_from_cancelled c
+  end
+
   test "Container running cancel" do
     c, _ = minimal_new
     set_user_from_auth :dispatch1
